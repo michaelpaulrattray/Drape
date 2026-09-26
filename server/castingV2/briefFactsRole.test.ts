@@ -47,6 +47,36 @@ function engineReturning(role: string | null): TextEngine {
 
 const PHRASINGS = ["a runway model", "runway model", "catwalk model", "high-fashion model"];
 
+/*
+  ⚠ **THE PROJECTION IS EXACTLY WHAT SOMETHING READS — #1288, 2026-09-26.**
+
+  `open` and `variationAxis` were computed here and shipped to the client for the
+  echo's "… were left to the roll" clause. He retired the clause, and nothing else
+  in the product had ever read either field, so both left with it — a field
+  computed on every sheet load and read by nobody is the shape this repository has
+  paid for repeatedly (#1204, #1217).
+
+  Nothing else guards a wire field going dead, which is exactly how one comes
+  BACK: a later shift adds `open` again for a surface that is then cut, and the
+  projection quietly grows a fourth key no reader wants. So the key set is
+  asserted whole rather than field by field, and a new key is a deliberate act
+  that edits this line and says who reads it.
+*/
+describe("the brief-facts projection carries nothing nobody reads", () => {
+  it("projects exactly role, locks and statedAccessories", async () => {
+    const compiled = await castingBriefCompiler({
+      briefText: "a runway model early 20s",
+      candidateCount: 8,
+      rollSeed: "projection-shape",
+      engine: engineReturning("runway model"),
+    });
+    const facts = readBriefFacts(compiled.lockContract, compiled.compiledBrief, "a runway model early 20s");
+    expect(Object.keys(facts).sort()).toEqual(["locks", "role", "statedAccessories"]);
+    /* THE POSITIVE CONTROL: it is a real projection, not an empty object. */
+    expect(facts.role).toBe("runway model");
+  });
+});
+
 describe("readBriefFacts surfaces the category", () => {
   it.each(PHRASINGS)("compiling %j puts the category where the echo can see it", async (phrase) => {
     const compiled = await castingBriefCompiler({
