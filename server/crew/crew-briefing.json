@@ -6137,9 +6137,16 @@
     {
       "id": "judge-frame-1408",
       "title": "The view checker reads a bounded copy, so a big picture can be checked at all (#1408)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1412,
-      "note": "PR #1412 — gate green, flagged for the relay because it touches the value a free Try again depends on."
+      "note": "PR #1412 merged 8d502e23 — hand verdict pass. One docblock correction missed the merge and rides PR #1416."
+    },
+    {
+      "id": "judge-frame-correction-1408",
+      "title": "The bounded-checker docblock stops blaming Thursday's three views on this job (#1408)",
+      "status": "in-review",
+      "prNumber": 1416,
+      "note": "Comment-only; the correction was pushed after the merge had taken the earlier head."
     },
     {
       "id": "refine-ceiling-sentence-1275",
