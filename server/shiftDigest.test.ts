@@ -161,6 +161,10 @@ function digestInputs(overrides: Partial<DigestInputs> = {}): DigestInputs {
        declaring "the board was read and is clean", and an arm that wants the
        unread answer must say so, which is the distinction the field exists for. */
     openPullRequests: [],
+    /* Same doctrine for the claims-and-refusals read (#1094 piece 2): `[]` is
+       "read, and nobody has claimed anything", and an arm that wants the UNREAD
+       answer passes the `unreadable` shape. */
+    cardComments: [],
     patrolClocks: "no seat is overdue",
     since: { label: "foreman-20260904-2340.md", iso: "2026-09-04T13:40:00.000Z", notes: [] },
     commits: [],
@@ -536,6 +540,82 @@ describe("buildDigest", () => {
     expect(digest).toContain("not a clean board, it is an unread one");
     expect(digest).not.toContain("No open pull request names any card above");
     expect(digest).not.toContain("ALREADY BEING BUILT");
+  });
+
+  /**
+   * ⚠ **#1094 PIECE 2 — NEXT UP STOPS OFFERING A CARD SOMEBODY IS ALREADY ON.**
+   *
+   * His order, 2026-09-26 (terminal): *"work on 1094 and 1307 next so the desk
+   * shows whats built"*. The digest prints the line every shift chooses from, so
+   * the row carries the SAME phrase his page carries and the heading says how many
+   * are actually takeable.
+   */
+  it("annotates a NEXT UP row with the phrase his page shows, and says it is not on offer", () => {
+    const digest = buildDigest(
+      digestInputs({
+        nextUp: [
+          { number: 1231, title: "the scripts typecheck", labels: ["founder-ordered"], createdAt: "2026-09-24T01:00:00Z" },
+          { number: 1240, title: "the view's own block", labels: ["founder-ordered"], createdAt: "2026-09-25T01:00:00Z" },
+        ],
+        openPullRequests: [
+          { number: 1316, title: "build(typecheck): the population", body: "for card #1231", url: "u", headRefName: "team/x-1231" },
+        ],
+        cardComments: [],
+      }),
+    );
+    expect(digest).toContain("being built — PR #1316 · NOT ON OFFER");
+    expect(digest).toContain("1 ON OFFER, 1 already being built or claimed");
+    /* THE CONTROL: the row nobody is on carries no phrase at all. */
+    expect(digest).not.toMatch(/#1240.*NOT ON OFFER/s);
+  });
+
+  it("⚠ a live CLAIM takes a row off offer — the artifact a pull-request read cannot see", () => {
+    const at = new Date("2026-09-04T22:00:00Z").toISOString();
+    const digest = buildDigest(
+      digestInputs({
+        nextUp: [
+          { number: 1107, title: "his card", labels: ["founder-ordered"], createdAt: "2026-09-04T01:00:00Z" },
+        ],
+        openPullRequests: [],
+        cardComments: [{ kind: "claim", card: 1107, seat: "seat-desk-9", at }],
+      }),
+    );
+    expect(digest).toContain("claimed by seat-desk-9");
+    expect(digest).toContain("NOT ON OFFER");
+    expect(digest).toContain("0 ON OFFER, 1 already being built or claimed");
+  });
+
+  it("a REFUSAL annotates the row and leaves it ON OFFER — a judgement, not a hold", () => {
+    const digest = buildDigest(
+      digestInputs({
+        nextUp: [
+          { number: 1217, title: "the cohort's house roll prompt", labels: ["founder-ordered"], createdAt: "2026-09-24T01:00:00Z" },
+        ],
+        openPullRequests: [],
+        cardComments: [{ kind: "refusal", card: 1217, at: "2026-09-04T00:21:50Z" }],
+      }),
+    );
+    expect(digest).toContain("not built — the reason is on the card");
+    expect(digest).not.toContain("NOT ON OFFER");
+    /* The heading stays silent because every row is still takeable. */
+    expect(digest).not.toContain("ON OFFER,");
+  });
+
+  it("⚠ says the CLAIMS were unread when they were, and never renders that as a quiet board", () => {
+    const digest = buildDigest(
+      digestInputs({
+        nextUp: [
+          { number: 1090, title: "his two", labels: ["founder-ordered"], createdAt: "2026-09-22T14:38:56Z" },
+        ],
+        cardComments: { unreadable: "`gh api .../issues/comments` could not be read" },
+      }),
+    );
+    expect(digest).toContain("THE CLAIMS AND REFUSALS COULD NOT BE READ");
+    expect(digest).toContain("may look FREE while a");
+    /* THE CONTROL: with the read landed, the line is absent. */
+    expect(buildDigest(digestInputs({
+      nextUp: [{ number: 1090, title: "his two", labels: ["founder-ordered"], createdAt: "2026-09-22T14:38:56Z" }],
+    }))).not.toContain("THE CLAIMS AND REFUSALS COULD NOT BE READ");
   });
 
   it("says nothing about pull requests when there is no band to annotate", () => {

@@ -49,6 +49,16 @@ import {
   readOpenPullRequests,
   type OpenPullRequest,
 } from "./cardClaimWarning.mts";
+/* ⚠ THE NARROW, FACT-GRADE READER DECIDES WHETHER A ROW IS ON OFFER (#1094
+   piece 2); `findCardPullRequests` below stays for the WIDE warning, which is a
+   different question — a person reading this ranking wants to be told to go and
+   look, his page states a fact. Both are here and the lines say which is which. */
+import {
+  buildBoard,
+  commentsUnreadableLines,
+  type CardBuildBoard,
+} from "./cardBuildState.mts";
+import type { CrewCardCommentFact } from "../../shared/crewCardBuildState.js";
 import { isUnreadable, type Unreadable } from "./shiftDigest.mts";
 import {
   findCardPullRequests,
@@ -204,16 +214,26 @@ function rowLines(
   ownLabel: string,
   now: Date,
   prs: readonly OpenPullRequest[] | Unreadable,
-): { lines: string[]; claimedAny: boolean } {
+  board: CardBuildBoard,
+): { lines: string[]; claimedAny: boolean; offered: number } {
   const lines: string[] = [];
   let claimedAny = false;
+  let offered = 0;
   for (const [index, row] of rows.entries()) {
     const age = Math.floor(
       (now.getTime() - Date.parse(row.createdAt)) / (24 * 60 * 60 * 1000),
     );
+    const phrase = board.phraseFor(row.number);
+    const heldOff = board.holdsOffOffer(row.number);
+    if (!heldOff) offered += 1;
     lines.push(
       `${String(index + 1).padStart(2)}. #${row.number}  ${row.createdAt.slice(0, 10)}  (${age}d)  ${row.title}`,
     );
+    /* ⚠ ANNOTATED, NEVER HIDDEN — the ranking is the whole product of this view
+       and a row silently missing from it is worse than a row with a phrase. The
+       two states where somebody's hands are on the work say `NOT ON OFFER`; a
+       refusal says its phrase and stays on offer (`buildStateHoldsOffOffer`). */
+    if (phrase !== null) lines.push(`      → ${phrase}${heldOff ? " · NOT ON OFFER" : ""}`);
     /*
       The other labels are printed rather than filtered to a set we chose,
       because `blocked` is the one that matters most here and naming it in a
@@ -225,6 +245,10 @@ function rowLines(
       .filter((name) => name !== ownLabel);
     if (others.length > 0) lines.push(`      labels: ${others.join(", ")}`);
     if (isUnreadable(prs)) continue;
+    /* ⚠ THE WIDE READ STILL RUNS ON EVERY ROW, INCLUDING ONE THE PHRASE ALREADY
+       NAMES — see the same note in `shiftDigest.mts`. The phrase is the fact; this
+       line carries the URL, the draft marker and #1099's cannot-be-merged note,
+       which lives nowhere else and belongs on exactly these rows. */
     for (const { pr, where } of findCardPullRequests(prs, `#${row.number}`)) {
       claimedAny = true;
       lines.push(
@@ -237,7 +261,7 @@ function rowLines(
       if (readPullRequestConflict(pr) === true) lines.push(`        ⚠ ${PR_CONFLICT_NOTE}`);
     }
   }
-  return { lines, claimedAny };
+  return { lines, claimedAny, offered };
 }
 
 export const PATROL_POINTER = "npx tsx scripts/patrol-clocks.mts";
@@ -254,9 +278,14 @@ export function renderBands(input: {
    *  silently print the un-annotated ranking this change exists to end, and
    *  every arm would stay green. */
   openPullRequests: readonly OpenPullRequest[] | Unreadable;
+  /** The claims and refusals — REQUIRED for the same reason (#1094 piece 2). */
+  cardComments: readonly CrewCardCommentFact[] | Unreadable;
 }): string[] {
-  const { ordered, urgent, now, openPullRequests: prs } = input;
+  const { ordered, urgent, now, openPullRequests: prs, cardComments } = input;
+  /* ONE board for both bands, the same judgement his page draws. */
+  const board = buildBoard({ openPullRequests: prs, comments: cardComments, nowMs: now.getTime() });
   let claimedAny = false;
+  let offered = 0;
   const out: string[] = [
     "STANDING EXCEPTIONS — derived from the queue, never a second list",
     `read ${now.toISOString()} · ${ordered.length} ordered · ${urgent.length} urgent`,
@@ -280,8 +309,9 @@ export function renderBands(input: {
   if (ordered.length === 0) {
     out.push("  (empty — no open card carries `founder-ordered`.)");
   } else {
-    const cut = rowLines(orderedBandRunningOrder(ordered), "founder-ordered", now, prs);
+    const cut = rowLines(orderedBandRunningOrder(ordered), "founder-ordered", now, prs, board);
     claimedAny = claimedAny || cut.claimedAny;
+    offered += cut.offered;
     out.push(...cut.lines);
   }
 
@@ -289,8 +319,9 @@ export function renderBands(input: {
   if (urgent.length === 0) {
     out.push("  (empty — no open card carries `urgent`.)");
   } else {
-    const cut = rowLines(oldestFirst(urgent), "urgent", now, prs);
+    const cut = rowLines(oldestFirst(urgent), "urgent", now, prs, board);
     claimedAny = claimedAny || cut.claimedAny;
+    offered += cut.offered;
     out.push(...cut.lines);
   }
 
@@ -317,6 +348,19 @@ export function renderBands(input: {
     );
   } else {
     out.push(`✓ No open pull request names any card above (${prs.length} open PR(s) read).`);
+  }
+  out.push(...commentsUnreadableLines(cardComments, ""));
+
+  /* ⚠ THE COUNT A SHIFT ACTS ON IS HOW MANY IT CAN ACTUALLY TAKE (#1094 piece
+     2). A header reading "6 ordered" over six rows of which five are being built
+     is the offer this card exists to end, and the two bands are counted together
+     because a shift takes ONE card from the two of them. */
+  const rowsShown = ordered.length + urgent.length;
+  if (rowsShown > 0 && offered < rowsShown) {
+    out.push(
+      `⚠ ${offered} of the ${rowsShown} row(s) above are ON OFFER — the rest are already being built`,
+      "  or claimed, and say so on their own line.",
+    );
   }
 
   out.push(
@@ -366,11 +410,19 @@ export function report(input: {
    * exit code — which is exactly why the unreadable case has to print.
    */
   readOpenPullRequests: () => readonly OpenPullRequest[] | Unreadable;
+  /**
+   * THE CLAIMS AND REFUSALS (#1094 piece 2) — a parameter for the same reasons,
+   * and it must never refuse either: a shift that cannot read the comments still
+   * needs the ranking, and the line says the board is unread.
+   */
+  readCardComments: () => readonly CrewCardCommentFact[] | Unreadable;
   now: Date;
   log: (line: string) => void;
   error: (line: string) => void;
 }): number {
-  const { readOpenQueue, readOpenPullRequests: readPrs, now, log, error } = input;
+  const {
+    readOpenQueue, readOpenPullRequests: readPrs, readCardComments: readComments, now, log, error,
+  } = input;
   let ordered: readonly Row[];
   let urgent: readonly Row[];
   try {
@@ -417,6 +469,15 @@ export function report(input: {
     };
   }
 
-  for (const line of renderBands({ ordered, urgent, now, openPullRequests })) log(line);
+  let cardComments: readonly CrewCardCommentFact[] | Unreadable;
+  try {
+    cardComments = readComments();
+  } catch (failure) {
+    cardComments = {
+      unreadable: `the comment read threw: ${String(failure instanceof Error ? failure.message : failure)}`,
+    };
+  }
+
+  for (const line of renderBands({ ordered, urgent, now, openPullRequests, cardComments })) log(line);
   return 0;
 }

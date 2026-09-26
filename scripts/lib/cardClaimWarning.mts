@@ -51,6 +51,23 @@ export interface OpenPullRequest extends PullRequestMergeability {
   readonly url?: string;
   readonly isDraft?: boolean;
   readonly headRefName?: string;
+  /**
+   * ⚠ **`labels` RIDES ALONG FOR #1094 piece 2 AND IT IS NOT DECORATION.**
+   * `crewCardBuildPhrase` says *"waiting on review"* rather than *"being built"*
+   * when a pull request carries `needs-fable` or `founder-review`, and those two
+   * states mean different things to a shift reading a queue. Without the field
+   * every phrase a SCRIPT prints would read `being built` while his page — which
+   * has the labels — read `waiting on review` for the same card. Two surfaces
+   * saying different words about one fact is the drift this whole card is about.
+   */
+  readonly labels?: readonly { readonly name?: string }[];
+  /**
+   * ⚠ **`updatedAt` RIDES ALONG FOR THE VERDICT READ (#1094).** It is the clock
+   * a caller that cannot afford a per-pull-request commit read dates the relay's
+   * verdict against — `shared/handVerdict.ts` owns why, and it was measured on
+   * three real verdicts before it shipped.
+   */
+  readonly updatedAt?: string;
 }
 
 /**
@@ -75,6 +92,22 @@ export interface OpenPullRequest extends PullRequestMergeability {
  * matcher depends on, and a mirror drifts (working law 4). One field list, one
  * `gh` call shape, two callers.
  */
+/**
+ * THE `gh pr list` CALL, AS AN ARRAY, so a caller with its own injected `gh`
+ * reader spends the SAME field list (#1094 piece 2).
+ *
+ * ⚠ **`scripts/lib/crewQueueCount.mts` takes its `gh` as a parameter** — that is
+ * what makes his switch-panel counts drivable without a network — so it cannot
+ * call the function below. A second field list typed there would be the mirror
+ * this file's own `labels`/`updatedAt` notes exist about: the matcher's branch
+ * limb, the review stage and the verdict clock each depend on a field being
+ * asked for, and a copy that lost one would silently answer a weaker question.
+ */
+export const OPEN_PR_LIST_ARGS: readonly string[] = [
+  "pr", "list", "--state", "open", "--limit", "100",
+  "--json", "number,title,body,url,isDraft,headRefName,labels,updatedAt,mergeable,mergeStateStatus",
+];
+
 export function readOpenPullRequests(
   fixturePath?: string | null,
   cwd?: string | null,
@@ -91,7 +124,7 @@ export function readOpenPullRequests(
     /* `gh` with no shell — it is an .exe, and the shell form emits DEP0190. */
     const out = execFileSync(
       "gh",
-      ["pr", "list", "--state", "open", "--limit", "100", "--json", "number,title,body,url,isDraft,headRefName,mergeable,mergeStateStatus"],
+      [...OPEN_PR_LIST_ARGS],
       {
         encoding: "utf8",
         stdio: ["ignore", "pipe", "pipe"],

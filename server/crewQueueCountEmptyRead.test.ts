@@ -335,6 +335,10 @@ describe("the evidence comes from a reading this run already takes", () => {
       if (at !== -1) return JSON.stringify([]);
       if (args.includes("sort:created-asc")) return JSON.stringify([{ number: 1000, createdAt: "2026-09-01T00:00:00Z" }]);
       if (args.includes("pr")) return JSON.stringify([]);
+      /* #1094 piece 2 — the claims-and-refusals read (`gh api .../issues/comments`).
+         It is NOT a whole-queue read and must not be counted as one; before this
+         branch existed it fell through and this arm read 2. */
+      if (args[0] === "api") return JSON.stringify([]);
       wholeQueueReads += 1;
       return JSON.stringify(CREW_WORK_CATEGORIES.flatMap((category) => cardsFor(category.queueLabel, 1)));
     };
@@ -359,5 +363,101 @@ describe("the evidence comes from a reading this run already takes", () => {
     for (const category of CREW_WORK_CATEGORIES) {
       expect(storedFor(writes, category.key)).toBeNull();
     }
+  });
+});
+
+/**
+ * ⚠ **A CARD SOMEBODY IS ALREADY BUILDING IS NOT COUNTED AS WORK ON OFFER
+ * (#1094 piece 2).**
+ *
+ * His order, 2026-09-26 (terminal), verbatim: ***"work on 1094 and 1307 next so
+ * the desk shows whats built"*** — said after THIS panel offered him #1231,
+ * #1217, #1258, #1248 and #1288 as tonight's work while every one had a pull
+ * request in the merge queue or a refusal on the card. The `building` exclusion
+ * reason subtracts them and the sentence beside the number says so.
+ */
+describe("the switch counts subtract what is already being built (#1094)", () => {
+  /** A world where the `excluded` column exists, so the OFFERED count is stored. */
+  function connectionWithColumns() {
+    const writes: Array<{ sql: string; values: readonly unknown[] }> = [];
+    const conn = {
+      async query<T = unknown>(sql: string, values?: readonly unknown[]): Promise<[T, unknown]> {
+        if (/SHOW TABLES LIKE/.test(sql)) return [[{}] as T, null];
+        if (/SHOW COLUMNS/.test(sql)) return [[{}] as unknown as T, null];
+        if (/INSERT INTO/i.test(sql)) writes.push({ sql, values: values ?? [] });
+        return [[] as unknown as T, null];
+      },
+    };
+    return { conn, writes };
+  }
+
+  /** The `excluded` JSON stored for one category, or null. */
+  function excludedFor(
+    writes: ReadonlyArray<{ sql: string; values: readonly unknown[] }>,
+    key: string,
+  ): Record<string, number> | null {
+    for (const write of writes) {
+      if (write.values[0] !== key) continue;
+      const columns = [...write.sql.matchAll(/`(\w+)`/g)].map((m) => m[1]!);
+      /* The statement is built from the columns that exist, so the position of
+         `excluded` is read out of the SQL rather than assumed. */
+      const at = columns.indexOf("excluded");
+      if (at === -1) return null;
+      const raw = write.values[at - 1];
+      return typeof raw === "string" ? (JSON.parse(raw) as Record<string, number>) : null;
+    }
+    return null;
+  }
+
+  /** A `gh` double: three bug cards, one of which has an open pull request. */
+  function ghWithABuiltCard(options: { readonly withPr: boolean }): QueueGhReader {
+    return (args) => {
+      const at = args.indexOf("--label");
+      if (at !== -1) {
+        const label = args[at + 1]!;
+        return JSON.stringify(label === BUGS ? cardsFor(BUGS, 3) : []);
+      }
+      if (args.includes("sort:created-asc")) {
+        return JSON.stringify([{ number: 1000, createdAt: "2026-09-01T00:00:00Z" }]);
+      }
+      if (args.includes("pr")) {
+        /* `cardsFor` numbers from 1000, so #1001 is the middle bug card. */
+        return JSON.stringify(options.withPr
+          ? [{ number: 5000, title: "fix: the bug (#1001)", body: "for card #1001", isDraft: false }]
+          : []);
+      }
+      if (args[0] === "api") return JSON.stringify([]);
+      return JSON.stringify(cardsFor(BUGS, 3));
+    };
+  }
+
+  it("subtracts the built card, names the reason, and the CONTROL keeps all three", async () => {
+    const built = connectionWithColumns();
+    await refreshQueueCounts(built.conn, ghWithABuiltCard({ withPr: true }), QUIET);
+    expect(storedFor(built.writes, "bugs")).toBe(2);
+    expect(excludedFor(built.writes, "bugs")).toEqual({ building: 1 });
+
+    /* ⚠ THE CONTROL, AND WITHOUT IT THE ARM ABOVE PROVES NOTHING: the same three
+       cards with no pull request store 3 and exclude nothing. */
+    const clean = connectionWithColumns();
+    await refreshQueueCounts(clean.conn, ghWithABuiltCard({ withPr: false }), QUIET);
+    expect(storedFor(clean.writes, "bugs")).toBe(3);
+    expect(excludedFor(clean.writes, "bugs")).toEqual({});
+  });
+
+  it("⚠ an UNREAD board subtracts NOTHING — a `gh` hiccup must never shrink his numbers", async () => {
+    const { conn, writes } = connectionWithColumns();
+    const said: string[] = [];
+    const gh: QueueGhReader = (args) => {
+      if (args.includes("pr")) throw new Error("gh: not authenticated");
+      if (args[0] === "api") throw new Error("gh: not authenticated");
+      return ghWithABuiltCard({ withPr: false })(args);
+    };
+    await refreshQueueCounts(conn, gh, { log: () => {}, warn: (line) => said.push(line) });
+
+    expect(storedFor(writes, "bugs")).toBe(3);
+    expect(excludedFor(writes, "bugs")).toEqual({});
+    /* And it is said out loud rather than degrading in silence. */
+    expect(said.join("\n")).toContain("already-being-built reading is INCOMPLETE");
   });
 });

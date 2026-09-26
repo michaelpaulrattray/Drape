@@ -31,7 +31,9 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { cardCommentsVerdict, readCardComments } from "./lib/cardBuildState.mts";
 import { openPullRequestsVerdict, readOpenPullRequests } from "./lib/cardClaimWarning.mts";
+import type { CrewCardCommentFact } from "../shared/crewCardBuildState.js";
 import { LAW_SURFACES } from "./lib/lawText.mts";
 import { OPEN_QUEUE_LIMIT, bandFromOpenQueue } from "./lib/nextUpItems.mts";
 import { mailboxEntries } from "./lib/mailboxEntries.mts";
@@ -193,6 +195,20 @@ function openPullRequests(root: string, network: boolean): OpenPullRequestLike[]
      the pull requests of whatever directory it was launched from would name
      another repository's branches beside this one's cards. */
   return openPullRequestsVerdict(network ? readOpenPullRequests(null, root) : null, network);
+}
+
+/**
+ * THE CLAIMS AND REFUSALS ON THE CARDS (#1094 piece 2) — the half a pull-request
+ * read cannot see, and the half that existed at the moment the duplicate this
+ * card was filed about actually happened.
+ *
+ * Same doctrine as the collector above and for the same recorded reason: the
+ * `null` → UNREADABLE mapping lives beside the reader in
+ * `lib/cardBuildState.mts`, where a suite can drive both directions, because
+ * nothing in this script past a `gh` call is reachable from one.
+ */
+function cardComments(root: string, network: boolean): CrewCardCommentFact[] | Unreadable {
+  return cardCommentsVerdict(network ? readCardComments(null, root) : null, network);
 }
 
 /* Named, because the truncation marker below compares against it: a read that
@@ -357,6 +373,7 @@ function main(argv: string[]): number {
 
     const queue = nextUp(root, options.network);
     const openPrs = openPullRequests(root, options.network);
+    const comments = cardComments(root, options.network);
     const closed = closedSince(root, sinceIso, options.network);
 
     digest = buildDigest({
@@ -367,6 +384,7 @@ function main(argv: string[]): number {
       roots: topLevelDirectories(root),
       nextUp: queue.rows,
       openPullRequests: openPrs,
+      cardComments: comments,
       patrolClocks: patrolClocks(root),
       since,
       commits: commitsSince(root, sinceIso),

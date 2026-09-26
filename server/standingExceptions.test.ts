@@ -46,7 +46,10 @@ const render = (
   ordered: Row[],
   urgent: Row[],
   openPullRequests: Parameters<typeof renderBands>[0]["openPullRequests"] = [],
-) => renderBands({ ordered, urgent, now: NOW, openPullRequests }).join("\n");
+  /* Same doctrine for the claims-and-refusals read (#1094 piece 2): an explicit
+     empty list is "read, and nobody has claimed anything". */
+  cardComments: Parameters<typeof renderBands>[0]["cardComments"] = [],
+) => renderBands({ ordered, urgent, now: NOW, openPullRequests, cardComments }).join("\n");
 
 describe("the state the card was filed about: nothing urgent, work he ordered", () => {
   const ordered = [
@@ -171,12 +174,14 @@ describe("the fetch -> render seam, DRIVEN — where the interesting bug lives",
   function drive(
     readOpenQueue: () => readonly Row[],
     readOpenPullRequests: Parameters<typeof report>[0]["readOpenPullRequests"] = () => [],
+    readCardComments: Parameters<typeof report>[0]["readCardComments"] = () => [],
   ) {
     const out: string[] = [];
     const errs: string[] = [];
     const code = report({
       readOpenQueue,
       readOpenPullRequests,
+      readCardComments,
       now: NOW,
       log: (l) => out.push(l),
       error: (l) => errs.push(l),
@@ -335,6 +340,7 @@ describe("deriveBands - an empty band is cross-examined against the queue it was
     const code = report({
       readOpenQueue: () => [],
       readOpenPullRequests: () => [],
+      readCardComments: () => [],
       now: NOW,
       log: (l) => out.push(l),
       error: (l) => errs.push(l),
@@ -466,6 +472,7 @@ describe("is somebody already building it (#1094) — this view offered a card a
     const code = report({
       readOpenQueue: () => [his],
       readOpenPullRequests: () => { throw new Error("gh: command not found"); },
+      readCardComments: () => [],
       now: NOW,
       log: (l) => out.push(l),
       error: (l) => errs.push(l),
@@ -485,6 +492,7 @@ describe("is somebody already building it (#1094) — this view offered a card a
     report({
       readOpenQueue: () => [his],
       readOpenPullRequests: () => [pr()],
+      readCardComments: () => [],
       now: NOW,
       log: (l) => out.push(l),
       error: () => {},
@@ -497,5 +505,79 @@ describe("is somebody already building it (#1094) — this view offered a card a
     const out = render([], [], { unreadable: "offline" });
     expect(out).toContain("both bands are empty");
     expect(out).not.toContain("THE OPEN PULL REQUESTS COULD NOT BE READ");
+  });
+
+  /**
+   * ⚠ **#1094 PIECE 2 — THE BAND STOPS OFFERING WHAT SOMEBODY IS ALREADY ON.**
+   *
+   * Slice 1 gave this view a WARNING; his order of 2026-09-26 makes it a fact:
+   * *"work on 1094 and 1307 next so the desk shows whats built"*. The row carries
+   * the same phrase his page carries and the footer says how many are takeable.
+   */
+  describe("and it says how many are actually on offer (#1094 piece 2)", () => {
+    it("the row carries the phrase and says NOT ON OFFER, and the footer counts", () => {
+      const out = render([his], [], [pr()]);
+      expect(out).toContain("being built — PR #1091 · NOT ON OFFER");
+      expect(out).toContain("0 of the 1 row(s) above are ON OFFER");
+      /* THE CONTROL: an unrelated pull request leaves the row unannotated and the
+         footer silent, so the arm above is not passing on a line printed always. */
+      const clean = render([his], [], [pr({ title: "unrelated", body: "" })]);
+      expect(clean).not.toContain("NOT ON OFFER");
+      expect(clean).not.toContain("are ON OFFER");
+    });
+
+    it("a live CLAIM takes a row off offer — the artifact the PR read cannot see", () => {
+      const at = new Date(NOW.getTime() - 60 * 60 * 1000).toISOString();
+      const out = render([his], [], [], [{ kind: "claim", card: 1090, seat: "seat-desk-9", at }]);
+      expect(out).toContain("claimed by seat-desk-9");
+      expect(out).toContain("NOT ON OFFER");
+    });
+
+    it("a REFUSAL annotates and stays on offer", () => {
+      const out = render([his], [], [], [{ kind: "refusal", card: 1090, at: "2026-09-08T00:00:00Z" }]);
+      expect(out).toContain("not built — the reason is on the card");
+      expect(out).not.toContain("NOT ON OFFER");
+      expect(out).not.toContain("are ON OFFER");
+    });
+
+    it("⚠ an unreadable COMMENT read says so, and never reads as a quiet board", () => {
+      const out = render([his], [], [], { unreadable: "`gh api` could not be read" });
+      expect(out).toContain("THE CLAIMS AND REFUSALS COULD NOT BE READ");
+      expect(out).toContain("may look FREE while a");
+      /* And the ranking still prints — it degrades, never refuses. */
+      expect(out).toContain("#1090");
+    });
+
+    it("⚠ a comment read that THROWS becomes that line, never an exit code", () => {
+      const out: string[] = [];
+      const errs: string[] = [];
+      const code = report({
+        readOpenQueue: () => [his],
+        readOpenPullRequests: () => [],
+        readCardComments: () => { throw new Error("gh: command not found"); },
+        now: NOW,
+        log: (l) => out.push(l),
+        error: (l) => errs.push(l),
+      });
+      expect(code).toBe(0);
+      expect(out.join("\n")).toContain("#1090");
+      expect(out.join("\n")).toContain("THE CLAIMS AND REFUSALS COULD NOT BE READ");
+      expect(out.join("\n")).toContain("gh: command not found");
+      expect(errs.join("")).toBe("");
+    });
+
+    it("the seam is DRIVEN for the comment read too", () => {
+      const at = new Date(NOW.getTime() - 60 * 60 * 1000).toISOString();
+      const out: string[] = [];
+      report({
+        readOpenQueue: () => [his],
+        readOpenPullRequests: () => [],
+        readCardComments: () => [{ kind: "claim", card: 1090, seat: "seat-desk-9", at }],
+        now: NOW,
+        log: (l) => out.push(l),
+        error: () => {},
+      });
+      expect(out.join("\n")).toContain("claimed by seat-desk-9");
+    });
   });
 });

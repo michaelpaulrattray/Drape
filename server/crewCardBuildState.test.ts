@@ -18,6 +18,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   CREW_CLAIM_LIVE_MS,
+  buildStateHoldsOffOffer,
+  handVerdictForPullRequest,
   crewCardBuildPhrase,
   crewCardBuildState,
   crewCardBuildViews,
@@ -195,6 +197,133 @@ describe("the one judgement", () => {
   });
 });
 
+/**
+ * ⚠ **HIS DESK CORRECTION, 2026-09-26: A PULL REQUEST THE RELAY HAS ALREADY READ
+ * WAS DRAWN AS *WAITING ON REVIEW*, BESIDE ONE NOBODY HAD LOOKED AT.**
+ *
+ * The two states he acts differently on are *somebody owes this a look* and
+ * *somebody looked and it is merging*, and the label alone cannot tell them apart:
+ * the verdict is a COMMENT (`**Fable review — by hand`, by the founder's account),
+ * and nothing removes the label when it lands.
+ *
+ * **The shapes below are the two real ones off the board on the day**, read at the
+ * wire rather than imagined: #1322's newest verdict at 03:03:27Z against a head
+ * commit at 03:03:02Z and `updated_at` 03:03:27Z (fresh), and #1326 carrying
+ * `needs-fable` with its verdict read the same way. `shared/handVerdict.ts` holds
+ * why `updatedAt` is the bound these readers use and what it costs.
+ */
+describe("has this pull request been reviewed? (his desk, 2026-09-26)", () => {
+  const verdict = (pr: number, at: string) => ({ kind: "verdict", card: pr, at } as const);
+
+  it("a FRESH verdict reads as passed and merging — measured on PR #1322", () => {
+    const pr = { ...PR_1326, number: 1322, labels: ["needs-fable"], updatedAt: "2026-09-26T03:03:27Z" };
+    const handVerdict = handVerdictForPullRequest({
+      pullRequest: 1322,
+      updatedAt: pr.updatedAt,
+      facts: [verdict(1322, "2026-09-26T03:03:27Z")],
+    });
+    expect(handVerdict).toBe("fresh");
+    expect(crewCardBuildState({
+      card: 1248,
+      openPullRequests: [{ ...pr, handVerdict }],
+      facts: [],
+      nowMs: NOW,
+    })).toEqual({ kind: "pull-request", pullRequest: 1322, stage: "passed" });
+  });
+
+  it("⚠ THE NEGATIVE CONTROL: `needs-fable` and NO verdict still reads as waiting on review", () => {
+    const handVerdict = handVerdictForPullRequest({
+      pullRequest: 1326,
+      updatedAt: "2026-09-26T02:01:51Z",
+      facts: [],
+    });
+    expect(handVerdict).toBe("none");
+    expect(crewCardBuildState({
+      card: 1248,
+      openPullRequests: [{ ...PR_1326, labels: ["needs-fable"], handVerdict }],
+      facts: [],
+      nowMs: NOW,
+    })).toMatchObject({ stage: "review" });
+  });
+
+  it("⚠ a verdict with something AFTER it is stale — the head may have moved", () => {
+    /* A push, a label change or a later comment all move `updatedAt`, so this
+       under-claims rather than over-claims: it can say *not yet* about a verdict
+       that stands, never *passed* about one that does not. */
+    expect(handVerdictForPullRequest({
+      pullRequest: 1322,
+      updatedAt: "2026-09-26T03:10:00Z",
+      facts: [verdict(1322, "2026-09-26T03:03:27Z")],
+    })).toBe("stale");
+    expect(crewCardBuildState({
+      card: 1248,
+      openPullRequests: [{ ...PR_1326, labels: ["needs-fable"], handVerdict: "stale" }],
+      facts: [],
+      nowMs: NOW,
+    })).toMatchObject({ stage: "review" });
+  });
+
+  it("a DRAFT is still a draft, verdict or not — an unfinished PR is unfinished", () => {
+    expect(crewCardBuildState({
+      card: 1248,
+      openPullRequests: [{ ...PR_1326, draft: true, handVerdict: "fresh" }],
+      facts: [],
+      nowMs: NOW,
+    })).toMatchObject({ stage: "draft" });
+  });
+
+  it("⚠ a VERDICT fact names a PULL REQUEST and can never be a card's own state", () => {
+    /* GitHub gives issues and pull requests one number sequence and hands both
+       through one comment listing, so the judgement filters the kind out rather
+       than sorting it with the claims. Without that, "PR #1322 was reviewed" would
+       read as "the newest thing on card 1322 is a verdict" and answer nothing. */
+    expect(crewCardBuildState({
+      card: 1322,
+      openPullRequests: [],
+      facts: [verdict(1322, "2026-09-26T03:03:27Z")],
+      nowMs: NOW,
+    })).toBeNull();
+    /* And it does not shadow a live claim on the same number either. */
+    expect(crewCardBuildState({
+      card: 1322,
+      openPullRequests: [],
+      facts: [claim(1322, "2026-09-26T02:00:00Z"), verdict(1322, "2026-09-26T03:03:27Z")],
+      nowMs: NOW,
+    })).toMatchObject({ kind: "claimed" });
+  });
+
+  it("an unreadable clock refuses to vouch for a verdict", () => {
+    expect(handVerdictForPullRequest({ pullRequest: 1, updatedAt: "not a date", facts: [verdict(1, "2026-09-26T00:00:00Z")] }))
+      .toBe("stale");
+    expect(handVerdictForPullRequest({ pullRequest: 1, updatedAt: null, facts: [] })).toBe("none");
+  });
+});
+
+/**
+ * ⚠ **WHICH STATES TAKE A CARD OFF OFFER — the predicate the five queue readers
+ * act on (#1094 piece 2), and it is TWO of the three.**
+ */
+describe("is this card still on offer?", () => {
+  it("an open pull request and a live claim hold it off offer", () => {
+    expect(buildStateHoldsOffOffer({ kind: "pull-request", pullRequest: 1, stage: "gate" })).toBe(true);
+    expect(buildStateHoldsOffOffer({ kind: "pull-request", pullRequest: 1, stage: "passed" })).toBe(true);
+    expect(buildStateHoldsOffOffer({ kind: "claimed", seat: "seat-x", at: "2026-09-26T02:00:00Z" })).toBe(true);
+  });
+
+  it("⚠ A REFUSAL DOES NOT — it is a judgement the next reader may overturn", () => {
+    /* The re-scope's sentence names three states; this is deliberately two. A
+       refusal is a shift's reading of the code, with `file:line` on the card, and
+       withholding on it would let one shift retire a card of HIS silently — with
+       no label, no ruling and nothing on his desk (#1337 is open because a refusal
+       has no permanent home). So it annotates and stays on offer. */
+    expect(buildStateHoldsOffOffer({ kind: "refused", at: "2026-09-26T00:21:50Z" })).toBe(false);
+  });
+
+  it("a card nobody is on is on offer", () => {
+    expect(buildStateHoldsOffOffer(null)).toBe(false);
+  });
+});
+
 describe("the phrase his page draws", () => {
   it("says what is happening, in his words, with the PR named", () => {
     expect(crewCardBuildPhrase({ kind: "pull-request", pullRequest: 1316, stage: "gate" }, NOW))
@@ -203,6 +332,10 @@ describe("the phrase his page draws", () => {
       .toBe("waiting on review — PR #1326");
     expect(crewCardBuildPhrase({ kind: "pull-request", pullRequest: 1326, stage: "draft" }, NOW))
       .toBe("being written — PR #1326");
+    /* His desk correction of 2026-09-26: reviewed and queued to merge is not the
+       same row as still waiting for a look. */
+    expect(crewCardBuildPhrase({ kind: "pull-request", pullRequest: 1322, stage: "passed" }, NOW))
+      .toBe("passed and merging — PR #1322");
     expect(crewCardBuildPhrase({ kind: "refused", at: "2026-09-26T00:21:50Z" }, NOW))
       .toBe("not built — the reason is on the card");
   });

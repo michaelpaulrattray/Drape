@@ -49,6 +49,14 @@ import {
 } from "../../shared/crewCardBuildState";
 import { LIVE_QUEUE_REPO } from "./liveQueue";
 
+/**
+ * THE ONE ACCOUNT WHOSE COMMENT CAN BE A VERDICT — derived from the repository
+ * this reader is pointed at rather than typed again, because a hand-written
+ * `"michaelpaulrattray"` beside a repository constant that already says it is
+ * the mirror working law 4 is about.
+ */
+export const LIVE_QUEUE_OWNER = LIVE_QUEUE_REPO.split("/")[0] ?? "";
+
 export const CARD_ACTIVITY_TTL_MS = 120_000;
 export const CARD_ACTIVITY_BOOT_HOURS = 48;
 export const CARD_ACTIVITY_MAX_PAGES = 3;
@@ -90,13 +98,31 @@ export function cardOfCommentUrl(issueUrl: unknown): number | null {
  * One listing row → one fact, or `null`. Exported so the arms prove the mapping
  * against a captured response rather than a shape imagined here.
  */
-export function factFromCommentRow(raw: unknown): CrewCardCommentFact | null {
+export function factFromCommentRow(
+  raw: unknown,
+  ownerLogin: string = LIVE_QUEUE_OWNER,
+): CrewCardCommentFact | null {
   if (!raw || typeof raw !== "object") return null;
   const row = raw as Record<string, unknown>;
   const card = cardOfCommentUrl(row.issue_url);
   if (card === null) return null;
   if (typeof row.body !== "string" || typeof row.created_at !== "string") return null;
-  return crewCardCommentFact({ card, body: row.body, createdAt: row.created_at });
+  /* ⚠ `user.login` RIDES ALONG FOR THE VERDICT AND FOR NOTHING ELSE (#1094, his
+     desk correction of 2026-09-26). A claim or a refusal is judged on its body
+     alone — any seat may write one — while a hand verdict is judged on WHO wrote
+     it, which is `reviewRounds`' own floor. An absent login therefore costs a
+     verdict and never a claim. */
+  const user = row.user;
+  const authorLogin = user && typeof user === "object" && typeof (user as { login?: unknown }).login === "string"
+    ? (user as { login: string }).login
+    : null;
+  return crewCardCommentFact({
+    card,
+    body: row.body,
+    createdAt: row.created_at,
+    authorLogin,
+    ownerLogin,
+  });
 }
 
 /**

@@ -80,6 +80,14 @@ import {
   readPullRequestConflict,
   type PullRequestMergeability,
 } from "../../shared/crewShiftState.js";
+/* ⚠ THE NARROW, FACT-GRADE READER IS THE ONE THAT DECIDES WHETHER A ROW IS
+   OFFERED (#1094 piece 2); `findCardPullRequests` above stays for the WIDE
+   warning, which is a different question with a different audience — his page
+   states a fact, a person reading a digest wants to be told to go and look.
+   Both are here, and the lines below say which is which rather than letting a
+   reader guess. */
+import type { CrewCardCommentFact } from "../../shared/crewCardBuildState.js";
+import { buildBoard, commentsUnreadableLines, type CardBuildBoard } from "./cardBuildState.mts";
 
 /** A heading- or bullet-delimited chunk of a law surface. */
 export type Section = {
@@ -846,6 +854,22 @@ export type DigestInputs = {
    * prevents. The line names the PR; the shift decides.
    */
   readonly openPullRequests: OpenPullRequestLike[] | Unreadable;
+  /**
+   * THE CLAIMS AND REFUSALS ON THE CARDS (#1094 piece 2) — the other half of
+   * "is somebody already on this", and the half that existed at the moment the
+   * duplicate actually happened.
+   *
+   * ⚠ **A CLAIM IS THE ARTIFACT A PULL-REQUEST READ CANNOT SEE.** #1094's own
+   * measurement: a shift posted `CLAIMED — …` on #1107 at 00:12 and a second
+   * builder opened its pull request at 00:13:59, eighty-five seconds later. Both
+   * readings were correct when they were taken, and only the comment existed
+   * when it mattered.
+   *
+   * ⚠ **REQUIRED, for `openPullRequests`' reason one field up**: an optional
+   * field would let a caller ask neither question and render exactly like a
+   * caller that asked and found a quiet board.
+   */
+  readonly cardComments: CrewCardCommentFact[] | Unreadable;
   /** `patrol-clocks.mts`'s own output, embedded rather than reimplemented. */
   readonly patrolClocks: string | Unreadable;
   readonly since: PreviousShift | Unreadable;
@@ -944,15 +968,50 @@ export function buildDigest(inputs: DigestInputs): string {
        one and was printed with the same confidence on a blip. */
     out.push("NEXT UP: EMPTY — no open `founder-ordered` card, and the open queue was read to confirm it.");
   } else {
-    out.push(`NEXT UP: ${inputs.nextUp.length} open \`founder-ordered\` card(s), oldest first:`);
     const prs = inputs.openPullRequests;
+    /* ONE board per digest, built from the two reads, and the SAME judgement his
+       page draws — so a row's phrase here and the phrase he is reading on
+       `/admin/crew` cannot differ (#1094 piece 2). */
+    const board: CardBuildBoard = buildBoard({
+      openPullRequests: prs,
+      comments: inputs.cardComments,
+      nowMs: inputs.now.getTime(),
+    });
+    const offered = inputs.nextUp.filter((row) => !board.holdsOffOffer(row.number)).length;
+    /* ⚠ THE HEADING SAYS HOW MANY ARE ACTUALLY ON OFFER, because the count is
+       the sentence a shift acts on. "6 open ordered cards" over six rows of
+       which five are being built is the offer this card exists to end. */
+    out.push(
+      `NEXT UP: ${inputs.nextUp.length} open \`founder-ordered\` card(s), oldest first`
+      + (offered === inputs.nextUp.length
+        ? ":"
+        : ` — ${offered} ON OFFER, ${inputs.nextUp.length - offered} already being built or claimed:`),
+    );
     let claimedAny = false;
     for (const row of [...inputs.nextUp].sort((a, b) => a.createdAt.localeCompare(b.createdAt))) {
       const labels = row.labels.filter((label) => label !== "founder-ordered");
+      const phrase = board.phraseFor(row.number);
       out.push(
         `  #${row.number}  ${row.createdAt.slice(0, 10)}  ${row.title}${labels.length > 0 ? `  [${labels.join(", ")}]` : ""}`,
       );
+      /* ⚠ THE ROW IS ANNOTATED RATHER THAN HIDDEN. A shift may legitimately be
+         finishing its own card's second half, and #1083 ruled that a reader must
+         never silently withhold work — so the phrase says what is happening and
+         `NOT ON OFFER` says what it means, in the two states where somebody's
+         hands are on it. A refusal annotates and stays on offer: its reasoning is
+         in `buildStateHoldsOffOffer`. */
+      if (phrase !== null) {
+        out.push(`    → ${phrase}${board.holdsOffOffer(row.number) ? " · NOT ON OFFER" : ""}`);
+      }
       if (isUnreadable(prs)) continue;
+      /* ⚠ THE WIDE READ STILL RUNS ON EVERY ROW, INCLUDING ONE THE PHRASE ALREADY
+         NAMES, AND SUPPRESSING IT WAS TRIED FIRST AND REVERTED. The two lines are
+         not the same line: the phrase is the fact (*what stage*, *on offer or
+         not*), and this one carries the URL, the draft marker and #1099's
+         CANNOT-BE-MERGED note — which lives nowhere else and belongs precisely on
+         the rows that DO have a pull request. Dropping it to save a line would
+         have retired a shipped control to tidy an output (working law 7's own
+         question: what was bolted to the thing I just closed). */
       const claimed = findCardPullRequests(prs, `#${row.number}`);
       if (claimed.length === 0) continue;
       claimedAny = true;
@@ -994,6 +1053,10 @@ export function buildDigest(inputs: DigestInputs): string {
         "    follow-up, a finished half, or another seat mid-build. READ IT before you cut a branch.",
       );
     }
+    /* The claims-and-refusals half, whose own three answers are the same three:
+       a live claim printed as a phrase on the row, a listing read and quiet, and
+       a listing NOBODY READ. Only the last needs a line. */
+    out.push(...commentsUnreadableLines(inputs.cardComments, "  "));
     if (inputs.truncated?.nextUp) {
       /* ⚠ The cap is on the POPULATION, not on the band (#774): the band is
          filtered out of a whole-open-queue read, and `gh` returns the NEWEST

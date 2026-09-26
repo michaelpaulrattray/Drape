@@ -42,8 +42,15 @@
  * whole decision is driveable without a network (law 3).
  */
 
-/** The prefix every hand verdict starts with. Posted by the relay, read here. */
-export const HAND_VERDICT_MARKER = "**Fable review — by hand";
+/**
+ * ⚠ **THE MARKER AND THE TEST MOVED TO `shared/handVerdict.ts` (#1094) AND ARE
+ * RE-EXPORTED HERE, NOT RE-DECLARED.** His Desk needs the same fact — *has this
+ * pull request been reviewed?* — and `shared/` is the only place the server and
+ * the client may both read. Every existing importer of this module keeps its
+ * import path; there is one spelling of the marker.
+ */
+export { HAND_VERDICT_MARKER, isHandVerdict } from "../../shared/handVerdict.js";
+import { isHandVerdict } from "../../shared/handVerdict.js";
 
 /** One issue comment on the PR, reduced to what the decision uses. */
 export type HandVerdictReading = {
@@ -65,11 +72,6 @@ export type PrIdentity = {
   /** The one account whose comments count: the repository owner's. */
   ownerLogin: string;
 };
-
-/** Does this body carry the marker, at the very start (after whitespace)? */
-export function isHandVerdict(body: string): boolean {
-  return body.trimStart().startsWith(HAND_VERDICT_MARKER);
-}
 
 /** What a single comment is, for this PR. */
 export type VerdictKind = "verdict" | "stale-verdict" | "not-a-verdict";

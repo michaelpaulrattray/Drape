@@ -115,6 +115,37 @@
  * written the marker — never as a side effect of asking. A reader that writes
  * is how a dry run moves a fixture (`free-answer-is-a-write`).
  *
+ * # ⚠ A CARD SOMEBODY IS ALREADY BUILDING IS NOT TAKEABLE (#1094 piece 2)
+ *
+ * His order, 2026-09-26 (terminal), verbatim: ***"work on 1094 and 1307 next so
+ * the desk shows whats built"*** — and the re-scope it settled: **a card that
+ * has an open pull request or a live claim is not on offer.** That answers the
+ * #541 rule-3 question this card was held on for four days: *built is built*.
+ *
+ * ⚠ **IT SKIPS THE ROW RATHER THAN ANSWERING `NONE`, AND THAT IS THE WHOLE
+ * DESIGN DECISION HERE.** The obvious shape — *a card with a pull request means
+ * no escalation* — is the #586 freeze wearing a new trigger, and this card's own
+ * held comment said so: the gate answers `NONE`, and **every `awaiting-fable`
+ * card behind the built one freezes with it.** Measured on 2026-09-06, when #508
+ * sat unlabelled at the top and #535 — the next Fable card in his own order —
+ * was never escalated. So a built card joins `blocked` and `needs-sitting` in
+ * the SKIP list: the walk steps over it and the next genuinely takeable row
+ * decides, which is exactly what an Opus shift would do reading the same board.
+ *
+ * ⚠ **THE CONSEQUENCE IS THAT THIS GATE CAN NOW SAY YES WHERE IT USED TO SAY
+ * NO, and that is correct rather than a side effect.** A takeable card at the
+ * top used to block escalation (the paragraph above); if somebody is building
+ * that card, it is not takeable, and the Fable card behind it is what a shift
+ * would reach. Nothing else about the bias changes.
+ *
+ * ⚠ **AN UNREADABLE BOARD STILL ANSWERS `NONE`**, per this file's own law five
+ * screens up: every unreadable state answers NONE, because a gate that cannot
+ * see whether a card is already being built must not buy an expensive session on
+ * it. `scripts/lib/cardBuildState.mts`'s own header records that this is the ONE
+ * caller of the shared board which fails that way — the other four print the
+ * reason and offer the card anyway, because their cost of being wrong is a line
+ * a person reads rather than a Fable session.
+ *
  * # THE BUNDLE IS CANDIDATES, NOT A COMPUTED LIST
  *
  * The card asks for the judgment card *"PLUS the small cards adjacent to it in
@@ -131,13 +162,15 @@ import { resolve } from "node:path";
 
 import { heldStatesFromLabels } from "../shared/crewNextUpHold.js";
 
+import { buildBoard, readCardComments } from "./lib/cardBuildState.mts";
+import { readOpenPullRequests } from "./lib/cardClaimWarning.mts";
 import { OPEN_QUEUE_LIMIT } from "./lib/nextUpItems.mts";
 import { compareOrderedBand, rankFromLabels } from "./lib/orderedBand.mts";
 import { deriveBands, type Row as BandRow } from "./lib/standingExceptions.mts";
 
 type Json = Record<string, any>;
 
-const KNOWN_FLAGS = new Set(["--state", "--queue", "--record", "--today"]);
+const KNOWN_FLAGS = new Set(["--state", "--queue", "--record", "--today", "--open-prs", "--comments"]);
 
 /**
  * The `gh --limit`, stated ONCE and reused as its own floor guard: a limit and
@@ -423,10 +456,62 @@ if (items.length === 0) none("neither band holds a card — nothing is ordered a
  * stated here rather than discovered, because a gate that quietly jumped his
  * order would be worse than one that waits.
  */
+/**
+ * IS SOMEBODY ALREADY BUILDING IT? — the board, read through the ONE reader
+ * every queue reader consults (#1094 piece 2; the header's own section).
+ *
+ * ⚠ **FIXTURE MODE IS A DECLARATION ABOUT THE WORLD, NOT A SKIPPED READ.** With
+ * `--queue` given, the board is whatever `--open-prs` and `--comments` say and
+ * EMPTY when they are absent — i.e. an arm that does not mention the board is
+ * declaring that nobody is building anything, which is what the queue-logic arms
+ * mean. The live path (no `--queue`) always takes both real reads, and an
+ * unreadable half there answers `NONE`.
+ *
+ * A fixture path that cannot be read is UNREADABLE rather than empty, which is
+ * what makes the `NONE` direction drivable without breaking `gh`.
+ *
+ * ⚠ **THE PARAGRAPH ABOVE WAS TRUE OF THE DOCUMENT AND FALSE OF THE CODE UNTIL
+ * THE GATE WENT RED IN CI (PR #1343, run 36218388495).** The first shape asked
+ * *"did ANY board fixture arrive"* and, if one did, sent the OTHER half to `gh`:
+ * an arm passing `--open-prs` alone took a live comment read, which is fine on a
+ * machine where `gh` is authenticated and is an unreadable board on a runner
+ * where it is not — five arms green here, red there, for a reason that was never
+ * about the gate. **Each half is now independent**: a half with a fixture reads
+ * it, a half without one under `--queue` is EMPTY BY DECLARATION, and **a fixture
+ * run cannot reach the network at all.** That is the property the suite's
+ * hostile-PATH arm drives directly, with `gh` proven unreachable first.
+ */
+const fixtureQueue = flags.has("--queue");
+const prRows = flags.has("--open-prs")
+  ? readOpenPullRequests(flags.get("--open-prs")!)
+  : (fixtureQueue ? [] : readOpenPullRequests(null));
+const commentRows = flags.has("--comments")
+  ? readCardComments(flags.get("--comments")!)
+  : (fixtureQueue ? [] : readCardComments(null));
+const board = buildBoard({
+  openPullRequests: prRows === null
+    ? { unreadable: "`gh pr list` could not be read" }
+    : prRows,
+  comments: commentRows === null
+    ? { unreadable: "`gh api .../issues/comments` could not be read" }
+    : commentRows,
+  nowMs: Date.now(),
+});
+if (board.partial) {
+  none(
+    `the board could not be read (${board.unreadable.join("; ")}) — a Fable session is never bought `
+    + "on a board nobody could see, because the card at the top may already be built",
+  );
+}
+
 const firstTakeable = items.find(
-  (item) => !item.held.includes("blocked") && !item.held.includes("sitting"),
+  (item) => !item.held.includes("blocked")
+    && !item.held.includes("sitting")
+    /* Somebody's hands are on it right now — an Opus shift reading the same
+       board would step over it, so this walk does too. */
+    && !board.holdsOffOffer(item.issueNumber),
 );
-if (firstTakeable === undefined) none(`every one of the ${items.length} ordered or urgent card(s) is blocked or needs a sitting — a Fable shift cannot clear those either`);
+if (firstTakeable === undefined) none(`every one of the ${items.length} ordered or urgent card(s) is blocked, needs a sitting, or is already being built — a Fable shift cannot clear those either`);
 if (!firstTakeable.held.includes("fable")) {
   none(`the next card is #${firstTakeable.issueNumber}, which an Opus shift can take — Fable is not needed`);
 }
@@ -448,7 +533,11 @@ if (state.lastCard === firstTakeable.issueNumber) {
  * *"one Fable session each"*) and a bundle must not quietly merge them.
  */
 const after = items.slice(items.indexOf(firstTakeable) + 1);
-const bundle = after.filter((item) => item.held.length === 0).map((item) => item.issueNumber);
+const bundle = after
+  /* A bundle naming a card somebody is already building is the same waste one
+     card along, and cheaper to exclude than to explain in the brief. */
+  .filter((item) => item.held.length === 0 && !board.holdsOffOffer(item.issueNumber))
+  .map((item) => item.issueNumber);
 
 const sessionsToday = state.day === TODAY ? state.countToday : 0;
 console.log(

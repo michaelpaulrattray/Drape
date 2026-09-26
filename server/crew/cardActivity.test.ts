@@ -47,11 +47,34 @@ const CAPTURED_REFUSAL = {
     + " by seat-janitor, 2026-09-26.**\n",
 };
 
-const CAPTURED_PROSE = {
+/**
+ * ⚠ **THIS ROW WAS THIS SUITE'S "ORDINARY PROSE" FIXTURE UNTIL #1094 PIECE 2, AND
+ * IT IS A HAND VERDICT.** Piece 1 needed a body that parsed to NOTHING and reached
+ * for a real comment off the board; the one it reached for is the relay's own
+ * verdict on PR #1300, which this reader now reads as exactly that. The fixture is
+ * kept with its real bytes and its assertion inverted, because those bytes are the
+ * artifact — and a genuine prose row is added below, since a negative control that
+ * was never really one is the instrument lesson this repository keeps re-learning.
+ */
+const CAPTURED_VERDICT = {
   ...CAPTURED_CLAIM,
   issue_url: "https://api.github.com/repos/michaelpaulrattray/Drape/issues/1300",
   created_at: "2026-09-26T02:18:29Z",
   body: "**Fable review — by hand** (the relay is the reviewer; head `db80d60c`)\n",
+};
+
+/** The same verdict body by ANY OTHER account is not a verdict (`reviewRounds`' floor). */
+const CAPTURED_VERDICT_BY_ANOTHER = {
+  ...CAPTURED_VERDICT,
+  user: { login: "some-other-account" },
+};
+
+const CAPTURED_PROSE = {
+  ...CAPTURED_CLAIM,
+  issue_url: "https://api.github.com/repos/michaelpaulrattray/Drape/issues/1300",
+  created_at: "2026-09-26T02:19:02Z",
+  body: "Driven live against the real board: #1076 annotated with its genuinely open PR"
+    + " #1078. 12 arms, a 38-pass control, seven sabotages.\n",
 };
 
 const NOW = Date.parse("2026-09-26T03:00:00Z");
@@ -76,6 +99,22 @@ describe("the mapping, on captured rows", () => {
       .toEqual({ kind: "claim", card: 1094, seat: "seat-desk-2", at: "2026-09-26T02:15:15Z" });
     expect(factFromCommentRow(CAPTURED_REFUSAL)?.kind).toBe("refusal");
     expect(factFromCommentRow(CAPTURED_PROSE)).toBeNull();
+  });
+
+  it("⚠ #1094 piece 2 — a hand verdict is a fact, and ONLY from the owner's account", () => {
+    /* The row is the relay's real verdict on PR #1300, and the number it carries
+       is a PULL REQUEST's: GitHub gives issues and pull requests one sequence and
+       hands both through this endpoint. `crewCardBuildState` filters the kind out
+       of its card judgement for exactly that reason. */
+    expect(factFromCommentRow(CAPTURED_VERDICT))
+      .toEqual({ kind: "verdict", card: 1300, at: "2026-09-26T02:18:29Z" });
+    /* THE NEGATIVE CONTROL THAT MATTERS: the same body, another account. The relay
+       posts as the founder's account and so does every seat, so this check is the
+       floor rather than the fence — `reviewRounds`' own docblock says so. */
+    expect(factFromCommentRow(CAPTURED_VERDICT_BY_ANOTHER)).toBeNull();
+    /* An owner login the caller does not know cannot mint one either. */
+    expect(factFromCommentRow(CAPTURED_VERDICT, "")).toBeNull();
+    expect(factFromCommentRow({ ...CAPTURED_VERDICT, user: undefined })).toBeNull();
   });
 
   it("a row missing what it needs is nothing, not a throw", () => {
