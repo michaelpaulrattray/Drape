@@ -35,9 +35,26 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
+
+/* THE WRITER'S FAR END (#1424). The submit procedure is the fourth consumer of
+   the shared vocabulary and was the one that had drifted, so its arms live here
+   beside the parity arms rather than in a file of their own.
+
+   ⚠ Mocking `./db` is safe for the admin arms in this file and that is a read
+   rather than a hope: nothing under `server/routes/admin/` statically imports
+   the `../../db` BARREL — `announcements.ts` and `overview.ts` reach specific
+   modules (`db/announcementQueries`, `db/adminOverviewQueries`) and every
+   handler reaches the rest inside `await import(...)`. The barrel mock
+   therefore reaches exactly the one module that names it, which is the submit
+   route. `shared/bugReportVocabulary.ts`'s own docblock records why that
+   distinction matters: a router that needs the mockable barrel to EVALUATE
+   takes unrelated suites down with it. */
+const mockCreateBugReport = vi.fn().mockResolvedValue(91);
+vi.mock("./db", () => ({ createBugReport: (...args: any[]) => mockCreateBugReport(...args) }));
 
 import { bugReportsRouter } from "./routes/admin/bugReports";
+import { bugReportsRouter as submitRouter } from "./routes/bugReports";
 import { adminRouter } from "./routes/admin";
 import { BUG_REPORT_CATEGORIES, BUG_REPORT_STATUSES } from "../shared/bugReportVocabulary";
 
@@ -269,5 +286,92 @@ describe("both inputs reject an undeclared field (invariant 4), driven at the re
     for (const status of declared) {
       expect(() => parser.parse({ id: 1, status }), `${status} is a column value the API refuses`).not.toThrow();
     }
+  });
+});
+
+describe("the SUBMIT procedure accepts every category the column accepts (#1424)", () => {
+  /* Working law 4 with the drift already realised. Three consumers agreed with
+     the column and the fourth — the only one a customer's report passes
+     through — carried its own inline enum of six, missing `wardrobe`.
+
+     ⚠ These arms DRIVE the procedure rather than reading its zod object,
+     because reading the schema is the same class of mistake as the drift: the
+     Atlas's own `strictInput` was a substring test for months, and a second
+     reader looking at the same declaration learns nothing the first believed.
+     What is proven here is the behaviour — the writer receives the category.
+
+     ⚠ EVERY ARM GETS ITS OWN ADDRESS. `BUG_RATE_LIMIT` is five requests per ten
+     minutes keyed on the client IP, and the limiter is in-memory and shared
+     across a file, so seven categories from one address would see the last two
+     refused with `TOO_MANY_REQUESTS` — a red that reads exactly like a rejected
+     category. `freeTextWhitespace.test.ts` records the same trap. */
+  let address = 0;
+  const caller = () =>
+    submitRouter.createCaller({
+      user: {
+        id: 40,
+        role: "user",
+        email: "reporter@example.com",
+        name: "Someone",
+        openId: null,
+        suspendedAt: null,
+        lockedUntil: null,
+        approved: true,
+        emailVerified: true,
+      },
+      req: { protocol: "https", ip: `198.51.100.${++address}`, headers: {}, socket: {} },
+      res: { clearCookie: vi.fn() },
+    } as never);
+
+  const description = "The wardrobe page will not load my garments";
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockCreateBugReport.mockResolvedValue(91);
+  });
+
+  it("accepts each of the shared categories and hands it to the writer unchanged", async () => {
+    for (const category of BUG_REPORT_CATEGORIES) {
+      mockCreateBugReport.mockClear();
+      await expect(
+        caller().submit({ description, category }),
+        `${category} is a column value the submit route refuses`,
+      ).resolves.toMatchObject({ success: true });
+      expect(mockCreateBugReport).toHaveBeenCalledWith(expect.objectContaining({ category }));
+    }
+  });
+
+  it("accepts `wardrobe` specifically — the value the hand-copied list had dropped", async () => {
+    /* Named on its own so the reason this card exists cannot be lost in a loop
+       over seven. RED on the unfixed route, which is what makes the loop above
+       an arm rather than a restatement of the enum. */
+    await expect(caller().submit({ description, category: "wardrobe" })).resolves.toMatchObject({ success: true });
+    expect(mockCreateBugReport).toHaveBeenCalledWith(expect.objectContaining({ category: "wardrobe" }));
+  });
+
+  it("still defaults to `other` when the caller sends no category", async () => {
+    /* The direction a widening could break: the lobby's feedback menu is the
+       only live caller and two of its three shapes rely on this default. */
+    await expect(caller().submit({ description })).resolves.toMatchObject({ success: true });
+    expect(mockCreateBugReport).toHaveBeenCalledWith(expect.objectContaining({ category: "other" }));
+  });
+
+  it("NEGATIVE CONTROL — a category the column does not declare is still refused, before the writer", async () => {
+    /* Without this the loop above would pass on `z.string()`, which accepts
+       every category and is not the fix. */
+    await expect(
+      caller().submit({ description, category: "wardobe" as never }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(mockCreateBugReport).not.toHaveBeenCalled();
+  });
+
+  it("names no category list of its own — it reads the shared one", async () => {
+    /* The behavioural arms above pass on a hand-copied list that happens to be
+       correct today, which is the state this card found and the state that
+       drifts again. The absence of a second list is the thing that cannot be
+       observed behaviourally, so it is read at the source, comments stripped. */
+    const source = code(path.join(__dirname, "routes/bugReports.ts"));
+    expect(source).toMatch(/z\.enum\(BUG_REPORT_CATEGORIES\)/);
+    expect(source, "the submit route names a category as a literal again").not.toMatch(/"casting"/);
   });
 });

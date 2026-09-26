@@ -3,10 +3,19 @@
  *
  * These live here rather than beside the db helpers for the reason
  * `castingVocabularies.ts` states about its own lists: **a hand-copied second
- * list is a control that lies.** Three places name these values — the
+ * list is a control that lies.** FOUR places name these values — the
  * `bug_reports.status` / `.category` columns, the admin procedure that
- * validates a status change, and the inbox page that labels and filters them —
- * and a value added on one side must be a value all three have.
+ * validates a status change, the inbox page that labels and filters them, and
+ * **the submit procedure a customer's report actually goes through** — and a
+ * value added on one side must be a value all four have.
+ *
+ * ⚠ **The fourth was missing from this sentence until #1424, and it was the one
+ * that had drifted.** This list said three, `server/routes/bugReports.ts` held
+ * its own inline enum of SIX against the column's seven, and the value it had
+ * dropped was `wardrobe` — so the single consumer that decides what a customer
+ * may SEND was the single consumer this file did not know about. A list of
+ * consumers that is short by one is how the drift it exists to prevent happens
+ * anyway: nobody re-checks a place the source of truth never claimed.
  *
  * ⚠ **And there is a second, sharper reason it is HERE and not in `server/db`.**
  * The first shape of this imported the two lists into the admin router from the

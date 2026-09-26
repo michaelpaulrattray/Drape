@@ -5,6 +5,7 @@ import { checkRateLimit, getClientIp, rateLimitError } from "../security/rateLim
 import { createBugReport } from "../db";
 import { createModuleLogger } from "../logging/logger";
 import { captureProductEvent } from "../monitoring/productEvents";
+import { BUG_REPORT_CATEGORIES } from "../../shared/bugReportVocabulary";
 
 const log = createModuleLogger("routes/bugReports");
 
@@ -15,7 +16,20 @@ export const bugReportsRouter = router({
     .input(z.object({
       // `.trim()` before the floor (#816): ten spaces used to reach the admin inbox as a report.
       description: z.string().trim().min(10, "Please describe the issue in at least 10 characters").max(2000),
-      category: z.enum(["casting", "export", "billing", "ui", "other", "feedback"]).default("other"),
+      /*
+        THE WRITER READS THE SHARED LIST (#1424). This was a hand-copied enum of
+        SIX, against the column's seven, and the one it had dropped was
+        `wardrobe` — so a category the database accepts, the admin inbox labels
+        and the inbox filter offers could never be SENT. Nobody had hit it only
+        because the lobby's feedback menu sends `feedback` or `other` and
+        nothing else; the first category picker would have made wardrobe reports
+        fail validation with the customer seeing only that it did not work.
+
+        Widening an input schema is the safe direction — it accepts a value no
+        in-flight client sends yet. The opposite direction (removing a value a
+        bundle still sends) is the one that needs a deploy of tolerance first.
+      */
+      category: z.enum(BUG_REPORT_CATEGORIES).default("other"),
       page: z.string().max(256).optional(),
       modelId: z.number().int().positive().optional(),
       viewport: z.string().max(32).optional(),
