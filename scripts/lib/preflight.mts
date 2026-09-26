@@ -318,6 +318,11 @@ export const ALWAYS_RUN_SUITES: ReadonlyArray<{ readonly file: string; readonly 
     reason:
       "derives its population (every tracked .ts/.tsx docblock that backticks a suite name) from `git ls-files` via `suitePointers()`; a pointer added under any tree is its subject and no literal says so. ⚠ THE CARD SAID TWO — the derived arm found this third one the hour the set was written, which is why the arm is derived (#647, #1037). ~1.4 s measured.",
   },
+  {
+    file: "server/errorMessageInterpolation.test.ts",
+    reason:
+      "derives its population (every template literal in an error or log context across the tracked production source) from `git ls-files` via `errorMessageLeaks()`; a `new Error(`… ${brief}`)` added under ANY tree is its subject and it names no path literal. ⚠ THE FOURTH, and the derived arm in `server/preflight.test.ts` is what found it — the set's own docblock says a fourth cannot be added without joining, and this is that case arriving (#1406, #1037).",
+  },
 ];
 
 /** A helper module that enumerates the suite population, and the exported functions that do it. */
