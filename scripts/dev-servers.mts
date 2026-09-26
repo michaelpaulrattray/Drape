@@ -28,6 +28,7 @@ import {
   launchDirectoryIsGone,
   launchDirectoryState,
   listenersOutsideEveryTree,
+  normaliseTreePath,
   portsOfTree,
   rootsStartedAfter,
   pidsNamed,
@@ -155,6 +156,43 @@ const DISK = {
   },
 };
 
+/**
+ * ⚠ THE SECOND FACT THAT DECIDES IT, AND IT IS THE ONE `isEmpty` COULD NOT
+ * REACH (#1435).
+ *
+ * `git worktree list --porcelain` is the authority on which directories are live
+ * trees, and its FIRST row is the main tree — so an ordinary `pnpm dev` is
+ * registered and nothing about it changes. A dev server launched from a path
+ * that is absent here was launched from a tree that has been removed, whatever
+ * the process has gone on writing into the leftover directory since.
+ *
+ * ⚠ **A read that fails returns an EMPTY set on purpose, and the listing then
+ * says so out loud.** An empty set means "could not read git", which
+ * `launchDirectoryState` treats as `live` — the same asymmetry as `isEmpty`, for
+ * the same reason. Being silent about a leftover costs a port; calling a live
+ * tree abandoned costs work.
+ */
+function registeredWorktrees(): { paths: Set<string>; readable: boolean } {
+  try {
+    const out = execFileSync("git", ["worktree", "list", "--porcelain"], {
+      encoding: "utf8",
+      maxBuffer: 4 * 1024 * 1024,
+    });
+    const paths = new Set(
+      out.split(/\r?\n/)
+        .filter((line) => line.startsWith("worktree "))
+        .map((line) => normaliseTreePath(line.slice("worktree ".length))),
+    );
+    /* Zero rows is not a readable answer either: git printed nothing, and the
+       main tree is always a row when it did print. */
+    return { paths, readable: paths.size > 0 };
+  } catch {
+    return { paths: new Set<string>(), readable: false };
+  }
+}
+
+const WORKTREES = registeredWorktrees();
+
 const describe = (tree: (typeof trees)[number], held: ReadonlyMap<number, number[]> = ports) => {
   /* ⚠ `portsOfTree`, never `childPids` — PR #784 review, finding 1. An
      unwatched tree's ROOT can be the port holder, and the backstop below cannot
@@ -164,19 +202,28 @@ const describe = (tree: (typeof trees)[number], held: ReadonlyMap<number, number
      could not fire for #783's OWN specimen: a removed shift worktree leaves an
      empty directory shell on this machine. See `launchDirectoryState`, which
      also words the line, so this file holds no second copy of the decision. */
-  const state = launchDirectoryState(tree.launchedFrom, DISK);
+  const state = launchDirectoryState(tree.launchedFrom, DISK, WORKTREES.paths);
+  const gone = launchDirectoryIsGone(state);
   return `  root ${String(tree.rootPid).padStart(6)}  started ${tree.startedAt.toLocaleString()}`
     + `  children [${tree.childPids.join(", ") || "none"}]`
     /* "between restarts" is a promise only a watcher can keep. An unwatched
-       tree holding no port is not waiting to come back — it is litter. */
+       tree holding no port is not waiting to come back — it is litter.
+       ⚠ And a WATCHED tree whose source is gone cannot keep the promise either:
+       root 30196 printed "between restarts" for 13 hours while every restart
+       died on ERR_MODULE_NOT_FOUND (#1435). The watcher is what made it
+       immortal, not what made it recoverable. */
     + `  ${listening.length > 0
       ? listening.join(" ")
-      : tree.watched ? "(no port — between restarts)" : "(no port — nothing is being served)"}`
+      : tree.watched
+        ? gone ? "(no port — its source is gone)" : "(no port — between restarts)"
+        : "(no port — nothing is being served)"}`
     + (tree.watched ? "" : "\n         ⚠ NO WATCHER — started off the entrypoint, so nothing restarts it")
-    + (launchDirectoryIsGone(state)
+    + (gone
       ? `\n         ⚠ ABANDONED — launched from ${tree.launchedFrom}, which ${state === "shell"
         ? "is an empty directory: that tree was removed and only its name is left"
-        : "no longer exists"}.`
+        : state === "unregistered"
+          ? "git does not list as a worktree: that tree was removed and this process has been writing into what is left"
+          : "no longer exists"}.`
         + " Nobody's live work; safe to kill."
       : "")
     + (state === "unknown"
@@ -206,12 +253,26 @@ const sayUnplaced = (found: ReturnType<typeof listenersOutsideEveryTree>) => {
   console.log("  which is exactly how #783 told four shifts the machine was clear over a live server.");
 };
 
+/**
+ * ⚠ SAY WHEN THE SECOND FACT WAS UNAVAILABLE, for the same reason as above.
+ *
+ * With no worktree list, `launchDirectoryState` falls back to `live` and no tree
+ * can ever read ABANDONED on the unregistered limb. A reader that goes quiet
+ * about a limb it could not run is the #783 failure one door along.
+ */
+const sayWorktreesUnread = () => {
+  if (WORKTREES.readable) return;
+  console.log("\n⚠ `git worktree list` could not be read, so no tree above can be called ABANDONED for");
+  console.log("  having lost its worktree. That limb is OFF for this run, not answered in the negative.");
+};
+
 if (trees.length === 0) {
   const found = listenersOutsideEveryTree(trees, ports);
   console.log(found.length === 0
     ? "no dev server is running on this machine."
     : "this reader sees no dev server tree on this machine — and that is contradicted below.");
   sayUnplaced(found);
+  sayWorktreesUnread();
   process.exit(found.length === 0 ? 0 : 2);
 }
 
@@ -227,6 +288,7 @@ const kill = ARGS.value("kill");
 if (since === null && kill === null) {
   const found = listenersOutsideEveryTree(trees, ports);
   sayUnplaced(found);
+  sayWorktreesUnread();
   process.exit(found.length === 0 ? 0 : 2);
 }
 
@@ -243,6 +305,7 @@ if (since !== null) {
        different words. */
     const found = listenersOutsideEveryTree(trees, ports);
     sayUnplaced(found);
+    sayWorktreesUnread();
     process.exit(found.length === 0 ? 0 : 2);
   }
   targets = mine.map((tree) => tree.rootPid);
@@ -290,4 +353,5 @@ console.log(`\n${left.length} dev server tree(s) left:`);
 for (const tree of left) console.log(describe(tree, portsNow));
 const stillListening = listenersOutsideEveryTree(left, portsNow);
 sayUnplaced(stillListening);
+sayWorktreesUnread();
 process.exit(stillListening.length === 0 ? 0 : 2);
