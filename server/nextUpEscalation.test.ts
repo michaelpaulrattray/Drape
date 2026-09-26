@@ -258,6 +258,128 @@ describe("the escalation verdict", () => {
   });
 });
 
+describe("the URGENT band is read too — #1258, #541's defect one band over", () => {
+  /*
+    ⚠ **EVERY ARM HERE WOULD HAVE ANSWERED `NONE` UNDER THE OLD READING, AND
+    THAT IS WHY THEY ARE BEHAVIOUR ARMS RATHER THAN A SOURCE GREP.** The gate
+    asked `gh issue list --label founder-ordered` and nothing else, so a card
+    that is urgent but not ordered was invisible to it: the hold rendered on his
+    page, every shift stepped over it, and nothing wrote the marker. #1222 —
+    `bug` + `urgent` + `rung:N2`, his own eye on the Sifr dress — was escalated
+    by hand on 2026-09-26 for exactly this reason.
+
+    The fixtures are now the WHOLE OPEN QUEUE rather than one band, which is the
+    other half of the change: one read, cross-examined, instead of two narrow
+    reads that each believe whatever comes back.
+  */
+
+  it("escalates an urgent Fable card when nothing is in his ordered band", () => {
+    const queue = queueFile("urgent-only", [
+      card(1201, ["bug"], "an ordinary bug nobody ordered"),
+      card(1210, ["seat:retro"], "a retro card"),
+      card(1222, ["bug", "urgent", "rung:N2", "awaiting-fable"], "a signed view's lower half is still a guess"),
+    ]);
+    const result = run("--queue", queue, "--state", statePath("urgent-only"), "--today", "2026-09-26");
+
+    expect(result.last).toMatch(/^ESCALATE #1222 /);
+    expect(result.status).toBe(0);
+  });
+
+  it("his ordered band outranks the urgent one — a takeable ordered card still blocks it", () => {
+    /* #471's rule: `urgent` means this cannot wait, `founder-ordered` means he
+       chose the order. His band is walked FIRST, so an Opus-takeable card at the
+       top of it suppresses the escalation exactly as it did before. */
+    const queue = queueFile("ordered-outranks", [
+      card(391, ["founder-ordered"], "his ladder ruling"),
+      card(1222, ["bug", "urgent", "awaiting-fable"], "the urgent judgment card"),
+    ]);
+    const result = run("--queue", queue, "--state", statePath("ordered-outranks"), "--today", "2026-09-26");
+
+    expect(result.last).toMatch(/^NONE: /);
+    expect(result.last).toContain("#391");
+    expect(result.status).toBe(1);
+  });
+
+  it("escalates the ORDERED Fable card, never the urgent one, when both are waiting", () => {
+    const queue = queueFile("both-fable", [
+      card(534, ["founder-ordered", "awaiting-fable"], "his own judgment card"),
+      card(1222, ["bug", "urgent", "awaiting-fable"], "the urgent judgment card"),
+    ]);
+    const result = run("--queue", queue, "--state", statePath("both-fable"), "--today", "2026-09-26");
+
+    expect(result.last).toMatch(/^ESCALATE #534 /);
+    expect(result.last).not.toContain("#1222");
+  });
+
+  it("names an urgent takeable card as a bundle candidate behind the judgment card", () => {
+    const queue = queueFile("urgent-bundle", [
+      card(534, ["founder-ordered", "awaiting-fable"], "his own judgment card"),
+      card(1235, ["bug", "urgent"], "an urgent bug an Opus sitting could also land"),
+      card(1240, ["seat:retro"], "neither ordered nor urgent — not a candidate"),
+    ]);
+    const result = run("--queue", queue, "--state", statePath("urgent-bundle"), "--today", "2026-09-26");
+
+    expect(result.last).toMatch(/^ESCALATE #534 /);
+    expect(result.last).toContain("bundle=#1235");
+    expect(result.last).not.toContain("#1240");
+  });
+
+  it("a card carrying BOTH labels is counted once, in his band", () => {
+    /* It is in both bands by construction. Counted twice it would appear in its
+       own bundle — the judgment card offered as a candidate alongside itself. */
+    const queue = queueFile("both-labels", [
+      card(541, ["founder-ordered", "urgent", "awaiting-fable"], "ordered and urgent"),
+      card(1240, ["seat:retro"], "not in either band"),
+    ]);
+    const result = run("--queue", queue, "--state", statePath("both-labels"), "--today", "2026-09-26");
+
+    expect(result.last).toMatch(/^ESCALATE #541 /);
+    expect(result.last).toContain("bundle=none");
+  });
+
+  it("answers NONE when neither band holds a card, rather than reading the rest of the queue", () => {
+    /* The queue answered and is believable; it simply holds nothing in either
+       band. A gate that walked the whole queue here would escalate work he never
+       ordered and never called urgent. */
+    const queue = queueFile("no-bands", [
+      card(1240, ["seat:retro", "awaiting-fable"], "Fable-only but in neither band"),
+      card(1241, ["bug"], "an ordinary bug"),
+    ]);
+    const result = run("--queue", queue, "--state", statePath("no-bands"), "--today", "2026-09-26");
+
+    expect(result.last).toMatch(/^NONE: /);
+    expect(result.last).toContain("neither band");
+    expect(result.status).toBe(1);
+  });
+
+  it("answers NONE when an empty band cannot be believed, never a fallback to the band it could read", () => {
+    /*
+      ⚠ **THE ARM THE CARD ASKED FOR, DISSOLVED RATHER THAN BUILT AS WRITTEN.**
+      #1258 asks for *"an unreadable urgent query answers NONE rather than
+      falling back to the ordered band alone."* There is no second query to be
+      unreadable any more — the fix removed one. What remains is the same
+      danger in the shape it can actually take: a whole-queue read that came
+      back EMPTY makes both bands unbelievable (`deriveBands`, #774), and the
+      gate must refuse rather than treat "no ordered cards" as a reading.
+    */
+    const result = run("--queue", queueFile("blip", []), "--state", statePath("blip"), "--today", "2026-09-26");
+
+    expect(result.last).toMatch(/^NONE: /);
+    expect(result.last).toContain("could not be believed");
+    expect(result.status).toBe(1);
+  });
+
+  it("reaches both bands through deriveBands rather than filtering labels itself", () => {
+    /* A second copy of the cut is how the two views come to disagree about what
+       is at the top of his queue. The cut and the empty-band cross-examination
+       are `queue-standing-exceptions.mts`'s, and this gate calls them. */
+    const source = readFileSync(SCRIPT, "utf8");
+    expect(source).toContain("deriveBands");
+    expect(source, "the gate must not ask gh for one band any more")
+      .not.toMatch(/"--label",\s*"founder-ordered"/);
+  });
+});
+
 describe("the no-repeat rule — one session, never five", () => {
   it("refuses a second automatic escalation of the same card", () => {
     const queue = queueFile("repeat", [card(534, ["founder-ordered", "awaiting-fable"])]);
