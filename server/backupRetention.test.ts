@@ -21,9 +21,14 @@ import { mkdtempSync, mkdirSync, rmSync, statSync, writeFileSync } from "node:fs
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 
 import {
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+
+/* This suite spawns real `git` processes (init, add, commit, hash-object) in throwaway repositories, so it
+   declares the child-process class timeout (#548) — the gate reddened #1293 for the missing line. */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
   BACKUP_RETENTION_FLOOR_DAYS,
   type BackupEntry,
   type BackupItem,
