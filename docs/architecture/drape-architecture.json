@@ -11396,6 +11396,10 @@
       "path": "server/casting/snapshotShadowAudit.test.ts"
     },
     {
+      "id": "test:server/casting/sweptTerminalEvents.test.ts",
+      "path": "server/casting/sweptTerminalEvents.test.ts"
+    },
+    {
       "id": "test:server/casting/typedIterationDoors.test.ts",
       "path": "server/casting/typedIterationDoors.test.ts"
     },
@@ -22940,12 +22944,22 @@
     },
     {
       "from": "module:server/casting/operationRecovery.ts",
+      "to": "module:server/monitoring/productEvents.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/operationRecovery.ts",
       "to": "module:shared/boardTypes.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/casting/operationRecovery.ts",
       "to": "module:shared/exportViews.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/operationRecovery.ts",
+      "to": "module:shared/productEventCatalogue.ts",
       "kind": "imports"
     },
     {

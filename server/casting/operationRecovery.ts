@@ -31,6 +31,8 @@ import {
 } from "../db/generationOperations";
 import { adjudicateStaleInkEvidenceOperation } from "../db/inkAddRecovery";
 import { createModuleLogger } from "../logging/logger";
+import { captureProductEvent } from "../monitoring/productEvents";
+import { productErrorCode, productNoun } from "../../shared/productEventCatalogue";
 import { recordRefund } from "./atomicCredits";
 import { slotCost } from "./packagePricing";
 import {
@@ -870,7 +872,172 @@ export async function recoverEvidenceMintOperation(
   return { type: "durable_success" };
 }
 
+/*
+  ════════════════════════════════════════════════════════════════════════════
+  THE SWEEP'S TERMINAL EVENTS (#1425, #509 part 2's sweep half)
+
+  Part 2 records the generation lifecycle from `directOperation.ts`: one
+  `generation started` when an operation is claimed, and one `generation
+  delivered` or `generation failed` when it terminates. **This file is a SECOND,
+  independent settlement path and it recorded nothing** — so an operation the
+  sweep settled had a start and no terminal, for the life of the stream. Rolls
+  started would permanently exceed rolls delivered plus rolls failed, with
+  nothing on the page saying why, and the honest reading of that gap ("some
+  generations vanish") would have been wrong: the money was settled correctly
+  every time.
+
+  It is not a rare road. `CLAUDE.md`'s *"Deploying while a paid roll is in
+  flight"* calls a deploy landing mid-roll a known, accepted collision class and
+  names this sweep as the designed answer, so the product takes it on purpose.
+
+  Part 2 had already written the reasoning down — at `directOperation.ts:305`,
+  explaining why a free pre-start answer still sends a delivery with zero on it:
+  *"The temptation is to send nothing at all — and that would leave a
+  `generation started` with no terminal, so starts would permanently exceed
+  deliveries plus failures and nobody reading the dashboard would know why."*
+  The rule was applied to the free-answer seam and not to this one.
+
+  # WHY THE EVENT IS READ OFF THE RECEIPT AND NOT OFF THE DECISION
+
+  The settlement sites are many — five per-kind recoverers that return early
+  plus three in the generic tail — and a capture at each is eight chances to
+  duplicate one or miss one. This wraps the ONE funnel they all leave through
+  and then reads the row they just wrote, which is working law 1 pointed
+  inwards: **the receipt is the artifact, the local variable is the claim.**
+
+  That is not merely tidier, it is more accurate. `StaleOperationDecision` folds
+  a partial delivery into `paid_failure` and `durable_success` on purpose — its
+  own comments say *"partial and total failure end the same way for the sweep"* —
+  so the decision cannot tell a roll that delivered six of eight from one that
+  delivered all eight. **The row can**, because
+  `finalizeGenerationOperationSuccess` writes `partial` or `succeeded` to
+  `status`, and `outcome` is exactly that distinction. The same read supplies the
+  money both ways and the failure's own `errorCode`, none of which the decision
+  carries.
+
+  # EXACTLY ONCE, AND IT IS STRUCTURAL RATHER THAN REMEMBERED
+
+  The sweep runs every 60s and re-examines rows, which is the duplication shape
+  #509 part 2's money edges were placed to avoid. Two gates hold here and
+  neither is a flag:
+
+   1. **A terminal decision can only be reached from a non-terminal row.** The
+      adjudicator's door admits `claimed`, `running` and a fenced Sign and
+      returns `"skipped"` for everything else. Once settled the row is
+      `succeeded` / `partial` / `failed`, so a second pass returns `"skipped"`
+      above every settlement site and no event is ever considered.
+   2. **The event is gated on the RECEIPT, not on the decision.** A decision
+      whose row is missing or still non-terminal sends nothing and logs — an
+      event claiming a delivery over an unsettled row would be worse than the
+      silence this card is fixing.
+
+  `recovery_required` sends nothing on purpose: the operation is parked for a
+  human and has NOT terminated. It will terminate later — by hand, or by a
+  fenced Sign's next pass — and the event belongs at that moment, not at the
+  park. The gap it leaves is real and is the honest one: a started generation
+  awaiting support review has no terminal event because it has no terminal.
+
+  # WHAT IS DELIBERATELY NOT SENT
+
+  **Nothing says the sweep did it.** A swept terminal is almost certainly worth
+  distinguishing from a live one — *"how often does a deploy cost somebody a
+  wait"* is a real question — but the catalogue declares no property for it and
+  inventing one is a decision rather than a repair. The honest default is the
+  same event the direct road sends; the distinction is this card's own follow-up.
+
+  One thing IS better here than on the direct road, and it needed no new
+  property: `action` is the real noun. `directOperation.ts` remembers the kind in
+  a per-PROCESS map, and its docblock states the limit — *"finalized by the
+  recovery sweep in another process, has no entry — and its terminal event
+  reports `action: "unnamed action"`"*. That sentence described a road that did
+  not exist yet. The sweep holds the operation ROW, so it reads the kind off the
+  column and names the action properly.
+  ════════════════════════════════════════════════════════════════════════════ */
 export async function adjudicateStaleGenerationOperation(
+  operation: GenerationOperation,
+  now = new Date(),
+): Promise<StaleOperationDecision | "skipped"> {
+  const decision = await settleStaleGenerationOperation(operation, now);
+  await recordSweptTerminalEvent(operation, decision);
+  return decision;
+}
+
+/**
+ * Send the terminal event for an operation this sweep just settled, read off the
+ * receipt it wrote. Never throws: the sweep's counters, its callers and the
+ * adjudicator's contract must not move because an analytics line could not be
+ * composed — `captureProductEvent` cannot throw either, and this does not depend
+ * on that being true (`directOperation.ts:255` records the same reasoning about
+ * the same transport).
+ */
+async function recordSweptTerminalEvent(
+  operation: GenerationOperation,
+  decision: StaleOperationDecision | "skipped",
+): Promise<void> {
+  if (decision !== "durable_success" && decision !== "paid_failure" && decision !== "free_failure") return;
+  try {
+    const db = await getDb();
+    if (!db) return;
+    const [receipt] = await db
+      .select({
+        status: generationOperations.status,
+        errorCode: generationOperations.errorCode,
+        chargedCredits: generationOperations.chargedCredits,
+        refundedCredits: generationOperations.refundedCredits,
+      })
+      .from(generationOperations)
+      .where(and(
+        eq(generationOperations.userId, operation.userId),
+        eq(generationOperations.id, operation.id),
+      ))
+      .limit(1);
+    if (!receipt) {
+      log.error(
+        { operationId: operation.id, decision },
+        "[OperationRecovery] settled an operation whose receipt could not be read back — no terminal event sent",
+      );
+      return;
+    }
+    const action = productNoun(operation.kind);
+    if (receipt.status === "succeeded" || receipt.status === "partial") {
+      captureProductEvent("generation delivered", operation.userId, {
+        action,
+        outcome: receipt.status === "partial" ? "partial" : "complete",
+        creditsCharged: receipt.chargedCredits,
+        creditsRefunded: receipt.refundedCredits,
+      });
+      return;
+    }
+    if (receipt.status === "failed") {
+      captureProductEvent("generation failed", operation.userId, {
+        action,
+        /* The row's own code, which is the one the customer's receipt carries.
+           The generic tail writes `TIMEOUT` for a free failure and
+           `INTERNAL_SERVER_ERROR` for a paid one; each per-kind recoverer writes
+           its own, and reading the column is how this stays true when the next
+           kind is added. */
+        errorCode: productErrorCode(receipt.errorCode ?? "INTERNAL_SERVER_ERROR"),
+        creditsCharged: receipt.chargedCredits,
+        creditsRefunded: receipt.refundedCredits,
+      });
+      return;
+    }
+    /* A terminal decision over a row that is not terminal. Not an event — a
+       disagreement between this function and the settlement it just ran, which
+       is a defect to read about. */
+    log.error(
+      { operationId: operation.id, decision, status: receipt.status },
+      "[OperationRecovery] terminal decision over a non-terminal receipt — no terminal event sent",
+    );
+  } catch (error) {
+    log.error(
+      { err: error, operationId: operation.id, decision },
+      "[OperationRecovery] the terminal product event could not be composed — settlement is unaffected",
+    );
+  }
+}
+
+async function settleStaleGenerationOperation(
   operation: GenerationOperation,
   now = new Date(),
 ): Promise<StaleOperationDecision | "skipped"> {
