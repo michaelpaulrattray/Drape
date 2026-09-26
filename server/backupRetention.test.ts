@@ -24,11 +24,6 @@ import path from "node:path";
 import { afterAll, describe, expect, it, vi } from "vitest";
 
 import {
-import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
-
-/* This suite spawns real `git` processes (init, add, commit, hash-object) in throwaway repositories, so it
-   declares the child-process class timeout (#548) — the gate reddened #1293 for the missing line. */
-vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
   BACKUP_RETENTION_FLOOR_DAYS,
   type BackupEntry,
   type BackupItem,
@@ -41,6 +36,12 @@ vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
   summarise,
   treeRefusal,
 } from "../scripts/lib/backupRetention.mts";
+
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+
+/* This suite spawns real `git` processes (init, add, commit, hash-object) in throwaway repositories, so it
+   declares the child-process class timeout (#548) — the gate reddened #1293 for the missing line. */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 /** A tree-walking / spawning suite declares its own ceiling (the contended-timeout guard). */
 const CONTENDED_TEST_TIMEOUT_MS = 30_000;
