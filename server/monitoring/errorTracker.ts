@@ -45,7 +45,13 @@
 import { requestContext } from "../logging/logger";
 import { createModuleLogger } from "../logging/logger";
 import { deployedCommitSha, deploymentTag } from "../_core/env";
-import { scrubErrorEvent, type IncomingEvent } from "../../shared/errorEventScrub";
+import {
+  scrubBreadcrumb,
+  scrubErrorEvent,
+  type IncomingBreadcrumb,
+  type IncomingEvent,
+  type ScrubbedBreadcrumb,
+} from "../../shared/errorEventScrub";
 
 const log = createModuleLogger("errorTracker");
 
@@ -70,13 +76,26 @@ interface TrackerState {
   ready: boolean;
   /** How many events the scrub refused — a wiring defect's own counter. */
   refused: number;
+  /**
+   * How many BREADCRUMBS were refused for the same reason. Its own counter and
+   * not folded into `refused`, because the two lose different amounts: a
+   * refused event is a whole report gone, a refused crumb is one line of a
+   * trail. One number answering both questions would make the event count lie.
+   */
+  refusedBreadcrumbs: number;
   /** How many were handed to the SDK. */
   sent: number;
 }
 
 let sentry: SentryModule | null = null;
 let starting: Promise<void> | null = null;
-const state: TrackerState = { configured: false, ready: false, refused: 0, sent: 0 };
+const state: TrackerState = {
+  configured: false,
+  ready: false,
+  refused: 0,
+  refusedBreadcrumbs: 0,
+  sent: 0,
+};
 
 function dsn(): string {
   return (process.env.SENTRY_DSN ?? "").trim();
@@ -113,12 +132,33 @@ function gate(event: IncomingEvent): IncomingEvent | null {
 }
 
 /**
+ * The same gate for one crumb of the trail, wired as the SDK's retention hook.
+ *
+ * A refusal is logged and counted exactly as an event's is, and for the reason
+ * `scrubBreadcrumb`'s docblock gives: without this the mis-wiring it exists to
+ * report would be trimmed away silently, because retention runs before the
+ * event gate and there would be nothing left in the event to find.
+ */
+function breadcrumbGate(breadcrumb: IncomingBreadcrumb): ScrubbedBreadcrumb | null {
+  const verdict = scrubBreadcrumb(breadcrumb, imageOrigin());
+  if (verdict.verdict === "refuse") {
+    state.refusedBreadcrumbs += 1;
+    log.error(
+      { refusedKey: verdict.key, refusedPath: verdict.path },
+      "breadcrumb REFUSED before retention — a customer's recipe field was attached to it",
+    );
+    return null;
+  }
+  return verdict.verdict === "keep" ? verdict.breadcrumb : null;
+}
+
+/**
  * EVERY OPTION THE SDK IS GIVEN, BUILT WHERE A TEST CAN READ IT.
  *
  * This is invariant 5 — *"Assert at the wire. Contracts about what gets sent are
  * proven on the outgoing request, not on a constant near it."* The claims that
- * matter here (the scrub IS the last gate; PII is off; nothing is traced;
- * breadcrumbs are never retained) are claims about the object handed to
+ * matter here (the scrub IS the last gate; PII is off; nothing is traced; a
+ * breadcrumb is retained only if its category is allowed) are claims about the object handed to
  * `init`, so `server/errorTracker.test.ts` drives THIS function's result rather
  * than re-stating the same literals beside it and agreeing with itself.
  */
@@ -130,7 +170,7 @@ export function buildTrackerOptions(): {
   sendDefaultPii: boolean;
   sendClientReports: boolean;
   integrations: (defaults: { name: string }[]) => { name: string }[];
-  beforeBreadcrumb: () => null;
+  beforeBreadcrumb: (breadcrumb: IncomingBreadcrumb) => ScrubbedBreadcrumb | null;
   beforeSend: (event: IncomingEvent) => IncomingEvent | null;
 } {
   return {
@@ -168,9 +208,22 @@ export function buildTrackerOptions(): {
       refusal is visible on Sentry's side as well as in our own log.
     */
     sendClientReports: true,
-    /* Nothing is retained in the first place. A console breadcrumb carries
-       whatever was logged, and this product logs failed API responses. */
-    beforeBreadcrumb: () => null,
+    /*
+      THE TRAIL, ALLOWED BY CATEGORY (#1405). Until this line the answer was
+      `() => null` — nothing retained at all, which was right while the only
+      alternative was retaining console arguments and clicked element text.
+      `projectBreadcrumb` is the widening: navigation and http/xhr/fetch, their
+      `data` cut to the few named fields, `message` never read, everything else
+      dropped. It runs HERE so a customer's sentence is never held in this
+      process's memory, and again in the projection so nothing depends on it
+      having run — see the scrub's own note on why both.
+
+      ⚠ The SDK also hands this hook a `hint` carrying the raw source of the
+      crumb (the DOM event, the XHR object, the console arguments). It is
+      deliberately not a parameter: there is nothing in it this product wants,
+      and a signature that cannot see it cannot come to read it.
+    */
+    beforeBreadcrumb: (breadcrumb) => breadcrumbGate(breadcrumb),
     beforeSend: (event) => gate(event),
   };
 }
@@ -203,14 +256,19 @@ export async function initErrorTracker(): Promise<string> {
            to copy it here, or the tested object and the sent object become two
            lists that drift (working law 4). */
         ...options,
-        /* The one cast in this file, and it is a TYPE adapter and nothing else.
-           Sentry's `ErrorEvent` has no index signature, so it is not assignable
-           to the scrub's deliberately structural `IncomingEvent` — the scrub is
-           typed against the CONTRACT rather than against the SDK precisely so an
-           SDK upgrade cannot widen what travels. The function called here is the
-           same object the suite drives; only its declared type moves. */
+        /* The casts in this file, and they are TYPE adapters and nothing else.
+           Sentry's `ErrorEvent` and `Breadcrumb` have no index signature, so
+           neither is assignable to the scrub's deliberately structural
+           `IncomingEvent`/`IncomingBreadcrumb` — the scrub is typed against the
+           CONTRACT rather than against the SDK precisely so an SDK upgrade
+           cannot widen what travels. The functions called here are the same
+           objects the suite drives; only their declared types move. */
         beforeSend: (event) =>
           options.beforeSend(event as unknown as IncomingEvent) as unknown as typeof event | null,
+        beforeBreadcrumb: (breadcrumb) =>
+          options.beforeBreadcrumb(
+            breadcrumb as unknown as IncomingBreadcrumb,
+          ) as unknown as typeof breadcrumb | null,
       });
       sentry = mod;
       state.ready = true;
@@ -316,6 +374,7 @@ export function resetErrorTrackerForTests(): void {
   state.configured = false;
   state.ready = false;
   state.refused = 0;
+  state.refusedBreadcrumbs = 0;
   state.sent = 0;
 }
 
