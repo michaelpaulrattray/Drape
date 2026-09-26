@@ -1401,13 +1401,39 @@ describe("a distributed open kind is carried by its two per-side crops", () => {
  * name** (an accessory with no kind and an ink ask with no placement, both of
  * which this caller deliberately cannot supply), **0 vanished** — plus five of
  * the six guaranteed axes said and `makeup` refusing `notASlot`, which is the
- * decided absence the arm above already owns.
+ * decided absence the arm above already owns. **16 of those 30 subjects are
+ * named by no other arm in this file**, which is the population's whole value.
+ *
+ * ⚠ # EVERY PROBE CARRIES A COMPANION FACT, AND THE FIRST VERSION DID NOT
+ *
+ * A one-facet delta cannot see the defect this arm exists for. Drop the facet
+ * and the step is empty, so `nothingAsked` fires — a NAMED refusal — and a
+ * silent drop arrives wearing an honest refusal's clothes. Driven: a sabotage
+ * skipping `cheekbones` in the written loop left all 70 tests green, this sweep
+ * among them.
+ *
+ * So each probe delta carries a second fact that always lands, on a different
+ * facet. Now the step is never empty: a dropped probe facet leaves the
+ * companion asked, the call returns `ok: true`, and the sweep sees the fact
+ * vanish. **`nothingAsked` must therefore never appear in the reasons at all**,
+ * and that is asserted — it would mean the companion itself went missing, which
+ * is the same defect one facet over.
  */
 describe("nothing a step writes can go quiet — it is said, or it is refused by name (#1303)", () => {
   /* The phrase is unmistakable and carries the subject's own noun, so a slot
      lookup that needs to recognise an object still can. */
   function probePhraseFor(subject: (typeof FREE_SUBJECT_KEYS)[number]): string {
     return `${SUBJECT_NOUNS[subject]?.[0] ?? "thing"} filed by the sweep`;
+  }
+
+  /* A SECOND FACT THAT ALWAYS LANDS, so no probe can empty its own step and let
+     `nothingAsked` stand in for a drop. Eye colour reaches two slots on every
+     cast; a subject that IS eye colour gets hair colour instead, because a
+     companion sharing the probe's facet would be no companion at all. */
+  function companionFor(subject: (typeof FREE_SUBJECT_KEYS)[number]): RefineDelta {
+    return facetOfSubject(subject) === "eye.colour"
+      ? { hairColour: "copper" }
+      : { eyeColour: "green" };
   }
 
   it("every free subject in the vocabulary is accounted for, and none of them vanishes", () => {
@@ -1424,13 +1450,17 @@ describe("nothing a step writes can go quiet — it is said, or it is refused by
     for (const subject of FREE_SUBJECT_KEYS) {
       const phrase = probePhraseFor(subject);
       const delta: RefineDelta = {
+        ...companionFor(subject),
         free: { [subject]: isPluralSubject(subject) ? [phrase] : phrase },
       };
       const result = repaintAsksFor({ pronouns: her, delta, prose });
       if (!result.ok) {
-        /* A refusal is only an acceptable outcome if it SAYS something: an
-           empty reason is a drop wearing a refusal's clothes. */
+        /* A refusal is only an acceptable outcome if it SAYS something, and if
+           what it says is about THIS ask. `nothingAsked` would mean the
+           companion fact vanished — the same defect, one facet over. */
         expect(result.reason, `${subject} refused with no reason`).toBeTruthy();
+        expect(result.reason, `${subject} emptied a step that carries a companion fact`)
+          .not.toBe("nothingAsked");
         refused.push([subject, result.reason]);
         continue;
       }
