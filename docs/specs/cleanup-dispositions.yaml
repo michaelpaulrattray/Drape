@@ -1250,6 +1250,12 @@
   why: a seam whose own NAME says test-only; the sweep cannot see a convention and a human can
   argued: 6c/13a
 
+- symbol: resetErrorTrackerForTests
+  file: server/monitoring/errorTracker.ts
+  verdict: KEEP
+  why: a seam whose own NAME says test-only; the sweep cannot see a convention and a human can
+  argued: 6c/13a
+
 - symbol: replyIsAcknowledged
   file: server/crew/crewBriefing.ts
   verdict: KEEP
