@@ -1,111 +1,17 @@
-import { useState, useEffect } from "react";
-import { AlertTriangle, X, Coins } from "lucide-react";
 import { toast } from "sonner";
 
 // Warning threshold - show warning when balance drops below this
 export const LOW_BALANCE_THRESHOLD = 2500; // ~7 generations remaining
 
-interface LowBalanceWarningProps {
-  balance: number;
-  onTopUp: () => void;
-  variant?: "banner" | "toast";
-  dismissible?: boolean;
-}
-
-/**
- * Banner component for persistent low balance warning
- */
-export function LowBalanceBanner({ 
-  balance, 
-  onTopUp, 
-  dismissible = true 
-}: Omit<LowBalanceWarningProps, "variant">) {
-  const [isDismissed, setIsDismissed] = useState(false);
-
-  // Reset dismissed state when balance changes significantly
-  useEffect(() => {
-    if (balance >= LOW_BALANCE_THRESHOLD) {
-      setIsDismissed(false);
-    }
-  }, [balance]);
-
-  if (isDismissed || balance >= LOW_BALANCE_THRESHOLD) {
-    return null;
-  }
-
-  const isVeryLow = balance < 500;
-  const isCritical = balance === 0;
-
-  return (
-    <div 
-      className={`relative flex items-center justify-between gap-4 px-4 py-3 rounded-xl border ${
-        isCritical 
-          ? "bg-red-500/10 border-red-500/30 text-red-400"
-          : isVeryLow
-          ? "bg-amber-500/10 border-amber-500/30 text-amber-500"
-          : "bg-amber-500/10 border-amber-500/30 text-amber-400"
-      }`}
-    >
-      <div className="flex items-center gap-3">
-        <div className={`p-2 rounded-lg ${
-          isCritical 
-            ? "bg-red-500/20"
-            : isVeryLow
-            ? "bg-amber-500/20"
-            : "bg-amber-500/20"
-        }`}>
-          <AlertTriangle className="w-4 h-4" />
-        </div>
-        <div>
-          <p className="text-sm font-medium">
-            {isCritical 
-              ? "You're out of credits!"
-              : isVeryLow
-              ? "Credits running very low"
-              : "Low credit balance"
-            }
-          </p>
-          <p className="text-xs opacity-80">
-            {isCritical
-              ? "Top up now to continue generating"
-              : `Only ${balance} credits remaining`
-            }
-          </p>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <button
-          onClick={onTopUp}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
-            isCritical
-              ? "bg-red-500 hover:bg-red-600 text-white"
-              : isVeryLow
-              ? "bg-amber-500 hover:bg-amber-600 text-black"
-              : "bg-amber-500 hover:bg-amber-600 text-black"
-          }`}
-        >
-          <Coins className="w-4 h-4" />
-          Top Up Now
-        </button>
-        
-        {dismissible && !isCritical && (
-          <button
-            onClick={() => setIsDismissed(true)}
-            className="p-2 rounded-lg hover:bg-white/10 transition-colors"
-            aria-label="Dismiss warning"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
 /**
  * Show a toast notification for low balance
  * Call this after credit deduction to alert user
+ *
+ * The persistent BANNER form of this warning was removed 2026-09-26 (#108
+ * slice 5). Its only consumer was ever `pages/Dashboard.tsx`, deleted with the
+ * legacy `/dashboard` page in `98931f66` (2026-04-04); the toast is the warning
+ * the product delivers today, from `useCastingGeneration`, `CastingTakeover`
+ * and `DrapeStudio`.
  */
 export function showLowBalanceToast(balance: number, onTopUp: () => void) {
   if (balance >= LOW_BALANCE_THRESHOLD) {
@@ -133,4 +39,3 @@ export function showLowBalanceToast(balance: number, onTopUp: () => void) {
     }
   );
 }
-

@@ -120,6 +120,26 @@ Controls taken 2026-08-26 on the committed config (working law 2):
 | 2026-09-22 | 19 | 0 | — | **55** | **1** | 2 | **Janitor run 9, the nightly `35767237320` at `8b0d3f44` (fired on schedule, 18:27Z).** Run 8's predicted floor landed exactly on the 21 Sep nightly (`35647295633`: exports 53) and the 22 Sep merges then put it **two files above**, with a *types* section reappearing after run 7 saw it absent. Read at the code (#1141), each reached only from inside its own declaring module: `castingV2Scope.ts: CASTING_ROLL_ENGINE_MODELS, parseCastingRollEngineModel` (the roll-engine model flag, #1079 — read by the error message at `:2837`, the parser at `:2847` and the two call sites at `:2853`/`:2891`); `houseBlock.ts: CREATURE_EXPRESSION_FANG_SENTENCE` (#1069 — read by `CREATURE_EXPRESSION_LINE` one line below); `falImages.ts: FAL_EDIT_SIBLINGS` (#1079 — read by `editSiblingOf` immediately below); and the types section's single row `crewShiftState.ts: CardPullRequestWhere` (read by the exported `CardPullRequestMatch` and one local). One row LEFT the list in the same window — `rollEngine.ts: resetCastingEngineForTests` — which is why the net is +2 and not +3. Run 8's `lib/staffPage.ts` KEEP was the shape checked for and none of the five has it: no test, generator, Atlas or capability-atlas entry names any of them. PR #1142 drops the five keywords. |
 | 2026-09-24 | 19 | 0 | — | **53** | **2** | 2 | **A MEASUREMENT on two clean trees, not a nightly** (Janitor run 9, PR #1142's branch `895b164f` against its parent `0c329d60`). ⚠ **The baseline was taken twice because the first one was wrong in the direction this ledger's own header warns about.** A `pnpm janitor:knip` in the MAIN working tree read **files 18, exports 55** while the same commit in a clean worktree read **files 19, exports 55** with three extra findings — `scripts/lib/sabotage.mts` as an unused file, `capabilityAtlas.mts: raiseSites`, and `importerCountDiff.mts: walk, isTestFile, selfUsesOfName`. The cause is the header's own, now grown: the main tree carries **585 untracked disposables**, they import things, and knip walks them. **So the gap between a main-tree reading and the nightly is currently THREE findings wide.** The honest before/after, both clean and both at one commit: `0c329d60` files 19 · exports **55** · types **3** · duplicates 2 → `895b164f` files 19 · exports **53** · types **2** · duplicates 2, and the diff between the two runs is exactly the five rows above and nothing else. **Expected next nightly: files 19, exports 53, types 2, duplicates 2, binaries absent.** Above that is run 10's finding. |
 
+| 2026-09-26 | 19 | 0 | — | **71** | **13** | 2 | **A MEASUREMENT on a clean worktree, not a nightly** (#108 slice 5, a builder seat, at `fa8ac509`) — directly comparable to run 9's row above, which was the same kind of reading. The newest nightly is `36177483290` at `655a496a` (2026-09-25 19:05Z), one day behind this tree, and its own counts were not read; **the 53 → 71 files and 2 → 13 types are therefore a local-to-local delta over the 24–26 Sep merges, and they are the next Janitor patrol's finding rather than this slice's** (clock fires 2026-09-27). Nothing is proposed from it. What slice 5 did touch: **one row**, `LowBalanceWarning.tsx: LowBalanceBanner`, deleted with its dead barrel line on his word *"108)clear them"* — expected next reading **70 files / 115 symbols**. The other four of #108's held five are the FLOOR recorded immediately below. |
+
+## The client/shared unused-exports FLOOR is 4, and it is on purpose
+
+⚠ **A READING THAT SHOWS THESE FOUR IS CORRECT, NOT UNFINISHED — DO NOT RE-ASK
+THEM** (#108 slice 5, 2026-09-26, on his word *"108)clear them"*; the full read is
+`docs/specs/UNUSED_EXPORTS_PURGE_MANIFEST_2026-09-26_SLICE5.md`). Each is held by a
+ruling of his or by a live control, so no shift can act on it and a shift that
+re-reads the list learns nothing the fifth time:
+
+| row | what holds it |
+|---|---|
+| `client/src/features/operations/castDeletionSync.ts: publishCastDeleted` | its consumer CALLS it at `features/lobby/DeleteCastDialog.tsx:64` — a Segment 00 lobby orphan, and his word is *"NOTHING IS DELETED. Segment 00's orphaned components STAY."* |
+| `shared/exportViews.ts: filenameWithActualImageExtension` | three call sites in `features/export/useExportPack.ts` plus a self-use at `exportViews.ts:84`, and that consumer file is read by a live guard at five places (`server/modelLifecycleGuard.test.ts`) |
+| `client/src/features/profile/ProfileVisual.tsx: ProfileCover` | a recorded keep with its reasoning written out — `server/profileVisualDefaults.test.ts:85` asserts the literal `"export function ProfileCover"` |
+| `client/src/features/casting/evidence/PrivateEvidenceImage.tsx: PrivateEvidenceImage` | the R7 evidence family is PARKED by his word (#6) and `server/r7-evidence-delivery-contract.test.ts:48` names this component as the contract's placeholder surface |
+
+**A fifth client or shared row is a finding**, exactly as a duplicates reading
+above 1 is: it names something new rather than one of these four.
+
 ⚠ **THE COLUMNS ABOVE ARE NOT ALL THE SAME KIND OF NUMBER, AND ONE ROW MIXED
 TWO REPORTERS.** Measured Janitor run 2: `pnpm janitor:knip` passes
 `--reporter compact`, which prints **one line per FILE**, so its `(178)` is
