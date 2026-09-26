@@ -73,9 +73,9 @@ _Called as:_ `castingV2.refine`
 | `unreadable` | interpreter-refusal |  | server/castingV2/castingIntent.ts:1372<br>server/castingV2/castingIntent.ts:1408<br>(+14) | 21 test(s) | light.softer, guard.gibberish, guard.scope.ink.none |
 | `reader_outage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:625<br>server/castingV2/refineInterpreter.ts:912<br>(+2) | 5 test(s) | _documented-unreachable or gap — see findings_ |
 | `wall_likeness` | interpreter-refusal |  | server/castingV2/refineDelta.ts:498<br>server/castingV2/refineDelta.ts:1609<br>(+2) | 7 test(s) | guard.likeness |
-| `wall_content` | interpreter-refusal |  | server/castingV2/refineDelta.ts:538<br>server/castingV2/refineInterpreter.ts:1589<br>(+1) | 6 test(s) | guard.content |
+| `wall_content` | interpreter-refusal |  | server/castingV2/refineDelta.ts:538<br>server/castingV2/refineInterpreter.ts:1647<br>(+1) | 6 test(s) | guard.content |
 | `wall_stage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:513<br>server/castingV2/refineDelta.ts:1619<br>(+2) | 9 test(s) | background.white |
-| `wall_unbacked` | interpreter-refusal |  | server/castingV2/refineDelta.ts:537<br>server/castingV2/refineInterpreter.ts:1676<br>(+1) | 4 test(s) | wardrobe.tee, guard.stage, age.older, guard.compliment, wardrobe.colour |
+| `wall_unbacked` | interpreter-refusal |  | server/castingV2/refineDelta.ts:537<br>server/castingV2/refineInterpreter.ts:1734<br>(+1) | 4 test(s) | wardrobe.tee, guard.stage, age.older, guard.compliment, wardrobe.colour |
 | `wall_unfileable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:549<br>server/castingV2/refineDelta.ts:1338<br>(+2) | 8 test(s) | _documented-unreachable or gap — see findings_ |
 | `gate_ink_document` | interpreter-refusal |  | server/castingV2/refineDelta.ts:562<br>server/castingV2/refineDelta.ts:562<br>(+3) | 2 test(s) | ink.words.face, ink.words.noplace, ink.words.behind-ear, ink.transform.none |
 | `gate_ink_uncarried` | interpreter-refusal |  | server/castingV2/refineDelta.ts:569<br>server/castingV2/refineDelta.ts:569<br>(+4) | 3 test(s) | ink.words.chest |
