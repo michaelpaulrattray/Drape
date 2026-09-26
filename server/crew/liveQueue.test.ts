@@ -100,8 +100,20 @@ describe("the mapping, on a captured search item", () => {
       closedAt: "2026-09-24T23:34:59Z",
       mergedAt: "2026-09-24T23:34:59Z",
       holdReason: null,
+      /* #1094 — a PULL REQUEST's body is kept, because the read that answers
+         *which card is this building* is the brief's own `card #N` sentence and
+         two of the eleven open PRs measured that day named their card nowhere
+         else. It stays server-side: the issue arm below still proves a CARD's
+         prose never leaves the reader, and nothing in this type is sent to the
+         page. */
+      body: CAPTURED_PR_1185.body,
       url: "https://github.com/michaelpaulrattray/Drape/pull/1185",
     });
+  });
+
+  it("a card's body is still dropped — only a PULL REQUEST keeps one (#1094)", () => {
+    expect(liveQueueItemFromSearch(OPEN_ISSUE)!.body).toBeNull();
+    expect(liveQueueItemFromSearch(CAPTURED_PR_1185)!.body).toBe(CAPTURED_PR_1185.body);
   });
 
   it("an open issue is an issue, open, with its Waiting-on line and NOT its body", () => {
