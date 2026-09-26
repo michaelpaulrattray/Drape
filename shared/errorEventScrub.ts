@@ -91,6 +91,16 @@ export const REDACTED = "[redacted]";
  * customer's own words (`prompt`, `brief`), where her pictures
  * live (`resultUrl`, `imageKey`) and a credential (`passwordHash`, the field
  * that once reached `auth.me`).
+ *
+ * ⚠ **A NINTH KEY WAS HERE FOR AN HOUR AND WAS WRONG — the retired persona-word
+ * column, removed at `6a5f07b6`.** It read as an obvious member of *her own
+ * words* and the product had already stopped writing it; #1241 retired the name
+ * and `server/castingV2/candidateDispositionRetired.test.ts` refuses it anywhere
+ * in the tree, which is what caught it. **A refusing key for a field that can no
+ * longer appear is not harmless — it is a list nobody can trust**, because a
+ * reader takes its presence as evidence the field is still written. When N2b
+ * lands (personality and voice born at Sign, as editable text), whatever field
+ * it writes joins this list in the same commit, under its real name.
  */
 export const REFUSING_KEYS: readonly string[] = [
   "masterPrompt",
