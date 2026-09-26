@@ -518,6 +518,45 @@ describe("generation failures", () => {
     expect(generateView).toHaveBeenCalledTimes(5 * VIEW_ARRIVAL_ATTEMPTS);
   });
 
+  /*
+    ⚠ WHAT #1212 ACTUALLY MOVED, AND IT IS ONE CLASS.
+
+    `cannot_say` is a door that refuses BEFORE the provider is contacted -
+    nothing was ever going to arrive, and its own declaration says *"the recipe
+    will have the same nothing to say a second later"*. It was being asked three
+    times per view, spending the customer's wait to reach an answer the door had
+    already given in full. Fifteen calls became five.
+
+    Driven beside the arm above rather than instead of it: the two together are
+    the whole point of the set, because they are the two classes the transport
+    contract and this road disagree about in OPPOSITE directions.
+  */
+  it("asks a door that already said no exactly once per view", async () => {
+    const generateView = vi.fn(async () => {
+      throw new ProviderError("cannot_say", "no slot for that");
+    });
+    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
+    await buildCastPackage(deps({ identityEngine }), input);
+    expect(generateView).toHaveBeenCalledTimes(5);
+  });
+
+  /*
+    AND THE CLASSES DELIBERATELY LEFT ON THE ARRIVAL BUDGET, driven at the road
+    rather than only asserted at the set. A redraw from a stochastic engine is a
+    different draw, and she has already paid for a frame she does not have -
+    narrowing these is a money decision and it is carded, not taken here.
+  */
+  it("still spends the arrival budget on a class that might come back clean", async () => {
+    for (const failure of ["render_fault", "provider_account"] as const) {
+      const generateView = vi.fn(async () => {
+        throw new ProviderError(failure, failure);
+      });
+      const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
+      await buildCastPackage(deps({ identityEngine }), input);
+      expect(generateView, failure).toHaveBeenCalledTimes(5 * VIEW_ARRIVAL_ATTEMPTS);
+    }
+  });
+
   it("still activates the Cast when every view fails — the master is usable", async () => {
     const identityEngine = () => ({
       id: "e",

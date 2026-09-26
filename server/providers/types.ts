@@ -229,6 +229,80 @@ export function refusesAfterRender(failure: ProviderFailureClass): boolean {
   return REFUSES_AFTER_RENDER.has(failure);
 }
 
+/**
+ * ⚠ **THE THIRD QUESTION THIS UNION ANSWERS, AND IT IS NOT EITHER OF THE TWO
+ * ABOVE — #1212, 2026-09-26.**
+ *
+ * `isRetryable` asks **will the transport succeed if tried again**, and it
+ * makes `unknown` terminal on purpose so an unmapped fault fails closed rather
+ * than spinning. `refusesAfterRender` asks **does the money go back once a
+ * picture exists**. This asks a third thing:
+ *
+ * > **The customer has already paid for this view. Is asking again the way to
+ * > get it to her?**
+ *
+ * That question and the transport's answer the SAME event differently, and the
+ * class where they differ most is the one the contract deliberately fails
+ * closed on: `unknown`. An unmapped engine fault is the commonest way a paid
+ * view does not arrive, and for a budget-protection question it must not spin,
+ * while for a did-it-arrive question a second attempt is exactly what is owed.
+ *
+ * ⚠ **SO THIS IS NOT A WIDER OR NARROWER `isRetryable` AND MUST NEVER BE
+ * DERIVED FROM IT.** That repair was written, driven and REVERTED inside
+ * #1208: deriving took a paid view failing on `unknown` from two attempts to
+ * ONE, on the card that ordered the opposite. `packageOrchestrator.test.ts`'s
+ * arm *"treats an unmapped engine fault as a view that did not arrive, not a
+ * refusal"* is what caught it and still does.
+ *
+ * ## What is on the list, and every reason is quoted from the class itself
+ *
+ * A class earns a place here only when its OWN declaration above already says a
+ * second attempt reaches the identical answer. That is the discipline that
+ * keeps this from being a new taxonomy invented at a keyboard:
+ *
+ * - `content_policy` — *"Never retried — it will refuse again."*
+ * - `capability` — the request asked for something this provider cannot do;
+ *   the same request asks the same impossible thing.
+ * - `cannot_say` — *"the recipe will have the same nothing to say a second
+ *   later."* This door refuses BEFORE the provider is contacted, so nothing
+ *   was ever going to arrive; asking twice buys a wait to reach an answer the
+ *   door had already given in full.
+ *
+ * ## What is deliberately NOT on it, which is the more important half
+ *
+ * **Because a redraw is genuinely a different draw.** `render_fault` and
+ * `facts_missing` are verdicts about bytes that DID come back from a
+ * stochastic engine — the same prompt can land a clean frame next time, and
+ * the customer has already paid for a frame she does not have. Their
+ * docblocks call them non-retryable **at the provider layer**, which is the
+ * transport's question, not this one.
+ *
+ * **Because narrowing a paid road is a money decision, not a tidy-up.**
+ * `provider_account`, `composite_fault`, `segment_store` and
+ * `removal_not_delivered` each carry a docblock sentence that reads like a
+ * qualification for this list — *"every candidate after it will fail the same
+ * way"*, *"the same inputs produce the same cut"*, *"a second attempt in the
+ * same second reaches the same database"*, *"asking the same engine the same
+ * question is not a different request"*. Putting them here would drop each from
+ * two attempts to one on a road the customer has paid for. Every one of those
+ * is a real candidate and none of them is mine to decide in a card about
+ * writing the taxonomy down; they are filed together, with
+ * `provider_account` named as the strongest.
+ *
+ * **`unknown`, for the reason this whole docblock exists.**
+ */
+export const VIEW_ARRIVAL_TERMINAL: ReadonlySet<ProviderFailureClass> =
+  new Set<ProviderFailureClass>(["content_policy", "capability", "cannot_say"]);
+
+/**
+ * Is another attempt worth the customer's time on a view she has already paid
+ * for? Asked BY the road rather than restated inside it, so the loop cannot
+ * hold a private opinion about her money — which is what it did until #1212.
+ */
+export function mayStillArrive(failure: ProviderFailureClass): boolean {
+  return !VIEW_ARRIVAL_TERMINAL.has(failure);
+}
+
 export class ProviderError extends Error {
   readonly failureClass: ProviderFailureClass;
   /** The provider's own reference, for support. Internal — never projected. */
