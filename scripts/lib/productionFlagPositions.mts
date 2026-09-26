@@ -312,7 +312,16 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "75 rolls had gone through this road on production since 26 August, all his. It is "
       + "the parent of CASTING_CONCEPT_UPLOAD_SCOPE, which widened in the same act and could "
       + "not have widened before it. Still owed and NOT blocking: the N1 milestone-close deep "
-      + "review (#1121, the relay's). --- the record before this widen: the creative register (#16, rung N1 of the rebaseline) — BUILT DARK 2026-08-26 on the "
+      + "review (#1121, the relay's). "
+      + "*** IT IS BEING RETIRED — his word on #1398, Crew reply #228, 2026-09-26 23:06:38Z, "
+      + "verbatim and entire: \"Delete it\", said of the old casting lane this flag chose "
+      + "between, and #1398's wording covers both halves (\"the old lane comes out of the "
+      + "product, and so does the switch that used to choose between the two\"). Manifest: "
+      + "docs/specs/OLD_LANE_RETIREMENT_MANIFEST_2026-09-27.md. Slices: #1442 (its only child "
+      + "re-parented off it — DONE 2026-09-27, so the sentence above about being a parent is "
+      + "history), #1443 (the write path and this flag, which is when THIS ROW IS REMOVED "
+      + "rather than set to off — the CASTING_TWO_PATHS_SCOPE precedent), #1444, #1445. "
+      + "The position is unchanged until #1443 deploys: all. --- the record before this widen: the creative register (#16, rung N1 of the rebaseline) — BUILT DARK 2026-08-26 on the "
       + "founder's own verdict on the court (\"I think C is worth building to find out how close "
       + "we can get\"), and FLIPPED TO users:1 2026-08-26 01:21Z on his word on the Crew tab, "
       + "verbatim: \"flip it\" (reply #4 on card register-flip-users1; set by foreman-16 under "
@@ -469,7 +478,15 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "re-cut and re-driven) was discharged first. Its parent is "
       + "CASTING_CREATIVE_REGISTER_SCOPE (the description is written for the AUTHOR). "
       + "Widening past users:1 re-opens the vendor-exposure question, since the upload rides "
-      + "whole to the describer",
+      + "whole to the describer. "
+      + "*** ITS PARENT MOVED TO CASTING_V2_SCOPE ON 2026-09-27 (#1442, slice 1 of the old-lane "
+      + "retirement, on his word on #1398: \"Delete it\"). The register is being retired with the "
+      + "house road it gated, and a child cannot name a parent that is leaving: the register's "
+      + "row goes absent, absent parses as off, this flag is all, and the boot REFUSES in a "
+      + "loop. Not a loosening, on the old parent's own reason — what the description must not "
+      + "contradict is the locked house block, appended on the author road alone, and since the "
+      + "register went to all on 2026-09-24 there is no off-that-road account left for a "
+      + "casting-only check to admit. This row's POSITION does not move: all, on his reply #202",
   },
   R7_EVIDENCE_COMPOSER_SCOPE: { position: "off", why: "the composer's runtime door, unopened" },
   R7_EVIDENCE_PACKAGE_SCOPE: {
