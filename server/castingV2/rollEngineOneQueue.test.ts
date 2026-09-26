@@ -46,7 +46,7 @@ vi.mock("../providers/falImages", async (importOriginal) => {
   };
 });
 
-const { FAL_GPT_IMAGE_2, FAL_GPT_IMAGE_25_FLARE } = await import("../providers/falImages");
+const { FAL_GPT_IMAGE_25_FLARE, FAL_GPT_IMAGE_25_SUNBURST } = await import("../providers/falImages");
 const { castingCreativeEngine, resetCastingEngineForTests } = await import("./rollEngine");
 const { CASTING_ROLL_ENGINE_SCOPE_ENV, CASTING_ROLL_ENGINE_MODEL_ENV, CASTING_V2_SCOPE_ENV } = await import("./castingV2Scope");
 
@@ -72,10 +72,13 @@ afterEach(() => {
 });
 
 describe("#1079 · the two roll engines share ONE provider queue", () => {
-  it("the Flare engine and the GPT Image 2 engine are handed the SAME ProviderQueue instance", () => {
+  it("the scoped engine and the default engine are handed the SAME ProviderQueue instance", () => {
     castingCreativeEngine(1);
     castingCreativeEngine(2);
-    expect(handed.map((entry) => entry.model)).toEqual([FAL_GPT_IMAGE_25_FLARE, FAL_GPT_IMAGE_2]);
+    /* The default is Sunburst since #1340; this arm is about the QUEUE, and the
+       models are named so a default that moves again is read here rather than
+       silently absorbed. */
+    expect(handed.map((entry) => entry.model)).toEqual([FAL_GPT_IMAGE_25_FLARE, FAL_GPT_IMAGE_25_SUNBURST]);
     expect(handed[0]?.queue).toBeDefined();
     /* Identity, not equality: two queues configured alike pass a deep compare
        and still spend the account's allowance twice over. */

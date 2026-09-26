@@ -129,6 +129,45 @@ export function editSiblingOf(model: string): string | null {
 export const FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE = 0.099;
 
 /**
+ * WHAT A PICTURE COSTS, PER MODEL — because one engine's figure is not another
+ * engine's figure (#1340, and it is #1134's defect one layer down).
+ *
+ * The census above this layer used to add every roll render to the fal line as
+ * `openai/gpt-image-2` whatever engine ran, so from the day the roll scope was
+ * flipped it priced a 2.5 picture at GPT Image 2's rate — **six times too
+ * high**. #1134 fixed that by reading the engine off the row. This is the same
+ * mistake one floor down: both engine factories stamped
+ * `FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE` onto `estimatedCostUsd` no matter
+ * which endpoint they were pointed at, and the #1340 probe watched a Sunburst
+ * edit come back labelled `0.099`.
+ *
+ * ⚠ **A MODEL THAT IS NOT IN HERE IS UNPRICED, AND THAT IS THE POINT.** The
+ * lookup returns `undefined` rather than a neighbour's number: `estimatedCostUsd`
+ * is optional precisely so a gap can say *we have not measured this* instead of
+ * quietly inheriting a figure from a different engine. `openai/gpt-image-2.5/sunburst/edit`
+ * is deliberately absent — the swap makes it a live road, nothing has measured
+ * it, and an unmeasured entry in a table called MEASURED is the *"fresher lie"*
+ * `scripts/lib/falSpend.mts` refuses by name.
+ *
+ * These numbers are repeated from `FAL_MEASURED_USD` in `scripts/lib/falSpend.mts`
+ * rather than imported, for that module's own stated reason — it stays outside
+ * the server's import graph — and `server/falSpend.test.ts` pins the two
+ * equal, so a re-measurement that moves one and not the other reddens.
+ */
+export const FAL_MEASURED_USD_PER_IMAGE: Readonly<Record<string, number>> = {
+  [FAL_GPT_IMAGE_2]: FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE,
+  [FAL_GPT_IMAGE_2_EDIT]: FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE,
+  /* #1134, 2026-09-25 — one balance window carrying eight Sunburst renders and
+     nothing else divides to $0.0150 a picture; two further readings bracket it. */
+  [FAL_GPT_IMAGE_25_SUNBURST]: 0.015,
+};
+
+/** The measured figure for a model, or `undefined` where nothing has measured it. */
+export function measuredUsdPerImage(model: string): number | undefined {
+  return FAL_MEASURED_USD_PER_IMAGE[model];
+}
+
+/**
  * ⚠ **AN OPEN QUESTION ABOUT THIS ENGINE, filed rather than discovered twice**
  * (opus-1189 §4, queued fable-1544 §2): **render size may change COMPOSITION,
  * not just resolution.**
@@ -156,7 +195,7 @@ export type FalCreativeConfig = {
 };
 
 export function createFalCreativeEngine(config: FalCreativeConfig): CreativeEngine {
-  const model = config.model ?? FAL_GPT_IMAGE_2;
+  const model = config.model ?? FAL_GPT_IMAGE_25_SUNBURST;
   const timeoutMs = config.timeoutMs ?? 300_000;
   const pollIntervalMs = config.pollIntervalMs ?? 1_500;
   const queue =
@@ -268,7 +307,7 @@ export function createFalMaskedEditEngine(config: FalCreativeConfig) {
        request that has already taken money. */
     throw new ProviderError("capability", "masked editing needs FAL_KEY to render");
   }
-  const model = config.model ?? FAL_GPT_IMAGE_2_EDIT;
+  const model = config.model ?? FAL_GPT_IMAGE_25_SUNBURST_EDIT;
   const timeoutMs = config.timeoutMs ?? 300_000;
   const pollIntervalMs = config.pollIntervalMs ?? 1_500;
   const queue =
@@ -318,7 +357,9 @@ export function createFalMaskedEditEngine(config: FalCreativeConfig) {
               width: job.width,
               height: job.height,
               latencyMs: job.latencyMs,
-              estimatedCostUsd: FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE,
+              /* The endpoint that actually painted, never a constant — a gap
+                 reads as UNPRICED rather than as another engine's price. */
+              estimatedCostUsd: measuredUsdPerImage(model),
               provenance: { provider: "fal" as const, model, providerRef: job.requestId },
             };
           },

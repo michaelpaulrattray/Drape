@@ -80,7 +80,11 @@ import {
 } from "../lib/shapeOnFace.mts";
 import { createFalRegionReader } from "../../server/castingV2/falRegionReader";
 import { parseStrictArgsOrRefuse } from "../lib/strictArgs.mts";
-import { createFalMaskedEditEngine, FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE } from "../../server/providers/falImages";
+import {
+  createFalMaskedEditEngine,
+  FAL_GPT_IMAGE_2_EDIT,
+  FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE,
+} from "../../server/providers/falImages";
 
 const OUT = "output/edit-law";
 const READS = `${OUT}/reads`;
@@ -128,7 +132,12 @@ const apiKey = process.env.FAL_KEY;
 if (!apiKey) { console.error("FAL_KEY is required"); process.exit(1); }
 
 const reader = createFalRegionReader({ apiKey });
-const engine = createFalMaskedEditEngine({ apiKey });
+/* PINNED TO GPT IMAGE 2 (#1340). The masked-edit factory defaults to
+   Sunburst now, and this cell QUOTES `FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE`
+   and compares against readings taken on GPT Image 2 — so following the new
+   default would render on one engine while pricing and comparing on another.
+   Moving this cell to Sunburst is its own decision, with its own re-baseline. */
+const engine = createFalMaskedEditEngine({ apiKey, model: FAL_GPT_IMAGE_2_EDIT });
 await mkdir(READS, { recursive: true });
 
 const MIN_COMPONENT = 150;
