@@ -44,12 +44,19 @@ export const changeRequestsRouter = router({
   // confirmation leg was retired by #800 (2026-09-11): it never ran in
   // production (no webhook was ever configured, so it self-approved), which
   // means the panel review was always the only human decision on this road.
+  //
+  // ⚠ `.strict()` (#1360, the Warden's W5-B). This is the approval that
+  // EXECUTES a money change request, and it stood beside `admin.adjustCredits`
+  // as the other staff money surface the 2026-08-23 strictness sweep never
+  // reached. Its one caller, `AdminChangeRequests.tsx`, sends `id`, `action`
+  // and an optional `reviewNotes` — read before this was tightened — and the
+  // removal contract in `adjustCredits`' note applies here too.
   reviewChangeRequest: adminProcedure
     .input(z.object({
       id: z.number(),
       action: z.enum(["approved", "denied"]),
       reviewNotes: z.string().max(2000).optional(),
-    }))
+    }).strict())
     .mutation(async ({ ctx, input }) => {
       const { getChangeRequestById, updateChangeRequestStatus } = await import("../../db");
       const { logAuditEvent } = await import("../../auditLog");

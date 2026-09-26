@@ -11,6 +11,7 @@ import {
   scanSettlesWithin,
   scannedFace,
   scannedFaceIfReady,
+  scannedFaceAlreadyRead,
 } from "./faceScanService";
 import { MaskError } from "./maskGeometry";
 import type { Mask } from "./maskedComposite";
@@ -833,6 +834,114 @@ describe("the reading this face has already paid for", () => {
     expect(keptCalls.kept[0].frameKey).toBe(FACE.imageKey);
     expect(keptCalls.kept[0].candidateId).toBe(FACE.candidateId);
     expect(keptCalls.kept[0].scan.slots.size).toBeGreaterThan(0);
+  });
+
+  /*
+    ⚠ AND THE PANEL'S FIRST PAINT ASKS THE TABLE TOO (#1378).
+
+    The defect these arms close: `scannedFaceIfReady` — the panel's first paint —
+    reads the in-memory cache ALONE. That was the whole truth on 2026-08-13 when
+    it was written, and stopped being it on 2026-08-16 when the kept table landed
+    in a commit that touched this module and its suite and nothing else. So
+    `scannedFace` gained the tier and the first paint did not: the first open of a
+    face in a fresh process drew the library-only panel WHILE THE ANSWER SAT ON
+    DISK, then bought a fresh twenty-call read of it.
+
+    Every arm below fails against `scannedFaceIfReady`, which is the point — the
+    old reader cannot pass them, because it never asks.
+  */
+  it("THE DEFECT — a cold memory with a kept row answers from the table, and spends nothing", async () => {
+    arm("all");
+    const reader = countingReader();
+    const { deps } = await dependencies(reader);
+    keptAnswer = {
+      slots: new Map([["hair", { box: { x: 1, y: 2, width: 3, height: 4, frame: { width: 1000, height: 1500 } }, maskUrl: "data:image/png;base64,AAAA" }]]),
+      words: new Map([["skin", ["a warm even tan"]]]),
+      asked: 12,
+      empty: [],
+      stencilBytes: 8360,
+      sides: "eye:LR",
+    };
+
+    /* The old reader is the negative control, and it is the defect itself: the
+       memory is cold, so it says "nothing has been read for this face". */
+    expect(scannedFaceIfReady(FACE), "the memory-only reader cannot see the row")
+      .toBeNull();
+
+    const served = await scannedFaceAlreadyRead({ ...FACE, dependencies: deps });
+
+    expect(served, "the reading that was already paid for").not.toBeNull();
+    expect(served!.found).toBe(1);
+    expect(served!.failed, "a kept reading is clean by construction").toEqual([]);
+    expect(served!.frameUrl).toContain(FACE.imageKey);
+    expect(reader.calls(), "not one segmenter call for a first paint").toBe(0);
+    expect(keptCalls.served, "asked the table once, with the frame on screen").toHaveLength(1);
+    expect(keptCalls.served[0].frameKey).toBe(FACE.imageKey);
+  });
+
+  it("HOLDS what it found, so the scan query behind it rings nobody", async () => {
+    /* Without this the panel would be right and the money would still be spent:
+       the client fires `faceScan` straight after the first paint. */
+    arm("all");
+    const reader = countingReader();
+    const { deps } = await dependencies(reader);
+    keptAnswer = {
+      slots: new Map([["hair", { box: { x: 1, y: 2, width: 3, height: 4, frame: { width: 1000, height: 1500 } }, maskUrl: "data:image/png;base64,AAAA" }]]),
+      words: new Map(), asked: 12, empty: [], stencilBytes: 10, sides: "eye:LR",
+    };
+
+    await scannedFaceAlreadyRead({ ...FACE, dependencies: deps });
+    const after = await scannedFace({ ...FACE, dependencies: deps });
+
+    expect(reader.calls(), "the scan query spent nothing either").toBe(0);
+    expect(after.found).toBe(1);
+    expect(keptCalls.served, "and it did not ask the table a second time").toHaveLength(1);
+    expect(scannedFaceIfReady(FACE), "the memory now holds it, so every later look is free").not.toBeNull();
+  });
+
+  it("CONTROL — with the flag off it does not ask the table and does not scan", async () => {
+    arm(undefined);
+    const reader = countingReader();
+    const { deps } = await dependencies(reader);
+
+    expect(await scannedFaceAlreadyRead({ ...FACE, dependencies: deps })).toBeNull();
+    expect(keptCalls.served, "nothing was asked of the table").toHaveLength(0);
+    expect(reader.calls(), "and a first paint NEVER scans, whatever the flags say").toBe(0);
+  });
+
+  it("CONTROL — no row means the library-only panel, never a scan bought at first paint", async () => {
+    arm("all");
+    const reader = countingReader();
+    const { deps } = await dependencies(reader);
+    keptAnswer = null;
+
+    expect(await scannedFaceAlreadyRead({ ...FACE, dependencies: deps })).toBeNull();
+    expect(keptCalls.served, "it did ask").toHaveLength(1);
+    expect(reader.calls(), "and answered nothing rather than buying an answer").toBe(0);
+  });
+
+  it("CONTROL — a scan in flight answers nothing, not a partial", async () => {
+    /*
+      The first paint must not draw rows the panel is about to be told are still
+      arriving: the `faceScan` query owns an in-flight read and reports
+      `done: false` with what has landed. A partial served HERE would arrive with
+      no such word beside it.
+    */
+    arm("all");
+    const { deps } = await dependencies(countingReader());
+    const inFlight = scannedFace({ ...FACE, dependencies: deps });
+    /* One tick, because the entry is held AFTER the scan's own table ask — so a
+       reader that ran sooner would be racing rather than reading an in-flight
+       scan, which is a different claim and was what the first draft of this arm
+       actually measured (it saw two asks and called it a defect). */
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(await scannedFaceAlreadyRead({ ...FACE, dependencies: deps })).toBeNull();
+    expect(keptCalls.served, "the live scan asked; this reader did not ask again").toHaveLength(1);
+
+    await inFlight;
+    expect(await scannedFaceAlreadyRead({ ...FACE, dependencies: deps }), "once it settles, it answers")
+      .not.toBeNull();
   });
 
   it("NEVER writes a reading that lost regions — the missing-eyes law", async () => {

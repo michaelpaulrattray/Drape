@@ -337,3 +337,103 @@ describe("referral.claim, closed on #1010", () => {
     ).toThrow();
   });
 });
+
+/**
+ * THE TWO STAFF MONEY PROCEDURES, closed on #1360 (the Warden's W5-B).
+ *
+ * The fifth population here, and the reason it is here rather than in a file of
+ * its own is the one this file has given four times: the proof is `parserOf`,
+ * and a second copy of it is the mirror working law 4 warns about.
+ *
+ * # THE ASYMMETRY THIS CLOSES
+ *
+ * On 2026-08-23 the five public endpoints and the five billing procedures were
+ * closed, and `CLAUDE.md`'s rule going forward reads *`.strict()` on all new
+ * code and all public/auth/billing schemas now*. **`admin.adjustCredits` is a
+ * billing schema by any reading of that sentence, and the sweep did not reach
+ * it** — the rule was applied to the customer's side of the money and not to
+ * staff's. `admin.reviewChangeRequest` is the approval that EXECUTES a money
+ * change request and stood open beside it.
+ *
+ * Neither was exploitable: an unknown field was silently DROPPED, never
+ * misread. What it was is the POSTURE the next field addition inherits, and an
+ * asymmetry nobody wrote down is how the next sweep misses the same half again.
+ *
+ * # THE CALL SITES, READ BEFORE TIGHTENING
+ *
+ *   admin.adjustCredits        one caller, `AdminUserManagement.tsx` —
+ *                              `{ userId, amount, reason }`, exactly the three
+ *                              declared keys
+ *   admin.reviewChangeRequest  one caller, `AdminChangeRequests.tsx` —
+ *                              `{ id, action, reviewNotes }`, the last
+ *                              `undefined` when the operator left it blank
+ *
+ * No shipped bundle sends a field these schemas do not declare. ⚠ And from this
+ * commit the removal contract binds them: a field is removed only after clients
+ * have stopped sending it for one full deploy, never in the commit that stops
+ * sending it — until now an unknown key cost nothing, and now it is a
+ * BAD_REQUEST on a money surface mid-deploy.
+ */
+describe("the two staff money procedures, closed on #1360", () => {
+  /** What the admin panel actually sends, `undefined` optional and all. */
+  const AS_THE_PANEL_SENDS_IT = {
+    adjustCredits: { userId: 823, amount: -160, reason: "roll 249 never delivered" },
+    reviewChangeRequest: { id: 41, action: "approved", reviewNotes: undefined },
+  } as const;
+
+  it("⚠ CONTROL — both live callers' own payloads still parse", async () => {
+    /*
+      The arm that matters on a money surface. A rejection arm passes just as
+      happily when the schema rejects EVERYTHING, and the cost of that here is
+      an admin who cannot move a customer's credits or settle a refund request
+      at all — a bigger failure than the posture this card is closing.
+    */
+    const { adminRouter } = await import("./routes/admin");
+    expect(() =>
+      parserOf(adminRouter, "adjustCredits").parse({ ...AS_THE_PANEL_SENDS_IT.adjustCredits }),
+    ).not.toThrow();
+    expect(() =>
+      parserOf(adminRouter, "reviewChangeRequest").parse({ ...AS_THE_PANEL_SENDS_IT.reviewChangeRequest }),
+    ).not.toThrow();
+    /* And the review with its optional note actually filled in, since a blank
+       one is the shape above. */
+    expect(() =>
+      parserOf(adminRouter, "reviewChangeRequest").parse({
+        id: 41,
+        action: "denied",
+        reviewNotes: "the roll delivered on the retry",
+      }),
+    ).not.toThrow();
+  });
+
+  it("rejects an undeclared field on both", async () => {
+    const { adminRouter } = await import("./routes/admin");
+    for (const name of ["adjustCredits", "reviewChangeRequest"] as const) {
+      expect(
+        () =>
+          parserOf(adminRouter, name).parse({
+            ...AS_THE_PANEL_SENDS_IT[name],
+            somethingNobodyDeclared: "x",
+          }),
+        `admin.${name} silently dropped an undeclared field — invariant 4 is not enforced on it`,
+      ).toThrow();
+    }
+  });
+
+  it("⚠ still refuses the values it always refused — strictness replaced nothing", async () => {
+    /*
+      `.strict()` is a new refusal beside the old ones, not a swap. A hand that
+      rebuilt the object while adding it could drop `.trim().min(1)` or the
+      ±100,000 cap and every arm above would stay green, on the procedure that
+      moves credits.
+    */
+    const { adminRouter } = await import("./routes/admin");
+    const adjust = parserOf(adminRouter, "adjustCredits");
+    expect(() => adjust.parse({ userId: 823, amount: 50, reason: "   " }), "a blank reason").toThrow();
+    expect(() => adjust.parse({ userId: 823, amount: 100001, reason: "too big" }), "over the cap").toThrow();
+    expect(() =>
+      parserOf(adminRouter, "reviewChangeRequest").parse({ id: 41, action: "maybe" }),
+      "an action outside the enum",
+    ).toThrow();
+  });
+});

@@ -73,11 +73,13 @@ import { declaredTakes, takeShownFor } from "../castingV2/railTakes";
 import { listLineageReferences } from "../db/castingV2ReferenceLibrary";
 import {
   captureCastingFaceScanEnabled,
+  captureCastingScanTableEnabled,
   captureCastingReferenceLibraryEnabled,
 } from "../castingV2/castingV2Scope";
 import {
   panelScanOf,
   scanProgressOf,
+  scannedFaceAlreadyRead,
   scanSettlesWithin,
   scannedFace,
   scannedFaceIfReady,
@@ -415,6 +417,29 @@ function panelFor(
  * answer a version rendered before this landed gives, told apart by the log
  * line rather than by the caller.
  */
+/**
+ * THE FRAME THIS PANEL IS LOOKING AT — a selected version's own picture, or the
+ * master's.
+ *
+ * Lifted out of `faceScan` when `facePanel` came to need the same answer
+ * (#1378): both must agree about which bytes are on screen, because the kept
+ * reading is served only when the row was read from them. Two copies of this
+ * would disagree on exactly the case that matters — a version selected between
+ * the two queries.
+ *
+ * A row with no image key has nothing to read, and answers `null` rather than
+ * throwing: the panel degrades to the unscanned shape.
+ */
+async function frameKeyForPanel(
+  userId: number,
+  candidateId: string,
+  face: Awaited<ReturnType<typeof readOwnedFaceForPanel>>,
+): Promise<string | null> {
+  if (face.anchor !== null) return face.anchor.imageKey ?? null;
+  const owned = await getOwnedCandidateWithSelectedFace(userId, candidateId);
+  return owned?.candidate.imageKey ?? null;
+}
+
 async function carriedGeometryFor(
   userId: number,
   face: Awaited<ReturnType<typeof readOwnedFaceForPanel>>,
@@ -2059,12 +2084,42 @@ export const castingV2Router = router({
         arrives on `faceScan` below — and every look after that finds it warm
         here, complete in one round trip.
       */
+      /*
+        ⚠ AND THE TABLE, NOT ONLY THE MEMORY (#1378).
+
+        `scannedFaceIfReady` reads the in-memory cache alone, which was the whole
+        truth when it was written and stopped being it three days later when the
+        kept table landed and touched only `faceScanService.ts`. The consequence
+        was that the FIRST open of a face in a fresh process drew the library-only
+        panel while the reading sat on disk, and then bought it again — and this
+        program deploys many times a night, so a fresh process is ordinary.
+
+        `scannedFaceAlreadyRead` is memory then table, never a scan: one indexed
+        SELECT, which is what a first paint can afford. It also HOLDS what it
+        finds, so the `faceScan` query behind it answers `done` without ringing a
+        segmenter.
+      */
+      const scanKey = {
+        userId: ctx.user.id,
+        candidateId: face.candidateId,
+        variantId: face.anchor?.id ?? null,
+      };
+      /*
+        ⚠ THE FRAME IS RESOLVED ONLY WHEN THE TABLE COULD ANSWER, which keeps the
+        flag-off path byte-for-byte what it was. With a master face selected the
+        key costs an owner-scoped read, and buying one for an account that has no
+        kept readings to serve would be a round trip for nothing.
+      */
+      const frameKey = captureCastingFaceScanEnabled(ctx.user.id)
+        && captureCastingScanTableEnabled(ctx.user.id)
+        ? await frameKeyForPanel(ctx.user.id, input.candidateId, face)
+        : null;
       const ready = captureCastingFaceScanEnabled(ctx.user.id)
-        ? scannedFaceIfReady({
-          userId: ctx.user.id,
-          candidateId: face.candidateId,
-          variantId: face.anchor?.id ?? null,
-        })
+        ? (frameKey === null
+          /* No frame, no staleness check, so no row may be served — and the
+             memory is still free to answer, exactly as before. */
+          ? scannedFaceIfReady(scanKey)
+          : await scannedFaceAlreadyRead({ ...scanKey, imageKey: frameKey }))
         : null;
       return {
         enabled: true as const,
@@ -2129,11 +2184,7 @@ export const castingV2Router = router({
         selected the master is the face. A row with no image key has nothing to
         read, so it degrades to the unscanned panel rather than throwing.
       */
-      let imageKey = face.anchor?.imageKey ?? null;
-      if (face.anchor === null) {
-        const owned = await getOwnedCandidateWithSelectedFace(ctx.user.id, input.candidateId);
-        imageKey = owned?.candidate.imageKey ?? null;
-      }
+      const imageKey = await frameKeyForPanel(ctx.user.id, input.candidateId, face);
 
       let scan: PanelScan | null = null;
       let done = true;

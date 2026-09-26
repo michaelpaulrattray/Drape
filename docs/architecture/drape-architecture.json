@@ -6154,7 +6154,7 @@
       "name": "adjustCredits",
       "type": "mutation",
       "auth": "admin",
-      "input": "open",
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/admin/users.ts"
     },
@@ -6404,7 +6404,7 @@
       "name": "reviewChangeRequest",
       "type": "mutation",
       "auth": "admin",
-      "input": "open",
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/admin/changeRequests.ts"
     },
@@ -33967,13 +33967,6 @@
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
-      "id": "finding:non-strict-input:route:admin.adjustCredits",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:admin.adjustCredits",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
       "id": "finding:non-strict-input:route:admin.createBanner",
       "severity": "warn",
       "kind": "non-strict-input",
@@ -34090,13 +34083,6 @@
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:admin.listUsers",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:admin.reviewChangeRequest",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:admin.reviewChangeRequest",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
