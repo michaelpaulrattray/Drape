@@ -500,14 +500,75 @@ export const CAPTURE_SENTENCES: readonly string[] = [
 ];
 const captureSentences: readonly string[] = CAPTURE_SENTENCES;
 
-/** Every sentence of a lane's block, in order — the suite asserts the author wrote none of them. */
-/** The block minus the style preset — what every preset will share once there is more than one. HUMAN lane's. */
-export const UNIVERSAL_BLOCK_SENTENCES: readonly string[] = [
-  ...framingSentences,
+/**
+ * ⚠ **THE BLOCK MINUS ITS FRAMING PARAGRAPH — EXPORTED FOR THE SIGNED
+ * PACKAGE, 2026-09-26 (#1240), and the export is the point rather than a
+ * convenience.**
+ *
+ * His question, verbatim: *"why cant the realism block be the same as when
+ * casting a sheet?"* — and his *"yes"* to the shape. A signed view is a
+ * photograph of the person this block already made, so it is made under the
+ * same photographic law: the capture paragraph (shared since #1215), then
+ * exactly these realism, negative, preset and authority sentences.
+ *
+ * **FRAMING is the one paragraph a view does NOT take**, and that is why this
+ * constant exists rather than the view reaching for `HOUSE_BLOCK_SENTENCES`:
+ * each view carries its own angle directive, and the roll's crop and posture
+ * sentences would fight it. Everything below framing is lane-independent —
+ * the two lanes differ in EXACTLY the expression and anatomy sentences, both
+ * of which sit in framing — so this list is the same on both lanes, and the
+ * creature path below derives from it too.
+ *
+ * `composeBlock` consumes it, so the roll's own bytes and the view's share one
+ * source and cannot drift (working law 4). Every prior defect on this road —
+ * #1207's trousers, #1207's flash, #1221's ink — was one sentence drifting
+ * between two copies of one rule.
+ *
+ * ⚠ **STATED, because it is a decision and not a free win** (fidelity law):
+ * the roll covers EXPRESSION in its framing paragraph (`EXPRESSION_LINE`), so
+ * a view taking this list plus its own directive carries no expression rule at
+ * all — measured, four of the five view directives name neither a mouth nor a
+ * gaze. That is defensible on this card's own principle (a view has a
+ * reference photograph where a roll has only words, and the reference shows
+ * the expression), and it is NOT silently assumed: it is a named arm below, a
+ * question put to the court's frames, and the declined alternative — re-typing
+ * a gaze-free expression sentence, which no constant here holds — is recorded
+ * rather than taken.
+ */
+const photographParagraphs: readonly string[] = [
+  captureSentences.join(" "),
+  PHOTOREAL_HUMAN_BLOCKS.realismSentences.join(" "),
+  NEGATIVE_LINES.join(" "),
+  PHOTOREAL_PRESET.join(" "),
+  AUTHORITY_LINE,
+];
+
+/** The paragraphs a signed view takes, in the order the roll sends them (#1240). */
+export const HOUSE_PHOTOGRAPH_PARAGRAPHS: readonly string[] = photographParagraphs;
+
+/*
+  capture + realism + negatives — the run of sentences the universal list and a
+  view's block BOTH hold. Named so that neither is a second copy of the other:
+  before #1240 there was one list and the question did not arise, and the day
+  there are two is the day to make the overlap a constant rather than a habit
+  (working law 4).
+*/
+const bodySentences: readonly string[] = [
   ...captureSentences,
   ...PHOTOREAL_HUMAN_BLOCKS.realismSentences,
   ...NEGATIVE_LINES,
 ];
+
+/** The same thing sentence by sentence — what the lane composers and the guards read. */
+export const HOUSE_PHOTOGRAPH_SENTENCES: readonly string[] = [
+  ...bodySentences,
+  ...PHOTOREAL_PRESET,
+  AUTHORITY_LINE,
+];
+
+/** Every sentence of a lane's block, in order — the suite asserts the author wrote none of them. */
+/** The block minus the style preset — what every preset will share once there is more than one. HUMAN lane's. */
+export const UNIVERSAL_BLOCK_SENTENCES: readonly string[] = [...framingSentences, ...bodySentences];
 
 /** Every sentence of the HUMAN lane's block, in order — the meaning this constant has always had. */
 export const HOUSE_BLOCK_SENTENCES: readonly string[] = [...UNIVERSAL_BLOCK_SENTENCES, ...PHOTOREAL_PRESET, AUTHORITY_LINE];
@@ -521,14 +582,7 @@ export const HOUSE_BLOCK_SENTENCES: readonly string[] = [...UNIVERSAL_BLOCK_SENT
  */
 export function houseBlockSentencesFor(lane: HouseLane): readonly string[] {
   if (lane === "human") return HOUSE_BLOCK_SENTENCES;
-  return [
-    ...framingSentencesFor(lane),
-    ...captureSentences,
-    ...PHOTOREAL_HUMAN_BLOCKS.realismSentences,
-    ...NEGATIVE_LINES,
-    ...PHOTOREAL_PRESET,
-    AUTHORITY_LINE,
-  ];
+  return [...framingSentencesFor(lane), ...HOUSE_PHOTOGRAPH_SENTENCES];
 }
 
 /**
@@ -538,11 +592,7 @@ export function houseBlockSentencesFor(lane: HouseLane): readonly string[] {
 function composeBlock(lane: HouseLane, fangs = true): string {
   return [
     framingSentencesFor(lane, fangs).join(" "),
-    captureSentences.join(" "),
-    PHOTOREAL_HUMAN_BLOCKS.realismSentences.join(" "),
-    NEGATIVE_LINES.join(" "),
-    PHOTOREAL_PRESET.join(" "),
-    AUTHORITY_LINE,
+    ...photographParagraphs,
   ].join("\n");
 }
 

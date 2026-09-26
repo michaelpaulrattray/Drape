@@ -12,7 +12,9 @@
  * makes software feel like it is talking *about* you rather than working for
  * you, and it is the specific AI-product tell this design avoids. The echo
  * covers only what the system did: what it pinned across all eight, what it
- * left free, and how the eight differ.
+ * left free, and — where a sheet follows a face — which face it follows. ⚠ It
+ * no longer says HOW the eight differ (#1251, #230); the faces are directly
+ * above the sentence and prove that themselves.
  *
  * **Composed, not templated.** A fuller brief and an emptier one do not produce
  * the same sentence with different words in the gaps — sex and age fuse into one
@@ -290,6 +292,12 @@ function composeSpans(
     The variation axis is excluded from the enumeration when it names the same
     idea: saying presence is varying and then saying the eight differ by
     disposition is one thought colliding with itself.
+
+    ⚠ **AND THAT SENTENCE IS GONE AS OF #1251 (2026-09-26), SO THIS EXCLUSION
+    NOW GUARDS A COLLISION THAT CANNOT HAPPEN.** It is kept exactly as it was,
+    on purpose: dropping it would start naming an axis the live author road has
+    not named since 2026-09-24, which is a copy change nobody asked for on the
+    road every account is on. It is carded rather than decided here.
   */
   /*
     A locked look cannot also be the thing the eight differ by.
@@ -298,6 +306,12 @@ function composeSpans(
     which is a sentence contradicting itself — and it was not merely bad copy,
     it was reporting the compiler's own confusion. When the brief pins a look,
     every candidate gets it, and disposition is what actually varies.
+
+    ⚠ **SINCE #1251 THIS RULE IS OBSERVABLE ONLY THROUGH `axisTwin` BELOW** —
+    the sentence it was written about no longer renders, so what it decides now
+    is which open axis the "left to the roll" enumeration may name. The arms
+    that prove it were re-pointed at that observable rather than deleted, and
+    the behaviour is unchanged in every case.
   */
   const effectiveAxis = locks.look && variationAxis === "look" ? "disposition" : variationAxis;
   const axisTwin = effectiveAxis === "disposition" ? "energy" : effectiveAxis === "look" ? "look" : null;
@@ -324,31 +338,48 @@ function composeSpans(
   }
 
   /*
-    ⚠ NO DIFFER-BY CAPTION ON THE AUTHOR ROAD (#230, his verdict on a live MAX
-    sheet, verbatim): *"Delete the differ-by line on LOW and MAX. Don't say the
-    eight differ by look, disposition, or expression. Keep only: Everyone on
-    this sheet is cast as [type] — [sex] in their [age band]. The sheet already
-    proves whether the faces are different."*
+    ⚠ NO DIFFER-BY CAPTION ANYWHERE — #1251, 2026-09-26. IT WAS THE AUTHOR ROAD
+    ONLY, AND THE THING IT NAMED HAS STOPPED BEING SHOWABLE.
 
-    It is not only his taste — on that road the sentence is FALSE. One authored
-    prompt paints all eight and the per-slice identities are marked unsent
-    (#176), so there is no axis anyone varied; the caption was describing the
-    house resolver's mechanism on a sheet that never ran it.
+    His ruling is #230, his verdict on a live MAX sheet, verbatim: *"Delete the
+    differ-by line on LOW and MAX. Don't say the eight differ by look,
+    disposition, or expression. Keep only: Everyone on this sheet is cast as
+    [type] — [sex] in their [age band]. The sheet already proves whether the
+    faces are different."*
 
-    The HOUSE road keeps it, and that is deliberate rather than an oversight:
-    there the eight really are resolved one at a time along that axis, so the
-    sentence is true of them. His ruling is about LOW and MAX, which are the
-    author road's own two positions.
+    On the AUTHOR road it was also FALSE, which is why the first fix was the
+    road rather than the wording: one authored prompt paints all eight and the
+    per-slice identities are marked unsent (#176), so there is no axis anyone
+    varied; the caption was describing the house resolver's mechanism on a sheet
+    that never ran it.
+
+    ⚠ **WHAT CHANGED IS THE HOUSE ROAD, AND NOT BECAUSE THE SENTENCE WENT
+    FALSE.** There the eight really are resolved one at a time along that axis,
+    so it is still true of them. What #1241 removed is the DISPOSITION LABEL
+    under each tile, on his ruling that candidates are auditioners carrying no
+    personality — so the sheet now names a difference the customer has no way to
+    check. A true sentence about a term the page cannot show is the same defect
+    his own reason names: *"The sheet already proves whether the faces are
+    different."* That reason is as true of the house road as of the author one,
+    and one rule is better than two.
+
+    ⚠ **THE FOLLOW LABEL SURVIVES; ONLY ITS SUBORDINATE CLAUSE GOES.** *"The
+    eight follow 01 on roll 05"* is lineage — a fact about which face this sheet
+    descends from, which the page does show and which nothing else says in
+    prose. It was never part of his ruling's quarrel.
+
+    ⚠ **AND `effectiveAxis` / `axisTwin` STAY, DELIBERATELY UNTOUCHED.** They
+    also decide which open axis is left OUT of the "left to the roll"
+    enumeration above, and that exclusion is live on BOTH roads. Its stated
+    reason is avoiding a collision with the sentence this commit deletes, so it
+    has outlived its reason — but changing it moves live author-road copy for a
+    question this card did not ask, so it is CARDED rather than folded in. See
+    the card filed with #1251's PR.
   */
   if (options.authorRoad) return spans;
 
   if (options.followLabel) {
-    spans.push({
-      kind: "text",
-      text: ` The eight follow ${options.followLabel}${variationAxis ? `, and differ by ${effectiveAxis}` : ""}.`,
-    });
-  } else if (effectiveAxis) {
-    spans.push({ kind: "text", text: ` The eight differ by ${effectiveAxis}.` });
+    spans.push({ kind: "text", text: ` The eight follow ${options.followLabel}.` });
   }
 
   return spans;
