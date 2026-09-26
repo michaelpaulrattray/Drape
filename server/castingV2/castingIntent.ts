@@ -108,6 +108,8 @@ import {
   type BodyAnchorRegion,
 } from "../../shared/bodyAnchorRegions";
 import { WARDROBE_LINE_MAX_LENGTH } from "../../shared/castingPaths";
+/* The brief's own bound — `NOTES_MAX_FIDELITY` is DERIVED from it (#1214). */
+import { BRIEF_TEXT_MAX_AUTHOR_ROAD } from "../../shared/briefLength";
 import { mentionsWornClothing } from "./statedWardrobe";
 import { WARDROBE_PICK_REFUSED, wardrobePickDoor } from "./wardrobeDoor";
 import { createModuleLogger } from "../logging/logger";
@@ -612,25 +614,51 @@ const COMPOSED_AVOID_MAX = 120;
 const ROLE_MAX = 80;
 export const NOTES_MAX = 180;
 /**
- * ⚠ **THE SAME BOUND, INSIDE `CASTING_BRIEF_FIDELITY_SCOPE`** — 2000 rather
- * than 180 (`CASTING_V2_BRIEF_FIDELITY_BUILD.md` §3b, ruled fable-1600).
+ * ⚠ **THE SAME BOUND, INSIDE `CASTING_BRIEF_FIDELITY_SCOPE`** — the brief's
+ * own bound rather than 180 (`CASTING_V2_BRIEF_FIDELITY_BUILD.md` §3b, ruled
+ * fable-1600).
  *
- * It is the BRIEF's own bound: `briefText` is capped at 2000 characters where
- * the roll is accepted (`server/routes/castingV2.ts`), and the headroom reading
- * measured the notes coming back SHORTER THAN THE BRIEF on 8 of 8 drives with
- * the announced cap released. So at 2000 this stops being a content decision
- * and becomes a malfunction stop — which is why it beat the measured 1200 at
- * the countersign: **a bound that is true by construction beats one that is
- * true by measurement**, and a measured bound is one unusual brief away from
- * being the defect again.
+ * It is the BRIEF's own bound: `briefText` is capped where the roll is
+ * accepted, and the headroom reading measured the notes coming back SHORTER
+ * THAN THE BRIEF on 8 of 8 drives with the announced cap released. So at the
+ * brief's bound this stops being a content decision and becomes a malfunction
+ * stop — which is why it beat the measured 1200 at the countersign: **a bound
+ * that is true by construction beats one that is true by measurement**, and a
+ * measured bound is one unusual brief away from being the defect again.
+ *
+ * ⚠ **IT WAS THE LITERAL `2000` UNTIL 2026-09-26, AND IT LOST ITS
+ * CONSTRUCTION TWO DAYS EARLIER WITHOUT ANYTHING NOTICING** (#1214).
+ *
+ * `2000` was a COPY of the brief's bound, and the source moved:
+ * `CASTING_CREATIVE_REGISTER_SCOPE` went to `all` on 2026-09-24 (his Crew reply
+ * #201), so every roll takes the author road, whose entrance admits
+ * `BRIEF_TEXT_MAX_AUTHOR_ROAD` = 4,000 — and #1204 then retired the 2,000
+ * constant entirely. From that moment this was a bare number wearing a
+ * construction's justification: a brief between 2,000 and 4,000 characters
+ * could produce `characterNotes` bounded at 2,000, which is the truncation this
+ * flag exists to prevent, one road up.
+ *
+ * **So it is DERIVED rather than re-chosen** (working law 4 — a second copy of
+ * a fact is a copy that can be wrong, and this one was). The construction the
+ * principle argues for is now in the code instead of in this paragraph, and it
+ * cannot go stale again when the entrance moves.
+ *
+ * **What it costs, said rather than implied**: a brief over 2,000 characters
+ * now keeps notes it would previously have had cut. Measured on the dev rows
+ * the day it changed — 87 rolls, longest brief **1,137** characters, none over
+ * 1,200 — so no roll that exists is affected either way; what changes is what
+ * the next long brief meets. Production rows were NOT read (a builder seat does
+ * not touch the production database), and this is the one thing about the
+ * change that is unmeasured.
  *
  * ⚠ **A bound that can no longer ration also can no longer NOTICE.** The thing
  * 180 used to catch — a reply far longer than it should be — is now asserted
  * directly instead: a summary LONGER THAN THE BRIEF IT SUMMARISES is a defect
  * wearing length, and `briefFidelityScope.test.ts` holds that arm independently
- * of either cap.
+ * of either cap. That arm is why widening this bound does not widen what counts
+ * as a malfunction.
  */
-export const NOTES_MAX_FIDELITY = 2000;
+export const NOTES_MAX_FIDELITY = BRIEF_TEXT_MAX_AUTHOR_ROAD;
 
 /* --------------------------------------------------------------- scrubbing */
 
