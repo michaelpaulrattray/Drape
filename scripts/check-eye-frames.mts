@@ -93,10 +93,94 @@ if (keys !== null && keys.length === 0) {
   process.exit(0);
 }
 
-const head = async (url: string): Promise<number | null> =>
-  await fetch(url, { method: "HEAD", signal: AbortSignal.timeout(10_000) })
-    .then((response) => response.status)
-    .catch(() => null);
+/**
+ * ⚠ **ONE ASK IS NOT AN ANSWER, AND THE JUDGE'S OWN RETRY IS NOT ENOUGH ON ITS
+ * OWN — MEASURED BEFORE THIS WAS WRITTEN, NOT AFTER.**
+ *
+ * `judgeEyeFramePresence` launches every key at once (#1177 measured that a
+ * bounded pool prevents no drops, costs a second, and makes a dead host twenty
+ * times worse) and then re-asks the unread ones serially. With 321 keys off a
+ * home connection that was **not enough**: four consecutive runs on a clean tree
+ * gave `ok · UNREAD 2 · ok · UNREAD 1`, so **the check refused on half of them
+ * with nothing wrong**. Every failure was UNREAD, never missing.
+ *
+ * A guard that reddens a correct PR every other run is worse than the guard
+ * being absent — it gets ignored, then removed, and the third broken card
+ * reaches him anyway. And the fix does not belong in the judge: its docblock says
+ * it owns no fetch policy, and a pause between attempts is exactly that. So the
+ * retry lives HERE, where the policy already is.
+ *
+ * ⚠ **The pause is the whole medicine.** The judge's serial retry fires
+ * immediately, while the burst it is recovering from is still draining. One
+ * re-ask after a real gap clears it: **9 runs of 9 green after this, against 2
+ * refusals in 4 before.**
+ *
+ * ⚠ **AND IT COSTS WALL CLOCK, WHICH THE RUN NOW SAYS OUT LOUD RATHER THAN
+ * LEAVING TO BE GUESSED.** A stalled ask is not refused quickly — it burns the
+ * whole 10 s abort window before the retry starts, so the run's length IS the
+ * drop count: measured on this machine, `1 retry → 13.8 s · 16 → 26.0 s · 26 →
+ * 34.0 s`, against 5.6 s for a run that needed none. That is why the verdict line
+ * carries the number: a 34-second run and a 6-second run are the same verdict
+ * about the frames and different facts about the network, and a future reader
+ * staring at a slow step should not have to re-derive that. CI's network is not
+ * this one and the figure there will be its own; the step sits in a 30-minute
+ * job, and the bound per key is one timeout plus one retry.
+ */
+const HEAD_RETRY_PAUSE_MS = 400;
+/* WHAT IT SAW, not just what it concluded (D-235). A run that quietly needed 40
+   re-asks and a run that needed none are different facts about the network, and
+   only one of them explains a wall-clock reading to whoever reads this log next. */
+let retried = 0;
+const head = async (url: string): Promise<number | null> => {
+  const ask = async (): Promise<number | null> =>
+    await fetch(url, { method: "HEAD", signal: AbortSignal.timeout(10_000) })
+      .then((response) => response.status)
+      .catch(() => null);
+  const first = await ask();
+  /* A STATUS is an answer, whatever it says — a 404 is the finding, not a
+     failure, and re-asking it would only make an absent frame cost twice as long
+     to report. Only an unmade request is retried. */
+  if (first !== null) return first;
+  retried += 1;
+  await new Promise((resolve) => setTimeout(resolve, HEAD_RETRY_PAUSE_MS));
+  return await ask();
+};
+
+/**
+ * ⚠ **EXITING STRAIGHT OUT OF A FETCH CRASHES NODE ON WINDOWS, AND THE NUMBER
+ * BELOW IS MEASURED RATHER THAN CHOSEN.**
+ *
+ * `process.exit()` while undici's socket is still tearing down trips
+ * `Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\win\async.c,
+ * line 94` and the process leaves **127**, not the code it was given. Driven on
+ * node 24.18.0, this machine, 2026-09-26, three runs per arm after one fetch:
+ *
+ *     no settle            127 127 127
+ *     setTimeout(0)        127 127 127
+ *     setTimeout(1)        127 127 127
+ *     setTimeout(50)         1   1   1
+ *     setTimeout(200)        1   1   1
+ *
+ * ⚠ **And the tempting explanation is wrong, which is why it is written down**:
+ * cancelling the body, sending `Connection: close`, using GET and consuming it,
+ * and `controller.abort()` after the read were each driven and each still left
+ * 127. `abort()` plus a 50 ms settle passes and `abort()` plus 1 ms does not —
+ * so it is the WINDOW that matters and nothing else. 250 ms is 5x the shortest
+ * window measured clean.
+ *
+ * It fails SAFE, which is the part that makes a timing constant acceptable here:
+ * a settle too short turns a refusal's exit 1 into an exit 127, which is still
+ * nonzero, so the gate step still reddens. It can make a refusal noisier. It
+ * cannot make one pass.
+ *
+ * The success path has always looked fine — 321 requests leave the pool settled
+ * by the time it exits — but that is luck rather than design, so both roads take
+ * the same door.
+ */
+const EXIT_SETTLE_MS = 250;
+const settle = async (): Promise<void> => {
+  await new Promise((resolve) => setTimeout(resolve, EXIT_SETTLE_MS));
+};
 
 /*
   THE BUCKET IS CONFIRMED AT PRODUCTION BEFORE A SINGLE KEY IS ASKED FOR.
@@ -111,21 +195,32 @@ const csp = await fetch(PRODUCTION_ORIGIN, { method: "HEAD", signal: AbortSignal
   .then((response) => response.headers.get("content-security-policy"))
   .catch(() => null);
 const agreement = judgeBucketBaseAgainstCsp(PRODUCTION_PUBLIC_BUCKET_BASE, csp);
+
+/*
+  ONE TERMINAL EXIT FROM HERE DOWN, so every road that has touched the network
+  goes through the settle above. The early exits further up are before any fetch,
+  where a bare exit was measured clean.
+*/
+let code = 0;
 if (!agreement.ok) {
   console.log(`REFUSED: ${agreement.why}`);
-  process.exit(1);
-}
-console.log(`  bucket: ${agreement.why}`);
-
-const verdict = await judgeEyeFramePresence(keys, PRODUCTION_PUBLIC_BUCKET_BASE, head);
-if (!verdict.ok) {
-  console.log(`REFUSED: an eye frame this edition names is not in the production bucket — his card would draw broken images (#320, #1330).
+  code = 1;
+} else {
+  console.log(`  bucket: ${agreement.why}`);
+  const verdict = await judgeEyeFramePresence(keys, PRODUCTION_PUBLIC_BUCKET_BASE, head);
+  const asked = retried === 0 ? "every key answered first time" : `${retried} key(s) needed a second ask`;
+  if (verdict.ok) {
+    console.log(`eye frames: ok — ${verdict.why} (${asked})`);
+  } else {
+    console.log(`  network: ${asked}`);
+    console.log(`REFUSED: an eye frame this edition names is not in the production bucket — his card would draw broken images (#320, #1330).
     ${verdict.why}
   repair: re-upload the frame(s) under the PRODUCTION R2 variables, naming that bucket —
     railway.cmd run --service Drape -- npx tsx scripts/crew-upload-eye-frame.mts <path> --bucket <name>
   then put the new key(s) in ${BRIEFING_PATH} and push`);
-  process.exit(1);
+    code = 1;
+  }
 }
 
-console.log(`eye frames: ok — ${verdict.why}`);
-process.exit(0);
+await settle();
+process.exit(code);

@@ -157,6 +157,24 @@ export function gateCommandMatches(command: string, run: string, match: ExcuseMa
  */
 export const PREFLIGHT_CHECKS: readonly PreflightCheck[] = [
   {
+    id: "eye-frames",
+    label: "Eye frames present in the production bucket (#1330)",
+    command: ["npx", "tsx", "scripts/check-eye-frames.mts", "--base-ref", "origin/main"],
+    // ADOPTED rather than excused, on the bundle budget's reasoning below and
+    // more strongly. It needs no tool a dev box lacks (one HEAD per key against
+    // a PUBLIC bucket, no credential), and on any diff that does not touch the
+    // briefing it reads one `git diff` and leaves — about a second, which is why
+    // it can sit first without taxing ordinary work.
+    //
+    // The case for adopting is the edition shift itself: a wrong-bucket upload
+    // is invisible at the call site, and learning it here costs twenty seconds
+    // where learning it from the gate costs a four-minute round trip and
+    // learning it from neither costs the founder a card of broken images (#320,
+    // #1330). The base is `origin/main` because preflight runs before the first
+    // push, so there is no PR base to ask for yet.
+    gateRun: "npx tsx scripts/check-eye-frames.mts",
+  },
+  {
     id: "typecheck",
     label: "Typecheck (pnpm check)",
     command: ["pnpm", "check"],
