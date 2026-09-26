@@ -4,7 +4,15 @@ import { statSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 import { readListedSource } from "../testing/listedSource";
-import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "../testing/childProcessTimeout";
+
+/* The sweep at the bottom spawns `git ls-files` AND reads hundreds of files off
+   the real tree, so it is in both derived timeout populations (#548 and #741).
+   ONE declaration satisfies both: the sweep guard accepts either constant, the
+   child-process guard accepts only this one, and the two values are equal. It is
+   file-level rather than a per-arm third argument, which is what both readers
+   look for. */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 /**
  * THE TIER A SIGNED VIEW IS ASKED FOR, AND THE TEST THAT MUST NOT FOLLOW IT.
@@ -260,5 +268,5 @@ describe("no bare tier literal comes back on the signed-view road", () => {
     for (const entry of KNOWN_DEBT) {
       expect(offenders, `${entry.file} — ${entry.because}`).toContain(entry.file);
     }
-  }, CONTENDED_TEST_TIMEOUT_MS);
+  });
 });
