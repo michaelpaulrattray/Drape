@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "ad1a0bbfea08efd5"
+    "sourceFingerprint": "72ceab5dc905fad6"
   },
   "domains": [
     {
@@ -12865,6 +12865,10 @@
     {
       "id": "test:server/productionFlagPositions.test.ts",
       "path": "server/productionFlagPositions.test.ts"
+    },
+    {
+      "id": "test:server/productionHealthProbe.test.ts",
+      "path": "server/productionHealthProbe.test.ts"
     },
     {
       "id": "test:server/profile.test.ts",
