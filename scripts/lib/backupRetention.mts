@@ -88,12 +88,18 @@
  * returns KEPT for every entry, forever, which is the right answer arrived at
  * by the rule rather than by remembering. Deleting them is a founder act.
  *
- * # IT REPORTS. IT DOES NOT DELETE.
+ * # IT REPORTS — AND SINCE #1294 IT MAY DELETE ONE DISPOSITION
  *
- * There is no delete path in this module or in its runner
- * (`scripts/janitor-backup-retention.mts`), by construction and not by
- * discipline. The deletion of a backup is a founder act; what a patrol may do
- * mechanically is produce the list and the citation for each keep.
+ * This section read *"IT REPORTS. IT DOES NOT DELETE. There is no delete path in
+ * this module or in its runner, by construction and not by discipline"* until
+ * 2026-09-26, and it was true of the day it was written: #1143 built the check
+ * and deliberately left the authority question open. **#1294 put it to him and he
+ * answered, verbatim and entire: _"1294) delete them itself"_.**
+ *
+ * So there IS a delete path now, it acts on the `expired` disposition and on
+ * nothing else, and every limb of it is at the foot of this file —
+ * {@link itemsToDelete}, {@link deletionRefusal}, {@link insertDeletionRows} —
+ * with the reason each refusal exists stated there rather than here.
  *
  * `server/backupRetention.test.ts` drives every arm, including the empty-reading
  * refusal, against real temporary repositories and real bytes.
@@ -392,4 +398,155 @@ export function summarise(verdicts: readonly BackupVerdict[]): {
     }
   }
   return { items: verdicts.length, bytes, reclaimableItems, reclaimableBytes, byDisposition };
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   MAY A PATROL DELETE WHAT THE CHECK HAS RETIRED? — HIS WORD, AND ITS GUARDS
+
+   #1294, 2026-09-26 (terminal), verbatim and entire: **"1294) delete them
+   itself"**. Asked whether the team may act on the retention check's `expired`
+   verdict by itself or whether every list comes to him, he chose the first. So
+   the header above — *"there is no delete path in this module or in its runner,
+   by construction"* — is superseded for exactly one disposition and for nothing
+   else, and the functions below are the whole of it.
+
+   ⚠ THE SCOPE IS ONE ENUM VALUE, AND IT IS NARROWER THAN THE STRONGEST PROOF.
+   `redundant` — every entry byte-identical to a blob git holds — is a STRONGER
+   reading than `expired`, and it is deliberately NOT deletable here, because his
+   word and the card's own scope sentence both name `expired` and nothing else.
+   It reads 0 on this pile and the doc says why (swept disposables were untracked
+   by design, so git never held their bytes), so the exclusion costs nothing
+   today; the runner PRINTS a line when the count is not zero rather than letting
+   a stronger case sit silently outside the road. Widening this set is his word,
+   not a shift's tidy-up.
+
+   ⚠ AND THE REAL RISK IS NOT THE FILTER, IT IS THE TREE THE VERDICT WAS READ
+   FROM. The relay's review of PR #1293 measured it: run from the main tree, two
+   of the same sixteen items read KEPT where the seat's tree read them EXPIRED,
+   because `commitHolding` walks `git log --all` and `editionDate` walks the
+   briefing's history — both answer from the clone they run in. A tree BEHIND
+   main fails toward KEEP, which is safe. A tree holding a commit main does NOT
+   have — an abandoned local branch, a reverted commit — fails the other way:
+   bytes "recoverable from git" at a commit nobody will ever fetch. That is the
+   direction {@link deletionRefusal} exists for, and it is why the relay's
+   verdict asked this card to require a fresh main before any deletion.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * The dispositions a patrol may act on by itself — a SET so the arms can hold it
+ * against the full population rather than against a sentence.
+ *
+ * The population is derivable: `summarise([]).byDisposition` enumerates every
+ * member of {@link BackupDisposition} because its record type forces it, so a
+ * fifth disposition arriving one day is visible to the suite the day it lands
+ * and defaults to NOT deletable.
+ */
+export const DELETABLE_DISPOSITIONS: ReadonlySet<BackupDisposition> = new Set<BackupDisposition>(["expired"]);
+
+/**
+ * Which items of a listing a patrol may delete.
+ *
+ * Nothing else in this module decides it, and no caller re-implements the test:
+ * the one place a `kept`, `too-recent` or `redundant` item could become
+ * deletable is the set above. **This is the function the sabotage arm breaks** —
+ * widen it to admit `kept` and `server/backupRetention.test.ts` reddens on the
+ * R2-orphan fixture, which is the only copy of 31 files.
+ */
+export function itemsToDelete(verdicts: readonly BackupVerdict[]): readonly BackupVerdict[] {
+  return verdicts.filter((v) => DELETABLE_DISPOSITIONS.has(v.disposition));
+}
+
+/** What the runner must prove about the tree it read the verdicts from. */
+export type TreeFreshness = {
+  /** `git rev-parse HEAD` in the tree the listing was read from. */
+  readonly headSha: string;
+  /** The remote's `refs/heads/main`, read with `git ls-remote` — a read, so no ref is written. */
+  readonly remoteMainSha: string;
+  /** `git status --porcelain` lines; a dirty tree is not the tree it claims to be. */
+  readonly dirtyPaths: readonly string[];
+};
+
+const FULL_SHA = /^[0-9a-f]{40}$/;
+
+/**
+ * May this reading be acted on? The reason it may not, or null when it may.
+ *
+ * ⚠ **A READ THAT FAILED IS NEVER AGREEMENT.** Both shas must be full 40-hex
+ * before they are compared, so an empty `ls-remote` (no network, no remote, a
+ * renamed branch) refuses rather than comparing two empty strings and finding
+ * them equal — the shape that makes a guard pass hardest exactly when its
+ * evidence is missing.
+ *
+ * ⚠ **AND A STALE LISTING CANNOT BE ACTED ON, BY CONSTRUCTION RATHER THAN BY
+ * THIS FUNCTION.** The runner computes the verdicts in the same process run that
+ * deletes; there is no `--from <file>`, so there is no artifact to go stale. What
+ * this adds is the other half: the TREE those verdicts were computed from is the
+ * tip of `main` and clean, which is the only thing that makes a verdict
+ * comparable to the one the founder was shown.
+ */
+export function deletionRefusal(freshness: TreeFreshness): string | null {
+  const head = freshness.headSha.trim().toLowerCase();
+  const remote = freshness.remoteMainSha.trim().toLowerCase();
+  if (!FULL_SHA.test(head)) {
+    return `the tree's HEAD did not read as a commit sha (${JSON.stringify(freshness.headSha)}) — a failed read is not agreement`;
+  }
+  if (!FULL_SHA.test(remote)) {
+    return `the remote's refs/heads/main did not read as a commit sha (${JSON.stringify(freshness.remoteMainSha)}) — a failed read is not agreement`;
+  }
+  if (head !== remote) {
+    return `the tree is at ${head.slice(0, 8)} and origin/main is at ${remote.slice(0, 8)} — a verdict is only as good as the tree it was read from (PR #1293's review: the same 16 items read differently from two trees)`;
+  }
+  if (freshness.dirtyPaths.length > 0) {
+    return `the tree has ${freshness.dirtyPaths.length} uncommitted path(s), first ${JSON.stringify(freshness.dirtyPaths[0])} — a dirty tree is not the tree it claims to be`;
+  }
+  return null;
+}
+
+/**
+ * The receipt marker in `docs/JANITOR_LOG.md`.
+ *
+ * ⚠ **IT IS A TABLE ROW AND DELIBERATELY NOT A `## Run` HEADING.**
+ * `scripts/patrol-clocks.mts` reads each seat's last run out of the newest
+ * `^##\s+Run\b` heading in its own log, so a tool appending a heading there
+ * would tell the clock the Janitor had patrolled and push its next run a full
+ * period out. A row under a fixed marker is a receipt the clock cannot see.
+ */
+export const BACKUP_DELETION_MARKER = "<!-- BACKUP-DELETION-ROWS -->";
+
+/** One receipt row: what went, how big, what the deletion stood on, and the tree it was read from. */
+export function deletionReceiptRow(
+  verdict: BackupVerdict,
+  now: Date,
+  readFrom: { readonly tree: string; readonly sha: string },
+): string {
+  const name = verdict.item.path.replace(/\\/g, "/").split("/").pop() ?? verdict.item.path;
+  const cells = [
+    now.toISOString().replace(/\.\d+Z$/, "Z"),
+    "`" + name + "`",
+    `${(verdict.item.bytes / 1024).toFixed(1)} kB`,
+    String(verdict.entries.length),
+    verdict.citation,
+    "`" + readFrom.sha.slice(0, 8) + "` in `" + readFrom.tree.replace(/\\/g, "/") + "`",
+  ];
+  return `| ${cells.join(" | ")} |`;
+}
+
+/**
+ * The log text with the rows inserted, newest first, directly under the marker.
+ *
+ * THROWS when the marker is absent rather than appending to the end of the file:
+ * a receipt written somewhere nobody reads is the same as no receipt, and this is
+ * the one artifact that says what a deletion destroyed.
+ */
+export function insertDeletionRows(logText: string, rows: readonly string[]): string {
+  if (rows.length === 0) return logText;
+  const at = logText.indexOf(BACKUP_DELETION_MARKER);
+  if (at < 0) {
+    throw new Error(
+      `backup-retention: the receipt marker ${BACKUP_DELETION_MARKER} is not in the log — refusing to write the receipt anywhere else. `
+        + "A deletion whose receipt lands where nobody reads it is an undocumented deletion.",
+    );
+  }
+  const end = at + BACKUP_DELETION_MARKER.length;
+  return `${logText.slice(0, end)}\n${rows.join("\n")}${logText.slice(end)}`;
 }

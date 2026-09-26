@@ -17,21 +17,28 @@
  *    classifier that returned one constant could not pass.
  */
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { afterAll, describe, expect, it, vi } from "vitest";
 
 import {
+  BACKUP_DELETION_MARKER,
   BACKUP_RETENTION_FLOOR_DAYS,
+  type BackupDisposition,
   type BackupEntry,
   type BackupItem,
+  DELETABLE_DISPOSITIONS,
   classifyBackup,
   classifyEntry,
+  deletionReceiptRow,
+  deletionRefusal,
   gitBlobSha,
   hashesOf,
+  insertDeletionRows,
   isBackupName,
+  itemsToDelete,
   looksBinary,
   summarise,
   treeRefusal,
@@ -279,4 +286,175 @@ describe("the summary counts what a founder act would free, and nothing else", (
     expect(s.reclaimableBytes).toBe(100);
     expect(s.byDisposition).toEqual({ redundant: 1, expired: 0, kept: 1, "too-recent": 1 });
   });
+});
+
+/* ───────────────────────────────────────────────────────────────────────────
+   THE DELETION ARM'S OWN CONTROLS (#1294, his word: "delete them itself")
+
+   The rule's next reader used to be a founder holding a delete key; since his
+   word it can be the script itself, so these arms are the difference between a
+   check and a shredder. The two the card named are the first two below: a KEPT
+   item admitted to the deletion set must go red, and a listing read from a tree
+   that is not main's tip must be refused.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+describe("what a patrol may delete by itself — his word on #1294, and nothing wider", () => {
+  const closed = { recoverableAt: null, anchorClosedAt: daysAgo(30) };
+  const inGit = { recoverableAt: "deadbee", anchorClosedAt: null };
+  const open = { recoverableAt: null, anchorClosedAt: null };
+  const one = [entry("_1141-thing-disposable.mts", Buffer.from("x"))];
+  /* The real keep this arm exists for: 31 files downloaded before their
+     originals were deleted from the bucket, so the backup IS the only copy. */
+  const orphan = [entry("013c8fa6-59fb-4169-9594-7f93e64a3071.png", Buffer.from([0x89, 0x50, 0x00]))];
+
+  const expired = classifyBackup(item({ path: "C:/p/drape-janitor-run6-late-sweep" }), one, () => closed, 7, NOW);
+  const redundant = classifyBackup(item({ path: "C:/p/drape-debris-2026-08-19.zip" }), one, () => inGit, 7, NOW);
+  const kept = classifyBackup(item({ path: "C:/p/drape-janitor-run6-crew-eye-orphans" }), orphan, () => open, 7, NOW);
+  const tooRecent = classifyBackup(item({ path: "C:/p/drape-janitor-run9-disposables-2026-09-24.zip", modified: daysAgo(2) }), one, () => closed, 7, NOW);
+
+  it("the four dispositions are the fixtures they claim to be — otherwise the arms below prove nothing", () => {
+    expect(expired.disposition).toBe("expired");
+    expect(redundant.disposition).toBe("redundant");
+    expect(kept.disposition).toBe("kept");
+    expect(tooRecent.disposition).toBe("too-recent");
+  });
+
+  it("⚠ itemsToDelete takes the EXPIRED one and leaves the other three — the KEPT one is 31 files' only copy", () => {
+    const doomed = itemsToDelete([kept, tooRecent, redundant, expired]);
+    expect(doomed).toHaveLength(1);
+    expect(doomed[0]!.item.path).toBe(expired.item.path);
+    /* Named individually rather than only by the count, so a filter that let two
+       through could not pass by accident of ordering. */
+    const paths = doomed.map((v) => v.item.path);
+    expect(paths, "the R2 orphans are the only copies that exist").not.toContain(kept.item.path);
+    expect(paths, "inside the 7-day floor, not judged on its contents").not.toContain(tooRecent.item.path);
+    expect(paths, "a stronger proof, and outside the road his word named").not.toContain(redundant.item.path);
+  });
+
+  it("the deletable set is exactly {expired}, held against the FULL population rather than a sentence", () => {
+    /*
+      `summarise` enumerates every member of BackupDisposition because its record
+      type forces it to, so this population is derived from the module and not
+      typed here (working law 4). A fifth disposition is visible to this arm the
+      day it lands, and defaults to not deletable.
+    */
+    const population = Object.keys(summarise([]).byDisposition) as BackupDisposition[];
+    expect(population.sort()).toEqual(["expired", "kept", "redundant", "too-recent"]);
+    expect(population.filter((d) => DELETABLE_DISPOSITIONS.has(d))).toEqual(["expired"]);
+  });
+
+  it("an empty listing deletes nothing — the shape that would otherwise pass every arm above", () => {
+    expect(itemsToDelete([])).toEqual([]);
+  });
+});
+
+describe("a verdict is only as good as the tree it was read from (PR #1293's review)", () => {
+  const sha = (c: string): string => c.repeat(40);
+  const fresh = { headSha: sha("a"), remoteMainSha: sha("a"), dirtyPaths: [] as string[] };
+
+  it("POSITIVE — main's tip, clean, is actionable", () => {
+    expect(deletionRefusal(fresh)).toBeNull();
+    /* Case and whitespace are what `git` and `ls-remote` actually differ by. */
+    expect(deletionRefusal({ ...fresh, headSha: `${sha("A")}\n`, remoteMainSha: ` ${sha("a")} ` })).toBeNull();
+  });
+
+  it("⚠ a tree that is NOT main's tip is refused, and the message names both shas", () => {
+    const refusal = deletionRefusal({ ...fresh, remoteMainSha: sha("b") });
+    expect(refusal).toBeTruthy();
+    expect(refusal).toContain("aaaaaaaa");
+    expect(refusal).toContain("bbbbbbbb");
+  });
+
+  it("⚠ a failed read is NEVER agreement — two empty strings do not compare equal", () => {
+    /*
+      The failure this arm exists for: `git ls-remote` with no network prints
+      nothing, and a refusal written as `head !== remote` would then compare ""
+      with "" and let the deletion through — a guard that passes hardest exactly
+      when its evidence is missing.
+    */
+    expect(deletionRefusal({ headSha: "", remoteMainSha: "", dirtyPaths: [] })).toContain("failed read is not agreement");
+    expect(deletionRefusal({ ...fresh, remoteMainSha: "" })).toContain("refs/heads/main");
+    expect(deletionRefusal({ ...fresh, headSha: "abc1234" })).toContain("HEAD");
+    /* A short sha is not a prefix match either — 40-hex or it is not an answer. */
+    expect(deletionRefusal({ headSha: "aaaaaaaa", remoteMainSha: "aaaaaaaa", dirtyPaths: [] })).toBeTruthy();
+  });
+
+  it("a dirty tree is refused, and the message names the first path", () => {
+    const refusal = deletionRefusal({ ...fresh, dirtyPaths: [" M docs/JANITOR_LOG.md"] });
+    expect(refusal).toContain("uncommitted");
+    expect(refusal).toContain("JANITOR_LOG.md");
+  });
+});
+
+describe("the receipt — the only record of what a deletion destroyed", () => {
+  const closed = { recoverableAt: null, anchorClosedAt: daysAgo(30) };
+  const one = [entry("_1141-thing-disposable.mts", Buffer.from("x"))];
+  const verdict = classifyBackup(
+    item({ path: "C:\\Users\\Admin\\drape-janitor-run6-late-sweep", bytes: 16_900 }),
+    one,
+    () => closed,
+    7,
+    NOW,
+  );
+  const row = deletionReceiptRow(verdict, NOW, { tree: "C:\\Users\\Admin\\Drape", sha: "fa8ac509".padEnd(40, "0") });
+
+  it("a row carries what went, what it stood on, and the tree it was read from", () => {
+    expect(row.startsWith("| ")).toBe(true);
+    expect(row).toContain("drape-janitor-run6-late-sweep");
+    expect(row).toContain("16.5 kB");
+    expect(row).toContain(verdict.citation);
+    expect(row).toContain("fa8ac50");
+    expect(row).toContain("C:/Users/Admin/Drape");
+  });
+
+  it("rows go under the marker, newest first, and nothing else in the file moves", () => {
+    const log = `# log\n\n| when | item |\n|---|---|\n${BACKUP_DELETION_MARKER}\n| older |\n\n## Run 1 — 2026-08-26\n`;
+    const out = insertDeletionRows(log, [row]);
+    const lines = out.split("\n");
+    const at = lines.indexOf(BACKUP_DELETION_MARKER);
+    expect(lines[at + 1]).toBe(row);
+    expect(lines[at + 2]).toBe("| older |");
+    expect(out.endsWith("## Run 1 — 2026-08-26\n")).toBe(true);
+  });
+
+  it("no rows leaves the file byte-identical", () => {
+    const log = `# log\n${BACKUP_DELETION_MARKER}\n`;
+    expect(insertDeletionRows(log, [])).toBe(log);
+  });
+
+  it("⚠ a missing marker THROWS rather than appending somewhere nobody reads", () => {
+    expect(() => insertDeletionRows("# log\nno marker here\n", [row])).toThrow(/receipt marker/);
+  });
+
+  it("the real docs/JANITOR_LOG.md holds the marker — the receipt has a home in the tree", () => {
+    const log = readFileSync(path.join(process.cwd(), "docs", "JANITOR_LOG.md"), "utf8");
+    expect(log, "the tool refuses to delete without somewhere to write the receipt").toContain(BACKUP_DELETION_MARKER);
+  });
+
+  it(
+    "⚠ a receipt row can never read as a patrol run — the clock's OWN patterns, not a copy of them",
+    () => {
+      /*
+        `scripts/patrol-clocks.mts` reads the Janitor's last run out of the newest
+        `## Run` heading in that same file. A tool appending a heading there would
+        tell the clock the seat had patrolled and push its next run three days
+        out. The patterns are extracted from the clock reader's source rather than
+        retyped, so this arm follows them if they move (working law 4).
+      */
+      const clockSource = readFileSync(path.join(process.cwd(), "scripts", "patrol-clocks.mts"), "utf8");
+      const runPatterns = [...clockSource.matchAll(/\/(\^##[^/\n]*Run[^/\n]*)\//g)].map((m) => new RegExp(m[1]!));
+      expect(runPatterns.length, "the clock reader's run-heading patterns must be found, or this arm proves nothing")
+        .toBeGreaterThanOrEqual(2);
+      /* POSITIVE CONTROL: they do match a real run heading. */
+      const realHeading = "## Run 9 — 2026-09-24 01:15–0x:xx AEST (Janitor, patrol #9, card #1141)";
+      expect(runPatterns.some((re) => re.test(realHeading))).toBe(true);
+      /* And they match neither the receipt section's heading nor any row. */
+      for (const re of runPatterns) {
+        expect(re.test("## Backup deletions — the receipt table (#1294)"), String(re)).toBe(false);
+        expect(re.test(row), String(re)).toBe(false);
+        expect(re.test(BACKUP_DELETION_MARKER), String(re)).toBe(false);
+      }
+    },
+    CONTENDED_TEST_TIMEOUT_MS,
+  );
 });
