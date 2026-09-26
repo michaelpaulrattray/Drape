@@ -1256,6 +1256,24 @@
   why: a seam whose own NAME says test-only; the sweep cannot see a convention and a human can
   argued: 6c/13a
 
+- symbol: resetProductEventsForTests
+  file: server/monitoring/productEvents.ts
+  verdict: KEEP
+  why: a seam whose own NAME says test-only; the sweep cannot see a convention and a human can
+  argued: 6c/13a
+
+- symbol: setProductEventClientForTests
+  file: server/monitoring/productEvents.ts
+  verdict: KEEP
+  why: "a seam whose own NAME says test-only — and it is also the WIRE seam (#509 part 2): productEventWire.test.ts installs a REAL PostHog client with a fake fetch through it and reads the outgoing bytes, which is the only way to prove what leaves the process now that posthog-node has removed before_send. A recorder-only seam would have made that suite impossible"
+  argued: 6c/13a
+
+- symbol: resetDirectOperationActionsForTests
+  file: server/casting/directOperation.ts
+  verdict: KEEP
+  why: "a seam whose own NAME says test-only; it clears the per-process map of operationId -> product noun that #509 part 2 keeps so a terminal event can name its action. Without it one arm's remembered operation leaks into the next"
+  argued: 6c/13a
+
 - symbol: replyIsAcknowledged
   file: server/crew/crewBriefing.ts
   verdict: KEEP

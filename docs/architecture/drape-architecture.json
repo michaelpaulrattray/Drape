@@ -92,7 +92,7 @@
     {
       "id": "domain:platform",
       "name": "platform",
-      "moduleCount": 17
+      "moduleCount": 18
     },
     {
       "id": "domain:profile",
@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 65
+      "moduleCount": 66
     },
     {
       "id": "domain:staff",
@@ -5113,6 +5113,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/monitoring/productEvents.ts",
+      "path": "server/monitoring/productEvents.ts",
+      "domain": "platform",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/providers/bannedEngines.ts",
       "path": "server/providers/bannedEngines.ts",
       "domain": "providers",
@@ -6093,6 +6099,12 @@
     {
       "id": "module:shared/pictureFormats.ts",
       "path": "shared/pictureFormats.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/productEventCatalogue.ts",
+      "path": "shared/productEventCatalogue.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -9210,6 +9222,16 @@
     {
       "id": "env:PORT",
       "name": "PORT",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:POSTHOG_API_KEY",
+      "name": "POSTHOG_API_KEY",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:POSTHOG_HOST",
+      "name": "POSTHOG_HOST",
       "valueRecorded": false
     },
     {
@@ -12778,6 +12800,10 @@
       "path": "server/devServerTrees.test.ts"
     },
     {
+      "id": "test:server/directOperationProductEvents.test.ts",
+      "path": "server/directOperationProductEvents.test.ts"
+    },
+    {
       "id": "test:server/dirtyTreeGuard.test.ts",
       "path": "server/dirtyTreeGuard.test.ts"
     },
@@ -13072,6 +13098,22 @@
     {
       "id": "test:server/privateEvidencePurge.test.ts",
       "path": "server/privateEvidencePurge.test.ts"
+    },
+    {
+      "id": "test:server/productEventCatalogue.test.ts",
+      "path": "server/productEventCatalogue.test.ts"
+    },
+    {
+      "id": "test:server/productEventOptionsDeclared.test.ts",
+      "path": "server/productEventOptionsDeclared.test.ts"
+    },
+    {
+      "id": "test:server/productEventWire.test.ts",
+      "path": "server/productEventWire.test.ts"
+    },
+    {
+      "id": "test:server/productEvents.test.ts",
+      "path": "server/productEvents.test.ts"
     },
     {
       "id": "test:server/productionBaseUrl.test.ts",
@@ -20386,6 +20428,11 @@
     },
     {
       "from": "module:server/_core/index.ts",
+      "to": "module:server/monitoring/productEvents.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
       "to": "module:server/routers.ts",
       "kind": "imports"
     },
@@ -20667,6 +20714,16 @@
     {
       "from": "module:server/casting/directOperation.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/directOperation.ts",
+      "to": "module:server/monitoring/productEvents.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/directOperation.ts",
+      "to": "module:shared/productEventCatalogue.ts",
       "kind": "imports"
     },
     {
@@ -30232,6 +30289,21 @@
     {
       "from": "module:server/monitoring/healthMonitor.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/monitoring/productEvents.ts",
+      "to": "module:server/_core/env.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/monitoring/productEvents.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/monitoring/productEvents.ts",
+      "to": "module:shared/productEventCatalogue.ts",
       "kind": "imports"
     },
     {
