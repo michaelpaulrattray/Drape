@@ -239,6 +239,9 @@ export const REVIEWER_WORKFLOW_PATH = ".github/workflows/review.yml";
 /** The one file that declares what a money/auth diff is (#958). */
 export const MONEY_DECLARATION_PATH = ".github/money-surfaces.sh";
 
+/** The one file that declares when a diff is big enough to earn a look (#1194). */
+export const REVIEW_SIZE_DECLARATION_PATH = ".github/review-size.sh";
+
 /**
  * ⚠ THE MONEY/AUTH PATTERN IS EXTRACTED, NEVER COPIED.
  *
@@ -322,7 +325,93 @@ export function extractMoneySymbols(declarationText: string): string {
 export const MONEY_SYMBOL_ROOTS: readonly string[] = ["server", "shared"];
 
 /** One changed file from `GET pulls/:n/files`. */
-export type FilePatch = { filename: string; patch: string | null };
+/**
+ * One changed file as the PR-files payload gives it.
+ *
+ * ⚠ `additions` and `deletions` ride the SAME request the patch does (#1194), so
+ * the size reading below costs no extra call — the same argument #987 made for
+ * reading the patch here rather than asking `git`.
+ */
+export type FilePatch = {
+  filename: string;
+  patch: string | null;
+  additions: number;
+  deletions: number;
+};
+
+/**
+ * ⚠ **THE SIZE OBLIGATION HAD EXACTLY ONE READER, AND AN ABSENCE WAS READING AS
+ * A DECISION (#1194).**
+ *
+ * The money rule and the reviewer-workflow rule are asked HERE as well as in
+ * triage, on the stated ground that *a label someone removed cannot un-owe a
+ * money diff*. The size rule was not, so a PR that never got a triage run — a PR
+ * born CONFLICTING gets no `pull_request` run for any event (#566) — was
+ * announced to nobody, and this tool printed `review=declined`, **the same word
+ * it uses for a diff that genuinely earned no look.**
+ *
+ * Measured on #1191: opened 23:34:51Z, ready 23:35:10Z, no `Fable Review` run
+ * created for either event, 288 changed lines. `gate.yml` recovered on its own
+ * because it also triggers on `synchronize`; triage's two events cannot fire
+ * again on a PR that is already open and already ready.
+ *
+ * ⚠ **IT CHANGES WHAT IS REPORTED, NOT WHAT MERGES**, and that is the honest
+ * scope. An ordinary large diff with no verdict still merges on the gate alone —
+ * the standing orders' own rule — but it now reads `no-verdict`, which is true,
+ * instead of `declined`, which claims triage decided something it never saw.
+ */
+export function extractReviewSizeLine(declarationText: string): number {
+  const match = /^\s*REVIEW_SIZE_LINE='(\d+)'\s*$/m.exec(declarationText);
+  if (!match) {
+    throw new Error(
+      `could not find the REVIEW_SIZE_LINE='…' line in ${REVIEW_SIZE_DECLARATION_PATH}. It is the ` +
+        `single declaration of when a diff is big enough to earn a look, and this tool refuses ` +
+        `to guess at one rather than mirror it (working law 4).`,
+    );
+  }
+  const line = Number(match[1]);
+  /* A zero would make EVERY diff owe a review and a huge one would make none —
+     both are silent, and one of them is the permissive direction. */
+  if (!Number.isSafeInteger(line) || line < 1) {
+    throw new Error(`REVIEW_SIZE_LINE in ${REVIEW_SIZE_DECLARATION_PATH} is not a positive integer: ${match[1]}`);
+  }
+  return line;
+}
+
+export function extractReviewNonCodePattern(declarationText: string): string {
+  const match = /^\s*REVIEW_NON_CODE='([^']+)'\s*$/m.exec(declarationText);
+  if (!match) {
+    throw new Error(
+      `could not find the REVIEW_NON_CODE='…' line in ${REVIEW_SIZE_DECLARATION_PATH}. Without it ` +
+        `this tool cannot tell a code line from a generated map, and a size reading that counted ` +
+        `the Atlas would put nearly every diff past the line.`,
+    );
+  }
+  return match[1]!;
+}
+
+/**
+ * How many lines of CODE this diff changes, by triage's own exclusion pattern.
+ *
+ * Added plus deleted, which is what `git diff --numstat | awk '{s+=$1+$2}'`
+ * sums in the workflow — the two readers must answer the same question or the
+ * second one is a different rule wearing the first one's name.
+ */
+export function changedCodeLines(patches: readonly FilePatch[], nonCodePattern: string): number {
+  const nonCode = new RegExp(nonCodePattern);
+  return patches
+    .filter((file) => !nonCode.test(file.filename))
+    .reduce((sum, file) => sum + file.additions + file.deletions, 0);
+}
+
+/** Does this diff earn a look on size alone? */
+export function exceedsReviewSizeLine(
+  patches: readonly FilePatch[],
+  nonCodePattern: string,
+  line: number,
+): boolean {
+  return changedCodeLines(patches, nonCodePattern) >= line;
+}
 
 /**
  * The files under `MONEY_SYMBOL_ROOTS` whose added or removed lines name the

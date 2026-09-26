@@ -32,6 +32,10 @@
  */
 import { describe, expect, it, vi } from "vitest";
 
+import { readFile } from "node:fs/promises";
+
+import { BRIEF_TEXT_MAX_AUTHOR_ROAD } from "../../shared/briefLength";
+
 import type { TextEngine } from "../providers/types";
 
 import {
@@ -195,12 +199,39 @@ describe("the two numbers move together", () => {
     expect(parsed.notes.overflow).toBe(0);
   });
 
-  it("and the raised bound is the BRIEF's own bound, not a measured one", () => {
-    /* 2000 is where the roll's own input schema caps `briefText`. A measured
-       number (1200 covered the longest reply seen) was rejected at the
-       countersign on the principle that a bound true by construction beats one
-       true by measurement. */
-    expect(NOTES_MAX_FIDELITY).toBe(2000);
+  /*
+    ⚠ **THIS ARM READ `toBe(2000)` UNTIL 2026-09-26 AND WAS GREEN THROUGH THE
+    EXACT DEFECT IT NAMES** (#1214). Its own comment said 2,000 was *"where the
+    roll's own input schema caps `briefText`"* — true when written, false from
+    2026-09-24, when every account moved to the author road and the entrance's
+    bound became 4,000. A literal pinned against a literal cannot notice its
+    source moving; it can only notice somebody typing a different literal.
+
+    So the arm asserts the IDENTITY the principle actually claims, and the
+    constant is derived rather than copied. `BRIEF_TEXT_MAX_AUTHOR_ROAD` moving
+    now moves both, and this arm goes on being true for the reason it states.
+  */
+  it("and the raised bound IS the brief's own bound, derived rather than copied", () => {
+    expect(NOTES_MAX_FIDELITY).toBe(BRIEF_TEXT_MAX_AUTHOR_ROAD);
+  });
+
+  /*
+    ⚠ AND THE DERIVATION IS READ AT THE SOURCE, because the arm above passes
+    just as happily over `export const NOTES_MAX_FIDELITY = 4000` — which is the
+    same bare number one entrance-change away from being wrong again, and is
+    precisely what this card was filed about.
+  */
+  it("is not a literal that happens to match today", async () => {
+    const source = await readFile(
+      new URL("./castingIntent.ts", import.meta.url),
+      "utf8",
+    );
+    const line = source
+      .split(/\r?\n/)
+      .find((row) => row.startsWith("export const NOTES_MAX_FIDELITY"));
+    expect(line, "NOTES_MAX_FIDELITY is no longer declared here").toBeDefined();
+    expect(line).toContain("BRIEF_TEXT_MAX_AUTHOR_ROAD");
+    expect(line).not.toMatch(/=\s*\d/);
   });
 });
 
