@@ -1,7 +1,9 @@
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 
 import {
   CARD_COMMENT_WINDOW_HOURS,
@@ -15,6 +17,14 @@ import {
   readOpenPullRequestsWith,
 } from "../scripts/lib/cardBuildState.mts";
 import { CARD_ACTIVITY_BOOT_HOURS, CARD_ACTIVITY_PAGE } from "./crew/cardActivity";
+
+/* ⚠ IN THE #548 POPULATION ONE HOP OUT, AND CORRECTLY SO. Every arm here hands
+   the reader a FAKE transport and nothing in this file spawns anything — but the
+   module it imports holds `execFileSync` in its real reader, which is the hop the
+   deriver resolves, and an arm added later that forgot the fake would spawn for
+   real inside vitest's 5 s default. `server/crewQueueCountEmptyRead.test.ts`
+   carries the same declaration for the same reason. */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 /**
  * THE ONE BOARD EVERY QUEUE READER CONSULTS, DRIVEN (#1094 piece 2).
