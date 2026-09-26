@@ -13,28 +13,36 @@
  * | a delivered view (2K) | 1696x2528 | 6.24 - 9.74 MB |
  * | **the PAIR, which is what one call carries** | | **11.98 - 13.10 MB** |
  *
- * **The defect is measured and it is not hypothetical: 3 of the 27 views that
- * reached the judged road on production landed `unavailable` — 11.1% delivered
- * unchecked and CHARGED (D-246)** — and the heaviest pair in the population,
- * 13.10 MB, is one of them (asset 317). The Sign engine court (#1394) hit the
- * same wall from the other side: every 4K and every Sunburst frame it rendered
- * failed to be judged at all, and its larger anchor took 149 s against a 75 s
- * deadline.
+ * **WHAT IS BROKEN IS THE BIG FRAME, AND IT IS MEASURED.** The Sign engine court
+ * (#1394) rendered every arm at full size and **every 4K frame and every
+ * Sunburst frame failed to be judged at all**; today's 2K read fine against the
+ * small anchor (8.5 s) and **could not be reached against the larger one — 149 s
+ * against a 75 s deadline.** D-246 then DELIVERS such a view and CHARGES for it
+ * with nobody having looked. So a tier or engine change to the Sign views —
+ * #1373 and #1394, both live — would deliver every view unjudged and charged,
+ * which is why #1408's own body says it *"must land BEFORE any tier or engine
+ * change"*.
  *
- * ⚠ **AND WHAT IS *NOT* TRUE IS A THRESHOLD, WHICH IS WORTH MORE THAN THE FIX.**
- * #1408's own body says *"above roughly 8-9 MB of payload no answer comes back
- * inside the judge's 75 s deadline"*. That was driven on 2026-09-27 against the
- * real model with the real 13.10 MB pair, three reads: **it answered every
- * time, in 8.3 s, 6.7 s and 6.6 s.** So a big payload is not deterministically
- * fatal and this module must not be read as having removed a wall.
+ * ⚠ **AND WHAT IS *NOT* BROKEN IS TODAY'S 2K ROAD — READ AT THE ROWS, WHICH
+ * CORRECTS THIS MODULE'S FIRST DRAFT.** It opened by attributing production's
+ * three `unavailable` views to this payload. **They are not this defect's.** All
+ * three landed on 2026-09-25 (assets 317, 322, 324) and they are #1220's three —
+ * the judge spending its whole token ceiling on reasoning before it could write
+ * an answer, fixed the same day by `reasoning: "off"` and a 75 s deadline. **The
+ * eleven views made since all carry a real verdict from a named judge.**
  *
- * **What it removes is EXPOSURE, and that is the honest claim.** The failures
- * are intermittent — 3 in 27 is exactly the shape a single sample cannot see —
- * and every judge call now has **4x less to deliver before the reader can
- * start** (13.10 MB to 3.19 MB on that same pair), **17x less on the frame
- * #1373 wants to ship** (53.51 MB to 3.02 MB for a 4K view, where 50 MB for one
- * frame is not a marginal call at all). It costs the check nothing, which was
- * driven rather than assumed: see the court below.
+ * ⚠ **The card's threshold is not true either, and it was driven rather than
+ * repeated.** #1408 says *"above roughly 8-9 MB of payload no answer comes back
+ * inside the judge's 75 s deadline"*. Against the real model with the real
+ * 13.10 MB pair, three reads: **it answered every time — 8.3 s, 6.7 s, 6.6 s.**
+ *
+ * **So this is a PREREQUISITE, not a repair of something bleeding today**, and
+ * saying otherwise would be borrowing #1220's incident to justify this one. What
+ * it buys: a 4K view goes to the judge at **3.02 MB instead of 53.51 MB** (17x),
+ * which is the difference between judged and not; and today's road gets **4x
+ * less to deliver** (13.10 MB to 3.19 MB) as headroom on a population of eleven
+ * — far too few views to call the payload road safe. It costs the check nothing,
+ * which was driven rather than assumed: see the court below.
  *
  * # It was proven not to blind the judge
  *
