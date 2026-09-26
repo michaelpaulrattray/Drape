@@ -4,12 +4,20 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
+import { NUMERIC_ENV_VARS } from "./_core/env";
+import { CASTING_ROLL_ENGINE_MODEL_ENV } from "./castingV2/castingV2Scope";
+import { FAL_ACCOUNT_CEILING_ENV, FAL_ALLOWANCES } from "./castingV2/falBudget";
+import { RITE_DISK_READS } from "../scripts/lib/dirtyTreeGuard.mts";
 import {
+  BOOT_DECLARATION_PATHS,
   BOOT_GOVERNED_FLOOR,
   BOOT_GOVERNED_ENV_NAMES,
   bootOwnerOf,
   bootSettingClaims,
+  falEnvNames,
   foldBootClaims,
+  numericEnvNames,
+  rollEngineModelEnvName,
 } from "../scripts/lib/governedBootSettings.mts";
 import {
   PRODUCTION_FLAG_POSITIONS,
@@ -42,49 +50,60 @@ import {
  */
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const sourceOf = (relative: string) => readFileSync(path.join(repoRoot, relative), "utf8");
+const read = (rel: string) => readFileSync(path.join(repoRoot, rel), "utf8");
 
-/** `NUMERIC_ENV_VARS = { NAME: 5, ... }` — the keys, scanned rather than imported. */
-function numericNamesByScan(): string[] {
-  const source = sourceOf("server/_core/env.ts");
-  const block = /export const NUMERIC_ENV_VARS = \{([\s\S]*?)\n\} as const;/.exec(source);
-  if (!block) throw new Error("NUMERIC_ENV_VARS is not declared the way this scan reads it");
-  return [...block[1]!.matchAll(/^\s*([A-Z][A-Z0-9_]*)\s*:/gm)].map((hit) => hit[1]!);
-}
-
-/** `FAL_ALLOWANCES = [ { env: "NAME", ... } ]` plus the ceiling's own constant. */
-function falNamesByScan(): string[] {
-  const source = sourceOf("server/castingV2/falBudget.ts");
-  const block = /export const FAL_ALLOWANCES: readonly FalAllowance\[\] = \[([\s\S]*?)\n\];/.exec(source);
-  if (!block) throw new Error("FAL_ALLOWANCES is not declared the way this scan reads it");
-  const allowances = [...block[1]!.matchAll(/env:\s*"([A-Z][A-Z0-9_]*)"/g)].map((hit) => hit[1]!);
-  const ceiling = /export const FAL_ACCOUNT_CEILING_ENV = "([A-Z][A-Z0-9_]*)";/.exec(source);
-  if (!ceiling) throw new Error("the fal ceiling's env name is not a declared constant any more");
-  return [...allowances, ceiling[1]!];
-}
-
-function rollEngineModelByScan(): string {
-  const source = sourceOf("server/castingV2/castingV2Scope.ts");
-  const hit = /export const CASTING_ROLL_ENGINE_MODEL_ENV = "([A-Z][A-Z0-9_]*)";/.exec(source);
-  if (!hit) throw new Error("the roll engine model's env name is not a declared constant any more");
-  return hit[1]!;
-}
+/**
+ * ⚠ **THE IMPORT IS THE SECOND READER, AND IT IS THE RIGHT WAY ROUND — the
+ * deploy rite's own suite settled it.**
+ *
+ * The module scanned first and imported first in two different drafts. The
+ * import version was REFUSED by `server/dirtyTreeGuard.test.ts`: it derives the
+ * rite's static import graph, and `server/_core/env.ts` brought **41 server
+ * modules** into the graph of a script that pushes to production, each of which
+ * would then have had to become a `RITE_DISK_READS` entry.
+ *
+ * So the module scans and this suite imports. **A suite can afford the import; a
+ * deploy script cannot** — and the two readers still do not share a resolver,
+ * which is the property working law 4 actually wants.
+ */
+const IMPORTED_NAMES = [
+  ...Object.keys(NUMERIC_ENV_VARS),
+  ...FAL_ALLOWANCES.map((allowance) => allowance.env),
+  FAL_ACCOUNT_CEILING_ENV,
+  CASTING_ROLL_ENGINE_MODEL_ENV,
+].sort();
 
 describe("the boot-governed population", () => {
-  it("⚠ CONTROL — the scan found real declarations, and each one's specimen", () => {
+  it("⚠ CONTROL — the imported declarations are real, and each one's specimen", () => {
     /* POSITIVE CONTROLS FIRST. Every comparison below is vacuously true over an
-       empty scan, which is exactly how an enumeration guard goes green while
-       enumerating nothing. */
-    expect(numericNamesByScan()).toContain("DAILY_GENERATION_LIMIT");
-    expect(numericNamesByScan().length).toBeGreaterThanOrEqual(5);
-    expect(falNamesByScan()).toContain("FAL_CONCURRENCY");
-    expect(falNamesByScan()).toContain("FAL_ACCOUNT_CEILING");
-    expect(rollEngineModelByScan()).toBe("CASTING_ROLL_ENGINE_MODEL");
+       empty population, which is exactly how an enumeration guard goes green
+       while enumerating nothing. */
+    expect(IMPORTED_NAMES).toContain("DAILY_GENERATION_LIMIT");
+    expect(IMPORTED_NAMES).toContain("FAL_CONCURRENCY");
+    expect(IMPORTED_NAMES).toContain("FAL_ACCOUNT_CEILING");
+    expect(IMPORTED_NAMES).toContain("CASTING_ROLL_ENGINE_MODEL");
+    expect(Object.keys(NUMERIC_ENV_VARS).length).toBeGreaterThanOrEqual(5);
+    expect(FAL_ALLOWANCES.length).toBeGreaterThanOrEqual(3);
   });
 
-  it("the imported population and the text scan agree, name for name", () => {
-    const scanned = [...numericNamesByScan(), ...falNamesByScan(), rollEngineModelByScan()].sort();
-    expect([...BOOT_GOVERNED_ENV_NAMES]).toEqual(scanned);
+  it("⚠ the rite's TEXT SCAN and the IMPORTED declarations agree, name for name", () => {
+    /* The whole point of the split. A declaration renamed, moved or reshaped
+       makes these two disagree, and the scan is the one on the deploy path. */
+    expect([...BOOT_GOVERNED_ENV_NAMES]).toEqual(IMPORTED_NAMES);
+  });
+
+  it("⚠ the rite does not IMPORT the server to ask this — the graph is why", () => {
+    /* `server/dirtyTreeGuard.test.ts` derives the rite's static import graph and
+       refused the import version: `server/_core/env.ts` brings 41 server modules
+       into a script that pushes to production. The three files are READ, and
+       they are named so the rite's disk-read list can quote them. */
+    const source = read("scripts/lib/governedBootSettings.mts");
+    expect(source).not.toMatch(/from "\.\.\/\.\.\/server\//);
+    expect([...BOOT_DECLARATION_PATHS]).toEqual([
+      "server/_core/env.ts",
+      "server/castingV2/falBudget.ts",
+      "server/castingV2/castingV2Scope.ts",
+    ]);
   });
 
   it("every name says where it is read at boot", () => {
@@ -149,6 +168,53 @@ describe("the boot-governed population", () => {
       expect((error as Error).message).toContain("FAL_ALLOWANCES");
       expect((error as Error).message).toContain("NUMERIC_ENV_VARS");
     }
+  });
+
+  it("⚠ REFUSES a scan that finds nothing rather than returning an empty list — driven", () => {
+    /*
+      ⚠ **THE SABOTAGE RUN BOUGHT THIS ARM.** Every extractor's empty branch is
+      unreachable at the real tree — the declarations are all there — so
+      neutering one changed nothing any arm could see. A guard reachable only
+      through data that never occurs is not a guard (working law 3), which is
+      why the extractors take their SOURCE rather than reading the file
+      themselves.
+
+      What an empty scan would cost: the settings it dropped stop being governed
+      and the gate still reports a clean block — a green over nothing.
+    */
+    expect(() => numericEnvNames(`export const NUMERIC_ENV_VARS = {\n} as const;\n`))
+      .toThrow(/came back with no names/);
+    expect(() => numericEnvNames(`const SOMETHING_ELSE = {};\n`))
+      .toThrow(/not declared the way this reader reads it/);
+    expect(() => falEnvNames(`export const FAL_ALLOWANCES: readonly FalAllowance[] = [\n];\n`))
+      .toThrow(/came back with no rows/);
+    expect(() => rollEngineModelEnvName(`// the constant was renamed\n`))
+      .toThrow(/not a declared constant/);
+
+    /* POSITIVE CONTROLS — the same readers answer on the real sources, so the
+       refusals above are about EMPTINESS and not about refusing everything. */
+    const repoFile = (rel: string) => read(rel);
+    expect(numericEnvNames(repoFile(BOOT_DECLARATION_PATHS[0])).length).toBeGreaterThan(3);
+    expect(falEnvNames(repoFile(BOOT_DECLARATION_PATHS[1])).length).toBeGreaterThan(3);
+    expect(rollEngineModelEnvName(repoFile(BOOT_DECLARATION_PATHS[2]))).toBe("CASTING_ROLL_ENGINE_MODEL");
+  });
+
+  it("⚠ every file this scan reads is on the rite's DISK-READ list", () => {
+    /*
+      The rite turns these bytes into a refusal about production, so a dirty one
+      on the desk must block the deploy — that is what `RITE_DISK_READS` is for.
+
+      ⚠ **Nothing else could catch this.** `server/dirtyTreeGuard.test.ts`
+      derives the rite's static IMPORT graph, and a text read is not an import,
+      so a row deleted here would leave that suite perfectly green. The
+      population is the module's own exported list, so a fourth declaration
+      cannot arrive without a row.
+    */
+    const covered = new Set(RITE_DISK_READS.map((entry) => entry.path));
+    for (const declaration of BOOT_DECLARATION_PATHS) {
+      expect(covered, `${declaration} is read by the rite and is not on RITE_DISK_READS`).toContain(declaration);
+    }
+    expect(BOOT_DECLARATION_PATHS.length).toBeGreaterThan(0);
   });
 
   it("the floor is real and the population clears it", () => {

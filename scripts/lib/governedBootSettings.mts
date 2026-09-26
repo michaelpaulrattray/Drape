@@ -7,9 +7,9 @@
  * `productionFlagPositions.mts` compared a written record of where our settings
  * stand against the settings the live service actually holds, and refused if
  * they disagreed — for every name matching `SCOPE` or `STAGE` and **for nothing
- * else.** So for every other setting the product reads at boot the gate was
- * blind in both directions: it could not say one was set when the record said
- * nothing about it, and it could not say the record was wrong about one.
+ * else.** So for every other setting the product reads at boot the deploy rite
+ * was blind in both directions: it could not tell us one was set when the record
+ * said nothing about it, and it could not tell us the record was wrong about one.
  *
  * ⚠ **Measured at the live service on 2026-09-26, and this is not a
  * hypothetical**: `CASTING_ROLL_ENGINE_MODEL` is **SET to `sunburst`** on
@@ -40,25 +40,42 @@
  * The question is narrower: **which non-scope settings does the product READ AT
  * BOOT in a way that changes behaviour?**
  *
- * # THE POPULATION IS DERIVED, WHICH IS THE WHOLE POINT
- *
- * Three declarations already answer it, and each one is a place the product
- * REFUSES TO BOOT over:
+ * # THREE DECLARATIONS ANSWER IT, AND EACH IS A PLACE THE PRODUCT REFUSES TO BOOT
  *
  *   `NUMERIC_ENV_VARS`  — `assertNumericEnv()` reads every one at boot and
- *                         throws on a malformed value, because a blank variable
- *                         turned four sites into silent outages.
+ *     (server/_core/env.ts)  throws on a malformed value, because a blank
+ *                         variable turned four sites into silent outages.
  *   `FAL_ALLOWANCES`    — `assertFalBudget()` refuses to boot if the sum passes
  *     + the ceiling       the provider's ceiling or any path has no slots.
+ *     (castingV2/falBudget.ts)
  *   the roll engine     — the boot gate refuses if `CASTING_ROLL_ENGINE_SCOPE`
  *     model name          names anyone and the model is unset or unknown.
+ *     (castingV2/castingV2Scope.ts)
  *
- * ⚠ **They are IMPORTED, never scanned.** A hand-typed second list is what
- * produced this card, and a regex standing in for something the code already
- * states is working law 4 inverted. The second reader lives in
- * `server/productionBootSettings.test.ts` and it is a TEXT SCAN of these same
- * three files — so the two do not share a resolver, and a declaration that moves
- * or a reader that stops reading is caught by them disagreeing.
+ * # ⚠ IT READS THEM AS TEXT, AND THE FIRST SHAPE IMPORTED THEM — THE GATE SAID NO
+ *
+ * Importing the three declarations is the obvious reading of working law 4, and
+ * it is what this module did first. **`server/dirtyTreeGuard.test.ts` refused
+ * it**: that suite derives the DEPLOY RITE's static import graph, and pulling
+ * `server/_core/env.ts` in brought **41 server modules** — the whole casting
+ * scope module among them — into the graph of a script that pushes to
+ * production. Every one would then have to become a `RITE_DISK_READS` entry, so
+ * a founder's parked edit anywhere in that tree would block a deploy.
+ *
+ * So the readers are the other way round, and the assignment is the honest one:
+ *
+ *   **here**, on the rite's path, a TEXT SCAN of three files and nothing else;
+ *   **in `server/productionBootSettings.test.ts`**, the real TypeScript
+ *   declarations, IMPORTED, and held to equal this scan name for name.
+ *
+ * A suite can afford the import; a deploy script cannot. The two readers do not
+ * share a resolver either way round, which is the property law 4 actually wants
+ * — and the scan is not trusted on its own: every extractor REFUSES rather than
+ * returning a short list, because a reader that can come up empty reports a
+ * complete answer either way.
+ *
+ * ⚠ **The three paths are `RITE_DISK_READS` entries**, because this is the rite
+ * reading the working tree's disk to decide something real.
  *
  * ⚠ **Every name here is safe to PRINT WITH ITS VALUE**, which is a condition of
  * being on the table at all (`never-filter-a-secret-listing`: the rite's flag
@@ -68,9 +85,22 @@
  * `PORT` catches its own empty string and `findAvailablePort` throws before the
  * server listens, and `LOG_LEVEL` changes what is written, not what is done.
  */
-import { NUMERIC_ENV_VARS } from "../../server/_core/env.js";
-import { CASTING_ROLL_ENGINE_MODEL_ENV } from "../../server/castingV2/castingV2Scope.js";
-import { FAL_ACCOUNT_CEILING_ENV, FAL_ALLOWANCES } from "../../server/castingV2/falBudget.js";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+
+/** The three files this scan reads — named so the rite's disk-read list can quote them. */
+export const BOOT_DECLARATION_PATHS = [
+  "server/_core/env.ts",
+  "server/castingV2/falBudget.ts",
+  "server/castingV2/castingV2Scope.ts",
+] as const;
+
+function sourceOf(relative: string): string {
+  return readFileSync(path.join(REPO_ROOT, relative), "utf8");
+}
 
 /**
  * The floor a derived collector must clear before its answer counts.
@@ -87,16 +117,51 @@ export const BOOT_GOVERNED_FLOOR = 10;
 /** One declared name and the declaration it came from. */
 export type BootSettingClaim = { readonly name: string; readonly from: string };
 
+function refuse(what: string, file: string): never {
+  throw new Error(
+    `governedBootSettings: ${what} in ${file}. This reader is on the deploy rite's path and `
+    + "refuses rather than returning a short list — a setting it silently dropped would stop "
+    + "being governed with nothing anywhere saying so.",
+  );
+}
+
+/** `NUMERIC_ENV_VARS = { NAME: 5, … } as const;` — the keys. */
+export function numericEnvNames(source: string): string[] {
+  const block = /export const NUMERIC_ENV_VARS = \{([\s\S]*?)\n\} as const;/.exec(source);
+  if (!block) refuse("NUMERIC_ENV_VARS is not declared the way this reader reads it", BOOT_DECLARATION_PATHS[0]);
+  const names = [...block[1]!.matchAll(/^\s*([A-Z][A-Z0-9_]*)\s*:/gm)].map((hit) => hit[1]!);
+  if (names.length === 0) refuse("NUMERIC_ENV_VARS came back with no names", BOOT_DECLARATION_PATHS[0]);
+  return names;
+}
+
+/** `FAL_ALLOWANCES = [ { env: "NAME", … } ]` plus the ceiling's own constant. */
+export function falEnvNames(source: string): string[] {
+  const block = /export const FAL_ALLOWANCES: readonly FalAllowance\[\] = \[([\s\S]*?)\n\];/.exec(source);
+  if (!block) refuse("FAL_ALLOWANCES is not declared the way this reader reads it", BOOT_DECLARATION_PATHS[1]);
+  const allowances = [...block[1]!.matchAll(/env:\s*"([A-Z][A-Z0-9_]*)"/g)].map((hit) => hit[1]!);
+  if (allowances.length === 0) refuse("FAL_ALLOWANCES came back with no rows", BOOT_DECLARATION_PATHS[1]);
+  const ceiling = /export const FAL_ACCOUNT_CEILING_ENV = "([A-Z][A-Z0-9_]*)";/.exec(source);
+  if (!ceiling) refuse("the fal ceiling's env name is not a declared constant", BOOT_DECLARATION_PATHS[1]);
+  return [...allowances, ceiling[1]!];
+}
+
+/** `CASTING_ROLL_ENGINE_MODEL_ENV = "…"` — the model gate's variable. */
+export function rollEngineModelEnvName(source: string): string {
+  const hit = /export const CASTING_ROLL_ENGINE_MODEL_ENV = "([A-Z][A-Z0-9_]*)";/.exec(source);
+  if (!hit) refuse("the roll engine model's env name is not a declared constant", BOOT_DECLARATION_PATHS[2]);
+  return hit[1]!;
+}
+
 /**
  * FOLD THE CLAIMS INTO A POPULATION, OR REFUSE — AND IT IS ITS OWN FUNCTION SO
  * IT CAN BE DRIVEN DIRECTLY.
  *
- * ⚠ **The sabotage run is why this is not three lines inside `collect()`**
+ * ⚠ **The sabotage run is why this is not three lines inside the collector**
  * (working law 3). Both refusals below are unreachable at the real tree: the
  * population is complete and no name is claimed twice, so neutering either one
- * changed nothing any arm could see and the suite stayed green at 27 with the
- * guard gone. A guard reachable only through data that never occurs is not a
- * guard — the same finding `jevCardCategory.mts`'s coverage guard records.
+ * changed nothing any arm could see and the suite stayed green with the guard
+ * gone. A guard reachable only through data that never occurs is not a guard —
+ * the same finding `jevCardCategory.mts`'s coverage guard records.
  *
  * The two failures are different and both are quiet:
  *
@@ -137,10 +202,15 @@ export function foldBootClaims(
 /** The claims the three declarations actually make, at this tree. */
 export function bootSettingClaims(): BootSettingClaim[] {
   return [
-    ...Object.keys(NUMERIC_ENV_VARS).map((name) => ({ name, from: "NUMERIC_ENV_VARS" })),
-    ...FAL_ALLOWANCES.map((allowance) => ({ name: allowance.env, from: "FAL_ALLOWANCES" })),
-    { name: FAL_ACCOUNT_CEILING_ENV, from: "falAccountCeiling" },
-    { name: CASTING_ROLL_ENGINE_MODEL_ENV, from: "the roll engine model gate" },
+    ...numericEnvNames(sourceOf(BOOT_DECLARATION_PATHS[0])).map((name) => ({
+      name,
+      from: "NUMERIC_ENV_VARS",
+    })),
+    ...falEnvNames(sourceOf(BOOT_DECLARATION_PATHS[1])).map((name) => ({
+      name,
+      from: "FAL_ALLOWANCES",
+    })),
+    { name: rollEngineModelEnvName(sourceOf(BOOT_DECLARATION_PATHS[2])), from: "the roll engine model gate" },
   ];
 }
 
@@ -154,9 +224,13 @@ export const BOOT_GOVERNED_ENV_NAMES: readonly string[] = foldBootClaims(bootSet
 
 /** Where each one is read at boot — for a message that says why it is governed. */
 export function bootOwnerOf(name: string): string | null {
-  if (Object.prototype.hasOwnProperty.call(NUMERIC_ENV_VARS, name)) return "assertNumericEnv() at boot";
-  if (FAL_ALLOWANCES.some((allowance) => allowance.env === name)) return "assertFalBudget() at boot";
-  if (name === FAL_ACCOUNT_CEILING_ENV) return "assertFalBudget()'s ceiling at boot";
-  if (name === CASTING_ROLL_ENGINE_MODEL_ENV) return "the roll engine model gate at boot";
-  return null;
+  const claim = bootSettingClaims().find((entry) => entry.name === name);
+  if (!claim) return null;
+  if (claim.from === "NUMERIC_ENV_VARS") return "assertNumericEnv() at boot";
+  if (claim.from === "FAL_ALLOWANCES") {
+    return name === "FAL_ACCOUNT_CEILING"
+      ? "assertFalBudget()'s ceiling at boot"
+      : "assertFalBudget() at boot";
+  }
+  return "the roll engine model gate at boot";
 }
