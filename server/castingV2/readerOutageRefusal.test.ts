@@ -143,6 +143,99 @@ describe("refine — the reader did not answer, and the refusal says so", () => 
     expect(REFUSAL_REASONS).toContain("reader_outage");
   });
 
+  /*
+    ⚠ THE THIRD STATE — a reply cut off at OUR ceiling (#1275, the named
+    remainder of #1272).
+
+    Driven rather than reasoned, and driven at the DOUBLE rather than by moving
+    the ceiling: `truncated` is the transport's own `finish_reason === "length"`,
+    so a fixture that sets it is the product's own signal and cannot drift from a
+    number. Before this, a fragment fell through to the parse failure and she was
+    told to try naming what she wanted changed — about a sentence that was never
+    the problem, on a road she has paid for.
+  */
+  const TRUNCATED_FRAGMENT = '{"intent":"edit","eyeColour":"gre';
+
+  function truncating(text: string): TextEngine {
+    return {
+      id: "test:truncating",
+      complete: async (_request: TextRequest): Promise<TextResult> => ({
+        text,
+        provenance: { provider: "openrouter" as const, model: "test", servedModel: "test" },
+        latencyMs: 1,
+        truncated: true,
+      }),
+    };
+  }
+
+  it("the fragment really is unparseable — the fixture is not doing the work", () => {
+    /* Law 2 pointed at the fixture: if this string happened to parse, every arm
+       below would be measuring the wrong branch and passing for it. */
+    expect(() => JSON.parse(TRUNCATED_FRAGMENT)).toThrow();
+  });
+
+  it("refuses reader_outage when the reply was cut off at our ceiling", async () => {
+    const parse = await interpretRefinement({
+      instruction: SENTENCE,
+      engine: truncating(TRUNCATED_FRAGMENT),
+      ...FACE,
+    });
+    expect(parse.ok).toBe(false);
+    expect(!parse.ok && parse.refusal.reason).toBe("reader_outage");
+  });
+
+  it("and the sentence blames US — our ceiling is not her wording", async () => {
+    const parse = await interpretRefinement({
+      instruction: SENTENCE,
+      engine: truncating(TRUNCATED_FRAGMENT),
+      ...FACE,
+    });
+    expect(parse.ok).toBe(false);
+    if (parse.ok) return;
+    const said = refusalMessage(parse);
+    expect(said).toContain("Try again in a moment");
+    /* The whole card, as one assertion. */
+    expect(said).not.toContain("Try naming");
+  });
+
+  it("NEGATIVE CONTROL: the SAME fragment without the flag still blames her, correctly", async () => {
+    /*
+      This is the arm that proves the flag is what moved her sentence, and not
+      the fragment's shape. A reply we could not read, that the provider says it
+      finished, genuinely may be her sentence — that side of the line is #126's
+      and does not move.
+    */
+    const parse = await interpretRefinement({
+      instruction: SENTENCE,
+      engine: replying(TRUNCATED_FRAGMENT),
+      ...FACE,
+    });
+    expect(parse.ok).toBe(false);
+    if (parse.ok) return;
+    expect(parse.refusal.reason).toBe("unreadable");
+    expect(refusalMessage(parse)).toContain("Try naming");
+  });
+
+  it("POSITIVE CONTROL: a truncated reply that STILL PARSES is used, not refused", async () => {
+    /*
+      ⚠ THE DIVERGENCE FROM #1272's EIGHT, ASSERTED RATHER THAN DESCRIBED.
+
+      Those eight refuse the moment `truncated` is set, before parsing. This road
+      does not, because the provider can finish the object and then hit the
+      ceiling on trailing text, and `firstObject` returns the first BALANCED
+      `{…}` — so on a paid road that is a reading that WORKS today. Refusing
+      early would have turned a working edit into a refusal to buy a tidier
+      branch. Without this arm the fix would be indistinguishable from the one
+      that costs her the edit.
+    */
+    const parse = await interpretRefinement({
+      instruction: SENTENCE,
+      engine: truncating(PARSES),
+      ...FACE,
+    });
+    expect(parse.ok).toBe(true);
+  });
+
   it("is NOT answerable by a second reader — you do not re-ask a reader that is down", () => {
     /* `unreadable` IS on that list, and correctly: a sentence the interpreter
        could not file, with a picture attached, is exactly what a words-take

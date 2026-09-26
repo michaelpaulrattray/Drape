@@ -229,10 +229,13 @@ function readsTruncatedInCode(source: string): boolean {
 const NOT_IN_THE_CLASS: Record<string, string> = {
   "reimagine.ts":
     "calls .complete but never parses JSON from the reply, so a fragment cannot become a fact",
-  "refineInterpreter.ts":
-    "in the class and filed separately (#1275): it sits on the PAID refine road, already "
-    + "re-samples three times on an unreadable reply, and its fix is a third `ReadFailure` "
-    + "state feeding a customer-facing refusal sentence — a decision, not a transcription",
+  /*
+    ⚠ `refineInterpreter.ts` WAS EXEMPTED HERE AND IS NOT ANY MORE — #1275 made
+    the decision the exemption was holding open (a third `ReadFailure` state,
+    `truncated`, standing beside `threw` on the ours side). It is now an ordinary
+    member of the population above and has its own arm below, so a revert
+    reddens twice: once here for not reading the signal, once there by name.
+  */
 };
 
 describe("every casting reader that asks a model reads the truncation signal", () => {
@@ -287,6 +290,31 @@ describe("every casting reader that asks a model reads the truncation signal", (
     }
   });
 
+  it("the ninth — the paid refine road — reads it and routes it to the OURS side", () => {
+    /*
+      #1275, kept SEPARATE from the eight above rather than appended to that
+      list, because it is a different act with a different shape: the eight
+      refuse the moment `truncated` is set, and this one lets the parse run and
+      reclassifies only the FAILURE, so a flagged reply that still parses keeps
+      working on a road the customer has paid for.
+
+      Three assertions rather than one, because reading the signal and ACTING on
+      it are different facts and only the second is the card. A fix that read
+      `reply.truncated` into a variable and never used it would pass the
+      population arm above — which is exactly the "collected, never asserted"
+      shape this repository has already paid for.
+    */
+    const row = callers.find((candidate) => candidate.entry === "refineInterpreter.ts");
+    expect(row, "refineInterpreter.ts is no longer a .complete caller").toBeDefined();
+    const code = codeOnly(row!.source);
+    expect(readsTruncatedInCode(row!.source), "it stopped reading truncated").toBe(true);
+    expect(code, "`truncated` is no longer a ReadFailure state").toMatch(/"truncated"/);
+    expect(
+      /trace\.last === "threw"\s*\|\|\s*trace\.last === "truncated"/.test(code),
+      "a truncated read no longer stands beside `threw` on the ours side",
+    ).toBe(true);
+  });
+
   /* ── THE CLASSIFIER'S OWN CONTROLS (law 2: verify the instrument) ────────── */
 
   it("POSITIVE CONTROL: a mention in a block comment is not a read", () => {
@@ -302,8 +330,12 @@ describe("every casting reader that asks a model reads the truncation signal", (
   });
 
   it("POSITIVE CONTROL: `reply.truncated` inside a comment is not a read either", () => {
-    /* The harder half, and `refineInterpreter` is the live specimen: the token
-       appears WITH its dot, in prose. Stripping is what tells them apart. */
+    /* The harder half. `refineInterpreter` WAS the live specimen — the token
+       appeared WITH its dot, in prose, and nowhere in its code — until #1275;
+       its ceiling comments are still there, which is why it needed the stripping
+       to be classified correctly in EITHER direction. Stripping is what tells a
+       mention and a read apart, and this control is synthetic so it keeps
+       proving that whatever the tree does next. */
     const source = [
       "/* The ceiling went up because `reply.truncated` does not degrade. */",
       "// a truncated reply parses to nothing — see reply.truncated",

@@ -993,8 +993,18 @@ export async function interpretRefinement(input: RefineInterpretInput): Promise<
     right side of the line. Three empty completions in a row is our transport
     failing, not her sentence, and "try again in a moment" is the true advice.
   */
-  if (trace.last === "threw") {
-    log.warn({}, "[refineInterpreter] reader outage — three samplings, nothing came back");
+  /*
+    ⚠ AND `truncated` STANDS BESIDE `threw` HERE (#1275) — that is what "joins
+    the ours side" means in practice. Three samplings all cut off at
+    `REFINE_PARSE_MAX_TOKENS` is our ceiling failing her, not her sentence
+    failing to be clear, so "try again in a moment" is the true advice and "try
+    naming what you want changed" is advice she cannot act on.
+  */
+  if (trace.last === "threw" || trace.last === "truncated") {
+    log.warn(
+      { why: trace.last },
+      "[refineInterpreter] reader outage — three samplings, nothing usable came back",
+    );
     return { ok: false, refusal: { reason: "reader_outage" } };
   }
   return { ok: false, refusal: { reason: "unreadable" } };
@@ -1379,14 +1389,26 @@ export async function asksNothingOfItsOwn(
 }
 
 /**
- * WHY THE LAST SAMPLING FAILED — `threw` (nothing came back) or `unparsed` (a
- * reply came back and could not be read).
+ * WHY THE LAST SAMPLING FAILED — `threw` (nothing came back), `truncated` (a
+ * reply came back cut off at OUR token ceiling) or `unparsed` (a whole reply
+ * came back and could not be read).
  *
  * Optional and written only by the top-level loop, so the six other `runOnce`
- * call sites are untouched. The distinction exists because those two states
+ * call sites are untouched. The distinction exists because these states
  * deserve different sentences and had one: see `RefineRefusal.reader_outage`.
+ *
+ * ⚠ `truncated` IS THE THIRD STATE, AND IT TAKES THE OURS ROAD (#1275, the
+ * named remainder of #1272). A reply cut off at `REFINE_PARSE_MAX_TOKENS`
+ * fails the parse — `firstObject` never closes an unterminated outer object —
+ * and until this state existed it landed in `unparsed`, which is the one side
+ * of the line allowed to point at HER sentence. A token ceiling is ours by
+ * definition, so it cannot be: she was told to try naming what she wanted
+ * changed, about a sentence that was never the problem, on a road she has paid
+ * for. This is the same reading #1272 applied to `hairColourFromReference` and
+ * `makeupFromReference`, and it needs no new customer copy — it moves this road
+ * between two sentences that already exist.
  */
-type ReadFailure = "threw" | "unparsed";
+type ReadFailure = "threw" | "truncated" | "unparsed";
 
 /**
  * One sampling. Returns null when the reply was unusable, so the caller retries.
@@ -1415,6 +1437,16 @@ async function runOnce(
 ): Promise<RefineParse | null> {
   let raw: unknown;
   let text: string;
+  /*
+    THE CEILING WAS HIT — carried out of the `try` so the parse failure below
+    can say WHOSE fault it was (#1275).
+
+    Declared here rather than read inside the parse branch because `reply` is
+    scoped to the try: this is the transport's own `finish_reason === "length"`,
+    and a fragment of JSON does not degrade to a missing field, it fails the
+    whole parse.
+  */
+  let ceilingHit = false;
   try {
     const reply = await engine.complete({
       about: purpose,
@@ -1474,6 +1506,7 @@ async function runOnce(
       read perfectly. A presentation habit was being reported as their mistake.
     */
     text = reply.text;
+    ceilingHit = reply.truncated === true;
   } catch (error) {
     /*
       NOTHING CAME BACK — the transport threw, the deadline passed, or the
@@ -1490,8 +1523,33 @@ async function runOnce(
   try {
     raw = JSON.parse(firstObject(stripFence(text)));
   } catch (error) {
-    if (trace) trace.last = "unparsed";
-    log.warn({ err: error }, "[refineInterpreter] unreadable reply");
+    /*
+      A REPLY CUT OFF AT OUR CEILING IS OURS, AND IT HAD TAKEN HER SENTENCE
+      (#1275, the named remainder of #1272).
+
+      ⚠ THE SHAPE HERE DELIBERATELY DIFFERS FROM THE EIGHT #1272 FIXED, and the
+      difference is the whole decision this card was filed to make. Those eight
+      refuse the moment `truncated` is set, BEFORE parsing; this one lets the
+      parse run and only reclassifies the FAILURE. The reason is that a reply
+      can be flagged `truncated` and still parse — the provider may complete the
+      object and then hit the ceiling on trailing text, and `firstObject`
+      returns the first BALANCED `{…}` — and on a paid road that is a reading
+      that works today. Refusing before the parse would turn a working edit into
+      a refusal to buy a tidier branch, so nothing that succeeds now stops
+      succeeding: the only thing that changes is which sentence she is shown
+      when it fails.
+
+      The eight had no retry and nothing to lose by refusing early; this road
+      re-samples three times, which is also why its harm was the weaker of the
+      class and why it was left out of that sweep rather than swept badly.
+    */
+    if (trace) trace.last = ceilingHit ? "truncated" : "unparsed";
+    log.warn(
+      { err: error, ceiling: ceilingHit ? REFINE_PARSE_MAX_TOKENS : undefined },
+      ceilingHit
+        ? "[refineInterpreter] the reader was cut off at the token ceiling — ours, not her sentence"
+        : "[refineInterpreter] unreadable reply",
+    );
     return null;
   }
 
