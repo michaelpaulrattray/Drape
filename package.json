@@ -13,6 +13,7 @@
     "check:dispositions": "tsx scripts/check-cleanup-dispositions.mts --strict",
     "preflight": "tsx scripts/preflight.mts",
     "check:casting-tests": "tsc -p tsconfig.casting-tests.json --noEmit",
+    "check:server-tests": "tsc --noEmit -p tsconfig.server-tests.json",
     "format": "prettier --write .",
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",

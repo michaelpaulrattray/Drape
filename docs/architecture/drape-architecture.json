@@ -13426,6 +13426,10 @@
       "path": "server/serverResilience.test.ts"
     },
     {
+      "id": "test:server/serverTestsTypecheckProject.test.ts",
+      "path": "server/serverTestsTypecheckProject.test.ts"
+    },
+    {
       "id": "test:server/session-reset.test.ts",
       "path": "server/session-reset.test.ts"
     },
