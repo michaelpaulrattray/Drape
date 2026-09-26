@@ -416,6 +416,24 @@ describe("a row that looks live is distinguishable from one that does not", () =
     expect(source).toContain("--force");
   });
 
+  /*
+    ⚠ **THE NO-ID READ MUST NOT BE CAPPED (#1234), AND THIS IS A SOURCE ARM ON
+    PURPOSE.** The SQL sits past a live database connection, so nothing in
+    `pnpm test` can drive it — and a `LIMIT 1` there is the whole defect: with
+    one row in hand, `resolveCloseTarget` has nothing to refuse with and the
+    close silently takes the newest open run, which is another seat's the moment
+    two overlap. The sabotage run put the `LIMIT` back and every behaviour arm
+    stayed green, which is what bought this arm.
+  */
+  it("the close script reads EVERY open row, not the newest one", () => {
+    const source = sourceOf("scripts/crew-shift-close.mts");
+    const read = /WHERE endedAt IS NULL ORDER BY id DESC[^`]*/.exec(source);
+    expect(read, "the no-id read of the open rows is gone or re-worded").not.toBeNull();
+    expect(read![0], "a capped read gives the resolver nothing to refuse with").not.toMatch(/LIMIT/i);
+    /* And the decision really is the shared resolver rather than a local pick. */
+    expect(source).toContain("resolveCloseTarget(");
+  });
+
   /* And the dry run is checked AFTER the live guard, so a rehearsal on a live
      row reports the refusal rather than describing a write that would not
      happen. */

@@ -276,6 +276,26 @@ describe("resolveCloseTarget — #1234", () => {
     expect(verdict.why).toContain("--id");
   });
 
+  it("⚠ a named shift that matches nothing REFUSES even when exactly one row is open", () => {
+    /*
+      ⚠ **THE ARM THE SABOTAGE RUN ASKED FOR.** The first shape of this suite
+      only ever met a non-matching `--shift` with TWO rows open, so a fall-back
+      reading *"nothing matched, but there is only one open row, so that must be
+      it"* passed green — and that fall-back is this very incident: the shift's
+      own row had been closed by somebody else, and the only row left open
+      belongs to a stranger.
+    */
+    const verdict = resolveCloseTarget({
+      openRuns: [run(361, "foreman-20260925-1745", "retro")],
+      shift: "foreman-20260925-1649",
+    });
+
+    expect(verdict.kind).toBe("refuse");
+    if (verdict.kind !== "refuse") return;
+    expect(verdict.why).toContain("no OPEN run");
+    expect(verdict.why).toContain("#361");
+  });
+
   it("refuses when nothing is open, and says that is itself the finding", () => {
     const verdict = resolveCloseTarget({ openRuns: [], shift: null });
 
