@@ -575,6 +575,21 @@ export async function signCandidate(
     */
     wardrobeLine: castWardrobeLine(documents.technicalSchema),
     wardrobeSource: castWardrobeSource(documents.technicalSchema),
+    /*
+      WHAT SHE WAS CAST AS — her own brief, into all five views (#1278 part 1).
+
+      From the ROLL rather than from `technicalSchema`, and that is working law 4
+      rather than convenience: `casting_rolls.briefText` is the customer's typed
+      words and already exists: sealing a copy of it into the Cast's blob would be
+      a second list shadowing a source of truth, and this one can never change
+      after the roll, so there is nothing a snapshot would protect against.
+
+      ⚠ Read at the composed prompt, not assumed: `models.masterPrompt` is the
+      whole compiled roll prompt (FRAMING, CAMERA, REALISM, NEGATIVES, AUTHORITY),
+      so it is the wrong artifact for this — see `description` on the orchestrator
+      input, which carries the measurement.
+    */
+    description: source.roll.briefText,
     identityRevisionId: cast.identityRevisionId,
     identityText: documents.identityText,
     chargedCredits: price,
@@ -977,6 +992,13 @@ async function completeSignPackage(
     wardrobeLine: string | null;
     /** Its `source` — `brief` keeps the ink ride on the house prior (#1222). */
     wardrobeSource: string | null;
+    /**
+     * WHAT SHE WAS CAST AS — the roll's own brief text (#1278 part 1).
+     *
+     * `null` for a Cast with no source roll, whose five views then compose
+     * exactly what they composed before this field existed.
+     */
+    description: string | null;
     identityRevisionId: string;
     identityText: string;
     chargedCredits: number;
@@ -1020,6 +1042,9 @@ async function completeSignPackage(
       pronouns: input.pronouns,
       featureWords,
       wardrobeLine: input.wardrobeLine,
+      /* Her own words dress the five views and the judge judges against them
+         (#1278 part 1) — one field, read twice, same as the outfit above. */
+      description: input.description,
     });
 
     if (result.refundUnrecorded) {

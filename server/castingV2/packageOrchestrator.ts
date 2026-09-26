@@ -292,6 +292,25 @@ export type BuildPackageInput = {
    * every Cast signed to date.
    */
   wardrobeLine?: string | null;
+  /**
+   * WHAT THIS CAST WAS CAST AS — her own brief, carried into every view (#1278
+   * part 1, his eye 2026-09-26: *"The dress is a plain modest version of what the
+   * brief describes"*).
+   *
+   * Rides beside the anchor and the wardrobe line for the same reason they do: a
+   * fact about this Cast the composer cannot derive. `null` or absent composes
+   * and judges exactly today's sentences, which is every Cast with no source roll.
+   *
+   * ⚠ **It is `casting_rolls.briefText` — the customer's own words — and NOT
+   * `models.masterPrompt`.** The card named the latter; read at the rows it is the
+   * whole COMPOSED roll prompt, carrying FRAMING (*"waist-up"*), CAMERA, REALISM,
+   * a NEGATIVE line banning the letters he unbanned on views, and an AUTHORITY
+   * paragraph claiming precedence over the description. Sending that into a
+   * full-length view would order two framings in one prompt and duplicate the very
+   * block #1240 unified. `briefText` carries none of it: measured on both of his
+   * cyberpunk casts, zero photograph-direction phrases.
+   */
+  description?: string | null;
 };
 
 async function defaultStoreImage(input: {
@@ -640,7 +659,7 @@ export async function renderViewAttempts<T>(
       }
       const image = await engine.generateView({
         prompt: [
-          composePackageViewPrompt(angle, input.wardrobeLine ?? null),
+          composePackageViewPrompt(angle, input.wardrobeLine ?? null, input.description ?? null),
           cropClause,
           wordsClause,
         ]
@@ -667,6 +686,10 @@ export async function renderViewAttempts<T>(
         /* The SAME value the prompt above was composed from — one field, read
            twice, so the generator and the judge cannot be told two outfits. */
         wardrobeLine: input.wardrobeLine ?? null,
+        /* And the same for her brief, for the same reason: the wardrobe sentence
+           narrows when one is on record, so a judge without it would fail the
+           view for wearing what this prompt just asked for (#1278 part 1). */
+        description: input.description ?? null,
       });
       verdicts.push(verdict);
       // A picture came back and the judge answered about it: this attempt

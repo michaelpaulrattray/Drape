@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 import { describe, expect, it } from "vitest";
 
-import { CANONICAL_VIEW_ANGLES } from "../../shared/boardTypes";
+import { CANONICAL_VIEW_ANGLES, CAST_VIEW_ANGLES } from "../../shared/boardTypes";
 import { CASTING_V2_SIGN_COSTS } from "../casting/castingCreditCosts";
 import {
   PHOTOREAL_HUMAN_BLOCKS,
@@ -21,6 +21,7 @@ import {
 import {
   CASTING_V2_SIGN_PRICE_CREDITS,
   CAST_PACKAGE_VIEWS,
+  CAST_PACKAGE_WARDROBE_SPEC,
   CAST_PACKAGE_VIEW_PRICE,
   castPackageView,
   composePackageViewPrompt,
@@ -823,5 +824,249 @@ describe("the close-up's addition check is relative to the reference", () => {
        the prompt asked for. */
     expect(composePackageViewPrompt("closeUp", null))
       .toContain(packageViewExpectation("closeUp", null).wardrobe);
+  });
+});
+
+
+/**
+ * #1278 PART 1 — THE VIEW IS DRESSED BY THE BRIEF, NOT BY A PROHIBITION LIST.
+ *
+ * His eye, 2026-09-26, verbatim: *"The dress is a plain modest version of what
+ * the brief describes, and the hem and shoes differ every take."*
+ *
+ * ⚠ **THE CARD'S DIAGNOSIS WAS RIGHT AND TWO OF ITS FACTS WERE NOT** — both read
+ * at the rows and at the composed prompt, and both pinned here because a
+ * successor reading the card alone would rebuild the wrong thing:
+ *
+ *  1. **It blamed `castPackageWardrobeSpec(line)`.** That road has never run in
+ *     production: 0 of 6 minted casts carry `technicalSchema.wardrobe.line`, all
+ *     time, INCLUDING the two signed the day before he reported this. Every view
+ *     ever sent carried `CAST_PACKAGE_WARDROBE_SPEC`, so that is the sentence
+ *     this card had to change.
+ *  2. **It named `models.masterPrompt` as the words to send.** That column is the
+ *     whole COMPILED roll prompt — FRAMING ("waist-up"), CAMERA, REALISM, a
+ *     NEGATIVE line banning the letters he unbanned on views, and an AUTHORITY
+ *     paragraph claiming precedence over the description. Sending it into a
+ *     full-length view orders two framings in one prompt, which is the trousers
+ *     class this file already documents. The customer's own words are
+ *     `casting_rolls.briefText`, which carries none of it.
+ *
+ * **What actually produced his plain dress: four sentences, all ours.** The view
+ * said "there is no written description of this person, and none is needed",
+ * then "Add nothing the reference photograph does not show … no damage", then
+ * that the reference is chest-up so nothing below the waist can be compared —
+ * and since #1240 brought the roll's `AUTHORITY_LINE` over, "Where the
+ * description is silent, this block governs: plain studio frame." **The
+ * description was silent because we never sent one, so that paragraph's only
+ * live branch was the one that orders plain.** The engine obeyed us.
+ */
+describe("#1278 part 1 — a signed view is dressed by the cast's own brief", () => {
+  /* Her real brief: cast #55 "Sifr", roll 300, user 1, production. */
+  const SIFR = "A pale, slightly androgynous cyberpunk woman with short, messy silver-grey hair and "
+    + "heavy black makeup that can read as either elegant or damaged depending on the artist. She wears "
+    + "a white, body-conscious dress that mixes qipao structure with industrial straps, buckles, and a "
+    + "worn graphic on the chest, leaving the exact cut, hardware, and weathering open. Dense tattoos "
+    + "cover one arm and parts of her body, but their style, density, and placement can shift. The "
+    + "overall presence should feel cold, stylish, and quietly intense — a street-level futurist that "
+    + "different versions can interpret without losing the same core look.";
+
+  it("⚠ a cast with NO brief on record composes exactly what it composed before", () => {
+    /*
+      The safety property of the whole change, and it covers most casts: 4 of 6
+      minted casts have no source roll at all. Asserted as the three legacy
+      sentences taken from the cohort constant BY NAME — re-typing them here would
+      be a copy that stops being true the day somebody edits a comma, which is the
+      drift this file has already been bitten by.
+    */
+    for (const angle of CAST_VIEW_ANGLES) {
+      const undescribed = composePackageViewPrompt(angle, null, null);
+      for (const sentence of PHOTOREAL_HUMAN_BLOCKS.referenceDocumentSentences) {
+        expect(undescribed, `${angle} must still carry the undescribed rule`).toContain(sentence);
+      }
+      expect(undescribed, `${angle} carries no DESCRIPTION label`).not.toMatch(/^DESCRIPTION: /m);
+    }
+    /*
+      ⚠ AND THE LOOP ABOVE CANNOT POLICE THOSE BYTES, WHICH THE SABOTAGE PROVED.
+      It reads the sentences from the same constant it is checking, so editing the
+      constant moves both sides together and the arm stays green — a tautology
+      wearing a guard's clothes (deriving from a copy is not deriving). Changing
+      "none is needed" to "none is required" in the cohort file survived it.
+
+      So the bytes are pinned by HASH. This is the one place a frozen value is the
+      right tool rather than the drift this file warns about: the claim is
+      specifically THESE BYTES MUST NOT MOVE, because every Cast with no brief on
+      record renders from them and #1278 must not touch a single one. The digest is
+      origin/main's — proven byte-identical at the wire before it was recorded.
+    */
+    const undescribedRule = PHOTOREAL_HUMAN_BLOCKS.referenceDocumentSentences.join(" ");
+    expect(
+      createHash("sha256").update(undescribedRule, "utf8").digest("hex"),
+      "the undescribed reference rule changed — a Cast with no brief would render differently",
+    ).toBe("dfebf3b9ab72701fdf88137af88f04aa7e87401d743441cf7f160d180ccfda43");
+  });
+
+  it("an absent, empty or whitespace brief is the same fact as no brief", () => {
+    /* One door (`viewDescriptionOf`) so the roads cannot disagree about what "no
+       description" means, and so a blank brief never emits a bare label. */
+    for (const angle of CAST_VIEW_ANGLES) {
+      const none = composePackageViewPrompt(angle, null, null);
+      expect(composePackageViewPrompt(angle), `${angle}: omitted`).toBe(none);
+      expect(composePackageViewPrompt(angle, null, ""), `${angle}: empty`).toBe(none);
+      expect(composePackageViewPrompt(angle, null, "   \n  "), `${angle}: whitespace`).toBe(none);
+    }
+  });
+
+  it("⚠ with a brief on record, the prompt STOPS denying that a description exists", () => {
+    /*
+      The contradiction arm. Adding a description while the opener still says
+      "there is no written description of this person" would be a prompt that
+      denies its own next line — the trousers class, which an image model resolves
+      by picking one silently, per view. So that sentence has to LEAVE.
+    */
+    for (const angle of CAST_VIEW_ANGLES) {
+      const described = composePackageViewPrompt(angle, null, SIFR);
+      expect(described, angle).not.toContain("there is no written description of this person");
+      expect(described, angle).not.toContain("This is not a licence to invent — no damage");
+      expect(described, angle).toMatch(/^DESCRIPTION: A pale, slightly androgynous/m);
+    }
+  });
+
+  it("⚠ the DESCRIPTION arrives before the AUTHORITY paragraph that grants it authority", () => {
+    /*
+      Position is the point, not tidiness. `AUTHORITY_LINE` says "the description
+      says WHO to cast … anything the description states outright is a fact and
+      overrides any default or negative here" — a paragraph that has been resolving
+      to nothing on this road since #1240. The label must precede it, and the
+      identity sentence must precede the label, so the reference's primacy is
+      established before her brief is read.
+    */
+    for (const angle of CAST_VIEW_ANGLES) {
+      const described = composePackageViewPrompt(angle, null, SIFR);
+      const identity = described.indexOf("Keep this exact person unchanged");
+      const label = described.indexOf("\nDESCRIPTION: ");
+      const authority = described.indexOf("AUTHORITY:");
+      expect(identity, `${angle}: identity sentence present`).toBeGreaterThanOrEqual(0);
+      expect(label, `${angle}: description after identity`).toBeGreaterThan(identity);
+      expect(authority, `${angle}: authority after description`).toBeGreaterThan(label);
+    }
+  });
+
+  it("⚠ the reference still wins on everything it shows — a roll brief licenses variation", () => {
+    /*
+      The one authored sentence in this change, and why it is not optional: a brief
+      is written for a ROLL, where variation is wanted, and hers says the hair "can
+      lean black or dusty teal", the ink "can shift", "different versions can
+      interpret". On a VIEW the person is already settled by the reference, so those
+      alternatives must be closed explicitly — otherwise dressing the view from the
+      brief would invite drift on the one road whose contract is the same individual.
+    */
+    for (const angle of CAST_VIEW_ANGLES) {
+      const described = composePackageViewPrompt(angle, null, SIFR);
+      expect(described, angle).toContain("the reference wins");
+      expect(described, angle).toContain("is already settled here and is not reopened");
+    }
+  });
+
+  it("⚠ an ADDITION now needs BOTH records silent — her own chest graphic stops being a failure", () => {
+    /*
+      The worked example is his own cast. Today's sentence fails "any printed text
+      or logo that the reference does not show" — and her brief asks for "a worn
+      graphic on the chest", which a chest-up reference may not resolve. The product
+      was calling her outfit an addition and refusing the slice.
+    */
+    /*
+      ⚠ THE SKIP CONDITION IS STRUCTURAL, AND AN EARLIER DRAFT'S WAS NOT — the
+      sabotage caught it. That draft skipped an angle when the described and
+      undescribed sentences were EQUAL, meaning "this is the close-up, which keeps
+      its own". Remove the narrowing and every angle becomes equal, so every angle
+      is skipped and the arm passes with nothing checked. A guard whose skip
+      condition is satisfied BY THE DEFECT reads its own failure as "not
+      applicable". The population is now named by the shared constant, and counted,
+      so it has a floor.
+    */
+    let narrowed = 0;
+    for (const angle of CAST_VIEW_ANGLES) {
+      if (packageViewExpectation(angle, null, null).wardrobe !== CAST_PACKAGE_WARDROBE_SPEC) continue;
+      const described = packageViewExpectation(angle, null, SIFR).wardrobe;
+      expect(described, angle).toContain("does not show AND the description does not name");
+      expect(described, angle).toContain("a failure wherever they appear");
+      narrowed += 1;
+    }
+    expect(narrowed, "the shared wardrobe sentence must cover several views").toBeGreaterThanOrEqual(4);
+  });
+
+  it("⚠ the judge narrows WITH the generator and never apart from it", () => {
+    /*
+      The boundary this file already guards, arriving through a new door. A judge
+      reading the unnarrowed sentence while the generator reads the narrowed one
+      would refuse the view for wearing exactly what the prompt asked for — and a
+      refused slice is a refunded slice.
+    */
+    for (const angle of CAST_VIEW_ANGLES) {
+      const prompt = composePackageViewPrompt(angle, null, SIFR);
+      expect(prompt, angle).toContain(packageViewExpectation(angle, null, SIFR).wardrobe);
+    }
+  });
+
+  it("the close-up keeps its OWN wardrobe sentence on both roads", () => {
+    /* At that crop the garment is barely in frame, which is why it has its own
+       sentence at all. Only the shared sentence has a described form. */
+    expect(packageViewExpectation("closeUp", null, SIFR).wardrobe)
+      .toBe(packageViewExpectation("closeUp", null, null).wardrobe);
+  });
+
+  it("the three full-length views stop being asked an open question about the hem", () => {
+    /* His second fault. The undescribed clause asks for "whatever its lower half
+       and footwear WOULD BE", which nothing constrains; with the brief on record
+       her own words answer it. What this does NOT do is make the three views agree
+       with EACH OTHER — that is part 2's one-sheet-then-cut shape. */
+    for (const angle of CAST_VIEW_ANGLES) {
+      const undescribed = composePackageViewPrompt(angle, null, null);
+      const described = composePackageViewPrompt(angle, null, SIFR);
+      if (!undescribed.includes("whatever its lower half and footwear would be")) {
+        expect(described, `${angle} has no below-waist clause`).not.toContain("Below the waist,");
+        continue;
+      }
+      expect(described, angle).not.toContain("whatever its lower half and footwear would be");
+      expect(described, angle).toContain("footwear the DESCRIPTION names");
+    }
+  });
+
+  it("⚠ NEGATIVE CONTROL — the view does not receive the roll's photograph direction", () => {
+    /*
+      The arm that refuses the card's literal instruction. `masterPrompt` and the
+      author's `register.prompt` both carry the house block inline, and pasting
+      either here would order a second framing, re-ban the letters his 2026-09-25
+      ruling unbanned on views, and duplicate what #1240 unified. The description is
+      the CHARACTER half only.
+    */
+    for (const angle of CAST_VIEW_ANGLES) {
+      const described = composePackageViewPrompt(angle, null, SIFR);
+      /*
+        FRAMING is the one house paragraph a view does not take — it replaces it
+        with its own angle directive — so the roll's framing sentences arriving here
+        could only mean a composed prompt had been pasted in. Taken from the
+        constant rather than typed, so the arm cannot drift from the block.
+      */
+      for (const sentence of PHOTOREAL_HUMAN_BLOCKS.framingSentences) {
+        expect(described, `${angle} must not carry the roll's framing`).not.toContain(sentence);
+      }
+      /* Same for the gaze: a back view cannot obey "Eyes into the lens" (#1240). */
+      expect(described, `${angle} must not carry the roll's expression order`)
+        .not.toContain(EXPRESSION_LINE);
+      /* And the house-road compiler's own opener, which `masterPrompt` carries. */
+      expect(described, angle).not.toContain("CASTING CATEGORY (ABSOLUTE)");
+      /*
+        ⚠ THE ARM THAT WOULD ACTUALLY CATCH A PASTE. The shared capture and realism
+        sentences are SUPPOSED to be here — #1240 gives both roads the same ones —
+        so banning them would be wrong, and an earlier draft of this arm did exactly
+        that and failed. What a pasted `masterPrompt` or `register.prompt` produces
+        is a SECOND copy of them. Count, do not ban.
+      */
+      for (const sentence of [...CAPTURE_SENTENCES, ...NEGATIVE_LINES, AUTHORITY_LINE]) {
+        expect(described.split(sentence).length - 1, `${angle}: "${sentence.slice(0, 40)}…" exactly once`)
+          .toBe(1);
+      }
+    }
   });
 });

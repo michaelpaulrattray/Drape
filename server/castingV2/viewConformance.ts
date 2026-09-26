@@ -100,6 +100,15 @@ type ViewConformanceInput = {
    * exactly, including its *anything below the frame cannot be compared* clause.
    */
   wardrobeLine?: string | null;
+  /**
+   * HER BRIEF, WHEN THE CAST HAS ONE ON RECORD (#1278 part 1).
+   *
+   * The judge takes it for one reason only: the generator's wardrobe sentence
+   * narrows when a brief is on record, and a judge reading the unnarrowed one
+   * would refuse a view for wearing exactly what the prompt asked for. `null` or
+   * absent keeps today's sentence, which is every Cast with no source roll.
+   */
+  description?: string | null;
   signal?: AbortSignal;
 };
 
@@ -217,7 +226,11 @@ export function createViewConformanceJudge(config: ViewConformanceJudgeConfig): 
       };
     }
 
-    const expectation = packageViewExpectation(input.angle, input.wardrobeLine ?? null);
+    const expectation = packageViewExpectation(
+      input.angle,
+      input.wardrobeLine ?? null,
+      input.description ?? null,
+    );
     let text: string;
     try {
       const reply = await config.engine.complete({

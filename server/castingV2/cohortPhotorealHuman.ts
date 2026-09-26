@@ -619,10 +619,80 @@ const VIEW_DECLINED_SENTENCES: readonly string[] = [
  * migrate it onto the neck. The sentence asks for what this crop can honestly
  * contain and nothing beyond it.
  */
+/*
+  The clause both forms share: what the reference photograph establishes about
+  her. Named once because there are now TWO forms of this rule and the day there
+  are two is the day the overlap becomes a constant rather than a habit (working
+  law 4 — the same reasoning `houseBlock.ts`'s `bodySentences` carries).
+*/
+const REFERENCE_ESTABLISHES =
+  "Everything the reference shows on her — tattoos and ink, piercings, scars, birthmarks and freckling, "
+  + "makeup, jewellery and worn accessories, her hair and her outfit — is hers, and is rendered plainly "
+  + "and accurately wherever the frame of THIS view reaches it.";
+
+/* The failure clause, identical in both forms — it is what gives the licence teeth. */
+const REFERENCE_DO_NOT_IDEALISE =
+  "Do not idealise them away, do not soften them, and do not substitute an unmarked face or a bare, "
+  + "unmade one: a marking, a piercing or makeup the reference shows and this photograph loses is a "
+  + "failed view.";
+
 const REFERENCE_IS_THE_DOCUMENT: readonly string[] = [
-  "THE REFERENCE PHOTOGRAPH IS THE DESCRIPTION: there is no written description of this person, and none is needed. Everything the reference shows on her — tattoos and ink, piercings, scars, birthmarks and freckling, makeup, jewellery and worn accessories, her hair and her outfit — is hers, and is rendered plainly and accurately wherever the frame of THIS view reaches it.",
-  "Do not idealise them away, do not soften them, and do not substitute an unmarked face or a bare, unmade one: a marking, a piercing or makeup the reference shows and this photograph loses is a failed view.",
+  `THE REFERENCE PHOTOGRAPH IS THE DESCRIPTION: there is no written description of this person, and none is needed. ${REFERENCE_ESTABLISHES}`,
+  REFERENCE_DO_NOT_IDEALISE,
   "Add nothing the reference photograph does not show. This is not a licence to invent — no damage, no ink, no makeup, no accessory and no head covering that is absent from the reference may appear, and nothing visible in it may migrate to a part of the body where it is not.",
+];
+
+/**
+ * THE SAME RULE FOR A CAST WHOSE BRIEF IS ON RECORD — #1278 part 1, his eye
+ * 2026-09-26: *"The dress is a plain modest version of what the brief describes,
+ * and the hem and shoes differ every take."*
+ *
+ * # Why a second form exists rather than an edit to the first
+ *
+ * ⚠ **The list above OPENS by asserting there is no written description.** Send
+ * a description beside it and the prompt contradicts itself in its first two
+ * sentences — which is the trousers class exactly (`castViewPackage.ts`'s own
+ * docblock: *"a block contradicting itself in the same breath, which an image
+ * model resolves by picking one, silently, per view"*). So the description
+ * cannot simply be added; the sentence that denies it has to go with it.
+ *
+ * # What his two faults were actually caused by, read at the composed prompt
+ *
+ * Nothing had gone wrong at the engine. A signed view is told, in one prompt:
+ * *"there is no written description of this person"*; *"Add nothing the
+ * reference photograph does not show … no damage"*; that the reference is
+ * chest-up so nothing below the waist can be compared; and — since #1240
+ * brought the roll's `AUTHORITY_LINE` over — *"Where the description is silent,
+ * this block governs: plain studio frame."* **Four sentences ordering the
+ * plainest reading, one of them forbidding the very weathering his brief asks
+ * for.** His dress came back plain because we asked for it plainly.
+ *
+ * # The two changes, and both are narrowings rather than new licences
+ *
+ *  1. The opener stops denying a description and states the PRECEDENCE instead.
+ *     The reference still wins on everything it shows — that is the identity
+ *     contract and a brief written for a ROLL deliberately licenses variation
+ *     (*"hair that can lean black or dusty teal"*, *"placement can shift"*,
+ *     *"different versions can interpret"*). Those alternatives must not reopen
+ *     a signed face, so the sentence closes them explicitly. **This is the one
+ *     authored sentence in the change and it is named out loud** (the fidelity
+ *     law): without it, dressing the view from the brief would also invite drift
+ *     on the one road whose whole contract is *the same individual*.
+ *  2. "Add nothing the reference does not show" becomes "nothing the reference
+ *     does not show AND the description does not name". Every noun in the list
+ *     is kept; each is now conditional on BOTH records being silent. A brief
+ *     that says nothing about damage still forbids damage.
+ *
+ * The undescribed form above is untouched and its bytes are asserted identical
+ * to the pre-#1278 tree, so a cast with no brief on record renders exactly as it
+ * did. That is most of them: read at the rows 2026-09-26, 2 of 6 minted casts
+ * carry a source roll with brief text.
+ */
+const REFERENCE_WITH_DESCRIPTION: readonly string[] = [
+  `THE REFERENCE PHOTOGRAPH IS THE RECORD OF HER APPEARANCE, and the DESCRIPTION below is the record of what she was cast as. ${REFERENCE_ESTABLISHES}`,
+  REFERENCE_DO_NOT_IDEALISE,
+  "Where the DESCRIPTION and the reference disagree about anything the reference shows, the reference wins — it is this person, and any alternative the description leaves open for her face, her hair, her colouring or her markings is already settled here and is not reopened. The description governs what the reference cannot show: below the frame of this crop, and the cut, hardware, length, footwear and weathering of the outfit it names.",
+  "Add nothing that the reference photograph does not show AND the description does not name: damage, ink, makeup, an accessory or a head covering that neither of them establishes may not appear, and nothing visible in the reference may migrate to a part of the body where it is not.",
 ];
 
 /*
@@ -869,6 +939,12 @@ export const PHOTOREAL_HUMAN_BLOCKS = {
   realismSentencesAll: SKIN_AND_FEATURES_SENTENCES,
   viewDeclinedSentences: VIEW_DECLINED_SENTENCES,
   referenceDocumentSentences: REFERENCE_IS_THE_DOCUMENT,
+  /*
+    The same rule for a cast whose brief is on record (#1278 part 1). A SECOND
+    form rather than an edit to the one above, because that one opens by denying
+    a written description exists — see `REFERENCE_WITH_DESCRIPTION`'s docblock.
+  */
+  referenceDescribedSentences: REFERENCE_WITH_DESCRIPTION,
   /*
     The signed package's authority paragraph, and it takes the UNPATHED form
     deliberately for now: the package composes its own wardrobe spec
