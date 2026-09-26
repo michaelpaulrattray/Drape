@@ -766,3 +766,28 @@ and no fourth key (recommended), or a fourth key and two more numbers.
 Retro: run 1 2026-08-26, run 2 2026-09-05, run 3 2026-09-12, run 4 2026-09-19,
 **run 5 2026-09-27** (one day past a 7-day clock, after eight shifts correctly
 gave his ordered band precedence). Next due ~2026-10-04.
+
+**R15's THIRD INSTANCE, found at the close by OBEYING the document — appended
+after run 5's first commit, because it is the same class one step further on.**
+The close ceremony's own guard paragraph prescribed
+`npx tsc --noEmit -p tsconfig.scripts.json`. Run tonight on a clean tree it is
+**RED: 18 errors across 7 untracked disposables, none of them this shift's** —
+six sharing one cause, the tattoo-studio retirement having removed
+`inkViewReferenceClause` and `carriedInkPlates` from under five `court-…` files.
+**That command was retired on 2026-09-26 by PR #1316** (#1231), which put the
+check behind `scripts/typecheck-scripts.mts` and made it derive its exclude list
+from `git ls-files --others --exclude-standard -- scripts`. The current command,
+`pnpm check:scripts`, **exits 0** and says out loud that it left 676 untracked
+files out. **So a shift that did exactly as it was told got a red it could not
+act on, ten hours after the card fixing it closed** — and #1231's own body had
+predicted the gap in its step 4: *"the close-of-shift instruction names the
+typecheck but nothing tells a shift what to do when the errors are not its
+own."* Corrected in the orders with both readings in it.
+
+⚠ **Three instances in one window, all the same shape: the orders naming
+something the tree has moved past** — the preflight clause (six days stale), the
+seat guard list (grown beside the tool that already ran it), and this command
+(ten hours stale). **None was carelessness and all three were written by shifts
+doing their job**; what they share is that a paragraph in the orders has no
+reader that can fail. The Retro is that reader, weekly, and that is the argument
+for its clock being kept rather than deferred eight shifts running.
