@@ -573,7 +573,7 @@ describe("executeMintPackage mint-transition invariant (review item 1)", () => {
     );
     const { executeMintPackage } = await import("./casting/mintPackage");
     await expect(
-      executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID }),
+      executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID, chargeReferenceId: `op:${REQUEST_ID}:charge` }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
     expect(getModelAssets).not.toHaveBeenCalled();
     expect(deductCredits).not.toHaveBeenCalled();
@@ -587,7 +587,7 @@ describe("executeMintPackage mint-transition invariant (review item 1)", () => {
     );
     const { executeMintPackage } = await import("./casting/mintPackage");
     await expect(
-      executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID }),
+      executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID, chargeReferenceId: `op:${REQUEST_ID}:charge` }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
     expect(getModelAssets).not.toHaveBeenCalled();
     expect(deductCredits).not.toHaveBeenCalled();
@@ -598,7 +598,7 @@ describe("executeMintPackage mint-transition invariant (review item 1)", () => {
     vi.mocked(getModelById).mockResolvedValue(model({ agencyId: "MOD-26-STRAY0" }) as never);
     const { executeMintPackage } = await import("./casting/mintPackage");
     await expect(
-      executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID }),
+      executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID, chargeReferenceId: `op:${REQUEST_ID}:charge` }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
     expect(getModelAssets).not.toHaveBeenCalled();
     expect(deductCredits).not.toHaveBeenCalled();
@@ -610,7 +610,7 @@ describe("executeMintPackage mint-transition invariant (review item 1)", () => {
     vi.mocked(getModelById).mockResolvedValue(model({ mintedAt: new Date() }) as never);
     const { executeMintPackage } = await import("./casting/mintPackage");
     await expect(
-      executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID }),
+      executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID, chargeReferenceId: `op:${REQUEST_ID}:charge` }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
     expect(deductCredits).not.toHaveBeenCalled();
     expect(mintModelAtomically).not.toHaveBeenCalled();

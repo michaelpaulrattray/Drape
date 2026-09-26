@@ -384,6 +384,7 @@ import { verifyIdentityEdit } from "./casting/identity/editGate";
 import { refundReferenceFor } from "./casting/atomicCredits";
 import { PublicError } from "./lib/publicError";
 import { executeMintPackage } from "./casting/mintPackage";
+import { operationChargeReference } from "./casting/operationContract";
 import {
   executeApplyModelEdit as executeApplyModelEditRaw,
   executeRunGeneration as executeRunGenerationRaw,
@@ -401,6 +402,22 @@ import { resolveEffectiveCastStateForRead } from "./casting/effectiveCastRead";
 import { assertPublicOperationResult } from "./casting/operationContract";
 
 const REQUEST_ID = "11111111-1111-4111-8111-111111111111";
+/*
+  ⚠ A CHARGE REFERENCE IS PASSED NOW, AND IT USED TO BE OMITTED (#1362).
+
+  These arms called `executeMintPackage` with no `chargeReferenceId` and then
+  asserted the refund was keyed `legacy-mint-7:slot:threeQuarter` — the
+  entrance's own fallback, which was CONSTANT PER MODEL. Since a duplicate
+  deduct is refused, reaching it twice for one model would have refused the
+  charge permanently. The fallback is deleted, so the fixture now passes what
+  production passes: `operationChargeReference(operationId)`, unique per
+  operation, which is what `markGenerationOperationRunning` returns.
+
+  The arms below are STRONGER for it — they now prove the refund is keyed on
+  THIS operation's charge rather than on a per-model constant that could not
+  have distinguished two mints of one model.
+*/
+const CHARGE_REF = operationChargeReference(REQUEST_ID);
 const accounting = (reference: string) => ({
   chargeReferenceId: reference,
   onCharged: () => undefined,
@@ -552,7 +569,7 @@ describe("mint slot — createModelAsset returns { success:false }", () => {
     vi.mocked(getModelAssets).mockResolvedValue(CORE_MINUS_ONE as never);
     vi.mocked(commitGeneratedPackageSnapshot).mockRejectedValueOnce(new Error("atomic package insert failed"));
     vi.mocked(createModelAsset).mockResolvedValue({ success: true, assetId: 900 } as never);
-    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID });
+    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID, chargeReferenceId: CHARGE_REF });
 
     expect(res.minted).toBe(false);
     expect((res as Record<string, unknown>).mintAborted).toBe(true);
@@ -562,7 +579,7 @@ describe("mint slot — createModelAsset returns { success:false }", () => {
     expect(res.failed[0].refunded).toBeGreaterThan(0);
     // Refund recorded exactly once, under the slot's deterministic id
     expect(addCredits).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(addCredits).mock.calls[0][4]).toBe(refundReferenceFor("legacy-mint-7:slot:threeQuarter"));
+    expect(vi.mocked(addCredits).mock.calls[0][4]).toBe(refundReferenceFor(`${CHARGE_REF}:slot:threeQuarter`));
     expect(storageDelete).toHaveBeenCalledWith("casting/v.png");
     // The durable marker reflects the recorded refund
     const markerCall = vi.mocked(createModelAsset).mock.calls[0][0] as { status: { refunded: number } };
@@ -574,7 +591,7 @@ describe("mint slot — createModelAsset returns { success:false }", () => {
     vi.mocked(commitGeneratedPackageSnapshot).mockRejectedValueOnce(new Error("atomic package insert failed"));
     vi.mocked(createModelAsset).mockResolvedValue({ success: true, assetId: 900 } as never);
     vi.mocked(addCredits).mockResolvedValue({ success: false, error: "db down" } as never);
-    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID });
+    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID, chargeReferenceId: CHARGE_REF });
     expect(res.failed[0].refunded).toBe(0);
     const markerCall = vi.mocked(createModelAsset).mock.calls[0][0] as { status: { refunded: number } };
     expect(markerCall.status.refunded).toBe(0);
@@ -585,17 +602,17 @@ describe("mint slot — createModelAsset returns { success:false }", () => {
     vi.mocked(commitGeneratedPackageSnapshot).mockRejectedValueOnce(new Error("atomic package insert failed"));
     // The durable marker insert fails (result-style, no throw).
     vi.mocked(createModelAsset).mockResolvedValue({ success: false } as never);
-    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID });
+    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID, chargeReferenceId: CHARGE_REF });
     expect(res.minted).toBe(false);
     expect(res.failed).toHaveLength(1);
     expect(res.failed[0].markerPersisted).toBe(false); // the truth reaches the response
-    expect(res.failed[0].refundReference).toBe(refundReferenceFor("legacy-mint-7:slot:threeQuarter"));
+    expect(res.failed[0].refundReference).toBe(refundReferenceFor(`${CHARGE_REF}:slot:threeQuarter`));
   });
 
   it("a failed createGeneration fails the slot BEFORE any image call", async () => {
     vi.mocked(getModelAssets).mockResolvedValue(CORE_MINUS_ONE as never);
     vi.mocked(createGeneration).mockResolvedValue({ success: false } as never);
-    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID });
+    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID, chargeReferenceId: CHARGE_REF });
     expect(res.minted).toBe(false);
     expect(res.failed).toHaveLength(1);
     expect(generateRemainingViews).not.toHaveBeenCalled();
@@ -1126,7 +1143,7 @@ describe("public error sanitization at the paid doors", () => {
   it("mint slot: a raw internal error never lands in the PUBLIC failed-slot record; refund truth does", async () => {
     vi.mocked(getModelAssets).mockResolvedValue(CORE_MINUS_ONE as never);
     vi.mocked(generateRemainingViews).mockRejectedValueOnce(new Error(RAW_INTERNAL));
-    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID });
+    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID, chargeReferenceId: CHARGE_REF });
     expect(res.failed).toHaveLength(1);
     expect(res.failed[0].reason).toBe("Generation failed");
     expect(res.failed[0].refunded).toBeGreaterThan(0);
@@ -1138,7 +1155,7 @@ describe("public error sanitization at the paid doors", () => {
   it("mint slot: deliberately written PublicError wording (identity gate) passes through", async () => {
     vi.mocked(getModelAssets).mockResolvedValue(CORE_MINUS_ONE as never);
     vi.mocked(generateRemainingViews).mockRejectedValueOnce(new PublicError("The engine rejected this request. Adjust the instruction and try again."));
-    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID });
+    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID, chargeReferenceId: CHARGE_REF });
     expect(res.failed[0].reason).toBe("The engine rejected this request. Adjust the instruction and try again.");
   });
 

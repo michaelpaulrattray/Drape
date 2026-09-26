@@ -12442,6 +12442,10 @@
       "path": "server/changeRequests.test.ts"
     },
     {
+      "id": "test:server/chargeReferenceRequired.test.ts",
+      "path": "server/chargeReferenceRequired.test.ts"
+    },
+    {
       "id": "test:server/childProcessTestTimeouts.test.ts",
       "path": "server/childProcessTestTimeouts.test.ts"
     },

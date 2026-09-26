@@ -295,6 +295,7 @@ import { buildIdentityAnchor } from "./casting/geminiClient";
 import { verifyViewIdentity } from "./casting/backViewGate";
 import { executeMintPackage, executeRestoreSlotVersion } from "./casting/mintPackage";
 import { executeRefreshSlots } from "./casting/refreshSlots";
+import { operationChargeReference } from "./casting/operationContract";
 import { REFUSAL_COPY } from "./casting/identity/refusalCopy";
 import { bootstrapModelSnapshot } from "./casting/snapshotBootstrap";
 import { captureSnapshotReadMode } from "./casting/snapshotReadScope";
@@ -1456,7 +1457,7 @@ describe("executeRefreshSlots consumes the §7 anchor (M9)", () => {
       asset({ id: 2, storageUrl: "https://r2/anchor.png", provenance: { identityRole: "anchor", identityRevisionId: "rev-3" } }),
       asset({ id: 1, viewType: "threeQuarter", storageUrl: "https://r2/tq.png", provenance: { identityRevisionId: "rev-3" } }),
     ] as never);
-    const res = await executeRefreshSlots({ userId: 1, modelId: 7, angles: ["threeQuarter"], operationId: REQUEST_ID });
+    const res = await executeRefreshSlots({ userId: 1, modelId: 7, angles: ["threeQuarter"], operationId: REQUEST_ID, chargeReferenceId: operationChargeReference(REQUEST_ID) });
     expect(res.refreshed).toHaveLength(1);
     expect(vi.mocked(generateRemainingViews).mock.calls[0][1]).toBe("https://r2/anchor.png");
     expect(commitRefreshedSlotsSnapshot).toHaveBeenCalledWith(expect.objectContaining({
@@ -1483,7 +1484,7 @@ describe("executeRefreshSlots consumes the §7 anchor (M9)", () => {
       .mockResolvedValueOnce({ ok: false, checked: true })
       .mockResolvedValueOnce({ ok: true, checked: true });
 
-    const res = await executeRefreshSlots({ userId: 1, modelId: 7, angles: ["sideFull"], operationId: REQUEST_ID });
+    const res = await executeRefreshSlots({ userId: 1, modelId: 7, angles: ["sideFull"], operationId: REQUEST_ID, chargeReferenceId: operationChargeReference(REQUEST_ID) });
 
     expect(res.refreshed).toHaveLength(1);
     expect(storageDelete).toHaveBeenCalledTimes(1);
@@ -1506,7 +1507,7 @@ describe("executeRefreshSlots consumes the §7 anchor (M9)", () => {
       .mockResolvedValueOnce({ ok: false, checked: true })
       .mockResolvedValueOnce({ ok: false, checked: true });
 
-    const res = await executeRefreshSlots({ userId: 1, modelId: 7, angles: ["backFull"], operationId: REQUEST_ID });
+    const res = await executeRefreshSlots({ userId: 1, modelId: 7, angles: ["backFull"], operationId: REQUEST_ID, chargeReferenceId: operationChargeReference(REQUEST_ID) });
 
     expect(res.refreshed).toEqual([]);
     expect(res.failed).toHaveLength(1);
@@ -1526,7 +1527,7 @@ describe("executeRefreshSlots consumes the §7 anchor (M9)", () => {
     ] as never);
     vi.mocked(commitRefreshedSlotsSnapshot).mockRejectedValueOnce(new Error("snapshot commit failed"));
 
-    const res = await executeRefreshSlots({ userId: 1, modelId: 7, angles: ["threeQuarter"], operationId: REQUEST_ID });
+    const res = await executeRefreshSlots({ userId: 1, modelId: 7, angles: ["threeQuarter"], operationId: REQUEST_ID, chargeReferenceId: operationChargeReference(REQUEST_ID) });
 
     expect(res.refreshed).toEqual([]);
     expect(res.failed).toHaveLength(1);
@@ -1544,7 +1545,7 @@ describe("executeRefreshSlots consumes the §7 anchor (M9)", () => {
     ] as never);
     vi.mocked(updateGeneration).mockRejectedValueOnce(new Error("audit unavailable"));
 
-    const res = await executeRefreshSlots({ userId: 1, modelId: 7, angles: ["threeQuarter"], operationId: REQUEST_ID });
+    const res = await executeRefreshSlots({ userId: 1, modelId: 7, angles: ["threeQuarter"], operationId: REQUEST_ID, chargeReferenceId: operationChargeReference(REQUEST_ID) });
 
     expect(res.refreshed).toHaveLength(1);
     expect(res.failed).toEqual([]);

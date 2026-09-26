@@ -235,7 +235,33 @@ export interface MintPackageInput {
    *  separate deliberate act; identity iteration stays free until it. */
   mint?: boolean;
   readMode?: SnapshotReadMode;
-  chargeReferenceId?: string;
+  /**
+   * The ledger's idempotency key for this operation's charge, and it is
+   * REQUIRED (#1362, the Warden money audit's W5-D).
+   *
+   * ⚠ IT WAS OPTIONAL, WITH A FALLBACK THAT WAS CONSTANT PER MODEL —
+   * `` `legacy-{kind}-${modelId}` ``. A duplicate deduct is REFUSED
+   * (`server/db/credits.ts`: *"Credit charge already recorded"*), so reaching
+   * that fallback a SECOND time for one model would have refused the charge
+   * permanently: not "insufficient credits" but a dead button, carrying a
+   * message about a charge already recorded, that never recovers. The money
+   * direction was safe — nothing taken, nothing lost — and the CUSTOMER
+   * direction was not.
+   *
+   * ⚠ IT WAS NEVER REACHABLE, and the fix is to delete the branch rather than
+   * to make it survivable. The one production caller passes
+   * `started.chargeReferenceId` from `markGenerationOperationRunning`, whose
+   * return type is `Promise<{{ operationId: string; chargeReferenceId: string }}>`
+   * — non-optional, and valued `operationChargeReference(operationId)`, unique
+   * per operation. Read at the caller's TYPE rather than at a grep for the
+   * symbol, which is the distinction this repository has been bitten by (an
+   * import is not a call site).
+   *
+   * So the type now says what the caller already guaranteed. The trap it
+   * removes is the one that arms itself quietly: a second caller, a promoted
+   * test helper, or anybody making this optional again.
+   */
+  chargeReferenceId: string;
   operationId: string;
   onCharged?: (amount: number) => void;
   onRefunded?: (amount: number) => void;
@@ -259,7 +285,15 @@ export interface SlotGenContext {
   reasonLabel: string;
   /** Present on mint; absent on refresh (stamped into generation metadata + provenance). */
   mintTier?: MintTier;
-  chargeReferenceId?: string;
+  /**
+   * The charge this slot's refund is keyed against, and it is REQUIRED for the
+   * same reason as the two entrances' own (#1362): both of them build this
+   * context, both already pass a unique per-operation reference, and the
+   * `?? `legacy-package-${modelId}`` fallback below it was a THIRD constant-per-
+   * model key — the one the card did not name, found by sweeping the class
+   * rather than the two instances (working law 7).
+   */
+  chargeReferenceId: string;
   onRefunded?: (amount: number) => void;
   operationId?: string;
 }
@@ -454,7 +488,7 @@ async function failSlot(
     }
   }
   const refund = slotCost(angle);
-  const chargeKey = `${ctx.chargeReferenceId ?? `legacy-package-${ctx.modelId}`}:slot:${angle}`;
+  const chargeKey = `${ctx.chargeReferenceId}:slot:${angle}`;
   const outcome = await recordRefund(
     ctx.userId,
     refund,
@@ -607,7 +641,7 @@ export async function executeMintPackage(input: MintPackageInput) {
   if (totalCost > 0) {
     const deduct = await deductCredits(
       input.userId, totalCost, "generation",
-      `Mint package (${input.tier}, pending)`, input.chargeReferenceId ?? `legacy-mint-${input.modelId}`,
+      `Mint package (${input.tier}, pending)`, input.chargeReferenceId,
       { toolKind: "image" }, // the charge pays for generating the missing view images
     );
     if (!deduct.success) {
@@ -624,7 +658,7 @@ export async function executeMintPackage(input: MintPackageInput) {
     headshotUrl: anchor.storageUrl!,
     reasonLabel: "Mint package",
     mintTier: input.tier,
-    chargeReferenceId: input.chargeReferenceId ?? `legacy-mint-${input.modelId}`,
+    chargeReferenceId: input.chargeReferenceId,
     onRefunded: input.onRefunded,
     operationId: input.operationId,
   };
