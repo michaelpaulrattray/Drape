@@ -60,9 +60,11 @@
  *    the terminal list earns its place by its OWN declaration already saying a
  *    second attempt reaches the identical answer; the six that read like
  *    candidates and are deliberately left retrying are named there too, with
- *    why. What moved in behaviour is exactly one class, `cannot_say`: a door
- *    that refuses before the provider is contacted, so nothing was ever going
- *    to arrive.
+ *    why. ⚠ **Nothing a customer meets on THIS road changes**: the terminal
+ *    set adds `cannot_say`, which this road cannot raise — the only raiser is
+ *    `refineService.ts`'s `RepaintCannotSayError`, on the repaint road, and it
+ *    is not a `ProviderError`. The value is the derivation and its arms, not a
+ *    wait saved here.
  * 3. **A lost commit deletes its object.** If the fence refuses — the sweep got
  *    here first — nothing will ever reference those bytes, and the cleanup
  *    worker only deletes keys a row handed it. Best-effort delete now, or it is
@@ -759,9 +761,21 @@ export async function renderViewAttempts<T>(
         have dropped from two attempts to one, the opposite of what that card
         ordered. The new predicate keeps `unknown` retrying and says why.
 
-        What moved: `cannot_say` is terminal now. That door refuses before the
-        provider is contacted, so nothing was ever going to arrive, and asking
-        twice only spends her wait reaching an answer the door already gave.
+        ⚠ **NOTHING A CUSTOMER MEETS ON THIS ROAD CHANGES, AND THE FIRST
+        DRAFT OF THIS PARAGRAPH SAID OTHERWISE.** It claimed `cannot_say`
+        going terminal turned fifteen calls into five. **Read at the bytes,
+        this road cannot raise `cannot_say` at all**: the only raiser in the
+        product is `refineService.ts`'s `RepaintCannotSayError`, on the repaint
+        road, and it extends `Error` rather than `ProviderError` — so it could
+        not reach the `instanceof ProviderError` branch above even if a view
+        somehow threw it. It is on the terminal set because the CONTRACT's own
+        declaration justifies it, not because a wait was saved here.
+
+        So what this change is worth is the derivation and its arms, not a
+        behaviour win: the loop stops holding a private opinion about a union
+        that already has a contract module, and the six classes that read like
+        candidates for the terminal set are named and pinned instead of being
+        rediscovered by whoever reads these two string comparisons next.
         Transport and rate limits were already retried inside the adapter.
       */
       if (!mayStillArrive(failureClass)) break;

@@ -266,7 +266,13 @@ export function refusesAfterRender(failure: ProviderFailureClass): boolean {
  * - `cannot_say` — *"the recipe will have the same nothing to say a second
  *   later."* This door refuses BEFORE the provider is contacted, so nothing
  *   was ever going to arrive; asking twice buys a wait to reach an answer the
- *   door had already given in full.
+ *   door had already given in full. ⚠ **It is UNREACHABLE from the Sign
+ *   package's view loop today and is here on the contract's own terms, not on
+ *   a measured win** — the only raiser in the product is `refineService.ts`'s
+ *   `RepaintCannotSayError`, on the repaint road, and it extends `Error`
+ *   rather than `ProviderError`. A set that only answered for the roads that
+ *   happen to raise a class today is a set that is wrong the day a second road
+ *   raises it, which is the shape this whole file exists to avoid.
  *
  * ## What is deliberately NOT on it, which is the more important half
  *

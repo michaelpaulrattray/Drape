@@ -519,19 +519,24 @@ describe("generation failures", () => {
   });
 
   /*
-    ⚠ WHAT #1212 ACTUALLY MOVED, AND IT IS ONE CLASS.
+    ⚠ THE ONLY CLASS #1212 MOVED - AND IT IS UNREACHABLE ON THIS ROAD, WHICH
+    IS SAID HERE RATHER THAN LEFT FOR A READER TO DISCOVER.
 
-    `cannot_say` is a door that refuses BEFORE the provider is contacted -
-    nothing was ever going to arrive, and its own declaration says *"the recipe
-    will have the same nothing to say a second later"*. It was being asked three
-    times per view, spending the customer's wait to reach an answer the door had
-    already given in full. Fifteen calls became five.
+    Nothing in the view road raises `cannot_say`: the only raiser in the product
+    is `refineService.ts`'s `RepaintCannotSayError`, on the repaint road, and it
+    extends `Error` rather than `ProviderError`, so it could not even reach the
+    `instanceof ProviderError` branch. **No customer wait is saved by this
+    change.** The first draft of this suite and its PR said fifteen calls became
+    five; that was wrong and the reviewer caught it at the bytes.
 
-    Driven beside the arm above rather than instead of it: the two together are
-    the whole point of the set, because they are the two classes the transport
-    contract and this road disagree about in OPPOSITE directions.
+    The arm stays because it is the ONLY way to prove the loop now asks the
+    contract instead of naming its own classes: `content_policy` and
+    `capability` were already terminal, so they cannot tell the two
+    implementations apart. Throwing a class the road cannot raise is a
+    deliberate synthetic - it measures the WIRING, and the wiring is what this
+    card was about.
   */
-  it("asks a door that already said no exactly once per view", async () => {
+  it("asks the terminal set, not two class names - driven on a class only the set knows", async () => {
     const generateView = vi.fn(async () => {
       throw new ProviderError("cannot_say", "no slot for that");
     });
