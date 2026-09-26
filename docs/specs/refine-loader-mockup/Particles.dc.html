@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>E · Her picture as dust</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;font-family:Archivo,system-ui,-apple-system,sans-serif;background:#1c1c1f}
+a{color:#ffffff}a:hover{color:#ffffff}
+@keyframes dust-breathe{0%,100%{filter:saturate(0.2) brightness(0.52)}50%{filter:saturate(0.2) brightness(0.64)}}
+.dust-picture{animation:dust-breathe 6s ease-in-out infinite}
+@media (prefers-reduced-motion: reduce){.dust-picture{animation:none}}
+</style>
+</helmet>
+<div style="position: relative; width: 466px; height: 695px; overflow: hidden; border-radius: 12px; background: #141416; font-family: Archivo, system-ui, sans-serif;">
+  <img src="/_blob/46f5c4f8e0929e63f6a0396e8956367c" alt="" class="dust-picture" style="position: absolute; inset: 0; width: 466px; height: 695px; object-fit: cover; opacity: 0.55; filter: saturate(0.2) brightness(0.55);">
+  <canvas id="dust" width="466" height="695" style="position: absolute; inset: 0; width: 466px; height: 695px; cursor: default;"></canvas>
+  <div style="position: absolute; left: 0; right: 0; top: 330px; display: flex; flex-direction: column; align-items: center; gap: 5px; pointer-events: none; color: #ffffff; text-shadow: 0 1px 14px rgba(0,0,0,0.6);">
+    <div style="font-size: 14.5px; font-weight: 500; line-height: 1.35;">make the whole look pinker …</div>
+    <div style="margin-top: 14px; width: 160px; height: 2px; border-radius: 1px; background: rgba(255,255,255,0.18); overflow: hidden;">
+      <div style="width: {{barWidth}}; height: 2px; border-radius: 1px; background: #ffffff; opacity: 0.95;"></div>
+    </div>
+    <div style="margin-top: 8px; font-size: 11px; letter-spacing: 0.02em; opacity: 0.6;">{{stage}}</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;progress&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:0.25,&quot;min&quot;:0,&quot;max&quot;:1,&quot;step&quot;:0.05,&quot;unit&quot;:&quot;of the render&quot;},&quot;density&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:1700,&quot;min&quot;:800,&quot;max&quot;:6000,&quot;step&quot;:100,&quot;unit&quot;:&quot;particles&quot;},&quot;reach&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:40,&quot;min&quot;:30,&quot;max&quot;:140,&quot;step&quot;:5,&quot;unit&quot;:&quot;px&quot;},&quot;ripple&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:10,&quot;min&quot;:3,&quot;max&quot;:15,&quot;step&quot;:1,&quot;unit&quot;:&quot;s between ripples&quot;},&quot;$preview&quot;:{&quot;width&quot;:466,&quot;height&quot;:695}}">
+class Component extends DCLogic {
+  // The dust sits on HER SHAPE (where the picture differs from its studio backdrop)
+  // and never sits still: every particle roams around its own spot the whole time.
+  // Every few seconds a ripple runs out from the centre and lights the dust it
+  // passes, like a drop on water. The bar and the stage word carry the real
+  // progress; the dust is alive regardless of it.
+  progressValue() { var p = Number(this.props.progress); return isNaN(p) ? 0.5 : Math.max(0, Math.min(1, p)); }
+  componentDidMount() {
+    var self = this;
+    var canvas = document.getElementById('dust');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var W = canvas.width, H = canvas.height;
+    var count = this.props.density || 2400;
+    var reach = this.props.reach || 60;
+    var rippleEvery = this.props.ripple || 7;
+    var mouse = { x: -9999, y: -9999 };
+    var particles = [];
+    var img = new Image();
+    img.src = '/_blob/46f5c4f8e0929e63f6a0396e8956367c';
+    var figure = null; // 0..1 per pixel: how much this pixel is HER rather than the backdrop
+    function homePoint() {
+      for (var tries = 0; tries < 80; tries++) {
+        var x = Math.random() * W, y = Math.random() * H;
+        if (!figure) return { x: x, y: y };
+        var v = figure[(Math.floor(y) * W + Math.floor(x))];
+        if (Math.random() < (0.03 + v * 1.1)) return { x: x, y: y };
+      }
+      return { x: Math.random() * W, y: Math.random() * H };
+    }
+    function seed() {
+      particles = [];
+      for (var i = 0; i < count; i++) {
+        var home = homePoint();
+        particles.push({ hx: home.x, hy: home.y, x: home.x, y: home.y, vx: 0, vy: 0,
+          r: 0.6 + Math.random() * 1.1, a: 0.35 + Math.random() * 0.55,
+          phase: Math.random() * 6.2832, speed: 0.6 + Math.random() * 0.8 });
+      }
+    }
+    img.onload = function () {
+      try {
+        var off = document.createElement('canvas'); off.width = W; off.height = H;
+        var o = off.getContext('2d'); o.drawImage(img, 0, 0, W, H);
+        var d = o.getImageData(0, 0, W, H).data;
+        var lum = new Float32Array(W * H);
+        for (var i = 0; i < W * H; i++) lum[i] = (0.2126 * d[i * 4] + 0.7152 * d[i * 4 + 1] + 0.0722 * d[i * 4 + 2]) / 255;
+        var edge = 0, n = 0;
+        for (var y = 0; y < H; y += 3) { edge += lum[y * W] + lum[y * W + W - 1]; n += 2; }
+        for (var x = 0; x < W; x += 3) { edge += lum[x] + lum[(H - 1) * W + x]; n += 2; }
+        var backdrop = edge / n;
+        figure = new Float32Array(W * H);
+        for (var j = 0; j < W * H; j++) { var diff = Math.abs(lum[j] - backdrop) * 3.2; figure[j] = diff > 1 ? 1 : diff; }
+      } catch (e) { figure = null; }
+      seed();
+    };
+    img.onerror = function () { seed(); };
+    seed();
+    canvas.addEventListener('mousemove', function (e) {
+      var b = canvas.getBoundingClientRect();
+      mouse.x = (e.clientX - b.left) * (W / b.width); mouse.y = (e.clientY - b.top) * (H / b.height);
+    });
+    canvas.addEventListener('mouseleave', function () { mouse.x = -9999; mouse.y = -9999; });
+    var t = 0;
+    var cx = W / 2, cy = H * 0.47, rippleSpeed = 150, rippleBand = 26, rippleReach = Math.sqrt(cx * cx + cy * cy) + rippleBand;
+    function frame() {
+      t += 0.016;
+      var breath = 0.9 + 0.1 * Math.sin((t / 6) * 6.2832 - 1.5708);
+      var since = t % rippleEvery, ringR = since * rippleSpeed, ringOn = ringR < rippleReach;
+      var ringFade = ringOn ? 1 - ringR / rippleReach : 0;
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = '#ffffff';
+      for (var i = 0; i < particles.length; i++) {
+        var p = particles[i];
+        // never still: a slow wander around its own spot, different for every particle
+        var wx = Math.sin(t * p.speed + p.phase) * 0.045 + (Math.random() - 0.5) * 0.06;
+        var wy = Math.cos(t * p.speed * 0.8 + p.phase * 1.7) * 0.045 + (Math.random() - 0.5) * 0.06;
+        var dx = p.x - mouse.x, dy = p.y - mouse.y, dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < reach) { var f = (reach - dist) / reach; p.vx += (dx / (dist + 0.01)) * f * 1.6; p.vy += (dy / (dist + 0.01)) * f * 1.6; }
+        var lit = 0;
+        if (ringOn) {
+          var rx = p.x - cx, ry = p.y - cy, rd = Math.sqrt(rx * rx + ry * ry), gap = Math.abs(rd - ringR);
+          if (gap < rippleBand) {
+            lit = (1 - gap / rippleBand) * ringFade;
+            var push = lit * 0.35;
+            p.vx += (rx / (rd + 0.01)) * push; p.vy += (ry / (rd + 0.01)) * push;
+          }
+        }
+        p.vx += (p.hx - p.x) * 0.006 + wx;                                // a loose leash home, so the roaming stays on her shape
+        p.vy += (p.hy - p.y) * 0.006 + wy;
+        p.vx *= 0.9; p.vy *= 0.9;
+        p.x += p.vx; p.y += p.vy;
+        var alpha = p.a * breath + lit * 0.6;
+        ctx.globalAlpha = alpha > 1 ? 1 : alpha;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r + lit * 0.6, 0, 6.2832); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      self._raf = requestAnimationFrame(frame);
+    }
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) { frame(); cancelAnimationFrame(self._raf); } else { frame(); }
+  }
+  componentWillUnmount() { if (this._raf) cancelAnimationFrame(this._raf); }
+  renderVals() {
+    var p = this.progressValue();
+    var names = ['sending', 'painting', 'checking', 'finishing'];
+    var stage = p <= 0 ? 'sending' : names[Math.min(3, Math.max(0, Math.ceil(p * 4) - 1))];
+    return { barWidth: Math.round(p * 100) + '%', stage: stage };
+  }
+}
+</script>
+</body>
+</html>
