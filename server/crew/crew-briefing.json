@@ -1,7 +1,7 @@
 {
-  "edition": 547,
-  "updatedAt": "2026-09-26T15:19:36.730Z",
-  "shift": "Foreman — the checker can now read a big picture, which is what your quality change was waiting on",
+  "edition": 548,
+  "updatedAt": "2026-09-26T17:10:56.778Z",
+  "shift": "Foreman — when a page breaks in someone's browser, we can start finding out (two keys from you)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -311,7 +311,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-26T11:53:41.559Z",
+      "readAt": "2026-09-26T16:58:56.450Z",
       "items": [
         {
           "issueNumber": 1129,
@@ -404,6 +404,12 @@
           "rung": "N4b"
         },
         {
+          "issueNumber": 1419,
+          "title": "Two keys to paste, and Drape starts telling us when a page breaks for someone",
+          "kind": "rung",
+          "rung": "N6"
+        },
+        {
           "issueNumber": 29,
           "title": "Retirement + cleanup — roadmap item 7, and its missing tool now exists",
           "kind": "rung",
@@ -437,6 +443,28 @@
     }
   },
   "needsYou": [
+    {
+      "id": "sentry-keys-1419",
+      "issueNumber": 1419,
+      "state": "open",
+      "filedAt": "2026-09-26",
+      "title": "Two keys to paste, and Drape starts telling us when a page breaks for someone",
+      "productImpact": "Right now, when something goes wrong for someone using Drape, nobody finds out. If a page breaks in a customer's browser she sees the error screen, and we never hear about it unless she tells us.\n\nThe code that reports those crashes to you is built and tested — the server half went live on 26 September, the browser half is in review now. It is switched off, and it stays off until you paste two keys.",
+      "workedExample": "You already have a Sentry account. It needs two projects, because the server and the browser are separate: a Node one, and a Browser one. Their two keys go on Railway as SENTRY_DSN and VITE_SENTRY_DSN. That is the whole job — about five minutes, free at our size, and the next deploy switches it on.\n\nWhat you would then see: a page that breaks shows up in Sentry within seconds, saying which page, which account, and what went wrong. What never travels: her words, her brief, her pictures, or the recipe behind her cast. That is built into the code rather than promised — if any of those is ever attached to a report, the whole report is refused rather than trimmed.\n\nNobody sees anything different in the app either way.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Paste both keys",
+          "consequence": "A broken page reaches you within seconds instead of never. Nothing else changes and no customer sees anything different."
+        },
+        {
+          "key": "B",
+          "label": "Not yet",
+          "consequence": "Nothing breaks and nothing pretends. With no keys nothing is sent, and no screen can show you a '0 errors today' that only means nobody switched it on. This card closes."
+        }
+      ],
+      "recommendation": "Paste both keys. It costs nothing on the free tier at our size and takes about five minutes. Until it is done, the first thing we will learn about a broken page is a customer telling us — and that is the one thing this whole job exists to stop."
+    },
     {
       "id": "old-lane-delete-1398",
       "issueNumber": 1398,
@@ -6144,7 +6172,7 @@
     {
       "id": "judge-frame-correction-1408",
       "title": "The bounded-checker docblock stops blaming Thursday's three views on this job (#1408)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1416,
       "note": "Comment-only; the correction was pushed after the merge had taken the earlier head."
     },
@@ -8509,6 +8537,13 @@
       "status": "merged",
       "prNumber": 1404,
       "note": "Merged 2026-09-26 on the relay's hand verdict (pass, read in full)."
+    },
+    {
+      "id": "error-tracker-509-part1b",
+      "title": "A crash in a customer's BROWSER reaches somebody — and a render crash reached nobody at all until now (#509 part 1b)",
+      "status": "merged",
+      "prNumber": 1418,
+      "note": "Merged 2026-09-26 (8178afee) on the relay's hand verdict — pass, read in full."
     }
   ],
   "problems": [
@@ -8820,7 +8855,7 @@
     227
   ],
   "nextUp": {
-    "readAt": "2026-09-26T11:55:29.813Z",
+    "readAt": "2026-09-26T16:58:56.450Z",
     "items": [
       {
         "issueNumber": 1278,
@@ -8830,7 +8865,11 @@
       {
         "issueNumber": 1373,
         "title": "Sign views render at the engine's top tier — 4K on Nano Banana Pro, one declaration for Sign and Try again (his word, 2026-09-26)",
-        "urgent": true
+        "urgent": true,
+        "held": {
+          "state": "blocked",
+          "because": "you — your eye on #1394's court frames. That court measured Nano Banana Pro's 4K tier as WORSE than today's 2K on every axis the judge reads (65% against 80% o…"
+        }
       },
       {
         "issueNumber": 1394,
@@ -8845,7 +8884,11 @@
       {
         "issueNumber": 180,
         "title": "N2: THE GHOST AUDIT — enumerate every piece of old-lane machinery still running under the author road (categories, dice, archetypes, personas); the Follow ghost (#176) is specimen #1 (founder flag, 2026-08-27)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "you — your answer on #1398 (*\"The old casting lane is switched off for everyone — do we delete it?\"*). The audit's whole population is the old lane's machinery…"
+        }
       },
       {
         "issueNumber": 509,
