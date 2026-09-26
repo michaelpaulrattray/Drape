@@ -441,7 +441,7 @@ export function resolveCloseTarget(input: {
  * `#01079` is), and a branch matches when one of its maximal digit runs IS the
  * number — so `team/relay1079b` matches and `team/relaysmall` does not.
  */
-type CardPullRequestWhere = "title" | "body" | "branch";
+export type CardPullRequestWhere = "title" | "body" | "branch";
 
 export interface CardPullRequestMatch<T> {
   readonly pr: T;
@@ -464,6 +464,21 @@ export function cardNumberOf(raw: string | null | undefined): number | null {
   return Number.isSafeInteger(value) && value > 0 ? value : null;
 }
 
+/**
+ * `#0*N` not followed or preceded by a digit — the one spelling of "this text
+ * names that card".
+ *
+ * Written out rather than with a lookbehind so the expression reads the same on
+ * every engine this file is bundled through, and EXPORTED because
+ * `crewCardBuildState.ts` asks the same question of a pull request title with a
+ * narrower rule for the body (#1094): a second hand-written copy of this
+ * expression is working law 4 in miniature, on the token every card reference
+ * in the product turns on.
+ */
+export function cardNumberToken(card: number): RegExp {
+  return new RegExp(`(^|[^0-9])#0*${card}([^0-9]|$)`);
+}
+
 /** The open PRs naming this card, each with where the number was found. */
 export function findCardPullRequests<T extends PullRequestLike>(
   openPrs: readonly T[],
@@ -471,10 +486,7 @@ export function findCardPullRequests<T extends PullRequestLike>(
 ): CardPullRequestMatch<T>[] {
   const card = cardNumberOf(cardRef);
   if (card === null) return [];
-  /* `#0*N` not followed or preceded by a digit. Written out rather than with a
-     lookbehind so the expression reads the same on every engine this file is
-     bundled through. */
-  const token = new RegExp(`(^|[^0-9])#0*${card}([^0-9]|$)`);
+  const token = cardNumberToken(card);
   const matches: CardPullRequestMatch<T>[] = [];
   for (const pr of openPrs) {
     const where: CardPullRequestWhere[] = [];

@@ -58,6 +58,19 @@ export type LiveQueueItem = {
   readonly mergedAt: string | null;
   /** The card's own `**Waiting on:**` line, or null — the one thing read from a body. */
   readonly holdReason: string | null;
+  /**
+   * A PULL REQUEST's body, and `null` on everything else (#1094).
+   *
+   * ⚠ **THE HEADER'S PROMISE IS ABOUT THE PAGE AND IT STILL HOLDS.** Nothing in
+   * this type travels: the router sends `LiveDesk`, which is derived from these
+   * rows and carries sentences. What needs this field is the read that answers
+   * *which card is this pull request building* — measured at the wire, two of
+   * the eleven open pull requests on the day it landed named their card ONLY in
+   * their body (#1315 for #1182, #1316 for #1231), and two of his five examples
+   * were exactly those. `pullRequestBuildsCard` reads the brief's own `card #N`
+   * sentence out of it and the body goes no further.
+   */
+  readonly body: string | null;
   readonly url: string;
 };
 
@@ -130,6 +143,7 @@ export function liveQueueItemFromSearch(raw: unknown): LiveQueueItem | null {
     closedAt: isoOrNull(item.closed_at),
     mergedAt,
     holdReason: typeof item.body === "string" ? holdReasonFromBody(item.body) : null,
+    body: pull !== null && typeof item.body === "string" ? item.body : null,
     url: String(item.html_url ?? ""),
   };
 }
