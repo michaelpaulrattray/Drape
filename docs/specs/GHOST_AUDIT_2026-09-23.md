@@ -9,12 +9,23 @@ Run 2026-09-23 (foreman-20260923-1542), read at `origin/main@272392db`. Every ro
 read at the code, not carried from a document (law 7c); the one behavioural claim is
 **driven** rather than reasoned (law 7b), and its driver is named where it is made.
 
+> ⚠ **STOP — READ *THE RE-READ, 2026-09-26* AT THE FOOT OF THIS FILE BEFORE ACTING ON
+> ANYTHING ABOVE IT.** `CASTING_CREATIVE_REGISTER_SCOPE` went to `all` on **2026-09-24**,
+> one day after this audit ran, so the section immediately below — the one this whole
+> document turns on — is FALSE, and **ten of the rows in the table have moved**. Two of
+> them now read as deletions and are load-bearing. The re-read says which, with the
+> production row counts and the `file:line` of every surviving reader.
+
 ---
 
 ## ⚠ THE SENTENCE THAT REFRAMES THE WHOLE CARD, AND IT WAS MEASURED FIRST
 
-**The author road runs for exactly ONE account. For everybody else the "old lane" is not a
-ghost — it is the product, and every one of its records IS sent.**
+> ⚠ **SUPERSEDED 2026-09-24 — KEPT AS HISTORY, NOT AS FACT.** Struck rather than deleted
+> because what it was true of is how the four findings below were scoped, and a correction
+> that erases its own premise cannot be checked.
+
+~~**The author road runs for exactly ONE account. For everybody else the "old lane" is not a
+ghost — it is the product, and every one of its records IS sent.**~~
 
 `CASTING_CREATIVE_REGISTER_SCOPE=users:1`, read off the live service on the deploy receipt
 `output/deploy-receipts/2026-09-23T05-24-42-532Z-22668.txt:58` rather than off the record
@@ -25,9 +36,14 @@ apart:
 - **On every other account** (the house road) — nothing here is a ghost yet, and the
   machinery below becomes one the moment N2 widens the flag.
 
-**That is why this table belongs to N2 rather than to a cleanup pass.** A row marked *dead on
+**That is why this table belongs to N2 rather than to a cleanup pass.** ~~A row marked *dead on
 the author road* is not a deletion authority today; it is the list of what stops being true
-when the flag goes home.
+when the flag goes home.~~
+
+> ⚠ **THE FLAG WENT HOME ON 2026-09-24, SO IT IS ONE NOW** — and the sentence above is the
+> exact trap this document became. See the re-read at the foot of the file: the WRITE path
+> is retirable and the READ path is not, because 220 of production's 306 rolls read as
+> legacy for good.
 
 ---
 
@@ -209,3 +225,139 @@ Recorded on #203; nothing was changed here.
 - **The legacy studio** (`server/casting/`, `features/casting/`) — a different lane, retired
   by #29, not this card's class.
 - **A derived population.** See the floor note under the table.
+
+---
+
+# ⚠ THE RE-READ, 2026-09-26 — THE FLAG WENT HOME AND THIS DOCUMENT WENT STALE THE SAME DAY
+
+**Every bold sentence in the section headed *THE SENTENCE THAT REFRAMES THE WHOLE
+CARD* above became FALSE on 2026-09-24**, one day after it was written, and
+nothing in this file said so. It is kept rather than rewritten, because what it
+was true of matters and because a correction that deletes its own premise cannot
+be checked — but **read this section first and that one as history.**
+
+What changed: **`CASTING_CREATIVE_REGISTER_SCOPE` went to `all`** at his switch
+sitting (#1132, card `switch-01-author-road`, his reply verbatim and entire:
+*"Yes"*). Re-read at the **live service** rather than at the record that predicts
+it — `railway variables --service Drape` returns
+`CASTING_CREATIVE_REGISTER_SCOPE=all` — and `castingIntent.ts:633` says so in the
+code.
+
+So the two sentences this file turned on:
+
+| written 2026-09-23 | true on 2026-09-26 |
+|---|---|
+| *"The author road runs for exactly ONE account."* | **Every account's road.** |
+| *"A row marked dead on the author road is not a deletion authority today."* | **It is one.** |
+
+## What that costs, measured at the rows rather than reasoned
+
+The retirement has a **permanent floor**, and it is the first thing this re-read
+went looking for. `rollComposedOnAuthorRoad` (`rollProjection.ts:486`) reads the
+**ROW's own** `compiledBrief.register.kind`, never the flag — and the projection's
+`authorRoad` decides *"the read-only reading sentence and which record lines
+draw"*. So every house-composed row keeps needing the house **READ** path however
+wide the flag goes.
+
+Counted on **production**, read-only:
+
+| | rolls |
+|---|---|
+| total | **306** |
+| `register.kind = "author"` | 86 |
+| **no `register` at all** (pre-flag — the house road) | **216** |
+| `register.kind = "house"` (the #132-era follow/override road) | 2 |
+| `register.kind = "creative"` (the #94 register, retired) | 2 |
+| `compiledBrief.compiler` | `pathA-v1` on all 306 |
+
+**220 of 306 production sheets read as legacy, for good.** The newest of them is
+2026-08-26; the author road has had every roll since. So the line this retirement
+must not cross is exactly: **the WRITE path can go, the READ path cannot.**
+
+## The table, re-verified row by row
+
+Only rows whose verdict MOVED are listed. Each was opened at the code rather than
+carried from the row above it.
+
+| row | verdict 2026-09-23 | verdict now | owner |
+|---|---|---|---|
+| `personaLine` | *fixed* (nulled on this road) | ⚠ **GONE** — #1241 (`3100bb7a`) retired the candidate disposition end to end and migration `0068` DROPPED the column | closed |
+| `intent.reads` | *dead on the author road* | **dead on BOTH roads** — the court measured *"zero readers on either road"*, and its only named consumer `personaLineFor` no longer exists. ⚠ **AND IT STAYS**: his word on #1123, verbatim, *"leave it"* — the `reads`-only trim was offered and **not ordered** | ruled, closed |
+| `intent.composedDirection` | *dead on the author road* | ⚠ **WRONG THEN AND WRONG NOW** — `needsAestheticRetry` (`interpreter.ts:137`) reads it on BOTH roads to decide a free re-ask. The court found this before any call fired | #1123, closed |
+| `intent.variationAxis` | *dead except through finding 1* | ⚠ **NOT DEAD** — `promoteStatedRole` (`heritagePromotion.ts:126`) reads it on both roads, `cohortPhotorealHuman.ts:1710` reads it, and the axis registry's echo reads it (`axisRegistry.ts:1080`) | #1123, closed |
+| `chips`, `variance` → `varianceHeld` | *dead on the wire* | ✅ **OFF THE WIRE** — #1124 shipped; `rollProjection.ts:90` records it. **The ROWS are unchanged**, which was the whole shape of that fix | closed |
+| `intent.role` when promoted | ⚠ FICTION CONSUMER | ✅ **the truncation is fixed** — #1122 shipped road (a), with one home for the rule (`capAtWordBoundary.ts`). ⚠ Roads **(b)** and **(c)** are still HIS: whether a borrowed role should be shown at all | #1122 closed, (c) his |
+| per-slice `resolvedIdentity` | correctly fenced; residual **#179** | ✅ **residual closed** — #179's ceremony found 404 of 404 production records already marked and **0 readable as fact** | closed |
+| `validateLocks` over the dice | ⚠ inert on the author road | unchanged, and now inert for **every** account | **#1125, OPEN, `rung:N3`** |
+| `LOOKS` / `ARCHETYPES` / `ENERGIES` | *dead on the author road* | ⚠ **THE MOST MISREADABLE ROW IN THE TABLE — see below** | this card |
+| `compiledBrief.archetype` (rolled) | *dead — nothing, anywhere* | ⚠ **true of the PERSISTED FIELD and false of the VALUE — see below** | this card |
+
+## ⚠ TWO ROWS THAT READ AS DELETIONS AND ARE NOT
+
+Both would have been deleted by a shift working from the 2026-09-23 wording, and
+both are load-bearing. This is the correction the re-read exists for.
+
+**1 · The three prose tables SURVIVE the retirement.** What dies is their prose
+reaching an engine, not the tables. Their readers, opened one at a time:
+
+- `composeCandidatePrompt` (`cohortPhotorealHuman.ts:2919-2922`, `:2784`) — the
+  `thesis` / `avoid` / `whisper` strings. **This is the only reader that dies.**
+- `stylingResolution.ts:128,134` — `FLAVOURED_ARCHETYPES` and `FLAVOURED_LOOKS`,
+  computed at module load from the same prose; `stylingResolutionFor` is called
+  from `briefCompiler.ts:935` **inside `resolveSheet`, which runs on BOTH roads**,
+  because the author road keeps the per-slice record.
+- `properNouns.ts:35` — the brand and proper-noun wall is built from the KEYS.
+- `interpreter.ts:627` and `castingIntent.ts:808` — the reader's ask and the
+  schema, which **his *"leave it"* protects**.
+- `axisRegistry.ts:726,739,1048` — `footprint`, reached only from
+  `axisRegistry.test.ts` (`sweepComposedPrompt` has no production caller), so a
+  contract-test reader and #1125's subject.
+
+**2 · `resolveArchetype`'s RETURN VALUE is live.** The audit's *"nothing, anywhere
+— no reader outside the compiler"* is true of the **persisted**
+`compiledBrief.archetype` and false of the value: `briefCompiler.ts:1334` hands it
+straight to `resolveSheet`, which is the dice, whose `resolvedIdentity` the author
+road **keeps** (marked `unsent: true`) as the honest record of what was rolled. It
+cannot be removed on its own; it goes when the dice go, and the dice are not on
+this card.
+
+## So what #180 actually still owes, and why it stops here
+
+**One brief: retire the house-road WRITE path.** With the flag at `all`,
+`briefCompiler.ts:1382` always builds `seeded` and `:1408` replaces **every**
+candidate's `prompt` with `seeded.prompt` — so `composeCandidatePrompt` composes
+eight prompts on every production roll and **all eight are discarded**. Its
+fourteen `authorRoad` branch sites (`briefCompiler.ts`, plus `rollService.ts` and
+`routes/castingV2.ts`) each have one arm no account can reach.
+
+⚠ **AND IT CANNOT START TONIGHT, for a reason that is not caution.** Collapsing
+`authorRoad` to `true` while `CASTING_CREATIVE_REGISTER_SCOPE` still exists ships
+**a flag that lies** — set it to `off` and the product would ignore it, which is
+worse than either state. So the code collapse and the flag's retirement are ONE
+act, and retiring a production flag is his word (PROGRAM.md: *production variables
+and flag positions* are founder-only). N2's own definition is *"every
+half-rolled-out flag either widens to everyone or is retired with its machinery"*
+— the widen happened on his word; **the retirement has not been asked for.**
+
+**The question is therefore on his desk as one word, and nothing in this file is
+the answer to it.** Two further facts belong beside it when it is asked:
+
+- **Deleting the write path removes the road back.** There would be no house
+  compiler to return to if his eye ever disagreed with the author road. His own
+  rule cuts toward deleting — *"Nothing is KEPT in a retirement because a future
+  feature might want it"* — and his sign-off on the author road (2026-09-23,
+  *"im happy to sign off on the cyborg breif now"*) is the eye that earned it.
+- **`deterministicBriefCompiler` (`briefCompiler.ts:1559`) is the other caller of
+  the dying composer.** Its own docblock calls it test-only and invites live
+  callers; whichever way that is settled, it is settled deliberately in that
+  brief, not incidentally inside a cleanup.
+
+## What this re-read did NOT do
+
+- **It changed no code.** Every finding above is a reading; the shift that
+  produced it shipped its code on #1275, a different card.
+- **It did not re-run the audit.** The population above is the 2026-09-23 table
+  re-verified, not a fresh walk, so the original's own **floor** note still
+  governs: no derived list stands behind it.
+- **It did not touch the refine road.** His timing correction of 2026-08-28 puts
+  that half at N3's opening act, and that is unchanged.
