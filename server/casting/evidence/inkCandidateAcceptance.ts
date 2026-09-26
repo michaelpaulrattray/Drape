@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import {
   beginDirectOperation,
   completeDirectOperationFailure,
+  recordDirectOperationDelivered,
   requireDirectOperationRecovery,
   type DirectOperationGate,
 } from "../directOperation";
@@ -232,7 +233,7 @@ export async function acceptInkAddCandidate(
     ) {
       throw new Error("Public candidate copy was not verified");
     }
-    return prepared.kind === "feature_projection"
+    const accepted = prepared.kind === "feature_projection"
       ? await (
           dependencies.commitProjection
           ?? commitInkProjectionCandidateAcceptance
@@ -244,6 +245,28 @@ export async function acceptInkAddCandidate(
           prepared,
           publicStorageUrl: stored.url,
         });
+    /*
+      ONE RECORD FOR BOTH BRANCHES, BELOW THE TERNARY RATHER THAN INSIDE IT.
+
+      Either commit's transaction has returned, so the
+      `finalizeRunningGenerationOperationSuccessIn` inside it has landed and the
+      operation is terminally succeeded. Zeros are structural: that finalizer
+      writes them literally and refuses a paid operation outright
+      (`generationOperations.ts:1729`), and accepting a candidate spends nothing
+      — the credits were taken by the generation that produced it.
+
+      ⚠ Written once for two settlements on purpose. Two copies, one per branch,
+      is the shape that lets a third branch arrive tomorrow with no record at
+      all — and a branch that returns from inside a ternary cannot be given one
+      without this refactor anyway.
+    */
+    recordDirectOperationDelivered({
+      userId: input.userId,
+      operationId: gate.operationId,
+      chargedCredits: 0,
+      refundedCredits: 0,
+    });
+    return accepted;
   } catch (error) {
     const terminal = await getOutcome({
       userId: input.userId,
