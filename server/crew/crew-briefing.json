@@ -1,7 +1,7 @@
 {
-  "edition": 551,
-  "updatedAt": "2026-09-26T20:57:04.923Z",
-  "shift": "Retro — the crew's own record audited, and the standing orders were telling every shift something that stopped being true six days earlier",
+  "edition": 552,
+  "updatedAt": "2026-09-26T22:42:08.772Z",
+  "shift": "Janitor — patrol #10: the machine tidied, a dead dev server three shifts had left running finally explained, and five findings filed",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -311,7 +311,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-26T20:55:44.726Z",
+      "readAt": "2026-09-26T22:38:19.052Z",
       "items": [
         {
           "issueNumber": 1129,
@@ -6231,9 +6231,9 @@
     {
       "id": "try-again-row-1347",
       "title": "One muted line under a view's name — Unchecked · Try again (#1347)",
-      "status": "in-review",
-      "prNumber": 1353,
-      "note": "Your reply 224, built. Held for the reviewer."
+      "status": "merged",
+      "prNumber": 1355,
+      "note": "Merged 2026-09-26 as PR #1355 (#1353 was closed and replaced). Row corrected by hand; the class is #1439."
     },
     {
       "id": "brief-dresses-view-1278",
@@ -8568,6 +8568,13 @@
       "status": "merged",
       "prNumber": 1418,
       "note": "Merged 2026-09-26 (8178afee) on the relay's hand verdict — pass, read in full."
+    },
+    {
+      "id": "devserver-abandoned-1435",
+      "title": "A dev server left running on this machine can be told apart from a live one (#1435)",
+      "status": "in-review",
+      "prNumber": 1438,
+      "note": "Three shifts left a dead one running because the tool called it live. Sabotage 2 arms red, 3 probes at the wire."
     }
   ],
   "problems": [
@@ -8581,72 +8588,23 @@
     {
       "id": "gh-graphql-burst-1399",
       "severity": "warning",
-      "state": "open",
+      "state": "resolved",
       "title": "This page can silently keep yesterday's lists, four nights running",
-      "detail": "Nothing you can see in the product is affected — this is our own tooling. GitHub is refusing about half of the commands the crew uses to keep this page current, while telling us we have used 48 of our 5,000 allowance. It is a separate burst limit that reports itself as the wrong thing, which is why four shifts have read it as \"we ran out\" and waited it out.\n\nWhat it costs you: the sweep that refreshes Next up and the in-flight list at the end of every shift skipped all eight of its checks tonight. It is built to leave things alone rather than guess, which is right — but it means this page can keep yesterday's lists without saying so. It also blocked a finished change from merging.\n\nThere is a real fix rather than a wait: the other half of GitHub's interface worked all night, and every refused command has an equivalent there. Written up with the measurement on #1399."
+      "detail": "RESOLVED — card #1399 closed 2026-09-26. Driven rather than assumed: tonight's desk sweep ran all of its checks and printed `[gh] issue list (open) → REST`, and every queue read this shift went through that road without a refusal.\n\nNothing you can see in the product is affected — this is our own tooling. GitHub is refusing about half of the commands the crew uses to keep this page current, while telling us we have used 48 of our 5,000 allowance. It is a separate burst limit that reports itself as the wrong thing, which is why four shifts have read it as \"we ran out\" and waited it out.\n\nWhat it costs you: the sweep that refreshes Next up and the in-flight list at the end of every shift skipped all eight of its checks tonight. It is built to leave things alone rather than guess, which is right — but it means this page can keep yesterday's lists without saying so. It also blocked a finished change from merging.\n\nThere is a real fix rather than a wait: the other half of GitHub's interface worked all night, and every refused command has an equivalent there. Written up with the measurement on #1399."
     },
     {
       "id": "scripts-typecheck-red-1231",
       "severity": "warning",
-      "state": "open",
+      "state": "resolved",
       "title": "One of the crew's own checks is broken, and it has been for four nights",
-      "detail": "Nothing you can see is affected — this is our tooling, not the product. One of the two checks a shift runs before it closes has been failing on a clean tree because six scratch files left behind by earlier shifts have errors in them. It matters because a check that is already red is a check a shift learns to ignore, which is how real breakage gets missed. It has been written up in four shift reports and nobody acted, so it is now a card the tidying round can take: #1231."
+      "detail": "RESOLVED — card #1231 closed 2026-09-26 (PR #1316). The check is `pnpm check:scripts` now and it derives its own exclude list, so other shifts' scratch files cannot redden it. Verified this shift: exit 0, and preflight's script-guard step green.\n\nNothing you can see is affected — this is our tooling, not the product. One of the two checks a shift runs before it closes has been failing on a clean tree because six scratch files left behind by earlier shifts have errors in them. It matters because a check that is already red is a check a shift learns to ignore, which is how real breakage gets missed. It has been written up in four shift reports and nobody acted, so it is now a card the tidying round can take: #1231."
     },
     {
-      "id": "referral-link-dead-1010",
+      "id": "backup-delete-arm-cannot-run-1436",
       "severity": "warning",
-      "state": "resolved",
-      "title": "Your referral link does nothing when a friend opens it — since 4 April",
-      "detail": "What a customer sees: Settings shows their referral link with a Copy button. They send it to a friend. The friend opens it — and nothing is captured, nothing is claimed, and neither of them gets the reward when the friend signs up. Only typing the code by hand into “Redeem a referral code” works.\n\nWhy: the small piece of code that reads “?ref=CODE” off the link and claims it after sign-in was only ever used by the old dashboard page, and that page was deleted on 4 April (a Manus clean-up commit). The server half still works and is still tested; it has simply had nothing calling it for five months. Found by 106’s third check — the one that asks not “does anything use this?” but “did something STOP using it, and why?” — which is exactly what that check is for.\n\nThe fix is filed as bug 1010: mount that piece of code once at the app root. One import, one line. It is money-adjacent (it turns referral rewards back on for link sign-ups, through the same reward code the hand-typed road already uses), so the PR carries founder-review and goes through the reviewer whatever its size. Recommendation: wire it — it is the behaviour your settings page already promises. If you would rather retire the link instead, say so on 1010."
-    },
-    {
-      "id": "fable-reviewer-no-verdict-884-0915",
-      "severity": "warning",
-      "state": "resolved",
-      "title": "The outside reviewer failed again tonight, identically, and your 'wait' stands",
-      "detail": "Tonight's job touched no money and no sign-in code, so it merged on our own checks under your 2026-08-29 ruling. The reviewer job died after 977 milliseconds on its first call having spent six tenths of a cent — the same shape as every other failed run, which is #884's reading: everything about it is identical either side of the boundary, and the only unread thing left is your Fable allowance. Nothing here needs you unless you want to look at that."
-    },
-    {
-      "id": "fable-reviewer-no-verdict-884-0914d",
-      "severity": "warning",
-      "state": "resolved",
-      "title": "The outside reviewer failed again tonight — the 31st in a row, identical to the other thirty, and your 'wait' stands",
-      "detail": "Tonight's job touched no money and no sign-in code, so it merged on our own checks as your rule allows — but the reviewer still ran and still died the same way: it reached the point of asking the model, failed in half a second, used nothing and spent nothing. Read out of the run's own log rather than off the red tick, which is the only reading that can tell this apart from a genuine bad verdict. Nothing here is new and nothing was re-diagnosed: you closed #884 saying the only unread thing left is your own Fable allowance. The five finished jobs behind it are on your desk."
-    },
-    {
-      "id": "fable-reviewer-no-verdict-884-0914c",
-      "severity": "warning",
-      "state": "resolved",
-      "title": "The outside reviewer failed again tonight, the same way, and your 'wait' stands",
-      "detail": "Tonight's job was not money or sign-in work, so it merged on our own checks as the rule allows — but the reviewer still ran and still failed, identically to every other one: it reached the point of starting, died on its first question in 0.5 seconds, and spent nothing. Read at the run's own record rather than at the red tick, which is the only way to tell a failure from a verdict. You have said the reviewer card is not relevant and it is closed; I did not re-diagnose it. Nothing new here — it is recorded so the run of failures stays countable."
-    },
-    {
-      "id": "fable-reviewer-no-verdict-884-0914b",
-      "severity": "warning",
-      "state": "resolved",
-      "title": "The outside reviewer failed again tonight — at least 40 failed runs, and your 'wait' stands",
-      "detail": "Counted rather than carried over: of the last 100 reviewer runs, 40 ended in failure, the oldest of those on 13 September — and the list does not reach back far enough to see the start, so 40 is a floor. Tonight's run on the refund fix died the same way as all of them: it reached the point of starting work, failed on its first question in 0.8 seconds, and spent nothing. You have said the reviewer card is not relevant and it is closed; I did not re-diagnose it. ONE THING WORTH KNOWING FOR ANYONE SCANNING THE LIST: a reviewer run tonight shows GREEN, and it reviewed nothing — the green means 'we looked at this job and decided it did not need a review'. A run finishing is not a verdict."
-    },
-    {
-      "id": "fable-reviewer-no-verdict-884-36",
-      "severity": "warning",
-      "state": "resolved",
-      "title": "The outside reviewer has now failed 36 times in a row — and tonight it cost us a held change",
-      "detail": "Both of tonight's changes failed the same way as the thirty-four before them: about six hundred milliseconds, one turn, zero dollars, an error on the very first step, all still tracing to 1am on the 12th. I read each run's own numbers rather than the red tick beside it, and I did not re-diagnose it — you said wait. WHAT IS NEW IS THE COST: one of tonight's two changes touches a file the safety net treats as money-related, so our own rule holds it back until a reviewer exists. It is finished, its checks are green, and it needs one click when the reviewer is back. That is the first time this outage has actually stopped work rather than just looked alarming."
-    },
-    {
-      "id": "fable-reviewer-no-verdict-884-30",
-      "severity": "warning",
-      "state": "resolved",
-      "title": "The outside reviewer has now failed 30 times in a row, all from the same moment — your 'wait' stands",
-      "detail": "Both of tonight's changes failed the same way as the twenty-eight before them: 563 milliseconds, one turn, zero dollars, an error on the very first step, every one of them still tracing to 1am on the 12th. I read each run's own numbers rather than the red tick beside it. You said wait, so I did not re-diagnose it. Neither change touched money or sign-in — the machine confirmed that by applying no label — so both merged on the machine checks alone."
-    },
-    {
-      "id": "fable-reviewer-no-verdict-884-28",
-      "severity": "warning",
-      "state": "resolved",
-      "title": "The outside reviewer has now failed 28 times in a row, all from the same moment — your 'wait' stands",
-      "detail": "Both of tonight's changes failed the same way as the twenty-six before them: 753 and 35 milliseconds, one turn, zero dollars, an error on the very first step, every one of them still tracing to 1am on the 12th. I read the runs' own numbers rather than the red tick beside them. You said wait, so I did not re-diagnose it. Neither change touched money or sign-in — the machine confirmed that by applying no label — so both merged on the machine checks alone, which passed first time on both."
+      "state": "open",
+      "title": "The tidying job you gave us the go-ahead for has never actually run, and cannot (#1436)",
+      "detail": "This is our own housekeeping, not the product — nothing a customer sees is affected.\n\nYou told us the crew could throw away its own expired backups itself rather than bringing you a list every time. That was built the same day. Tonight was the first time anybody tried it, and it refuses every time it is asked — so in the day since it landed it has never once run, and the record of what it deleted is still empty.\n\nWhy: before deleting anything it checks that the working folder is tidy, and it counts the crew's ~640 scratch files as untidiness. Those files are supposed to be there. So the check can never pass on this machine, which is the only machine the backups are on.\n\nIt is worth fixing properly rather than working around: the tidiness check protects nothing here — we read the code, and every decision the job makes comes from the project's saved history and from the backup files themselves, never from the working folder. What it is holding up is small (about 0.9 MB across five old backups), so there is no rush, but a safety check that can only ever say no is the kind a crew learns to route around."
     }
   ],
   "acknowledgedReplyIds": [
@@ -8879,7 +8837,7 @@
     227
   ],
   "nextUp": {
-    "readAt": "2026-09-26T20:55:44.726Z",
+    "readAt": "2026-09-26T22:38:19.051Z",
     "items": [
       {
         "issueNumber": 1278,
