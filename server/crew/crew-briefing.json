@@ -1,7 +1,7 @@
 {
-  "edition": 553,
-  "updatedAt": "2026-09-26T23:31:44.907Z",
-  "shift": "Relay — the engine court's thirteen frames reach his Desk, his Sunburst-high word and 'Delete it' recorded, the three keys live",
+  "edition": 554,
+  "updatedAt": "2026-09-26T23:51:36.792Z",
+  "shift": "Foreman (night shift) — your \"Delete it\" is the ruling, and the old lane's retirement has a written manifest and its first slice",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -228,6 +228,10 @@
         {
           "state": "in-progress",
           "title": "The checker that looks at every view you pay for could not read a BIG picture — and that is what your picture-quality change was really waiting on (#1408). Every signed view is checked against the face you signed before you are charged for it, and the check works by sending the checker two photographs: her signed face and the new view. It was sending them at full size, about 12 megabytes for the pair. When the picture gets bigger that stops working — the court you asked for last night could get NO reading at all on any of the 4K pictures or any of the Sunburst ones, and one of today's took 149 seconds against a 75-second limit. When the checker cannot answer we hand the picture over anyway and charge for it, with nobody having looked, so moving your views to a better picture would have meant every view arriving unchecked. The checker now looks at a bounded copy: the largest size the checker itself can actually use, saved in a format about a quarter of the weight. A 4K view reaches it at 3 megabytes instead of 53, and it answered in 8.5 seconds. ⚠ What we did NOT do is shrink the picture to the size an older version of the checker used — the obvious move, and it would have thrown away a third of the detail, when her tattoos, piercings, freckles and makeup are exactly what the check looks at. And we proved it still works rather than assuming: shown a DIFFERENT woman's face it still says no, and shown her own it still says yes and names her freckles, her ear piercings and her tattoo sleeve. ⚠ One correction, made rather than left to be found: the first version of this report blamed three views of yours from Thursday on this problem. They were not — they were the three already fixed on Thursday, and every view since has carried a real verdict. This job is groundwork for the quality change, not a leak being plugged. Nothing you receive changes: your picture is stored and delivered before the check happens, so only the copy the checker looks at is affected."
+        },
+        {
+          "title": "You answered the old-lane question with \"Delete it\" (#1398) — so the old way of casting comes out of the product, in five careful slices with nothing new folded in. The written manifest went first, because a deletion is the one thing the gate cannot give back, and it caught two things that would have gone wrong: the name of the road being deleted is also the name of the road your 220 older sheets read through, in the same file — and the setting has a child that would have crash-looped the site if the parent left first. Slice 1 (that child moved out of the way, nothing anybody can see) is built and waiting on review; the audit card #180 carries the rest",
+          "state": "in-progress"
         }
       ]
     },
@@ -478,7 +482,7 @@
     {
       "id": "old-lane-delete-1398",
       "issueNumber": 1398,
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-26",
       "title": "The old casting lane is switched off for everyone — do we delete it?",
       "productImpact": "Until two days ago Drape had two ways of casting a sheet. The old one wrote eight separate descriptions, one per face, out of its own house vocabulary. The new one sends your own words straight to the engine.\n\nOn 24 September you switched everyone to the new one. Nothing has cast the old way since.\n\nBut the old way is still in the product. Every time anyone rolls a sheet it still builds its eight descriptions — and then throws all eight away, because the new road has already written the real one. Nobody sees it and nobody can reach it.",
@@ -8673,6 +8677,13 @@
       "status": "in-review",
       "prNumber": 1438,
       "note": "Three shifts left a dead one running because the tool called it live. Sabotage 2 arms red, 3 probes at the wire."
+    },
+    {
+      "id": "old-lane-slice1-1442",
+      "title": "The old lane's retirement: the written manifest, and the one setting that had to move before anything could be deleted (#1442, slice 1 of 5)",
+      "status": "in-review",
+      "prNumber": 1449,
+      "note": "Money surface (env.ts is on the list) — held for the hand review."
     }
   ],
   "problems": [
