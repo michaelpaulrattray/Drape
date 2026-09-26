@@ -1,7 +1,7 @@
 {
-  "edition": 541,
-  "updatedAt": "2026-09-26T03:34:46.046Z",
-  "shift": "Foreman — your cast's own brief now dresses her signed views",
+  "edition": 542,
+  "updatedAt": "2026-09-26T08:09:38.827Z",
+  "shift": "Foreman — the ceremony you approved could not run, and the reason was hiding in our own tooling",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -207,11 +207,15 @@
         },
         {
           "title": "Your signed views are photographed under the same rules your master was made under (#1240) — the old instructions that guessed her colouring and banned letters on her skin are off the road. Eight close-ups rendered both ways are in your gallery; one look closes it, and #1278 is unblocked either way",
-          "state": "waiting"
+          "state": "done"
         },
         {
           "state": "in-progress",
           "title": "Your cast's own brief now dresses her signed views (#1278). You said her dress comes back a plain modest version of what the brief describes. It was not the engine: a signed view was being told, in one breath, that there is no written description of this person, to add nothing her photo does not show including no damage, that nothing below the waist can be judged, and — from the change that landed yesterday — that where the description is silent it should default to a plain studio frame. Four instructions all asking for the plainest possible reading, one of them forbidding the very worn look her brief asks for. She came back plain because we asked for it. Her own words now go with the picture. On your own Sifr, eight takes: trousers in four of four before, a dress in four of four after. The frames and the full reading are on the card; they go to your eye with part 2's, so you judge the finished thing once rather than in halves."
+        },
+        {
+          "state": "done",
+          "title": "The data clean-up you approved (#179) turned out to be unnecessary — and finding that out uncovered something worse. That job was meant to stop one thing: you refining one of your older casts and being handed invented facts about her, the way you once followed a Mediterranean-looking man and got eight Indian \"relatives\" back. Good news first: that cannot happen. Every one of your 404 author-road tiles on production is already marked as \"this was never sent to the engine\", all 404 of them, and the old unmarked ones are long gone. Nothing needed changing and nothing was changed. The worse part: the clean-up script could not have run even if it had been needed — it asked the database for a column we deleted last night, so it would have died instantly. Six other scripts of ours were in the same state, and the check that was supposed to catch exactly this was reading 11 of our 515 scripts and calling it a clean sweep. That is fixed, two of the scripts are repaired, and the remaining four are written down as #1364."
         }
       ]
     },
@@ -295,32 +299,8 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-26T00:32:51.297Z",
+      "readAt": "2026-09-26T08:10:37.345Z",
       "items": [
-        {
-          "issueNumber": 179,
-          "title": "Legacy author-road rows (96 per DB) still hold unmarked unsent identity records — data ceremony to mark them (#176 residue)",
-          "kind": "roadmap",
-          "rung": "N2"
-        },
-        {
-          "issueNumber": 180,
-          "title": "N2: THE GHOST AUDIT — enumerate every piece of old-lane machinery still running under the author road (categories, dice, archetypes, personas); the Follow ghost (#176) is specimen #1 (founder flag, 2026-08-27)",
-          "kind": "roadmap",
-          "rung": "N2"
-        },
-        {
-          "issueNumber": 209,
-          "title": "The remainder of #206: the ID-LESS refusals need a name before the map can hold them, and the ~70 non-doors may be correct as they are",
-          "kind": "roadmap",
-          "rung": "N2"
-        },
-        {
-          "issueNumber": 1123,
-          "title": "N2: the brief reader is still asked for four fields the author road discards — a court, because trimming the ask can move the facts we keep",
-          "kind": "roadmap",
-          "rung": "N2"
-        },
         {
           "issueNumber": 1129,
           "title": "Should the sheet repeat your own sentence back as the casting category? — the decision half of #1122",
@@ -336,7 +316,7 @@
         {
           "issueNumber": 14,
           "title": "The Pinterest-style reference selector — designed, unbuilt, and it fell through the flag-derived register",
-          "kind": "roadmap",
+          "kind": "rung",
           "rung": "N3"
         },
         {
@@ -346,27 +326,21 @@
           "rung": "N3"
         },
         {
+          "issueNumber": 26,
+          "title": "The inspired EDIT is capped at a tenth of the inspired BRIEF — 200 chars vs 2000",
+          "kind": "rung",
+          "rung": "N3"
+        },
+        {
           "issueNumber": 30,
           "title": "The auto-discovery scan: the panel finds a cast's uncatalogued features on its own (his demand, 17 Aug), quality-gated — N3's detector",
           "kind": "design-unbuilt",
           "rung": "N3"
         },
         {
-          "issueNumber": 55,
-          "title": "L&F: The honest loader — real stage names, no invented percentages, the D-169 mock still owed",
-          "kind": "roadmap",
-          "rung": "N3"
-        },
-        {
-          "issueNumber": 60,
-          "title": "L&F: Back-of-body vocabulary — the filing the ruling ordered never happened",
-          "kind": "roadmap",
-          "rung": "N3"
-        },
-        {
           "issueNumber": 61,
           "title": "L&F: Outfit-card thumbnails via the point-cutter — the ordered roadmap promise never written",
-          "kind": "roadmap",
+          "kind": "rung",
           "rung": "N3"
         },
         {
@@ -378,19 +352,19 @@
         {
           "issueNumber": 64,
           "title": "L&F: Compositor diagnostics umbrella — five takeable-but-untaken items on the live repaint path",
-          "kind": "roadmap",
+          "kind": "rung",
           "rung": "N3"
         },
         {
           "issueNumber": 65,
           "title": "N3: the honest sentence at a words-only tattoo sale (his ruling) — the one deliverable left here",
-          "kind": "roadmap",
+          "kind": "rung",
           "rung": "N3"
         },
         {
           "issueNumber": 801,
           "title": "N3: the refine engine re-asked — GPT Image 2.5 (Flare, Sunburst) vs today's anti-drift road, measured on his casts (his word, 11 Sep: waits at N3)",
-          "kind": "roadmap",
+          "kind": "rung",
           "rung": "N3"
         },
         {
@@ -412,22 +386,10 @@
           "rung": "N4b"
         },
         {
-          "issueNumber": 509,
-          "title": "Errors and product analytics before real users — one error tracker, one event stream, and one honest strip on the admin Overview",
-          "kind": "roadmap",
-          "rung": "N6"
-        },
-        {
           "issueNumber": 29,
           "title": "Retirement + cleanup — roadmap item 7, and its missing tool now exists",
-          "kind": "roadmap",
+          "kind": "rung",
           "rung": "N8"
-        },
-        {
-          "issueNumber": 26,
-          "title": "The inspired EDIT is capped at a tenth of the inspired BRIEF — 200 chars vs 2000",
-          "kind": "roadmap",
-          "rung": null
         },
         {
           "issueNumber": 706,
@@ -3345,7 +3307,7 @@
       "id": "view-house-block-1240-frames",
       "title": "Sifr2's close-up, eight takes: four under the new rules, four under the old",
       "question": "WHAT YOU ARE JUDGING — one question only: do the NEW close-ups lose any face detail against the OLD ones? Look at skin texture, freckles, lashes, the eyes. Everything else about the two strips is identical: your own Sifr2 master, the same crop, the same engine, rendered in the same few minutes. The only difference is the instructions. The old set had about twenty extra lines of close-up craft in it, and a close-up is where that would show if it mattered — which is the whole reason these are close-ups. Two words is enough. If detail IS lost, those lines come back as an addition for views only. If not, nothing moves. Either way this is already live and does not get undone.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-26T02:20:09.493Z",
       "issueNumber": 1240,
       "cardId": "view-house-block-1240",
@@ -6054,7 +6016,7 @@
       "id": "view-try-again-1208-strip",
       "title": "The Try again button, on a real strip — is three lines under a good picture too much?",
       "question": "WHAT YOU ARE JUDGING — not whether it works, but how heavy it looks. On this strip, two views were delivered without us managing to check them and one never arrived. The two we couldn't check now carry three lines each: the name, the sentence \"We didn't get to check this one\", and the button. The one that failed carries its refund line and the button. The three good views carry nothing new. The sentence has to be there — without it a free button appears under one tile and not the others for no reason anyone could see — so if this is too busy the answer is a different shape, not a missing sentence. Light and dark are the same strip. Tell me if it reads right, or if the good tiles have become louder than the broken one.",
-      "state": "waiting",
+      "state": "done",
       "filedAt": "2026-09-25T08:10:00.000Z",
       "issueNumber": 1208,
       "cardId": null,
@@ -6073,6 +6035,27 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "ceremony-179-persona",
+      "title": "The #179 ceremony could not run — it selected a column #1241 dropped (#179)",
+      "status": "in-review",
+      "prNumber": 1365,
+      "note": "Run on both worlds after the fix: nothing to mark, nothing written. Sabotage 4/4."
+    },
+    {
+      "id": "try-again-row-1347",
+      "title": "One muted line under a view's name — Unchecked · Try again (#1347)",
+      "status": "in-review",
+      "prNumber": 1353,
+      "note": "Your reply 224, built. Held for the reviewer."
+    },
+    {
+      "id": "brief-dresses-view-1278",
+      "title": "A signed view is dressed by the cast's own brief (#1278 part 1)",
+      "status": "merged",
+      "prNumber": 1339,
+      "note": "Was stuck unmergeable for three shifts; merged main forward, gate fired again."
+    },
     {
       "id": "view-house-block-1240",
       "title": "One block, two roads — a signed view sends the roll's own house sentences (#1240)",
@@ -8675,7 +8658,8 @@
     220,
     221,
     222,
-    223
+    223,
+    224
   ],
   "nextUp": {
     "readAt": "2026-09-26T00:32:51.296Z",
