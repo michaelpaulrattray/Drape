@@ -101,16 +101,78 @@ act on.
 exist.** No commit holds them and no name anchors them, so every entry returns
 KEPT, forever. Deleting them is a founder act.
 
-## It reports. It does not delete.
+## It reports — and since #1294 it may delete ONE disposition
 
-There is no delete path in the module or its runner, by construction and not by
-discipline, and **no flag adds one**. The deletion of a backup is a founder act.
-What a patrol may do mechanically is produce the list and the citation.
+This section read *"It reports. It does not delete. … no flag adds one. The
+deletion of a backup is a founder act"* until 2026-09-26, and that was the honest
+state of the day it was written: #1143 deliberately built the check and left the
+authority question open, and #1294 put it to him.
+
+**His word, 2026-09-26 (terminal), verbatim and entire:**
+
+> **1294) delete them itself**
+
+So the tool may now act, and the scope of what he authorised is narrow enough to
+state in four lines:
 
 ```
-npx tsx scripts/janitor-backup-retention.mts
+npx tsx scripts/janitor-backup-retention.mts                              the listing, deletes nothing
 npx tsx scripts/janitor-backup-retention.mts --root <dir> --repo <dir> --json
+npx tsx scripts/janitor-backup-retention.mts --delete-expired --dry-run   what WOULD go
+npx tsx scripts/janitor-backup-retention.mts --delete-expired            act on it
 ```
+
+| may go by itself | never, without his word |
+|---|---|
+| `expired` — every entry retired, at least one of them by its finished work | `kept` — something inside is the only copy that exists (the 31 R2 orphans, 13.4 MB) |
+| | `too-recent` — inside the 7-day floor, not judged on its contents at all |
+| | `redundant` — see below; a STRONGER proof, and outside the road his word named |
+| | `output/` — 7.0 GB of primary court evidence, which no rule here covers |
+
+⚠ **`redundant` IS EXCLUDED ON PURPOSE AND IT IS THE COUNTER-INTUITIVE ONE.**
+Every entry byte-identical to a blob git holds is a stronger reading than a
+closed card, so on the face of it it is the SAFER thing to delete. It is out
+because his word and the card's own scope sentence both name `expired` and
+nothing else, and because folding a second disposition into the road while
+nobody is looking is how a half-decision ships under an authorised one's name.
+It reads **0** on this pile and the section above says why it almost always
+will, so the exclusion costs nothing today — and the run PRINTS a line when the
+count is not zero, so a stronger case can never sit silently outside the road.
+
+⚠ **A VERDICT CARRIES THE TREE IT WAS READ FROM, AND THAT IS WHY A DELETION
+NEEDS A FRESH MAIN.** Two of the readers are tree-dependent: `commitHolding`
+walks `git log --all` and `editionDate` walks the committed briefing's history,
+so both answer from the clone they run in. **Measured** by the relay's review of
+PR #1293: run from the main tree, `drape-census-scratch-2026-09-12.zip` and
+`drape-debris-2026-08-19.zip` read **KEPT** where the same sixteen items read
+from a seat's tree read them **EXPIRED**. A tree BEHIND main fails toward KEEP,
+which is safe. A tree holding a commit main does not have — an abandoned local
+branch, a reverted commit — fails the other way: bytes "recoverable from git" at
+a commit nobody will ever fetch. So every reading is *as read from tree X at sha
+Y*, the listing prints nothing it has not read, and `--delete-expired` **REFUSES**
+unless:
+
+- `git rev-parse HEAD` equals the remote's `refs/heads/main` (read with
+  `git ls-remote`, which writes no ref), **both as full 40-hex** — a read that
+  failed is never agreement, so two empty strings do not compare equal; and
+- `git status --porcelain` is empty — a dirty tree is not the tree it claims to
+  be. (Which also means a second `--delete-expired` in a row refuses, because the
+  first one left its receipt uncommitted. That is correct: commit the receipt.)
+
+**There is no `--from <file>`.** The verdicts are computed in the same process
+run that acts on them, so there is no listing artifact that can go stale between
+the reading and the deletion.
+
+**The receipt is a table in `docs/JANITOR_LOG.md`** under a fixed marker, one row
+per item — what went, its size, its entry count, the citation the deletion stood
+on, and the tree and sha it was read from. It is deliberately **not** a `## Run`
+heading: `scripts/patrol-clocks.mts` reads the Janitor's last run out of the
+newest such heading, and a tool writing one would tell the clock the seat had
+patrolled.
+
+`server/backupRetention.test.ts` drives all of it, and two arms are the ones that
+matter: a `kept` item admitted to the deletion set reddens on the R2-orphan
+fixture, and a tree that is not main's tip reddens the freshness refusal.
 
 ## The first reading — dry run, 2026-09-26, tree `736e5354`
 
@@ -139,10 +201,17 @@ never measured against, is how a keep test quietly starts approving things. A
 frames-name anchor is its own reader with its own controls, on the day somebody
 wants those 9.5 MB.
 
-## The one thing still open, and it is a founder question
+## The founder question is ANSWERED (#1294, 2026-09-26)
 
-Nothing above needed a value judgement, with one exception: **five items, 892.9
-kB, now read as expired, and deleting them is his act, not a patrol's.** The
-question on #1143 is whether a patrol may act on an `expired` verdict by itself
-in future, or whether every deletion keeps coming to him. Until that is answered
-the instrument prints and stops.
+Nothing in the rule needed a value judgement, with one exception: **five items,
+892.9 kB, read as expired, and whether a patrol could delete them by itself was
+his to decide.** #1294 asked it in his own terms and he answered *"delete them
+itself"*. So the instrument no longer prints and stops; it prints, proves the
+tree, and acts on `expired` alone.
+
+**What was NOT asked and therefore has not changed:** the 31 R2 orphans (the only
+copies that exist), the 9.5 MB of frames zips (kept because `nameAnchorOf`
+requires the leading `_` of the population it was written for — a frames anchor
+is its own reader with its own controls, on the day somebody wants those bytes),
+`output/`'s 7.0 GB of paid-court evidence, and `redundant`. Each remains a keep
+for a reason this document states rather than for a reason nobody wrote down.

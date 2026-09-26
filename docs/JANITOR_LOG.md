@@ -13,10 +13,12 @@ founder 2026-08-26, *"do it"*). What lives here and nowhere else:
    never a judgement of value; the 7-day rule keeps anything recent.
    **Backups the sweeps WROTE have their own rule since #1143 —
    `docs/JANITOR_BACKUP_RETENTION.md`, applied by
-   `npx tsx scripts/janitor-backup-retention.mts`.** It reports and never
-   deletes: a backup expires when what it protects is provably recoverable
-   elsewhere, which is a check rather than a date, and a founder act is what
-   removes anything.
+   `npx tsx scripts/janitor-backup-retention.mts`.** A backup expires when
+   what it protects is provably recoverable elsewhere, which is a check rather
+   than a date. ⚠ **Since #1294 (his word, *"delete them itself"*) the tool may
+   ACT on an `expired` verdict by itself** — `--delete-expired`, from a clean
+   checkout of `main` at the tip, with its receipt in the table below and
+   nothing else touched. Every other disposition still needs him.
 2. **The dead-code readings** — knip's counts per run are in
    `docs/JANITOR_KNIP.md`'s table; this file records what was DONE with
    them (cards filed, ceilings found, attempted-and-reverted deletions).
@@ -25,6 +27,32 @@ Every Janitor run BEGINS by reading this file and ENDS by appending to it.
 Findings are deduped against the queue, open and closed. knip, the Atlas
 and the un-wiring differ are three readers with no shared resolver, and
 none of them has deletion authority on its own.
+
+---
+
+## Backup deletions — the receipt table (#1294)
+
+⚠ **EVERY ROW HERE WAS WRITTEN BY THE TOOL, NEVER BY HAND**, by
+`npx tsx scripts/janitor-backup-retention.mts --delete-expired`. It is the only
+record of what a deletion destroyed, so the run that writes a row COMMITS it.
+
+His word, 2026-09-26 (terminal), verbatim and entire: **_"1294) delete them
+itself"_** — asked whether the team may act on the retention check's `expired`
+verdict by itself or whether every list comes to him. What that authorises and
+what it does not is in `docs/JANITOR_BACKUP_RETENTION.md`: `expired` items only,
+from a clean checkout of `main` at the tip, and never `kept` (somebody's only
+copy), `too-recent` (inside the 7-day floor), `redundant` (a stronger proof, and
+outside the road his word named) or `output/` (primary court evidence, which no
+rule here covers).
+
+⚠ **It is a TABLE and deliberately not a `## Run` heading.**
+`scripts/patrol-clocks.mts` reads the Janitor's last run out of the newest
+`## Run` heading in this file, so a tool appending a heading would tell the clock
+the seat had patrolled and push its next run three days out. Newest first.
+
+| when (UTC) | item | bytes | entries | what the deletion stood on | read from |
+|---|---|---|---|---|---|
+<!-- BACKUP-DELETION-ROWS -->
 
 ---
 
