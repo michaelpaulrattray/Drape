@@ -595,7 +595,23 @@ if (heldNeedsYou.length > 0) {
 
 if (heldEyeItems.length > 0) {
   console.log("");
-  console.log(`⚠ ${heldEyeItems.length} set(s) of frames would have LEFT HIS PAGE, and did not.`);
+  /*
+    ⚠ EVERY ROW HERE IS A CARD THAT CLOSED WHILE HIS EYE WAS STILL OWED (#1349).
+
+    That is what the hold IS: the issue is CLOSED — `planCardResolutions` only
+    reaches a hold through `closing()` — and the frames still need him. His
+    rule, 2026-09-26: *"yes it shouldnt close if its waiting on my eye and my
+    verdict"*. So the block says the breach out loud rather than only naming the
+    frames, because the card being shut is the half that costs him a verdict:
+    #1208 closed on its merge, he answered the next day, and the answer landed
+    where nobody was listening.
+  */
+  console.log(`⚠ ${heldEyeItems.length} card(s) are CLOSED while his eye is still owed (#1349).`);
+  console.log("  A card waiting on his eye or his verdict does not close — his rule, 2026-09-26.");
+  console.log("  Reopen it with the receipt `built and live — waiting on his eye`, so his verdict");
+  console.log("  has an owner when it lands; the frames stay on his page either way.");
+  console.log("");
+  console.log(`  ${heldEyeItems.length} set(s) of frames would have LEFT HIS PAGE, and did not.`);
   console.log("  The gallery renders `open` only, so marking these done removes them from his");
   console.log("  screen. Their issue closing means the work finished, not that he looked — so");
   console.log("  each is left visible and named instead (#354). This does NOT clear itself:");

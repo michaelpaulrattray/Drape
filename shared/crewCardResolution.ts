@@ -340,3 +340,95 @@ export function promotionLine(promotion: Promotion): string {
   return `${promotion.list} ${promotion.id}: open → done — resolved by the card's issue closing `
     + `(#${promotion.issueNumber})`;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   A CARD WAITING ON HIS EYE OR HIS VERDICT DOES NOT CLOSE (#1349)
+
+   His rule, 2026-09-26 (terminal), verbatim and entire:
+
+     "yes it shouldnt close if its waiting on my eye and my verdict"
+
+   Said after #1208 was closed at 07:47Z with the receipt "both halves shipped
+   and live" while its eye item — *is three lines under a good picture too
+   much?* — was still open on his Desk. He answered it the next day, and the
+   answer landed on a CLOSED card with nobody to build it; the relay had to
+   quote it across by hand.
+
+   ⚠ SHIPPING IS NOT FINISHING WHEN HIS EYE IS THE LAST STEP. The receipt on
+   such a card is *"built and live — waiting on his eye"*, and it closes on his
+   verdict, not on the merge.
+
+   The rule lives HERE, beside `eyeItemStillNeedingHim`, because this module is
+   already the one owner of *what still needs him* — `planCardResolutions` asks
+   it of a card being promoted, and a second spelling of the same question in
+   the close script is working law 4's own failure shape.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/** Why a card may not be closed yet, in the words a shift acts on. */
+export type WaitingOnHim = {
+  list: CardList;
+  /** The desk item's own id — `view-try-again-1208-strip`, and so on. */
+  id: string;
+  /** `open` or `waiting`; both still want something from him. */
+  state: string;
+};
+
+/**
+ * Every desk item that still needs him and names this ISSUE.
+ *
+ * Keyed on the issue number rather than on a desk card id, because that is what
+ * a shift has in its hand at the moment it is about to close something: the run
+ * row's `cardRef`, a `gh issue close` argument, a PR body.
+ *
+ * Both lists are read. An eye item is the case his ruling was about, and an open
+ * NEEDS YOU question is the same fact wearing the other list's clothes — a card
+ * whose question he has not answered is as unfinished as a frame he has not
+ * looked at.
+ */
+export function deskItemsWaitingOnHim(
+  briefing: ResolvableBriefing,
+  issueNumber: number,
+): WaitingOnHim[] {
+  const waiting: WaitingOnHim[] = [];
+
+  for (const item of briefing.eyeItems ?? []) {
+    if (item.issueNumber !== issueNumber) continue;
+    if (!crewCardNeedsHim(item.state)) continue;
+    waiting.push({ list: "eyeItems", id: item.id, state: item.state });
+  }
+
+  for (const card of briefing.needsYou ?? []) {
+    if (card.issueNumber !== issueNumber) continue;
+    if (!crewCardNeedsHim(card.state)) continue;
+    waiting.push({ list: "needsYou", id: card.id, state: card.state });
+  }
+
+  return waiting;
+}
+
+/**
+ * The finding a shift reads when it is closing work on such a card.
+ *
+ * One owner for the sentence as well as for the question: the close script and
+ * the desk sweep both say it, and two wordings of one rule is how a rule stops
+ * being one rule.
+ */
+export function waitingOnHimFinding(issueNumber: number, waiting: readonly WaitingOnHim[]): string {
+  const named = waiting
+    .map((item) => `${item.list === "eyeItems" ? "eye item" : "needs-you card"} '${item.id}' (${item.state})`)
+    .join(", and ");
+  return (
+    `⚠ FINDING — #${issueNumber} IS WAITING ON HIM AND MUST NOT BE CLOSED.`
+    + `\n  ${named} still needs him on his Desk.`
+    + "\n"
+    + "\n  His rule, 2026-09-26: \"yes it shouldnt close if its waiting on my eye and"
+    + "\n  my verdict\". Shipping is not finishing when his eye is the last step —"
+    + "\n  #1208 closed on a merge, his verdict landed on a closed card the next day,"
+    + "\n  and nobody owned it."
+    + "\n"
+    + `\n  Leave #${issueNumber} OPEN with the receipt:`
+    + "\n    built and live — waiting on his eye"
+    + "\n  It closes when his verdict is recorded on it, and the shift that reads that"
+    + "\n  verdict opens the follow-up if one is needed."
+  );
+}

@@ -84,6 +84,10 @@
  * look had nothing but a writer to reach for. That is
  * `scripts/crew-shift-state.mts`.
  */
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 import {
   CREW_SHIFT_OUTCOMES,
   CREW_SHIFT_STALL_MS,
@@ -92,11 +96,54 @@ import {
   looksLive,
   resolveCloseTarget,
 } from "../shared/crewShiftState.js";
+import {
+  deskItemsWaitingOnHim,
+  waitingOnHimFinding,
+  type ResolvableBriefing,
+} from "../shared/crewCardResolution.js";
 import { openDatabase, resolveDatabaseUrl, worldOf } from "./lib/dbConnection.mts";
 import { refreshQueueCountsQuietly } from "./lib/crewQueueCount.mts";
 import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
 const TABLE = "crew_shift_runs";
+
+/**
+ * The deployed briefing — his Desk, as this tree ships it.
+ *
+ * Read for ONE question (#1349): is the card this run names still waiting on his
+ * eye or on an answer from him? It is read from the repository rather than from
+ * the page, because a close runs where the code is and the page is a render of
+ * this same file.
+ */
+const BRIEFING_PATH = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "server",
+  "crew",
+  "crew-briefing.json",
+);
+
+/**
+ * His desk, or `null` when it cannot be read.
+ *
+ * ⚠ NULL IS NOT "NOTHING IS WAITING", and the caller says so out loud rather
+ * than printing a clean bill. A close must never die on a reading — losing a
+ * shift's close leaves a row open, which his page renders as a shift still
+ * running (#288) — so this swallows, and the honesty is in what gets printed.
+ */
+function readDeskOrNull(): ResolvableBriefing | null {
+  try {
+    return JSON.parse(readFileSync(BRIEFING_PATH, "utf8")) as ResolvableBriefing;
+  } catch {
+    return null;
+  }
+}
+
+/** `#1349` → 1349; anything else → null, because a guess is worse than a skip. */
+function issueNumberOf(cardRef: unknown): number | null {
+  const match = /^#(\d+)$/.exec(String(cardRef ?? "").trim());
+  return match ? Number(match[1]) : null;
+}
 
 /* ⚠ EVERY ARGUMENT ENUMERATED — anything else refuses (#288). A flag added to
    this script and not to this list is refused, which is the correct direction:
@@ -188,8 +235,8 @@ try {
      and is driven without a database. */
   const [candidates] = await conn.query<any[]>(
     explicitId !== null
-      ? `SELECT id, shift, seat, intent, startedAt, heartbeatAt, endedAt FROM \`${TABLE}\` WHERE id = ?`
-      : `SELECT id, shift, seat, intent, startedAt, heartbeatAt, endedAt FROM \`${TABLE}\` WHERE endedAt IS NULL ORDER BY id DESC`,
+      ? `SELECT id, shift, seat, cardRef, intent, startedAt, heartbeatAt, endedAt FROM \`${TABLE}\` WHERE id = ?`
+      : `SELECT id, shift, seat, cardRef, intent, startedAt, heartbeatAt, endedAt FROM \`${TABLE}\` WHERE endedAt IS NULL ORDER BY id DESC`,
     explicitId !== null ? [Number(explicitId)] : [],
   );
 
@@ -318,9 +365,45 @@ try {
   await refreshQueueCountsQuietly(conn, (line) => console.error(line));
 
   /*
-    THE FINDING (#295). Reported only once the row is safely terminal — a
-    check that can cost a shift its close is a check that gets skipped, and
-    the record of what happened matters more than the discipline note.
+    THE FINDINGS, both reported only once the row is safely terminal — a check
+    that can cost a shift its close is a check that gets skipped, and the record
+    of what happened matters more than the discipline note. They are COLLECTED
+    rather than each exiting where it stands: a shift that skipped its heartbeat
+    AND is closing work on a card he has not judged deserves to read both, and
+    an early `exit(2)` on the first would hide the second.
+  */
+  const findings: string[] = [];
+
+  /*
+    ⚠ A CARD WAITING ON HIS EYE OR HIS VERDICT DOES NOT CLOSE (#1349).
+
+    His rule, 2026-09-26: *"yes it shouldnt close if its waiting on my eye and my
+    verdict"*. The run row already names the card, and this is the moment a
+    shift is deciding that its work is finished — so the reminder belongs here,
+    where the card's number is in the shift's hand, rather than in a document.
+
+    ⚠ IT DOES NOT REFUSE, AND THAT IS THIS SCRIPT'S OWN RULE RATHER THAN A SOFT
+    TOUCH: refusing would leave the RUN row open, which his page renders as a
+    shift still running (#288). The row closes, the finding is printed, and the
+    exit code carries it — the same shape the heartbeat finding below has had
+    since #295.
+  */
+  const closingIssue = issueNumberOf(target.cardRef);
+  if (closingIssue !== null) {
+    const desk = readDeskOrNull();
+    if (desk === null) {
+      console.error(
+        `\n⚠ his Desk could not be read (${path.basename(BRIEFING_PATH)}), so whether`
+        + `\n  #${closingIssue} is waiting on his eye is UNKNOWN — not "nothing is waiting".`,
+      );
+    } else {
+      const waiting = deskItemsWaitingOnHim(desk, closingIssue);
+      if (waiting.length > 0) findings.push(`\n${waitingOnHimFinding(closingIssue, waiting)}`);
+    }
+  }
+
+  /*
+    THE HEARTBEAT FINDING (#295).
 
     The bar is HALF the stall window and it DERIVES from that same constant
     rather than inventing a second number: a run past the FULL window with no
@@ -330,7 +413,7 @@ try {
   */
   if (!checkedIn && ranForMs > CREW_SHIFT_STALL_MS / 2) {
     const minutes = Math.round(ranForMs / 60_000);
-    console.error(
+    findings.push(
       `\n⚠ FINDING — run #${row.id} ran ${minutes} min and NEVER CHECKED IN.`
       + "\n  `heartbeatAt` still equals `startedAt`, so the heartbeat step in the standing"
       + "\n  orders was skipped for the whole shift. Past the window that reads as"
@@ -340,10 +423,13 @@ try {
       + "\n  The step, after every meaningful act (branch cut, PR opened, PR merged,"
       + "\n  edition written):"
       + "\n    railway.cmd run --service MySQL -- npx tsx scripts/crew-shift-start.mts \\"
-      + "\n      --note '<what just happened>' [--branch <name>]"
-      + "\n"
-      + "\n  The row IS closed and correct. Exit 2 is this finding, not a failure.",
+      + "\n      --note '<what just happened>' [--branch <name>]",
     );
+  }
+
+  if (findings.length > 0) {
+    for (const finding of findings) console.error(finding);
+    console.error("\n  The row IS closed and correct. Exit 2 is the finding(s) above, not a failure.");
     await conn.end();
     process.exit(2);
   }
