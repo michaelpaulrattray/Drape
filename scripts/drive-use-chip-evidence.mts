@@ -44,7 +44,7 @@ const connection = await openDatabase(url);
 /* The fixture is READ, never assumed: a variant whose ask carried a picture the
    customer attached, on a session that is still open. */
 const [rows] = await connection.query<any[]>(
-  `SELECT v.publicId AS variant, cand.publicId AS candidate, cand.position, cand.personaLine,
+  `SELECT v.publicId AS variant, cand.publicId AS candidate, cand.position, cand.imageKey,
           roll.rollIndex, s.publicId AS session, u.openId
      FROM casting_candidate_variants v
      JOIN casting_candidates cand ON cand.id = v.candidateId
@@ -55,7 +55,24 @@ const [rows] = await connection.query<any[]>(
   [process.env.EYE_VARIANT ?? ""],
 );
 if (rows.length === 0) throw new Error("EYE_VARIANT names no variant in dev");
-const { session, openId, personaLine } = rows[0];
+const { session, openId, imageKey } = rows[0];
+/*
+  ⚠ WHO IS ON SCREEN IS ASSERTED FROM HER PICTURE'S OWN KEY (#1364).
+
+  This read the candidate's disposition line and looked for it in the panel's
+  text. Migration `0068` dropped that column (#1241) — the caption it fed is one
+  index label now — so the SELECT above could not execute at all and this driver
+  could not run against a database.
+
+  The replacement is STRONGER than the caption it lost, rather than a tolerance.
+  A disposition line came off the DONOR cast, so every clone of one donor shared
+  it and the old check could pass on a stranger; an index label is unique only
+  within a roll. An `imageKey` is minted per candidate with `crypto.randomUUID()`
+  (a repository-wide guard rejects `Math.random()` in storage writers) and the
+  served URL is the public bucket URL built from that key, so it appears in the
+  page's own markup and can belong to nobody else.
+*/
+if (!imageKey) throw new Error("the fixture candidate has no imageKey to identify her by");
 /* The tile's own label — `indexLabel`, which is the 1-based position padded. */
 const TILE_LABEL = String(Number(rows[0].position) + 1).padStart(2, "0");
 /*
@@ -67,7 +84,7 @@ const TILE_LABEL = String(Number(rows[0].position) + 1).padStart(2, "0");
   the wrong person, which is worth no more than a green about one.
 */
 const ROLL_LABEL = String(Number(rows[0].rollIndex)).padStart(2, "0");
-console.log(`fixture: "${personaLine}" — roll ${ROLL_LABEL}, tile ${TILE_LABEL}, session ${session}`);
+console.log(`fixture: ${imageKey} — roll ${ROLL_LABEL}, tile ${TILE_LABEL}, session ${session}`);
 await connection.end();
 
 const token = await new SignJWT({ openId, appId: process.env.VITE_APP_ID, name: "use chip eye" })
@@ -122,10 +139,12 @@ for (const theme of ["dark", "light"] as const) {
      below is about whoever is on screen, so this is the arm that makes them
      about the FIXTURE. Its absence is what made the first negative control
      worthless. */
-  const whoIsOpen = await page.evaluate(() => document.body.innerText);
-  check(`the viewer is showing "${personaLine}" (${theme})`, whoIsOpen.includes(personaLine),
-    whoIsOpen.split("\n").map((l) => l.trim()).filter(Boolean).slice(0, 3).join(" · "));
-  if (!whoIsOpen.includes(personaLine)) break;
+  /* Her picture's key is read off the MARKUP rather than the rendered text: an
+     image URL is an attribute, and `innerText` never carries one. */
+  const whoIsOpen = await page.evaluate(() => document.body.innerHTML);
+  check(`the viewer is showing the fixture's own picture (${theme})`, whoIsOpen.includes(imageKey),
+    whoIsOpen.includes(imageKey) ? imageKey : `no ${imageKey} anywhere in the open panel`);
+  if (!whoIsOpen.includes(imageKey)) break;
 
   /* Wait on the CHIP, never on a clock — the panel can only draw it once the
      selected version's own row has arrived from a remote database. */

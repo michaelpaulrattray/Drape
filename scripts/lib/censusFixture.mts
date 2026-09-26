@@ -18,8 +18,8 @@
  *
  * Clones the donor's cast the way `ensureOutsider` does — session, roll, a
  * settled zero-credit operation, one ready candidate pointing at the donor's
- * image and identity — under the outsider's account, tagged by `personaLine` so
- * two runs produce one fixture. Then it ASSERTS the state the corpus assumes:
+ * image and identity — under the outsider's account, tagged on its own
+ * operation's `clientRequestId` so two runs produce one fixture. Then it ASSERTS the state the corpus assumes:
  * no variants, no selected face. The census never renders (the claim door is
  * shut), so nothing it does can add a variant; if one ever appears, somebody
  * else drove this cast, and the drive refuses rather than measuring a branch
@@ -33,7 +33,36 @@ import { randomUUID } from "node:crypto";
 import { openDatabase } from "./dbConnection.mts";
 import { DONOR_OPEN_ID } from "./outsider.mts";
 
-export const CENSUS_FIXTURE_TAG = "capability-census fixture — never render on this cast";
+/**
+ * THE NAME THIS FIXTURE IS FOUND BY, and it lives on the fixture's own
+ * operation row (#1364).
+ *
+ * It used to be written into the retired disposition column that migration
+ * `0068` DROPPED (#1241) — so the lookup below could not execute at all: it died
+ * on `Unknown column` the moment it touched a database. The tag now goes in
+ * `generation_operations.clientRequestId`, and that column was already the right
+ * home rather than the nearest one:
+ *
+ * - **the fixture writes that row itself**, at zero credits, and was spending
+ *   the field on a `randomUUID()` nothing ever read back;
+ * - **`UNIQUE(userId, clientRequestId)`** is exactly what a fixture tag means —
+ *   one per account, found the second time instead of duplicated. The old
+ *   SELECT-then-INSERT was a check-then-write with no constraint under it;
+ * - it needs **no migration**, and #1241 had just removed one;
+ * - it stays **readable** in dev data, which is a fixture's whole point.
+ *
+ * Declined, and named so the next reader does not re-open it: a dedicated column
+ * (a migration for dev tooling); the roll's `briefText` (it carries the DONOR's
+ * brief, which the census measures — overwriting it would change what the corpus
+ * reads); `payloadHash` (varchar(64), and a sha256 of the tag would make the row
+ * unreadable to a human poking at dev rows); a file beside the tree (the scratch
+ * directory is shared between seats and a worktree can be fresh).
+ *
+ * ⚠ **≤ 36 characters.** `clientRequestId` is `varchar(36) NOT NULL`, and MySQL
+ * refuses a longer value outright rather than truncating it — which is why this
+ * is a comment and not a guard.
+ */
+export const CENSUS_FIXTURE_TAG = "census-fixture-pristine";
 
 export type CensusFixture = {
   userId: number;
@@ -66,8 +95,11 @@ export async function ensureCensusFixture(input: { userId: number; donorOpenId?:
   const conn = await openDatabase(url);
   try {
     const [mine] = await conn.execute(
-      `SELECT id, publicId FROM casting_candidates
-        WHERE userId = ? AND personaLine = ? AND status = 'ready' ORDER BY id ASC LIMIT 1`,
+      `SELECT c.id, c.publicId FROM casting_candidates c
+         JOIN casting_rolls r ON r.id = c.rollId
+         JOIN generation_operations o ON o.id = r.operationId
+        WHERE c.userId = ? AND o.clientRequestId = ? AND c.status = 'ready'
+        ORDER BY c.id ASC LIMIT 1`,
       [input.userId, CENSUS_FIXTURE_TAG],
     );
     let found = (mine as Array<{ id: number; publicId: string }>)[0] ?? null;
@@ -100,7 +132,10 @@ export async function ensureCensusFixture(input: { userId: number; donorOpenId?:
         `INSERT INTO generation_operations
            (id, userId, clientRequestId, kind, payloadHash, status, plannedCredits, chargedCredits)
          VALUES (?, ?, ?, 'casting.fixture', ?, 'succeeded', 0, 0)`,
-        [operationId, input.userId, randomUUID(), `census-fixture-${operationId}`],
+        /* The tag rides `clientRequestId` — see {@link CENSUS_FIXTURE_TAG}. Its
+           UNIQUE(userId, clientRequestId) is what makes a second fixture on one
+           account impossible rather than merely unlikely. */
+        [operationId, input.userId, CENSUS_FIXTURE_TAG, `census-fixture-${operationId}`],
       );
       const rollPublicId = randomUUID();
       await conn.execute(
@@ -114,10 +149,10 @@ export async function ensureCensusFixture(input: { userId: number; donorOpenId?:
       await conn.execute(
         `INSERT INTO casting_candidates
            (publicId, rollId, sessionId, userId, position, status, pointsCost, imageKey, thumbKey,
-            personaLine, internalPrompt, provider, providerModel)
-         VALUES (?, ?, ?, ?, 1, 'ready', 0, ?, ?, ?, ?, ?, ?)`,
+            internalPrompt, provider, providerModel)
+         VALUES (?, ?, ?, ?, 1, 'ready', 0, ?, ?, ?, ?, ?)`,
         [
-          candidatePublicId, rollId, sessionId, input.userId, donor.imageKey, donor.thumbKey, CENSUS_FIXTURE_TAG,
+          candidatePublicId, rollId, sessionId, input.userId, donor.imageKey, donor.thumbKey,
           typeof donor.internalPrompt === "string" ? donor.internalPrompt : JSON.stringify(donor.internalPrompt),
           donor.provider, donor.providerModel,
         ],

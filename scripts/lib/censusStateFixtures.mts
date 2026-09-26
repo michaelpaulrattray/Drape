@@ -164,7 +164,7 @@ export async function ensureInkBranchFixture(input: { userId: number }): Promise
   }
 }
 
-export const ACCESSORY_FIXTURE_TAG = "capability-census fixture B — branch with accessory, never render";
+export const ACCESSORY_FIXTURE_TAG = "census-fixture-accessory-branch";
 
 /** The MANUFACTURED accessory branch: a tagged clone wearing stated glasses. */
 export async function ensureAccessoryBranchFixture(input: { userId: number }): Promise<BranchFixture> {
@@ -173,7 +173,10 @@ export async function ensureAccessoryBranchFixture(input: { userId: number }): P
   try {
     const [mine] = await conn.execute(
       `SELECT c.id, c.publicId FROM casting_candidates c
-        WHERE c.userId = ? AND c.personaLine = ? AND c.status = 'ready' ORDER BY c.id ASC LIMIT 1`,
+         JOIN casting_rolls r ON r.id = c.rollId
+         JOIN generation_operations o ON o.id = r.operationId
+        WHERE c.userId = ? AND o.clientRequestId = ? AND c.status = 'ready'
+        ORDER BY c.id ASC LIMIT 1`,
       [input.userId, ACCESSORY_FIXTURE_TAG],
     );
     let cand = (mine as Array<{ id: number; publicId: string }>)[0] ?? null;
@@ -255,7 +258,15 @@ async function cloneTaggedCast(
   await conn.execute(
     `INSERT INTO generation_operations (id, userId, clientRequestId, kind, payloadHash, status, plannedCredits, chargedCredits)
      VALUES (?, ?, ?, 'casting.fixture', ?, 'succeeded', 0, 0)`,
-    [operationId, userId, randomUUID(), `census-clone-${operationId}`],
+    /* THE TAG RIDES `clientRequestId` (#1364). It used to be written onto the
+       candidate's retired disposition column, which migration `0068` dropped, so
+       both the write and the lookup died on `Unknown column`. This column was
+       already the fixture tag's right home: the fixture writes the row itself, it
+       was spending the field on a `randomUUID()` nothing read back, and
+       UNIQUE(userId, clientRequestId) is what a fixture tag MEANS — one per
+       account, found the second time instead of duplicated. ≤ 36 chars, which
+       MySQL enforces on a `varchar(36) NOT NULL`. */
+    [operationId, userId, tag, `census-clone-${operationId}`],
   );
   const rollPublicId = randomUUID();
   await conn.execute(
@@ -269,10 +280,10 @@ async function cloneTaggedCast(
   await conn.execute(
     `INSERT INTO casting_candidates
        (publicId, rollId, sessionId, userId, position, status, pointsCost, imageKey, thumbKey,
-        personaLine, internalPrompt, provider, providerModel)
-     VALUES (?, ?, ?, ?, 1, 'ready', 0, ?, ?, ?, ?, ?, ?)`,
+        internalPrompt, provider, providerModel)
+     VALUES (?, ?, ?, ?, 1, 'ready', 0, ?, ?, ?, ?, ?)`,
     [
-      candidatePublicId, rollId, sessionId, userId, donor.imageKey, donor.thumbKey, tag,
+      candidatePublicId, rollId, sessionId, userId, donor.imageKey, donor.thumbKey,
       typeof donor.internalPrompt === "string" ? donor.internalPrompt : JSON.stringify(donor.internalPrompt),
       donor.provider, donor.providerModel,
     ],
@@ -282,7 +293,7 @@ async function cloneTaggedCast(
   return (made as Array<{ id: number; publicId: string }>)[0]!;
 }
 
-export const DANGLING_FIXTURE_TAG = "capability-census fixture C — dangling delivered crop, never render";
+export const DANGLING_FIXTURE_TAG = "census-fixture-dangling-crop";
 
 /**
  * THE DANGLING-CROP BRANCH — a record that NAMES a delivered crop with no row.
@@ -303,7 +314,10 @@ export async function ensureDanglingCropFixture(input: { userId: number }): Prom
   try {
     const [mine] = await conn.execute(
       `SELECT c.id, c.publicId FROM casting_candidates c
-        WHERE c.userId = ? AND c.personaLine = ? AND c.status = 'ready' ORDER BY c.id ASC LIMIT 1`,
+         JOIN casting_rolls r ON r.id = c.rollId
+         JOIN generation_operations o ON o.id = r.operationId
+        WHERE c.userId = ? AND o.clientRequestId = ? AND c.status = 'ready'
+        ORDER BY c.id ASC LIMIT 1`,
       [input.userId, DANGLING_FIXTURE_TAG],
     );
     let cand = (mine as Array<{ id: number; publicId: string }>)[0] ?? null;
