@@ -46,3 +46,5 @@ export function getSessionCookieOptions(
     secure: isSecureRequest(req),
   };
 }
+
+// probe #1307 (acceptance test, throwaway branch — never merged to main)
