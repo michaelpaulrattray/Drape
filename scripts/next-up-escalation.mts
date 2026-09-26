@@ -469,11 +469,25 @@ if (items.length === 0) none("neither band holds a card — nothing is ordered a
  *
  * A fixture path that cannot be read is UNREADABLE rather than empty, which is
  * what makes the `NONE` direction drivable without breaking `gh`.
+ *
+ * ⚠ **THE PARAGRAPH ABOVE WAS TRUE OF THE DOCUMENT AND FALSE OF THE CODE UNTIL
+ * THE GATE WENT RED IN CI (PR #1343, run 36218388495).** The first shape asked
+ * *"did ANY board fixture arrive"* and, if one did, sent the OTHER half to `gh`:
+ * an arm passing `--open-prs` alone took a live comment read, which is fine on a
+ * machine where `gh` is authenticated and is an unreadable board on a runner
+ * where it is not — five arms green here, red there, for a reason that was never
+ * about the gate. **Each half is now independent**: a half with a fixture reads
+ * it, a half without one under `--queue` is EMPTY BY DECLARATION, and **a fixture
+ * run cannot reach the network at all.** That is the property the suite's
+ * hostile-PATH arm drives directly, with `gh` proven unreachable first.
  */
-const boardFixtures = flags.has("--open-prs") || flags.has("--comments");
-const driven = flags.has("--queue") && !boardFixtures;
-const prRows = driven ? [] : readOpenPullRequests(flags.get("--open-prs") ?? null);
-const commentRows = driven ? [] : readCardComments(flags.get("--comments") ?? null);
+const fixtureQueue = flags.has("--queue");
+const prRows = flags.has("--open-prs")
+  ? readOpenPullRequests(flags.get("--open-prs")!)
+  : (fixtureQueue ? [] : readOpenPullRequests(null));
+const commentRows = flags.has("--comments")
+  ? readCardComments(flags.get("--comments")!)
+  : (fixtureQueue ? [] : readCardComments(null));
 const board = buildBoard({
   openPullRequests: prRows === null
     ? { unreadable: "`gh pr list` could not be read" }

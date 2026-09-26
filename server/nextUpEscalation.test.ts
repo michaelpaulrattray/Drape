@@ -1,6 +1,6 @@
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { runHook } from "./testing/hookDriver";
@@ -407,15 +407,29 @@ describe("the URGENT band is read too — #1258, #541's defect one band over", (
  * that one, and it fails if the skip ever becomes a refusal.
  */
 describe("a card somebody is already building is not takeable (#1094)", () => {
-  const prFile = (name: string, rows: unknown[]): string => {
-    const path = join(dir, `${name}-prs.json`);
-    writeFileSync(path, JSON.stringify(rows), "utf8");
-    return path;
-  };
-  const commentFile = (name: string, rows: unknown[]): string => {
-    const path = join(dir, `${name}-comments.json`);
-    writeFileSync(path, JSON.stringify(rows), "utf8");
-    return path;
+  /**
+   * ⚠ **BOTH HALVES OF THE BOARD, ALWAYS — AND THIS HELPER EXISTS BECAUSE THE
+   * FIRST SHAPE OF THESE ARMS WENT RED IN CI AND GREEN HERE.**
+   *
+   * The arms used to pass `--open-prs` alone, or `--comments` alone, and the gate
+   * read *"did ANY board fixture arrive"* — so the OTHER half went to `gh`. On
+   * this machine `gh` is authenticated and answers; on the runner it is not, the
+   * half came back unreadable, and five arms answered `NONE: the board could not
+   * be read` (PR #1343, head `cb8b946e`, run 36218388495). **Nothing about the
+   * gate was wrong in the way the red suggested; the arms were not fully driven.**
+   *
+   * So a fixture is never written on its own: `board()` writes BOTH files and
+   * returns BOTH flags, and an arm cannot leave a half to the network by
+   * forgetting it. The property that makes that true of the script rather than of
+   * this helper — *a `--queue` run cannot reach `gh` at all* — is driven directly
+   * by the hostile-PATH arm at the end, with `gh` proven unreachable first.
+   */
+  const board = (name: string, rows: { prs?: unknown[]; comments?: unknown[] } = {}): string[] => {
+    const prPath = join(dir, `${name}-prs.json`);
+    const commentPath = join(dir, `${name}-comments.json`);
+    writeFileSync(prPath, JSON.stringify(rows.prs ?? []), "utf8");
+    writeFileSync(commentPath, JSON.stringify(rows.comments ?? []), "utf8");
+    return ["--open-prs", prPath, "--comments", commentPath];
   };
   /** A comment row exactly as `gh api repos/{owner}/{repo}/issues/comments` returns one. */
   const claim = (card: number, at: string, seat = "seat-desk-9") => ({
@@ -429,11 +443,12 @@ describe("a card somebody is already building is not takeable (#1094)", () => {
     const queue = queueFile("built-fable", [
       card(508, ["founder-ordered", "awaiting-fable"], "deploy on merge"),
     ]);
-    const prs = prFile("built-fable", [
-      { number: 1400, title: "feat: deploy on merge (#508)", body: "for card #508", headRefName: "team/x-508" },
-    ]);
     const result = run(
-      "--queue", queue, "--open-prs", prs, "--state", statePath("built-fable"), "--today", "2026-09-26",
+      "--queue", queue,
+      ...board("built-fable", {
+        prs: [{ number: 1400, title: "feat: deploy on merge (#508)", body: "for card #508", headRefName: "team/x-508" }],
+      }),
+      "--state", statePath("built-fable"), "--today", "2026-09-26",
     );
     expect(result.last).toMatch(/^NONE: /);
     expect(result.last).toContain("already being built");
@@ -446,9 +461,10 @@ describe("a card somebody is already building is not takeable (#1094)", () => {
     const queue = queueFile("claimed-fable", [
       card(508, ["founder-ordered", "awaiting-fable"], "deploy on merge"),
     ]);
-    const comments = commentFile("claimed-fable", [claim(508, new Date().toISOString())]);
     const result = run(
-      "--queue", queue, "--comments", comments, "--state", statePath("claimed-fable"), "--today", "2026-09-26",
+      "--queue", queue,
+      ...board("claimed-fable", { comments: [claim(508, new Date().toISOString())] }),
+      "--state", statePath("claimed-fable"), "--today", "2026-09-26",
     );
     expect(result.last).toMatch(/^NONE: /);
     expect(result.status).toBe(1);
@@ -463,20 +479,22 @@ describe("a card somebody is already building is not takeable (#1094)", () => {
       card(391, ["founder-ordered"], "his ladder ruling"),
       card(508, ["founder-ordered", "awaiting-fable"], "deploy on merge"),
     ]);
-    const prs = prFile("skip-built", [
-      { number: 1401, title: "chore: the ladder ruling", body: "for card #391", headRefName: "team/ladder-391" },
-    ]);
     const result = run(
-      "--queue", queue, "--open-prs", prs, "--state", statePath("skip-built"), "--today", "2026-09-26",
+      "--queue", queue,
+      ...board("skip-built", {
+        prs: [{ number: 1401, title: "chore: the ladder ruling", body: "for card #391", headRefName: "team/ladder-391" }],
+      }),
+      "--state", statePath("skip-built"), "--today", "2026-09-26",
     );
     expect(result.last).toMatch(/^ESCALATE #508 /);
     expect(result.status).toBe(0);
 
-    /* THE CONTROL: without the pull request the same queue answers NONE, because
-       #391 is genuinely takeable. Without this arm the one above proves only that
-       the script runs. */
+    /* THE CONTROL: the same queue against an EMPTY board — both halves read and
+       holding nothing — answers NONE, because #391 is genuinely takeable. Without
+       this arm the one above proves only that the script runs. */
     const control = run(
-      "--queue", queue, "--state", statePath("skip-built-control"), "--today", "2026-09-26",
+      "--queue", queue, ...board("skip-built-control"),
+      "--state", statePath("skip-built-control"), "--today", "2026-09-26",
     );
     expect(control.last).toMatch(/^NONE: /);
     expect(control.last).toContain("#391");
@@ -488,11 +506,12 @@ describe("a card somebody is already building is not takeable (#1094)", () => {
       card(530, ["founder-ordered"], "the sphinx-cat tail court"),
       card(539, ["founder-ordered"], "MAX heat"),
     ]);
-    const prs = prFile("bundle-built", [
-      { number: 1402, title: "court: the sphinx-cat tail (#530)", body: "for card #530" },
-    ]);
     const result = run(
-      "--queue", queue, "--open-prs", prs, "--state", statePath("bundle-built"), "--today", "2026-09-26",
+      "--queue", queue,
+      ...board("bundle-built", {
+        prs: [{ number: 1402, title: "court: the sphinx-cat tail (#530)", body: "for card #530" }],
+      }),
+      "--state", statePath("bundle-built"), "--today", "2026-09-26",
     );
     expect(result.last).toMatch(/^ESCALATE #508 /);
     expect(result.last).toContain("bundle=#539");
@@ -503,22 +522,34 @@ describe("a card somebody is already building is not takeable (#1094)", () => {
     /* Every other consumer of the board prints the reason and offers the card
        anyway; this one spends a Fable session, so it stands down. Driven with a
        fixture path that cannot be read, which is what a broken `gh` looks like to
-       the reader. */
+       the reader — and the OTHER half is still a real fixture, so the arm can
+       never be answering about a live read. */
     const queue = queueFile("unread-board", [
       card(508, ["founder-ordered", "awaiting-fable"], "deploy on merge"),
     ]);
+    const good = board("unread-board");
     const result = run(
       "--queue", queue,
-      "--open-prs", join(dir, "does-not-exist.json"),
+      "--open-prs", join(dir, "does-not-exist.json"), "--comments", good[3]!,
       "--state", statePath("unread-board"), "--today", "2026-09-26",
     );
     expect(result.last).toMatch(/^NONE: /);
     expect(result.last).toContain("board could not be read");
     expect(result.status).toBe(1);
 
-    /* THE CONTROL: the same queue with a readable, empty board escalates. */
+    /* And the other half, unreadable on its own, refuses the same way — a board is
+       partial if EITHER half is. */
+    const commentsUnread = run(
+      "--queue", queue,
+      "--open-prs", good[1]!, "--comments", join(dir, "also-does-not-exist.json"),
+      "--state", statePath("unread-comments"), "--today", "2026-09-26",
+    );
+    expect(commentsUnread.last).toMatch(/^NONE: /);
+    expect(commentsUnread.last).toContain("board could not be read");
+
+    /* THE CONTROL: the same queue with both halves readable and empty escalates. */
     const control = run(
-      "--queue", queue, "--open-prs", prFile("unread-control", []),
+      "--queue", queue, ...good,
       "--state", statePath("unread-control"), "--today", "2026-09-26",
     );
     expect(control.last).toMatch(/^ESCALATE #508 /);
@@ -529,17 +560,111 @@ describe("a card somebody is already building is not takeable (#1094)", () => {
       card(508, ["founder-ordered", "awaiting-fable"], "deploy on merge"),
     ]);
     const old = new Date(Date.now() - 13 * 60 * 60 * 1000).toISOString();
-    const comments = commentFile("stale-claim", [claim(508, old)]);
     const result = run(
-      "--queue", queue, "--comments", comments, "--state", statePath("stale-claim"), "--today", "2026-09-26",
+      "--queue", queue, ...board("stale-claim", { comments: [claim(508, old)] }),
+      "--state", statePath("stale-claim"), "--today", "2026-09-26",
     );
     expect(result.last).toMatch(/^ESCALATE #508 /);
+  });
+
+  /**
+   * ⚠ **THE ARM THAT PROVES A FIXTURE RUN NEVER TOUCHES `gh` — and it verifies
+   * its own instrument first (working law 2).**
+   *
+   * Every arm above could have been written against a gate that quietly read the
+   * live board for the half it was not given, and on a developer machine it would
+   * look identical. So: run the gate with a PATH that contains node and nothing
+   * else, and with every `gh` credential removed from the environment.
+   *
+   * The FIRST assertion is that `gh` is genuinely unreachable under that
+   * environment — a hostile PATH that still finds `gh` would make the whole arm a
+   * green that means nothing, which is the shape this repository keeps a memory
+   * file about.
+   */
+  it("⚠ a `--queue` run answers with `gh` UNREACHABLE and no token — proven unreachable first", () => {
+    const nodeDir = dirname(process.execPath);
+    const env: NodeJS.ProcessEnv = { ...process.env };
+    for (const name of ["GH_TOKEN", "GITHUB_TOKEN", "GH_CONFIG_DIR", "GH_HOST", "GITHUB_READ_TOKEN"]) {
+      delete env[name];
+    }
+    /* Windows needs COMSPEC's own directory for `cmd.exe` itself to function; the
+       node directory carries `npx`. `gh` lives in neither. */
+    env.PATH = process.platform === "win32"
+      ? `${join(process.env.SystemRoot ?? "C:\\Windows", "System32")};${nodeDir}`
+      : nodeDir;
+    env.Path = env.PATH;
+
+    /* THE INSTRUMENT'S OWN CONTROL: is `gh` actually out of reach here?
+       ⚠ Probed through `runHook` rather than a bare `spawnSync`, and not for
+       tidiness: `server/childProcessTestTimeouts.test.ts` keeps THIS FILE as the
+       specimen proving its deriver resolves one hop — *"neither writes
+       `spawnSync` in code"* — and a direct call here would quietly retire that
+       proof. Through a shell a missing binary is the shell's own exit code
+       (9009 / 127, `hookDriver`'s own note), so a non-zero status is the answer
+       either way. */
+    let ghFound = false;
+    try {
+      ghFound = runHook("gh", ["--version"], { env, shell: process.platform === "win32" }).status === 0;
+    } catch {
+      ghFound = false;
+    }
+    expect(ghFound, "the hostile PATH still finds `gh`, so this arm would prove nothing").toBe(false);
+
+    const queue = queueFile("no-gh", [
+      card(391, ["founder-ordered"], "his ladder ruling"),
+      card(508, ["founder-ordered", "awaiting-fable"], "deploy on merge"),
+    ]);
+    const proc = runHook(
+      "npx",
+      ["tsx", SCRIPT, "--queue", queue,
+        ...board("no-gh", {
+          prs: [{ number: 1401, title: "chore: the ladder ruling", body: "for card #391" }],
+        }),
+        "--state", statePath("no-gh"), "--today", "2026-09-26"],
+      { shell: process.platform === "win32", env },
+    );
+    const last = proc.stdout.split(/\r?\n/).filter((line) => line.trim().length > 0).pop() ?? "";
+    /* The full verdict, not merely "it did not crash": the built row is skipped
+       and the Fable card behind it is reached, with no network anywhere. */
+    expect(last, proc.stderr).toMatch(/^ESCALATE #508 /);
+    expect(last).not.toContain("board could not be read");
+    expect(proc.status).toBe(0);
+
+    /*
+      ⚠ **AND THIS IS THE RUN THAT TELLS THE FIX FROM THE BUG, WHICH THE ONE
+      ABOVE CANNOT.** With both fixtures handed in, the old code and the new code
+      behave identically — it read "did any fixture arrive", and one had. The red
+      in CI needed a run with ONE half given, and that is this: a comment fixture,
+      no `--open-prs`, `gh` unreachable. The old gate sent the pull-request half
+      to the network and answered `NONE: the board could not be read`; the new one
+      reads the missing half as EMPTY BY DECLARATION and answers the verdict.
+      Without this run every arm here would pass against the defect.
+    */
+    const oneHalf = runHook(
+      "npx",
+      ["tsx", SCRIPT, "--queue", queue,
+        "--comments", join(dir, "no-gh-comments.json"),
+        "--state", statePath("no-gh-one-half"), "--today", "2026-09-26"],
+      { shell: process.platform === "win32", env },
+    );
+    const oneHalfLast = oneHalf.stdout.split(/\r?\n/).filter((line) => line.trim().length > 0).pop() ?? "";
+    expect(oneHalfLast, oneHalf.stderr).not.toContain("board could not be read");
+    /* #391 has no pull request in this run — nothing was read for it — so it is
+       takeable and the gate correctly declines to spend a session. The verdict
+       is a real one either way; what must never happen is the unread board. */
+    expect(oneHalfLast).toMatch(/^NONE: the next card is #391/);
+    expect(oneHalf.status).toBe(1);
   });
 
   it("⚠ consults the ONE shared reader rather than its own grep", () => {
     const source = readFileSync(SCRIPT, "utf8");
     expect(source).toContain('from "./lib/cardBuildState.mts"');
     expect(source).toContain("board.holdsOffOffer(");
+    /* ⚠ AND EACH HALF IS INDEPENDENT — the CI red this arm was added beside. A
+       gate that asked "did any board fixture arrive" sent the other half to the
+       network; both halves must read their own flag. */
+    expect(source).toContain('flags.has("--open-prs")');
+    expect(source).toContain('flags.has("--comments")');
   });
 });
 
