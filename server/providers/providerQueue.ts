@@ -113,9 +113,29 @@ export class ProviderQueue {
     const failureClass: ProviderFailureClass =
       error instanceof ProviderError ? error.failureClass : "unknown";
 
-    // A refusal the provider made about *this request* — bad content, an
-    // unsupported ask — says nothing about provider health. Counting it would
-    // let a run of policy refusals trip the breaker for everyone.
+    /*
+      A refusal the provider made about *this request* — bad content, an
+      unsupported ask — says nothing about provider health. Counting it would
+      let a run of policy refusals trip the breaker for everyone.
+
+      ⚠ **THIS IS A FOURTH QUESTION ABOUT THE SAME UNION AND IT MUST NOT BE
+      DERIVED FROM THE OTHER THREE — found by #1301's law-7 sweep, which went
+      looking for exactly this shape and then argued the other way.** `types.ts`
+      holds three sets: will the transport succeed (`isRetryable`), does the money
+      go back once a picture exists (`refusesAfterRender`), and is asking again
+      how she gets the view she paid for (`mayStillArrive`). This asks a fourth —
+      **does this failure say anything about the PROVIDER'S health** — and the
+      fact that its answer is today the same two class names is a coincidence of
+      two short lists, not a contract to share.
+
+      Read it at the consequence, which is why the temptation is worth resisting
+      in writing: `mayStillArrive`'s set gained `provider_account` in #1301
+      because a second 403 reaches the same answer. If this line had been
+      "derived" from that set on the strength of the names matching, an exhausted
+      account would have stopped counting toward the breaker in the same commit —
+      so the one failure that SHOULD open it for every caller would have gone
+      silent, and nothing in this file would have gone red.
+    */
     if (failureClass === "content_policy" || failureClass === "capability") return;
 
     this.consecutiveFailures += 1;

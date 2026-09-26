@@ -548,11 +548,14 @@ describe("generation failures", () => {
   /*
     AND THE CLASSES DELIBERATELY LEFT ON THE ARRIVAL BUDGET, driven at the road
     rather than only asserted at the set. A redraw from a stochastic engine is a
-    different draw, and she has already paid for a frame she does not have -
-    narrowing these is a money decision and it is carded, not taken here.
+    different draw, and she has already paid for a frame she does not have.
+
+    ⚠ `provider_account` WAS IN THIS ARM UNTIL #1301 AND IS NOW THE ARM BELOW —
+    it is the one class of that card's four with a reachable raiser on this road
+    and a measured incident behind it.
   */
   it("still spends the arrival budget on a class that might come back clean", async () => {
-    for (const failure of ["render_fault", "provider_account"] as const) {
+    for (const failure of ["render_fault", "facts_missing"] as const) {
       const generateView = vi.fn(async () => {
         throw new ProviderError(failure, failure);
       });
@@ -560,6 +563,39 @@ describe("generation failures", () => {
       await buildCastPackage(deps({ identityEngine }), input);
       expect(generateView, failure).toHaveBeenCalledTimes(5 * VIEW_ARRIVAL_ATTEMPTS);
     }
+  });
+
+  /*
+    ⚠ THE ONE MEASURED WIN OF #1301, DRIVEN AT THE ROAD AND AT THE MONEY.
+
+    An exhausted provider account is the incident the class was split out of
+    `capability` for: `falTransport.ts` maps 401/403 to it, `generateView` goes
+    through that transport, and its own declaration says *"every candidate after
+    it will fail the same way, and no user action can fix it."* So the customer
+    was waiting through FIFTEEN guaranteed-403 calls with backoff — five views,
+    three attempts, 1.5 s then 4 s between each — to reach the answer the first
+    one had already given in full.
+
+    Both halves are asserted, and the second is the one that makes this a wait
+    change rather than a money change: **five calls, no waits at all, and the
+    whole 450 still goes back.** A slice that never landed refunds either way
+    (`buildOneView`'s per-slot settlement), which is why narrowing this is not a
+    money decision — it was the only reason #1212 declined to take it.
+  */
+  it("asks ONCE when our provider account is unusable — and still refunds every credit", async () => {
+    const generateView = vi.fn(async () => {
+      throw new ProviderError("provider_account", "402 no funds");
+    });
+    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
+    const result = await buildCastPackage(deps({ identityEngine }), input);
+
+    // Five views, one attempt each — 5 rather than 15.
+    expect(generateView).toHaveBeenCalledTimes(5);
+    // And not one spaced wait, which is the whole of what she stops sitting through.
+    expect(waitedMs).toHaveLength(0);
+    expect(result.failed).toHaveLength(5);
+    // Zero of N: the base comes back with the slices, exactly as before (450, not 250).
+    expect(result.refundedCredits).toBe(450);
   });
 
   it("still activates the Cast when every view fails — the master is usable", async () => {
