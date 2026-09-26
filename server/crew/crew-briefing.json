@@ -299,7 +299,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-26T08:10:37.345Z",
+      "readAt": "2026-09-26T10:40:27.207Z",
       "items": [
         {
           "issueNumber": 1129,
@@ -6104,7 +6104,7 @@
     {
       "id": "ceremony-179-persona",
       "title": "The #179 ceremony could not run — it selected a column #1241 dropped (#179)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1365,
       "note": "Run on both worlds after the fix: nothing to mark, nothing written. Sabotage 4/4."
     },
