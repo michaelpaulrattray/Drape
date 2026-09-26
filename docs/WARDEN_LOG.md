@@ -360,3 +360,97 @@ stated on #858 with no recommendation).
 **Spent: nothing.** One read-only disposable against production
 (`scripts/_warden4-audit-rows-disposable.mts`, deleted at close), no PR, no
 gate run, no money, no credits.
+
+---
+
+## Run 5 — 2026-09-26 17:20–17:5x AEST (Warden, patrol #5, crew run #381)
+
+Ran as a **builder seat** (`seat2-20260926-171737`), not as a night shift: the seat's batch named
+card **#1225** — the full billing and money-road audit the founder put on this seat's table on
+2026-09-25 (*"doesnt need to re-run now by it can definitely land on the wardens table for whenver
+the warden runs"*). `patrol-clocks.mts` read the seat **due in 1 day**; the card was taken on the
+batch's order rather than on the clock, which is the one difference from runs 1–4 and is recorded so
+run 6 counts its clock from today.
+
+**Run 4's brief is therefore only partly discharged**, and this is stated rather than left to be
+assumed: items 1–4 of it (the 2026-09-21 secrets run, `pnpm audit --prod`, Socket under Higher
+Noise, the audit-row read and the surface diff) were **NOT taken this run** — the money audit was
+the whole unit of work. **Run 6 takes run 4's brief as written, plus the items below.**
+
+### A. The money audit
+
+**The document is `docs/specs/MONEY_AUDIT_2026-09-26.md`**, written beside the July security audit
+as the card asked, with every finding carrying its class and its road read at `git log -S`.
+
+**Verdict: no live money loss, and nothing found can take or lose a customer's credits today.**
+Five entries; four findings and one standing decision.
+
+| id | finding | severity | road |
+|---|---|---|---|
+| W5-A | every credit **price** declaration is outside both halves of `.github/money-surfaces.sh` | medium, latent | **never covered** |
+| W5-B | `admin.adjustCredits` and `admin.reviewChangeRequest` carry open input schemas | medium | **never closed** |
+| W5-C | the Stripe webhook event-table idempotency is check-then-act and **fails open** | low, absorbed | wired and live, weaker than the layer beneath it |
+| W5-D | two non-unique charge-reference fallbacks (`refreshSlots`, `mintPackage`) | low, unreachable | **path ONE — never reachable** |
+| W5-E | no application-side fraud cap on credit purchases | decision, not a defect | deleted 2026-08-19 on a founder-stated default |
+
+**The reading worth carrying forward is W5-A's, because it is this seat's own kind of mistake.**
+The money classifier has two halves precisely because the path half missed every refund fix (#958
+measured 4 of 60); the symbol half was added for where money is **decided**. **Where money is
+PRICED was never added** — `git log -S "castingCreditCosts"` over all three readers returns
+nothing, on any branch, ever. So a PR changing what a customer pays merges on the gate alone.
+It has never bitten, and the reason is instructive rather than comforting: all six commits that
+ever touched a price module were caught, **every one of them because a new price ships beside the
+refund machinery that spends it**. A pure repricing has never happened. Zero instances is luck,
+not coverage — the bug-report exception's shape exactly.
+
+**W5-E carries a correction to CLAUDE.md's own sentence, in the narrowing direction:** there is no
+one-time purchase surface at all (`createTopupCheckout` returns nothing repository-wide), so the
+missing fraud cap describes a narrower surface than the sentence implies. No card — it is a decision
+already made and written down, and refiling it without new evidence is the noise the charter forbids.
+
+### B. Findings baseline — the readings taken
+
+| reading | at | verdict |
+|---|---|---|
+| the money classifier against every price-declaring module | `fa8ac509`, the real `.github/money-surfaces.sh` sourced | **5 of 5 modules uncovered** — W5-A |
+| the classifier against all six historical price commits | `git log --since=2026-08-01` | 6 of 6 caught, all incidentally — W5-A's severity |
+| `MONEY_SYMBOLS` population | `server/` + `shared/`, non-test | **36 modules** (the file's own docblock records 32 at #958) — the symbol half is doing more work than its comment claims |
+| the atomic credit layer | `server/casting/atomicCredits.ts`, all 261 lines | **healthy** — charge before work, derived refund reference, duplicate distinguished from payment, refund failure never reported as "not charged" |
+| every credit write on the Stripe road | `webhooks.ts`, `planChangeSettlement.ts` | **all six keyed on a deterministic reference**, every caller reads `.duplicate` — this is what absorbs W5-C |
+| duplicate-write semantics | `server/db/credits.ts:159-205` | duplicate **add** pays once and returns `duplicate: true`; duplicate **deduct** is **refused** — the direction that makes W5-D a dead button rather than a loss |
+| the billing five's strictness | `server/routes/billing.ts` | all five `.strict()`; both invoice readers `.strict().optional()` — **object strict, whole optional**, the order that matters |
+| invariant 3 across the money roads | every `input.userId` under `server/routes/` | **holds** — all are admin procedures on a target user, authority from `adminProcedure`, actor audited from `ctx.user.id` |
+| the view-retry re-charge (#1208/#1220 new shape) | `viewRetryService.ts` | **correct** — fresh operation per retry, price read from the same projection the button renders |
+| recovery coverage | `server/castingV2/*Recovery.ts` | every paid road has one: roll, sign, refine, retry, viewRetry, plus legacy `operationRecovery` |
+| access-control suites | `fa8ac509` | **5 files / 74 tests green** (`approvalGate`, `staffImageBoundary`, `publicInputStrictness`, `sessionIssuanceSites`, `moneySurfaceClassifier`) |
+| the credit suites | `fa8ac509` | **2 files / 19 tests green** (`atomicCredits`, `deployCollision`) |
+| the Atlas `non-strict-input` findings | `docs/architecture/drape-architecture.json` | **115 total**, matching CLAUDE.md #1028 reading; 36 of them on a money-ish surface, two of which move money — W5-B |
+
+### C. Controls and instruments
+
+**Nothing new was built and nothing was driven for its own sake** — the anti-boredom rule binds this
+seat hardest, and every finding above traces to card #1225 own list of what the pass must read.
+
+⚠ **One instrument caveat found the hard way and recorded so the next run does not repeat it:**
+a `grep -c "recordRefund("` per module reads several paid roads as having a charge with no refund.
+It is wrong. **The house style is dependency injection** — the call is written
+`(dependencies.refund ?? recordRefund)(` — so `viewRetryService.ts` counts zero charges and zero
+refunds while having both, at `:315` and `:498`. A pairing census built on a bare symbol count is
+not a census.
+
+### D. What this run leaves standing, and run 6 brief
+
+**Filed:** four cards, one per finding (W5-A … W5-D). **Closed:** nothing. No production write, no
+flag touched, no money and no credits spent.
+
+**Run 6 takes, in order:**
+1. **Run 4 whole brief, undischarged** — the `secrets.yml` scheduled run at its log, `pnpm audit --prod`, Socket under Higher Noise (still unmeasured; the reading needs a merged PR that ADDED a package), the `audit_logs` read and the security-surface diff.
+2. Whether W5-A card landed, and whether the classifier own suite was driven with it.
+3. The clock counts from **today**.
+
+**Not a Warden brief, named so it is not re-proposed:** a row-level reconciliation of the production
+credit ledger (a separate and much larger reading, named in the audit own limits); opening the
+Stripe dashboard for delivery-retry history (it would sharpen W5-C severity and is not this seat
+access); W5-E fraud cap (his decision, already made).
+
+**Spent: nothing.** No disposable scripts written, no money, no credits.
