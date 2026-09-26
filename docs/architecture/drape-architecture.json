@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "e6d3b639c70aea04"
+    "sourceFingerprint": "04dcc389b6aaf749"
   },
   "domains": [
     {
@@ -12645,6 +12645,10 @@
     {
       "id": "test:server/facePanelOwnership.test.ts",
       "path": "server/facePanelOwnership.test.ts"
+    },
+    {
+      "id": "test:server/facePanelSubject.test.ts",
+      "path": "server/facePanelSubject.test.ts"
     },
     {
       "id": "test:server/faceScanWire.test.ts",
