@@ -223,6 +223,156 @@ describe("the path reading — where money is stored and bought", () => {
   });
 });
 
+describe("the price reading — where money is SET (#1359)", () => {
+  /*
+    ⚠ THE THIRD SURFACE, AND IT WAS ON NEITHER HALF UNTIL 2026-09-26.
+
+    The path list is *where money is stored and bought*; the symbol list is
+    *where money is decided*. **Where money is PRICED was never added** — so a
+    change to `rollCandidate: 20`, to `CASTING_V2_ROLL_PRICE_CREDITS`, or to the
+    Sign decomposition merged on the gate like a CSS tweak, with no
+    `founder-review` label and the charter reading rather than CLAUDE.md in
+    full. Road: never covered; `git log -S "castingCreditCosts" -- .github/`
+    returns nothing on any branch at any time.
+
+    ⚠ IT HAD NEVER BITTEN, AND THAT IS THE ARGUMENT FOR FIXING IT RATHER THAN
+    AGAINST. Every commit that ever touched a price module was caught
+    INCIDENTALLY, because a new price ships beside the refund machinery that
+    spends it and the symbol half fires for an unrelated reason. A PURE
+    repricing has never happened here. Measured over the 60 newest merge commits
+    on `main`, the same standard #958 set: 9 of 60 before this widening and
+    **9 of 60 after it** — nothing new is labelled, so it costs no reviewer
+    attention at all and closes a hole whose first instance would have been a
+    repricing.
+  */
+  it.each([
+    "server/casting/castingCreditCosts.ts",
+    "server/casting/packagePricing.ts",
+    "server/casting/evidence/evidenceCandidateContract.ts",
+    "server/wardrobe/creditCosts.ts",
+    "server/castingV2/castViewPackage.ts",
+    "client/src/features/casting/constants.ts",
+    "client/src/features/casting/castingPrices.ts",
+  ])("labels %s", (file) => {
+    expect(pathRe.test(file)).toBe(true);
+  });
+
+  /**
+   * THE POSITIVE CONTROL, and it is the arm the card asked for by name: a diff
+   * that changes ONLY a price, touching no credit primitive, is a money diff
+   * now and was not before. Without the symbol half asserted false here, this
+   * arm would pass on a diff the OLD reading already caught, which is the shape
+   * that reads as coverage and is not.
+   */
+  it("a repricing that calls no credit primitive is a money diff", () => {
+    const changed = ["server/casting/castingCreditCosts.ts"];
+    const diffLines = [
+      "-  rollCandidate: 20,",
+      "+  rollCandidate: 30,",
+      "-export const CASTING_V2_ROLL_PRICE_CREDITS = 160;",
+      "+export const CASTING_V2_ROLL_PRICE_CREDITS = 240;",
+    ];
+    expect(changed.some((f) => pathRe.test(f))).toBe(true);
+    expect(diffLines.some((l) => symbolRe.test(l))).toBe(false);
+  });
+
+  /**
+   * The same, on the CLIENT copy — which is the half that is structurally
+   * invisible to the symbol reading, not merely a pattern near-miss. `git diff
+   * -G"$MONEY_SYMBOLS"` is scoped `-- server shared` and STAYS so; a `client/`
+   * scope would match every client file mentioning a primitive as a substring,
+   * which is #958's rejected 17-of-60 widening wearing a different hat. So the
+   * two client price files are on the PATH list by name, and this arm holds
+   * both facts at once.
+   */
+  it("the client's own price copy is a money diff, and the symbol scope stays server-only", () => {
+    expect(pathRe.test("client/src/features/casting/constants.ts")).toBe(true);
+    expect(gateYml).toContain('git diff -G"$MONEY_SYMBOLS" --name-only "origin/$BASE"...HEAD -- server shared');
+    expect(reviewYml).toContain('git diff -G"$MONEY_SYMBOLS" --name-only "origin/$BASE"...HEAD -- server shared');
+  });
+
+  /**
+   * THE NEGATIVE CONTROL. #958 rejected `^server/casting/`, `^server/castingV2/`
+   * wholesale at 17 of 60 as too noisy to be read, and that judgement is what
+   * this widening must not quietly undo. Named files only: an ordinary casting
+   * module beside a price module is still not a money diff.
+   */
+  it.each([
+    "server/casting/promptAuthor.ts",
+    "server/casting/refreshSlots.ts",
+    "server/castingV2/briefCompiler.ts",
+    "server/castingV2/rollService.ts",
+    "client/src/features/casting/ControlPanel.tsx",
+    "client/src/features/castingV2/briefEcho.ts",
+  ])("still leaves %s alone", (file) => {
+    expect(pathRe.test(file)).toBe(false);
+  });
+
+  /*
+    ⚠ THE DRIFT GUARD, DERIVED RATHER THAN TYPED — the same shape as the
+    `atomicCredits` one below, pointed at prices.
+
+    A file-path list is precisely the second list working law 4 warns about, and
+    the list above is one. So the POPULATION is read out of the Atlas's own
+    price collector, which emits every credit number keyed by its declaring
+    constant and its module: a price module added tomorrow reddens here instead
+    of arriving invisible to the gate on its first day.
+
+    ⚠ THE COLLECTOR DOES NOT TRY TO DEFINE "PRICE" — deliberately, and CLAUDE.md
+    records why: inventing a taxonomy is not a mechanical act, so it emits every
+    number with its provenance and lets the reader judge. Its list is therefore
+    WIDER than this one, and the two numbers that are not prices are excluded BY
+    NAME so the exclusion is a decision on the record rather than a regex that
+    quietly skips them.
+  */
+  const NUMBERS_THAT_ARE_NOT_PRICES = new Map([
+    [
+      "server/castingV2/carriedGeometry.ts",
+      "CARRIED_GEOMETRY_COST_NOTE_ABOVE is a log threshold, read as `if (slots.length > it) log.info(...)`. Nobody is charged it.",
+    ],
+    [
+      "server/db/discrepancyQueries.ts",
+      "OPERATION_COST_SQL READS costs the ledger already recorded, for the moderator reconciliation. It sets none.",
+    ],
+  ]);
+
+  it("every module the Atlas says declares a credit number is on the list, or excluded by name", () => {
+    const atlas = JSON.parse(read("docs/architecture/drape-architecture.json")) as {
+      creditCosts?: { file?: string; module?: string; id?: string }[];
+    };
+    const rows = atlas.creditCosts ?? [];
+    /* A collector that can come up empty reports a complete answer either way. */
+    if (rows.length === 0) throw new Error("the Atlas declares no creditCosts — reader broken");
+
+    const modules = [...new Set(rows.map((r) => r.file ?? r.module ?? r.id?.split(":")[1] ?? ""))]
+      .filter(Boolean)
+      .sort();
+    expect(modules.length).toBeGreaterThan(3);
+
+    const missing = modules.filter((m) => !pathRe.test(m) && !NUMBERS_THAT_ARE_NOT_PRICES.has(m));
+    expect(
+      missing,
+      "these modules declare a credit number the Atlas can see, and a diff touching only them "
+        + `is not read as money: ${missing.join(", ")}. Add them to MONEY_PATHS, or name them in `
+        + "NUMBERS_THAT_ARE_NOT_PRICES with the reason.",
+    ).toEqual([]);
+  });
+
+  /**
+   * And the exclusion list cannot rot into a silencer: a module named there
+   * must still exist and must still be absent from the path list, so "excluded
+   * because it is not a price" can never come to mean "excluded because
+   * somebody added it and forgot to delete the excuse".
+   */
+  it("each excluded module is real and genuinely off the list", () => {
+    for (const [module, reason] of NUMBERS_THAT_ARE_NOT_PRICES) {
+      expect(reason.length, `${module} needs a stated reason`).toBeGreaterThan(30);
+      expect(() => read(module), `${module} no longer exists, so drop its exclusion`).not.toThrow();
+      expect(pathRe.test(module), `${module} is now on MONEY_PATHS, so drop its exclusion`).toBe(false);
+    }
+  });
+});
+
 describe("the symbol reading — where money is decided", () => {
   /**
    * Real lines, taken from the five PRs the path list missed. Not invented
