@@ -131,7 +131,14 @@ function slot(overrides: Partial<CastSlotProjection> = {}): CastSlotProjection {
     url: null,
     note: "This view didn't arrive — refunded",
     refundedCredits: CAST_PACKAGE_VIEW_PRICE,
-    retry: { priceCredits: CAST_PACKAGE_VIEW_PRICE },
+    /*
+      ⚠ The `as` below means this object does NOT have to satisfy the type, so
+      `reason` was the only one of the three fixtures in this file that the
+      compiler did not catch when the field was added (#1347). Carried anyway:
+      a fixture that is a shape the projection can never produce teaches the
+      reader something false about the service under it.
+    */
+    retry: { priceCredits: CAST_PACKAGE_VIEW_PRICE, reason: "refunded" },
     ...overrides,
   } as CastSlotProjection;
 }
@@ -274,9 +281,11 @@ describe("try again on one view — what moves, and in what order", () => {
       state: "ready",
       url: "https://cdn.example/view.png",
       unjudged: true,
-      note: "We didn't get to check this one",
+      /* His ruling of 2026-09-26 replaced the sentence with the row's one word,
+         so the note is null and the reason is what the room reads (#1347). */
+      note: null,
       refundedCredits: null,
-      retry: { priceCredits: 0 },
+      retry: { priceCredits: 0, reason: "unchecked" },
     });
     const result = await retryCastView(dependencies([free]), input);
     expect(result.outcome).toBe("ready");
@@ -296,7 +305,7 @@ describe("try again on one view — what moves, and in what order", () => {
       url: "https://cdn.example/view.png",
       unjudged: true,
       refundedCredits: null,
-      retry: { priceCredits: 0 },
+      retry: { priceCredits: 0, reason: "unchecked" },
     });
     const result = await retryCastView(dependencies([free]), input);
     expect(result.outcome).toBe("failed");

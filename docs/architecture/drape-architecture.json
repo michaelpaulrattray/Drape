@@ -37,7 +37,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 47
+      "moduleCount": 48
     },
     {
       "id": "domain:client-shared",
@@ -1509,6 +1509,12 @@
     {
       "id": "module:client/src/features/castingV2/singleFlight.ts",
       "path": "client/src/features/castingV2/singleFlight.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/viewRetryRow.ts",
+      "path": "client/src/features/castingV2/viewRetryRow.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -10492,6 +10498,10 @@
       "path": "client/src/features/castingV2/useChipAnatomy.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/viewRetryRow.test.ts",
+      "path": "client/src/features/castingV2/viewRetryRow.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/viewerCompare.test.ts",
       "path": "client/src/features/castingV2/viewerCompare.test.ts"
     },
@@ -16705,6 +16715,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/viewRetryRow.ts",
+      "to": "module:server/castingV2/castProjection.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/export/ExportPackDialog.tsx",
       "to": "module:client/src/features/casting/constants.ts",
       "kind": "imports"
@@ -19357,6 +19372,11 @@
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
       "to": "module:client/src/features/castingV2/roomBusy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingRoom.tsx",
+      "to": "module:client/src/features/castingV2/viewRetryRow.ts",
       "kind": "imports"
     },
     {

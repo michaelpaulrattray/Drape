@@ -1968,11 +1968,11 @@
   color: var(--metaStrong);
 }
 
-.dpc-slot__refund {
-  font: 400 10.5px var(--font-mono);
-  letter-spacing: 0.05em;
-  color: var(--meta);
-}
+/*
+  `.dpc-slot__refund` — the "50 CR BACK" pill — was deleted 2026-09-26 with its
+  only consumer, on his ruling (Desk reply 224): the empty tile's own sentence
+  already says refunded, and the row underneath says it again in one word.
+*/
 
 .dpc-slot__label {
   font: 400 12px var(--font-sans);
@@ -1980,22 +1980,39 @@
 }
 
 /*
-  TRY AGAIN (#1208 slice 2) — the quietest possible paid button.
+  ONE MUTED LINE UNDER THE NAME (#1347) — his ruling, 2026-09-26, on the real
+  strip: *"one muted line under the name, nothing else … in our design
+  language."*
 
-  It sits under a tile that has already let someone down, so it is a text
-  affordance rather than a filled control: restrained, monochrome, and small
-  enough that a room of five good views does not read as a room of five
-  buttons. The price rides in the label, which is why there is no separate
-  price chip — one thing to read, in one place.
+  It carries a word and a link on ONE baseline, at the caption's own size, so a
+  room of five good views and one that needs something does not read as a room
+  of buttons. The word is the quieter of the two colours and the link is the
+  stronger, which is the only thing telling the eye where to press — no chip, no
+  border, no fill.
+*/
+.dpc-slot__row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font: 400 10.5px/1.35 var(--font-sans);
+  color: var(--faint);
+}
+
+/*
+  TRY AGAIN (#1208 slice 2, restyled #1347) — the quietest possible link.
+
+  ⚠ **THE PRICE LEFT IT 2026-09-26** (*"No credit count in the row."*), so the
+  label is two words and nothing else, and it inherits the row's type rather
+  than setting its own — a second font size here is what made this a separate
+  line instead of part of one.
 */
 .dpc-slot__again {
-  align-self: flex-start;
   padding: 0;
   border: 0;
   background: none;
-  font: 400 11px var(--font-sans);
+  font: inherit;
   letter-spacing: 0.01em;
-  color: var(--metaStrong);
+  color: var(--meta);
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
@@ -2004,7 +2021,7 @@
 .dpc-slot__again:hover:not(:disabled) { color: var(--ink); }
 
 .dpc-slot__again:disabled {
-  color: var(--meta);
+  color: var(--faint);
   cursor: default;
   text-decoration: none;
 }

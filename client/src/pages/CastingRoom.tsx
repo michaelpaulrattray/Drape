@@ -20,6 +20,11 @@ import {
   slotIsBeingAsked,
   slotShowsWorking,
 } from "@/features/castingV2/roomBusy";
+import {
+  VIEW_RETRY_LINK,
+  VIEW_RETRY_SEPARATOR,
+  VIEW_RETRY_WORDS,
+} from "@/features/castingV2/viewRetryRow";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { CAST_NAME_MAX_LENGTH } from "@shared/inputLimits";
 
@@ -711,42 +716,62 @@ export default function CastingRoom() {
                           ) : null}
                           {slot.state === "failed-refunded" && !beingAsked ? (
                             <div className="dpc-slot__confession">
+                              {/*
+                                ⚠ THE "50 CR BACK" PILL IS GONE — his ruling,
+                                2026-09-26 (Desk reply 224): *"Drop the '50 CR
+                                BACK' inside the empty tile too — 'This view
+                                didn't arrive — refunded' is enough, and the row
+                                underneath already says Refunded."* Two
+                                statements of the same money fact on one tile,
+                                one of them in mono, was a third of the weight
+                                he was reading as noise.
+                              */}
                               <p>{slot.note}</p>
-                              {typeof slot.refundedCredits === "number" && slot.refundedCredits > 0 ? (
-                                <span className="dpc-slot__refund">{slot.refundedCredits} CR BACK</span>
-                              ) : null}
                             </div>
                           ) : null}
                         </button>
                         <span className="dpc-slot__label">{slot.label}</span>
-                        {!beingAsked && slot.state !== "failed-refunded" && slot.note ? (
-                          <span className="dpc-takes__caption">{slot.note}</span>
-                        ) : null}
                         {/*
-                          ONE BUTTON, TWO PRICES (#1208 slice 2, #1220 slice 2).
-                          His rule: you pay 50 for each view you keep. A view
-                          that failed was refunded, so this costs; a view
-                          nobody checked was charged and kept, so it does not.
-                          The price is on the button either way — never a word
-                          the customer has to interpret, and never two buttons.
+                          ONE MUTED LINE UNDER THE NAME, NOTHING ELSE (#1347) —
+                          his ruling on the real strip, 2026-09-26 (Desk reply
+                          224): *"Too heavy — the good tiles have become louder
+                          than the broken one… one muted line under the name,
+                          nothing else."* So the row is two lines everywhere:
+                          the name, then `Unchecked · Try again` or `Refunded ·
+                          Try again`. A good view carries nothing, as it always
+                          did.
 
-                          ⚠ **AND IT LEAVES WHILE THE VIEW IS BEING MADE**
-                          rather than sitting there disabled with a verb on it
-                          (#1235). A tile that is working has nothing to offer:
-                          the server withholds the offer for as long as the
-                          operation runs, so a press that came back to a
+                          **It supersedes two things he had ruled before, and
+                          both deliberately.** The caption that used to sit here
+                          (*"We didn't get to check this one"*, #1220) is gone —
+                          the single word says it. And the PRICE has left the
+                          link (#1208's *"one price on the button"*) on his
+                          *"No credit count in the row."*
+
+                          The word comes from the offer's own `reason`, so a
+                          word can never be drawn without the link under it, nor
+                          the link without its word — there is no shape in which
+                          the server offers one and not the other.
+
+                          ⚠ **AND THE WHOLE ROW LEAVES WHILE THE VIEW IS BEING
+                          MADE** rather than sitting there disabled with a verb
+                          on it (#1235). A tile that is working has nothing to
+                          offer: the server withholds the offer for as long as
+                          the operation runs, so a press that came back to a
                           reloaded page cannot buy the same view twice.
                         */}
                         {slot.retry && !beingAsked ? (
-                          <button
-                            type="button"
-                            className="dpc-slot__again"
-                            onClick={() => askAgain(slot.angle)}
-                          >
-                            {slot.retry.priceCredits > 0
-                              ? `Try again · ${slot.retry.priceCredits} CR`
-                              : "Try again · free"}
-                          </button>
+                          <span className="dpc-slot__row">
+                            {VIEW_RETRY_WORDS[slot.retry.reason]}
+                            <span aria-hidden="true">{VIEW_RETRY_SEPARATOR}</span>
+                            <button
+                              type="button"
+                              className="dpc-slot__again"
+                              onClick={() => askAgain(slot.angle)}
+                            >
+                              {VIEW_RETRY_LINK}
+                            </button>
+                          </span>
                         ) : null}
                       </article>
                       );
