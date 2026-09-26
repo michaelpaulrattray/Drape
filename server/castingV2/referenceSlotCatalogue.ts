@@ -182,6 +182,20 @@ export type SlotDefinition = {
    */
   whenAbsent?: { says: string; why: string };
   /**
+   * THIS ROW IS DRAWN WITHOUT A TILE — see {@link CatalogueEntry.noThumbnail}.
+   *
+   * Absent on every slot but `build` today, and absent is the DEFAULT rather
+   * than the safe answer: a row that can hold a picture shows it. The panel's
+   * one thumbnail site reads this, so a slot that authors it loses its tile on
+   * every surface at once rather than in whichever renderer remembered.
+   *
+   * ⚠ Not to be read as {@link SlotDefinition.wordsOnly}, one field up, which is
+   * a STRING about why no segmentation question names the slot. Two different
+   * facts, and a slot can have either, both or neither: `build` has a question
+   * (composed) and no tile; `teeth` has no question and keeps its tile.
+   */
+  noThumbnail?: { why: string };
+  /**
    * WHY THIS SLOT HAS A QUESTION AND NO GUARD — the open lane's carve-out.
    *
    * Present on open slots ONLY, and never on a catalogued one. The invariant
@@ -376,6 +390,45 @@ type CatalogueEntry = {
    * recipe or files them in the library.
    */
   whenAbsent?: { says: string; why: string };
+  /**
+   * THE ROW IS DRAWN, AND IT IS DRAWN WITHOUT A PICTURE — founder ruling,
+   * 2026-09-26 (#1341, out of #61): *"currently we have a build thumbnail,
+   * really build should carry as text only"*.
+   *
+   * # IT IS A THIRD STATE, AND THE TWO IT SITS BETWEEN ALREADY EXIST
+   *
+   * `panel.row: "none"` draws NO ROW ({@link STRUCTURE_IS_WORDS} — cheekbones,
+   * jaw, chin, on fable-360). A plain row draws its thumbnail and its words.
+   * This is the row that keeps its name, its words and its rectangle and simply
+   * has no tile: *text only*, which is his phrase.
+   *
+   * ⚠ **IT DOES NOT TOUCH THE BOUNDING BOX, and that is what keeps it legal
+   * under fable-414** (*"nothing should ride words alone in the right panel —
+   * everything in the right panel should have a bounding box"*). A box is a
+   * click target; a thumbnail is a claim that a crop of those pixels shows you
+   * the feature. Only the second one is removed here, so the row still points
+   * somewhere and the ask still reaches it.
+   *
+   * ⚠ **AND IT DOES NOT STOP THE MINT.** The crop is still cut and still
+   * stored — `slotSpecFor`, the library and any render that reads a carried crop
+   * are all untouched. This field is about the PANEL, which is a display
+   * surface, and turning a mint off is a different decision from hiding a tile.
+   *
+   * # WHY BUILD AND NOT ITS NEIGHBOUR
+   *
+   * `build`'s region is COMPOSED — the whole-subject matte below the `face` box
+   * — so its tile is a crop of a dressed torso, and the catalogue already says
+   * in two places that what such a crop shows is *her clothes* rather than her
+   * build. A picture that cannot show the thing it is named after is the
+   * machinery showing through, which is what his ruling removes.
+   *
+   * `skin` is the nearest shape and is deliberately NOT given this field: a skin
+   * tile is legible at a glance in a way a torso crop is not, its own entry
+   * argues that case at length under `display`, and he ruled on build alone.
+   * Extending a ruling to the row next door is how a half-decided change ships
+   * under somebody else's word.
+   */
+  noThumbnail?: { why: string };
 };
 
 const STRUCTURE_IS_WORDS = (part: string): PanelPlacement => ({
@@ -734,6 +787,27 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
       already carried by the pristine master every render anchors on.
     */
     remint: "everyRender",
+    /*
+      HIS RULING, 2026-09-26 (#1341, cut out of #61), verbatim and entire:
+      *"currently we have a build thumbnail, really build should carry as text
+      only and outfit does need its own card but this is also n3 right?"*
+
+      The outfit half is N3's and is not touched here; this is the half he ruled
+      on today. The row keeps its name, its words and its rectangle.
+
+      It agrees with two things this entry already says rather than arguing with
+      them: the cutting region is COMPOSED because no question names a build, and
+      the entry's own paragraphs twice record that a below-head crop of her is
+      her CLOTHES. A tile that shows a crew tee under the word "Build" was
+      answering a question nobody asked.
+    */
+    noThumbnail: {
+      why:
+        "build's region is composed (the whole-subject matte below the `face` box), so its tile is "
+        + "a crop of a dressed torso — the catalogue says twice on this entry that such a crop "
+        + "shows her CLOTHES, not her build. Founder, 2026-09-26 (#1341): \"build should carry as "
+        + "text only\". The box, the words and the ask are untouched, and the crop is still minted",
+    },
   },
   {
     feature: "skin",
@@ -1160,6 +1234,10 @@ function definitionOf(entry: CatalogueEntry, instance: Instance | null): SlotDef
     /* Carried only where it was authored: a slot with nothing here says nothing
        when its read is empty, which is what every slot did before this field. */
     ...(entry.whenAbsent ? { whenAbsent: entry.whenAbsent } : {}),
+    /* Same discipline, same reason (#1341): absent on every slot that did not
+       author it, so "draws a thumbnail" stays the default and a row loses its
+       tile only where somebody wrote down why. */
+    ...(entry.noThumbnail ? { noThumbnail: entry.noThumbnail } : {}),
     ...(entry.instances.of === "perSide" ? { pairNoun: entry.instances.pairNoun } : {}),
   };
 

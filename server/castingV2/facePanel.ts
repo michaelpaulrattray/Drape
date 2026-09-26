@@ -714,7 +714,13 @@ export function facePanel(input: {
     const box = input.carriedGeometry?.get(slot);
     return box === undefined || state.box === null ? state : { ...state, box };
   };
-  const stateOf = (slot: FeatureSlot): SlotState => fresher(slot, stateOfRaw(slot));
+  /* Three steps, in this order and for a reason: the library and the scan merge
+     (`stateOfRaw`), the render's own geometry replaces a stale box (`fresher`),
+     and only then is a text-only row's tile dropped (`textOnly`, #1341) — last,
+     so it cannot be undone by a later fill, and after `fresher` so the box it
+     keeps is the freshest one. */
+  const stateOf = (slot: FeatureSlot): SlotState =>
+    textOnly(slot, fresher(slot, stateOfRaw(slot)));
   const stateOfRaw = (slot: FeatureSlot): SlotState => {
     const held = stateOfSlot(
       bySlot.get(slot) ?? [],
@@ -742,6 +748,42 @@ export function facePanel(input: {
       box: held.box ?? found.box,
     };
   };
+
+  /**
+   * A ROW THE CATALOGUE DRAWS WITHOUT A TILE — founder ruling, 2026-09-26
+   * (#1341): *"build should carry as text only"*.
+   *
+   * # ONE PLACE, AND IT IS AFTER BOTH SOURCES HAVE BEEN MERGED
+   *
+   * A thumbnail reaches a row two ways — the library's minted crop (`held.thumb`)
+   * and the scan-born window on today's frame — and *text only* has to mean
+   * neither. Applied HERE, on the state, so both are already resolved and there
+   * is one line to read rather than a condition at each source. Every surface
+   * that draws a tile reads this state: a catalogued row, a child of a pair, an
+   * open kind's row, and the photograph order rows are sorted in.
+   *
+   * ⚠ **THE BOX SURVIVES ON PURPOSE.** fable-414 requires every panel row to
+   * have a bounding box, and it is satisfied: only the tile goes. A row with no
+   * box would leave the panel entirely (the rule two hundred lines down), which
+   * is the opposite of what he asked for — he asked for the row to carry TEXT,
+   * not to disappear.
+   *
+   * ⚠ **AND THE CONSEQUENCE WORTH SAYING OUT LOUD: a row with no tile and no
+   * words does not render at all** (`hasContent`). For `build` that is the
+   * honest reading of his ruling rather than a gap — a build row with nothing
+   * said about it and nothing but a crop of a crew tee to show was the tile
+   * pretending to be content. It is named here so the next reader meets it as a
+   * decision instead of finding it as a bug.
+   *
+   * Derived from the catalogue, never a list here: a second roster of
+   * picture-less slots is working law 4's copy, and this one would go stale the
+   * first time a slot's rule changed — which the enumeration paragraph further
+   * down this file has already been bitten by twice.
+   */
+  const textOnly = (slot: FeatureSlot, state: SlotState): SlotState =>
+    slotDefinition(slot)?.noThumbnail === undefined || state.thumb === null
+      ? state
+      : { ...state, thumb: null };
 
   /**
    * WHAT THIS ROW STATES WHEN THE SCAN FOUND NOTHING — or null, which is almost

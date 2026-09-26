@@ -213,6 +213,25 @@ describe("2. the closed grammar is unchanged for every non-open key", () => {
       added nothing on the way. Still 25 slots, no slot carries the key under
       any spelling (`referenceSlotCatalogue.test.ts` drives that and reads the
       values too), and the open branch is once again not in this list to move.
+
+      MOVED 2026-09-26, `5a5d1dca79131a23` → `d7e7251bc3ee413d`, by the
+      text-only Build row (#1341, founder: *"build should carry as text only"*).
+      `noThumbnail` is authored on ONE slot, `build`. The reading this pin asks
+      for, taken before re-pinning: **still 25 slots** (the length assertion
+      below passed through the move, so the count is driven rather than
+      claimed); exactly one slot carries the new field, which
+      `facePanelTextOnlyRow.test.ts` drives over the WHOLE catalogue rather than
+      by naming it (`declared).toEqual(["build"])`, with `skin` asserted to
+      carry nothing — it is the negative control for the ruling not being
+      extended a row sideways); an ordinary slot does not carry the key under
+      any spelling, because `definitionOf` spreads it conditionally exactly as
+      it does `whenAbsent`; and the open branch is, for the fourth time, not in
+      this list to move — `openSlotDefinition` synthesizes its record outside
+      `catalogueSlots()` and has no panel-placement field to gain.
+
+      ⚠ Unlike the 2026-08-24 entry, this one is NOT expected to move back: it
+      is a founder ruling about what a row shows, not scaffolding for a path
+      that was later retired.
     */
     const digest = crypto
       .createHash("sha256")
@@ -220,7 +239,7 @@ describe("2. the closed grammar is unchanged for every non-open key", () => {
       .digest("hex")
       .slice(0, 16);
     expect(catalogueSlots()).toHaveLength(25);
-    expect(digest).toBe("5a5d1dca79131a23");
+    expect(digest).toBe("d7e7251bc3ee413d");
   });
 });
 
