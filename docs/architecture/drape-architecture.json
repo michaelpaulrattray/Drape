@@ -12809,6 +12809,10 @@
       "path": "server/freeTextWhitespace.test.ts"
     },
     {
+      "id": "test:server/gateReadRetry.test.ts",
+      "path": "server/gateReadRetry.test.ts"
+    },
+    {
       "id": "test:server/gateStallAlarm.test.ts",
       "path": "server/gateStallAlarm.test.ts"
     },

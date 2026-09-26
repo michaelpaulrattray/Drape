@@ -22,6 +22,13 @@
  *        against an unknown fault is how a stall becomes a loop).
  *     3  the push could not be dated — no verdict, read the PR by hand
  *     4  --watch gave up with the run still alive (not a stall; say so)
+ *     5  COULD NOT READ — the instrument could not see GitHub after its
+ *        retries. ⚠ NOT a stall and deliberately not exit 2: a transient
+ *        network failure used to kill the poll with a raw Node stack, which
+ *        is neither of this script's two answers and reads at a glance like
+ *        the finding (#1409, measured twice in one shift on PR #1404). A
+ *        shift that read the stack as a stall stopped waiting on a healthy
+ *        gate. Retry, then say which it was.
  *     1  tool error
  *
  * The threshold and its three-round measurement live in `lib/gateStall.mts`,
@@ -32,6 +39,7 @@
  */
 import { execFileSync } from "node:child_process";
 
+import { GateReadUnavailable, READ_ATTEMPTS, readWithRetry } from "./lib/gateRead.mts";
 import {
   GATE_DURATION,
   NO_SUITE_FINDING_MS,
@@ -44,12 +52,28 @@ import { readPullRequestConflict } from "../shared/crewShiftState.js";
 
 const GATE_WORKFLOW_PATH = ".github/workflows/gate.yml";
 
-function gh(args: string[]): string {
-  return execFileSync("gh", args, { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+/**
+ * ⚠ THE RETRY WRAPS THE `gh` CALL AND NOTHING ELSE, which is the line between
+ * the two classes (#1409). A transient failure means `gh` itself failed; the
+ * `JSON.parse` in `api` sits OUTSIDE, so a malformed response still throws —
+ * `gh` succeeded and returned garbage, and that is a real fault about a real
+ * answer. `scripts/lib/gateRead.mts` carries what counts as transient and why.
+ */
+function gh(args: string[]): Promise<string> {
+  return readWithRetry(
+    () => execFileSync("gh", args, { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 }),
+    {
+      onRetry: ({ attempt, of, waitMs, why, matched }) => {
+        console.log(
+          `  … could not reach GitHub (${why}: ${matched}) — attempt ${attempt} of ${of}, retrying in ${waitMs / 1000}s`,
+        );
+      },
+    },
+  );
 }
 
-function api<T>(path: string): T {
-  return JSON.parse(gh(["api", path])) as T;
+async function api<T>(path: string): Promise<T> {
+  return JSON.parse(await gh(["api", path])) as T;
 }
 
 function fail(message: string): never {
@@ -95,6 +119,8 @@ for (let i = 0; i < argv.length; i += 1) {
           "  --timeout <min>   give up watching after min minutes (default 30)",
           "",
           `finding line: no gate run ${NO_SUITE_FINDING_MS / 60_000} minutes after the push`,
+          `a read that fails at the network is retried ${READ_ATTEMPTS} times; exhausted, it exits 5`,
+          "  — exit 5 is 'I could not see', exit 2 is 'the gate has stalled'. Different actions.",
           `gate duration, measured: p50 ${(GATE_DURATION.p50Ms / 60_000).toFixed(1)}m · p99 ${(GATE_DURATION.p99Ms / 60_000).toFixed(1)}m`,
         ].join("\n"),
       );
@@ -111,8 +137,10 @@ if (!Number.isInteger(pr) || pr <= 0) fail(`--pr must be a positive integer, got
 // ---- the gate workflow's id, DERIVED ---------------------------------------
 // Never a pasted number: a second copy of an id is a mirror of the workflow
 // file and drifts from it the first time the workflow is recreated (law 4).
-const workflows = api<{ workflows: Array<{ id: number; path: string; state: string }> }>(
-  "repos/:owner/:repo/actions/workflows?per_page=100",
+const workflows = (
+  await api<{ workflows: Array<{ id: number; path: string; state: string }> }>(
+    "repos/:owner/:repo/actions/workflows?per_page=100",
+  )
 ).workflows;
 const gate = workflows.find((w) => w.path === GATE_WORKFLOW_PATH);
 if (!gate) fail(`no workflow at ${GATE_WORKFLOW_PATH} — the gate has been renamed or removed`);
@@ -122,9 +150,9 @@ if (gate.state !== "active") {
 
 type Suite = { created_at: string; app: { slug: string; name: string } | null };
 
-function read(): { verdict: StallVerdict; sha: string; suites: Suite[]; runs: GateRun[] } {
+async function read(): Promise<{ verdict: StallVerdict; sha: string; suites: Suite[]; runs: GateRun[] }> {
   const head = JSON.parse(
-    gh(["pr", "view", String(pr), "--json",
+    await gh(["pr", "view", String(pr), "--json",
       "headRefOid,headRefName,isDraft,state,mergeable,mergeStateStatus"]),
   ) as {
     headRefOid: string; headRefName: string; isDraft: boolean; state: string;
@@ -135,7 +163,7 @@ function read(): { verdict: StallVerdict; sha: string; suites: Suite[]; runs: Ga
   };
   const sha = head.headRefOid;
 
-  const runs = api<{
+  const runs = (await api<{
     workflow_runs: Array<{
       status: string;
       conclusion: string | null;
@@ -144,15 +172,15 @@ function read(): { verdict: StallVerdict; sha: string; suites: Suite[]; runs: Ga
     }>;
   }>(
     `repos/:owner/:repo/actions/workflows/${gate!.id}/runs?head_sha=${sha}&per_page=50`,
-  ).workflow_runs.map<GateRun>((r) => ({
+  )).workflow_runs.map<GateRun>((r) => ({
     status: r.status,
     conclusion: r.conclusion,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   }));
 
-  const suites = api<{ check_suites: Suite[] }>(
-    `repos/:owner/:repo/commits/${sha}/check-suites?per_page=100`,
+  const suites = (
+    await api<{ check_suites: Suite[] }>(`repos/:owner/:repo/commits/${sha}/check-suites?per_page=100`)
   ).check_suites;
 
   // The push is dated the same way the threshold was measured: by the earliest
@@ -205,7 +233,33 @@ function banner(sha: string, suites: Suite[], runs: GateRun[]): void {
 
 const sleep = (n: number) => new Promise<void>((r) => setTimeout(r, n));
 
-const first = read();
+/**
+ * One read, or the NAMED finding — never a raw stack (#1409).
+ *
+ * ⚠ This is the whole point of the card and it is worth saying in one place:
+ * an unhandled throw is neither of this script's answers. Exit 5 says *the
+ * instrument could not see*; exit 2 says *the gate has stalled*. They lead to
+ * opposite actions, and until now the first one arrived wearing a Node stack
+ * that a reader could mistake for the second.
+ */
+async function readOrSayWhy(): ReturnType<typeof read> {
+  try {
+    return await read();
+  } catch (error) {
+    if (!(error instanceof GateReadUnavailable)) throw error;
+    console.log(
+      [
+        `COULD NOT READ THE GATE — ${READ_ATTEMPTS} attempts, all refused at the network (${error.why}).`,
+        "  This is NOT a stall and NOT a verdict about the gate: the instrument could not see.",
+        "  Nothing is known about the run either way. Try again, or read the PR by hand.",
+        `  last reading: ${error.lastText.split("\n")[0]?.slice(0, 200) ?? "(none)"}`,
+      ].join("\n"),
+    );
+    process.exit(5);
+  }
+}
+
+const first = await readOrSayWhy();
 banner(first.sha, first.suites, first.runs);
 console.log(describeVerdict(first.verdict));
 
@@ -228,7 +282,7 @@ while (current.kind !== "complete" && current.kind !== "stall" && current.kind !
     break;
   }
   await sleep(intervalMs);
-  const round = read();
+  const round = await readOrSayWhy();
   current = round.verdict;
   console.log(`[${new Date().toISOString()}] ${describeVerdict(current)}`);
 }
