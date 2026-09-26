@@ -16,11 +16,30 @@
 #   A review is OWED when any of:
 #     - the diff touches money/auth surfaces (`.github/money-surfaces.sh`,
 #       both halves — the paths, and a changed line naming the credit API);
-#     - the diff is substantial (>= 50 changed lines of non-doc code);
+#     - the diff changes the rules of the review itself;
+#     - the diff touches a surface A CUSTOMER SEES
+#       (`.github/customer-surfaces.sh` — `client/src/`, outside the client's
+#       own tests and outside the staff panels);
 #     - the PR carries the `needs-fable` label (anyone can escalate).
-#   Nobody owes a look when:
-#     - docs/mailbox/output-only changes, or a trivial diff below the line;
-#     - the PR carries the `skip-review` label.
+#   Nobody owes a look when none of those is true, or when the PR carries the
+#   `skip-review` label.
+#
+# ⚠ THE SIZE TRIGGER IS GONE, BY HIS WORD AND NOT BY A RAISED NUMBER (#1328,
+# 2026-09-26, terminal). Asked *"why must ever PR have a review a fable review
+# on PR's seems like a waste of credits doesnt it?"*, told the rule and the
+# day's tally — 22 seat PRs reviewed, 0 code defects found, 2 prose claims
+# corrected, 22 of 22 instruments red under the relay's hand — then *"i think
+# opus 5 is comfrotable on more than 250 lines of code dont you?"* and, on the
+# recommendation to remove it outright rather than raise it: **"drop it"**.
+# A diff's line count decides nothing here any more, and `>= 50 changed lines
+# of non-doc code` is not a rule this repository has.
+#
+# ⚠ WHAT REPLACED IT IS THE ONE OBLIGATION A GATE CANNOT DISCHARGE. Working
+# law 6 says no visual change ships without being looked at in the running app,
+# and law 9 puts his eye above any reader's prose. The four mechanical checks
+# read every diff; none of them can look at a frame. So a customer-visible diff
+# earns `needs-fable` and the comment names the obligation as the relay's eye on
+# the rendered frames, both themes. It is a PROXY on a path and it says so.
 #
 # When a review is owed, triage LABELS the PR `needs-fable` and posts ONE
 # comment naming the obligation and the reading (ordinary diffs read
@@ -46,7 +65,10 @@
 # triage PERMANENTLY. Measured on #1191: opened 23:34:51Z, ready 23:35:10Z, no
 # `Fable Review` run created for either, on a 288-line diff. `gate.yml` came
 # back on its own when main was merged in, because it also triggers on
-# `synchronize`; this did not.
+# `synchronize`; this did not. (The 288 lines are what earned #1191 a look under
+# the rule of the day; that rule is retired — see the `"drop it"` note above.
+# The lost-triage half is not: the customer-surface limb is asked twice for
+# exactly this reason.)
 #
 # The standing orders already promised the recovery road — *"the manual road is
 # `gh pr edit <n> --add-label needs-fable` and it works ONCE"* — and it had
@@ -140,16 +162,12 @@ jobs:
             MONEY=yes
           fi
 
-          # Code lines: everything that is not docs, images, mailbox or output.
-          # ⚠ The pattern and the line are `.github/review-size.sh`'s, sourced
-          #   rather than typed, because `pr-merge-in-order.mts` asks the same
-          #   question and until #1194 nothing did — see that file's header.
-          . ./.github/review-size.sh
-          CODE=$(echo "$CHANGED" | grep -vE "$REVIEW_NON_CODE" || true)
-          LINES=0
-          if [ -n "$CODE" ]; then
-            LINES=$(echo "$CODE" | xargs -r -d '\n' git diff --numstat "origin/$BASE"...HEAD -- | awk '{s+=$1+$2} END {print s+0}')
-          fi
+          # What a CUSTOMER sees (#1328): the one declaration, sourced rather
+          # than typed, because `pr-merge-in-order.mts` asks the same question —
+          # the shape `money-surfaces.sh` was carved out for after #958's two
+          # copies drifted.
+          . ./.github/customer-surfaces.sh
+          CUSTOMER=$(echo "$CHANGED" | grep -E "$CUSTOMER_SURFACE_PATHS" | grep -vE "$CUSTOMER_SURFACE_EXEMPT" || true)
 
           if [ "$MONEY" = "yes" ]; then
             echo "Money/auth surfaces touched — a review is owed, and it reads CLAUDE.md in full."
@@ -169,20 +187,22 @@ jobs:
             } >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          if [ -z "$CODE" ]; then
-            echo "Docs/assets only — nobody owes this diff a look."
-            echo "review=no" >> "$GITHUB_OUTPUT"; exit 0
+          if [ -n "$CUSTOMER" ]; then
+            # ⚠ ONE LINE into `$GITHUB_OUTPUT`: the file list can be long and a
+            #   multi-line value would be read as several outputs.
+            COUNT=$(echo "$CUSTOMER" | wc -l | tr -d ' ')
+            FIRST=$(echo "$CUSTOMER" | head -1)
+            echo "Customer-visible files changed ($COUNT):"
+            echo "$CUSTOMER"
+            {
+              echo "review=yes"
+              echo "frames=yes"
+              echo "why=it changes what a customer sees ($COUNT file(s) under client/src/, e.g. $FIRST)"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
           fi
-          echo "Changed code lines: $LINES (the line is $REVIEW_SIZE_LINE)"
-          if [ "$LINES" -lt "$REVIEW_SIZE_LINE" ]; then
-            echo "Trivial diff (<$REVIEW_SIZE_LINE code lines) — nobody owes this diff a look; the mechanical checks still apply."
-            echo "review=no" >> "$GITHUB_OUTPUT"; exit 0
-          fi
-          echo "Substantial diff — a review is owed."
-          {
-            echo "review=yes"
-            echo "why=it changes $LINES lines of code (the line is $REVIEW_SIZE_LINE)"
-          } >> "$GITHUB_OUTPUT"
+          echo "No money/auth surface, no customer surface, no escalation — nobody owes this diff a look; the four mechanical checks still apply."
+          echo "review=no" >> "$GITHUB_OUTPUT"
 
       # The obligation lives ON THE PR: a label the merge tool reads, and one
       # comment a person reads. The label is applied even when it is already
@@ -195,6 +215,7 @@ jobs:
           PR: ${{ github.event.pull_request.number }}
           DEEP: ${{ steps.decide.outputs.deep }}
           HELD: ${{ steps.decide.outputs.held }}
+          FRAMES: ${{ steps.decide.outputs.frames }}
           WHY: ${{ steps.decide.outputs.why }}
         run: |
           gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --add-label needs-fable
@@ -210,6 +231,11 @@ jobs:
             READING='This is a **money/auth** diff: the review reads CLAUDE.md in full, and this PR is HELD until the verdict is posted — a shift neither merges it nor posts one.'
           elif [ "$HELD" = "yes" ]; then
             READING='This diff changes the rules of the review itself: the review reads docs/REVIEWER_CHARTER.md, and this PR is HELD until the verdict is posted — a shift neither merges it nor posts one.'
+          elif [ "$FRAMES" = "yes" ]; then
+            # ⚠ Double quotes because the sentence carries an apostrophe; there
+            #   is deliberately no backtick or $ in it, which inside double
+            #   quotes would be command or variable substitution.
+            READING="This diff touches a surface a customer SEES, so the obligation is the relay's EYE ON THE RENDERED FRAMES, BOTH THEMES — working law 6, and the one thing none of the four mechanical checks can do — beside the reading of docs/REVIEWER_CHARTER.md. The path is a PROXY for what a customer notices, and it is the only signal a workflow has: a client diff that moves no pixel earns a look it did not need. The standing orders let a shift merge it on the gate alone if the verdict has not landed yet."
           else
             READING='An ordinary diff: the review reads docs/REVIEWER_CHARTER.md. The standing orders let a shift merge it on the gate alone if the verdict has not landed yet.'
           fi

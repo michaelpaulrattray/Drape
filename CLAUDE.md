@@ -344,10 +344,29 @@ work is either one of its shifts or must behave like one. The binding pieces:
   are the new outside reviewer the outfit reviewer is permanently dead and
   will not come back."*).** `review.yml`'s triage still decides which diffs
   earn a look — money/auth surfaces (both halves of `.github/money-surfaces.sh`),
-  ≥50 changed code lines, or a `needs-fable` escalation — and says so ON THE
-  PR: it applies `needs-fable` and posts one comment naming the obligation and
-  the reading (ordinary diffs: `docs/REVIEWER_CHARTER.md`; money/auth: this
-  file in full). **The verdict is a PR comment by the founder's account headed
+  a change to the review's own rules, **a CUSTOMER-VISIBLE diff (both halves of
+  `.github/customer-surfaces.sh`)**, or a `needs-fable` escalation — and says so
+  ON THE PR: it applies `needs-fable` and posts one comment naming the obligation
+  and the reading (ordinary diffs: `docs/REVIEWER_CHARTER.md`; money/auth: this
+  file in full). ⚠ **THE SIZE TRIGGER IS GONE, AND HE REMOVED IT RATHER THAN
+  RAISING IT — this clause read *"≥50 changed code lines"* until 2026-09-26
+  (#1328).** Asked *"why must ever PR have a review a fable review on PR's seems
+  like a waste of credits doesnt it?"*, told the rule and that day's tally — 22
+  seat PRs reviewed, **0 code defects found**, 2 prose claims corrected, 22 of 22
+  instruments red under the relay's hand — then *"i think opus 5 is comfrotable
+  on more than 250 lines of code dont you?"* and, on the recommendation to drop
+  the trigger outright instead of moving the number: **"drop it"**. A line count
+  decides nothing about a review in this repository. ⚠ **What replaced it is the
+  one obligation none of the four mechanical checks can discharge**: a diff under
+  `client/src/` (outside the client's own `*.test.ts` and outside the STAFF
+  SURFACES — `features/admin/`, `features/moderator/`, and the `pages/Admin…` and
+  `pages/Moderator…` pages, which is his *"keep it with you"* on the relay's
+  sentence that a staff diff merges on the gate) earns `needs-fable`, and the comment
+  names the obligation as **the relay's eye on the rendered frames, both
+  themes** — working law 6, and law 9's *his eyes are king*. It is a PROXY on a
+  path and says so; the hand `needs-fable` road is the remedy for a
+  customer-visible change the path cannot see. It is NOT held. **The verdict is a
+  PR comment by the founder's account headed
   `**Fable review — by hand`, posted after the head commit** — the road every
   merge of 2026-09-22 took — and `scripts/pr-merge-in-order.mts` reads it off
   the PR (`scripts/lib/reviewRounds.mts`): a later push makes it stale, a
