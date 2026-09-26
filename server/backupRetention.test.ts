@@ -448,9 +448,22 @@ describe("the receipt — the only record of what a deletion destroyed", () => {
       /* POSITIVE CONTROL: they do match a real run heading. */
       const realHeading = "## Run 9 — 2026-09-24 01:15–0x:xx AEST (Janitor, patrol #9, card #1141)";
       expect(runPatterns.some((re) => re.test(realHeading))).toBe(true);
-      /* And they match neither the receipt section's heading nor any row. */
+      /*
+        ⚠ AND THE HEADING IS READ OUT OF THE REAL FILE, NOT TYPED HERE. The first
+        shape of this arm asserted the string it expected, and the sabotage run
+        proved it blind: renaming the section in `docs/JANITOR_LOG.md` to
+        `## Run 10 — 2026-09-26 backup deletions` left all 30 arms green, which is
+        the one edit this arm exists to catch. The heading that owns the marker is
+        whichever `## ` line most recently precedes it — exactly what the clock
+        reader would collect.
+      */
+      const log = readFileSync(path.join(process.cwd(), "docs", "JANITOR_LOG.md"), "utf8");
+      const before = log.slice(0, log.indexOf(BACKUP_DELETION_MARKER)).split(/\r?\n/);
+      const owningHeading = [...before].reverse().find((l) => l.startsWith("## "));
+      expect(owningHeading, "the marker must sit under a `## ` heading, or this arm has nothing to judge")
+        .toBeTruthy();
       for (const re of runPatterns) {
-        expect(re.test("## Backup deletions — the receipt table (#1294)"), String(re)).toBe(false);
+        expect(re.test(owningHeading!), `${String(re)} matched ${owningHeading!}`).toBe(false);
         expect(re.test(row), String(re)).toBe(false);
         expect(re.test(BACKUP_DELETION_MARKER), String(re)).toBe(false);
       }
