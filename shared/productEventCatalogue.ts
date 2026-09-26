@@ -75,6 +75,14 @@
  * - **No person properties.** Nothing is ever `$set` on a person, so a PostHog
  *   person profile is an account id and nothing else.
  */
+/*
+  The bug-report categories are IMPORTED rather than restated. That file is
+  already the source of truth for the column, the admin procedure and the inbox
+  page, and its own header says why: *"a hand-copied second list is a control
+  that lies."* A fourth copy here would be the drift this file's own
+  `PRODUCT_EVENT_ERROR_CODES` docblock was written about.
+*/
+import { BUG_REPORT_CATEGORIES } from "./bugReportVocabulary";
 
 /* ────────────────────────────────────────────────────────────────────────── */
 
@@ -83,13 +91,135 @@
  * own naming convention and, more to the point, readable by somebody who has
  * never seen this file.
  */
-export const PRODUCT_EVENTS = [
+export const GENERATION_EVENTS = [
   "generation started",
   "generation delivered",
   "generation failed",
 ] as const;
 
+/**
+ * THE MONEY AND PRODUCT EDGES — the second lifecycle, and this card's own
+ * remainder (#509 part 2, money edges).
+ *
+ * The card names four: *"plan changed, credits bought, refund asked, bug report
+ * sent"*. Read at the code, three have a road and the fourth does not, and the
+ * mapping is recorded here rather than in a commit message:
+ *
+ * - **credits bought** → `invoice.payment_succeeded`, where a period is bought
+ *   and credits are granted (`webhooks.ts`'s `periodBought`).
+ * - **plan changed** → `customer.subscription.updated`.
+ * - **bug report sent** → `bugReports.submit`.
+ * - ⚠ **refund asked** → **NO CUSTOMER ROAD EXISTS.** Every refund in this
+ *   product is automatic (per-slice on a failed generation — already carried by
+ *   `creditsRefunded` above) or admin-issued (`stripe_refund` /
+ *   `refund_credits` change requests). `requestRefund|refundRequest|askRefund`
+ *   over `server/`, `client/src/` and `shared/` returns one hit and it is a
+ *   local variable inside a test. The nearest thing a customer actually does is
+ *   open a **dispute** with their bank — `charge.dispute.created`, named
+ *   `payment disputed` below. An *"ask us for a refund"* surface would be new
+ *   customer-facing capability, and it is not invented here.
+ *
+ * # ⚠ WHY THE NAMES SAY WHAT STRIPE MEANS, NOT WHAT THE CARD HOPED
+ *
+ * The obvious reading is to call `customer.subscription.updated` *"plan
+ * changed"*. **It would be a lie most of the time.** That type fires for a
+ * renewal, a payment-method change, a cancel-at-period-end flag or a metadata
+ * edit, and `handleSubscriptionUpdated` has several paths that apply NOTHING (a
+ * subscription `canceled` at Stripe, a stale older subscription, one Stripe does
+ * not know). Nothing at that seam classifies *"the tier this customer pays for
+ * changed"*. So the event is `subscription updated` — true of every delivery —
+ * and a real plan change reads on the dashboard as the tier moving between two
+ * of them. The other naming would have produced a chart the founder could not
+ * trust, which is worse than no chart.
+ *
+ * For the same reason `invoice.payment_succeeded` is `payment made` and not the
+ * card's *"credits bought"*: a **proration-only invoice grants no credits and
+ * returns early**, so a name promising credits would be false exactly when a
+ * customer changes plan mid-cycle. What was actually granted travels beside it
+ * as `creditsGranted`, which is `0` on that invoice and says so.
+ *
+ * # WHY EVERY HANDLED TYPE IS HERE — MEASURED, NOT PREFERRED
+ *
+ * Part 2 named all 29 operation kinds on the stated ground that a map covering
+ * only the V2 ones would have read `unnamed action` on 129 of 712 rows. The same
+ * question was put to the rows here
+ * (`scripts/_509money-volume-disposable.mts`, production, 2026-09-27):
+ *
+ *     stripe_webhook_events, all time  6 rows — and only TWO types have EVER arrived
+ *       invoice.payment_succeeded      4   (2026-07-09 → 2026-09-08)
+ *       checkout.session.completed     2   (2026-07-09 → 2026-08-16)
+ *     accounts by plan tier            4, ALL free
+ *     bug_reports                      0 rows, all time
+ *
+ * **No plan change, cancellation, failed payment or dispute has ever reached
+ * production.** So there is no volume argument for trimming this map — the
+ * stream is near-silent either way — and the first cancellation and the first
+ * failed payment are exactly the two the founder said he wants to catch before a
+ * customer tells him (#1419). A map naming only the card's four would go blind
+ * on the rest at the moment they first matter.
+ */
+export const MONEY_EVENTS = [
+  "checkout completed",
+  "subscription started",
+  "subscription updated",
+  "subscription ended",
+  "payment made",
+  "payment failed",
+  "payment disputed",
+  "dispute closed",
+  "refund failed",
+] as const;
+
+export type MoneyEventName = (typeof MONEY_EVENTS)[number];
+
+/** The one edge that is not a Stripe delivery. */
+export const BUG_REPORT_EVENTS = ["bug report sent"] as const;
+
+/**
+ * EVERY EVENT THIS PRODUCT MAY SEND — derived from the three families above
+ * rather than restated as a fourth flat list, because a second list shadowing
+ * these would drift from them (working law 4).
+ */
+export const PRODUCT_EVENTS = [
+  ...GENERATION_EVENTS,
+  ...MONEY_EVENTS,
+  ...BUG_REPORT_EVENTS,
+] as const;
+
 export type ProductEventName = (typeof PRODUCT_EVENTS)[number];
+
+/**
+ * THE STRIPE TYPE → PRODUCT EVENT MAP, and it is the whole reason this is ONE
+ * statement at the dispatcher rather than nine `capture()` calls in nine
+ * handlers.
+ *
+ * ⚠ **THE PLACEMENT IS A CORRECTNESS FACT, NOT A TIDINESS ONE.** The replay
+ * guard in `handleStripeWebhook` claims an event id before the work and
+ * **RELEASES that claim when a handler fails**, so Stripe redelivers and the
+ * handler runs again. An event captured inside a handler, before something later
+ * in the same handler failed, would therefore be **counted twice**. Captured
+ * once at the dispatcher tail — after the last thing that can fail, and only
+ * when `result.success` — it is exactly-once per Stripe event id, arbitrated by
+ * the unique index that guard already relies on.
+ *
+ * Keys are the `case` literals of that switch. `server/moneyEventCatalogue.test.ts`
+ * reads them out of `server/stripe/webhooks.ts` and holds them equal to this map
+ * in both directions, so a newly handled Stripe type cannot ship without a
+ * product word, and a word left behind by a removed case reddens too. That is a
+ * second reader which does not share the first one's resolver — part 2's guard
+ * for the operation kinds, pointed at a `switch` instead of a `Record`.
+ */
+export const MONEY_EVENT_FOR_STRIPE_TYPE: Record<string, MoneyEventName> = {
+  "checkout.session.completed": "checkout completed",
+  "customer.subscription.created": "subscription started",
+  "customer.subscription.updated": "subscription updated",
+  "customer.subscription.deleted": "subscription ended",
+  "invoice.payment_succeeded": "payment made",
+  "invoice.payment_failed": "payment failed",
+  "charge.dispute.created": "payment disputed",
+  "charge.dispute.closed": "dispute closed",
+  "refund.failed": "refund failed",
+};
 
 /**
  * THE PRODUCT NOUN FOR EVERY GENERATION OPERATION KIND.
@@ -274,6 +404,45 @@ export const PRODUCT_EVENT_PROPERTIES: Record<ProductEventName, Record<string, P
     },
     creditsCharged: { type: "count" },
     creditsRefunded: { type: "count" },
+  },
+
+  /* ── THE MONEY EDGES ──────────────────────────────────────────────────────
+     Eight of the nine declare nothing but the two facts every event carries,
+     and that is the honest shape rather than a thin one. The dispatcher knows
+     WHICH money thing happened and WHOSE account it happened on, and at that
+     seam it knows nothing else it could attach without reading Stripe again —
+     so nothing else is attached. The amount of money is deliberately absent
+     from all nine: a Stripe charge is a currency and minor units, the product
+     bills in credits, and an event carrying `1900` with no currency is the
+     uninterpretable number the DT law's clause 6 forbids. What a customer got
+     for their money travels as `creditsGranted` on the one event that grants
+     any. */
+  "checkout completed": { ...ALWAYS },
+  "subscription started": { ...ALWAYS },
+  "subscription updated": { ...ALWAYS },
+  "subscription ended": { ...ALWAYS },
+  "payment made": {
+    ...ALWAYS,
+    /* The card's *"credits bought"*, and the reason the event is not named that:
+       a proration-only invoice buys no period and grants nothing, so this is `0`
+       on exactly the delivery a customer's plan change produces. */
+    creditsGranted: { type: "count" },
+  },
+  "payment failed": { ...ALWAYS },
+  "payment disputed": { ...ALWAYS },
+  "dispute closed": { ...ALWAYS },
+  "refund failed": { ...ALWAYS },
+
+  /* ── THE ONE PRODUCT EDGE THAT IS NOT A STRIPE DELIVERY ───────────────────
+     ⚠ `description` is the whole content of a bug report and it is the single
+     most tempting property on this page — it is what a reader would most like
+     to see — and it is a customer's own prose, which the metadata-only boundary
+     forbids leaving the building. There is no property shape here that would
+     accept it. What travels is the CATEGORY she chose, which is a closed
+     vocabulary somebody already wrote down. */
+  "bug report sent": {
+    ...ALWAYS,
+    category: { type: "vocabulary", allowed: BUG_REPORT_CATEGORIES },
   },
 };
 
