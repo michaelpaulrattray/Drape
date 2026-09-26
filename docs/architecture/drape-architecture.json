@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 44
+      "moduleCount": 45
     },
     {
       "id": "domain:wardrobe",
@@ -5613,6 +5613,12 @@
     {
       "id": "module:server/testing/sourceSweepSuites.ts",
       "path": "server/testing/sourceSweepSuites.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/testing/storageKeyExpressions.ts",
+      "path": "server/testing/storageKeyExpressions.ts",
       "domain": "unassigned",
       "lifecycle": "active"
     },
