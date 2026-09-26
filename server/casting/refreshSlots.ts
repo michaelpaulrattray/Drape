@@ -178,7 +178,33 @@ export async function executeRefreshSlots(input: {
   modelId: number;
   angles: CanonicalViewAngle[];
   readMode?: SnapshotReadMode;
-  chargeReferenceId?: string;
+  /**
+   * The ledger's idempotency key for this operation's charge, and it is
+   * REQUIRED (#1362, the Warden money audit's W5-D).
+   *
+   * ⚠ IT WAS OPTIONAL, WITH A FALLBACK THAT WAS CONSTANT PER MODEL —
+   * `` `legacy-{kind}-${modelId}` ``. A duplicate deduct is REFUSED
+   * (`server/db/credits.ts`: *"Credit charge already recorded"*), so reaching
+   * that fallback a SECOND time for one model would have refused the charge
+   * permanently: not "insufficient credits" but a dead button, carrying a
+   * message about a charge already recorded, that never recovers. The money
+   * direction was safe — nothing taken, nothing lost — and the CUSTOMER
+   * direction was not.
+   *
+   * ⚠ IT WAS NEVER REACHABLE, and the fix is to delete the branch rather than
+   * to make it survivable. The one production caller passes
+   * `started.chargeReferenceId` from `markGenerationOperationRunning`, whose
+   * return type is `Promise<{{ operationId: string; chargeReferenceId: string }}>`
+   * — non-optional, and valued `operationChargeReference(operationId)`, unique
+   * per operation. Read at the caller's TYPE rather than at a grep for the
+   * symbol, which is the distinction this repository has been bitten by (an
+   * import is not a call site).
+   *
+   * So the type now says what the caller already guaranteed. The trap it
+   * removes is the one that arms itself quietly: a second caller, a promoted
+   * test helper, or anybody making this optional again.
+   */
+  chargeReferenceId: string;
   onCharged?: (amount: number) => void;
   onRefunded?: (amount: number) => void;
   operationId: string;
@@ -237,7 +263,7 @@ export async function executeRefreshSlots(input: {
     totalCost,
     "generation",
     `Refresh views (pending)`,
-    input.chargeReferenceId ?? `legacy-refresh-${input.modelId}`,
+    input.chargeReferenceId,
     { toolKind: "image" },
   );
   if (!deduct.success) {
@@ -251,7 +277,7 @@ export async function executeRefreshSlots(input: {
     model: generationModel,
     headshotUrl: anchorUrl,
     reasonLabel: "Refresh",
-    chargeReferenceId: input.chargeReferenceId ?? `legacy-refresh-${input.modelId}`,
+    chargeReferenceId: input.chargeReferenceId,
     onRefunded: input.onRefunded,
     operationId: input.operationId,
   };
