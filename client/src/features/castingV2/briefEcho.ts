@@ -11,17 +11,18 @@
  * where you typed it. A machine paraphrase of your sentence is the thing that
  * makes software feel like it is talking *about* you rather than working for
  * you, and it is the specific AI-product tell this design avoids. The echo
- * covers only what the system did: what it pinned across all eight, what it
- * left free, and — where a sheet follows a face — which face it follows. ⚠ It
- * no longer says HOW the eight differ (#1251, #230); the faces are directly
- * above the sentence and prove that themselves.
+ * covers only what the system PINNED across all eight and — where a sheet
+ * follows a face — which face it follows. ⚠ It no longer says HOW the eight
+ * differ (#1251, #230), and since #1288 it no longer says what was left OPEN
+ * either; the faces are directly above the sentence and the brief box is
+ * directly below it.
  *
  * **Composed, not templated.** A fuller brief and an emptier one do not produce
  * the same sentence with different words in the gaps — sex and age fuse into one
- * noun phrase, build folds in as an adjective, open axes are named up to three
- * and collapse past that. Differently shaped sentences from differently shaped
- * intents is the tell of composition, and it is the difference between this and
- * the pill row wearing a sentence costume.
+ * noun phrase, build folds in as an adjective, a clause with nothing to say
+ * does not appear. Differently shaped sentences from differently shaped intents
+ * is the tell of composition, and it is the difference between this and the
+ * pill row wearing a sentence costume.
  *
  * Server-owned facts, client-owned grammar: `readBriefFacts` validates, this
  * writes. Nothing here re-derives a fact.
@@ -39,8 +40,6 @@ export type BriefFacts = {
     energy?: string;
     look?: string;
   };
-  open: string[];
-  variationAxis: "look" | "disposition" | null;
   /** Worn things the brief named, in the user's own words. */
   statedAccessories?: string[];
 };
@@ -52,11 +51,17 @@ export type EchoField = "sex" | "ageBand" | "agePhase" | "heritage" | "build" | 
  * One piece of the sentence.
  *
  * `text` is connective prose and renders at secondary weight; `fact` is a
- * pinned value and renders at full ink with a hairline underline; `open` is an
- * axis the roll deliberately varied, dashed and pinnable. The founder's
+ * pinned value and renders at full ink with a hairline underline. The founder's
  * two-layer typography condition lives in this distinction: regulars scan the
  * facts at chip-speed because the facts are the only thing at full contrast,
  * while the sentence still reads as a sentence for a first-timer.
+ *
+ * ⚠ **THERE WAS A THIRD KIND, `open` — AN AXIS THE ROLL VARIED, DASHED AND
+ * PINNABLE — AND IT LEFT WITH THE CLAUSE THAT PRODUCED IT (#1288).** Its only
+ * producer was the "left to the roll" enumeration, so keeping the kind would
+ * have left a span variant, a popover branch and a piece of the renderer's
+ * vocabulary that nothing can ever emit. That shape — a consumer outliving its
+ * only producer — is the one this repository keeps paying for (#1204, #1217).
  */
 export type EchoSpan =
   | { kind: "text"; text: string }
@@ -68,20 +73,7 @@ export type EchoSpan =
    * and underlining it would promise a picker that cannot exist.
    */
   | { kind: "stated"; text: string }
-  | { kind: "fact"; text: string; field: EchoField }
-  | { kind: "open"; text: string; field: EchoField };
-
-/** Everyday words. The vocabulary the system stores is not the one people cast in. */
-const AXIS_WORDS: Record<string, string> = {
-  sex: "sex",
-  ageBand: "age",
-  heritage: "heritage",
-  build: "build",
-  energy: "presence",
-  look: "look",
-};
-
-const AXIS_ORDER: EchoField[] = ["heritage", "build", "energy", "look", "sex", "ageBand"];
+  | { kind: "fact"; text: string; field: EchoField };
 
 /** "a"/"an", for a category the user wrote without one. */
 function article(word: string): string {
@@ -199,15 +191,7 @@ function heritagePhrase(heritage: string[], first: boolean): EchoSpan[] {
  * Returns spans rather than a string so the renderer can give facts their own
  * typography and their own popover without parsing prose back apart.
  */
-/**
- * Beyond this many characters the sentence needs a third line at the widths
- * the sheet actually renders at. Measured, not guessed: the sheet's echo column
- * fits roughly 110 characters per line at 14px Archivo.
- */
-const TWO_LINE_BUDGET = 210;
-
 export type EchoOptions = {
-  terse?: boolean;
   followLabel?: string | null;
   /**
    * THIS SHEET's road, not the next roll's (#230). True when the sheet in
@@ -218,28 +202,39 @@ export type EchoOptions = {
   authorRoad?: boolean;
 };
 
+/*
+  ⚠ **THE TWO-LINE BUDGET AND THE TERSE FORM WENT WITH THE LATITUDE CLAUSE
+  (#1288), BECAUSE THE CLAUSE WAS THE ONLY THING EITHER OF THEM EVER SHED.**
+
+  This function used to compose the sentence, measure it against a 210-character
+  budget, and recompose it `terse` when it overran — and `terse` had exactly one
+  effect in the whole module: it suppressed the "left to the roll" enumeration.
+  With the enumeration gone the budget could only ever have recomposed a
+  byte-identical sentence, and `terse` could only ever have been a prop the
+  sheet computed and passed down for nothing.
+
+  The founder's ORIGINAL reason for the budget is untouched and worth keeping
+  straight, because losing the mechanism reads like losing the protection: the
+  first cap was `-webkit-line-clamp` plus `overflow: hidden`, which hid the later
+  facts and cut the popover panel off at the sentence's bottom edge, so the
+  grammar was made to say less instead. That argument always rested on the
+  LATITUDE clause being the droppable part — a pinned fact was never allowed to
+  go, and the suite still pins that. Nothing droppable is left, so there is
+  nothing for the mechanism to choose between. The CSS clamp stays in
+  `BriefEcho.tsx` as the backstop it always was.
+*/
 export function composeEcho(
   facts: BriefFacts,
   options: EchoOptions = {},
 ): EchoSpan[] {
-  const full = composeSpans(facts, options);
-  /*
-    The founder's hard two-line cap, enforced by SAYING LESS rather than by
-    clipping. The first version capped with `-webkit-line-clamp` and
-    `overflow: hidden`, which hid the later facts entirely and cut the popover
-    panel off at the sentence's bottom edge. A shorter true sentence beats a
-    longer one with its end cut off — and the terse form drops the latitude
-    clause, which is the part a returning user has already read.
-  */
-  if (options.terse || echoText(full).length <= TWO_LINE_BUDGET) return full;
-  return composeSpans(facts, { ...options, terse: true });
+  return composeSpans(facts, options);
 }
 
 function composeSpans(
   facts: BriefFacts,
-  options: EchoOptions & { terse?: boolean },
+  options: EchoOptions,
 ): EchoSpan[] {
-  const { role, locks, open, variationAxis } = facts;
+  const { role, locks } = facts;
   const spans: EchoSpan[] = [...categoryPhrase(role), ...subjectPhrase(locks, Boolean(role))];
 
   if (locks.heritage && locks.heritage.length > 0) {
@@ -264,9 +259,10 @@ function composeSpans(
     varying axis — so it fell through the gap and the sentence was quietly
     incomplete about a fact the user had typed and paid to have rendered.
 
-    A stated fact is never dropped by the terse form. Terse exists to shed the
-    latitude clause, which a returning user has already read; shedding something
-    they said themselves would be the opposite trade.
+    A stated fact is never dropped to make the sentence shorter. Shortening
+    existed to shed the latitude clause a returning user had already read (and
+    is gone with it, #1288); shedding something they said themselves would
+    always have been the opposite trade.
   */
   const stated = facts.statedAccessories ?? [];
   if (stated.length > 0) {
@@ -283,58 +279,42 @@ function composeSpans(
   if (pinnedAnything) spans.push({ kind: "text", text: "." });
 
   /*
-    Open axes, and the collapse rule that keeps this from becoming the pill row
-    in a sentence costume. Three named axes is real English —
-    "heritage, build and presence were left to the roll" — and six is a list
-    wearing a coat. Past three it says nothing about which, because at that
-    point "nothing pinned" is both shorter and truer.
+    ⚠ **NO "… WERE LEFT TO THE ROLL" CLAUSE — RETIRED OUTRIGHT, #1288,
+    2026-09-26, ON HIS WORD.**
 
-    The variation axis is excluded from the enumeration when it names the same
-    idea: saying presence is varying and then saying the eight differ by
-    disposition is one thought colliding with itself.
+    Shown the sentence and asked whether the axis it quietly withheld should be
+    named, his answer was neither option, verbatim: *"i honestly dont think it's
+    neccesary that line is really just giving you a rundown of the casting sheet
+    you already can see your prompt."* The two things before it — the faces, and
+    the brief box with his own words still in it — already say what it said.
 
-    ⚠ **AND THAT SENTENCE IS GONE AS OF #1251 (2026-09-26), SO THIS EXCLUSION
-    NOW GUARDS A COLLISION THAT CANNOT HAPPEN.** It is kept exactly as it was,
-    on purpose: dropping it would start naming an axis the live author road has
-    not named since 2026-09-24, which is a copy change nobody asked for on the
-    road every account is on. It is carded rather than decided here.
+    So the enumeration, its three-axis collapse rule, and the terse form that
+    existed to shed it are all gone. What stays is the sentence #230 kept
+    (*"Everyone on this sheet is cast as [type] — [sex] in their [age band]"*),
+    the stated-accessories clause, and the follow lineage.
+
+    ⚠ **HOW RARE IT ACTUALLY WAS, read before it was removed rather than after** —
+    it emitted only on a session's FIRST roll (`terse={rolls.length > 1}` at the
+    sheet), only where the compiled brief left axes open, and only inside the
+    two-line budget. His own hive-skull roll carries one subject chip and no open
+    axes, which is why he had never seen it: it was never reachable for a
+    creature brief, and never for any brief past Roll again.
+
+    ⚠ **AND `effectiveAxis` / `axisTwin` LEFT WITH IT, which is a founder-ruled
+    correction going quiet, so it is recorded here rather than simply deleted.**
+    The rule was: *a locked look cannot also be the thing the eight differ by.*
+    His sheet had read "held to commanding glamour … The eight differ by look" —
+    a sentence contradicting itself, and not merely bad copy, it was reporting the
+    compiler's own confusion, because a pinned look goes to every candidate and
+    disposition is what actually varies. That sentence stopped rendering at #1251,
+    which left the correction observable ONLY through which open axis this
+    enumeration was allowed to name; with the enumeration gone it has no
+    observable at all, and a rule with no observable is not a rule. The COMPILER's
+    own `variationAxis` is untouched — this was always a display correction
+    applied on the way out, never the thing that decided how the eight were cast.
   */
-  /*
-    A locked look cannot also be the thing the eight differ by.
-
-    The sheet said "held to commanding glamour … The eight differ by look",
-    which is a sentence contradicting itself — and it was not merely bad copy,
-    it was reporting the compiler's own confusion. When the brief pins a look,
-    every candidate gets it, and disposition is what actually varies.
-
-    ⚠ **SINCE #1251 THIS RULE IS OBSERVABLE ONLY THROUGH `axisTwin` BELOW** —
-    the sentence it was written about no longer renders, so what it decides now
-    is which open axis the "left to the roll" enumeration may name. The arms
-    that prove it were re-pointed at that observable rather than deleted, and
-    the behaviour is unchanged in every case.
-  */
-  const effectiveAxis = locks.look && variationAxis === "look" ? "disposition" : variationAxis;
-  const axisTwin = effectiveAxis === "disposition" ? "energy" : effectiveAxis === "look" ? "look" : null;
-  const namedOpen = AXIS_ORDER.filter((axis) => open.includes(axis) && axis !== axisTwin);
-
   if (!pinnedAnything) {
     spans.push({ kind: "text", text: "Nothing pinned — the roll cast freely from your words." });
-  } else if (namedOpen.length > 0 && namedOpen.length <= 3 && !options.terse) {
-    const words = namedOpen.map((axis) => AXIS_WORDS[axis] ?? axis);
-    spans.push({ kind: "text", text: " " });
-    namedOpen.forEach((axis, index) => {
-      if (index > 0) {
-        spans.push({ kind: "text", text: index === namedOpen.length - 1 ? " and " : ", " });
-      }
-      spans.push({
-        kind: "open",
-        text: index === 0 ? capitalize(words[index]) : words[index],
-        field: axis,
-      });
-    });
-    // "Build was", "Heritage and build were" — a sentence that gets its own
-    // verb wrong is a sentence nobody believes was written on purpose.
-    spans.push({ kind: "text", text: namedOpen.length === 1 ? " was left to the roll." : " were left to the roll." });
   }
 
   /*
@@ -368,13 +348,12 @@ function composeSpans(
     descends from, which the page does show and which nothing else says in
     prose. It was never part of his ruling's quarrel.
 
-    ⚠ **AND `effectiveAxis` / `axisTwin` STAY, DELIBERATELY UNTOUCHED.** They
-    also decide which open axis is left OUT of the "left to the roll"
-    enumeration above, and that exclusion is live on BOTH roads. Its stated
-    reason is avoiding a collision with the sentence this commit deletes, so it
-    has outlived its reason — but changing it moves live author-road copy for a
-    question this card did not ask, so it is CARDED rather than folded in. See
-    the card filed with #1251's PR.
+    ⚠ **`effectiveAxis` / `axisTwin` WERE KEPT HERE AND ARE NOW GONE (#1288).**
+    #1251 left them deliberately untouched, because they still decided which open
+    axis the "left to the roll" enumeration could name, and moving live copy was
+    not that card's question. It was carded, he answered it, and the whole clause
+    went — so the correction they carried has no observable left. Its history is
+    recorded above the `pinnedAnything` branch rather than lost with the code.
   */
   if (options.authorRoad) return spans;
 
@@ -383,10 +362,6 @@ function composeSpans(
   }
 
   return spans;
-}
-
-function capitalize(word: string): string {
-  return word.charAt(0).toUpperCase() + word.slice(1);
 }
 
 /** Plain text, for the accessible label and for tests. */

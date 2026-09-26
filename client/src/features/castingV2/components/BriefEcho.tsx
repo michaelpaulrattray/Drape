@@ -34,13 +34,16 @@ import type { LockOverrides } from "../sheetState";
  *   they are the only thing at full contrast, and the sentence still reads as a
  *   sentence for someone seeing it for the first time.
  *
- *   **Two lines, hard.** `-webkit-line-clamp` caps it. The grammar already
- *   collapses rather than enumerating, so this is a backstop for a long
- *   heritage pair, not the mechanism.
+ *   **Two lines, hard.** `-webkit-line-clamp` caps it. ⚠ It is the ONLY cap
+ *   now (#1288): the grammar's own say-less mechanism existed to shed the
+ *   "left to the roll" clause and went with it, so this is the backstop for a
+ *   long heritage pair and nothing else needs to choose what to drop.
  *
- *   **Terser on repeat.** A returning user has already read which axes are
- *   free; on the second and later rolls of a session the latitude clause drops
- *   and the pins stay, because the pins are what they are checking.
+ *   ⚠ **THERE WAS A THIRD, "terser on repeat", AND IT WENT THE SAME WAY.** On
+ *   the second and later rolls of a session the latitude clause dropped and the
+ *   pins stayed — but the latitude clause was the only thing `terse` ever
+ *   suppressed, so with the clause retired the prop computed a boolean the
+ *   grammar could not spend.
  */
 
 /*
@@ -138,7 +141,6 @@ export function factsHeld(policy: VaryPolicy | undefined): boolean {
 export function BriefEcho({
   facts,
   followLabel,
-  terse,
   authorRoad,
   pending,
   vary,
@@ -146,8 +148,6 @@ export function BriefEcho({
 }: {
   facts: BriefFacts;
   followLabel?: string | null;
-  /** True on the second and later rolls of a session. */
-  terse?: boolean;
   /**
    * THIS sheet's own road (#230) — it drops the differ-by caption, which is
    * false on a sheet one authored prompt painted. Distinct from `vary`, which
@@ -159,7 +159,7 @@ export function BriefEcho({
   vary?: VaryPolicy;
   onAdjust: (adjustment: EchoAdjustment) => void;
 }) {
-  const spans = composeEcho(facts, { terse, followLabel, authorRoad });
+  const spans = composeEcho(facts, { followLabel, authorRoad });
   if (spans.length === 0) return null;
 
   return (
@@ -209,7 +209,24 @@ function EchoSpanView({
 
   const { field } = span;
   const current = currentValue(facts, field);
-  const pinned = span.kind === "fact";
+  /*
+    ⚠ **EVERY SPAN WITH A FIELD IS A PINNED FACT NOW (#1288).** Until the "left
+    to the roll" clause was retired there was a second kind — `open`, a varying
+    axis the reader could click to PIN — and this whole block branched on which
+    it was: the label read *"Pin build, currently left to the roll"*, the heading
+    carried *"· varying"*, the trigger wore `dp-pop__trigger--open`, and the
+    footer's "Let it vary" was withheld. The clause was that kind's only
+    producer, so those branches are unreachable and are gone rather than kept as
+    a shape nothing can enter.
+
+    ⚠ **WHAT THE READER LOSES WITH THEM, SAID PLAINLY:** off the author road, a
+    fact you let vary now leaves the sentence with no span to pin it back from.
+    Both halves of that loop lived on the same road — `varyOffered` returns false
+    on the author road, which is every account's road since the register widened
+    to `all` — so on the road anybody is actually on, the sentence has been
+    read-only and neither half was reachable. It retires with the house road, not
+    with this clause.
+  */
 
   /*
     THE AUTHOR ROAD'S SENTENCE IS READ-ONLY (#535, his ruling — see
@@ -237,7 +254,7 @@ function EchoSpanView({
   */
   const queued = pending?.overrides[field];
   const queuedValue = queued && queued !== current ? queued : undefined;
-  const queuedVary = !queuedValue && pending?.unlocked.includes(field) === true && pinned;
+  const queuedVary = !queuedValue && pending?.unlocked.includes(field) === true;
   if (queuedValue || queuedVary) {
     /*
       A QUEUED CHANGE IS STILL CHANGEABLE.
@@ -280,27 +297,24 @@ function EchoSpanView({
 
   return (
     <Popover
-      label={
-        pinned
-          ? `Change ${ECHO_FIELD_HEADINGS[field].toLowerCase()}, currently ${span.text}`
-          : `Pin ${ECHO_FIELD_HEADINGS[field].toLowerCase()}, currently left to the roll`
-      }
-      heading={pinned ? ECHO_FIELD_HEADINGS[field] : `${ECHO_FIELD_HEADINGS[field]} · varying`}
-      className={pinned ? "dpc-echo__fact" : "dp-pop__trigger--open"}
+      label={`Change ${ECHO_FIELD_HEADINGS[field].toLowerCase()}, currently ${span.text}`}
+      heading={ECHO_FIELD_HEADINGS[field]}
+      className="dpc-echo__fact"
       options={VOCABULARIES[field].map((value) => ({
         value,
         label: value,
         current: value === current,
       }))}
       /*
-        "Let it vary" only exists where something is pinned. Offering it on an
-        axis that is already varying would be a control whose only outcome is
-        nothing happening — and on the author road (#154) the same is true of
-        a fact the verbatim sentence itself states, so `varyOffered` withholds
-        it there too and the sheet says why once, under the echo.
+        "Let it vary" only exists where something is pinned, which since #1288
+        is every span that reaches here. Offering it on an axis already varying
+        would have been a control whose only outcome is nothing happening — and
+        on the author road (#154) the same is true of a fact the verbatim
+        sentence itself states, so `varyOffered` withholds it there and the
+        sheet says why once, under the echo.
       */
       footer={
-        pinned && varyOffered(vary, field)
+        varyOffered(vary, field)
           ? {
               label: `Let ${ECHO_FIELD_HEADINGS[field].toLowerCase()} vary`,
               onSelect: () => onAdjust({ kind: "vary", field }),

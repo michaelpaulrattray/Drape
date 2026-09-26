@@ -151,8 +151,6 @@ for (const golden of GOLDEN_BRIEFS) {
             energy: locks.energy ?? null,
             look: locks.look ?? null,
           } as never,
-          open: [],
-          variationAxis: (intent.variationAxis as never) ?? null,
         }),
       );
       if (!echo.includes("cast as")) {
