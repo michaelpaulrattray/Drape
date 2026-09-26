@@ -1,8 +1,16 @@
 /**
  * THE ROLL ENGINE ON HIS ACCOUNT (#1079, #1084): under `CASTING_ROLL_ENGINE_SCOPE`
- * a user's roll renders on the 2.5 model `CASTING_ROLL_ENGINE_MODEL` names; everyone else's on GPT Image 2;
+ * a user's roll renders on the 2.5 model `CASTING_ROLL_ENGINE_MODEL` names;
  * both on ONE queue. And the edit sibling each engine takes for an image-anchored
  * render is declared per model, never assumed.
+ *
+ * ⚠ **EVERYONE ELSE NOW RENDERS ON SUNBURST, NOT ON GPT IMAGE 2 (#1340** — his
+ * word, 2026-09-26: *"anywhere we currently use gpt image 2.0 will be 2.5
+ * sunburst by default now"*). Every arm below that used to read GPT Image 2 as
+ * the unscoped answer reads Sunburst instead, and that is the change rather
+ * than a loosened assertion: **before it, his account rolled on Sunburst and
+ * every other account rolled on the older engine.** The scope flag now selects
+ * an EXCEPTION — which is how a court puts somebody on `flare`.
  *
  * Driven at the engine's own door with the real factory (no network: the
  * engine is never asked to render), so a rename of the flag or a lost sibling
@@ -45,25 +53,36 @@ afterEach(() => {
 });
 
 describe("#1079 · which engine paints whose roll", () => {
-  it("off, or absent: everyone renders on GPT Image 2 — the bytes every roll received before", () => {
+  it("off, or absent: EVERYONE renders on Sunburst — the default his 2026-09-26 word moved (#1340)", () => {
     delete process.env[CASTING_ROLL_ENGINE_SCOPE_ENV];
-    expect(castingCreativeEngine(1).id).toBe(`fal:${FAL_GPT_IMAGE_2}`);
-    expect(castingCreativeEngine(2).id).toBe(`fal:${FAL_GPT_IMAGE_2}`);
-    expect(castingCreativeEngine().id).toBe(`fal:${FAL_GPT_IMAGE_2}`);
+    expect(castingCreativeEngine(1).id).toBe(`fal:${FAL_GPT_IMAGE_25_SUNBURST}`);
+    expect(castingCreativeEngine(2).id).toBe(`fal:${FAL_GPT_IMAGE_25_SUNBURST}`);
+    expect(castingCreativeEngine().id).toBe(`fal:${FAL_GPT_IMAGE_25_SUNBURST}`);
+    /* Named, because the regression this guards is a silent return to the
+       engine every non-founder account was still on until #1340. */
+    expect(castingCreativeEngine(2).id).not.toBe(`fal:${FAL_GPT_IMAGE_2}`);
   });
 
-  it("users:1 + model flare — his roll renders on Flare, another account's on GPT Image 2, a caller with no user on GPT Image 2", () => {
+  it("users:1 + model flare — his roll renders on Flare and everyone else's on Sunburst", () => {
     process.env[CASTING_ROLL_ENGINE_SCOPE_ENV] = "users:1";
     expect(castingCreativeEngine(1).id).toBe(`fal:${FAL_GPT_IMAGE_25_FLARE}`);
-    expect(castingCreativeEngine(2).id).toBe(`fal:${FAL_GPT_IMAGE_2}`);
-    expect(castingCreativeEngine().id).toBe(`fal:${FAL_GPT_IMAGE_2}`);
+    expect(castingCreativeEngine(2).id).toBe(`fal:${FAL_GPT_IMAGE_25_SUNBURST}`);
+    expect(castingCreativeEngine().id).toBe(`fal:${FAL_GPT_IMAGE_25_SUNBURST}`);
   });
 
-  it("users:1 + model sunburst — the switch he asked for is a variable, not a build", () => {
+  it("users:1 + model sunburst — scoped and unscoped now name the SAME engine, and are still two branches", () => {
     process.env[CASTING_ROLL_ENGINE_SCOPE_ENV] = "users:1";
     process.env[CASTING_ROLL_ENGINE_MODEL_ENV] = "sunburst";
     expect(castingCreativeEngine(1).id).toBe(`fal:${FAL_GPT_IMAGE_25_SUNBURST}`);
-    expect(castingCreativeEngine(2).id).toBe(`fal:${FAL_GPT_IMAGE_2}`);
+    expect(castingCreativeEngine(2).id).toBe(`fal:${FAL_GPT_IMAGE_25_SUNBURST}`);
+    /*
+      Since #1340 this is the production position and both answers agree, so an
+      id comparison alone could pass with the scope branch deleted entirely.
+      The INSTANCES still differ — one is memoized per chosen model, the other
+      is the single default engine — which is what proves the flag is still
+      wired rather than merely harmless.
+    */
+    expect(castingCreativeEngine(1)).not.toBe(castingCreativeEngine(2));
   });
 
   it("a scope with no model behind it, or a model outside the vocabulary, is a BOOT refusal — never a silent GPT Image 2", () => {
@@ -75,10 +94,12 @@ describe("#1079 · which engine paints whose roll", () => {
       .toEqual({ kind: "users", userIds: [1] });
     /* Off needs no model — the variable is only read when someone is under scope. */
     expect(validateCastingRollEngineEnvironment({ scope: undefined, castingScope: "all", model: undefined })).toEqual({ kind: "off" });
-    /* And at the point of use an unset model under scope reads as GPT Image 2 (the boot refusal is what keeps this unreachable on production). */
+    /* And at the point of use an unset model under scope falls to the DEFAULT,
+       which is Sunburst since #1340 (the boot refusal is what keeps this
+       unreachable on production). */
     process.env[CASTING_ROLL_ENGINE_SCOPE_ENV] = "users:1";
     delete process.env[CASTING_ROLL_ENGINE_MODEL_ENV];
-    expect(castingCreativeEngine(1).id).toBe(`fal:${FAL_GPT_IMAGE_2}`);
+    expect(castingCreativeEngine(1).id).toBe(`fal:${FAL_GPT_IMAGE_25_SUNBURST}`);
   });
 
   it("the two engines are memoized separately and survive each other", () => {
@@ -90,10 +111,13 @@ describe("#1079 · which engine paints whose roll", () => {
     expect(flare).not.toBe(plain);
   });
 
-  it("the flag reads through the parent — CASTING_V2_SCOPE off means GPT Image 2 for everyone", () => {
+  it("the flag reads through the parent — CASTING_V2_SCOPE off means the default engine for everyone", () => {
     process.env[CASTING_V2_SCOPE_ENV] = "off";
     process.env[CASTING_ROLL_ENGINE_SCOPE_ENV] = "users:1";
-    expect(castingCreativeEngine(1).id).toBe(`fal:${FAL_GPT_IMAGE_2}`);
+    expect(castingCreativeEngine(1).id).toBe(`fal:${FAL_GPT_IMAGE_25_SUNBURST}`);
+    /* The arm is about the PARENT gating the child, so it has to fail when the
+       child is honoured: Flare is what he would get if the chain leaked. */
+    expect(castingCreativeEngine(1).id).not.toBe(`fal:${FAL_GPT_IMAGE_25_FLARE}`);
   });
 });
 

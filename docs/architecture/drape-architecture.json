@@ -12926,6 +12926,10 @@
       "path": "server/providers/falImagesAnchored.test.ts"
     },
     {
+      "id": "test:server/providers/falMaskedEditWire.test.ts",
+      "path": "server/providers/falMaskedEditWire.test.ts"
+    },
+    {
       "id": "test:server/providers/providerContract.test.ts",
       "path": "server/providers/providerContract.test.ts"
     },

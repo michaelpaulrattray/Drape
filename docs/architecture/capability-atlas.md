@@ -46,7 +46,7 @@ _Called as:_ `castingV2.refine`
 |---|---|---|---|---|---|
 | `candidate_missing` | service-refusal |  | server/castingV2/refineService.ts:1207 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `already_signed` | service-refusal |  | server/castingV2/refineService.ts:1224 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `busy` | service-refusal |  | server/castingV2/refineService.ts:4876<br>server/castingV2/rollEngine.ts:94<br>(+1) | 2 test(s) | _documented-unreachable or gap — see findings_ |
+| `busy` | service-refusal |  | server/castingV2/refineService.ts:4876<br>server/castingV2/rollEngine.ts:122<br>(+1) | 2 test(s) | _documented-unreachable or gap — see findings_ |
 | `refine_limit` | service-refusal |  | server/castingV2/refineService.ts:4335 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `master_missing` | service-refusal |  | server/castingV2/refineService.ts:1213 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `version_missing` | service-refusal |  | server/castingV2/refineService.ts:2544 | 1 test(s) | _documented-unreachable or gap — see findings_ |

@@ -78,17 +78,16 @@ import {
   type PrReading,
   type Rollup,
   MONEY_DECLARATION_PATH,
-  REVIEW_SIZE_DECLARATION_PATH,
+  CUSTOMER_SURFACE_DECLARATION_PATH,
   REVIEWER_WORKFLOW_PATH,
   checkStateOf,
   decideMergeAction,
   describeAction,
   extractJobNames,
-  exceedsReviewSizeLine,
   extractMoneyPattern,
   extractMoneySymbols,
-  extractReviewNonCodePattern,
-  extractReviewSizeLine,
+  extractCustomerSurfacePattern,
+  extractCustomerSurfaceExemptPattern,
   type FilePatch,
   orderByOpened,
   classifyMergeOutcome,
@@ -101,6 +100,7 @@ import {
   supplyChainStateOf,
   moneySymbolHits,
   touchesMoney,
+  touchesCustomerSurface,
   touchesReviewerWorkflow,
 } from "./lib/prMergeOrder.mts";
 import { gitTreeReader, readProtectedRefs } from "./lib/pushPaths.mts";
@@ -253,19 +253,22 @@ try {
   fail((error as Error).message);
 }
 
-// ---- the SIZE rule, from the ONE file that declares it (#1194) -------------
-// Triage labels a diff past this line `needs-fable`; until now nothing else
-// asked, so a PR that never got a triage run (born CONFLICTING — #566) printed
-// `review=declined`, the same word as a diff that genuinely earned no look.
-const reviewSizeDeclarationPath = join(REPO_ROOT, ".github", "review-size.sh");
-if (!existsSync(reviewSizeDeclarationPath))
-  fail(`${REVIEW_SIZE_DECLARATION_PATH} is missing — cannot read the size rule`);
-let reviewSizeLine: number;
-let reviewNonCode: string;
+// ---- what a CUSTOMER sees, from the ONE file that declares it (#1328) ------
+// It replaced the size rule, which the founder dropped rather than raised
+// ("drop it", 2026-09-26). The SECOND-READER argument is #1194's and unchanged:
+// a PR that never got a triage run (born CONFLICTING — #566) was announced to
+// nobody while this tool printed `review=declined`, the same word as a diff that
+// genuinely earned no look. Only the question is different, and it is the one
+// obligation CI cannot discharge — law 6's eye on the rendered frames.
+const customerSurfaceDeclarationPath = join(REPO_ROOT, ".github", "customer-surfaces.sh");
+if (!existsSync(customerSurfaceDeclarationPath))
+  fail(`${CUSTOMER_SURFACE_DECLARATION_PATH} is missing — cannot read the customer-surface rule`);
+let customerSurfacePaths: string;
+let customerSurfaceExempt: string;
 try {
-  const declaration = readFileSync(reviewSizeDeclarationPath, "utf8");
-  reviewSizeLine = extractReviewSizeLine(declaration);
-  reviewNonCode = extractReviewNonCodePattern(declaration);
+  const declaration = readFileSync(customerSurfaceDeclarationPath, "utf8");
+  customerSurfacePaths = extractCustomerSurfacePattern(declaration);
+  customerSurfaceExempt = extractCustomerSurfaceExemptPattern(declaration);
 } catch (error) {
   fail((error as Error).message);
 }
@@ -412,30 +415,29 @@ function readPrFiles(number: number): FilePatch[] {
   //    `@json` line — a patch is multi-line text, and splitting raw output on
   //    newlines would shred it into pretend files. `// null` because GitHub
   //    omits `patch` for binary and very large files; see `moneySymbolHits`.
+  //
+  // ⚠ `.additions` and `.deletions` rode here too, for #1194's size reading, and
+  //    left with it when the founder dropped the size rule (#1328). The parse
+  //    refusal that stood over them went at the same time and on purpose: a
+  //    refusal guarding a reading nobody performs is a dead control with a live
+  //    reputation, which is the shape law 7's ruling sweep exists to catch.
   const out = gh([
     "api",
     "--paginate",
     `repos/:owner/:repo/pulls/${number}/files`,
     "--jq",
-    ".[] | [.filename, (.patch // null), .additions, .deletions] | @json",
+    ".[] | [.filename, (.patch // null)] | @json",
   ]);
   const files: FilePatch[] = out
     .split(/\r?\n/)
     .map((l) => l.trim())
     .filter((l) => l !== "")
     .map((l) => {
-      const [filename, patch, additions, deletions] = JSON.parse(l) as [unknown, unknown, unknown, unknown];
+      const [filename, patch] = JSON.parse(l) as [unknown, unknown];
       if (typeof filename !== "string" || filename === "" || (patch !== null && typeof patch !== "string")) {
         fail(`#${number}: a changed-file row did not parse as [filename, patch]: ${l.slice(0, 120)}`);
       }
-      /* ⚠ The counts are REFUSED rather than defaulted to zero (#1194): a row
-         whose numbers did not parse would make a large diff read as small, which
-         is the silent permissive direction — exactly what the size reader exists
-         to close. */
-      if (!Number.isSafeInteger(additions) || !Number.isSafeInteger(deletions)) {
-        fail(`#${number}: ${filename} came back with no line counts — the size reading would be wrong, not missing`);
-      }
-      return { filename, patch, additions: additions as number, deletions: deletions as number };
+      return { filename, patch };
     });
   // Fail CLOSED. A pull request always changes at least one file, so an empty
   // list means the reading broke, and an empty list is exactly what makes both
@@ -491,16 +493,18 @@ function readPr(number: number, worktrees: Map<string, string>): PrReading {
   // label; the money rule is read here as well, from the one file, so a label
   // someone removed cannot un-owe a money diff; and a change to the review's
   // own rules is always read (#165's obligation, now a person's).
-  // ⚠ #1194 added the SIZE half. It changes what is REPORTED, not what merges:
-  // an ordinary large diff with no verdict still merges on the gate alone, but
-  // it now reads `no-verdict` — which is true — instead of `declined`, which
-  // claims triage decided something it never saw.
+  // ⚠ #1194 added a second reader for the SIZE half; #1328 replaced the question
+  // with the CUSTOMER-SURFACE one after the founder dropped the size rule. It
+  // changes what is REPORTED, not what merges: an ordinary customer-visible diff
+  // with no verdict still merges on the gate alone, but it reads `no-verdict` —
+  // which is true — instead of `declined`, which claims triage decided something
+  // it may never have seen.
   const reviewOwed =
     view.labels.some((l) => l.name === "needs-fable") ||
     touchesMoney(files, moneyPattern) ||
     moneySymbolHits(patches, moneySymbols).length > 0 ||
     touchesReviewerWorkflow(files) ||
-    exceedsReviewSizeLine(patches, reviewNonCode!, reviewSizeLine!);
+    touchesCustomerSurface(files, customerSurfacePaths!, customerSurfaceExempt!);
   // Stale verdicts count toward the acknowledgement pin (a word said for a
   // verdict that existed), never toward the merge.
   const verdictCount = tally.verdicts.length + tally.stale.length;

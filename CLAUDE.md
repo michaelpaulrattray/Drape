@@ -344,10 +344,29 @@ work is either one of its shifts or must behave like one. The binding pieces:
   are the new outside reviewer the outfit reviewer is permanently dead and
   will not come back."*).** `review.yml`'s triage still decides which diffs
   earn a look — money/auth surfaces (both halves of `.github/money-surfaces.sh`),
-  ≥50 changed code lines, or a `needs-fable` escalation — and says so ON THE
-  PR: it applies `needs-fable` and posts one comment naming the obligation and
-  the reading (ordinary diffs: `docs/REVIEWER_CHARTER.md`; money/auth: this
-  file in full). **The verdict is a PR comment by the founder's account headed
+  a change to the review's own rules, **a CUSTOMER-VISIBLE diff (both halves of
+  `.github/customer-surfaces.sh`)**, or a `needs-fable` escalation — and says so
+  ON THE PR: it applies `needs-fable` and posts one comment naming the obligation
+  and the reading (ordinary diffs: `docs/REVIEWER_CHARTER.md`; money/auth: this
+  file in full). ⚠ **THE SIZE TRIGGER IS GONE, AND HE REMOVED IT RATHER THAN
+  RAISING IT — this clause read *"≥50 changed code lines"* until 2026-09-26
+  (#1328).** Asked *"why must ever PR have a review a fable review on PR's seems
+  like a waste of credits doesnt it?"*, told the rule and that day's tally — 22
+  seat PRs reviewed, **0 code defects found**, 2 prose claims corrected, 22 of 22
+  instruments red under the relay's hand — then *"i think opus 5 is comfrotable
+  on more than 250 lines of code dont you?"* and, on the recommendation to drop
+  the trigger outright instead of moving the number: **"drop it"**. A line count
+  decides nothing about a review in this repository. ⚠ **What replaced it is the
+  one obligation none of the four mechanical checks can discharge**: a diff under
+  `client/src/` (outside the client's own `*.test.ts` and outside the STAFF
+  SURFACES — `features/admin/`, `features/moderator/`, and the `pages/Admin…` and
+  `pages/Moderator…` pages, which is his *"keep it with you"* on the relay's
+  sentence that a staff diff merges on the gate) earns `needs-fable`, and the comment
+  names the obligation as **the relay's eye on the rendered frames, both
+  themes** — working law 6, and law 9's *his eyes are king*. It is a PROXY on a
+  path and says so; the hand `needs-fable` road is the remedy for a
+  customer-visible change the path cannot see. It is NOT held. **The verdict is a
+  PR comment by the founder's account headed
   `**Fable review — by hand`, posted after the head commit** — the road every
   merge of 2026-09-22 took — and `scripts/pr-merge-in-order.mts` reads it off
   the PR (`scripts/lib/reviewRounds.mts`): a later push makes it stale, a
@@ -614,7 +633,7 @@ the live service on every push.
 | `CASTING_CONCEPT_UPLOAD_SCOPE` | upload a concept — a picture in, a description of the being out |
 | `CASTING_REFINE_DISPATCH_SCOPE` | whether the paid half of a refine stops holding the request |
 | `CASTING_RETRY_SCOPE` | the Retry button on a failed tile |
-| `CASTING_ROLL_ENGINE_SCOPE` | whether the roll road renders on a GPT Image 2.5 model, and for whom — `CASTING_ROLL_ENGINE_MODEL` (`flare` / `sunburst`) says which; GPT Image 2 otherwise |
+| `CASTING_ROLL_ENGINE_SCOPE` | which accounts roll on an EXCEPTION to the default engine — `CASTING_ROLL_ENGINE_MODEL` (`flare` / `sunburst`) says which |
 | `CASTING_TWO_PATHS_SCOPE` | the Wardrobe / Basics path choice — ✅ RETIRED OUTRIGHT (#203 step (e)); the flag is gone from the code and the columns are kept |
 | `CASTING_DIAGNOSTIC_CAPTURE_SCOPE` | keeping the frame from a refused render, and the words of a refused roll, for diagnosis |
 | `R7_SNAPSHOT_READ_SCOPE` | the R7-7B snapshot reader rollout |
@@ -626,7 +645,7 @@ the live service on every push.
 | `ENABLE_FINAL_MODEL_DELETE` | permanent Cast deletion, for every account — a boolean with no per-user narrowing |
 | `CREW_TAB_SCOPE` | the Crew tab at `/admin/crew` — his briefing and his reply box |
 
-- `CASTING_ROLL_ENGINE_MODEL` — `flare` or `sunburst`; which GPT Image 2.5 model `CASTING_ROLL_ENGINE_SCOPE`'s users roll on (a boot refusal if the scope names anyone and this is unset). See the catalogue entry
+- `CASTING_ROLL_ENGINE_MODEL` — `flare` or `sunburst`; which GPT Image 2.5 model `CASTING_ROLL_ENGINE_SCOPE`'s users roll on (a boot refusal if the scope names anyone and this is unset). Since #1340 the DEFAULT for every account is Sunburst, so this answers only for the accounts the scope names. See the catalogue entry
 - `FAL_KEY` — fal.ai credential; the casting image transport (GPT Image 2 for rolls, Nano Banana Pro for identity work). `OPENROUTER_API_KEY` — text transport (brief interpreter, treatment stage) and image fallback
 - `FAL_ACCOUNT_CEILING` (default 20) — the provider account's own concurrent-request ceiling, quoted from its 429. Four paths spend it and `assertFalBudget()` REFUSES TO BOOT if their sum exceeds it, or if any of them is set to zero: `ROLL_IMAGE_CONCURRENCY` 8 + `SIGN_VIEW_CONCURRENCY` 3 + `REFINE_EDIT_CONCURRENCY` 3 + `FAL_CONCURRENCY` 5 = 19. ⚠ **ONE SLOT IS DELIBERATELY UNOWNED and closing it is a capability change, not tidying** (#1158 slice 4d, 2026-09-24): a fifth path, `INK_PLATE_CONCURRENCY` 1, was paid for out of the **courtesy** pool (region reads 6 → 5, 2026-08-18) and retired with the ink studio, and his rule forbids handing the freed 1 back inside a retirement — so region reads stay at 5 and the sum is 19 of 20. It costs the panel nothing at the size the reader actually runs: a face scan is 20 segmenter calls, and `ceil(20/6)` and `ceil(20/5)` are both four waves. ⚠ **None of these five variables has ever been set on the production service** — read twice with controls the day the row came out; they all run on the defaults quoted here, so a boot line reading `ink plates 1` was the fallback rather than a configured value
 - `FAL_CONCURRENCY` (default 5, was 6 until the plate mint was wired) — how many fal calls the segmenter may have in flight at once. The account's ceiling is **20 concurrent requests**, and one panel scan asks eleven questions with every bilateral one becoming two more, so an ungated reader spends the whole allowance on one face: measured 2026-08-14, eight panels opened at once returned no rows at all on five of them, with the provider answering `429 concurrent_requests_limit`. Below 20 on purpose — roll dispatch spends from the same allowance
