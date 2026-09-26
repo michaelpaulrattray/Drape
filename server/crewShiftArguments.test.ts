@@ -430,8 +430,12 @@ describe("a row that looks live is distinguishable from one that does not", () =
     const read = /WHERE endedAt IS NULL ORDER BY id DESC[^`]*/.exec(source);
     expect(read, "the no-id read of the open rows is gone or re-worded").not.toBeNull();
     expect(read![0], "a capped read gives the resolver nothing to refuse with").not.toMatch(/LIMIT/i);
-    /* And the decision really is the shared resolver rather than a local pick. */
+    /* And the decision really is the shared resolver rather than a local pick,
+       AND its refusal is acted on. The sabotage run neutered that branch and
+       every behaviour arm stayed green — the script would throw rather than close
+       the wrong row, but only because nothing drives its database path at all. */
     expect(source).toContain("resolveCloseTarget(");
+    expect(source, "the resolver's refusal must be acted on").toMatch(/verdict\.kind === "refuse"\) refuse\(/);
   });
 
   /* And the dry run is checked AFTER the live guard, so a rehearsal on a live
