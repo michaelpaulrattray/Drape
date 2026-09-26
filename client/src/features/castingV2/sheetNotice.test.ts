@@ -181,6 +181,7 @@ describe("the studio-tee sentence never speaks over a sheet that wore the outfit
 
 describe("the Basics sentence and the path input are gone from the module", () => {
   const SOURCE = new URL("./sheetNotice.ts", import.meta.url);
+  const SHEET = new URL("../../pages/CastingSheet.tsx", import.meta.url);
 
   /*
     ⚠ THE POSITIVE CONTROL FOR THE ABSENCES BELOW — read at the SOURCE, because
@@ -220,5 +221,21 @@ describe("the Basics sentence and the path input are gone from the module", () =
     const source = await readFile(SOURCE, "utf8");
     const type = source.slice(source.indexOf("export type SheetNoticeInput"));
     expect(type.slice(0, type.indexOf("};"))).toContain("authorRoad: boolean");
+  });
+
+  /*
+    ⚠ **AND THE ONE SABOTAGE THIS SUITE COULD NOT OTHERWISE SEE: THE WIRE.**
+    Hard-coding `authorRoad: false` at the page's call site restores the defect
+    in production and leaves all nineteen arms above green, because a pure
+    function tested on its own inputs cannot see what its caller sends
+    (invariant 5 — assert at the wire). So the page's own source is read: the
+    field must come off the VIEWED ROLL, which is what makes walking the history
+    rail change what the sheet confesses.
+  */
+  it("is wired to the viewed roll's own road on the page, not to a constant", async () => {
+    const page = await readFile(SHEET, "utf8");
+    const call = page.slice(page.indexOf("const notice = sheetNotice({"));
+    const args = call.slice(0, call.indexOf("});"));
+    expect(args).toContain("authorRoad: roll.data?.authorRoad === true");
   });
 });
