@@ -9,6 +9,7 @@
 import type { inferRouterOutputs } from "@trpc/server";
 
 import { crewCardNeedsHim } from "../../../../../../shared/crewCardState";
+import { indexCardBuilds, type CrewCardBuildView } from "../../../../../../shared/crewCardBuildState";
 import { resolveHold, type CrewHold } from "../../../../../../shared/crewNextUpHold";
 import { crewPipelineRowIsDone } from "../../../../../../shared/crewPipelineStatus";
 import type { AppRouter } from "../../../../../../server/routers";
@@ -191,17 +192,43 @@ export type CrewNextUpRow = {
    * law 4 is about.
    */
   hold: CrewHold | null;
+  /**
+   * WHETHER SOMEBODY IS ALREADY ON THIS ROW — the same phrase the other lists
+   * carry, or `null` when nobody is (#1345).
+   *
+   * ⚠ **THE LIST HE READS FIRST WAS THE ONE THAT DID NOT SAY IT.** Seen on his
+   * desk 2026-09-26: NEXT UP row 7 read `#1307 Every concurrent PR conflicts on
+   * the atlas fingerprint line…` with nothing beside it while PR #1336 sat in
+   * *In flight* as *Reviewed — merging* for that same card. #1094's first piece
+   * put the phrase on Background Work and Not-on-any-road; NEXT UP was not in
+   * its scope, so the page said two different things about one card depending on
+   * which block he happened to look at.
+   *
+   * ⚠ **The judgement is `shared/crewCardBuildState.ts`'s, not this file's** —
+   * the same reason the hold above defers to `crewNextUpHold`. A second opinion
+   * about "is somebody building this" is the drift working law 4 is about, and
+   * that module's own header is where the narrow read (title, `card #N`, branch)
+   * is argued.
+   */
+  build: string | null;
 };
 
 export function nextUpRows(
   nextUp: CrewNextUpSource,
   cards: readonly CrewNeedsYouCard[],
+  /**
+   * What is already happening to each card, from the live read. Omitted — which
+   * is what every existing caller does — every row reads as nobody's, exactly as
+   * it did before this existed: an absent read cannot invent a builder.
+   */
+  builds: readonly CrewCardBuildView[] = [],
 ): CrewNextUpRow[] {
   const askingHim = new Map(
     cards
       .filter((card) => crewCardNeedsHim(card.state) && card.issueNumber !== null)
       .map((card) => [card.issueNumber as number, card.id]),
   );
+  const buildsByCard = indexCardBuilds(builds);
   return nextUp.items.map((item) => {
     const holdingCardId = askingHim.get(item.issueNumber) ?? null;
     const blockedOnYou = holdingCardId !== null;
@@ -212,6 +239,7 @@ export function nextUpRows(
       blockedOnYou,
       holdingCardId,
       hold: resolveHold({ blockedOnYou, held: item.held ?? null }),
+      build: buildsByCard.get(item.issueNumber) ?? null,
     };
   });
 }

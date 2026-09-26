@@ -13,6 +13,7 @@
 import { describe, expect, it } from "vitest";
 
 import { CREW_CARD_STATES, crewCardNeedsHim } from "../../../../../../shared/crewCardState";
+import { CREW_HOLD_WORD } from "../../../../../../shared/crewNextUpHold";
 import {
   stepsWithLiveState,
   eyeItemsFor,
@@ -379,5 +380,81 @@ describe("what still needs him — answered leaves the desk, not only closed (hi
     expect(eyeItemsFor(liveWith([1207], []), items).map((i) => i.id)).toEqual(["board", "loose"]);
     const off = { available: false, why: "x" } as unknown as Parameters<typeof eyeItemsFor>[0];
     expect(eyeItemsFor(off, items).map((i) => i.id)).toEqual(["sifr", "board", "loose"]);
+  });
+});
+
+describe("NEXT UP carries the build phrase the other lists carry (#1345)", () => {
+  /**
+   * Seen on his desk, 2026-09-26: row 7 read `#1307 Every concurrent PR
+   * conflicts on the atlas fingerprint line…` with nothing beside it, while PR
+   * #1336 sat in *In flight* as *Reviewed — merging* for that same card. #1094's
+   * first piece put the phrase on Background Work and Not-on-any-road; NEXT UP —
+   * the list he reads first — was not in its scope, so his page said two
+   * different things about one card depending on which block he looked at.
+   *
+   * The phrases themselves are `shared/crewCardBuildState.ts`'s and are driven in
+   * `server/crewCardBuildState.test.ts`. These arms are about the JOIN: the right
+   * phrase on the right row, nothing on a row nobody is on, and an absent read
+   * behaving exactly as no read did before this existed.
+   */
+  const NEXT_UP = {
+    readAt: "2026-09-26T13:57:00Z",
+    items: [
+      { issueNumber: 1307, title: "every concurrent PR conflicts on the atlas line", urgent: false },
+      { issueNumber: 1345, title: "the NEXT UP rows carry no build phrase", urgent: false },
+    ],
+  } as const;
+  const rowsWith = (builds: unknown[]) => nextUpRows(NEXT_UP as never, [], builds as never);
+
+  it("⚠ THE SPECIMEN — #1307's row now says its PR passed", () => {
+    const rows = rowsWith([{ issueNumber: 1307, phrase: "passed and merging — PR #1336" }]);
+    expect(rows.find((row) => row.issueNumber === 1307)!.build).toBe("passed and merging — PR #1336");
+  });
+
+  it("a row nobody is on carries nothing — the silence is what makes the phrase mean something", () => {
+    const rows = rowsWith([{ issueNumber: 1307, phrase: "being built — PR #1336" }]);
+    expect(rows.find((row) => row.issueNumber === 1345)!.build).toBeNull();
+  });
+
+  it("a phrase for a card that is not in this list reaches no row", () => {
+    /* The join is by issue number, so a Background-Work card being built must
+       not leak a phrase onto an ordered row that happens to sit beside it. */
+    const rows = rowsWith([{ issueNumber: 999, phrase: "being built — PR #12" }]);
+    expect(rows.every((row) => row.build === null)).toBe(true);
+  });
+
+  it("⚠ NO READ BEHAVES AS IT DID BEFORE THIS EXISTED — an absent list invents no builder", () => {
+    /* GitHub not answering is the window every live list on this page falls back
+       in. The wrong direction here would be a row inheriting a neighbour's
+       phrase or the call failing; it reads as nobody's, which is honest, and the
+       footer sentence is what says the read was thin. */
+    expect(nextUpRows(NEXT_UP as never, []).every((row) => row.build === null)).toBe(true);
+    expect(rowsWith([]).every((row) => row.build === null)).toBe(true);
+  });
+
+  it("the phrase rides BESIDE the hold, never instead of it — both facts survive", () => {
+    /* A held card can also be under construction, and his page must not have to
+       choose: the hold says why no shift took it, the phrase says who is on it. */
+    /* `blocked` is one of the real hold states (`CrewHeldState` in
+       `shared/crewNextUpHold.ts`), and the chip word is read back out of that
+       module rather than typed here — an arm that invents a hold shape passes on
+       a picture the product never draws. The first draft of this arm used
+       `kind: "card"`, which is no state at all, and it went green. */
+    const rows = nextUpRows(
+      {
+        readAt: "2026-09-26T13:57:00Z",
+        items: [{
+          issueNumber: 1307,
+          title: "t",
+          urgent: false,
+          held: { state: "blocked", because: "rides #1234" },
+        }],
+      } as never,
+      [] as never,
+      [{ issueNumber: 1307, phrase: "being built — PR #1336" }] as never,
+    );
+    expect(rows[0]!.build).toBe("being built — PR #1336");
+    expect(rows[0]!.hold?.word).toBe(CREW_HOLD_WORD.blocked);
+    expect(rows[0]!.hold?.because).toBe("rides #1234");
   });
 });
