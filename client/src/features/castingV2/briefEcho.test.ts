@@ -24,7 +24,7 @@ describe("the sentence composes rather than templates", () => {
       }),
     );
     expect(echoText(spans)).toBe(
-      "Everyone on this sheet is a slim woman in her early 20s. The eight differ by look.",
+      "Everyone on this sheet is a slim woman in her early 20s.",
     );
   });
 
@@ -41,7 +41,7 @@ describe("the sentence composes rather than templates", () => {
       }),
     );
     expect(echoText(spans)).toBe(
-      "Everyone on this sheet is a woman in her 20s, of East Asian heritage, reading dry, held to severe minimal. The eight differ by disposition.",
+      "Everyone on this sheet is a woman in her 20s, of East Asian heritage, reading dry, held to severe minimal.",
     );
   });
 
@@ -66,7 +66,7 @@ describe("varying is visible, and never becomes a list", () => {
       }),
     );
     expect(echoText(spans)).toBe(
-      "Everyone on this sheet is a woman in her 50s. Heritage, build and presence were left to the roll. The eight differ by look.",
+      "Everyone on this sheet is a woman in her 50s. Heritage, build and presence were left to the roll.",
     );
   });
 
@@ -82,7 +82,7 @@ describe("varying is visible, and never becomes a list", () => {
     );
     const text = echoText(spans);
     expect(text).not.toContain("left to the roll");
-    expect(text).toBe("Everyone on this sheet is a man in his 30s. The eight differ by disposition.");
+    expect(text).toBe("Everyone on this sheet is a man in his 30s.");
   });
 
   it("never names an axis the variation clause already names", () => {
@@ -105,7 +105,7 @@ describe("varying is visible, and never becomes a list", () => {
   it("falls back to the free-cast line when nothing at all was pinned", () => {
     const spans = composeEcho(facts({ open: ["sex", "ageBand", "heritage"], variationAxis: "disposition" }));
     expect(echoText(spans)).toBe(
-      "Nothing pinned — the roll cast freely from your words. The eight differ by disposition.",
+      "Nothing pinned — the roll cast freely from your words.",
     );
   });
 });
@@ -117,7 +117,7 @@ describe("lineage and the terser repeat form", () => {
       { followLabel: "the third face on roll 01" },
     );
     expect(echoText(spans)).toBe(
-      "Everyone on this sheet is a woman in her 40s. The eight follow the third face on roll 01, and differ by look.",
+      "Everyone on this sheet is a woman in her 40s. The eight follow the third face on roll 01.",
     );
   });
 
@@ -133,7 +133,7 @@ describe("lineage and the terser repeat form", () => {
       { terse: true },
     );
     expect(echoText(full)).toContain("were left to the roll");
-    expect(echoText(terse)).toBe("Everyone on this sheet is a woman in her 20s. The eight differ by look.");
+    expect(echoText(terse)).toBe("Everyone on this sheet is a woman in her 20s.");
     expect(echoText(terse).length).toBeLessThan(echoText(full).length);
   });
 });
@@ -255,7 +255,7 @@ describe("the casting category is in the sentence", () => {
       facts({ role: "runway model", locks: { ageBand: "20s", agePhase: "early" }, variationAxis: "look" }),
     );
     expect(echoText(spans)).toBe(
-      "Everyone on this sheet is cast as a runway model — in their early 20s. The eight differ by look.",
+      "Everyone on this sheet is cast as a runway model — in their early 20s.",
     );
   });
 
@@ -274,13 +274,22 @@ describe("the casting category is in the sentence", () => {
     their [age band]. The sheet already proves whether the faces are
     different."*
 
-    On the author road the caption was also FALSE, which is why the fix is the
-    road rather than the wording: one authored prompt paints all eight and the
-    per-slice identities are marked unsent (#176), so no axis was ever varied.
-    The HOUSE road keeps it — there the eight really are resolved one at a time
-    along that axis — and the arm below is what holds those two apart.
+    ⚠ **IT IS NOW EVERY ROAD (#1251).** The author road lost the caption first,
+    because there it was also FALSE — one authored prompt paints all eight and
+    the per-slice identities are marked unsent (#176), so no axis was ever
+    varied. The house road lost it on 2026-09-26 for his own stated reason
+    rather than for falsity: #1241 retired the disposition label under each
+    tile, so the sentence named a difference the page can no longer show.
+
+    ⚠ **SO THIS ARM NEEDED A NEW POSITIVE CONTROL, AND THAT IS THE WHOLE POINT
+    OF THE REWRITE.** It used to hold the roads apart by asserting the house road
+    still SAID the caption; with the caption gone from both, every
+    `not.toContain("differ by")` here is satisfied by a `composeEcho` that
+    returns nothing at all. The surviving difference between the roads is the
+    FOLLOW sentence, which the same early return suppresses — so that is what
+    holds them apart now.
   */
-  it("the author road says who is being cast and stops — no differ-by caption", () => {
+  it("the author road says who is being cast and stops", () => {
     const shown = facts({
       role: "oncology nurse",
       locks: { sex: "female", ageBand: "50s", heritage: ["British Isles"], energy: "grave" },
@@ -289,18 +298,39 @@ describe("the casting category is in the sentence", () => {
     expect(echoText(composeEcho(shown, { authorRoad: true }))).toBe(
       "Everyone on this sheet is cast as an oncology nurse — a woman in her 50s, of British Isles heritage, reading grave.",
     );
-    /* The house road is untouched — the positive control for the same data. */
-    expect(echoText(composeEcho(shown))).toContain("The eight differ by disposition");
-    for (const axis of ["look", "disposition"] as const) {
-      const spans = composeEcho(facts({ role: "blacksmith", variationAxis: axis }), { authorRoad: true });
-      expect(echoText(spans)).not.toContain("differ by");
-    }
-    /* A FOLLOW's tail carried the same claim in a subordinate clause; it goes with it. */
-    const followed = composeEcho(
-      facts({ locks: { sex: "female", ageBand: "40s" }, variationAxis: "look" }),
-      { authorRoad: true, followLabel: "the third face on roll 01" },
+
+    /*
+      THE POSITIVE CONTROL: the early return still suppresses something the
+      house road says. Without it this arm passes over an empty module.
+    */
+    const followed = facts({ locks: { sex: "female", ageBand: "40s" }, variationAxis: "look" });
+    expect(echoText(composeEcho(followed, { followLabel: "the third face on roll 01" }))).toContain(
+      "The eight follow the third face on roll 01.",
     );
-    expect(echoText(followed)).not.toContain("differ by");
+    expect(
+      echoText(composeEcho(followed, { authorRoad: true, followLabel: "the third face on roll 01" })),
+    ).not.toContain("follow");
+  });
+
+  /*
+    The caption is gone from BOTH roads, and it is driven over every axis the
+    type admits on both rather than asserted about the road that lost it first.
+    The positive control is the arm above: `composeEcho` still composes.
+  */
+  it("says how the eight differ on no road at all", () => {
+    for (const authorRoad of [true, false]) {
+      for (const variationAxis of ["look", "disposition", null] as const) {
+        for (const followLabel of [undefined, "the third face on roll 01"]) {
+          const spans = composeEcho(
+            facts({ role: "blacksmith", locks: { sex: "male", look: "severe minimal" }, variationAxis }),
+            { authorRoad, ...(followLabel ? { followLabel } : {}) },
+          );
+          expect(echoText(spans), `${authorRoad} / ${variationAxis} / ${followLabel}`).not.toContain(
+            "differ by",
+          );
+        }
+      }
+    }
   });
 
   it("carries the category alongside a full subject", () => {
@@ -312,14 +342,14 @@ describe("the casting category is in the sentence", () => {
       }),
     );
     expect(echoText(spans)).toBe(
-      "Everyone on this sheet is cast as an oncology nurse — a woman in her 50s, of British Isles heritage, reading grave. The eight differ by disposition.",
+      "Everyone on this sheet is cast as an oncology nurse — a woman in her 50s, of British Isles heritage, reading grave.",
     );
   });
 
   it("stands alone when the category is all the brief gave", () => {
     const spans = composeEcho(facts({ role: "blacksmith", variationAxis: "disposition" }));
     expect(echoText(spans)).toBe(
-      "Everyone on this sheet is cast as a blacksmith. The eight differ by disposition.",
+      "Everyone on this sheet is cast as a blacksmith.",
     );
   });
 
@@ -345,24 +375,42 @@ describe("the casting category is in the sentence", () => {
   });
 });
 
+/*
+  ⚠ **THIS RULE SURVIVES #1251, BUT ITS OBSERVABLE MOVED.**
+
+  The founder's sheet read *"held to commanding glamour … The eight differ by
+  look"* — a sentence contradicting itself, and not merely bad copy: it was
+  reporting the compiler's own confusion. A pinned look goes to every candidate,
+  so disposition is what actually varies. `effectiveAxis` is that correction.
+
+  The sentence it corrected no longer renders on any road, so `effectiveAxis`
+  can only be read through `axisTwin`, which decides which open axis the "left
+  to the roll" enumeration may NOT name. These two arms were re-pointed at that
+  observable rather than deleted: the rule still runs, the behaviour is
+  unchanged, and a suite that simply lost its arms here would have left a
+  founder-ruled correction unguarded on the way out.
+
+  Both arms use the same open set and the same variation axis, differing ONLY by
+  whether the brief pinned a look — so what they measure is the correction
+  itself rather than the enumeration.
+*/
 describe("a locked look cannot also be what the eight differ by", () => {
-  it("says disposition when the brief pinned the look", () => {
-    /*
-      The founder's sheet read "held to commanding glamour … The eight differ by
-      look" — a sentence contradicting itself, and not merely bad copy: it was
-      reporting the compiler's own confusion. A pinned look goes to every
-      candidate, so disposition is what actually varies.
-    */
+  const open = ["energy", "build"];
+
+  it("moves the excluded axis to presence when the brief pinned the look", () => {
     const spans = composeEcho(
-      facts({ locks: { sex: "male", look: "commanding glamour" }, variationAxis: "look" }),
+      facts({ locks: { sex: "male", look: "commanding glamour" }, open, variationAxis: "look" }),
     );
-    expect(echoText(spans)).toContain("The eight differ by disposition");
-    expect(echoText(spans)).not.toContain("differ by look");
+    /* effectiveAxis becomes disposition, whose twin is presence — so presence goes. */
+    expect(echoText(spans)).toContain("Build was left to the roll.");
+    expect(echoText(spans)).not.toContain("presence");
   });
 
-  it("still says look when the look is the thing varying", () => {
-    const spans = composeEcho(facts({ locks: { sex: "male" }, variationAxis: "look" }));
-    expect(echoText(spans)).toContain("The eight differ by look");
+  it("leaves presence alone when the look is genuinely the thing varying", () => {
+    const spans = composeEcho(facts({ locks: { sex: "male" }, open, variationAxis: "look" }));
+    /* effectiveAxis stays look, whose twin is look — absent from this open set,
+       so nothing is excluded and both axes are named. */
+    expect(echoText(spans)).toContain("Build and presence were left to the roll.");
   });
 });
 
@@ -384,7 +432,7 @@ describe("no clause may open the sentence with a comma", () => {
     const spans = composeEcho(facts({ locks: { heritage: ["East Asian"] }, variationAxis: "look" }));
     const text = echoText(spans);
     expect(text.startsWith(",")).toBe(false);
-    expect(text).toBe("Everyone on this sheet is of East Asian heritage. The eight differ by look.");
+    expect(text).toBe("Everyone on this sheet is of East Asian heritage.");
   });
 
   it("opens on presence when presence is the only thing pinned", () => {
