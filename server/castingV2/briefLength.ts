@@ -36,6 +36,16 @@
  * instead of quietly false. Filed on its own card rather than re-decided in
  * passing, because choosing a notes bound is a measurement, not a tidy-up.
  *
+ * ✅ **SETTLED 2026-09-26 (#1214), AND NOT BY CHOOSING A NUMBER.**
+ * `NOTES_MAX_FIDELITY` is now `BRIEF_TEXT_MAX_AUTHOR_ROAD` — the construction
+ * the principle argues for, written as a derivation instead of as a copy, so a
+ * later change to this entrance moves it too. The defect was never the value
+ * 2,000; it was that a copy of a fact had been left where the fact used to be
+ * (working law 4). Measured on the dev rows that day: 87 rolls, longest brief
+ * 1,137 characters, none over 1,200 — so nothing that exists is affected either
+ * way; the production rows were not read, which is the one thing about it that
+ * is unmeasured.
+ *
  * The rule is checked in the SERVICE rather than the schema because the refusal
  * must be free and must happen before the claim.
  */

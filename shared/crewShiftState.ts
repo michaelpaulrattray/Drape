@@ -306,6 +306,107 @@ export function findCardCollisions<T extends { readonly cardRef: string | null }
 export const CREW_SHIFT_OUTCOMES = ["shipped", "stopped", "failed"] as const;
 export type CrewShiftOutcome = (typeof CREW_SHIFT_OUTCOMES)[number];
 
+/* ── WHOSE ROW A BARE CLOSE CLOSES (#1234) ─────────────────────────────────── */
+
+/** What the resolver needs off an open run — nothing about time, nothing to write. */
+export type OpenRunForClose = {
+  readonly id: number;
+  readonly shift: string;
+  readonly seat: string;
+  readonly intent: string;
+};
+
+export type CloseTargetVerdict =
+  | { readonly kind: "one"; readonly run: OpenRunForClose; readonly how: "the shift id" | "the only open run" }
+  | { readonly kind: "refuse"; readonly why: string };
+
+function describeRun(run: OpenRunForClose): string {
+  return `#${run.id} ${run.shift} (${run.seat}) — ${run.intent}`;
+}
+
+/**
+ * ⚠ **A BARE CLOSE USED TO CLOSE THE *NEWEST* OPEN RUN, WHICH IS SOMEBODY'S ROW
+ * AND NOT NECESSARILY YOURS (#1234).**
+ *
+ * Measured, 2026-09-25. Row **#360** (`foreman-20260925-1649`) was open from
+ * 06:50Z. A second Foreman seat opened row **#361** at 07:45Z. At 07:55Z the
+ * first shift ran `crew-shift-close` with no `--id` and the `ORDER BY id DESC
+ * LIMIT 1` closed **#361**, stamping the wrong seat's row with the first
+ * shift's note while that seat was still mid-shift on a `founder-ordered` card.
+ * Its row left his page carrying a false sentence and nothing said so.
+ *
+ * ⚠ **The existing guard cannot catch it and that is not a gap in the guard.**
+ * `looksLive` refuses a row that checked in within the last couple of minutes —
+ * a live seat that is simply building looks identical to a dead one, so there is
+ * no time-based reading that separates them.
+ *
+ * **So the default is removed rather than documented harder.** A shift already
+ * passes `--shift <id>` at start; passing it at close names its OWN row, which
+ * is the only row a shift ever wants. With nothing named:
+ *
+ *   - exactly one open run  → close it. The single-seat night stays one command.
+ *   - more than one         → REFUSE, naming every open run, because a guess
+ *                             here is a false sentence on his page.
+ *   - none                  → refuse; the finding is that this shift never
+ *                             opened a row.
+ *
+ * ⚠ **It fails toward REFUSING, and the cost of that direction is one re-run
+ * with a flag** — against a row on his Working-now table saying a seat stopped
+ * when it had not, which is #288's incident with a different cause.
+ *
+ * `--id` does not come here: it reads a row by id whether open or closed, which
+ * is the dead-row recovery road, and the caller refuses an already-closed one.
+ */
+export function resolveCloseTarget(input: {
+  readonly openRuns: readonly OpenRunForClose[];
+  readonly shift: string | null;
+}): CloseTargetVerdict {
+  const open = input.openRuns;
+  const named = input.shift?.trim() ?? "";
+
+  if (named.length > 0) {
+    const mine = open.filter((run) => run.shift === named);
+    if (mine.length === 1) return { kind: "one", run: mine[0]!, how: "the shift id" };
+    if (mine.length === 0) {
+      return {
+        kind: "refuse",
+        why:
+          `no OPEN run for shift "${named}".`
+          + (open.length === 0
+            ? " Nothing is open at all — if this shift never opened a row, that is the finding."
+            : `\n  Open right now:\n    ${open.map(describeRun).join("\n    ")}`
+              + "\n  Close a dead shift's stale row with --id <n>, never by leaving --shift off."),
+      };
+    }
+    return {
+      kind: "refuse",
+      why:
+        `${mine.length} open runs carry the shift id "${named}", so naming it does not pick one:`
+        + `\n    ${mine.map(describeRun).join("\n    ")}`
+        + "\n  Close the one you mean with --id <n>.",
+    };
+  }
+
+  if (open.length === 0) {
+    return {
+      kind: "refuse",
+      why: "there is no open run to close. If this shift never opened one, that is the finding — say so in the report.",
+    };
+  }
+  if (open.length === 1) return { kind: "one", run: open[0]!, how: "the only open run" };
+
+  return {
+    kind: "refuse",
+    why:
+      `${open.length} runs are open, so a bare close would have to GUESS which is yours — and on`
+      + " 2026-09-25 it guessed another seat's and stamped it with this shift's note (#1234):"
+      + `\n    ${open.map(describeRun).join("\n    ")}`
+      + "\n  Name your own row:            --shift <the id you opened with>"
+      + "\n  Or close a dead one by hand:  --id <n>"
+      + "\n  To LOOK at what is running:   npx tsx scripts/crew-shift-state.mts",
+  };
+}
+
 /**
  * IS SOMEBODY ALREADY BUILDING THIS CARD? — the OTHER half of the #608 guard
  * (#1083).

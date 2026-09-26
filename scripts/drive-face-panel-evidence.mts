@@ -20,9 +20,34 @@
  *
  * Shots land in `output/panel-v2/`.
  *
- * # THE FIXTURE, AND WHAT IS HAND-WRITTEN IN IT
+ * # ⚠ THE SUBJECT IS FOUND AT THE ROWS, NOT NAMED HERE (#1151, 2026-09-26)
  *
- * The frame is the founder's own v#156 render, uploaded to the dev bucket. The
+ * This file addressed one hard-coded session on `userId 1` and it had rotted
+ * silently: that session is `expired` with **zero candidates**, and `userId 1`
+ * holds no `ready` candidate anywhere in the dev database, so every run timed out
+ * on the tile selector — the failure the paragraph below warns about, arriving in
+ * the one shape a photograph cannot tell from a broken panel.
+ *
+ * `scripts/lib/facePanelSubject.mts` picks the subject from the rows and the run
+ * PRINTS it, so the reading names its own fixture. The session is minted for
+ * whoever owns it rather than for user 1.
+ *
+ * ⚠ **The subject needs a ready candidate AND library rows, and #1151's own test
+ * (*"any account with a ready candidate"*) would have failed on a healthy
+ * product.** `FacePanel.tsx` returns null for a panel with no rows and nothing in
+ * flight, and the library holds only what an EDIT minted — so a ready candidate
+ * nobody has edited correctly has no panel. That is what #1151 saw when it
+ * widened the library flag to the dev bot and found the sheet rendering while the
+ * viewer *"still will not open"*: the viewer opened, and the panel had nothing to
+ * draw.
+ *
+ * # THE OLD FIXTURE, AND WHAT WAS HAND-WRITTEN IN IT
+ *
+ * Kept as history: it is the frame every assertion below was tuned against, and
+ * a run on a found subject that disagrees with one of them needs to know which
+ * frame the rule was written for.
+ *
+ * The frame was the founder's own v#156 render, uploaded to the dev bucket. The
  * library rows on it are hand-written fixture values standing in for the
  * harvest's own words, corrected against the photograph itself in shift 27
  * (`scripts/seed-face-panel-fixture-disposable.mts` says exactly what was
@@ -59,6 +84,11 @@ import type { Page } from "puppeteer-core";
 import { openDrivenPage, createChecks } from "./lib/drivePage.mts";
 import { openDatabase } from "./lib/dbConnection.mts";
 import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
+import { chooseSubject, describeSubject } from "./lib/facePanelSubject.mts";
+import {
+  captureCastingFaceScanEnabled,
+  captureCastingReferenceLibraryEnabled,
+} from "../server/castingV2/castingV2Scope";
 
 const args = parseStrictArgsOrRefuse(process.argv.slice(2), {
   value: ["base"],
@@ -67,8 +97,6 @@ const args = parseStrictArgsOrRefuse(process.argv.slice(2), {
 
 const BASE = args.value("base") ?? process.env.VERIFY_BASE_URL ?? "http://localhost:3000";
 const OUT = path.resolve("output/panel-v2");
-const SESSION = "2df4aeab-daa0-4bab-8ce7-d1e2c969510d";
-const TILE = "01";
 const THEMES = ["dark", "light"] as const;
 
 /**
@@ -113,12 +141,85 @@ const secret = process.env.JWT_SECRET;
 const appId = process.env.VITE_APP_ID;
 if (!secret || !appId) throw new Error("JWT_SECRET and VITE_APP_ID are required to mint a session");
 
-/* The fixture is on the founder's own account, so the session is his. Read,
-   never printed. */
+/*
+  THE SUBJECT IS FOUND, NOT REMEMBERED (#1151).
+
+  This block addressed `2df4aeab-…` on `userId 1` and minted the session for user
+  1 unconditionally. Both halves had rotted silently: read at the dev rows
+  2026-09-26, that session is `expired` with **zero candidates**, and `userId 1`
+  holds no `ready` candidate anywhere — so the run timed out on
+  `button[aria-label="View candidate 01 larger"]`, which is the failure this
+  file's own header warns is indistinguishable from a broken panel.
+
+  ⚠ **AND THE QUERY ASKS FOR MORE THAN A READY CANDIDATE, WHICH IS THE PART
+  #1151 DID NOT KNOW.** `FacePanel.tsx` returns null for a panel with no rows and
+  nothing in flight, and the rows come from the reference library, which holds
+  only what an EDIT minted. A ready candidate nobody has edited therefore has NO
+  panel — correctly — and pointing a driver at one reports a missing panel on a
+  healthy product. So the subject must carry library rows, and the `HAVING`
+  clause is that requirement rather than a filter for tidiness.
+
+  The session is minted for the SUBJECT's own account, whoever that is. Read,
+  never printed.
+*/
 const conn = await openDatabase(process.env.DATABASE_URL!);
-const [owners] = await conn.query("SELECT openId FROM users WHERE id = 1") as any[];
+const [subjectRows] = await conn.query(`
+  SELECT s.publicId AS sessionPublicId, s.status AS sessionStatus,
+         c.publicId AS candidatePublicId, s.userId, c.position,
+         COUNT(l.id) AS libraryRows, MAX(l.createdAt) AS newestRowAt
+    FROM casting_reference_library l
+    JOIN casting_candidates c ON c.id = l.candidateId
+    JOIN casting_rolls r ON r.id = c.rollId
+    JOIN casting_sessions s ON s.id = r.sessionId
+   WHERE c.status = 'ready' AND l.retiredAt IS NULL
+   GROUP BY s.publicId, s.status, c.publicId, s.userId, c.position
+  HAVING COUNT(l.id) > 0
+`) as any[];
+const subject = chooseSubject((subjectRows as any[]).map((row) => ({
+  sessionPublicId: String(row.sessionPublicId),
+  sessionStatus: String(row.sessionStatus),
+  candidatePublicId: String(row.candidatePublicId),
+  userId: Number(row.userId),
+  position: Number(row.position),
+  libraryRows: Number(row.libraryRows),
+  newestRowAt: new Date(row.newestRowAt),
+})));
+const SESSION = subject.sessionPublicId;
+const TILE = subject.tile;
+const [owners] = await conn.query("SELECT openId FROM users WHERE id = ?", [subject.userId]) as any[];
 await conn.end();
-if (!owners[0]?.openId) throw new Error("no owner account to drive as");
+if (!owners[0]?.openId) throw new Error(`no account row for user ${subject.userId} to drive as`);
+console.log(describeSubject(subject));
+
+/*
+  ⚠ AND THE FLAGS ARE CHECKED AGAINST THAT USER BEFORE THE BROWSER OPENS.
+
+  With the library flag not covering the subject, `facePanel` answers
+  `enabled: false`, the panel never renders, and this run fails ninety seconds
+  later on a selector — a refusal wearing a timeout's clothes. The check imports
+  the PRODUCT's own capture functions rather than re-parsing the scope string
+  (working law 4), so a grammar change cannot leave this reader believing an old
+  one.
+
+  **Its stated limit**: it reads THIS process's `.env`, and the server under
+  `--base` may have been started with another. So it is a refusal that catches
+  the ordinary case and names the line to add; a server started elsewhere still
+  fails at the selector, and the message below is what a shift will then re-read.
+*/
+{
+  const missing: string[] = [];
+  if (!captureCastingReferenceLibraryEnabled(subject.userId)) missing.push("CASTING_REFERENCE_LIBRARY_SCOPE");
+  if (!captureCastingFaceScanEnabled(subject.userId)) missing.push("CASTING_FACE_SCAN_SCOPE");
+  if (missing.length > 0) {
+    throw new Error(
+      `the subject is user ${subject.userId} and ${missing.join(" + ")} does not cover them in this .env — `
+        + `add \`${missing.map((flag) => `${flag}=users:${subject.userId}`).join("\` and \`")}\` and restart the server. `
+        + "Without the library flag the panel never renders and this run would fail on a selector ninety seconds "
+        + "from now; without the scan flag the panel is the library's rows alone and every re-anchored count below fails.",
+    );
+  }
+}
+
 const token = await new SignJWT({ openId: owners[0].openId, appId, name: "Panel v2 evidence" })
   .setProtectedHeader({ alg: "HS256" })
   .setExpirationTime("2h")
@@ -313,6 +414,17 @@ async function openPanel(page: Page): Promise<number> {
   */
   await page.waitForSelector(".dpc-face", { timeout: 90_000 });
   return Date.now() - started;
+}
+
+/**
+ * The walk stopped because the SUBJECT lacks something, not because the driver
+ * broke. Its own class so the report can say which of the two it was (#1151).
+ */
+class MeasuredRowMissing extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "MeasuredRowMissing";
+  }
 }
 
 /** The healthy thumbnail photographs, kept so the control has something to differ from. */
@@ -1022,6 +1134,31 @@ for (const theme of THEMES) {
     /* The reverse, hovering the SAME feature's box rather than whichever one
        happens to be drawn first. */
     const boxIndex = (litByRow?.boxes ?? []).findIndex((box: any) => box.tag === MEASURED_ROW);
+    /*
+      ⚠ AN INDEX BUILT FROM A NOT-FOUND ANSWER IS NEVER TURNED INTO A SELECTOR
+      (#1151, and it is the index-not-name class one step further along).
+
+      `findIndex` answers `-1`, and `-1 + 1` is `:nth-of-type(0)` — not a wrong
+      element but an INVALID selector, which puppeteer throws on. Measured on the
+      first run against a found subject: the whole drive died there, taking every
+      remaining check AND the entire light theme with it, and the hover check
+      three lines below had already reported `box 0 of 3` rather than saying the
+      box was absent (its `.catch(() => null)` swallowed the same throw).
+
+      So the absence is a named FAILURE about the subject, not an exception: this
+      frame has no `MEASURED_ROW` region, which is a true and useful thing to
+      report, and the remaining checks are unreachable on it rather than broken.
+    */
+    if (boxIndex < 0) {
+      check(
+        false,
+        `${theme}: the frame carries a region for the measured row, so the rest of this walk can run`,
+        `no box tagged "${MEASURED_ROW}" among ${litByRow?.boxes?.length ?? 0}`
+          + ` (${(litByRow?.boxes ?? []).map((box: any) => box.tag).join(", ") || "none"})`
+          + ` — every check below this line needs one and is NOT REACHED on this subject`,
+      );
+      throw new MeasuredRowMissing(`${MEASURED_ROW} has no region on this frame`);
+    }
     await page.hover(`.dpc-regions__box:nth-of-type(${boxIndex + 1})`).catch(() => null);
     await new Promise((resolve) => setTimeout(resolve, 150));
     const litByBox = await page.evaluate(READ_PANEL) as any;
@@ -1044,6 +1181,9 @@ for (const theme of THEMES) {
       just as meaninglessly. Same shape, same file, same fix: name the feature
       at both ends (working law 7 — fix the class, not the instance).
     */
+    /* `boxIndex` is proven >= 0 above, so the fallback can no longer spell
+       `:nth-of-type(0)`. Named first either way — the index is the last resort
+       for a box whose aria-label the read did not capture, not a second road. */
     const measuredSelector = litBox?.label
       ? `.dpc-regions__box[aria-label="${litBox.label.replace(/"/g, '\\"')}"]`
       : `.dpc-regions__box:nth-of-type(${boxIndex + 1})`;
@@ -1198,6 +1338,27 @@ for (const theme of THEMES) {
       refused.filter((entry) => /image-proxy|r2\.dev/.test(entry)).length === 0,
       `${theme}: no image or stencil was refused by the browser`,
       refused.length === 0 ? "no failed requests at all" : refused.slice(0, 3).join(" | "),
+    );
+  } catch (error) {
+    /*
+      ⚠ A CRASH IN ONE THEME NO LONGER COSTS THE OTHER ONE (#1151).
+
+      Everything above ran inside `try { } finally { close() }` with no catch, so
+      any throw ended the process: on the first run against a found subject the
+      dark walk died two thirds of the way through and the LIGHT theme was never
+      opened at all — the run reported nothing about the theme it had not
+      reached, and it reported it by exiting, which is the shape a shift reads as
+      "the driver is broken" rather than "this subject has no lips region".
+
+      A throw is now one recorded failure naming where the walk stopped, and the
+      next theme still runs. It is deliberately a FAILURE and not a skip: the run
+      must still be red, because it did not do what it says it does.
+    */
+    check(
+      false,
+      `${theme}: the walk reached the end`,
+      `stopped at: ${error instanceof Error ? error.message : String(error)}`
+        + (error instanceof MeasuredRowMissing ? " — a fact about this subject, not a broken driver" : ""),
     );
   } finally {
     await browser.close();

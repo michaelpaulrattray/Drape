@@ -4529,6 +4529,38 @@ async function refineCandidateCounted(
       is on.
     */
     : [];
+  /*
+    ⚠ AND THIS PARTICULAR CALL CANNOT CHANGE WHAT ANY RENDER SENDS. Recorded
+    here rather than left to be re-derived (#1290), because deriving it means
+    reading two ends of a six-thousand-line file and a reader who does not is
+    entitled to believe a control is acting.
+
+    Both directions close it. OFF the repaint road `inkAlreadyWorn` is `[]` by
+    the condition directly above, and `withoutCarriedInkWords` returns its input
+    unchanged on an empty worn set (`refineDelta.ts`'s `wornSlots.length === 0`
+    early return) — so the strip is a no-op by construction. ON the repaint road
+    the strip is real here, but nothing dispatches what this value composes: the
+    paste road's prompt is composed AGAIN, from the persisted row (wall (d)),
+    and the repaint assembles its own recipe from `editDelta` with its own call
+    to this function. That third call is the armed one.
+
+    What `asked` is FOR is the three pre-claim doors below, and each of them
+    reads BOTH of its sides off this same value — `missingFromPrompt(asked, …)`,
+    `contradictedFacets(…, asked)`, `staleCaptions` against the captions this
+    composition carried — so they are self-consistent whether the strip ran or
+    not. Driven rather than reasoned: this site and `askedFiled` below were both
+    sabotaged to their unstripped form and 680 tests across `refineService`,
+    `refineDelta`, `refineReask` and `inkApplied` stayed green, while the same
+    sabotage at the repaint's call reddens an existing wire arm in 8ms.
+
+    ⚠ KEPT, NOT DELETED, and for one reason: the paste road still exists, and on
+    the day anything turns the repaint off this strip is the correct thing to be
+    doing — it is inert BECAUSE of a flag position, not because it is wrong. The
+    question it raises in passing — whether the pre-claim completeness check
+    ought to be verifying the string the REPAINT will send, rather than a
+    composition nobody on that road dispatches — is a wall (d) question about
+    what this door is for, and it is carded rather than answered here.
+  */
   const asked = withoutCarriedInkWords(composed, inkAlreadyWorn, instruction);
 
   const preview = composeRenderPrompt(asked, EDIT_PROSE, carriedCaptions);
@@ -6058,6 +6090,26 @@ async function refineCandidateCounted(
        nothing to do with the retired segment store (see the note above the
        pre-claim composition). What went with the segments is the facet
        subtraction that used to wrap this call. */
+    /*
+      ⚠ AND LIKE THE PRE-CLAIM CALL, THIS ONE CANNOT CHANGE WHAT A RENDER SENDS
+      EITHER (#1290) — for the second of the two reasons given up there, so the
+      short version lives here and the long one lives once.
+
+      The only thing this value reaches that leaves the process is `prompt`
+      (`composedPrompt.full`, a few lines down), and `prompt` is read in exactly
+      one place: inside `renderOnce`, BELOW `if (repaintEnabled) return
+      repaintOnce()`. So it is dispatched only on the paste road — and on the
+      paste road `inkAlreadyWorn` is `[]`, which makes this call the identity.
+      On the repaint road the strip bites and the string is thrown away.
+
+      Its other two readers cannot see the strip at all: `regionOverrides` reads
+      `askedFiled.makeup`, and the record below reads `facetsAnsweredBy` — this
+      function only ever edits `free.ink`, and only by removing ITEMS from it,
+      never the facet.
+
+      Kept for the same reason as the other: correct for the paste road, inert
+      while production is `CASTING_REPAINT_SCOPE=all`.
+    */
     const askedFiled = withoutCarriedInkWords(filed, inkAlreadyWorn, instruction);
     /*
       WHERE THIS ASK LIVES ON HER FACE (law 8, fable-103's table ruling).

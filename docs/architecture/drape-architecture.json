@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "efd66f12e81638b0"
+    "sourceFingerprint": "48b00eaf6c832cb3"
   },
   "domains": [
     {
@@ -12647,6 +12647,10 @@
       "path": "server/facePanelOwnership.test.ts"
     },
     {
+      "id": "test:server/facePanelSubject.test.ts",
+      "path": "server/facePanelSubject.test.ts"
+    },
+    {
       "id": "test:server/faceScanWire.test.ts",
       "path": "server/faceScanWire.test.ts"
     },
@@ -23550,6 +23554,11 @@
     {
       "from": "module:server/castingV2/castingIntent.ts",
       "to": "module:shared/bodyAnchorRegions.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castingIntent.ts",
+      "to": "module:shared/briefLength.ts",
       "kind": "imports"
     },
     {
@@ -34629,10 +34638,10 @@
       "message": "Names 3 of Raster's 3 fields (server/castingV2/maskedComposite.ts), 3 of Mask's 3 fields (server/castingV2/maskedComposite.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/cohortPhotorealHuman.ts:1127",
+      "id": "finding:redeclared-shape:server/castingV2/cohortPhotorealHuman.ts:1126",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/cohortPhotorealHuman.ts:1127",
+      "subject": "server/castingV2/cohortPhotorealHuman.ts:1126",
       "message": "Names 6 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
