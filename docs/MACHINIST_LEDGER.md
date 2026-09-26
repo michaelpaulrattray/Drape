@@ -1270,6 +1270,18 @@ built to catch (an eager staff page, measured at +103.5 kB) could now land
 twice and pass. Total JS rose 22.7 kB while first paint fell 192 kB, which is
 the navigation trade #1036 was asked to measure, landing the right way round.
 
+✅ **CLOSED 2026-09-26 (#1265) — and the slack was worse than arithmetic said.**
+The budget is 290 kB on **266,595 B (260.3 kB)** re-measured at `0ba7f9e4`, with
+29.7 kB of room. The patrol's estimate above used the 19 Sep sabotage cost
+(+103.5 kB); the sabotage was **re-driven on the new tree** and the eager
+`AdminOverview` now costs **+116.0 kB** (385,370 B against 266,595 B). ⚠ **At
+the old 480 kB line that sabotage read `OK, headroom 103.7 kB` — the guard
+passed its own positive control, which is the finding in its strongest form.**
+Also closed with it: the gate's own comment restated the number and had been
+wrong for a week (it now points at the declaration instead), and the suite gained
+the arm that would have reddened on 19 Sep — the declared reading is pinned to
+the driven control byte count, so the pair cannot go stale silently again.
+
 **House commands** (`pnpm machinist:bench`, hyperfine 1.20.0, this machine, 20
 logical processors):
 

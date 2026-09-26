@@ -1,7 +1,7 @@
 {
-  "edition": 538,
-  "updatedAt": "2026-09-26T00:20:00.000Z",
-  "shift": "Foreman — N2 focus: every way into the studio is on the crew's map now (#1203), and the unchecked-view count came back clean (#1220)",
+  "edition": 540,
+  "updatedAt": "2026-09-26T02:20:09.493Z",
+  "shift": "Foreman — your signed views are photographed under the same rules your master was made under, and eight close-ups in your gallery settle the one question left",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -200,6 +200,14 @@
         {
           "state": "done",
           "title": "And you answered the switched-off buttons yourself while this shift was running — one word, \"good\". So that is closed: a button that is switched off now looks switched off, in all 43 places, including the two on the money pages. Nothing is waiting on you on that one any more. (#1237)"
+        },
+        {
+          "state": "done",
+          "title": "You answered the Sifr dress frames too, and your split is done exactly as you wrote it. The fault that card was about — her brief says a white dress and the signed full-length view put her in overall trousers and boots — is fixed, and all four takes now wear the dress, so that card is closed. The two things you said are still wrong are not that card: the dress comes back a plain, modest version of what your brief describes, and the hem and the shoes change from take to take. Both are the next card (#1278), and your own words on how to fix the second one are now written on it: one picture of four angles made in a single go, cut into the four slots, instead of four separate pictures that each invent the bottom half. That was the open question on that card and you have answered it. It still gets put in front of your eyes before it replaces anything, and the price of the one big picture will be named beside the quality. (#1222 closed, #1278)"
+        },
+        {
+          "title": "Your signed views are photographed under the same rules your master was made under (#1240) — the old instructions that guessed her colouring and banned letters on her skin are off the road. Eight close-ups rendered both ways are in your gallery; one look closes it, and #1278 is unblocked either way",
+          "state": "waiting"
         }
       ]
     },
@@ -283,7 +291,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-26T00:19:27.466Z",
+      "readAt": "2026-09-26T00:32:51.297Z",
       "items": [
         {
           "issueNumber": 179,
@@ -445,6 +453,28 @@
     }
   },
   "needsYou": [
+    {
+      "id": "view-house-block-1240",
+      "title": "Your signed views now use the same rules as your master — one look needed",
+      "productImpact": "Your signed views were being built from an old set of instructions, written back when casts wore the bare minimum, and two of them were working against you. One told the engine to guess her eye and hair colour from a heritage instead of copying her picture. The other banned letters anywhere in the frame — which means a script tattoo on her skin. You asked why a view could not just use the same rules as a sheet. It does now, and this is live.",
+      "workedExample": "The only open question is one I cannot answer for you. The old instructions carried about twenty extra lines about close-up craft — eyes, lashes, lips, brows — and those are gone with the rest of it. A close-up is where that would show, so I rendered eight from your own Sifr2 in one sitting: four the new way, four the old. Both sets are in your gallery. Both keep her neck ink, her makeup and her collar, so the thing that went wrong last time has not come back. I cannot see a detail loss, but my eye is not the one that counts. Look at the two strips and tell me: do the new ones lose any face detail?",
+      "options": [
+        {
+          "key": "no-loss",
+          "label": "They look the same to me",
+          "consequence": "Nothing moves. The card closes and the studio stays as it is now."
+        },
+        {
+          "key": "detail-lost",
+          "label": "The new ones lost detail",
+          "consequence": "The eye and lash lines come back as an addition for views only. Nothing else changes."
+        }
+      ],
+      "recommendation": "Recommend: look and tell me either way — it is two words. Nothing gets undone whichever you say, and your urgent card #1278 can start now because this one has landed.",
+      "state": "waiting",
+      "filedAt": "2026-09-26T02:20:09.493Z",
+      "issueNumber": 1240
+    },
     {
       "id": "roll-engine-price-1134",
       "title": "The engine you picked costs us about a third of the old one. Should everyone be on it?",
@@ -3308,10 +3338,31 @@
   ],
   "eyeItems": [
     {
+      "id": "view-house-block-1240-frames",
+      "title": "Sifr2's close-up, eight takes: four under the new rules, four under the old",
+      "question": "WHAT YOU ARE JUDGING — one question only: do the NEW close-ups lose any face detail against the OLD ones? Look at skin texture, freckles, lashes, the eyes. Everything else about the two strips is identical: your own Sifr2 master, the same crop, the same engine, rendered in the same few minutes. The only difference is the instructions. The old set had about twenty extra lines of close-up craft in it, and a close-up is where that would show if it mattered — which is the whole reason these are close-ups. Two words is enough. If detail IS lost, those lines come back as an addition for views only. If not, nothing moves. Either way this is already live and does not get undone.",
+      "state": "waiting",
+      "filedAt": "2026-09-26T02:20:09.493Z",
+      "issueNumber": 1240,
+      "cardId": "view-house-block-1240",
+      "frames": [
+        {
+          "key": "crew-eye/305c37bf-b95f-49ed-9e33-6055f7606ec9.jpg",
+          "arm": "NEW — the same rules as your master",
+          "caption": "Four close-ups of Sifr2 rendered today under the new rules, from your own Sifr2 master. This is what a signed close-up looks like from now on."
+        },
+        {
+          "key": "crew-eye/90948def-931f-4c24-957c-a3e672857d13.jpg",
+          "arm": "OLD — the instructions being retired",
+          "caption": "The same four, same master, same minutes, under the old instructions. Worth a glance at the second face: the eyes come back hazel-green against a dark-brown master. That is the old instruction guessing her colouring instead of copying it — one of the two things this fixes."
+        }
+      ]
+    },
+    {
       "id": "sifr-wardrobe-line-1222",
       "title": "Sifr's full front, dressed by her own brief - four takes on your master",
       "question": "WHAT YOU ARE JUDGING - last time the full front put her in overall pants and black boots. The fix: the studio now reads the outfit straight out of your brief, keeps it word for word, and every full-length view is built and checked against that sentence - a view that swaps her dress for trousers now fails instead of being delivered. These four takes are her full front rendered that new way, against your own Sifr master. Look at whether the lower half is the dress your brief describes, on all four. The hem length and the shoes differ take to take because your brief deliberately leaves them open. Two words is enough - right, or what it still misses. Your word closes #1222.",
-      "state": "waiting",
+      "state": "done",
       "filedAt": "2026-09-25T18:09:38.000Z",
       "issueNumber": 1222,
       "cardId": null,
@@ -6019,6 +6070,13 @@
   ],
   "pipeline": [
     {
+      "id": "view-house-block-1240",
+      "title": "One block, two roads — a signed view sends the roll's own house sentences (#1240)",
+      "status": "merged",
+      "prNumber": 1317,
+      "note": "63 prompt sentences to 20; the roll's own bytes unchanged, proved by hash. Court: 8 frames, ~$1.50."
+    },
+    {
       "id": "view-keeps-her-ink-1221",
       "title": "A signed cast's views keep her tattoos, her piercings and her makeup",
       "status": "merged",
@@ -8603,10 +8661,11 @@
     217,
     218,
     219,
-    220
+    220,
+    221
   ],
   "nextUp": {
-    "readAt": "2026-09-26T00:19:27.465Z",
+    "readAt": "2026-09-26T00:32:51.296Z",
     "items": [
       {
         "issueNumber": 1278,

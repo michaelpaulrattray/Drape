@@ -129,28 +129,94 @@ describe("judgeFirstPaint — the verdict", () => {
   });
 });
 
+/*
+  THE SABOTAGE, RE-DRIVEN AT THE TREE THESE ARMS READ — 2026-09-26, `0ba7f9e4`.
+
+  ⚠ Every figure below is from ONE sitting on ONE tree, which is the whole
+  repair #1265 made. The arms it replaces mixed a control read on 19 Sep with a
+  budget that had been correct for that day and a subject that had halved since;
+  a control and a sabotage from two trees cannot prove a line between them.
+
+  Road, both readings: `npx tsx scripts/bundle-budget.mts` (a real `vite build`,
+  level-9 gzip of what `dist/public/index.html` names), first on the tree as it
+  stands, then with `import "./pages/AdminOverview";` appended to
+  `client/src/App.tsx`, then restored and the restore proven at `git diff`.
+
+    control    assets/index-BLBlsaN3.js   266,595 B  (260.3 kB)
+    sabotage   assets/index-ByjWyy9A.js   385,370 B  (376.3 kB)   +118,775 B = +116.0 kB
+
+  ⚠ **AND THE SABOTAGE PASSED THE GUARD AS IT STOOD**: at the old 480 kB line
+  the verdict on 376.3 kB was `OK, headroom 103.7 kB`. That is the finding
+  #1265 is, stated as a reading rather than as arithmetic — the eager staff page
+  this module was built to refuse was being waved through.
+*/
+const MEASURED_2026_09_26 = { controlBytes: 266_595, sabotageBytes: 385_370 } as const;
+/** What the eager staff page cost on that tree, derived from the pair above. */
+const EAGER_STAFF_PAGE_BYTES = MEASURED_2026_09_26.sabotageBytes - MEASURED_2026_09_26.controlBytes;
+
 describe("the declared budget", () => {
-  it("is 480 kB (1024-byte kB, the ledger's unit), above the reading it was set against", () => {
-    expect(FIRST_PAINT_JS_BUDGET_BYTES).toBe(480 * 1024);
+  it("is 290 kB (1024-byte kB, the ledger's unit), above the reading it was set against", () => {
+    expect(FIRST_PAINT_JS_BUDGET_BYTES).toBe(290 * 1024);
     expect(FIRST_PAINT_JS_MEASURED_BYTES).toBeLessThan(FIRST_PAINT_JS_BUDGET_BYTES);
   });
 
-  it("its headroom is smaller than the sabotage it exists to catch (an eager AdminOverview: +103.5 kB, measured)", () => {
+  /*
+    ⚠ THE READING AND THE BUDGET ARE PINNED TO EACH OTHER, which is the arm the
+    old suite did not have and the reason #1265 was possible. The pair went
+    stale together on 2026-09-19: the measurement stopped describing the tree
+    and nothing here noticed, because no arm compared the declared reading to
+    anything a build had said. Now the declared reading IS the driven control
+    byte count, so a split that halves the entry leaves this red until somebody
+    re-reads both — a re-read is a two-line edit, and the alternative was a
+    week of a blind gate.
+  */
+  it("the declared reading is the driven control, not a remembered number", () => {
+    expect(FIRST_PAINT_JS_MEASURED_BYTES).toBe(MEASURED_2026_09_26.controlBytes);
+  });
+
+  it("its headroom is smaller than the sabotage it exists to catch (an eager AdminOverview: +116.0 kB, driven the same day)", () => {
     const headroom = FIRST_PAINT_JS_BUDGET_BYTES - FIRST_PAINT_JS_MEASURED_BYTES;
     expect(headroom).toBeGreaterThan(0);
+    expect(headroom).toBeLessThan(EAGER_STAFF_PAGE_BYTES);
+    /* And the cheapest instance of the class this guard names, not just today's:
+       103.5 kB was the 19 Sep reading of the same sabotage. Whichever of the two
+       is smaller is the line headroom must stay under. */
     expect(headroom).toBeLessThan(103.5 * 1024);
   });
 
   it("the sabotage reading is OVER and the control reading is OK, through the real judge", () => {
-    // Both figures were read on 2026-09-19 by driving scripts/bundle-budget.mts:
-    // the tree as it stands, then the same tree with `import "./pages/AdminOverview"`
-    // appended to App.tsx, then restored. The sabotage byte count is 555.9 kB
-    // back-converted (the script prints kB); the verdict turns on the line, not the digit.
-    const control = judgeFirstPaint(["assets/index-OtJK0qhJ.js"], [asset("assets/index-OtJK0qhJ.js", 463_219)]);
-    const sabotage = judgeFirstPaint(["assets/index-CGpfznEO.js"], [asset("assets/index-CGpfznEO.js", 569_242)]);
+    const control = judgeFirstPaint(
+      ["assets/index-BLBlsaN3.js"],
+      [asset("assets/index-BLBlsaN3.js", MEASURED_2026_09_26.controlBytes)],
+    );
+    const sabotage = judgeFirstPaint(
+      ["assets/index-ByjWyy9A.js"],
+      [asset("assets/index-ByjWyy9A.js", MEASURED_2026_09_26.sabotageBytes)],
+    );
     expect(control.ok).toBe(true);
     expect(sabotage.ok).toBe(false);
     expect(renderVerdict(sabotage)[0]).toMatch(/OVER, over by/);
     expect(renderVerdict(control)[0]).toMatch(/OK, headroom/);
+  });
+
+  /*
+    THE NEGATIVE CONTROL ON THE MOVE ITSELF — the one arm that would have gone
+    red on 2026-09-19 and the one this card exists because nobody had.
+
+    It asks the question the old budget could not answer: judged at the LINE AS
+    IT STOOD, was the sabotage caught? At 480 kB it was not — `ok: true`, and
+    the verdict line reads `OK, headroom`. Kept as a standing arm rather than a
+    note, because a budget's real failure mode is passing something it should
+    refuse, and that is invisible to every arm that only judges at the current
+    line.
+  */
+  it("⚠ the OLD 480 kB line would have passed today's sabotage — the blindness, driven", () => {
+    const atTheOldLine = judgeFirstPaint(
+      ["assets/index-ByjWyy9A.js"],
+      [asset("assets/index-ByjWyy9A.js", MEASURED_2026_09_26.sabotageBytes)],
+      480 * 1024,
+    );
+    expect(atTheOldLine.ok).toBe(true);
+    expect(renderVerdict(atTheOldLine)[0]).toContain("OK, headroom 103.7 kB");
   });
 });
