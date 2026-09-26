@@ -225,3 +225,138 @@ describe("the atlas merge driver", { timeout: 60_000 }, () => {
     expect(headMap(dir)).toBe("b.ts\nseed.ts\n");
   });
 });
+
+/**
+ * ⚠ THE DRIVER ABOVE IS LOCAL, AND GITHUB IS WHERE THE TAX WAS PAID (#1307).
+ *
+ * `merge-atlas` is why a merge-forward is one command on this machine. GitHub
+ * runs none of it — no `merge.atlas.driver`, no hooks, just git's own text merge
+ * — so the question *"can two open PRs both carry this file?"* is answered
+ * there, and the standing memory `local-merge-probe-cannot-predict-github` is
+ * the record of that being learned the hard way.
+ *
+ * What it cost, measured on the sixteen seat branches of 2026-09-26 with git's
+ * own three-way merge over the real blobs: **120 of 120 pairs conflicted on
+ * `drape-architecture.json`**, every one of them on `meta.sourceFingerprint`
+ * alone — a hash of every scanned file, so no two branches can agree on it. And
+ * a CONFLICTING PR fires no workflow run at all (the #566 absent state), so the
+ * gate went silent with it. With the line removed from all three sides: **0 of
+ * 120**, while 44 pairs still both changed the map and merged clean.
+ *
+ * So these arms drive GitHub's world with git configured the way GitHub has it,
+ * on the REAL committed map, in both directions: the map as it ships merges, and
+ * the same two edits with the old fingerprint line put back CONFLICT. The second
+ * arm is the positive control — without it the first is satisfied by a fixture
+ * whose two sides never really diverged.
+ */
+describe("what GitHub merges — no driver, no hooks (#1307)", { timeout: 120_000 }, () => {
+  const COMMITTED_MAP = resolve("docs/architecture/drape-architecture.json");
+
+  /* git as GitHub has it: the last `-c` for a key wins, so this overrides
+     `gitWith`'s own hooks path with a directory that holds no hooks. A fixture
+     that ran THIS repository's hooks would be measuring the wrong machine. */
+  const github = (cwd: string, ...args: string[]) =>
+    gitWith(["-c", `core.hooksPath=${join(cwd, ".no-hooks")}`], cwd, ...args);
+
+  /** The committed map, LF, as git stores it — never this checkout's CRLF smudge. */
+  const committedMap = (): string[] =>
+    readFileSync(COMMITTED_MAP, "utf8").split("\r\n").join("\n").split("\n");
+
+  /** A new entry of `kind`, inserted where the generator would have put one. */
+  function withEntry(lines: string[], kind: "module" | "test", id: string): string[] {
+    const at = lines.findIndex((line) => line.includes(`"id": "${kind}:`));
+    expect(at, `the committed map names no ${kind} — this fixture describes nothing`).toBeGreaterThan(0);
+    const pad = /^\s*/.exec(lines[at]!)![0];
+    const copy = [...lines];
+    copy.splice(
+      at - 1,
+      0,
+      `${pad.slice(2)}{`,
+      `${pad}"id": "${kind}:${id}",`,
+      `${pad}"path": "${id}"`,
+      `${pad.slice(2)}},`,
+    );
+    return copy;
+  }
+
+  /** The pre-#1307 world: a per-tree hash line inside `meta`, one per side. */
+  function withFingerprint(lines: string[], hash: string): string[] {
+    const at = lines.findIndex((line) => line.includes('"generatorVersion"'));
+    expect(at, "meta no longer carries generatorVersion — this fixture is stale").toBeGreaterThan(0);
+    const copy = [...lines];
+    copy[at] = `${copy[at]!.replace(/,\s*$/, "")},`;
+    copy.splice(at + 1, 0, `    "sourceFingerprint": "${hash}"`);
+    return copy;
+  }
+
+  /**
+   * Two branches off one base, each editing the map where its own PR would, then
+   * merged by a git with nothing of ours configured. Returns git's verdict.
+   */
+  function mergeTwoWays(mutate: (lines: string[], side: "a" | "b") => string[]): Result & { markers: boolean } {
+    const dir = mkdtempSync(join(tmpdir(), "drape-atlas-github-"));
+    repos.push(dir);
+    const map = join(dir, "drape-architecture.json");
+    github(dir, "init", "-q", "-b", "main");
+    /* The attribute is on the real file, so the fixture carries it too: an
+       UNKNOWN driver is precisely GitHub's state, and git falls back to the text
+       merge. A fixture without it would be testing a different path. */
+    writeFileSync(join(dir, ".gitattributes"), "drape-architecture.json merge=atlas\n");
+    writeFileSync(map, `${committedMap().join("\n")}`);
+    github(dir, "add", "-A");
+    expect(github(dir, "commit", "-q", "-m", "base").status).toBe(0);
+    for (const side of ["a", "b"] as const) {
+      github(dir, "checkout", "-q", "-b", side, "main");
+      writeFileSync(map, `${mutate(committedMap(), side).join("\n")}`);
+      github(dir, "add", "-A");
+      expect(github(dir, "commit", "-q", "-m", side).status).toBe(0);
+    }
+    github(dir, "checkout", "-q", "b");
+    const merge = github(dir, "merge", "--no-edit", "a");
+    return { ...merge, markers: readFileSync(map, "utf8").includes("<<<<<<<") };
+  }
+
+  /* Two edits in DIFFERENT regions of the document — a new module near the top,
+     a new test near the bottom — which is what two unrelated seat PRs produce. */
+  const twoRegions = (lines: string[], side: "a" | "b"): string[] =>
+    side === "a"
+      ? withEntry(lines, "module", "server/_probe/a.ts")
+      : withEntry(lines, "test", "server/_probe/b.test.ts");
+
+  it("the map as it ships: two PRs touching different parts of the architecture MERGE", () => {
+    /* Population control first: the two edits must land far apart, or this arm
+       passes because git's 3-line context happened not to overlap. */
+    const base = committedMap();
+    const moduleAt = base.findIndex((line) => line.includes('"id": "module:'));
+    const testAt = base.findIndex((line) => line.includes('"id": "test:'));
+    expect(Math.abs(testAt - moduleAt), "the two edits must be in different regions").toBeGreaterThan(100);
+
+    const merge = mergeTwoWays(twoRegions);
+    expect(merge.stdout + merge.stderr).not.toContain("CONFLICT");
+    expect(merge.markers, "the merged map carries no conflict markers").toBe(false);
+    expect(merge.status, merge.stderr).toBe(0);
+  });
+
+  it("CONTROL — put the source fingerprint back and the SAME two edits conflict", () => {
+    const merge = mergeTwoWays((lines, side) =>
+      withFingerprint(twoRegions(lines, side), side === "a" ? "a".repeat(16) : "b".repeat(16)),
+    );
+    expect(merge.status, "a per-tree hash in the committed map is a guaranteed conflict").not.toBe(0);
+    expect(merge.stdout + merge.stderr).toContain("CONFLICT (content)");
+    expect(merge.markers, "and the markers land in the map itself").toBe(true);
+  });
+
+  it("the fingerprint is written beside the maps and git cannot carry it", () => {
+    /* The sidecar is the whole reason the field could leave: the reading stays
+       available locally. If it were ever tracked, every branch would move it and
+       the tax would come straight back through a new file name. */
+    const generator = readFileSync("scripts/generate-architecture.mts", "utf8");
+    expect(generator).toContain('export const SOURCE_FINGERPRINT_FILE = "source-fingerprint.txt";');
+    expect(generator).toContain("fs.writeFileSync(path.join(outDir, SOURCE_FINGERPRINT_FILE)");
+
+    const ignored = runHook("git", ["check-ignore", "docs/architecture/source-fingerprint.txt"], { cwd: resolve(".") });
+    expect(ignored.status, "the sidecar must be gitignored — a tracked one is the conflict again").toBe(0);
+    const tracked = runHook("git", ["ls-files", "--error-unmatch", "docs/architecture/source-fingerprint.txt"], { cwd: resolve(".") });
+    expect(tracked.status, "and it must not already be tracked").not.toBe(0);
+  });
+});

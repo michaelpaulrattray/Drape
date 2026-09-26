@@ -23,6 +23,13 @@
 # (`annotations.yaml`), and the CAPABILITY generator's two module inputs, which
 # live under `scripts/`.
 #
+# ⚠ `fingerprint()` IS STILL THE DERIVATION EVEN THOUGH ITS VALUE LEFT THE
+# COMMITTED MAP (#1307). The hash now goes to a gitignored sidecar — it was one
+# line that every branch moved, so every pair of open PRs conflicted on it — but
+# the function still reads exactly the files the generators read, which is the
+# only reason it was ever the population here. `server/atlasCommitHook.test.ts`
+# reads its body, unchanged.
+#
 # **Both narrowings were measured rather than reasoned.** The first version
 # warned on MATCHES, and the very first commit it ran on warned about an
 # untracked `scripts/_*-disposable.mts` while `pnpm architecture:check` said the

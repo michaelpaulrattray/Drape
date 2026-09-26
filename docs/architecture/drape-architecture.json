@@ -1,8 +1,7 @@
 {
   "meta": {
     "schemaVersion": "1.0.0",
-    "generatorVersion": "1.0.0",
-    "sourceFingerprint": "0b8981fc6ef4d2c9"
+    "generatorVersion": "1.0.0"
   },
   "domains": [
     {
