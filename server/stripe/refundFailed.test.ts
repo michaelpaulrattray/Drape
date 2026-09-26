@@ -59,8 +59,9 @@ vi.mock("../db", () => db);
 
 vi.mock("../db/connection", () => ({
   getDb: vi.fn().mockImplementation(async () => ({
-    select: () => ({ from: () => ({ where: () => ({ limit: async () => [] }) }) }),
-    insert: () => ({ values: () => ({ onDuplicateKeyUpdate: async () => undefined }) }),
+    /* The claim and its release (#1361); this suite records neither. */
+    insert: () => ({ values: async () => undefined }),
+    delete: () => ({ where: async () => undefined }),
   })),
 }));
 

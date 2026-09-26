@@ -74,16 +74,23 @@ vi.mock("../db", () => db);
    that a failed event was NOT marked processed — without that, a "redeliver
    to retry" arm cannot tell a real failure from an ACK. */
 const processedEventInserts = vi.hoisted(() => [] as Array<{ eventId: string; eventType: string }>);
+/* ⚠ The replay guard is a CLAIM since #1361: the product inserts FIRST, lets
+   the unique index on `eventId` arbitrate, and RELEASES the row when the
+   handler fails. A double still shaped for the old select-then-record road is
+   INERT rather than red — it answers every call and models nothing — so it is
+   shaped like the guard here. */
 vi.mock("../db/connection", () => ({
   getDb: vi.fn().mockImplementation(async () => ({
-    select: () => ({ from: () => ({ where: () => ({ limit: async () => [] }) }) }),
     insert: () => ({
-      values: (row: { eventId: string; eventType: string }) => ({
-        onDuplicateKeyUpdate: async () => {
-          processedEventInserts.push(row);
-        },
-      }),
+      values: async (row: { eventId: string; eventType: string }) => {
+        if (processedEventInserts.some((seen) => seen.eventId === row.eventId)) {
+          throw Object.assign(new Error("Duplicate entry"), { code: "ER_DUP_ENTRY", errno: 1062 });
+        }
+        processedEventInserts.push(row);
+      },
     }),
+    /* One event in flight per arm, so the row dropped is the claim just made. */
+    delete: () => ({ where: async () => { processedEventInserts.pop(); } }),
   })),
 }));
 

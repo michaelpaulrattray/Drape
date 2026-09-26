@@ -31,48 +31,57 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { eq } from "drizzle-orm";
 import type Stripe from "stripe";
 
-// ── The fake table. Module-level because the mock factory is hoisted. ────────
+// ── The fake table. Module-level because the mock factory is hoisted. ────
+/** The rows the table holds, as a unique index on `eventId` would hold them. */
 const recordedEventIds = new Set<string>();
-/** Every `where(...)` the idempotency lookup built, in order. */
-const lookupConditions: unknown[] = [];
-/** Every row the recorder inserted, in order. */
+/** Every row the CLAIM inserted, in order. */
 const insertedRows: Array<Record<string, unknown>> = [];
-/**
- * Which event id the fake table should answer about.
- *
- * The fake cannot read a drizzle condition object, so it is told which id is
- * in flight and answers from `recordedEventIds`. That models the TABLE and not
- * the WHERE — so the WHERE gets its own arm below, asserting the condition the
- * product actually built. A fake that stood in for both would pass a lookup
- * keyed on the wrong column.
- */
-let eventIdInFlight = "";
-/** Set to make the lookup itself throw, for the documented fail-open path. */
-let lookupThrows = false;
+/** Every `where(...)` a release built, in order. */
+const releaseConditions: unknown[] = [];
+/** Set to make the claim insert fail with something that is NOT a duplicate. */
+let claimThrows = false;
+/** Set to make the release fail — the one hole the claim shape has. */
+let releaseThrows = false;
+
+/** What MySQL raises when a unique index refuses a second row. */
+function duplicateKeyError(): Error {
+  return Object.assign(new Error("Duplicate entry for key 'eventId'"), {
+    code: "ER_DUP_ENTRY",
+    errno: 1062,
+  });
+}
 
 vi.mock("../db/connection", () => ({
   getDb: vi.fn().mockImplementation(async () => ({
-    select: () => ({
-      from: () => ({
-        where: (condition: unknown) => ({
-          limit: async () => {
-            lookupConditions.push(condition);
-            if (lookupThrows) throw new Error("idempotency lookup is down");
-            return recordedEventIds.has(eventIdInFlight) ? [{ id: 1 }] : [];
-          },
-        }),
-      }),
-    }),
+    /*
+      THE CLAIM. The insert carries the whole guard now, so this fake models the
+      UNIQUE INDEX rather than a lookup: a second insert of an id already in the
+      set raises the driver's own duplicate error, which is the signal the
+      product reads.
+    */
     insert: () => ({
-      values: (row: Record<string, unknown>) => ({
-        onDuplicateKeyUpdate: async () => {
-          insertedRows.push(row);
-          recordedEventIds.add(String(row.eventId));
-        },
-      }),
+      values: async (row: Record<string, unknown>) => {
+        if (claimThrows) throw new Error("the events table is unreachable");
+        if (recordedEventIds.has(String(row.eventId))) throw duplicateKeyError();
+        insertedRows.push(row);
+        recordedEventIds.add(String(row.eventId));
+      },
+    }),
+    delete: () => ({
+      where: async (condition: unknown) => {
+        releaseConditions.push(condition);
+        if (releaseThrows) throw new Error("the events table is unreachable");
+        /* The fake cannot read a drizzle condition, so it releases whichever id
+           is in flight — and the CONDITION gets its own arm below, against one
+           built here from the same schema column. */
+        recordedEventIds.delete(eventIdInFlight);
+      },
     }),
   })),
 }));
+
+/** Which event id is in flight, for the release the fake cannot read. */
+let eventIdInFlight = "";
 
 vi.mock("./stripeService", () => ({
   constructWebhookEvent: vi.fn(),
@@ -129,6 +138,22 @@ function checkoutEvent(id: string): Stripe.Event {
   } as unknown as Stripe.Event;
 }
 
+/**
+ * The same event with NO `userId` in its metadata — a REAL handler failure.
+ *
+ * ⚠ The obvious way to fail a delivery is to make `creditReferrerOnPaidAction`
+ * reject, and it does not work: `handleCheckoutCompleted` catches that itself
+ * ("non-blocking — don't fail the webhook for referral credit issues") and
+ * still returns `success: true`. An arm built on it would have proved the
+ * release path while never entering it. This road is the handler's own
+ * documented failure: *"Missing userId in session metadata"*.
+ */
+function failingCheckoutEvent(id: string): Stripe.Event {
+  const event = checkoutEvent(id) as unknown as { data: { object: { metadata: Record<string, unknown> } } };
+  delete event.data.object.metadata.userId;
+  return event as unknown as Stripe.Event;
+}
+
 /** One delivery of `event`, with the fake table told which id is in flight. */
 async function deliver(event: Stripe.Event) {
   eventIdInFlight = event.id;
@@ -142,10 +167,11 @@ let savedRailwayName: string | undefined;
 beforeEach(() => {
   vi.clearAllMocks();
   recordedEventIds.clear();
-  lookupConditions.length = 0;
+  releaseConditions.length = 0;
   insertedRows.length = 0;
   eventIdInFlight = "";
-  lookupThrows = false;
+  claimThrows = false;
+  releaseThrows = false;
   savedRailway = process.env.RAILWAY_ENVIRONMENT;
   savedRailwayName = process.env.RAILWAY_ENVIRONMENT_NAME;
   process.env.RAILWAY_ENVIRONMENT_NAME = "production";
@@ -206,38 +232,65 @@ describe("a redelivered Stripe event does not pay twice", () => {
   });
 
   /*
-   * ⚠ ASSERT AT THE WIRE (enforcement invariant 5's habit, applied to a
-   * lookup). The stateful fake above models the TABLE — it is told which id is
-   * in flight and answers from a Set. It therefore cannot notice a lookup
-   * keyed on the wrong column, which is precisely how this gate would fail
-   * silently. So the condition the product actually builds is compared against
-   * one built here from the same schema column.
+   * ⚠ ASSERT AT THE WIRE (enforcement invariant 5's habit). The fake models
+   * the unique INDEX — it raises the driver's duplicate error on a second row
+   * for an id it already holds — so it cannot notice a RELEASE keyed on the
+   * wrong column, which is how a claim would silently never be given back. The
+   * condition the product builds is compared against one built here from the
+   * same schema column.
    */
-  it("the lookup is keyed on eventId — the WHERE, not just the answer", async () => {
-    const event = checkoutEvent("evt_1Keyed");
-    await deliver(event);
+  it("the release is keyed on eventId — the WHERE, not just the answer", async () => {
+    await deliver(failingCheckoutEvent("evt_1Keyed"));
 
-    expect(lookupConditions).toHaveLength(1);
-    expect(lookupConditions[0]).toEqual(eq(stripeWebhookEvents.eventId, "evt_1Keyed"));
+    expect(releaseConditions).toHaveLength(1);
+    expect(releaseConditions[0]).toEqual(eq(stripeWebhookEvents.eventId, "evt_1Keyed"));
   });
 
   /*
-   * ⚠ THE GATE FAILS OPEN, ON PURPOSE, AND NOTHING SAID SO OUT LOUD.
+   * ⚠ THE GATE FAILS CLOSED NOW (#1361), AND THIS ARM WAS ITS OPPOSITE.
    *
-   * `webhooks.ts` catches a failed idempotency lookup and proceeds — its own
-   * comment reads "If idempotency check fails, proceed anyway (fail open)".
-   * That is a real decision with a real cost: a database blip during a Stripe
-   * retry storm is the exact moment a duplicate would be paid. It is pinned as
-   * CURRENT BEHAVIOUR rather than changed, so whoever decides it is a defect
-   * is deciding rather than discovering.
+   * It read *"if the lookup THROWS, the event is processed anyway — fail-open,
+   * pinned"*, over a comment in `webhooks.ts` that said so outright. The claim
+   * shape ends it: a guard that cannot be reached REFUSES, the route turns that
+   * into a 400, and Stripe redelivers. A redelivery is cheap; paying an unknown
+   * number of times during exactly the database blip a retry storm arrives in
+   * is not.
    */
-  it("⚠ if the lookup THROWS, the event is processed anyway — fail-open, pinned", async () => {
-    lookupThrows = true;
+  it("⚠ if the guard is UNREACHABLE, the event is REFUSED rather than processed", async () => {
+    claimThrows = true;
 
-    const result = await deliver(checkoutEvent("evt_1LookupDown"));
+    const result = await deliver(checkoutEvent("evt_1GuardDown"));
 
+    expect(creditReferrerOnPaidAction, "the money line must not be reached").not.toHaveBeenCalled();
+    expect(result.success, "a refusal is a 400, which is what makes Stripe redeliver").toBe(false);
+    expect(result.message).toContain("replay cannot be ruled out");
+  });
+
+  /*
+   * THE CLAIM IS GIVEN BACK WHEN THE WORK FAILS, or a transient handler failure
+   * would be permanent: the retry would read as a duplicate and the effect
+   * would never land. This is the arm that makes claiming-before-working safe,
+   * and it is the one a careless "simplification" of the catch block breaks.
+   */
+  it("a FAILED handler releases the claim, so the redelivery does the work", async () => {
+    const failed = await deliver(failingCheckoutEvent("evt_1Transient"));
+    expect(failed.success).toBe(false);
+    expect(recordedEventIds.has("evt_1Transient"), "the claim must not outlive a failed handler").toBe(false);
+
+    /* Stripe's redelivery, and it must do the work rather than read as done. */
+    const retried = await deliver(checkoutEvent("evt_1Transient"));
+    expect(retried.success).toBe(true);
     expect(creditReferrerOnPaidAction).toHaveBeenCalledWith(1);
-    expect(result.success).toBe(true);
+  });
+
+  it("⚠ a release that FAILS is logged, and the event stays claimed — the stated hole", async () => {
+    /* Named rather than hidden: the same database that just failed is the only
+       thing that could undo this, so what is owed is the loud line. Pinned so a
+       later reader meets the limit here instead of in production. */
+    releaseThrows = true;
+
+    await deliver(failingCheckoutEvent("evt_1Stuck"));
+    expect(recordedEventIds.has("evt_1Stuck")).toBe(true);
   });
 
   /*
@@ -252,6 +305,6 @@ describe("a redelivered Stripe event does not pay twice", () => {
 
     expect(result.message).toBe("Test event verified");
     expect(creditReferrerOnPaidAction).not.toHaveBeenCalled();
-    expect(lookupConditions, "the gate was never reached").toHaveLength(0);
+    expect(insertedRows, "the guard was never reached").toHaveLength(0);
   });
 });

@@ -66,21 +66,30 @@ const db = vi.hoisted(() => ({
 
 vi.mock("../db", () => db);
 
-/* The webhook's idempotency pre-check reads the connection module directly.
-   The double RECORDS what the handler asks it to record (PR #786 round 2):
-   a redelivery arm must be able to see that a failed event was NOT marked
-   processed, or it drives a road production cannot take. */
+/* The webhook's replay guard reads the connection module directly. The double
+   RECORDS what the handler leaves recorded (PR #786 round 2): a redelivery arm
+   must be able to see that a failed event was NOT marked processed, or it
+   drives a road production cannot take.
+
+   ⚠ THE GUARD IS A CLAIM SINCE #1361 and this double moved with it — the
+   product inserts FIRST and lets the unique index arbitrate, then RELEASES the
+   row when the handler fails. The question every arm here asks is unchanged
+   (*was this event left recorded?*), and so are their expectations. */
 const processedEventInserts = vi.hoisted(() => [] as Array<{ eventId: string; eventType: string }>);
 vi.mock("../db/connection", () => ({
   getDb: vi.fn().mockImplementation(async () => ({
-    select: () => ({ from: () => ({ where: () => ({ limit: async () => [] }) }) }),
     insert: () => ({
-      values: (row: { eventId: string; eventType: string }) => ({
-        onDuplicateKeyUpdate: async () => {
-          processedEventInserts.push(row);
-        },
-      }),
+      values: async (row: { eventId: string; eventType: string }) => {
+        if (processedEventInserts.some((seen) => seen.eventId === row.eventId)) {
+          /* MySQL's own refusal from the unique index on `eventId`. */
+          throw Object.assign(new Error("Duplicate entry"), { code: "ER_DUP_ENTRY", errno: 1062 });
+        }
+        processedEventInserts.push(row);
+      },
     }),
+    /* The release. One event is in flight per arm, so the row dropped is the
+       claim just made — which is what `WHERE eventId = …` does in the product. */
+    delete: () => ({ where: async () => { processedEventInserts.pop(); } }),
   })),
 }));
 

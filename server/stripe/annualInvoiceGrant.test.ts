@@ -25,9 +25,9 @@ vi.mock("../db/connection", () => ({
         where: () => ({ limit: async () => [] }),
       }),
     }),
-    insert: () => ({
-      values: () => ({ onDuplicateKeyUpdate: async () => undefined }),
-    }),
+    /* The claim and its release (#1361); this suite records neither. */
+    insert: () => ({ values: async () => undefined }),
+    delete: () => ({ where: async () => undefined }),
   })),
 }));
 
