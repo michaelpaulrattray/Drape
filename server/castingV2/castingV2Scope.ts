@@ -2548,13 +2548,22 @@ export function validateCastingCreativeRegisterEnvironment(input: {
  * and the start page's tile stays the honest inert placeholder it is today. No
  * describer is called and no picture is read.
  *
- * **Its parent is `CASTING_CREATIVE_REGISTER_SCOPE`, not the casting scope, and
- * the difference is his sentence rather than caution.** What the description
- * must not contradict is the LOCKED HOUSE BLOCK, and `houseBlock.ts` is
- * appended by code only on the author road; off that road there is no block for
- * a description to argue with, and *"describe it to the authour"* names the
- * road outright. The casting and cleanup-worker parents ride in through the
- * register's own check.
+ * ⚠ **ITS PARENT IS `CASTING_V2_SCOPE` SINCE 2026-09-27 (#1442) — THIS
+ * PARAGRAPH SAID `CASTING_CREATIVE_REGISTER_SCOPE` AND IS KEPT BELOW AS THE
+ * REASON, BECAUSE THE REASON IS WHY THE RE-PARENT IS HONEST.** The full
+ * argument, the crash-loop it avoids, and the three positions read at the live
+ * service are on `captureCastingConceptUploadEnabled` below.
+ *
+ * What it said, and every word of it was true while the author road was one
+ * account's: *"Its parent is `CASTING_CREATIVE_REGISTER_SCOPE`, not the casting
+ * scope, and the difference is his sentence rather than caution."* What the
+ * description must not contradict is the LOCKED HOUSE BLOCK, and `houseBlock.ts`
+ * is appended by code only on the author road; off that road there is no block
+ * for a description to argue with, and *"describe it to the authour"* names the
+ * road outright. **Since the register went to `all` on 2026-09-24 there is no
+ * off-that-road account left for a casting-only check to admit**, so the casting
+ * parent now carries that sentence rather than dropping it. The cleanup-worker
+ * parent still rides in through casting's own check.
  *
  * It spends **house money and never a customer's credits** — one text call with
  * the picture inline (cents), no engine render, no segmenter read, no stored
@@ -2595,40 +2604,63 @@ export function parseCastingConceptUploadScope(raw: string | undefined): Casting
 /**
  * Captured ONCE at the door. The PARENT is captured here too rather than
  * trusted to boot — its siblings' reason: a boot check nobody invoked is the
- * second way a flag pair goes wrong, and this one's parent is not the casting
- * scope, so inheriting the sibling habit of calling `captureCastingV2Enabled`
- * alone would open the door to an account off the author road.
+ * second way a flag pair goes wrong.
+ *
+ * ⚠ **ITS PARENT IS `CASTING_V2_SCOPE` AS OF 2026-09-27, AND IT WAS
+ * `CASTING_CREATIVE_REGISTER_SCOPE` UNTIL THEN — slice 1 of the old-lane
+ * retirement (#1442), on his word on #1398 (Crew reply #228, verbatim and
+ * entire: *"Delete it"*).** The register is being retired with the house road it
+ * gated, and **a child cannot name a parent that is leaving**: the register's
+ * row goes absent from the service, `parseCastingCreativeRegisterScope` reads
+ * `undefined` as `off`, this child is `all`, and the boot refuses — in a loop,
+ * on every restart. That is the `unset-a-scope-chain-child-first` class.
+ *
+ * **It is a re-parent and not a loosening, and the reason is the old parent's
+ * own sentence.** What this flag's description must not contradict is the locked
+ * house block, and that block *"is appended by code only on the author road"* —
+ * so the register was the honest parent while the author road was one account's.
+ * Since 2026-09-24 the author road is **every** account's road
+ * (`CASTING_CREATIVE_REGISTER_SCOPE=all`, his reply #201: *"Yes"*), so the
+ * casting parent now carries the whole of that reason: a user inside casting is
+ * on the author road, and there is no longer any off-that-road account for a
+ * casting-only check to admit.
+ *
+ * **Behaviour on production: none, and it is read rather than argued.** At the
+ * live service on 2026-09-27 `CASTING_V2_SCOPE`,
+ * `CASTING_CREATIVE_REGISTER_SCOPE` and `CASTING_CONCEPT_UPLOAD_SCOPE` are all
+ * `all`, so this gate goes from `all AND all` to `all` — the same answer for
+ * every account.
  */
 export function captureCastingConceptUploadEnabled(userId: number): boolean {
   const child = parseCastingConceptUploadScope(process.env[CASTING_CONCEPT_UPLOAD_SCOPE_ENV]);
   if (!castingV2EnabledForUser(child, userId)) return false;
-  return captureCastingCreativeRegisterEnabled(userId);
+  return captureCastingV2Enabled(userId);
 }
 
 export function validateCastingConceptUploadEnvironment(input: {
   scope: string | undefined;
-  registerScope: string | undefined;
+  castingScope: string | undefined;
 }): CastingV2Scope {
   const child = parseCastingConceptUploadScope(input.scope);
   if (child.kind === "off") return child;
 
-  const parent = parseCastingCreativeRegisterScope(input.registerScope);
+  const parent = parseCastingV2Scope(input.castingScope);
   if (parent.kind === "off") {
     throw new CastingConceptUploadCoverageError(
-      `cannot be enabled while ${CASTING_CREATIVE_REGISTER_SCOPE_ENV} is off — the description is written `
-      + "for the AUTHOR, and off that road there is no house block for it to avoid contradicting",
+      `cannot be enabled while ${CASTING_V2_SCOPE_ENV} is off — the description it writes is a `
+      + "brief for a roll, and a user outside casting has nothing to cast from it",
     );
   }
   if (parent.kind === "all") return child;
   if (child.kind === "all") {
     throw new CastingConceptUploadCoverageError(
-      `cannot be "all" while ${CASTING_CREATIVE_REGISTER_SCOPE_ENV} is limited to specific users`,
+      `cannot be "all" while ${CASTING_V2_SCOPE_ENV} is limited to specific users`,
     );
   }
   const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
   if (uncovered.length > 0) {
     throw new CastingConceptUploadCoverageError(
-      `names users outside ${CASTING_CREATIVE_REGISTER_SCOPE_ENV}: ${uncovered.join(",")}`,
+      `names users outside ${CASTING_V2_SCOPE_ENV}: ${uncovered.join(",")}`,
     );
   }
   return child;

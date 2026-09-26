@@ -567,15 +567,22 @@ export function validateEnv(): void {
   });
 
   /*
-    UPLOAD A CONCEPT (#185), and its parent is the REGISTER rather than casting
-    — the only sub-flag in this file whose parent is not `CASTING_V2_SCOPE`.
-    What the description it produces must not contradict is the locked house
-    block, and that block is appended by code on the author road alone, so a
-    describer armed off that road would be writing against nothing.
+    UPLOAD A CONCEPT (#185), and ⚠ ITS PARENT MOVED TO CASTING ON 2026-09-27
+    (#1442, slice 1 of the old-lane retirement, on his word on #1398: "Delete
+    it"). It was the REGISTER — the only sub-flag in this file whose parent was
+    not `CASTING_V2_SCOPE` — and the register is being retired with the house
+    road it gated. A child cannot name a parent that is leaving: the register's
+    row goes absent, the parser reads absent as `off`, and this boot REFUSES in a
+    loop on every restart.
+
+    Not a loosening, on the old parent's own reason: what the description must
+    not contradict is the locked house block, appended on the author road alone,
+    and since 2026-09-24 the author road is every account's road — so there is no
+    off-that-road account left for a casting-only check to admit.
   */
   validateCastingConceptUploadEnvironment({
     scope: process.env[CASTING_CONCEPT_UPLOAD_SCOPE_ENV],
-    registerScope: process.env[CASTING_CREATIVE_REGISTER_SCOPE_ENV],
+    castingScope: process.env[CASTING_V2_SCOPE_ENV],
   });
 
   /*
