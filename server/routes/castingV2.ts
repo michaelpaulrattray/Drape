@@ -73,6 +73,7 @@ import { declaredTakes, takeShownFor } from "../castingV2/railTakes";
 import { listLineageReferences } from "../db/castingV2ReferenceLibrary";
 import {
   captureCastingFaceScanEnabled,
+  captureCastingScanTableEnabled,
   captureCastingReferenceLibraryEnabled,
 } from "../castingV2/castingV2Scope";
 import {
@@ -2098,24 +2099,27 @@ export const castingV2Router = router({
         finds, so the `faceScan` query behind it answers `done` without ringing a
         segmenter.
       */
+      const scanKey = {
+        userId: ctx.user.id,
+        candidateId: face.candidateId,
+        variantId: face.anchor?.id ?? null,
+      };
+      /*
+        ⚠ THE FRAME IS RESOLVED ONLY WHEN THE TABLE COULD ANSWER, which keeps the
+        flag-off path byte-for-byte what it was. With a master face selected the
+        key costs an owner-scoped read, and buying one for an account that has no
+        kept readings to serve would be a round trip for nothing.
+      */
+      const frameKey = captureCastingFaceScanEnabled(ctx.user.id)
+        && captureCastingScanTableEnabled(ctx.user.id)
+        ? await frameKeyForPanel(ctx.user.id, input.candidateId, face)
+        : null;
       const ready = captureCastingFaceScanEnabled(ctx.user.id)
-        ? await (async () => {
-          const frameKey = await frameKeyForPanel(ctx.user.id, input.candidateId, face);
-          return frameKey === null
-            /* No frame, no staleness check, so no row may be served — the memory
-               is still free to answer. */
-            ? scannedFaceIfReady({
-              userId: ctx.user.id,
-              candidateId: face.candidateId,
-              variantId: face.anchor?.id ?? null,
-            })
-            : scannedFaceAlreadyRead({
-              userId: ctx.user.id,
-              candidateId: face.candidateId,
-              variantId: face.anchor?.id ?? null,
-              imageKey: frameKey,
-            });
-        })()
+        ? (frameKey === null
+          /* No frame, no staleness check, so no row may be served — and the
+             memory is still free to answer, exactly as before. */
+          ? scannedFaceIfReady(scanKey)
+          : await scannedFaceAlreadyRead({ ...scanKey, imageKey: frameKey }))
         : null;
       return {
         enabled: true as const,
