@@ -131,6 +131,7 @@ import { runTypecheckOnCommit } from "./lib/typecheckOnCommit.mts";
 import { BRIEFING_PATH, generatedFilesFrom, judgeQuietEdition, QUIET_REFUSAL, type QuietVerdict } from "./lib/quietEdition.mts";
 import { judgeBriefingConformance } from "./lib/briefingConformance.mts";
 import { eyeFrameKeysOf, judgeEyeFramePresence } from "./lib/eyeFramePresence.mts";
+import { probeProductionHealth } from "./lib/productionHealthProbe.mts";
 import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
 /*
@@ -1144,20 +1145,38 @@ if (deployment.status !== "SUCCESS") die(`the deploy ended ${deployment.status}`
 
 /* ── 4. health, THREE TIMES — a deploy reporting SUCCESS is a claim ─────── */
 
-const healths: Array<{ status: string; db: number; uptime: number; timestamp: string }> = [];
-for (let read = 0; read < 3; read += 1) {
-  const response = await fetch(`${BASE}/api/health`).catch(() => null);
-  if (!response || !response.ok) die(`health read ${read + 1} returned ${response?.status ?? "no response"}`);
-  const body = await response!.json() as any;
-  healths.push({
-    status: body.status,
-    db: Number(body.checks?.database?.latencyMs ?? NaN),
-    uptime: Number(body.uptime ?? NaN),
-    timestamp: String(body.timestamp ?? ""),
-  });
-  if (read < 2) await wait(3_000);
-}
-if (healths.some((entry) => entry.status !== "healthy")) die(`health said ${healths.map((h) => h.status).join(", ")}`);
+/*
+  ⚠ THE VERDICT IS `scripts/lib/productionHealthProbe.mts` AND THE FETCH POLICY
+  IS HERE (#1188) — `judgeEyeFramePresence`'s split, for its reason.
+
+  This loop used to be inline, and `fetch(...).catch(() => null)` funnelled a
+  DROPPED CONNECTION into the same `die` as a 503. A 503 is an answer and must
+  refuse; silence says nothing about the deploy and was refusing anyway, on the
+  deploy-verification path, where "health read 2 returned no response" reads as a
+  broken production. Nothing drove this loop either, so a retry written in place
+  would have been a change to the deploy's own gate with no arm that could fail.
+
+  ⚠ THE TIMEOUT BELONGS HERE AND IT IS NOT OPTIONAL. #1177 measured a bare
+  `fetch` against a host that accepts and never answers at 306.6 seconds (node
+  24, undici's `headersTimeout`); ten seconds is the eye-frame pass's figure and
+  the same argument.
+*/
+const health = await probeProductionHealth({
+  wait,
+  read: async () => {
+    try {
+      const response = await fetch(`${BASE}/api/health`, { signal: AbortSignal.timeout(10_000) });
+      /* A response that cannot be parsed is still an ANSWER — `body: null` says
+         so, and the probe refuses on it rather than retrying. */
+      const body = await response.json().catch(() => null);
+      return { kind: "answered" as const, status: response.status, ok: response.ok, body };
+    } catch {
+      return { kind: "silent" as const };
+    }
+  },
+});
+if (!health.ok) die(health.why);
+const healths = health.readings;
 const latencies = healths.map((entry) => entry.db);
 // Both terms from the same reading — this loop sleeps, and the local clock is
 // not a party to the subtraction. See scripts/lib/uptimeAnchor.mts.

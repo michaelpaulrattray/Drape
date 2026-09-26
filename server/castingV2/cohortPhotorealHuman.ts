@@ -396,9 +396,10 @@ const STATED_COVERINGS_DOOR: readonly string[] = [
  * prompt's bytes do not move (`realismRollBlockBytes` in the guard pins the
  * whole string by hash). What changed is that the clauses which defer to *"the
  * character description"* are now NAMED CONSTANTS instead of anonymous
- * literals, so `referenceRealism()` can build the SIGN VIEW's block by
- * SUBTRACTING them rather than by re-typing the eleven photographic sentences
- * beside them. A second array of the same prose is the drift working law 4 is
+ * literals, so the SIGN VIEW's block could be built by SUBTRACTING them rather
+ * than by re-typing the eleven photographic sentences beside them. (That
+ * subtraction is retired — #1240 took the roll's own sentences instead — and
+ * the names stay because the guard reads them.) A second array of the same prose is the drift working law 4 is
  * about, and this file has already been bitten by exactly that (see the list
  * docblock below, where a hand-kept second array had forgotten
  * `SKIN_AND_FEATURES` entirely).
@@ -624,21 +625,19 @@ const REFERENCE_IS_THE_DOCUMENT: readonly string[] = [
   "Add nothing the reference photograph does not show. This is not a licence to invent — no damage, no ink, no makeup, no accessory and no head covering that is absent from the reference may appear, and nothing visible in it may migrate to a part of the body where it is not.",
 ];
 
-/**
- * The SIGN VIEW's realism block — the roll's, minus the doors, plus the rule.
- *
- * Derived rather than declared (working law 4). The photographic craft — skin
- * realism, the eye protocols, the ocular-symmetry carve-out, lips, brows, the
- * vellus clause — is the same photograph on both roads and is shared by
- * reference, so a repair to any of it reaches a signed customer's package on
- * the same commit.
- */
-export function referenceRealism(): string {
-  const kept = SKIN_AND_FEATURES_SENTENCES.filter(
-    (sentence) => !VIEW_DECLINED_SENTENCES.includes(sentence),
-  );
-  return [...kept, ...REFERENCE_IS_THE_DOCUMENT].join(" ");
-}
+/*
+  ⚠ `referenceRealism()` STOOD HERE AND IS GONE — 2026-09-26 (#1240), his
+  ruling *"why cant the realism block be the same as when casting a sheet?"*.
+
+  It built the Sign view's realism by SUBTRACTING the doors below from this
+  file's block, which was the right repair for #1221 and was still the LEGACY
+  block with a hole in it. The view now takes the ROLL's own sentences
+  (`houseBlock.ts`'s `HOUSE_PHOTOGRAPH_PARAGRAPHS`), so nothing subtracts and
+  nothing called this. **The two lists below stay on purpose**: they are how the
+  guard names the legacy sentences it proves absent from the view, and how a
+  view-only craft addendum would be rebuilt if the court's frames ask for one —
+  re-typing either is the drift this file has already been bitten by.
+*/
 
 /**
  * B2 — the ethnicity phenotype lock, restored by the craft-port audit

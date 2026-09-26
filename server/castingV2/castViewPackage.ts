@@ -30,15 +30,20 @@ import {
   type CastViewAngle,
 } from "../../shared/boardTypes";
 import { CASTING_V2_SIGN_COSTS } from "../casting/castingCreditCosts";
-import { PHOTOREAL_HUMAN_BLOCKS, referenceRealism } from "./cohortPhotorealHuman";
-import { CAPTURE_SENTENCES } from "./houseBlock";
+import { PHOTOREAL_HUMAN_BLOCKS } from "./cohortPhotorealHuman";
+import { HOUSE_PHOTOGRAPH_PARAGRAPHS } from "./houseBlock";
 
 /**
- * THE CAMERA AND LIGHT A SIGNED VIEW IS SHOT UNDER — the master's own, taken
- * from the road that made it (#1207). See {@link composePackageViewPrompt} for
- * why this is not `PHOTOREAL_HUMAN_BLOCKS.capture` any more.
+ * THE ONE RULE A VIEW HAS AND A ROLL CANNOT — kept as a VIEW-ONLY line when
+ * the legacy cohort blocks left this road (#1240).
+ *
+ * It is the founder's own sentence from #1221 (*everything the reference shows
+ * on her is hers; add nothing it does not show*), and it stays because a roll
+ * has no reference photograph to say it about. Taken from the cohort constant
+ * by name rather than re-typed: it is the same prose the #1221 ruling put
+ * there, and a second copy of it is the drift working law 4 is about.
  */
-const PACKAGE_CAPTURE = CAPTURE_SENTENCES.join(" ");
+const REFERENCE_IS_THE_DOCUMENT = PHOTOREAL_HUMAN_BLOCKS.referenceDocumentSentences.join(" ");
 
 /**
  * PACKAGE v3.1 — the final composition (founder ruling, 2026-08-02). This ends
@@ -735,11 +740,63 @@ function belowWaistFor(angle: CastViewAngle, wardrobeLine: string | null): strin
  * Sign view HAS NONE. So they collapsed to their defaults and the wire carried,
  * verbatim, *"Never invent damage, scars or ink that was not asked for"* and
  * *"the default is a bare, unmade face"*. **Her tattoos were removed on our
- * instruction.** It now sends {@link referenceRealism}, which keeps every
- * photographic sentence by reference and replaces the eleven description-bound
- * ones with the founder's single rule: the reference photograph is the
- * document. The ROLL road is untouched and its bytes are pinned by hash —
- * there the brief IS the description and the doors have a referent.
+ * instruction.** ~~It now sends `referenceRealism()`~~ — **that repair was
+ * a SUBTRACTION from the legacy block, and #1240 below replaced it with the
+ * roll's own sentences; only its one added rule survives, as
+ * `REFERENCE_IS_THE_DOCUMENT` above.** The ROLL road is untouched and its bytes
+ * are pinned by hash — there the brief IS the description and the doors have a
+ * referent.
+ *
+ * ⚠ **AND THE WHOLE LEGACY COHORT BLOCK LEFT THIS ROAD — founder ruling,
+ * 2026-09-26 (#1240), which is the end of this three-defect run rather than a
+ * fourth patch on it.**
+ *
+ * His question, verbatim: *"why cant the realism block be the same as when
+ * casting a sheet?"* — and his *"yes"* to the shape. **ONE BLOCK, TWO ROADS.**
+ * A view is a photograph of the person the house block already made, so it is
+ * photographed under that same block: the view's own lines, then
+ * {@link HOUSE_PHOTOGRAPH_PARAGRAPHS} — the roll's capture, realism, negatives,
+ * style preset and authority, taken from the same constants rather than copied.
+ *
+ * **Measured at the composed string before it was built** (working law 5): the
+ * block below the view's own lines goes from **63 sentences to 20**. What
+ * leaves is the legacy cohort's, and each departure is the card's point rather
+ * than a cost:
+ *
+ *   - `identityIntegrity` — fourteen sentences about CASTING a face from a
+ *     stated heritage. A view must cast nobody; the reference already is the
+ *     person. Its *"when the description does not state them, eye colour, hair
+ *     colour and skin tone … follow plausibly from their heritage"* clause fired
+ *     on EVERY view, telling the engine to derive her colouring instead of
+ *     copying the picture.
+ *   - `negatives` — the letters ban goes on his own ruling (*"what do other big
+ *     SaaS operators do? do they ban these? if not unban it"* — they do not).
+ *     **A script tattoo is text on her skin**, and this line forbade it on every
+ *     view. The roll's `NEGATIVE_LINES` keep the logo, watermark, caption,
+ *     signage and scene bans, which is the half a studio frame actually wants.
+ *   - `authority` — *"the FRAMING, CAPTURE, REALISM and NEGATIVE rules above
+ *     override the character description entirely"* and *"if the description
+ *     implies … a costume … ignore that implication"*. The roll's
+ *     `AUTHORITY_LINE` says the opposite and the right thing: a stated fact is
+ *     a fact and beats the block's defaults.
+ *   - the eye, lash, lip, brow and vellus CRAFT — twenty sentences the roll's
+ *     own realism does not carry either. **This is the one departure that is a
+ *     question rather than an answer**, and it is the card's court: close-ups
+ *     rendered under this block beside close-ups under the old one, at his eye
+ *     (law 9). If detail is lost there, they come back as a VIEW-ONLY addendum
+ *     — never as the old block, because the doors ride with it.
+ *
+ * ⚠ **The EXPRESSION rule leaves with them and nothing replaces it, which is
+ * stated here rather than discovered later** (fidelity law: name the tradeoff
+ * out loud). The roll carries expression in its FRAMING paragraph, which a view
+ * replaces with its own angle directive — and four of the five directives name
+ * neither a mouth nor a gaze. The defence is this card's own principle: a view
+ * has a reference photograph showing the expression where a roll has only
+ * words. The alternative — re-typing a gaze-free expression sentence, since
+ * `EXPRESSION_LINE` opens with *"Eyes into the lens"* and a back view cannot
+ * obey it — was DECLINED as an authored sentence on a road his ruling says
+ * takes the roll's own. It is an arm in the suite and a question for the
+ * court's frames.
  *
  * ⚠ **The words that could have carried her ink were declined by design, and
  * that is NOT repaired here.** The Sign's own log for this Cast reads
@@ -756,13 +813,10 @@ export function composePackageViewPrompt(angle: CastViewAngle, wardrobeLine: str
     "Keep this exact person unchanged: the same face, bone structure, skin, hair, facial hair and build "
     + "as the reference photograph. This is the same individual in a different photograph, never a "
     + "similar-looking person.",
+    REFERENCE_IS_THE_DOCUMENT,
     `${view.directive}${belowWaistFor(angle, wardrobeLine)}`,
     `WARDROBE: ${wardrobeSpecFor(angle, wardrobeLine)}`,
-    PACKAGE_CAPTURE,
-    referenceRealism(),
-    PHOTOREAL_HUMAN_BLOCKS.identityIntegrity,
-    PHOTOREAL_HUMAN_BLOCKS.negatives,
-    PHOTOREAL_HUMAN_BLOCKS.authority,
+    ...HOUSE_PHOTOGRAPH_PARAGRAPHS,
   ].join("\n");
 }
 
