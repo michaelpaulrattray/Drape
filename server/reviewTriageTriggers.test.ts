@@ -155,6 +155,48 @@ describe("the customer-surface rule is declared once and read twice", () => {
     expect(mergeTool).not.toMatch(/features\/admin\//);
   });
 
+  /**
+   * ⚠ ALL FOUR SECOND READERS, HELD TOGETHER — AND THE MONEY ONE HAD NO ARM AT
+   * ALL UNTIL THIS COMMIT.
+   *
+   * The arm above is the one #1194 wrote for the size reading, re-pointed at the
+   * limb that replaced it. Sabotaging this PR found that its SIBLINGS were
+   * unguarded: deleting `touchesMoney(files, moneyPattern) ||` from the merge
+   * tool's `reviewOwed` left **196 of 196 green** — the money hold's own second
+   * reader, the thing #987 and #958 exist to protect, removable in silence.
+   *
+   * **The class is the shape of the mistake, not the size rule**: an arm written
+   * for ONE second reader, beside three of the same shape with none. Working law
+   * 7 says fix the class, so all four are read out of the tool here — money paths,
+   * money symbols, the reviewer workflow and the customer surface — and a fifth
+   * arriving will sit beside them rather than needing its own suite.
+   *
+   * They are SOURCE reads, because what is being held is that the disjunction
+   * asks the question at all. `prMergeOrder.test.ts` drives what each answer
+   * MEANS; neither is the other's substitute.
+   */
+  it("⚠ the merge tool's reviewOwed asks all FOUR questions, not three", () => {
+    const owed = mergeTool.slice(
+      mergeTool.indexOf("const reviewOwed ="),
+      mergeTool.indexOf("const verdictCount ="),
+    );
+    expect(owed, "the reviewOwed disjunction could not be located — this arm is measuring nothing")
+      .toContain("reviewOwed");
+    for (const reader of [
+      "touchesMoney(",
+      "moneySymbolHits(",
+      "touchesReviewerWorkflow(",
+      "touchesCustomerSurface(",
+    ]) {
+      expect(
+        owed,
+        `pr-merge-in-order.mts stopped asking ${reader} — a label someone removed cannot un-owe that diff`,
+      ).toContain(reader);
+    }
+    /* And the escalation label, which is the one limb with no pattern behind it. */
+    expect(owed).toContain('"needs-fable"');
+  });
+
   it("⚠ the triage step names the obligation as the EYE ON THE FRAMES, not as a review of the code", () => {
     /* His ruling's whole point: the limb that survives is the one CI cannot do.
        A comment that said only "a review is owed" would lose the reason. */
