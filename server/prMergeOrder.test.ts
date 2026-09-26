@@ -32,6 +32,7 @@ import {
   type PrReading,
   type Rollup,
   MONEY_DECLARATION_PATH,
+  REVIEW_SIZE_DECLARATION_PATH,
   REVIEWER_WORKFLOW_PATH,
   checkStateOf,
   decideMergeAction,
@@ -40,8 +41,12 @@ import {
   classifyPrMergeReceipt,
   classifyRemoteBranchDeletion,
   extractJobNames,
+  changedCodeLines,
+  exceedsReviewSizeLine,
   extractMoneyPattern,
   extractMoneySymbols,
+  extractReviewNonCodePattern,
+  extractReviewSizeLine,
   MONEY_SYMBOL_ROOTS,
   moneySymbolHits,
   refuseDirtyWorktree,
@@ -155,7 +160,7 @@ describe("the money rule is read out of the one file that declares it", () => {
 
 // ---------------------------------------------------------------------------
 describe("the money rule's second half — a changed line naming the credit API (#987)", () => {
-  const file = (filename: string, patch: string | null) => ({ filename, patch });
+  const file = (filename: string, patch: string | null) => ({ filename, patch, additions: 0, deletions: 0 });
 
   it("extracts the symbols from the real .github/money-surfaces.sh, and refuses when they move", () => {
     expect(SYMBOLS).toMatch(/recordRefund/);
@@ -1242,5 +1247,88 @@ describe("the check classification reads a Socket skip as `skipped`, never as a 
   it("the Project Report beside it is a report, not the verdict — its SUCCESS never stands in for the alerts check", () => {
     const none = SKIPPED_HEAD_ROLLUP.filter((c) => c.name !== SOCKET_CHECK);
     expect(supplyChainStateOf(none, SOCKET_CHECK)).toBe("absent");
+  });
+});
+
+/**
+ * THE SIZE OBLIGATION HAS A SECOND READER (#1194).
+ *
+ * The money rule and the reviewer-workflow rule were always asked twice — once
+ * by triage and once by the merge tool, on the stated ground that *a label
+ * someone removed cannot un-owe a money diff*. **The size rule was asked once**,
+ * and a PR that never got a triage run was announced to nobody: no label, no
+ * comment, and `review=declined` — the same word this tool prints for a diff that
+ * genuinely earned no look.
+ *
+ * ⚠ **Measured on PR #1191, and the artifact is a run list rather than a
+ * reading.** Opened as a draft at 23:34:51Z, marked ready at 23:35:10Z, and no
+ * `Fable Review` run was created for either event: main had moved at 23:24Z, so
+ * the PR was born DIRTY, and a CONFLICTING PR gets no `pull_request` run for any
+ * event (#566). 288 changed lines, against a line of 50.
+ *
+ * ⚠ **It changes what is REPORTED, not what merges**, and the arms say so: an
+ * ordinary large diff with no verdict still merges on the gate alone.
+ */
+describe("the size rule is read twice — #1194", () => {
+  const declaration = readFileSync(join(__dirname, "..", REVIEW_SIZE_DECLARATION_PATH), "utf8");
+  const LINE = extractReviewSizeLine(declaration);
+  const NON_CODE = extractReviewNonCodePattern(declaration);
+  const changed = (filename: string, additions: number, deletions = 0) => ({
+    filename,
+    patch: null,
+    additions,
+    deletions,
+  });
+
+  it("⚠ CONTROL — the real declaration parses, and both halves are real", () => {
+    expect(LINE).toBe(50);
+    expect(NON_CODE).toMatch(/docs\//);
+    expect(() => new RegExp(NON_CODE)).not.toThrow();
+  });
+
+  it("REFUSES a declaration whose lines have moved rather than guessing a default", () => {
+    /* A guessed line is the silent failure this reader exists to close: a zero
+       would make every diff owe a review and a huge one would make none. */
+    expect(() => extractReviewSizeLine(`REVIEW_NON_CODE='^docs/'\n`)).toThrow(/REVIEW_SIZE_LINE=/);
+    expect(() => extractReviewNonCodePattern(`REVIEW_SIZE_LINE='50'\n`)).toThrow(/REVIEW_NON_CODE=/);
+    expect(() => extractReviewSizeLine(`REVIEW_SIZE_LINE='0'\n`)).toThrow(/positive integer/);
+  });
+
+  it("counts added AND deleted lines, which is what the workflow's awk sums", () => {
+    expect(changedCodeLines([changed("server/a.ts", 30, 25)], NON_CODE)).toBe(55);
+  });
+
+  it("⚠ does not count the generated Atlas maps, or nearly every diff would earn a look", () => {
+    /* Every commit touching a scanned path carries `docs/architecture/*.json`,
+       and the two maps are thousands of lines. Counting them is the same as
+       having no line at all. */
+    const patches = [
+      changed("docs/architecture/drape-architecture.json", 4000, 3000),
+      changed("docs/architecture/capability-atlas.json", 900, 800),
+      changed("docs/ARCHITECTURE.md", 40, 0),
+      changed(".agents/mailbox/foreman-1.md", 200, 0),
+      changed("output/receipt.txt", 100, 0),
+      changed("server/a.ts", 3, 1),
+    ];
+    expect(changedCodeLines(patches, NON_CODE)).toBe(4);
+    expect(exceedsReviewSizeLine(patches, NON_CODE, LINE)).toBe(false);
+  });
+
+  it("⚠ #1191's shape earns a look on size alone, which is what nobody was told", () => {
+    const patches = [changed("scripts/lib/thing.mts", 200, 88)];
+    expect(changedCodeLines(patches, NON_CODE)).toBe(288);
+    expect(exceedsReviewSizeLine(patches, NON_CODE, LINE)).toBe(true);
+  });
+
+  it("the line is an AT-OR-OVER test, the same as the workflow's `-lt` refusal", () => {
+    /* Triage declines below the line (`[ "$LINES" -lt 50 ]`), so exactly 50
+       earns one. An off-by-one here would be a second rule wearing the first's
+       name. */
+    expect(exceedsReviewSizeLine([changed("server/a.ts", LINE - 1)], NON_CODE, LINE)).toBe(false);
+    expect(exceedsReviewSizeLine([changed("server/a.ts", LINE)], NON_CODE, LINE)).toBe(true);
+  });
+
+  it("⚠ NEGATIVE CONTROL — a docs-only diff of any size still earns nothing", () => {
+    expect(exceedsReviewSizeLine([changed("docs/specs/BIG.md", 9000)], NON_CODE, LINE)).toBe(false);
   });
 });
