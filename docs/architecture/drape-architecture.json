@@ -12646,6 +12646,10 @@
       "path": "server/facePanelOwnership.test.ts"
     },
     {
+      "id": "test:server/facePanelSubject.test.ts",
+      "path": "server/facePanelSubject.test.ts"
+    },
+    {
       "id": "test:server/faceScanWire.test.ts",
       "path": "server/faceScanWire.test.ts"
     },
@@ -23549,6 +23553,11 @@
     {
       "from": "module:server/castingV2/castingIntent.ts",
       "to": "module:shared/bodyAnchorRegions.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castingIntent.ts",
+      "to": "module:shared/briefLength.ts",
       "kind": "imports"
     },
     {
