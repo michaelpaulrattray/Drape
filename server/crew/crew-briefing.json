@@ -1,7 +1,7 @@
 {
-  "edition": 540,
-  "updatedAt": "2026-09-26T02:20:09.493Z",
-  "shift": "Foreman — your signed views are photographed under the same rules your master was made under, and eight close-ups in your gallery settle the one question left",
+  "edition": 541,
+  "updatedAt": "2026-09-26T03:34:46.046Z",
+  "shift": "Foreman — your cast's own brief now dresses her signed views",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -208,6 +208,10 @@
         {
           "title": "Your signed views are photographed under the same rules your master was made under (#1240) — the old instructions that guessed her colouring and banned letters on her skin are off the road. Eight close-ups rendered both ways are in your gallery; one look closes it, and #1278 is unblocked either way",
           "state": "waiting"
+        },
+        {
+          "state": "in-progress",
+          "title": "Your cast's own brief now dresses her signed views (#1278). You said her dress comes back a plain modest version of what the brief describes. It was not the engine: a signed view was being told, in one breath, that there is no written description of this person, to add nothing her photo does not show including no damage, that nothing below the waist can be judged, and — from the change that landed yesterday — that where the description is silent it should default to a plain studio frame. Four instructions all asking for the plainest possible reading, one of them forbidding the very worn look her brief asks for. She came back plain because we asked for it. Her own words now go with the picture. On your own Sifr, eight takes: trousers in four of four before, a dress in four of four after. The frames and the full reading are on the card; they go to your eye with part 2's, so you judge the finished thing once rather than in halves."
         }
       ]
     },
@@ -471,7 +475,7 @@
         }
       ],
       "recommendation": "Recommend: look and tell me either way — it is two words. Nothing gets undone whichever you say, and your urgent card #1278 can start now because this one has landed.",
-      "state": "waiting",
+      "state": "done",
       "filedAt": "2026-09-26T02:20:09.493Z",
       "issueNumber": 1240
     },
@@ -3282,7 +3286,7 @@
         }
       ],
       "recommendation": "B, capped at three lines. The row's only job is telling one version from another and a fixed 701 pixels cannot do that for a long ask; a tooltip only helps someone who already knows to hover. If you would rather the ask box never moved, say A and it is a one-line change tonight.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-25",
       "issueNumber": 1187
     },
@@ -3341,7 +3345,7 @@
       "id": "view-house-block-1240-frames",
       "title": "Sifr2's close-up, eight takes: four under the new rules, four under the old",
       "question": "WHAT YOU ARE JUDGING — one question only: do the NEW close-ups lose any face detail against the OLD ones? Look at skin texture, freckles, lashes, the eyes. Everything else about the two strips is identical: your own Sifr2 master, the same crop, the same engine, rendered in the same few minutes. The only difference is the instructions. The old set had about twenty extra lines of close-up craft in it, and a close-up is where that would show if it mattered — which is the whole reason these are close-ups. Two words is enough. If detail IS lost, those lines come back as an addition for views only. If not, nothing moves. Either way this is already live and does not get undone.",
-      "state": "waiting",
+      "state": "answered",
       "filedAt": "2026-09-26T02:20:09.493Z",
       "issueNumber": 1240,
       "cardId": "view-house-block-1240",
@@ -8374,6 +8378,13 @@
       "status": "merged",
       "prNumber": 1279,
       "note": "Live on production as build 0ba7f9e4."
+    },
+    {
+      "id": "view-dressed-by-brief-1278",
+      "title": "A signed view is dressed by your cast's own brief, not by a list of bans (#1278 part 1)",
+      "status": "in-review",
+      "prNumber": 1339,
+      "note": "Held for the reviewer: it changes what the view checker refuses, so it changes refunds."
     }
   ],
   "problems": [
@@ -8662,7 +8673,9 @@
     218,
     219,
     220,
-    221
+    221,
+    222,
+    223
   ],
   "nextUp": {
     "readAt": "2026-09-26T00:32:51.296Z",
