@@ -148,6 +148,9 @@ function dependencies(
       identityRevisionId: "rev-1",
       identityText: "identity",
       technicalSchema: { subject: { sex: "female" } },
+      /* No brief on record — the default fixture is a Cast with no source roll,
+         which is 4 of 6 minted casts (#1278 part 1). */
+      briefText: null,
       /* No source candidate: her crops and carried words are the road's own
          subject and have their own arm; these arms are about the money. */
       candidateId: null,
@@ -238,6 +241,48 @@ beforeEach(() => {
 });
 
 describe("try again on one view — what moves, and in what order", () => {
+  it("⚠ a retried view carries the SAME brief the original five were composed from (#1278)", async () => {
+    /*
+      A Try again replaces one tile of a package. If the brief reached the Sign
+      road and not this one, the replacement would be composed from a different
+      prompt than the slot beside it — the unkeyed half outliving its keyed
+      sibling, and invisible because both pictures look plausible.
+
+      Driven at the WIRE (working law 5): the assertion is on the prompt the engine
+      was handed, not on the field being set near it.
+    */
+    const deps = dependencies([slot()], {
+      readSource: async () => ({
+        modelId: 7,
+        anchorStorageKey: "casting-v2/casts/op/anchor.png",
+        identityRevisionId: "rev-1",
+        identityText: "identity",
+        technicalSchema: { subject: { sex: "female" } },
+        briefText: "A pale cyberpunk woman in a worn white qipao dress with industrial straps.",
+        candidateId: null,
+        candidatePublicId: null,
+        selectedVariantId: null,
+        anchorDeltas: null,
+      }),
+    });
+    const result = await retryCastView(deps, input);
+    expect(result.outcome).toBe("ready");
+    expect(enginePrompts).toHaveLength(1);
+    expect(enginePrompts[0]).toContain("DESCRIPTION: A pale cyberpunk woman in a worn white qipao dress");
+    /* And the sentence that would contradict it is gone from the retried prompt too. */
+    expect(enginePrompts[0]).not.toContain("there is no written description of this person");
+  });
+
+  it("a retried view of a Cast with NO brief composes what it always did (#1278)", async () => {
+    /* The other direction, so the arm above cannot pass by always being true:
+       4 of 6 minted casts have no source roll and must not move. */
+    const result = await retryCastView(dependencies([slot()]), input);
+    expect(result.outcome).toBe("ready");
+    expect(enginePrompts).toHaveLength(1);
+    expect(enginePrompts[0]).toContain("there is no written description of this person");
+    expect(enginePrompts[0]).not.toMatch(/^DESCRIPTION: /m);
+  });
+
   it("a REFUNDED view costs 50, lands, and keeps the charge", async () => {
     const result = await retryCastView(dependencies([slot()]), input);
     expect(result.outcome).toBe("ready");
@@ -393,6 +438,7 @@ describe("try again on one view — what moves, and in what order", () => {
         identityRevisionId: "rev-1",
         identityText: "identity",
         technicalSchema: { subject: { sex: "female" }, wardrobe: { line: "a black slip" } },
+        briefText: null,
         candidateId: 55,
         candidatePublicId: "candidate-public",
         selectedVariantId: 91,
