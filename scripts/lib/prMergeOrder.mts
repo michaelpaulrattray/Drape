@@ -239,8 +239,8 @@ export const REVIEWER_WORKFLOW_PATH = ".github/workflows/review.yml";
 /** The one file that declares what a money/auth diff is (#958). */
 export const MONEY_DECLARATION_PATH = ".github/money-surfaces.sh";
 
-/** The one file that declares when a diff is big enough to earn a look (#1194). */
-export const REVIEW_SIZE_DECLARATION_PATH = ".github/review-size.sh";
+/** The one file that declares which diffs a CUSTOMER sees (#1328). */
+export const CUSTOMER_SURFACE_DECLARATION_PATH = ".github/customer-surfaces.sh";
 
 /**
  * ⚠ THE MONEY/AUTH PATTERN IS EXTRACTED, NEVER COPIED.
@@ -324,93 +324,99 @@ export function extractMoneySymbols(declarationText: string): string {
  */
 export const MONEY_SYMBOL_ROOTS: readonly string[] = ["server", "shared"];
 
-/** One changed file from `GET pulls/:n/files`. */
-/**
- * One changed file as the PR-files payload gives it.
- *
- * ⚠ `additions` and `deletions` ride the SAME request the patch does (#1194), so
- * the size reading below costs no extra call — the same argument #987 made for
- * reading the patch here rather than asking `git`.
- */
+/** One changed file as the PR-files payload gives it. */
 export type FilePatch = {
   filename: string;
   patch: string | null;
-  additions: number;
-  deletions: number;
 };
 
 /**
- * ⚠ **THE SIZE OBLIGATION HAD EXACTLY ONE READER, AND AN ABSENCE WAS READING AS
- * A DECISION (#1194).**
+ * ⚠ **THE SIZE RULE USED TO LIVE HERE AND THE FOUNDER DROPPED IT (#1328,
+ * 2026-09-26).**
  *
- * The money rule and the reviewer-workflow rule are asked HERE as well as in
- * triage, on the stated ground that *a label someone removed cannot un-owe a
- * money diff*. The size rule was not, so a PR that never got a triage run — a PR
- * born CONFLICTING gets no `pull_request` run for any event (#566) — was
- * announced to nobody, and this tool printed `review=declined`, **the same word
- * it uses for a diff that genuinely earned no look.**
+ * #1194 gave the size obligation a second reader in this file, on the ground
+ * that a PR which never got a triage run — a PR born CONFLICTING gets no
+ * `pull_request` run for any event (#566) — was announced to nobody while this
+ * tool printed `review=declined`, the same word it uses for a diff that
+ * genuinely earned no look. That argument was right and it is why this limb
+ * exists at all. **The QUESTION changed, not the shape.**
  *
- * Measured on #1191: opened 23:34:51Z, ready 23:35:10Z, no `Fable Review` run
- * created for either event, 288 changed lines. `gate.yml` recovered on its own
- * because it also triggers on `synchronize`; triage's two events cannot fire
- * again on a PR that is already open and already ready.
+ * His ruling, verbatim, asked whether a review on every PR was worth the
+ * credits and shown the day's tally (22 seat PRs reviewed, 0 code defects
+ * found): **"drop it"**. So `REVIEW_SIZE_LINE`, `REVIEW_NON_CODE`,
+ * `changedCodeLines` and `exceedsReviewSizeLine` are gone, and with them the
+ * `additions`/`deletions` columns of `FilePatch` and the parse refusal that
+ * guarded them — **named here because a refusal standing over a reading nobody
+ * performs is the dead-control-with-a-live-reputation shape (law 7's ruling
+ * sweep), not because they were in the way.**
  *
- * ⚠ **IT CHANGES WHAT IS REPORTED, NOT WHAT MERGES**, and that is the honest
- * scope. An ordinary large diff with no verdict still merges on the gate alone —
- * the standing orders' own rule — but it now reads `no-verdict`, which is true,
- * instead of `declined`, which claims triage decided something it never saw.
+ * What is asked instead is the one obligation none of the four mechanical
+ * checks can discharge: **does this diff touch a surface a CUSTOMER sees?**
+ * Working law 6 (render before shipping anything visual) and law 9 (his eye is
+ * king) cannot be run in CI at all, so a customer-visible diff earns
+ * `needs-fable` and the obligation is named as the relay's eye on the rendered
+ * frames, both themes.
+ *
+ * ⚠ **IT CHANGES WHAT IS REPORTED, NOT WHAT MERGES**, exactly as #1194's half
+ * did. An ordinary customer-visible PR with no verdict still merges on the gate
+ * alone — the standing orders' own rule — but it reads `no-verdict`, which is
+ * true, instead of `declined`, which claims triage decided something it may
+ * never have seen.
+ *
+ * The extraction REFUSES rather than defaulting, for `extractMoneyPattern`'s
+ * reason: a pattern that quietly matched nothing would make every customer diff
+ * read as ordinary, which is the permissive direction.
  */
-export function extractReviewSizeLine(declarationText: string): number {
-  const match = /^\s*REVIEW_SIZE_LINE='(\d+)'\s*$/m.exec(declarationText);
+export function extractCustomerSurfacePattern(declarationText: string): string {
+  const match = /^\s*CUSTOMER_SURFACE_PATHS='([^']+)'\s*$/m.exec(declarationText);
   if (!match) {
     throw new Error(
-      `could not find the REVIEW_SIZE_LINE='…' line in ${REVIEW_SIZE_DECLARATION_PATH}. It is the ` +
-        `single declaration of when a diff is big enough to earn a look, and this tool refuses ` +
-        `to guess at one rather than mirror it (working law 4).`,
-    );
-  }
-  const line = Number(match[1]);
-  /* A zero would make EVERY diff owe a review and a huge one would make none —
-     both are silent, and one of them is the permissive direction. */
-  if (!Number.isSafeInteger(line) || line < 1) {
-    throw new Error(`REVIEW_SIZE_LINE in ${REVIEW_SIZE_DECLARATION_PATH} is not a positive integer: ${match[1]}`);
-  }
-  return line;
-}
-
-export function extractReviewNonCodePattern(declarationText: string): string {
-  const match = /^\s*REVIEW_NON_CODE='([^']+)'\s*$/m.exec(declarationText);
-  if (!match) {
-    throw new Error(
-      `could not find the REVIEW_NON_CODE='…' line in ${REVIEW_SIZE_DECLARATION_PATH}. Without it ` +
-        `this tool cannot tell a code line from a generated map, and a size reading that counted ` +
-        `the Atlas would put nearly every diff past the line.`,
+      `could not find the CUSTOMER_SURFACE_PATHS='…' line in ${CUSTOMER_SURFACE_DECLARATION_PATH}. ` +
+        `It is the single declaration of which diffs a customer sees, and this tool refuses to ` +
+        `guess at one rather than mirror it (working law 4).`,
     );
   }
   return match[1]!;
 }
 
 /**
- * How many lines of CODE this diff changes, by triage's own exclusion pattern.
+ * The exemptions inside the prefix: the client's own test files and the staff
+ * panels under `client/src/features/admin/`.
  *
- * Added plus deleted, which is what `git diff --numstat | awk '{s+=$1+$2}'`
- * sums in the workflow — the two readers must answer the same question or the
- * second one is a different rule wearing the first one's name.
+ * It refuses when absent rather than treating "no exemptions" as the answer.
+ * Without it every client test file would earn a hand review — the noisy
+ * direction, but still a rule nobody wrote — and, worse, a reader that silently
+ * dropped the exemption would disagree with triage about the same diff, which
+ * is the two-readers-one-rule failure this declaration exists to prevent.
  */
-export function changedCodeLines(patches: readonly FilePatch[], nonCodePattern: string): number {
-  const nonCode = new RegExp(nonCodePattern);
-  return patches
-    .filter((file) => !nonCode.test(file.filename))
-    .reduce((sum, file) => sum + file.additions + file.deletions, 0);
+export function extractCustomerSurfaceExemptPattern(declarationText: string): string {
+  const match = /^\s*CUSTOMER_SURFACE_EXEMPT='([^']+)'\s*$/m.exec(declarationText);
+  if (!match) {
+    throw new Error(
+      `could not find the CUSTOMER_SURFACE_EXEMPT='…' line in ${CUSTOMER_SURFACE_DECLARATION_PATH}. ` +
+        `Without it this tool cannot tell a customer surface from the client's own tests or the ` +
+        `staff panels, and it would disagree with triage about the same diff.`,
+    );
+  }
+  return match[1]!;
 }
 
-/** Does this diff earn a look on size alone? */
-export function exceedsReviewSizeLine(
-  patches: readonly FilePatch[],
-  nonCodePattern: string,
-  line: number,
+/**
+ * Does this diff touch a surface a customer sees?
+ *
+ * The same two greps triage runs, in the same order: matched by the prefix,
+ * then dropped by the exemption. A file must survive both — the two readers
+ * answer one question or the second one is a different rule wearing the first
+ * one's name.
+ */
+export function touchesCustomerSurface(
+  files: readonly string[],
+  pathPattern: string,
+  exemptPattern: string,
 ): boolean {
-  return changedCodeLines(patches, nonCodePattern) >= line;
+  const surface = new RegExp(pathPattern);
+  const exempt = new RegExp(exemptPattern);
+  return files.some((f) => surface.test(f) && !exempt.test(f));
 }
 
 /**
@@ -561,9 +567,10 @@ export type MergeContext = {
  * correctly by the orders and unknowably by the transcript, and it took a hand
  * query at the API a day later to find out.
  *
- * `declined` earns no notice. It is the design working — a docs-only or
- * sub-50-line diff is SUPPOSED not to be reviewed, and a line about it on
- * every such merge is noise that would teach shifts to skip reading these.
+ * `declined` earns no notice. It is the design working — a diff that touches no
+ * money/auth surface, no customer surface and no review rule is SUPPOSED not to
+ * be reviewed (a docs change, a server test, a crew script), and a line about it
+ * on every such merge is noise that would teach shifts to skip reading these.
  *
  * ⚠ AND IT STATES THE FACT, NEVER THE BASIS OF THE MERGE (PR #665's review,
  * finding 2). The first wording said this was *"merging on the gate alone,

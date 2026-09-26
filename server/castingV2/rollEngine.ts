@@ -12,7 +12,6 @@
  */
 import {
   createFalCreativeEngine,
-  FAL_GPT_IMAGE_2,
   FAL_GPT_IMAGE_25_FLARE,
   FAL_GPT_IMAGE_25_SUNBURST,
 } from "../providers/falImages";
@@ -59,11 +58,38 @@ function falApiKey(): string {
 /**
  * THE ENGINE FOR THIS USER'S ROLL (#1079). Two memoized engines, ONE queue:
  * the budget the boot check proves fits inside the account's ceiling is spent
- * from one place whichever model paints. Under
- * `CASTING_ROLL_ENGINE_SCOPE` the caller's roll renders on GPT Image
- * 2.5 Flare; otherwise on GPT Image 2 exactly as before. A caller with no
- * user in hand (none today — both the roll and the retry dispatch know whose
- * roll it is) gets GPT Image 2.
+ * from one place whichever model paints.
+ *
+ * ⚠ **EVERY ROLL RENDERS ON GPT IMAGE 2.5 SUNBURST NOW, and the scope flag
+ * governs an EXCEPTION rather than the road** (#1340, his word 2026-09-26:
+ * *"anywhere we currently use gpt image 2.0 will be 2.5 sunburst by default
+ * now … switching all engines to gpt image 2.5 sunburst is a now job"*).
+ * Until this commit the unscoped branch was GPT Image 2, so **his account
+ * rolled on Sunburst and every other account rolled on the older engine** —
+ * the gap this closes. `CASTING_ROLL_ENGINE_SCOPE` + `CASTING_ROLL_ENGINE_MODEL`
+ * still decide, and are now how a court puts somebody on `flare` instead.
+ *
+ * Both halves of the swap are measured rather than assumed, which is clause 3
+ * of the disappearing-technology law (*name the price and the latency*):
+ *
+ *   price     $0.015 a picture against GPT Image 2's $0.099 — #1134's clean
+ *             window, and every re-reading of GPT Image 2 sits BELOW its own
+ *             constant while every reading of Sunburst is at least three times
+ *             below it (`scripts/lib/falSpend.mts`, `FAL_MEASURED_USD`).
+ *   latency   median roll wall time **26.5s on Sunburst (n=22) against 45.5s
+ *             on GPT Image 2 (n=12)**, read at 45 days of production rolls
+ *             (`casting_rolls.operationId` → `generation_operations`, grouped
+ *             by `casting_candidates.providerModel`). The arms straddle an
+ *             engine change rather than randomising it, and roll wall time
+ *             includes our own queue and the judge, so it is a reading of the
+ *             PRODUCT rather than of the model — which is the figure a customer
+ *             actually waits.
+ *
+ * Cheaper and faster, and his eye had already chosen it (N1 signed off on a
+ * Sunburst roll, 2026-09-23).
+ *
+ * A caller with no user in hand (none today — both the roll and the retry
+ * dispatch know whose roll it is) gets the default, which is now Sunburst.
  */
 export function castingCreativeEngine(userId?: number): CreativeEngine {
   const chosen = userId !== undefined ? castingRollEngineModelFor(userId) : null;
@@ -82,7 +108,9 @@ export function castingCreativeEngine(userId?: number): CreativeEngine {
   if (!engine) {
     engine = createFalCreativeEngine({
       apiKey: falApiKey(),
-      model: FAL_GPT_IMAGE_2,
+      /* Named here rather than left to the factory's default, so the engine a
+         roll renders on is readable at the roll's own call site. */
+      model: FAL_GPT_IMAGE_25_SUNBURST,
       queue: castingImageQueue(),
     });
   }

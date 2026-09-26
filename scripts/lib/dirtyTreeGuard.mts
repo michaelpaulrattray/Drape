@@ -79,6 +79,28 @@ export const RITE_DISK_READS: ReadonlyArray<{ readonly path: string; readonly wh
     path: ".gitattributes",
     why: "the quiet-edition judge derives its generated-file set from these bytes",
   },
+  /* ⚠ THE THREE BOOT DECLARATIONS (#1174). `governedBootSettings.mts` reads
+     these files as TEXT at module load to derive which non-scope settings the
+     flag-position gate governs — so the rite turns these bytes into a refusal
+     about production. They are exact entries and not a `server/` prefix, for
+     the same reason the `shared/` rows below are: the founder's parked product
+     edits stay desk-only.
+
+     They are READ rather than IMPORTED on purpose, and the reason is this very
+     list: the import version pulled 41 server modules into the rite's static
+     import graph, every one of which would then have needed a row here. */
+  {
+    path: "server/_core/env.ts",
+    why: "NUMERIC_ENV_VARS is scanned from these bytes — the settings the boot gate refuses over (#1174)",
+  },
+  {
+    path: "server/castingV2/falBudget.ts",
+    why: "FAL_ALLOWANCES and the account ceiling are scanned from these bytes (#1174)",
+  },
+  {
+    path: "server/castingV2/castingV2Scope.ts",
+    why: "the roll engine's model variable name is scanned from these bytes (#1174)",
+  },
   /* The six `shared/` modules the briefing judge imports at module load —
      exact entries, not a `shared/` prefix, so the founder's parked product
      edits under `shared/` stay desk-only. The suite DERIVES the rite's static

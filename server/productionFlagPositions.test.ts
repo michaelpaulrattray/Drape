@@ -53,6 +53,7 @@ import {
   parseVariableLines,
 } from "../scripts/lib/productionFlagPositions.mts";
 import { declaredEnvNames, serverAndSharedSources } from "../scripts/lib/declaredEnvNames.mts";
+import { BOOT_GOVERNED_ENV_NAMES } from "../scripts/lib/governedBootSettings.mts";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -114,6 +115,18 @@ describe("the position table's population", () => {
     ).toEqual([]);
   });
 
+  it("⚠ #1174 — names a position for every BOOT SETTING the product refuses to start over", () => {
+    /* The non-scope half. `CASTING_ROLL_ENGINE_MODEL` was SET to `sunburst` on
+       production and governed by nothing, because the gate read a NAME PATTERN
+       and that name carries neither SCOPE nor STAGE. A boot setting with no row
+       is a setting the rite cannot compare in either direction. */
+    const missing = BOOT_GOVERNED_ENV_NAMES.filter((name) => !(name in PRODUCTION_FLAG_POSITIONS));
+    expect(
+      missing,
+      "these settings are read at boot and have no declared production position",
+    ).toEqual([]);
+  });
+
   it("names no flag neither reader declares, except by deliberate exception", () => {
     /* The other direction: a row for a variable that no longer exists is a row
        that can never disagree with anything, which is the quietest way for a
@@ -121,7 +134,11 @@ describe("the position table's population", () => {
        `R7_EVIDENCE_COMPOSER_RECIPE` is not a scope, and it is on the table
        because the SERVICE holds it. */
     const EXPECTED_NON_FLAGS = ["R7_EVIDENCE_COMPOSER_RECIPE"];
-    const declared = new Set([...ATLAS_FLAGS, ...CONSTANT_SCAN_FLAGS]);
+    /* ⚠ #1174 widened the population rather than the exception list: the boot
+       settings are DERIVED from the declarations the product refuses to start
+       over, so a retired one drops out of this set on its own and its row then
+       shows up here as litter — which is the direction this arm exists for. */
+    const declared = new Set([...ATLAS_FLAGS, ...CONSTANT_SCAN_FLAGS, ...BOOT_GOVERNED_ENV_NAMES]);
     const extra = Object.keys(PRODUCTION_FLAG_POSITIONS)
       .filter((name) => !declared.has(name))
       .filter((name) => !EXPECTED_NON_FLAGS.includes(name));

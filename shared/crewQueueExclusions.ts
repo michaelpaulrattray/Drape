@@ -68,6 +68,32 @@ import { CREW_HOLD_LABELS } from "./crewNextUpHold";
  */
 export const QUEUE_EXCLUSION_REASONS = [
   {
+    key: "building",
+    /**
+     * ⚠ **THE ONLY ROW THAT IS NOT A LABEL, AND THAT IS WHY IT IS A ROW AT ALL**
+     * (#1094 piece 2). His order, 2026-09-26 (terminal), verbatim: ***"work on
+     * 1094 and 1307 next so the desk shows whats built"*** — said after this very
+     * panel offered him #1231, #1217, #1258, #1248 and #1288 as tonight's work
+     * while every one of them had a pull request in the merge queue or a refusal
+     * on the card. That is his 2026-08-31 question — *"how do we know they are
+     * not already scheduled to be fixed in current pipeline or work?"* — answered
+     * for the one case a label cannot answer it for: **nobody labels a card
+     * "somebody is building this"; the pull request and the claim comment ARE the
+     * fact**, and `shared/crewCardBuildState.ts` is the one judgement that reads
+     * them.
+     *
+     * ⚠ **IT IS FIRST, so it outranks even `ordered`.** A card he queued AND
+     * somebody is building is subtracted either way — the offered count is the
+     * same number — so the order only decides which sentence he reads, and
+     * *being built* is the sharper of the two: *already queued* tells him where
+     * the card sits, *being built* tells him the work is happening right now,
+     * which is the thing he opened this panel to find out.
+     */
+    queueLabel: null,
+    label: "being built",
+    blurb: "Somebody is on it right now — an open pull request, or a claim on the card.",
+  },
+  {
     key: "ordered",
     /** The relay's label on a card he asked for by name. */
     queueLabel: "founder-ordered",
@@ -187,8 +213,23 @@ const REASON_KEYS: readonly string[] = QUEUE_EXCLUSION_REASONS.map((reason) => r
  * carries, so the caller does no shaping and cannot shape it differently from
  * the next caller.
  */
-export function exclusionFor(labels: readonly string[]): CrewQueueExclusionKey | null {
+export function exclusionFor(
+  labels: readonly string[],
+  /**
+   * Is somebody already building this card? The caller answers it, through
+   * `shared/crewCardBuildState.ts`'s `buildStateHoldsOffOffer` — the fact is a
+   * pull request and a comment rather than a label, so it cannot be read off the
+   * list above. ⚠ **DEFAULT `false`**: a caller that cannot see the board
+   * subtracts nothing and draws exactly the panel it drew before this row
+   * existed. An unread board must never make a count smaller.
+   */
+  beingBuilt: boolean = false,
+): CrewQueueExclusionKey | null {
   for (const reason of QUEUE_EXCLUSION_REASONS) {
+    if (reason.queueLabel === null) {
+      if (reason.key === "building" && beingBuilt) return reason.key;
+      continue;
+    }
     if (labels.includes(reason.queueLabel)) return reason.key;
   }
   return null;

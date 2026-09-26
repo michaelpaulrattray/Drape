@@ -1366,7 +1366,7 @@
   arrival moment, and costs nothing to be honest about.
 */
 .dpc-viewer__frame[data-wait="true"] img {
-  animation: dpc-settle 7.5s ease-in-out infinite;
+  animation: dpc-settle 6s ease-in-out infinite;
   transform: scale(1.04);
 }
 
@@ -1396,9 +1396,30 @@
   what is being drawn, and the drive reads it.
 */
 
+/*
+  THE BREATH, AT HIS OWN NUMBERS (#55, 2026-09-26).
+
+  It was `brightness(0.72)` → `brightness(0.66)` over 7.5s, eyeballed as a mock
+  in D-169 when nothing was drawn over the picture but a sentence. His filed
+  spec names `0.52` → `0.64` over 6s, and that is the treatment he tuned the bar
+  and the stage word against — literally so: two of his instructions that
+  evening were about this exact value (*"i just think the dimming of the image
+  might be a little too dark?"*, then *"revert the image to its previous
+  darkness as the text and loading bar are difficult to read/see now"*).
+
+  ⚠ **THE CARD CALLS THIS THE *EXISTING* OVERLAY AND IT WAS NOT** — read at the
+  bytes, the app has never run these numbers; the mockup's picture sat over a
+  near-black plate at 0.55 opacity, which the app's does not. Photographed
+  before this change, the bar's 18%-white track was all but invisible against
+  the lighter treatment — the precise legibility complaint he made twice. His
+  numbers, taken.
+
+  The blur and the drain of colour are unchanged: they are what makes the
+  arrival an arrival.
+*/
 @keyframes dpc-settle {
-  0%, 100% { filter: blur(12px) saturate(0.32) brightness(0.72); }
-  50%      { filter: blur(16px) saturate(0.32) brightness(0.66); }
+  0%, 100% { filter: blur(12px) saturate(0.32) brightness(0.52); }
+  50%      { filter: blur(16px) saturate(0.32) brightness(0.64); }
 }
 
 /*
@@ -1500,6 +1521,48 @@
   white-space: nowrap;
 }
 
+/*
+  ONE BAR, ONE LINE — his own drawing, filed on #55 (2026-09-26).
+
+  160px by 2px, white on 18% white, and nothing else: no track shadow, no cap,
+  no label. The FILL's width is set inline from the row, never from a keyframe —
+  a width that grows on a clock is an invented percentage whatever it is called,
+  and this one moves only when the road announces that it has.
+
+  The transition is on the width so the four steps read as one bar advancing
+  rather than four jumps; 420ms is slower than a click and faster than anyone
+  waits for, and it carries no information of its own.
+*/
+.dpc-viewer__bar {
+  margin-top: 14px;
+  width: 160px;
+  height: 2px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--onScrim) 18%, transparent);
+  overflow: hidden;
+}
+
+.dpc-viewer__barFill {
+  display: block;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--onScrim);
+  opacity: 0.95;
+  transition: width 420ms ease-out;
+}
+
+/*
+  THE STAGE WORD, UNDER THE BAR — *"place the painting/state under the loading
+  bar"*. 11px at 60%, the same register the meta row is set in, because it is
+  the same kind of fact: small, true, and not asking to be read first.
+*/
+.dpc-viewer__step {
+  margin-top: 8px;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--onScrim) 60%, transparent);
+}
+
 .dpc-viewer__waitMeta {
   display: flex;
   align-items: baseline;
@@ -1521,6 +1584,9 @@
     filter: blur(14px) saturate(0.32) brightness(0.7);
   }
   .dpc-viewer__dots::after { animation: none; }
+  /* His spec's clause 7: the motion goes, the bar and the word stay. The fill
+     still moves when the road does — it just arrives rather than travels. */
+  .dpc-viewer__barFill { transition: none; }
 }
 
 .dpc-viewer__caption {

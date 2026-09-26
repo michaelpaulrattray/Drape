@@ -72,6 +72,12 @@ import {
   type CrewQueueTitle,
 } from "../../shared/crewQueueTitles.js";
 import { CREW_WORK_CATEGORIES } from "../../shared/crewWorkSwitches.js";
+import {
+  buildBoard,
+  readCardCommentsWith,
+  readOpenPullRequestsWith,
+  type CardBuildBoard,
+} from "./cardBuildState.mts";
 import { judgementIsBlind, mergedPullRequestArgs, SEARCH_RESULT_CEILING } from "./crewNamingWindow.mts";
 
 /**
@@ -396,6 +402,8 @@ function countOpen(
   warn: (line: string) => void,
   population: ReadonlyMap<string, number> | null,
   populationReadAt: number,
+  /** Who is already building what (#1094 piece 2) — see `readBuildBoard`. */
+  board: CardBuildBoard,
 ): CategoryReading | null {
   try {
     const out = gh(
@@ -523,7 +531,7 @@ function countOpen(
     const offeredRows: typeof stamped = [];
     const exclusions: Record<string, number> = {};
     for (const row of stamped) {
-      const reason = exclusionFor(row.labels);
+      const reason = exclusionFor(row.labels, board.holdsOffOffer(row.number));
       if (reason === null) offeredRows.push(row);
       else exclusions[reason] = (exclusions[reason] ?? 0) + 1;
     }
@@ -689,6 +697,35 @@ function countPipelineGroups(gh: QueueGhReader, warn: (line: string) => void, qu
 }
 
 /**
+ * THE BOARD, THROUGH THIS FILE'S INJECTED `gh` (#1094 piece 2).
+ *
+ * The transport is the caller's — that is what makes the whole reading drivable
+ * without a network — so the two reads go through `readOpenPullRequestsWith` and
+ * `readCardCommentsWith`, which spend the SAME argument lists the shift-facing
+ * readers spend. A field list typed again here would be the mirror those
+ * functions' own docblocks are about.
+ */
+function readBuildBoard(gh: QueueGhReader, warn: (line: string) => void): CardBuildBoard {
+  const prs = readOpenPullRequestsWith((args) => gh(args, { maxBuffer: 32 * 1024 * 1024 }));
+  const comments = readCardCommentsWith((args) => gh(args, { maxBuffer: 32 * 1024 * 1024 }));
+  const board = buildBoard({
+    openPullRequests: prs === null ? { unreadable: "`gh pr list` could not be read" } : prs,
+    comments: comments === null
+      ? { unreadable: "`gh api .../issues/comments` could not be read" }
+      : comments,
+    nowMs: Date.now(),
+  });
+  if (board.partial) {
+    warn(
+      "[warn] the already-being-built reading is INCOMPLETE this run"
+      + ` (${board.unreadable.join("; ")}) — the counts below subtract nothing for it,`
+      + " so a switch may offer a card somebody is already on.",
+    );
+  }
+  return board;
+}
+
+/**
  * WHAT A RUN OF THE COUNTER CAME BACK WITH.
  *
  * A refusal is a VALUE, not an exit and not a throw: the close's whole reason
@@ -846,10 +883,26 @@ export async function refreshQueueCounts(
   const populationReadAt = Date.now();
   const pipeline = countPipelineGroups(gh, warn, oldestOpen !== null);
 
+  /*
+    ⚠ WHO IS ALREADY BUILDING WHAT (#1094 piece 2). His order, 2026-09-26:
+    *"work on 1094 and 1307 next so the desk shows whats built"* — said after
+    THIS panel offered him five cards that each had a pull request in the merge
+    queue or a refusal on the card. The `building` exclusion reason subtracts
+    them and says so, so a switch reads `Bugs (11 on offer, 2 being built)`.
+
+    ⚠ **AN UNREAD BOARD SUBTRACTS NOTHING.** `buildBoard` with an unreadable half
+    answers "nobody is building anything", which writes the counts this script has
+    always written — a `gh` hiccup must never make his numbers smaller, because a
+    number that quietly shrinks for an invisible reason is the failure this whole
+    panel exists to avoid (#324, his own words on the card). It is said out loud
+    instead.
+  */
+  const board = readBuildBoard(gh, warn);
+
   let written = 0;
   let skipped = 0;
   for (const category of CREW_WORK_CATEGORIES) {
-    const reading = countOpen(category.queueLabel, namings, gh, warn, pipeline?.labelPopulation ?? null, populationReadAt);
+    const reading = countOpen(category.queueLabel, namings, gh, warn, pipeline?.labelPopulation ?? null, populationReadAt, board);
     if (reading === null) {
       skipped += 1;
       log(`  ${category.label.padEnd(14)} SKIPPED — the old row stands, with its older timestamp`);

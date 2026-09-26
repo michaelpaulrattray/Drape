@@ -24,7 +24,11 @@ import {
   readFalTraffic,
   type FalTraffic,
 } from "../scripts/lib/falSpend.mts";
-import { FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE } from "./providers/falImages";
+import {
+  FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE,
+  FAL_MEASURED_USD_PER_IMAGE,
+  measuredUsdPerImage,
+} from "./providers/falImages";
 
 const KEY = "NOT-A-REAL-FAL-KEY";
 
@@ -244,6 +248,43 @@ describe("the prices come from fal, and its opaque unit is not a price", () => {
       .toBe(FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE);
     expect(FAL_MEASURED_USD["openai/gpt-image-2/edit"]!.usd)
       .toBe(FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE);
+  });
+
+  /*
+    ⚠ AND THE PIN IS DERIVED, NOT A LIST OF THE MODELS SOMEBODY REMEMBERED
+    (#1340). The arm above names two endpoints by hand; a third engine added to
+    one table and not the other passes it while the two tables disagree — which
+    is the drift law 4 is about, in the guard that exists to catch it. This
+    walks the SERVER's map and demands falSpend agree about every key in it, so
+    the population grows by itself.
+  */
+  it("every model the server transport prices is priced the SAME by the spend table", () => {
+    const serverModels = Object.keys(FAL_MEASURED_USD_PER_IMAGE);
+    /* A floor, so an emptied map cannot pass by having nothing to compare. */
+    expect(serverModels.length).toBeGreaterThanOrEqual(3);
+    for (const model of serverModels) {
+      expect(FAL_MEASURED_USD[model], `${model} is priced in the server tree and absent from FAL_MEASURED_USD`)
+        .toBeDefined();
+      expect(FAL_MEASURED_USD[model]!.usd, `${model} disagrees between the two tables`)
+        .toBe(FAL_MEASURED_USD_PER_IMAGE[model]);
+    }
+  });
+
+  /*
+    A MODEL NOBODY HAS MEASURED COMES BACK UNDEFINED, NEVER A NEIGHBOUR'S PRICE.
+    `openai/gpt-image-2.5/sunburst/edit` is the live specimen: #1340 made it the
+    paid refine road's endpoint and nothing has measured it, so the honest
+    answer is a gap. Before #1340 the transport stamped GPT Image 2's $0.099
+    onto every render whatever endpoint painted — the probe that shift ran
+    watched a Sunburst edit come back labelled 0.099.
+  */
+  it("an unmeasured endpoint is UNPRICED at the transport, not given another engine's figure", () => {
+    expect(measuredUsdPerImage("openai/gpt-image-2.5/sunburst/edit")).toBeUndefined();
+    expect(measuredUsdPerImage("openai/gpt-image-2.5/flare/text-to-image")).toBeUndefined();
+    /* The positive control: a measured one does come back, so the arm above is
+       not passing because the lookup returns undefined for everything. */
+    expect(measuredUsdPerImage("openai/gpt-image-2.5/sunburst/text-to-image")).toBe(0.015);
+    expect(measuredUsdPerImage("openai/gpt-image-2")).toBe(FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE);
   });
 
   /*

@@ -78,6 +78,7 @@
  */
 import { execFileSync } from "node:child_process";
 
+import { cardCommentsVerdict, readCardComments } from "./lib/cardBuildState.mts";
 import {
   openPullRequestsVerdict,
   readOpenPullRequests,
@@ -132,10 +133,25 @@ function readPullRequests() {
   return openPullRequestsVerdict(readOpenPullRequests(), true);
 }
 
+/**
+ * THE THIRD IMPURE ACT (#1094 piece 2): has somebody CLAIMED one of these, or
+ * refused it?
+ *
+ * A claim is a comment and not a field, so it takes its own read — and it is the
+ * artifact that existed at the moment this card's measured duplicate happened,
+ * eighty-five seconds before the second pull request appeared. Judged by
+ * `cardCommentsVerdict` for the reason above: a mapping inside a script is a
+ * mapping no suite can reach.
+ */
+function readComments() {
+  return cardCommentsVerdict(readCardComments(), true);
+}
+
 process.exit(
   report({
     readOpenQueue,
     readOpenPullRequests: readPullRequests,
+    readCardComments: readComments,
     now: new Date(),
     log: (line) => console.log(line),
     error: (line) => console.error(line),

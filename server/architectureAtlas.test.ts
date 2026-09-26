@@ -107,7 +107,7 @@ describe("architecture atlas", () => {
     expect(atlasSourcePaths({ a: { b: [{ c: { path: "scripts/deploy-rite.mts" } }] } }))
       .toEqual(["scripts/deploy-rite.mts"]);
     /* And nothing at all, from something that names no paths. */
-    expect(atlasSourcePaths({ meta: { sourceFingerprint: "abc" } })).toEqual([]);
+    expect(atlasSourcePaths({ meta: { generatorVersion: "1.0.0" } })).toEqual([]);
   });
 
   it("⚠ A CRLF-SMUDGED CHECKOUT IS NOT A STALE ATLAS (fable-1366 §3c)", () => {
@@ -145,6 +145,47 @@ describe("architecture atlas", () => {
     expect(ok).toBe(false);
     expect(problems.join(" ")).toContain("drape-architecture.json is stale");
   }, 60_000);
+
+  /**
+   * ⚠ THE COMMITTED MAP CARRIES NO PER-TREE HASH, AND THE SCHEMA IS WHAT KEEPS
+   * IT THAT WAY (#1307).
+   *
+   * `sourceFingerprint` hashed every scanned file, so every branch moved it —
+   * one line in `meta` that no two open PRs could ever agree on, and the moment
+   * either merged the other read CONFLICTING on GitHub, which fires no gate run
+   * at all. Measured on the sixteen seat branches of 2026-09-26: 120 of 120
+   * pairs conflicted on this file; with the line stripped from all three sides,
+   * 0 of 120 did, while 44 pairs still both changed the map and merged clean.
+   *
+   * Nothing ever decided anything on the value: the freshness verdict above is a
+   * CONTENT comparison of the whole document. So the guard owed is not "the
+   * value is right" but "the value is not in here", and it is driven in both
+   * directions — the committed map's own `meta`, and ajv refusing a map that
+   * carries one. `meta`'s `additionalProperties: false` is the mechanism; this
+   * arm is what notices if that ever loosens.
+   */
+  it("CAN FAIL — a map carrying a source fingerprint is refused by the schema", () => {
+    const committed = JSON.parse(
+      fs.readFileSync(path.join(repoRoot, "docs/architecture/drape-architecture.json"), "utf8"),
+    );
+    expect(Object.keys(committed.meta).sort()).toEqual(["generatorVersion", "schemaVersion"]);
+
+    /* The positive control, and it is the whole arm: an otherwise VALID, real
+       atlas with the one field added back. A fixture that failed the schema for
+       other reasons would pass this assertion without proving anything. */
+    const withHash = {
+      ...committed,
+      meta: { ...committed.meta, sourceFingerprint: "0b8981fc6ef4d2c9" },
+    } as ReturnType<typeof buildAtlas>;
+    const refused = checkArchitecture({ build: () => withHash });
+    expect(refused.problems.join("\n")).toContain("must NOT have additional properties");
+
+    /* And the negative control: the same atlas WITHOUT the field raises no
+       schema complaint at all, so the arm above is reading the field and not
+       some other objection to the fixture. */
+    const accepted = checkArchitecture({ build: () => committed as ReturnType<typeof buildAtlas> });
+    expect(accepted.problems.filter((problem) => problem.startsWith("schema:"))).toEqual([]);
+  }, 120_000);
 
   /*
     #195 — THE EXPLORER IS UNTRACKED, SO ITS STALENESS IS NOT A FINDING.
@@ -553,7 +594,7 @@ describe("architecture atlas", () => {
    */
   it("CAN FAIL — step 2 is driven with a builder that really is nondeterministic", () => {
     let calls = 0;
-    const drifting = () => atlasShaped(`fingerprint-${++calls}`);
+    const drifting = () => atlasShaped(`drifting-${++calls}`);
     const { problems } = checkArchitecture({ build: drifting });
 
     /* THE GUARD AGAINST THE SILENT REPAIR. One call means the checker compared
@@ -716,9 +757,14 @@ function sha(text: string): string {
  * schema-valid and fresh would have to be a real build, which is the 10.7 s
  * this repair exists to stop paying eleven times.
  */
-function atlasShaped(fingerprint: string): ReturnType<typeof buildAtlas> {
+/* ⚠ THE STAMP USED TO BE `sourceFingerprint`, WHICH THE SCHEMA NOW REFUSES
+   (#1307 — every branch moved it, so every pair of open PRs conflicted on it).
+   The step-2 arms need two builds that DIFFER, not a particular field, so the
+   differentiator moved to a field that still exists. A fixture keyed on a field
+   the generator no longer emits is a fixture that stops describing anything. */
+function atlasShaped(stamp: string): ReturnType<typeof buildAtlas> {
   return {
-    meta: { schemaVersion: 1, generatorVersion: 1, sourceFingerprint: fingerprint },
+    meta: { schemaVersion: 1, generatorVersion: stamp },
     domains: [], modules: [], routes: [], surfaces: [], envVars: [], flags: [],
     workers: [], operationKinds: [], creditCosts: [], vocabulary: [], tests: [],
     edges: [], findings: [],

@@ -21,6 +21,16 @@ import {
   pipelineGroupFor,
   rungFromLabels,
 } from "../../shared/crewPipelineGroups";
+import {
+  buildStateHoldsOffOffer,
+  crewCardBuildState,
+  crewCardBuildViews,
+  handVerdictForPullRequest,
+  type CrewBuildPullRequest,
+  type CrewCardBuildView,
+  type CrewCardCommentFact,
+} from "../../shared/crewCardBuildState";
+import type { HandVerdictFreshness } from "../../shared/handVerdict";
 import { CREW_HOLD_LABELS, CREW_HOLD_WORD, heldStateFromLabels, type CrewHeldState } from "../../shared/crewNextUpHold";
 import { rankFromLabels, sortOrderedBand } from "../../shared/crewOrderedBand";
 import { CREW_PIPELINE_GROUPS } from "../../shared/crewPipelineGroups";
@@ -57,7 +67,7 @@ export type LiveNextUpItem = {
   readonly held?: { readonly state: CrewHeldState; readonly because?: string };
 };
 
-export type LivePullRequestState = "draft" | "held" | "gate";
+export type LivePullRequestState = "draft" | "held" | "passed" | "gate";
 
 export type LivePullRequest = {
   readonly number: number;
@@ -131,6 +141,21 @@ export type LiveDesk = {
     readonly rung: string | null;
     readonly closedAt: string;
   }[];
+  /**
+   * WHAT IS ALREADY HAPPENING TO EACH CARD (#1094) — his order, 2026-09-26:
+   * *"work on 1094 and 1307 next so the desk shows whats built"*. One short
+   * phrase per open card that somebody is building, has claimed, or has refused;
+   * a card nobody is on has no entry at all, which is how the rows stay quiet.
+   */
+  readonly builds: {
+    readonly items: readonly CrewCardBuildView[];
+    /**
+     * `null` when the claim-and-refusal read answered; its reason otherwise —
+     * the panel says so, because a missing phrase and an unread comment look
+     * identical on a row and only one of them means nobody is on it.
+     */
+    readonly commentsWhy: string | null;
+  };
   readonly counts: {
     readonly openCards: number;
     readonly openPullRequests: number;
@@ -224,7 +249,18 @@ function titlesOf(items: readonly LiveQueueItem[]): CrewQueueTitle[] {
  *    `pipelineGroupFor`, every group written even at zero, so the counts sum
  *    to the queue (the sweep's own control).
  */
-export function liveWorkCounts(reading: LiveQueueReading): LiveDesk["work"] {
+export function liveWorkCounts(
+  reading: LiveQueueReading,
+  /**
+   * WHICH CARDS SOMEBODY IS ALREADY BUILDING (#1094 piece 2) — the numbers under
+   * his switches subtract them, through the `building` exclusion reason, so the
+   * panel that offered him five already-built cards stops counting them as work.
+   * Empty by default: a reading with no comment half subtracts nothing and draws
+   * the panel it drew before, because an unread board must never make a count
+   * smaller.
+   */
+  heldOffOffer: ReadonlySet<number> = new Set<number>(),
+): LiveDesk["work"] {
   const countedAt = new Date(reading.readAt);
   const issues = openIssues(reading);
   const mergedTitles = reading.recent.filter((item) => item.kind === "pr" && item.status === "merged").map((item) => item.title);
@@ -242,7 +278,7 @@ export function liveWorkCounts(reading: LiveQueueReading): LiveDesk["work"] {
     const offered: LiveQueueItem[] = [];
     const excluded: Record<string, number> = {};
     for (const item of population) {
-      const reason = exclusionFor(item.labels);
+      const reason = exclusionFor(item.labels, heldOffOffer.has(item.number));
       if (reason === null) offered.push(item);
       else excluded[reason] = (excluded[reason] ?? 0) + 1;
     }
@@ -291,20 +327,38 @@ export function liveNextUp(reading: LiveQueueReading): LiveNextUpItem[] {
   return sortOrderedBand(rows).map(({ rank: _rank, createdAt: _createdAt, ...item }) => item);
 }
 
-export function livePullRequestState(item: Pick<LiveQueueItem, "draft" | "labels">): LivePullRequestState {
+/**
+ * ⚠ **A FRESH VERDICT OUTRANKS THE HELD LABEL — his desk correction of
+ * 2026-09-26.** *Waiting for review* and *reviewed, now merging* are the two
+ * states he actually acts differently on, and In flight drew them with one word
+ * because the label is what it read. The verdict is a comment rather than a
+ * label, so it arrives as an argument; absent, this answers exactly what it
+ * always did.
+ */
+export function livePullRequestState(
+  item: Pick<LiveQueueItem, "draft" | "labels">,
+  handVerdict: HandVerdictFreshness = "none",
+): LivePullRequestState {
   if (item.draft) return "draft";
+  if (handVerdict === "fresh") return "passed";
   if (item.labels.some((label) => HELD_PR_LABELS.includes(label))) return "held";
   return "gate";
 }
 
 /** Open PRs, most recently touched first — what is in flight right now. */
-export function livePullRequests(reading: LiveQueueReading): LivePullRequest[] {
+export function livePullRequests(
+  reading: LiveQueueReading,
+  facts: readonly CrewCardCommentFact[] = [],
+): LivePullRequest[] {
   const known = knownCards(reading);
   return openPulls(reading)
     .map((item) => ({
       number: item.number,
       title: item.title,
-      state: livePullRequestState(item),
+      state: livePullRequestState(
+        item,
+        handVerdictForPullRequest({ pullRequest: item.number, updatedAt: item.updatedAt, facts }),
+      ),
       cards: cardsNamedIn(item.title, known),
       author: item.author,
       updatedAt: item.updatedAt,
@@ -343,14 +397,77 @@ export function liveRecent(reading: LiveQueueReading): LiveRecentRow[] {
     .sort((a, b) => b.at.localeCompare(a.at));
 }
 
-export function deriveLiveDesk(reading: LiveQueueReading, rungKeys: readonly string[]): LiveDesk {
+/**
+ * THE BUILD PHRASES (#1094) — every open card, against the open pull requests
+ * this reading holds and whatever claims and refusals the comment reader
+ * managed to see.
+ *
+ * ⚠ **THE PULL REQUESTS COME FROM THE READING AND CARRY NO HEAD REF.** GitHub's
+ * search API does not return one, so `pullRequestBuildsCard`'s branch limb is
+ * empty here and its title and `card #N` limbs do the work. A shift's `gh pr
+ * list` fills all three. That is a difference in what each caller can SEE, and
+ * `shared/crewCardBuildState.ts`'s header says so rather than leaving it to be
+ * discovered.
+ *
+ * # THE PHRASES AND THE OFFER VERDICT COME FROM ONE PASS (#1094 piece 2)
+ *
+ * ⚠ **THE SET IS NOT DERIVED FROM THE PHRASES, and that is deliberate** — a
+ * reader that decided "is this on offer" by matching the WORDS of a phrase would
+ * break the day a phrase is reworded, and the phrase is copy. Both come from the
+ * same `CrewCardBuildState`, which is the fact.
+ */
+export function liveBuildBoard(
+  reading: LiveQueueReading,
+  facts: readonly CrewCardCommentFact[],
+): { items: CrewCardBuildView[]; heldOffOffer: Set<number> } {
+  const pulls: CrewBuildPullRequest[] = openPulls(reading).map((item) => ({
+    number: item.number,
+    title: item.title,
+    body: item.body,
+    draft: item.draft,
+    labels: item.labels,
+    /* ⚠ HIS DESK CORRECTION OF 2026-09-26: a pull request the relay has already
+       reviewed was reading *"waiting on review"* beside one nobody had looked at.
+       The verdict is a COMMENT, so it arrives in `facts` from the comment reader,
+       and the pull request's own `updatedAt` is what dates it — the reasoning and
+       the measurement are in `shared/handVerdict.ts`. With no comment read this
+       is `none` and the phrase is exactly the one it was before. */
+    handVerdict: handVerdictForPullRequest({
+      pullRequest: item.number,
+      updatedAt: item.updatedAt,
+      facts,
+    }),
+  }));
+  const parsed = Date.parse(reading.readAt);
+  const nowMs = Number.isFinite(parsed) ? parsed : Date.now();
+  const cards = openIssues(reading).map((item) => item.number);
+  const heldOffOffer = new Set<number>();
+  for (const card of cards) {
+    if (buildStateHoldsOffOffer(crewCardBuildState({ card, openPullRequests: pulls, facts, nowMs }))) {
+      heldOffOffer.add(card);
+    }
+  }
+  return {
+    items: crewCardBuildViews({ cards, openPullRequests: pulls, facts, nowMs }),
+    heldOffOffer,
+  };
+}
+
+export function deriveLiveDesk(
+  reading: LiveQueueReading,
+  rungKeys: readonly string[],
+  activity: { readonly facts: readonly CrewCardCommentFact[]; readonly why: string | null }
+    = { facts: [], why: "the card comments have not been read" },
+): LiveDesk {
+  const board = liveBuildBoard(reading, activity.facts);
   return {
     readAt: reading.readAt,
+    builds: { items: board.items, commentsWhy: activity.why },
     ladderCards: { readAt: reading.readAt, items: liveLadderCards(reading, rungKeys) },
     nextUp: { readAt: reading.readAt, items: liveNextUp(reading) },
-    pullRequests: livePullRequests(reading),
+    pullRequests: livePullRequests(reading, activity.facts),
     recent: liveRecent(reading),
-    work: liveWorkCounts(reading),
+    work: liveWorkCounts(reading, board.heldOffOffer),
     heldCards: openIssues(reading)
       .filter((item) => item.labels.includes(CREW_HOLD_LABELS.blocked))
       .map((item) => item.number)

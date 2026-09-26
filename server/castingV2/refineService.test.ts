@@ -93,6 +93,23 @@ let briefWorn: string[] | null = null;
 let failedVariant: Record<string, unknown> | null = null;
 /** Every dispatch-time recipe record written — the failing render's only account. */
 const dispatchRecords: Array<Record<string, unknown>> = [];
+/**
+ * EVERY STAGE THE ROAD ANNOUNCED, IN ORDER (#55, his honest loader).
+ *
+ * Collected rather than spied on because the ORDER is the only thing about
+ * these worth asserting — a mirror of the pipeline written in a test would
+ * agree with itself while the road did something else.
+ */
+const announcedSteps: string[] = [];
+/**
+ * MAKE THE ANNOUNCEMENT ITSELF FAIL — the only way to prove its fence (#55).
+ *
+ * Every one of the four calls sits inside the refine's compensated try, where
+ * an escaping rejection refunds the charge and fails the render. A telemetry
+ * write may never be able to do that, and an arm that only checked the happy
+ * road would pass with the fence deleted.
+ */
+let announceThrows = false;
 let engineThrows: Error | null = null;
 /**
  * A PAINT HELD OPEN, for the dispatch swap's arms at the bottom of this file.
@@ -184,6 +201,11 @@ vi.mock("../db/castingV2Variants", () => ({
     };
   }),
   markVariantDispatched: vi.fn(async () => true),
+  recordVariantStep: vi.fn(async (input: Record<string, unknown>) => {
+    announcedSteps.push(String(input.step));
+    if (announceThrows) throw new Error("the stage could not be announced");
+    return true;
+  }),
   recordVariantDispatch: vi.fn(async (input: Record<string, unknown>) => {
     journal.push("record-dispatch");
     dispatchRecords.push(input);
@@ -590,6 +612,8 @@ beforeEach(() => {
   atLanding.length = 0;
   failedVariant = null;
   dispatchRecords.length = 0;
+  announcedSteps.length = 0;
+  announceThrows = false;
   briefWorn = null;
   variantRows = [];
   candidateRow = {
@@ -2339,6 +2363,55 @@ describe("the render is checked against the record before it is delivered", () =
     expect(journal.filter((entry) => entry === "generate")).toHaveLength(2);
     expect(ledger.charges.at(-1)?.amount).toBe(25);
     expect(ledger.refunds, "the reader's opinion of a healthy frame moves no money").toHaveLength(0);
+  });
+
+  /*
+    THE ROAD ANNOUNCES WHERE IT IS, AND THE PICTURE'S LOADER DRAWS NOTHING ELSE
+    (#55 — the founder's honest loader, fable-020 re-ruled 2026-09-26).
+
+    His directive is old and was unbuildable for a year for one reason: the road
+    was silent between dispatch and landing, so every design for a progress
+    indicator came back as a number somebody had invented. These arms are the
+    fix's whole claim — that the four stages a customer reads are four lines
+    this pipeline genuinely passes, in this order, and that nothing about them
+    is a clock.
+
+    ⚠ THE ORDER IS THE ASSERTION. A test that checked each call in isolation
+    would be a mirror of the pipeline (working law 4) and would agree with
+    itself while the road did something else entirely.
+  */
+  it("announces the four real stages, in the order the road passes them", async () => {
+    await refineCandidate(greenEyes, input);
+    expect(announcedSteps).toEqual(["preparing", "rendering", "reading", "storing"]);
+  });
+
+  /*
+    AND IT GOES BACKWARDS WHEN THE WORK DOES. The free re-render is a second
+    trip through paint-and-check, so the road really does return to `rendering`
+    — and the bar retreats with it, because a high-water mark would be the one
+    number here nobody could justify.
+  */
+  it("announces the re-render again rather than holding its best position", async () => {
+    await refineCandidate({ ...greenEyes, verifier: verifierSaying(false, false, true) }, input);
+    expect(announcedSteps)
+      .toEqual(["preparing", "rendering", "reading", "rendering", "reading", "storing"]);
+  });
+
+  /*
+    A STAGE THAT CANNOT BE ANNOUNCED COSTS THE WAIT ITS WORD AND NOTHING ELSE.
+
+    Driven by making the write REJECT, which is the failure that matters: these
+    calls sit inside the compensated try, so an unfenced rejection would refund
+    the charge and fail a render that was about to arrive. She keeps the picture
+    she paid for; the loader simply says less about it.
+  */
+  it("delivers the picture when the announcement itself fails", async () => {
+    announceThrows = true;
+    const result = await refineCandidate(greenEyes, input);
+    expect(result.variantId, "the render landed").toBeTruthy();
+    expect(ledger.charges, "charged once, as always").toHaveLength(1);
+    expect(ledger.refunds, "a telemetry write never moves money").toHaveLength(0);
+    expect(landedVariant, "the variant landed").not.toBeNull();
   });
 
   /*

@@ -1,8 +1,7 @@
 {
   "meta": {
     "schemaVersion": "1.0.0",
-    "generatorVersion": "1.0.0",
-    "sourceFingerprint": "48a5dbc243d68ebd"
+    "generatorVersion": "1.0.0"
   },
   "domains": [
     {
@@ -38,7 +37,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 47
+      "moduleCount": 48
     },
     {
       "id": "domain:client-shared",
@@ -123,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 60
+      "moduleCount": 63
     },
     {
       "id": "domain:staff",
@@ -148,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 43
+      "moduleCount": 44
     },
     {
       "id": "domain:wardrobe",
@@ -1456,6 +1455,12 @@
     {
       "id": "module:client/src/features/castingV2/refineOutcomeNote.ts",
       "path": "client/src/features/castingV2/refineOutcomeNote.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/refineProgress.ts",
+      "path": "client/src/features/castingV2/refineProgress.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -4574,6 +4579,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/crew/cardActivity.ts",
+      "path": "server/crew/cardActivity.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/crew/crewBriefing.ts",
       "path": "server/crew/crewBriefing.ts",
       "domain": "unassigned",
@@ -5822,6 +5833,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:shared/crewCardBuildState.ts",
+      "path": "shared/crewCardBuildState.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:shared/crewCardIntents.ts",
       "path": "shared/crewCardIntents.ts",
       "domain": "shared",
@@ -5926,6 +5943,12 @@
     {
       "id": "module:shared/exportViews.ts",
       "path": "shared/exportViews.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/handVerdict.ts",
+      "path": "shared/handVerdict.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -6040,6 +6063,12 @@
     {
       "id": "module:shared/refineLimits.ts",
       "path": "shared/refineLimits.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/refineSteps.ts",
+      "path": "shared/refineSteps.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -10403,6 +10432,10 @@
       "path": "client/src/features/castingV2/refineOutcomeNote.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/refineProgress.test.ts",
+      "path": "client/src/features/castingV2/refineProgress.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/refineWait.test.ts",
       "path": "client/src/features/castingV2/refineWait.test.ts"
     },
@@ -10779,6 +10812,10 @@
       "path": "server/auth.me.test.ts"
     },
     {
+      "id": "test:server/backupRetention.test.ts",
+      "path": "server/backupRetention.test.ts"
+    },
+    {
       "id": "test:server/batch0-authority.test.ts",
       "path": "server/batch0-authority.test.ts"
     },
@@ -10881,6 +10918,10 @@
     {
       "id": "test:server/card391LadderFold.test.ts",
       "path": "server/card391LadderFold.test.ts"
+    },
+    {
+      "id": "test:server/cardBuildBoard.test.ts",
+      "path": "server/cardBuildBoard.test.ts"
     },
     {
       "id": "test:server/cardLabelProvenance.test.ts",
@@ -12351,6 +12392,10 @@
       "path": "server/castingV2SheetGone.test.ts"
     },
     {
+      "id": "test:server/castingV2VariantJsonWrites.test.ts",
+      "path": "server/castingV2VariantJsonWrites.test.ts"
+    },
+    {
       "id": "test:server/ceremonyArguments.test.ts",
       "path": "server/ceremonyArguments.test.ts"
     },
@@ -12419,6 +12464,10 @@
       "path": "server/creditsSQL.test.ts"
     },
     {
+      "id": "test:server/crew/cardActivity.test.ts",
+      "path": "server/crew/cardActivity.test.ts"
+    },
+    {
       "id": "test:server/crew/crewBriefing.test.ts",
       "path": "server/crew/crewBriefing.test.ts"
     },
@@ -12441,6 +12490,10 @@
     {
       "id": "test:server/crewBriefingFieldReaders.test.ts",
       "path": "server/crewBriefingFieldReaders.test.ts"
+    },
+    {
+      "id": "test:server/crewCardBuildState.test.ts",
+      "path": "server/crewCardBuildState.test.ts"
     },
     {
       "id": "test:server/crewCardIntents.test.ts",
@@ -12517,6 +12570,10 @@
     {
       "id": "test:server/crewShiftCardClaim.test.ts",
       "path": "server/crewShiftCardClaim.test.ts"
+    },
+    {
+      "id": "test:server/crewShiftHeartbeatScope.test.ts",
+      "path": "server/crewShiftHeartbeatScope.test.ts"
     },
     {
       "id": "test:server/crewShiftState.test.ts",
@@ -12871,6 +12928,10 @@
       "path": "server/productionBaseUrl.test.ts"
     },
     {
+      "id": "test:server/productionBootSettings.test.ts",
+      "path": "server/productionBootSettings.test.ts"
+    },
+    {
       "id": "test:server/productionFlagPositions.test.ts",
       "path": "server/productionFlagPositions.test.ts"
     },
@@ -12899,6 +12960,10 @@
       "path": "server/providers/falImagesAnchored.test.ts"
     },
     {
+      "id": "test:server/providers/falMaskedEditWire.test.ts",
+      "path": "server/providers/falMaskedEditWire.test.ts"
+    },
+    {
       "id": "test:server/providers/providerContract.test.ts",
       "path": "server/providers/providerContract.test.ts"
     },
@@ -12917,6 +12982,10 @@
     {
       "id": "test:server/queueOrdinalDiscipline.test.ts",
       "path": "server/queueOrdinalDiscipline.test.ts"
+    },
+    {
+      "id": "test:server/queueReaderBuildState.test.ts",
+      "path": "server/queueReaderBuildState.test.ts"
     },
     {
       "id": "test:server/queueRot.test.ts",
@@ -13355,6 +13424,22 @@
       "path": "server/scriptWorldGuard.test.ts"
     },
     {
+      "id": "test:server/scriptsTypecheckPopulation.test.ts",
+      "path": "server/scriptsTypecheckPopulation.test.ts"
+    },
+    {
+      "id": "test:server/seatBatches.test.ts",
+      "path": "server/seatBatches.test.ts"
+    },
+    {
+      "id": "test:server/seatBatchingJev.test.ts",
+      "path": "server/seatBatchingJev.test.ts"
+    },
+    {
+      "id": "test:server/seatPassDigest.test.ts",
+      "path": "server/seatPassDigest.test.ts"
+    },
+    {
       "id": "test:server/security/adminSecurity.test.ts",
       "path": "server/security/adminSecurity.test.ts"
     },
@@ -13389,6 +13474,10 @@
     {
       "id": "test:server/serverResilience.test.ts",
       "path": "server/serverResilience.test.ts"
+    },
+    {
+      "id": "test:server/serverTestsTypecheckProject.test.ts",
+      "path": "server/serverTestsTypecheckProject.test.ts"
     },
     {
       "id": "test:server/session-reset.test.ts",
@@ -14098,6 +14187,11 @@
     {
       "from": "module:client/src/features/admin/components/crew/CrewBackgroundWork.tsx",
       "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewBackgroundWork.tsx",
+      "to": "module:shared/crewCardBuildState.ts",
       "kind": "imports"
     },
     {
@@ -16426,6 +16520,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
+      "to": "module:client/src/features/castingV2/refineProgress.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
+      "to": "module:shared/refineSteps.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/components/CastSettingsModal.tsx",
       "to": "module:client/src/features/castingV2/castSettingsCopy.ts",
       "kind": "imports"
@@ -16618,6 +16722,16 @@
     {
       "from": "module:client/src/features/castingV2/referenceAttachCopy.ts",
       "to": "module:shared/inkProvenance.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/refineBusy.ts",
+      "to": "module:shared/refineSteps.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/refineProgress.ts",
+      "to": "module:shared/refineSteps.ts",
       "kind": "imports"
     },
     {
@@ -26661,6 +26775,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:shared/refineSteps.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/refineSubjects.ts",
       "to": "module:server/castingV2/refineDelta.ts",
       "kind": "imports"
@@ -27816,6 +27935,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/crew/cardActivity.ts",
+      "to": "module:server/crew/liveQueue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/cardActivity.ts",
+      "to": "module:shared/crewCardBuildState.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/crew/crewBriefing.ts",
       "to": "module:shared/crewCardState.ts",
       "kind": "imports"
@@ -27852,6 +27981,11 @@
     },
     {
       "from": "module:server/crew/liveDesk.ts",
+      "to": "module:shared/crewCardBuildState.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveDesk.ts",
       "to": "module:shared/crewNextUpHold.ts",
       "kind": "imports"
     },
@@ -27883,6 +28017,11 @@
     {
       "from": "module:server/crew/liveDesk.ts",
       "to": "module:shared/crewWorkSwitches.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveDesk.ts",
+      "to": "module:shared/handVerdict.ts",
       "kind": "imports"
     },
     {
@@ -28418,6 +28557,11 @@
     {
       "from": "module:server/db/castingV2Variants.ts",
       "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2Variants.ts",
+      "to": "module:shared/refineSteps.ts",
       "kind": "imports"
     },
     {
@@ -30932,6 +31076,11 @@
     },
     {
       "from": "module:server/routes/crew.ts",
+      "to": "module:server/crew/cardActivity.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/crew.ts",
       "to": "module:server/crew/crewBriefing.ts",
       "kind": "imports"
     },
@@ -32823,6 +32972,16 @@
     {
       "from": "module:shared/castingRealization.ts",
       "to": "module:shared/castingVocabularies.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/crewCardBuildState.ts",
+      "to": "module:shared/crewShiftState.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/crewCardBuildState.ts",
+      "to": "module:shared/handVerdict.ts",
       "kind": "imports"
     },
     {
@@ -34719,17 +34878,17 @@
       "message": "Names 2 of HairColourSection's 3 fields (server/castingV2/hairColourFromReference.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:722",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:724",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:722",
+      "subject": "server/castingV2/refineService.ts:724",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:881",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:891",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:881",
+      "subject": "server/castingV2/refineService.ts:891",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

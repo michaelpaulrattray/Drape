@@ -16,8 +16,7 @@
       "type": "object",
       "required": [
         "schemaVersion",
-        "generatorVersion",
-        "sourceFingerprint"
+        "generatorVersion"
       ],
       "additionalProperties": false,
       "properties": {
@@ -26,10 +25,6 @@
         },
         "generatorVersion": {
           "type": "string"
-        },
-        "sourceFingerprint": {
-          "type": "string",
-          "pattern": "^[0-9a-f]{16}$"
         }
       }
     },
