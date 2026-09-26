@@ -3,7 +3,6 @@
 export { ChangePlanModal } from "./ChangePlanModal";
 export { AddCreditsModal } from "./AddCreditsModal";
 export {
-  LowBalanceBanner,
   showLowBalanceToast,
   LOW_BALANCE_THRESHOLD,
 } from "./LowBalanceWarning";
