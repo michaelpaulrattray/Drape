@@ -304,9 +304,12 @@ if (typeof import.meta.main === "undefined") {
   );
 }
 
-if (import.meta.main) {
-  await main().catch((error: unknown) => {
+/* Ends by ending the process (scriptExitDiscipline): nothing imports this file, so
+   it is a command, and a command's LAST top-level statement exits. The refusals
+   inside `main` exit with their own codes before this line is reached. */
+main()
+  .then(() => process.exit(0))
+  .catch((error: unknown) => {
     console.error(`janitor-backup-retention: ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);
   });
-}
