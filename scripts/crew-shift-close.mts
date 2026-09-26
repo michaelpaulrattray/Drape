@@ -7,9 +7,19 @@
  *   railway.cmd run --service MySQL -- npx tsx scripts/crew-shift-close.mts \
  *     --outcome shipped --note 'PR #280 merged, edition 137 live' --pr 280
  *
- * `--id` is optional: with no id it closes the newest OPEN run, which is the
- * ordinary case. Pass one to close a DIFFERENT run — specifically a dead
- * shift's stale row, which `crew-shift-start.mts` prints when it finds one.
+ * `--shift <id>` names YOUR OWN row — the same id you opened with. With nothing
+ * named it closes the one open run, and **REFUSES when more than one is open**
+ * rather than guessing. `--id <n>` closes a row by number, which is the dead
+ * shift's stale row `crew-shift-start.mts` prints when it finds one.
+ *
+ * ⚠ **IT USED TO CLOSE THE NEWEST OPEN RUN WITH NOTHING NAMED, AND THAT CLOSED
+ * SOMEBODY ELSE'S ROW (#1234).** Measured 2026-09-25: row #360 was open from
+ * 06:50Z, a second seat opened #361 at 07:45Z, and at 07:55Z the first shift's
+ * bare close stamped **#361** with the first shift's note while that seat was
+ * mid-shift on a `founder-ordered` card. The existing live-row guard cannot
+ * catch it — a live seat that is simply building looks identical to a dead one —
+ * so the DEFAULT was removed rather than documented harder. The decision is
+ * `resolveCloseTarget` in `shared/crewShiftState.ts`, driven directly.
  *
  * `--dry-run` performs no write and prints exactly what the close would set.
  * `--force` is required to close a row that has checked in within the last
@@ -80,6 +90,7 @@ import {
   type CrewShiftOutcome,
   hasEverCheckedIn,
   looksLive,
+  resolveCloseTarget,
 } from "../shared/crewShiftState.js";
 import { openDatabase, resolveDatabaseUrl, worldOf } from "./lib/dbConnection.mts";
 import { refreshQueueCountsQuietly } from "./lib/crewQueueCount.mts";
@@ -92,7 +103,7 @@ const TABLE = "crew_shift_runs";
    the failure is loud and one line from fixed, where the old reader's failure
    was silent and wrote to production. */
 const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
-  value: ["outcome", "note", "pr", "id"],
+  value: ["outcome", "note", "pr", "id", "shift"],
   boolean: ["dry-run", "force"],
 });
 
@@ -171,20 +182,35 @@ try {
      it to now, which erases the one piece of evidence that the shift never
      checked in (`hasEverCheckedIn`'s docblock). Read after the write, every
      run in the table looks disciplined. */
+  /* ⚠ #1234 — the no-id read is EVERY open run now, not `LIMIT 1`. The one-row
+     read could not tell a single-seat night from two seats overlapping, so the
+     decision it fed had no way to refuse. `resolveCloseTarget` owns the choice
+     and is driven without a database. */
   const [candidates] = await conn.query<any[]>(
     explicitId !== null
       ? `SELECT id, shift, seat, intent, startedAt, heartbeatAt, endedAt FROM \`${TABLE}\` WHERE id = ?`
-      : `SELECT id, shift, seat, intent, startedAt, heartbeatAt, endedAt FROM \`${TABLE}\` WHERE endedAt IS NULL ORDER BY id DESC LIMIT 1`,
+      : `SELECT id, shift, seat, intent, startedAt, heartbeatAt, endedAt FROM \`${TABLE}\` WHERE endedAt IS NULL ORDER BY id DESC`,
     explicitId !== null ? [Number(explicitId)] : [],
   );
-  if (candidates.length !== 1) {
-    refuse(
-      explicitId !== null
-        ? `no run #${explicitId}.`
-        : "there is no open run to close. If this shift never opened one, that is the finding — say so in the report.",
-    );
+
+  let target: any;
+  if (explicitId !== null) {
+    if (candidates.length !== 1) refuse(`no run #${explicitId}.`);
+    target = candidates[0];
+  } else {
+    const verdict = resolveCloseTarget({
+      openRuns: candidates.map((row) => ({
+        id: Number(row.id),
+        shift: String(row.shift),
+        seat: String(row.seat),
+        intent: String(row.intent),
+      })),
+      shift: arg("shift"),
+    });
+    if (verdict.kind === "refuse") refuse(verdict.why);
+    console.log(`target: run #${verdict.run.id}, chosen by ${verdict.how}`);
+    target = candidates.find((row) => Number(row.id) === verdict.run.id)!;
   }
-  const target = candidates[0];
   if (target.endedAt !== null) {
     refuse(`run #${target.id} is already closed (${iso(target.endedAt)}). Closing it twice would rewrite the record.`);
   }
