@@ -129,7 +129,13 @@ describe("the size rule is declared once and read twice", () => {
        it. A separate `git diff` would be a second reader of a different moment. */
     expect(mergeTool).toMatch(/\.additions, \.deletions\] \| @json/);
     /* And a row whose counts did not parse is REFUSED, not defaulted to zero —
-       zero would make a large diff read as small, the permissive direction. */
+       zero would make a large diff read as small, the permissive direction.
+
+       ⚠ THE FIRST SHAPE OF THIS ASSERTION READ THE MESSAGE ONLY, and the
+       sabotage run caught it: neutering the `if` left the sentence in place and
+       the arm passed over a reader that had stopped refusing. The CONDITION is
+       what is held now, and the message beside it. */
+    expect(mergeTool).toMatch(/!Number\.isSafeInteger\(additions\) \|\| !Number\.isSafeInteger\(deletions\)/);
     expect(mergeTool).toMatch(/came back with no line counts/);
   });
 });
