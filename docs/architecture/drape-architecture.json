@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "22142d87bde47d99"
+    "sourceFingerprint": "5712d97037b2328e"
   },
   "domains": [
     {
@@ -10303,6 +10303,10 @@
       "path": "client/src/features/castingV2/chosenFrame.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/clippedProse.test.ts",
+      "path": "client/src/features/castingV2/clippedProse.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/conceptUpload.test.ts",
       "path": "client/src/features/castingV2/conceptUpload.test.ts"
     },
@@ -12865,6 +12869,10 @@
     {
       "id": "test:server/productionFlagPositions.test.ts",
       "path": "server/productionFlagPositions.test.ts"
+    },
+    {
+      "id": "test:server/productionHealthProbe.test.ts",
+      "path": "server/productionHealthProbe.test.ts"
     },
     {
       "id": "test:server/profile.test.ts",
