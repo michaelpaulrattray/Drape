@@ -24,7 +24,11 @@ if (rolls.length === 0) throw new Error("roll 216 not in this world");
 const brief = String(rolls[0].briefText);
 
 const [cands] = await conn.query<any[]>(
-  "SELECT position, status, personaLine, internalPrompt FROM casting_candidates WHERE rollId = 216 ORDER BY position",
+  /* The candidate disposition column was dropped from this table by #1241
+     (migration 0068), which made this SELECT unexecutable — the column left and
+     `scripts/` was not swept (#179). The tile carries one index label now, so
+     `position` below is the whole of what identifies a slice. */
+  "SELECT position, status, internalPrompt FROM casting_candidates WHERE rollId = 216 ORDER BY position",
 );
 const delivered = cands.filter((c) => c.status !== "failed");
 if (delivered.length === 0) throw new Error("no delivered slice on roll 216 — nothing to quote");
@@ -65,7 +69,6 @@ arm B columns: positions ${columns.map((c) => c.position).join(", ")} · ${colum
 console.log("wrote output/raw-prompt-reference/roll216-armB-columns.json");
 
 console.log(`\nroll 216 · slice position ${chosen.position} (${chosen.status})`);
-console.log(`  persona line: ${chosen.personaLine ?? "(none)"}`);
 console.log(`  prompt ${prompt.length} chars · brief ${brief.length} chars · his share ${((brief.length / prompt.length) * 100).toFixed(1)}%`);
 console.log(`  delivered slices on this roll: ${delivered.map((c) => c.position).join(", ")}`);
 console.log("\nwrote output/raw-prompt-reference/roll216-slice-prompt-today.txt");
