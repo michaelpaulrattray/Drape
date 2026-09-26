@@ -1,7 +1,7 @@
 {
-  "edition": 549,
-  "updatedAt": "2026-09-26T18:25:38.859Z",
-  "shift": "Foreman — what people do in the product is recorded, and your two keys became three",
+  "edition": 550,
+  "updatedAt": "2026-09-26T19:38:40.767Z",
+  "shift": "Foreman — a payment, a plan change and a bug report reach the same place, and one of the four things you asked for turned out to have no road",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -311,7 +311,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-26T18:25:10.643Z",
+      "readAt": "2026-09-26T19:37:35.403Z",
       "items": [
         {
           "issueNumber": 1129,
@@ -6168,11 +6168,18 @@
   ],
   "pipeline": [
     {
+      "id": "money-edges-509",
+      "title": "A payment, a plan change, a failed payment, a dispute and a bug report reach the same place (#509 part 2's money edges)",
+      "status": "in-review",
+      "prNumber": 1426,
+      "note": "Money surface — held for the hand review."
+    },
+    {
       "id": "product-events-509",
       "title": "What people do in the product is recorded, from the one seam that already knows (#509 part 2)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1423,
-      "note": "Money/auth diff — held for the hand review."
+      "note": "Merged 2026-09-26 (af507537) on the relay's hand verdict."
     },
     {
       "id": "judge-frame-1408",
@@ -8867,7 +8874,7 @@
     227
   ],
   "nextUp": {
-    "readAt": "2026-09-26T18:25:10.643Z",
+    "readAt": "2026-09-26T19:37:35.403Z",
     "items": [
       {
         "issueNumber": 1278,
