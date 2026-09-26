@@ -307,13 +307,13 @@ function run(): { ok: boolean; passed: number; failed: number; output: string } 
   };
 }
 
-function main(): void {
+function main(): number {
   /* ── THE CONTROL, FIRST, ON THE UNTOUCHED TREE ───────────────────────── */
   const control = run();
   if (!control.ok || control.passed === 0) {
     console.error(`CONTROL IS NOT GREEN (${control.passed} passed, ${control.failed} failed) — every verdict below would be meaningless.`);
     console.error(control.output.slice(-3000));
-    process.exit(1);
+    return 1;
   }
   console.log(`CONTROL: green, ${control.passed} arms.\n`);
 
@@ -335,13 +335,13 @@ function main(): void {
       const occurrences = before.split(edit.from).length - 1;
       if (occurrences !== 1) {
         console.error(`ANCHOR NOT UNIQUE (${occurrences}) for "${testCase.name}" in ${edit.file}`);
-        process.exit(1);
+        return 1;
       }
 
       const sabotaged = before.replace(edit.from, edit.to);
       if (sabotaged === before) {
         console.error(`EDIT CHANGED NOTHING for "${testCase.name}"`);
-        process.exit(1);
+        return 1;
       }
       writeFileSync(file, sabotaged);
     }
@@ -373,7 +373,7 @@ function main(): void {
     console.log("SURVIVORS:");
     for (const name of survivors) console.log(`  · ${name}`);
   }
-  process.exit(survivors.length === 0 ? 0 : 2);
+  return survivors.length === 0 ? 0 : 2;
 }
 
-main();
+process.exit(main());
