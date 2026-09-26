@@ -68,7 +68,7 @@ import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
 import type { FeatureSlot } from "./recipeAssembler";
 import { captureCastingScanTableEnabled } from "./castingV2Scope";
-import { keepScan, serveKeptScan } from "./keptFaceScan";
+import { keepScan, serveKeptScan, type KeptScanShape } from "./keptFaceScan";
 import { cropMask } from "./segmentCuts";
 import sharp from "sharp";
 
@@ -277,6 +277,94 @@ export type FaceScanDependencies = {
 };
 
 /**
+ * WHAT A KEPT ROW MEANS, in one place.
+ *
+ * Two callers turn a row into a reading now — {@link scannedFace} and
+ * {@link scannedFaceAlreadyRead} — and the `failed: []` rule below is the kind of
+ * clause that goes quietly wrong in a second copy (working law 4).
+ */
+function readingFromKept(kept: KeptScanShape, frameUrl: string): ScannedFace {
+  return {
+    frameUrl,
+    slots: kept.slots,
+    words: kept.words,
+    asked: kept.asked,
+    found: kept.slots.size,
+    empty: kept.empty,
+    /* A kept reading is a CLEAN one by construction — nothing else is written —
+       so this is not an assumption, it is the table's own rule read back. */
+    failed: [],
+    stencilBytes: kept.stencilBytes,
+    sides: kept.sides,
+  };
+}
+
+/**
+ * WHAT HAS ALREADY BEEN READ FOR THIS FACE — memory, THEN the table. Never a
+ * scan, and never a wait on one (#1378).
+ *
+ * # The defect this closes, and it is a tier one reader never learned about
+ *
+ * {@link scannedFaceIfReady} is the panel's first paint, and it reads the
+ * in-memory cache alone. That was the whole truth when it was written
+ * (`35815459`, 2026-08-13): memory was the only tier there was. The kept table
+ * arrived three days later (`30835252`, 2026-08-16) and touched
+ * `faceScanService.ts` and its own suite and **nothing else** — so
+ * {@link scannedFace} gained the tier and the panel's first paint did not.
+ *
+ * What a customer got: the **first** open of a face in a fresh process showed
+ * the library-only panel — no scanned regions — **while the answer sat on disk**,
+ * and then paid a fresh twenty-call segmenter read to learn what had already
+ * been bought. This program deploys many times a night, so "a fresh process" is
+ * the ordinary case rather than an edge one. Measured on 2026-09-26: 14 rows and
+ * 3 regions cold against 9 rows and 13 regions warm, same tree, same subject,
+ * one restart between the readings (#1378).
+ *
+ * # Why it is a separate function rather than `scannedFaceIfReady` made async
+ *
+ * That one promises never to touch a database and the panel's other caller
+ * relies on it; this one costs one indexed SELECT, which is what a first paint
+ * can afford and a scan is not.
+ *
+ * ⚠ **It deliberately does not move `counters`.** Those measure the MEMORY's
+ * miss rate — the number that bought the table — and a second caller would change
+ * their denominator. A hit here is still counted exactly once, by the `faceScan`
+ * query that always follows and finds the memory warm.
+ */
+export async function scannedFaceAlreadyRead(input: {
+  userId: number;
+  candidateId: number;
+  variantId: number | null;
+  /** The frame on screen. The staleness guard's other end: a row read from
+   *  different bytes is a stale reading, not this one. */
+  imageKey: string;
+  dependencies?: Pick<FaceScanDependencies, "publicUrl">;
+}): Promise<ScannedFace | null> {
+  const key = keyOf(input);
+  const held = cache.get(key);
+  /* A settled answer in memory is the same answer and free. An UNSETTLED entry
+     means a scan is in flight and its own query owns it — answering with a
+     partial here would have the first paint draw rows the panel is about to be
+     told are still arriving. */
+  if (held) return held.settled;
+  if (!captureCastingScanTableEnabled(input.userId)) return null;
+  const kept = await serveKeptScan({
+    userId: input.userId,
+    candidateId: input.candidateId,
+    variantId: input.variantId,
+    frameKey: input.imageKey,
+  });
+  if (!kept) return null;
+  const publicUrl = input.dependencies?.publicUrl ?? storagePublicUrl;
+  const served = readingFromKept(kept, publicUrl(input.imageKey));
+  /* HELD, so the `faceScan` query that follows finds it warm and answers
+     `done` without ringing a segmenter. Without this the panel would be right
+     and the money would still be spent. */
+  hold(key, { settled: served, partial: null, promise: Promise.resolve(served) });
+  return served;
+}
+
+/**
  * Read this face-version once, and hand back what the panel draws.
  *
  * The reader is built PER SCAN rather than shared, and that is load-bearing:
@@ -334,20 +422,7 @@ export async function scannedFace(input: {
       counters.hits += 1;
       counters.kept += 1;
       const publicUrl = input.dependencies?.publicUrl ?? storagePublicUrl;
-      const served: ScannedFace = {
-        frameUrl: publicUrl(input.imageKey),
-        slots: kept.slots,
-        words: kept.words,
-        asked: kept.asked,
-        found: kept.slots.size,
-        empty: kept.empty,
-        /* A kept reading is a CLEAN one by construction — nothing else is
-           written — so this is not an assumption, it is the table's own rule
-           read back. */
-        failed: [],
-        stencilBytes: kept.stencilBytes,
-        sides: kept.sides,
-      };
+      const served = readingFromKept(kept, publicUrl(input.imageKey));
       log.info(
         { candidateId: input.candidateId, found: served.found, kept: counters.kept },
         "[faceScanService] served a face-version from the kept reading — nothing was spent",
