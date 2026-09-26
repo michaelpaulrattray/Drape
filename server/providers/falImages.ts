@@ -121,6 +121,37 @@ export function editSiblingOf(model: string): string | null {
  * quoting* — designed once a solid figure exists, so the next reader inherits a
  * price with a shelf life rather than a number with a footnote.
  *
+ * ✅ **SO HERE IS THE DATE, AND WHAT IT PRICES — 2026-09-26 (#1196). IT IS THE
+ * PRICE OF A RETIRED ENGINE AND AN UPPER BOUND, NEVER A QUOTE FOR TODAY.**
+ * #1340 made Sunburst every account's roll engine and both factories in this
+ * file default to it (`:198`, `:310`), so nothing rendering from now on can be
+ * given this number: it prices rows ALREADY RENDERED, plus the calibration
+ * cells that name the constant by hand. **The retirement is CHECKED, not
+ * claimed here** — `server/castingV2/rollEngineChoice.test.ts` drives the
+ * engine a roll is actually given and `server/providers/falMaskedEditWire.test.ts`
+ * asserts the endpoint a paid edit is sent to AT THE WIRE, so a road coming
+ * back to GPT Image 2 reddens rather than quietly making this paragraph false.
+ *
+ * ⚠ **AND THE BAND IS WIDER THAN THE TWO READINGS ABOVE — it lives in ONE
+ * place now rather than half here and half there.** #1134 re-read this engine
+ * on 2026-09-25 and got three more figures that agree with neither the $0.099
+ * nor the $0.0400: they are recorded with their windows and their n in
+ * `scripts/lib/falSpend.mts` (`FAL_MEASURED_USD`'s comment for these rows, and
+ * `FAL_GPT_IMAGE_2_REREAD_2026_09_25`), which also carries the 2026-08-24 pair
+ * restated beside them, so that ONE place shows the whole band. **Until #1196
+ * each module recorded readings the other did not, and neither reader could see
+ * it.** The three #1134 figures are deliberately NOT repeated here: a second
+ * prose copy of a measurement is the drift working law 4 is about, and the
+ * narrative of how the 2026-08-24 pair was taken — and destroyed by a top-up —
+ * belongs where it happened, which is above.
+ *
+ * What is settled, and it is the whole of what a reader needs: **every
+ * re-reading at the sheet's 1024×1536 sits BELOW $0.099**, so every fal-side
+ * figure this constant has ever produced is an over-statement rather than a
+ * surprise waiting to land. Reconciling them needs a window driven on purpose,
+ * which now means moving `CASTING_ROLL_ENGINE_MODEL` off `sunburst` on
+ * production and back — the founder's call, and the open half of #1196.
+ *
  * Four planning surfaces import this (`scripts/build-cprime-pack.mts`,
  * `scripts/calibrate-providers.mts`, `scripts/calibration/accessory-instance-cell.mts`,
  * and a test that pins it), which is why the warning lives on the constant and

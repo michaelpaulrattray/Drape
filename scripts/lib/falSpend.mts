@@ -162,9 +162,43 @@ export const FAL_MEASURED_USD: Record<string, { usd: number; source: string }> =
      before and after on 2026-07-30. List arithmetic said $0.084 — 18% low.
      `FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE` is the same number in the server
      tree; it is repeated rather than imported so this module stays free of the
-     server's import graph, and the test pins them equal. */
-  "openai/gpt-image-2": { usd: 0.099, source: "measured 2026-07-30, 9 images off the balance" },
-  "openai/gpt-image-2/edit": { usd: 0.099, source: "measured 2026-07-30, 9 images off the balance" },
+     server's import graph, and the test pins them equal.
+
+     ⚠ **THIS PRICES A RETIRED ENGINE, AND IT IS AN UPPER BOUND — dated
+     2026-09-26 (#1196).** No road renders on GPT Image 2 any more: #1340 made
+     Sunburst every account's roll engine and both `falImages.ts` factories
+     default to it, so these two rows price rows ALREADY RENDERED and the
+     calibration cells that name the constant by hand. The two arms that would
+     redden if a road came back are `server/castingV2/rollEngineChoice.test.ts`
+     (the engine a roll is given) and `server/providers/falMaskedEditWire.test.ts`
+     (the endpoint a paid edit is sent to) — so the retirement is checked
+     rather than asserted here.
+
+     **FOUR re-readings at this size exist, no two agree, and every one of them
+     is BELOW $0.099** — which is the only part a reader needs. Newest first:
+
+       2026-09-25  $0.0825  clean window, 4 renders     `FAL_GPT_IMAGE_2_REREAD_2026_09_25`
+       2026-09-25  <=$0.0375  bound, 4 windows/140 renders
+       2026-09-25  $0.0532  least-squares fit, 54 windows
+       2026-08-24  $0.0400  settled balance reading, medium 1024×1536 (1 of 2 that day)
+       2026-07-30  $0.0990  this constant, 9 images
+
+     ⚠ **The 2026-08-24 pair lived only in `server/providers/falImages.ts`'s
+     docblock until this commit, beside a $0.0650 reading at 1536×2304** — so
+     the two modules that hold this one price each recorded readings the other
+     did not, and neither reader could see the band. It is restated here rather
+     than pointed at, deliberately and for this module's own stated reason: the
+     band is only useful in one piece, and this is the module a census reads.
+     How it was taken stays in that docblock. That second figure also
+     says why a single per-image constant cannot be right for both: a bigger
+     canvas costs more, and this number is the 1024×1536 sheet size only.
+
+     Nothing is swapped, for #1196's own reason: the readings disagree with each
+     other, and a fresher lie is not the repair. What closing the card takes is
+     a window driven on purpose — and that now needs `CASTING_ROLL_ENGINE_MODEL`
+     moved off `sunburst` on production and back, which is the founder's. */
+  "openai/gpt-image-2": { usd: 0.099, source: "measured 2026-07-30, 9 images off the balance — RETIRED engine, and an upper bound: every re-reading is below it (#1196)" },
+  "openai/gpt-image-2/edit": { usd: 0.099, source: "measured 2026-07-30, 9 images off the balance — RETIRED engine, and an upper bound: every re-reading is below it (#1196)" },
   /* fal's own model page: "$0.005 per request", 200 segmentations per dollar. */
   "fal-ai/sam-3/image": { usd: 0.005, source: "fal model page, $0.005 per request" },
   /* #1134, 2026-09-25 — `scripts/fal-picture-price.mts`, three readings that

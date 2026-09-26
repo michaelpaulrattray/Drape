@@ -241,6 +241,35 @@ describe("the prices come from fal, and its opaque unit is not a price", () => {
     expect(models[0]!.note).toContain("opaque");
   });
 
+  /*
+    A RETIRED ENGINE'S PRICE SAYS SO ON THE LINE A READER ACTUALLY SEES (#1196).
+
+    `$0.099` prices GPT Image 2, which no road renders on since #1340 — and it
+    is an upper bound: four re-readings at the sheet's size all sit below it. The
+    census prints `measured.source` verbatim into its own note, so the honest
+    place for both facts is the source string rather than a docblock the reader
+    of a spend line never opens. Pinned here because a paragraph can be dropped
+    in a tidy-up and nothing would go red.
+  */
+  it("prices a retired engine with the retirement ON the census note, not only in a docblock", async () => {
+    const retired = priceFalCalls(
+      [{ model: "openai/gpt-image-2", calls: 8, ms: 400_000 }],
+      await realPrices(),
+    );
+    expect(retired.models[0]!.note).toContain("RETIRED");
+    expect(retired.models[0]!.note).toContain("upper bound");
+    /* The negative control, without which the arm above passes on a table that
+       had called every engine retired: the engine every roll DOES render on
+       must not carry either word. */
+    const live = priceFalCalls(
+      [{ model: "openai/gpt-image-2.5/sunburst/text-to-image", calls: 8, ms: 400_000 }],
+      await realPrices(),
+    );
+    expect(live.models[0]!.basis).toBe("measured");
+    expect(live.models[0]!.note).not.toContain("RETIRED");
+    expect(live.models[0]!.note).not.toContain("upper bound");
+  });
+
   /* The measured figure and the server's own constant are ONE fact. A second
      copy free to drift is law 4, and this is where it would drift silently. */
   it("carries the same measured render price the server transport does", () => {
