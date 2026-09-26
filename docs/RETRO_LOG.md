@@ -540,3 +540,229 @@ control. **A constraint held by a docblock is R12's shape from the other side:
 not a control pinning a wrong premise, but a premise with no control at all.**
 Recorded here because a Retro that audits everyone else's reports and not its
 own would be the process finding.
+
+---
+
+## Run 5 — 2026-09-27 06:13–08:xx AEST (Retro, patrol #5, run #401)
+
+**Window:** 2026-09-19 03:00Z (run 4's close) → 2026-09-26 20:20Z. **125 mailbox
+files** — 102 seat-stamped entries (98 foreman, 1 each warden / janitor / retro /
+machinist), 22 runner notices, 1 `fable-*` entry the seat-prefix reader does not
+classify, **0 `runner-close-*`, 0 `runner-escalated-*`**. **199 PRs merged**
+(200 on the second read — one landed mid-run, which is the corpus moving under
+the reading and is recorded rather than smoothed). **301 `gate.yml` runs.**
+
+**Why the Retro ran today.** Its clock was **OVERDUE by one day** (`patrol-clocks.mts`:
+last run 2026-09-19, every 7 days) with switch **Process ON**, and **his ordered
+band had nothing startable** — all six cards re-verified at the card rather than
+inherited (law 2y): #1394 claimed and waiting on his eye, #1373 `blocked` behind
+it, #1278 part 2 built on whichever engine that court picks, #180 `blocked` on
+his word, #55 claimed, and **#509 part 3 blocked on a credential nobody has been
+asked for** (see §F). **227/227 replies acknowledged, none new for three shifts
+running**, so his eye cannot have lifted any of them. ⚠ **This seat had been
+passed over EIGHT consecutive shifts** — six of them said so in their own
+handoffs, each correctly, because his band comes first. The run of skips is
+recorded here as the thing that made this window's material pile up rather than
+as a fault.
+
+⚠ **One filename needed disambiguating before the corpus was counted:
+`retro-20260923-0135.md` is NOT a patrol run.** Its own text says so — *"none
+fired, so this ran as a Process background card under the switch, not as a patrol
+on its clock"* — which is memory `seat-label-is-a-switch-not-a-clock`. The clock
+reads `docs/RETRO_LOG.md`, and the log is right: run 4 was the last patrol.
+
+### A. Audit ledger
+
+**The instrument first (working law 2), and twice it changed the answer.**
+
+1. **The close-stamp read is anchored on the LAST `## Runner close-stamp`
+   heading** — run 4's correction, kept, because the template's own placeholder
+   heading sits above the runner's appended verdict. **Measured this window: 101
+   of 102 seat entries carry `— verified`. 0 UNVERIFIED.**
+   ⚠ **The one exception is `foreman-20260925-1649.md`, which carries no stamp
+   at ALL — not a bare heading, none.** No `runner-close-*` stub exists for it
+   and no runner notice was written that day. The likeliest reading is a
+   hand-launched seat rather than a runner-launched shift, and it is stated as a
+   reading rather than a fact because nothing on disk settles it. **The gap it
+   points at is structural and growing**: the trailer exists only for shifts the
+   runner launches, and his 2026-09-26 order put up to eight hand-launched seats
+   beside the crew — **so the team's one mechanical honesty check does not reach
+   the seats now doing much of the work.** Not carded: what a seat's trailer
+   should be is a design question for #1281's runner work, where it belongs.
+2. ⚠ **GitHub's own search reported two reopened cards and BOTH were wrong.**
+   `search/issues?q=…+reopened:2026-09-19..2026-09-27` returned **#503** and
+   **#1430**; neither has a `reopened` event on its timeline (#503: one `closed`
+   at 2026-09-04, nothing else; #1430 was created by this run). **So: 0 reopened
+   cards this window** — and the finding existed only until its instrument was
+   checked, which is the whole of law 2 in one reading.
+
+**Closure claims, read in bulk.** Every `#N … closed` pairing in the 102 entries
+(either order, ≤60 chars apart): **139 distinct numbers; 98 are issues, and 92
+are CLOSED at the artifact. Six read OPEN — and all six are the reader's
+proximity over-reach, adjudicated at the matched span**, which was printed with
+the same reader rather than re-grepped:
+
+| number | the span the reader matched | what it actually says |
+|---|---|---|
+| #55 | `#55 is closed` | the line is *"#55 is closed **off by** PR #1350"* — a part landed; the card is open and correctly so |
+| #180 | `#180, #179, #209. **#1133 should be RE-SCOPED rather than closed` | two different sentences |
+| #180 | `closed and five cards were missing, **#180` | two different clauses |
+| #1061 | `#1061)** · 0 closed` | a board line, and the count it matched is literally **zero** |
+| #1061 | `closed · **1 card relabelled (#1061` | relabelled, not closed |
+| #1098 | `#1098 — re-measured, its floor closed` | the SWEEP's floor, not the card |
+| #1161 | `closed, B is **#1161` | #1148 closed; #1161 is B |
+| #1278 | `#1278 court ran … **#1240 closed` | #1240 closed |
+
+**0 false closure claims by a shift — the fourth clear window** (run 4: 96/96;
+run 3: 89/91 with both exceptions correct; run 2: 68/68). **The reader's measured
+precision is 92/98**, and its failure mode is now named: a number and the word
+`closed` on one line in different clauses, sharpest where a board summary packs
+`(#1061)` against `0 closed`. **Over-reach is the correct direction for this
+reader** — it must never MISS a false claim — and the cost is eight spans read by
+eye. Left as it is, deliberately.
+
+**Merge claims: four sampled PAST the trailer, at the artifacts** — PRs #1254,
+#1259, #1271, #1279: each `MERGED` with a merge commit (`817e44da`, `2e2e5a0b`,
+`ba8504db`, `0ba7f9e4`) that `git merge-base --is-ancestor` puts in
+`origin/main`. All four hold.
+
+**One report audited deeply — `foreman-20260927-0550`, the immediate
+predecessor**, chosen because its claims are the freshest and the least checked:
+
+| claim | artifact | verdict |
+|---|---|---|
+| PR #1426 merged `4677ff6d` | local `HEAD` is `4677ff6d` | ✅ |
+| #1424 and #1425 filed | both exist, created 19:33Z / 19:34Z | ✅ |
+| edition 550 live at `4677ff6d` | `crew-read-replies` prints *"live briefing: edition 550, read at 4677ff6d"* | ✅ |
+| *"Now 24,889 bytes"* (MEMORY.md) | `wc -c` → **24889** | ✅ exact to the byte |
+| *"all 181 entries kept"* | 181 index lines | ✅ exact |
+| *"every link verified to resolve"* | **180 of 181** — `../../../Drape/.agents/mailbox/fable-1678.md` is one `../` short and resolves to `C:\Users\Admin\.claude\Drape\…`, which does not exist; the target is real at `C:\Users\Admin\Drape\…` | ❌ **false by one** |
+
+**That broken link is the only false claim found in the window**, and its shape
+is worth more than its size: **it is a claim about a CHECK, not about work.** The
+shift did the hard part (42 hooks rewritten, a truncation pass tried and
+correctly reverted) and then over-stated the verification by one item. **Fixed in
+this run** — the fourth `../` added.
+
+**Verdict: no false claim about WORK by any shift this window; one false claim
+about a verification, repaired; and one of my own two instruments was wrong and
+was caught before its finding was filed.**
+
+### B. Recurrence ledger
+
+| # | Repeat | Occurrences (evidence) | Class | Proposal | Status |
+|---|---|---|---|---|---|
+| **R13** (new) | **A closing keyword's CHEAPEST reader is empty, so the commit-message half is caught at the most expensive moment** | **6 gate failures on `PR body closes no card by accident (#376)` in 8 days** — `team/brief-dresses-view-1278`, `team/edition539`, `team/inkstudio-1158-s2-clean`, `team/bornink-1159`, `team/1153`, `team/relay1059` — against **1** in run 4's window; plus the expensive one: `Closes #1347` in a commit message **body** (read at the bytes, `pulls/1353/commits`, line 48), which the gate cannot see because `check-closing-keyword.mts` reads title+body only, which `pr-merge-in-order.mts:609` DOES see, and which cost **#1353 closed unmerged → #1354 opened and closed as a duplicate → #1355 merged**, plus a collision with the relay mid-verdict on a head it had already passed | a guard placed where the repair is expensive while the same reader could run where it is free | **Guard carded: #1430.** A `commit-msg` hook of one line — `npx tsx scripts/check-closing-keyword.mts --file "$1"` — over the reader that already exists (`lib/closingKeyword.mts`, no second copy of the pattern). **Driven both ways before filing**: the real offending text refused at exit 1, and `Card: #1347 — closes the gap in the row` (the house replacement, with *closes* in prose) passed at exit 0. Card names the two things the builder must DRIVE rather than reason about: it must be `commit-msg` (`pre-commit` runs before a message exists) and WHICH ROADS fire it, by #606's one-scratch-repo-per-road method | **Open** — #1430, `seat:retro` |
+| **R14** (new) | **A receipt COMPOSED rather than pasted — and the answer is right, so nothing downstream ever disagrees** | #1061's specimen (`foreman-20260921-1909` printed `select outcome, count(*) … from storage_cleanup_items`, a column that has never existed, composed from a design #1007 declared it was not building); **plus four more in ONE entry this window, each self-reported honestly** by `foreman-20260927-0445` §3 — a price quoted from `PROGRAM.md` four days stale AND a different population (295 vs 712/155), an import cost written into a docblock before anything was measured, an error vocabulary copied from a constant answering a different question (dropping the three codes a failing provider returns), and a payload assertion the wire contradicted. Its own summary: *"Three of the four were claims already written into a docblock"* | a number written from a document instead of from the thing | **No guard, and the reason is structural: `.agents/` is gitignored, so no suite can ever read a shift entry.** Its sibling shape — an errored read printed as an empty population — **is already prevented by construction and that was read at the bytes**: `SKELETON-disposable.mts` runs its query under top-level `await` with no `try`, so a throwing query is an unhandled rejection that exits nonzero and prints nothing. **A line went into the orders' close ceremony this run**, carrying #1061's worked example and that skeleton fact. **#1061 closed** with the call on it | **Watched** with the line in force. If it recurs with the line in place, the honest next step is a close-ceremony command, not another paragraph |
+| **R15** (new, and it is the one this run is most uncomfortable about) | **A clause in the standing orders told every shift that `pnpm preflight` could not see guards it had been running for six days** | The clause (written 2026-09-25 off PR #1250's two reds): *"`pnpm preflight` is diff-adjacent and cannot see them"*, naming `listedSource`, `contendedTestTimeouts` and the new suite. **Read at the code: `ALWAYS_RUN_SUITES` (`scripts/lib/preflight.mts:318`) has run `contendedTestTimeouts`, `childProcessTestTimeouts`, `suitePointerDiscipline` and `errorMessageInterpolation` on EVERY invocation since #1037 merged `b21c69e2` on 2026-09-19 13:30 +1000** — six days before the clause. Driven with `pnpm preflight --list --base 4677ff6d~1`: it also runs `scriptExitDiscipline` + `scriptConnectionDiscipline` as their own named step. And `selfInvocationCheck` / `scriptExitDiscipline` both name `"scripts"`, `"server"`, `"client/src"` literals, so #565's reverse index selects them for a diff under those trees. The hand list then grew **three → four → six** across two days (seat rules 5 and 7), and **four builder-seat branches paid a gate red each** while it stood — PR #1250 (twice), PR #1316, and the branches in R13's row | working law 4 — a second list shadowing a source of truth — on the team's own critical path, plus law 7c (a document contradicting the tree) | **No guard; the repair is deletion, done this run.** The clause is corrected at the code with the measurement in it; seat rule **(5) is retired outright** (*"there is no set to count, there is one command"*) and **(7) is rewritten to teach the two RULES** — a script's last top-level statement exits; a backticked suite name in prose must exist — because knowing the rule is what stops the red, and both guards are run for you. **The reds were real: #1250 and #1316 were genuinely non-compliant.** What was false is that the tool could not have said so | **Watched.** The next run reads whether a seat's hand list has grown back |
+
+**Also read, and NOT findings** — each checked because an unexamined improvement
+reads exactly like a recurrence that stopped:
+
+- **#503's class did not recur.** Its card measured *"7 of the last 60 gate runs
+  cancelled by a second push"* (11.7%); this window is **13 of 301 (4.3%)**,
+  spread **one per branch** with no branch cancelled twice, and the two
+  attributable ones have recorded causes (`team/try-again-row-1347` is R13's
+  incident; `team/errors-509` is a fix pushed after a red). Improving, not
+  repeating.
+- **R11 (run 4) is CLOSED as a recurrence.** #1037 merged `b21c69e2` on the day
+  run 4 closed and the always-run set has since grown to four **by its own
+  derived arm** — `errorMessageInterpolation` joined as the fourth, which is the
+  set's own docblock prediction arriving. R15 above is not R11 returning: it is
+  the *document* about R11's fix being wrong, which is the opposite direction.
+- **A "do NOT" copied forward past its cause** — looked for specifically, because
+  PROGRAM.md's §2y worked example is exactly this and it costs a night each
+  time. Four entries carry *"never with `patrol-clocks.mts`"*; #1249 (its cause)
+  closed **2026-09-26T06:25Z**, and all four were written at 23:24Z, 00:57Z,
+  03:43Z and 04:40Z — **every one of them BEFORE the closure**, and the two
+  shifts after it dropped the caveat. **The class did not recur.** Recorded
+  because a negative result read at the timestamps is worth as much as a finding.
+- **R7 (a shift dies leaving no report): zero instances, fourth clear week** — no
+  `runner-close-*` file in the window at all.
+- **The QUIET declarations (7) all read under #360's rule** — marker alone on its
+  line or a line beginning with the words, fenced blocks and blockquotes
+  stripped. No entry was miscounted in either direction.
+
+**Recurrence rate this period: 3 repeat classes over 125 entries / 199 PRs**
+(run 4: 5 over 116 / 123). **One carded (R13, #1430)**, two repaired in place and
+watched (R14, R15), one closed (R11), one improving (#503), two classes looked
+for and absent (reopens, stale "do NOT"). **0 laws proposed** — nothing here is
+the founder's to rule on.
+
+### C. The anti-boredom read
+
+**199 merged PRs in the window, and 194 of 200 trace mechanically** — every `#N`
+and `card N` in title + body resolved at `gh api`, kept if it is an ISSUE created
+before the PR. **All six that do not trace are Dependabot** (#1053, #1054,
+#1055, #1056, #1057, #50), which legitimately cite no card; two of them cite
+nothing at all and four cite changelog numbers the extractor over-collects.
+**So: 0 shift or seat PRs without a finding that predates them. No boredom
+finding.**
+
+**Gate rejections read for a shared cause** — 32 failures of 301 runs (10.6%),
+grouped by the step that failed:
+
+| failed step | count |
+|---|---|
+| `Unit tests` | 14 |
+| `Typecheck (pnpm check)` | 8 |
+| `PR body closes no card by accident (#376)` | **6** |
+| `static-shapes::Post Run setup-node` (all four Dependabot) | 4 |
+| `Workflow lint (actionlint + zizmor)` | 1 |
+| `Architecture Atlas freshness` | 1 |
+
+**The #376 step is the single largest non-Dependabot cluster and it is R13.** The
+`Unit tests` bucket is 14 across 12 distinct branches with two branches red twice
+— and R15 is what most of the repeated ones were about: a repo-wide guard the
+shift believed preflight could not run for it.
+
+### D. The items the window's shifts addressed to this seat
+
+Read out of the entries rather than out of a handoff. **Five cards were waiting
+and four had already been built and closed by ordinary shifts** — #1268 (the
+lock-wire guard's 11-of-28), #1273 (a card reader overturning a reasoned label),
+#1330 (the eye-frame presence guard's path-three death), #1234 (the shift-close
+default closing somebody else's row). That is the queue working: a Retro card is
+not a Retro monopoly, and eight skipped shifts cost less than they looked like.
+
+**#1061 was the one left, and it was this seat's to decide** — `blocked` on
+purpose so an ordinary Process shift would not decide it. **Settled and closed
+this run**, verdict in R14 above and in full on the card.
+
+**One item deliberately not taken:** `foreman-20260922-1544`'s proposal that the
+review paragraph's four hand-flips be derived from the runs. The shift that
+raised it established it is **moot as written** — #1066 deleted the action
+reviewer, so there is no run left to derive a state from — and his 2026-09-22
+ruling made the relay the reviewer permanently. Nothing to build; recorded so the
+next run does not re-derive it.
+
+### E. The seat's own work, audited the same way
+
+This run filed one card (#1430), closed one (#1061), corrected three paragraphs
+of the standing orders and fixed one broken link in the memory index. **Two of
+those four acts were driven before they were written** — the `commit-msg` hook's
+positive and negative controls, and `pnpm preflight --list` over a real `scripts/`
+diff — and **the two instruments this run built were both checked before their
+findings were believed**, one of which (the reopen search) was wrong and produced
+nothing. The one thing it did NOT drive is whether `commit-msg` fires on revert,
+cherry-pick and a replayed rebase; **that is named on #1430 as the builder's
+first act rather than assumed here**, because a hook covering some roads and
+silently missing others reads as coverage.
+
+### F. Not a Retro matter, but it happened this run and is on the record
+
+**#509 part 3 — the admin strip — is blocked on a credential nobody has been
+asked for**, found by the law-7c read a card gets before it is taken. Two of the
+four numbers his card names (*active accounts today*, *generations today*) have
+been on `AdminOverview` all along (`HealthMetrics.tsx:164` and `:171`, under
+"Last 24 hours"); the other two are Sentry's, and `SENTRY_DSN` is **send-only** —
+reading issues back wants an auth token, and `posthog-node`'s `PostHog` prototype
+exposes no query method at all (read at the bytes). Recorded on #509, with one
+plain-English question folded into **#1419** so he answers once: two links out
+and no fourth key (recommended), or a fourth key and two more numbers.
+
+### Clocks
+
+Retro: run 1 2026-08-26, run 2 2026-09-05, run 3 2026-09-12, run 4 2026-09-19,
+**run 5 2026-09-27** (one day past a 7-day clock, after eight shifts correctly
+gave his ordered band precedence). Next due ~2026-10-04.

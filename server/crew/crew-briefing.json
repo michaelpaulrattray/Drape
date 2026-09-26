@@ -1,7 +1,7 @@
 {
-  "edition": 550,
-  "updatedAt": "2026-09-26T19:38:40.767Z",
-  "shift": "Foreman — a payment, a plan change and a bug report reach the same place, and one of the four things you asked for turned out to have no road",
+  "edition": 551,
+  "updatedAt": "2026-09-26T20:57:04.923Z",
+  "shift": "Retro — the crew's own record audited, and the standing orders were telling every shift something that stopped being true six days earlier",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -311,7 +311,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-26T19:37:35.403Z",
+      "readAt": "2026-09-26T20:55:44.726Z",
       "items": [
         {
           "issueNumber": 1129,
@@ -405,7 +405,7 @@
         },
         {
           "issueNumber": 1419,
-          "title": "Two keys to paste, and Drape starts telling us when a page breaks for someone",
+          "title": "Three keys to paste, and one small choice about your admin page",
           "kind": "rung",
           "rung": "N6"
         },
@@ -448,9 +448,9 @@
       "issueNumber": 1419,
       "state": "open",
       "filedAt": "2026-09-26",
-      "title": "Three keys to paste: Drape starts telling us when a page breaks, and what people actually do",
+      "title": "Three keys to paste, and one small choice about your admin page",
       "productImpact": "Two things are true today and neither is good.\n\nWhen something goes wrong for someone using Drape, nobody finds out. If a page breaks in a customer's browser she sees the error screen, and we never hear about it unless she tells us.\n\nAnd nothing records what people DO. We cannot answer 'how many people cast anything this week' or 'how often did a roll not arrive'. Before Drape opens to real users, those are the two questions worth being able to ask.\n\nThe code for all three is built and tested. It is switched off, and it stays off until you paste three keys.",
-      "workedExample": "This was two keys yesterday. The third is the same kind of job and the same five minutes, so it is on this card rather than a new one — you answer once.\n\nTwo are Sentry (you have the account): a Node project and a Browser project, whose keys go on Railway as SENTRY_DSN and VITE_SENTRY_DSN. The third is PostHog, which you may not have yet — free to start, a couple of minutes — and its key goes on as POSTHOG_API_KEY.\n\nWhat you would then see: a page that breaks shows up in Sentry within seconds, saying which page, which account, and what went wrong. And a simple picture of what is happening — rolls started, rolls delivered, rolls that did not arrive, refines, Signs — with the credits that moved beside each.\n\nWhat never travels, in any of the three: her words, her brief, her pictures, her email, or the recipe behind her cast. That is built in rather than promised — the crash reporter refuses a whole report if one is ever attached, and the event stream cannot send free text of any kind, only numbers and words from a list we wrote down.\n\nTwo small things: the browser key only takes effect on a build made AFTER it is set, so paste it before the next deploy. And if you would rather PostHog kept our data in Europe there is a second variable for that — left alone it uses the US.",
+      "workedExample": "This was two keys yesterday. The third is the same kind of job and the same five minutes, so it is on this card rather than a new one — you answer once.\n\nTwo are Sentry (you have the account): a Node project and a Browser project, whose keys go on Railway as SENTRY_DSN and VITE_SENTRY_DSN. The third is PostHog, which you may not have yet — free to start, a couple of minutes — and its key goes on as POSTHOG_API_KEY.\n\nWhat you would then see: a page that breaks shows up in Sentry within seconds, saying which page, which account, and what went wrong. And a simple picture of what is happening — rolls started, rolls delivered, rolls that did not arrive, refines, Signs — with the credits that moved beside each.\n\nWhat never travels, in any of the three: her words, her brief, her pictures, her email, or the recipe behind her cast. That is built in rather than promised — the crash reporter refuses a whole report if one is ever attached, and the event stream cannot send free text of any kind, only numbers and words from a list we wrote down.\n\nTwo small things: the browser key only takes effect on a build made AFTER it is set, so paste it before the next deploy. And if you would rather PostHog kept our data in Europe there is a second variable for that — left alone it uses the US.\n\nONE SMALL EXTRA QUESTION, added 27 September, and it is a one-word answer. Back in September you asked for a row on your admin page showing four things: errors in the last day, active accounts today, generations today, and the route that fails most. Two of those four are already on that page and have been for a long time — active accounts and generations, right under the 'Last 24 hours' heading beside the success rate. So half of what you asked for is built, and rebuilding it would just put the same two numbers on screen twice.\n\nThe other two come out of Sentry, and here is the catch: the key above only lets us SEND errors to Sentry, not read them back. Reading them back needs a fourth key of a different kind. So either your admin page gets a link to Sentry and a link to PostHog beside the numbers it already shows — one click to their real dashboards, nothing that can quietly go out of date, and no fourth key — or you paste a fourth key and we print those two numbers onto the page. Say 'links' or 'fourth key'.",
       "options": [
         {
           "key": "A",
@@ -466,9 +466,14 @@
           "key": "C",
           "label": "Not yet",
           "consequence": "Nothing breaks and nothing pretends. With no keys nothing is sent, and no screen can show you a '0 errors today' or '12 rolls today' that only means nobody switched it on. This card closes."
+        },
+        {
+          "key": "D",
+          "label": "Links on the admin page, no fourth key (on top of A)",
+          "consequence": "Your admin page gets one link to Sentry and one to PostHog beside the four numbers it already draws. It needs nothing more from you than the keys above, it cannot fall out of date, and their own dashboards show far more than a number we could copy across. This is the recommendation."
         }
       ],
-      "recommendation": "Paste all three. Every one is free at our size — PostHog allows a million events a month and we would send about four hundred and sixty, read at the real rows tonight — and it takes about five minutes. Until it is done, the first thing we learn about a broken page is a customer telling us, and we cannot answer a single question about how the studio is being used."
+      "recommendation": "Paste all three. Every one is free at our size — PostHog allows a million events a month and we would send about four hundred and sixty, read at the real rows tonight — and it takes about five minutes. Until it is done, the first thing we learn about a broken page is a customer telling us, and we cannot answer a single question about how the studio is being used. On the small extra question: the links. It asks nothing more of you than the three keys, it cannot go stale, and their real dashboards beat two numbers copied onto a row."
     },
     {
       "id": "old-lane-delete-1398",
@@ -6170,7 +6175,7 @@
     {
       "id": "money-edges-509",
       "title": "A payment, a plan change, a failed payment, a dispute and a bug report reach the same place (#509 part 2's money edges)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1426,
       "note": "Money surface — held for the hand review."
     },
@@ -8874,7 +8879,7 @@
     227
   ],
   "nextUp": {
-    "readAt": "2026-09-26T19:37:35.403Z",
+    "readAt": "2026-09-26T20:55:44.726Z",
     "items": [
       {
         "issueNumber": 1278,
