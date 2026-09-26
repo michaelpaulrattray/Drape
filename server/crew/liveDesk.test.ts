@@ -38,6 +38,8 @@ function item(overrides: Partial<LiveQueueItem> & { number: number }): LiveQueue
     closedAt: null,
     mergedAt: null,
     holdReason: null,
+    /* #1094 — a pull request keeps its body server-side; a card never does. */
+    body: null,
     url: `https://github.com/x/y/issues/${overrides.number}`,
     ...overrides,
   };
@@ -313,5 +315,98 @@ describe("the cards still held on him — his question 2026-09-25, \"do i need t
   it("CONTROL — the label it reads is the hold vocabulary's, not a second spelling", () => {
     const desk = deriveLiveDesk(reading([item({ number: 5, labels: ["BLOCKED", "awaiting-fable"] })]), RUNGS);
     expect(desk.heldCards).toEqual([]);
+  });
+});
+
+describe("what is already happening to each card — his order 2026-09-26, \"so the desk shows whats built\"", () => {
+  /* The measured instance: five cards on his Background Work panel, every one
+     with a pull request in the queue or a refusal written on it, all five
+     offered to him as tonight's work. */
+  const openCards = [
+    item({ number: 1231, labels: ["seat:janitor"] }),
+    item({ number: 1217, labels: ["seat:janitor"] }),
+    item({ number: 1258, labels: ["seat:retro"] }),
+    item({ number: 1248, labels: ["seat:retro"] }),
+    item({ number: 1288, labels: ["casting-upkeep"] }),
+    item({ number: 493, labels: ["seat:retro"] }),
+  ];
+  const openPrs = [
+    /* Its title names no card at all — the body's `card #N` is the only road. */
+    item({
+      number: 1316, kind: "pr",
+      title: "build(typecheck): the scripts check runs over the scripts the repository has",
+      body: "Opened for card #1231 (closed by hand with its receipt). Replaces #1311 (#566).",
+    }),
+    item({
+      number: 1326, kind: "pr",
+      title: "The desk says one thing about a debt card, not two (#1248)",
+      body: "For card #1248. The live desk (#1193) derives every list; #493 homed the orphan rows (#566).",
+      labels: ["needs-fable"],
+    }),
+  ];
+  const facts = [
+    { kind: "refusal" as const, card: 1217, at: "2026-09-26T00:21:50Z" },
+    { kind: "claim" as const, card: 1288, seat: "seat-casting", at: "2026-09-26T01:09:00Z" },
+  ];
+  const now = reading([]).readAt;
+
+  it("names the pull request, the refusal and the live claim — and nothing for a card nobody is on", () => {
+    const desk = deriveLiveDesk(
+      { ...reading([...openCards, ...openPrs]), readAt: "2026-09-26T02:30:00Z" },
+      RUNGS,
+      { facts, why: null },
+    );
+    expect(desk.builds.items).toEqual([
+      { issueNumber: 1217, phrase: "not built — the reason is on the card" },
+      { issueNumber: 1231, phrase: "being built — PR #1316" },
+      { issueNumber: 1248, phrase: "waiting on review — PR #1326" },
+      { issueNumber: 1288, phrase: "claimed by seat-casting, 1 h ago" },
+    ]);
+    expect(desk.builds.commentsWhy).toBeNull();
+    expect(now).toBe("2026-09-25T00:00:00Z");
+  });
+
+  it("⚠ #493 is CITED by PR #1326 and is not being built — the row stays quiet", () => {
+    const desk = deriveLiveDesk(
+      { ...reading([...openCards, ...openPrs]), readAt: "2026-09-26T02:30:00Z" },
+      RUNGS,
+      { facts, why: null },
+    );
+    expect(desk.builds.items.map((row) => row.issueNumber)).not.toContain(493);
+    /* CONTROL — the derivation DID look at that PR's body, so the silence is a
+       judgement rather than an unread field. */
+    expect(desk.builds.items.map((row) => row.issueNumber)).toContain(1248);
+  });
+
+  it("no comment read means no comment phrases and a reason on the panel — never a quiet board", () => {
+    const desk = deriveLiveDesk(
+      { ...reading([...openCards, ...openPrs]), readAt: "2026-09-26T02:30:00Z" },
+      RUNGS,
+      { facts: [], why: "GitHub answered 403 (rate limited)" },
+    );
+    /* The pull requests ride the queue, so they survive; the claim and the
+       refusal do not, and the panel is told why. */
+    expect(desk.builds.items.map((row) => row.issueNumber)).toEqual([1231, 1248]);
+    expect(desk.builds.commentsWhy).toBe("GitHub answered 403 (rate limited)");
+  });
+
+  it("CONTROL — a caller that passes no activity at all says so rather than claiming a clean board", () => {
+    const desk = deriveLiveDesk(reading([item({ number: 7, labels: ["bug"] })]), RUNGS);
+    expect(desk.builds.items).toEqual([]);
+    expect(desk.builds.commentsWhy).not.toBeNull();
+  });
+
+  it("a MERGED pull request is not an open one — a landed card is not still being built", () => {
+    const desk = deriveLiveDesk({
+      ...reading(
+        [item({ number: 1231, labels: ["seat:janitor"] })],
+        [item({
+          number: 1316, kind: "pr", status: "merged", mergedAt: "2026-09-26T01:00:00Z",
+          closedAt: "2026-09-26T01:00:00Z", body: "for card #1231",
+        })],
+      ),
+      readAt: "2026-09-26T02:30:00Z",
+    }, RUNGS, { facts: [], why: null });
+    expect(desk.builds.items).toEqual([]);
   });
 });
