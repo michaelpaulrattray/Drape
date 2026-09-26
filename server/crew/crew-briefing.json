@@ -1,7 +1,7 @@
 {
-  "edition": 543,
-  "updatedAt": "2026-09-26T10:31:55.548Z",
-  "shift": "Foreman — your signed casts render at the engine's best setting, and the card's own fix would have refunded pictures you already have",
+  "edition": 544,
+  "updatedAt": "2026-09-26T11:52:33.961Z",
+  "shift": "Foreman — a refine reply cut off at our own limit stops blaming your sentence, and the ghost audit's own premise had flipped under it",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -216,6 +216,10 @@
         {
           "state": "done",
           "title": "The data clean-up you approved (#179) turned out to be unnecessary — and finding that out uncovered something worse. That job was meant to stop one thing: you refining one of your older casts and being handed invented facts about her, the way you once followed a Mediterranean-looking man and got eight Indian \"relatives\" back. Good news first: that cannot happen. Every one of your 404 author-road tiles on production is already marked as \"this was never sent to the engine\", all 404 of them, and the old unmarked ones are long gone. Nothing needed changing and nothing was changed. The worse part: the clean-up script could not have run even if it had been needed — it asked the database for a column we deleted last night, so it would have died instantly. Six other scripts of ours were in the same state, and the check that was supposed to catch exactly this was reading 11 of our 515 scripts and calling it a clean sweep. That is fixed, two of the scripts are repaired, and the remaining four are written down as #1364."
+        },
+        {
+          "state": "done",
+          "title": "Two things on the refine road and the ghost audit. When you type a refine instruction, the studio reads it with a model, and that reading has a length limit of ours. If the reply got cut off at OUR limit, you were told \"try naming what you want changed\" — advice about a sentence that was never the problem, on a road you have paid for. It now says what it says when anything else of ours fails: try again in a moment, nothing was charged (#1275). And the audit of the old casting lane (#180) was re-read, because its own central sentence stopped being true the day after it was written — see the question on your desk."
         }
       ]
     },
@@ -299,11 +303,17 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-26T10:40:27.207Z",
+      "readAt": "2026-09-26T11:53:41.559Z",
       "items": [
         {
           "issueNumber": 1129,
           "title": "Should the sheet repeat your own sentence back as the casting category? — the decision half of #1122",
+          "kind": "rung",
+          "rung": "N2"
+        },
+        {
+          "issueNumber": 1398,
+          "title": "The old casting lane is switched off for everyone — do we delete it?",
           "kind": "rung",
           "rung": "N2"
         },
@@ -419,6 +429,28 @@
     }
   },
   "needsYou": [
+    {
+      "id": "old-lane-delete-1398",
+      "issueNumber": 1398,
+      "state": "open",
+      "filedAt": "2026-09-26",
+      "title": "The old casting lane is switched off for everyone — do we delete it?",
+      "productImpact": "Until two days ago Drape had two ways of casting a sheet. The old one wrote eight separate descriptions, one per face, out of its own house vocabulary. The new one sends your own words straight to the engine.\n\nOn 24 September you switched everyone to the new one. Nothing has cast the old way since.\n\nBut the old way is still in the product. Every time anyone rolls a sheet it still builds its eight descriptions — and then throws all eight away, because the new road has already written the real one. Nobody sees it and nobody can reach it.",
+      "workedExample": "Every sheet you have already cast keeps reading exactly as it does now. 220 of your 306 sheets were cast the old way, and the part of the product that reads them is staying whatever you decide — that half is permanent. Nothing you own is touched, no customer sees anything different on the day this ships, and nothing about prices, credits or refunds is involved.\n\nThe one real argument for keeping it: if you ever decided the new road was worse, there would be no old road to go back to. It would have to be rebuilt. My reading is that this is not a live risk — you have cast on the new road for a month and signed it off — but that is your call and not mine, which is why it is here rather than done.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Delete it",
+          "consequence": "The old lane comes out of the product, and so does the switch that used to choose between the two. A few days of careful work in slices; nothing new folded in."
+        },
+        {
+          "key": "B",
+          "label": "Keep it",
+          "consequence": "It stays exactly as it is, doing nothing, as a way back to the old behaviour. Nothing changes today and the card closes."
+        }
+      ],
+      "recommendation": "Delete it. You signed the new road off on your own eye on 23 September and switched everyone to it the next day. Keeping a lane nobody can reach is the thing your own retirement rule warns about, and leaving it means every future change has to keep a second set of casting behaviour working. It is a few days of careful work in slices, with nothing new folded in."
+    },
     {
       "id": "sign-view-quality-1373",
       "title": "Your casts' pictures are now at the best setting — is the extra half-minute worth it?",
@@ -6095,6 +6127,20 @@
   ],
   "pipeline": [
     {
+      "id": "refine-ceiling-sentence-1275",
+      "title": "A refine reply cut off at our ceiling stops blaming her sentence (#1275)",
+      "status": "merged",
+      "prNumber": 1396,
+      "note": "Sabotage 5/5. Hand verdict: pass, no findings."
+    },
+    {
+      "id": "ghost-audit-reread-180",
+      "title": "The ghost audit re-read — its table is now a deletion authority (#180)",
+      "status": "merged",
+      "prNumber": 1397,
+      "note": "220 of 306 production rolls read as legacy for good; two rows read as deletions and are load-bearing."
+    },
+    {
       "id": "sign-view-tier-1373",
       "title": "Signed views render at the engine's best setting (#1373)",
       "status": "in-review",
@@ -8438,6 +8484,13 @@
   ],
   "problems": [
     {
+      "id": "gh-graphql-burst-1399",
+      "severity": "warning",
+      "state": "open",
+      "title": "This page can silently keep yesterday's lists, four nights running",
+      "detail": "Nothing you can see in the product is affected — this is our own tooling. GitHub is refusing about half of the commands the crew uses to keep this page current, while telling us we have used 48 of our 5,000 allowance. It is a separate burst limit that reports itself as the wrong thing, which is why four shifts have read it as \"we ran out\" and waited it out.\n\nWhat it costs you: the sweep that refreshes Next up and the in-flight list at the end of every shift skipped all eight of its checks tonight. It is built to leave things alone rather than guess, which is right — but it means this page can keep yesterday's lists without saying so. It also blocked a finished change from merging.\n\nThere is a real fix rather than a wait: the other half of GitHub's interface worked all night, and every refused command has an equivalent there. Written up with the measurement on #1399."
+    },
+    {
       "id": "scripts-typecheck-red-1231",
       "severity": "warning",
       "state": "open",
@@ -8728,7 +8781,7 @@
     224
   ],
   "nextUp": {
-    "readAt": "2026-09-26T00:32:51.296Z",
+    "readAt": "2026-09-26T11:55:29.813Z",
     "items": [
       {
         "issueNumber": 1278,
@@ -8736,8 +8789,28 @@
         "urgent": true
       },
       {
-        "issueNumber": 1240,
-        "title": "A signed view sends the roll's own house sentences — one block, two roads; the legacy cohort realism/negatives/authority leave the view road (his word 2026-09-26; absorbs #1216)",
+        "issueNumber": 1373,
+        "title": "Sign views render at the engine's top tier — 4K on Nano Banana Pro, one declaration for Sign and Try again (his word, 2026-09-26)",
+        "urgent": true
+      },
+      {
+        "issueNumber": 1394,
+        "title": "Engine court for the Sign views: GPT Image 2.5 Sunburst edit against Nano Banana Pro (2K and 4K), same anchors, same views — his word, 2026-09-26",
+        "urgent": true
+      },
+      {
+        "issueNumber": 55,
+        "title": "L&F: The honest loader — real stage names, no invented percentages, the D-169 mock still owed",
+        "urgent": false
+      },
+      {
+        "issueNumber": 180,
+        "title": "N2: THE GHOST AUDIT — enumerate every piece of old-lane machinery still running under the author road (categories, dice, archetypes, personas); the Follow ghost (#176) is specimen #1 (founder flag, 2026-08-27)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 509,
+        "title": "Errors and product analytics before real users — one error tracker, one event stream, and one honest strip on the admin Overview",
         "urgent": false
       }
     ]
