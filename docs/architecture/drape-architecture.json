@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "e62f0b3938170d8e"
+    "sourceFingerprint": "936230659a6bd9dd"
   },
   "domains": [
     {
@@ -13337,6 +13337,10 @@
     {
       "id": "test:server/scriptWorldGuard.test.ts",
       "path": "server/scriptWorldGuard.test.ts"
+    },
+    {
+      "id": "test:server/scriptsTypecheckPopulation.test.ts",
+      "path": "server/scriptsTypecheckPopulation.test.ts"
     },
     {
       "id": "test:server/security/adminSecurity.test.ts",
