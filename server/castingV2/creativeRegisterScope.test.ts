@@ -1,6 +1,14 @@
 /**
- * `CASTING_CREATIVE_REGISTER_SCOPE` — the ladder, THE PROMPT AUTHOR it now
- * governs (#131), and the WIRE both sides of the flag.
+ * THE AUTHOR ROAD — THE PROMPT AUTHOR (#131), the locked house block, the two
+ * walls, the style and the lanes, driven at the WIRE both sides of the road.
+ *
+ * ⚠ IT WAS `CASTING_CREATIVE_REGISTER_SCOPE`'s SUITE AND THE FLAG IS GONE —
+ * #1443, slice 2 of the old-lane retirement, on his word on #1398: "Delete it".
+ * The ladder's arms went with the parser they drove; the road arms stayed,
+ * because the compiler still takes an `authorRoad` input and `rollService`
+ * passes a literal `true`. THE FILE KEEPS ITS NAME on purpose — the card, the
+ * manifest and the capability atlas point at it by name, and renaming a suite
+ * inside a retirement is the tidying his rule on #1398 forbids folding in.
  *
  * The founder's verdict on the Prompt Author court (Crew reply #8, 2026-08-26)
  * is the spec: *"B is the studio … build the author verbatim-first with LOW as
@@ -18,12 +26,6 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { TextEngine, TextRequest } from "../providers/types";
 
-import {
-  CastingCreativeRegisterCoverageError,
-  CastingCreativeRegisterScopeConfigurationError,
-  parseCastingCreativeRegisterScope,
-  validateCastingCreativeRegisterEnvironment,
-} from "./castingV2Scope";
 import { INTERPRET_TIMEOUT_MS, interpreterSystemPrompt } from "./interpreter";
 import { castingBriefCompiler } from "./briefCompiler";
 import { FOLLOW_ANCHOR_CLAUSE } from "./familyClause";
@@ -70,53 +72,32 @@ import {
 } from "./houseBlock";
 import { PHOTOREAL_HUMAN_BLOCKS, photorealHumanConstant } from "./cohortPhotorealHuman";
 
-/* ------------------------------------------------------------ the ladder */
+/* ---------------------------------------------- the ladder — RETIRED */
 
-describe("the ladder", () => {
-  it("is off when absent, and off means off", () => {
-    expect(parseCastingCreativeRegisterScope(undefined).kind).toBe("off");
-    expect(parseCastingCreativeRegisterScope("").kind).toBe("off");
-    expect(parseCastingCreativeRegisterScope("off").kind).toBe("off");
-  });
+/*
+  THE LADDER'S SIX ARMS STOOD HERE AND ARE GONE — #1443, slice 2 of the old-lane
+  retirement, on his word on #1398: "Delete it". They drove
+  `parseCastingCreativeRegisterScope` and
+  `validateCastingCreativeRegisterEnvironment`, and both are deleted with the
+  flag: absent-means-off, the grammar refusal, the two coverage refusals and the
+  admit arm all had a variable as their whole subject.
 
-  it("refuses a grammar it does not recognise", () => {
-    for (const raw of ["on", "true", "users:", "users:0", "users:1,1", "users: 1"]) {
-      expect(() => parseCastingCreativeRegisterScope(raw)).toThrow(
-        CastingCreativeRegisterScopeConfigurationError,
-      );
-    }
-  });
+  ⚠ WHAT IS NOT LOST, because deleting a scope suite is exactly where a boot
+  fence goes quiet: the chain this flag sat in is still driven, one rung up and
+  one rung down. `castingV2Scope.test.ts` holds the parent's ladder, and
+  `conceptUploadScope.test.ts` holds the child's — re-pointed onto
+  `CASTING_V2_SCOPE` in slice 1 (#1442) with a negative control over a parent
+  that is `off` AND over one that is ABSENT, which is this retirement's own
+  shape.
 
-  it("refuses while casting itself is off — what it governs is the COMPILE of a roll", () => {
-    expect(() =>
-      validateCastingCreativeRegisterEnvironment({ scope: "users:1", castingScope: "off" }),
-    ).toThrow(CastingCreativeRegisterCoverageError);
-  });
-
-  it("refuses a user the parent does not cover", () => {
-    expect(() =>
-      validateCastingCreativeRegisterEnvironment({ scope: "users:1,7", castingScope: "users:1" }),
-    ).toThrow(/names users outside CASTING_V2_SCOPE: 7/);
-  });
-
-  it("refuses `all` while the parent names specific users", () => {
-    expect(() =>
-      validateCastingCreativeRegisterEnvironment({ scope: "all", castingScope: "users:1" }),
-    ).toThrow(CastingCreativeRegisterCoverageError);
-  });
-
-  it("admits a covered user, and admits anything under an open parent", () => {
-    expect(
-      validateCastingCreativeRegisterEnvironment({ scope: "users:1", castingScope: "users:1,2" }).kind,
-    ).toBe("users");
-    expect(validateCastingCreativeRegisterEnvironment({ scope: "all", castingScope: "all" }).kind).toBe(
-      "all",
-    );
-    expect(validateCastingCreativeRegisterEnvironment({ scope: "off", castingScope: "off" }).kind).toBe(
-      "off",
-    );
-  });
-});
+  ⚠ AND THE ROAD ARMS BELOW ARE NOT THE FLAG'S ANY MORE — they are the
+  compiler's `authorRoad` input, which `rollService` passes as a literal `true`
+  on every roll. So an arm that reads "off the flag" is describing the HOUSE
+  arm, which slice 2 deliberately did NOT collapse: 86 arms across 17 suites
+  drive it, and retiring them is #180's ghost audit and slice 4 (#1445), not a
+  side effect of taking a variable out. Every "off" arm here is a test seam's
+  arm until those cards land.
+*/
 
 /* ----------------------------------------- the interpreter is the READER */
 
@@ -375,7 +356,7 @@ describe("the WIRE — on, EVERY roll is the author road: one prompt, verbatim f
       candidateCount: 8,
       rollSeed: "wire-on",
       engine,
-      creativeRegister: true,
+      authorRoad: true,
     });
     /* The interpreter ran as the READER, and was not asked to route. */
     expect(sent(engine, "interpret").length).toBeGreaterThan(0);
@@ -463,7 +444,7 @@ describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the c
       rollSeed: "wire-follow",
       engine,
       followIdentity: FOLLOW as never,
-      creativeRegister: true,
+      authorRoad: true,
       anchorImageAttached: true,
     });
     expect(sent(engine, "author")).toHaveLength(0);
@@ -507,7 +488,7 @@ describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the c
       rollSeed: "wire-follow-max",
       engine,
       followIdentity: FOLLOW as never,
-      creativeRegister: true,
+      authorRoad: true,
       anchorImageAttached: true,
     });
     expect(sent(engine, "author")).toHaveLength(0);
@@ -530,7 +511,7 @@ describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the c
       engine,
       followIdentity: FOLLOW as never,
       followStatedAnchor: FOLLOW as never,
-      creativeRegister: true,
+      authorRoad: true,
       anchorImageAttached: true,
     });
     const clause = (on.compiledBrief.register as { carried: { clause: string } }).carried.clause;
@@ -551,7 +532,7 @@ describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the c
       engine,
       followIdentity: FOLLOW as never,
       overrides: { ageBand: "40s" } as never,
-      creativeRegister: true,
+      authorRoad: true,
       anchorImageAttached: true,
     });
     /* No rewrite, no axis in the clause, the wire is the courted bytes. */
@@ -569,7 +550,7 @@ describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the c
       rollSeed: "wire-follow-unattached",
       engine,
       followIdentity: FOLLOW as never,
-      creativeRegister: true,
+      authorRoad: true,
       /* anchorImageAttached deliberately absent. */
     });
     expect(on.candidates[0]?.prompt).toBe(`${RICH}\n\n${HOUSE_BLOCK}`);
@@ -585,7 +566,7 @@ describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the c
       rollSeed: "wire-override",
       engine: overridden,
       overrides: { ageBand: "40s", heritage: "Slavic" } as never,
-      creativeRegister: true,
+      authorRoad: true,
     });
     expect(sent(overridden, "author")).toHaveLength(0);
     /*
@@ -615,7 +596,7 @@ describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the c
       rollSeed: "wire-unlock",
       engine: plain,
       unlock: ["sex"] as never,
-      creativeRegister: true,
+      authorRoad: true,
     });
     expect(on.candidates[0]?.prompt).toBe(`${RICH}\n\n${HOUSE_BLOCK}`);
     expect(on.compiledBrief.register).not.toHaveProperty("carried");
@@ -635,7 +616,7 @@ describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the c
       engine: empty,
       overrides: {},
       unlock: [],
-      creativeRegister: true,
+      authorRoad: true,
     });
     /* No author call at a roll (#535); the seed road, with no clause. */
     expect(sent(empty, "author")).toHaveLength(0);
@@ -650,7 +631,7 @@ describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the c
       candidateCount: 8,
       rollSeed: "wire-brand",
       engine,
-      creativeRegister: true,
+      authorRoad: true,
     });
     for (const candidate of on.candidates) expect(candidate.prompt.toLowerCase()).not.toContain("versace");
     const prompt = String((on.compiledBrief.register as { prompt: string }).prompt);
@@ -796,7 +777,7 @@ describe("slice C — the WIRE through the compiler: two walls on the author roa
   it("'a red sports car' refuses free as not_a_being, in the founder's words, and the author is never called", async () => {
     const engine = engineReading([intentWith("not_a_being")]);
     const refusal = await refusalOf(() =>
-      castingBriefCompiler({ briefText: "a red sports car", candidateCount: 8, rollSeed: "c-car", engine, creativeRegister: true }),
+      castingBriefCompiler({ briefText: "a red sports car", candidateCount: 8, rollSeed: "c-car", engine, authorRoad: true }),
     );
     expect(refusal.code).toBe("not_a_being");
     expect(refusal.message).toBe(NOT_A_BEING_MESSAGE);
@@ -807,7 +788,7 @@ describe("slice C — the WIRE through the compiler: two walls on the author roa
   it("a named character refuses free as likeness — the wall the ruling KEEPS", async () => {
     const engine = engineReading([intentWith("likeness")]);
     const refusal = await refusalOf(() =>
-      castingBriefCompiler({ briefText: "a Spider-Man look-alike", candidateCount: 8, rollSeed: "c-likeness", engine, creativeRegister: true }),
+      castingBriefCompiler({ briefText: "a Spider-Man look-alike", candidateCount: 8, rollSeed: "c-likeness", engine, authorRoad: true }),
     );
     expect(refusal.code).toBe("likeness");
     expect(refusal.message).toBe(LIKENESS_MESSAGE);
@@ -817,7 +798,7 @@ describe("slice C — the WIRE through the compiler: two walls on the author roa
   it("a creature CASTS on the author road — the stage wall is dead there — and the row records the reading", async () => {
     const brief = "a swamp monster with moss-green skin and amber eyes";
     const engine = engineReading([intentWith("being")]);
-    const on = await castingBriefCompiler({ briefText: brief, candidateCount: 8, rollSeed: "c-creature", engine, creativeRegister: true });
+    const on = await castingBriefCompiler({ briefText: brief, candidateCount: 8, rollSeed: "c-creature", engine, authorRoad: true });
     expect(sent(engine, "author")).toHaveLength(0);
     /*
       #232/#237: the reader called it a `being`, so the block it was painted
@@ -845,11 +826,11 @@ describe("slice C — the WIRE through the compiler: two walls on the author roa
 
   it("a human on the author road records subject 'human'; an unparsed reply records 'unread' and the sheet goes out on the verbatim brief", async () => {
     const human = engineReading([intentWith("photoreal_human")]);
-    const a = await castingBriefCompiler({ briefText: THIN, candidateCount: 8, rollSeed: "c-human", engine: human, creativeRegister: true });
+    const a = await castingBriefCompiler({ briefText: THIN, candidateCount: 8, rollSeed: "c-human", engine: human, authorRoad: true });
     expect(a.compiledBrief.register).toMatchObject({ kind: "author", subject: "human" });
 
     const garbage = engineReading(["not json at all", "still not json"]);
-    const b = await castingBriefCompiler({ briefText: THIN, candidateCount: 8, rollSeed: "c-unread", engine: garbage, creativeRegister: true });
+    const b = await castingBriefCompiler({ briefText: THIN, candidateCount: 8, rollSeed: "c-unread", engine: garbage, authorRoad: true });
     expect(b.compiledBrief.interpreted).toBe(false);
     expect(b.compiledBrief.register).toMatchObject({ kind: "author", subject: "unread" });
     expect(b.candidates[0]?.prompt.startsWith(`${THIN}\n\n`)).toBe(true);
@@ -858,7 +839,7 @@ describe("slice C — the WIRE through the compiler: two walls on the author roa
   it("the styled-brief screen is not consulted on the author road: an anime brief with an unparsed reply paints from its own words; off, it still walls", async () => {
     const brief = "an anime girl with silver twin-tails";
     const on = await castingBriefCompiler({
-      briefText: brief, candidateCount: 8, rollSeed: "c-styled-on", engine: engineReading(["{ not: json"]), creativeRegister: true,
+      briefText: brief, candidateCount: 8, rollSeed: "c-styled-on", engine: engineReading(["{ not: json"]), authorRoad: true,
     });
     expect(on.candidates[0]?.prompt.startsWith(`${brief}\n\n`)).toBe(true);
     expect(on.compiledBrief.register).toMatchObject({ kind: "author", subject: "unread" });
@@ -872,7 +853,7 @@ describe("slice C — the WIRE through the compiler: two walls on the author roa
   it("a FOLLOW under the flag is the author road too (#154) and is asked the four-valued subject question; off the flag it is asked today's", async () => {
     const engine = engineReading([intentWith("photoreal_human")]);
     await castingBriefCompiler({
-      briefText: RICH, candidateCount: 8, rollSeed: "c-follow", engine, followIdentity: FOLLOW as never, creativeRegister: true,
+      briefText: RICH, candidateCount: 8, rollSeed: "c-follow", engine, followIdentity: FOLLOW as never, authorRoad: true,
     });
     expect(sent(engine, "interpret")[0]?.system).toContain(SUBJECT_INSTRUCTION);
     expect(sent(engine, "interpret")[0]?.system).not.toContain(COHORT_INSTRUCTION);
@@ -923,7 +904,7 @@ describe("the cast style (#142) — the settings modal's selector, one member to
       candidateCount: 8,
       rollSeed: "wire-style",
       engine: engineAnswering([]),
-      creativeRegister: true,
+      authorRoad: true,
       style: "photoreal",
     });
     expect(on.compiledBrief.register).toMatchObject({ kind: "author", style: "photoreal" });
@@ -943,7 +924,7 @@ describe("the cast style (#142) — the settings modal's selector, one member to
       candidateCount: 8,
       rollSeed: "wire-style-off",
       engine: engineAnswering([]),
-      creativeRegister: false,
+      authorRoad: false,
       style: "photoreal",
     });
     expect(off.compiledBrief.register).toBeUndefined();

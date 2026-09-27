@@ -158,7 +158,7 @@ describe("the prompt author's model", () => {
         "a young woman with an intense cyber-goth aesthetic, platinum-silver asymmetric hair, pale porcelain skin",
       candidateCount: 8,
       rollSeed: "author-model-arm",
-      creativeRegister: true,
+      authorRoad: true,
     });
     /* The road ran and composed by code: seed + block, no text call. */
     const register = (compiled.compiledBrief as { register?: { kind?: string; mode?: string } }).register;

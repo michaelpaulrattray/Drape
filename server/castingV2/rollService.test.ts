@@ -110,7 +110,6 @@ vi.mock("../db/castingV2", async (importOriginal) => ({
   /* The parent SHEET's born pair. Its default is the honest one for a fixture
      whose parent predates the paths: both NULL, which must keep the follow's
      prompt unpathed. The follow arms override it. */
-  getRollWardrobeForOwnedCandidate: vi.fn(async () => ({ wardrobeLine: null })),
   getOwnedRoll: vi.fn(async () => ({
     id: 100,
     publicId: "roll-public",
@@ -499,7 +498,6 @@ describe("the sequence", () => {
   it("a brief that fits reaches the compiler untouched", async () => {
     const long = "a wiry cyclist ".repeat(140);
     vi.stubEnv("CASTING_V2_SCOPE", "all");
-    vi.stubEnv("CASTING_CREATIVE_REGISTER_SCOPE", `users:${INPUT.userId}`);
     try {
       const seen: string[] = [];
       const dependencies = baseDependencies();
@@ -525,7 +523,6 @@ describe("the sequence", () => {
     const long = "a wiry cyclist ".repeat(270);
     expect(long.length).toBeGreaterThan(BRIEF_TEXT_MAX_AUTHOR_ROAD);
     vi.stubEnv("CASTING_V2_SCOPE", "all");
-    vi.stubEnv("CASTING_CREATIVE_REGISTER_SCOPE", `users:${INPUT.userId}`);
     try {
       await expect(
         createRoll({ ...(baseDependencies() as object) } as never, { ...INPUT, briefText: long }),
@@ -646,7 +643,6 @@ describe("the sequence", () => {
     const long = "a wiry cyclist ".repeat(140);
     expect(long.length).toBeGreaterThan(2000);
     vi.stubEnv("CASTING_V2_SCOPE", "all");
-    vi.stubEnv("CASTING_CREATIVE_REGISTER_SCOPE", `users:${INPUT.userId}`);
     try {
       await expect(
         createRoll({ ...(baseDependencies() as object) } as never, { ...INPUT, briefText: long, unlock: ["sex"] as never }),
@@ -1396,25 +1392,61 @@ describe("no roll is born on a path", () => {
     });
 
     /**
-     * ⚠ A FOLLOW WEARS THE SHEET IT DESCENDS FROM, IN THE PICTURE AS WELL AS
-     * IN THE ROW — and this OUTLIVES the retirement (§3.1).
+     * ⚠ THE ROAD, ASSERTED AT THE WIRE — #1443, and this arm is the whole reason
+     * the compiler's `authorRoad` input may stay OPTIONAL.
      *
-     * Rolls written while the road ran still carry a pair, and a follow from
-     * one of them must be dressed in it: the db layer inherits inside the
-     * transaction, which is the authority for what is STORED, and that arrives
-     * too late for the eight PROMPTS. So the pair is read owner-scoped before
-     * the compile, and these arms assert on what the COMPILER was handed.
+     * Slice 2 deleted `CASTING_CREATIVE_REGISTER_SCOPE`, so nothing reads a flag
+     * to decide a road any more: this service passes a literal `true`. The
+     * compiler's input still DEFAULTS to the retired house road, because 86 arms
+     * across 17 suites drive it that way and retiring them is #180's ghost audit
+     * and slice 4 (#1445). That default is the hazard, and it is the hazard this
+     * arm exists for: a production caller that stopped passing the road would
+     * compose a sheet no engine has been sent since 2026-09-24, silently, with
+     * every other arm in this file still green.
+     *
+     * Read off the object the compiler was HANDED (invariant 5), never off a
+     * constant near it.
+     */
+    it("⚠ hands the compiler the AUTHOR ROAD, as a literal — the flag is gone and the default is the retired one (#1443)", async () => {
+      seedCandidates();
+      const seen: Record<string, unknown>[] = [];
+      await createRoll(
+        {
+          ...(baseDependencies() as object),
+          compileBrief: async (compilerInput: Record<string, unknown>) => {
+            seen.push(compilerInput);
+            return deterministicBriefCompiler(compilerInput as never);
+          },
+        } as never,
+        { ...INPUT } as never,
+      );
+      expect(seen[0]?.authorRoad).toBe(true);
+      /* And the flag's own input name is gone with the flag — a service still
+         sending `creativeRegister` would be handing the compiler a key it no
+         longer reads, which reads as a road being chosen and is not one. */
+      expect("creativeRegister" in seen[0]!).toBe(false);
+    });
+
+    /**
+     * ⚠ A FOLLOW WORE THE SHEET IT DESCENDED FROM, AND SINCE #1443 IT DOES NOT
+     * — slice 2 of the old-lane retirement, on his word on #1398: "Delete it".
+     *
+     * These two arms asserted that the COMPILER was handed the parent roll's own
+     * sentence (`inheritedWardrobe`), read owner-scoped before the compile so the
+     * eight prompts and the row could not disagree. That was the HOUSE road's
+     * contract. On the author road a follow is dressed by the engine from its own
+     * brief (#154) and the line the row records is the brief's own stated outfit
+     * (#1222) — so the read had no consumer left, and
+     * `getRollWardrobeForOwnedCandidate` is deleted with it.
+     *
+     * INVERTED rather than deleted, because the new contract deserves a positive
+     * control at the two places it is decided: what the compiler is handed, and
+     * what the db layer is told about inheritance.
      */
     describe("a follow", () => {
-      const PARENT_LINE = "a red apron over a plain white tee, dark straight jeans, plain low shoes";
-
-      /* ⚠ The fixture is the db reader's REAL shape and lost its `path` with it
-         (step (e) — `OwnedRollWardrobe` is one field now). A fixture richer than
-         the function it stands in for is how a suite goes on proving something
-         about a shape that can no longer occur. */
-      async function followWith(parent: { wardrobeLine: string | null }) {
+      it("hands the compiler NO inherited sentence, and tells the db layer not to inherit (#1443)", async () => {
         const castingDb = await castingDbModule();
-        (castingDb.getRollWardrobeForOwnedCandidate as any).mockResolvedValueOnce(parent);
+        (castingDb.createRollWithCandidates as any).mockClear();
         seedCandidates();
         const seen: Record<string, unknown>[] = [];
         await createRoll(
@@ -1427,29 +1459,18 @@ describe("no roll is born on a path", () => {
           } as never,
           { ...INPUT, followCandidatePublicId: FOLLOW_CANDIDATE_PUBLIC_ID },
         );
-        return seen[0];
-      }
-
-      it("hands the compiler the PARENT's line, not a freshly resolved one", async () => {
-        const compilerInput = await followWith({ wardrobeLine: PARENT_LINE });
-        expect(compilerInput.inheritedWardrobe).toEqual({ line: PARENT_LINE });
-        /* And no pick travelled with it — the field is gone, and the answer
-           already exists anyway, which was the older of the two reasons. */
+        const compilerInput = seen[0]!;
+        /* Asked with `in` rather than left to `toEqual`, which treats an
+           explicitly-undefined property as a missing one and would pass over a
+           service that still put the key there. */
+        expect("inheritedWardrobe" in compilerInput).toBe(false);
         expect("pickWardrobe" in compilerInput).toBe(false);
-        /* ⚠ Nor a PATH (step (e)), asked with `in` rather than left to `toEqual`
-           — which treats an explicitly-undefined property as a missing one and
-           would pass over a service that still put the key there. */
-        expect("path" in (compilerInput.inheritedWardrobe as object)).toBe(false);
-      });
-
-      it("⚠ carries the parent's NULL when the parent predates the paths", async () => {
-        /*
-          The same divergence with its sign flipped: a service that resolved a
-          line here would paint eight people in the house outfit while the
-          transaction wrote the parent's NULL.
-        */
-        const compilerInput = await followWith({ wardrobeLine: null });
-        expect(compilerInput.inheritedWardrobe).toEqual({ line: null });
+        expect("path" in compilerInput).toBe(false);
+        /* And a FOLLOW is the author road too (#154), stated at the wire. */
+        expect(compilerInput.authorRoad).toBe(true);
+        const calls = (castingDb.createRollWithCandidates as any).mock.calls;
+        expect(calls.length, "nothing reached the insert").toBeGreaterThan(0);
+        expect(calls[calls.length - 1][0].inheritWardrobe).toBe(false);
       });
     });
   });
@@ -1499,9 +1520,7 @@ describe("the ROW A follow (#177) — on the author road the photo rides, or the
 
   beforeEach(() => {
     saved.CASTING_V2_SCOPE = process.env.CASTING_V2_SCOPE;
-    saved.CASTING_CREATIVE_REGISTER_SCOPE = process.env.CASTING_CREATIVE_REGISTER_SCOPE;
     process.env.CASTING_V2_SCOPE = "all";
-    process.env.CASTING_CREATIVE_REGISTER_SCOPE = "all";
   });
   afterEach(() => {
     for (const [name, value] of Object.entries(saved)) {
@@ -1618,20 +1637,18 @@ describe("the ROW A follow (#177) — on the author road the photo rides, or the
     expect(dbCalls.createRoll).not.toHaveBeenCalled();
   });
 
-  it("off the author road a follow reads no storage and the engine receives no references — the house wire is what it always was", async () => {
-    process.env.CASTING_CREATIVE_REGISTER_SCOPE = "off";
-    const { seen, result } = await followRoll();
-    await result;
-    expect(anchorReads).toEqual([]);
-    expect(seen[0]?.anchorImageAttached).toBe(false);
-    for (const dispatch of engineSent) expect(dispatch.references).toBeUndefined();
-    const written = dbCalls.createRoll.mock.calls[0]?.[0] as {
-      candidates: Array<{ internalPrompt: { anchorImageKey?: string } }>;
-    };
-    for (const candidate of written.candidates) {
-      expect(candidate.internalPrompt).not.toHaveProperty("anchorImageKey");
-    }
-  });
+  /*
+    ⚠ "off the author road a follow reads no storage and the engine receives no
+    references" STOOD HERE AND IS GONE — #1443. It set this flag to `off` and
+    asserted the HOUSE wire: no anchor read, no reference on the dispatch, no
+    `anchorImageKey` on the written candidate. There is no off, so the arm could
+    only pass by arming a road nothing can take.
+
+    The states it protected are still driven, on the road that is left: the arm
+    above refuses FREE when the anchor frame cannot be read, and the
+    no-photograph case has its own arm in `creativeRegisterScope.test.ts` (a
+    follow WITHOUT the photo attached carries no clause at all).
+  */
 });
 
 /**

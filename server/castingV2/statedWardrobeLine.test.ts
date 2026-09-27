@@ -161,7 +161,7 @@ describe("the wire — the extraction block is asked exactly when the author roa
       candidateCount: 8,
       rollSeed: "seed-stated-wire-author",
       engine: authorEngine,
-      creativeRegister: true,
+      authorRoad: true,
     });
     /* The interpreter may legitimately re-sample once, so the claim is about
        EVERY call that went out, not about there being one. */
@@ -194,7 +194,7 @@ describe("the compile — the author road records her outfit and never restates 
       candidateCount: 8,
       rollSeed: "seed-stated-line",
       engine: engineReturning(replyWith(SIFR_LINE)),
-      creativeRegister: true,
+      authorRoad: true,
     });
     expect(compiled.wardrobeLine).toBe(SIFR_LINE);
   });
@@ -213,7 +213,7 @@ describe("the compile — the author road records her outfit and never restates 
       candidateCount: 8,
       rollSeed: "seed-stated-not-restated",
       engine: engineReturning(replyWith(SIFR_LINE)),
-      creativeRegister: true,
+      authorRoad: true,
     });
     expect(compiled.wardrobeLine).toBe(SIFR_LINE);
     for (const candidate of compiled.candidates) {
@@ -229,7 +229,7 @@ describe("the compile — the author road records her outfit and never restates 
       candidateCount: 8,
       rollSeed: "seed-stated-none",
       engine: engineReturning(replyWith(null)),
-      creativeRegister: true,
+      authorRoad: true,
     });
     expect(compiled.wardrobeLine).toBeNull();
   });
@@ -246,7 +246,7 @@ describe("the compile — the author road records her outfit and never restates 
       candidateCount: 8,
       rollSeed: "seed-stated-poison",
       engine: engineReturning(replyWith("a red leather jacket and dark jeans")),
-      creativeRegister: true,
+      authorRoad: true,
     });
     expect(compiled.wardrobeLine).toBeNull();
   });

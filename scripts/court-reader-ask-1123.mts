@@ -71,11 +71,14 @@ import { CARD_FIELDS, CONTROL_FIELDS, DEAD_FIELDS, trimAsk } from "./lib/readerA
 /**
  * The ask production sends today, READ FROM THE COMPOSER rather than quoted.
  *
- * All three scope flags the reader's options hang off stand at `all`
- * (`scripts/lib/productionFlagPositions.mts`: `CASTING_CREATIVE_REGISTER_SCOPE`
- * #201, `CASTING_BRIEF_FIDELITY_SCOPE` #203, `CASTING_BORN_INK_SCOPE` #215, all
- * widened 2026-09-24), and the compiler hands `wardrobe` a literal `false`
- * (`briefCompiler.ts:1136`). So this object IS every account's roll.
+ * `author` is a literal `true` since #1443 retired
+ * `CASTING_CREATIVE_REGISTER_SCOPE` with the old lane (his word on #1398:
+ * "Delete it") — the paragraph here named it as one of three flags standing at
+ * `all`, which is why the sentence moved rather than the object. The other two
+ * still stand at `all` (`scripts/lib/productionFlagPositions.mts`:
+ * `CASTING_BRIEF_FIDELITY_SCOPE` #203, `CASTING_BORN_INK_SCOPE` #215, widened
+ * 2026-09-24), and the compiler hands `wardrobe` a literal `false`. So this
+ * object IS every account's roll.
  */
 const READER_OPTIONS = {
   wardrobe: false,

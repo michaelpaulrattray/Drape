@@ -127,6 +127,56 @@ cannot pass by being inert.
 
 ### SLICE 2 — the house-road WRITE path comes out of the server, and the flag with it
 
+> ⚠ **CORRECTED AT THE CODE, 2026-09-27, BY THE SHIFT THAT BUILT IT — SLICE 2
+> SHIPPED HALF OF WHAT THIS SECTION SAYS, ON PURPOSE, AND THE OTHER HALF IS
+> MEASURED RATHER THAN DEFERRED ON A HUNCH.**
+>
+> **What shipped:** the FLAG and everything that reads one. `CASTING_CREATIVE_REGISTER_SCOPE_ENV`,
+> both error classes, `parseCastingCreativeRegisterScope`,
+> `captureCastingCreativeRegisterEnabled`,
+> `validateCastingCreativeRegisterEnvironment`, the boot fence in
+> `server/_core/env.ts`, the capture in `rollService`, both readers in
+> `server/routes/castingV2.ts`, the row in `scripts/lib/productionFlagPositions.mts`
+> and the production variable. Nothing in the product reads a flag to decide a
+> road any more: **`rollService` passes the compiler a literal `authorRoad: true`,
+> asserted at the wire** (`rollService.test.ts`).
+>
+> **What did NOT ship, and the number that decided it:** the compiler's HOUSE
+> ARM. The collapse this section describes was written, driven, and then declined
+> — with the branch removed, **86 arms across 17 suites go red**: `styleRefusal`
+> 24, `categorySurvival` 17, `axisRegistry` 10, `stylingResolution` 6,
+> `partialDeferenceOn` 4, `followAnchor` 4, `realizedAxes` 3, `promptGuards` 3,
+> `partialDeference` 3, `biasTierAxes` 3, `statedHairSpeaks` 2,
+> `overridePrecedence` 2, and one each in `varianceBudget`, `likenessRefusal`,
+> `hairStyles`, `composedDirection`, `briefFidelityScope`. Read by running the
+> full suite over the collapsed tree, so the figure is reproducible by anybody who
+> removes the branch and runs `pnpm test` once.
+>
+> **Why that is a re-cut and not a shortcut.** Those arms drive this compiler
+> with a reader double and read the HOUSE composition back out of the eight
+> prompts — the categories, the styling tiers, the axes. They are **#180's ghost
+> audit's own subject** (*"categories, dice, archetypes, personas"*) and slice
+> 4's (**#1445**). Deciding which of them die is a reading of that table, not a
+> side effect of taking a variable out, and his rule on #1398 is explicit that
+> nothing is folded into a retirement. **`deterministicBriefCompiler` cannot
+> stand in for them**: it asks no reader, so an arm that needs a reply to set
+> intent has no seam left once the live compiler stops composing house.
+>
+> **⚠ AND SLICE 4's CARD UNDER-COUNTS ITS OWN POPULATION BY THIRTEEN SUITES.**
+> It names four (`briefCompiler.test.ts`, `hairStyles.test.ts`,
+> `skinTonePin.test.ts`, `statedCovering.test.ts`). The measured figure is the
+> seventeen above plus those four, and it is recorded on #1445 before anybody
+> branches on it (the #909 rule: a card filed mid-another-job records the sample
+> that shift had in hand).
+>
+> **The hazard this leaves, and what holds it:** the compiler's `authorRoad`
+> input DEFAULTS to the retired house road, so a new production caller that
+> forgot it would compose a sheet no engine has been sent since 2026-09-24,
+> silently. `rollService.test.ts` asserts the literal on the object the compiler
+> was HANDED — on a plain roll and on a follow — and that arm reddens under
+> sabotage (measured: 2 arms red when the literal is removed).
+
+
 **One act, deliberately.** Collapsing the code while the flag still exists ships
 a flag the product ignores; deleting the flag while the code reads it crashes the
 boot. So the code collapse, the flag's removal from the boot fence, and the
@@ -237,6 +287,30 @@ the reason on the card rather than only here.
 | the `CASTING_V2_SCOPE` parent | untouched. This retirement is one rung of its chain, not the chain |
 
 ## THE FLOOR ON THIS MANIFEST
+
+> ⚠ **AND THE FLOOR WAS REAL — SLICE 2 FOUND WHAT NO GREP IN THIS DOCUMENT
+> COULD.** Three things this manifest did not say, each read at the code while
+> the slice was being cut:
+>
+> 1. **`buildChips`' `carry.authorRoad` could not be collapsed to a constant**
+>    the way the population table says: `deterministicBriefCompiler` passes
+>    `false` there, so collapsing `removable()` would have changed THAT
+>    compiler's chips — slice 4's subject, decided by accident. It is RENAMED
+>    (`derivedChipsRemovable`) rather than collapsed, which also takes the
+>    hazardous word off a write-path site.
+> 2. **`rollService`'s `inheritedWardrobe` read had to go with it.** The table
+>    says `:706` becomes `null`; making it so leaves the local and its database
+>    read with no consumer, and `getRollWardrobeForOwnedCandidate` — one
+>    non-test caller — with none either. Both are deleted, and the query it ran
+>    on every follow goes with them.
+> 3. **The `reimagine` door's gate had NO driven arm at all**, found by
+>    sabotaging the line this slice was moving: with the whole gate deleted, 241
+>    tests passed across thirteen files. Its sibling — the field the glyph is
+>    drawn from — was worse: a literal `false` for every account passed **6,311
+>    tests across 326 files** and would have put every customer's client back on
+>    the retired house-road UI. Three arms now drive both, through the real
+>    router, and each reddens under sabotage.
+
 
 **Every population above is a FLOOR, and the reader that produced it is named
 beside it** — `grep -c authorRoad` per file, `grep -rn` for the flag constant,

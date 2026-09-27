@@ -297,40 +297,40 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "interpreting two sets of briefs is a cost paid briefly and on purpose. ⚠ A reading "
       + "taken while it is narrow states which side it drove.",
   },
-  CASTING_CREATIVE_REGISTER_SCOPE: {
-    position: "all",
-    why:
-      "THE AUTHOR ROAD, NOW EVERY ACCOUNT'S ROAD. WIDENED to `all` 2026-09-24 on his Crew "
-      + "reply #201 (card switch-01-author-road), verbatim and entire: \"Yes\". " + "HIS SWITCH SITTING, 2026-09-24 (#1132) — he went down the whole list in one go, as he "
-      + "said he would (\"One sitting — prepare every switch with its evidence and I'll go "
-      + "down the list in one go\"). "
-      + "This is the flip N1 was signed off for and never shipped: his sign-off the day "
-      + "before (\"im happy to sign off on the cyborg breif now\") is law 9 satisfied, and "
-      + "until today every account that was not his still cast through the old house "
-      + "compiler. It REMOVES a text call from every roll rather than adding one — since "
-      + "Re-imagine the prompt is composed by code — so it is cheaper than what it replaces. "
-      + "75 rolls had gone through this road on production since 26 August, all his. It is "
-      + "the parent of CASTING_CONCEPT_UPLOAD_SCOPE, which widened in the same act and could "
-      + "not have widened before it. Still owed and NOT blocking: the N1 milestone-close deep "
-      + "review (#1121, the relay's). "
-      + "*** IT IS BEING RETIRED — his word on #1398, Crew reply #228, 2026-09-26 23:06:38Z, "
-      + "verbatim and entire: \"Delete it\", said of the old casting lane this flag chose "
-      + "between, and #1398's wording covers both halves (\"the old lane comes out of the "
-      + "product, and so does the switch that used to choose between the two\"). Manifest: "
-      + "docs/specs/OLD_LANE_RETIREMENT_MANIFEST_2026-09-27.md. Slices: #1442 (its only child "
-      + "re-parented off it — DONE 2026-09-27, so the sentence above about being a parent is "
-      + "history), #1443 (the write path and this flag, which is when THIS ROW IS REMOVED "
-      + "rather than set to off — the CASTING_TWO_PATHS_SCOPE precedent), #1444, #1445. "
-      + "The position is unchanged until #1443 deploys: all. --- the record before this widen: the creative register (#16, rung N1 of the rebaseline) — BUILT DARK 2026-08-26 on the "
-      + "founder's own verdict on the court (\"I think C is worth building to find out how close "
-      + "we can get\"), and FLIPPED TO users:1 2026-08-26 01:21Z on his word on the Crew tab, "
-      + "verbatim: \"flip it\" (reply #4 on card register-flip-users1; set by foreman-16 under "
-      + "the established variable procedure, read back by name). This is step 3 of the design's "
-      + "§5 — a flagged roll of his cyborg brief on his account — and his eye on both bars "
-      + "(conviction + spread) is the milestone gate. Not `all` before that: an ordinary brief "
-      + "under the flag still compiles house to the byte, but the creative population has not "
-      + "been seen at his eye through the built road yet.",
-  },
+  /* ⚠ `CASTING_CREATIVE_REGISTER_SCOPE`'s ROW STOOD HERE AND IS GONE — #1443,
+     slice 2 of the old-lane retirement, on his word on #1398 (Crew reply #228,
+     2026-09-26 23:06:38Z, verbatim and entire: "Delete it"), whose card covers
+     both halves: "the old lane comes out of the product, and so does the switch
+     that used to choose between the two". A position is his word alone, and this
+     sentence is that word.
+
+     REMOVED rather than left at `off`, which is this table's own rule read
+     correctly and the `CASTING_TWO_PATHS_SCOPE` precedent one comment down: a
+     row survives a variable being UNSET while any reader exists in code, and
+     dies when the last reader does. Slice 2 took the constant, the parser, the
+     capture, the boot fence and every branch that read it, so the population arm
+     below ("names no flag neither reader declares") is what requires the row to
+     go.
+
+     Its history, because the row's lesson outlives the row: it was the AUTHOR
+     ROAD's door — built dark 2026-08-26 on his verdict on the court ("I think C
+     is worth building to find out how close we can get"), flipped to `users:1`
+     the same day on his "flip it" (Crew reply #4), and widened to `all`
+     2026-09-24 on his "Yes" (Crew reply #201, card switch-01-author-road) at the
+     switch sitting. That widen is what finally SHIPPED N1: until it, every
+     account that was not his still cast through the old house compiler. The
+     switch audit read the rows on 2026-09-23 and found every roll on production,
+     all time, belonged to ONE account — his (`N2_SWITCH_LIST_2026-09-23.md`) —
+     so no widen and no retirement on this row has ever disturbed a living
+     customer. That is quoted from the audit, not re-measured here.
+
+     ⚠ THE ORDER INSIDE THE SLICE, because it is the whole risk: the code
+     deploys FIRST and the variable is deleted from the service AFTER. Between
+     those moments the row still reads `all` and the behaviour is always-author,
+     so flag and behaviour agree. Its one child, CASTING_CONCEPT_UPLOAD_SCOPE,
+     was re-parented onto CASTING_V2_SCOPE in slice 1 (#1442) for the same
+     reason one rung earlier: a child whose boot fence names a parent that is
+     leaving is a crash-looping deploy. */
   /* ⚠ `CASTING_TWO_PATHS_SCOPE`'s ROW STOOD HERE AND IS GONE — #203 slice 2
      step (e), 2026-09-25, and it is REMOVED rather than left at `off` because
      this table's own population arm requires it: `productionFlagPositions.test.ts`

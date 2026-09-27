@@ -38,18 +38,22 @@
  * ---
  *
  * ⚠ **WHAT THIS FILE COMPOSES IS NOT WHAT A ROLL SENDS TODAY, AND NOTHING
- * ELSE IN HERE SAYS SO (#1217).** Everything above describes the HOUSE road,
- * and the house road is the `off` position of a flag that is now `all`:
- * `CASTING_CREATIVE_REGISTER_SCOPE` widened to every account on 2026-09-24
- * (his Crew reply #201, verbatim and entire: *"Yes"*;
- * `scripts/lib/productionFlagPositions.mts:300`). On the author road
- * `briefCompiler.ts:1420` replaces every candidate's `prompt` with the one
- * authored sentence, so **the constant is composed eight times per roll and
- * delivered to no engine.**
+ * ELSE IN HERE SAYS SO (#1217).** Everything above describes the HOUSE road.
+ * That road was the `off` position of `CASTING_CREATIVE_REGISTER_SCOPE`, which
+ * widened to every account on 2026-09-24 (his Crew reply #201, verbatim and
+ * entire: *"Yes"*). On the author road `briefCompiler` replaces every
+ * candidate's `prompt` with the one authored sentence, so **the constant is
+ * composed eight times per roll and delivered to no engine.**
  *
- * It is still LIVE code, and that is the reason it is documented rather than
- * deleted — it is the road the product falls back to if that flag ever moves,
- * and retiring it is a rung decision, not a housekeeping one.
+ * ⚠ **AND THE FLAG ITSELF IS GONE NOW — #1443, slice 2 of the old-lane
+ * retirement, on his word on #1398: *"Delete it"*. So the sentence this
+ * paragraph used to end on is no longer true**: it said this is *"the road the
+ * product falls back to if that flag ever moves"*, and there is no flag left to
+ * move. What reaches an engine from here is `deterministicBriefCompiler`'s
+ * output and nothing else. **Its fate is SLICE 4 (#1445), deliberately and on
+ * its own card** — his rule on the retirement is that nothing new is folded
+ * into it, and deciding what happens to a compiler a test seam still uses is a
+ * decision, not a sweep. It is LIVE code until that card lands.
  *
  * **What this paragraph is for:** a shift reading this file to learn what the
  * product sends is reading the wrong answer, and the cost of that is the whole
@@ -2795,14 +2799,14 @@ function coveringFor(statedText: string): string {
  * it explicitly.
  *
  * ⚠ **CALLED ON EVERY ROLL; ITS RESULT REACHES NO ENGINE (#1217).**
- * `briefCompiler.ts:1070` calls this per candidate inside `resolveSheet`, which
- * `briefCompiler.ts:1336` calls unconditionally, above the register decision —
- * and `briefCompiler.ts:1420` then overwrites every `prompt` with the authored
- * sentence, because `CASTING_CREATIVE_REGISTER_SCOPE` is `all`. The module
- * docblock's last paragraph carries the whole reading. The one caller whose
- * output IS delivered is `deterministicBriefCompiler`
- * (`briefCompiler.ts:1562`), which has no production caller — it is the
- * no-interpreter test seam.
+ * `briefCompiler` calls this per candidate inside `resolveSheet`, which the live
+ * compiler calls unconditionally — and then overwrites every `prompt` with the
+ * authored sentence. It was `because CASTING_CREATIVE_REGISTER_SCOPE is all`;
+ * since #1443 took that flag out there is no other road for it to be true of.
+ * The module docblock's last paragraph carries the whole reading. The one caller
+ * whose output IS delivered is `deterministicBriefCompiler`, which has no
+ * production caller — it is the no-interpreter test seam, and slice 4 (#1445) is
+ * where both of them are settled.
  */
 export function composeCandidatePrompt(input: {
   /** The user's own sentence — the reliable place to ask "did they say hair?". */

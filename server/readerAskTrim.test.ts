@@ -33,10 +33,11 @@ import {
 
 /**
  * The ask production sends TODAY, and it is read from the composer rather than
- * quoted: `CASTING_CREATIVE_REGISTER_SCOPE`, `CASTING_BRIEF_FIDELITY_SCOPE` and
- * `CASTING_BORN_INK_SCOPE` all stand at `all`
- * (`scripts/lib/productionFlagPositions.mts`), and the compiler hands
- * `wardrobe` a literal `false` (`briefCompiler.ts:1136`).
+ * quoted: `author` is a literal `true` since #1443 retired
+ * `CASTING_CREATIVE_REGISTER_SCOPE` with the old lane (his word on #1398:
+ * "Delete it"), `CASTING_BRIEF_FIDELITY_SCOPE` and `CASTING_BORN_INK_SCOPE`
+ * stand at `all` (`scripts/lib/productionFlagPositions.mts`), and the compiler
+ * hands `wardrobe` a literal `false`.
  */
 const productionAsk = (): string => interpreterSystemPrompt({
   wardrobe: false,

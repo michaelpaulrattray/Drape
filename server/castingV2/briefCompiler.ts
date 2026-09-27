@@ -413,17 +413,38 @@ export type BriefCompilerInput = {
    */
   briefFidelity?: boolean;
   /**
-   * THE AUTHOR ROAD — inside `CASTING_CREATIVE_REGISTER_SCOPE`, captured at
-   * the roll and handed down like the two above (#131). On, EVERY roll
-   * composes ONE prompt for the sheet — the customer's own words, the family
-   * clause when a follow is carried (#154), and the locked house block, all by
-   * code (#535: no text call at the roll; the author is the visible Re-imagine
-   * press, which writes into the box BEFORE anything rolls) — and the two
-   * walls are the ruling's. Off, or absent: the eight prompts, the reader's
-   * question and the walls are byte-identical to today's. The name is the
-   * flag's, kept so the capture site and the row's `register` read alike.
+   * THE AUTHOR ROAD. On, EVERY roll composes ONE prompt for the sheet — the
+   * customer's own words, the family clause when a follow is carried (#154),
+   * and the locked house block, all by code (#535: no text call at the roll;
+   * the author is the visible Re-imagine press, which writes into the box
+   * BEFORE anything rolls) — and the two walls are the ruling's.
+   *
+   * ⚠ IT WAS `creativeRegister`, READ OFF A FLAG, AND THE FLAG IS GONE —
+   * #1443, slice 2 of the old-lane retirement, on his word on #1398 (Crew reply
+   * #228: *"Delete it"*). `CASTING_CREATIVE_REGISTER_SCOPE`, its parser, its
+   * capture, its boot fence and its production row are deleted; **`rollService`
+   * passes a literal `true` on every roll**, and `rollService.test.ts` asserts
+   * that at the wire rather than near it. Production behaviour is unchanged —
+   * the flag stood at `all` for every account from 2026-09-24 (his Crew reply
+   * #201: *"Yes"*).
+   *
+   * ⚠ AND THE HOUSE ARM IS STILL HERE, WHICH IS THIS SLICE'S DECLARED
+   * REMAINDER RATHER THAN AN OVERSIGHT. Collapsing it was slice 2's stated
+   * scope and it was DRIVEN before it was declined: with the branch removed,
+   * **86 arms across 17 suites go red** — `styleRefusal` 24, `categorySurvival`
+   * 17, `axisRegistry` 10 and fourteen more — because they drive this compiler
+   * with a reader double and read the HOUSE composition back out of the eight
+   * prompts. Those arms are the category, styling and axis machinery #180's
+   * ghost audit is about, and deciding which of them die is that card's work
+   * and slice 4's (#1445), not a side effect of taking a flag out. The
+   * remainder is on both cards with the figure and the reader that produced it.
+   *
+   * So: absent means the retired HOUSE road, and the only callers that leave it
+   * absent are those suites and `deterministicBriefCompiler`. A new production
+   * caller that forgets it would compose a sheet no engine has been sent since
+   * 2026-09-24 — which is why the service's literal is asserted at the wire.
    */
-  creativeRegister?: boolean;
+  authorRoad?: boolean;
   /** The settings modal's style (#142) — read, like the meter, only on the author road. */
   style?: CastStyle;
   /** Set on a follow roll; the sheet narrows around this candidate. */
@@ -1116,7 +1137,7 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     which on that road was never sent and describes nobody in the frames.
   */
   const anchor = input.followStatedAnchor ?? anchorFrom(input.followIdentity ?? null);
-  const authorRoad = input.creativeRegister === true;
+  const authorRoad = input.authorRoad === true;
 
   const outcome = await interpretBrief({
     briefText,

@@ -485,8 +485,21 @@ export const NOTES_CAP_RELEASED =
  * THE SUBJECT QUESTION — one slot in the system prompt, two shapes (#131
  * slice C, the ruling's §6).
  *
- * Outside `CASTING_CREATIVE_REGISTER_SCOPE` the reader is asked today's
- * two-valued cohort question, and "other" walls the roll as
+ * ⚠ **BOTH SHAPES STILL EXIST HERE AND ONLY ONE OF THEM IS ASKED — #1443, slice
+ * 2 of the old-lane retirement.** `briefCompiler` now hands `author: true` on
+ * every roll, so the four-valued question below is the only one that reaches a
+ * reader; the two-valued one keeps its constants because `parseCastingIntent`'s
+ * own arms drive both, and because this slot is where working law 5 is proven
+ * (the swap asserts it applied at the prompt rather than near it).
+ *
+ * The paragraph that follows described a population that no longer exists: it
+ * opened *"Outside `CASTING_CREATIVE_REGISTER_SCOPE`"*, and there is no outside
+ * any more. **One door leaves the map with it, recorded in the capability atlas
+ * in the same commit: `roll.unsupported_cohort` can no longer be raised by the
+ * roll road at all**, because only the two-valued parse answers it.
+ *
+ * The two-valued cohort question asked the reader today's question, and "other"
+ * walled the roll as
  * `unsupported_cohort` — creature, anime, robot and named likeness alike,
  * because the only certified adapter paints photographic humans and the house
  * composer would bill for a photograph of someone vaguely anime-adjacent. On

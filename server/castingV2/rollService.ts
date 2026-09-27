@@ -44,7 +44,6 @@ import type { CastingSession } from "../../drizzle/schema";
 import {
   captureCastingBornInkEnabled,
   captureCastingBriefFidelityEnabled,
-  captureCastingCreativeRegisterEnabled,
 } from "./castingV2Scope";
 import { mintBornInkRows } from "./bornInkMint";
 import { refusal } from "./refusalTag";
@@ -76,7 +75,6 @@ import {
   getBriefForOwnedCandidate,
   getOwnedCandidateWithSelectedFace,
   getOwnedCastingSession,
-  getRollWardrobeForOwnedCandidate,
   getOwnedRoll,
   getRollByOperation,
   landCandidate,
@@ -428,9 +426,16 @@ export async function createRoll(
   let followStatedAnchor: FollowAnchor | null = null;
   /** The SELECTED face's frame key (#177 Row A) — the picture the customer is pointing at, resolved through selection like everything a follow inherits. */
   let followAnchorImageKey: string | null = null;
-  /* The parent's `path` travelled here beside its sentence until #203 slice 2
-     step (e); nothing downstream ever read it, so it is off the projection. */
-  let inheritedWardrobe: { wardrobeLine: string | null } | null = null;
+  /*
+    ⚠ `inheritedWardrobe` STOOD HERE, AND SO DID THE READ THAT FILLED IT — #1443,
+    slice 2. It carried the parent sheet's born outfit into the HOUSE compile, the
+    one consumer it ever had; with the flag gone a follow is dressed by the engine
+    from its own brief (#154) and the line the row records is the brief's own
+    stated outfit (#1222). `getRollWardrobeForOwnedCandidate` went with it — a
+    query whose answer nothing reads is a round trip on every follow and a claim
+    that machinery is live. (The parent's `path` had already left this projection
+    at #203 slice 2 step (e).)
+  */
   if (input.followCandidatePublicId) {
     /*
       Read through SELECTION — §11's second landmine (D-123).
@@ -495,33 +500,16 @@ export async function createRoll(
     followIdentity = honest.identity;
     followStatedAnchor = honest.statedAnchor;
     followAnchorImageKey = parent.imageKey;
-    /*
-      WHAT THE SHEET THIS FOLLOW DESCENDS FROM IS WEARING (design §3.1).
-
-      A follow inherits both columns, and the db layer performs that inheritance
-      in the statement that writes the row — which is the authority for what is
-      STORED and arrives too late for the eight PROMPTS. Read here, owner-scoped
-      through the owned candidate, so the pictures and the row agree.
-
-      Read UNCONDITIONALLY, and that is deliberate: a parent cast before the
-      paths existed answers `null`, which is exactly what the prompt needs to
-      stay unpathed. This used to say *"outside the flag as well"* — there is no
-      flag to be outside of since #203 slice 2 step (e) retired it, and the
-      unconditional read is now simply the only read there is.
-    */
-    inheritedWardrobe = (await getRollWardrobeForOwnedCandidate(
-      input.userId,
-      input.followCandidatePublicId,
-    )) ?? { wardrobeLine: null };
   }
 
   /*
-    THE AUTHOR ROAD, DECIDED FIRST (#131 slice E; review of PR #138, finding 1):
-    the register scope captured once, and the road predicate stated here from
-    the same input the compiler reads. It used to exclude a follow and a chip
-    edit; since #154 (the family clause) the flag alone decides — a follow's
-    anchor and the chip edits are carried as words. Two things below hang on
-    it: the brief bound and the PATH. On the author road the engine dresses the
+    THE AUTHOR ROAD WAS DECIDED HERE, AND SINCE #1443 THERE IS NOTHING TO DECIDE
+    (#131 slice E; review of PR #138, finding 1). The register scope was captured
+    once and the road predicate stated here from the same input the compiler
+    reads; it used to exclude a follow and a chip edit, and since #154 (the family
+    clause) the flag alone decided — a follow's anchor and the chip edits are
+    carried as words. Two things below used to hang on it: the brief bound (#1204
+    took it) and the PATH. On the author road the engine dresses the
     cast from the prompt (ruling rule 11 — the switch is retired), so no path
     is born and no wardrobe pick is asked; a sheet that drew "WARDROBE — <line>"
     over an outfit the engine was never told about was the review's finding —
@@ -540,8 +528,21 @@ export async function createRoll(
     (his Sifr dress became overalls and boots). A follow still re-derives from
     its own brief rather than inheriting.
   */
-  const creativeRegister = captureCastingCreativeRegisterEnabled(input.userId);
-  const authorRoad = creativeRegister;
+  /*
+    ⚠ THE REGISTER CAPTURE AND ITS `authorRoad` ALIAS STOOD HERE AND ARE GONE —
+    #1443, slice 2 of the old-lane retirement, on his word on #1398: *"Delete
+    it"*. `captureCastingCreativeRegisterEnabled` returned `all AND all` for
+    every account from 2026-09-24 (his Crew reply #201: *"Yes"*), so every
+    predicate below that read it is collapsed to its author arm.
+
+    ⚠ AND THE WORD DOES NOT LEAVE THE PRODUCT — it leaves the WRITE path only.
+    `rollComposedOnAuthorRoad` (`rollProjection.ts`) derives the same word from
+    the ROW's own compiled brief, 220 of 306 production sheets are read through
+    it, and it is permanent. The manifest
+    (`docs/specs/OLD_LANE_RETIREMENT_MANIFEST_2026-09-27.md`) opens on that
+    finding because a retirement done by grepping the name deletes the read path
+    in the same edit and goes green.
+  */
 
   /*
     THE ANCHOR PHOTO (#177; the founder's pick verbatim: "i chose row a on my
@@ -559,7 +560,7 @@ export async function createRoll(
     the same combination independently (`CandidateRequest.references`).
   */
   let anchorImage: { bytes: Buffer; contentType: string; imageKey: string } | null = null;
-  if (authorRoad && input.followCandidatePublicId) {
+  if (input.followCandidatePublicId) {
     /*
       BOTH photograph-unavailable states get the same free refusal (Fable
       review of #184, finding 1): a ready parent whose `imageKey` is NULL —
@@ -670,8 +671,11 @@ export async function createRoll(
 
     ⚠ It took `authorRoad` and chose between two bounds until #1204. The house
     bound's population emptied when the register flag went to `all` on
-    2026-09-24, so the argument was selecting an arm nothing could reach; the
-    road predicate is still computed above, because the COMPILE still needs it.
+    2026-09-24, so the argument was selecting an arm nothing could reach. ⚠ AND
+    THE CLAUSE THAT CLOSED THIS PARAGRAPH IS NO LONGER TRUE: it read *"the road
+    predicate is still computed above, because the COMPILE still needs it"* —
+    #1443 took the predicate with the flag, and the compile needs no argument to
+    take the only road there is.
   */
   const tooLong = briefTooLong(input.briefText);
   if (tooLong) throw new TRPCError({ code: "BAD_REQUEST", message: tooLong });
@@ -700,15 +704,25 @@ export async function createRoll(
         On a FOLLOW the sentence is the parent's, verbatim and including its
         null, because that is what the transaction is about to write.
       */
-      /* On the author road the house prompts are discarded and the row inherits
-         nothing, so the compiler is handed no sentence — its line, since #1222,
-         is the brief's own stated outfit, derived inside the compile. */
-      inheritedWardrobe: inheritedWardrobe && !authorRoad
-        ? { line: inheritedWardrobe.wardrobeLine }
-        : undefined,
+      /* ⚠ `inheritedWardrobe` STOOD HERE AND IS GONE (#1443). The house prompts
+         are discarded and the row inherits nothing, so the compiler is handed no
+         sentence — its line, since #1222, is the brief's own stated outfit,
+         derived inside the compile. The compiler's own input FIELD stays, because
+         `deterministicBriefCompiler` still hands it on (slice 4's, #1445). */
       readInk,
       briefFidelity,
-      creativeRegister,
+      /*
+        THE ROAD, AS A LITERAL — #1443. It was `creativeRegister`, captured off
+        `CASTING_CREATIVE_REGISTER_SCOPE` at the top of this function; the flag is
+        deleted and the answer it gave every account since 2026-09-24 is this.
+        ⚠ ASSERTED AT THE WIRE, not near it (invariant 5): `rollService.test.ts`
+        reads it off the object the compiler was handed, because the compiler's
+        input still DEFAULTS to the retired house road — 86 arms across 17 suites
+        drive it that way and retiring them is #180's and slice 4's work — so a
+        production caller that stopped passing this would compose a sheet no
+        engine has received since the flag went to `all`.
+      */
+      authorRoad: true,
       style: input.style,
       followIndexLabel,
       followIdentity,
@@ -787,8 +801,13 @@ export async function createRoll(
         parent candidate.
       */
       path: bornPath,
-      /* An authored follow is dressed by the engine (#154): the parent's pair stays with the parent. */
-      inheritWardrobe: !authorRoad,
+      /* An authored follow is dressed by the engine (#154): the parent's pair
+         stays with the parent. A LITERAL `false` since #1443 — it was
+         `!authorRoad`, off a flag that stood at `all` for every account, so the
+         db layer has taken this answer on every roll production has written
+         since the author road opened. The db option itself stays: it is a
+         general one, and collapsing it is a simplification nobody asked for. */
+      inheritWardrobe: false,
       /*
         ⚠ WRITTEN, NOT RE-RESOLVED — and it used to be re-resolved here.
 
