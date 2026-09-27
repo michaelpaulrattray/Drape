@@ -48,9 +48,7 @@ import {
   validateCastingBornInkEnvironment,
   CASTING_BORN_INK_SCOPE_ENV,
   CASTING_BRIEF_FIDELITY_SCOPE_ENV,
-  CASTING_CREATIVE_REGISTER_SCOPE_ENV,
   validateCastingBriefFidelityEnvironment,
-  validateCastingCreativeRegisterEnvironment,
   CASTING_CONCEPT_UPLOAD_SCOPE_ENV,
   validateCastingConceptUploadEnvironment,
   validateCastingInkRegionCropEnvironment,
@@ -555,16 +553,18 @@ export function validateEnv(): void {
   });
 
   /*
-    THE CREATIVE REGISTER, same parent and the same reason as the two above: it
-    gates the COMPILE of a roll — which register the eight slices are written
-    in — so a user outside casting has no brief for it to route. Off, and absent
-    means off, the compile is byte-identical to today's, which is the design's
-    own §1a and the first thing its suite asserts.
+    ⚠ THE CREATIVE REGISTER'S BOOT FENCE STOOD HERE AND IS GONE — #1443, slice 2
+    of the old-lane retirement, on his word on #1398: *"Delete it"*. It parsed
+    `CASTING_CREATIVE_REGISTER_SCOPE` and held it inside `CASTING_V2_SCOPE`;
+    there is no such variable any more, and a boot that checks a variable nobody
+    reads is invariant 7 wearing a green tick.
+
+    ⚠ THE VARIABLE IS DELETED FROM THE SERVICE AFTER THIS CODE DEPLOYS, NEVER
+    BEFORE — the order is the whole risk and it is stated on the card. Between
+    the two moments the row still reads `all` and the behaviour is always-author,
+    so flag and behaviour AGREE: the window can only produce an ignored
+    variable, never a wrong answer.
   */
-  validateCastingCreativeRegisterEnvironment({
-    scope: process.env[CASTING_CREATIVE_REGISTER_SCOPE_ENV],
-    castingScope: process.env[CASTING_V2_SCOPE_ENV],
-  });
 
   /*
     UPLOAD A CONCEPT (#185), and ⚠ ITS PARENT MOVED TO CASTING ON 2026-09-27

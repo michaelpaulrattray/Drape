@@ -122,7 +122,7 @@ export const ROADS: readonly Road[] = [
       "A roll is eight independently refundable units; a deploy landing mid-roll costs only the undelivered slices (accepted collision class, D-85).",
       "The path/wardrobeLine columns (migration 0051) make the born path a fact of the roll; NULL means cast before the paths existed.",
       "A brief the reader NEVER READ (the deadline fired, the transport or provider failed, no engine configured) is refused FREE before the claim as `reader_outage` at EVERY length (briefCompiler.ts; founder ruling #126 'refuse-free', Crew reply #7 2026-08-26, and 'always' on the length question, reply #9) - it replaced the H30 fallback that charged roll 219 for a sheet cast from the brief's first 80 characters. Only a reply the provider gave that the compiler could not parse still falls back; `reader_outage` is a declared door as of #206 (`roll.reader_outage`) and documented as unreached because no corpus row can carry a brief — this note stays as the road's account of WHY it exists.",
-      "On THE AUTHOR ROAD (`CASTING_CREATIVE_REGISTER_SCOPE`, #131 slice C) the roll's subject walls are the ruling's two and no third: the reader is asked a four-valued subject question (`SUBJECT_INSTRUCTION`, interpreter.ts) in place of the two-valued cohort one, a creature / robot / alien / anime brief CASTS, a real person or a named character refuses FREE before the claim as `likeness` (`LIKENESS_MESSAGE`, briefCompiler.ts) and a subject that is not a being refuses FREE as `not_a_being` (`NOT_A_BEING_MESSAGE`; founder: 'someone asking for an object should be refused like a car'). Both are the reader's judgement taken twice (`cohortWallRetried`). Off the flag the roll walls exactly as before (`unsupported_cohort`). Both walls are declared doors as of #206 — `roll.likeness` and `roll.not_a_being`, the latter the twin of `concept.no_being`, which reached the map first while this half stayed invisible.",
+      "THE ROLL'S SUBJECT WALLS ARE THE RULING'S TWO AND NO THIRD (#131 slice C; the flag this clause used to name is retired since #1443, his word on #1398 — 'Delete it' — so there is no other road to be off): the reader is asked a four-valued subject question (`SUBJECT_INSTRUCTION`, interpreter.ts) in place of the two-valued cohort one, a creature / robot / alien / anime brief CASTS, a real person or a named character refuses FREE before the claim as `likeness` (`LIKENESS_MESSAGE`, briefCompiler.ts) and a subject that is not a being refuses FREE as `not_a_being` (`NOT_A_BEING_MESSAGE`; founder: 'someone asking for an object should be refused like a car'). Both are the reader's judgement taken twice (`cohortWallRetried`). This clause read 'Off the flag the roll walls exactly as before (`unsupported_cohort`)' and no LIVE roll is off it since #1443: the flag is deleted and `rollService` passes the author road as a literal, so the reader is always asked the four-valued question and only the two-valued parse answers `unsupported_cohort`. The house arm survives in the compiler as a declared test seam whose retirement is #180's and slice 4's, so that wall is reachable from a suite and from nothing a customer can do — the corpus UNREACHABLE_DOORS entry carries the reading. Both kept walls are declared doors as of #206 — `roll.likeness` and `roll.not_a_being`, the latter the twin of `concept.no_being`, which reached the map first while this half stayed invisible.",
     ],
   },
   {
@@ -302,8 +302,10 @@ export const ROADS: readonly Road[] = [
     doors: [],
     doorsNote:
       "THIS ROAD DECLARES NO DOOR, AND THAT IS ITS SHAPE RATHER THAN A GAP (#1203). Its three exits are none of the "
-      + "four declared shapes the census reads: outside the register scope it answers `NOT_FOUND` "
-      + "(`captureCastingCreativeRegisterEnabled` in `server/routes/castingV2.ts`) — a DARK door, not a refusal, "
+      + "four declared shapes the census reads: outside CASTING itself it answers `NOT_FOUND` "
+      + "(`captureCastingV2Enabled` in `server/routes/castingV2.ts` — it was the register's capture until "
+      + "#1443 retired that flag, and the casting parent was already ANDed inside it, so the population this "
+      + "door refuses has not changed) — a DARK door, not a refusal, "
       + "because a code saying 'not yet' advertises a capability; the ceiling is `RATE_LIMITS.reimagine` "
       + "(`server/security/rateLimit.ts`); and every other outcome is the free answer `{ kind: \"nothing\" }` — no "
       + "text engine configured, the author's SECOND draft refused too, or the call threw (both of the last two "
@@ -313,7 +315,8 @@ export const ROADS: readonly Road[] = [
       + "REACH THIS ENTRANCE — the corpus drives `refineCandidate` and nothing else, so #1203's own instruction to "
       + "add 'a corpus row per door' is not something this harness can do; a reimagine corpus needs its own driver, "
       + "and that is the map's next growth ring here.",
-    flags: ["CASTING_V2_SCOPE", "CASTING_CREATIVE_REGISTER_SCOPE"],
+    /* `CASTING_CREATIVE_REGISTER_SCOPE` stood beside the parent here until #1443 retired it. */
+    flags: ["CASTING_V2_SCOPE"],
     notes: [
       "IT REPLACED THE IMAGINATION METER ENTIRELY (#535, his 'build it', Crew replies #145/#146, 2026-09-06): there is no level, no mode and no setting between the box and the picture except Style, so the #252 lie — a sheet reading 'Max' over words nobody authored — has nothing left to fall out of. The design is `docs/specs/REIMAGINE_DESIGN_2026-09-06.md` §3.",
       "A NEW IDEA, NOT A POLISH, and the locked trio is the whole of what survives verbatim (his decisions 3–4). An earlier reading had every named feature and material surviving; his own rolled courts overturned it at the frames (244 vs 245, '10x better'; 243 vs 246, 'much better') — named colours and materials are PIECES the author may reinvent, and the qualities paragraph beat the keep-every-piece paragraph both times.",
@@ -345,7 +348,8 @@ export const ROADS: readonly Road[] = [
       + "six are still outside the declared set: `NOT_FOUND` off `captureCastingConceptUploadEnabled`, and the shared "
       + "`referenceAttachBytesRefusal` / `BYTES_NOT_AN_IMAGE_MESSAGE` pair, which are the ink door's own sentences "
       + "reused rather than restated.",
-    flags: ["CASTING_V2_SCOPE", "CASTING_CREATIVE_REGISTER_SCOPE", "CASTING_CONCEPT_UPLOAD_SCOPE"],
+    /* The register sat between these two until #1442 re-parented the child and #1443 retired the flag. */
+    flags: ["CASTING_V2_SCOPE", "CASTING_CONCEPT_UPLOAD_SCOPE"],
     notes: [
       "His own order, 2026-08-28 (#185): 'if you have a model already or concept or image you can upload it the image analyzer will analyze and describe it to the authour and cast it with the description ... that way its easy for someone to upload an image and get a prompt to create someone similar without having to type it all out.' Production holds `CASTING_CONCEPT_UPLOAD_SCOPE` at `all` since 2026-09-24 on his Crew reply #202 ('yes, turn it on').",
       "THE FORMAT IS WHAT THE BYTES ARE, never what the payload claimed — the ink door's rule reused. It matters twice here: the picture rides to the describer as a `data:<mime>;base64,` URI, so a JPEG announced as a PNG is a malformed request to the vendor rather than a bad row in our database.",

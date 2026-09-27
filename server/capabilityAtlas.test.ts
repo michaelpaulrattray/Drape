@@ -906,11 +906,15 @@ describe("every way into the casting studio is on the map", () => {
     const reimagine = ROADS.find((r) => r.id === "reimagine");
     expect(reimagine, "#1203's subject").toBeDefined();
     expect(reimagine!.procedures).toEqual(["castingV2.reimagine"]);
-    /* Both halves of the scope chain: `captureCastingCreativeRegisterEnabled`
-       ANDs the casting parent inside itself, so a road naming only the child
-       would under-report what gates it. */
-    expect(reimagine!.flags).toContain("CASTING_CREATIVE_REGISTER_SCOPE");
-    expect(reimagine!.flags).toContain("CASTING_V2_SCOPE");
+    /* ⚠ THIS WAS BOTH HALVES OF A SCOPE CHAIN AND IS ONE FLAG SINCE #1443: the
+       door read `captureCastingCreativeRegisterEnabled`, which ANDed the casting
+       parent inside itself, and that flag is retired with the old lane (his word
+       on #1398: "Delete it"). The door reads `captureCastingV2Enabled` now — the
+       same answer for every account, because the register stood at `all` — so
+       naming the parent is naming the whole gate rather than under-reporting it,
+       and the pair is asserted as an EQUALITY so a flag creeping back in is not
+       silently tolerated. */
+    expect(reimagine!.flags).toEqual(["CASTING_V2_SCOPE"]);
     /* It declares no door, so the honest note is the whole of what it says
        about its exits — an empty `doors` with no note would be the silent gap. */
     expect(reimagine!.doors).toEqual([]);

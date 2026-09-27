@@ -2424,111 +2424,40 @@ export function validateCastingBriefFidelityEnvironment(input: {
 }
 
 /* ======================================================================= */
-/*  THE CREATIVE REGISTER — `CASTING_CREATIVE_REGISTER_SCOPE`               */
+/*  THE CREATIVE REGISTER — `CASTING_CREATIVE_REGISTER_SCOPE` — RETIRED     */
 /* ======================================================================= */
 
-/**
- * `CASTING_CREATIVE_REGISTER_SCOPE` — whether a CREATIVE brief compiles in the
- * creative register instead of the house one (`CREATIVE_REGISTER_DESIGN.md`,
- * rung N1 of the rebaseline; step 2 ordered by the founder's own verdict on
- * the court, #16, 2026-08-26: *"I think C is worth building to find out how
- * close we can get"*).
- *
- * Off, and absent means off, the product is BYTE-IDENTICAL to today's: the
- * interpreter is not asked whether a brief is creative, no author is called,
- * no variance card is authored, and every slice composes through
- * `composeCandidatePrompt` exactly as it does now. That is the design's own
- * §1a made structural — the population the engine is already great at never
- * rides an experiment — and `context-is-not-additive` (a SUBSET of prompt
- * context once raised the stage wall twice as often as its superset) is why
- * the gating is the point rather than caution.
- *
- * On, EVERY roll takes THE AUTHOR ROAD (#131, his verdict on the Prompt
- * Author court, Crew reply #8 2026-08-26: *"B is the studio … build the author
- * verbatim-first with LOW as the default"*): the interpreter still runs, as
- * the READER only; one text call (`promptAuthor.ts`) writes ONE prompt — the
- * customer's words verbatim first, by code, then the photoreal bundle at LOW
- * or an invented, ownable look that leaves the face open at MAX — and all
- * eight slices carry it, the engine varying everything it leaves open. No
- * engagement gate, no variance card, no house scaffolding. The register of PR
- * #94 (the selector, the card, `creativeRegister.ts`) is retired. **And the
- * walls are the ruling's two** (slice C): the reader is asked a four-valued
- * subject question instead of the two-valued cohort one, a creature, robot,
- * alien or anime brief CASTS (the stage wall is dead on this road), a named
- * likeness still refuses free, and a subject that is not a being — "a car"
- * — refuses free before the claim (`NOT_A_BEING_MESSAGE`). The styled-brief
- * screen is not consulted: the brief reaches the engine verbatim, so there is
- * nothing for a photoreal fallback to ignore.
- *
- * Its parent is `CASTING_V2_SCOPE` and nothing narrower: what it governs is
- * the COMPILE of a roll, the brief-fidelity scope's own reason one block up.
- */
-export const CASTING_CREATIVE_REGISTER_SCOPE_ENV = "CASTING_CREATIVE_REGISTER_SCOPE";
+/*
+  ⚠ THE REGISTER'S WHOLE BLOCK STOOD HERE AND IS GONE — #1443, slice 2 of the
+  old-lane retirement, on his word on #1398 (Crew reply #228, 2026-09-26
+  23:06:38Z, verbatim and entire: *"Delete it"*), whose card puts both halves in
+  one sentence: *"the old lane comes out of the product, and so does the switch
+  that used to choose between the two."*
 
-export class CastingCreativeRegisterScopeConfigurationError extends Error {
-  constructor() {
-    super(
-      `${CASTING_CREATIVE_REGISTER_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
-    );
-    this.name = "CastingCreativeRegisterScopeConfigurationError";
-  }
-}
+  What left: `CASTING_CREATIVE_REGISTER_SCOPE_ENV`, its two error classes
+  (`CastingCreativeRegisterScopeConfigurationError`,
+  `CastingCreativeRegisterCoverageError`), `parseCastingCreativeRegisterScope`,
+  `captureCastingCreativeRegisterEnabled` and
+  `validateCastingCreativeRegisterEnvironment`. The flag stood at `all` on
+  production from 2026-09-24 (his Crew reply #201: *"Yes"*), so every account
+  was already on the author road and the collapse moved nothing at the wire.
 
-export class CastingCreativeRegisterCoverageError extends Error {
-  constructor(detail: string) {
-    super(`${CASTING_CREATIVE_REGISTER_SCOPE_ENV} ${detail}`);
-    this.name = "CastingCreativeRegisterCoverageError";
-  }
-}
+  ⚠ WHAT DID NOT LEAVE, AND MUST NOT: the word `authorRoad` still names a
+  SECOND thing — `rollComposedOnAuthorRoad` in `rollProjection.ts`, which reads
+  the ROW's own compiled brief and never a flag. 220 of 306 production sheets
+  are read through it, for good. The manifest
+  (`docs/specs/OLD_LANE_RETIREMENT_MANIFEST_2026-09-27.md`) opens on that
+  finding because a retirement done by grepping the name deletes the read path
+  in the same edit and goes green.
 
-export function parseCastingCreativeRegisterScope(raw: string | undefined): CastingV2Scope {
-  return parseScopeGrammar(raw, () => {
-    throw new CastingCreativeRegisterScopeConfigurationError();
-  });
-}
-
-/**
- * Captured ONCE at the roll, like every scope in this program: a flag consulted
- * twice in one request is a request that can disagree with itself. The parent
- * is enforced again here rather than trusted to boot, because a boot check
- * nobody invoked is the second way a flag pair goes wrong.
- */
-export function captureCastingCreativeRegisterEnabled(userId: number): boolean {
-  const register = parseCastingCreativeRegisterScope(
-    process.env[CASTING_CREATIVE_REGISTER_SCOPE_ENV],
-  );
-  if (!castingV2EnabledForUser(register, userId)) return false;
-  return captureCastingV2Enabled(userId);
-}
-
-export function validateCastingCreativeRegisterEnvironment(input: {
-  scope: string | undefined;
-  castingScope: string | undefined;
-}): CastingV2Scope {
-  const register = parseCastingCreativeRegisterScope(input.scope);
-  if (register.kind === "off") return register;
-
-  const parent = parseCastingV2Scope(input.castingScope);
-  if (parent.kind === "off") {
-    throw new CastingCreativeRegisterCoverageError(
-      `cannot be enabled while ${CASTING_V2_SCOPE_ENV} is off — what it governs is the COMPILE of a `
-      + "roll, and a user outside casting has no brief to compile",
-    );
-  }
-  if (parent.kind === "all") return register;
-  if (register.kind === "all") {
-    throw new CastingCreativeRegisterCoverageError(
-      `cannot be "all" while ${CASTING_V2_SCOPE_ENV} is limited to specific users`,
-    );
-  }
-  const uncovered = register.userIds.filter((userId) => !parent.userIds.includes(userId));
-  if (uncovered.length > 0) {
-    throw new CastingCreativeRegisterCoverageError(
-      `names users outside ${CASTING_V2_SCOPE_ENV}: ${uncovered.join(",")}`,
-    );
-  }
-  return register;
-}
+  ⚠ AND ITS ONE CHILD WAS RE-PARENTED FIRST, IN ITS OWN SLICE (#1442, merged
+  and deployed 2026-09-26 23:57Z). `CASTING_CONCEPT_UPLOAD_SCOPE` named this
+  flag as its parent and its boot fence THROWS when the parent is off or
+  narrower; this row going absent parses as `off`, so deleting it first would
+  have been a boot refusal in a loop after a deploy that reported SUCCESS —
+  the `unset-a-scope-chain-child-first` class. The child's own docblock below
+  carries that history.
+*/
 
 /* ------------------------------------------ the concept-upload sub-flag */
 

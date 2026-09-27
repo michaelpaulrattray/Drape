@@ -629,7 +629,7 @@ the live service on every push.
 | `CASTING_INK_WORDS_SCOPE` | where a tattoo invented from words may land |
 | `CASTING_BORN_INK_SCOPE` | whether a cast may be born with tattoos the product knows about |
 | `CASTING_BRIEF_FIDELITY_SCOPE` | whether a customer's own words are rationed on the way into her sheet |
-| `CASTING_CREATIVE_REGISTER_SCOPE` | whether a roll takes the author road |
+| `CASTING_CREATIVE_REGISTER_SCOPE` | whether a roll takes the author road — ✅ RETIRED with the old lane (#1443); every roll takes it |
 | `CASTING_CONCEPT_UPLOAD_SCOPE` | upload a concept — a picture in, a description of the being out |
 | `CASTING_REFINE_DISPATCH_SCOPE` | whether the paid half of a refine stops holding the request |
 | `CASTING_RETRY_SCOPE` | the Retry button on a failed tile |

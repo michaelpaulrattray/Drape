@@ -13,7 +13,10 @@
  * humanoid, colours dropped). A chain that refuses his own passing outputs
  * has broken the design, whatever else it catches.
  */
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { appRouter } from "../routers";
+import type { TrpcContext } from "../_core/context";
 
 import type { TextEngine, TextRequest } from "../providers/types";
 import { INTERPRET_TIMEOUT_MS } from "./interpreter";
@@ -27,7 +30,7 @@ import {
   speciesGroupsIn,
   SPECIES_GROUPS,
 } from "./reimagine";
-import { countWords, neverWrittenIn } from "./promptAuthor";
+import { countWords, neverWrittenIn, resetAuthorEngineForTests } from "./promptAuthor";
 
 /* His brief and his RIGHT output, verbatim from the card's correction. */
 const WAR_BUILT_BRIEF =
@@ -266,5 +269,151 @@ describe("the press, driven by a misbehaving double (law 3)", () => {
     const second = await reimagineBrief({ engine: empty.engine, briefText: "a pirate" });
     expect(second.kind).toBe("idea");
     expect(second.attempts).toBe(2);
+  });
+});
+
+/* ------------------------------------------------------- THE DOOR (#1443) */
+
+/**
+ * ⚠ THE PRESS HAD NO DRIVEN DOOR AT ALL UNTIL THIS ARM — found by SABOTAGE while
+ * slice 2 of the old-lane retirement was moving that door's predicate (#1443,
+ * his word on #1398: *"Delete it"*).
+ *
+ * Deleting the whole gate — the `NOT_FOUND` and the capture it reads — left 241
+ * tests green across thirteen files. The door is on the capability map with a
+ * written `doorsNote` about its three exits, and nothing anywhere drove the
+ * first one; the only `"No such thing"` in any suite was the CLIENT's
+ * concept-upload copy.
+ *
+ * It matters more than an ordinary absence because of what is behind it: the
+ * press spends HOUSE money on a text call, free to the customer, with its own
+ * rate bucket as the only other brake. Invariant 7 and working law 3 both point
+ * here — a protection with no driving test does not exist.
+ *
+ * Driven through the REAL router (`appRouter.createCaller`), never through the
+ * capture beside it, because the thing being proven is what the door answers.
+ */
+describe("the door and the glyph's field — one predicate, driven (#1443)", () => {
+  const saved = { ...process.env };
+
+  beforeEach(() => {
+    /*
+      ⚠ NO NETWORK FROM A UNIT RUN, AND THE FIRST VERSION OF THE POSITIVE CONTROL
+      BELOW MADE ONE. `vitest.setup.ts` loads `.env`, so `OPENROUTER_API_KEY` is
+      present on this machine and `authorTextEngine()` returned a REAL engine: the
+      arm passed because an outbound call to the provider failed with ECONNRESET
+      and the press answered `nothing` — green for the wrong reason, and a unit
+      suite reaching the internet. Unset here, with the memo dropped, so the
+      `nothing` is the CONFIGURED state rather than a dead wire.
+    */
+    delete process.env.OPENROUTER_API_KEY;
+    resetAuthorEngineForTests();
+  });
+
+  afterEach(() => {
+    for (const name of ["CASTING_V2_SCOPE", "OPENROUTER_API_KEY"]) {
+      if (saved[name] === undefined) delete process.env[name];
+      else process.env[name] = saved[name];
+    }
+    resetAuthorEngineForTests();
+  });
+
+  function ctxFor(userId: number): TrpcContext {
+    const user = {
+      id: userId,
+      openId: `door-${userId}`,
+      email: "door@example.com",
+      name: "Door",
+      displayName: null,
+      avatarUrl: null,
+      avatarKey: null,
+      bannerUrl: null,
+      bannerKey: null,
+      bio: null,
+      loginMethod: "email",
+      approved: true,
+      role: "user",
+      storageUsed: 0,
+      storageLimit: 104857600,
+      suspendedAt: null,
+      suspendedReason: null,
+      suspendedBy: null,
+      frozenAt: null,
+      frozenReason: null,
+      frozenBy: null,
+      referralCode: null,
+      referredByUserId: null,
+      accessCode: null,
+      approvedAt: new Date(),
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      lastSignedIn: new Date(),
+    } as unknown as NonNullable<TrpcContext["user"]>;
+    return {
+      user,
+      correlationId: `door-${userId}`,
+      req: { protocol: "https", headers: {} } as TrpcContext["req"],
+      res: { clearCookie: () => undefined } as unknown as TrpcContext["res"],
+    };
+  }
+
+  it("answers NOT_FOUND while casting is off — a code saying 'not yet' would advertise a capability", async () => {
+    process.env.CASTING_V2_SCOPE = "off";
+    const caller = appRouter.createCaller(ctxFor(4001));
+    await expect(caller.castingV2.reimagine({ briefText: "a pirate" })).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      message: "No such thing.",
+    });
+  });
+
+  it("and an ABSENT scope is shut too — the shape a retirement produces", async () => {
+    delete process.env.CASTING_V2_SCOPE;
+    const caller = appRouter.createCaller(ctxFor(4002));
+    await expect(caller.castingV2.reimagine({ briefText: "a pirate" })).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
+  });
+
+  /**
+   * ⚠ AND THE GLYPH'S FIELD IS THE SAME PREDICATE, WHICH NOTHING CHECKED EITHER.
+   *
+   * `config.authorRoadEnabled` is what draws the Re-imagine press on the brief
+   * boxes, makes the reading sentence read-only and keeps the retired
+   * wardrobe/basics switch off the page. Sabotage: setting it to a literal
+   * `false` for every account passed **6,311 tests across 326 files** — every
+   * customer's client would fall back to the retired house-road UI and no arm
+   * anywhere would say so.
+   *
+   * Slice 3 (#1444) removes the field once the client has stopped reading it;
+   * until then this arm is what holds it to the door's own answer, because #1443
+   * re-sourced BOTH of them and a pair that must agree is the thing to assert.
+   */
+  it("⚠ the field the glyph is drawn from answers exactly what the door does", async () => {
+    process.env.CASTING_V2_SCOPE = "off";
+    const shut = await appRouter.createCaller(ctxFor(4004)).castingV2.config({});
+    expect(shut.authorRoadEnabled).toBe(false);
+    expect(shut.enabled).toBe(false);
+
+    process.env.CASTING_V2_SCOPE = "all";
+    const open = await appRouter.createCaller(ctxFor(4005)).castingV2.config({});
+    expect(open.authorRoadEnabled).toBe(true);
+    expect(open.enabled).toBe(true);
+  });
+
+  it("⚠ POSITIVE CONTROL — inside casting the door ADMITS, and the refusal above is not the arm passing for the wrong reason", async () => {
+    /*
+      Admitted, and then the honest free answer: no text engine is CONFIGURED for
+      this arm (`OPENROUTER_API_KEY` unset in the hook above, the memo dropped),
+      so the press has nothing to offer and says so (`{ kind: "nothing" }`). That
+      is the door's third exit, and reaching it is the proof the refusal above is
+      the scope's and not the harness's.
+    */
+    process.env.CASTING_V2_SCOPE = "all";
+    const caller = appRouter.createCaller(ctxFor(4003));
+    await expect(caller.castingV2.reimagine({ briefText: "a pirate" })).resolves.toEqual({
+      kind: "nothing",
+    });
   });
 });

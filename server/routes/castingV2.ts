@@ -33,7 +33,6 @@ import {
   captureCastingReferenceAttachEnabled,
   captureCastingConceptUploadEnabled,
   captureCastingRepaintEnabled,
-  captureCastingCreativeRegisterEnabled,
   captureCastingV2Enabled,
 } from "../castingV2/castingV2Scope";
 import { reimagineBrief } from "../castingV2/reimagine";
@@ -941,9 +940,24 @@ export const castingV2Router = router({
       reading sentence goes read-only, and the wardrobe/basics switch is NOT
       (ruling rules 10 and 11: the engine dresses the cast on this road). Same
       shape as the two above: the client asks so it does not offer a control
-      nobody's roll would read — the `reimagine` door checks the same capture.
+      nobody's roll would read — the `reimagine` door checks the same predicate.
+
+      ⚠ ITS SOURCE MOVED WITH THE FLAG AND THE FIELD DELIBERATELY STAYED — #1443,
+      slice 2 of the old-lane retirement. It read
+      `captureCastingCreativeRegisterEnabled`, which was `register AND casting`
+      and stood at `all AND all` for every account, so `captureCastingV2Enabled`
+      is the same answer for everybody and no client's drawing moves.
+
+      ⚠ AND THE FIELD IS NOT REMOVED IN THIS SLICE, BECAUSE REMOVING IT IS THE
+      UNSAFE DIRECTION HERE. The client compares `=== true`, so a bundle that
+      outlives the deploy would read `undefined`, take the FALSE arm, and draw
+      the retired house-road controls — the wardrobe/basics switch, removable
+      chips, an editable reading sentence, no Re-imagine glyph. That is the
+      opposite of #203's field removal, where `undefined` drew nothing and the
+      end state was nothing. The client stops reading it in slice 3 (#1444) and
+      the field leaves one deploy after that.
     */
-    authorRoadEnabled: captureCastingCreativeRegisterEnabled(ctx.user.id),
+    authorRoadEnabled: captureCastingV2Enabled(ctx.user.id),
     /*
       ⚠ **THE SIXTH GATE — `wardrobeEditsEnabled` — IS RETIRED WITH THE PATHS**
       (#203 slice 2 step c).
@@ -1229,13 +1243,23 @@ export const castingV2Router = router({
     .input(z.object({ briefText: z.string().trim().min(1).max(BRIEF_TEXT_MAX_AUTHOR_ROAD) }).strict()) // #816
     .mutation(async ({ ctx, input }): Promise<{ kind: "idea"; text: string } | { kind: "nothing" }> => {
       /*
-        THE FLAG FIRST, and NOT_FOUND rather than a refusal — outside
-        `CASTING_CREATIVE_REGISTER_SCOPE` there is no such capability, and the
-        capture already ANDs the casting parent inside itself. The glyph is
-        drawn off `config.authorRoadEnabled`, the same capture, so an account
-        that can press it is an account this door admits.
+        THE DOOR FIRST, and NOT_FOUND rather than a refusal — a code saying "not
+        yet" advertises a capability. The glyph is drawn off
+        `config.authorRoadEnabled`, the same predicate, so an account that can
+        press it is an account this door admits.
+
+        ⚠ THE PREDICATE WAS `captureCastingCreativeRegisterEnabled` UNTIL #1443
+        (slice 2 of the old-lane retirement). It was `register AND casting` and
+        the register stood at `all`, so the casting parent was already carrying
+        the whole of this gate; what is kept deliberately is the REFUSAL — the
+        same code and the same sentence for the same population, an account
+        outside casting — rather than falling in with `requireCastingV2`'s
+        PRECONDITION_FAILED, which would reword a door for no reason inside a
+        retirement. Dropping the check altogether was the third option and it is
+        the wrong one: it would open a house text call to an account casting is
+        not available for.
       */
-      if (!captureCastingCreativeRegisterEnabled(ctx.user.id)) {
+      if (!captureCastingV2Enabled(ctx.user.id)) {
         throw new TRPCError({ code: "NOT_FOUND", message: "No such thing." });
       }
       enforceRateLimit(ctx.user.id, RATE_LIMITS.reimagine);

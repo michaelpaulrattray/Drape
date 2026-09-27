@@ -850,78 +850,29 @@ export async function getBriefForOwnedCandidate(
   };
 }
 
-/**
- * WHAT THE SHEET A FOLLOW DESCENDS FROM IS WEARING — the born pair, read
- * BEFORE compilation (design §3.1, item 5 of §10's build).
+/*
+ * ⚠ `getRollWardrobeForOwnedCandidate` AND ITS `OwnedRollWardrobe` TYPE STOOD
+ * HERE AND ARE GONE — #1443, slice 2 of the old-lane retirement, on his word on
+ * #1398: *"Delete it"*.
  *
- * # Why this read exists at all, and it is a debt item 5 created
+ * It read the parent sheet's born outfit before a follow compiled, and it existed
+ * for ONE consumer: the HOUSE compile's `inheritedWardrobe` input, which painted
+ * a follow in the parent's sentence. On the author road the follow is dressed by
+ * the engine from its own brief (#154) and the line the row records is the
+ * brief's own stated outfit (#1222) — so `rollService` passed the read behind
+ * `!authorRoad`, and with the flag gone the last consumer went with it. A read
+ * whose only caller is a branch that can never be taken is invariant 7 inverted:
+ * the query still runs, costs a round trip on every follow, and nothing looks at
+ * the answer.
  *
- * `createRollWithCandidates` already inherits the parent roll's `path` and
- * `wardrobeLine` inside its own transaction, and that statement stays the
- * authority for what is WRITTEN. It cannot help the PROMPT: the eight prompts
- * are composed before the transaction opens, so once the wardrobe line reaches
- * the roll prompt, a follow would be PAINTED in a freshly resolved outfit and
- * RECORDED in the parent's — eight pictures disagreeing with the row that
- * describes them, and then five signed views judged against a line they were
- * never painted in. That is the refunded-slices class condition (v) exists for,
- * arriving through the one door condition (v) does not cover.
- *
- * # The BORN column, by name, and this is the one caller allowed it
- *
- * `wardrobeLine.ts`'s header names exactly one exception to
- * `currentWardrobeLine`: the Follow, because a Follow deliberately wants the
- * SHEET's outfit rather than this person's. An edited look stays on the person
- * it was made for — *a momentary choice made permanent for eight strangers* is
- * the sentence `refineSubjects.ts` already uses about `expression`.
- *
- * Joined THROUGH the owned candidate so the roll is re-proved to belong to this
- * user in the same statement that finds it (invariant 1), exactly as
- * `getBriefForOwnedCandidate` above — a caller holding a candidate id cannot
- * reach a stranger's sheet through this.
- *
- * # ⚠ IT WAS A PAIR AND IT IS ONE FIELD NOW — #203 slice 2 step (e)
- *
- * `path` was selected beside the sentence, on the stated ground that *a caller
- * needs to tell "this cast wears the house line" from "this cast predates the
- * paths" and a bare string cannot say the second.* True of a caller who
- * RESOLVES a line; this one does not — it hands the sentence to the compiler
- * verbatim whenever it is present, so the path could never change the answer,
- * and the one caller in the tree never read it.
- *
- * So it is off the projection rather than left as a field with no reader
- * (invariant 7 — the call step (d) made about `wardrobeEditsEnabled`). **The
- * distinction itself is not lost**: `getOwnedCandidateWithSelectedFace` below
- * still returns both `rollPath` and `rollWardrobeLine`, and the refine and Sign
- * roads still resolve them through `currentWardrobeLine`, which is where telling
- * *house* from *predates the paths* actually decides something.
+ * ⚠ WHAT IS NOT LOST: `getOwnedCandidateWithSelectedFace` below still returns
+ * `rollPath` and `rollWardrobeLine`, and the refine and Sign roads still resolve
+ * them through `currentWardrobeLine`. The COLUMNS are kept — they are the
+ * evidence of which rolls predate the author road — and reading a stored
+ * sentence outlives composing a new one. `briefCompiler`'s own
+ * `inheritedWardrobe` input also stays, because `deterministicBriefCompiler`
+ * still hands it on and that compiler's fate is slice 4's (#1445).
  */
-export type OwnedRollWardrobe = {
-  wardrobeLine: string | null;
-};
-
-export async function getRollWardrobeForOwnedCandidate(
-  userId: number,
-  candidatePublicId: string,
-): Promise<OwnedRollWardrobe | null> {
-  assertPositiveId(userId, "userId");
-  const db = await requireDb();
-  const [row] = await db
-    .select({
-      wardrobeLine: castingRolls.wardrobeLine,
-    })
-    .from(castingCandidates)
-    .innerJoin(castingRolls, and(
-      eq(castingRolls.id, castingCandidates.rollId),
-      eq(castingRolls.userId, userId),
-    ))
-    .where(and(
-      eq(castingCandidates.publicId, candidatePublicId),
-      eq(castingCandidates.userId, userId),
-    ))
-    .limit(1);
-  if (!row) return null;
-  return { wardrobeLine: row.wardrobeLine ?? null };
-}
 
 /**
  * The cross-roll tray: kept candidates of one session, oldest keep first.

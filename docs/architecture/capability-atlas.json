@@ -518,7 +518,7 @@
           "server/castingV2/stageWallBackstop.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1257",
+          "server/castingV2/briefCompiler.ts:1278",
           "server/castingV2/briefRefusalCopy.ts:116"
         ]
       },
@@ -531,7 +531,7 @@
           "server/castingV2/creativeRegisterScope.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1260",
+          "server/castingV2/briefCompiler.ts:1281",
           "server/castingV2/briefRefusalCopy.ts:122"
         ]
       },
@@ -546,7 +546,7 @@
           "server/castingV2/styleRefusal.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1186",
+          "server/castingV2/briefCompiler.ts:1207",
           "server/castingV2/briefRefusalCopy.ts:128"
         ]
       },
@@ -558,8 +558,8 @@
           "server/castingV2/briefRefusalCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1099",
-          "server/castingV2/briefCompiler.ts:1556",
+          "server/castingV2/briefCompiler.ts:1120",
+          "server/castingV2/briefCompiler.ts:1577",
           "server/castingV2/briefRefusalCopy.ts:108"
         ]
       },
@@ -575,8 +575,8 @@
           "server/castingV2/styleRefusal.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1239",
-          "server/castingV2/briefCompiler.ts:1246",
+          "server/castingV2/briefCompiler.ts:1260",
+          "server/castingV2/briefCompiler.ts:1267",
           "server/castingV2/briefRefusalCopy.ts:110"
         ]
       },
@@ -609,7 +609,7 @@
           "server/castingV2/rollService.test.ts"
         ],
         "sites": [
-          "server/castingV2/rollService.ts:413"
+          "server/castingV2/rollService.ts:411"
         ]
       },
       {
@@ -619,7 +619,7 @@
           "server/castingV2/rollService.test.ts"
         ],
         "sites": [
-          "server/castingV2/rollService.ts:407"
+          "server/castingV2/rollService.ts:405"
         ]
       },
       {
@@ -629,7 +629,7 @@
           "server/castingV2/rollService.test.ts"
         ],
         "sites": [
-          "server/castingV2/rollService.ts:401"
+          "server/castingV2/rollService.ts:399"
         ]
       },
       {
@@ -861,7 +861,6 @@
       "CASTING_BORN_INK_SCOPE",
       "CASTING_BRIEF_FIDELITY_SCOPE",
       "CASTING_CONCEPT_UPLOAD_SCOPE",
-      "CASTING_CREATIVE_REGISTER_SCOPE",
       "CASTING_FACE_SCAN_SCOPE",
       "CASTING_HAIR_REFERENCE_SCOPE",
       "CASTING_INK_CUT_SCOPE",
@@ -1546,7 +1545,7 @@
           "A roll is eight independently refundable units; a deploy landing mid-roll costs only the undelivered slices (accepted collision class, D-85).",
           "The path/wardrobeLine columns (migration 0051) make the born path a fact of the roll; NULL means cast before the paths existed.",
           "A brief the reader NEVER READ (the deadline fired, the transport or provider failed, no engine configured) is refused FREE before the claim as `reader_outage` at EVERY length (briefCompiler.ts; founder ruling #126 'refuse-free', Crew reply #7 2026-08-26, and 'always' on the length question, reply #9) - it replaced the H30 fallback that charged roll 219 for a sheet cast from the brief's first 80 characters. Only a reply the provider gave that the compiler could not parse still falls back; `reader_outage` is a declared door as of #206 (`roll.reader_outage`) and documented as unreached because no corpus row can carry a brief — this note stays as the road's account of WHY it exists.",
-          "On THE AUTHOR ROAD (`CASTING_CREATIVE_REGISTER_SCOPE`, #131 slice C) the roll's subject walls are the ruling's two and no third: the reader is asked a four-valued subject question (`SUBJECT_INSTRUCTION`, interpreter.ts) in place of the two-valued cohort one, a creature / robot / alien / anime brief CASTS, a real person or a named character refuses FREE before the claim as `likeness` (`LIKENESS_MESSAGE`, briefCompiler.ts) and a subject that is not a being refuses FREE as `not_a_being` (`NOT_A_BEING_MESSAGE`; founder: 'someone asking for an object should be refused like a car'). Both are the reader's judgement taken twice (`cohortWallRetried`). Off the flag the roll walls exactly as before (`unsupported_cohort`). Both walls are declared doors as of #206 — `roll.likeness` and `roll.not_a_being`, the latter the twin of `concept.no_being`, which reached the map first while this half stayed invisible."
+          "THE ROLL'S SUBJECT WALLS ARE THE RULING'S TWO AND NO THIRD (#131 slice C; the flag this clause used to name is retired since #1443, his word on #1398 — 'Delete it' — so there is no other road to be off): the reader is asked a four-valued subject question (`SUBJECT_INSTRUCTION`, interpreter.ts) in place of the two-valued cohort one, a creature / robot / alien / anime brief CASTS, a real person or a named character refuses FREE before the claim as `likeness` (`LIKENESS_MESSAGE`, briefCompiler.ts) and a subject that is not a being refuses FREE as `not_a_being` (`NOT_A_BEING_MESSAGE`; founder: 'someone asking for an object should be refused like a car'). Both are the reader's judgement taken twice (`cohortWallRetried`). This clause read 'Off the flag the roll walls exactly as before (`unsupported_cohort`)' and no LIVE roll is off it since #1443: the flag is deleted and `rollService` passes the author road as a literal, so the reader is always asked the four-valued question and only the two-valued parse answers `unsupported_cohort`. The house arm survives in the compiler as a declared test seam whose retirement is #180's and slice 4's, so that wall is reachable from a suite and from nothing a customer can do — the corpus UNREACHABLE_DOORS entry carries the reading. Both kept walls are declared doors as of #206 — `roll.likeness` and `roll.not_a_being`, the latter the twin of `concept.no_being`, which reached the map first while this half stayed invisible."
         ]
       },
       {
@@ -1770,10 +1769,9 @@
         ],
         "summary": "Wherever there is a brief box, one press sends the words IN the box through the author and writes the result back INTO the box — visible, editable, undoable; casting then uses whatever is in the box, so there is no hidden mode a sheet could lie about. Sex, age and species are LOCKED when typed and nothing else is; lighting, camera, framing, backdrop and scene are banned in the instruction. One press is at most two text calls — a draft, then one re-ask naming the refusal — and a second refusal or a failed call answers `nothing`, leaving the box exactly as she typed it. Nothing is charged, nothing is stored, nothing renders.",
         "doors": [],
-        "doorsNote": "THIS ROAD DECLARES NO DOOR, AND THAT IS ITS SHAPE RATHER THAN A GAP (#1203). Its three exits are none of the four declared shapes the census reads: outside the register scope it answers `NOT_FOUND` (`captureCastingCreativeRegisterEnabled` in `server/routes/castingV2.ts`) — a DARK door, not a refusal, because a code saying 'not yet' advertises a capability; the ceiling is `RATE_LIMITS.reimagine` (`server/security/rateLimit.ts`); and every other outcome is the free answer `{ kind: \"nothing\" }` — no text engine configured, the author's SECOND draft refused too, or the call threw (both of the last two inside `reimagineBrief`, `server/castingV2/reimagine.ts`). The customer reads ONE sentence for all three (`Nothing to offer this time — your words stand.`, `client/src/features/castingV2/components/Reimagine.tsx`) and that is deliberate: an outage and a refusal ask her for the same next act. ⚠ AND NO CORPUS ROW CAN REACH THIS ENTRANCE — the corpus drives `refineCandidate` and nothing else, so #1203's own instruction to add 'a corpus row per door' is not something this harness can do; a reimagine corpus needs its own driver, and that is the map's next growth ring here.",
+        "doorsNote": "THIS ROAD DECLARES NO DOOR, AND THAT IS ITS SHAPE RATHER THAN A GAP (#1203). Its three exits are none of the four declared shapes the census reads: outside CASTING itself it answers `NOT_FOUND` (`captureCastingV2Enabled` in `server/routes/castingV2.ts` — it was the register's capture until #1443 retired that flag, and the casting parent was already ANDed inside it, so the population this door refuses has not changed) — a DARK door, not a refusal, because a code saying 'not yet' advertises a capability; the ceiling is `RATE_LIMITS.reimagine` (`server/security/rateLimit.ts`); and every other outcome is the free answer `{ kind: \"nothing\" }` — no text engine configured, the author's SECOND draft refused too, or the call threw (both of the last two inside `reimagineBrief`, `server/castingV2/reimagine.ts`). The customer reads ONE sentence for all three (`Nothing to offer this time — your words stand.`, `client/src/features/castingV2/components/Reimagine.tsx`) and that is deliberate: an outage and a refusal ask her for the same next act. ⚠ AND NO CORPUS ROW CAN REACH THIS ENTRANCE — the corpus drives `refineCandidate` and nothing else, so #1203's own instruction to add 'a corpus row per door' is not something this harness can do; a reimagine corpus needs its own driver, and that is the map's next growth ring here.",
         "flags": [
-          "CASTING_V2_SCOPE",
-          "CASTING_CREATIVE_REGISTER_SCOPE"
+          "CASTING_V2_SCOPE"
         ],
         "notes": [
           "IT REPLACED THE IMAGINATION METER ENTIRELY (#535, his 'build it', Crew replies #145/#146, 2026-09-06): there is no level, no mode and no setting between the box and the picture except Style, so the #252 lie — a sheet reading 'Max' over words nobody authored — has nothing left to fall out of. The design is `docs/specs/REIMAGINE_DESIGN_2026-09-06.md` §3.",
@@ -1805,7 +1803,6 @@
         "doorsNote": "⚠ THIS ROAD'S DOORS REACHED THE MAP BEFORE THE ROAD DID — the six were declared with #192 and every one of them is documented-unreachable (the corpus sends sentences, not pictures), while the ENTRANCE they belong to had no road until #1203. That is the forward/backward asymmetry in one specimen: the map could prove every door it named was real and could not notice it had never named the road. The FLAG and the two byte doors above the six are still outside the declared set: `NOT_FOUND` off `captureCastingConceptUploadEnabled`, and the shared `referenceAttachBytesRefusal` / `BYTES_NOT_AN_IMAGE_MESSAGE` pair, which are the ink door's own sentences reused rather than restated.",
         "flags": [
           "CASTING_V2_SCOPE",
-          "CASTING_CREATIVE_REGISTER_SCOPE",
           "CASTING_CONCEPT_UPLOAD_SCOPE"
         ],
         "notes": [
@@ -2024,7 +2021,7 @@
         "severity": "info",
         "kind": "documented-unreachable",
         "subject": "roll.unsupported_cohort",
-        "message": "no corpus row reaches it: answers a styled brief the certified adapter cannot cast — off the author road, and off it only. Its own sentence had NO pin at all before #206: it was an inline literal written out twice, so either copy could have been reworded silently — a row could reach it via: a brief-carrying row on an account OUTSIDE `CASTING_CREATIVE_REGISTER_SCOPE`, since the author road does not raise it; the flag position is part of the row's state, which no current row grammar carries"
+        "message": "no corpus row reaches it: answers a styled brief the certified adapter cannot cast - off the author road, and off it only. NO LIVE ROLL IS OFF IT SINCE #1443 (slice 2 of the old-lane retirement, his word on #1398: 'Delete it'): the flag that could put a roll on the house road is deleted and `rollService` passes the author road as a literal, so the reader is asked the four-valued subject question on every roll and only the TWO-valued parse answers this reason. The house arm survives in the compiler as a declared test seam - 86 arms across 17 suites drive it, and retiring them is #180 and slice 4 (#1445) - so the raise is reachable from a suite and from nothing a customer can do. Its own sentence had NO pin at all before #206: it was an inline literal written out twice, so either copy could have been reworded silently — a row could reach it via: no customer can reach it, and that is a fact about the product rather than a gap in this harness. This line read 'a brief-carrying row on an account OUTSIDE CASTING_CREATIVE_REGISTER_SCOPE' until #1443, and there is no such account: the flag is deleted and every live roll is composed on the author road. It becomes reachable again only if a road is built that asks the two-valued cohort question; what keeps the parse honest meanwhile is its own driven arms in `creativeRegisterScope.test.ts`"
       },
       {
         "id": "documented:scope_mismatch",
@@ -3151,7 +3148,7 @@
       "severity": "info",
       "kind": "documented-unreachable",
       "subject": "roll.unsupported_cohort",
-      "message": "no corpus row reaches it: answers a styled brief the certified adapter cannot cast — off the author road, and off it only. Its own sentence had NO pin at all before #206: it was an inline literal written out twice, so either copy could have been reworded silently — a row could reach it via: a brief-carrying row on an account OUTSIDE `CASTING_CREATIVE_REGISTER_SCOPE`, since the author road does not raise it; the flag position is part of the row's state, which no current row grammar carries"
+      "message": "no corpus row reaches it: answers a styled brief the certified adapter cannot cast - off the author road, and off it only. NO LIVE ROLL IS OFF IT SINCE #1443 (slice 2 of the old-lane retirement, his word on #1398: 'Delete it'): the flag that could put a roll on the house road is deleted and `rollService` passes the author road as a literal, so the reader is asked the four-valued subject question on every roll and only the TWO-valued parse answers this reason. The house arm survives in the compiler as a declared test seam - 86 arms across 17 suites drive it, and retiring them is #180 and slice 4 (#1445) - so the raise is reachable from a suite and from nothing a customer can do. Its own sentence had NO pin at all before #206: it was an inline literal written out twice, so either copy could have been reworded silently — a row could reach it via: no customer can reach it, and that is a fact about the product rather than a gap in this harness. This line read 'a brief-carrying row on an account OUTSIDE CASTING_CREATIVE_REGISTER_SCOPE' until #1443, and there is no such account: the flag is deleted and every live roll is composed on the author road. It becomes reachable again only if a road is built that asks the two-valued cohort question; what keeps the parse honest meanwhile is its own driven arms in `creativeRegisterScope.test.ts`"
     },
     {
       "id": "documented:scope_mismatch",
