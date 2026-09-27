@@ -1,7 +1,7 @@
 {
   "edition": 559,
-  "updatedAt": "2026-09-27T03:33:28.463Z",
-  "shift": "Foreman (night shift) — the engine you picked for signing views is wired (#1459). You said Sunburst high produced the best result easily and you would live without Nano Banana's extra detail; the five pictures a signed cast gets are now made by that engine. It is written, tested and in review, not live yet. Nothing about what you press, what you pay or what a failed picture refunds has changed. The one thing you will notice when it ships: signing takes about 45 seconds longer.",
+  "updatedAt": "2026-09-27T03:41:49.603Z",
+  "shift": "Foreman (night shift) — the engine you picked for signing views is LIVE (#1459). You said Sunburst high produced the best result easily and you would live without Nano Banana's extra detail; the five pictures a signed cast gets are now made by that engine. Nothing about what you press, what you pay or what a failed picture refunds has changed, and nothing names an engine to you anywhere. The one thing you will notice: signing takes about 45 seconds longer. Worth your hands — sign one of your own casts and look at all five.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -239,7 +239,7 @@
         },
         {
           "state": "in-progress",
-          "title": "Your word on the outfit test is built (#1459). \"Sunburst produced the best result easily\" — so the five pictures a cast gets when you sign it are now made by GPT Image 2.5 Sunburst instead of Nano Banana, at the bigger size that engine actually returns. The costs you already accepted: about 45 seconds longer per sign, and slightly less skin and hair detail. Nothing else moved — the price is the same to within a cent and a half, a picture that fails is still refunded on its own, and nothing anywhere names an engine to you. It is waiting on review before it goes live; when it does, sign one cast and look at the five."
+          "title": "Your word on the outfit test is built and live (#1459). \"Sunburst produced the best result easily\" — so the five pictures a cast gets when you sign it are now made by GPT Image 2.5 Sunburst instead of Nano Banana, at the bigger size that engine actually returns. The costs you already accepted: about 45 seconds longer per sign, and slightly less skin and hair detail. Nothing else moved — the price is the same to within a cent and a half, a picture that fails is still refunded on its own, and nothing anywhere names an engine to you. Still open until you have signed one of your own casts and looked at the five."
         }
       ]
     },
@@ -6345,7 +6345,7 @@
     {
       "id": "sign-engine-sunburst-1459-strip",
       "title": "The engine you chose, coming out of the studio's own signing road",
-      "question": "NOT A NEW QUESTION — you already chose this engine on the outfit test, and this is not asking you to choose again. It is the receipt: the engine you picked, wired into the product, making a real picture through the same road a customer's Sign takes. Left is the head-and-shoulders photograph every view is built from. Middle is what that cast's full-length front looks like TODAY, on the old engine. Right is the same view out of the new road. It is a test cast rather than one of yours, because nothing is live yet. When it ships, the thing worth your hands is signing one of your own casts and looking at all five — that is what closes #1459.",
+      "question": "NOT A NEW QUESTION — you already chose this engine on the outfit test, and this is not asking you to choose again. It is the receipt: the engine you picked, wired into the product and now live, making a real picture through the same road your Sign takes. Left is the head-and-shoulders photograph every view is built from. Middle is what that cast's full-length front looks like on the OLD engine. Right is the same view out of the road you are on now. It is a test cast rather than one of yours because it was rendered before this went live. The thing worth your hands is signing one of your own casts and looking at all five — that is what finishes #1459.",
       "state": "open",
       "filedAt": "2026-09-27T03:33:28.464Z",
       "issueNumber": 1459,
@@ -8774,9 +8774,9 @@
     {
       "id": "sign-engine-sunburst-1459",
       "title": "The five signed views render on the engine you chose (#1459)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1462,
-      "note": "Money-adjacent — a sign is 450 credits. Left for the hand review rather than merged by the shift."
+      "note": "Merged 2026-09-27 (3800d42a) on the relay's hand verdict."
     }
   ],
   "problems": [
