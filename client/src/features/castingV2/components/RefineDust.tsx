@@ -48,10 +48,28 @@ export function RefineDust({ figure }: { figure: RefineFigure }) {
     let particles: DustParticle[] = [];
     let width = 0;
     let height = 0;
+    let colour = "white";
     const mouse: { x: number; y: number } | null = { x: 0, y: 0 };
     let pointerInside = false;
 
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
+
+    /*
+      THE DUST IS THE SAME WHITE AS THE WORDS ON THE PICTURE.
+
+      `--onScrim` is the token the bar, the stage word and her own sentence are
+      all set in — what the product draws ON a darkened photograph. A canvas
+      cannot use `var()`, so it is read once per measure rather than written as a
+      literal: the day that token moves, the dust moves with it instead of being
+      the one white on the picture that did not.
+
+      The keyword is a last resort for a canvas with no stylesheet behind it, and
+      it is a keyword rather than a hex so that nothing here reads as a second
+      copy of the token's value. An invalid `fillStyle` is silently ignored by
+      the canvas, which would leave the dust drawn in whatever colour came before.
+    */
+    const dustColour = () =>
+      getComputedStyle(parent).getPropertyValue("--onScrim").trim() || "white";
 
     /*
       THE BOX IS THE PICTURE'S BOX, and it is measured rather than assumed.
@@ -80,6 +98,7 @@ export function RefineDust({ figure }: { figure: RefineFigure }) {
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
       context.setTransform(ratio, 0, 0, ratio, 0, 0);
+      colour = dustColour();
       particles = seedDust({
         figure,
         width,
@@ -95,7 +114,7 @@ export function RefineDust({ figure }: { figure: RefineFigure }) {
     const paint = (t: number) => {
       const breath = dustBreath(t);
       context.clearRect(0, 0, width, height);
-      context.fillStyle = "#ffffff";
+      context.fillStyle = colour;
       stepDust({
         particles,
         width,
