@@ -723,7 +723,8 @@ export async function renderViewAttempts<T>(
           engine that painted is stamped on every asset
           (`provenance.engine`), so a Sunburst row and a Nano Banana Pro row
           are already told apart by the record rather than by memory.
-          `server/castingV2/signViewTier.test.ts` pins both halves.
+          `server/castingV2/signViewEngineChain.test.ts` pins both halves, the
+          hazard included.
         */
         resolution: "2K",
         viewAngle: angle,
