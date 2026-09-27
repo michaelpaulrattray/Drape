@@ -111,7 +111,8 @@ import { captureCastingRetryEnabled } from "../castingV2/castingV2Scope";
 import { signCandidate } from "../castingV2/signService";
 import { REFINE_ANSWERING_MAX_LENGTH, REFINE_INSTRUCTION_MAX_LENGTH } from "../castingV2/refineLimits";
 import {
-  readAskReference, readAskScope, readRefineStep, readRegeneratedFrom, referencesOf, refineCandidate,
+  readAskReference, readAskScope, readRefineFigure, readRefineStep, readRegeneratedFrom, referencesOf,
+  refineCandidate,
 } from "../castingV2/refineService";
 import { pendingStage } from "../castingV2/pendingStage";
 import {
@@ -1765,6 +1766,22 @@ export const castingV2Router = router({
             `regenerating` above does not (invariant 8).
           */
           step: readRefineStep(variant.internalPrompt),
+          /*
+            AND WHERE SHE IS IN THE PICTURE THE DUST IS SCATTERED OVER (#55,
+            board E, clause 3: *"dust on her shape … so they sit on her outline,
+            hair and body, not on the wall"*).
+
+            A coarse grid of digits cut from the master at dispatch — about
+            1.5 KB, on a response the panel already polls. It carries no pixels
+            and no colour and cannot be turned back into a picture of her, which
+            is why it is allowed out at all: the same INTERNAL column as `step`,
+            the same derived answer, never the record (invariant 8).
+
+            NULL is a real answer: a row claimed before this shipped, or a master
+            sharp could not read. The loader draws the ambient field it always
+            drew rather than a uniform cloud it would be calling her shape.
+          */
+          figure: readRefineFigure(variant.internalPrompt),
         })),
         /*
           THE OUTCOMES THAT REACHED NOBODY — explicit projection, three fields

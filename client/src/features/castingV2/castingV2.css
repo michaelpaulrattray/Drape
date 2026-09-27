@@ -1437,6 +1437,27 @@
   pointer-events: none;
 }
 
+/*
+  HER PICTURE AS DUST — the canvas board E draws on (#55).
+
+  It sits exactly where the dot field sits and answers the same box, so the two
+  are interchangeable and the surface never has to know which one it got.
+
+  `pointer-events: none` is load-bearing rather than tidy: the plate underneath
+  owns press-and-hold to see the previous frame, and a transparent canvas over
+  the photograph would swallow it. The dust reads the pointer from the plate's
+  own listener instead (`RefineDust.tsx` says so at the line that adds it).
+
+  No animation is declared here. Every particle's motion is in the canvas, on
+  the frame clock — a CSS animation on this element would be a second, slower
+  idea of the same movement.
+*/
+.dpc-viewer__dust {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
 .dpc-viewer__dots::before,
 .dpc-viewer__dots::after {
   content: "";

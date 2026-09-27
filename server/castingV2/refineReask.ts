@@ -721,6 +721,17 @@ const VALID_IN_CONTEXT: readonly string[] = [
   */
   "pose", "poses", "posed",
   /*
+    AND `dust` ONE SLIP FROM `bust`, caught by the same guard on 2026-09-27 the
+    moment the refine road's own log line said the loader's dust stays ambient
+    (#55, board E). The word entered the product's vocabulary and the gate would
+    have started asking a customer who typed *"add dust to her jacket"* whether
+    she meant her bust — the `shave` → `shape` incident with a fourth pair of
+    nouns, and the fourth time this guard has caught one before a customer did.
+    Dust and dusty are ordinary words about a worn, weathered look, which is a
+    register this product's briefs use constantly.
+  */
+  "dust", "dusty", "dusted",
+  /*
     THE NEIGHBOURHOOD THE WORN THINGS EXPOSE — the other half of census row
     `guard.typo`, and it lands in the same commit as the nouns above because
     that is the recipe (fable-1499 §1a). Each of these is one slip from a word

@@ -69,11 +69,14 @@ import {
   markVariantDispatched,
   recordVariantDispatch,
   recordVariantOutcome,
+  recordVariantFigure,
   recordVariantStep,
   selectVariant,
   VariantOwnershipError,
 } from "../db/castingV2Variants";
 import { isRefineStep, type RefineStep } from "../../shared/refineSteps";
+import { isRefineFigure, type RefineFigure } from "../../shared/refineFigure";
+import { cutRefineFigure } from "./refineFigure";
 import { getBriefForOwnedCandidate, getOwnedCandidateWithSelectedFace } from "../db/castingV2";
 import { readBriefFacts } from "./rollProjection";
 import { createModuleLogger } from "../logging/logger";
@@ -849,6 +852,15 @@ export type RefineServiceDependencies = {
    * get wrong.
    */
   recordStep?: typeof recordVariantStep;
+  /**
+   * Records where she is in her own picture, so the loader's dust can sit on her
+   * shape (#55, board E). Injectable for the same reason as `recordStep`: what
+   * is worth asserting is that it is written ONCE, from the master's own bytes,
+   * and that its failure costs the render nothing.
+   */
+  recordFigure?: typeof recordVariantFigure;
+  /** Cuts that map. Injectable so a suite can drive the fence without sharp. */
+  cutFigure?: typeof cutRefineFigure;
   /**
    * Brings each reference to the master's geometry before dispatch.
    *
@@ -6050,6 +6062,37 @@ async function refineCandidateCounted(
 
     const base = await (dependencies.readBytes ?? storageReadBytes)(variant.baseImageKey);
     /*
+      HER SHAPE, FOR THE WAITING PICTURE — cut once, here, because here is where
+      her bytes already are (#55, board E's dust).
+
+      ⚠ **FENCED LIKE `announce`, AND THE FENCE IS THE WHOLE OF IT.** This is
+      decoration on a loading screen sitting inside the compensated try, where an
+      escaping rejection refunds the charge and fails the edit. Nothing about
+      dust may ever cost a picture — so sharp's own failures are swallowed by
+      `cutRefineFigure` (it answers null), and the WRITE is caught here. A row
+      with no map draws the ambient field, which is what every row drew before
+      this shipped.
+
+      Not awaited for its value, and deliberately at this line rather than
+      earlier: the bytes are the input, so anywhere above it would be a second
+      read of the master for decoration.
+    */
+    try {
+      const figure = await (dependencies.cutFigure ?? cutRefineFigure)(base.bytes);
+      if (figure) {
+        await (dependencies.recordFigure ?? recordVariantFigure)({
+          userId: input.userId,
+          variantId: variant.id,
+          figure,
+        });
+      }
+    } catch (error) {
+      log.warn(
+        { err: String(error).slice(0, 120), operationId, variant: variant.publicId },
+        "[refineService] could not record her shape — the render stands, the loader's dust stays ambient",
+      );
+    }
+    /*
       THE MASTER'S EXACT PIXELS, read from the master itself — and read LAZILY,
       because only the masked path needs them.
     
@@ -10612,6 +10655,26 @@ export function readRefineStep(internalPrompt: unknown): RefineStep | null {
   if (!internalPrompt || typeof internalPrompt !== "object") return null;
   const value = (internalPrompt as { step?: unknown }).step;
   return isRefineStep(value) ? value : null;
+}
+
+/**
+ * WHERE SHE IS IN HER OWN PICTURE — off the row's own record, or null (#55,
+ * board E's dust).
+ *
+ * Same boundary rule as the step above: the column is INTERNAL and only the
+ * answer crosses (invariant 8). And the same treatment of null, for the same
+ * reason — a row cut before this existed, or a master sharp could not read, has
+ * no map, and the loader draws the ambient field it always drew rather than
+ * scattering a uniform cloud it would be calling her shape.
+ *
+ * Validated on the way out even though it was validated on the way in: between
+ * those two moments it was a json column, and #55's own dust loop is the
+ * consumer — a `w` nobody re-checked is a page that hangs.
+ */
+export function readRefineFigure(internalPrompt: unknown): RefineFigure | null {
+  if (!internalPrompt || typeof internalPrompt !== "object") return null;
+  const value = (internalPrompt as { figure?: unknown }).figure;
+  return isRefineFigure(value) ? value : null;
 }
 
 /**

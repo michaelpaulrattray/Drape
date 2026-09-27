@@ -2,6 +2,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { decodeFrame } from "../frameDecodes";
 import { refineProgress } from "../refineProgress";
+import { RefineDust } from "./RefineDust";
+import type { RefineFigure } from "@shared/refineFigure";
 import type { RefineStep } from "@shared/refineSteps";
 import { createPortal } from "react-dom";
 import { Download, X } from "lucide-react";
@@ -111,6 +113,19 @@ export type ViewerWait = {
    * honest reading and is his rule — *a stage that does not fire is not shown*.
    */
   step?: RefineStep | null;
+  /**
+   * WHERE SHE IS IN HER OWN PICTURE — the dust's seed map (#55, board E clause
+   * 3), or null when the road has none for this row.
+   *
+   * Cut from the master by the server and passed straight through: the browser
+   * cannot read her pixels (the public bucket sends no CORS header), and opening
+   * the bucket to let it would let any origin read a customer's cast into a
+   * canvas. `shared/refineFigure.ts` carries the whole reading.
+   *
+   * Null is a real answer and is drawn as one: the ambient field that shipped
+   * before this, never a uniform scatter called her shape.
+   */
+  figure?: RefineFigure | null;
   /** How many are running, when more than one is (the picture narrates none). */
   extra?: number;
 };
@@ -740,9 +755,25 @@ export function CandidateViewer({
                 <>
                   {/* The dot field is the render's own texture — nothing is
                       rendering, so nothing moves. */}
-                  {wait.stage === "settling"
-                    ? null
-                    : <span className="dpc-viewer__dots" aria-hidden="true" />}
+                  {wait.stage === "settling" ? null : wait.figure ? (
+                    /*
+                      HER PICTURE AS DUST — board E, on the row that has her
+                      shape (#55). It is the same claim the dot field made and no
+                      more: a surface is laid over the picture until it is ready.
+                      What it adds is that the surface is HERS.
+                    */
+                    <RefineDust figure={wait.figure} />
+                  ) : (
+                    /*
+                      AND THE AMBIENT FIELD IS WHAT A ROW WITHOUT HER SHAPE GETS
+                      — a row claimed before the map shipped, or a master sharp
+                      could not read. Scattering a uniform cloud and calling it
+                      dust on her shape would be the fidelity law's violation
+                      rather than its shortcut; this field never claimed to be
+                      her, and still does not.
+                    */
+                    <span className="dpc-viewer__dots" aria-hidden="true" />
+                  )}
                   {/* The scrim stays either way: the sentence has to be
                       readable over a photograph that is no longer softened. */}
                   <span className="dpc-viewer__falloff" aria-hidden="true" />
