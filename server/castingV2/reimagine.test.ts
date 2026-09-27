@@ -298,13 +298,24 @@ describe("the door and the glyph's field — one predicate, driven (#1443)", () 
 
   beforeEach(() => {
     /*
-      ⚠ NO NETWORK FROM A UNIT RUN, AND THE FIRST VERSION OF THE POSITIVE CONTROL
-      BELOW MADE ONE. `vitest.setup.ts` loads `.env`, so `OPENROUTER_API_KEY` is
-      present on this machine and `authorTextEngine()` returned a REAL engine: the
-      arm passed because an outbound call to the provider failed with ECONNRESET
-      and the press answered `nothing` — green for the wrong reason, and a unit
-      suite reaching the internet. Unset here, with the memo dropped, so the
-      `nothing` is the CONFIGURED state rather than a dead wire.
+      ⚠ THE POSITIVE CONTROL BELOW MUST NOT DEPEND ON A GLOBAL IT DOES NOT OWN,
+      AND THIS HOOK IS A BELT RATHER THAN THE BRACES.
+
+      `vitest.setup.ts` already STRIPS `OPENROUTER_API_KEY` from every unit run by
+      name, for exactly this reason (its own docblock: a suite that reaches live
+      infrastructure is not a unit test, and the roll suite once went from 17ms to
+      32 seconds quietly billing the founder's account). So `authorTextEngine()`
+      returns null here whatever `.env` holds, and the `nothing` the arm asserts
+      is the CONFIGURED state.
+
+      ⚠ AND THE SENTENCE THAT STOOD HERE WAS WRONG, WHICH IS WHY IT IS BEING
+      NAMED RATHER THAN QUIETLY REPLACED: it said this arm had first been written
+      green for the wrong reason, passing on an outbound ECONNRESET. That was
+      inferred from ONE log line in a shared run and it does not survive the
+      probe — driven with this hook disabled, the arm passes in 7ms with no
+      `[reimagine]` line at all, and the ECONNRESET belongs to the fixture in the
+      refusal chain above (`engineAnswering([new Error("ECONNRESET")])`). Working
+      law 1 aimed at my own report: the log was a claim, the probe is the fact.
     */
     delete process.env.OPENROUTER_API_KEY;
     resetAuthorEngineForTests();
@@ -404,11 +415,12 @@ describe("the door and the glyph's field — one predicate, driven (#1443)", () 
 
   it("⚠ POSITIVE CONTROL — inside casting the door ADMITS, and the refusal above is not the arm passing for the wrong reason", async () => {
     /*
-      Admitted, and then the honest free answer: no text engine is CONFIGURED for
-      this arm (`OPENROUTER_API_KEY` unset in the hook above, the memo dropped),
-      so the press has nothing to offer and says so (`{ kind: "nothing" }`). That
-      is the door's third exit, and reaching it is the proof the refusal above is
-      the scope's and not the harness's.
+      Admitted, and then the honest free answer: no text engine is CONFIGURED in a
+      unit run — `vitest.setup.ts` strips the provider key by name, and the hook
+      above unsets it again so this arm does not rest on that — so the press has
+      nothing to offer and says so (`{ kind: "nothing" }`). That is the door's
+      third exit, and reaching it is the proof the refusal above is the scope's
+      and not the harness's.
     */
     process.env.CASTING_V2_SCOPE = "all";
     const caller = appRouter.createCaller(ctxFor(4003));
