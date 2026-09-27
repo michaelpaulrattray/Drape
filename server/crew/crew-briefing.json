@@ -1,7 +1,7 @@
 {
-  "edition": 555,
-  "updatedAt": "2026-09-27T00:05:36.721Z",
-  "shift": "Relay — his eye on the engine court, provisionally: Sign views stay on Nano Banana Pro 2K (\"more organic\"; Sunburst high \"too smoothed out\"), pending the outfit court he ordered (#1451, running); #1373 closed, PR #1387 closed unmerged; the sheet-cut item answered by his eye — its profile cuts were the wrong camera, so the sheet copies the product's views exactly",
+  "edition": 556,
+  "updatedAt": "2026-09-27T01:24:56.524Z",
+  "shift": "Relay — the outfit court's eight frames reach his Desk: Sifr, four inventing views, Nano Banana Pro 2K against Sunburst high, $3.43, neither engine refused",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -6269,6 +6269,68 @@
           "key": "crew-eye/a94d2eeb-a11c-4cd4-a0d3-ad9d59daa1ae.jpg",
           "arm": "sheet vs singles, high",
           "caption": "The caveman at high — the same comparison on a second cast."
+        }
+      ]
+    },
+    {
+      "id": "outfit-court-1451-views",
+      "title": "Sifr, the four views that must invent her outfit — Nano Banana Pro 2K on the left, Sunburst high on the right. Which invents the dress better?",
+      "question": "WHAT YOU ARE JUDGING — invention. The anchor you signed shows Sifr from the chest up; the full-length front, both profiles and the back have to invent the rest of the white qipao-structured dress with its straps, buckles and worn graphic. Each strip is one row: the anchor, then three draws from today's engine (Nano Banana Pro 2K), then three from Sunburst high, all at the same scale. Neither engine refused anything and both kept her face and the right angle on every frame, so this is purely about the clothes: does the invented part agree with what the anchor shows, does it agree with the dress the brief describes, and is it a dress you would sign? Numbers beside it: Sunburst takes about 52 seconds a picture against 29, for about the same money. Say 'keep NBP 2K' or 'switch the Sign views to Sunburst high'.",
+      "state": "open",
+      "filedAt": "2026-09-27T01:24:56.524Z",
+      "issueNumber": 1451,
+      "cardId": null,
+      "frames": [
+        {
+          "key": "crew-eye/7f81dc0d-eda3-4c00-9607-df57a19ad394.jpg",
+          "arm": "front, full length",
+          "caption": "Front full-length — the anchor, three Nano Banana Pro 2K draws, three Sunburst high draws, matched scale."
+        },
+        {
+          "key": "crew-eye/e53370c1-58be-4f28-914d-40f50649e10b.jpg",
+          "arm": "profile, nose to the left",
+          "caption": "Profile with her nose to the frame's left — anchor, three and three."
+        },
+        {
+          "key": "crew-eye/0df17f38-2b48-4bd5-b7e8-6477392317cf.jpg",
+          "arm": "profile, nose to the right",
+          "caption": "Profile with her nose to the frame's right — anchor, three and three."
+        },
+        {
+          "key": "crew-eye/89cd2cfa-a25b-4bef-b54f-c61a1b4037ce.jpg",
+          "arm": "back, full length",
+          "caption": "Back full-length — the view that invents the most; anchor, three and three."
+        }
+      ]
+    },
+    {
+      "id": "outfit-court-1451-crops",
+      "title": "The same four views, torso to hem only — the dress itself, enlarged to one scale",
+      "question": "WHAT YOU ARE JUDGING — the garment, close. These are the torso-to-hem cuts out of each picture on the strips above, enlarged to one scale with hard pixels so nothing is smoothed by the enlargement. Same order on every row: the anchor's own torso, then three Nano Banana Pro 2K, then three Sunburst high. Look at the straps and buckles, the worn graphic on the chest, the qipao structure at the collar and the hem, and whether each engine keeps them the same across its three draws. A word per row is enough.",
+      "state": "open",
+      "filedAt": "2026-09-27T01:24:56.524Z",
+      "issueNumber": 1451,
+      "cardId": null,
+      "frames": [
+        {
+          "key": "crew-eye/d9a8e24c-f08e-40a1-9fda-3c9d6ffb82b5.jpg",
+          "arm": "front, torso to hem",
+          "caption": "Front — torso to hem out of each of the seven, matched scale."
+        },
+        {
+          "key": "crew-eye/2a4f4e6e-558a-47c7-9cd8-598e944c339b.jpg",
+          "arm": "left profile, torso to hem",
+          "caption": "Left profile — torso to hem, matched scale."
+        },
+        {
+          "key": "crew-eye/585538ab-9b21-4578-9489-aaba126b6dba.jpg",
+          "arm": "right profile, torso to hem",
+          "caption": "Right profile — torso to hem, matched scale."
+        },
+        {
+          "key": "crew-eye/b327bc75-1461-4232-9acb-d15f02739475.jpg",
+          "arm": "back, torso to hem",
+          "caption": "Back — torso to hem, matched scale."
         }
       ]
     }
