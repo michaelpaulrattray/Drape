@@ -1,7 +1,7 @@
 {
-  "edition": 557,
-  "updatedAt": "2026-09-27T01:35:44.343Z",
-  "shift": "Relay — his eye closed the outfit court: the Sign views move to Sunburst high (\"sunburst produced the best result easily\"), NBP 2K's texture the stated compromise; build #1459 filed; #1451 closed",
+  "edition": 558,
+  "updatedAt": "2026-09-27T02:21:32.285Z",
+  "shift": "Foreman (night shift) — the old lane's switch is out of the product (#1443, slice 2 of 5): every roll is the author road by code now, nothing reads a setting to choose. The half that would have deleted the old road's own machinery was written, measured at 86 checks across 17 test files, and left to the audit card that owns it rather than decided in a cleanup.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -230,7 +230,11 @@
           "title": "The checker that looks at every view you pay for could not read a BIG picture — and that is what your picture-quality change was really waiting on (#1408). Every signed view is checked against the face you signed before you are charged for it, and the check works by sending the checker two photographs: her signed face and the new view. It was sending them at full size, about 12 megabytes for the pair. When the picture gets bigger that stops working — the court you asked for last night could get NO reading at all on any of the 4K pictures or any of the Sunburst ones, and one of today's took 149 seconds against a 75-second limit. When the checker cannot answer we hand the picture over anyway and charge for it, with nobody having looked, so moving your views to a better picture would have meant every view arriving unchecked. The checker now looks at a bounded copy: the largest size the checker itself can actually use, saved in a format about a quarter of the weight. A 4K view reaches it at 3 megabytes instead of 53, and it answered in 8.5 seconds. ⚠ What we did NOT do is shrink the picture to the size an older version of the checker used — the obvious move, and it would have thrown away a third of the detail, when her tattoos, piercings, freckles and makeup are exactly what the check looks at. And we proved it still works rather than assuming: shown a DIFFERENT woman's face it still says no, and shown her own it still says yes and names her freckles, her ear piercings and her tattoo sleeve. ⚠ One correction, made rather than left to be found: the first version of this report blamed three views of yours from Thursday on this problem. They were not — they were the three already fixed on Thursday, and every view since has carried a real verdict. This job is groundwork for the quality change, not a leak being plugged. Nothing you receive changes: your picture is stored and delivered before the check happens, so only the copy the checker looks at is affected."
         },
         {
-          "title": "You answered the old-lane question with \"Delete it\" (#1398) — so the old way of casting comes out of the product, in five careful slices with nothing new folded in. The written manifest went first, because a deletion is the one thing the gate cannot give back, and it caught two things that would have gone wrong: the name of the road being deleted is also the name of the road your 220 older sheets read through, in the same file — and the setting has a child that would have crash-looped the site if the parent left first. Slice 1 (that child moved out of the way, nothing anybody can see) is built and waiting on review; the audit card #180 carries the rest",
+          "title": "You answered the old-lane question with \"Delete it\" (#1398) — so the old way of casting comes out of the product, in five careful slices with nothing new folded in. The written manifest went first, because a deletion is the one thing the gate cannot give back, and it caught two things that would have gone wrong: the name of the road being deleted is also the name of the road your 220 older sheets read through, in the same file — and the setting has a child that would have crash-looped the site if the parent left first. Slice 1 (that child moved out of the way, nothing anybody can see) is live; the audit card #180 carries the rest",
+          "state": "done"
+        },
+        {
+          "title": "The switch that chose between the old way of casting and the new one is now GONE from the product (#1443, slice 2 of five). Nothing you can see changes: it has been answering the same way for every account since 24 September, and every roll now takes the new road because the code says so rather than because a setting does. The setting itself comes off the live site right after this, in that order on purpose — the other way round would have taken the site down on every restart. ⚠ And the honest half: this slice was also meant to delete the OLD road's machinery, and it did not. We wrote that deletion, ran the whole test suite over it, and 86 checks across 17 files went red — they are the checks that watch the old way's categories and styling, which is exactly what the audit you ordered (#180) is for. Deciding which of those 86 to retire is that audit's job, not a cleanup's side effect, so it was measured and handed over rather than guessed at. One thing found on the way, by deliberately breaking things to see what noticed: the Re-imagine button's own door had NO test at all — deleting the whole check left 241 tests green — and the switch that draws it on your brief boxes had none either. Both have real tests now.",
           "state": "in-progress"
         }
       ]
@@ -6379,13 +6383,6 @@
       "note": "220 of 306 production rolls read as legacy for good; two rows read as deletions and are load-bearing."
     },
     {
-      "id": "sign-view-tier-1373",
-      "title": "Signed views render at the engine's best setting (#1373)",
-      "status": "in-review",
-      "prNumber": 1387,
-      "note": "Measured, not estimated: 43.0s vs 28.5s, $0.30 vs $0.15. Sabotage 8/8."
-    },
-    {
       "id": "ceremony-179-persona",
       "title": "The #179 ceremony could not run — it selected a column #1241 dropped (#179)",
       "status": "merged",
@@ -8736,16 +8733,23 @@
     {
       "id": "devserver-abandoned-1435",
       "title": "A dev server left running on this machine can be told apart from a live one (#1435)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1438,
       "note": "Three shifts left a dead one running because the tool called it live. Sabotage 2 arms red, 3 probes at the wire."
     },
     {
       "id": "old-lane-slice1-1442",
       "title": "The old lane's retirement: the written manifest, and the one setting that had to move before anything could be deleted (#1442, slice 1 of 5)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1449,
       "note": "Money surface (env.ts is on the list) — held for the hand review."
+    },
+    {
+      "id": "old-lane-slice2-1443",
+      "title": "The old lane's retirement: the switch itself is out of the product (#1443, slice 2 of 5)",
+      "status": "merged",
+      "prNumber": 1460,
+      "note": "Nothing a customer sees; the setting had said the same thing for every account since 24 Sep."
     }
   ],
   "problems": [
