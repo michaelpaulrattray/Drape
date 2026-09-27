@@ -137,3 +137,62 @@ export function withViewThumbnailSuffix(value: string): string {
 export function isViewThumbnailBearingKey(key: string): boolean {
   return !key.endsWith(VIEW_THUMBNAIL_SUFFIX) && VIEW_KEY_PATTERN.test(key.replace(/^\/+/, ""));
 }
+
+/**
+ * THE SMALL COPY'S URL FOR A PICTURE THAT HAS ONE — and the picture's own URL
+ * for every other kind.
+ *
+ * # Why the question has to be asked, when the strip never asked it
+ *
+ * The strip (#1389) only ever draws a signed cast's views, so it could append
+ * the suffix unconditionally and be right every time. The surfaces #1447 moves
+ * onto the small copy cannot: the modal shell that draws a cast's portrait also
+ * draws a **concept upload's local preview** (a `blob:`/`data:` URL with no
+ * object behind it) and an **unsigned candidate's frame** (a key outside the
+ * views prefix, so no derivative was ever minted for it). Appending blindly
+ * there would ask for an object that cannot exist and pay a 404 per open to
+ * learn it.
+ *
+ * So the predicate that already decides which objects CARRY a small copy
+ * decides which URLs may ask for one. One rule, three readers — the mint, the
+ * sweep and now the picture — rather than a second list of "surfaces where it is
+ * safe" that drifts the first time a surface is added (working law 4).
+ *
+ * ⚠ **It answers about the URL's PATH, not about the surface asking.** A caller
+ * cannot get this wrong by using it on the wrong picture, which is the whole
+ * reason it is shaped as a total function over URLs rather than a boolean a call
+ * site has to remember to check.
+ *
+ * ⚠ **The append is deliberately the same append `withViewThumbnailSuffix`
+ * performs on a key**, so `server/viewThumbnails.test.ts`'s equality — the URL
+ * of the derived key IS the derived URL of the key — still holds through this
+ * door. These URLs are `R2_PUBLIC_URL` + key and carry no query string; a URL
+ * that did would break here exactly as it already breaks in the strip, so this
+ * introduces no case that did not exist.
+ */
+export function viewSmallCopyUrl(url: string): string {
+  return namesAViewObject(url) ? withViewThumbnailSuffix(url) : url;
+}
+
+/**
+ * Does this URL address one of the objects that carries a small copy?
+ *
+ * The key is the URL's PATH. `new URL` is used rather than a substring search
+ * because a `data:`/`blob:` preview must answer false rather than accidentally
+ * matching on its payload, and a bare key (no origin) must still answer for
+ * itself — which is why an unparseable value falls back to the string.
+ */
+function namesAViewObject(url: string): boolean {
+  let path = url;
+  try {
+    path = new URL(url).pathname;
+  } catch {
+    /* Not absolute — treat the value as the key it appears to be. */
+  }
+  try {
+    path = decodeURIComponent(path);
+  } catch {
+    /* A malformed escape is not a view key; leave it as it came. */
+  }
+  return isViewThumbnailBearingKey(path);
+}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { SmallCopyImage } from "./SmallCopyImage";
 
 /**
  * The shell the sign, delete and concept-review dialogs share.
@@ -232,9 +233,27 @@ export function CastingModal({
         than staying behind as a road nobody takes.
       */}
       <div className="dpc-modal__portrait">
+        {/*
+          ⚠ THE SMALL COPY WHERE ONE EXISTS, THE PICTURE ITSELF WHERE IT DOES
+          NOT — AND THE SLOT DOES NOT HAVE TO KNOW WHICH (#1447).
+
+          This slot draws three different kinds of picture: a signed cast's
+          anchor (delete), an unsigned candidate's frame (sign) and a concept
+          upload's LOCAL preview (concept review). Only the first has a
+          derivative beside it. `SmallCopyImage` asks the shared predicate about
+          the URL's own path, so the other two are handed through untouched and
+          never pay a 404 for asking — which is why this needs no flag that
+          three call sites would have to remember.
+
+          It matters here for the same reason it matters on the rename thumb:
+          the delete portrait used to be free because the roster card behind it
+          had already downloaded that exact URL. Once the card moved to the
+          small copy, leaving this on the full file would have pulled a fresh
+          5.8 MB to confirm a deletion.
+        */}
         {portrait ? (
           <span className={portraitMuted ? "dpc-modal__muted" : undefined}>
-            <img src={portrait} alt="" />
+            <SmallCopyImage fullSrc={portrait} />
           </span>
         ) : (portraitFallback ?? null)}
         {portraitOverlay ?? null}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { ModalScrim } from "./CastingModal";
+import { SmallCopyImage } from "./SmallCopyImage";
 import { CAST_NAME_MAX_LENGTH } from "@shared/inputLimits";
 
 /**
@@ -78,7 +79,18 @@ export function RenameDialog({
     >
       <div className="dpc-renamem__head">
         <span className="dpc-renamem__thumb">
-          {imageUrl ? <img src={imageUrl} alt="" /> : null}
+          {/*
+            THE SMALL COPY (#1447), AND HERE IT IS NOT AN OPTIMISATION — IT IS
+            THE FIX NOT MOVING ITS OWN COST SOMEWHERE ELSE.
+
+            This thumb is 46x58. It was handed the full stored picture and got
+            away with it because the roster card behind the dialog had already
+            downloaded that exact URL, so opening Rename cost nothing. The
+            moment the card moved to the small copy, the two URLs differed and
+            this span would have pulled a fresh 5.8 MB file — 19.0 MB once
+            #1373's 4K tier lands — to draw a face the size of a fingernail.
+          */}
+          {imageUrl ? <SmallCopyImage fullSrc={imageUrl} /> : null}
         </span>
         <span>
           {/* The eyebrow names WHO — the old title said "this cast" and left
