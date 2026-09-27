@@ -1,7 +1,7 @@
 {
-  "edition": 554,
-  "updatedAt": "2026-09-26T23:51:36.792Z",
-  "shift": "Foreman (night shift) — your \"Delete it\" is the ruling, and the old lane's retirement has a written manifest and its first slice",
+  "edition": 555,
+  "updatedAt": "2026-09-27T00:05:36.721Z",
+  "shift": "Relay — his eye on the engine court, provisionally: Sign views stay on Nano Banana Pro 2K (\"more organic\"; Sunburst high \"too smoothed out\"), pending the outfit court he ordered (#1451, running); #1373 closed, PR #1387 closed unmerged; the sheet-cut item answered by his eye — its profile cuts were the wrong camera, so the sheet copies the product's views exactly",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -524,7 +524,7 @@
         }
       ],
       "recommendation": "A — ship it. It is what you asked for, the wait is half a minute on something you do rarely, and 30 cents a picture is not a number that decides anything. But look at the two frames first: if the difference is not visible to you, none of the rest is worth paying for.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-26T10:31:55.549Z",
       "issueNumber": 1373
     },
@@ -6178,7 +6178,7 @@
       "id": "sign-engine-court-1394-arms",
       "title": "Four engines drew the same person — you chose Sunburst high; do the frames agree with you?",
       "question": "WHAT YOU ARE JUDGING — is it still her. Each sheet shows the anchor picture you signed on the left, then the same view drawn by four settings: today's engine at 2K, today's engine at 4K, Sunburst at high, and Sunburst at max. You have already chosen Sunburst high on the numbers (best at keeping face, angle and outfit, same price as today, about forty seconds slower). This is your eye closing it: look at the face detail sheets first, then the three-quarter view, which every engine struggles with. Say 'confirmed' or name the frame that changes your mind.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-26T23:31:44.907Z",
       "issueNumber": 1394,
       "cardId": null,
@@ -6219,7 +6219,7 @@
       "id": "sign-engine-court-1394-chain",
       "title": "Five edits in a row on the same picture — does she survive the chain better at high or at max?",
       "question": "WHAT YOU ARE JUDGING — drift. Your question was whether max reduces degradation more than high when a picture is edited again and again. Each sheet starts with the anchor and then shows five successive edits, each made on the previous result. The numbers say identity held on both tiers and max bought nothing for three and a half times the price. Look at the fifth frame on each: is it still her, and is either tier visibly cleaner? A word is enough.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-26T23:31:44.907Z",
       "issueNumber": 1394,
       "cardId": null,
@@ -6249,8 +6249,8 @@
     {
       "id": "sheet-cut-1278-part2",
       "title": "One character sheet cut into four views, beside four views drawn one at a time — which keeps her outfit the same?",
-      "question": "WHAT YOU ARE JUDGING — consistency across the views, which is the full-length views bug you raised: the front and the back coming back in different bottoms. TOP ROW on each sheet: one Sunburst render of a four-view character sheet (front, left profile, right profile, back), cut into four. BOTTOM ROW: the same four views drawn as four separate renders. The sheet is one call instead of four and each view has about a third of the pixels; identity read 11 of 16 on the sheet. Tell me whether the top row's outfit consistency is worth the smaller pictures, or whether the bottom row wins.",
-      "state": "open",
+      "question": "WHAT YOU ARE JUDGING — consistency across the views, which is the full-length views bug you raised: the front and the back coming back in different bottoms. Each strip is ONE ROW OF EIGHT. The LEFT FOUR are the four views (front, left profile, right profile, back) cut out of a single Sunburst render of a character sheet. The RIGHT FOUR are the same four views drawn as four separate renders. The sheet is one call instead of four, and each cut view has about a third of the pixels of a single render — a lower-resolution picture per view; identity read 11 of 16 on the sheet. Compare the trousers and shoes across the left four against the right four. Tell me whether the left four's outfit consistency is worth the smaller pictures, or whether the right four win.",
+      "state": "answered",
       "filedAt": "2026-09-26T23:31:44.907Z",
       "issueNumber": 1278,
       "cardId": null,
@@ -6258,7 +6258,7 @@
         {
           "key": "crew-eye/c4bb9cc2-dc15-4022-8231-ba66309176e0.jpg",
           "arm": "sheet vs singles, high",
-          "caption": "Jericho at high — one sheet cut four ways (top) beside four renders made one by one (bottom)."
+          "caption": "Jericho at high — LEFT four: one sheet cut four ways; RIGHT four: four renders made one by one."
         },
         {
           "key": "crew-eye/e4ed69d0-f16a-4084-b546-73d0ee9d3a88.jpg",
