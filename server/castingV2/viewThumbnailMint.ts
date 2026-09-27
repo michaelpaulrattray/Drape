@@ -36,6 +36,22 @@ const log = createModuleLogger("castingV2/viewThumbnailMint");
 export type ViewThumbnailDependencies = {
   put?: typeof storagePut;
   shrink?: (bytes: Buffer) => Promise<Buffer>;
+  /**
+   * WRITE ONLY IF THE FRESH COPY IS WIDER THAN THIS MANY PIXELS (#1456).
+   *
+   * The product's own mint never passes it: on the render road there is nothing
+   * beside the object yet, so every mint is the first one. It exists for the
+   * BACKFILL, which meets copies minted under an earlier, narrower constant and
+   * has to tell two cases apart that look identical from the outside — a copy
+   * that is narrow because the constant was, and one that is narrow because its
+   * SOURCE is. Only the first can be improved.
+   *
+   * ⚠ **It lives here rather than in the ceremony so that the comparison is made
+   * against the bytes this module produces.** A ceremony deciding for itself
+   * would need its own resize and its own quality, which is the mirrored
+   * constant this module exists to not have (working law 4).
+   */
+  onlyWiderThan?: number;
 };
 
 /**
@@ -74,6 +90,24 @@ export async function mintViewThumbnail(
   const put = dependencies.put ?? storagePut;
   try {
     const small = await shrink(bytes);
+    /*
+      THE BACKFILL'S QUESTION, ASKED OF THE REAL BYTES (#1456). A source
+      narrower than the target comes back at its own width (`withoutEnlargement`
+      above), so a copy that is still narrow after a re-mint is telling us the
+      SOURCE is the limit — and re-writing it every run would be churn that
+      looks like work. Reading the width off what was actually produced is the
+      only honest way to know, because a HEAD gives a byte count and no width.
+    */
+    if (dependencies.onlyWiderThan !== undefined) {
+      const width = (await sharp(small).metadata()).width ?? 0;
+      if (width <= dependencies.onlyWiderThan) {
+        log.info(
+          { storedWidth: dependencies.onlyWiderThan, freshWidth: width },
+          "Left a small copy alone: a fresh one would be no wider",
+        );
+        return;
+      }
+    }
     /*
       A shrink that came back BIGGER than the source is not written. It cannot
       happen for a 4K view and a 288px JPEG, and that is exactly why it is worth
