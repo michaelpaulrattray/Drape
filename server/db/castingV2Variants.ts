@@ -32,6 +32,7 @@ import {
   type CastingCandidateVariant,
 } from "../../drizzle/schema";
 import { isRefineStep, type RefineStep } from "../../shared/refineSteps";
+import { isRefineFigure, type RefineFigure } from "../../shared/refineFigure";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
 
 function assertPositiveId(value: number, name: string): void {
@@ -405,6 +406,43 @@ export async function recordVariantStep(input: {
     .update(castingCandidateVariants)
     .set({
       internalPrompt: sql`JSON_SET(COALESCE(${castingCandidateVariants.internalPrompt}, JSON_OBJECT()), '$.step', ${input.step})`,
+    })
+    .where(and(
+      eq(castingCandidateVariants.id, input.variantId),
+      eq(castingCandidateVariants.userId, input.userId),
+      inArray(castingCandidateVariants.status, ["queued", "dispatched"]),
+    ));
+  return affectedRows(result) === 1;
+}
+
+/**
+ * AND WHERE SHE IS IN HER OWN PICTURE — the dust's seed map on the row (#55).
+ *
+ * The same shape of write as the step above and for the same reason: it rides
+ * `internalPrompt` with `JSON_SET` so it cannot disturb a key beside it, it is
+ * scoped to a row that has not landed with the owner in the same statement
+ * (invariant 1), and **it may never cost a picture.** Written once, at dispatch,
+ * from bytes the render already holds.
+ *
+ * Validated on the way IN as well as out, exactly as the step's closed
+ * vocabulary is: the column is json, so a malformed map written here is one a
+ * browser has to defend against at runtime rather than one anybody sees in a
+ * review.
+ */
+export async function recordVariantFigure(input: {
+  userId: number;
+  variantId: number;
+  figure: RefineFigure;
+}): Promise<boolean> {
+  assertPositiveId(input.userId, "userId");
+  if (!isRefineFigure(input.figure)) {
+    throw new TypeError("figure must be a refine figure — a grid whose cells match its own dimensions");
+  }
+  const db = await requireDb();
+  const result = await db
+    .update(castingCandidateVariants)
+    .set({
+      internalPrompt: sql`JSON_SET(COALESCE(${castingCandidateVariants.internalPrompt}, JSON_OBJECT()), '$.figure', CAST(${JSON.stringify(input.figure)} AS JSON))`,
     })
     .where(and(
       eq(castingCandidateVariants.id, input.variantId),

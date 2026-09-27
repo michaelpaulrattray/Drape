@@ -33,11 +33,19 @@ import { refineStepFraction, type RefineStep } from "@shared/refineSteps";
  *
  * A row the road has announced NOTHING about gets no bar and no word — not a
  * plausible one, not the first one, not the last one it had. *A stage that does
- * not fire is not shown.* That happens in two real situations and both are
- * short: the seconds between her press and the server's first row, and a render
- * claimed by a build that predates the announcement. In both the picture still
- * carries her own sentence and the dust, which claim only that something is
- * being worked on — which is true.
+ * not fire is not shown.* The picture still carries her own sentence and the
+ * dust, which claim only that something is being worked on — which is true.
+ *
+ * ⚠ **THAT IS ONE SITUATION, NOT TWO — CORRECTED 2026-09-27 (#55), AND THE CODE
+ * WAS RIGHT ALL ALONG.** This paragraph named the seconds between her press and
+ * the server's first row as a second case, and it is not one: the local head of
+ * a wait is `stage: "queued"`, the branch below answers *sending* for it, and
+ * that is the honest answer — **a request that is out IS sending**, and `queued`
+ * is the row's own status rather than an announcement anybody has to make. The
+ * real case is the other one: a **dispatched** row from a build that predates
+ * the announcement, which `refineProgress.test.ts` drives by name. Found by the
+ * relay reading the code against this docblock on PR #1350; behaviour unchanged,
+ * and the sentence is what moved.
  *
  * A SETTLING row gets no bar either, and for a stronger reason: nobody is
  * rendering it. A progress bar over a row the recovery sweep is refunding is
