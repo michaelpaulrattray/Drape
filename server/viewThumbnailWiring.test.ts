@@ -25,8 +25,23 @@ import { describe, expect, it } from "vitest";
 
 const repoRoot = path.join(__dirname, "..");
 
+/**
+ * ⚠ COMMENTS ARE STRIPPED, AND #1447's OWN SABOTAGE RUN IS WHY.
+ *
+ * Every arm here looks for a code token, and the files it reads EXPLAIN the
+ * defect they are guarded against — so a reader of raw text passes on the
+ * explanation. Measured: deleting the strip's `key={src}` left this suite green,
+ * because the comment above that call site says the words *`key={src}` is still
+ * load-bearing*. Seven of eight sabotage cases were caught and that was the
+ * eighth, and it would have read as coverage.
+ *
+ * The cheapest green would then have been to delete the reasoning, which is the
+ * same trap `client/src/foundation/promotion-guard.test.ts` names: a guard that
+ * punishes the explanation is a guard that erases it.
+ */
 function read(relative: string): string {
-  return fs.readFileSync(path.join(repoRoot, relative), "utf8");
+  const text = fs.readFileSync(path.join(repoRoot, relative), "utf8");
+  return text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 }
 
 describe("the mint is wired into the one place a view's bytes are stored", () => {
