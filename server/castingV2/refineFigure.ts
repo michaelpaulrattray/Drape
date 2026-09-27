@@ -66,16 +66,39 @@ export async function cutRefineFigure(bytes: Buffer): Promise<RefineFigure | nul
       `info.channels` costs nothing and cannot be wrong the day sharp's
       defaults move under it (memory: the quiet clever call).
     */
-    const { data, info } = await sharp(bytes)
+    const source = sharp(bytes);
+    const meta = await source.metadata();
+    if (!meta.width || !meta.height) return null;
+    /*
+      ⚠ THE GRID IS ASKED FOR, NOT ACCEPTED — and the first draft of this took
+      whatever height sharp chose and then CLAMPED the loop at the cap.
+
+      Driven, because the difference is invisible in a 2:3 master: a 200x2000
+      picture comes back 32x320 from `fit: "inside"`, the clamp reads the first
+      96 of those rows, and the map is **the top 30 % of the picture presented
+      as the whole of it** — a figure standing at the bottom lands in a grid of
+      zeros. Found by the neighbourhood of a sabotage case rather than by the
+      arm that was supposed to cover it, which asserted only that the grid was
+      no taller than the cap.
+
+      `fit: "fill"` squashes the aspect instead of cropping it, and that is
+      exactly right HERE and nowhere else: every cell is addressed as a FRACTION
+      of the picture's box, never as pixels, so a squashed grid still points at
+      the part of her it was cut from. A map is not a picture.
+    */
+    const h = Math.max(1, Math.min(
+      REFINE_FIGURE_MAX_HEIGHT,
+      Math.round((REFINE_FIGURE_WIDTH * meta.height) / meta.width),
+    ));
+    const { data, info } = await source
       .removeAlpha()
       .greyscale()
-      .resize({ width: REFINE_FIGURE_WIDTH, fit: "inside", withoutEnlargement: false })
+      .resize({ width: REFINE_FIGURE_WIDTH, height: h, fit: "fill" })
       .raw()
       .toBuffer({ resolveWithObject: true });
     const w = info.width;
-    const h = Math.min(info.height, REFINE_FIGURE_MAX_HEIGHT);
     const channels = info.channels;
-    if (!(w >= 1 && h >= 1 && channels >= 1)) return null;
+    if (!(w >= 1 && info.height === h && channels >= 1)) return null;
 
     /* Luminance per cell, 0..1. One channel after `greyscale()`; three if a
        future sharp hands them back, in which case the first is the grey. */
@@ -116,11 +139,20 @@ export async function cutRefineFigure(bytes: Buffer): Promise<RefineFigure | nul
     /*
       THE WRITER CHECKS ITSELF AGAINST THE READER'S OWN VALIDATOR.
 
-      Not belt and braces: this value is about to be written into a json column
-      and read back by a browser loop, and the one thing worse than no dust is a
-      row carrying a malformed map that the client has to defend against at
-      runtime. If the shape this produced would not pass the wire's own gate, it
-      does not go on the wire.
+      This value is about to be written into a json column and read back by a
+      browser loop, and the one thing worse than no dust is a row carrying a
+      malformed map the client has to defend against at runtime. If the shape
+      this produced would not pass the wire's own gate, it does not go on the
+      wire.
+
+      ⚠ **AND IT IS UNREACHABLE DEFENCE RATHER THAN A TESTED CONTROL — said here
+      rather than left to be assumed.** The sabotage round deleted it and every
+      suite stayed green, because no input this function accepts produces a map
+      its own construction would make invalid: the dimensions are asked for and
+      checked against what came back, and the cells are generated from them. It
+      is kept as one line at a json boundary, and it is the ONE case of twenty
+      that survived. A control nothing can trip is worth exactly that much and
+      the report says so.
     */
     return isRefineFigure(figure) ? figure : null;
   } catch {

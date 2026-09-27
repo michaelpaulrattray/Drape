@@ -146,6 +146,51 @@ describe("her shape, cut from her own master", () => {
     expect(strip!.cells).toHaveLength(strip!.w * strip!.h);
   });
 
+  /*
+    ⚠ AND THE CAP COVERS THE WHOLE PICTURE RATHER THAN ITS TOP — the arm above
+    is the one that MISSED this, and it is left standing beside it on purpose.
+
+    It asserted that the grid was no taller than the cap and that its cells
+    counted up, both of which were true while the map was garbage: a 200x2000
+    picture came back from sharp as 32x320, the loop read the first 96 rows, and
+    a figure standing at the BOTTOM landed in a grid of zeros. Nothing about
+    "no taller than the cap" can see that.
+
+    So the assertion is where she IS, not how big the grid is. Found through the
+    neighbourhood of a sabotage case rather than by a test, which is the argument
+    for driving the sabotage at all.
+  */
+  it("carries her from the BOTTOM of a picture too tall for the grid", async () => {
+    const ground = await sharp({
+      create: { width: 200, height: 2000, channels: 3, background: { r: 15, g: 15, b: 15 } },
+    }).png().toBuffer();
+    const box = await sharp({
+      create: { width: 120, height: 300, channels: 3, background: { r: 245, g: 245, b: 245 } },
+    }).png().toBuffer();
+    const figure = await cutRefineFigure(
+      await sharp(ground).composite([{ input: box, gravity: "south" }]).png().toBuffer(),
+    );
+    expect(figure).not.toBeNull();
+    if (!figure) return;
+    expect(figure.h).toBe(REFINE_FIGURE_MAX_HEIGHT);
+    const low = meanWeight(figure, 0.3, 0.92, 0.7, 0.99);
+    const high = meanWeight(figure, 0.3, 0.05, 0.7, 0.3);
+    expect(low, "she is where she was painted").toBeGreaterThan(0.8);
+    /*
+      A RATIO RATHER THAN A ZERO, and the reason is worth writing down because
+      the first draft of this arm asserted the zero and went red.
+
+      This fixture's figure TOUCHES the bottom edge, and the backdrop is the mean
+      of the edge cells — so some of her is inside the estimate of the wall, and
+      the whole dark ground then reads as differing from it a little. That is a
+      stated property of his formula rather than anything about the cap, and the
+      map is still overwhelmingly her where she is. Asserting the zero here would
+      be asserting that his formula is something it is not.
+    */
+    expect(low / Math.max(high, 0.01), "and far more of her at the bottom than the top")
+      .toBeGreaterThan(3);
+  });
+
   it("answers null rather than throwing on something that is not a picture", async () => {
     await expect(cutRefineFigure(Buffer.from("her picture, allegedly"))).resolves.toBeNull();
     await expect(cutRefineFigure(Buffer.alloc(0))).resolves.toBeNull();
