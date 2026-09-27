@@ -1,6 +1,13 @@
 import { ProviderQueue, withRetry } from "./providerQueue";
 import { runFalImageJob } from "./falTransport";
-import { ProviderError, type CandidateRequest, type CreativeEngine, type ImageResult } from "./types";
+import {
+  ProviderError,
+  type CandidateRequest,
+  type CreativeEngine,
+  type IdentityEditRequest,
+  type IdentityEngine,
+  type ImageResult,
+} from "./types";
 
 /**
  * GPT Image 2 via fal.ai (plan §H.9: "Fal also hosts GPT Image 2 — a
@@ -176,9 +183,29 @@ export const FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE = 0.099;
  * lookup returns `undefined` rather than a neighbour's number: `estimatedCostUsd`
  * is optional precisely so a gap can say *we have not measured this* instead of
  * quietly inheriting a figure from a different engine. `openai/gpt-image-2.5/sunburst/edit`
- * is deliberately absent — the swap makes it a live road, nothing has measured
- * it, and an unmeasured entry in a table called MEASURED is the *"fresher lie"*
- * `scripts/lib/falSpend.mts` refuses by name.
+ * is deliberately absent, and an unmeasured entry in a table called MEASURED is
+ * the *"fresher lie"* `scripts/lib/falSpend.mts` refuses by name.
+ *
+ * ⚠ **AND THE REASON IT IS ABSENT CHANGED ON 2026-09-27 (#1459) — IT IS NO
+ * LONGER "NOTHING HAS MEASURED IT". TWO COURTS HAVE, AND IT STILL CANNOT GO IN
+ * HERE, WHICH IS THE MORE USEFUL FACT.** #1394's price phase took a SETTLED
+ * balance either side of one render and got **$0.14** at 2352x3504; #1451's
+ * 24-render window divides to $0.1429 with the residue putting it at ~$0.136.
+ * Two independent readings, agreeing.
+ *
+ * **This table is keyed on MODEL and this endpoint's price moves with the
+ * SIZE**, and the two roads that now send to it ask for different ones: a Sign
+ * view asks 2352x3504 (`SIGNED_VIEW_SIZE`, ~8.24 MP) and a paid refine repaint
+ * asks the master's own pixels, around 1024x1536 (~1.57 MP). Writing $0.14 here
+ * would price every repaint at roughly five times its size — the same defect
+ * one row up, where `openai/gpt-image-2.5/sunburst/text-to-image` sits at
+ * $0.015 for the sheet's 1024x1536 and this file already warns that *"a bigger
+ * canvas costs more, and this number is the 1024x1536 sheet size only."*
+ *
+ * So the measurement is recorded where a SIZE can be recorded beside it — on
+ * `createFalSunburstViewEngine` below, in the two court records, and in the
+ * capability atlas — and a size-keyed price is the card this would need.
+ * `undefined` here stays the honest answer for both roads.
  *
  * These numbers are repeated from `FAL_MEASURED_USD` in `scripts/lib/falSpend.mts`
  * rather than imported, for that module's own stated reason — it stays outside
@@ -397,6 +424,181 @@ export function createFalMaskedEditEngine(config: FalCreativeConfig) {
           { signal: request.signal },
         ),
       );
+    },
+  };
+}
+
+/**
+ * THE SIGNED VIEW'S SIZE — what the door actually gives, asked for by name.
+ *
+ * Sunburst's edit door publishes `image_size` as `{width, height}` with each
+ * side up to 14142, and it does not honour that: #1394 asked for 3392x5056 and
+ * was answered **2352x3504**, the aspect kept, which is the same ~8.29 MP
+ * ceiling `image_size` carries above for GPT Image 2. So this is the door's own
+ * measured ceiling at the package's 2:3, not a preference — and it is asked for
+ * explicitly so no row has to be read as an ask that was silently clamped.
+ *
+ * Both sides are multiples of 16, which the door requires.
+ *
+ * For scale: Nano Banana Pro's `2K` tier returned **1696x2528** (4.29 MP), so a
+ * signed view is about twice the pixels it was, and the files roughly double
+ * with it (measured across 24 renders in #1451: 5.0 MB against 9.4 MB).
+ */
+export const SIGNED_VIEW_SIZE = { width: 2352, height: 3504 } as const;
+
+/**
+ * ⚠ **INHERITED FROM NANO BANANA PRO AND UNVERIFIED FOR THIS DOOR.**
+ *
+ * `falQueue.ts` refuses more than 14 references because fal documents that
+ * ceiling for Nano Banana Pro. **Nothing states one for Sunburst's edit door**,
+ * and inventing a number would be a guess on a paid road. Carrying the
+ * incumbent number forward is the choice that changes nothing: the guard that
+ * was standing when this road was Nano Banana Pro's is still standing, and it
+ * refuses before dispatch rather than after the customer has paid.
+ *
+ * What it costs is bounded and measured rather than argued: a signed view
+ * travels with the anchor plus the cast's DELIVERED ink crops, and
+ * `casting_ink_delivery_crops` holds **0 rows, all time, in production**
+ * (#1451's fixture reading) — so every view this product has ever rendered
+ * carried exactly ONE reference. The ceiling has never been approached.
+ */
+const SIGNED_VIEW_MAX_REFERENCES = 14;
+
+/**
+ * THE SIGN'S VIEW ENGINE — GPT Image 2.5 Sunburst at `high`, on the edit door.
+ *
+ * **His word, 2026-09-27 (terminal), verbatim and entire**, closing the outfit
+ * court (#1451) on his own Sifr after the engine court (#1394):
+ *
+ * > *"sunburst produced the best result easily . i guess we will have to settle
+ * > on sunburst high then and compromise on that additional detail from NBP
+ * > 2k"*
+ *
+ * It supersedes his provisional *"keep NBP 2k for signing views"* of the same
+ * morning, given before the outfit frames reached his Desk. Both courts asked
+ * the question the disappearing-technology law's clause 2 requires — a
+ * measurement on HIS fixtures, never a leaderboard — and clause 3's other half
+ * is stated here beside the choice rather than left in a document:
+ *
+ *   price     ~$0.14 a picture, against Nano Banana Pro's published $0.15.
+ *             Two independent readings agree: #1394's price phase took a
+ *             SETTLED balance either side of one render (14.77 -> 14.63), and
+ *             #1451's 24-render window divides to $0.1429 with the residue
+ *             putting Sunburst at ~$0.136. It is NOT in
+ *             `FAL_MEASURED_USD_PER_IMAGE` — see the note there; that table is
+ *             keyed on MODEL and this engine's price moves with the SIZE.
+ *   latency   ~52 s a picture against ~29 s (#1451, p95 65.5 s). A five-view
+ *             Sign at `SIGN_VIEW_CONCURRENCY` 3 is two waves either way:
+ *             ~104 s against ~58 s. He accepted this cost in the same sentence
+ *             he chose the engine.
+ *   quality   NOT stated here. Working law 9 — his eye closed it, and the
+ *             compromise is his own: *"compromise on that additional detail"*,
+ *             i.e. less skin and hair texture than Nano Banana Pro 2K.
+ *
+ * # Why this is a SECOND engine and not a changed default
+ *
+ * `createFalIdentityEngine` is Nano Banana Pro, and the Sign is not its only
+ * customer: `refineService.ts` renders the paid non-repaint edit through the
+ * same factory at `1K`. His word moved THE SIGNED VIEWS and nothing else, so
+ * pointing that factory at another door would have moved a second paid road he
+ * did not rule on. This engine serves `packageOrchestrator`'s attempt loop —
+ * the Sign and a Try again, which must be one engine or one cast wears two
+ * looks — and nothing else.
+ *
+ * # Why the body is `createFalMaskedEditEngine`'s, field for field
+ *
+ * Because that is what #1394 and #1451 measured. Both courts sent their
+ * Sunburst arms through `runFalImageJob` with this exact body (a court could
+ * not use the factory itself: it pins `quality: "high"` and #1394 had to ask
+ * for `"max"` as well). A swap shipping a different body would be shipping
+ * something no court has seen.
+ *
+ * # It renders the signed-view TIER and refuses anything else
+ *
+ * `IdentityEditRequest.resolution` is Nano Banana Pro's tier vocabulary and
+ * this door has one size. Silently ignoring the field is the unowned-axis
+ * defect — a caller asking for `4K` would be answered 2352x3504 with nothing
+ * saying so — so `2K`, the signed-view tier, is the only value this engine
+ * accepts, and it fails before dispatch rather than after the money moves.
+ */
+export function createFalSunburstViewEngine(config: {
+  apiKey: string;
+  model?: string;
+  timeoutMs?: number;
+  pollIntervalMs?: number;
+  queue?: ProviderQueue;
+}): IdentityEngine {
+  if (!config.apiKey) {
+    /* Refused at construction, in one sentence, rather than discovered inside a
+       request that has already taken a customer's 450 credits. */
+    throw new ProviderError("capability", "signing views needs FAL_KEY to render");
+  }
+  const model = config.model ?? FAL_GPT_IMAGE_25_SUNBURST_EDIT;
+  const timeoutMs = config.timeoutMs ?? 300_000;
+  const pollIntervalMs = config.pollIntervalMs ?? 1_500;
+  const queue =
+    config.queue ?? new ProviderQueue({ name: "fal-sign-views", concurrency: 3, maxQueueDepth: 32 });
+
+  async function edit(request: IdentityEditRequest): Promise<ImageResult> {
+    if (request.resolution !== "2K") {
+      throw new ProviderError(
+        "capability",
+        `the sign view engine renders the 2K signed-view tier only — asked for ${request.resolution}`,
+      );
+    }
+    if (request.references.length > SIGNED_VIEW_MAX_REFERENCES) {
+      throw new ProviderError("capability", "too many reference images for this engine");
+    }
+
+    return queue.run("signView", () =>
+      withRetry(
+        "fal.signView",
+        async () => {
+          const job = await runFalImageJob({
+            apiKey: config.apiKey,
+            endpoint: model,
+            body: {
+              prompt: request.prompt,
+              image_urls: request.references.map(
+                (reference) =>
+                  `data:${reference.contentType};base64,${reference.bytes.toString("base64")}`,
+              ),
+              image_size: SIGNED_VIEW_SIZE,
+              num_images: 1,
+              quality: "high",
+              output_format: "png",
+            },
+            timeoutMs,
+            pollIntervalMs,
+            signal: request.signal,
+          });
+
+          return {
+            bytes: job.bytes,
+            contentType: job.contentType,
+            width: job.width,
+            height: job.height,
+            latencyMs: job.latencyMs,
+            /* The endpoint that actually painted, never a constant — a gap
+               reads as UNPRICED rather than as another engine's price, and
+               this door is deliberately absent from the measured table. */
+            estimatedCostUsd: measuredUsdPerImage(model),
+            provenance: { provider: "fal" as const, model, providerRef: job.requestId },
+          };
+        },
+        { signal: request.signal },
+      ),
+    );
+  }
+
+  return {
+    id: `fal:${model}`,
+    editWithReferences: edit,
+    async generateView(request: IdentityEditRequest & { viewAngle: string }): Promise<ImageResult> {
+      /* The angle folded into the instruction exactly as `falQueue` folds it,
+         because both courts composed their prompts through THAT function and
+         the words are the one thing this swap must not change. */
+      return edit({ ...request, prompt: `${request.prompt}\n\nView: ${request.viewAngle}.` });
     },
   };
 }
