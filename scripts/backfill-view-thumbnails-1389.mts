@@ -215,8 +215,9 @@ async function main(): Promise<void> {
       const bytes = Buffer.from(await response.arrayBuffer());
       /*
         The product's own mint, never a second copy of its settings. It swallows
-        its own failures, so a refusal here is counted as unreadable rather than
-        crashing a ceremony halfway through a bucket.
+        its own failures rather than crashing a ceremony halfway through a
+        bucket, so a mint that declines is counted as `refused` — its own
+        outcome, and NOT as `unreadable`, which means the source never arrived.
 
         The writer is WRAPPED rather than replaced: the mint returns void by
         design (a caller able to branch on success would eventually treat a
