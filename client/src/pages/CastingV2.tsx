@@ -37,6 +37,7 @@ import { HeroDeck } from "@/features/castingV2/components/HeroDeck";
 import { CardMenu } from "@/foundation";
 import { DestructiveConfirm } from "@/foundation";
 import { RenameDialog } from "@/foundation";
+import { SmallCopyImage } from "@/foundation";
 import { classifyDispatchFailure } from "@/features/castingV2/dispatchFailure";
 import { readSheetGone } from "@/features/castingV2/sheetGone";
 import {
@@ -1406,7 +1407,25 @@ export default function CastingV2() {
               onClick={() => navigate(`/casting/cast/${cast.castId}`)}
             >
               <span className="dpc-castcard__frame">
-                {cast.imageUrl ? <img src={cast.imageUrl} alt="" /> : null}
+                {/*
+                  THE SMALL COPY, NOT THE SIGNED FRONT PICTURE (#1447).
+
+                  This 178px tile was handed `cast.imageUrl` — the front
+                  close-up's full stored file, 5.8 MB at today's 2K and 19.0 MB
+                  once #1373's 4K tier lands — once per cast on the grid. Ten
+                  casts was 58 MB before a single card was readable, and on a
+                  phone it is the difference between a page and a wait.
+
+                  `SmallCopyImage` asks for the derivative that has sat beside
+                  every view since #1389 and falls back to the full picture when
+                  there is none, so a cast signed before that keeps working with
+                  no migration. The 32 signed views on production were minted by
+                  #1389's backfill on 2026-09-26, so the fallback is the road
+                  nothing is on rather than the road everything takes.
+                */}
+                {cast.imageUrl ? (
+                  <SmallCopyImage key={cast.imageUrl} fullSrc={cast.imageUrl} />
+                ) : null}
                 {cast.status === "building" ? (
                   <span className="dpc-castcard__building">BUILDING</span>
                 ) : null}

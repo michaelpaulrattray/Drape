@@ -62,7 +62,7 @@
     {
       "id": "domain:foundation",
       "name": "foundation",
-      "moduleCount": 27
+      "moduleCount": 28
     },
     {
       "id": "domain:home",
@@ -2391,6 +2391,12 @@
     {
       "id": "module:client/src/foundation/RenameDialog.tsx",
       "path": "client/src/foundation/RenameDialog.tsx",
+      "domain": "foundation",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/foundation/SmallCopyImage.tsx",
+      "path": "client/src/foundation/SmallCopyImage.tsx",
       "domain": "foundation",
       "lifecycle": "active"
     },
@@ -16047,6 +16053,11 @@
     },
     {
       "from": "module:client/src/features/casting/components/ImageViewer/ViewTabs.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/components/ImageViewer/ViewTabs.tsx",
       "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
@@ -16058,11 +16069,6 @@
     {
       "from": "module:client/src/features/casting/components/ImageViewer/ViewTabs.tsx",
       "to": "module:shared/refundCopy.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/casting/components/ImageViewer/ViewTabs.tsx",
-      "to": "module:shared/viewThumbnails.ts",
       "kind": "imports"
     },
     {
@@ -19051,6 +19057,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/foundation/CastingModal.tsx",
+      "to": "module:client/src/foundation/SmallCopyImage.tsx",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/foundation/ChromeStubs.tsx",
       "to": "module:client/src/foundation/icons.tsx",
       "kind": "imports"
@@ -19152,6 +19163,11 @@
     },
     {
       "from": "module:client/src/foundation/index.ts",
+      "to": "module:client/src/foundation/SmallCopyImage.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/index.ts",
       "to": "module:client/src/foundation/theme.ts",
       "kind": "imports"
     },
@@ -19217,7 +19233,17 @@
     },
     {
       "from": "module:client/src/foundation/RenameDialog.tsx",
+      "to": "module:client/src/foundation/SmallCopyImage.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/RenameDialog.tsx",
       "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/SmallCopyImage.tsx",
+      "to": "module:shared/viewThumbnails.ts",
       "kind": "imports"
     },
     {

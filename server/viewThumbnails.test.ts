@@ -12,6 +12,7 @@ import {
   VIEW_THUMBNAIL_SUFFIX,
   VIEW_THUMBNAIL_WIDTH,
   isViewThumbnailBearingKey,
+  viewSmallCopyUrl,
   withViewThumbnailSuffix,
 } from "../shared/viewThumbnails";
 import { mintViewThumbnail } from "./castingV2/viewThumbnailMint";
@@ -75,6 +76,52 @@ describe("which keys carry a small copy", () => {
     ["a deeper path under views", "casting-v2/casts/op-7/views/nested/abc.png"],
   ])("says no to %s", (_why, key) => {
     expect(isViewThumbnailBearingKey(key)).toBe(false);
+  });
+});
+
+/**
+ * THE URL-LEVEL ANSWER (#1447) — and the arms that matter are the NEGATIVE ones.
+ *
+ * The strip could append the suffix unconditionally because it only ever draws a
+ * signed cast's views. The surfaces #1447 moves onto the small copy cannot: the
+ * modal shell that draws a cast's portrait also draws a concept upload's local
+ * preview and an unsigned candidate's frame. A resolver that said yes to those
+ * would pass every positive arm below and cost a 404 per open.
+ */
+describe("the URL a picture should ask for", () => {
+  it("asks for the small copy of a signed view, and of the anchor", () => {
+    expect(viewSmallCopyUrl(publicUrl(VIEW_KEY)))
+      .toBe(publicUrl(withViewThumbnailSuffix(VIEW_KEY)));
+    expect(viewSmallCopyUrl(publicUrl(ANCHOR_KEY)))
+      .toBe(publicUrl(withViewThumbnailSuffix(ANCHOR_KEY)));
+  });
+
+  it("agrees with the key-level answer, so the two doors cannot diverge", () => {
+    /* The same cross-reading the first describe makes, through the new door. */
+    expect(viewSmallCopyUrl(publicUrl(VIEW_KEY)))
+      .toBe(withViewThumbnailSuffix(publicUrl(VIEW_KEY)));
+  });
+
+  it("answers for a bare key as well as an absolute URL", () => {
+    /* Not a road the client takes today, and the reader must not depend on an
+       origin being present to recognise the key it is handed. */
+    expect(viewSmallCopyUrl(VIEW_KEY)).toBe(withViewThumbnailSuffix(VIEW_KEY));
+  });
+
+  it.each([
+    ["a concept upload's local preview", "blob:http://localhost:3000/9f1c-4a2b"],
+    ["an inline data URL", "data:image/png;base64,iVBORw0KGgoAAAANSUhEUg=="],
+    ["an unsigned candidate's frame", "https://pub-x.r2.dev/casting-v2/rolls/op-7/candidates/abc.png"],
+    ["a bundled hero deck asset", "/casting-hero/deck/oni.webp"],
+    ["a garment", "https://pub-x.r2.dev/wardrobe/garments/abc.png"],
+    ["an empty string", ""],
+  ])("hands %s straight through, untouched", (_why, url) => {
+    expect(viewSmallCopyUrl(url)).toBe(url);
+  });
+
+  it("does not stack a suffix onto a URL that already carries one", () => {
+    const once = viewSmallCopyUrl(publicUrl(VIEW_KEY));
+    expect(viewSmallCopyUrl(once)).toBe(once);
   });
 });
 

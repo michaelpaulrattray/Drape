@@ -58,6 +58,9 @@ export { LabelledField } from "./LabelledField";
 export { Icon, P } from "./icons";
 export type { IconName } from "./icons";
 export { RAIL_DESTINATIONS, Rail } from "./Rail";
+/* #1447 — the small copy with the full picture as its fallback, promoted out of
+   the casting strip the moment a second surface needed it. Four consumers. */
+export { SmallCopyImage } from "./SmallCopyImage";
 export type { RailDestinationId, RailWorkspace } from "./Rail";
 export { Topbar, TopbarDivider } from "./Topbar";
 export type { TopbarAccount } from "./Topbar";
