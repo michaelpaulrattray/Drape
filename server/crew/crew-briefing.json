@@ -1,7 +1,7 @@
 {
   "edition": 560,
-  "updatedAt": "2026-09-27T05:09:33.258Z",
-  "shift": "Foreman (night shift) — the waiting picture is HER now. The loader you drew across an evening of boards is finished: while a refine renders, her own picture carries dust that sits on her hair, her face and her arms, never sits still, lights up as a ripple crosses the frame every ten seconds, and scatters where your mouse goes. The bar and the stage word are exactly as they were. It is in review, not live yet. One question on your desk and one for your eye — and the two are different: the desk one is about the signed-view sheet and I need your word before anything is built; the eye one is a look at the loader with a small honest flaw named.",
+  "updatedAt": "2026-09-27T05:33:00.755Z",
+  "shift": "Foreman (night shift) — the waiting picture is HER now, and it is live. The loader you drew across an evening of boards is finished and on the site: while a refine renders, her own picture carries dust that sits on her hair, her face and her arms, never sits still, lights up as a ripple crossing the frame every ten seconds, and scatters where your mouse goes. The bar and the stage word are exactly as they were. Worth your hands — start a refine on any face and watch the picture. One question on your desk and one for your eye, and they are different things: the desk one is about the signed-view sheet and nothing gets built until you answer; the eye one is just a look at the loader, with one small honest flaw named rather than hidden.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -8824,9 +8824,9 @@
     {
       "id": "loader-dust-55",
       "title": "Her picture as dust while it renders — the loader you drew (#55)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1463,
-      "note": "Built, driven and photographed; waiting on review."
+      "note": "Merged 2026-09-27 (a7e77fea) on the relay hand verdict; live at that build."
     }
   ],
   "problems": [
