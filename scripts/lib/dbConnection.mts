@@ -158,13 +158,46 @@ export type ScriptConnection = mysql.Connection & {
   query<T = mysql.RowDataPacket[]>(sql: string, values?: unknown): Promise<[T, mysql.FieldPacket[]]>;
 };
 
+/**
+ * ⚠ THE DEFAULT IS THE RESOLVER, NOT `DATABASE_URL` — AND #1448 IS WHY.
+ *
+ * It was `process.env.DATABASE_URL`. So a script handed no url at all reached
+ * for the `.env` world even inside a command somebody had deliberately wrapped
+ * in a production service, and `assertSameWorld` below refused the run — which
+ * is correct and is also a ceremony that will not go. #1389's backfill died
+ * exactly that way on production on 2026-09-26, and the refusal's own message
+ * named the repair: *"Use openDatabase(resolveDatabaseUrl())"*.
+ *
+ * ⚠ **The repair the card asked for was a per-caller sweep, and that is the
+ * shape this module has already documented itself failing at**: `resolveDatabaseUrl`
+ * is measured at *4 of 404 callers* two paragraphs up, with the sentence *"both
+ * are opt-in, and a control that is not invoked does not exist"*. The answer to
+ * a class is never "remember harder" — the same sentence that put the timezone
+ * at this door rather than in a helper every future reader must recall.
+ *
+ * ⚠ **NO ROAD THAT WORKS TODAY CHANGES, and that is checkable rather than
+ * hopeful.** The only inputs whose resolution moves are the ones where
+ * `MYSQL_PUBLIC_URL` or `PUBLIC_DATABASE_URL` is set and differs from
+ * `DATABASE_URL` — and `assertSameWorld` already THROWS on precisely that
+ * combination. A plain local run has neither variable and stays on `.env`,
+ * measured on this bench the day this landed.
+ *
+ * ⚠ **It overrides nobody's stated intent.** A caller that passes
+ * `process.env.DATABASE_URL` BY NAME is declaring "my `.env` world", and 42
+ * tracked files do — courts, drives, benches and probes that should never
+ * become production-capable because somebody wrapped them. Those are untouched:
+ * the default answers only for a caller that stated nothing.
+ */
 export function openDatabase(
-  input: string | mysql.ConnectionOptions | undefined = process.env.DATABASE_URL,
+  input: string | mysql.ConnectionOptions | undefined = resolveDatabaseUrl(),
 ): Promise<ScriptConnection> {
   const options = typeof input === "string" || input === undefined
     ? { uri: input }
     : { ...input };
-  if (!options.uri) throw new Error("no DATABASE_URL — pass one explicitly for a production ceremony");
+  if (!options.uri) throw new Error(
+    "no database url — none of MYSQL_PUBLIC_URL, PUBLIC_DATABASE_URL or DATABASE_URL is set; "
+    + "pass one explicitly for a production ceremony",
+  );
   assertSameWorld(options.uri);
   /* Every opened connection says which world it opened, on STDERR so a script
      whose stdout is a report or a JSON payload is not disturbed by it. The
@@ -189,13 +222,19 @@ export function openDatabase(
  * the connections would have left half of the class behind — and half a class is
  * how this one survived a documented helper for as long as it did.
  */
+/** The same default as `openDatabase` above, for the same reason. Sweeping only
+ *  the connections would leave half of the class behind — which is this file's
+ *  own sentence about the world check, one arm down. */
 export function openPool(
-  input: string | mysql.PoolOptions | undefined = process.env.DATABASE_URL,
+  input: string | mysql.PoolOptions | undefined = resolveDatabaseUrl(),
 ): mysql.Pool {
   const options = typeof input === "string" || input === undefined
     ? { uri: input }
     : { ...input };
-  if (!options.uri) throw new Error("no DATABASE_URL — pass one explicitly for a production ceremony");
+  if (!options.uri) throw new Error(
+    "no database url — none of MYSQL_PUBLIC_URL, PUBLIC_DATABASE_URL or DATABASE_URL is set; "
+    + "pass one explicitly for a production ceremony",
+  );
   /* The same door for a pool. Sweeping only the connections would leave half of
      the class behind, which is how the last one survived a documented helper. */
   assertSameWorld(options.uri);

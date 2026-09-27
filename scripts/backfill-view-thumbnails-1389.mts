@@ -35,10 +35,42 @@
  * `scripts/lib/dbConnection.mts` on stderr before anything happens, because a
  * ceremony that does not say which database it is on is how the wrong one gets
  * written to (memory: two databases, compare the port).
+ *
+ * # ⚠ WHICH WRAPPER, FOR PRODUCTION — AND NEITHER ONE ALONE IS ENOUGH (#1448)
+ *
+ * This is a TWO-SERVICE ceremony: it needs the production BUCKET and the
+ * production DATABASE, and no single `railway run` supplies both. Measured at
+ * the artifact on 2026-09-27 by asking each wrapper what it injects, rather
+ * than reasoned from the dashboard:
+ *
+ *     railway run --service Drape   ->  DATABASE_URL = mysql.railway.internal:3306
+ *                                       (PRIVATE, unreachable from a laptop)
+ *                                       R2_* present
+ *     railway run --service MySQL   ->  MYSQL_PUBLIC_URL = hayabusa.proxy.rlwy.net:23768
+ *                                       MYSQL_URL (private), and NO DATABASE_URL
+ *                                       no R2_* at all
+ *
+ * ⚠ **So `--service Drape` on its own still cannot work, whatever this script
+ * does** — its only database address is the private one. What makes the
+ * ceremony go is handing the resolver a PUBLIC url in the shell, which
+ * `railway run` passes through (driven, same sitting):
+ *
+ *     # bash
+ *     export MYSQL_PUBLIC_URL="$(railway variables --service MySQL --kv  *       | grep '^MYSQL_PUBLIC_URL=' | cut -d= -f2-)"
+ *     railway run --service Drape -- npx tsx scripts/backfill-view-thumbnails-1389.mts --apply
+ *
+ *     # PowerShell
+ *     $env:MYSQL_PUBLIC_URL = (railway variables --service MySQL --kv `
+ *       | Select-String '^MYSQL_PUBLIC_URL=').ToString().Split('=',2)[1]
+ *     railway run --service Drape -- npx tsx scripts/backfill-view-thumbnails-1389.mts --apply
+ *
+ * `resolveDatabaseUrl()` prefers that public url, so the run reads the world it
+ * was wrapped for and `assertSameWorld` is satisfied rather than refusing.
+ * **Against dev, no wrapper and no export** — `.env` is the dev world already.
  */
 import "dotenv/config";
 import { HeadObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { openDatabase } from "./lib/dbConnection.mjs";
+import { openDatabase, resolveDatabaseUrl } from "./lib/dbConnection.mjs";
 import {
   isViewThumbnailBearingKey,
   withViewThumbnailSuffix,
@@ -86,7 +118,14 @@ async function main(): Promise<void> {
     },
   });
 
-  const db = await openDatabase();
+  /*
+    THE RESOLVER, NAMED RATHER THAN DEFAULTED (#1448). The door's default is
+    `resolveDatabaseUrl()` now, so this is not load-bearing — it is the intent
+    stated where the next operator of a production ceremony will read it: this
+    script reads the world it was WRAPPED for, never whichever one `.env`
+    happens to name.
+  */
+  const db = await openDatabase(resolveDatabaseUrl());
   const [rows] = await db.query<AssetRow[]>(
     "SELECT id, storageKey, storageUrl FROM model_assets ORDER BY id DESC",
   );
