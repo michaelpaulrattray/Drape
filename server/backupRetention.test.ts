@@ -350,12 +350,12 @@ describe("what a patrol may delete by itself — his word on #1294, and nothing 
 
 describe("a verdict is only as good as the tree it was read from (PR #1293's review)", () => {
   const sha = (c: string): string => c.repeat(40);
-  const fresh = { headSha: sha("a"), remoteMainSha: sha("a"), dirtyPaths: [] as string[] };
+  const fresh = { headSha: sha("a"), remoteMainSha: sha("a") };
 
-  it("POSITIVE — main's tip, clean, is actionable", () => {
+  it("POSITIVE — a HEAD that is origin/main's tip is actionable", () => {
     expect(deletionRefusal(fresh)).toBeNull();
     /* Case and whitespace are what `git` and `ls-remote` actually differ by. */
-    expect(deletionRefusal({ ...fresh, headSha: `${sha("A")}\n`, remoteMainSha: ` ${sha("a")} ` })).toBeNull();
+    expect(deletionRefusal({ headSha: `${sha("A")}\n`, remoteMainSha: ` ${sha("a")} ` })).toBeNull();
   });
 
   it("⚠ a tree that is NOT main's tip is refused, and the message names both shas", () => {
@@ -372,17 +372,175 @@ describe("a verdict is only as good as the tree it was read from (PR #1293's rev
       with "" and let the deletion through — a guard that passes hardest exactly
       when its evidence is missing.
     */
-    expect(deletionRefusal({ headSha: "", remoteMainSha: "", dirtyPaths: [] })).toContain("failed read is not agreement");
+    expect(deletionRefusal({ headSha: "", remoteMainSha: "" })).toContain("failed read is not agreement");
     expect(deletionRefusal({ ...fresh, remoteMainSha: "" })).toContain("refs/heads/main");
     expect(deletionRefusal({ ...fresh, headSha: "abc1234" })).toContain("HEAD");
     /* A short sha is not a prefix match either — 40-hex or it is not an answer. */
-    expect(deletionRefusal({ headSha: "aaaaaaaa", remoteMainSha: "aaaaaaaa", dirtyPaths: [] })).toBeTruthy();
+    expect(deletionRefusal({ headSha: "aaaaaaaa", remoteMainSha: "aaaaaaaa" })).toBeTruthy();
   });
 
-  it("a dirty tree is refused, and the message names the first path", () => {
-    const refusal = deletionRefusal({ ...fresh, dirtyPaths: [" M docs/JANITOR_LOG.md"] });
-    expect(refusal).toContain("uncommitted");
-    expect(refusal).toContain("JANITOR_LOG.md");
+  it(
+    "⚠ NEGATIVE CONTROL — the precondition is the two shas and NOTHING else (#1436)",
+    () => {
+      /*
+        A third field stood here — `dirtyPaths`, from `git status --porcelain` with
+        no `-uno` — and its arm asserted that ANY dirty path refuses. It made the
+        deletion arm his word authorised (#1294) unrunnable in the only tree the
+        backups live beside: measured the day it was found, **681 dirty paths, 680
+        of them untracked** (644 the Janitor's own disposable pile, 524 of those
+        permanent by name), and the 681st a modified `.claude/settings.json`, which
+        is on the never-stage list. Neither sweeping nor committing could ever
+        satisfy it.
+
+        It protected no verdict either. `classifyEntry`'s three grounds are
+        committed history, the briefing's history, and arithmetic on dates — the
+        arms above this describe block are those three, and none of them can see a
+        working tree.
+
+        ⚠ **THIS ARM IS READ AT THE LIBRARY'S SOURCE, AND ITS FIRST FORM WAS NOT.**
+        That form asserted the KEYS OF THE FIXTURE OBJECT above, which is a
+        test-local literal — so the sabotage case that puts a working-tree refusal
+        back into `deletionRefusal` SURVIVED it, 33/33 green. A guard on the
+        contract has to read the contract.
+      */
+      const lib = readFileSync(
+        path.join(process.cwd(), "scripts", "lib", "backupRetention.mts"),
+        "utf8",
+      );
+
+      /* The type is what a re-adder must widen, so the type is what this reads. */
+      const typeAt = lib.indexOf("export type TreeFreshness = {");
+      expect(typeAt, "TreeFreshness must be found, or this arm proves nothing").toBeGreaterThan(0);
+      const decl = lib.slice(typeAt, lib.indexOf("\n};", typeAt));
+      const fields = [...decl.matchAll(/^\s+readonly\s+(\w+)\s*:/gm)].map((m) => m[1]!);
+      expect(fields.sort(), "a third fact means a third precondition — and #1436 is why that is a decision")
+        .toEqual(["headSha", "remoteMainSha"]);
+
+      /* And the decision function may not reach for one by any other road. */
+      const fnAt = lib.indexOf("export function deletionRefusal(");
+      const body = lib.slice(fnAt, lib.indexOf("\n}", fnAt));
+      for (const word of ["dirtyPaths", "status", "uncommitted", "clean"]) {
+        expect(body.includes(word), `deletionRefusal names ${word} — the working-tree test is back`)
+          .toBe(false);
+      }
+
+      /* Hundreds of untracked paths at main's tip are actionable — this machine's
+         own state, driven for real in the block below. */
+      expect(deletionRefusal({ headSha: sha("c"), remoteMainSha: sha("c") })).toBeNull();
+    },
+  );
+});
+
+describe("the freshness READ, driven at real repositories (#1436)", () => {
+  /*
+    The arms above judge `deletionRefusal` on a handed pair. This drives the two
+    git reads that PRODUCE that pair, because the composition is where the defect
+    lived: the function was right about what it was given, and the runner was
+    handing it a third fact that no verdict reads and that the tree the backups
+    live beside can never satisfy.
+
+    Real bare remote, real clone, real pushes — no fixture stands in for git here,
+    because the thing being proven is what git actually says about a dirty tree at
+    a remote's tip.
+  */
+  const git = (cwd: string, ...args: string[]): string =>
+    execFileSync("git", args, { cwd, encoding: "utf8" });
+
+  /** The runner's own two reads, against a real repository. */
+  const freshnessOf = (repo: string): { headSha: string; remoteMainSha: string } => ({
+    headSha: git(repo, "rev-parse", "HEAD").trim(),
+    remoteMainSha: git(repo, "ls-remote", "origin", "refs/heads/main").trim().split(/\s+/)[0] ?? "",
+  });
+
+  function worldAtMainsTip(): { remote: string; clone: string } {
+    const remote = path.join(tempDir(), "origin.git");
+    mkdirSync(remote, { recursive: true });
+    git(remote, "init", "--bare", "--initial-branch", "main", ".");
+    const clone = tempDir();
+    git(clone, "init", "--initial-branch", "main", ".");
+    git(clone, "config", "user.email", "seat@example.test");
+    git(clone, "config", "user.name", "seat");
+    git(clone, "remote", "add", "origin", remote);
+    writeFileSync(path.join(clone, "tracked.md"), "one\n");
+    git(clone, "add", "tracked.md");
+    git(clone, "commit", "-m", "one");
+    writeFileSync(path.join(clone, "tracked.md"), "two\n");
+    git(clone, "commit", "-am", "two");
+    git(clone, "push", "origin", "main");
+    return { remote, clone };
+  }
+
+  it(
+    "⚠ NEGATIVE CONTROL — hundreds of untracked files and a modified tracked file at the tip are ACTIONABLE",
+    () => {
+      /*
+        This is the state of the only tree the backups live beside, every day, and
+        it is the arm that could not have passed before #1436: 680 untracked paths
+        — 644 the Janitor's own disposable pile, 524 of them permanent by name —
+        plus a modified `.claude/settings.json` that may never be staged.
+      */
+      const { clone } = worldAtMainsTip();
+      for (let i = 0; i < 300; i += 1) {
+        writeFileSync(path.join(clone, `_scratch-${i}-disposable.mts`), "x");
+      }
+      writeFileSync(path.join(clone, "tracked.md"), "locally modified, never staged\n");
+
+      const dirty = git(clone, "status", "--porcelain").trim().split(/\r?\n/);
+      expect(dirty.length, "the fixture must actually be dirty, or this arm proves nothing")
+        .toBeGreaterThan(300);
+      expect(dirty.filter((l) => l.startsWith("??")).length).toBe(300);
+      expect(dirty.some((l) => l.trim().startsWith("M ")), "and one TRACKED modification too").toBe(true);
+
+      expect(deletionRefusal(freshnessOf(clone))).toBeNull();
+    },
+    CHILD_PROCESS_TEST_TIMEOUT_MS,
+  );
+
+  it(
+    "⚠ POSITIVE CONTROL — a tree BEHIND origin/main still refuses, and a local-only commit does too",
+    () => {
+      /*
+        The direction the gate exists for, and the one the relay measured on PR
+        #1293: `commitHolding` walks THIS clone's history, so a verdict read here
+        is only comparable to one read elsewhere if the history is the remote's.
+      */
+      const { clone } = worldAtMainsTip();
+      expect(deletionRefusal(freshnessOf(clone))).toBeNull();
+
+      git(clone, "reset", "--hard", "HEAD~1");
+      const behind = deletionRefusal(freshnessOf(clone));
+      expect(behind, "a tree behind main is not the tree a shared verdict came from").toBeTruthy();
+      expect(behind).toContain("COMMITTED history");
+
+      git(clone, "checkout", "-b", "team/elsewhere");
+      writeFileSync(path.join(clone, "tracked.md"), "a commit the remote does not have\n");
+      git(clone, "commit", "-am", "local only");
+      expect(
+        deletionRefusal(freshnessOf(clone)),
+        "a local-only commit is the hazard — never a dirty working tree",
+      ).toBeTruthy();
+    },
+    CHILD_PROCESS_TEST_TIMEOUT_MS,
+  );
+
+  it("the RUNNER reads exactly those two facts — and no longer reads the working tree", () => {
+    /*
+      The arms above drive `rev-parse` and `ls-remote` because that is what the
+      runner does. This pins that claim at the runner's own bytes so the two
+      cannot drift apart (working law 4), and it is the line a re-added
+      `git status` read would have to delete before it could ship.
+    */
+    const runner = readFileSync(
+      path.join(process.cwd(), "scripts", "janitor-backup-retention.mts"),
+      "utf8",
+    );
+    const from = runner.indexOf("function readFreshness(");
+    expect(from, "readFreshness must be found, or this arm proves nothing").toBeGreaterThan(0);
+    const body = runner.slice(from, runner.indexOf("\n}", from));
+    expect(body).toContain('git("rev-parse", "HEAD")');
+    expect(body).toContain('git("ls-remote", "origin", "refs/heads/main")');
+    expect(body, "the working-tree read is what #1436 removed — it protected no verdict")
+      .not.toContain('"status"');
   });
 });
 
