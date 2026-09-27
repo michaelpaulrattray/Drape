@@ -212,6 +212,73 @@ describe("minting the small copy", () => {
     expect(meta.format).toBe("jpeg");
   });
 
+  /**
+   * THE BACKFILL'S QUESTION (#1456), DRIVEN AT THE REAL ENCODER.
+   *
+   * `onlyWiderThan` exists so a ceremony meeting copies minted under an earlier,
+   * narrower constant can tell two cases apart that look identical from the
+   * outside: a copy that is narrow because the CONSTANT was, and one that is
+   * narrow because its SOURCE is. Only the first can be improved, and re-writing
+   * the second on every run is churn that reads as work.
+   *
+   * ⚠ Both arms run sharp for real rather than a stand-in shrink, because the
+   * whole decision is about the width of the bytes that actually come out — a
+   * mocked shrink would let this pass while measuring nothing.
+   */
+  /* ⚠ The 288 is the width production's copies were minted at before #1456, and
+     it is deliberately a LITERAL rather than the constant: that is what makes
+     this arm also say the constant has not been narrowed back underneath the
+     copies the backfill is meant to replace. Swapping it for
+     `VIEW_THUMBNAIL_WIDTH` would compare the constant with itself. */
+  it("writes when a fresh copy really is wider than the one already stored", async () => {
+    const sharp = (await import("sharp")).default;
+    const full = await sharp({
+      create: { width: 1696, height: 2528, channels: 3, background: { r: 180, g: 140, b: 120 } },
+    }).png().toBuffer();
+    const put = vi.fn().mockResolvedValue({ key: "k", url: "u" });
+    await mintViewThumbnail(VIEW_KEY, full, { put, onlyWiderThan: 288 });
+    expect(put).toHaveBeenCalledTimes(1);
+    const meta = await sharp(put.mock.calls[0][1] as Buffer).metadata();
+    expect(meta.width).toBe(VIEW_THUMBNAIL_WIDTH);
+  });
+
+  it("leaves a copy alone when its SOURCE is the limit, not the constant", async () => {
+    const sharp = (await import("sharp")).default;
+    /* A source narrower than the target comes back at its own width, so the
+       stored 200px copy is already everything this picture can give. */
+    const narrowSource = await sharp({
+      create: { width: 200, height: 250, channels: 3, background: { r: 30, g: 60, b: 90 } },
+    }).png().toBuffer();
+    const put = vi.fn().mockResolvedValue({ key: "k", url: "u" });
+    await mintViewThumbnail(VIEW_KEY, narrowSource, { put, onlyWiderThan: 200 });
+    expect(put).not.toHaveBeenCalled();
+  });
+
+  /* The negative control on the control: without the option, the same bytes
+     that were just refused ARE written. A guard that refuses everything would
+     pass the arm above while protecting nothing. */
+  it("only refuses because of the option — the same bytes write without it", async () => {
+    const sharp = (await import("sharp")).default;
+    const narrowSource = await sharp({
+      create: { width: 200, height: 250, channels: 3, background: { r: 30, g: 60, b: 90 } },
+    }).png().toBuffer();
+    const put = vi.fn().mockResolvedValue({ key: "k", url: "u" });
+    await mintViewThumbnail(VIEW_KEY, narrowSource, { put });
+    expect(put).toHaveBeenCalledTimes(1);
+  });
+
+  /* The product's own mint never passes it, so the render road is unchanged by
+     #1456 — every mint there is the first one beside that object. */
+  it("is off unless a caller asks for it", async () => {
+    const sharp = (await import("sharp")).default;
+    const full = await sharp({
+      create: { width: 1696, height: 2528, channels: 3, background: { r: 10, g: 10, b: 10 } },
+    }).png().toBuffer();
+    const put = vi.fn().mockResolvedValue({ key: "k", url: "u" });
+    await mintViewThumbnail(VIEW_KEY, full, { put });
+    expect(put).toHaveBeenCalledTimes(1);
+  });
+
   it("does not enlarge a view that is already narrower than the target", async () => {
     const sharp = (await import("sharp")).default;
     const tiny = await sharp({
