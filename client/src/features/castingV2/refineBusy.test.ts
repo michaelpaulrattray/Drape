@@ -204,19 +204,19 @@ describe("the wait the picture shows", () => {
 
   it("narrates from the click, before the server has a row for it", () => {
     expect(refineWait({ viewerCandidateId: HER, mutation: out, pending: [] }))
-      .toEqual({ instruction: "give her horns", stage: "queued", step: null, extra: 0 });
+      .toEqual({ instruction: "give her horns", stage: "queued", step: null, figure: null, extra: 0 });
   });
 
   it("hands over to the row the moment it exists, without a flicker of nothing", () => {
     expect(refineWait({ viewerCandidateId: HER, mutation: out, pending: [row()] }))
-      .toEqual({ instruction: "dangly cross earrings", stage: "dispatched", step: null, extra: 0 });
+      .toEqual({ instruction: "dangly cross earrings", stage: "dispatched", step: null, figure: null, extra: 0 });
   });
 
   it("keeps narrating from the row when the click is long gone (D-161)", () => {
     /* The panel was closed and reopened; the mutation is a memory, the render
        is not. This is the arm that must never be traded for immediacy. */
     expect(refineWait({ viewerCandidateId: HER, mutation: idle, pending: [row()] }))
-      .toEqual({ instruction: "dangly cross earrings", stage: "dispatched", step: null, extra: 0 });
+      .toEqual({ instruction: "dangly cross earrings", stage: "dispatched", step: null, figure: null, extra: 0 });
   });
 
   it("says nothing about ANOTHER cast's click", () => {
@@ -229,7 +229,7 @@ describe("the wait the picture shows", () => {
       mutation: idle,
       pending: [row({ stage: "settling", instruction: "the dead one" }), row()],
     });
-    expect(wait).toEqual({ instruction: "dangly cross earrings", stage: "dispatched", step: null, extra: 1 });
+    expect(wait).toEqual({ instruction: "dangly cross earrings", stage: "dispatched", step: null, figure: null, extra: 1 });
   });
 
   it("still describes a settling row, because the controls come back before the picture does", () => {
@@ -237,7 +237,7 @@ describe("the wait the picture shows", () => {
       viewerCandidateId: HER,
       mutation: idle,
       pending: [row({ stage: "settling" })],
-    })).toEqual({ instruction: "dangly cross earrings", stage: "settling", step: null, extra: 0 });
+    })).toEqual({ instruction: "dangly cross earrings", stage: "settling", step: null, figure: null, extra: 0 });
   });
 
   it("says nothing when nothing is out", () => {
@@ -258,11 +258,47 @@ describe("the wait the picture shows", () => {
       viewerCandidateId: HER,
       mutation: idle,
       pending: [row({ step: "reading" })],
-    })).toEqual({ instruction: "dangly cross earrings", stage: "dispatched", step: "reading", extra: 0 });
+    })).toEqual({ instruction: "dangly cross earrings", stage: "dispatched", step: "reading", figure: null, extra: 0 });
   });
 
   it("claims no step for a wait the server has not heard of yet", () => {
     expect(refineWait({ viewerCandidateId: HER, mutation: out, pending: [] })?.step).toBe(null);
+  });
+
+  /*
+    AND IT CARRIES HER SHAPE THE SAME WAY, ON THE SAME RULE (#55, board E).
+
+    The map the dust sits on is cut by the server at dispatch, so it arrives
+    exactly when the row does and never before. Three arms because there are
+    three roads through this reader and the middle one is where a default would
+    hide: a live row hands its map over, a row WITHOUT one hands over null
+    rather than the last map this face had, and the local head of the wait —
+    the seconds before the server has a row — has none at all.
+
+    The last of those is what keeps the picture honest in the first seconds: a
+    remembered map would scatter the previous edit's dust over the new one and
+    call it her shape.
+  */
+  const SHAPE = { w: 2, h: 1, cells: "90" };
+
+  it("carries her shape from the row to the picture", () => {
+    expect(refineWait({
+      viewerCandidateId: HER,
+      mutation: idle,
+      pending: [row({ step: "rendering", figure: SHAPE })],
+    })?.figure).toEqual(SHAPE);
+  });
+
+  it("carries null for a row the road cut no map for", () => {
+    expect(refineWait({
+      viewerCandidateId: HER,
+      mutation: idle,
+      pending: [row({ step: "rendering" })],
+    })?.figure).toBe(null);
+  });
+
+  it("has no shape at all before the server has a row", () => {
+    expect(refineWait({ viewerCandidateId: HER, mutation: out, pending: [] })?.figure).toBe(null);
   });
 });
 

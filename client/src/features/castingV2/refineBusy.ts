@@ -31,6 +31,7 @@
  *
  * The picture goes on narrating a settling row; only the CONTROLS come back.
  */
+import type { RefineFigure } from "@shared/refineFigure";
 import type { RefineStep } from "@shared/refineSteps";
 
 /** The stages the server reports for a row that has not landed. */
@@ -45,7 +46,13 @@ export type PendingStage = "queued" | "dispatched" | "settling";
  * nothing has been announced about this row; it is carried as null rather than
  * defaulted, because the surface draws nothing over a stage that did not fire.
  */
-export type PendingRow = { stage?: PendingStage | null; step?: RefineStep | null };
+export type PendingRow = {
+  stage?: PendingStage | null;
+  step?: RefineStep | null;
+  /** Her shape in her own picture, for the dust (#55) — absent on a row the road
+      cut no map for, and on the local head of a wait the server has not heard of. */
+  figure?: RefineFigure | null;
+};
 
 export function refineBusy(input: {
   /** The face the viewer is open on. */
@@ -119,6 +126,16 @@ export type RefineWait = {
    * thing known is that a request is out.
    */
   step: RefineStep | null;
+  /**
+   * Her shape, for the dust to sit on (#55, board E) — or null.
+   *
+   * Never invented here either, and for the same reason as `step`: the local
+   * head of a wait is a request that is out and a server that has not answered,
+   * so nothing about her picture has been cut yet. The picture draws the ambient
+   * field for those few seconds, which is what it drew for the whole wait before
+   * this shipped.
+   */
+  figure: RefineFigure | null;
   /** Other rows out for this face — "and 2 more". */
   extra: number;
 };
@@ -143,6 +160,7 @@ export function refineWait(input: {
       instruction: live.instruction,
       stage: live.stage ?? "queued",
       step: live.step ?? null,
+      figure: live.figure ?? null,
       extra: input.pending.length - 1,
     };
   }
@@ -155,7 +173,7 @@ export function refineWait(input: {
       road has said nothing about ours, because it has not yet heard of it.
       `step: null` is that fact, said rather than papered over.
     */
-    return { instruction, stage: "queued", step: null, extra: input.pending.length };
+    return { instruction, stage: "queued", step: null, figure: null, extra: input.pending.length };
   }
   /* Nothing live and nothing out: a settling row still narrates, because the
      picture goes on describing a row the sweep is refunding even though the
@@ -166,6 +184,7 @@ export function refineWait(input: {
       instruction: settling.instruction,
       stage: settling.stage ?? "queued",
       step: settling.step ?? null,
+      figure: settling.figure ?? null,
       extra: input.pending.length - 1,
     }
     : null;
