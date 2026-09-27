@@ -158,7 +158,7 @@ export const selfUsesOfName = (tree: Tree, symbol: string): number => {
  * differ's entrypoint says: a ceremony is not a request path.
  */
 export const REPORTED_ROOTS = ["server/", "shared/"] as const;
-export const isReportedPath = (repoRelative: string): boolean =>
+const isReportedPath = (repoRelative: string): boolean =>
   REPORTED_ROOTS.some((root) => repoRelative.startsWith(root));
 
 /**

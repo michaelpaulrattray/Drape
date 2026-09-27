@@ -179,7 +179,7 @@ const MONEY_AUTH_WORDS = new Set([
   "ledger",
 ]);
 
-export function pathWords(requested: string): string[] {
+function pathWords(requested: string): string[] {
   return requested
     .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
     .split(/[^A-Za-z0-9]+/)
@@ -603,7 +603,7 @@ export function selectLawSections(
  * carried sections: a pointer is a place to look, and the whole document is not
  * a place.
  */
-export function pointerSections(
+function pointerSections(
   surfaces: readonly { readonly path: string; readonly text: string }[],
   request: LawRequest,
   roots: readonly string[],

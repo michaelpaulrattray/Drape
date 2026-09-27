@@ -131,7 +131,7 @@ export type BackupKind = "zip" | "directory";
  * says how many it skipped, so a tenth naming style shows up as a number rather
  * than as silence.
  */
-export const BACKUP_NAME_PATTERNS: readonly RegExp[] = [
+const BACKUP_NAME_PATTERNS: readonly RegExp[] = [
   /^drape-debris-/,
   /^drape-untracked(-tail)?-/,
   /^drape-disposables-sweep-/,

@@ -65,7 +65,7 @@ import { refusalTagOf } from "../../server/castingV2/refusalTag";
 export const CAPABILITY_SCHEMA_VERSION = "1.0.0";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-export const CAPABILITY_OUT_DIR = path.join(repoRoot, "docs", "architecture");
+const CAPABILITY_OUT_DIR = path.join(repoRoot, "docs", "architecture");
 export const CAPABILITY_JSON = path.join(CAPABILITY_OUT_DIR, "capability-atlas.json");
 export const CAPABILITY_MD = path.join(CAPABILITY_OUT_DIR, "capability-atlas.md");
 

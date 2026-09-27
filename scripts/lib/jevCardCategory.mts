@@ -140,7 +140,7 @@ export function categoryQuestion(): Record<string, JevChoiceQuestion> {
 }
 
 /** How much of a card body goes on the wire. Long bodies are the norm here. */
-export const CARD_BODY_CHAR_CAP = 6000;
+const CARD_BODY_CHAR_CAP = 6000;
 
 export type CardForReading = {
   readonly number: number;

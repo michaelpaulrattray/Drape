@@ -17,7 +17,7 @@
 import fs from "node:fs";
 
 /** Checked in order. First hit wins. */
-export const BROWSER_CANDIDATES = [
+const BROWSER_CANDIDATES = [
   // Windows — the founder's machine and every shift on it.
   "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
   "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",

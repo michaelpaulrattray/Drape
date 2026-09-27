@@ -151,7 +151,7 @@ export const FACE_SCAN_READS_PER_VERSION = 20;
  * here was exactly $20.00. Any bench that quotes a spend across a window long
  * enough to top up must either say the term or say it cannot see it.
  */
-export const FAL_REPAINT_MEASURED_2026_08_17 = {
+const FAL_REPAINT_MEASURED_2026_08_17 = {
   twoToThreeReferences: { usd: 0.215, renders: 6, source: "opus-634 court, corrected for settle lag" },
   fiveToSixReferences: { usd: 0.235, renders: 4, source: "opus-635 court, settled reading" },
   settleLagUsd: 0.23,

@@ -136,7 +136,7 @@ export const APP_WRITE_PATH_KEYS = [
  * be — these keys start discriminating and belong in the list below. That is a
  * one-line change, and the sentence above is the test for making it.
  */
-export const WORLD_DISCRIMINATING_KEYS = [
+const WORLD_DISCRIMINATING_KEYS = [
   "DATABASE_URL",
   "MYSQL_PUBLIC_URL",
   "R2_BUCKET",
@@ -178,7 +178,7 @@ export function readLocalEnvFile(path = ".env"): Map<string, string> {
 type MixedWorld = { key: string };
 
 /** The finding, separated from the throwing so it can be driven in a control. */
-export function findLocalValuesInsideRailway(
+function findLocalValuesInsideRailway(
   environment: Record<string, string | undefined>,
   localFile: Map<string, string>,
   /**

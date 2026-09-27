@@ -21,10 +21,10 @@ import { MaskError } from "../../server/castingV2/maskGeometry";
 import type { Mask } from "../../server/castingV2/maskedComposite";
 
 /** The names the deleted branch treated as bilateral. */
-export const DELETED_BILATERAL = new Set(["ear", "eyes", "eyebrows"]);
+const DELETED_BILATERAL = new Set(["ear", "eyes", "eyebrows"]);
 
 /** The singular it built its two adjectives from. */
-export function deletedSingularOf(name: string): string {
+function deletedSingularOf(name: string): string {
   return name === "eyes" ? "eye" : name.replace(/s$/, "");
 }
 
@@ -68,7 +68,7 @@ async function askRegion(apiKey: string, image: Buffer, prompt: string): Promise
  * What the two sides answered, kept separately as well as unioned — the union is
  * what a caller saw, and the two halves are why.
  */
-export async function deletedBilateralSides(input: {
+async function deletedBilateralSides(input: {
   apiKey: string;
   image: Buffer;
   name: string;

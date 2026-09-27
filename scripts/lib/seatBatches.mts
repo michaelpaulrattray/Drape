@@ -390,7 +390,7 @@ export function seatPopulation(input: {
  * case-insensitively inside a window ending at the `#N`, so *"stacks on PR
  * #1325"* counts and *"the rule #230 set"* does not.
  */
-export const DEPENDENCY_PHRASES: readonly string[] = [
+const DEPENDENCY_PHRASES: readonly string[] = [
   "builds on",
   "build on",
   "built on",
@@ -414,7 +414,7 @@ export const DEPENDENCY_PHRASES: readonly string[] = [
 ];
 
 /** How many characters before a `#N` are read for a dependency phrase. */
-export const DEPENDENCY_WINDOW = 90;
+const DEPENDENCY_WINDOW = 90;
 
 /** Every `#N` in this text that names one of `openCards` — a citation, not yet a dependency. */
 export function citedOpenCards(text: string, openCards: readonly number[], self: number): number[] {

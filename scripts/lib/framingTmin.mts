@@ -98,7 +98,7 @@ const median = (values: readonly number[]): number =>
  * It is what sets the width of every frame's feasible band, `[share, ratio ×
  * share]`, so a population whose max/min share exceeds it has no common `T`.
  */
-export const FRAMING_RENDER_RATIO = 2304 / 1536;
+const FRAMING_RENDER_RATIO = 2304 / 1536;
 
 export function tMinOf(
   frames: readonly FramingFrame[],

@@ -471,7 +471,7 @@ export type MigrationReport = {
  * is a second caller, and two copies of a `.slice` like this drift
  * (working law 4).
  */
-export function missingObjectsFrom(verdict: {
+function missingObjectsFrom(verdict: {
   readonly missingTables: readonly string[];
   readonly missingColumns: readonly string[];
   readonly missingIndexes: readonly string[];

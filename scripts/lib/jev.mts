@@ -173,7 +173,7 @@ export async function askJev(
 }
 
 /** $0.042 per million input tokens; output is free. Stated, never estimated from a list price. */
-export const JEV_INPUT_USD_PER_MTOK = 0.042;
+const JEV_INPUT_USD_PER_MTOK = 0.042;
 
 export function jevSpendUsd(inputTokens: number): number {
   return (inputTokens / 1_000_000) * JEV_INPUT_USD_PER_MTOK;

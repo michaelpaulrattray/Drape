@@ -53,7 +53,7 @@ import type { Checks } from "./drivePage.mts";
  * still records the seconds it actually took — so a genuinely slow product is
  * visible as a number rather than hidden behind a verdict.
  */
-export const LANDING_TIMEOUT_MS = 8 * 60 * 1000;
+const LANDING_TIMEOUT_MS = 8 * 60 * 1000;
 
 /* ---------------------------------------------------------------------------
    Finding the sheet. Navigation, not verdict — so HTTP is the honest tool.
@@ -155,7 +155,7 @@ export function createCurrentFaceKey(input: {
 }
 
 /** How many real (non-ghost) versions the stack is showing. */
-export const stackSize = (page: Page): Promise<number> =>
+const stackSize = (page: Page): Promise<number> =>
   page.$$eval(".dpc-refine__pick:not(.dpc-refine__pick--ghost)", (nodes) => nodes.length);
 
 export function createViewerOpener(input: {
@@ -250,7 +250,7 @@ export function createViewerOpener(input: {
  * that starts while it is *becoming* busy types half a sentence. Waiting for
  * quiet is what the founder does without noticing.
  */
-export async function waitUntilIdle(page: Page, timeoutMs = LANDING_TIMEOUT_MS): Promise<string> {
+async function waitUntilIdle(page: Page, timeoutMs = LANDING_TIMEOUT_MS): Promise<string> {
   const settled = await page
     .waitForFunction(
       () => {
@@ -284,7 +284,7 @@ export async function waitUntilIdle(page: Page, timeoutMs = LANDING_TIMEOUT_MS):
  * A step that collided is void — not a pass, not a failure, and never a row in
  * the delivery rate.
  */
-export async function serverUptime(base: string): Promise<number | null> {
+async function serverUptime(base: string): Promise<number | null> {
   try {
     const res = await fetch(`${base}/api/health`);
     const body = await res.json() as { uptime?: number };
@@ -340,7 +340,7 @@ export function createLandedImageKey(candidateId: string) {
  * lumping it in with the honest ones is how a real defect gets counted as
  * correct behaviour.
  */
-export const MACHINE_WORDS =
+const MACHINE_WORDS =
   /transform response|undefined|\[object |TypeError|NetworkError|ECONN|fetch failed|<html|status code|JSON/i;
 
 type RefineOutcome = "delivered" | "asked" | "refused" | "errored" | "timeout" | "collided";

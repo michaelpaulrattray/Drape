@@ -115,7 +115,7 @@ export function dropInstructionBlock(prompt: string, field: string): string {
  * last leaves one dangling, so it goes — the schema is illustrative rather than
  * parsed, but a trailing comma before `}` is a change to the ask nobody chose.
  */
-export function closeDanglingComma(prompt: string): string {
+function closeDanglingComma(prompt: string): string {
   return prompt.replace(/,\n\}\n/, "\n}\n");
 }
 
