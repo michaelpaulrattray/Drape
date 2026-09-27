@@ -37,8 +37,8 @@
 import { holdReasonFromBody } from "../../shared/crewNextUpHold";
 
 export const LIVE_QUEUE_REPO = "michaelpaulrattray/Drape";
-export const LIVE_QUEUE_TTL_MS = 30_000;
-export const RECENT_WINDOW_HOURS = 48;
+const LIVE_QUEUE_TTL_MS = 30_000;
+const RECENT_WINDOW_HOURS = 48;
 export const LIVE_QUEUE_PAGE = 100;
 const REQUEST_TIMEOUT_MS = 8_000;
 
@@ -279,7 +279,7 @@ export function createLiveQueueReader(options: LiveQueueReaderOptions = {}): Liv
 }
 
 /** The process-wide reader the crew router uses. */
-export const liveQueueReader: LiveQueueReader = createLiveQueueReader();
+const liveQueueReader: LiveQueueReader = createLiveQueueReader();
 
 export function readLiveQueue(): Promise<LiveQueue> {
   return liveQueueReader.read();

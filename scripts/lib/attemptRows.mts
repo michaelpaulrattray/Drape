@@ -123,7 +123,7 @@ export function databaseUrl(): string {
  * this result set at all, rather than being excluded from a denominator
  * somewhere downstream where the exclusion could be forgotten.
  */
-export async function readAttemptRows(input: {
+async function readAttemptRows(input: {
   since?: Date;
   userId?: number;
 }): Promise<AttemptRow[]> {

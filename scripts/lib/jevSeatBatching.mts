@@ -116,10 +116,10 @@ export const SEAT_BATCHING_CONFIDENCE_GATE = 0.85;
  * worst case is one wasted breath per card. And the FIRST failure stops the
  * asking entirely (`failure` below), so the worst case is one timeout per pass.
  */
-export const JEV_ASK_TIMEOUT_MS = 20_000;
+const JEV_ASK_TIMEOUT_MS = 20_000;
 
 /** How much of a card body goes on the wire — the category reader's own cap. */
-export const SEAT_CARD_BODY_CHAR_CAP = 6000;
+const SEAT_CARD_BODY_CHAR_CAP = 6000;
 
 export interface SeatCardForReading {
   readonly number: number;

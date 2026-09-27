@@ -24,7 +24,7 @@ import type { CrewLiveRecentRow, CrewLiveView } from "./crewTypes";
 import { QueueReadStamp } from "./QueueReadStamp";
 import type { CrewQueueRead } from "./crewTypes";
 
-export const SINCE_VISIBLE = 8;
+const SINCE_VISIBLE = 8;
 
 const OUTCOME_WORD: Record<CrewLiveRecentRow["outcome"], string> = {
   merged: "Merged",

@@ -71,7 +71,7 @@ function clausesOf(text: string): string[] {
  * pinned"* is AGREEING, and a comparator that took every word of the ask at
  * face value called that a contradiction on the first honest row it met.
  */
-export function askedTerms(asked: string): string[] {
+function askedTerms(asked: string): string[] {
   const wanted = clausesOf(asked).filter((clause) => !NEGATORS.test(clause));
   return Array.from(new Set(
     wanted.join(" ").toLowerCase().split(/[^a-z0-9]+/)

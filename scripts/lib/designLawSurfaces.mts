@@ -30,7 +30,7 @@ import path from "node:path";
 
 /** Repo root, from this file's own location — no cwd assumption. */
 const HERE = path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"));
-export const ROUTER_FILE = path.resolve(HERE, "..", "..", "client", "src", "App.tsx");
+const ROUTER_FILE = path.resolve(HERE, "..", "..", "client", "src", "App.tsx");
 
 /**
  * Fixtures a parameterised address needs before it can be visited.

@@ -294,7 +294,7 @@ function ancestorsOf(rows: readonly ProcessRow[], row: ProcessRow): ProcessRow[]
  * everything below it** — with watchers preferred, because a watcher is the
  * only thing that restarts what you kill.
  */
-export function owningRoot(rows: readonly ProcessRow[], row: ProcessRow): ProcessRow | null {
+function owningRoot(rows: readonly ProcessRow[], row: ProcessRow): ProcessRow | null {
   const above = ancestorsOf(rows, row);
   const watchersAbove = above.filter(isDevServerRoot);
   if (watchersAbove.length > 0) return watchersAbove[watchersAbove.length - 1];

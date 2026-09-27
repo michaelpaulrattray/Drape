@@ -174,7 +174,7 @@ export function oldestFirst(rows: readonly Row[]): Row[] {
 
 /** Whether a queue row carries the `urgent` label — read from the row's own
  *  labels rather than from a second list, which is this file's whole point. */
-export function isUrgent(row: Row): boolean {
+function isUrgent(row: Row): boolean {
   return row.labels.some((label) => label.name === "urgent");
 }
 

@@ -62,8 +62,8 @@ import { SignJWT } from "jose";
 
 import { openDatabase, worldOf } from "./dbConnection.mts";
 
-export const OUTSIDER_OPEN_ID = "outside-scope-bot-local";
-export const OUTSIDER_NAME = "Outside Scope Bot";
+const OUTSIDER_OPEN_ID = "outside-scope-bot-local";
+const OUTSIDER_NAME = "Outside Scope Bot";
 /** Whose sheet is copied when the outsider has none. Any ready cast will do. */
 export const DONOR_OPEN_ID = "verify-bot-local";
 
@@ -81,7 +81,7 @@ export type Outsider = {
 };
 
 /** The flags a driver might want to be outside of, and the env var each reads. */
-export const SCOPE_FLAGS = [
+const SCOPE_FLAGS = [
   "CASTING_V2_SCOPE",
   "CASTING_REFERENCE_LIBRARY_SCOPE",
   "CASTING_REPAINT_SCOPE",
@@ -94,7 +94,7 @@ type ScopeFlag = (typeof SCOPE_FLAGS)[number];
  * so the fixture states the rule it is asserting: `all` admits everyone, absent
  * or `off` admits nobody, `users:1,7` admits exactly those ids.
  */
-export function scopeAdmits(raw: string | undefined, userId: number): boolean {
+function scopeAdmits(raw: string | undefined, userId: number): boolean {
   const value = (raw ?? "").trim();
   if (value === "" || value.toLowerCase() === "off") return false;
   if (value.toLowerCase() === "all") return true;
@@ -244,7 +244,7 @@ export async function ensureOutsider(input: { donorOpenId?: string } = {}): Prom
  * nobody is outside it and a driver's "the surface is absent" would be a green
  * about the flag rather than about the gate.
  */
-export function assertOutsideScope(outsider: Outsider, flag: ScopeFlag): void {
+function assertOutsideScope(outsider: Outsider, flag: ScopeFlag): void {
   const raw = process.env[flag];
   if (!scopeAdmits(raw, outsider.id)) return;
   throw new Error(

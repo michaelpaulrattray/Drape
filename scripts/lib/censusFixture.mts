@@ -62,7 +62,7 @@ import { DONOR_OPEN_ID } from "./outsider.mts";
  * refuses a longer value outright rather than truncating it — which is why this
  * is a comment and not a guard.
  */
-export const CENSUS_FIXTURE_TAG = "census-fixture-pristine";
+const CENSUS_FIXTURE_TAG = "census-fixture-pristine";
 
 export type CensusFixture = {
   userId: number;

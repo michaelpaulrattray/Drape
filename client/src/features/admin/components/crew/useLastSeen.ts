@@ -11,9 +11,9 @@
  */
 import { useState } from "react";
 
-export const LAST_SEEN_KEY = "drape_crew_last_seen";
+const LAST_SEEN_KEY = "drape_crew_last_seen";
 
-export function readLastSeen(storage: Pick<Storage, "getItem"> | null): number | null {
+function readLastSeen(storage: Pick<Storage, "getItem"> | null): number | null {
   try {
     const raw = storage?.getItem(LAST_SEEN_KEY);
     if (!raw) return null;

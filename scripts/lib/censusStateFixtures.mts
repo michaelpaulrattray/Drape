@@ -164,7 +164,7 @@ export async function ensureInkBranchFixture(input: { userId: number }): Promise
   }
 }
 
-export const ACCESSORY_FIXTURE_TAG = "census-fixture-accessory-branch";
+const ACCESSORY_FIXTURE_TAG = "census-fixture-accessory-branch";
 
 /** The MANUFACTURED accessory branch: a tagged clone wearing stated glasses. */
 export async function ensureAccessoryBranchFixture(input: { userId: number }): Promise<BranchFixture> {
@@ -293,7 +293,7 @@ async function cloneTaggedCast(
   return (made as Array<{ id: number; publicId: string }>)[0]!;
 }
 
-export const DANGLING_FIXTURE_TAG = "census-fixture-dangling-crop";
+const DANGLING_FIXTURE_TAG = "census-fixture-dangling-crop";
 
 /**
  * THE DANGLING-CROP BRANCH — a record that NAMES a delivered crop with no row.

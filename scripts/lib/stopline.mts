@@ -68,7 +68,7 @@ export const STOPLINE_PATH = fileURLToPath(new URL("../../.agents/mailbox/STOPLI
  * frozen line — a guard that required the file to say the right thing would be
  * one typo away from waving a spend through.
  */
-export function readStopline(path: string = STOPLINE_PATH): string | null {
+function readStopline(path: string = STOPLINE_PATH): string | null {
   if (!existsSync(path)) return null;
   try {
     return readFileSync(path, "utf8");
@@ -84,7 +84,7 @@ export function readStopline(path: string = STOPLINE_PATH): string | null {
  * `what` names the thing that would have been charged, so the refusal reads as
  * an answer rather than a crash.
  */
-export function assertLineIsRunning(what: string, path: string = STOPLINE_PATH): void {
+function assertLineIsRunning(what: string, path: string = STOPLINE_PATH): void {
   const frozen = readStopline(path);
   if (frozen === null) return;
   throw new Error(

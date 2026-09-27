@@ -135,7 +135,7 @@ export class LawLog {
  * nothing else — no argument, no page content, no input reaches it — and it
  * runs inside a headless tab the drive owns.)
  */
-export function paintedHolders(patternSource: string, patternFlags: string): HTMLElement[] {
+function paintedHolders(patternSource: string, patternFlags: string): HTMLElement[] {
   const pattern = new RegExp(patternSource, patternFlags);
   const SKIP = /^(SCRIPT|STYLE|TITLE|NOSCRIPT|TEMPLATE)$/;
   const matches: HTMLElement[] = [];

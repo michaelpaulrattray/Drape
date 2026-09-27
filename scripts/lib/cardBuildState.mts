@@ -88,7 +88,7 @@ import { isUnreadable, type Unreadable } from "./shiftDigest.mts";
  * sit through rather than a session, the same bar `OPEN_PR_READ_TIMEOUT_MS` sets
  * one module along.
  */
-export const CARD_COMMENT_READ_TIMEOUT_MS = 30_000;
+const CARD_COMMENT_READ_TIMEOUT_MS = 30_000;
 
 /**
  * The comment window, DERIVED from the reader his page uses rather than typed

@@ -297,7 +297,7 @@ export function errorMessageLeaks(repoRoot: string): InterpolationReading {
  * reason the reading carries a number at all: a reader that silently stopped
  * parsing would report zero sites, which is byte-identical to a clean tree.
  */
-export function countContexts(file: string, source: string): number {
+function countContexts(file: string, source: string): number {
   const sourceFile = ts.createSourceFile(
     file,
     source,

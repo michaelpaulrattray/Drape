@@ -55,7 +55,7 @@ import { LIVE_QUEUE_REPO } from "./liveQueue";
  * `"michaelpaulrattray"` beside a repository constant that already says it is
  * the mirror working law 4 is about.
  */
-export const LIVE_QUEUE_OWNER = LIVE_QUEUE_REPO.split("/")[0] ?? "";
+const LIVE_QUEUE_OWNER = LIVE_QUEUE_REPO.split("/")[0] ?? "";
 
 export const CARD_ACTIVITY_TTL_MS = 120_000;
 export const CARD_ACTIVITY_BOOT_HOURS = 48;
@@ -273,7 +273,7 @@ export function createCardActivityReader(options: CardActivityReaderOptions = {}
 }
 
 /** The process-wide reader the crew router uses. */
-export const cardActivityReader: CardActivityReader = createCardActivityReader();
+const cardActivityReader: CardActivityReader = createCardActivityReader();
 
 export function readCardActivity(): Promise<CrewCardActivity> {
   return cardActivityReader.read();

@@ -42,9 +42,9 @@ import type { CrewPipelineGroupView, CrewQueueCountView } from "../db/crewWorkSw
 import type { LiveQueueItem, LiveQueueReading } from "./liveQueue";
 
 export const ORDERED_LABEL = "founder-ordered";
-export const URGENT_LABEL = "urgent";
+const URGENT_LABEL = "urgent";
 /** A PR carrying either waits for the relay's hand verdict before it can merge. */
-export const HELD_PR_LABELS: readonly string[] = ["needs-fable", "founder-review"];
+const HELD_PR_LABELS: readonly string[] = ["needs-fable", "founder-review"];
 
 export type LiveLadderCard = {
   readonly issueNumber: number;
@@ -416,7 +416,7 @@ export function liveRecent(reading: LiveQueueReading): LiveRecentRow[] {
  * break the day a phrase is reworded, and the phrase is copy. Both come from the
  * same `CrewCardBuildState`, which is the fact.
  */
-export function liveBuildBoard(
+function liveBuildBoard(
   reading: LiveQueueReading,
   facts: readonly CrewCardCommentFact[],
 ): { items: CrewCardBuildView[]; heldOffOffer: Set<number> } {

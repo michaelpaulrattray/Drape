@@ -33,10 +33,10 @@ import { KIND_LOCALITIES } from "../../shared/kindLocality";
 import type { CeremonyWorld } from "./ceremony.mts";
 
 export const OPEN_KIND_PROPERTY_TABLE = "casting_open_kind_properties";
-export const OPEN_KIND_PROPERTY_KEY = "uq_casting_open_kind_properties_kind";
+const OPEN_KIND_PROPERTY_KEY = "uq_casting_open_kind_properties_kind";
 
 /** The columns the design ruled, in the order the DDL writes them. */
-export const OPEN_KIND_PROPERTY_COLUMNS = [
+const OPEN_KIND_PROPERTY_COLUMNS = [
   "id",
   "kind",
   "locality",
