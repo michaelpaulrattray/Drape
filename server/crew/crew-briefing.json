@@ -1,7 +1,7 @@
 {
-  "edition": 558,
-  "updatedAt": "2026-09-27T02:21:32.285Z",
-  "shift": "Foreman (night shift) — the old lane's switch is out of the product (#1443, slice 2 of 5): every roll is the author road by code now, nothing reads a setting to choose. The half that would have deleted the old road's own machinery was written, measured at 86 checks across 17 test files, and left to the audit card that owns it rather than decided in a cleanup.",
+  "edition": 559,
+  "updatedAt": "2026-09-27T03:33:28.463Z",
+  "shift": "Foreman (night shift) — the engine you picked for signing views is wired (#1459). You said Sunburst high produced the best result easily and you would live without Nano Banana's extra detail; the five pictures a signed cast gets are now made by that engine. It is written, tested and in review, not live yet. Nothing about what you press, what you pay or what a failed picture refunds has changed. The one thing you will notice when it ships: signing takes about 45 seconds longer.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -236,6 +236,10 @@
         {
           "title": "The switch that chose between the old way of casting and the new one is now GONE from the product (#1443, slice 2 of five). Nothing you can see changes: it has been answering the same way for every account since 24 September, and every roll now takes the new road because the code says so rather than because a setting does. The setting itself comes off the live site right after this, in that order on purpose — the other way round would have taken the site down on every restart. ⚠ And the honest half: this slice was also meant to delete the OLD road's machinery, and it did not. We wrote that deletion, ran the whole test suite over it, and 86 checks across 17 files went red — they are the checks that watch the old way's categories and styling, which is exactly what the audit you ordered (#180) is for. Deciding which of those 86 to retire is that audit's job, not a cleanup's side effect, so it was measured and handed over rather than guessed at. One thing found on the way, by deliberately breaking things to see what noticed: the Re-imagine button's own door had NO test at all — deleting the whole check left 241 tests green — and the switch that draws it on your brief boxes had none either. Both have real tests now.",
           "state": "in-progress"
+        },
+        {
+          "state": "in-progress",
+          "title": "Your word on the outfit test is built (#1459). \"Sunburst produced the best result easily\" — so the five pictures a cast gets when you sign it are now made by GPT Image 2.5 Sunburst instead of Nano Banana, at the bigger size that engine actually returns. The costs you already accepted: about 45 seconds longer per sign, and slightly less skin and hair detail. Nothing else moved — the price is the same to within a cent and a half, a picture that fails is still refunded on its own, and nothing anywhere names an engine to you. It is waiting on review before it goes live; when it does, sign one cast and look at the five."
         }
       ]
     },
@@ -319,7 +323,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-26T22:38:19.052Z",
+      "readAt": "2026-09-27T03:34:05.844Z",
       "items": [
         {
           "issueNumber": 1129,
@@ -328,8 +332,14 @@
           "rung": "N2"
         },
         {
-          "issueNumber": 1398,
-          "title": "The old casting lane is switched off for everyone — do we delete it?",
+          "issueNumber": 1444,
+          "title": "Old lane retirement slice 3 of 5: the client's authorRoadEnabled wire field goes — and the row-derived authorRoad in the same two files does not",
+          "kind": "rung",
+          "rung": "N2"
+        },
+        {
+          "issueNumber": 1445,
+          "title": "Old lane retirement slice 4 of 5: composeCandidatePrompt and deterministicBriefCompiler's fate — the three prose tables SURVIVE, and five live readers say why",
           "kind": "rung",
           "rung": "N2"
         },
@@ -410,12 +420,6 @@
           "title": "N4b — Voice: the cast's voice package gets its own rung, two engines by voice kind (his word, 4 Sep)",
           "kind": "design-unbuilt",
           "rung": "N4b"
-        },
-        {
-          "issueNumber": 1419,
-          "title": "Three keys to paste, and one small choice about your admin page",
-          "kind": "rung",
-          "rung": "N6"
         },
         {
           "issueNumber": 29,
@@ -6337,6 +6341,22 @@
           "caption": "Back — torso to hem, matched scale."
         }
       ]
+    },
+    {
+      "id": "sign-engine-sunburst-1459-strip",
+      "title": "The engine you chose, coming out of the studio's own signing road",
+      "question": "NOT A NEW QUESTION — you already chose this engine on the outfit test, and this is not asking you to choose again. It is the receipt: the engine you picked, wired into the product, making a real picture through the same road a customer's Sign takes. Left is the head-and-shoulders photograph every view is built from. Middle is what that cast's full-length front looks like TODAY, on the old engine. Right is the same view out of the new road. It is a test cast rather than one of yours, because nothing is live yet. When it ships, the thing worth your hands is signing one of your own casts and looking at all five — that is what closes #1459.",
+      "state": "open",
+      "filedAt": "2026-09-27T03:33:28.464Z",
+      "issueNumber": 1459,
+      "cardId": null,
+      "frames": [
+        {
+          "key": "crew-eye/8a48c03b-bf34-49eb-a7ca-d335db9634a9.jpg",
+          "arm": "anchor · old engine · new",
+          "caption": "LEFT: the photograph the views are made from. MIDDLE: today's engine, Nano Banana — 1696x2528. RIGHT: the new one, Sunburst — 2352x3504, about twice the pixels. Both invent everything below the photograph's frame, which is what the outfit test was about. The checker that guards every view you pay for passed the new one on all three of its questions."
+        }
+      ]
     }
   ],
   "pipeline": [
@@ -8750,6 +8770,13 @@
       "status": "merged",
       "prNumber": 1460,
       "note": "Nothing a customer sees; the setting had said the same thing for every account since 24 Sep."
+    },
+    {
+      "id": "sign-engine-sunburst-1459",
+      "title": "The five signed views render on the engine you chose (#1459)",
+      "status": "in-review",
+      "prNumber": 1462,
+      "note": "Money-adjacent — a sign is 450 credits. Left for the hand review rather than merged by the shift."
     }
   ],
   "problems": [
@@ -9014,25 +9041,20 @@
     229
   ],
   "nextUp": {
-    "readAt": "2026-09-26T22:38:19.051Z",
+    "readAt": "2026-09-27T03:34:05.843Z",
     "items": [
       {
         "issueNumber": 1278,
         "title": "A signed view is dressed by an extraction and a prohibition list, never by the brief — the full-length views come back modest, generic and inconsistent; the brief dresses the view and the full-length views render as one sheet (his eye 2026-09-26)",
-        "urgent": true
-      },
-      {
-        "issueNumber": 1373,
-        "title": "Sign views render at the engine's top tier — 4K on Nano Banana Pro, one declaration for Sign and Try again (his word, 2026-09-26)",
         "urgent": true,
         "held": {
           "state": "blocked",
-          "because": "you — your eye on #1394's court frames. That court measured Nano Banana Pro's 4K tier as WORSE than today's 2K on every axis the judge reads (65% against 80% o…"
+          "because": "#1459 — the Sign views move to Sunburst high first; part 2 rewrites the same render path. Not on him: his word on the engine landed 2026-09-27."
         }
       },
       {
-        "issueNumber": 1394,
-        "title": "Engine court for the Sign views: GPT Image 2.5 Sunburst edit against Nano Banana Pro (2K and 4K), same anchors, same views — his word, 2026-09-26",
+        "issueNumber": 1459,
+        "title": "The Sign views render on GPT Image 2.5 Sunburst high — his word on the outfit court, 2026-09-27: \"sunburst produced the best result easily\"",
         "urgent": true
       },
       {
@@ -9043,11 +9065,7 @@
       {
         "issueNumber": 180,
         "title": "N2: THE GHOST AUDIT — enumerate every piece of old-lane machinery still running under the author road (categories, dice, archetypes, personas); the Follow ghost (#176) is specimen #1 (founder flag, 2026-08-27)",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "you — your answer on #1398 (*\"The old casting lane is switched off for everyone — do we delete it?\"*). The audit's whole population is the old lane's machinery…"
-        }
+        "urgent": false
       },
       {
         "issueNumber": 509,
