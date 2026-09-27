@@ -60,6 +60,7 @@ import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 import { assertOneWorld } from "./lib/worldGuard.mts";
 import { openDatabase } from "./lib/dbConnection.mts";
 import { readFalBalance } from "./lib/falSpend.mts";
+import { resolveDatabaseUrl, worldOf } from "./lib/dbConnection.mts";
 import { CAST_PACKAGE_VIEWS, composePackageViewPrompt } from "../server/castingV2/castViewPackage";
 import { createViewConformanceJudge } from "../server/castingV2/viewConformance";
 import { createOpenRouterTextEngine, DEFAULT_INTERPRETER_MODEL } from "../server/providers/openrouterText";
@@ -70,23 +71,48 @@ import { castWardrobeLine } from "../server/castingV2/wardrobeLine";
 import { ProviderQueue } from "../server/providers/providerQueue";
 import type { CastViewAngle } from "../shared/boardTypes";
 
-/*
-  THE WORLD, DECLARED. This court reads its fixtures out of a database and it
-  must be the DEV one: `DATABASE_URL` is the only world key it consults, and it
-  writes no object anywhere — every frame lands on this machine's disk. Inert
-  under a plain `npx tsx`; it refuses a half-production process under
-  `railway run`, which is the shape that would silently read his customers rows.
-*/
-assertOneWorld(["DATABASE_URL"]);
-
 /* ------------------------------------------------------------------ the ask */
 
 const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
-  value: ["phase", "only", "anchors", "draws", "out", "size", "arms", "tier", "anchor"],
-  boolean: ["help", "dry-run", "run"],
+  value: ["phase", "only", "anchors", "draws", "out", "size", "arms", "tier", "anchor", "models"],
+  boolean: ["help", "dry-run", "run", "prod-fixtures"],
 });
 
-const PHASES = ["price", "main", "chain", "sheet", "controls", "contact", "rejudge", "report"] as const;
+/**
+ * WHICH DATABASE THE FIXTURES COME OUT OF, AND THE WORLD DECLARED FROM THE SAME
+ * ANSWER — widened for #1451, whose subject is one of the founder's OWN casts
+ * and therefore lives in production.
+ *
+ * #1394 read its fixtures out of the DEV database and declared `DATABASE_URL`;
+ * that is still what an undecorated run does, byte for byte. `--prod-fixtures`
+ * says the answer rests on `MYSQL_PUBLIC_URL` instead — the variable the
+ * production MySQL service defines and a local `.env` does not — so the guard
+ * refuses exactly the shape it was built for in either mode:
+ *
+ *   plain `npx tsx`                     → inert, reads `DATABASE_URL` (dev)
+ *   `railway run`, no `--prod-fixtures` → REFUSES: DATABASE_URL is the local one
+ *   `railway run --service MySQL`, with → passes; `openDatabase`'s own
+ *     `--prod-fixtures`                    `assertSameWorld` is the second gate
+ *
+ * ⚠ **THE DECLARATION AND THE URL ARE ONE EXPRESSION ON PURPOSE.** Two
+ * statements — a flag deciding the url here and a hand-written key list there —
+ * is the shape `worldGuard.mts`'s own header records being bitten by three
+ * times: an honest declaration that is incomplete in a direction nobody can see
+ * from the call site. And the guard now runs AFTER the strict argument parse
+ * rather than before it, because it cannot know which world it is guarding until
+ * the arguments are read; a bad argument is therefore refused before a world is,
+ * which costs nothing since neither refusal opens a connection.
+ *
+ * This court still writes no database row and no bucket object in either world.
+ * Every frame lands on this machine's disk.
+ */
+const PROD_FIXTURES = ARGS.flag("prod-fixtures");
+const FIXTURE_DB_URL = PROD_FIXTURES ? resolveDatabaseUrl() : process.env.DATABASE_URL;
+assertOneWorld(PROD_FIXTURES ? ["MYSQL_PUBLIC_URL"] : ["DATABASE_URL"]);
+
+const PHASES = [
+  "price", "main", "outfit", "chain", "sheet", "controls", "contact", "rejudge", "report",
+] as const;
 type Phase = (typeof PHASES)[number];
 
 const HELP = `court-sign-engine — the Sign views on Sunburst against Nano Banana Pro (#1394)
@@ -99,6 +125,10 @@ const HELP = `court-sign-engine — the Sign views on Sunburst against Nano Bana
   --size <WxH>                    the Sunburst ask (default 2352x3504, the door's own ceiling)
   --arms <a,b>                    a subset of nb2k,nb4k,sbhigh,sbmax — split the run across processes
   --tier <high|max>               one Sunburst tier only, for the chain and sheet phases
+  --models <ids>                  the fixture model ids to read (default ${[248, 251, 253].join(",")})
+  --prod-fixtures                 read the fixtures from the PRODUCTION database (read-only), for a
+                                  court on one of the founder's own casts — pair it with
+                                  \`railway run --service MySQL\` or it reads dev and says so
   --out <dir>                     where frames land (default output/1394-sign-engine)
   --dry-run                       print the plan and the cost estimate, spend nothing
   --run                           actually spend house money on the provider
@@ -111,6 +141,8 @@ must never have.
   phases
     price     one Sunburst render per tier with a settled balance either side
     main      anchors x angles x 4 arms x draws, each judged
+    outfit    the four INVENTING views x draws x {nb2k, sbhigh}, each judged, each read
+              for what it invented below the anchor's crop (#1451)
     chain     five successive Sunburst edits, high and max, judged every step
     sheet     one four-column reference sheet per tier, cut and judged (#1278 part 2)
     controls  the judge's noise floor, and the cross-anchor positive control
@@ -239,16 +271,32 @@ const SHEET_SIZE = { width: 4688, height: 1760 } as const;
 /* --------------------------------------------------------------- the fixtures */
 
 /**
- * THE FIXTURES, READ OUT OF THE DEV DATABASE RATHER THAN TYPED IN.
+ * THE FIXTURES, READ OUT OF A DATABASE RATHER THAN TYPED IN.
  *
- * Two signed casts owned by two different fixture accounts, chosen because they
- * are decisively different people — which is what makes the cross-anchor
- * positive control below worth running. Their anchors, wardrobe lines and
- * briefs come from the same rows the product's own Try again reader
- * (`readCastViewRenderSource`) reads, so the words this court composes are the
- * words a real retried view composes.
+ * #1394's default is three signed casts in the DEV database, owned by two
+ * different fixture accounts, chosen because they are decisively different
+ * people — which is what makes the cross-anchor positive control below worth
+ * running. Their anchors, wardrobe lines and briefs come from the same rows the
+ * product's own Try again reader (`readCastViewRenderSource`) reads, so the
+ * words this court composes are the words a real retried view composes.
+ *
+ * `--models <ids>` names a different set, and #1451 needs one: his own words
+ * were *"use one of my more creative casts"*, and his casts are in PRODUCTION.
+ * A model id means nothing without the world it belongs to, so the ids are an
+ * argument rather than a second constant here and every row this court writes
+ * carries `world` beside them.
  */
-const FIXTURE_MODEL_IDS = [248, 251, 253] as const;
+const DEFAULT_FIXTURE_MODEL_IDS = [248, 251, 253] as const;
+const FIXTURE_MODEL_IDS: readonly number[] = (() => {
+  const raw = ARGS.value("models");
+  if (raw === null) return DEFAULT_FIXTURE_MODEL_IDS;
+  const ids = raw.split(",").map((part) => Number(part.trim()));
+  if (ids.length === 0 || ids.some((id) => !Number.isInteger(id) || id <= 0)) {
+    console.error("REFUSING: --models takes a comma-separated list of positive model ids.");
+    process.exit(1);
+  }
+  return ids;
+})();
 
 /**
  * ⚠ **THE THIRD FIXTURE EXISTS BECAUSE SUNBURST REFUSED THE SECOND, AND THE
@@ -268,12 +316,27 @@ const FIXTURE_MODEL_IDS = [248, 251, 253] as const;
  * the default `--anchors 2` keeps every other arm exactly as it was run.
  */
 
-/** A short, stable name for a fixture, used in every frame path and every row. */
+/**
+ * A short, stable name for a fixture, used in every frame path and every row.
+ *
+ * ⚠ **THE LAST CLAUSE WAS A FALLBACK AND IT IS NOW DERIVED — #1451.** It read
+ * `return "jericho"`, which was true of #1394's three fixtures and silently
+ * wrong of every other cast in either world: run against the founder's own
+ * production Sifr, every frame would have landed under `output/…/jericho/` and
+ * every row would have said `anchor: "jericho"` — a court reporting confidently
+ * about a woman it never rendered. The two hand-written cases stay, because
+ * #1394's paths on disk and its `--anchor caveman` invocations are part of a
+ * published record; anything else is slugged from the cast's own name, which
+ * gives `Jericho` → `jericho` and leaves that record byte-identical.
+ */
 function keyOf(name: string): string {
   const lower = name.toLowerCase();
   if (lower.includes("caveman")) return "caveman";
   if (lower.includes("basics")) return "basics";
-  return "jericho";
+  const slug = lower.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  /* A name made entirely of characters a path cannot hold still needs a folder,
+     and the id is the one thing every fixture has. */
+  return slug === "" ? "cast" : slug;
 }
 
 type Fixture = {
@@ -288,7 +351,7 @@ type Fixture = {
 };
 
 async function loadFixtures(limit: number): Promise<Fixture[]> {
-  const db = await openDatabase();
+  const db = await openDatabase(FIXTURE_DB_URL);
   try {
     const [rows] = await db.query<any[]>(
       `SELECT m.id AS modelId, m.name, m.technicalSchema, r.briefText,
@@ -758,6 +821,667 @@ async function phaseMain(fixtures: Fixture[]): Promise<void> {
   }
 }
 
+/* ------------------------------------------------- the outfit phase (#1451) */
+
+/**
+ * THE OUTFIT COURT — his order, 2026-09-27, verbatim: *"actually i want one more
+ * test and use one of my more creative casts for it. test NBP and sunburst high
+ * on outfit creation. meaning sunburst might invent the outfit it cant see
+ * better then NBP can"*.
+ *
+ * # What #1394's wardrobe axis could not answer
+ *
+ * That court's third axis asks *"the SAME outfit the reference photograph shows"*
+ * — agreement with what is VISIBLE. The anchor is a chest-up photograph, so on
+ * the four views that show a whole body, most of the outfit is not in the
+ * reference at all and the axis is silent about it by construction (the spec
+ * says so in as many words: *"anything below the frame of the reference CANNOT
+ * be compared to it"*). His hypothesis lives exactly in that silence.
+ *
+ * # The four views, and why two of them are this court's own ask
+ *
+ * `frontFull` and `backFull` are the package's own, composed by
+ * `composePackageViewPrompt` and sent unchanged — a real Sign's front and back.
+ *
+ * ⚠ **THE TWO PROFILES ARE NOT.** Read at the code: the package's `sideClose`
+ * spec is *"a head-and-shoulders TRUE side profile"* and its directive says
+ * *"Head and shoulders only"* — it shows no outfit below the chest, so it cannot
+ * carry an outfit-invention question, and it names only the RIGHT edge so it has
+ * no left twin. So this court asks for a FULL-LENGTH profile, built from the
+ * package's own `frontFull` prompt with one appended TURN clause. That clause is
+ * authored here and is declared as such, on the precedent already in this file:
+ * {@link sheetPrompt} adds its four-column instruction to the same base for the
+ * same reason.
+ *
+ * ⚠ **The clause says out loud that it overrides the stance above it.** The base
+ * prompt reads *"stands square to camera"*; a turn instruction appended without
+ * saying so is a prompt that contradicts its own earlier line and leaves the
+ * engine to pick. The sheet arm got away with that because its layout clause was
+ * obviously later and more specific; a single figure gets no such help.
+ *
+ * ⚠ **AND THE TWO SIDES ARE NAMED BY THE FRAME'S EDGE, NEVER BY HER ANATOMY** —
+ * which is the package's own craft (*"the subject's nose points toward the RIGHT
+ * EDGE OF THE OUTPUT FRAME"*, ported from the legacy per-angle framing under
+ * §I's craft-reference law) and this repository's own measurement: an
+ * anatomy-relative side ask is answered against the image half about as often as
+ * not. So `leftProfileFull` means *her nose points at the frame's left edge*, and
+ * that is what the reader is asked and what the caption says.
+ *
+ * # What is measured, and what is deliberately not
+ *
+ * Per render: wall seconds, the provider's own latency, bytes, returned pixels,
+ * the price. Then the product's own three-axis judge at the mapped angle, so a
+ * refused or off-angle render is not read as a wardrobe finding. Then ONE prose
+ * question about the outfit — the card's own wording, no score, no verdict.
+ *
+ * ⚠ **THE ANGLE AXIS IS NOT TRUSTWORTHY ON THE TWO PROFILES AND THE ROWS SAY SO
+ * PER ROW.** They are judged against `sideClose`'s spec, which asks for the true
+ * 90° turn this court wants read and for a head-and-shoulders framing this court
+ * deliberately widened, so an angle FAIL there is this court's own framing
+ * mismatch. #1394's sheet arm declared the same thing about its middle two
+ * columns. That would have left half the views with no honest angle reading at
+ * all, which is why {@link phaseOutfitControls} exists.
+ */
+const OUTFIT_VIEWS = [
+  {
+    id: "frontFull",
+    base: "frontFull",
+    turn: "",
+    judgedAs: "frontFull",
+    angleAxisTrustworthy: true,
+    caption: "front, full length",
+  },
+  {
+    id: "leftProfileFull",
+    base: "frontFull",
+    turn:
+      "TURN — THIS OVERRIDES \"square to camera\" ABOVE: the subject is turned a full ninety degrees"
+      + " so that her nose points toward the LEFT EDGE OF THE OUTPUT FRAME. A true profile: one eye"
+      + " visible, never a three-quarter view. Still full length, head to feet entirely inside the"
+      + " frame with margin above the hair and below the feet, arms relaxed at the sides, standing"
+      + " still rather than posing.",
+    judgedAs: "sideClose",
+    angleAxisTrustworthy: false,
+    caption: "profile, nose to the frame's LEFT, full length",
+  },
+  {
+    id: "rightProfileFull",
+    base: "frontFull",
+    turn:
+      "TURN — THIS OVERRIDES \"square to camera\" ABOVE: the subject is turned a full ninety degrees"
+      + " so that her nose points toward the RIGHT EDGE OF THE OUTPUT FRAME. A true profile: one eye"
+      + " visible, never a three-quarter view. Still full length, head to feet entirely inside the"
+      + " frame with margin above the hair and below the feet, arms relaxed at the sides, standing"
+      + " still rather than posing.",
+    judgedAs: "sideClose",
+    angleAxisTrustworthy: false,
+    caption: "profile, nose to the frame's RIGHT, full length",
+  },
+  {
+    id: "backFull",
+    base: "backFull",
+    turn: "",
+    judgedAs: "backFull",
+    angleAxisTrustworthy: true,
+    caption: "back, full length",
+  },
+] as const satisfies readonly {
+  id: string;
+  base: CastViewAngle;
+  turn: string;
+  judgedAs: CastViewAngle;
+  angleAxisTrustworthy: boolean;
+  caption: string;
+}[];
+
+/**
+ * The two arms this court is asked for, and only those — narrowed further by
+ * `--arms` so the run can be split across two processes the way #1394's main
+ * phase was, for the reason stated there: a picture waiting behind two others
+ * reports the queue rather than the engine.
+ *
+ * ⚠ **A `--arms` that names neither of these REFUSES rather than running an
+ * empty loop.** An empty arm list is a court that spends nothing, writes no rows
+ * and exits 0 — indistinguishable from a clean run, which is how a measurement
+ * comes to be believed on the strength of having not happened.
+ */
+const OUTFIT_CANDIDATE_ARMS = ["nb2k", "sbhigh"] as const satisfies readonly ArmId[];
+const OUTFIT_ARMS: readonly (typeof OUTFIT_CANDIDATE_ARMS)[number][] = (() => {
+  const kept = OUTFIT_CANDIDATE_ARMS.filter((arm) => (ARMS as readonly ArmId[]).includes(arm));
+  if (kept.length === 0 && PHASE === "outfit") {
+    console.error(
+      `REFUSING: the outfit phase runs ${OUTFIT_CANDIDATE_ARMS.join(" and ")} only, and --arms named`
+      + ` ${ARMS.join(",")} — nothing would render and the run would look clean.`,
+    );
+    process.exit(1);
+  }
+  return kept;
+})();
+
+/**
+ * The one string both arms are handed, composed exactly once per view.
+ *
+ * `\n\nView: <base angle>.` is the line `falQueue`'s own `generateView` appends,
+ * kept here for the same reason {@link directiveFor} keeps it: the arms must not
+ * differ in a byte, and the Nano Banana arm gets that line from the engine
+ * whether this court wants it or not.
+ */
+function outfitPrompt(fixture: Fixture, view: (typeof OUTFIT_VIEWS)[number]): string {
+  const base = `${composePackageViewPrompt(view.base, fixture.wardrobeLine, fixture.brief)}\n\nView: ${view.base}.`;
+  return view.turn === "" ? base : `${base}\n${view.turn}`;
+}
+
+/**
+ * WHAT THE OUTFIT READER IS HANDED AS THE CAST'S OWN WORDS ABOUT HER CLOTHES.
+ *
+ * The card says *"the brief's wardrobe line"*. Measured on his casts: none of
+ * the five signed Casts in production carries a stored `wardrobe.line` at all
+ * (`castWardrobeLine` returns `null`), so on this subject there is no line to
+ * quote and the only record of her clothes is the brief — which is precisely
+ * what the product itself hands the judge as `description`. Cutting the wardrobe
+ * sentence out of the brief by hand would be an authored extraction standing in
+ * for a field, so the whole record goes across and the row says which it was.
+ */
+function wardrobeRecordOf(fixture: Fixture): { text: string | null; source: "storedLine" | "brief" | "none" } {
+  if (fixture.wardrobeLine !== null) return { text: fixture.wardrobeLine, source: "storedLine" };
+  if (fixture.brief !== null) return { text: fixture.brief, source: "brief" };
+  return { text: null, source: "none" };
+}
+
+/**
+ * THE OUTFIT READER — the card's own question, prose only.
+ *
+ * ⚠ **IT RETURNS NO SCORE AND NO BOOLEAN, ON PURPOSE** (working law 9). Four
+ * prose answers for his eye to read beside the frames; nothing in this court
+ * folds them into a rate, because *"which engine invented the better dress"* is
+ * not a question a reader is allowed to close.
+ */
+const OUTFIT_READER_SYSTEM =
+  "You are looking at two photographs of the same person. IMAGE 1 is the signed reference photograph:"
+  + " it is cropped at the chest, so most of the outfit is not in it. IMAGE 2 is a new full-length"
+  + " photograph of the same person. Describe what you can see. Answer in plain prose, in the JSON"
+  + " shape asked for, and never guess at something the picture does not show — say that it does not"
+  + " show it.";
+
+type OutfitReading = {
+  outfit: string;
+  agreesWithAnchor: string;
+  agreesWithRecord: string;
+  addedByNeither: string;
+};
+
+async function readOutfit(
+  engine: ReturnType<typeof createOpenRouterTextEngine>,
+  input: {
+    anchor: { bytes: Buffer; contentType: string };
+    candidate: { bytes: Buffer; contentType: string };
+    wardrobeRecord: string | null;
+  },
+): Promise<{ reading: OutfitReading | null; why: string; wallMs: number; tokens: { in: number; out: number } | null; truncated: boolean }> {
+  const started = Date.now();
+  const user = [
+    "Answer as a JSON object with exactly these four string fields, each one or two sentences of prose:",
+    "  \"outfit\"            — describe the outfit in IMAGE 2, head to feet: garments, cut, length,"
+    + " hardware, footwear, and how worn or pristine it looks.",
+    "  \"agreesWithAnchor\"  — does IMAGE 2's outfit agree with the part of the outfit IMAGE 1 actually"
+    + " shows? Name what agrees and what does not.",
+    "  \"agreesWithRecord\"  — does IMAGE 2's outfit agree with the WRITTEN RECORD below? Name what"
+    + " agrees and what does not. If there is no record, say so.",
+    "  \"addedByNeither\"    — what does IMAGE 2 wear that IMAGE 1 does not show AND the written record"
+    + " does not name? If nothing, say nothing.",
+    "",
+    "WRITTEN RECORD of what this person wears:",
+    input.wardrobeRecord ?? "(there is no written record of this person's clothes)",
+  ].join("\n");
+  let text: string;
+  let tokens: { in: number; out: number } | null = null;
+  let truncated = false;
+  try {
+    const reply = await engine.complete({
+      about: "describe",
+      system: OUTFIT_READER_SYSTEM,
+      user,
+      images: [input.anchor, input.candidate],
+      json: true,
+      temperature: 0,
+      /* Four prose fields run long; the ceiling is for the answer and the
+         reasoning is off, which is `viewConformance`'s own hard-won shape after
+         a judge came back empty twice on this very cast's Sign (#1220). */
+      reasoning: "off",
+      maxOutputTokens: 1_200,
+    });
+    text = reply.text;
+    tokens = reply.tokens ?? null;
+    truncated = reply.truncated === true;
+  } catch (error) {
+    return {
+      reading: null, why: error instanceof Error ? error.message : String(error),
+      wallMs: Date.now() - started, tokens: null, truncated: false,
+    };
+  }
+  const fail = (why: string) => ({ reading: null, why, wallMs: Date.now() - started, tokens, truncated });
+  const match = /\{[\s\S]*\}/.exec(text);
+  if (!match) return fail(`no JSON object in the reply: ${text.slice(0, 200)}`);
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(match[0]) as Record<string, unknown>;
+  } catch (error) {
+    return fail(`unparseable JSON: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  const field = (name: string): string => (typeof parsed[name] === "string" ? String(parsed[name]) : "");
+  const reading: OutfitReading = {
+    outfit: field("outfit"),
+    agreesWithAnchor: field("agreesWithAnchor"),
+    agreesWithRecord: field("agreesWithRecord"),
+    addedByNeither: field("addedByNeither"),
+  };
+  if (reading.outfit === "") return fail(`the reply carried no "outfit" prose: ${text.slice(0, 200)}`);
+  return { reading, why: "", wallMs: Date.now() - started, tokens, truncated };
+}
+
+/**
+ * THE TURN READER — a court-owned instrument, because the product has none for a
+ * view the product does not promise.
+ *
+ * It answers two things about one frame, with no reference beside it: is this a
+ * TRUE ninety-degree profile, and if so which edge of the frame does the nose
+ * point at. That is what makes an off-angle profile legible as off-angle rather
+ * than as an outfit finding — which is what the card asked the three-axis judge
+ * for and what the three-axis judge cannot give here.
+ *
+ * ⚠ **IT IS CONTROLLED BEFORE ITS VERDICTS COUNT** (working law 2), and the
+ * controls cost no renders: see {@link phaseOutfitControls}.
+ */
+const TURN_READER_SYSTEM =
+  "You are looking at one photograph of a person standing. Answer only about the direction the person"
+  + " faces in this photograph. Use the EDGES OF THIS IMAGE as your reference, never the person's own"
+  + " left and right. Answer in the JSON shape asked for.";
+
+type TurnReading = { profile: boolean; edge: "left" | "right" | "neither"; note: string };
+
+async function readTurn(
+  engine: ReturnType<typeof createOpenRouterTextEngine>,
+  frame: { bytes: Buffer; contentType: string },
+): Promise<{ reading: TurnReading | null; why: string }> {
+  const user = [
+    "Answer as a JSON object with exactly these three fields:",
+    "  \"profile\" — true if this is a TRUE side profile: the person turned a full ninety degrees so"
+    + " that one eye and one ear are visible and the far eye is hidden. false for a front view, a back"
+    + " view, or a three-quarter turn where both eyes are visible.",
+    "  \"edge\"    — \"left\" if the nose points toward the LEFT EDGE of this image, \"right\" if it"
+    + " points toward the RIGHT EDGE, \"neither\" if the person faces the camera or faces away.",
+    "  \"note\"    — one short sentence saying what you actually see.",
+  ].join("\n");
+  let text: string;
+  try {
+    const reply = await engine.complete({
+      about: "classify",
+      system: TURN_READER_SYSTEM,
+      user,
+      images: [frame],
+      json: true,
+      temperature: 0,
+      reasoning: "off",
+      maxOutputTokens: 400,
+    });
+    text = reply.text;
+  } catch (error) {
+    return { reading: null, why: error instanceof Error ? error.message : String(error) };
+  }
+  const match = /\{[\s\S]*\}/.exec(text);
+  if (!match) return { reading: null, why: `no JSON object in the reply: ${text.slice(0, 200)}` };
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(match[0]) as Record<string, unknown>;
+  } catch (error) {
+    return { reading: null, why: `unparseable JSON: ${error instanceof Error ? error.message : String(error)}` };
+  }
+  if (typeof parsed.profile !== "boolean") return { reading: null, why: `no boolean "profile": ${text.slice(0, 200)}` };
+  const edge = parsed.edge === "left" || parsed.edge === "right" ? parsed.edge : "neither";
+  return {
+    reading: { profile: parsed.profile, edge, note: typeof parsed.note === "string" ? parsed.note : "" },
+    why: "",
+  };
+}
+
+/**
+ * THE TURN READER'S CONTROLS — three frames, no renders, and every one of them
+ * a picture the founder has already paid for.
+ *
+ * The fixture's own DELIVERED package views are in the database and in the
+ * bucket. So the reader is asked about:
+ *
+ *   1. her delivered `frontFull` — a square-to-camera full length. It must read
+ *      `profile: false`. **If it does not, this reader cannot tell a turn from a
+ *      stance and every profile angle reading in this court is struck.**
+ *   2. her delivered `sideClose` — a real ninety-degree profile of her. It must
+ *      read `profile: true`. The edge it names is recorded rather than asserted,
+ *      because nothing here knows a priori which way that delivered frame faces.
+ *   3. the SAME frame, flipped horizontally. It must read `profile: true` and it
+ *      must name **the opposite edge from (2)**. That is the positive control on
+ *      the SIDE half of the reading, and it is exact: one picture, one bit
+ *      changed, an answer that must invert.
+ *
+ * ⚠ **The two halves of this reader are controlled separately and can fail
+ * separately.** (1) failing strikes both; (3) failing strikes only the edge, and
+ * the record says the left/right rows are unverified while the presence rows
+ * stand. A single pass/fail over an instrument that answers two questions is how
+ * a half-blind reader keeps a whole reputation.
+ */
+async function phaseOutfitControls(fixtures: Fixture[]): Promise<void> {
+  console.log(
+    "OUTFIT CONTROLS — the turn reader against the fixture's own delivered views."
+    + " No renders: these frames are already paid for.",
+  );
+  const engine = textEngineForReaders();
+  const db = await openDatabase(FIXTURE_DB_URL);
+  let delivered: { modelId: number; viewType: string; url: string }[];
+  try {
+    const [rows] = await db.query<any[]>(
+      `SELECT modelId, viewType, storageUrl FROM model_assets
+        WHERE modelId IN (${fixtures.map((fixture) => fixture.modelId).join(",")})
+          AND viewType IN ('frontFull','sideClose')
+          AND storageUrl IS NOT NULL
+        ORDER BY modelId, viewType, id`,
+    );
+    delivered = rows.map((row) => ({
+      modelId: Number(row.modelId), viewType: String(row.viewType), url: String(row.storageUrl),
+    }));
+  } finally {
+    await db.end();
+  }
+
+  for (const fixture of fixtures) {
+    for (const viewType of ["frontFull", "sideClose"] as const) {
+      const row = delivered.find((entry) => entry.modelId === fixture.modelId && entry.viewType === viewType);
+      if (!row) {
+        note({ control: "turn-reader", anchor: fixture.key, viewType, missing: "this cast has no delivered view of this kind" });
+        continue;
+      }
+      const response = await fetch(row.url);
+      if (!response.ok) {
+        note({ control: "turn-reader", anchor: fixture.key, viewType, missing: `fetch ${response.status}` });
+        continue;
+      }
+      const bytes = Buffer.from(await response.arrayBuffer());
+      const frame = await forTheJudge(bytes);
+      const straight = await readTurn(engine, frame);
+      note({
+        control: "turn-reader",
+        anchor: fixture.key,
+        viewType,
+        variant: "as delivered",
+        mustRead: viewType === "frontFull" ? "profile: false" : "profile: true",
+        readAsRequired: straight.reading === null
+          ? false
+          : straight.reading.profile === (viewType === "sideClose"),
+        ...(straight.reading ?? {}),
+        why: straight.why,
+      });
+      if (viewType !== "sideClose") continue;
+      /* The same picture with one bit changed. `flop` is the horizontal flip;
+         `flip` is vertical, and using the wrong one here would be a control that
+         asks the reader about a woman standing on her head. */
+      const flipped = await forTheJudge(await sharp(bytes).flop().png().toBuffer());
+      const mirrored = await readTurn(engine, flipped);
+      note({
+        control: "turn-reader",
+        anchor: fixture.key,
+        viewType,
+        variant: "mirrored",
+        mustRead: "profile: true, and the OPPOSITE edge from the delivered frame",
+        readAsRequired: straight.reading !== null && mirrored.reading !== null
+          && mirrored.reading.profile
+          && straight.reading.edge !== "neither"
+          && mirrored.reading.edge !== "neither"
+          && mirrored.reading.edge !== straight.reading.edge,
+        deliveredEdge: straight.reading?.edge ?? null,
+        ...(mirrored.reading ?? {}),
+        why: mirrored.why,
+      });
+    }
+  }
+}
+
+/** One engine for both readers, one queue, so neither measures the other's wait. */
+let readerEngine: ReturnType<typeof createOpenRouterTextEngine> | null = null;
+function textEngineForReaders() {
+  if (!readerEngine) {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) throw new Error("OPENROUTER_API_KEY is required — the readers are this court's instruments");
+    readerEngine = createOpenRouterTextEngine({
+      apiKey,
+      model: process.env.SIGN_JUDGE_MODEL || DEFAULT_INTERPRETER_MODEL,
+      queue: new ProviderQueue({ name: "court-outfit-reader", concurrency: 2, maxQueueDepth: 64 }),
+    });
+  }
+  return readerEngine;
+}
+
+async function phaseOutfit(fixtures: Fixture[]): Promise<void> {
+  const renders = fixtures.length * OUTFIT_VIEWS.length * OUTFIT_ARMS.length * DRAWS;
+  console.log(
+    `OUTFIT PHASE — ${fixtures.length} anchor(s) x ${OUTFIT_VIEWS.length} inventing views x`
+    + ` ${OUTFIT_ARMS.length} arms x ${DRAWS} draws = ${renders} renders.`,
+  );
+  /* The four composed strings land on disk whether or not anything spends, so
+     the record can QUOTE the prompt instead of describing it (working law 5:
+     the contract is proven on the outgoing request). */
+  for (const fixture of fixtures) {
+    const prompts = Object.fromEntries(
+      OUTFIT_VIEWS.map((view) => [view.id, outfitPrompt(fixture, view)]),
+    );
+    await save(
+      `${fixture.key}/outfit/prompts.json`,
+      Buffer.from(`${JSON.stringify({
+        modelId: fixture.modelId,
+        name: fixture.name,
+        world: worldOf(FIXTURE_DB_URL),
+        wardrobeLine: fixture.wardrobeLine,
+        brief: fixture.brief,
+        prompts,
+      }, null, 2)}\n`),
+    );
+  }
+  if (!RUN) {
+    const perArm = fixtures.length * OUTFIT_VIEWS.length * DRAWS;
+    let total = 0;
+    for (const arm of OUTFIT_ARMS) {
+      const each = arm === "nb2k" ? NANO_BANANA_PRO_USD_PER_IMAGE["2K"] : SUNBURST_MEASURED_USD.sbhigh;
+      total += perArm * each;
+      console.log(`DRY RUN — ${ARM_LABEL[arm]} ${perArm} x $${each.toFixed(2)} = $${(perArm * each).toFixed(2)}`);
+    }
+    console.log(
+      `DRY RUN — total $${total.toFixed(2)} plus text-reader cents.`
+      + " The composed prompts are on disk either way.",
+    );
+    return;
+  }
+  /* ⚠ THE CONTROLS RUN IN THIS PROCESS, BEFORE THE FIRST RENDER (working law 2).
+     Not a sibling phase somebody could forget to invoke: an instrument whose
+     controls are one flag away from being skipped is an instrument that will one
+     day report without them. */
+  await phaseOutfitControls(fixtures);
+  const judgeFn = judge();
+  const reader = textEngineForReaders();
+  for (const fixture of fixtures) {
+    const record = wardrobeRecordOf(fixture);
+    const anchorForReading = await forTheJudge(fixture.anchor.bytes);
+    for (const view of OUTFIT_VIEWS) {
+      const prompt = outfitPrompt(fixture, view);
+      for (const arm of OUTFIT_ARMS) {
+        for (let draw = 1; draw <= DRAWS; draw += 1) {
+          const started = Date.now();
+          try {
+            const render = await renderArm(arm, prompt, [fixture.anchor]);
+            const meta = await sharp(render.bytes).metadata();
+            const file = await save(`${fixture.key}/outfit/${view.id}/${arm}-${draw}.png`, render.bytes);
+            const candidate = await forTheJudge(render.bytes);
+            const verdict = await judgeOne(judgeFn, {
+              angle: view.judgedAs,
+              anchor: anchorForReading,
+              candidate,
+              wardrobeLine: fixture.wardrobeLine,
+              brief: fixture.brief,
+            });
+            const turn = view.turn === "" ? null : await readTurn(reader, candidate);
+            const outfit = await readOutfit(reader, {
+              anchor: anchorForReading,
+              candidate,
+              wardrobeRecord: record.text,
+            });
+            note({
+              phase: "outfit", anchor: fixture.key, world: worldOf(FIXTURE_DB_URL),
+              view: view.id, judgedAs: view.judgedAs,
+              angleAxisTrustworthy: view.angleAxisTrustworthy,
+              arm, armLabel: ARM_LABEL[arm], draw, file,
+              pixels: `${meta.width}x${meta.height}`,
+              bytes: render.bytes.length,
+              ms: render.latencyMs,
+              wallMs: Date.now() - started,
+              usd: render.usd ?? SUNBURST_MEASURED_USD[arm as "sbhigh"] ?? null,
+              usdMeasuredBy: render.usd === null ? "this court's price phase, n=1" : "the provider's own figure",
+              model: render.model,
+              providerRef: render.providerRef,
+              wardrobeRecordSource: record.source,
+              ...verdict,
+              turnProfile: turn?.reading?.profile ?? null,
+              turnEdge: turn?.reading?.edge ?? null,
+              turnNote: turn?.reading?.note ?? (turn?.why ?? ""),
+              outfitRead: outfit.reading,
+              outfitReadWhy: outfit.why,
+              outfitReadMs: outfit.wallMs,
+              /* ⚠ ADDED AFTER THE 2026-09-27 RUN, WHICH IS WHY THAT RUN'S ROWS
+                 DO NOT CARRY IT. `readOutfit` returned the provider's token
+                 usage from the first line it was written and the only consumer
+                 threw it away — the exact silhouette of the arm-at-the-producer
+                 defect `packageOrchestrator` records about its own `dropped`.
+                 The readers bill on OpenRouter, so they are outside the fal
+                 balance window entirely and the record had no other way to
+                 price them. */
+              outfitReadTokens: outfit.tokens,
+              outfitReadTruncated: outfit.truncated,
+            });
+          } catch (error) {
+            /* A Sunburst content refusal is a FINDING and is recorded with the
+               prompt that earned it, never retried into silence (#1394 measured
+               seven of them on the caveman's asks). */
+            const why = error instanceof Error ? error.message : String(error);
+            note({
+              phase: "outfit", anchor: fixture.key, view: view.id, arm, draw,
+              failed: why,
+              refusal: /content_policy_violation|content checker/.test(why),
+              promptChars: prompt.length,
+              wallMs: Date.now() - started,
+            });
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * THE OUTFIT CONTACT SHEETS — one per view, plus one outfit-region strip per
+ * view, which is what his eye actually closes this on (law 9).
+ *
+ * The anchor first, then every Nano Banana draw, then every Sunburst draw. All
+ * four views and both arms are 2:3, so matching the panel WIDTH matches the
+ * scale; the anchor is 1024x1536 and the same aspect.
+ *
+ * ⚠ **THE OUTFIT-REGION STRIP ENLARGES WITH HARD PIXELS AND NOTHING ELSE.** The
+ * arms deliver different sizes (1696x2528 against 2352x3504), so a crop of the
+ * same fractional region is a different number of pixels in each. Every crop is
+ * brought up to the LARGEST crop's size with `kernel: "nearest"` — no
+ * interpolation, no sharpening, no invented detail. A smooth upscale of the
+ * smaller side would be this court inventing the very thing it is asking him to
+ * compare.
+ *
+ * ⚠ **AND THE ANCHOR'S PANEL IN THAT STRIP IS NOT THE SAME REGION**, because it
+ * cannot be: the anchor is cropped at the chest and has no hem. Its panel is the
+ * bottom of what it does show — the only piece of this outfit that is on record
+ * as a photograph — and it is captioned as that rather than as a torso-to-hem
+ * crop it is not.
+ */
+const OUTFIT_REGION = { top: 0.30, height: 0.52 } as const;
+
+async function hardEnlarge(bytes: Buffer, width: number, height: number): Promise<Buffer> {
+  return sharp(bytes)
+    .resize({ width, height, fit: "fill", kernel: "nearest" })
+    .png()
+    .toBuffer();
+}
+
+async function phaseOutfitContact(fixtures: Fixture[]): Promise<void> {
+  const { readFile } = await import("node:fs/promises");
+  const read = async (relative: string): Promise<Buffer | null> => {
+    try {
+      return await readFile(path.join(OUT, relative));
+    } catch {
+      return null;
+    }
+  };
+  const PANEL = 620;
+  for (const fixture of fixtures) {
+    for (const view of OUTFIT_VIEWS) {
+      const panels: { bytes: Buffer; caption: string }[] = [
+        { bytes: fixture.anchor.bytes, caption: "the anchor she signed" },
+      ];
+      const forCrop: { bytes: Buffer; caption: string; wholeFigure: boolean }[] = [
+        { bytes: fixture.anchor.bytes, caption: "anchor — all it shows", wholeFigure: false },
+      ];
+      for (const arm of OUTFIT_CANDIDATE_ARMS) {
+        for (let draw = 1; draw <= DRAWS; draw += 1) {
+          const bytes = await read(`${fixture.key}/outfit/${view.id}/${arm}-${draw}.png`);
+          if (!bytes) continue;
+          panels.push({ bytes, caption: `${ARM_LABEL[arm]} ${draw}` });
+          forCrop.push({ bytes, caption: `${ARM_LABEL[arm]} ${draw}`, wholeFigure: true });
+        }
+      }
+      if (panels.length < 2) continue;
+      const sheet = await strip(panels, PANEL);
+      const file = await save(`contact/1451-${fixture.key}-${view.id}-arms.png`, sheet);
+      note({ contact: "outfit-arms", anchor: fixture.key, view: view.id, panels: panels.length, file });
+
+      /* The outfit region out of each, at matched scale. */
+      const crops: { bytes: Buffer; caption: string }[] = [];
+      for (const panel of forCrop) {
+        const meta = await sharp(panel.bytes).metadata();
+        const width = meta.width ?? 0;
+        const height = meta.height ?? 0;
+        if (width === 0 || height === 0) continue;
+        /* A full-length frame gives torso-to-hem; the chest-up anchor gives the
+           bottom of its own frame, which is all the garment it holds. */
+        const top = panel.wholeFigure
+          ? Math.round(height * OUTFIT_REGION.top)
+          : Math.round(height * (1 - OUTFIT_REGION.height));
+        const band = Math.min(Math.round(height * OUTFIT_REGION.height), height - top);
+        crops.push({
+          bytes: await sharp(panel.bytes).extract({ left: 0, top, width, height: band }).png().toBuffer(),
+          caption: panel.caption,
+        });
+      }
+      if (crops.length < 2) continue;
+      const sizes = await Promise.all(crops.map((crop) => sharp(crop.bytes).metadata()));
+      const widest = Math.max(...sizes.map((size) => size.width ?? 0));
+      const tallest = Math.max(...sizes.map((size) => size.height ?? 0));
+      const matched = await Promise.all(crops.map(async (crop, index) => ({
+        caption: crop.caption,
+        bytes: (sizes[index]!.width ?? 0) === widest && (sizes[index]!.height ?? 0) === tallest
+          ? crop.bytes
+          : await hardEnlarge(crop.bytes, widest, tallest),
+      })));
+      const cropSheet = await strip(matched, PANEL);
+      const cropFile = await save(`contact/1451-${fixture.key}-${view.id}-outfit.png`, cropSheet);
+      note({
+        contact: "outfit-region", anchor: fixture.key, view: view.id,
+        panels: matched.length, matchedTo: `${widest}x${tallest}`,
+        enlargement: "nearest-neighbour, no interpolation", file: cropFile,
+      });
+    }
+  }
+}
+
 /**
  * THE DEGRADATION CHAIN — his question, 2026-09-26: *"on the edit door with
  * sunburst does max reduce degradation more than high?"*
@@ -1176,6 +1900,11 @@ async function phaseContact(fixtures: Fixture[]): Promise<void> {
       });
     }
   }
+
+  /* #1451's sheets, from the same disk pass. It builds only what is there, so a
+     tree with no outfit phase on it emits nothing and says nothing — which is
+     why this is not a tenth phase name to remember. */
+  await phaseOutfitContact(fixtures);
 }
 
 
@@ -1338,6 +2067,69 @@ async function phaseReport(): Promise<void> {
     console.log(`| ${angle} | ${cells.join(" | ")} |`);
   }
 
+  const outfit = rows.filter((row) => row.phase === "outfit");
+  if (outfit.length > 0) {
+    console.log("\n## THE OUTFIT COURT (#1451) — per arm\n");
+    console.log(
+      "| arm | renders | refusals | identity | angle (front/back only) | wardrobe | mean s | p95 s |"
+      + " MB | pixels | $/picture | $ total |",
+    );
+    console.log("|---|---|---|---|---|---|---|---|---|---|---|---|");
+    for (const arm of OUTFIT_CANDIDATE_ARMS) {
+      const mine = outfit.filter((row) => row.arm === arm && row.failed === undefined);
+      const failed = outfit.filter((row) => row.arm === arm && row.failed !== undefined);
+      if (mine.length === 0 && failed.length === 0) continue;
+      const seconds = mine.map((row) => Number(row.ms) / 1000);
+      const megabytes = mine.map((row) => Number(row.bytes) / 1_048_576);
+      const judged = mine.filter((row) => row.unjudged !== true);
+      /* ⚠ The angle rate counts ONLY the views whose spec this court did not
+         widen. Folding the two profiles in would publish a number that is mostly
+         this court's own framing mismatch, and a reader would quote it. */
+      const anglePopulation = judged.filter((row) => row.angleAxisTrustworthy === true);
+      const perPicture = mine.length === 0 ? NaN : mean(
+        mine.map((row) => (typeof row.usd === "number" ? row.usd : NaN)).filter((value) => !Number.isNaN(value)),
+      );
+      console.log(
+        `| ${ARM_LABEL[arm]} | ${mine.length} | ${failed.length}`
+        + ` | ${rate(judged.filter((row) => row.identityPass === true).length, judged.length)}`
+        + ` | ${rate(anglePopulation.filter((row) => row.anglePass === true).length, anglePopulation.length)}`
+        + ` | ${rate(judged.filter((row) => row.wardrobePass === true).length, judged.length)}`
+        + ` | ${mean(seconds).toFixed(1)} | ${p95(seconds).toFixed(1)}`
+        + ` | ${mean(megabytes).toFixed(1)} | ${mine.length === 0 ? "-" : String(mine[0]!.pixels)}`
+        + ` | $${perPicture.toFixed(2)} | $${(perPicture * mine.length).toFixed(2)} |`,
+      );
+    }
+
+    console.log("\n## THE OUTFIT COURT — the turn reader on the two profiles\n");
+    console.log("| view | arm | draw | a true 90° profile? | nose at which frame edge? | the reader's own words |");
+    console.log("|---|---|---|---|---|---|");
+    for (const row of outfit) {
+      if (row.turnProfile === null || row.turnProfile === undefined) continue;
+      console.log(
+        `| ${row.view} | ${row.armLabel} | ${row.draw} | ${row.turnProfile === true ? "yes" : "**no**"}`
+        + ` | ${row.turnEdge} | ${String(row.turnNote).replace(/\|/g, "/")} |`,
+      );
+    }
+
+    console.log("\n## THE OUTFIT COURT — what each render was read as wearing (prose, no score)\n");
+    for (const row of outfit) {
+      const reading = row.outfitRead as Record<string, string> | null | undefined;
+      console.log(`### ${row.view} — ${row.armLabel}, draw ${row.draw}`);
+      if (row.failed !== undefined) {
+        console.log(`\n${row.refusal === true ? "**REFUSED by the engine**" : "**never arrived**"}: ${row.failed}\n`);
+        continue;
+      }
+      if (!reading) {
+        console.log(`\nthe reader did not answer: ${row.outfitReadWhy}\n`);
+        continue;
+      }
+      console.log(`\n- **the outfit:** ${reading.outfit}`);
+      console.log(`- **against the anchor's visible half:** ${reading.agreesWithAnchor}`);
+      console.log(`- **against her written record:** ${reading.agreesWithRecord}`);
+      console.log(`- **added by neither:** ${reading.addedByNeither}\n`);
+    }
+  }
+
   const failures = rows.filter((row) => row.failed !== undefined);
   console.log(`\n## RENDERS THAT NEVER ARRIVED: ${failures.length}\n`);
   for (const row of failures) console.log(`- ${JSON.stringify(row)}`);
@@ -1445,6 +2237,10 @@ async function phaseReport(): Promise<void> {
 
 async function main(): Promise<number> {
   console.log(`court-sign-engine — phase ${PHASE}, ${RUN ? "SPENDING" : "dry run"}, frames under ${OUT}`);
+  /* WHICH WORLD THE FIXTURES CAME FROM, on stdout beside the plan as well as on
+     stderr from `openDatabase` — a report whose world has to be inferred has had
+     it inferred wrongly here before. */
+  console.log(`fixtures from ${worldOf(FIXTURE_DB_URL)}${PROD_FIXTURES ? " (--prod-fixtures, read-only)" : ""}`);
   const fixtures = await loadFixtures(ANCHOR_COUNT);
   for (const fixture of fixtures) {
     console.log(
@@ -1455,6 +2251,7 @@ async function main(): Promise<number> {
   }
   if (PHASE === "price") await phasePrice(fixtures);
   else if (PHASE === "main") await phaseMain(fixtures);
+  else if (PHASE === "outfit") await phaseOutfit(fixtures);
   else if (PHASE === "chain") await phaseChain(fixtures);
   else if (PHASE === "sheet") await phaseSheet(fixtures);
   else if (PHASE === "controls") await phaseControls(fixtures);
