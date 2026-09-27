@@ -191,17 +191,23 @@ function issueState(issueNumber: number): "OPEN" | "CLOSED" | null {
  * A pipeline row's pull request, as `gh` answers it — `null` when it could not
  * be read at all.
  *
- * ⚠ **THE THREE FIELD NAMES ARE THE CONTRACT AND NO FIXTURE CAN SEE THEM
+ * ⚠ **THE FIELD NAMES ARE THE CONTRACT AND NO FIXTURE CAN SEE THEM
  * (#1101, inheriting #1099's own lesson).** Trim `mergeable,mergeStateStatus`
  * out of this list and `readPullRequestConflict` correctly answers `null` for
  * every row, the stuck block goes quiet for ever, and nothing anywhere turns
  * red — the suite would be driving a table that still carries the fields. So
  * `server/crewPipelineRowStates.test.ts` holds this list at the BYTES.
+ *
+ * `closedAt` joined it for #1439 and is the one field here that decides NOTHING:
+ * the closed-unmerged verdict is `state` alone, and this only lets the report
+ * tell a shift when the PR was closed so the replacement is one search away. It
+ * is held at the bytes with the rest, because a field read for a report still
+ * has to be asked for.
  */
 function prRecord(prNumber: number): PipelineRowPullRequest {
   const row = gh([
     "pr", "view", String(prNumber),
-    "--json", "state,mergeable,mergeStateStatus",
+    "--json", "state,mergeable,mergeStateStatus,closedAt",
   ]) as Json | null;
   return row === null ? null : row as PipelineRowPullRequest;
 }
@@ -690,6 +696,38 @@ if (pipelinePlan.stuck.length > 0) {
   console.log("     what is held up and that somebody has to re-merge it before it can land.");
   for (const item of pipelinePlan.stuck) {
     console.log(`  ! ${item.id} — PR #${item.prNumber}, row still says \`${item.status}\``);
+  }
+}
+
+if (pipelinePlan.closedUnmerged.length > 0) {
+  /*
+    ⚠ REPORTED, NEVER REWRITTEN, AND THE REFUSAL TO GUESS IS THE WHOLE DESIGN
+    (#1439). The specimen: `try-again-row-1347` said `in-review` over PR #1353
+    for a day, while #1355 — its replacement — had merged and card #1347 had
+    closed four seconds later. The sweep promotes a row when THE PR THE ROW
+    NAMES merges, and #1353 never will: it was closed and replaced because a
+    commit message carried a closing keyword and could not be amended without a
+    force push (#376). So the row's condition can never become true, the sweep
+    correctly left it alone, and it was stuck for good.
+
+    **The sweep cannot guess the successor PR and must not try.** A row promoted
+    to `merged` on a guess is worse than a row that is late, because it is the
+    shape he asked about — *"problems never seems to update"* — wearing a green
+    tick. What it CAN do is refuse to let a row assert a state its own evidence
+    contradicts, and name the PR and its close date so the replacement is one
+    search away.
+  */
+  console.log("");
+  console.log(`⚠ ${pipelinePlan.closedUnmerged.length} pipeline row(s) name a PR that was CLOSED WITHOUT MERGING.`);
+  console.log("  The row's own claim has stopped being true and this pass can never repair it:");
+  console.log("  it promotes a row when the PR THE ROW NAMES merges, and that one never will.");
+  console.log("  Nothing is rewritten here — the successor is a judgement about work. By hand:");
+  console.log("  1. Find the replacement PR (a closed-and-replaced PR is the #376 road — a");
+  console.log("     closing keyword in a commit message, rebuilt on a new branch).");
+  console.log("  2. Point the row at it and set the status the record supports, or delete the row.");
+  for (const item of pipelinePlan.closedUnmerged) {
+    const closed = item.closedAt === null ? "close date unread" : `closed ${item.closedAt}`;
+    console.log(`  ! ${item.id} — PR #${item.prNumber} ${closed}, row still says \`${item.status}\``);
   }
 }
 

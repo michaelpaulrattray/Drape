@@ -621,7 +621,15 @@ export const PR_CONFLICT_NOTE =
  * his terms, only for a PR still stuck after the repair road was walked.
  */
 export type PipelineRowPullRequest =
-  (PullRequestMergeability & { readonly state?: string | null }) | null;
+  (PullRequestMergeability & {
+    readonly state?: string | null;
+    /**
+     * When the pull request was closed, for the report only — the sweep never
+     * decides anything from it, so an absent value costs nothing (#1439).
+     */
+    readonly closedAt?: string | null;
+  })
+  | null;
 
 export type PlannablePipelineRow = {
   id?: string;
@@ -634,6 +642,11 @@ export type PipelineRowPlan<T extends PlannablePipelineRow = PlannablePipelineRo
   merged: T[];
   /** Live, and it can no longer land — named for a person, never repaired. */
   stuck: T[];
+  /**
+   * The PR was CLOSED WITHOUT MERGING, so the row's condition can never become
+   * true — named for a person, never repaired, never guessed at (#1439).
+   */
+  closedUnmerged: Array<T & { closedAt: string | null }>;
   /** `gh` could not answer; never read as "still fine" (working law 2). */
   unreadable: T[];
 };
@@ -657,6 +670,7 @@ export function planPipelineRowStates<T extends PlannablePipelineRow>(
 ): PipelineRowPlan<T> {
   const merged: T[] = [];
   const stuck: T[] = [];
+  const closedUnmerged: Array<T & { closedAt: string | null }> = [];
   const unreadable: T[] = [];
 
   for (const row of rows) {
@@ -668,8 +682,30 @@ export function planPipelineRowStates<T extends PlannablePipelineRow>(
       unreadable.push(row);
       continue;
     }
-    if (typeof pr.state === "string" && pr.state.toUpperCase() === "MERGED") {
+    const state = typeof pr.state === "string" ? pr.state.toUpperCase() : null;
+    if (state === "MERGED") {
       merged.push(row);
+      continue;
+    }
+    /*
+      CLOSED AND NOT MERGED — the one case where the row's own claim has
+      definitely stopped being true and the `merged` promotion can never fire
+      (#1439). The specimen: `try-again-row-1347` said `in-review` over PR #1353,
+      which was closed and REPLACED by #1355 because a commit message carried a
+      closing keyword and could not be amended without a force push (#376). The
+      sweep was not wrong about it — it was SILENT, having no rule for this state
+      — so the row sat telling him a finished thing was waiting on a reviewer.
+
+      ⚠ It returns BEFORE the conflict test, so a closed PR is never also
+      reported stuck: GitHub keeps answering `mergeable` on a closed PR, and two
+      blocks describing one row is what this script's header says it exists to
+      kill.
+    */
+    if (state === "CLOSED") {
+      closedUnmerged.push({
+        ...row,
+        closedAt: typeof pr.closedAt === "string" ? pr.closedAt : null,
+      });
       continue;
     }
     /* `true` only. `null` is "not yet knowable" and says nothing — a PR read
@@ -678,5 +714,5 @@ export function planPipelineRowStates<T extends PlannablePipelineRow>(
     if (readPullRequestConflict(pr) === true) stuck.push(row);
   }
 
-  return { merged, stuck, unreadable };
+  return { merged, stuck, closedUnmerged, unreadable };
 }
