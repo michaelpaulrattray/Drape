@@ -1,7 +1,7 @@
 {
-  "edition": 559,
-  "updatedAt": "2026-09-27T03:41:49.603Z",
-  "shift": "Foreman (night shift) — the engine you picked for signing views is LIVE (#1459). You said Sunburst high produced the best result easily and you would live without Nano Banana's extra detail; the five pictures a signed cast gets are now made by that engine. Nothing about what you press, what you pay or what a failed picture refunds has changed, and nothing names an engine to you anywhere. The one thing you will notice: signing takes about 45 seconds longer. Worth your hands — sign one of your own casts and look at all five.",
+  "edition": 560,
+  "updatedAt": "2026-09-27T05:09:33.258Z",
+  "shift": "Foreman (night shift) — the waiting picture is HER now. The loader you drew across an evening of boards is finished: while a refine renders, her own picture carries dust that sits on her hair, her face and her arms, never sits still, lights up as a ripple crosses the frame every ten seconds, and scatters where your mouse goes. The bar and the stage word are exactly as they were. It is in review, not live yet. One question on your desk and one for your eye — and the two are different: the desk one is about the signed-view sheet and I need your word before anything is built; the eye one is a look at the loader with a small honest flaw named.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -323,7 +323,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-27T03:34:05.844Z",
+      "readAt": "2026-09-27T05:10:39.681Z",
       "items": [
         {
           "issueNumber": 1129,
@@ -455,6 +455,33 @@
     }
   },
   "needsYou": [
+    {
+      "id": "sheet-shape-1278",
+      "title": "One word: when we fix the outfit on a signed cast, do we redraw each picture or cut them out of one?",
+      "productImpact": "Right now, when you sign a cast, each full-length picture is drawn on its own. That is why the outfit comes back a bit different every time — a different hem, different shoes. You reported it and it is the card being fixed.\n\nThe fix is to draw one picture of all her views together, so the outfit is the same in every one by construction. What happens NEXT is the part I need you to settle, because there are two very different answers and you have said something that points at each.\n\nOne of them delivers the views by cutting up that single picture. Everything matches, it is the cheapest and fastest — and each view ends up about a third the size we give you today, so it is a visibly softer picture. You asked about exactly this when you saw the test frames: \"the cut view is around 1/3 of the pixels meaning its a lower resolution image?\" You never said whether that was acceptable.\n\nThe other uses that single picture only as a REFERENCE, and then draws each view again at full size from it. Everything still matches, the pictures stay as sharp as they are today, and you also get the reference sheet itself as something you can download. It costs about four renders instead of one — roughly 50c of our money per sign instead of 15c.\n\nWhen you chose, you said \"my preference is the sheet-as-reference shape\". That is the name of the second one on the list you were answering. But the plan written down since then describes the first one. Nobody noticed the two had swapped, and they are different products, so I am asking rather than guessing.",
+      "workedExample": "Sign a cast whose brief describes a specific outfit. Today the front and the back come back wearing noticeably different versions of it. Under either fix they match. Under the cut-it-up one, they also come back softer than the pictures you get today.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Sheet as reference, then draw each view full size",
+          "consequence": "Everything matches AND stays as sharp as today. You also get a downloadable reference sheet of the cast. Costs about 50c of our money per sign instead of 15c, and takes a little longer."
+        },
+        {
+          "key": "B",
+          "label": "Cut the views out of the one picture",
+          "consequence": "Everything matches. Cheapest and fastest. Each view is about a third the size we deliver today — a visibly softer picture on something that costs 450 credits."
+        },
+        {
+          "key": "C",
+          "label": "Show me both on one of my casts first",
+          "consequence": "A test on Sifr, both ways, side by side for your eye. Costs a few dollars of our money and a day. Nothing is built until you have looked."
+        }
+      ],
+      "recommendation": "RECOMMENDED: A. It is what your own words named, and it is the only one that fixes the outfit without making the picture worse — the whole complaint was that signed views do not look like the cast you signed, and a third of the pixels is a second way of saying that. B is worth taking only if the extra cost genuinely bothers you at this volume, and at four signs a week it does not. C if you would rather see it than decide it, and I will run it without asking again.",
+      "state": "open",
+      "filedAt": "2026-09-27T05:09:56.168Z",
+      "issueNumber": 1278
+    },
     {
       "id": "sentry-keys-1419",
       "issueNumber": 1419,
@@ -6346,7 +6373,7 @@
       "id": "sign-engine-sunburst-1459-strip",
       "title": "The engine you chose, coming out of the studio's own signing road",
       "question": "NOT A NEW QUESTION — you already chose this engine on the outfit test, and this is not asking you to choose again. It is the receipt: the engine you picked, wired into the product and now live, making a real picture through the same road your Sign takes. Left is the head-and-shoulders photograph every view is built from. Middle is what that cast's full-length front looks like on the OLD engine. Right is the same view out of the road you are on now. It is a test cast rather than one of yours because it was rendered before this went live. The thing worth your hands is signing one of your own casts and looking at all five — that is what finishes #1459.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-27T03:33:28.464Z",
       "issueNumber": 1459,
       "cardId": null,
@@ -6355,6 +6382,22 @@
           "key": "crew-eye/8a48c03b-bf34-49eb-a7ca-d335db9634a9.jpg",
           "arm": "anchor · old engine · new",
           "caption": "LEFT: the photograph the views are made from. MIDDLE: today's engine, Nano Banana — 1696x2528. RIGHT: the new one, Sunburst — 2352x3504, about twice the pixels. Both invent everything below the photograph's frame, which is what the outfit test was about. The checker that guards every view you pay for passed the new one on all three of its questions."
+        }
+      ]
+    },
+    {
+      "id": "loader-dust-55",
+      "title": "Her picture as dust — the loader you drew, finished",
+      "question": "Two things to look at, and only the second is a question. FIRST, the loader itself: this is your board E, built. While a refine renders, her picture carries dust that sits on HER rather than scattered evenly over the frame, moving the whole time, with your ripple every ten seconds and your mouse scatter. SECOND, and this is the question: the middle panel is how the studio works out where she is — white is her, black is the wall. Look at her t-shirt. It is almost exactly the same brightness as the studio wall behind her, so by the rule you set (dust goes where the picture differs from its backdrop) her whole torso reads as wall, and the dust thins across her middle. That is your rule meeting a pale garment, not something broken. I would leave it — the eye goes to the head and the arms anyway, and a little dust in the air is what stops it looking like a cut-out of her. If you want the whole of her lit, it is one more line: catch her OUTLINE as well as her brightness, and then a white shirt on a white wall still gets dust. Your call, and nothing waits on it.",
+      "state": "open",
+      "filedAt": "2026-09-27T05:09:33.258Z",
+      "issueNumber": 55,
+      "cardId": null,
+      "frames": [
+        {
+          "key": "crew-eye/e0368af4-4615-4cba-8853-65059c8a9f11.jpg",
+          "arm": "her picture · the map · the loader",
+          "caption": "LEFT: the photograph. MIDDLE: where the studio thinks she is — white is her, black is the wall, and her t-shirt is black because it matches the wall. RIGHT: the waiting picture, with the dust on her and your bar and stage word underneath. Photographed in the running app; no credits spent."
         }
       ]
     }
@@ -8777,6 +8820,13 @@
       "status": "merged",
       "prNumber": 1462,
       "note": "Merged 2026-09-27 (3800d42a) on the relay's hand verdict."
+    },
+    {
+      "id": "loader-dust-55",
+      "title": "Her picture as dust while it renders — the loader you drew (#55)",
+      "status": "in-review",
+      "prNumber": 1463,
+      "note": "Built, driven and photographed; waiting on review."
     }
   ],
   "problems": [
@@ -9038,10 +9088,11 @@
     226,
     227,
     228,
-    229
+    229,
+    230
   ],
   "nextUp": {
-    "readAt": "2026-09-27T03:34:05.843Z",
+    "readAt": "2026-09-27T05:10:39.680Z",
     "items": [
       {
         "issueNumber": 1278,
@@ -9049,7 +9100,7 @@
         "urgent": true,
         "held": {
           "state": "blocked",
-          "because": "#1459 — the Sign views move to Sunburst high first; part 2 rewrites the same render path. Not on him: his word on the engine landed 2026-09-27."
+          "because": "YOU — which shape. Your word *\"my preference is the sheet-as-reference shape\"* names the option that renders each view at full size from the sheet; the plan fi…"
         }
       },
       {
