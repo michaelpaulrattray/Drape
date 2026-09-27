@@ -190,8 +190,9 @@ export const FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE = 0.099;
  * LONGER "NOTHING HAS MEASURED IT". TWO COURTS HAVE, AND IT STILL CANNOT GO IN
  * HERE, WHICH IS THE MORE USEFUL FACT.** #1394's price phase took a SETTLED
  * balance either side of one render and got **$0.14** at 2352x3504; #1451's
- * 24-render window divides to $0.1429 with the residue putting it at ~$0.136.
- * Two independent readings, agreeing.
+ * 24-render window divides to $0.1429 with the residue putting it at ~$0.136;
+ * #1459's drive through the shipped engine read **$0.15** (21.68 -> settled
+ * 21.53, n=1). Three readings inside a cent and a half.
  *
  * **This table is keyed on MODEL and this endpoint's price moves with the
  * SIZE**, and the two roads that now send to it ask for different ones: a Sign
@@ -480,11 +481,16 @@ const SIGNED_VIEW_MAX_REFERENCES = 14;
  * measurement on HIS fixtures, never a leaderboard — and clause 3's other half
  * is stated here beside the choice rather than left in a document:
  *
- *   price     ~$0.14 a picture, against Nano Banana Pro's published $0.15.
- *             Two independent readings agree: #1394's price phase took a
- *             SETTLED balance either side of one render (14.77 -> 14.63), and
- *             #1451's 24-render window divides to $0.1429 with the residue
- *             putting Sunburst at ~$0.136. It is NOT in
+ *   price     $0.14-$0.15 a picture at this size, which is Nano Banana Pro's
+ *             published $0.15 to within a cent and a half. THREE readings, all
+ *             n=1 or near it and none of them settling the last cent:
+ *             #1394's price phase, a SETTLED balance either side of one render,
+ *             **$0.14** (14.77 -> 14.63); #1451's 24-render window, dividing to
+ *             **$0.1429** with the residue putting Sunburst at ~$0.136; and
+ *             #1459's own drive through this engine, **$0.15** (21.68 ->
+ *             settled 21.53). The band is stated rather than the middle of it,
+ *             because fal's balance is quantised to the cent and a one-render
+ *             subtraction cannot resolve finer than that. It is NOT in
  *             `FAL_MEASURED_USD_PER_IMAGE` — see the note there; that table is
  *             keyed on MODEL and this engine's price moves with the SIZE.
  *   latency   ~52 s a picture against ~29 s (#1451, p95 65.5 s). A five-view
