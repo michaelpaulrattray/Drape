@@ -12356,6 +12356,10 @@
       "path": "server/castingV2/signService.test.ts"
     },
     {
+      "id": "test:server/castingV2/signViewEngineChain.test.ts",
+      "path": "server/castingV2/signViewEngineChain.test.ts"
+    },
+    {
       "id": "test:server/castingV2/skinTonePin.test.ts",
       "path": "server/castingV2/skinTonePin.test.ts"
     },
@@ -13170,6 +13174,10 @@
     {
       "id": "test:server/providers/falMaskedEditWire.test.ts",
       "path": "server/providers/falMaskedEditWire.test.ts"
+    },
+    {
+      "id": "test:server/providers/falSignViewWire.test.ts",
+      "path": "server/providers/falSignViewWire.test.ts"
     },
     {
       "id": "test:server/providers/providerContract.test.ts",
@@ -27829,6 +27837,11 @@
     {
       "from": "module:server/castingV2/signEngine.ts",
       "to": "module:server/castingV2/viewConformance.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signEngine.ts",
+      "to": "module:server/providers/falImages.ts",
       "kind": "imports"
     },
     {

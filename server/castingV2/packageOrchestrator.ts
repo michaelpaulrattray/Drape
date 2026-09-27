@@ -122,7 +122,7 @@ import {
   composeViewFeatureWordsClause,
   type CarriedFeatureWords,
 } from "./viewFeatureWords";
-import { castingIdentityEngine, castingViewConformanceJudge } from "./signEngine";
+import { castingViewConformanceJudge, castingViewEngine } from "./signEngine";
 import { conformanceProvenance, type ViewConformanceJudge, type ViewConformanceVerdict } from "./viewConformance";
 
 const log = createModuleLogger("castingV2/packageOrchestrator");
@@ -584,7 +584,7 @@ export async function renderViewAttempts<T>(
   | { status: "fenced"; verdicts: ViewConformanceVerdict[] }
   | { status: "failed"; reason: string; verdicts: ViewConformanceVerdict[] }
 > {
-  const engine = (dependencies.identityEngine ?? castingIdentityEngine)();
+  const engine = (dependencies.identityEngine ?? castingViewEngine)();
   const judge = (dependencies.judge ?? castingViewConformanceJudge)();
   const store = dependencies.storeImage ?? defaultStoreImage;
   const drop = dependencies.deleteObject ?? storageDelete;
@@ -697,7 +697,35 @@ export async function renderViewAttempts<T>(
           .filter((part) => part !== "")
           .join("\n"),
         references,
-        // §H.10: signed package views are 2K.
+        /*
+          §H.10: signed package views are the `2K` TIER.
+
+          ⚠ **AND IT IS A TIER, NOT A PIXEL COUNT — WHICH MATTERS NOW THAT THE
+          ENGINE UNDER IT HAS CHANGED (#1459).** It never was a measurement:
+          Nano Banana Pro answered `2K` with 1696x2528, and this road now
+          renders on Sunburst's edit door, which answers 2352x3504. What the
+          word has always named is the SIGNED-VIEW tier — the one the anchor's
+          `1K` is not — and `refineService.ts` says the same thing from the
+          other side: *"1K: a candidate's own resolution. The 2K tier belongs
+          to signed views."*
+
+          So the `model_assets.resolution` enum keeps saying `2K` and the row
+          stays honest, because the two readers below (`committedPackageAngles`,
+          `unsettledPackageAngles`) are asking a ROLE question — *is this a
+          full view rather than the 1K anchor?* — and the tier is what answers
+          it. **Adding a value for the new size would put two labels on one
+          role across a live table whose existing rows cannot be relabelled
+          without a row rewrite, and a reader that missed the second label
+          would read a paid, landed view as never arrived.** That is a money
+          hazard for no gain.
+
+          What carries the honest SIZE instead is the row's own provenance: the
+          engine that painted is stamped on every asset
+          (`provenance.engine`), so a Sunburst row and a Nano Banana Pro row
+          are already told apart by the record rather than by memory.
+          `server/castingV2/signViewEngineChain.test.ts` pins both halves, the
+          hazard included.
+        */
         resolution: "2K",
         viewAngle: angle,
       });
