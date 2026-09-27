@@ -115,6 +115,64 @@ describe("the sweep is wired into the one exported deletion primitive", () => {
  * only implementation: the derived half — no second copy of the suffix anywhere
  * in the client — is what makes a hand-rolled rival cost something.
  */
+/**
+ * THE BACKFILL ASKS HOW WIDE THE STORED COPY IS, NOT WHETHER ONE EXISTS (#1456).
+ *
+ * ⚠ **This is a WIRE reading and the behaviour it guards lives one file away.**
+ * `server/viewThumbnails.test.ts` drives `onlyWiderThan` against the real
+ * encoder; what no unit test can see is whether the ceremony still ASKS. The
+ * ceremony needs a bucket and a database, so it is never executed by
+ * `pnpm test` — which is precisely the condition under which a control quietly
+ * stops being called (invariant 7).
+ *
+ * The regression this exists to catch is a tidy one: putting the HEAD back.
+ * A `HeadObjectCommand` answers with a byte count and no width, so a ceremony
+ * reading it skips every narrow copy as "already present" — the exact silence
+ * #1456 was filed about, with a clean run and nothing written.
+ */
+describe("the #1389 backfill can tell a narrow small copy from a missing one", () => {
+  const source = read("scripts/backfill-view-thumbnails-1389.mts");
+
+  it("reads the stored copy's WIDTH rather than asking whether it exists", () => {
+    expect(source).toContain("sharp(Buffer.from(body)).metadata()");
+    expect(source).toContain("existing >= VIEW_THUMBNAIL_WIDTH");
+    /* The HEAD is what this replaced: it cannot answer the question. */
+    expect(source).not.toContain("HeadObjectCommand");
+  });
+
+  /*
+    ⚠ Through the BUCKET, not the public origin. This read decides whether to
+    write, and r2.dev may serve a cached copy of the width we have just
+    replaced — which would make the ceremony re-mint what it had already fixed,
+    every run, while reporting work.
+  */
+  it("reads that width authoritatively rather than through the public URL", () => {
+    const at = source.indexOf("async function storedWidth(");
+    /* Anchored twice on purpose: a rename must make this arm RED rather than
+       vacuous, and an unmatched regex yields "" which passes every `not`. */
+    expect(at).toBeGreaterThan(-1);
+    const reader = /async function storedWidth\([\s\S]*?\n {2}\}/.exec(source)?.[0] ?? "";
+    expect(reader).not.toBe("");
+    expect(reader).toContain("GetObjectCommand");
+    expect(reader).toContain("Bucket: bucket");
+    expect(reader).not.toContain("publicOrigin");
+  });
+
+  /*
+    The decision belongs to the mint, so the ceremony holds no second copy of
+    the resize or the quality (working law 4) — and it watches the WRITE happen
+    rather than trusting a void return, which is how the old loop came to report
+    a clean run over a bucket refusing every put.
+  */
+  it("hands the decision to the product's own mint and counts the real write", () => {
+    expect(source).toContain("onlyWiderThan: existing");
+    expect(source).toContain("mintViewThumbnail(key, bytes");
+    expect(source).toContain("wrote = true");
+    expect(source).not.toContain(".resize(");
+    expect(source).not.toContain(".jpeg(");
+  });
+});
+
 describe("the small copy's picture has exactly one implementation", () => {
   const source = read("client/src/foundation/SmallCopyImage.tsx");
 

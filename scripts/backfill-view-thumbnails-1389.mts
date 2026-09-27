@@ -20,11 +20,36 @@
  *
  * - **It writes NOTHING to the database.** The derivative is a derived key; no
  *   row names it, which is the whole shape of #1389.
- * - **It never re-mints.** An object whose small copy already exists is skipped
- *   on a HEAD, so a second run over the same world is nearly free and an
- *   interrupted run simply resumes.
  * - **It spends no customer credits and calls no model.** The cost is house R2
  *   egress: one read of each already-paid-for object.
+ *
+ * # ⚠ IT RE-MINTS A COPY THAT IS NARROWER THAN THE CONSTANT (#1456)
+ *
+ * This bullet used to read *"it never re-mints — an object whose small copy
+ * already exists is skipped on a HEAD, so a second run over the same world is
+ * nearly free"*, and that was right while there was only ever one width. #1456
+ * widened `VIEW_THUMBNAIL_WIDTH` from 288 to 576, which left the copies minted
+ * before it **narrower than every consumer now asks for** — and a HEAD cannot
+ * see that, because it answers with a byte count and no width.
+ *
+ * So the question asked of each object is now *"is the copy beside it at least
+ * as wide as the constant"*, read off the stored bytes themselves through the
+ * BUCKET rather than the public URL — an authoritative read, because a CDN
+ * serving a cached copy of the old width would make the ceremony re-mint
+ * something it had already fixed.
+ *
+ * ⚠ **A copy can be narrow because its SOURCE is narrow, and that one must be
+ * left alone.** `withoutEnlargement` means a 200px view yields a 200px copy
+ * forever, so re-writing it on every run would be churn that reads as work.
+ * The mint decides this, not the ceremony (`onlyWiderThan`), so the comparison
+ * is made against the bytes the product actually produces rather than against a
+ * second copy of its resize settings.
+ *
+ * **What the second run costs, stated rather than promised:** it writes nothing,
+ * and it still READS the source of every source-limited object to learn that
+ * again. At the 32-object population this ceremony was built for that is a
+ * bounded cost; it is not the "nearly free" the old bullet claimed, and the
+ * `source-limited` count in the output is how you see how much of it there is.
  *
  * # ⚠ IT IS A DRY RUN UNLESS YOU SAY `--apply`
  *
@@ -69,13 +94,16 @@
  * **Against dev, no wrapper and no export** — `.env` is the dev world already.
  */
 import "dotenv/config";
-import { HeadObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import sharp from "sharp";
 import { openDatabase, resolveDatabaseUrl } from "./lib/dbConnection.mjs";
 import {
+  VIEW_THUMBNAIL_WIDTH,
   isViewThumbnailBearingKey,
   withViewThumbnailSuffix,
 } from "../shared/viewThumbnails.js";
 import { mintViewThumbnail } from "../server/castingV2/viewThumbnailMint.js";
+import { storagePut } from "../server/storage.js";
 
 type AssetRow = { id: number; storageKey: string | null; storageUrl: string };
 
@@ -142,39 +170,106 @@ async function main(): Promise<void> {
   );
   if (!apply) console.log("DRY RUN — pass --apply to write. Nothing below is minted.");
 
-  let present = 0;
+  /*
+    HOW WIDE IS THE COPY THAT IS ALREADY THERE? (#1456)
+
+    Read through the BUCKET rather than the public origin, on purpose: this
+    answer decides whether to write, and a CDN handing back a cached copy of the
+    width we just replaced would make the ceremony re-mint what it had already
+    fixed. `null` means there is nothing beside the object yet.
+  */
+  async function storedWidth(derivedKey: string): Promise<number | null> {
+    let body: Uint8Array;
+    try {
+      const stored = await client.send(new GetObjectCommand({ Bucket: bucket, Key: derivedKey }));
+      body = await stored.Body!.transformToByteArray();
+    } catch {
+      return null; /* Absent, which is the population #1389 wrote this for. */
+    }
+    /* A stored object that sharp cannot read is not a width we may reason from,
+       so it is treated as absent and re-minted rather than silently kept. */
+    return (await sharp(Buffer.from(body)).metadata()).width ?? null;
+  }
+
+  let alreadyWide = 0;
   let minted = 0;
+  let widened = 0;
+  let sourceLimited = 0;
+  let refused = 0;
   let unreadable = 0;
   for (const key of population) {
     const derived = withViewThumbnailSuffix(key);
-    try {
-      await client.send(new HeadObjectCommand({ Bucket: bucket, Key: derived }));
-      present += 1;
+    const existing = await storedWidth(derived);
+    if (existing !== null && existing >= VIEW_THUMBNAIL_WIDTH) {
+      alreadyWide += 1;
       continue;
-    } catch {
-      /* Absent, which is the whole population this script is for. */
     }
     if (!apply) {
-      minted += 1;
+      if (existing === null) minted += 1;
+      else widened += 1;
       continue;
     }
     try {
       const response = await fetch(`${publicOrigin}/${key.split("/").map(encodeURIComponent).join("/")}`);
       if (!response.ok) { unreadable += 1; continue; }
       const bytes = Buffer.from(await response.arrayBuffer());
-      /* The product's own mint, never a second copy of its settings. It
-         swallows its own failures, so a refusal here is counted as unreadable
-         rather than crashing a ceremony halfway through a bucket. */
-      await mintViewThumbnail(key, bytes);
-      minted += 1;
+      /*
+        The product's own mint, never a second copy of its settings. It swallows
+        its own failures rather than crashing a ceremony halfway through a
+        bucket, so a mint that declines is counted as `refused` — its own
+        outcome, and NOT as `unreadable`, which means the source never arrived.
+
+        The writer is WRAPPED rather than replaced: the mint returns void by
+        design (a caller able to branch on success would eventually treat a
+        missing thumbnail as an error), so the only honest way to learn whether
+        a narrow copy was actually improved is to watch the write happen.
+      */
+      let wrote = false;
+      await mintViewThumbnail(key, bytes, {
+        ...(existing === null ? {} : { onlyWiderThan: existing }),
+        put: async (...args: Parameters<typeof storagePut>) => {
+          wrote = true;
+          return storagePut(...args);
+        },
+      });
+      /*
+        FIVE OUTCOMES, EACH COUNTED AS ITSELF. The version of this loop before
+        #1456 incremented `minted` the moment the mint RETURNED — and the mint
+        swallows its own failures by design, so a bucket refusing every write
+        reported a clean run. `wrote` is the write actually happening.
+      */
+      if (existing === null) {
+        if (wrote) minted += 1;
+        else refused += 1; /* sharp refused the bytes, or the copy was no smaller. */
+      } else if (wrote) {
+        widened += 1;
+      } else {
+        sourceLimited += 1; /* The source is the limit, not the constant. */
+      }
     } catch {
       unreadable += 1;
     }
   }
 
   console.log(
-    `${apply ? "minted" : "would mint"} ${minted} · already present ${present} · unreadable ${unreadable}`,
+    `${apply ? "minted" : "would mint"} ${minted}`
+    + ` · ${apply ? "widened" : "would widen"} ${widened}`
+    + ` · already ${VIEW_THUMBNAIL_WIDTH}px or wider ${alreadyWide}`
+    + `${apply ? ` · source-limited ${sourceLimited} · refused ${refused}` : ""}`
+    + ` · unreadable ${unreadable}`,
   );
+  /*
+    ⚠ THE DRY RUN CANNOT TELL A NARROW COPY FROM A SOURCE-LIMITED ONE, and says
+    so rather than letting its own figure read as a forecast. Knowing which it is
+    means minting the thing and looking at what came out, which is the one act a
+    dry run may not perform.
+  */
+  if (!apply && widened > 0) {
+    console.log(
+      `  of those ${widened}, some may be as wide as their source already allows —`
+      + " only --apply can tell those apart, and it reports them as source-limited.",
+    );
+  }
 }
 
 await main();
