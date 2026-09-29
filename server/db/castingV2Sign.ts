@@ -57,6 +57,10 @@ import {
 import { CAST_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
 import { identityStampFor } from "../casting/identity/anchorSelector";
 import { CASTING_SESSION_IDLE_MS } from "./castingV2";
+import {
+  slotFailureStatus,
+  type SlotFailureRecord,
+} from "../castingV2/slotFailureRecord";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
 
 /** The identity recipe this ceremony writes under (D-12 provenance). */
@@ -645,24 +649,20 @@ export async function commitPackageSlotAsset(input: {
   }
 }
 
-export type SlotFailureRecord = {
-  reason: string;
-  refunded: number;
-  refundReference: string;
-  /** The per-axis verdict, so a dispute is answerable from the record. */
-  conformance?: unknown;
-};
-
 /**
- * A view that will not be arriving, written down.
+ * The failed-slot record and its one stored composition now live in
+ * `server/castingV2/slotFailureRecord.ts` — re-exported here so every
+ * existing reader keeps its import.
  *
- * `mintPackage`'s durable-marker idiom (a row with no `storageUrl` carrying a
- * failed status), because the room reads slots from the asset ledger and a
- * failure that exists only in a log is a failure the customer's screen cannot
- * confess to. It carries what actually happened — including `refunded: 0` when
- * the refund itself did not record — so the room never claims money moved that
- * did not.
+ * They moved for a reason this file could not fix: the composition was
+ * written out TWICE in this module (here and in the recovery sweep's writer
+ * below), both copies named their fields one at a time, and both dropped
+ * `earlierAttempts` for thirteen months (#1492). A pure function behind a
+ * mocked db module can only ever be driven as a mock of itself, so the seam
+ * that was broken was the seam nothing could reach.
  */
+export type { SlotFailureRecord };
+
 export async function recordPackageSlotFailure(input: {
   userId: number;
   operationId: string;
@@ -697,14 +697,7 @@ export async function recordPackageSlotFailure(input: {
         storageKey: null,
         pointsCost: 0,
         pinned: false,
-        status: {
-          state: "failed",
-          reason: input.failure.reason,
-          refunded: input.failure.refunded,
-          refundReference: input.failure.refundReference,
-          ...(input.failure.conformance ? { conformance: input.failure.conformance } : {}),
-          at,
-        },
+        status: slotFailureStatus(input.failure, at),
         provenance: { source: "castingV2.sign" },
       });
       return true;
@@ -754,14 +747,11 @@ export async function recordRecoveredSlotFailure(input: {
     storageKey: null,
     pointsCost: 0,
     pinned: false,
-    status: {
-      state: "failed",
-      reason: input.failure.reason,
-      refunded: input.failure.refunded,
-      refundReference: input.failure.refundReference,
-      ...(input.failure.conformance ? { conformance: input.failure.conformance } : {}),
-      at,
-    },
+    /* The SAME derivation as the live writer — #1492's class sweep. This
+       sibling carried the identical hand-written field list, so it dropped
+       `earlierAttempts` for the same reason and would have dropped the next
+       field added too. */
+    status: slotFailureStatus(input.failure, at),
     provenance: { source: "castingV2.sign.recovery" },
   });
   return true;

@@ -98,6 +98,7 @@ import {
 } from "../db/castingV2Sign";
 import { createModuleLogger } from "../logging/logger";
 import { storageDelete, storagePut } from "../storage";
+import { captureRefusedRender } from "./diagnosticCapture";
 import { mintViewThumbnail } from "./viewThumbnailMint";
 import {
   ProviderError,
@@ -240,6 +241,16 @@ export type PackageOrchestratorDependencies = {
    * both and prove nothing about the split.
    */
   outfitPlateEngine?: () => OutfitPlateEngine;
+  /**
+   * THE REFUSED FRAME'S KEEPER (#1492).
+   *
+   * Injected for the same reason `wait` is: the production path reaches a
+   * database and a private bucket, so a suite could only ever prove that
+   * nothing broke. A test that cannot see the capture cannot tell a wired
+   * capture from an unwired one — which is precisely the state this road was in
+   * for thirteen months while every arm here was green.
+   */
+  capture?: typeof captureRefusedRender;
 };
 
 type PackageSlotOutcome =
@@ -967,6 +978,58 @@ export async function renderViewAttempts<T>(
         const failedAxes = (Object.keys(verdict.axes) as Array<keyof typeof verdict.axes>)
           .filter((axis) => !verdict.axes[axis].pass);
         lastReason = conformanceReason(failedAxes, verdict);
+        /*
+          KEEP THE PICTURE THE JUDGE TURNED DOWN — #1492, his own Jingu (2026-09-29).
+
+          He retried two views several times, every attempt was refused on
+          `angle`, and **the record could say "angle" and nothing else**: the
+          frame is dropped one line down and the judge's note never leaves this
+          process. So there was nothing for his eye to overrule (law 9 — *the
+          engine lies and cannot be trusted*), and nothing for a court to read
+          either. `CASTING_DIAGNOSTIC_CAPTURE_SCOPE` has stood at `users:1` on
+          production for exactly this since 2026-08-08 and this road never
+          called it.
+
+          ⚠ **ONE CALL SITE SERVES BOTH ROADS, which is why it is here and not in
+          either of them.** The Sign's five views and a Try again both render
+          through this loop, so the Sign's refusals and the retry's arrive on the
+          same terms — and the retry, which is the half he was stuck in, could
+          not have been covered from `signService` at all.
+
+          It is BEFORE the drop only for reading order; the bytes are in hand
+          either way. It cannot break the render — the capture never throws, is
+          dark on every account but his, and its failure is logged and dropped.
+        */
+        /*
+          ⚠ **`.catch()`, AND IT IS NOT BELT-AND-BRACES — THE ARM THAT FOUND
+          THIS NEEDED IT.** The capture is INSIDE this attempt loop's `try`, so
+          a keeper that threw would be caught below as an ARRIVAL failure: it
+          would spend the wrong budget (measured: three stored-and-dropped
+          objects instead of two), and the judge's refusal would be reported as
+          a view that never came back. The production capture promises never to
+          throw — and a promise in a docblock is not a control (working law 3),
+          least of all one standing between a diagnostic and a customer's money.
+        */
+        await (dependencies.capture ?? captureRefusedRender)({
+          userId: input.userId,
+          operationId: input.operationId,
+          reason: `view_refused:${failedAxes.join("+")}`,
+          /*
+            ⚠ **THE NAME CARRIES THE ANGLE AND THE ATTEMPT, and a key that did
+            not would be worse than no capture at all.** `diagnosticKey` is
+            `…/<userId>/<operationId>/<name>.png` — one Sign renders five angles
+            with up to two judged attempts each under ONE operation id, so a
+            bare name would have the second attempt silently overwrite the
+            picture of the first, and the pair that shows whether the engine is
+            drawing the same wrong thing twice is exactly the pair he needs.
+          */
+          frames: [{ name: `view-${angle}-attempt${attempt}`, bytes: image.bytes }],
+        }).catch((error: unknown) => {
+          log.warn(
+            { err: error, operationId: input.operationId, angle, attempt },
+            "[packageOrchestrator] the refused frame was not kept — the refusal stands unchanged",
+          );
+        });
         await drop(stored.key).catch(() => undefined);
         stored = null;
         log.warn(

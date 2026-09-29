@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 185
+      "moduleCount": 186
     },
     {
       "id": "domain:castingV2",
@@ -4521,6 +4521,12 @@
     {
       "id": "module:server/castingV2/sliceRefundLedger.ts",
       "path": "server/castingV2/sliceRefundLedger.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/slotFailureRecord.ts",
+      "path": "server/castingV2/slotFailureRecord.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -24432,6 +24438,11 @@
     },
     {
       "from": "module:server/castingV2/diagnosticCapture.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/diagnosticCapture.ts",
       "to": "module:server/db/storageCleanup.ts",
       "kind": "imports"
     },
@@ -25753,6 +25764,11 @@
     {
       "from": "module:server/castingV2/packageOrchestrator.ts",
       "to": "module:server/castingV2/castViewPackage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageOrchestrator.ts",
+      "to": "module:server/castingV2/diagnosticCapture.ts",
       "kind": "imports"
     },
     {
@@ -29223,6 +29239,11 @@
     {
       "from": "module:server/db/castingV2Sign.ts",
       "to": "module:server/casting/identity/anchorSelector.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2Sign.ts",
+      "to": "module:server/castingV2/slotFailureRecord.ts",
       "kind": "imports"
     },
     {
@@ -35664,10 +35685,10 @@
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refusalLoopCapture.ts:172",
+      "id": "finding:redeclared-shape:server/castingV2/refusalLoopCapture.ts:181",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refusalLoopCapture.ts:172",
+      "subject": "server/castingV2/refusalLoopCapture.ts:181",
       "message": "Names 3 of CapturedDiagnostic's 3 fields (server/castingV2/diagnosticCapture.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
