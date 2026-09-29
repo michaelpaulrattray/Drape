@@ -140,6 +140,7 @@ import {
   type StatedHair,
   type StatedSkin,
 } from "./castingIntent";
+import type { CastPronouns } from "./castPronouns";
 import { describeRealizedAxes, realizeAxes } from "./realizedAxes";
 import { resolveHairAxes, type HairTiers } from "./hairResolver";
 import {
@@ -685,10 +686,22 @@ const VIEW_DECLINED_SENTENCES: readonly string[] = [
   are two is the day the overlap becomes a constant rather than a habit (working
   law 4 — the same reasoning `houseBlock.ts`'s `bodySentences` carries).
 */
-const REFERENCE_ESTABLISHES =
-  "Everything the reference shows on her — tattoos and ink, piercings, scars, birthmarks and freckling, "
-  + "makeup, jewellery and worn accessories, her hair and her outfit — is hers, and is rendered plainly "
-  + "and accurately wherever the frame of THIS view reaches it.";
+/**
+ * ⚠ **IT SAID "HER" WHATEVER THE CAST WAS, AND SO DID THE TWO BLOCKS BELOW —
+ * #1480 finding A.** A male cast (his Bingu) was described as *her* four times
+ * in one paragraph and as *him* three lines later, because the plate clause and
+ * the tattoo clause in the same prompt already took the cast's pronouns and this
+ * one did not. It takes them now, like its neighbours.
+ *
+ * ⚠ **"is hers" became "is `possessive` own" rather than growing the type.**
+ * The possessive PRONOUN (hers / his / theirs) is a fourth word `CastPronouns`
+ * does not carry, and a sentence can be written without needing it — widening a
+ * shared type to phrase one clause is the tail wagging the dog.
+ */
+const referenceEstablishes = (pronouns: CastPronouns): string =>
+  `Everything the reference shows on ${pronouns.object} — tattoos and ink, piercings, scars, birthmarks and freckling, `
+  + `makeup, jewellery and worn accessories, ${pronouns.possessive} hair and ${pronouns.possessive} outfit — is `
+  + `${pronouns.possessive} own, and is rendered plainly and accurately wherever the frame of THIS view reaches it.`;
 
 /* The failure clause, identical in both forms — it is what gives the licence teeth. */
 const REFERENCE_DO_NOT_IDEALISE =
@@ -696,8 +709,8 @@ const REFERENCE_DO_NOT_IDEALISE =
   + "unmade one: a marking, a piercing or makeup the reference shows and this photograph loses is a "
   + "failed view.";
 
-const REFERENCE_IS_THE_DOCUMENT: readonly string[] = [
-  `THE REFERENCE PHOTOGRAPH IS THE DESCRIPTION: there is no written description of this person, and none is needed. ${REFERENCE_ESTABLISHES}`,
+const referenceIsTheDocument = (pronouns: CastPronouns): readonly string[] => [
+  `THE REFERENCE PHOTOGRAPH IS THE DESCRIPTION: there is no written description of this person, and none is needed. ${referenceEstablishes(pronouns)}`,
   REFERENCE_DO_NOT_IDEALISE,
   "Add nothing the reference photograph does not show. This is not a licence to invent — no damage, no ink, no makeup, no accessory and no head covering that is absent from the reference may appear, and nothing visible in it may migrate to a part of the body where it is not.",
 ];
@@ -748,10 +761,36 @@ const REFERENCE_IS_THE_DOCUMENT: readonly string[] = [
  * did. That is most of them: read at the rows 2026-09-26, 2 of 6 minted casts
  * carry a source roll with brief text.
  */
-const REFERENCE_WITH_DESCRIPTION: readonly string[] = [
-  `THE REFERENCE PHOTOGRAPH IS THE RECORD OF HER APPEARANCE, and the DESCRIPTION below is the record of what she was cast as. ${REFERENCE_ESTABLISHES}`,
+/**
+ * ⚠ **THE THIRD SENTENCE'S OUTFIT CLAUSE DEFERS TO THE OUTFIT REFERENCE WHEN
+ * ONE RIDES — #1480, and this is one of the three places that told the engine
+ * the DESCRIPTION settles the hem while a plate was attached to settle it.**
+ *
+ * His question, 2026-09-29: *"so how many times are you mentioning the outfit?
+ * i mean the outfit is attached as a reference image now right"*. Counted at the
+ * composed bytes, five — and three of them were composed with no knowledge that
+ * a plate rides. Where the plate's reading of the brief and the engine's fresh
+ * reading of the brief differ (which is every time, since that difference is the
+ * whole reason the plate exists) the prompt had told it two things, and an image
+ * model resolves that by picking one, silently, per view. His own measured law:
+ * context is not additive.
+ *
+ * So the clause that hands the hem to the description is REPLACED, not merely
+ * softened, when an outfit reference is in the request. **Its identity half is
+ * untouched in both branches** — what the reference settles about the face, the
+ * hair, the colouring and the markings is the same sentence either way, because
+ * the plate has no authority over any of it.
+ */
+const referenceWithDescription = (
+  pronouns: CastPronouns,
+  outfitReferenceOrdinal: number | null,
+): readonly string[] => [
+  `THE REFERENCE PHOTOGRAPH IS THE RECORD OF ${pronouns.possessive.toUpperCase()} APPEARANCE, and the DESCRIPTION below is the record of what ${pronouns.subject} ${pronouns.plural ? "were" : "was"} cast as. ${referenceEstablishes(pronouns)}`,
   REFERENCE_DO_NOT_IDEALISE,
-  "Where the DESCRIPTION and the reference disagree about anything the reference shows, the reference wins — it is this person, and any alternative the description leaves open for her face, her hair, her colouring or her markings is already settled here and is not reopened. The description governs what the reference cannot show: below the frame of this crop, and the cut, hardware, length, footwear and weathering of the outfit it names.",
+  `Where the DESCRIPTION and the reference disagree about anything the reference shows, the reference wins — it is this person, and any alternative the description leaves open for ${pronouns.possessive} face, ${pronouns.possessive} hair, ${pronouns.possessive} colouring or ${pronouns.possessive} markings is already settled here and is not reopened. `
+  + (outfitReferenceOrdinal === null
+    ? "The description governs what the reference cannot show: below the frame of this crop, and the cut, hardware, length, footwear and weathering of the outfit it names."
+    : `The description governs what the reference cannot show about this person below the frame of this crop. It does NOT settle the outfit: reference ${outfitReferenceOrdinal} does, down to the cut, hardware, length, footwear and weathering.`),
   "Add nothing that the reference photograph does not show AND the description does not name: damage, ink, makeup, an accessory or a head covering that neither of them establishes may not appear, and nothing visible in the reference may migrate to a part of the body where it is not.",
 ];
 
@@ -1012,13 +1051,13 @@ export const PHOTOREAL_HUMAN_BLOCKS = {
   */
   realismSentencesAll: SKIN_AND_FEATURES_SENTENCES,
   viewDeclinedSentences: VIEW_DECLINED_SENTENCES,
-  referenceDocumentSentences: REFERENCE_IS_THE_DOCUMENT,
+  referenceDocumentSentences: referenceIsTheDocument,
   /*
     The same rule for a cast whose brief is on record (#1278 part 1). A SECOND
     form rather than an edit to the one above, because that one opens by denying
     a written description exists — see `REFERENCE_WITH_DESCRIPTION`'s docblock.
   */
-  referenceDescribedSentences: REFERENCE_WITH_DESCRIPTION,
+  referenceDescribedSentences: referenceWithDescription,
   /*
     The signed package's authority paragraph, and it takes the UNPATHED form
     deliberately for now: the package composes its own wardrobe spec

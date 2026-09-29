@@ -785,9 +785,18 @@ export async function renderViewAttempts<T>(
       */
       const outfitReference = input.outfitReference ?? null;
       if (outfitReference) references.push(outfitReference.image);
-      const plateClause = outfitReference
+      /*
+        ⚠ **ONE ORDINAL, TWO READERS — #1480.** It was computed inline for the
+        clause alone; the composed prompt now has to NAME the outfit's reference
+        in three more places, and two authors of this number would point a Cast
+        with three tattoos at a picture of her elbow and call it the outfit.
+        Named once, passed to both.
+      */
+      const outfitReferenceOrdinal = outfitReference ? 2 + crops.length : null;
+      const viewPronouns = input.pronouns ?? pronounsForSex(null);
+      const plateClause = outfitReference && outfitReferenceOrdinal !== null
         ? outfitReferenceClause({
-            ordinal: 2 + crops.length,
+            ordinal: outfitReferenceOrdinal,
             /* ⚠ **Read off the reference, never defaulted.** This was
                `input.outfitPlateSide ?? "front"` while the side and the image
                were two optional fields that had to agree: a caller that set one
@@ -798,7 +807,7 @@ export async function renderViewAttempts<T>(
                object now, so there is nothing left to default. */
             side: outfitReference.side,
             kind: outfitReference.kind,
-            pronouns: input.pronouns ?? pronounsForSex(null),
+            pronouns: viewPronouns,
           })
         : "";
       /*
@@ -854,9 +863,21 @@ export async function renderViewAttempts<T>(
         */
         ...(outfitReference ? { aspectRatio: PLATE_VIEW_ASPECT_RATIO } : {}),
         prompt: [
-          composePackageViewPrompt(angle, input.wardrobeLine ?? null, input.description ?? null),
+          /*
+            ⚠ **THE OUTFIT CLAUSE IS NO LONGER APPENDED AFTER THE HOUSE BLOCK —
+            #1480 finding D.** It used to sit after `AUTHORITY_LINE`, the
+            paragraph that says what beats what, so the one sentence naming the
+            outfit's real authority was outside the ordering that decides
+            authority. The composer places it with WARDROBE now, and is handed
+            the ORDINAL as well, so the three sentences that still told the
+            engine to work the hem out from the description stop doing so.
+          */
+          composePackageViewPrompt(angle, input.wardrobeLine ?? null, input.description ?? null, {
+            pronouns: viewPronouns,
+            outfitReferenceOrdinal,
+            outfitClause: plateClause,
+          }),
           cropClause,
-          plateClause,
           wordsClause,
         ]
           .filter((part) => part !== "")
@@ -914,6 +935,10 @@ export async function renderViewAttempts<T>(
            narrows when one is on record, so a judge without it would fail the
            view for wearing what this prompt just asked for (#1278 part 1). */
         description: input.description ?? null,
+        /* And the same for whose face it is — #1480 finding A's third site, so the
+           checker is not describing a different person from the one the
+           generator was asked for. */
+        pronouns: viewPronouns,
       });
       verdicts.push(verdict);
       // A picture came back and the judge answered about it: this attempt

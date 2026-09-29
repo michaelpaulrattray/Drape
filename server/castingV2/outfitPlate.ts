@@ -60,7 +60,7 @@
 import sharp from "sharp";
 
 import type { ReferenceImage } from "../providers/types";
-import type { CastPronouns } from "./castPronouns";
+import { pronounsForSex, type CastPronouns } from "./castPronouns";
 import {
   VIEW_IDENTITY_SENTENCE,
   belowWaistFor,
@@ -290,8 +290,12 @@ export function outfitReferenceClause(input: {
       + `what reference ${input.ordinal} does not, continue the same garments around the body `
       + `rather than inventing different ones.`;
   return (
+    /* ⚠ *"in the outfit for this shoot"* was vague to an engine — #1480 finding
+       D. A shoot is a word about our process; what the sentence means is that
+       this is the one outfit every picture of this person shows. */
     `THE OUTFIT — reference ${input.ordinal} ${what}: the same person as reference 1, `
-    + `head to feet, in the outfit for this shoot, seen ${half}. Copy the GARMENTS from it exactly: `
+    + `head to feet, in the outfit this person wears in every picture of them, seen ${half}. `
+    + `Copy the GARMENTS from it exactly: `
     + `the cut, the length, the hem, the fastenings and hardware, the layers, the wear and the `
     + `damage, and the footwear. Where there are no garments, copy in the same way what stands in `
     + `for them — the skin, hide, fur, scales, markings and feet it shows below the crop of `
@@ -333,6 +337,11 @@ export function outfitReferenceClause(input: {
 export function composeOutfitPlatePrompt(
   wardrobeLine: string | null = null,
   description: string | null = null,
+  /* ⚠ The plate carries the master, so every sentence about the person is about
+     a real person and takes their pronouns — #1480 finding A, which fixed the
+     reference paragraph this prompt reads BY NAME. Without this the plate would
+     be the one request still calling a male cast "her". */
+  pronouns: CastPronouns = pronounsForSex(null),
 ): string {
   const brief = viewDescriptionOf(description);
   const front = castPackageView("frontFull");
@@ -346,12 +355,15 @@ export function composeOutfitPlatePrompt(
       invites exactly the floating-garment picture his ruling declined.
     */
     VIEW_IDENTITY_SENTENCE,
-    referenceRuleFor(brief),
+    /* No outfit reference here BY CONSTRUCTION: this request is what invents the
+       outfit, so the description IS the record for the hem and the footwear.
+       It is the one prompt where #1480's yield must NOT happen. */
+    referenceRuleFor(brief, pronouns, null),
     PLATE_LAYOUT,
     ...(brief === null ? [] : [`DESCRIPTION: ${brief}`]),
-    `LEFT PANEL — ${front.directive}${belowWaistFor("frontFull", wardrobeLine, brief)}`,
-    `RIGHT PANEL — ${back.directive}${belowWaistFor("backFull", wardrobeLine, brief)}`,
-    `WARDROBE: ${wardrobeSpecFor("frontFull", wardrobeLine, brief)}`,
+    `LEFT PANEL — ${front.directive}${belowWaistFor("frontFull", wardrobeLine, brief, null)}`,
+    `RIGHT PANEL — ${back.directive}${belowWaistFor("backFull", wardrobeLine, brief, null)}`,
+    `WARDROBE: ${wardrobeSpecFor("frontFull", wardrobeLine, brief, pronouns, null)}`,
     ...HOUSE_PHOTOGRAPH_PARAGRAPHS,
   ].join("\n");
 }
@@ -441,13 +453,15 @@ export async function renderOutfitPlate(input: {
   anchor: ReferenceImage;
   wardrobeLine: string | null;
   description: string | null;
+  /** Whose face this is — the plate's own prompt says it four times (#1480 finding A). */
+  pronouns?: CastPronouns;
   operationId?: number | string | null;
   signal?: AbortSignal;
 }): Promise<OutfitPlate | null> {
   const started = Date.now();
   try {
     const image = await input.engine.editWithReferences({
-      prompt: composeOutfitPlatePrompt(input.wardrobeLine, input.description),
+      prompt: composeOutfitPlatePrompt(input.wardrobeLine, input.description, input.pronouns),
       /*
         THE MASTER, AND IT IS HIS RULING RATHER THAN THIS MODULE'S READING.
 

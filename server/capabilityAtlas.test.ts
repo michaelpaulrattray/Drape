@@ -399,6 +399,101 @@ describe("the static half reads what the source declares", () => {
     ).toEqual(["server/castingV2/fixture.test.ts"]);
   });
 
+  /*
+    ⚠ #1494's REPAIR WAS A FLOOR AND THIS IS ITS MEASURED REMAINDER (#1498).
+
+    The arm above drives a door id on the line that OPENS a comment. It could
+    not drive the line AFTER that one, because the reader was a line-SHAPE test:
+    it asked whether a line starts a comment, and a line cannot see the line
+    above it. **This repository's dominant comment style is a block whose
+    continuation lines carry no `*` prefix**, so every one of those read as code
+    and every door id inside one counted as proof that the door had been driven.
+
+    Measured at the tree of 2026-09-30, both readings taken over the same
+    `pinCandidates` list so the comparison moves one thing: **296 candidate
+    files, 68 doors, 143 pins under the line-shape reader and 130 under the
+    block-aware one — 13 pins across 7 doors credited to prose.** No door
+    reaches zero and the unpinned set is 16 before and 16 after.
+
+    ⚠ **IT WOULD HAVE BEEN 8 DOORS AND ONE OF THEM EMPTIED.** `scope_mismatch`'s
+    only pin was two sentences in `refineService.test.ts`, so widening the reader
+    alone takes it to ZERO and the unpinned set to 17 — a wall the census has
+    called proven for as long as it has existed. That is why this lands second:
+    the arm that names the door by its id went in first, at the test that was
+    already driving the wall and asserting only its sentence. Driven both ways
+    before this shipped.
+  */
+  describe("a door named inside a comment BLOCK is not pinned by that file (#1498)", () => {
+    const FILE = "server/castingV2/fixture.test.ts";
+    const pinnedBy = (text: string) => pinsIn([[FILE, text]], ["busy"]).get("busy");
+
+    it("the continuation line of an unprefixed block is prose, however it is quoted", () => {
+      /*
+        THE SHAPE THE WHOLE CARD IS ABOUT, and it is written the way this
+        repository writes: `/*` alone on its line, then sentences with no
+        prefix. Under the old reader only the first line was stripped.
+      */
+      for (const quoted of ['"busy"', "'busy'", "`busy`"]) {
+        expect(pinnedBy(`/*\n  Without the redirect this ask would meet ${quoted}\n  and refuse.\n*/`), quoted)
+          .toEqual([]);
+      }
+    });
+
+    it("a block that runs for many lines is prose all the way to its close", () => {
+      expect(pinnedBy('/*\n  one\n  two\n  three\n  a wall such as "busy"\n  five\n*/')).toEqual([]);
+    });
+
+    it("code AFTER the block's closing line is still code", () => {
+      /*
+        The half that stops this becoming a reader that eats files. A block ends
+        where it ends, and everything under it is product again.
+      */
+      expect(pinnedBy('/*\n  prose about the queue\n*/\nexpect(r.reason).toBe("busy");')).toEqual([FILE]);
+      /* And on the closing line itself, which the old reader threw away whole
+         only when the line STARTED the comment. */
+      expect(pinnedBy('/*\n  prose\n*/ expect(r.reason).toBe("busy");')).toEqual([FILE]);
+    });
+
+    it("a one-line block opens nothing — the lines under it are still read", () => {
+      /*
+        NEGATIVE CONTROL ON THE TRACKER ITSELF. A walk that entered a block on
+        every `/*` and waited for a `*\/` on a LATER line would swallow the rest
+        of the file here, and would pass every arm above by answering "prose" to
+        everything.
+      */
+      expect(pinnedBy('/* one line of prose */\nexpect(r.reason).toBe("busy");')).toEqual([FILE]);
+    });
+
+    it("THE TRAP THE CARD NAMED IN ADVANCE: a `/*` inside a string literal opens nothing", () => {
+      /*
+        #1498 said it out loud before anything was built: *a block tracker that
+        does not tokenise strings is fooled by `/*` inside a string literal*.
+        This reader is not, and the reason is structural rather than careful —
+        it opens a block only where `isCommentLine` already said one begins, at
+        the START of a line. A `/*` in the middle of a line of code is never
+        that, so it cannot open anything.
+
+        Without this arm the tracker could swallow every line after a perfectly
+        ordinary test that happens to assert on a comment marker, and the doors
+        below it would silently read unpinned.
+      */
+      expect(pinnedBy('const marker = "/*";\nexpect(r.reason).toBe("busy");')).toEqual([FILE]);
+      expect(pinnedBy('expect(strip("a /* b")).toBe("a");\nexpect(r.reason).toBe("busy");')).toEqual([FILE]);
+    });
+
+    it("the old reader's own arms still hold — `//` and a bare `*` open nothing", () => {
+      /*
+        WORKING LAW 2 POINTED AT THE WIDENING. A reader that answered "prose" to
+        everything would pass every negative arm above; these are the ones it
+        cannot pass, and they are #1494's arms restated so this change is held
+        to them too.
+      */
+      expect(pinnedBy('// a wall such as "busy"\nexpect(r.reason).toBe("busy");')).toEqual([FILE]);
+      expect(pinnedBy(' * a wall such as "busy"\nexpect(r.reason).toBe("busy");')).toEqual([FILE]);
+      expect(pinnedBy('expect(r.reason).toBe("busy");')).toEqual([FILE]);
+    });
+  });
+
   /**
    * #209 item 1 — THE UPLOAD ENTRANCE'S DOORS ARE DECLARED AND QUALIFIED.
    *

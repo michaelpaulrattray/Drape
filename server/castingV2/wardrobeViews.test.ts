@@ -7,6 +7,7 @@ import {
   packageViewExpectation,
   wardrobeSpecFor,
 } from "./castViewPackage";
+import { pronounsForSex, type CastPronouns } from "./castPronouns";
 import { castWardrobeLine } from "./wardrobeLine";
 
 /**
@@ -188,22 +189,48 @@ describe("#1479 · every wardrobe sentence defers to the reference photograph", 
    * fourth road added later joins this set by existing, and a road that stops
    * deferring to the reference reddens here rather than on a customer's Sign.
    */
-  const everySentenceTheProductCanSend = (): Array<{ road: string; angle: string; text: string }> =>
+  const everySentenceTheProductCanSend = (
+    pronouns: CastPronouns = pronounsForSex(null),
+  ): Array<{ road: string; angle: string; text: string }> =>
     CAST_PACKAGE_VIEWS.flatMap((angle) => [
-      { road: "nothing written down", angle, text: wardrobeSpecFor(angle, null, null) },
-      { road: "the cast's own brief", angle, text: wardrobeSpecFor(angle, null, DESCRIPTION) },
-      { road: "a stored line", angle, text: wardrobeSpecFor(angle, LINE_WITHOUT_JEWELLERY, null) },
+      { road: "nothing written down", angle, text: wardrobeSpecFor(angle, null, null, pronouns) },
+      { road: "the cast's own brief", angle, text: wardrobeSpecFor(angle, null, DESCRIPTION, pronouns) },
+      { road: "a stored line", angle, text: wardrobeSpecFor(angle, LINE_WITHOUT_JEWELLERY, null, pronouns) },
     ]);
 
-  it("says what the reference shows is hers — on all three roads, every view", () => {
-    const sentences = everySentenceTheProductCanSend();
-    /* A floor, so a `flatMap` that silently returned nothing cannot pass. */
-    expect(sentences.length, "three roads over every package view").toBeGreaterThanOrEqual(15);
-    for (const { road, angle, text } of sentences) {
-      expect(text, `${road} · ${angle}`).toMatch(
-        /the reference (photograph itself shows her wearing|DOES show) is this person's own/,
-      );
+  it("says what the reference shows is the cast's own — all three roads, every view, every pronoun", () => {
+    /*
+      ⚠ **THE REGEX SAID `shows her wearing` AND MOVED WITH #1480 FINDING A**,
+      which is what the card predicted: this clause and the reference paragraph
+      take the cast's pronouns together, *"or the male cast reads her in one
+      sentence and his in the next"*. Pinning the WORD would have frozen the
+      defect; pinning the SHAPE per pronoun is what the arm was always about.
+    */
+    for (const sex of [null, "male", "female"]) {
+      const pronouns = pronounsForSex(sex);
+      const sentences = everySentenceTheProductCanSend(pronouns);
+      /* A floor, so a `flatMap` that silently returned nothing cannot pass. */
+      expect(sentences.length, "three roads over every package view").toBeGreaterThanOrEqual(15);
+      for (const { road, angle, text } of sentences) {
+        expect(text, `${String(sex)} · ${road} · ${angle}`).toMatch(
+          new RegExp(`the reference (photograph itself shows ${pronouns.object} wearing|DOES show) is this person's own`),
+        );
+      }
     }
+  });
+
+  it("⚠ and the pronoun is the CAST'S — a sentence frozen back to `her` reddens here (#1480 finding A)", () => {
+    /*
+      The arm above would pass perfectly well on a sentence that had gone back to
+      a fixed word, because it builds its own regex from the same pronouns it
+      passes in — a guard measuring itself. This is the half that cannot: two
+      pronouns, one sentence, and they must DIFFER.
+    */
+    const his = wardrobeSpecFor("frontFull", null, DESCRIPTION, pronounsForSex("male"));
+    const hers = wardrobeSpecFor("frontFull", null, DESCRIPTION, pronounsForSex("female"));
+    expect(his).not.toBe(hers);
+    expect(his).toContain("shows him wearing");
+    expect(hers).toContain("shows her wearing");
   });
 
   it("⚠ NO sentence carries an unconditional addition list — the exact clause that refused his earrings", () => {

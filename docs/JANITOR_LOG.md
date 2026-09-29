@@ -77,6 +77,12 @@ the seat had patrolled and push its next run three days out. Newest first.
 | when (UTC) | item | bytes | entries | what the deletion stood on | read from |
 |---|---|---|---|---|---|
 <!-- BACKUP-DELETION-ROWS -->
+| 2026-09-29T16:06:31Z | `drape-disposables-sweep-2026-09-12-wave2.zip` | 20.8 kB | 10 | every one of 10 entries has expired; 0 by git, the rest by finished work | `384ef16c` in `C:/Users/Admin/Drape` |
+| 2026-09-29T16:06:31Z | `drape-disposables-sweep-2026-09-12.zip` | 814.6 kB | 358 | every one of 358 entries has expired; 0 by git, the rest by finished work | `384ef16c` in `C:/Users/Admin/Drape` |
+| 2026-09-29T16:06:31Z | `drape-janitor-run6-disposables-2026-09-15.zip` | 13.3 kB | 10 | every one of 10 entries has expired; 0 by git, the rest by finished work | `384ef16c` in `C:/Users/Admin/Drape` |
+| 2026-09-29T16:06:31Z | `drape-janitor-run6-late-sweep` | 16.9 kB | 2 | every one of 2 entries has expired; 0 by git, the rest by finished work | `384ef16c` in `C:/Users/Admin/Drape` |
+| 2026-09-29T16:06:31Z | `drape-janitor-run7-disposables-2026-09-18.zip` | 27.3 kB | 19 | every one of 19 entries has expired; 0 by git, the rest by finished work | `384ef16c` in `C:/Users/Admin/Drape` |
+| 2026-09-29T16:06:31Z | `drape-janitor-run8-disposables-2026-09-21.zip` | 78.5 kB | 34 | every one of 34 entries has expired; 0 by git, the rest by finished work | `384ef16c` in `C:/Users/Admin/Drape` |
 
 ---
 
@@ -2251,3 +2257,432 @@ that the card did not ask for: the reader defect became **#1483** rather than a 
 and the standing-shape question became §F.3 rather than a guard. No production
 variable, flag, database row or customer surface was touched; the only repository
 change is this entry.
+
+## Run 11 — 2026-09-30 01:35–03:0x AEST (Janitor, patrol #11, card #1515 filed)
+
+Clock fired on the day (`patrol-clocks.mts`: *"1 seat's clock has fired: Janitor
+(due today)"*), Housekeeping ON, master ON, **N2 the confirmed focus** — so
+standing exception 3 was the whole brief, and it outranks the focus by the
+priority order in the standing orders (founder-urgent → standing exceptions →
+focus → switch cards). No new Crew replies (236/236 acknowledged). Run 10's own
+numbered next-run list was the agenda, re-verified at the cards first rather than
+inherited: **#1436, #1437 and #1389 have all CLOSED since**, #1434 has not.
+**One card filed, nothing built, nothing spent, no production write but the shift
+row and six heartbeats.**
+
+⚠ **READ §E FIRST. Run 10 met THREE abandoned review-watch pollers and left them
+on stated doctrine; this run met 183 of them burning a third of the team's whole
+GitHub budget.** The doctrine was right at three and became the thing that let it
+reach 183.
+
+⚠ **AND A LIVE BUILDER SEAT WORKED BESIDE ME THE WHOLE SHIFT**, creating
+worktrees, branches and disposables under my readings. Every hold set was re-read
+immediately before each destructive act for that reason, and the closing counts in
+§L say which of them are contaminated by concurrent work rather than pretending
+they are a clean "after".
+
+### A. The disposables — 697 → 693 swept, then 717 by other hands
+
+`disposable-age.mts`: **697** untracked at start (run 10 left 644 — **53 arrived in
+three days**, against run 10's 68 and run 9's 76; the ordinary rate holds and is
+gently falling), **5** sweepable, **0** chain rows. **4 swept, 1 held.**
+
+**Second reader before the delete** (run 8's rule, run 10's log-exclusion
+refinement), and its **positive controls driven first** rather than assumed:
+`print-owner-openid-disposable` fired on its untracked citer, `price-attach-read-disposable`
+on its tracked one, and a name that cannot exist returned nothing. Only then were
+the five read: **0 of 5 cited by any tracked file at HEAD.**
+
+⚠ **ONE WAS HELD, AND THE DISTINCTION IS WORTH MORE THAN THE FILE.**
+`_1086-lobby-fixture-disposable.mts` is cited by `output/1098-comment.md`, which
+**quotes its bytes at a line number** (`:57`) as the evidence for a claim. That is
+a USE. The other four were cited only by `output/janitor/run9-untracked-{all,stay}.txt`
+— **a past Janitor run's own inventory** — and that is not a use, on exactly the
+ground run 10 excluded `docs/JANITOR_LOG.md` for. **The strong form of the
+argument is that a census listing every untracked file necessarily lists every
+sweep candidate, so an unexcluded reader would call all 697 of them cited and the
+sweep would be impossible by construction.** So: **run 10's exclusion extends from
+the log to a run's own manifest files, and NOT to a working document that quotes a
+file's contents.**
+
+Manifest `output/_janitor11/run11-disposable-manifest.txt` (bytes + sha1 per row,
+18,409 bytes total), zip
+`C:\Users\Admin\drape-janitor-run11-disposables-2026-09-29.zip` — **4 entries
+verified by NAME AND SIZE against the manifest before the delete, 0 mismatches,
+read back out of the archive's own central directory** rather than from the copy
+that wrote it. Re-read after: **693 · sweepable 1 · chain 0**, and the 1 remaining
+sweepable is exactly the row held, so the arithmetic closes.
+
+⚠ **The closing count is 717, and it is not a regression**: two builder seats added
+24 disposables while this patrol ran. 526 remain unresolvable by name (run 10: 524,
+run 9: 518) — the structural finding is unchanged and only a naming rule shrinks it.
+
+### B. The root frames — run 10's handoff was one ground short, and the four stay
+
+`git status --porcelain -uall` at the root: the **`436-*` seven** and the
+`FABLE_R7_*` pair as always, both on their standing citations.
+
+⚠ **Run 10's next-run item 6 read *"the 4 `1389-strip-*.png` — sweepable once
+#1389 closes; nothing cites them."* #1389 HAS closed, nothing does cite them, and
+they are still a KEEP** — because run 10's own §B gave them **two** grounds (*"their
+card #1389 is OPEN, and they are inside the 7-day floor"*) and its handoff line
+carried only the first. Read at the bytes: all four were written **2026-09-26
+11:54Z**, which is **3 days 4 hours** ago against a 7-day floor that expires
+**2026-10-03**. Run 12 or 13 takes them.
+
+**The lesson is the handoff's shape, not the frames.** A next-run item that
+compresses a two-ground verdict into one ground reads as an instruction to act, and
+the ground it drops is the one that was still load-bearing. Law 2y — a handoff
+instruction is a claim with a timestamp — applies to a seat's note to *itself*.
+
+### C. `team/*` refs — remote 69 → 40, local 143 → 115, and a cross-check caught my own bug
+
+`delete_branch_on_merge` read at the artifact: still **`false`**, so **#1434 is
+open and the cause is not re-derived** (run 10's item 1). Remote was **69** against
+the 32 run 10 left — **37 in three days**, exactly as that run predicted for a
+burst day.
+
+Classified by run 10's criterion, unwidened, at **two readers sharing no
+resolver**: GitHub REST (`pulls?state=all`, 767 rows) and **git protocol**
+(`git ls-remote origin 'refs/pull/*/head'`, 767 rows). Both controlled before
+either was trusted — PR #1512's pull head matched the API's sha, and a bogus
+`refs/pull/99999/head` was absent. **69 read · 29 DELETE · 29 KEEP · 11 HOLD · 0
+reader disagreement.**
+
+⚠ **THE MANIFEST WRITER DISAGREED WITH THE CLASSIFIER — 39 ROWS AGAINST 29 — AND
+THE CROSS-CHECK IS THE ONLY REASON IT WAS CAUGHT.** My manifest script omitted the
+**worktree HOLD** the classifier applied, so it would have deleted the remote ref
+of **ten branches a registered worktree is checked out on**, which is precisely the
+surprise run 10 added that criterion to prevent. Fixed by re-reading
+`git worktree list` inside the writer rather than passing the set in, with the
+reason in a comment, and pinned by an explicit assertion (`comm -12` of the held
+set against the delete list) that printed clean before anything was pushed.
+**A criterion applied in one reader and not the other is working law 4 inside a
+single sitting; two counts that must agree are worth computing twice.**
+
+**Recoverable by TWO roads per row and the manifest says so**: the tip sha written
+out in full with a `git push origin <sha>:refs/heads/<branch>` restore line, and
+`refs/pull/<n>/head`, which is not a branch and survives the deletion. **39 of 39
+candidates had the second ref holding the same tip** before the filter, and the
+claim was **re-proven AFTER the deletion** on three specimens rather than read off
+run 10's record: #1470, #1507 and #1508 each still at their pull head, each branch
+ref gone.
+
+**Every tip re-read immediately before the push: 29 unchanged, 0 moved, 0 gone.**
+Manifest `output/_janitor11/run11-remote-branch-manifest.txt`.
+
+**Local: 143 → 115.** The remote manifest as the criterion (run 9's rule) plus the
+worktree hold plus *the local tip must equal the merged head*: **28 deleted, 100
+KEEP, 15 HOLD**, manifest `output/_janitor11/run11-local-branch-manifest.txt`.
+**23 of the keeps are branches whose local tip differs from a merged head** — work
+only this machine holds — and they are correctly kept, unwidened. `main` was
+asserted absent from the delete list explicitly, and the held set was re-read
+between classification and deletion because a seat moved a worktree's branch
+mid-run (`team/pin-reader-blocks-1498` left the set, `team/shared-bare-door-id-1506`
+joined it).
+
+**Run 10's item 2 — its 5 HELD refs — is NOT discharged**: all five
+(`reader-ask-court-1123`, `seat-runner-1281`, `sign-engine-court-1394`,
+`storage-key-population-1401`, `try-again-row-1347-r2`) are still checked out on
+registered worktrees, so they are still held, now among eleven.
+
+### D. Orphan directories — 3 removed, all three holding a live junction into `node_modules`, and ZERO orphans remain
+
+⚠ **The canary was RE-DRIVEN rather than read off run 10's record**, because the
+downside is the whole dependency tree. A junction built with
+`New-Item -ItemType Junction`, **proven live by reading a file THROUGH it**, the
+holder removed with Bash `rm -rf`, the target re-read intact: **PASS**. Only then
+was anything real touched.
+
+**24 `drape-*` directories** (run 10 left 13). Run 1's three checks — unregistered,
+no `.env`, no live process names the path — plus a walker that **refuses to traverse
+a reparse point**, because run 10's first reading followed the junctions and nearly
+wrote up the main tree's own cache as a leftover.
+
+**Three were zero-file shells, each with a junction pointing straight at
+`C:\Users\Admin\Drape\node_modules`** (read with `fsutil reparsepoint query`, not
+inferred): `drape-ceremony-1464`, `drape-review-1440`, `drape-review-1475`.
+Unregistered, no `.env`, no process naming them, **no file anywhere on disk citing
+them**, and **0 files inside** — so the 7-day floor had nothing to protect; a floor
+protects work, and a zero-file shell holds none. Removed. **The repository's
+`node_modules` was counted either side and between each removal: `ls -A` 64 → 64
+throughout, with `require.resolve` of both `react` and `vite` resolving after.**
+
+⚠ **Belt-and-braces failed and the proven road carried it.** Run 10's practice is to
+remove the junction as a LINK first; Bash `rmdir` will not take a Windows junction,
+and `cmd //c rmdir` died on the doubled-backslash trap run 10's item 9 warns about.
+The canary had already proven `rm -rf` does not follow a junction, so that is what
+was used — the extra step was unavailable, not skipped, and the three readings of
+the dependency tree are what stand behind it.
+
+**Run 10's item 3 is discharged**: `drape-shift-seat-2-20260926-171737`, the
+zero-file shell held busy by a process's CWD, is **GONE** — whatever held it exited.
+
+**At close: 20 `drape-*` directories, 15 of them registered worktrees, and all 5
+unregistered ones are legitimate KEEPs** — `drape-janitor-run6-crew-eye-orphans`
+(#1143, the only copies of 31 R2 objects) and four frame directories
+(`drape-1288-frames`, `drape-1288-frames-seat3`, `drape-1372-frames-seat3`,
+`drape-1451-frames` — 4/12/16/47 files, 26–27 Sep, inside the floor; render frames
+are evidence and run 6 §C is why a patrol does not take them on its own judgement).
+**There is no orphan directory on this machine at this reading.**
+
+### E. ⚠ THE REVIEW WATCH HAD LEAKED 183 LIVE COPIES AND WAS EATING A THIRD OF THE TEAM'S GITHUB BUDGET — 176 SWEPT, CARD #1515
+
+Run 10 §E found **three** copies of `scripts/_review-watch-disposable.sh` and left
+them, on doctrine it stated plainly: three copies of a single-purpose watch means at
+most one can be anybody's, no reading says which, and *"killing the founder's own
+watch to tidy two duplicates is the trade this seat's doctrine refuses."*
+**Three days later there were 183.**
+
+**Measured, not estimated:**
+
+| | reading |
+|---|---|
+| live copies whose command IS the script | **183** |
+| oldest | **2026-09-24 12:43** |
+| newest | four minutes before the reading |
+| median gap between arrivals | **30.2 min** (n=182) |
+| arrivals per day | 23 · 48 · 50 · 30 · — · 20 · 12-by-02:00 |
+
+**The cost, measured at the API in one rate-limit window, two readings 181 s
+apart:**
+
+| | REST calls/hour |
+|---|---|
+| **before** (183 copies) | **1,630** |
+| **after** (0 copies) | **19**, and one of those was my own reading |
+
+The ceiling is **5,000/hour for the one shared account**, so the abandoned pollers
+were consuming **about a third of the whole team's budget** re-listing the same two
+pull requests. **Nothing else of the team's was running** — no dev server, one open
+shift row, mine — so the before/after IS the attribution, and the ~99% fall proves
+it rather than arguing it.
+
+⚠ **A theoretical figure was computed first and was WRONG, which is why the
+measurement was taken.** 183 copies × one call per 300 s predicts 2,196/hour; the
+window read `used 1029` and could not support it. The measured 1,630 is the
+decision-grade number and the arithmetic is recorded as the thing it corrected.
+
+⚠ **THIS IS NOT THE CAUSE OF THE GRAPHQL FAILURES AND THE EASY WRONG CLAIM IS
+REFUSED.** The script uses REST **on purpose** — its own comment says the one
+account's GraphQL burst limit trips under many seats — and GraphQL read
+**4,933 remaining** while this was happening. Two GraphQL timeouts hit this patrol's
+own `disposable-age` reads tonight (the `gh-graphql-burst-1399` shape) and they are
+a **different fault**. Run 10 was careful about precisely this and the care is kept.
+
+**Swept 176** (175 killed, 1 already gone), manifest
+`output/_janitor11/run11-watch-process-manifest.txt` with every pid and start time.
+⚠ **I intended to keep the newest so a live relay session kept its watch, and it
+died with the others because it was a CHILD of one of them rather than an
+independent watch** — so for about four minutes no watch was running, and that is
+stated rather than smoothed over.
+
+⚠ **I did NOT restart one, and that was a decision.** A watch's entire value is its
+output reaching a person; one launched from a patrol session prints into a stdout
+nobody reads, which is exactly the useless artifact 176 of had just been removed.
+**The launcher then put exactly one back by itself** — pid 34292 at 01:56:41, after
+the sweep — which both restores the function at ~12 calls/hour and confirms the
+launcher is live, the leak's actual cause. **The end state is the ideal one and it
+was reached by not acting.**
+
+**Card #1515** carries the leak: a single-instance guard in the script, and — the
+half that matters — *find what launches one every half hour and never reaps it*,
+read at the launcher rather than inferred. The 30.2-minute median matches the
+runner's quiet-backoff interval and is recorded as **a lead, not a conclusion**,
+because a patrol should not guess at that.
+
+⚠ **THE CLASS IS WORTH MORE THAN THE INSTANCE AND IT HAS NOW BITTEN THIS SEAT
+THREE RUNS RUNNING**: a dev server that outlived its worktree (#1435), a `tail -f`
+on a log that no longer exists (run 10 §E), and this. **A single-purpose background
+process started by a session that then ends has no owner and no reaper**, and the
+only thing that finds it is a patrol counting processes every three days.
+**Run 10's doctrine — do not kill what you cannot attribute — is correct at three
+copies and is the thing that lets 183 accumulate. The discriminator that actually
+works is REDUNDANCY: a single-purpose watch cannot want 183 copies of itself,
+whoever owns them.** That sentence is this run's contribution to the seat's
+doctrine and it does not overturn run 10's, it bounds it.
+
+### F. Dev servers — none, for the first time in four runs
+
+`dev-servers.mts`: **"no dev server is running on this machine."** Run 10 killed one
+and left one; my predecessor killed seat 2's orphan at its close. **Nothing to do,
+and PR #1438's reader (the `unregistered` fourth state) has had no work to prove
+itself on yet** — a quiet reading is not a verified one, and run 12 should not read
+this as coverage.
+
+### G. `%TEMP%` — 24 abandoned directories, 457.6 MB, and a false success caught by its own verification
+
+`drape-*` in `%TEMP%`: **24**, in four families, **none held by any process** and
+**no reparse point inside any of them** (checked before a recursive delete, as
+always).
+
+| family | n | files | bytes | newest |
+|---|---|---|---|---|
+| `drape-1478*` | 15 | 7,972 | 475.5 MB | 29 Sep 22:03 |
+| `drape-atlas-merge-*` | 8 | 438 | 254 kB | 27 Sep 14:45 |
+| `drape-rite-*` | 1 | 1 | 4.1 MB | 27 Sep 15:13 |
+
+**Each family was identified at its contents rather than by its name**, and the
+Chromium one got a better discriminator than "no process names the path":
+`Default`, `Local State` and `Crashpad` are present while **`SingletonLock` and
+`DevToolsActivePort` are ABSENT — and those two exist only while a browser holds
+the profile**, so the profiles are provably unattached. Card **#1478 is CLOSED**.
+`drape-atlas-merge-*` are the merge driver suite's scratch git repositories
+(`.git`, `src`, `map.json`, `.gitattributes`); `drape-rite-*` is a typescript
+`tsbuildinfo` cache. All regenerable machine state, none of it work. Recorded by
+name, file count, bytes and mtime (`output/_janitor11/run11-temp-manifest.txt`,
+which carries a SKIPPED arm for a held or reparse-bearing row that did not fire)
+rather than copied out, on run 10's precedent. **24 removed, 0 failed, `%TEMP%`
+back to 0, 457.6 MB freed**; `node_modules` 64 and `require.resolve` intact after.
+
+⚠ **THE FIRST ATTEMPT REPORTED "removed: 24 of 24" AND HAD DELETED NOTHING.** It
+rewrote each Windows path to a Bash one with `sed`, the doubled-backslash trap
+(run 10's item 9) made every expression fail with `unterminated 's' command`, `$BP`
+came out **empty**, `rm -rf ""` did nothing — and the loop's own success test was
+`[ -e "$BP" ]`, which is false for an empty path, **so absence of a path read as
+proof of deletion.** The re-listing check on the next line said `24` and caught it.
+**A verification that re-reads the subject catches what a verification derived from
+the action's own variables cannot** — the second attempt iterated the directories
+themselves with no path rewriting at all.
+
+### H. The backup retention receipt table has its first rows — #1436's fix VERIFIED, run 10's item 8 discharged
+
+**18 items, 25.3 MB · redundant 0 · expired 6 · kept 9 · too-recent 3.**
+
+⚠ **#1436's fix was verified at the instrument before its verdicts were trusted
+(law 2), and the verification is the interesting part.** Run 10 left this arm
+refusing because `readFreshness` counted 680 untracked files as a dirty tree,
+**524 of which are permanent** — an unmeetable precondition by construction. Run
+first from a tree one commit behind the remote, it now refuses for the
+**legitimate** reason instead: *"the tree is at c8f5ac19 and origin/main is at
+384ef16c — every verdict is read from COMMITTED history."* **Same refusal,
+different cause, and only the second one is a real guard.** That is a negative
+control the fix had to pass and did.
+
+Then `--dry-run` from the tip, **and it agreed with this file's own standing
+warning before it was allowed to act**: `drape-janitor-run6-crew-eye-orphans` is
+**NOT** in the doomed set (26 of 31 entries not recoverable elsewhere), which is the
+row run 10 wrote *"is KEPT and must stay"* about. An instrument that contradicted
+that would not have been run.
+
+**Then the real arm, on his #1294 word (*"delete them itself"*), from
+`384ef16c` = `origin/main`'s tip: 6 items, 971.4 kB deleted**, and **6 rows written
+by the tool into this file's receipt table — the first rows it has ever held**,
+empty since #1294 merged on 2026-09-26. Committed in this same shift, as the table's
+own rule requires. `drape-janitor-run6-late-sweep` was one of the six, so the two
+`drape-janitor-run6-*` directories are now one.
+
+### I. Dead-code reading — #1437's sweep confirmed at the instrument, and a flat reading that proves nothing
+
+Full row in `docs/JANITOR_KNIP.md` (2026-09-30). The two headlines:
+
+**#1437's sweep is independently confirmed: 57 symbols gone between the 26 and 28
+Sep nightlies, which is exactly what its PR claimed to have dropped.** The local
+before/after was a local-to-local delta; the nightly is the reader that could
+contradict it and does not. 3 symbols arrived.
+
+⚠ **AND THE TWO NIGHTLIES ARE THE SAME TREE, WHICH IS THE ONLY REASON THIS RUN
+DOES NOT REPORT THAT THE ARRIVAL HAS STOPPED.** Their sets are byte-identical
+(51 rows, 64 symbols), which reads as two independent nights agreeing — but
+`git rev-list df39b128..6c658b9a` is **one commit**, a CLAUDE.md docs change, and
+its diff touches **0 files** under `scripts`/`server`/`shared`/`client`. **A flat
+reading across a tree that did not move is not evidence about arrival.** This is
+run 9's error from the other end, and the sentence was drafted before the check was
+run. **Post-sweep arrival is 3 symbols over ONE code-bearing night against run 10's
+~16/night — a floor on one night's evidence, not a trend.**
+
+⚠ Two further traps walked into and backed out of, both of which run 10 had
+already named: a **row** diff said 34 gone / 12 arrived (an artifact — a file that
+merely changes symbols counts as both), where the **symbol** diff says 57/3; and my
+extractor counts export symbols only, reading the 26 Sep nightly at **118** where
+run 10's row records **135**, so **the 118 → 64 series is exports-only and
+comparable only to itself.** The likeliest reconciliation is that run 10's series
+counts exports and types together, but that is inference and is recorded as one.
+
+### J. The memory index — 0 faults
+
+`memory-index-audit.mts` (#1472), exit **0**. Four indexes walked, **266 memory
+files on disk and 266 pointed at**: unreachable 0, dangling 0, duplicate pointers
+0, joined lines 0, ellipsis hooks 0. `MEMORY.md` is **20,970 bytes / 132 lines /
+129 pointers** — comfortably inside the read limit whose silent truncation is why
+this clock exists (it stood at 26,134 on 2026-09-26 with a live pointer in the
+invisible tail).
+
+### K. `output/` purge remainder (#8)
+
+Untouched, on run 9's verdict, re-affirmed: the list is exhausted and its last row
+is `output/scratch`, which is LIVE and cited by `.claude/skills/verify/SKILL.md`,
+`.githooks/atlas-regenerate` and `.githooks/pre-commit`. **Never sweep it.**
+
+### L. The counts, and which of them are contaminated
+
+| | run 10 left | run 11 close |
+|---|---|---|
+| untracked disposables under `scripts/` | 644 | **717** ⚠ (693 after my sweep; two live seats added 24 during the run) |
+| of which sweepable | 0 | **1** (the held citation) |
+| unresolvable by name | 524 | **526** |
+| remote `team/*` refs | 32 | **41** ⚠ (40 after my sweep; a seat pushed one) |
+| local branches | 93 `team/*` | **116 total** ⚠ (115 after; a seat cut one) |
+| `drape-*` directories | 13 | **20** (15 registered worktrees, 5 legitimate KEEPs) |
+| orphan directories | 1 (busy) | **0** |
+| `%TEMP%` `drape-*` | 0 | **0** (24 swept this run, 457.6 MB) |
+| live review-watch copies | 3 (left) | **1** (176 swept; the launcher restored one) |
+| REST calls/hour from abandoned pollers | not measured | **1,630 → 19** |
+| dev server trees | 0 | **0** |
+| `node_modules` at the main tree, `ls -A` | 64 | **64** |
+| retention receipt-table rows | 0 | **6** |
+| memory-index faults | not read | **0** |
+
+### M. Anti-boredom check
+
+Every act traces to **run 10's own numbered next-run list** (§A, §B, §C, §D, §G,
+§H, §I) produced on its clock three days earlier, to **run 6/9's standing rules**
+(the frame-directory and citation doctrines), or to **a hazard met on the way**
+(§D's three junctions, §E's 183 processes — found while looking for what run 10's
+item 5 had left). **No new instrument was built and no code was changed**; the one
+finding that wants a guard and a launcher hunt (**#1515**) was **filed and not
+worked**, because a single-instance guard plus a hunt for what spawns them is a
+build, not a sweep. Scripts written are three `.mjs` classifiers under
+`output/_janitor11/` — outside `scripts/`, so outside the guards' population and
+outside `disposable-age`'s count (run 4's `output/_retro4/` is the precedent).
+Production writes: the shift row and six heartbeats. Remote writes: 29 branch
+deletions (each tip held at two refs, each re-read immediately before the push),
+1 card. **Spend: nothing** — no credits, no house money, no paid model call, no
+production variable, no migration, no flag.
+
+**Next run (~2026-10-03):**
+
+1. ⚠ **#1515 first — read whether a watch is leaking again before anything else.**
+   One precise count is the whole check:
+   `Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'bash\.exe"?\s+/c/Users/Admin/Drape/scripts/_review-watch-disposable' }`.
+   **One copy is correct. Two is the leak returning.** If the card has not been
+   built, the population will be back in the dozens and the sweep is the same act;
+   do not re-derive the cost, the measured figure is 1,630 → 19 calls/hour.
+   ⚠ **Use a precise reader**: a loose `-like '*review-watch-disposable*'` matches
+   your own command line and reported 4 where the truth was 0.
+2. **The 4 `1389-strip-*.png`** (§B) — the 7-day floor expires **2026-10-03**, so
+   they are sweepable from that date. **Nothing cites them and #1389 is closed;
+   the floor was the only remaining ground.**
+3. **#1434 — read it before counting refs.** Still `false` at this run. If it is
+   ON, expect the remote near 12 and the finding is closed; if still OFF, expect
+   **~35 more per burst day** and do not re-derive the cause.
+4. **The 11 HELD remote refs** (§C) — take each once `git worktree list` no longer
+   names its branch. Run 10's original five are all still held.
+5. ⚠ **Re-drive the junction canary before any sweep outside the repository.**
+   Three live links into `node_modules` this run against run 10's thirty-five; the
+   burst makes more, and a recorded pass is a record rather than a reading.
+6. **The 29 Sep nightly is the first reading that can test the post-sweep arrival
+   rate** (§I) — it carries five merges. Read the NIGHTLY, not the main tree, and
+   count at the SYMBOL. Expected, if the class is genuinely fixed: files 19,
+   exports near 51, types 16, duplicates 2.
+7. **The retention arm works now and needs the tree AT `origin/main`'s tip** —
+   merge forward first, or it refuses for the right reason. Its receipt rows must
+   be committed in the same shift that writes them.
+8. ⚠ **Two shell traps were paid for AGAIN this run and both are run 10's item 9.**
+   A `sed` path rewrite and `cmd //c rmdir` both died on doubled backslashes, and
+   the `sed` failure produced a **false success**. **Iterate the real paths; never
+   rewrite them. And make the success test re-read the subject, not the variable
+   the action used.**
+9. **A live builder seat may be working beside you.** Re-read `git worktree list`
+   immediately before every destructive act — the held set moved twice during this
+   run — and expect your closing counts to include work that is not yours.

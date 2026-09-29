@@ -30,6 +30,7 @@ import {
   type CastViewAngle,
 } from "../../shared/boardTypes";
 import { CASTING_V2_SIGN_COSTS } from "../casting/castingCreditCosts";
+import { pronounsForSex, type CastPronouns } from "./castPronouns";
 import { PHOTOREAL_HUMAN_BLOCKS } from "./cohortPhotorealHuman";
 import { HOUSE_PHOTOGRAPH_PARAGRAPHS } from "./houseBlock";
 
@@ -43,7 +44,8 @@ import { HOUSE_PHOTOGRAPH_PARAGRAPHS } from "./houseBlock";
  * by name rather than re-typed: it is the same prose the #1221 ruling put
  * there, and a second copy of it is the drift working law 4 is about.
  */
-const REFERENCE_IS_THE_DOCUMENT = PHOTOREAL_HUMAN_BLOCKS.referenceDocumentSentences.join(" ");
+const referenceIsTheDocument = (pronouns: CastPronouns): string =>
+  PHOTOREAL_HUMAN_BLOCKS.referenceDocumentSentences(pronouns).join(" ");
 
 /**
  * THE SAME RULE WHEN THE CAST'S BRIEF IS ON RECORD — #1278 part 1.
@@ -54,7 +56,8 @@ const REFERENCE_IS_THE_DOCUMENT = PHOTOREAL_HUMAN_BLOCKS.referenceDocumentSenten
  * choice and the description have to move together — sending the undescribed
  * opener beside a description is a prompt that denies its own next line.
  */
-const REFERENCE_WITH_DESCRIPTION = PHOTOREAL_HUMAN_BLOCKS.referenceDescribedSentences.join(" ");
+const referenceWithDescription = (pronouns: CastPronouns, outfitReferenceOrdinal: number | null): string =>
+  PHOTOREAL_HUMAN_BLOCKS.referenceDescribedSentences(pronouns, outfitReferenceOrdinal).join(" ");
 
 /**
  * THE CAST'S OWN WORDS, NORMALISED — the one door the description comes through.
@@ -94,8 +97,14 @@ export const VIEW_IDENTITY_SENTENCE =
  * reads the choice here rather than re-deciding it. The choice and the
  * description have to move together on every road that sends both.
  */
-export function referenceRuleFor(description: string | null): string {
-  return description === null ? REFERENCE_IS_THE_DOCUMENT : REFERENCE_WITH_DESCRIPTION;
+export function referenceRuleFor(
+  description: string | null,
+  pronouns: CastPronouns = pronounsForSex(null),
+  outfitReferenceOrdinal: number | null = null,
+): string {
+  return description === null
+    ? referenceIsTheDocument(pronouns)
+    : referenceWithDescription(pronouns, outfitReferenceOrdinal);
 }
 
 /**
@@ -286,7 +295,32 @@ export const CASTING_V2_SIGN_PRICE_CREDITS =
  * or the cast's own brief — is being judged alongside the photograph. When
  * there is one, an addition must be absent from BOTH to be a failure.
  */
-function wardrobeAdditionsClause(alsoJudgedAgainstADescription: boolean): string {
+function wardrobeAdditionsClause(
+  alsoJudgedAgainstADescription: boolean,
+  pronouns: CastPronouns = pronounsForSex(null),
+): string {
+  /*
+    ⚠ **FINDING D's ADDITIONS FOLD WAS BUILT AND THEN DECLINED, AND THE REASON
+    IS WORTH MORE THAN THE FOLD — #1480, read at `viewConformance.ts:308`.**
+
+    The audit asked to *"fold the additions rule to one place"*, because the
+    rule *add nothing that neither record establishes* is stated here and again
+    in the reference paragraph, in two half-lists. Merging the nouns into that
+    paragraph and leaving this sentence to name the rule works perfectly — for
+    the GENERATOR, which is handed the whole prompt.
+
+    **The judge is not.** `packageViewExpectation` hands `viewConformance` the
+    framing and wardrobe strings and nothing else; its user message is
+    literally `SPECIFICATION for IMAGE 2: / Framing: … / Wardrobe: …`. A
+    wardrobe sentence that defers to *"the add-nothing rule above"* therefore
+    defers, in the judge's prompt, to nothing at all — and the axis it would
+    silently widen is the one that refunds slices.
+
+    So this sentence stays self-contained: its own nouns, its own condition. The
+    duplication is real and is the price of one clause having two consumers that
+    see different amounts of context. The four #1479 arms in
+    `wardrobeViews.test.ts` are what caught it.
+  */
   return "ADDITIONS — jewellery, a hat, a bag, a prop, or any printed text or logo "
     + "that the reference does not show"
     + (alsoJudgedAgainstADescription ? " AND the description does not name" : "")
@@ -300,16 +334,34 @@ function wardrobeAdditionsClause(alsoJudgedAgainstADescription: boolean): string
       person's own and must be there"*), and it is the one wardrobe sentence
       that has never refused a customer's own jewellery.
     */
-    + "Anything the reference photograph itself shows her wearing is this person's own and is "
+    /* ⚠ `her` was fixed here too — #1480 finding A's second site, and it and the
+       reference paragraph MOVE TOGETHER or a male cast reads *her* in one
+       sentence and *his* in the next. */
+    + `Anything the reference photograph itself shows ${pronouns.object} wearing is this person's own and is `
     + "never an addition, whether or not it is named in words.";
 }
 
-export const CAST_PACKAGE_WARDROBE_SPEC =
-  "the SAME outfit the reference photograph shows — the same garments, in the same colours, "
-  + "unchanged across every view. "
-  + "The reference is a chest-up photograph, so it shows nothing below the waist: anything "
-  + "below the frame of the reference CANNOT be compared to it and must not fail this check. "
-  + `Judge only what both images show, plus ${wardrobeAdditionsClause(false)}`;
+function sharedWardrobeSpec(pronouns: CastPronouns): string {
+  return "the SAME outfit the reference photograph shows — the same garments, in the same colours, "
+    + "unchanged across every view. "
+    + "The reference is a chest-up photograph, so it shows nothing below the waist: anything "
+    + "below the frame of the reference CANNOT be compared to it and must not fail this check. "
+    + `Judge only what both images show, plus ${wardrobeAdditionsClause(false, pronouns)}`;
+}
+
+/**
+ * The shared sentence in its DEFAULT-PRONOUN form — what the `VIEWS` table
+ * holds and what `wardrobeSpecFor` compares against to tell the close-up's own
+ * sentence from this one.
+ *
+ * ⚠ **The table's copy is the `they` form and that is deliberate** (#1480
+ * finding A): a spec written before any cast is in hand cannot know whose it
+ * is, and `they` is this product's answer for a person whose pronouns are not
+ * known (`castPronouns.ts`). Nothing sends this constant to an engine —
+ * `wardrobeSpecFor` composes with the cast's own pronouns and the identity
+ * check below is the only thing that reads it by value.
+ */
+export const CAST_PACKAGE_WARDROBE_SPEC = sharedWardrobeSpec(pronounsForSex(null));
 
 /**
  * THE SAME SENTENCE WITH THE CAST'S BRIEF ON RECORD — #1278 part 1.
@@ -345,14 +397,55 @@ export const CAST_PACKAGE_WARDROBE_SPEC =
  * fewer refusals, because every clause here either stays or widens. Named rather
  * than discovered later, since a slice refused is a slice refunded.
  */
-export const CAST_PACKAGE_WARDROBE_SPEC_DESCRIBED =
-  "the SAME outfit the reference photograph shows and the DESCRIPTION names — one outfit, "
-  + "unchanged across every view. "
-  + "Inside the frame of the reference, the reference is the record. Below its frame the "
-  + "description governs: the cut, length, hardware, footwear and weathering it names are this "
-  + "outfit's own wherever they appear, and where it leaves them open any reading in keeping with "
-  + "the garments, materials and colours above the crop is correct. "
-  + `Judge the clothing against both records together. ${wardrobeAdditionsClause(true)}`;
+function describedWardrobeSpec(pronouns: CastPronouns, outfitReferenceOrdinal: number | null): string {
+  /*
+    ⚠ **THE BELOW-FRAME HALF YIELDS TO THE OUTFIT REFERENCE — #1480, and this
+    is the fourth of the five places that addressed the outfit.** It said *below
+    its frame the description governs: the cut, length, hardware, footwear* while
+    a plate was attached to settle exactly those, which is two answers to one
+    question in one prompt.
+
+    ⚠ **THE JUDGE IS NOT HANDED THE PLATE BRANCH, AND THAT IS NOT THE #1278
+    PART-1 DEFECT RETURNING.** That defect was the judge and the generator being
+    told two different OUTFITS. Here they are told the same outfit; what differs
+    is a clause about where the garment came FROM, and the judge is handed two
+    images — the anchor and the candidate — and never the plate, so a sentence
+    naming reference N would point it at a picture it cannot see. Its own
+    below-frame clause already ends *"where it leaves them open any reading in
+    keeping with the garments, materials and colours above the crop is correct"*,
+    which is precisely what a plate-dressed hem is, so the permissive side is
+    already wide enough to admit one. `packageViewExpectation` therefore passes
+    `null` here and its sentence is byte-identical to today's.
+  */
+  const belowFrame = outfitReferenceOrdinal === null
+    ? "Inside the frame of the reference, the reference is the record. Below its frame the "
+      + "description governs: the cut, length, hardware, footwear and weathering it names are this "
+      + "outfit's own wherever they appear, and where it leaves them open any reading in keeping with "
+      + "the garments, materials and colours above the crop is correct. "
+    : `Inside the frame of the reference, the reference is the record. Below its frame the OUTFIT is `
+      + `reference ${outfitReferenceOrdinal}: copy its cut, length, hardware, footwear and weathering `
+      + `rather than working them out from the description. `;
+  return "the SAME outfit the reference photograph shows and the DESCRIPTION names — one outfit, "
+    + "unchanged across every view. "
+    + belowFrame
+    + `Judge the clothing against both records together. ${wardrobeAdditionsClause(true, pronouns)}`;
+}
+
+/*
+  ⚠ `CAST_PACKAGE_WARDROBE_SPEC_DESCRIBED` STOOD HERE AND IS GONE — #1480, and
+  the uncalled-export sweep is what said so rather than a judgement.
+
+  It was a CONSTANT because there was nothing to vary; #1480 gave this sentence
+  two variables (the cast's pronouns, and whether an outfit reference settles
+  the lower half), so every road that wanted it had to call the function
+  instead. Keeping the constant beside the function as a default-form alias left
+  an export with no consumer anywhere in the tree — not one production caller,
+  not one test — and `check-cleanup-dispositions` refused the push for it.
+
+  The sentence has not moved and nothing about it is lost: `wardrobeSpecFor` is
+  still the one door both the generator and the judge come through, which is the
+  property #1278 part 1's docblock above is really about.
+*/
 
 /**
  * THE SAME SENTENCE, WRITTEN FROM A STORED LINE (design §3.3, item 6).
@@ -395,13 +488,16 @@ export const CAST_PACKAGE_WARDROBE_SPEC_DESCRIBED =
  * `wardrobeAdditionsClause`'s — one owner, three sentences, so the next
  * narrowing cannot reach two of them and miss this one again.
  */
-export function castPackageWardrobeSpec(wardrobeLine: string | null): string {
-  if (wardrobeLine === null) return CAST_PACKAGE_WARDROBE_SPEC;
+export function castPackageWardrobeSpec(
+  wardrobeLine: string | null,
+  pronouns: CastPronouns = pronounsForSex(null),
+): string {
+  if (wardrobeLine === null) return sharedWardrobeSpec(pronouns);
   return `exactly this outfit, unchanged across every view: ${wardrobeLine}. `
     + "This description covers the whole figure — what is worn on the upper body, on the lower body "
     + "and on the feet — so it applies below the frame of the reference photograph as well as inside "
     + "it. Judge the clothing against this description and the reference photograph together. "
-    + wardrobeAdditionsClause(true);
+    + wardrobeAdditionsClause(true, pronouns);
 }
 
 /**
@@ -676,7 +772,18 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
     },
     directive:
       "FULL BODY FROM BEHIND, walking away from camera. Head to feet entirely inside the frame. "
-      + "The face is not visible. Add nothing to the back or arms that the reference does not show.",
+      /*
+        ⚠ **IT SAID *"that the reference does not show"* AND PREDATED BOTH THINGS
+        IT NOW CONTRADICTS — #1480 finding C.** The master is a chest-up FRONT
+        photograph and cannot show a back at all, while the same prompt says
+        *"ALSO TRUE OF THIS PERSON, and not visible in the reference photograph:
+        … draw these where they belong"* (a born back tattoo) and, on a Sign with
+        a plate, *"copy the GARMENTS from reference N exactly"* — whose right
+        panel is the back. Three instructions, two of them telling the engine to
+        put on the back what the third forbade. It names every record now.
+      */
+      + "The face is not visible. Add nothing to the back or arms that neither the references "
+      + "nor the words above establish.",
     belowWaist: true,
   },
 };
@@ -783,6 +890,8 @@ export function wardrobeSpecFor(
   angle: CastViewAngle,
   wardrobeLine: string | null,
   description: string | null = null,
+  pronouns: CastPronouns = pronounsForSex(null),
+  outfitReferenceOrdinal: number | null = null,
 ): string {
   const base = VIEWS[angle].spec.wardrobe;
   /*
@@ -791,14 +900,16 @@ export function wardrobeSpecFor(
     `CLOSE_UP_WARDROBE`). Only the shared sentence has a described form.
   */
   if (base !== CAST_PACKAGE_WARDROBE_SPEC) return base;
-  if (wardrobeLine !== null) return castPackageWardrobeSpec(wardrobeLine);
+  if (wardrobeLine !== null) return castPackageWardrobeSpec(wardrobeLine, pronouns);
   /*
     #1278 part 1. The stored-line road is FIRST because a line is the stronger
     record when one exists — though none ever has: read at the rows 2026-09-26,
     0 of 6 minted casts carry `technicalSchema.wardrobe.line`, all time, the two
     signed the day before included.
   */
-  return description === null ? base : CAST_PACKAGE_WARDROBE_SPEC_DESCRIBED;
+  return description === null
+    ? sharedWardrobeSpec(pronouns)
+    : describedWardrobeSpec(pronouns, outfitReferenceOrdinal);
 }
 
 /**
@@ -874,8 +985,21 @@ export function belowWaistFor(
   angle: CastViewAngle,
   wardrobeLine: string | null,
   description: string | null = null,
+  outfitReferenceOrdinal: number | null = null,
 ): string {
-  if (!VIEWS[angle].belowWaist || wardrobeLine !== null) return "";
+  /*
+    ⚠ **AN OUTFIT REFERENCE SILENCES THIS SENTENCE ENTIRELY — #1480, and the
+    docblock above already predicted it: "what it cannot fix is its being asked
+    three times."** Path E was built to stop the bottom half being worked out
+    from words, and this sentence went on asking for exactly that, composed with
+    no knowledge that a plate rides.
+
+    It is the same branch a stored wardrobe line already took, with one more
+    condition, for the same reason: when something else in the request settles
+    the lower half, a paragraph telling the engine to derive it is not
+    redundancy, it is a second answer.
+  */
+  if (!VIEWS[angle].belowWaist || wardrobeLine !== null || outfitReferenceOrdinal !== null) return "";
   /*
     #1278 part 1 — the hem-and-shoes half of his report.
 
@@ -1022,16 +1146,63 @@ export function belowWaistFor(
  * this one: the repair here makes the PICTURE the document, which is the road
  * his ruling names, and it holds whether or not the words ever ride.
  */
+/**
+ * ⚠ **WHAT THE DESCRIPTION SETTLES ON *THIS* ROAD, AND WHAT IT DOES NOT —
+ * #1480 finding B.**
+ *
+ * `AUTHORITY_LINE` arrived on the view road with #1240 (his *"why cant the
+ * realism block be the same as when casting a sheet?"*), and on the ROLL it is
+ * right: *"Anything the description states outright — a look, a feature, a
+ * garment, a mood — is a fact and overrides any default or negative here."*
+ *
+ * On a VIEW it overreaches. A brief reading *"on a rain-soaked street at night,
+ * mid-stride, laughing"* then overrides the studio block's *"no environment,
+ * location or scene"* and fights the angle directive's own posture — and the
+ * judge's framing spec, which is derived from `spec` alone and knows nothing
+ * about the brief, then fails the view we asked for. His Bingu's two angle
+ * refusals are the first frames to read this against.
+ *
+ * So ONE sentence, on the view road only, placed with the view's own lines and
+ * never inside the shared block — the block is one road's and both roads' by his
+ * ruling, and narrowing it here would narrow the roll too.
+ */
+const VIEW_DESCRIPTION_SCOPE =
+  "ON THIS ROAD the description settles WHO this person is and WHAT they wear, and nothing else: "
+  + "where they are, what they are doing, their expression and where the camera stands come from "
+  + "this view's own directive and the studio block below, never from the description.";
+
 export function composePackageViewPrompt(
   angle: CastViewAngle,
   wardrobeLine: string | null = null,
   description: string | null = null,
+  options: {
+    /** Whose face this is, for every sentence that refers to the person (#1480 finding A). */
+    pronouns?: CastPronouns;
+    /**
+     * WHICH REFERENCE IS THE OUTFIT, when one rides — `null` on every view that
+     * has no plate and on a Sign whose plate did not land (#1480).
+     *
+     * ⚠ **It is the ORDINAL and not a boolean**, because three of the five
+     * places that addressed the outfit have to stop deferring to the
+     * description and start naming the picture, and a sentence that says *"the
+     * outfit is a reference"* without saying WHICH one is no better than the
+     * ambiguity it replaces. The orchestrator already computes it
+     * (`2 + crops.length`) for the clause itself; it is passed in rather than
+     * recomputed, because two authors of one ordinal would point a Cast with
+     * three tattoos at a picture of her elbow and call it the outfit.
+     */
+    outfitReferenceOrdinal?: number | null;
+    /** The outfit clause itself, composed by its owner and PLACED here (finding D). */
+    outfitClause?: string;
+  } = {},
 ): string {
   const view = VIEWS[angle];
   const brief = viewDescriptionOf(description);
+  const pronouns = options.pronouns ?? pronounsForSex(null);
+  const outfitReferenceOrdinal = options.outfitReferenceOrdinal ?? null;
   return [
     VIEW_IDENTITY_SENTENCE,
-    referenceRuleFor(brief),
+    referenceRuleFor(brief, pronouns, outfitReferenceOrdinal),
     /*
       #1278 part 1 — the cast's own words, and the position is load-bearing in two
       directions. It sits AFTER the identity sentence and the reference rule, so
@@ -1041,9 +1212,22 @@ export function composePackageViewPrompt(
       this road it has been resolving to nothing, leaving *"where the description
       is silent, this block governs: plain studio frame"* as its only live branch.
     */
-    ...(brief === null ? [] : [`DESCRIPTION: ${brief}`]),
-    `${view.directive}${belowWaistFor(angle, wardrobeLine, brief)}`,
-    `WARDROBE: ${wardrobeSpecFor(angle, wardrobeLine, brief)}`,
+    ...(brief === null ? [] : [`DESCRIPTION: ${brief}`, VIEW_DESCRIPTION_SCOPE]),
+    `${view.directive}${belowWaistFor(angle, wardrobeLine, brief, outfitReferenceOrdinal)}`,
+    `WARDROBE: ${wardrobeSpecFor(angle, wardrobeLine, brief, pronouns, outfitReferenceOrdinal)}`,
+    /*
+      ⚠ **THE OUTFIT CLAUSE SITS WITH WARDROBE — #1480 finding D.** It was
+      appended by `packageOrchestrator` AFTER the whole house block, i.e. after
+      `AUTHORITY_LINE`, which is the paragraph that says what beats what — so the
+      one sentence naming the outfit's real authority sat outside the ordering
+      that decides authority. It is the outfit's sentence; it belongs where the
+      outfit is discussed.
+
+      It arrives composed rather than composed here: its owner is
+      `outfitReferenceClause` in `outfitPlate.ts`, which knows the reference's
+      SIDE and KIND, and neither of those belongs in this signature.
+    */
+    ...(options.outfitClause ? [options.outfitClause] : []),
     ...HOUSE_PHOTOGRAPH_PARAGRAPHS,
   ].join("\n");
 }

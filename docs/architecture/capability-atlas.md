@@ -69,8 +69,8 @@ _Called as:_ `castingV2.refine`
 
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
-| `empty` | interpreter-refusal |  | server/castingV2/refineDelta.ts:626<br>server/castingV2/refineInterpreter.ts:898<br>(+1) | 5 test(s) | guard.empty |
-| `unreadable` | interpreter-refusal |  | server/castingV2/castingIntent.ts:1381<br>server/castingV2/castingIntent.ts:1417<br>(+14) | 8 test(s) | light.softer, guard.gibberish, guard.scope.ink.none |
+| `empty` | interpreter-refusal |  | server/castingV2/refineDelta.ts:626<br>server/castingV2/refineInterpreter.ts:898<br>(+1) | 4 test(s) | guard.empty |
+| `unreadable` | interpreter-refusal |  | server/castingV2/castingIntent.ts:1381<br>server/castingV2/castingIntent.ts:1417<br>(+14) | 7 test(s) | light.softer, guard.gibberish, guard.scope.ink.none |
 | `reader_outage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:625<br>server/castingV2/refineInterpreter.ts:912<br>(+2) | 2 test(s) | _documented-unreachable or gap — see findings_ |
 | `wall_likeness` | interpreter-refusal |  | server/castingV2/refineDelta.ts:498<br>server/castingV2/refineDelta.ts:1609<br>(+2) | 6 test(s) | guard.likeness |
 | `wall_content` | interpreter-refusal |  | server/castingV2/refineDelta.ts:538<br>server/castingV2/refineInterpreter.ts:1647<br>(+1) | 6 test(s) | guard.content |
@@ -79,9 +79,9 @@ _Called as:_ `castingV2.refine`
 | `wall_unfileable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:549<br>server/castingV2/refineDelta.ts:1338<br>(+2) | 8 test(s) | _documented-unreachable or gap — see findings_ |
 | `gate_ink_document` | interpreter-refusal |  | server/castingV2/refineDelta.ts:562<br>server/castingV2/refineDelta.ts:562<br>(+3) | 2 test(s) | ink.words.face, ink.words.noplace, ink.words.behind-ear, ink.transform.none |
 | `gate_ink_uncarried` | interpreter-refusal |  | server/castingV2/refineDelta.ts:569<br>server/castingV2/refineDelta.ts:569<br>(+4) | 3 test(s) | ink.words.chest |
-| `gate_ink_unkeepable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:588<br>server/castingV2/refineDelta.ts:588<br>(+3) | 3 test(s) | _documented-unreachable or gap — see findings_ |
+| `gate_ink_unkeepable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:588<br>server/castingV2/refineDelta.ts:588<br>(+3) | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `gate_ink_coverage_unread` | interpreter-refusal |  | server/castingV2/refineDelta.ts:596<br>server/castingV2/refineDelta.ts:596<br>(+3) | 3 test(s) | ink.words.chest.basics |
-| `scope_unknown` | service-refusal |  | server/castingV2/refineService.ts:1385<br>server/castingV2/refineService.ts:1423 | 2 test(s) | guard.scope.unknown |
+| `scope_unknown` | service-refusal |  | server/castingV2/refineService.ts:1385<br>server/castingV2/refineService.ts:1423 | 1 test(s) | guard.scope.unknown |
 | `scope_mismatch` | service-refusal |  | server/castingV2/refineService.ts:4946 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 
 - wall_stage = PROVABLY the shoot (the lexicon backed the claim); wall_unbacked = the model claimed out-of-scope and the lexicon could not confirm — one wall was two walls wearing one name until census card C1.
@@ -106,7 +106,7 @@ _Called as:_ `castingV2.refine`
 | `whichInkToChange` | cannot-say | free | server/castingV2/cannotSayCopy.ts:415 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `inkNotKept` | cannot-say | free | server/castingV2/cannotSayCopy.ts:408 | 1 test(s) | ink.transform.dangling |
 | `inkBeyondToday` | cannot-say | free | server/castingV2/cannotSayCopy.ts:272 | 2 test(s) | _documented-unreachable or gap — see findings_ |
-| `unplacedInk` | cannot-say | refunded | server/castingV2/cannotSayCopy.ts:248 | 5 test(s) | _documented-unreachable or gap — see findings_ |
+| `unplacedInk` | cannot-say | refunded | server/castingV2/cannotSayCopy.ts:248 | 3 test(s) | _documented-unreachable or gap — see findings_ |
 | `removal_absent` | service-refusal |  | server/castingV2/refineService.ts:3500 | 1 test(s) | ink.remove.none, skin.freckles.remove.none |
 | `removal_unnamed` | service-refusal |  | server/castingV2/refineService.ts:3072 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `removal_not_in_brief` | service-refusal |  | server/castingV2/refineService.ts:3481 | 1 test(s) | acc.glasses.remove.none, acc.remove.branch.other |
@@ -205,7 +205,7 @@ _Called as:_ `castingV2.concept.describe`
 | `concept.not_about_the_person` | concept-refusal |  | server/castingV2/conceptDescribeCopy.ts:82 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `concept.not_a_casting_note` | concept-refusal |  | server/castingV2/conceptDescribeCopy.ts:87 | 2 test(s) | _documented-unreachable or gap — see findings_ |
 | `concept.ran_long` | concept-refusal |  | server/castingV2/conceptDescribeCopy.ts:111 | 2 test(s) | _documented-unreachable or gap — see findings_ |
-| `concept.unreadable` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1272<br>server/castingV2/conceptDescribe.ts:1309<br>(+1) | 3 test(s) | _documented-unreachable or gap — see findings_ |
+| `concept.unreadable` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1272<br>server/castingV2/conceptDescribe.ts:1309<br>(+1) | 2 test(s) | _documented-unreachable or gap — see findings_ |
 | `concept.no_transport` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1208<br>server/castingV2/conceptDescribeCopy.ts:114 | 4 test(s) | _documented-unreachable or gap — see findings_ |
 
 > ⚠ THIS ROAD'S DOORS REACHED THE MAP BEFORE THE ROAD DID — the six were declared with #192 and every one of them is documented-unreachable (the corpus sends sentences, not pictures), while the ENTRANCE they belong to had no road until #1203. That is the forward/backward asymmetry in one specimen: the map could prove every door it named was real and could not notice it had never named the road. The FLAG and the two byte doors above the six are still outside the declared set: `NOT_FOUND` off `captureCastingConceptUploadEnabled`, and the shared `referenceAttachBytesRefusal` / `BYTES_NOT_AN_IMAGE_MESSAGE` pair, which are the ink door's own sentences reused rather than restated.
@@ -343,13 +343,13 @@ Derived from the architecture Atlas's own extractor. A procedure with no road is
 | concept.not_a_casting_note | concept-refusal |  | conceptDescribe.test.ts, conceptDescribeCopy.test.ts |
 | concept.not_about_the_person | concept-refusal |  | conceptDescribe.test.ts |
 | concept.ran_long | concept-refusal |  | conceptDescribe.test.ts, conceptDescribeCopy.test.ts |
-| concept.unreadable | concept-refusal |  | conceptDescribe.test.ts, conceptDescribeCopy.test.ts, readerFrameBound.test.ts |
+| concept.unreadable | concept-refusal |  | conceptDescribe.test.ts, conceptDescribeCopy.test.ts |
 | departure | cannot-say | refunded | cannotSayCopy.test.ts |
-| empty | interpreter-refusal |  | diagnosticCapture.test.ts, faceScan.test.ts, faceScanService.test.ts, readerOutageRefusal.test.ts, refineRefusals.test.ts |
+| empty | interpreter-refusal |  | diagnosticCapture.test.ts, faceScan.test.ts, readerOutageRefusal.test.ts, refineRefusals.test.ts |
 | gate_ink_coverage_unread | interpreter-refusal |  | refineDelta.test.ts, refineRefusals.test.ts, refineService.test.ts |
 | gate_ink_document | interpreter-refusal |  | inkReferenceGate.test.ts, refineDelta.test.ts |
 | gate_ink_uncarried | interpreter-refusal |  | refineDelta.test.ts, refineRefusals.test.ts, refineService.test.ts |
-| gate_ink_unkeepable | interpreter-refusal |  | refineDelta.test.ts, refineRefusals.test.ts, refineService.test.ts |
+| gate_ink_unkeepable | interpreter-refusal |  | refineRefusals.test.ts |
 | history_predates_undo | service-refusal |  | refineService.test.ts |
 | history_unreadable | service-refusal |  | refineService.test.ts |
 | inkBeyondToday | cannot-say | free | cannotSayCopy.test.ts, inkBeyondTodayAsk.test.ts |
@@ -358,7 +358,7 @@ Derived from the architecture Atlas's own extractor. A procedure with no road is
 | kind_unserved | service-refusal |  | refineService.test.ts |
 | master_missing | service-refusal |  | refineService.test.ts |
 | noInkToChange | cannot-say | free | cannotSayCopy.test.ts |
-| notASlot | cannot-say | free | cannotSayCopy.test.ts, carrySurvival.test.ts, mintedSlots.test.ts, openKindPolicy.test.ts, openLaneKind.test.ts, referenceSlotCatalogue.test.ts, refineService.test.ts, repaintAsks.test.ts |
+| notASlot | cannot-say | free | cannotSayCopy.test.ts, carrySurvival.test.ts, mintedSlots.test.ts, openKindPolicy.test.ts, openLaneKind.test.ts, repaintAsks.test.ts |
 | nothingAsked | cannot-say | free | cannotSayCopy.test.ts, repaintAsks.test.ts |
 | noWords | cannot-say | refunded | cannotSayCopy.test.ts, mintedSlots.test.ts, repaintAsks.test.ts, viewFeatureWords.test.ts |
 | perSideRemoval | cannot-say | refunded | cannotSayCopy.test.ts, repaintAsks.test.ts |
@@ -378,18 +378,18 @@ Derived from the architecture Atlas's own extractor. A procedure with no road is
 | roll.uninterpretable | roll-refusal |  | briefCompiler.test.ts, briefRefusalCopy.test.ts |
 | roll.unsupported_cohort | roll-refusal |  | briefCompiler.test.ts, briefRefusalCopy.test.ts, cohortWallRetry.test.ts, creativeRegisterScope.test.ts, styleRefusal.test.ts |
 | scope_mismatch | service-refusal |  | refineService.test.ts |
-| scope_unknown | service-refusal |  | facePanel.test.ts, refineService.test.ts |
+| scope_unknown | service-refusal |  | refineService.test.ts |
 | session_closed | service-refusal |  | rollService.test.ts |
 | session_expired | service-refusal |  | rollService.test.ts |
 | session_missing | service-refusal |  | rollService.test.ts |
 | sideNamedWithoutScope | cannot-say | refunded | cannotSayCopy.test.ts, repaintAsks.test.ts |
 | step_moved | service-refusal |  | refineService.test.ts |
-| uncatalogued | cannot-say | refunded | cannotSayCopy.test.ts, repaintAsks.test.ts, vacantPhrase.test.ts |
+| uncatalogued | cannot-say | refunded | cannotSayCopy.test.ts, repaintAsks.test.ts |
 | unnamedObject | cannot-say | refunded | cannotSayCopy.test.ts, mintedSlots.test.ts, repaintAsks.test.ts |
-| unplacedInk | cannot-say | refunded | cannotSayCopy.test.ts, inkBeyondTodayAsk.test.ts, inkDesignForAsk.test.ts, refineService.test.ts, repaintAsks.test.ts |
-| unreadable | interpreter-refusal |  | creativeRegisterScope.test.ts, hairColourFromReference.test.ts, makeupFromReference.test.ts, openLaneAccept.test.ts, openLaneKind.test.ts, readerOutageRefusal.test.ts, refineInterpreterCeiling.test.ts, refineService.test.ts |
+| unplacedInk | cannot-say | refunded | cannotSayCopy.test.ts, inkBeyondTodayAsk.test.ts, repaintAsks.test.ts |
+| unreadable | interpreter-refusal |  | creativeRegisterScope.test.ts, hairColourFromReference.test.ts, makeupFromReference.test.ts, openLaneAccept.test.ts, openLaneKind.test.ts, readerOutageRefusal.test.ts, refineService.test.ts |
 | upload.tooLarge | upload-refusal |  | inkUploadDoor.test.ts, uploadRefusalCopy.test.ts |
-| upload.tooSmall | upload-refusal |  | inkDeliveryCrop.test.ts, inkUploadDoor.test.ts, referenceAttachService.test.ts, uploadRefusalCopy.test.ts, server/db/castingV2ReferenceLibrary.test.ts |
+| upload.tooSmall | upload-refusal |  | inkUploadDoor.test.ts, referenceAttachService.test.ts, uploadRefusalCopy.test.ts, server/db/castingV2ReferenceLibrary.test.ts |
 | upload.unreadable | upload-refusal |  | inkReferenceCutter.test.ts, inkUploadDoor.test.ts, referenceAttachService.test.ts, uploadRefusalCopy.test.ts |
 | upload.unsupportedFormat | upload-refusal |  | inkUploadDoor.test.ts, referenceAttachService.test.ts, uploadRefusalCopy.test.ts |
 | version_missing | service-refusal |  | refineService.test.ts |

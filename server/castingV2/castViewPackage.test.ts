@@ -1,3 +1,4 @@
+import { pronounsForSex } from "./castPronouns";
 import { createHash } from "node:crypto";
 
 import { describe, expect, it } from "vitest";
@@ -438,7 +439,10 @@ describe("a signed view is lit the way its master was lit", () => {
  */
 describe("a signed view's realism block reads the reference, not a description", () => {
   const declined = PHOTOREAL_HUMAN_BLOCKS.viewDeclinedSentences;
-  const theDocumentRule = PHOTOREAL_HUMAN_BLOCKS.referenceDocumentSentences;
+  /* ⚠ A FUNCTION OF THE CAST'S PRONOUNS SINCE #1480 FINDING A — it was a bare
+     array while the sentences said "her" whatever the cast was. Read with the
+     default (`they`), which is what a prompt composed with no pronouns sends. */
+  const theDocumentRule = PHOTOREAL_HUMAN_BLOCKS.referenceDocumentSentences(pronounsForSex(null));
 
   it("⚠ carries none of the description-bound sentences, on any of the five views", () => {
     /*
@@ -880,7 +884,7 @@ describe("#1278 part 1 — a signed view is dressed by the cast's own brief", ()
     */
     for (const angle of CAST_VIEW_ANGLES) {
       const undescribed = composePackageViewPrompt(angle, null, null);
-      for (const sentence of PHOTOREAL_HUMAN_BLOCKS.referenceDocumentSentences) {
+      for (const sentence of PHOTOREAL_HUMAN_BLOCKS.referenceDocumentSentences(pronounsForSex(null))) {
         expect(undescribed, `${angle} must still carry the undescribed rule`).toContain(sentence);
       }
       expect(undescribed, `${angle} carries no DESCRIPTION label`).not.toMatch(/^DESCRIPTION: /m);
@@ -898,11 +902,48 @@ describe("#1278 part 1 — a signed view is dressed by the cast's own brief", ()
       record renders from them and #1278 must not touch a single one. The digest is
       origin/main's — proven byte-identical at the wire before it was recorded.
     */
-    const undescribedRule = PHOTOREAL_HUMAN_BLOCKS.referenceDocumentSentences.join(" ");
+    const undescribedRule = PHOTOREAL_HUMAN_BLOCKS.referenceDocumentSentences(pronounsForSex(null)).join(" ");
     expect(
       createHash("sha256").update(undescribedRule, "utf8").digest("hex"),
       "the undescribed reference rule changed — a Cast with no brief would render differently",
-    ).toBe("dfebf3b9ab72701fdf88137af88f04aa7e87401d743441cf7f160d180ccfda43");
+    ).toBe("139679ae2af7311ba0ce921e884d16bd5e45f52f832b923b3ffb6a66eeb29794");
+  });
+
+  /**
+   * ⚠ **THE PIN ABOVE MOVED WITH #1480 FINDING A, AND EXACTLY WHAT MOVED IS
+   * RECORDED HERE RATHER THAN IN A COMMIT MESSAGE NOBODY RE-READS.**
+   *
+   * It was `dfebf3b9…`, a hash of a sentence that said *her* whatever the cast
+   * was. Two things changed and only two:
+   *
+   * 1. **The pronouns are the cast's now**, which is the whole of finding A.
+   * 2. **`is hers` became `is <possessive> own`**, for every cast including a
+   *    female one — the possessive PRONOUN (hers/his/theirs) is a fourth word
+   *    `CastPronouns` does not carry, and widening a shared type across the ten
+   *    files that build one by hand, to phrase one clause, is the tail wagging
+   *    the dog. The meaning is identical and the reading is the same length.
+   *
+   * So the claim this suite can honestly make is not *"byte-identical"* but
+   * *"one phrase, deliberately"*, and the arm below is what holds it to that:
+   * a female cast's sentence must differ from the old one ONLY there.
+   */
+  it("⚠ a female cast's reference rule changed in exactly one phrase (#1480 finding A)", () => {
+    const female = PHOTOREAL_HUMAN_BLOCKS.referenceDocumentSentences(pronounsForSex("female")).join(" ");
+    expect(
+      createHash("sha256").update(female, "utf8").digest("hex"),
+      "the female form moved again — read the docblock above before re-pinning",
+    ).toBe("b262d470789685f8d4b37b404f18675adcdc0734449d09f1823ec493ed1a909b");
+
+    /* The ONE phrase, named, so a second silent change cannot hide behind the
+       first. Restoring `is hers` here and re-pinning would be visible. */
+    expect(female).toContain("her hair and her outfit — is her own");
+    expect(female).not.toContain("is hers");
+
+    /* And every OTHER pronoun in the sentence really is hers — this is the
+       arm that proves the repair did something, not just that it changed. */
+    expect(female).toContain("Everything the reference shows on her");
+    expect(PHOTOREAL_HUMAN_BLOCKS.referenceDocumentSentences(pronounsForSex("male")).join(" "))
+      .toContain("Everything the reference shows on him");
   });
 
   it("an absent, empty or whitespace brief is the same fact as no brief", () => {
