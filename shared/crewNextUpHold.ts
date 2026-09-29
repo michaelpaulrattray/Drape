@@ -429,3 +429,71 @@ export function holdOwnerFromReason(reason: string | null | undefined): CrewHold
   if (first === undefined) return "unknown";
   return FOUNDER_HOLD_WORDS.has(first) ? "you" : "other";
 }
+
+/** One held card whose hold sentence cannot say whose hold it is. */
+export type UnreadableHold = {
+  readonly issueNumber: number;
+  /** Which hold labels are live on it, so the report names the state it is in. */
+  readonly heldStates: readonly CrewHeldState[];
+  /**
+   * The sentence that could not be read as a person, or `null` when the body
+   * carries no `CREW_HOLD_MARKER` line at all. The two are different repairs —
+   * one is a sentence to rewrite, the other is a sentence to write — so the
+   * report distinguishes them rather than saying "unreadable" about both.
+   */
+  readonly reason: string | null;
+};
+
+/**
+ * ⚠ **THE HELD CARDS NOTHING DRAWS AND NOTHING NAMED (#1467 slice 2).**
+ *
+ * `liveWaitingOnYou` puts a held card on his page when its own `**Waiting on:**`
+ * sentence names HIM, and that is the whole of what slice 1 built. Its stated
+ * remainder is this function: **a card whose hold is live and whose sentence
+ * cannot be read as a person is drawn by nothing** — correctly, because
+ * `holdOwnerFromReason` never guesses `you` — **and until now it was named by
+ * nothing either.** A hold with no reason anybody can read is #541's freezer
+ * wearing a label: not on his desk, not takeable by a shift, and silent.
+ *
+ * **Measured on the real queue the day this landed (42 open cards, read with
+ * these same three readers rather than a grep): 6 held cards — 2 name him
+ * (#1492, #1434, both drawn since slice 1), 2 name something that is not a
+ * person and are correctly not drawn (#1098 waits on the Janitor's clock, #129
+ * on data), and 2 carry `blocked` with no `**Waiting on:**` line at all
+ * (#1468, #1337).** Those last two are this function's population.
+ *
+ * ⚠ **IT REPORTS AND NEVER REPAIRS, for `planDeskHoldLabels`' own reason one
+ * type above: what a hold is waiting on is a judgement about work.** Writing a
+ * sentence nobody meant would make the silence worse, because the next reader
+ * would believe it.
+ *
+ * ⚠ **AND IT IS DERIVED FROM `holdOwnerFromReason` RATHER THAN FROM "HAS NO
+ * SENTENCE", WHICH IS THE SAME ANSWER TODAY AND THE RIGHT ONE TOMORROW.** With
+ * a sentence present that reader returns `you` or `other` and never `unknown`,
+ * so the two rules currently select exactly the same two cards. Keying on the
+ * reader means a future `unknown` — a sentence of pure punctuation, an emphasis
+ * marker alone — joins this population on the day it becomes possible, instead
+ * of passing as readable because a body line exists. That is working law 4:
+ * this asks the question the page asks, not a second question that happens to
+ * agree.
+ */
+export function planUnreadableHolds(input: {
+  /** Every OPEN card, with the labels and body `gh issue list` returns. */
+  readonly open: ReadonlyArray<{
+    readonly issueNumber: number;
+    readonly labels: readonly string[];
+    readonly body: string;
+  }>;
+}): readonly UnreadableHold[] {
+  const found: UnreadableHold[] = [];
+  for (const row of input.open) {
+    const heldStates = heldStatesFromLabels(row.labels);
+    /* No live hold label, no hold — the sentence is not asked for and a rotted
+       one is not a finding (#298 leaves it in place on purpose). */
+    if (heldStates.length === 0) continue;
+    const reason = holdReasonFromBody(row.body);
+    if (holdOwnerFromReason(reason) !== "unknown") continue;
+    found.push({ issueNumber: row.issueNumber, heldStates, reason });
+  }
+  return found.sort((a, b) => a.issueNumber - b.issueNumber);
+}

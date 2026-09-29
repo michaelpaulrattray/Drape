@@ -83,9 +83,11 @@ import {
   promotionLine,
 } from "../shared/crewCardResolution.js";
 import {
+  type UnreadableHold,
   CREW_HOLD_LABELS,
   CREW_HOLD_MARKER,
   planDeskHoldLabels,
+  planUnreadableHolds,
 } from "../shared/crewNextUpHold.js";
 import { buildBoard, readCardComments } from "./lib/cardBuildState.mts";
 import { type GhExec, makeGhTransport } from "./lib/ghQueueTransport.mts";
@@ -236,8 +238,43 @@ const allOpen = gh([
   "issue", "list",
   "--state", "open",
   "--limit", String(OPEN_QUEUE_LIMIT),
-  "--json", "number,title,labels",
+  /* `body` rides along for `planUnreadableHolds` (#1467 slice 2) — the hold
+     REASON lives in the body, so a held card that never says whose hold it is
+     can only be found here. Same request, same instant, no extra call, and the
+     ladder pass below reads this same answer. */
+  "--json", "number,title,labels,body",
 ]) as Json[] | null;
+
+/*
+  ⚠ **THE HELD CARDS NOTHING DRAWS (#1467 slice 2).** `planUnreadableHolds` owns
+  the rule and the measurement; this is its I/O, and it sits here because the
+  read above is the only one that sees the WHOLE queue. The stale-hold block
+  below is its neighbour and its opposite: that one asks whether a hold has
+  outlived his desk, this one asks whether anybody can tell what a live hold is
+  waiting for.
+
+  ⚠ **A READ THAT FAILED IS NEVER REPORTED AS A CLEAN POPULATION.** `null` here
+  means `gh` did not answer, and an empty finding list would read exactly like
+  "every held card says whose hold it is" — the shape the shift-close orders
+  name as a receipt that cannot be trusted.
+*/
+const unreadableHolds: readonly UnreadableHold[] = allOpen === null
+  ? []
+  : planUnreadableHolds({
+    open: allOpen.map((row) => ({
+      issueNumber: Number(row?.number),
+      labels: Array.isArray(row?.labels)
+        ? (row.labels as Json[]).map((label: Json) => String((label as { name?: unknown })?.name ?? ""))
+        : [],
+      body: String(row?.body ?? ""),
+    })),
+  });
+if (allOpen === null) {
+  skipped.push(
+    "HOLDS: the open queue could not be read, so no card was checked for a hold that does not say"
+    + " whose it is. That is unread, NOT clean.",
+  );
+}
 
 /* ─── 1. NEXT UP — the founder-ordered queue, in the order a shift takes it ─── */
 
@@ -669,6 +706,53 @@ if (staleHolds.length > 0) {
     console.log("  a glance only, to check the sentence is still true:");
     for (const hold of quiet) console.log(`  · #${hold.issueNumber}`);
   }
+}
+
+if (unreadableHolds.length > 0) {
+  /*
+    ⚠ **THE OTHER DIRECTION, AND IT IS THE SILENT ONE (#1467 slice 2).** The
+    block above finds a hold that has outlived his desk. This finds a hold that
+    is perfectly live and says nothing anybody can act on: `liveWaitingOnYou`
+    will not draw it, because that reader never guesses `you` from a sentence it
+    cannot read, and until this block nothing named it either.
+
+    ⚠ **IT IS EVERY BAND, WHICH IS THE WHOLE POINT.** `planDeskHoldLabels`'
+    population is the `founder-ordered` queue, and neither of the two cards this
+    was filed about is founder-ordered — so the obvious home could not see
+    either of them. This reads the whole-queue answer instead.
+
+    Exit code 0, on the rule the tail of this file states rather than a fresh
+    judgement: a briefing carrying this is schema-VALID, so a shift can ship
+    past it, and exit 2 is spent only on what it cannot.
+  */
+  const titles = new Map<number, string>(
+    (allOpen ?? []).map((row) => [Number(row?.number), String(row?.title ?? "")]),
+  );
+  const silent = unreadableHolds.filter((hold) => hold.reason === null);
+  const unclear = unreadableHolds.filter((hold) => hold.reason !== null);
+  console.log("");
+  console.log(
+    `⚠ ${unreadableHolds.length} held card(s) do not say whose hold it is — so his page cannot draw`,
+  );
+  console.log("  them and, until this line existed, nothing named them either (#1467).");
+  console.log("  NOT repaired here: what a hold is waiting on is a judgement about work, and a");
+  console.log("  sentence nobody meant is worse than none because the next reader believes it.");
+  if (silent.length > 0) {
+    console.log(`  NO \`${CREW_HOLD_MARKER}\` LINE IN THE BODY — write one, or drop the hold label:`);
+    for (const hold of silent) {
+      console.log(
+        `  ! #${hold.issueNumber} [${hold.heldStates.join(",")}] ${(titles.get(hold.issueNumber) ?? "").slice(0, 70)}`,
+      );
+    }
+  }
+  if (unclear.length > 0) {
+    console.log("  A LINE IS THERE and the first word after the marker names nobody — rewrite it so");
+    console.log("  it begins with who is waited on (`you`, a person, a card, a clock):");
+    for (const hold of unclear) {
+      console.log(`  ! #${hold.issueNumber} [${hold.heldStates.join(",")}] ${JSON.stringify(hold.reason)}`);
+    }
+  }
+  console.log("  ⚠ A comment does not count — the body is what is read (the founder-ordered clause).");
 }
 
 if (pipelinePlan.stuck.length > 0) {

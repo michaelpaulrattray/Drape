@@ -385,18 +385,29 @@ export function liveNextUp(reading: LiveQueueReading): LiveNextUpItem[] {
  * would appear on his desk for two days and then vanish, which is worse than a
  * rule.
  *
- * ⚠ **AND THE REMAINDER IS NAMED BY NOTHING YET, WHICH IS STATED HERE RATHER
- * THAN PROMISED AWAY.** A held card whose sentence cannot be read — absent, or
- * about something that is not a person — is simply not drawn, and no report
- * lists it. The obvious home is `crew-desk-sweep.mts`'s stale-hold block, but
- * that block's population is `planDeskHoldLabels`' `ordered` — the
- * **founder-ordered** cards alone — and neither of the two cards this card was
- * filed about is founder-ordered. Widening it is its own slice with its own
- * reading, filed on #1467; writing a docblock that says a control exists is how
- * this repository has twice come to believe in one that does not (invariant 7).
- * Until then the honest floor is: **a card that does not say whose hold it is
- * does not reach his page**, which is the same direction #298 chose for a
- * reason that has not changed.
+ * ⚠ **THE REMAINDER IS NAMED NOW, AND IT IS STILL NOT DRAWN — the two are
+ * different questions (#1467 slice 2).** A held card whose sentence cannot be
+ * read — absent, or about something that is not a person — is deliberately not
+ * drawn here, because this reader never guesses `you`; that is the same
+ * direction #298 chose, for a reason that has not changed. What has changed is
+ * that it is no longer SILENT: `planUnreadableHolds` (`shared/crewNextUpHold.ts`)
+ * reads the whole open queue and `crew-desk-sweep.mts` prints every such card
+ * at the close of every shift, which is where a person is already looking.
+ *
+ * It could not live in the stale-hold block beside it: that block's population
+ * is `planDeskHoldLabels`' `ordered` — the **founder-ordered** cards alone —
+ * and **neither of the two cards this card was filed about is founder-ordered**,
+ * so the obvious home could see neither of them. Measured the night slice 2
+ * landed, with these three readers rather than a grep: **6 held cards — 2 name
+ * him, 2 name something that is not a person, 2 (#1468, #1337) carry `blocked`
+ * with no `**Waiting on:**` line at all.**
+ *
+ * ⚠ **The report REPAIRS NOTHING**, for `planDeskHoldLabels`' reason: what a
+ * hold waits on is a judgement about work, and a sentence nobody meant is worse
+ * than none because the next reader believes it. So the floor this docblock used
+ * to state still stands as the page's behaviour — **a card that does not say
+ * whose hold it is does not reach his page** — it is just no longer the only
+ * thing that happens to it.
  */
 export function liveWaitingOnYou(reading: LiveQueueReading): LiveWaitingOnYou[] {
   const items: LiveWaitingOnYou[] = [];

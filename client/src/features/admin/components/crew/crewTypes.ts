@@ -377,6 +377,14 @@ export function needsYouFor(live: CrewLiveView, cards: readonly CrewNeedsYouCard
 }
 
 /**
+ * The filer's hold sentence with its marker put back, so a bare row reads as a
+ * sentence rather than starting mid-thought. See `needsYouCardFromHold`.
+ */
+function waitingSentence(reason: string): string {
+  return /^waiting\s+on\b/i.test(reason.trim()) ? reason : `Waiting on ${reason}`;
+}
+
+/**
  * A held card rendered as a needs-you card, with nothing invented.
  *
  * ⚠ **ITS `id` IS WHAT MAKES THE REPLY BOX WORK**, and it is the card number
@@ -392,12 +400,25 @@ export function needsYouFor(live: CrewLiveView, cards: readonly CrewNeedsYouCard
  * thing that is not a guess. A bare row is visibly terser than a written-up card
  * — that difference is true, and it is the signal that a shift still owes this
  * one a proper write-up.
+ *
+ * ⚠ **THE MARKER IS PUT BACK AS PROSE, WHICH IS THE ONE WORD THIS ROW COMPOSES
+ * (the relay's nit on PR #1527, filed on #1467 for this slice).** The reader
+ * strips `**Waiting on:**` to get the sentence, so the row rendered #1434's as
+ * *"you — a yes or no, and no is a fine answer."* — a line that starts with a
+ * pronoun and reads like the middle of something. Restoring the two words makes
+ * it a sentence again (*"Waiting on you — a yes or no…"*) without touching what
+ * the filer actually wrote, which is why it is a prefix rather than a rewrite.
+ *
+ * A sentence that already opens with those words is left alone: the marker and a
+ * filer's own *"Waiting on the founder"* would otherwise stack into *"Waiting on
+ * Waiting on the founder"*. No card says it twice today — it is guarded because
+ * the cost is one comparison and the symptom would be on HIS page.
  */
 function needsYouCardFromHold(item: CrewLiveDesk["waitingOnYou"][number]): CrewNeedsYouCard {
   return {
     id: `card-${item.issueNumber}`,
     title: item.title,
-    productImpact: item.reason,
+    productImpact: waitingSentence(item.reason),
     workedExample: null,
     options: [],
     recommendation: null,
