@@ -147,6 +147,15 @@ export type UploadRefusalCode = keyof typeof UPLOAD_REFUSAL_COPY;
  *
  * So it says only what is true today. The customer-facing DETACH is filed as
  * its own chunk (fable-1173 §2); when it lands, this sentence names it.
+ *
+ * ⚠ **AND THIS PARAGRAPH TRAVELLED WITH THE SENTENCE, because it is about the
+ * sentence's GUARD and would have been orphaned by the move** (#209 item 1).
+ * It used to end "…and `referenceAttachDoor.test.ts` is where the two are kept
+ * in step", present tense, about a file that has never existed (#647). The
+ * refusal is driven TODAY by `inkReferenceMint.test.ts`, which is the only
+ * suite that reads it. A reader who follows a pointer, finds nothing, and
+ * concludes the guard was never written has just re-filed a live control as a
+ * dead one — the wrong-road class `CLAUDE.md`'s law-7 section is about.
  */
 export const REFERENCE_ATTACH_REFUSAL_COPY = {
   /*
