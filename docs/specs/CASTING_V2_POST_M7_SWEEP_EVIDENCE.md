@@ -86,6 +86,7 @@ missing.
 ("show all"). An owner `SELECT` with no ceiling is bounded by user behaviour, not
 by the statement. Raised to a stated `OPEN_SESSION_CEILING = 40` — sessions
 expire after seven quiet days, so forty covers a heavy week several times over
+(⚠ thirty quiet days since 2026-09-27, #1464 — the ceiling did not move with it)
 while the query keeps a limit at all.
 
 ---

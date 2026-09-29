@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 67
+      "moduleCount": 68
     },
     {
       "id": "domain:staff",
@@ -5883,6 +5883,12 @@
     {
       "id": "module:shared/castingRealization.ts",
       "path": "shared/castingRealization.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/castingRetention.ts",
+      "path": "shared/castingRetention.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -12374,6 +12380,10 @@
       "path": "server/castingV2/segmentCuts.test.ts"
     },
     {
+      "id": "test:server/castingV2/sessionRetentionWindow.test.ts",
+      "path": "server/castingV2/sessionRetentionWindow.test.ts"
+    },
+    {
       "id": "test:server/castingV2/sexCoding.test.ts",
       "path": "server/castingV2/sexCoding.test.ts"
     },
@@ -17071,6 +17081,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/retentionCopy.ts",
+      "to": "module:shared/castingRetention.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/sheetGone.ts",
       "to": "module:shared/spokenError.ts",
       "kind": "imports"
@@ -20098,6 +20113,11 @@
     {
       "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:shared/briefLength.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:shared/castingRetention.ts",
       "kind": "imports"
     },
     {
@@ -28798,6 +28818,11 @@
     {
       "from": "module:server/db/castingV2.ts",
       "to": "module:shared/castingPaths.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2.ts",
+      "to": "module:shared/castingRetention.ts",
       "kind": "imports"
     },
     {

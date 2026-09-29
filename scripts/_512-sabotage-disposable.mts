@@ -121,7 +121,13 @@ const SABOTAGES: Sabotage[] = [
        leak. The late arm's INDEPENDENCE is the wait sabotage above, which fells
        it alone. */
     name: "law 5 — the expiry-copy reading",
-    edits: [["return /7 quiet days/i.test(text);", "return true;"]],
+    /* ⚠ THIS ARM WAS INERT AND HAD BEEN FOR SOME TIME (found while sweeping
+       #1464). Its edit named `return /7 quiet days/i.test(text);`, a line the
+       law has not carried since the scoped reading of #782 replaced the
+       page-wide one — so the edit matched nothing, the law was never
+       sabotaged, and the arm reported a pass on an untouched instrument.
+       Re-aimed at the reading the law actually performs. */
+    edits: [["      stated: statesExpiry(section.innerText),", "      stated: true,"]],
     expect: [
       "an unsigned-sheets section that never says when the sheets expire",
       "an unsigned-sheets section that arrives with a query and never says when the sheets expire",

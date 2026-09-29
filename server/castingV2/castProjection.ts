@@ -165,7 +165,7 @@ export type SignedCastProjection = {
   /**
    * Her sheet is still a place you can go.
    *
-   * FALSE once the session's own seven-day clock runs out — which happens
+   * FALSE once the session's own thirty-day clock runs out — which happens
    * independently of the §G.6 exemption that keeps her siblings' faces alive.
    * Anything offering a link to that sheet must read this first, or it offers a
    * 404 to a customer who has done nothing wrong.

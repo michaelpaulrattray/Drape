@@ -1888,7 +1888,7 @@ export type InsertBoardEdge = typeof boardEdges.$inferInsert;
    candidates a user keeps or discards. Deliberately NOT built on the existing
    model/evidence tables — evidence is owned identity truth, whereas candidates
    are exploratory, expiring and non-authoritative. Reusing those tables would
-   have made "delete every candidate after 7 idle days" a dangerous statement
+   have made "delete every candidate after 30 idle days" a dangerous statement
    to write.
 
    Convention: every "→" below is a LOGICAL foreign key — an indexed plain
@@ -1933,7 +1933,7 @@ export type CastingCandidateStatus = typeof CASTING_CANDIDATE_STATUSES[number];
  *
  * `cancelled_unseen` — dispatched before a cancel, landed after it, never shown
  * to anyone. Refunded under the late-landing generosity ruling.
- * `retention` — the 7-day sweep aged it out. The user received this candidate
+ * `retention` — the idle-window sweep aged it out. The user received this candidate
  * and looked at it; refunding it would undo work that was genuinely delivered.
  */
 export const CASTING_EXPIRED_REASONS = ["cancelled_unseen", "retention"] as const;
@@ -1961,7 +1961,8 @@ export const castingSessions = mysqlTable("casting_sessions", {
   parentCastId: int("parentCastId"), // fork-from-room lineage →models
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   lastActivityAt: timestamp("lastActivityAt").defaultNow().onUpdateNow().notNull(),
-  // Slides with activity; 7 idle days (§G.6). The bulk purge reads this.
+  // Slides with activity; 30 idle days (§G.6, widened from 7 on 2026-09-27,
+  // #1464). The bulk purge reads this; `shared/castingRetention.ts` declares it.
   expiresAt: timestamp("expiresAt"),
 }, (table) => ([
   uniqueIndex("uq_casting_sessions_public").on(table.publicId),

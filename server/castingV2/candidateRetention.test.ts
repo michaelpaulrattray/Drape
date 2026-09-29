@@ -884,7 +884,7 @@ describe("abandoning a sheet releases it, rather than waiting for a sweep", () =
       Asserted at the SOURCE rather than through the sweep, because widening the
       sweep is the fix that looks cheaper and is wrong: an abandoned sheet's
       `expiresAt` is whatever the last activity set, so the purge would be
-      deferred up to seven days; and nothing transitions `abandoned`, so the
+      deferred up to thirty days; and nothing transitions `abandoned`, so the
       sweep would re-select it every tick forever.
     */
     const source = await readFile(

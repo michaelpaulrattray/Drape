@@ -2666,6 +2666,7 @@ nothing else. Keep, Discard and Sign stay on the tile, where the surrounding
 context is.
 
 **No retention warning accompanies it.** Download is the REMEDY for the seven-day
+(thirty-day since 2026-09-27, #1464)
 purge, not its victim — handing the owner the bytes is precisely how a face
 outlives §G.6. The retention confession already has one ratified home and tone
 (`retentionCopy.ts`), and repeating it under a download button would be the same
@@ -2860,7 +2861,8 @@ two places that promised it was fine.
 change, sharing `expireSessionCandidatesIn` with the sweep so the §G.6
 carve-outs cannot drift between callers. Deliberately NOT by widening the sweep,
 which is wrong twice: an abandoned sheet's `expiresAt` is whatever the last
-activity set, so the purge would be deferred up to seven days after the user
+activity set, so the purge would be deferred up to seven days (thirty since
+2026-09-27, #1464) after the user
 asked for it; and nothing transitions `abandoned`, so the sweep would re-select
 every abandoned sheet on every tick forever, eventually crowding real expiries
 out of its own row limit.

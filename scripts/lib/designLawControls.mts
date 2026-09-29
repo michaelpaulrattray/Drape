@@ -28,6 +28,8 @@
  */
 import type { Browser, Page } from "puppeteer-core";
 
+import { CASTING_SESSION_IDLE_PHRASE } from "../../shared/castingRetention.js";
+
 import {
   assertBriefEcho,
   assertDockVisible,
@@ -469,7 +471,7 @@ export const CONTROLS: Control[] = [
     run: assertRetentionStated,
     offender: { html: page(``, `<section><h2>Unsigned sheets</h2><p>Three waiting.</p></section>`) },
     compliant: {
-      html: page(``, `<section><h2>Unsigned sheets</h2><p>Kept for 7 quiet days, then cleared.</p></section>`),
+      html: page(``, `<section><h2>Unsigned sheets</h2><p>Kept for ${CASTING_SESSION_IDLE_PHRASE}, then cleared.</p></section>`),
     },
   },
   {
@@ -501,7 +503,7 @@ export const CONTROLS: Control[] = [
       html: page(
         ``,
         `<div id="late"></div><script>setTimeout(function(){document.getElementById("late").innerHTML=` +
-          `"<section><h2>Unsigned sheets</h2><p>Kept for 7 quiet days.</p></section>";},1500)<\/script>`,
+          `"<section><h2>Unsigned sheets</h2><p>Kept for ${CASTING_SESSION_IDLE_PHRASE}.</p></section>";},1500)<\/script>`,
       ),
       mayHold: ["retentionCopy"],
     },
@@ -509,7 +511,7 @@ export const CONTROLS: Control[] = [
   {
     /*
       THE PHRASE IN THE WRONG PLACE (#782). The old reader tested the whole
-      page for *7 quiet days*, so a footer saying it satisfied a section that
+      page for the expiry phrase, so a footer saying it satisfied a section that
       did not. Both arms carry the footer; only the compliant one states the
       expiry INSIDE the unsigned-sheets section, which is where the law's own
       prose puts it.
@@ -521,14 +523,14 @@ export const CONTROLS: Control[] = [
       html: page(
         ``,
         `<section><h2>Unsigned sheets</h2><p>Three waiting.</p></section>` +
-          `<footer><p>Sheets are kept for 7 quiet days.</p></footer>`,
+          `<footer><p>Sheets are kept for ${CASTING_SESSION_IDLE_PHRASE}.</p></footer>`,
       ),
     },
     compliant: {
       html: page(
         ``,
-        `<section><h2>Unsigned sheets</h2><p>Kept for 7 quiet days, then cleared.</p></section>` +
-          `<footer><p>Sheets are kept for 7 quiet days.</p></footer>`,
+        `<section><h2>Unsigned sheets</h2><p>Kept for ${CASTING_SESSION_IDLE_PHRASE}, then cleared.</p></section>` +
+          `<footer><p>Sheets are kept for ${CASTING_SESSION_IDLE_PHRASE}.</p></footer>`,
       ),
     },
   },
@@ -547,7 +549,7 @@ export const CONTROLS: Control[] = [
       html: page(``, `<section><h2>Unsigned <em>sheets</em></h2><p>Three waiting.</p></section>`),
     },
     compliant: {
-      html: page(``, `<section><h2>Unsigned <em>sheets</em></h2><p>Kept for 7 quiet days, then cleared.</p></section>`),
+      html: page(``, `<section><h2>Unsigned <em>sheets</em></h2><p>Kept for ${CASTING_SESSION_IDLE_PHRASE}, then cleared.</p></section>`),
     },
   },
   {
@@ -589,7 +591,7 @@ export const CONTROLS: Control[] = [
     run: assertRetentionStated,
     offender: { html: page(``, `<p>nothing about sheets on this page.</p>`), requires: ["retentionCopy"] },
     compliant: {
-      html: page(``, `<section><h2>Unsigned sheets</h2><p>Kept for 7 quiet days.</p></section>`),
+      html: page(``, `<section><h2>Unsigned sheets</h2><p>Kept for ${CASTING_SESSION_IDLE_PHRASE}.</p></section>`),
       requires: ["retentionCopy"],
     },
   },
