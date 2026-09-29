@@ -80,6 +80,7 @@ import { useFaceSelection } from "@/features/castingV2/components/faceSelection"
 import { KeptTray } from "@/features/castingV2/components/KeptTray";
 import { visibleShortlist } from "@/features/castingV2/keptStrip";
 import { signTargets } from "@/features/castingV2/signTarget";
+import { signVersionFor } from "@/features/castingV2/signVersion";
 import { SignConfirm } from "@/features/castingV2/components/SignConfirm";
 
 /**
@@ -1235,6 +1236,67 @@ export default function CastingSheet() {
     serverSelected: variants.data?.selectedVariantId ?? null,
     chosen: chosenFrame,
   });
+
+  /*
+    WHICH VERSION THE SIGN BOX IS ABOUT TO MAKE PERMANENT (#1478, his ruling
+    **A**: *"Sign shows you which version it's about to sign, with the picture,
+    before you spend"*).
+
+    # WHY THIS ASKS AGAIN RATHER THAN READING THE VIEWER'S ANSWER
+
+    The Sign target is the newest KEPT face, and the viewer is open on whichever
+    face was last clicked — they are frequently not the same woman. Reading
+    `variants` above would therefore name the version of a face this ceremony
+    is not about, which is a worse defect than the silence it replaces.
+
+    It is very nearly free where it matters: when the target IS the open face,
+    this is the same query key as the viewer's, so TanStack serves it from cache
+    with no request at all. It is gated on the modal being open, so a sheet
+    nobody is signing on pays nothing.
+
+    # ⚠ AND WHY IT IS THE SERVER'S POINTER HERE, WHERE THE VIEWER USES THE
+    # CLICK-AWARE ONE — THE ONE CLAUSE IN THIS BLOCK NOT TO "TIDY UP"
+
+    Every other surface on this sheet resolves the shown version through
+    `selectedVariantFor`, which prefers a click whose write is still in flight.
+    This one deliberately does not, and the reason is that the Sign box is not
+    one of those surfaces.
+
+    The override is scoped to the VIEWER and the TILE. It never reaches the kept
+    strip: a tray row's picture is `faceImageKey`, projected from the server's
+    own `selectedVariantId` — which is the same fact `getSignableCandidate`
+    resolves the Sign from. So inside the round trip of a version click, the
+    modal's PICTURE is the server's version and the SIGN takes the server's
+    version, while the viewer behind the scrim is drawing the clicked one.
+
+    A sentence read through `selectedVariantFor` would then say *"this signs
+    your edit"* over a photograph of the original, and sign the original — a
+    confident sentence contradicting both the picture beside it and the money.
+    Keyed on the server's pointer it says *"this signs your original, not your
+    edit"*, which is true of the picture, true of the spend, and is exactly the
+    warning that window needs.
+
+    (That window — the client drawing one version while a paid act takes
+    another — is a real defect of its own, and it is REFINE's too: the refine
+    service resolves its parent through `getOwnedCandidateWithSelectedFace`, the
+    same pointer, while the panel beside it rides the override. Filed rather
+    than folded in; it is not what the founder hit and it wants its own design.)
+
+    ⚠ It is `null` while the answer is in flight and `null` if the read fails.
+    That is deliberate too: this is a claim about where 450 credits are going,
+    and an absent sentence is exactly today's product while a wrong one would be
+    a defect worse than the card.
+  */
+  const signTargetVariants = trpc.castingV2.variants.useQuery(
+    { candidateId: signing?.candidateId ?? "" },
+    { enabled: signing !== null },
+  );
+  const signsVersion = signing && signTargetVariants.data
+    ? signVersionFor({
+      refinementCount: signTargetVariants.data.variants.length,
+      selectedVariantId: signTargetVariants.data.selectedVariantId,
+    })
+    : null;
 
   /*
     THE FRAME THE SHOWN ONE REPLACED — "current-vs-proposed", answered with the
@@ -3376,6 +3438,7 @@ export default function CastingSheet() {
         <SignConfirm
           indexLabel={signing.indexLabel}
           imageUrl={signing.imageUrl}
+          signsVersion={signsVersion}
           priceCredits={signPrice}
           busy={sign.isPending}
           onCancel={() => setSigning(null)}

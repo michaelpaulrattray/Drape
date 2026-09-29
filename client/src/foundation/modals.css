@@ -771,6 +771,31 @@ button.dpc-modal__replace:focus-visible {
 }
 
 /*
+  WHICH VERSION THE MONEY IS ABOUT TO BE SPENT ON (#1478, his ruling A).
+
+  Sans and not mono, because it is a sentence — the house's own law, and the
+  reason it cannot simply join the cost line beside the price. It sits directly
+  above that price: the face answers "who", the title answers "what", and this
+  is the last fact read before the button, which is where he needed it.
+
+  FULL `--ink`, unlike the explainer above it. That paragraph describes the
+  ceremony and is true of every Sign; this one is the specific claim about the
+  specific picture, and it exists because a quieter version of it — silence —
+  is what the founder walked past. It is still a STATEMENT and takes no accent:
+  accent means state in this product, and nothing here is wrong or refused.
+*/
+.dpc-modal__version {
+  margin: 0;
+  padding: 13px 0 0;
+  font: 400 12.5px/1.5 var(--font-sans);
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+/* The version line already supplies the gap the cost would have opened. */
+.dpc-modal__version + .dpc-modal__cost { padding-top: 6px; }
+
+/*
   THE WAY OUT, QUIETER THAN THE WAYS ON. With three actions in the row — leave,
   keep the words, cast them — two bordered buttons side by side read as a pair
   of equals and the eye has nowhere to start. Borderless is the house's own
