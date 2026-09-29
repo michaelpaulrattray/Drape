@@ -21,7 +21,16 @@
  *
  * `global.fetch` is stubbed, so no request is made and no money moves. The
  * arms assert the endpoint, the tier, the size and the body fal is handed.
- */
+  *
+ * ⚠ **THE ENGINE THIS PROVES IS NOT WIRED TO THE SIGN ANY MORE (#1278 path E,
+ * 2026-09-29).** A delivered view renders on Nano Banana Pro again; Sunburst
+ * draws the wardrobe plate, through a different door, and
+ * `signViewEngineChain.test.ts` is where the road's real endpoint is proved.
+ * These arms still hold this factory to the body the two courts measured,
+ * which is worth keeping while the factory is — see its own docblock for why
+ * it was kept rather than deleted. **Do not read a green run here as evidence
+ * about what a customer's Sign renders on.**
+*/
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {

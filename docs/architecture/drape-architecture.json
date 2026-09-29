@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 183
+      "moduleCount": 184
     },
     {
       "id": "domain:castingV2",
@@ -4089,6 +4089,12 @@
     {
       "id": "module:server/castingV2/openLaneKind.ts",
       "path": "server/castingV2/openLaneKind.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/outfitPlate.ts",
+      "path": "server/castingV2/outfitPlate.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -12056,12 +12062,20 @@
       "path": "server/castingV2/openLanePinning.test.ts"
     },
     {
+      "id": "test:server/castingV2/outfitPlate.test.ts",
+      "path": "server/castingV2/outfitPlate.test.ts"
+    },
+    {
       "id": "test:server/castingV2/overridePrecedence.test.ts",
       "path": "server/castingV2/overridePrecedence.test.ts"
     },
     {
       "id": "test:server/castingV2/packageOrchestrator.test.ts",
       "path": "server/castingV2/packageOrchestrator.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/packageOrchestratorPlate.test.ts",
+      "path": "server/castingV2/packageOrchestratorPlate.test.ts"
     },
     {
       "id": "test:server/castingV2/partialDeference.test.ts",
@@ -25602,6 +25616,31 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/outfitPlate.ts",
+      "to": "module:server/castingV2/castPronouns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/outfitPlate.ts",
+      "to": "module:server/castingV2/castViewPackage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/outfitPlate.ts",
+      "to": "module:server/castingV2/houseBlock.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/outfitPlate.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/outfitPlate.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/packageOrchestrator.ts",
       "to": "module:server/casting/atomicCredits.ts",
       "kind": "imports"
@@ -25624,6 +25663,11 @@
     {
       "from": "module:server/castingV2/packageOrchestrator.ts",
       "to": "module:server/castingV2/inkViewReferences.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageOrchestrator.ts",
+      "to": "module:server/castingV2/outfitPlate.ts",
       "kind": "imports"
     },
     {
@@ -28358,7 +28402,17 @@
     },
     {
       "from": "module:server/castingV2/viewRetryService.ts",
+      "to": "module:server/castingV2/outfitPlate.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryService.ts",
       "to": "module:server/castingV2/packageOrchestrator.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryService.ts",
+      "to": "module:server/castingV2/signEngine.ts",
       "kind": "imports"
     },
     {

@@ -680,7 +680,7 @@ export function castPackageLabel(
  * correct on every path, including a Basics Cast with no collar at all. Only
  * the shared sentence, the one that names an outfit, has anything to replace.
  */
-function wardrobeSpecFor(
+export function wardrobeSpecFor(
   angle: CastViewAngle,
   wardrobeLine: string | null,
   description: string | null = null,
@@ -771,7 +771,7 @@ function wardrobeSpecFor(
  * The judge is untouched by this: `packageViewExpectation` is assembled from
  * `spec` alone and never reads a directive, so nothing here can fail a view.
  */
-function belowWaistFor(
+export function belowWaistFor(
   angle: CastViewAngle,
   wardrobeLine: string | null,
   description: string | null = null,

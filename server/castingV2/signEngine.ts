@@ -13,19 +13,34 @@
  * a generator grading its own output is not a second opinion, and prompt
  * compliance as the sole check is the settled anti-pattern (§I).
  *
- * ⚠ **AND THE ONE THAT MAKES THE PICTURE IS NOW TWO, BECAUSE THE SIGN AND THE
- * REFINE ARE ON DIFFERENT ENGINES (#1459, 2026-09-27).** His word closed the
- * outfit court: *"sunburst produced the best result easily"*. So a SIGNED VIEW
- * renders on GPT Image 2.5 Sunburst `high` (`castingViewEngine`), and the paid
- * refine's non-repaint edit stays on Nano Banana Pro at `1K`
- * (`castingIdentityEngine`, which `refineService.ts` reads). Read
- * `createFalSunburstViewEngine`'s own docblock for the measurement, the price
- * and the reason the two did not move together — the short version is that his
- * word moved the signed views and nothing else.
+ * ⚠ **AND THERE ARE THREE NOW, BECAUSE PATH E SPLIT THE OUTFIT FROM THE
+ * PICTURE (#1278 part 2, his ruling 2026-09-29).** His two courts did not
+ * cancel — they each answered about a different job, and he said so in one
+ * line: *"Sunburst was only chosen because it was more creative in outfit
+ * design. NBP2k was a better quality rersult though."* So:
+ *
+ *   `castingViewEngine`       Nano Banana Pro `2K` — every DELIVERED view.
+ *   `castingOutfitPlateEngine` GPT Image 2.5 Sunburst `high` — the wardrobe
+ *                              plate only, which no customer is ever handed.
+ *   `castingIdentityEngine`   Nano Banana Pro `1K` — the paid refine's
+ *                              non-repaint edit (`refineService.ts`).
+ *
+ * ⚠ **THIS SUPERSEDES #1459 AND DOES SO HERE RATHER THAN IN A REVERT** — his
+ * own instruction: *"#1459's switch of the delivered views to Sunburst is
+ * superseded WHEN path E lands, inside E's own PR — not reverted separately
+ * beforehand."* #1459 was right on its own question and is kept in the record
+ * for it; what changed is that the outfit stopped being the delivered
+ * picture's problem.
+ *
+ * ⚠ **ALL THREE SHARE ONE QUEUE AND THAT IS THE WHOLE BUDGET STORY.** The fal
+ * account's ceiling is spent by four DECLARED paths (`falBudget.ts`) summing to
+ * 19 of 20, and `assertFalBudget()` refuses to boot on a fifth. The plate is a
+ * new road, not a new path: it draws from `SIGN_VIEW_CONCURRENCY` like the
+ * views beside it, so the arithmetic that table exists to protect is unmoved.
  */
 import { createOpenRouterTextEngine, DEFAULT_INTERPRETER_MODEL } from "../providers/openrouterText";
 import { createFalIdentityEngine } from "../providers/falQueue";
-import { createFalSunburstViewEngine } from "../providers/falImages";
+import { createFalSunburstPlateEngine } from "../providers/falImages";
 import { falAllowanceOf } from "./falBudget";
 import { ProviderQueue } from "../providers/providerQueue";
 import type { IdentityEngine } from "../providers/types";
@@ -41,6 +56,7 @@ import { envInt } from "../_core/env";
 let viewQueue: ProviderQueue | null = null;
 let identityEngine: IdentityEngine | null = null;
 let viewEngine: IdentityEngine | null = null;
+let plateEngine: IdentityEngine | null = null;
 let judge: ViewConformanceJudge | null = null;
 
 function castPackageQueue(): ProviderQueue {
@@ -70,30 +86,60 @@ export function castingIdentityEngine(): IdentityEngine {
 }
 
 /**
- * WHAT A SIGNED VIEW RENDERS ON — his word, 2026-09-27 (#1459).
+ * WHAT A SIGNED VIEW RENDERS ON — Nano Banana Pro at the `2K` tier.
+ *
+ * **His word, 2026-09-29 (terminal), path E:** *"NBP2k was a better quality
+ * rersult though."* The delivered views are the pictures a customer keeps, so
+ * they render on the engine his eye picked for QUALITY; the outfit they wear is
+ * settled one call earlier by {@link castingOutfitPlateEngine}, which is the
+ * engine his eye picked for INVENTION.
  *
  * `packageOrchestrator`'s attempt loop takes this one, so the Sign and a Try
- * again are one engine (they must be, or one cast wears two looks). Everything
- * else that reaches `castingIdentityEngine` above — the refine's non-repaint
- * edit, and the courts that pin the old engine on purpose — is untouched.
+ * again are one engine — they must be, or one cast wears two looks.
  *
- * ⚠ **IT SHARES THE SIGN'S QUEUE, AND THAT IS THE WHOLE BUDGET STORY.** The
- * fal account's ceiling is spent by four declared paths (`falBudget.ts`) and
- * this road is one of them at `SIGN_VIEW_CONCURRENCY` 3. The engine changed;
- * the path did not, so the arithmetic `assertFalBudget()` refuses to boot
- * against is unmoved — a second queue here would have been a fifth spender
- * that no table knew about, which is the defect that table exists for.
+ * ⚠ **IT IS A SEPARATE MEMO FROM `castingIdentityEngine` DESPITE BUILDING THE
+ * SAME FACTORY, AND DELIBERATELY SO.** The two roads ask for different tiers
+ * (`2K` here, `1K` there) and have moved apart once already this week. A door
+ * with its own name is a door the next ruling can move without touching the
+ * refine; collapsing them would save one line and re-merge two paid roads his
+ * rulings keep treating separately.
  *
- * The missing-credential refusal is the same one, for the same reason stated
- * at the top of this file: it fires before the money moves, not at dispatch.
+ * The missing-credential refusal is the same one, for the same reason stated at
+ * the top of this file: it fires before the money moves, not at dispatch.
  */
 export function castingViewEngine(): IdentityEngine {
   if (!viewEngine) {
     const apiKey = process.env.FAL_KEY;
     if (!apiKey) throw new Error("FAL_KEY is required to build a signed Cast package");
-    viewEngine = createFalSunburstViewEngine({ apiKey, queue: castPackageQueue() });
+    viewEngine = createFalIdentityEngine({ apiKey, queue: castPackageQueue() });
   }
   return viewEngine;
+}
+
+/**
+ * WHAT THE WARDROBE PLATE RENDERS ON — GPT Image 2.5 Sunburst at `high`.
+ *
+ * **His word, 2026-09-29 (terminal):** *"Sunburst was only chosen because it
+ * was more creative in outfit design."* That sentence is this engine's entire
+ * job description. It draws one two-panel plate per Sign, the plate is cut in
+ * memory and handed to the two full-length views as a reference, and **nothing
+ * it paints is ever delivered to a customer or stored** (`outfitPlate.ts`).
+ *
+ * ⚠ **A MISSING CREDENTIAL IS THE ONE PLACE THIS DOOR IS STRICTER THAN IT
+ * LOOKS, AND IT IS STILL SAFE.** It throws like its siblings — but every caller
+ * of the plate road turns a throw into "no plate" and renders master-only, so
+ * an unset `FAL_KEY` cannot reach here in practice: `castingViewEngine` above
+ * refuses on the same variable first, before any money moves. The refusal is
+ * kept anyway rather than softened, because a door that returns `null` for a
+ * configuration fault is how a silently disabled feature ships.
+ */
+export function castingOutfitPlateEngine(): IdentityEngine {
+  if (!plateEngine) {
+    const apiKey = process.env.FAL_KEY;
+    if (!apiKey) throw new Error("FAL_KEY is required to render a Sign's wardrobe plate");
+    plateEngine = createFalSunburstPlateEngine({ apiKey, queue: castPackageQueue() });
+  }
+  return plateEngine;
 }
 
 export function castingViewConformanceJudge(): ViewConformanceJudge {
@@ -136,5 +182,11 @@ export function castingViewConformanceJudge(): ViewConformanceJudge {
 export function resetSignEnginesForTests(): void {
   viewQueue = null;
   identityEngine = null;
+  /* ⚠ BOTH OF THESE WERE MISSING. `viewEngine` was memoized by #1459 and never
+     added here, so a suite that set `FAL_KEY` after another had built the
+     engine kept the first one — a reset that silently resets less than it
+     names is the shape every one of these leaks has. */
+  viewEngine = null;
+  plateEngine = null;
   judge = null;
 }
