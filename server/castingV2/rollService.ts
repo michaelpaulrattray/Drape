@@ -756,8 +756,10 @@ export async function createRoll(
       /* ⚠ `inheritedWardrobe` STOOD HERE AND IS GONE (#1443). The house prompts
          are discarded and the row inherits nothing, so the compiler is handed no
          sentence — its line, since #1222, is the brief's own stated outfit,
-         derived inside the compile. The compiler's own input FIELD stays, because
-         `deterministicBriefCompiler` still hands it on (slice 4's, #1445). */
+         derived inside the compile. ⚠ This ended *"The compiler's own input FIELD
+         stays, because `deterministicBriefCompiler` still hands it on (slice 4's,
+         #1445)"* — that fate arrived: #1490 act 2 deleted the seam and the FIELD
+         went with it, so there is no longer an input to pass. */
       readInk,
       briefFidelity,
       /* ⚠ `authorRoad: true` STOOD HERE AND IS GONE (#1490 act 1) — and it is the
