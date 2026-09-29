@@ -431,8 +431,21 @@ function describedWardrobeSpec(pronouns: CastPronouns, outfitReferenceOrdinal: n
     + `Judge the clothing against both records together. ${wardrobeAdditionsClause(true, pronouns)}`;
 }
 
-/** The described sentence in its default-pronoun, no-plate form — the judge's. */
-export const CAST_PACKAGE_WARDROBE_SPEC_DESCRIBED = describedWardrobeSpec(pronounsForSex(null), null);
+/*
+  ⚠ `CAST_PACKAGE_WARDROBE_SPEC_DESCRIBED` STOOD HERE AND IS GONE — #1480, and
+  the uncalled-export sweep is what said so rather than a judgement.
+
+  It was a CONSTANT because there was nothing to vary; #1480 gave this sentence
+  two variables (the cast's pronouns, and whether an outfit reference settles
+  the lower half), so every road that wanted it had to call the function
+  instead. Keeping the constant beside the function as a default-form alias left
+  an export with no consumer anywhere in the tree — not one production caller,
+  not one test — and `check-cleanup-dispositions` refused the push for it.
+
+  The sentence has not moved and nothing about it is lost: `wardrobeSpecFor` is
+  still the one door both the generator and the judge come through, which is the
+  property #1278 part 1's docblock above is really about.
+*/
 
 /**
  * THE SAME SENTENCE, WRITTEN FROM A STORED LINE (design §3.3, item 6).
