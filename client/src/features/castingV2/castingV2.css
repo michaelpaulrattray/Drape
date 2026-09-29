@@ -1172,6 +1172,18 @@
   Download and close share one row now. They were absolutely positioned to the
   same corner before download existed; the chrome wrapper owns the position and
   these own only their shape, or the two would sit on top of each other.
+
+  ⚠ NO `text-decoration` HERE, AND ITS ABSENCE IS THE POINT (#1531). The block
+  carried `text-decoration: none`, which was dead on both selectors and read as
+  though it were holding something off. The viewer is `createPortal`'d to
+  `document.body`, so nothing in `.dp-root` reaches either control; what
+  actually decides this is Tailwind's preflight, which resets `a` to
+  `text-decoration: inherit`, and the chrome inherits `none`. Driven in the
+  running app with the line present and with it gone, both themes: the download
+  computes `text-decoration-line: none` either way. A declaration that changes
+  nothing is not a guard — it is a line that makes the next reader think one
+  exists. If either control ever needs a decoration OF ITS OWN, it is written
+  here on its own class and beats the inherit outright.
 */
 .dpc-viewer__close,
 .dpc-viewer__download {
@@ -1184,7 +1196,6 @@
   border: 0;
   border-radius: 6px;
   cursor: pointer;
-  text-decoration: none;
 }
 
 /*
