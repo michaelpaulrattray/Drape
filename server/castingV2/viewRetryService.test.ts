@@ -841,13 +841,13 @@ describe("a retried full-length view wears the outfit it already has — #1474",
 
     const prompt = watch.viewRequests[0].prompt;
     /* The reference faces the front, and the sentence says so. */
-    expect(prompt).toContain("in the outfit for this shoot, seen from the front");
+    expect(prompt).toContain("in the outfit this person wears in every picture of them, seen from the front");
     /* The positive control the loose form would pass by accident: the retried
        view IS the back view, and its own directive still says so. So this pair
        proves the clause and the directive disagree on purpose rather than
        proving the word "front" appears somewhere. */
     expect(prompt).toContain("FULL BODY FROM BEHIND");
-    expect(prompt).not.toContain("in the outfit for this shoot, seen from behind");
+    expect(prompt).not.toContain("in the outfit this person wears in every picture of them, seen from behind");
   });
 
   it("mints a fresh plate when NO sibling has landed — the road before #1474, kept", async () => {

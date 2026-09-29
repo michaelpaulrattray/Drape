@@ -415,8 +415,23 @@ describe("⚠ a cast with tattoos AND a plate — the ordinals are the defect", 
   });
 
   it("keeps her tattoos at the same ordinals with a plate and without one", async () => {
-    /* The inertness half: adding a plate must not move a single sentence that
-       was already pointing at a picture of her. */
+    /*
+      The inertness half: adding a plate must not move a single sentence that
+      was already pointing at a picture of her.
+
+      ⚠ **IT ASSERTED THE WHOLE PROMPT UP TO THE PLATE CLAUSE, AND #1480 MADE
+      THAT FALSE ON PURPOSE.** Three of the sentences above the clause — the
+      reference paragraph's outfit half, the directive's below-waist sentence
+      and the WARDROBE line — used to tell the engine the DESCRIPTION settles
+      the hem WHILE A PLATE WAS ATTACHED TO SETTLE IT, and making them yield is
+      the whole of that card. So the arm is narrowed to what it was ever really
+      about — **the tattoo crops' ordinals and their sentences** — rather than
+      lowered or deleted: a plate must not renumber a picture of her arm.
+
+      The whole-prompt comparison did not go away, it MOVED to where it is still
+      true: `viewOutfitAuthority.test.ts` asserts the no-plate road composes
+      byte-identically with and without this card's options, on every angle.
+    */
     const crops = [crop()];
     async function promptFor(withPlate: boolean) {
       const generateView = recordView();
@@ -434,10 +449,17 @@ describe("⚠ a cast with tattoos AND a plate — the ordinals are the defect", 
     const withoutPlate = await promptFor(false);
     const inkSentence = "left upper arm tattoo";
     expect(withoutPlate).toContain(inkSentence);
-    /* Everything the plate clause is APPENDED to is identical, byte for byte —
-       the plate adds a paragraph and moves nothing. */
-    const upToPlate = withPlate.slice(0, withPlate.indexOf("THE OUTFIT —")).trimEnd();
-    expect(upToPlate).toBe(withoutPlate.trimEnd());
+
+    /* The ink sentence is present and IDENTICAL on both roads — same ordinal,
+       same words. One crop, so reference 2 is hers and the plate takes 3. */
+    const inkLine = (text: string): string =>
+      text.split("\n").find((line) => line.includes(inkSentence)) ?? "";
+    expect(inkLine(withPlate), "the plate renumbered her tattoo").toBe(inkLine(withoutPlate));
+    expect(inkLine(withPlate)).toContain("Reference 2");
+
+    /* And the plate really did take the NEXT ordinal rather than hers. */
+    expect(withPlate).toContain("THE OUTFIT — reference 3");
+    expect(withoutPlate).not.toContain("THE OUTFIT —");
   });
 });
 
