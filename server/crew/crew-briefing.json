@@ -1,7 +1,7 @@
 {
-  "edition": 564,
-  "updatedAt": "2026-09-29T06:50:00.000Z",
-  "shift": "Foreman (night shift) — you said \"good\" to the outfit plate frames; recorded, and your eye on a real sign is still what closes that one. Tonight: pressing Try again on a full-length picture used to invent a whole new outfit. You would have four pictures of her in one outfit, ask for one of them again, and get it back in a different dress and different shoes — your hem-and-shoes complaint, re-run on the one picture you had already said you disliked. It now copies the outfit straight out of the picture you are already holding. Driven on your own Sifr, three tries each way: the old way came back 0 out of 3 in her outfit, the new way 3 out of 3. It is also about twice as fast, because it no longer waits for a second picture to be drawn first. One strip on your desk, and one honest trade in it worth your eye.",
+  "edition": 565,
+  "updatedAt": "2026-09-29T08:05:00.000Z",
+  "shift": "Foreman (night shift) — two things came out of your bad Sign this morning, and they turned out to be different animals. The first: one of your three thrown-away pictures was thrown away wrongly. The checker that decides whether a picture came back in the right clothes was told that jewellery is never allowed — and your creature is wearing heavy brass earrings in his own signed photograph. So a picture that copied him faithfully was called wrong and refunded, and you had to ask again. Driven on his own picture: the old rule threw out his own earrings 2 times in 4, the new rule keeps them 4 times out of 4, and a fake logo pasted on to check we have not gone soft is still thrown out 3 times out of 3. That is in review.\n\nThe second is your nose edit, and it is NOT what it looked like. We read the records of that minute before building anything. You had clicked back to the original picture 17 seconds before you pressed Sign — so at the moment you signed, the original really was what was on your screen, and it signed what was on your screen. The fix we had written down would have signed the original too. So nothing was built, and there is one plain question for you on your desk instead.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -323,7 +323,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-29T06:25:18.154Z",
+      "readAt": "2026-09-29T07:45:42.149Z",
       "items": [
         {
           "issueNumber": 1129,
@@ -455,6 +455,33 @@
     }
   },
   "needsYou": [
+    {
+      "id": "sign-version-1478",
+      "title": "You edited his nose, then signed, and got the original — one question",
+      "productImpact": "You told us: \"i refined him edited his nose but only his original image signed.\"\n\nWe checked the records of that minute before building anything, and it is not what it looked like. You clicked back to the original picture 17 seconds before you pressed Sign. So at the moment you signed, the original really was the picture on your screen, and Sign signed the picture on your screen.\n\nThe product did nothing random. What it did do was stay silent: nothing in the Sign box mentioned that the edit you had just paid for was not the thing about to be made permanent.\n\nWe have not built anything, because the fix we had written down would not have helped you — it would have signed the original too.",
+      "workedExample": "The nose edit arrived at 6:36:36. You moved off it at 6:37:32. You signed at 6:37:49. Seventeen seconds.\n\nWorth knowing: that edit is the only one that has ever existed in the product, and none of the nine casts ever signed had an edit on it. So this is about getting it right before it matters, not about repairing damage.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Sign tells you which one it is about to sign",
+          "consequence": "The Sign box says \"this signs your original\" or \"this signs your edit\", with that picture next to it, before you spend. Nothing is chosen for you."
+        },
+        {
+          "key": "B",
+          "label": "Sign always takes your newest edit",
+          "consequence": "Stepping back to compare would stop changing what gets signed. Only deliberately choosing a version would."
+        },
+        {
+          "key": "C",
+          "label": "Leave it as it is",
+          "consequence": "Sign takes whichever version is on screen, and being on the right one is up to you."
+        }
+      ],
+      "recommendation": "A. You did not make a mistake — you compared two pictures, which is what the comparison is for. What was missing was the product saying what it was about to do with your 450 credits.",
+      "state": "open",
+      "filedAt": "2026-09-29T08:05:00.000Z",
+      "issueNumber": 1478
+    },
     {
       "id": "sheet-shape-1278",
       "title": "Your own answer is built — one look, no decision",
@@ -3446,7 +3473,7 @@
       "id": "retry-outfit-1474",
       "title": "Try again now keeps the outfit you already have — three tries each way, your Sifr",
       "question": "WHAT YOU ARE LOOKING AT — three rows, all rendered tonight on your own Sifr. ROW ONE is the outfit of record: her signed picture, then the front full-length picture she already has — a white strapped top, taupe trousers, black flat shoes. ROW TWO is what pressing Try again on her BACK picture did until tonight, three times: a long white slit dress with cream boots, then a mini dress, then a different mini dress. Three good pictures, three different outfits, none of them hers. ROW THREE is the same three tries after tonight's fix: her top, her taupe trousers, her black shoes, three times out of three.\n\nTHE ONE THING WORTH YOUR EYE, and it is a real trade. Row two is faithful to your BRIEF, which says a white body-conscious dress. Row three is faithful to the PICTURE you already have, which is a top and trousers — Sifr was signed before the outfit picture existed, so her front picture wandered off the brief on its own, and the fix now copies that wandering rather than correcting it. We took the view that what a Try again owes you is the outfit in the four pictures you are holding, not a fresh reading of the brief. If you would rather it went back to the brief, say so and we will build that instead.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-29T06:45:00.000Z",
       "issueNumber": 1474,
       "cardId": "sheet-shape-1278",
@@ -3464,7 +3491,7 @@
       "question": "WHAT YOU ARE LOOKING AT — three rows, all rendered tonight on your own casts. ROW ONE is the one that matters: your Sifr's signed picture on the left, then the outfit picture the way it worked yesterday, then the way it works now. The middle pair is a DIFFERENT WOMAN in a long slit dress — it had never seen her, so it invented both the person and the top. The right pair is her, in the top she was actually signed in: the same collar clasp, the same two buckled straps, the same graphic on the chest, the same tattooed arm. ROW TWO follows that through to the picture a customer keeps, with yesterday's beside it for comparison. ROW THREE is one of your creatures, because a being with no clothes gets this extra picture too — for it the picture settles the body below the crop instead of a garment, and it worked. Nothing is being asked of you here. The only thing still owed is your eye on a real sign, which is the same thing card 1278 is waiting for.",
       "state": "open",
       "filedAt": "2026-09-29T05:30:00.000Z",
-      "issueNumber": 1471,
+      "issueNumber": 1278,
       "cardId": "sheet-shape-1278",
       "frames": [
         {
@@ -8906,6 +8933,13 @@
       "status": "merged",
       "prNumber": 1473,
       "note": "Open and ready; held for the reviewer because it touches a money-path file."
+    },
+    {
+      "id": "wardrobe-reference-1479",
+      "title": "A picture is no longer thrown away for jewellery he is already wearing (#1479)",
+      "status": "in-review",
+      "prNumber": 1482,
+      "note": "Open and ready; held for the reviewer because it touches a money-path file."
     }
   ],
   "problems": [
@@ -9171,10 +9205,11 @@
     230,
     231,
     232,
-    233
+    233,
+    234
   ],
   "nextUp": {
-    "readAt": "2026-09-29T06:25:18.153Z",
+    "readAt": "2026-09-29T07:45:42.149Z",
     "items": [
       {
         "issueNumber": 1278,
@@ -9202,7 +9237,7 @@
       },
       {
         "issueNumber": 1469,
-        "title": "N2c: Shoots, the cast library's named collections (All · Unfiled · shoots · +), Approach A, after N2b — his word 2026-09-29",
+        "title": "N2c: Campaigns, the cast library's named collections (All · Unfiled · campaigns · +), Approach A, after N2b — his word 2026-09-29 (noun changed from shoots the same day)",
         "urgent": false
       }
     ]
