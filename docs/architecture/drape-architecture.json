@@ -10408,6 +10408,10 @@
       "path": "client/src/components/appChrome.test.ts"
     },
     {
+      "id": "test:client/src/components/errorBoundaryReport.test.ts",
+      "path": "client/src/components/errorBoundaryReport.test.ts"
+    },
+    {
       "id": "test:client/src/components/errorBoundaryReports.test.ts",
       "path": "client/src/components/errorBoundaryReports.test.ts"
     },
@@ -12666,6 +12670,10 @@
     {
       "id": "test:server/clientInputCaps.test.ts",
       "path": "server/clientInputCaps.test.ts"
+    },
+    {
+      "id": "test:server/clientReleaseWiring.test.ts",
+      "path": "server/clientReleaseWiring.test.ts"
     },
     {
       "id": "test:server/closingKeyword.test.ts",

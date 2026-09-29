@@ -19,6 +19,55 @@ import { defineConfig, type PluginOption } from "vite";
  */
 const wantsBundleReport = process.env.BUNDLE_REPORT === "1";
 
+/**
+ * THE BUILD THE BROWSER BUNDLE CAME FROM, BAKED IN — #1420's release tag.
+ *
+ * The server tags its events with `RAILWAY_GIT_COMMIT_SHA` read at RUNTIME
+ * (`server/_core/env.ts`'s `deployedCommitSha`). A bundle has no runtime access
+ * to the platform's environment, so the only moment the browser half can learn
+ * which tree it is, is this one.
+ *
+ * ⚠ **WHETHER RAILWAY'S BUILD STEP HAS THAT VARIABLE WAS THE ONE UNREAD FACT
+ * #1418 REFUSED TO GUESS AT, AND IT IS STILL NOT READABLE AT AN ARTIFACT FROM
+ * HERE — SO THE BUILD IS MADE TO SAY.** Railway's own reference documents it as
+ * provided *"to all builds and deployments"* (docs.railway.com/variables/reference,
+ * the Git-variables table), but that is the vendor's claim and this repository
+ * does not file a claim as a fact (law 7b). The production build log carries no
+ * environment at all — read at the real log for the 2026-09-29 deploy, which
+ * prints vite's asset list and railpack's copy steps and nothing else — so
+ * there was no reading to take. `releaseStampPlugin` below therefore prints, on
+ * every real build, which of the two happened. **The next production build's log
+ * answers the question permanently, and costs nothing to have asked.**
+ *
+ * Absent, the tag is ABSENT rather than empty: an empty release is a group in
+ * Sentry that every unlabelled build falls into, which is the "0 errors today"
+ * lie #1419 refused wearing a different hat. `clientRelease()` in
+ * `client/src/monitoring/errorTracker.ts` is the reader, and it is the only one.
+ */
+const clientRelease = (process.env.RAILWAY_GIT_COMMIT_SHA ?? "").trim();
+
+/**
+ * Say what was baked in, at BUILD time only.
+ *
+ * A `console.log` at this module's top level would fire on every import —
+ * `server/bundleReportWiring.test.ts` imports this config five times — so the
+ * line lives in a plugin hook, which runs when vite actually builds and never
+ * when the config object is merely read.
+ */
+function releaseStampPlugin(release: string): PluginOption {
+  return {
+    name: "drape-release-stamp",
+    apply: "build",
+    buildStart() {
+      console.log(
+        release.length > 0
+          ? `[build] browser release ${release}`
+          : "[build] RAILWAY_GIT_COMMIT_SHA is not set at build time — the browser bundle carries no release tag",
+      );
+    },
+  };
+}
+
 /** Every font format `@fontsource` ships and any a future face could. */
 const FONT_FILE = /\.(woff2?|ttf|otf|eot)$/i;
 
@@ -56,7 +105,24 @@ const bundleReportPlugins: PluginOption[] = wantsBundleReport
   : [];
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), ...bundleReportPlugins],
+  plugins: [react(), tailwindcss(), releaseStampPlugin(clientRelease), ...bundleReportPlugins],
+  /**
+   * THE ONE VALUE THIS BUILD BAKES IN THAT IS NOT A `VITE_` VARIABLE, AND THE
+   * NAME IS DELIBERATE.
+   *
+   * `import.meta.env.VITE_*` is Vite's own channel and it reads `.env` files as
+   * well as the process, so defining a `VITE_`-shaped name here would give one
+   * identifier two sources with `define` silently winning — the parallel-copy
+   * shape working law 4 is about. `__DRAPE_RELEASE__` can only have come from
+   * this line.
+   *
+   * It is `declare const`d where it is READ rather than in a `.d.ts`, so the
+   * declaration sits beside the guard that survives its absence (vitest and the
+   * server tsconfigs never run `define`, and a bare reference would throw).
+   */
+  define: {
+    __DRAPE_RELEASE__: JSON.stringify(clientRelease),
+  },
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),

@@ -655,3 +655,110 @@ describe("the empty and hostile inputs", () => {
     expect(kept[kept.length - 1]?.filename).toBe("f119.ts");
   });
 });
+
+/**
+ * ⚠ THE COMPONENT STACK (#1420) — A WIDENING OF WHAT LEAVES THE BUILDING, AND
+ * THE ARMS ARE WRITTEN AS IF IT WERE ONE.
+ *
+ * A boundary-caught render crash's own stack names React's internals
+ * (`commitHookEffectListMount`, `renderWithHooks`) and no component of ours, so
+ * `contexts.react.componentStack` is the only thing that says WHICH PART OF THE
+ * TREE was rendering. #1418 left it out because this projection had no field for
+ * it; giving it one is a new field on the outgoing wire and it earns the same
+ * treatment as every other free-text value rather than a pass for being ours.
+ *
+ * ⚠ **THE THIRD ARM IS THE ONE THAT MATTERS AND IT IS A REGRESSION ARM.** This
+ * block used to end `out.contexts = { trace: projectedTrace }` — an ASSIGNMENT,
+ * which was right while `trace` was the only context that could travel and
+ * becomes a silent dropper the moment a second one can. A `react` context added
+ * above it would have been overwritten by a later `trace`; added below it, it
+ * would have thrown `trace` away instead. Either way the suite that only checked
+ * one of them at a time would have stayed green.
+ */
+describe("⚠ the component stack, and the two contexts that must both survive", () => {
+  const COMPONENT_STACK = "\n    at RollSheet\n    at CastingStudio\n    at ErrorBoundary";
+
+  it("carries the component stack out, under the key Sentry's own React integration uses", () => {
+    const verdict = scrubErrorEvent({
+      ...castingErrorEvent(),
+      contexts: { react: { componentStack: COMPONENT_STACK } },
+    });
+    if (verdict.verdict !== "send") throw new Error("refused for the wrong reason");
+    expect(verdict.event.contexts?.react?.componentStack).toBe(COMPONENT_STACK);
+  });
+
+  it("⚠ REGRESSION: `trace` and `react` both travel — one no longer overwrites the other", () => {
+    const verdict = scrubErrorEvent({
+      contexts: {
+        trace: { trace_id: "t1", span_id: "s1" },
+        react: { componentStack: COMPONENT_STACK },
+      },
+    });
+    if (verdict.verdict !== "send") throw new Error("refused for the wrong reason");
+    expect(verdict.event.contexts).toEqual({
+      trace: { trace_id: "t1", span_id: "s1" },
+      react: { componentStack: COMPONENT_STACK },
+    });
+  });
+
+  it("takes only `componentStack` from that context — a second key does not travel", () => {
+    const verdict = scrubErrorEvent({
+      contexts: { react: { componentStack: COMPONENT_STACK, version: "19.1.0", ownerStack: "..." } },
+    });
+    if (verdict.verdict !== "send") throw new Error("refused for the wrong reason");
+    expect(verdict.event.contexts?.react).toEqual({ componentStack: COMPONENT_STACK });
+  });
+
+  it("redacts and caps it like any other free text — a DEV stack carries source paths", () => {
+    /* React appends source locations in a development build, and a path on a
+       developer's machine can name a person — which is the same reason a stack
+       FRAME's filename goes through the redaction. A picture's URL under the
+       image bucket is the decidable leak the redaction can actually see. */
+    const verdict = scrubErrorEvent(
+      { contexts: { react: { componentStack: `at Tile (${R2_ORIGIN}/assets/her-cast.png)` } } },
+      R2_ORIGIN,
+    );
+    if (verdict.verdict !== "send") throw new Error("refused for the wrong reason");
+    expect(verdict.event.contexts?.react?.componentStack).toBe("at Tile ([redacted])");
+
+    const long = scrubErrorEvent({
+      contexts: { react: { componentStack: "\n    at Deep".repeat(500) } },
+    });
+    if (long.verdict !== "send") throw new Error("refused for the wrong reason");
+    const kept = long.event.contexts?.react?.componentStack ?? "";
+    /* The HEAD survives, which is the innermost component — the same end
+       `STACK_FRAME_CAP` keeps, and the useful one. */
+    expect(kept.startsWith("\n    at Deep")).toBe(true);
+    expect(kept).toContain("more characters dropped");
+  });
+
+  it("does not travel at all when it is not a string, or is empty", () => {
+    for (const componentStack of [12, null, {}, [], ""]) {
+      const verdict = scrubErrorEvent({ contexts: { react: { componentStack } } });
+      if (verdict.verdict !== "send") throw new Error("refused for the wrong reason");
+      expect(verdict.event.contexts, `componentStack ${JSON.stringify(componentStack)}`).toBeUndefined();
+    }
+  });
+
+  it("⚠ still refuses the whole event when a recipe key rides in beside it", () => {
+    const verdict = scrubErrorEvent({
+      contexts: { react: { componentStack: COMPONENT_STACK } },
+      extra: { masterPrompt: "the complete recipe" },
+    });
+    expect(verdict.verdict).toBe("refuse");
+  });
+
+  it("names no context but the two — `culture`, `browser`, `device` and `os` stay out", () => {
+    const verdict = scrubErrorEvent({
+      contexts: {
+        react: { componentStack: COMPONENT_STACK },
+        culture: { locale: "en-AU" },
+        browser: { name: "Edge", version: "141" },
+        device: { model: "a machine" },
+        os: { name: "Windows" },
+      },
+    });
+    if (verdict.verdict !== "send") throw new Error("refused for the wrong reason");
+    expect(Object.keys(verdict.event.contexts ?? {})).toEqual(["react"]);
+  });
+});

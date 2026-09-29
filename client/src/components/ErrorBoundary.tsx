@@ -40,11 +40,25 @@ class ErrorBoundary extends Component<Props, State> {
      * happened here — was written to a console nobody was reading and reached
      * nobody at all.
      *
-     * `errorInfo.componentStack` is deliberately NOT passed: the scrub's
-     * projection has no field for it, so it could not travel, and giving it one
-     * is a widening with its own diff (filed beside the source-map card).
+     * ⚠ **`errorInfo.componentStack` IS PASSED NOW (#1420), AND IT IS THE FIELD
+     * THIS CALL SITE EXISTS FOR.** A render crash's own stack points at React's
+     * internals — `commitHookEffectListMount`, `renderWithHooks` — and names no
+     * component of ours; the component stack is the only thing that says WHICH
+     * PART OF THE TREE was rendering. It was left out by #1418 because the
+     * scrub's projection had no field for it and could not carry it; that field
+     * exists now (`contexts.react.componentStack`), where the SDK's own React
+     * integration puts it, so Sentry renders it rather than burying it.
+     *
+     * It is OUR component names and never a customer's words, which is why this
+     * widening is a small one — and it still goes through the scrub's redaction
+     * and cap like every other free-text value, because a DEV build's component
+     * stack carries source paths and a path can name a person.
      */
-    reportClientError(error, { kind: 'render', route: window.location.pathname });
+    reportClientError(error, {
+      kind: 'render',
+      route: window.location.pathname,
+      componentStack: errorInfo.componentStack ?? undefined,
+    });
   }
 
   handleRetry = (): void => {

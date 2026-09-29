@@ -221,7 +221,26 @@ export interface ScrubbedEvent {
   tags?: Record<string, string>;
   request?: { method?: string; url?: string };
   breadcrumbs?: ScrubbedBreadcrumb[];
-  contexts?: { trace?: { trace_id?: string; span_id?: string } };
+  contexts?: {
+    trace?: { trace_id?: string; span_id?: string };
+    /**
+     * React's component stack for a boundary-caught render crash (#1420) —
+     * WHICH PART OF THE TREE was rendering, which the error's own stack does
+     * not say (it names React's internals). Set by
+     * `client/src/components/ErrorBoundary.tsx` through the scope, under the
+     * key the SDK's own React integration uses so Sentry renders it.
+     *
+     * ⚠ **THIS IS A WIDENING OF WHAT LEAVES THE BUILDING AND IT IS NARROW ON
+     * PURPOSE.** It carries OUR component names — our shape, not a customer's
+     * work — and the one road anything of hers could reach it by is a DEV
+     * build, where React appends source locations and a path can name a
+     * person. So it goes through `redactFreeText` and the same
+     * `FREE_TEXT_CAP` as every other free-text value, rather than being
+     * trusted for being ours. It is one field and a `componentStack` that is
+     * not a string does not travel at all.
+     */
+    react?: { componentStack: string };
+  };
 }
 
 export type ScrubVerdict =
@@ -550,16 +569,53 @@ export function project(event: IncomingEvent, imageOrigin?: string): ScrubbedEve
     if (projected.length > 0) out.breadcrumbs = projected;
   }
 
+  /*
+    TWO NAMED CONTEXTS, AND THE SHAPE OF THIS BLOCK IS THE REPAIR.
+
+    ⚠ It used to end `out.contexts = { trace: projectedTrace }` — an ASSIGNMENT,
+    which was correct while `trace` was the only context that could travel and
+    is a silent dropper the moment a second one can. `react` (#1420) is that
+    second one, and building the object first means neither can overwrite the
+    other however they arrive. Every other context Sentry attaches — `device`,
+    `browser`, `os`, `culture`, `app` — is still absent by default, which is the
+    projection's whole rule (invariant 8) and the reason a new SDK context is
+    dropped on the day it appears rather than on the day somebody notices.
+
+    ⚠ **THE CLASS, SWEPT (working law 7), AND THE PREDICATE IS THE TYPE.** The
+    mistake is *assigning a fresh single-key literal into a field whose type can
+    hold more than one key*. Read at this function: of `ScrubbedEvent`'s
+    multi-member fields, `tags`, `request` and `breadcrumbs` already accumulate
+    into a local and assign once, and `contexts` was the only one that did not.
+    The four that DO assign a literal — `stacktrace`, `logentry`, `exception`,
+    `user` — each have a declared type with exactly ONE member, so a second
+    cannot be added without editing the type and bringing a reader to the line;
+    `user` says so in its own comment on purpose. The sibling outgoing
+    projection (`server/monitoring/productEvents.ts`) takes a flat
+    `Record<string, unknown>` and has no field of this shape at all.
+  */
   const contexts = event.contexts;
   if (contexts !== null && typeof contexts === "object") {
-    const trace = (contexts as Record<string, unknown>).trace;
+    const raw = contexts as Record<string, unknown>;
+    const projectedContexts: NonNullable<ScrubbedEvent["contexts"]> = {};
+
+    const trace = raw.trace;
     if (trace !== null && typeof trace === "object") {
-      const raw = trace as Record<string, unknown>;
+      const rawTrace = trace as Record<string, unknown>;
       const projectedTrace: { trace_id?: string; span_id?: string } = {};
-      if (typeof raw.trace_id === "string") projectedTrace.trace_id = raw.trace_id;
-      if (typeof raw.span_id === "string") projectedTrace.span_id = raw.span_id;
-      if (Object.keys(projectedTrace).length > 0) out.contexts = { trace: projectedTrace };
+      if (typeof rawTrace.trace_id === "string") projectedTrace.trace_id = rawTrace.trace_id;
+      if (typeof rawTrace.span_id === "string") projectedTrace.span_id = rawTrace.span_id;
+      if (Object.keys(projectedTrace).length > 0) projectedContexts.trace = projectedTrace;
     }
+
+    const react = raw.react;
+    if (react !== null && typeof react === "object") {
+      /* The component stack and NOTHING else from this context — a future
+         integration putting a second key under `react` does not travel. */
+      const stack = asFreeText((react as Record<string, unknown>).componentStack, imageOrigin);
+      if (stack) projectedContexts.react = { componentStack: stack };
+    }
+
+    if (Object.keys(projectedContexts).length > 0) out.contexts = projectedContexts;
   }
 
   return out;
