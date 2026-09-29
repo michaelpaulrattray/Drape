@@ -440,6 +440,18 @@ interpreter's verdict, so what holds the raise is two BYTE pins —
 bytes cannot move silently; the BEHAVIOUR is unowned, and that is now on #1495
 rather than implied by a sentence about a seam.
 
+⚠ **AND THAT WAS DRIVEN RATHER THAN GREPPED (law 7b, 2026-09-30).** The raise's
+condition was made unreachable in a way TypeScript accepts, on one line so the line
+count held and the atlas's own byte pins still resolved —
+`String(outcome.reason) === "unsupported_cohortXX"` — and
+`vitest run server/castingV2 server/capabilityAtlas.test.ts` returned **281 files /
+5,741 tests, 0 failed**. **The POSITIVE control is the same sabotage on the `likeness`
+raise three lines down: 2 arms red across 2 suites** (`creativeRegisterScope.test.ts`,
+`likenessRefusal.test.ts`). So the instrument can see a compiler raise die, and this one
+has nobody watching it. ⚠ A first attempt used `if (false && …)` and reddened only
+`typecheckGate.test.ts` — a TYPE error, not a behaviour arm, and it would have been the
+wrong receipt for this claim.
+
 **Measured 2026-09-30, with its reader named** — `git grep -c` over `*.test.ts`
 for `COHORT_INSTRUCTION` / `COHORT_SCHEMA_LINE` / `author: false` /
 `unsupported_cohort`: **six suites**, of which **four drive the two-valued reach,
