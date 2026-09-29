@@ -51,7 +51,7 @@ vi.mock("./viewThumbnailMint", () => ({ mintViewThumbnail: vi.fn(async () => und
 
 const { buildCastPackage } = await import("./packageOrchestrator");
 const { CAST_PACKAGE_VIEWS } = await import("./castViewPackage");
-const { PLATE_ANGLES, PLATE_VIEW_ASPECT_RATIO, composeOutfitPlatePrompt, outfitPlateClause } = await import("./outfitPlate");
+const { PLATE_ANGLES, PLATE_VIEW_ASPECT_RATIO, composeOutfitPlatePrompt, outfitReferenceClause } = await import("./outfitPlate");
 const { pronounsForSex } = await import("./castPronouns");
 type OutfitPlateEngine = import("./outfitPlate").OutfitPlateEngine;
 
@@ -262,7 +262,7 @@ describe("the two full-length views wear the plate, and nothing else does", () =
     );
 
     /*
-      ⚠ **DERIVED FROM `outfitPlateClause`, NOT RETYPED** (working law 4;
+      ⚠ **DERIVED FROM `outfitReferenceClause`, NOT RETYPED** (working law 4;
       changed in #1471 after a retyped copy of the sentence reddened this arm on
       a wording change it had no opinion about). What this arm is actually FOR
       is the ordinal and the side — that frontFull was handed the front panel at
@@ -272,9 +272,12 @@ describe("the two full-length views wear the plate, and nothing else does", () =
       making the sentence a detail of one module again.
     */
     const clauseFor = (side: "front" | "back") =>
-      outfitPlateClause({
+      outfitReferenceClause({
         ordinal: 2,
         side,
+        /* A SIGN's outfit reference is always a plate panel; the delivered kind
+           belongs to a retry and has its own arms in `viewRetryService.test.ts`. */
+        kind: "plate",
         /* The fallback the orchestrator applies, read from the same function
            rather than assumed. This fixture declares no `pronouns` at all — the
            field is optional on the input — so the null form is the one the

@@ -6,11 +6,13 @@ import {
   sheetAgeLine,
   sheetExpiryNotice,
 } from "./retentionCopy";
+import { CASTING_SESSION_IDLE_DAYS, CASTING_SESSION_IDLE_MS } from "@shared/castingRetention";
 
 /**
  * The retention confession.
  *
- * Seven quiet days has been enforced since M5 and said almost nowhere, so a
+ * The window (thirty quiet days since 2026-09-27, seven before it) has been
+ * enforced since M5 and said almost nowhere, so a
  * user could lose a sheet they were still thinking about without having been
  * told it was possible. These are the three surfaces that fix that, and the
  * assertions are mostly about the two ways this kind of copy lies: appearing
@@ -26,7 +28,10 @@ const inPast = (ms: number) => new Date(NOW - ms).toISOString();
 describe("the card line", () => {
   it("says how long it has been idle, well before expiry is relevant", () => {
     const line = (ms: number) =>
-      sheetAgeLine({ lastActivityAt: inPast(ms), expiresAt: inFuture(7 * DAY - ms) }, NOW);
+      sheetAgeLine(
+        { lastActivityAt: inPast(ms), expiresAt: inFuture(CASTING_SESSION_IDLE_MS - ms) },
+        NOW,
+      );
     expect(line(2 * HOUR)).toBe("Rolled today");
     expect(line(26 * HOUR)).toBe("Rolled yesterday");
     expect(line(3 * DAY)).toBe("Rolled 3 days ago");
@@ -34,7 +39,10 @@ describe("the card line", () => {
 
   it("switches to expiry only inside the final two days", () => {
     const at = (left: number) =>
-      sheetAgeLine({ lastActivityAt: inPast(7 * DAY - left), expiresAt: inFuture(left) }, NOW);
+      sheetAgeLine(
+        { lastActivityAt: inPast(CASTING_SESSION_IDLE_MS - left), expiresAt: inFuture(left) },
+        NOW,
+      );
     // Outside the window it is still an age line — no early nagging.
     expect(at(3 * DAY)).toMatch(/^Rolled/);
     expect(at(2 * DAY + HOUR)).toMatch(/^Rolled/);
@@ -118,7 +126,7 @@ describe("the empty state", () => {
       client cannot tell them apart. Saying "your sheet expired" to someone who
       never made one would be inventing a history to fill a silence.
     */
-    expect(RETENTION_EMPTY_STATE).toContain("7 quiet days");
+    expect(RETENTION_EMPTY_STATE).toContain(`${CASTING_SESSION_IDLE_DAYS} quiet days`);
     expect(RETENTION_EMPTY_STATE).not.toMatch(/your|expired sheet was|we deleted/i);
   });
 

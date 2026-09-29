@@ -165,7 +165,7 @@ export type SignedCastProjection = {
   /**
    * Her sheet is still a place you can go.
    *
-   * FALSE once the session's own seven-day clock runs out — which happens
+   * FALSE once the session's own thirty-day clock runs out — which happens
    * independently of the §G.6 exemption that keeps her siblings' faces alive.
    * Anything offering a link to that sheet must read this first, or it offers a
    * 404 to a customer who has done nothing wrong.
@@ -399,6 +399,32 @@ function slotEvidence(assets: readonly ModelAsset[]): Map<CastViewAngle, SlotEvi
     evidence.set(angle, entry);
   }
   return evidence;
+}
+
+/**
+ * WHICH PICTURE A SLOT IS ACTUALLY SHOWING — the delivered asset, or null.
+ *
+ * ⚠ **It exists so that the one place that needs to REFERENCE a delivered view
+ * cannot come to disagree with the place that DISPLAYS it** (#1474). A Try again
+ * on a full-length view now dresses itself from its delivered sibling, and the
+ * whole worth of that is that the two pictures a customer ends up holding wear
+ * one outfit. A reader that re-derived "the newest filled one" in SQL would be a
+ * second copy of the selection law this file owns — working law 4 — and its
+ * drift would be the retry copying the garments out of a picture nobody is
+ * looking at.
+ *
+ * So it is {@link slotEvidence}, asked for one angle. `assets` must be
+ * newest-first, exactly as that function requires; `listCastAssets` orders by
+ * descending id, which is where every caller gets them.
+ *
+ * ⚠ **`landed` and not `anchor`**: the 1K anchor is her face and is never the
+ * record for what she is wearing below the crop.
+ */
+export function landedViewAsset(
+  assets: readonly ModelAsset[],
+  angle: CastViewAngle,
+): ModelAsset | null {
+  return slotEvidence(assets).get(angle)?.landed ?? null;
 }
 
 export function projectSignedCast(input: {

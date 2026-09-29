@@ -2047,7 +2047,7 @@
         "severity": "info",
         "kind": "documented-unreachable",
         "subject": "session_expired",
-        "message": "no corpus row reaches it: answers Roll again on a sheet the retention rule has EXPIRED (seven quiet days) — names expiry, promises nothing was charged, and fires before the interpreter it used to spend 13 s on — a row could reach it via: the same brief-carrying row against an expired fixture session; pinned by its rollService arm and driven in the app on dev session 89 (PR #859)"
+        "message": "no corpus row reaches it: answers Roll again on a sheet the retention rule has EXPIRED (thirty quiet days) — names expiry, promises nothing was charged, and fires before the interpreter it used to spend 13 s on — a row could reach it via: the same brief-carrying row against an expired fixture session; pinned by its rollService arm and driven in the app on dev session 89 (PR #859)"
       },
       {
         "id": "documented:session_missing",
@@ -3174,7 +3174,7 @@
       "severity": "info",
       "kind": "documented-unreachable",
       "subject": "session_expired",
-      "message": "no corpus row reaches it: answers Roll again on a sheet the retention rule has EXPIRED (seven quiet days) — names expiry, promises nothing was charged, and fires before the interpreter it used to spend 13 s on — a row could reach it via: the same brief-carrying row against an expired fixture session; pinned by its rollService arm and driven in the app on dev session 89 (PR #859)"
+      "message": "no corpus row reaches it: answers Roll again on a sheet the retention rule has EXPIRED (thirty quiet days) — names expiry, promises nothing was charged, and fires before the interpreter it used to spend 13 s on — a row could reach it via: the same brief-carrying row against an expired fixture session; pinned by its rollService arm and driven in the app on dev session 89 (PR #859)"
     },
     {
       "id": "documented:session_missing",

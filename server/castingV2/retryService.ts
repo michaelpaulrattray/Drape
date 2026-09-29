@@ -464,7 +464,7 @@ export async function retryCandidate(
     on the roll road that is a cancel that already refunded the slice. Here
     it is not — cancel is a no-op on a terminal roll — but the RETENTION
     SWEEP expires `queued`/`dispatched` rows too, so a retry on a sheet at
-    the edge of its seven days can lose its CAS to the sweep mid-render
+    the edge of its thirty days can lose its CAS to the sweep mid-render
     (review of #151, finding 1). Nobody else refunds a retry's charge, so
     this road does: under its own reference, once, and a refund that does
     not record is said so rather than sealed as "0 credits were refunded".

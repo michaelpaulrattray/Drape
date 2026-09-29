@@ -86,7 +86,7 @@ export type SurfacePlan = {
        * it `requires` fails forever for an account with none; leaving it
        * undeclared means the law samples once, beats the query, and reports
        * "not applicable" on a page that was about to render the thing — which
-       * is the vacuous pass, and it happened: a run measured 7-quiet-days copy
+       * is the vacuous pass, and it happened: a run measured the expiry copy
        * on /casting, a "faster" version reported nothing there, and only a diff
        * of the two runs showed the assertion had quietly stopped being made.
        *

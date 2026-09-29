@@ -105,7 +105,10 @@ import {
   hashGenerationOperationClaim,
 } from "../casting/operationContract";
 import { CAST_PACKAGE_VIEW_PRICE } from "./castViewPackage";
+import { castPronouns } from "./castPronouns";
+import { outfitReferenceClause } from "./outfitPlate";
 import {
+  deliveredOutfitKeysFrom,
   retryCastView,
   VIEW_RETRY_ALREADY_ASKING_MESSAGE,
   type ViewRetryServiceDependencies,
@@ -122,6 +125,17 @@ let refundRecords = true;
 let engineAnswers: Array<"ok" | "throw"> = ["ok"];
 let engineCalls = 0;
 const enginePrompts: string[] = [];
+/**
+ * WHICH FULL-LENGTH VIEWS HAVE ALREADY BEEN DELIVERED (#1474).
+ *
+ * ⚠ **The default is EMPTY on purpose.** Every arm written before #1474 is
+ * about the fresh-plate road, and an empty map is exactly the state that takes
+ * it — so those arms keep asserting what they were written to assert, and the
+ * sibling road is reached only by the arms that ask for it.
+ */
+let deliveredOutfitKeys: Partial<Record<"frontFull" | "backFull", string>> = {};
+/** Every storage key the service asked for an outfit reference, in order. */
+const outfitReads: string[] = [];
 
 function slot(overrides: Partial<CastSlotProjection> = {}): CastSlotProjection {
   return {
@@ -148,7 +162,11 @@ function dependencies(
   overrides: Partial<ViewRetryServiceDependencies> = {},
 ): ViewRetryServiceDependencies {
   return {
-    readSlots: async () => ({ modelId: 7, slots }),
+    readSlots: async () => ({ modelId: 7, slots, deliveredOutfitKeys }),
+    readOutfitBytes: async (key: string) => {
+      outfitReads.push(key);
+      return { bytes: Buffer.from("delivered-sibling-view"), contentType: "image/png" };
+    },
     readSource: async () => ({
       modelId: 7,
       anchorStorageKey: "casting-v2/casts/op/anchor.png",
@@ -241,6 +259,8 @@ beforeEach(() => {
   refundRecords = true;
   engineAnswers = ["ok"];
   engineCalls = 0;
+  deliveredOutfitKeys = {};
+  outfitReads.length = 0;
   receipts.success.mockClear();
   receipts.failure.mockClear();
   carried.inkAsked.mockClear();
@@ -666,6 +686,220 @@ describe("try again on one view — what moves, and in what order", () => {
     expect(result).toEqual(already);
     expect(deducts).toHaveLength(0);
     expect(journal).toEqual([]);
+  });
+});
+
+describe("deliveredOutfitKeysFrom — which key belongs to which angle (#1474)", () => {
+  /*
+    ⚠ **THE TRANSPOSITION ARM.** TypeScript cannot see this defect: both keys
+    are `string`, so a mapping that filed the front view's key under `backFull`
+    would typecheck, and every other arm in this file would stay green — while a
+    `backFull` retry dressed itself from the very picture the customer pressed
+    Try again to be rid of. That is the only reason the mapping is a separate,
+    exported, pure function.
+  */
+  const row = (overrides: Record<string, unknown>) => ({
+    id: 100,
+    modelId: 7,
+    viewType: "frontFull",
+    resolution: "2K",
+    storageUrl: "https://cdn.example/view.png",
+    storageKey: "key",
+    pointsCost: 50,
+    pinned: false,
+    status: null,
+    provenance: {},
+    createdAt: new Date(),
+    ...overrides,
+  }) as never;
+
+  it("⚠ files each angle's key under ITS OWN angle", () => {
+    const keys = deliveredOutfitKeysFrom([
+      row({ id: 200, viewType: "backFull", storageKey: "THE-BACK-KEY" }),
+      row({ id: 100, viewType: "frontFull", storageKey: "THE-FRONT-KEY" }),
+    ]);
+    expect(keys).toEqual({ frontFull: "THE-FRONT-KEY", backFull: "THE-BACK-KEY" });
+  });
+
+  it("newest wins per angle, and the other three views are never in the map", () => {
+    const keys = deliveredOutfitKeysFrom([
+      row({ id: 300, viewType: "frontFull", storageKey: "NEW" }),
+      row({ id: 200, viewType: "frontFull", storageKey: "OLD" }),
+      row({ id: 100, viewType: "closeUp", storageKey: "A-CLOSE-UP" }),
+    ]);
+    expect(keys).toEqual({ frontFull: "NEW" });
+  });
+
+  it("a row with a URL and NO key is left out — bytes need a key", () => {
+    /* Then the retry mints a plate exactly as it did before #1474, rather than
+       asking storage for `null`. */
+    expect(deliveredOutfitKeysFrom([row({ viewType: "frontFull", storageKey: null })])).toEqual({});
+    expect(deliveredOutfitKeysFrom([row({ viewType: "frontFull", storageKey: "" })])).toEqual({});
+  });
+
+  it("a written-off view is not a delivered one", () => {
+    expect(deliveredOutfitKeysFrom([
+      row({
+        viewType: "frontFull",
+        storageUrl: "",
+        storageKey: "a-key-on-a-confession",
+        status: { state: "failed", reason: "didn't arrive", refunded: 50 },
+      }),
+    ])).toEqual({});
+  });
+});
+
+describe("a retried full-length view wears the outfit it already has — #1474", () => {
+  /*
+    THE DEFECT, IN ONE SENTENCE: a Try again used to mint a FRESH plate, and a
+    fresh plate is a fresh invention — so the retried back could arrive in a
+    different outfit from the front the customer is already holding. That is his
+    own hem-and-shoes complaint re-run on the one slot he disliked.
+
+    Every arm below drives the real service and reads the OUTGOING request
+    (invariant 5). The fixture's angle is `backFull`, so the sibling it should
+    dress from is the delivered `frontFull`.
+  */
+
+  /** Capture both doors at once: what the plate engine was asked, and what the
+   *  view engine was sent. A plate arm that only counted renders could not tell
+   *  "no plate" from "a plate nobody used". */
+  function watchBothDoors() {
+    const plateRequests: Array<{ references: Array<{ bytes: Buffer }> }> = [];
+    const viewRequests: Array<{ prompt: string; references: Array<{ bytes: Buffer }> }> = [];
+    return {
+      plateRequests,
+      viewRequests,
+      overrides: {
+        outfitPlateEngine: () => ({
+          editWithReferences: async (request: { references: Array<{ bytes: Buffer }> }) => {
+            plateRequests.push({ references: request.references });
+            return { bytes: Buffer.from("plate-bytes"), contentType: "image/png" };
+          },
+        }),
+        identityEngine: () => ({
+          generateView: async (request: {
+            prompt: string;
+            references: Array<{ bytes: Buffer }>;
+          }) => {
+            viewRequests.push({ prompt: request.prompt, references: request.references });
+            return {
+              bytes: Buffer.from("view"),
+              contentType: "image/png",
+              provenance: { model: "test-engine", provider: "test" },
+            };
+          },
+        /* `as never` is this file's own idiom for the identity engine: the real
+           type is the provider's and a fake only needs `generateView`. */
+        }) as never,
+      } as Partial<ViewRetryServiceDependencies>,
+    };
+  }
+
+  it("⚠ sends the DELIVERED SIBLING as the outfit reference and renders NO plate", async () => {
+    deliveredOutfitKeys = { frontFull: "casting-v2/casts/op/views/front.png" };
+    const watch = watchBothDoors();
+
+    await retryCastView(dependencies([slot()], watch.overrides), input);
+
+    /* 1 · The sibling's own key was read — the one the projection named, not a
+       key this test invented a second way. */
+    expect(outfitReads).toEqual(["casting-v2/casts/op/views/front.png"]);
+    /* 2 · NO PLATE. This is the money half: the plate is house-money and 56–71
+       seconds (#1471), and neither is spent when the outfit already exists. A
+       zero here is the whole of #1474's saving, and it is asserted as "never
+       asked" rather than inferred from a picture. */
+    expect(watch.plateRequests).toEqual([]);
+    /* 3 · The delivered bytes reached the OUTGOING view request, after the
+       anchor. Not "a reference was passed" — the right picture. */
+    expect(watch.viewRequests).toHaveLength(1);
+    const references = watch.viewRequests[0].references;
+    expect(references[0].bytes).toEqual(Buffer.from("anchor"));
+    expect(references[references.length - 1].bytes).toEqual(Buffer.from("delivered-sibling-view"));
+    /* 4 · And the prompt says what that picture IS. Derived from the clause
+       rather than retyped (working law 4). */
+    expect(watch.viewRequests[0].prompt).toContain(
+      outfitReferenceClause({ ordinal: 2, side: "front", kind: "delivered", pronouns: castPronouns({ subject: { sex: "female" } }) }),
+    );
+  });
+
+  it("⚠ names the SIBLING's side, never the retried view's — the defect the old default hid", async () => {
+    /*
+      THE ARM THAT WOULD HAVE CAUGHT THE WORST VERSION OF THIS CHANGE.
+
+      A `backFull` retry is dressed by a picture facing the FRONT. The clause
+      before #1474 read its side from `input.outfitPlateSide ?? "front"` — two
+      optional fields that had to agree — and on the plate road the view's side
+      and the picture's side are the same, so nothing could tell them apart.
+      They are opposites here: a clause saying "from behind" would order a paid
+      render to copy garments from a side its reference does not show.
+    */
+    deliveredOutfitKeys = { frontFull: "casting-v2/casts/op/views/front.png" };
+    const watch = watchBothDoors();
+
+    await retryCastView(dependencies([slot()], watch.overrides), input);
+
+    const prompt = watch.viewRequests[0].prompt;
+    /* The reference faces the front, and the sentence says so. */
+    expect(prompt).toContain("in the outfit for this shoot, seen from the front");
+    /* The positive control the loose form would pass by accident: the retried
+       view IS the back view, and its own directive still says so. So this pair
+       proves the clause and the directive disagree on purpose rather than
+       proving the word "front" appears somewhere. */
+    expect(prompt).toContain("FULL BODY FROM BEHIND");
+    expect(prompt).not.toContain("in the outfit for this shoot, seen from behind");
+  });
+
+  it("mints a fresh plate when NO sibling has landed — the road before #1474, kept", async () => {
+    /* A first Try again on a Sign whose other full-length view failed, and every
+       Cast older than path E. Nothing about that road moves. */
+    deliveredOutfitKeys = {};
+    const watch = watchBothDoors();
+
+    await retryCastView(dependencies([slot()], watch.overrides), input);
+
+    expect(outfitReads).toEqual([]);
+    expect(watch.plateRequests).toHaveLength(1);
+    /* The plate is edited from her master (#1471) — unchanged by this card. */
+    expect(watch.plateRequests[0].references[0].bytes).toEqual(Buffer.from("anchor"));
+  });
+
+  it("falls back to a fresh plate when the sibling's object cannot be read — never a refusal", async () => {
+    /*
+      The row says a picture is there and the bucket disagrees. The customer has
+      been charged for a VIEW, so this drops one rung and renders; it must not
+      become a failed retry over a reference nobody sees.
+    */
+    deliveredOutfitKeys = { frontFull: "casting-v2/casts/op/views/gone.png" };
+    const watch = watchBothDoors();
+
+    const result = await retryCastView(
+      dependencies([slot()], {
+        ...watch.overrides,
+        readOutfitBytes: async () => { throw new Error("NoSuchKey"); },
+      } as Partial<ViewRetryServiceDependencies>),
+      input,
+    );
+
+    expect(result.outcome).toBe("ready");
+    expect(result.refundedCredits).toBe(0);
+    expect(watch.plateRequests).toHaveLength(1);
+  });
+
+  it("a close-up retry is untouched: no sibling read, no plate, no outfit clause", async () => {
+    /* The inertness half. Three of the five views have never had an outfit
+       reference and this card must not give them one. */
+    deliveredOutfitKeys = { frontFull: "casting-v2/casts/op/views/front.png" };
+    const watch = watchBothDoors();
+
+    await retryCastView(
+      dependencies([slot({ angle: "closeUp" })], watch.overrides),
+      { ...input, angle: "closeUp" },
+    );
+
+    expect(outfitReads).toEqual([]);
+    expect(watch.plateRequests).toEqual([]);
+    expect(watch.viewRequests[0].prompt).not.toContain("THE OUTFIT — reference");
   });
 });
 

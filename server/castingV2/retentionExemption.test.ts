@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
  *
  * The promise: **the kept siblings of a signed Cast survive their sheet's
  * expiry for as long as she lives**, specifically so the room's Siblings card
- * can show real faces rather than tiles that vanish after seven days. The card
+ * can show real faces rather than tiles that vanish after thirty days. The card
  * now depends on it, which turns a documented intention into a thing that can
  * silently break someone's Cast.
  *

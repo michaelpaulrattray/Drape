@@ -1337,7 +1337,7 @@ export async function listSignedCasts(
  * one: §G.6 protects the kept siblings of a signed Cast from sheet expiry
  * precisely so this card keeps working for as long as she lives. An unkept
  * candidate is purged with its session, so listing one would be promising a
- * face that disappears in seven days.
+ * face that disappears in thirty days.
  */
 /**
  * The two statuses a face can be in and still be somebody's sibling.

@@ -38,6 +38,7 @@
  */
 import type { Page } from "puppeteer-core";
 
+import { CASTING_SESSION_IDLE_PHRASE } from "../../shared/castingRetention.js";
 import type { ExistentialSubject } from "./designLawSurfaces.mts";
 
 export type Observation = {
@@ -664,8 +665,16 @@ export async function assertPricedButtons(page: Page, where: string, log: LawLog
  * A sheet that quietly disappears after a week is a worse surprise than one
  * that said so. Only asserted where the section actually renders.
  *
+ * ⚠ **THE PHRASE IS DERIVED, NOT TYPED (#1464).** It was the literal
+ * `/7 quiet days/i` until his word moved the window to thirty, at which point
+ * this law would have reddened on a page that was telling the truth — an
+ * instrument disagreeing with the product because it kept its own copy of a
+ * number. It reads `CASTING_SESSION_IDLE_PHRASE`, the same constant the copy
+ * on the page is built from, so what it asserts is that the section states the
+ * window AT ALL and in the right place. The controls derive it too.
+ *
  * ⚠ **READ INSIDE THE SECTION, NEVER ACROSS THE PAGE (#782).** This tested
- * `document.body.innerText` for the expiry phrase, so *7 quiet days* printed
+ * `document.body.innerText` for the expiry phrase, so the phrase printed
  * ANYWHERE — a footer, a help line, a different section's aside — satisfied a
  * law whose prose says *wherever unsigned sheets surface*. Wider than its own
  * region, failing toward silence. The reading is scoped now: each element
@@ -708,8 +717,15 @@ export async function assertRetentionStated(
       .catch(() => undefined);
   }
 
-  const result = await page.evaluate((holdersSource) => {
-    const EXPIRY = /7 quiet days/i;
+  const result = await page.evaluate(([holdersSource, expiryPhrase]) => {
+    /* A plain case-insensitive substring, not a built regex: the phrase is a
+       product sentence fragment and escaping it would be a trap nobody would
+       ever see fire. */
+    const needle = expiryPhrase.toLowerCase();
+    /* No named inner function inside this callback: tsx compiles a named arrow
+       to `__name(fn, "statesExpiry")`, and `__name` does not exist in the page,
+       so the law threw ReferenceError on the gate (#1464, gate run 36528511781).
+       The test is inlined at its one use below. */
     /*
       THE DEEPEST PAINTED ELEMENTS WHOSE PAINTED TEXT HOLDS THE PHRASE — read
       across their text nodes, normalised, the way the wait above reads
@@ -734,10 +750,10 @@ export async function assertRetentionStated(
     }
     const readings = Array.from(sections).map((section) => ({
       scope: section.tagName.toLowerCase() + (section.className ? `.${String(section.className).split(/\s+/)[0]}` : ""),
-      stated: EXPIRY.test(section.innerText),
+      stated: section.innerText.toLowerCase().includes(needle),
     }));
     return { stated: readings.every((r) => r.stated), scopes: readings.map((r) => `${r.scope}${r.stated ? "" : " (no expiry copy)"}`) };
-  }, PAINTED_HOLDERS_SOURCE);
+  }, [PAINTED_HOLDERS_SOURCE, CASTING_SESSION_IDLE_PHRASE] as [string, string]);
   if (result === null) {
     absentSubject(
       log,
@@ -754,7 +770,7 @@ export async function assertRetentionStated(
     "retention stated where sheets surface",
     result.stated,
     result.stated
-      ? `unsigned-sheets section states the 7 quiet days (read inside ${result.scopes.join(", ")})`
+      ? `unsigned-sheets section states the ${CASTING_SESSION_IDLE_PHRASE} (read inside ${result.scopes.join(", ")})`
       : `unsigned-sheets section with no expiry copy inside it (${result.scopes.join(", ")})`,
   );
 }
