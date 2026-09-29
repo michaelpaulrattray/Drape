@@ -18,7 +18,7 @@ import {
   buildStaticAtlas, declaredCastingProcedures, declaredConceptRefusals, declaredInterpreterRefusals, declaredRollRefusals, declaredServiceRefusals, drivenFindings,
   duplicateDoorFindings, entranceCoverageFindings, listFiles, outcomeId,
   pinCandidates, pinningTests, pinsIn, reachesDoors, readCommittedAtlas, reasonOfNote, renderCapabilityPage, committedPageIsFresh, lfOnly,
-  CAPABILITY_MD, CASTING_ENTRANCE, type Finding,
+  CAPABILITY_MD, CASTING_ENTRANCE, bareDoorId, declaredReferenceRefusals, declaredUploadRefusals, type Finding,
 } from "../scripts/lib/capabilityAtlas.mts";
 import { ROADS, UNMAPPED_ENTRANCES, type Road } from "../scripts/capability-atlas-roads.mts";
 import { CORPUS, type CorpusRow } from "../scripts/capability-atlas-corpus.mts";
@@ -289,6 +289,24 @@ describe("the static half reads what the source declares", () => {
     expect(() => pinCandidates([
       ["server/castingV2/somethingElse.test.ts", 'import "../../scripts/lib/capabilityAtlas.mts";'],
     ])).toThrow(/no test file reaches/);
+
+    /*
+      ⚠ BUT A SUITE THAT ONLY TALKS ABOUT THE MODULE IS NOT EXCLUDED (#209
+      item 1) — #1494's defect in the opposite direction, and the direction that
+      fails toward SILENCE. The exclusion read RAW TEXT, so a suite explaining
+      this very rule in a docblock dropped out of the pin corpus and the door
+      whose only pin it was read as unpinned: an absent pin is indistinguishable
+      from a suite that never had one. Found by writing that sentence.
+
+      Both arms, because the repair has to keep the exclusion it narrows: prose
+      mentioning the module is KEPT, an import of it is still dropped.
+    */
+    expect(pinCandidates([
+      ["server/castingV2/talksAbout.test.ts", '/* pinCandidates drops a file importing `lib/capabilityAtlas.mts`. */\nreason: "wall_unfileable"'],
+    ]).map(([f]) => f)).toEqual(["server/castingV2/talksAbout.test.ts"]);
+    expect(() => pinCandidates([
+      ["server/castingV2/talksAbout.test.ts", ' * a docblock line\nimport { buildStaticAtlas } from "../../scripts/lib/capabilityAtlas.mts";'],
+    ])).toThrow(/no test file reaches/);
   });
 
   it("NEGATIVE CONTROL — a door EXPLAINED in a docblock is not CITED there", () => {
@@ -380,6 +398,39 @@ describe("the static half reads what the source declares", () => {
     ).toEqual(["server/castingV2/fixture.test.ts"]);
   });
 
+  /**
+   * #209 item 1 — THE UPLOAD ENTRANCE'S DOORS ARE DECLARED AND QUALIFIED.
+   *
+   * These five had NO ID AT ALL until they reached this map, which is the one
+   * shape a wider reader could never have rescued: every other gap #206 closed
+   * was an id the code stated and the reader did not visit.
+   *
+   * The arms live in the CENSUS's suite rather than beside the copy table
+   * because `pinCandidates` drops any file importing `lib/capabilityAtlas.mts`
+   * — the control that stops the census pinning its own specimens — so a suite
+   * that called these readers would stop being a pin for the doors it names.
+   */
+  it("declares the upload entrance's doors, each carrying its entrance (#209)", () => {
+    expect(declaredUploadRefusals()).toEqual([
+      "upload.tooLarge", "upload.tooSmall", "upload.unreadable", "upload.unsupportedFormat",
+    ]);
+    expect(declaredReferenceRefusals()).toEqual(["reference.pictureCap"]);
+
+    /*
+      THE QUALIFICATION IS THE WHOLE REPAIR. Declaring these bare would attach
+      the INTERPRETER's `unreadable` — "a reply came back and could not be
+      read" — to an upload door, which is the conflation `roll.*` was qualified
+      to avoid and the stated reason this half of #209 waited a year.
+    */
+    const declared = buildStaticAtlas(CORPUS).declared;
+    for (const id of [...declaredUploadRefusals(), ...declaredReferenceRefusals()]) {
+      const entry = declared.find((d) => d.id === id);
+      expect(entry, `${id} is not on the map`).toBeDefined();
+      expect(bareDoorId(id), "an upload door must carry its entrance").not.toBe(id);
+      expect(entry!.sites.length, `${id} cites no line of source`).toBeGreaterThan(0);
+    }
+  });
+
   it("every pin on the map has the door on a line of CODE — swept, not spot-checked (#1494)", () => {
     /*
       The whole-map half, in the shape the citations arm above uses: asserted
@@ -396,10 +447,15 @@ describe("the static half reads what the source declares", () => {
     let checked = 0;
     for (const entry of buildStaticAtlas(CORPUS).declared) {
       /* Pins are searched on the BARE member name and attached to the QUALIFIED
-         entry (the concept and roll entrances) — `buildStaticAtlas`'s own
-         comment. The bare name is what a test quotes, so it is what is looked
-         for here. */
-      const bare = entry.id.replace(/^(concept|roll)\./, "");
+         entry — `buildStaticAtlas`'s own comment. The bare name is what a test
+         quotes, so it is what is looked for here.
+
+         ⚠ IT WAS `/^(concept|roll)\./` HERE UNTIL #209 ITEM 1, WHICH IS THE
+         SAME LIST THE ATLAS KEEPS, TYPED AGAIN. Declaring the upload
+         entrance's doors reddened this arm on five perfectly well-formed ids,
+         because a mirror only ever announces itself when the thing it mirrors
+         moves (working law 4). It reads the atlas's own reader now. */
+      const bare = bareDoorId(entry.id);
       const quoted = [`"${bare}"`, `'${bare}'`, `\`${bare}\``];
       for (const file of entry.pinnedBy) {
         const onCode = readFileSync(file, "utf8")

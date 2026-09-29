@@ -59,6 +59,7 @@ import { ROADS, LAWS, UNMAPPED_ENTRANCES, type Road } from "../capability-atlas-
 import { CANNOT_SAY_COPY, cannotSaySentence, type CannotSayReason } from "../../server/castingV2/cannotSayCopy";
 import { CONCEPT_DESCRIBE_COPY } from "../../server/castingV2/conceptDescribeCopy";
 import { ROLL_REFUSAL_COPY } from "../../server/castingV2/briefRefusalCopy";
+import { UPLOAD_REFUSAL_COPY, REFERENCE_ATTACH_REFUSAL_COPY } from "../../server/castingV2/uploadRefusalCopy";
 import { FREE_SUBJECT_KEYS } from "../../server/castingV2/subjectCards";
 import { refusalTagOf } from "../../server/castingV2/refusalTag";
 
@@ -74,7 +75,9 @@ export const CAPABILITY_MD = path.join(CAPABILITY_OUT_DIR, "capability-atlas.md"
 export type DeclaredId = {
   id: string;
   /** Where the id comes from. */
-  kind: "service-refusal" | "interpreter-refusal" | "cannot-say" | "concept-refusal" | "roll-refusal";
+  kind:
+    | "service-refusal" | "interpreter-refusal" | "cannot-say"
+    | "concept-refusal" | "roll-refusal" | "upload-refusal" | "reference-refusal";
   /** For a `cannot-say` member: whether the sentence is free or after a refund. */
   charge?: "free" | "refunded";
   /** Test files that name the id as a quoted literal. */
@@ -387,6 +390,78 @@ export function declaredRollRefusals(): string[] {
 }
 
 /**
+ * THE UPLOAD ENTRANCE'S FOUR BYTE DOORS (#209 item 1) — the map's THIRD
+ * entrance, and the one whose absence was invisible by construction.
+ *
+ * ⚠ **THESE HAD NO ID AT ALL, WHICH IS WHY NO POPULATION CHANGE COULD EVER
+ * HAVE FOUND THEM.** Every other gap #206 closed was a reader's blind spot —
+ * an id the code stated and the map did not read. These four were `code:`
+ * strings on a refusal object with no declared table anywhere, so there was
+ * nothing for a reader to be blind TO. #209 filed them for exactly that
+ * reason, and it is the one shape a wider grep cannot rescue.
+ *
+ * ⚠ **`upload.*`, NOT `ink.*` OR `reference.*`, AND IT IS ONE DOOR SET ASKED BY
+ * TWO ROADS.** `inkDesignBytesRefusal` answers `castingV2.concept.describe`
+ * (on for every account) and `castingV2.reference.attach`
+ * (`CASTING_REFERENCE_ATTACH_SCOPE`) through `referenceAttachBytesRefusal`,
+ * which narrows to exactly these four and throws on a fifth. A per-road prefix
+ * would put one function's four answers on the map twice — and
+ * `concept.unreadable` is ALREADY a different door (the concept reader's
+ * outage), so a `concept.` prefix here would have fired
+ * `duplicateDoorFindings` rather than described anything.
+ *
+ * Qualified for the same reason `roll.*` is: the interpreter's bare
+ * `unreadable` means *a reply came back and could not be read*, and declaring
+ * these bare would auto-attach its line to an upload door.
+ *
+ * The population is the copy table's keys, IMPORTED — never a grep.
+ */
+/**
+ * EVERY ENTRANCE PREFIX A DOOR ID MAY CARRY, AND THE ONE FUNCTION THAT TAKES IT
+ * OFF AGAIN (#209 item 1).
+ *
+ * ⚠ **THIS EXISTS BECAUSE THE LIST WAS ALREADY IN TWO PLACES AND THEY HAD
+ * ALREADY DRIFTED.** `buildStaticAtlas` slices a prefix off per entrance to
+ * look a pin up on the BARE name; `capabilityAtlas.test.ts`'s #1494 sweep
+ * re-derived the same thing with its own `/^(concept|roll)\./`. Adding a third
+ * and fourth entrance reddened the sweep on doors that were perfectly well
+ * declared — working law 4, found the only way a mirror is ever found, by
+ * moving the thing it mirrors.
+ *
+ * So there is one list and one reader. A fifth entrance adds its name HERE and
+ * every consumer follows; it cannot be added to one reader and forgotten in
+ * the other.
+ */
+export const DOOR_ENTRANCE_PREFIXES = ["concept", "roll", "upload", "reference"] as const;
+
+/**
+ * The member name a TEST quotes, from the id the MAP carries.
+ *
+ * A test quotes what the product returns (`"likeness"`, `"tooSmall"`), never
+ * the atlas's own `roll.likeness` — so every pin search goes through here.
+ */
+export function bareDoorId(id: string): string {
+  const prefix = DOOR_ENTRANCE_PREFIXES.find((name) => id.startsWith(`${name}.`));
+  return prefix ? id.slice(prefix.length + 1) : id;
+}
+
+export function declaredUploadRefusals(): string[] {
+  return Object.keys(UPLOAD_REFUSAL_COPY).sort().map((id) => `upload.${id}`);
+}
+
+/**
+ * THE REFERENCE ENTRANCE'S OWN DOOR — the per-Cast cap, and there is one.
+ *
+ * Separate from `upload.*` because it belongs to ONE road: the attach is the
+ * only entrance that KEEPS what it takes, so it is the only one that can run
+ * out of room. It is a real `TOO_MANY_REQUESTS` (invariant 6), not a 200
+ * carrying an error field.
+ */
+export function declaredReferenceRefusals(): string[] {
+  return Object.keys(REFERENCE_ATTACH_REFUSAL_COPY).sort().map((id) => `reference.${id}`);
+}
+
+/**
  * THE CASTING ENTRANCE — the one namespace this census is about. Its
  * sub-routers (`castingV2.ink`, `.reference`, `.concept`) are part of it.
  */
@@ -691,7 +766,23 @@ export function pinCandidates(
     instance). Excluded structurally, by what the file imports, not by name.
   */
   const kept = entries
-    .filter(([, text]) => !text.includes("lib/capabilityAtlas.mts"))
+    /*
+      ⚠ **ON CODE LINES, NOT ON RAW TEXT — #1494's DEFECT IN THE OPPOSITE
+      DIRECTION, and it was found by writing a sentence** (#209 item 1).
+
+      A suite explaining this very exclusion in a docblock — naming the module
+      in backticks, as prose about the rule — was DROPPED from the pin corpus by
+      it, and the door whose only pin it was then read as unpinned. #1494 has
+      just finished teaching this map that a backticked mention of a door id is
+      not a test of that door; a backticked mention of a module is not an import
+      of it either, and this half failed toward SILENCE, which is the worse
+      direction: an absent pin looks exactly like a suite that never had one.
+
+      The intent is unchanged and is still structural — what a file IMPORTS,
+      static or dynamic, never a name — and a real import is always on a line of
+      code, so nothing this filter was built to catch escapes it.
+    */
+    .filter(([, text]) => !codeLinesIn(text).includes("lib/capabilityAtlas.mts"))
     .filter(([file, text]) => reachesDoors(file, text));
   /*
     REFUSE RATHER THAN RETURN A SHORT LIST (the Atlas collector rule, CLAUDE.md).
@@ -925,6 +1016,55 @@ export function raiseSites(): Map<string, string[]> {
       if (new RegExp(`^\\s{2}${id}:`).test(line)) add(`roll.${id}`, `${rel(rollCopyFile)}:${at + 1}`);
     });
   }
+  /*
+    #209 — THE UPLOAD ENTRANCE'S RAISE SITES, and the shape is a THIRD one
+    again: these doors neither `refusal("x"` nor `reason: "x"` nor
+    `new BriefRefusal("x"` — they return `{ code: "x", message }`, which none of
+    the three readers above visits. That is the whole reason all four were
+    invisible to this map until they were declared.
+
+    Two files raise them and both are named, because a scan that matches nothing
+    looks exactly like a scan with nothing to match: `inkUploadDoor.ts` is the
+    byte reader itself and `referenceAttachDoor.ts` is the narrowing that
+    carries its four codes onto the attach road. It REFUSES on a missing file
+    for the reason the concept entrance states above.
+
+    ⚠ The id pattern allows a CAPITAL — `unsupportedFormat` is camelCase, and
+    the `[a-z][a-z0-9_]*` the older readers use would have found three of four
+    and looked identical in the artifact.
+  */
+  const uploadMembers = new Set(Object.keys(UPLOAD_REFUSAL_COPY));
+  for (const name of ["inkUploadDoor.ts", "referenceAttachDoor.ts"]) {
+    const file = path.join(SOURCE_DIR, name);
+    if (!fs.existsSync(file)) {
+      throw new Error(
+        `capability atlas: the upload entrance's file ${name} is not on disk — `
+        + "its byte doors would silently lose every citation they have. "
+        + "Point the upload entrance's file list at the modules that raise them.",
+      );
+    }
+    fs.readFileSync(file, "utf8").split("\n").forEach((line, at) => {
+      if (isCommentLine(line)) return;
+      for (const match of line.matchAll(/\bcode:\s*"([a-zA-Z][a-zA-Z0-9_]*)"/g)) {
+        if (uploadMembers.has(match[1]!)) add(`upload.${match[1]!}`, `${rel(file)}:${at + 1}`);
+      }
+    });
+  }
+  /* The copy tables' key lines are sites too — the concept entrance's pattern,
+     and here it is what gives the cap a citation at all: its own raise is in
+     `server/routes/castingV2.ts`, outside this scan's tree. */
+  const uploadCopyFile = path.join(SOURCE_DIR, "uploadRefusalCopy.ts");
+  const uploadCopyLines = fs.readFileSync(uploadCopyFile, "utf8").split("\n");
+  for (const id of uploadMembers) {
+    uploadCopyLines.forEach((line, at) => {
+      if (new RegExp(`^\\s{2}${id}:`).test(line)) add(`upload.${id}`, `${rel(uploadCopyFile)}:${at + 1}`);
+    });
+  }
+  for (const id of Object.keys(REFERENCE_ATTACH_REFUSAL_COPY)) {
+    uploadCopyLines.forEach((line, at) => {
+      if (new RegExp(`^\\s{2}${id}:`).test(line)) add(`reference.${id}`, `${rel(uploadCopyFile)}:${at + 1}`);
+    });
+  }
   const conceptCopyFile = path.join(SOURCE_DIR, "conceptDescribeCopy.ts");
   const conceptCopyLines = fs.readFileSync(conceptCopyFile, "utf8").split("\n");
   for (const id of conceptMembers) {
@@ -986,6 +1126,8 @@ export function buildStaticAtlas(corpus: readonly CorpusRow[] = CORPUS): StaticA
   const cannot = Object.keys(CANNOT_SAY_COPY).sort() as CannotSayReason[];
   const concept = declaredConceptRefusals();
   const roll = declaredRollRefusals();
+  const upload = declaredUploadRefusals();
+  const reference = declaredReferenceRefusals();
   /*
     #192 — PINS ARE SEARCHED ON THE BARE MEMBER NAME AND ATTACHED TO THE
     QUALIFIED ENTRY. `pinningTests` looks for a QUOTED literal, and a test
@@ -994,9 +1136,13 @@ export function buildStaticAtlas(corpus: readonly CorpusRow[] = CORPUS): StaticA
     reported five doors as proven by no test — a finding manufactured entirely
     by this file's naming choice.
   */
-  const conceptBare = concept.map((id) => id.slice("concept.".length));
-  const rollBare = roll.map((id) => id.slice("roll.".length));
-  const pins = pinningTests([...service, ...interpreter, ...cannot, ...conceptBare, ...rollBare]);
+  const conceptBare = concept.map(bareDoorId);
+  const rollBare = roll.map(bareDoorId);
+  const uploadBare = upload.map(bareDoorId);
+  const referenceBare = reference.map(bareDoorId);
+  const pins = pinningTests([
+    ...service, ...interpreter, ...cannot, ...conceptBare, ...rollBare, ...uploadBare, ...referenceBare,
+  ]);
   const sites = raiseSites();
   const declared: DeclaredId[] = [
     ...service.map((id) => ({ id, kind: "service-refusal" as const, pinnedBy: pins.get(id) ?? [], sites: sites.get(id) ?? [] })),
@@ -1007,7 +1153,7 @@ export function buildStaticAtlas(corpus: readonly CorpusRow[] = CORPUS): StaticA
     ...concept.map((id) => ({
       id,
       kind: "concept-refusal" as const,
-      pinnedBy: pins.get(id.slice("concept.".length)) ?? [],
+      pinnedBy: pins.get(bareDoorId(id)) ?? [],
       sites: sites.get(id) ?? [],
     })),
     /* #206 — pins on the BARE name for the reason stated above the concept
@@ -1016,7 +1162,25 @@ export function buildStaticAtlas(corpus: readonly CorpusRow[] = CORPUS): StaticA
     ...roll.map((id) => ({
       id,
       kind: "roll-refusal" as const,
-      pinnedBy: pins.get(id.slice("roll.".length)) ?? [],
+      pinnedBy: pins.get(bareDoorId(id)) ?? [],
+      sites: sites.get(id) ?? [],
+    })),
+    /* #209 — pins on the BARE name for the reason stated above the concept
+       entry, and with the limit that reason implies stated on
+       `uploadRefusalCopy.ts`: `unreadable` is a door on TWO roads, so the
+       interpreter's door of that name shares every pin this one has. That is
+       the pin reader's granularity, unchanged since #192 and shared with
+       `concept.unreadable`; narrowing it is a change to the reader. */
+    ...upload.map((id) => ({
+      id,
+      kind: "upload-refusal" as const,
+      pinnedBy: pins.get(bareDoorId(id)) ?? [],
+      sites: sites.get(id) ?? [],
+    })),
+    ...reference.map((id) => ({
+      id,
+      kind: "reference-refusal" as const,
+      pinnedBy: pins.get(bareDoorId(id)) ?? [],
       sites: sites.get(id) ?? [],
     })),
   ].sort((a, b) => a.id.localeCompare(b.id));
