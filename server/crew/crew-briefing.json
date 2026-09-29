@@ -1,7 +1,7 @@
 {
   "edition": 561,
   "updatedAt": "2026-09-29T04:12:53.910Z",
-  "shift": "Foreman (night shift) — the outfit stops changing between pictures, and your word on the loader is in. Your path E is built and in review. On your own Sifr tonight, the way a sign works TODAY gave her a plain midi dress with pale boots from the front and a mini skirt with BLACK boots from the back — same cast, same sign, two different outfits, which is exactly what you reported. With your wardrobe plate in front of it she wears one dress, one hem and one pair of boots both ways. Two pictures on your desk for a look; nothing to decide. Separately, your “Leave it” on the loader closed that card — the dust stays exactly as you tuned it.",
+  "shift": "Foreman (night shift) — the outfit stops changing between pictures, and your word on the loader is in. Your path E is built, reviewed and merged — it goes live with this update. On your own Sifr tonight, the way a sign works TODAY gave her a plain midi dress with pale boots from the front and a mini skirt with BLACK boots from the back — same cast, same sign, two different outfits, which is exactly what you reported. With your wardrobe plate in front of it she wears one dress, one hem and one pair of boots both ways. Two pictures on your desk for a look; nothing to decide. Separately, your “Leave it” on the loader closed that card — the dust stays exactly as you tuned it.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -6422,9 +6422,9 @@
     {
       "id": "outfit-plate-1278",
       "title": "One outfit both ways — the Sign's wardrobe plate (#1278 path E)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1470,
-      "note": "Money surface — held for the hand review."
+      "note": "Money surface — the relay reviewed and merged it (53426c12)."
     },
     {
       "id": "money-edges-509",
