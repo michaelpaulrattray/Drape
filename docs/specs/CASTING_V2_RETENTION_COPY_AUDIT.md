@@ -73,7 +73,7 @@ the wider window is what makes that sentence reachable at all.
 
 | String | Class | Justification |
 |---|---|---|
-| `Unsigned sheets are cleared after 7 quiet days.` | invented | States the rule. |
+| `Unsigned sheets are cleared after 7 quiet days.` | invented | States the rule. ⚠ Reads *30 quiet days* since 2026-09-27 (#1464), built from `CASTING_SESSION_IDLE_PHRASE` rather than typed. |
 
 **Narrowing from the brief, deliberate.** The ruling said the empty state
 *"says what happened"*. It cannot: an expired session is gone from the
@@ -91,6 +91,7 @@ Stating the rule is true in both cases. A test asserts the string contains no
 
 The ruling stated that *"zero user-facing copy exists"*. One line did:
 `SectionHead aside="Unsigned sheets clear after 7 quiet days."` on the lobby
+(⚠ *30 quiet days* since 2026-09-27, #1464, and derived rather than typed)
 (`CastingV2.tsx`), shipped earlier. It only renders when at least one sheet
 exists, which is why it reads as absent in exactly the case a user would want
 it — and it left the empty state saying nothing at all.

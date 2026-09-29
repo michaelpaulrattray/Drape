@@ -40,6 +40,7 @@ import { RenameDialog } from "@/foundation";
 import { SmallCopyImage } from "@/foundation";
 import { classifyDispatchFailure } from "@/features/castingV2/dispatchFailure";
 import { readSheetGone } from "@/features/castingV2/sheetGone";
+import { CASTING_SESSION_IDLE_PHRASE } from "@shared/castingRetention";
 import {
   RETENTION_EMPTY_STATE,
   isExpiryWarning,
@@ -1044,12 +1045,12 @@ export default function CastingV2() {
           */}
           <SectionHead
             eyebrow="Unsigned sheets"
-            aside="Unsigned sheets clear after 7 quiet days."
+            aside={`Unsigned sheets clear after ${CASTING_SESSION_IDLE_PHRASE}.`}
           />
           {/*
             One row that scrolls, not a grid that grows.
 
-            Unsigned sheets are working state — scratch, kept for seven days —
+            Unsigned sheets are working state — scratch, kept for thirty days —
             and a grid of them expands forever until it outweighs the roster it
             sits above. The cast is the subject of this page; the scratch should
             never be able to push it below the fold.

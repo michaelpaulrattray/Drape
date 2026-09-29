@@ -895,7 +895,7 @@ export default function CastingRoom() {
                     candidates kept beside her on the same sheet, and retention
                     protects exactly them for as long as she lives (§G.6) — so
                     the card can promise a face without promising something
-                    that disappears in seven days. Verified against the live
+                    that disappears in thirty days. Verified against the live
                     sweep predicate, not assumed.
 
                     A tile opens the viewer, which is the right depth for now: a
@@ -960,7 +960,7 @@ export default function CastingRoom() {
                     Offered only while the sheet still EXISTS. Her siblings'
                     faces outlive their session by design (§G.6 protects the
                     candidates, not the page), so this link rots quietly on any
-                    Cast older than her sheet's seven days — a dead end handed
+                    Cast older than her sheet's thirty days — a dead end handed
                     to someone who did nothing wrong.
                   */}
                   {data.sheetOpen && data.lineage.fromSessionPublicId ? (

@@ -2165,7 +2165,7 @@ export default function CastingSheet() {
   const rollIsOverdue = waitExceeds(roll.data?.ageMs, ROLL_OVERDUE_MS);
 
   /*
-    Seven quiet days is idle time, not age: `expiresAt` is pushed out every
+    Thirty quiet days is idle time, not age: `expiresAt` is pushed out every
     time the session is touched. So this only ever appears on a sheet the user
     has genuinely left alone, which is the only case where it is news.
   */

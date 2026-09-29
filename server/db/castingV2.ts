@@ -23,6 +23,7 @@ import { randomUUID } from "node:crypto";
 import { and, asc, desc, eq, inArray, isNull, isNotNull, lt, or, sql } from "drizzle-orm";
 
 import type { CastingPath } from "../../shared/castingPaths";
+import { CASTING_SESSION_IDLE_MS } from "../../shared/castingRetention";
 
 import {
   boardItems,
@@ -40,8 +41,17 @@ import { availableModelWhere } from "../casting/modelAvailability";
 import { CASTING_V2_COSTS } from "../casting/castingCreditCosts";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
 
-/** Sessions are the resumable unsigned sheet: 7 idle days (§G.6). */
-export const CASTING_SESSION_IDLE_MS = 7 * 24 * 60 * 60 * 1000;
+/**
+ * Sessions are the resumable unsigned sheet: 30 idle days (§G.6, widened from
+ * seven by his word on 2026-09-27 — *"id like to keep casting sheets for 30
+ * days also not 7 days"*).
+ *
+ * Re-exported rather than declared, because the same window is stated to the
+ * customer in `client/src/features/castingV2/retentionCopy.ts` and read by the
+ * design law that checks the sentence is on the page. One declaration:
+ * `shared/castingRetention.ts`.
+ */
+export { CASTING_SESSION_IDLE_MS };
 
 /**
  * A discarded candidate stays undoable until the next roll, and never for less
@@ -602,7 +612,7 @@ export async function listSessionRolls(userId: number, sessionId: number): Promi
 /**
  * This user's unsigned sheets, most recently worked on first.
  *
- * A session is a durable seven-day object, and until something can list them
+ * A session is a durable thirty-day object, and until something can list them
  * that durability is unreachable: close the tab and the sheet you paid for
  * exists only in a URL you no longer have. This is the read behind "resume".
  *
@@ -634,11 +644,16 @@ export async function listSessionRolls(userId: number, sessionId: number): Promi
  * no affordance saying anything was missing. A sheet you paid for and cannot
  * find is the same failure as a sheet that was never kept.
  *
- * Not unbounded, though. Sessions expire after seven quiet days, so the set is
+ * Not unbounded, though. Sessions expire after thirty quiet days, so the set is
  * bounded in PRACTICE — but bounded by behaviour is not bounded by the
  * statement, and an owner SELECT with no ceiling is one unusual week away from
  * being a page-load that reads everything. Forty covers a heavy week several
  * times over while keeping the query honest about having a limit at all.
+ *
+ * ⚠ The window went 7 → 30 idle days on 2026-09-27 (#1464), so "bounded in
+ * practice" is now four times looser and forty is four times nearer. It still
+ * covers a heavy month at the volume this product runs at; the ceiling is the
+ * thing to re-read first if a resume list ever looks truncated.
  */
 const OPEN_SESSION_CEILING = 40;
 
@@ -1364,7 +1379,7 @@ export async function listExpiredSessions(input: {
  * **The release now runs INLINE, in the same transaction as the status change.**
  * Not by widening the sweep, which looked cheaper and is wrong twice over: an
  * abandoned sheet's `expiresAt` is whatever the last activity set, so the purge
- * would be deferred up to seven days after the user asked for it; and
+ * would be deferred up to thirty days after the user asked for it; and
  * `markSessionExpired` only transitions from `open`, so the sweep would
  * re-select every abandoned sheet on every 60-second tick, forever, eventually
  * crowding real expiries out of its own row limit.

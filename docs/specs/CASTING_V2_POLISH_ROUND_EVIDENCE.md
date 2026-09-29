@@ -124,7 +124,7 @@ public URLs. What changed is the product's posture, which was previously
 silence.
 
 **No retention warning accompanies it**, deliberately. Download is the *remedy*
-for the seven-day purge, not its victim — handing the owner the bytes is how a
+for the seven-day purge (thirty days since 2026-09-27, #1464), not its victim — handing the owner the bytes is how a
 face outlives §G.6. The retention confession already has one ratified home and
 tone (`retentionCopy.ts`), and repeating it under a download button would be the
 same sentence, off-tone, in the wrong place. Say so if you want a word there.

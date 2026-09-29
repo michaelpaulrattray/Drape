@@ -332,7 +332,7 @@ async function defaultStoreImage(input: { bytes: Buffer; contentType: string; ke
 /**
  * The sentence for a sheet that resolves but cannot be rolled on (#854). Said
  * before any text call, so it can promise nothing was charged. `expired` is
- * the retention rule (seven quiet days, `candidateRetention.ts`); `abandoned`
+ * the retention rule (thirty quiet days, `candidateRetention.ts`); `abandoned`
  * is the customer's own Start over. Both end the same way: the words are
  * still theirs, and a fresh sheet is where they roll again.
  */
