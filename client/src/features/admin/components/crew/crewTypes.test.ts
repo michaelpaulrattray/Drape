@@ -402,8 +402,10 @@ describe("what still needs him — answered leaves the desk, not only closed (hi
        answer can be filed under — and one the row can be sure of. */
     expect(drawn[0].id).toBe("card-1492");
     expect(drawn[0].state).toBe("open");
-    /* Product impact leads the row: the filer's own sentence, nothing composed. */
-    expect(drawn[0].productImpact).toBe("Michael's ruling on the retry shape (A / B / C in the body).");
+    /* Product impact leads the row: the filer's own sentence, with the marker
+       put back so it reads as a sentence — the one word this row composes. */
+    expect(drawn[0].productImpact)
+      .toBe("Waiting on Michael's ruling on the retry shape (A / B / C in the body).");
     expect(drawn[0].options).toEqual([]);
     expect(drawn[0].recommendation).toBeNull();
   });
@@ -415,6 +417,37 @@ describe("what still needs him — answered leaves the desk, not only closed (hi
       rows,
     );
     expect(drawn.map((c) => c.id)).toEqual(["c1492"]);
+  });
+
+  /*
+    ⚠ **THE MARKER IS PUT BACK (the relay's nit on PR #1527, filed on #1467).**
+    `holdReasonFromBody` strips `**Waiting on:**` to get the sentence, so a bare
+    row printed #1434's as a line that begins with a pronoun. These arms pin the
+    restored words and the one case that must NOT take them twice.
+  */
+  it("a bare row reads as a sentence rather than starting on a pronoun (#1467 slice 2)", () => {
+    const drawn = needsYouFor(
+      liveWith([], [1434], [waiting(1434, "you — a yes or no, and no is a fine answer.")]),
+      [],
+    );
+    expect(drawn[0].productImpact).toBe("Waiting on you — a yes or no, and no is a fine answer.");
+  });
+
+  it("⚠ does not say it twice when the filer already wrote the words", () => {
+    for (const sentence of [
+      "Waiting on the founder's word",
+      "waiting  on you — a yes or no",
+      "  Waiting on him",
+    ]) {
+      const drawn = needsYouFor(liveWith([], [700], [waiting(700, sentence)]), []);
+      expect(drawn[0].productImpact, sentence).toBe(sentence);
+    }
+  });
+
+  it("the filer's own words are never edited — only prefixed", () => {
+    const sentence = "YOU. And the frames are in the comment, not the body.";
+    const drawn = needsYouFor(liveWith([], [701], [waiting(701, sentence)]), []);
+    expect(drawn[0].productImpact).toBe(`Waiting on ${sentence}`);
   });
 
   it("with no live read the bare half is absent — nothing can vouch for it", () => {

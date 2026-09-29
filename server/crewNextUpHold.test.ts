@@ -12,6 +12,7 @@ import {
   holdOwnerFromReason,
   holdReasonFromBody,
   planDeskHoldLabels,
+  planUnreadableHolds,
   resolveHold,
 } from "../shared/crewNextUpHold.js";
 
@@ -406,5 +407,89 @@ describe("who a hold is waiting on, read from the filer's own sentence", () => {
     ].join("\n");
     expect(holdOwnerFromReason(holdReasonFromBody(body))).toBe("you");
     expect(holdOwnerFromReason(holdReasonFromBody("no marker anywhere in this body"))).toBe("unknown");
+  });
+});
+
+/**
+ * ⚠ **THE HELD CARDS NOTHING DRAWS (#1467 slice 2).**
+ *
+ * `liveWaitingOnYou` draws a held card when its own sentence names HIM. This is
+ * its stated remainder: a live hold whose sentence names nobody is correctly not
+ * drawn, and was named by nothing until `planUnreadableHolds` existed.
+ *
+ * ⚠ **THE CORPUS IS THE REAL QUEUE**, read on 2026-09-29 with these same three
+ * readers over all 42 open cards — 6 held, 2 naming him, 2 naming a clock or a
+ * body of data, 2 with no marker line at all. The bodies below are those cards'
+ * own sentences, not fixtures invented to suit the reader.
+ */
+describe("a live hold that does not say whose it is gets NAMED, never repaired", () => {
+  const held = (issueNumber: number, reason: string | null, labels: readonly string[] = [CREW_HOLD_LABELS.blocked]) => ({
+    issueNumber,
+    labels,
+    body: reason === null
+      ? "A body with no marker line anywhere in it."
+      : [`Some prose first.`, ``, `${CREW_HOLD_MARKER} ${reason}`, ``, `And more after it.`].join("\n"),
+  });
+
+  it("names a held card with no marker line at all — #1468 and #1337's real shape", () => {
+    const found = planUnreadableHolds({ open: [held(1468, null), held(1337, null)] });
+    expect(found.map((h) => h.issueNumber)).toEqual([1337, 1468]);
+    expect(found.every((h) => h.reason === null)).toBe(true);
+    expect(found[0].heldStates).toEqual(["blocked"]);
+  });
+
+  it("does NOT name a card whose sentence names him — his page already draws those", () => {
+    /* #1434 and #1492, verbatim from the live queue. */
+    expect(planUnreadableHolds({
+      open: [
+        held(1434, "you — a yes or no, and no is a fine answer."),
+        held(1492, "Michael's ruling on the retry shape (A / B / C in the body). No seat picks a shape."),
+      ],
+    })).toEqual([]);
+  });
+
+  it("does NOT name a card whose sentence names something that is not a person", () => {
+    /* #1098 and #129, verbatim. Correctly undrawn AND correctly unreported —
+       the filer said what it waits for, which is the whole ask. */
+    expect(planUnreadableHolds({
+      open: [
+        held(1098, "the **Janitor patrol** (clock every 3 days; last run 2026-09-21, so ~24 Sep)."),
+        held(129, "slice 1's rows — PR #1007 merged (9d517932); slice 2's patrol needs refused AND passed prompts on record first"),
+      ],
+    })).toEqual([]);
+  });
+
+  it("⚠ is silent about a card with NO hold label, however empty its body — #298 leaves a rotted line in place on purpose", () => {
+    expect(planUnreadableHolds({ open: [held(900, null, [])] })).toEqual([]);
+    expect(planUnreadableHolds({ open: [held(901, null, ["bug", "rung:N2"])] })).toEqual([]);
+  });
+
+  it("reads EVERY hold label, not `blocked` alone — a sitting is a hold whose whole meaning is a person", () => {
+    for (const state of CREW_HELD_STATES) {
+      const found = planUnreadableHolds({ open: [held(700, null, [CREW_HOLD_LABELS[state]])] });
+      expect(found.map((h) => h.issueNumber), `hold label ${CREW_HOLD_LABELS[state]}`).toEqual([700]);
+      expect(found[0].heldStates).toEqual([state]);
+    }
+  });
+
+  it("⚠ keys on the OWNER reader, so a sentence of pure punctuation is caught rather than passing as written", () => {
+    /* The two rules — "no sentence" and "no readable owner" — pick the same two
+       cards today. This is the case that tells them apart, and it is why the
+       function asks the question the page asks. */
+    const found = planUnreadableHolds({ open: [held(910, "**** — ((")] });
+    expect(found.map((h) => h.issueNumber)).toEqual([910]);
+    expect(found[0].reason).not.toBeNull();
+  });
+
+  it("separates the two repairs: a missing sentence from an unreadable one", () => {
+    const found = planUnreadableHolds({ open: [held(2, null), held(1, "*** ***")] });
+    expect(found.find((h) => h.issueNumber === 2)?.reason).toBeNull();
+    expect(found.find((h) => h.issueNumber === 1)?.reason).toBe("*** ***");
+  });
+
+  it("is sorted by card number and reports an empty queue as empty", () => {
+    expect(planUnreadableHolds({ open: [held(90, null), held(9, null), held(50, null)] })
+      .map((h) => h.issueNumber)).toEqual([9, 50, 90]);
+    expect(planUnreadableHolds({ open: [] })).toEqual([]);
   });
 });
