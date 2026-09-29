@@ -1,7 +1,7 @@
 {
-  "edition": 577,
-  "updatedAt": "2026-09-29T21:20:00.000Z",
-  "shift": "Foreman (night shift) — two questions that had been sitting on their own cards for days are now on this page, at the top, with a box to answer in. One asks whether a job the crew has decided not to build should stay on the list with a mark against it or be closed. The other asks whether the crew's own instruction file can go into the public code repository, given it holds your rulings. Neither had ever appeared here, and one has been waiting since Friday. Here is why. Last night's change made this section read the jobs themselves instead of a list typed out by hand — but it can only show a job that says, in its own note, who it is waiting for. These two said nothing at all. So they were invisible to you and untakeable by the crew at the same time, which is the worst of both. From tonight the crew is told at the end of every shift about any job held up with no reason written down, so a question cannot go quiet like this again. The rows that were already here read better too: they used to begin mid-sentence, and now they start with “Waiting on”. Separately, the job you ordered about errors and analytics is finished and closed. Crashes on the server and in a customer's browser both reach us, the money moments are recorded, and your admin page links out to both dashboards — your own “links, no fourth key”. Nothing was spent and nothing a customer can see changed.",
+  "edition": 578,
+  "updatedAt": "2026-09-29T22:35:00.000Z",
+  "shift": "Foreman (night shift) — the last piece of the old casting lane is out of the studio, and it took an out-of-date promise with it. Since you said Yes on 24 September, every cast has been read by the new four-way question — is this a person, a creature, a real somebody, or not a being at all. The OLD two-way question was still sitting in the code beside it, unreachable, and so was the refusal it fed: a message that told a customer “Casting makes photographic people … not anime or illustration yet”. That sentence stopped being true when you said we cast creatures perfectly fine. Nobody could ever have seen it — but if it had ever appeared it would have told a customer something this studio no longer believes, so it is gone rather than tidied. Nothing on any screen changes, and the proof is not an opinion: the exact words we send the brief reader were compared before and after, all sixteen combinations, and every one is identical to the byte. Your reviewer re-ran that comparison independently and got the same answer. Nothing was spent.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -279,6 +279,10 @@
         },
         {
           "title": "The job you ordered about errors and analytics is finished (#509). A crash on the server and a crash in a customer's browser both reach us with the build they came from; the money moments are recorded once each, with no amounts and never a customer's own words; and your admin page links out to both dashboards rather than copying numbers onto itself — your “links, no fourth key”. Checked before closing: with the keys removed it says plainly that nothing is being recorded, so no screen can ever show you a comfortable zero that only means it was switched off.",
+          "state": "done"
+        },
+        {
+          "title": "And the very last of the old casting lane is out (#1495). One question reaches the brief reader now instead of two. The old two-way question — photographic person, or “other” — has been unreachable since your Yes on 24 September, and the refusal it fed went with it. That refusal is the part worth your attention: it said “not anime or illustration yet”, which had quietly become untrue of your own studio. A message nobody can reach is dead weight; a message nobody can reach that contradicts the product would have embarrassed us the day something changed and it came back to life. The bar for the change was bytes rather than judgement — sixteen of sixteen versions of the reader's instructions are identical before and after — and the one job this leaves behind is named rather than folded in: the studio still asks the reader to pick an outfit field nobody uses, and taking that out DOES change the words on the wire, so it stays its own job (#1123).",
           "state": "done"
         }
       ]
@@ -9037,6 +9041,14 @@
       "status": "merged",
       "prNumber": 1530,
       "note": "Merged 5d684498 — #1467 slice 2; two silent questions reached your desk.",
+      "cardId": null
+    },
+    {
+      "id": "two-valued-question-retired-1495",
+      "title": "The old two-way subject question retires, and the out-of-date refusal it fed goes with it",
+      "status": "merged",
+      "prNumber": 1533,
+      "note": "Merged 8d57e4d7 — #1495 and #1521 closed; 16 of 16 prompt combinations byte-identical.",
       "cardId": null
     }
   ],
