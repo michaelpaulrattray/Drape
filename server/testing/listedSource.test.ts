@@ -301,7 +301,11 @@ const BARE_READS_ALLOWED: Record<string, string[]> = {
     + " has vanished is broken, not tolerant",
   ],
   "server/castingV2/uploadRefusalCopy.test.ts": [
-    "OWNER — the module that must stay a leaf",
+    "OWNER — the module that must import exactly its one leaf",
+    "uploadLimits.ts — that leaf, by fixed name, and it must keep THROWING: the"
+    + " OWNER's single-import arm rests on the leaf still being one, so a guard"
+    + " that shrugged at a missing leaf would pass on the tree it exists to refuse"
+    + " (#209 item 1)",
     "each LITERAL_ALLOWED carve-out, a two-name list guarded by existsSync",
   ],
   "scripts/lib/stopline.mts": [
@@ -340,6 +344,14 @@ const BARE_READS_ALLOWED: Record<string, string[]> = {
     "ROLL_ENTRANCE_FILE — behind its own existsSync, which throws a NAMED error"
     + " saying the five walls would silently lose every citation",
     "briefRefusalCopy.ts — the roll copy table, by fixed name",
+    "the UPLOAD entrance's two raising modules (inkUploadDoor.ts,"
+    + " referenceAttachDoor.ts), each behind the same existsSync-and-throw the roll"
+    + " entrance uses, and for the same reason: a scan that matches nothing looks"
+    + " exactly like a scan with nothing to match, so five doors would silently"
+    + " lose every citation (#209 item 1)",
+    "uploadRefusalCopy.ts — the upload copy table, by fixed name; it is the ONLY"
+    + " citation `reference.pictureCap` has, because that door's own raise is in"
+    + " server/routes/castingV2.ts, outside this scan's tree",
     "conceptDescribeCopy.ts — the concept copy table, by fixed name",
     "refineDelta.ts — the union members’ own type lines, by fixed name",
     "cannotSayCopy.ts — the cannot-say copy table, by fixed name",

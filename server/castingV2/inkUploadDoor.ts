@@ -30,7 +30,8 @@
  */
 import { randomUUID } from "node:crypto";
 
-import { BYTES_NOT_AN_IMAGE_MESSAGE } from "./uploadRefusalCopy";
+import { UPLOAD_REFUSAL_COPY, type UploadRefusalCode } from "./uploadRefusalCopy";
+import { INK_DESIGN_MAX_BYTES, INK_DESIGN_MIN_EDGE } from "./uploadLimits";
 
 /*
   THE FORMAT VOCABULARY MOVED TO `shared/` AND IS RE-EXPORTED FROM HERE (#27).
@@ -54,27 +55,17 @@ export {
   type InkDesignFormat,
 } from "../../shared/pictureFormats";
 
-/**
- * How many designs one Cast may hold.
- *
- * Bytes we keep, on a road with no charge path to pace them (fable-921 §3b), so
- * something has to. Eight is small on purpose: the alternative is discovering
- * the number after a cast holds four hundred objects, and the vocabulary can
- * express four tuples today — two designs per place is already generous.
- */
-export const INK_DESIGNS_PER_CANDIDATE = 8;
+/*
+  THE THREE NUMBERS ARE DECLARED IN `uploadLimits.ts` AND RE-EXPORTED HERE, so
+  this module's fifteen importers are untouched and there is still exactly one
+  `export const` per number (#209 item 1).
 
-/** Eight megabytes: a phone photograph of a flash sheet, comfortably. */
-export const INK_DESIGN_MAX_BYTES = 8 * 1024 * 1024;
-
-/**
- * The shortest edge a design may have.
- *
- * A design is destined to be a CROP carried into a repaint recipe, and a
- * reference smaller than this cannot describe a tattoo — it can only describe
- * that there was one. Refusing at the door beats delivering a blur.
- */
-export const INK_DESIGN_MIN_EDGE = 256;
+  They moved for one reason: `uploadRefusalCopy.ts` states the sentences that
+  QUOTE them, and that module must import a leaf and nothing else — importing
+  this file would be a cycle, and writing `8MB` out beside the constant that
+  produces it would be a second author of one number.
+*/
+export { INK_DESIGNS_PER_CANDIDATE, INK_DESIGN_MAX_BYTES, INK_DESIGN_MIN_EDGE } from "./uploadLimits";
 
 /* What the bytes may actually BE — `INK_DESIGN_FORMATS` and its type, guard and
    mime mapping now live in `shared/pictureFormats.ts` and are re-exported at
@@ -84,10 +75,13 @@ export const INK_DESIGN_MIN_EDGE = 256;
 export const INK_KEY_PREFIX = "casting-v2/ink";
 
 type InkUploadRefusalCode =
-  | "unreadable"
-  | "unsupportedFormat"
-  | "tooLarge"
-  | "tooSmall"
+  /*
+    THE BYTE READER'S FOUR, TAKEN FROM THE COPY TABLE RATHER THAN RETYPED
+    (#209 item 1). They are declared where their sentences are, so a fifth byte
+    door cannot arrive as a code with no words — which is the state all four of
+    these were in before they reached the map.
+  */
+  | UploadRefusalCode
   /*
     THE CUTTER'S OWN CODES, carried here rather than mapped onto the four above
     (build 3a.2's upload wire). A map would have to collapse them — every one of
@@ -135,23 +129,23 @@ export function inkDesignBytesRefusal(input: {
   if (input.byteSize > INK_DESIGN_MAX_BYTES) {
     return {
       code: "tooLarge",
-      message: `That file is larger than ${Math.round(INK_DESIGN_MAX_BYTES / (1024 * 1024))}MB.`,
+      message: UPLOAD_REFUSAL_COPY.tooLarge,
     };
   }
   if (!input.decoded) {
-    return { code: "unreadable", message: BYTES_NOT_AN_IMAGE_MESSAGE };
+    return { code: "unreadable", message: UPLOAD_REFUSAL_COPY.unreadable };
   }
   if (!isInkDesignFormat(input.decoded.format)) {
     return {
       code: "unsupportedFormat",
-      message: "Designs come as PNG, JPEG or WebP.",
+      message: UPLOAD_REFUSAL_COPY.unsupportedFormat,
     };
   }
   const shortest = Math.min(input.decoded.width ?? 0, input.decoded.height ?? 0);
   if (shortest < INK_DESIGN_MIN_EDGE) {
     return {
       code: "tooSmall",
-      message: `That image is too small to draw from — ${INK_DESIGN_MIN_EDGE}px on the shortest side, at least.`,
+      message: UPLOAD_REFUSAL_COPY.tooSmall,
     };
   }
   return null;

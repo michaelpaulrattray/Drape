@@ -71,6 +71,17 @@ vi.mock("../db/castingV2", async (importOriginal) => ({
     };
   }),
   listRollCandidates: vi.fn(async () => rows.candidates),
+  /*
+    THE SHEET'S "I AM CASTING" STAMP (#1454), journalled rather than counted.
+
+    It exists to be READ by a second load, and what makes it worth anything is
+    WHEN it is written: before the compile, which is the window his report is
+    about. So it goes in the same journal as `rows`, `running` and `charge` — an
+    order, not a call count.
+  */
+  markSessionCasting: vi.fn(async (_userId: number, _sessionPublicId: string, at: Date | null) => {
+    journal.push(at === null ? "casting:off" : "casting:on");
+  }),
   /* The sheet, read before the compile (#854). `open` is the fixture's default;
      the door arms override it to `expired`, `abandoned` and null. */
   getOwnedCastingSession: vi.fn(async () => ({ id: 10, status: "open" })),
@@ -548,6 +559,95 @@ describe("the sequence", () => {
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     expect(journal).not.toContain("claim");
     expect(journal).not.toContain("charge");
+  });
+
+  /*
+    THE SHEET SAYS IT IS CASTING FOR THE WINDOW BEFORE ITS ROLL ROW EXISTS
+    (#1454, his report 2026-09-27: *"if i exit the sheet and then come back into
+    it sheet 4 will not show at all until its finished generating the cards"*).
+
+    The roll row is written after the compile, and the compile is a text call —
+    ~13 s on a short brief, 40–120 s on the author road (#466). For that window
+    `getSession` has nothing to return, so a second load draws the sheet as idle
+    over a roll that is being paid for. The stamp is the fact that fills it.
+
+    These arms are about ORDER and CLEANUP, which is the whole of it: a stamp
+    written after the compile would be a stamp for a window that has closed, and
+    a stamp a refusal leaves behind is a pill over a roll that is not happening.
+    They ride the same journal as the money sequence because they are the same
+    kind of claim.
+
+    ⚠ NOTHING HERE TOUCHES MONEY, and that is asserted rather than assumed:
+    every arm below also reads `claim` and `charge`, so a stamp that somehow
+    came to gate spending reddens here first.
+  */
+  describe("the sheet says it is casting before the roll row exists", () => {
+    it("stamps BEFORE the compile — which is the window, and the only reason it exists", async () => {
+      const dependencies = baseDependencies() as { compileBrief: (input: unknown) => unknown };
+      const seenAtCompile: string[] = [];
+      await createRoll(
+        {
+          ...(dependencies as object),
+          compileBrief: (input: unknown) => {
+            /* What the journal held at the moment the text call started. A stamp
+               written after this line would be invisible for the whole wait. */
+            seenAtCompile.push(...journal);
+            return dependencies.compileBrief(input);
+          },
+        } as never,
+        INPUT,
+      );
+      expect(seenAtCompile).toContain("casting:on");
+      /* And before the money, because the compile is before the money. */
+      expect(seenAtCompile).not.toContain("claim");
+      expect(seenAtCompile).not.toContain("charge");
+    });
+
+    it("hands over to the roll's own row rather than clearing itself", async () => {
+      await createRoll(baseDependencies(), INPUT);
+      const stamps = journal.filter((entry) => entry.startsWith("casting:") || entry === "rows");
+      /*
+        `createRollWithCandidates` clears the stamp inside the transaction that
+        writes the row — the one road where the rows take over the telling, so
+        the service must NOT also clear it. Two clears would be two places
+        deciding when the pill goes, which is how a pair drifts.
+      */
+      expect(stamps).toEqual(["casting:on", "rows"]);
+    });
+
+    it("a refused brief leaves the sheet exactly as the click found it", async () => {
+      await expect(
+        createRoll({ ...(baseDependencies() as object) } as never, { ...INPUT, briefText: "x" }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      /*
+        THE ARM THAT DECIDED THE SHAPE OF THIS FIX. The card proposed writing the
+        roll ROW here instead; a refused brief would then leave a permanent
+        failed `04` in the rail and a sheet in the lobby, which is the founder
+        bug `listOpenCastingSessions` was written against on 2026-08-01. A stamp
+        has nothing to unwind — it goes back to null and the refusal is free and
+        traceless, exactly as it is today.
+      */
+      expect(journal.filter((entry) => entry.startsWith("casting:")))
+        .toEqual(["casting:on", "casting:off"]);
+      expect(journal).not.toContain("rows");
+      expect(journal).not.toContain("claim");
+      expect(journal).not.toContain("charge");
+    });
+
+    it("a door that refuses before the compile never stamps at all", async () => {
+      /*
+        The negative control, and it is not decoration: a stamp at the TOP of
+        `createRoll` would pass every arm above and put a casting pill on a sheet
+        whose Roll again was refused in milliseconds for being expired. Nothing
+        above the compile makes anybody wait, so nothing above the compile is
+        worth telling a second reader about.
+      */
+      getOwnedCastingSession.mockResolvedValueOnce({ id: 10, status: "expired" } as never);
+      await expect(createRoll(baseDependencies(), INPUT)).rejects.toMatchObject({
+        code: "PRECONDITION_FAILED",
+      });
+      expect(journal.filter((entry) => entry.startsWith("casting:"))).toEqual([]);
+    });
   });
 
   /*

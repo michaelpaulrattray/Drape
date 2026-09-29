@@ -226,6 +226,47 @@ export async function getOwnedCastingSession(
 }
 
 /**
+ * THE SHEET IS CASTING — SAY SO BEFORE THERE IS A ROLL TO SAY IT WITH (#1454).
+ *
+ * `createRoll` compiles the brief before it writes the roll row, and the
+ * compile is a text call the customer waits through. For that window nothing on
+ * the server knows a roll is happening, so a second tab — or the same tab after
+ * leaving and coming back — draws the sheet as idle while 160 credits are
+ * committed. His report, 2026-09-27.
+ *
+ * **This writes a fact and takes no authority.** It is not a lock and not a
+ * claim: two tabs may stamp the same sheet, the later write simply wins, and
+ * whether a roll may start is still the dispatch latch's and the operation
+ * gate's question alone. Nothing downstream reads this column to decide
+ * anything about money.
+ *
+ * Owner-scoped in the statement that writes it (invariant 1) and keyed on the
+ * PUBLIC id, so the caller never has to resolve an internal one first. A
+ * foreign or unknown id updates nothing rather than refusing: a stamp that
+ * cannot be written is not a reason to fail a roll the real ownership checks
+ * are about to adjudicate anyway.
+ *
+ * Pass `null` to clear it. Every road out of the compile clears it: the roll's
+ * own birth does it inside `createRollWithCandidates`'s session update, and
+ * `createRoll` clears it on a refusal or any other throw.
+ */
+export async function markSessionCasting(
+  userId: number,
+  sessionPublicId: string,
+  at: Date | null,
+): Promise<void> {
+  assertPositiveId(userId, "userId");
+  const db = await requireDb();
+  await db
+    .update(castingSessions)
+    .set({ castingSince: at })
+    .where(and(
+      eq(castingSessions.publicId, sessionPublicId),
+      eq(castingSessions.userId, userId),
+    ));
+}
+
+/**
  * Slides the idle window. Navigation never destroys work (§G.6), so activity
  * only ever pushes expiry further out; it can never bring it closer.
  */
@@ -456,6 +497,18 @@ export async function createRollWithCandidates(input: CreateRollInput): Promise<
       .update(castingSessions)
       .set({
         activeRollId: roll.id,
+        /*
+          THE "I AM CASTING" STAMP DIES WITH THE ROW IT WAS STANDING IN FOR
+          (#1454), in this statement rather than a later one.
+
+          From the instant this transaction commits the roll row says everything
+          the stamp said and more — its index, its status, its live dot — so a
+          stamp that outlived it would be a second answer to a question the rows
+          already answer, which is the shape that drifts. Cleared beside
+          `activeRollId` because the two facts change at the same moment and for
+          the same reason.
+        */
+        castingSince: null,
         expiresAt: new Date(now.getTime() + CASTING_SESSION_IDLE_MS),
       })
       .where(and(eq(castingSessions.id, session.id), eq(castingSessions.userId, input.userId)));

@@ -421,6 +421,16 @@
         ]
       },
       {
+        "id": "reference.pictureCap",
+        "kind": "reference-refusal",
+        "pinnedBy": [
+          "server/castingV2/uploadRefusalCopy.test.ts"
+        ],
+        "sites": [
+          "server/castingV2/uploadRefusalCopy.ts:171"
+        ]
+      },
+      {
         "id": "refine_limit",
         "kind": "service-refusal",
         "pinnedBy": [
@@ -602,7 +612,7 @@
           "server/castingV2/rollService.test.ts"
         ],
         "sites": [
-          "server/castingV2/rollService.ts:411"
+          "server/castingV2/rollService.ts:414"
         ]
       },
       {
@@ -612,7 +622,7 @@
           "server/castingV2/rollService.test.ts"
         ],
         "sites": [
-          "server/castingV2/rollService.ts:405"
+          "server/castingV2/rollService.ts:408"
         ]
       },
       {
@@ -622,7 +632,7 @@
           "server/castingV2/rollService.test.ts"
         ],
         "sites": [
-          "server/castingV2/rollService.ts:399"
+          "server/castingV2/rollService.ts:402"
         ]
       },
       {
@@ -734,6 +744,79 @@
           "server/castingV2/refineDelta.ts:602",
           "server/castingV2/refineInterpreter.ts:1010",
           "server/castingV2/refineDelta.ts:602"
+        ]
+      },
+      {
+        "id": "upload.tooLarge",
+        "kind": "upload-refusal",
+        "pinnedBy": [
+          "server/castingV2/inkUploadDoor.test.ts",
+          "server/castingV2/uploadRefusalCopy.test.ts"
+        ],
+        "sites": [
+          "server/castingV2/inkUploadDoor.ts:131",
+          "server/castingV2/uploadRefusalCopy.ts:118"
+        ]
+      },
+      {
+        "id": "upload.tooSmall",
+        "kind": "upload-refusal",
+        "pinnedBy": [
+          "server/castingV2/inkDeliveryCrop.test.ts",
+          "server/castingV2/inkUploadDoor.test.ts",
+          "server/castingV2/referenceAttachService.test.ts",
+          "server/castingV2/uploadRefusalCopy.test.ts",
+          "server/db/castingV2ReferenceLibrary.test.ts"
+        ],
+        "sites": [
+          "server/castingV2/inkUploadDoor.ts:147",
+          "server/castingV2/uploadRefusalCopy.ts:120"
+        ]
+      },
+      {
+        "id": "upload.unreadable",
+        "kind": "upload-refusal",
+        "pinnedBy": [
+          "server/castingV2/cohortWallRetry.test.ts",
+          "server/castingV2/conceptDescribe.test.ts",
+          "server/castingV2/conceptDescribeCopy.test.ts",
+          "server/castingV2/creativeRegisterScope.test.ts",
+          "server/castingV2/hairColourFromReference.test.ts",
+          "server/castingV2/hairReferenceCutter.test.ts",
+          "server/castingV2/inkReferenceCutter.test.ts",
+          "server/castingV2/inkUploadDoor.test.ts",
+          "server/castingV2/judgeFrame.test.ts",
+          "server/castingV2/makeupFromReference.test.ts",
+          "server/castingV2/openLaneAccept.test.ts",
+          "server/castingV2/openLaneKind.test.ts",
+          "server/castingV2/readerFrameBound.test.ts",
+          "server/castingV2/readerOutageRefusal.test.ts",
+          "server/castingV2/referenceAttachService.test.ts",
+          "server/castingV2/referenceClassGate.test.ts",
+          "server/castingV2/referenceMediumDoor.test.ts",
+          "server/castingV2/referenceWordsLane.test.ts",
+          "server/castingV2/refineInterpreterCeiling.test.ts",
+          "server/castingV2/refineService.test.ts",
+          "server/castingV2/truncatedReplyReaders.test.ts",
+          "server/castingV2/uploadRefusalCopy.test.ts",
+          "server/db/referenceReadDemand.test.ts"
+        ],
+        "sites": [
+          "server/castingV2/inkUploadDoor.ts:136",
+          "server/castingV2/uploadRefusalCopy.ts:114"
+        ]
+      },
+      {
+        "id": "upload.unsupportedFormat",
+        "kind": "upload-refusal",
+        "pinnedBy": [
+          "server/castingV2/inkUploadDoor.test.ts",
+          "server/castingV2/referenceAttachService.test.ts",
+          "server/castingV2/uploadRefusalCopy.test.ts"
+        ],
+        "sites": [
+          "server/castingV2/inkUploadDoor.ts:140",
+          "server/castingV2/uploadRefusalCopy.ts:116"
         ]
       },
       {
@@ -1964,6 +2047,13 @@
         "message": "no corpus row reaches it: REFINE's own reader outage — the sentence was never read because the call threw, the deadline passed, or no engine is configured. The twin of `roll.reader_outage` on the refine road, and of `concept.unreadable`; free, before the claim, exactly as the `unreadable` beside it always was. What changed is only WHOSE fault it names: `unreadable` means a reply came back and could not be read, and its sentence tells her to try naming what she wants changed, which is advice she cannot follow when the failure is ours — a row could reach it via: deliberately never as a corpus row, on the same ground the two doors above state: manufacturing a reader outage in the census would test the harness and not the product. Its pin is its own driven arm in `readerOutageRefusal.test.ts`, which throws the exact ProviderError a 402 produces and asserts the classifier's mapping beside it"
       },
       {
+        "id": "documented:reference.pictureCap",
+        "severity": "info",
+        "kind": "documented-unreachable",
+        "subject": "reference.pictureCap",
+        "message": "no corpus row reaches it: answers an attach at a Cast already holding all the pictures it may — a real TOO_MANY_REQUESTS (invariant 6), raised from a database count rather than from the bytes. The attach is the only upload entrance that KEEPS what it takes, so it is the only one that can run out of room; `castingV2.concept.describe` stores nothing and has no cap to hit — a row could reach it via: a corpus row that could attach EIGHT pictures to one Cast and then a ninth — a state built from eight prior writes, which is a fixture rather than a row whatever entrance the grammar gains. Driven today by `inkReferenceMint.test.ts`, which holds the sentence to naming no move the customer cannot make"
+      },
+      {
         "id": "documented:refine_limit",
         "severity": "info",
         "kind": "documented-unreachable",
@@ -2060,6 +2150,34 @@
         "kind": "documented-unreachable",
         "subject": "unplacedInk",
         "message": "no corpus row reaches it: raised at the pre-claim ink door only for a DOCUMENTED ask with no placement; every master-state words ask dies earlier at the document gate (measured, drive-4), and the documented states (reference attached, delivered ink) resolve their placement before that door — a row could reach it via: a reference-attached fixture whose take carries no placement"
+      },
+      {
+        "id": "documented:upload.tooLarge",
+        "severity": "info",
+        "kind": "documented-unreachable",
+        "subject": "upload.tooLarge",
+        "message": "no corpus row reaches it: answers a file over the byte ceiling, judged BEFORE the decode so a huge file costs nothing to refuse. The route's own zod input cap sits above it at the same number, so the common case never reaches this door at all — which is why it is the one of the four whose absence from the map mattered least and is still a door — a row could reach it via: the same picture-carrying row, carrying more bytes than `INK_DESIGN_MAX_BYTES`. Driven today by `inkUploadDoor.test.ts` at the boundary and one byte over it"
+      },
+      {
+        "id": "documented:upload.tooSmall",
+        "severity": "info",
+        "kind": "documented-unreachable",
+        "subject": "upload.tooSmall",
+        "message": "no corpus row reaches it: answers a picture under the edge floor — one that can describe that there was something rather than what it was. The floor exists because an attached picture is destined to become a CROP in a repaint recipe, so refusing at the door beats delivering a blur — a row could reach it via: the same picture-carrying row at 255px. Driven today by `inkUploadDoor.test.ts` and by `referenceAttachService.test.ts`, which drives the whole attach with an undersized png"
+      },
+      {
+        "id": "documented:upload.unreadable",
+        "severity": "info",
+        "kind": "documented-unreachable",
+        "subject": "upload.unreadable",
+        "message": "no corpus row reaches it: answers bytes sharp could not open at all, or a payload that was never base64 — the one sentence both live upload roads say, `castingV2.concept.describe` (every account) and `castingV2.reference.attach`. It is NOT the interpreter's `unreadable`, which means a reply came back unreadable, and the qualification is what keeps the two apart on this map — a row could reach it via: a corpus row grammar that carries a PICTURE instead of a sentence — the same second driven entrance `concept.no_being` and its four siblings need, and free at every one of these doors. Driven today by `uploadRefusalCopy.test.ts`, which calls both byte doors and asserts the sentence they hand back"
+      },
+      {
+        "id": "documented:upload.unsupportedFormat",
+        "severity": "info",
+        "kind": "documented-unreachable",
+        "subject": "upload.unsupportedFormat",
+        "message": "no corpus row reaches it: answers bytes that decoded cleanly and are not one of the three formats we take. The format is what the BYTES are, never what the payload claimed — this door is given no declared mime and no filename, so there is no field for a claim to arrive in — a row could reach it via: the same picture-carrying row; a fixture PDF renamed .png is the cheapest of the four to drive and would prove the format rule rather than the transport. Driven today by `inkUploadDoor.test.ts`"
       },
       {
         "id": "documented:version_missing",
@@ -3091,6 +3209,13 @@
       "message": "no corpus row reaches it: REFINE's own reader outage — the sentence was never read because the call threw, the deadline passed, or no engine is configured. The twin of `roll.reader_outage` on the refine road, and of `concept.unreadable`; free, before the claim, exactly as the `unreadable` beside it always was. What changed is only WHOSE fault it names: `unreadable` means a reply came back and could not be read, and its sentence tells her to try naming what she wants changed, which is advice she cannot follow when the failure is ours — a row could reach it via: deliberately never as a corpus row, on the same ground the two doors above state: manufacturing a reader outage in the census would test the harness and not the product. Its pin is its own driven arm in `readerOutageRefusal.test.ts`, which throws the exact ProviderError a 402 produces and asserts the classifier's mapping beside it"
     },
     {
+      "id": "documented:reference.pictureCap",
+      "severity": "info",
+      "kind": "documented-unreachable",
+      "subject": "reference.pictureCap",
+      "message": "no corpus row reaches it: answers an attach at a Cast already holding all the pictures it may — a real TOO_MANY_REQUESTS (invariant 6), raised from a database count rather than from the bytes. The attach is the only upload entrance that KEEPS what it takes, so it is the only one that can run out of room; `castingV2.concept.describe` stores nothing and has no cap to hit — a row could reach it via: a corpus row that could attach EIGHT pictures to one Cast and then a ninth — a state built from eight prior writes, which is a fixture rather than a row whatever entrance the grammar gains. Driven today by `inkReferenceMint.test.ts`, which holds the sentence to naming no move the customer cannot make"
+    },
+    {
       "id": "documented:refine_limit",
       "severity": "info",
       "kind": "documented-unreachable",
@@ -3187,6 +3312,34 @@
       "kind": "documented-unreachable",
       "subject": "unplacedInk",
       "message": "no corpus row reaches it: raised at the pre-claim ink door only for a DOCUMENTED ask with no placement; every master-state words ask dies earlier at the document gate (measured, drive-4), and the documented states (reference attached, delivered ink) resolve their placement before that door — a row could reach it via: a reference-attached fixture whose take carries no placement"
+    },
+    {
+      "id": "documented:upload.tooLarge",
+      "severity": "info",
+      "kind": "documented-unreachable",
+      "subject": "upload.tooLarge",
+      "message": "no corpus row reaches it: answers a file over the byte ceiling, judged BEFORE the decode so a huge file costs nothing to refuse. The route's own zod input cap sits above it at the same number, so the common case never reaches this door at all — which is why it is the one of the four whose absence from the map mattered least and is still a door — a row could reach it via: the same picture-carrying row, carrying more bytes than `INK_DESIGN_MAX_BYTES`. Driven today by `inkUploadDoor.test.ts` at the boundary and one byte over it"
+    },
+    {
+      "id": "documented:upload.tooSmall",
+      "severity": "info",
+      "kind": "documented-unreachable",
+      "subject": "upload.tooSmall",
+      "message": "no corpus row reaches it: answers a picture under the edge floor — one that can describe that there was something rather than what it was. The floor exists because an attached picture is destined to become a CROP in a repaint recipe, so refusing at the door beats delivering a blur — a row could reach it via: the same picture-carrying row at 255px. Driven today by `inkUploadDoor.test.ts` and by `referenceAttachService.test.ts`, which drives the whole attach with an undersized png"
+    },
+    {
+      "id": "documented:upload.unreadable",
+      "severity": "info",
+      "kind": "documented-unreachable",
+      "subject": "upload.unreadable",
+      "message": "no corpus row reaches it: answers bytes sharp could not open at all, or a payload that was never base64 — the one sentence both live upload roads say, `castingV2.concept.describe` (every account) and `castingV2.reference.attach`. It is NOT the interpreter's `unreadable`, which means a reply came back unreadable, and the qualification is what keeps the two apart on this map — a row could reach it via: a corpus row grammar that carries a PICTURE instead of a sentence — the same second driven entrance `concept.no_being` and its four siblings need, and free at every one of these doors. Driven today by `uploadRefusalCopy.test.ts`, which calls both byte doors and asserts the sentence they hand back"
+    },
+    {
+      "id": "documented:upload.unsupportedFormat",
+      "severity": "info",
+      "kind": "documented-unreachable",
+      "subject": "upload.unsupportedFormat",
+      "message": "no corpus row reaches it: answers bytes that decoded cleanly and are not one of the three formats we take. The format is what the BYTES are, never what the payload claimed — this door is given no declared mime and no filename, so there is no field for a claim to arrive in — a row could reach it via: the same picture-carrying row; a fixture PDF renamed .png is the cheapest of the four to drive and would prove the format rule rather than the transport. Driven today by `inkUploadDoor.test.ts`"
     },
     {
       "id": "documented:version_missing",

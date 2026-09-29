@@ -80,6 +80,7 @@ import {
   landCandidate,
   listRollCandidates,
   markCandidateDispatched,
+  markSessionCasting,
   setRollStatus,
   touchCastingSession,
 } from "../db/castingV2";
@@ -255,6 +256,8 @@ export type RollServiceDependencies = {
   engine?: (userId?: number) => CreativeEngine;
   admit?: (candidateCount: number) => AdmissionDecision;
   begin?: typeof beginDirectOperation;
+  /** Says the sheet is compiling a roll, or has stopped (#1454). A seam so a test can watch both halves. */
+  markCasting?: typeof markSessionCasting;
   markRunning?: typeof markGenerationOperationRunning;
   deduct?: typeof deductCredits;
   /**
@@ -680,6 +683,52 @@ export async function createRoll(
   const tooLong = briefTooLong(input.briefText);
   if (tooLong) throw new TRPCError({ code: "BAD_REQUEST", message: tooLong });
 
+  /*
+    THE SHEET STARTS SAYING IT IS CASTING HERE (#1454, his report 2026-09-27).
+
+    Everything above this line refuses FREE and in milliseconds — a foreign
+    sheet, an expired one, a follow whose photograph will not load, a brief over
+    the bound — and none of it is a roll happening. The compile is the first act
+    that makes the customer wait, so it is the first act worth telling a second
+    reader about. Stamped here rather than at the top for exactly that reason: a
+    refusal at the door must leave the sheet as it found it.
+
+    **It is a fact, not a claim.** Nothing is allocated, nothing is charged, no
+    roll index is taken and no row is written that a later refusal would have to
+    unwind — which is the whole argument for a stamp over the shape the card
+    proposed (birth the roll row here). That shape would leave a permanent
+    failed `04` in the rail and a sheet in the lobby for every free refusal,
+    reopening the founder bug `listOpenCastingSessions` was written against on
+    2026-08-01; it would move the operation gate ahead of the compile and the
+    replay contract with it; and it would move `activeRollId` — which undo is
+    anchored to and the retention sweep exempts — onto a roll that may never
+    exist. Declared rather than done quietly: the shape was read at the code,
+    those three consequences were measured, and the smaller fact was taken
+    instead. The customer outcome is the same one either way.
+  */
+  const markCasting = dependencies.markCasting ?? markSessionCasting;
+  await markCasting(input.userId, input.sessionPublicId, new Date());
+  /*
+    EVERY ROAD OUT OF THE COMPILE CLEARS IT, and a road that forgets is the
+    defect this closes rather than a stale pill (working law 7's class, pointed
+    at my own change). The roll's own birth clears it inside
+    `createRollWithCandidates`'s session update — the one road where the rows
+    take over the telling; everything else comes through here.
+  */
+  const stopCasting = async () => {
+    try {
+      await markCasting(input.userId, input.sessionPublicId, null);
+    } catch (error) {
+      /* A stamp that will not clear ages out on its own (the projection's
+         staleness bound), so it is never worth turning into a second failure on
+         top of the one being reported. */
+      log.warn(
+        { err: String(error).slice(0, 200), session: input.sessionPublicId },
+        "[rollService] could not clear the casting stamp — it will age out",
+      );
+    }
+  };
+
   let compiled: CompiledRollBrief;
   try {
     compiled = await compile({
@@ -725,6 +774,9 @@ export async function createRoll(
       followStatedAnchor,
     });
   } catch (error) {
+    /* The sheet is not casting any more, whichever way this went — a refusal
+       leaves it exactly as the click found it. */
+    await stopCasting();
     if (error instanceof BriefRefusal) {
       // A free refusal: no claim, no charge, no operation to reconcile.
       throw new TRPCError({ code: "BAD_REQUEST", message: error.message });
@@ -733,21 +785,31 @@ export async function createRoll(
   }
 
   const begin = dependencies.begin ?? beginDirectOperation;
-  const gate = await begin({
-    userId: input.userId,
-    clientRequestId: input.clientRequestId,
-    kind: "castingV2.roll",
-    payload: {
-      sessionPublicId: input.sessionPublicId,
-      briefText: input.briefText,
-      followCandidatePublicId: input.followCandidatePublicId ?? null,
-    },
-  });
+  let gate;
+  try {
+    gate = await begin({
+      userId: input.userId,
+      clientRequestId: input.clientRequestId,
+      kind: "castingV2.roll",
+      payload: {
+        sessionPublicId: input.sessionPublicId,
+        briefText: input.briefText,
+        followCandidatePublicId: input.followCandidatePublicId ?? null,
+      },
+    });
+  } catch (error) {
+    await stopCasting();
+    throw error;
+  }
 
   if (gate.type === "replay") {
     // Idempotency, not an error (§F): the same request id returns the roll it
     // already created rather than rolling — and charging — a second time.
     const existing = await getRollByOperation(input.userId, gate.operationId);
+    /* Both replay exits leave the compile behind, so neither leaves the sheet
+       claiming to be casting: the roll this returns already has its own row and
+       tells its own story. */
+    await stopCasting();
     if (!existing) {
       throw new TRPCError({
         code: "CONFLICT",
@@ -834,6 +896,8 @@ export async function createRoll(
       })),
     });
   } catch (error) {
+    /* No roll row was written, so the stamp has nothing to hand over to. */
+    await stopCasting();
     // The claim is still `claimed` and no credits moved, so this closes as a
     // free failure — the claimed finalizer, not the running one.
     return failClaimedDirectOperation({

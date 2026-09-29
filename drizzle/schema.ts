@@ -1956,6 +1956,28 @@ export const castingSessions = mysqlTable("casting_sessions", {
   originBoardId: int("originBoardId"),
   originItemId: int("originItemId"),
   activeRollId: int("activeRollId"),
+  /**
+   * WHEN A ROLL STARTED BEING CAST ON THIS SHEET, BEFORE ITS ROW EXISTS (#1454).
+   *
+   * A roll's own row is not written until its brief has compiled, and on the
+   * author road that is 13–120 seconds of a customer watching. For that window
+   * the only thing that knows a roll is happening is the tab that pressed the
+   * button: `getSession` has nothing to return, so leaving the sheet and coming
+   * back shows the previous roll and no sign that 160 credits are in flight —
+   * the founder's own report, 2026-09-27.
+   *
+   * So the sheet records that it is casting at the moment the button is
+   * pressed. NULL means nothing is being compiled here.
+   *
+   * **It is a fact with an expiry, not a lock.** Nothing reads it to decide
+   * whether a roll may start, what is charged, or what is refunded — the latch,
+   * the operation gate and the ledger own all of that and are untouched. A
+   * process that dies mid-compile leaves a stamp, so the reader treats one
+   * older than `CASTING_ROLL_COMPILE_STALE_MS` as absent rather than drawing a
+   * pill over a roll that stopped existing. Cleared by the roll's own birth, in
+   * the same statement that moves `activeRollId`, and on every refusal.
+   */
+  castingSince: timestamp("castingSince"),
   status: mysqlEnum("status", CASTING_SESSION_STATUSES).default("open").notNull(),
   signedCastCount: int("signedCastCount").default(0).notNull(),
   parentCastId: int("parentCastId"), // fork-from-room lineage →models
