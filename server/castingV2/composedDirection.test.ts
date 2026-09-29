@@ -122,37 +122,31 @@ describe("the garment guard", () => {
   });
 });
 
-describe("where it lands in the prompt", () => {
-  async function compiled(wire: Record<string, unknown>) {
-    return castingBriefCompiler({
-      briefText: "a campaign model",
-      candidateCount: 8,
-      rollSeed: "composed",
-      engine: engineReturning(wire),
-    });
-  }
+/*
+  TWO ARMS STOOD HERE — the aesthetic reference reaching all eight as
+  `REFERENCE DIRECTION:` and never as the category block, and its companion
+  that a sheet with no composed direction says nothing. ⚠ The second is named
+  here because it would have SURVIVED AS A GREEN NO-OP: with no composition at
+  all, "does not contain REFERENCE DIRECTION" is true of every prompt for the
+  wrong reason. The arms that read the INTENT — that the reference is captured
+  rather than vanishing, which is this file's C7 subject — survive.
 
-  it.skipIf(!COMPOSED_DIRECTION_ENABLED)("reaches every candidate as DIRECTION, never as the category", async () => {
-    const sheet = await compiled({
-      role: "campaign model",
-      composedDirection: {
-        thesis: "Quirky, slightly awkward prep-school beauty — unconventional features worn with ease.",
-        avoid: "Do not render as conventional runway prettiness.",
-      },
-    });
-    for (const candidate of sheet.candidates) {
-      expect(candidate.prompt).toContain("REFERENCE DIRECTION:");
-      expect(candidate.prompt).toContain("prep-school beauty");
-      // The category block is the user's own words and stays untouched.
-      const category = candidate.prompt.match(/CASTING CATEGORY \(ABSOLUTE\): [^.]*\./)?.[0] ?? "";
-      expect(category).not.toContain("prep-school");
-    }
-  });
+  ⚠ **DELETED WITH THE HOUSE ROAD — #1490 act 1, and FOLDED INTO #1125 rather
+  than re-pointed.** Every one of these arms asserted that a resolved and
+  persisted value left a FOOTPRINT IN THE PER-SLICE COMPOSED PROMPT. The author
+  road composes no per-slice prompt: one authored prompt paints all eight and
+  the dice records are marked `unsent` (#176), so there is no per-tier sentence
+  to look for and nothing for the arm to be right or wrong about.
 
-  it("says nothing when the interpreter composed nothing", async () => {
-    const sheet = await compiled({ role: "campaign model", composedDirection: null });
-    for (const candidate of sheet.candidates) {
-      expect(candidate.prompt).not.toContain("REFERENCE DIRECTION:");
-    }
-  });
-});
+  ⚠ **THIS IS A FLOOR DROP AND IT IS SAID OUT LOUD.** The class these arms
+  guard is the UNOWNED-AXIS COLLAPSE — an axis nobody owns is decided by
+  whichever prior is loudest, identically on every tile — and it was caught
+  FIVE separate times by the founder's own eye. It is not abandoned: #1125
+  (`debt`, `rung:N3`) is exactly this loss, filed by the #180 ghost audit
+  BEFORE these arms fell over, and its ruling is that the question — did the
+  delivered picture carry what she asked for — is #30's, asked of a FRAME
+  rather than of a prompt string.
+
+  What survives in this file is everything that reads the PARSE or the
+  RESOLVER directly, which is the half that still decides a real record.
+*/

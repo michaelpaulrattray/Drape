@@ -5,8 +5,13 @@
  * ⚠ IT WAS `CASTING_CREATIVE_REGISTER_SCOPE`'s SUITE AND THE FLAG IS GONE —
  * #1443, slice 2 of the old-lane retirement, on his word on #1398: "Delete it".
  * The ladder's arms went with the parser they drove; the road arms stayed,
- * because the compiler still takes an `authorRoad` input and `rollService`
- * passes a literal `true`. THE FILE KEEPS ITS NAME on purpose — the card, the
+ * because the compiler still took an `authorRoad` input and `rollService`
+ * passed a literal `true`. ⚠ **THAT INPUT IS GONE TOO AS OF #1490 ACT 1, AND
+ * WITH IT EVERY "off the flag" ARM IN THIS FILE.** The compiler has ONE road:
+ * the house branch is deleted, so there is no second composition for an arm to
+ * describe and no literal for a caller to forget. Each deleted arm carries its
+ * own reason in place, and none of them was weakened — the road underneath
+ * them was removed. THE FILE KEEPS ITS NAME on purpose — the card, the
  * manifest and the capability atlas point at it by name, and renaming a suite
  * inside a retirement is the tidying his rule on #1398 forbids folding in.
  *
@@ -90,13 +95,18 @@ import { PHOTOREAL_HUMAN_BLOCKS, photorealHumanConstant } from "./cohortPhotorea
   that is `off` AND over one that is ABSENT, which is this retirement's own
   shape.
 
-  ⚠ AND THE ROAD ARMS BELOW ARE NOT THE FLAG'S ANY MORE — they are the
-  compiler's `authorRoad` input, which `rollService` passes as a literal `true`
-  on every roll. So an arm that reads "off the flag" is describing the HOUSE
-  arm, which slice 2 deliberately did NOT collapse: 86 arms across 17 suites
-  drive it, and retiring them is #180's ghost audit and slice 4 (#1445), not a
-  side effect of taking a variable out. Every "off" arm here is a test seam's
-  arm until those cards land.
+  ⚠ AND THERE ARE NO "off the flag" ARMS BELOW ANY MORE — #1490 act 1. They
+  were never the flag's by then: they drove the compiler's `authorRoad` input,
+  the house arm slice 2 deliberately did NOT collapse because 101 arms across
+  20 suites drove it. Act 1 collapsed it and re-pointed all of them, so the
+  input is gone and so is every arm that described the second road. What is
+  left here is one road, asserted at the wire.
+
+  ⚠ ONE GHOST SURVIVES THIS FILE ON PURPOSE AND IS NOT ACT 1's TO TAKE: the
+  INTERPRETER still accepts `author: false`, and the arms that drive it
+  directly below still pass. Nothing in production can reach it now that the
+  compiler passes `true` unconditionally — that is a #180 finding, filed rather
+  than folded in (his rule on #1398).
 */
 
 /* ----------------------------------------- the interpreter is the READER */
@@ -321,42 +331,35 @@ describe("the word guards both roads share (#230's rules, now the Re-imagine cha
 
 /* --------------------------------------------------------------- the WIRE */
 
-describe("the WIRE — off is today's product to the byte", () => {
-  it("the author is never called, the row carries no register, the eight prompts are the house road", async () => {
-    const engine = engineAnswering([AUTHORED]);
-    const compiled = await castingBriefCompiler({
-      briefText: RICH,
-      candidateCount: 8,
-      rollSeed: "wire-off",
-      engine,
-    });
-    expect(sent(engine, "interpret").length).toBeGreaterThan(0);
-    expect(sent(engine, "author")).toHaveLength(0);
-    expect(compiled.compiledBrief).not.toHaveProperty("register");
-    for (const candidate of compiled.candidates) {
-      expect(candidate.prompt.startsWith("CASTING CATEGORY (ABSOLUTE)")).toBe(true);
-      expect(candidate.prompt).not.toContain(AUTHOR_ROAD_FRAMING[0]);
-      /* The house composer's own block did not move (the derivation is by reference). */
-      expect(candidate.prompt).toContain("Eight candidates must not share one skin");
-    }
-  });
-});
+/*
+  ⚠ `describe("the WIRE — off is today's product to the byte")` STOOD HERE AND
+  IS DELETED (#1490 act 1). Its single arm — *"the author is never called, the
+  row carries no register, the eight prompts are the house road"* — asserted
+  that a compile WITHOUT the flag produced the house composition, byte for
+  byte. There is no "without" any more: the house branch is gone from
+  `castingBriefCompiler`, every row carries a register, and every prompt is the
+  customer's own words. The arm was the flag's other side, and the flag was
+  deleted by his word on #1398 (*"Delete it"*) one slice before this one.
+*/
 
 describe("the WIRE — on, EVERY roll is the author road: one prompt, verbatim first, the reader untouched", () => {
-  it("all eight slices carry the ONE authored prompt; the locks are the reader's and identical to the unflagged compile", async () => {
-    const off = await castingBriefCompiler({
-      briefText: RICH,
-      candidateCount: 8,
-      rollSeed: "wire-on",
-      engine: engineAnswering([]),
-    });
+  it("all eight slices carry the ONE authored prompt, and every per-slice record is marked unsent", async () => {
+    /*
+      ⚠ A SECOND, UNFLAGGED COMPILE (`off`) STOOD HERE AND IS GONE (#1490 act
+      1) — and it had ALREADY STOPPED PROVING ANYTHING before it was removed,
+      which is why it goes rather than moves. With the house branch deleted
+      both compiles take the one road, so `on.lockContract` was being compared
+      to ITSELF and the identity comparison spread `unsent: true` over records
+      that already carried it. Both assertions passed and neither could fail.
+      A vacuous arm is worse than an absent one (working law 2), so the two
+      live facts underneath them are asserted directly below instead.
+    */
     const engine = engineAnswering([AUTHORED]);
     const on = await castingBriefCompiler({
       briefText: RICH,
       candidateCount: 8,
       rollSeed: "wire-on",
       engine,
-      authorRoad: true,
     });
     /* The interpreter ran as the READER, and was not asked to route. */
     expect(sent(engine, "interpret").length).toBeGreaterThan(0);
@@ -382,10 +385,16 @@ describe("the WIRE — on, EVERY roll is the author road: one prompt, verbatim f
        with the field: a candidate carries no disposition on either road now (his
        ruling, #1241), and `candidateDispositionRetired.test.ts` is what reddens
        if the word comes back. */
-    expect(on.lockContract).toEqual(off.lockContract);
-    expect(on.candidates.map((c) => c.resolvedIdentity)).toEqual(
-      off.candidates.map((c) => ({ ...c.resolvedIdentity, unsent: true })),
-    );
+    /* THE LOCKS ARE THE READER'S: the road rewrites what the engine is TOLD,
+       never what the sheet records about who was cast. `RICH` states a sex, so
+       the reader's answer is what the contract must carry. */
+    expect(on.lockContract).toMatchObject({ sex: "female" });
+    /* AND EVERY ONE OF THE EIGHT IS MARKED UNSENT (#176) — one authored prompt
+       painted them all, so no per-slice die reached the wire. */
+    expect(on.candidates).toHaveLength(8);
+    for (const candidate of on.candidates) {
+      expect((candidate.resolvedIdentity as { unsent?: boolean }).unsent).toBe(true);
+    }
     /* The row says how it was composed, and carries the whole prompt for the sheet to show. */
     expect(on.compiledBrief.register).toMatchObject({
       kind: "author",
@@ -430,13 +439,13 @@ const FOLLOW = {
 
 describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the clause is his courted sentence, and the unflagged compile does not move", () => {
   it("a FOLLOW with the photo riding: one prompt on all eight — the brief verbatim, the Row A clause, the block; no author call; the reader's record is the house follow's, marked unsent", async () => {
-    const off = await castingBriefCompiler({
-      briefText: RICH,
-      candidateCount: 8,
-      rollSeed: "wire-follow",
-      engine: engineAnswering([]),
-      followIdentity: FOLLOW as never,
-    });
+    /*
+      ⚠ THE UNFLAGGED FOLLOW (`off`) STOOD HERE AND IS GONE (#1490 act 1). Its
+      three assertions — the prompt opening on `CASTING CATEGORY (ABSOLUTE)`,
+      carrying the cut, and the row carrying no register — are the house
+      composition, which no longer exists. The describe's title clause *"and
+      the unflagged compile does not move"* went with them.
+    */
     const engine = engineAnswering([AUTHORED]);
     const on = await castingBriefCompiler({
       briefText: RICH,
@@ -444,15 +453,10 @@ describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the c
       rollSeed: "wire-follow",
       engine,
       followIdentity: FOLLOW as never,
-      authorRoad: true,
       anchorImageAttached: true,
     });
     expect(sent(engine, "author")).toHaveLength(0);
-    /* The unflagged follow is the house road, byte for byte, as it always was. */
-    expect(off.candidates[0]?.prompt.startsWith("CASTING CATEGORY (ABSOLUTE)")).toBe(true);
-    expect(off.candidates[0]?.prompt).toContain("low bun");
-    expect(off.compiledBrief).not.toHaveProperty("register");
-    /* The flagged follow: ONE prompt, the fixed clause between the brief and the block. */
+    /* The follow: ONE prompt, the fixed clause between the brief and the block. */
     const prompts = new Set(on.candidates.map((c) => c.prompt));
     expect(prompts.size).toBe(1);
     expect(on.candidates[0]?.prompt).toBe(`${RICH}\n\n${FOLLOW_ANCHOR_CLAUSE}\n\n${HOUSE_BLOCK}`);
@@ -461,12 +465,20 @@ describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the c
     expect(on.candidates[0]?.prompt).not.toContain("Nordic");
     expect(on.candidates[0]?.prompt).not.toContain("CASTING CATEGORY");
     expect(neverWrittenIn(FOLLOW_ANCHOR_CLAUSE)).toBeNull();
-    /* The identities the sheet records are still the house follow's — the
-       anchor biased the neighbourhood exactly as before — and they are marked
-       unsent (#176), because the one authored prompt never carried them. */
-    expect(on.candidates.map((c) => c.resolvedIdentity)).toEqual(
-      off.candidates.map((c) => ({ ...c.resolvedIdentity, unsent: true })),
-    );
+    /* The identities the sheet records are the follow resolver's — the anchor
+       biased the neighbourhood exactly as before — and they are marked unsent
+       (#176), because the one authored prompt never carried them. ⚠ This was a
+       comparison against the unflagged compile; with one road left that
+       compared a compile to itself, so it asserts the anchor's own bias and
+       the mark directly. */
+    for (const candidate of on.candidates) {
+      expect((candidate.resolvedIdentity as { unsent?: boolean }).unsent).toBe(true);
+    }
+    /* ⚠ AND THE ANCHOR'S BIAS IS NOT ASSERTED HERE ANY MORE, DELIBERATELY.
+       It was only ever readable as a DIFFERENCE from the unflagged compile,
+       and there is no second road to difference against. `followAnchor.test.ts`
+       owns that question directly; inventing a weaker stand-in here would be a
+       green no-op, which is the one thing worse than an absent arm. */
     expect(on.compiledBrief.register).toMatchObject({
       kind: "author",
       mode: "seed",
@@ -488,7 +500,6 @@ describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the c
       rollSeed: "wire-follow-max",
       engine,
       followIdentity: FOLLOW as never,
-      authorRoad: true,
       anchorImageAttached: true,
     });
     expect(sent(engine, "author")).toHaveLength(0);
@@ -511,7 +522,6 @@ describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the c
       engine,
       followIdentity: FOLLOW as never,
       followStatedAnchor: FOLLOW as never,
-      authorRoad: true,
       anchorImageAttached: true,
     });
     const clause = (on.compiledBrief.register as { carried: { clause: string } }).carried.clause;
@@ -532,7 +542,6 @@ describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the c
       engine,
       followIdentity: FOLLOW as never,
       overrides: { ageBand: "40s" } as never,
-      authorRoad: true,
       anchorImageAttached: true,
     });
     /* No rewrite, no axis in the clause, the wire is the courted bytes. */
@@ -550,7 +559,6 @@ describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the c
       rollSeed: "wire-follow-unattached",
       engine,
       followIdentity: FOLLOW as never,
-      authorRoad: true,
       /* anchorImageAttached deliberately absent. */
     });
     expect(on.candidates[0]?.prompt).toBe(`${RICH}\n\n${HOUSE_BLOCK}`);
@@ -566,7 +574,6 @@ describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the c
       rollSeed: "wire-override",
       engine: overridden,
       overrides: { ageBand: "40s", heritage: "Slavic" } as never,
-      authorRoad: true,
     });
     expect(sent(overridden, "author")).toHaveLength(0);
     /*
@@ -596,15 +603,15 @@ describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the c
       rollSeed: "wire-unlock",
       engine: plain,
       unlock: ["sex"] as never,
-      authorRoad: true,
     });
     expect(on.candidates[0]?.prompt).toBe(`${RICH}\n\n${HOUSE_BLOCK}`);
     expect(on.compiledBrief.register).not.toHaveProperty("carried");
     expect(on.chips.some((chip) => chip.field)).toBe(true);
     for (const chip of on.chips.filter((chip) => chip.field)) expect(chip.removable, chip.field).toBe(false);
-    /* Off the flag the same chips are removable, as they always were. */
-    const off = await castingBriefCompiler({ briefText: RICH, candidateCount: 8, rollSeed: "wire-unlock", engine: engineAnswering([]) });
-    for (const chip of off.chips.filter((chip) => chip.field)) expect(chip.removable, chip.field).toBe(true);
+    /* ⚠ THE `off` HALF — the same chips drawn REMOVABLE — IS DELETED (#1490
+       act 1). Every derived chip is read-only now, on the one road there is:
+       the brief travels verbatim, so a chip derived from the sentence cannot
+       be unsaid by removing it (#154, his answer (2)). */
   });
 
   it("an EMPTY override object is not an edit — no clause, the author road exactly as before", async () => {
@@ -616,7 +623,6 @@ describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the c
       engine: empty,
       overrides: {},
       unlock: [],
-      authorRoad: true,
     });
     /* No author call at a roll (#535); the seed road, with no clause. */
     expect(sent(empty, "author")).toHaveLength(0);
@@ -631,7 +637,6 @@ describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the c
       candidateCount: 8,
       rollSeed: "wire-brand",
       engine,
-      authorRoad: true,
     });
     for (const candidate of on.candidates) expect(candidate.prompt.toLowerCase()).not.toContain("versace");
     const prompt = String((on.compiledBrief.register as { prompt: string }).prompt);
@@ -777,7 +782,7 @@ describe("slice C — the WIRE through the compiler: two walls on the author roa
   it("'a red sports car' refuses free as not_a_being, in the founder's words, and the author is never called", async () => {
     const engine = engineReading([intentWith("not_a_being")]);
     const refusal = await refusalOf(() =>
-      castingBriefCompiler({ briefText: "a red sports car", candidateCount: 8, rollSeed: "c-car", engine, authorRoad: true }),
+      castingBriefCompiler({ briefText: "a red sports car", candidateCount: 8, rollSeed: "c-car", engine }),
     );
     expect(refusal.code).toBe("not_a_being");
     expect(refusal.message).toBe(NOT_A_BEING_MESSAGE);
@@ -788,7 +793,7 @@ describe("slice C — the WIRE through the compiler: two walls on the author roa
   it("a named character refuses free as likeness — the wall the ruling KEEPS", async () => {
     const engine = engineReading([intentWith("likeness")]);
     const refusal = await refusalOf(() =>
-      castingBriefCompiler({ briefText: "a Spider-Man look-alike", candidateCount: 8, rollSeed: "c-likeness", engine, authorRoad: true }),
+      castingBriefCompiler({ briefText: "a Spider-Man look-alike", candidateCount: 8, rollSeed: "c-likeness", engine }),
     );
     expect(refusal.code).toBe("likeness");
     expect(refusal.message).toBe(LIKENESS_MESSAGE);
@@ -798,7 +803,7 @@ describe("slice C — the WIRE through the compiler: two walls on the author roa
   it("a creature CASTS on the author road — the stage wall is dead there — and the row records the reading", async () => {
     const brief = "a swamp monster with moss-green skin and amber eyes";
     const engine = engineReading([intentWith("being")]);
-    const on = await castingBriefCompiler({ briefText: brief, candidateCount: 8, rollSeed: "c-creature", engine, authorRoad: true });
+    const on = await castingBriefCompiler({ briefText: brief, candidateCount: 8, rollSeed: "c-creature", engine });
     expect(sent(engine, "author")).toHaveLength(0);
     /*
       #232/#237: the reader called it a `being`, so the block it was painted
@@ -815,22 +820,20 @@ describe("slice C — the WIRE through the compiler: two walls on the author roa
     expect(on.compiledBrief.intent).not.toHaveProperty("creativeRegister");
   });
 
-  it("the same creature OFF the flag still walls as unsupported_cohort — byte-identical to today", async () => {
-    const engine = engineReading([intentWith("being"), intentWith("being")]);
-    const refusal = await refusalOf(() =>
-      castingBriefCompiler({ briefText: "a swamp monster with moss-green skin", candidateCount: 8, rollSeed: "c-creature-off", engine }),
-    );
-    expect(refusal.code).toBe("unsupported_cohort");
-    expect(sent(engine, "interpret")[0]?.system).not.toContain(SUBJECT_INSTRUCTION);
-  });
-
+  /*
+    ⚠ *"the same creature OFF the flag still walls as unsupported_cohort"*
+    STOOD HERE AND IS DELETED (#1490 act 1). It was the house road's stage
+    wall, and the arm directly above it — a creature CASTS, and the row records
+    the reading — is the product now. A swamp monster is exactly the mission's
+    own sentence, so there is no second answer left to pin.
+  */
   it("a human on the author road records subject 'human'; an unparsed reply records 'unread' and the sheet goes out on the verbatim brief", async () => {
     const human = engineReading([intentWith("photoreal_human")]);
-    const a = await castingBriefCompiler({ briefText: THIN, candidateCount: 8, rollSeed: "c-human", engine: human, authorRoad: true });
+    const a = await castingBriefCompiler({ briefText: THIN, candidateCount: 8, rollSeed: "c-human", engine: human });
     expect(a.compiledBrief.register).toMatchObject({ kind: "author", subject: "human" });
 
     const garbage = engineReading(["not json at all", "still not json"]);
-    const b = await castingBriefCompiler({ briefText: THIN, candidateCount: 8, rollSeed: "c-unread", engine: garbage, authorRoad: true });
+    const b = await castingBriefCompiler({ briefText: THIN, candidateCount: 8, rollSeed: "c-unread", engine: garbage });
     expect(b.compiledBrief.interpreted).toBe(false);
     expect(b.compiledBrief.register).toMatchObject({ kind: "author", subject: "unread" });
     expect(b.candidates[0]?.prompt.startsWith(`${THIN}\n\n`)).toBe(true);
@@ -839,29 +842,31 @@ describe("slice C — the WIRE through the compiler: two walls on the author roa
   it("the styled-brief screen is not consulted on the author road: an anime brief with an unparsed reply paints from its own words; off, it still walls", async () => {
     const brief = "an anime girl with silver twin-tails";
     const on = await castingBriefCompiler({
-      briefText: brief, candidateCount: 8, rollSeed: "c-styled-on", engine: engineReading(["{ not: json"]), authorRoad: true,
+      briefText: brief, candidateCount: 8, rollSeed: "c-styled-on", engine: engineReading(["{ not: json"]),
     });
     expect(on.candidates[0]?.prompt.startsWith(`${brief}\n\n`)).toBe(true);
     expect(on.compiledBrief.register).toMatchObject({ kind: "author", subject: "unread" });
 
-    const refusal = await refusalOf(() =>
-      castingBriefCompiler({ briefText: brief, candidateCount: 8, rollSeed: "c-styled-off", engine: engineReading(["{ not: json"]) }),
-    );
-    expect(refusal.code).toBe("unsupported_cohort");
+    /* ⚠ THE `off` HALF — the same anime brief walling as an unsupported cohort
+       — IS DELETED (#1490 act 1) together with the screen itself, which is gone
+       from `briefCompiler`. Its 24 driving arms in `styleRefusal.test.ts` went
+       the same way and carry the full reason. */
   });
 
   it("a FOLLOW under the flag is the author road too (#154) and is asked the four-valued subject question; off the flag it is asked today's", async () => {
     const engine = engineReading([intentWith("photoreal_human")]);
     await castingBriefCompiler({
-      briefText: RICH, candidateCount: 8, rollSeed: "c-follow", engine, followIdentity: FOLLOW as never, authorRoad: true,
+      briefText: RICH, candidateCount: 8, rollSeed: "c-follow", engine, followIdentity: FOLLOW as never,
     });
     expect(sent(engine, "interpret")[0]?.system).toContain(SUBJECT_INSTRUCTION);
     expect(sent(engine, "interpret")[0]?.system).not.toContain(COHORT_INSTRUCTION);
 
-    const off = engineReading([intentWith("photoreal_human")]);
-    await castingBriefCompiler({ briefText: RICH, candidateCount: 8, rollSeed: "c-follow-off", engine: off, followIdentity: FOLLOW as never });
-    expect(sent(off, "interpret")[0]?.system).toContain(COHORT_INSTRUCTION);
-    expect(sent(off, "interpret")[0]?.system).not.toContain(SUBJECT_INSTRUCTION);
+    /* ⚠ THE `off` HALF — the same follow asked today's two-valued COHORT
+       question — IS DELETED (#1490 act 1). The compiler passes `author: true`
+       unconditionally now, so no compile can put `COHORT_INSTRUCTION` on the
+       wire. The interpreter's own `author: false` option still exists and is
+       still driven directly in this file; that it has no caller left is a
+       finding for #180 rather than this act's work. */
   });
 });
 
@@ -904,7 +909,6 @@ describe("the cast style (#142) — the settings modal's selector, one member to
       candidateCount: 8,
       rollSeed: "wire-style",
       engine: engineAnswering([]),
-      authorRoad: true,
       style: "photoreal",
     });
     expect(on.compiledBrief.register).toMatchObject({ kind: "author", style: "photoreal" });
@@ -918,18 +922,15 @@ describe("the cast style (#142) — the settings modal's selector, one member to
     expect(readCastStyle(null)).toBeNull();
   });
 
-  it("off the flag the row still carries no register — the style is inert off the author road by construction", async () => {
-    const off = await castingBriefCompiler({
-      briefText: RICH,
-      candidateCount: 8,
-      rollSeed: "wire-style-off",
-      engine: engineAnswering([]),
-      authorRoad: false,
-      style: "photoreal",
-    });
-    expect(off.compiledBrief.register).toBeUndefined();
-    expect(readCastStyle(off.compiledBrief)).toBeNull();
-  });
+  /*
+    ⚠ *"off the flag the row still carries no register — the style is inert off
+    the author road by construction"* STOOD HERE AND IS DELETED (#1490 act 1).
+    It drove the compiler with `authorRoad: false`, a value the input type no
+    longer has: every row carries a register now, so there is no inert case
+    left to pin. The arm directly above — the compile WRITES the style onto the
+    register row and the projection reads it back through a validator — is the
+    whole behaviour.
+  */
 });
 
 /* ---------------------------------------------- the lanes (#232, #237) */

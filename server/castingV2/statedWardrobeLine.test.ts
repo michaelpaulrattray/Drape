@@ -154,14 +154,13 @@ describe("the wire — the extraction block is asked exactly when the author roa
     }
   });
 
-  it("⚠ ASSERTED AT THE OUTGOING CALL — the author compile asks, the house compile does not", async () => {
+  it("⚠ ASSERTED AT THE OUTGOING CALL — every compile asks the reader for the stated outfit", async () => {
     const authorEngine = engineRecording(replyWith(SIFR_LINE));
     await castingBriefCompiler({
       briefText: SIFR_BRIEF,
       candidateCount: 8,
       rollSeed: "seed-stated-wire-author",
       engine: authorEngine,
-      authorRoad: true,
     });
     /* The interpreter may legitimately re-sample once, so the claim is about
        EVERY call that went out, not about there being one. */
@@ -173,17 +172,12 @@ describe("the wire — the extraction block is asked exactly when the author roa
       expect(system).not.toContain("THE ONE OUTFIT ALL EIGHT OF THESE PEOPLE WEAR");
     }
 
-    const houseEngine = engineRecording(replyWith(SIFR_LINE));
-    await castingBriefCompiler({
-      briefText: SIFR_BRIEF,
-      candidateCount: 8,
-      rollSeed: "seed-stated-wire-house",
-      engine: houseEngine,
-    });
-    expect(houseEngine.systems.length).toBeGreaterThanOrEqual(1);
-    for (const system of houseEngine.systems) {
-      expect(system).not.toContain(marker);
-    }
+    /* ⚠ A SECOND, HOUSE-ROAD COMPILE STOOD HERE AND IS GONE (#1490 act 1) — it
+       asserted that a compile WITHOUT the road did NOT ask for the stated
+       outfit. The compiler passes `statedWardrobe: true` unconditionally now, so
+       there is no compile that does not ask. The interpreter's own option still
+       has both positions and is driven directly in the arm above this one, which
+       is where that contract belongs. */
   });
 });
 
@@ -194,7 +188,6 @@ describe("the compile — the author road records her outfit and never restates 
       candidateCount: 8,
       rollSeed: "seed-stated-line",
       engine: engineReturning(replyWith(SIFR_LINE)),
-      authorRoad: true,
     });
     expect(compiled.wardrobeLine).toBe(SIFR_LINE);
   });
@@ -213,7 +206,6 @@ describe("the compile — the author road records her outfit and never restates 
       candidateCount: 8,
       rollSeed: "seed-stated-not-restated",
       engine: engineReturning(replyWith(SIFR_LINE)),
-      authorRoad: true,
     });
     expect(compiled.wardrobeLine).toBe(SIFR_LINE);
     for (const candidate of compiled.candidates) {
@@ -229,7 +221,6 @@ describe("the compile — the author road records her outfit and never restates 
       candidateCount: 8,
       rollSeed: "seed-stated-none",
       engine: engineReturning(replyWith(null)),
-      authorRoad: true,
     });
     expect(compiled.wardrobeLine).toBeNull();
   });
@@ -246,19 +237,17 @@ describe("the compile — the author road records her outfit and never restates 
       candidateCount: 8,
       rollSeed: "seed-stated-poison",
       engine: engineReturning(replyWith("a red leather jacket and dark jeans")),
-      authorRoad: true,
     });
     expect(compiled.wardrobeLine).toBeNull();
   });
 
-  it("the house road is untouched — its line is still the follow's inherited sentence or nothing", async () => {
-    const compiled = await castingBriefCompiler({
-      briefText: SIFR_BRIEF,
-      candidateCount: 8,
-      rollSeed: "seed-stated-house",
-      engine: engineReturning(replyWith(SIFR_LINE)),
-    });
-    /* The reply VOLUNTEERS a stated line; the house road does not read it. */
-    expect(compiled.wardrobeLine).toBeNull();
-  });
+  /*
+    ⚠ *"the house road is untouched — its line is still the follow's inherited
+    sentence or nothing"* STOOD HERE AND IS DELETED (#1490 act 1). It drove a
+    compile that did not read the stated outfit and asserted a null line; every
+    compile reads it now, so the road it described is gone. The arm directly
+    above keeps the half that matters and is not about a road at all — a reply
+    that VOLUNTEERS an outfit the brief never stated is still refused, because
+    the parse cannot tell an answer from an offer.
+  */
 });

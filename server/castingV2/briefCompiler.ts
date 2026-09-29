@@ -412,39 +412,6 @@ export type BriefCompilerInput = {
    * bytes on the wire are byte-identical to today's.
    */
   briefFidelity?: boolean;
-  /**
-   * THE AUTHOR ROAD. On, EVERY roll composes ONE prompt for the sheet — the
-   * customer's own words, the family clause when a follow is carried (#154),
-   * and the locked house block, all by code (#535: no text call at the roll;
-   * the author is the visible Re-imagine press, which writes into the box
-   * BEFORE anything rolls) — and the two walls are the ruling's.
-   *
-   * ⚠ IT WAS `creativeRegister`, READ OFF A FLAG, AND THE FLAG IS GONE —
-   * #1443, slice 2 of the old-lane retirement, on his word on #1398 (Crew reply
-   * #228: *"Delete it"*). `CASTING_CREATIVE_REGISTER_SCOPE`, its parser, its
-   * capture, its boot fence and its production row are deleted; **`rollService`
-   * passes a literal `true` on every roll**, and `rollService.test.ts` asserts
-   * that at the wire rather than near it. Production behaviour is unchanged —
-   * the flag stood at `all` for every account from 2026-09-24 (his Crew reply
-   * #201: *"Yes"*).
-   *
-   * ⚠ AND THE HOUSE ARM IS STILL HERE, WHICH IS THIS SLICE'S DECLARED
-   * REMAINDER RATHER THAN AN OVERSIGHT. Collapsing it was slice 2's stated
-   * scope and it was DRIVEN before it was declined: with the branch removed,
-   * **86 arms across 17 suites go red** — `styleRefusal` 24, `categorySurvival`
-   * 17, `axisRegistry` 10 and fourteen more — because they drive this compiler
-   * with a reader double and read the HOUSE composition back out of the eight
-   * prompts. Those arms are the category, styling and axis machinery #180's
-   * ghost audit is about, and deciding which of them die is that card's work
-   * and slice 4's (#1445), not a side effect of taking a flag out. The
-   * remainder is on both cards with the figure and the reader that produced it.
-   *
-   * So: absent means the retired HOUSE road, and the only callers that leave it
-   * absent are those suites and `deterministicBriefCompiler`. A new production
-   * caller that forgets it would compose a sheet no engine has been sent since
-   * 2026-09-24 — which is why the service's literal is asserted at the wire.
-   */
-  authorRoad?: boolean;
   /** The settings modal's style (#142) — read, like the meter, only on the author road. */
   style?: CastStyle;
   /** Set on a follow roll; the sheet narrows around this candidate. */
@@ -1137,7 +1104,6 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     which on that road was never sent and describes nobody in the frames.
   */
   const anchor = input.followStatedAnchor ?? anchorFrom(input.followIdentity ?? null);
-  const authorRoad = input.authorRoad === true;
 
   const outcome = await interpretBrief({
     briefText,
@@ -1157,7 +1123,7 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     wardrobe: false,
     ink: input.readInk === true,
     fidelity: input.briefFidelity === true,
-    author: authorRoad,
+    author: true,
     /*
       THE STATED OUTFIT IS READ ON THE AUTHOR ROAD (#1222) — the record of what
       this cast is born wearing, extracted from her own sentence under full
@@ -1169,7 +1135,7 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
       because the view prompt was continuing a chest-up reference with no line
       behind it.
     */
-    statedWardrobe: authorRoad,
+    statedWardrobe: true,
   });
 
   /*
@@ -1205,61 +1171,6 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
       "[briefCompiler] reader outage — refusing free rather than casting from the brief alone (reply #9: always)",
     );
     throw new BriefRefusal("reader_outage", READER_OUTAGE_MESSAGE);
-  }
-
-  /*
-    DEFENCE IN DEPTH: an unreadable interpreter reply must never become a
-    photoreal charge for a brief that asked for something else.
-
-    Falling back to a photoreal compile is right for an ordinary brief — an
-    outage should not cost someone their roll (catalog H30). It is wrong the
-    moment the sentence names a visual style we cannot cast, because then the
-    fallback silently produces, and bills for, output that ignores a stated
-    fact. That is exactly what happened: a reply correctly identifying an
-    uncertified cohort was lost to a schema technicality, and the fallback
-    charged 160 credits for eight photoreal humans.
-
-    So the fallback screens for style words itself. A keyword list is a blunt
-    instrument and would be the wrong tool for a creative decision — but this
-    is not a creative decision, it is a refusal-to-spend, and the failure modes
-    are asymmetric: refusing a photoreal brief that happens to say "cartoonish"
-    costs the user nothing and is one edit away from working, while casting an
-    anime brief as photoreal costs them money for something they did not ask
-    for. It only ever runs when the interpreter's reply could not be read —
-    an OUTAGE no longer reaches it (refused free above, #126).
-  */
-  /*
-    Token membership rather than a regex. The first version of this line was
-    written with word-boundary escapes that a shell heredoc silently turned
-    into literal backspace characters, so the pattern matched nothing and the
-    guard was dead while looking correct in review. Plain string comparison
-    cannot be mangled that way.
-  */
-  const STYLE_WORDS = new Set([
-    "anime", "manga", "cartoon", "cartoonish", "cel", "celshaded",
-    "illustrated", "illustration", "painterly", "comic", "chibi", "waifu",
-    "cgi", "pixar", "disney", "render", "rendered", "3d", "toon",
-  ]);
-  const styledBrief = briefText
-    .toLowerCase()
-    .split(/[^a-z0-9]+/)
-    .some((token) => STYLE_WORDS.has(token));
-  /*
-    KILLED ON THE AUTHOR ROAD (#131 slice C, ruling §6 rule 11): the screen's
-    premise is that the FALLBACK ignores a stated style and bills for it. On
-    the author road the brief reaches the engine verbatim, so an anime brief
-    whose reader reply could not be parsed still paints anime — there is
-    nothing to screen.
-  */
-  if (!outcome.ok && outcome.reason === "unavailable" && styledBrief && !authorRoad) {
-    log.warn(
-      { briefText: briefText.slice(0, 80) },
-      "[briefCompiler] interpreter unavailable on a styled brief — refusing rather than casting photoreal",
-    );
-    throw new BriefRefusal(
-      "unsupported_cohort",
-      UNSUPPORTED_COHORT_MESSAGE,
-    );
   }
 
   if (!outcome.ok && outcome.reason === "unsupported_cohort") {
@@ -1318,7 +1229,7 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     chip read-only on this road. Null on a plain authored roll, so that
     prompt is byte-identical to what it was.
   */
-  const carried = authorRoad && input.anchorImageAttached ? followClause() : null;
+  const carried = input.anchorImageAttached ? followClause() : null;
   /*
     THE CHIP EDIT, WRITTEN INTO THE SENTENCE ITSELF (#164, his ruling on the
     fighting prompt): on the author road an override rewrites the brief —
@@ -1331,7 +1242,7 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     the entrance drops the overrides there, and this line is the structural
     half of the same rule.
   */
-  const rewritten = authorRoad && !carried ? rewriteBrief(briefText, input.overrides) : null;
+  const rewritten = !carried ? rewriteBrief(briefText, input.overrides) : null;
   /*
     THE BYTES SENT, recorded as sent (review of #173, finding 2): the scrub
     runs BEFORE the record is taken, so the sheet's prompt record can never
@@ -1339,7 +1250,7 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     ways — the record is the wire, not the draft.
   */
   const rewrittenOrTyped = rewritten?.text ?? briefText;
-  const briefSent = authorRoad ? (scrubBrands(rewrittenOrTyped) ?? rewrittenOrTyped) : rewrittenOrTyped;
+  const briefSent = scrubBrands(rewrittenOrTyped) ?? rewrittenOrTyped;
   /*
     Brand names never reach the image engine (founder gate 21). The two
     free-text fields are the only things here that travel to the provider as
@@ -1400,24 +1311,22 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     is scrubbed the way `role` and `characterNotes` are, and the scrubbed text
     is what the row keeps and the sheet will show. Declared on #131 for his word.
   */
-  const seeded = authorRoad
-    ? seedPromptRecord({
-        /* Already scrubbed at the record above — the record IS the wire. */
-        briefText: briefSent,
-        style: input.style,
-        /*
-          WHICH LANE THE LOCKED BLOCK IS COMPOSED IN (#232, #237) — from the
-          READER's own four-valued subject answer and nothing else. A `being`
-          takes the creature lane, whose block lets a creature's mouth be its
-          own anatomy at rest and requires a named tail or wing to be VISIBLE in
-          the frame; `human` and `unread` take today's bytes. It is decided ONCE
-          per roll here, never per slice, and never by scanning the brief for
-          creature words — the reader is the one thing that has already read it.
-        */
-        lane: houseLaneFor(outcome.ok ? outcome.subject : "unread"),
-        clause: carried?.clause ?? null,
-      })
-    : null;
+  const seeded = seedPromptRecord({
+    /* Already scrubbed at the record above — the record IS the wire. */
+    briefText: briefSent,
+    style: input.style,
+    /*
+      WHICH LANE THE LOCKED BLOCK IS COMPOSED IN (#232, #237) — from the
+      READER's own four-valued subject answer and nothing else. A `being`
+      takes the creature lane, whose block lets a creature's mouth be its
+      own anatomy at rest and requires a named tail or wing to be VISIBLE in
+      the frame; `human` and `unread` take today's bytes. It is decided ONCE
+      per roll here, never per slice, and never by scanning the brief for
+      creature words — the reader is the one thing that has already read it.
+    */
+    lane: houseLaneFor(outcome.ok ? outcome.subject : "unread"),
+    clause: carried?.clause ?? null,
+  });
   /*
     ON THE AUTHOR ROAD THE PER-SLICE RECORD IS MARKED UNSENT (#176). One
     authored prompt paints all eight, so the dice's identities describe what was
@@ -1431,13 +1340,11 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     gone outright now — candidates are auditioners and carry no disposition at
     all (his ruling, #1241) — so there is nothing left to null.
   */
-  const candidates = seeded
-    ? sheet.candidates.map((candidate) => ({
-        ...candidate,
-        prompt: seeded.prompt,
-        resolvedIdentity: { ...candidate.resolvedIdentity, unsent: true as const },
-      }))
-    : sheet.candidates;
+  const candidates = sheet.candidates.map((candidate) => ({
+    ...candidate,
+    prompt: seeded.prompt,
+    resolvedIdentity: { ...candidate.resolvedIdentity, unsent: true as const },
+  }));
 
   const violations = candidates
     .map((candidate) => {
@@ -1469,7 +1376,7 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
       briefText,
       intent,
       archetype,
-      chips: buildChips(intent, input.followIndexLabel ?? null, { authorRoad }),
+      chips: buildChips(intent, input.followIndexLabel ?? null, { authorRoad: true }),
       /*
         HOW THIS SHEET WAS COMPOSED — present ONLY under the flag, so an
         unflagged roll's row is byte-identical to today's. Since #535 there is
@@ -1483,59 +1390,55 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
         from — the customer's words, nothing house-internal — and it is what
         the sheet will show (#131 slice D: no hidden prompt, ever).
       */
-      ...(seeded
-        ? {
-            register: {
-              kind: "author",
-              /* The style the block was chosen by (#142) — shown on the sheet's record line: no hidden settings, ever. */
-              style: seeded.style,
-              /*
-                WHICH LANE the block was composed in (#232/#237) — `human` or
-                `creature`, recorded beside `subject` below rather than derived
-                from it by a later reader, so a row still says which block it
-                was painted under after the mapping has moved.
-              */
-              lane: seeded.lane,
-              mode: seeded.mode,
-              compose: seeded.compose,
-              seedWords: seeded.seedWords,
-              authored: seeded.authored,
-              content: seeded.content,
-              houseBlockWords: seeded.houseBlockWords,
-              prompt: seeded.prompt,
-              /*
-                WHAT KIND OF BEING the reader said this is — `human`, `being`,
-                or `unread` when the reply could not be parsed and the sheet
-                went out on the verbatim brief. The intent's `cohort` above
-                names the adapter that resolved the record, not this.
-              */
-              subject: outcome.ok ? outcome.subject : "unread",
-              /*
-                WHAT THE CLAUSE WAS WRITTEN FROM (#154, design §2d) — present
-                only where a follow or a chip edit was carried; the clause's
-                bytes sit inside `prompt` too, so the sheet's prompt record
-                shows it without a second reader (no hidden prompt, ever).
-              */
-              ...(carried ? { carried } : {}),
-              /*
-                THE BRIEF AS SENT (#164) — always recorded on an author row,
-                post-scrub, so the sheet's prompt record and *use as brief*
-                offer the bytes the engine actually received (the row's
-                `briefText` stays what she typed). `rewrites` rides only when
-                a chip edit rewrote the sentence, and says how each field
-                landed (replaced in place, or appended as one plain sentence).
-              */
-              briefSent,
-              ...(rewritten ? { rewrites: rewritten.edits } : {}),
-            },
-          }
-        : {}),
+      register: {
+        kind: "author",
+        /* The style the block was chosen by (#142) — shown on the sheet's record line: no hidden settings, ever. */
+        style: seeded.style,
+        /*
+          WHICH LANE the block was composed in (#232/#237) — `human` or
+          `creature`, recorded beside `subject` below rather than derived
+          from it by a later reader, so a row still says which block it
+          was painted under after the mapping has moved.
+        */
+        lane: seeded.lane,
+        mode: seeded.mode,
+        compose: seeded.compose,
+        seedWords: seeded.seedWords,
+        authored: seeded.authored,
+        content: seeded.content,
+        houseBlockWords: seeded.houseBlockWords,
+        prompt: seeded.prompt,
+        /*
+          WHAT KIND OF BEING the reader said this is — `human`, `being`,
+          or `unread` when the reply could not be parsed and the sheet
+          went out on the verbatim brief. The intent's `cohort` above
+          names the adapter that resolved the record, not this.
+        */
+        subject: outcome.ok ? outcome.subject : "unread",
+        /*
+          WHAT THE CLAUSE WAS WRITTEN FROM (#154, design §2d) — present
+          only where a follow or a chip edit was carried; the clause's
+          bytes sit inside `prompt` too, so the sheet's prompt record
+          shows it without a second reader (no hidden prompt, ever).
+        */
+        ...(carried ? { carried } : {}),
+        /*
+          THE BRIEF AS SENT (#164) — always recorded on an author row,
+          post-scrub, so the sheet's prompt record and *use as brief*
+          offer the bytes the engine actually received (the row's
+          `briefText` stays what she typed). `rewrites` rides only when
+          a chip edit rewrote the sentence, and says how each field
+          landed (replaced in place, or appended as one plain sentence).
+        */
+        briefSent,
+        ...(rewritten ? { rewrites: rewritten.edits } : {}),
+      },
     },
     lockContract: locks as Record<string, unknown>,
     cohortKey: intent.cohort,
     styleKey: null,
     styleProfile: null,
-    chips: buildChips(intent, input.followIndexLabel ?? null, { authorRoad }),
+    chips: buildChips(intent, input.followIndexLabel ?? null, { authorRoad: true }),
     candidates,
     variance: sheet.variance,
     size: CANDIDATE_RENDER.size,
@@ -1563,7 +1466,7 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
       null), returned so the caller writes it rather than resolving it a
       second time.
     */
-    wardrobeLine: authorRoad ? intent.statedWardrobe : sheet.wardrobeLine,
+    wardrobeLine: intent.statedWardrobe,
   };
 };
 

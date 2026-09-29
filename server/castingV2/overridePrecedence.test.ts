@@ -62,16 +62,34 @@ describe("a hand adjustment beats the interpreter", () => {
     expect(compiled.lockContract).toMatchObject({ ageBand: "40s" });
   });
 
-  it("every candidate is composed at the overridden value, not just the contract", async () => {
-    // The contract agreeing while the prompts disagree would be the worst
-    // possible outcome: the echo would say 40s and the sheet would show 20s.
-    const compiled = await compile({ overrides: { ageBand: "50s" } });
-    expect(compiled.candidates).toHaveLength(8);
-    for (const candidate of compiled.candidates) {
-      expect(candidate.prompt).toMatch(/fifties|50–5|5[0-9]–5[0-9]/);
-      expect(candidate.prompt).not.toMatch(/twenties/);
-    }
-  });
+  /*
+    TWO ARMS STOOD HERE, and the first one's own title names why it goes: it
+    asserted the override reached every COMPOSED candidate "not just the
+    contract". The contract half is the live half and survives — a hand-made
+    adjustment still outranks the interpreter's re-reading on the intent and in
+    the lock contract, which is H8's actual promise. On the author road an
+    override rewrites the BRIEF ITSELF (#164), and
+    `creativeRegisterScope.test.ts` drives that at the prompt.
+
+    ⚠ **DELETED WITH THE HOUSE ROAD — #1490 act 1, and FOLDED INTO #1125 rather
+    than re-pointed.** Every one of these arms asserted that a resolved and
+    persisted value left a FOOTPRINT IN THE PER-SLICE COMPOSED PROMPT. The author
+    road composes no per-slice prompt: one authored prompt paints all eight and
+    the dice records are marked `unsent` (#176), so there is no per-tier sentence
+    to look for and nothing for the arm to be right or wrong about.
+
+    ⚠ **THIS IS A FLOOR DROP AND IT IS SAID OUT LOUD.** The class these arms
+    guard is the UNOWNED-AXIS COLLAPSE — an axis nobody owns is decided by
+    whichever prior is loudest, identically on every tile — and it was caught
+    FIVE separate times by the founder's own eye. It is not abandoned: #1125
+    (`debt`, `rung:N3`) is exactly this loss, filed by the #180 ghost audit
+    BEFORE these arms fell over, and its ruling is that the question — did the
+    delivered picture carry what she asked for — is #30's, asked of a FRAME
+    rather than of a prompt string.
+
+    What survives in this file is everything that reads the PARSE or the
+    RESOLVER directly, which is the half that still decides a real record.
+  */
 
   it("overrides a fact the interpreter is confident about — sex", async () => {
     const compiled = await compile({ overrides: { sex: "male" } });
@@ -81,22 +99,6 @@ describe("a hand adjustment beats the interpreter", () => {
     }
   });
 
-  it("replaces a heritage rather than blending with the interpreter's", async () => {
-    const compiled = await compile({ overrides: { heritage: "Nordic" } });
-    expect(compiled.lockContract).toMatchObject({ heritage: [{ heritage: "Nordic", pct: 100 }] });
-    for (const candidate of compiled.candidates) {
-      /*
-        Scoped to the SUBJECT line on purpose. "East Asian" also appears in the
-        cohort constant's heritage-lock example ("a platinum-blonde East Asian
-        person still has East Asian bone structure"), so asserting against the
-        whole prompt tests the constant rather than the override.
-      */
-      const subject = candidate.prompt.split("\n").find((line) => line.startsWith("SUBJECT:"));
-      expect(subject).toBeDefined();
-      expect(subject).toContain("Nordic");
-      expect(subject).not.toContain("East Asian");
-    }
-  });
 
   it("beats an unlock of the same field in the same roll", async () => {
     /*
