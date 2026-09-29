@@ -308,18 +308,32 @@ describe("the sheet-level taste rules", () => {
     }
   });
 
-  it("describes in the prompt exactly the person it persists", async () => {
-    /*
-      The pass runs BEFORE composition. Adjusting a record afterwards would
-      leave a stored identity that contradicts the image the customer was sent,
-      and nothing downstream would ever notice.
-    */
-    for (const compiled of await sheetsOf("a model", 100)) {
-      for (const candidate of compiled.candidates) {
-        expect(candidate.prompt).toContain(candidate.resolvedIdentity.realized.hairStyle!.name);
-      }
-    }
-  });
+  /*
+    ONE ARM STOOD HERE — the prompt describing exactly the hairStyle the row
+    persists. That equality between record and prompt is precisely what the
+    author road breaks on purpose: the record documents what the dice rolled and
+    is marked `unsent`, because the eight were painted from her sentence. The
+    arms that read the hair VOCABULARY and the resolver survive.
+
+    ⚠ **DELETED WITH THE HOUSE ROAD — #1490 act 1, and FOLDED INTO #1125 rather
+    than re-pointed.** Every one of these arms asserted that a resolved and
+    persisted value left a FOOTPRINT IN THE PER-SLICE COMPOSED PROMPT. The author
+    road composes no per-slice prompt: one authored prompt paints all eight and
+    the dice records are marked `unsent` (#176), so there is no per-tier sentence
+    to look for and nothing for the arm to be right or wrong about.
+
+    ⚠ **THIS IS A FLOOR DROP AND IT IS SAID OUT LOUD.** The class these arms
+    guard is the UNOWNED-AXIS COLLAPSE — an axis nobody owns is decided by
+    whichever prior is loudest, identically on every tile — and it was caught
+    FIVE separate times by the founder's own eye. It is not abandoned: #1125
+    (`debt`, `rung:N3`) is exactly this loss, filed by the #180 ghost audit
+    BEFORE these arms fell over, and its ruling is that the question — did the
+    delivered picture carry what she asked for — is #30's, asked of a FRAME
+    rather than of a prompt string.
+
+    What survives in this file is everything that reads the PARSE or the
+    RESOLVER directly, which is the half that still decides a real record.
+  */
 
   it("leaves a follow alone — eight inherited cuts is the follow working", async () => {
     const parent = resolveCandidateIdentity(

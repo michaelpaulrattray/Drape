@@ -19,11 +19,11 @@ _Called as:_ `castingV2.config` · `castingV2.createSession` · `castingV2.openS
 
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
-| `roll.likeness` | roll-refusal |  | server/castingV2/briefCompiler.ts:1278<br>server/castingV2/briefRefusalCopy.ts:116 | 5 test(s) | _documented-unreachable or gap — see findings_ |
-| `roll.not_a_being` | roll-refusal |  | server/castingV2/briefCompiler.ts:1281<br>server/castingV2/briefRefusalCopy.ts:122 | 3 test(s) | _documented-unreachable or gap — see findings_ |
-| `roll.reader_outage` | roll-refusal |  | server/castingV2/briefCompiler.ts:1207<br>server/castingV2/briefRefusalCopy.ts:128 | 5 test(s) | _documented-unreachable or gap — see findings_ |
-| `roll.uninterpretable` | roll-refusal |  | server/castingV2/briefCompiler.ts:1120<br>server/castingV2/briefCompiler.ts:1596<br>(+1) | 2 test(s) | _documented-unreachable or gap — see findings_ |
-| `roll.unsupported_cohort` | roll-refusal |  | server/castingV2/briefCompiler.ts:1260<br>server/castingV2/briefCompiler.ts:1267<br>(+1) | 6 test(s) | _documented-unreachable or gap — see findings_ |
+| `roll.likeness` | roll-refusal |  | server/castingV2/briefCompiler.ts:1189<br>server/castingV2/briefRefusalCopy.ts:116 | 5 test(s) | _documented-unreachable or gap — see findings_ |
+| `roll.not_a_being` | roll-refusal |  | server/castingV2/briefCompiler.ts:1192<br>server/castingV2/briefRefusalCopy.ts:122 | 3 test(s) | _documented-unreachable or gap — see findings_ |
+| `roll.reader_outage` | roll-refusal |  | server/castingV2/briefCompiler.ts:1173<br>server/castingV2/briefRefusalCopy.ts:128 | 5 test(s) | _documented-unreachable or gap — see findings_ |
+| `roll.uninterpretable` | roll-refusal |  | server/castingV2/briefCompiler.ts:1087<br>server/castingV2/briefCompiler.ts:1499<br>(+1) | 2 test(s) | _documented-unreachable or gap — see findings_ |
+| `roll.unsupported_cohort` | roll-refusal |  | server/castingV2/briefCompiler.ts:1178<br>server/castingV2/briefRefusalCopy.ts:110 | 5 test(s) | _documented-unreachable or gap — see findings_ |
 
 > THE ROLL ENTRANCE'S FIVE WALLS ARE ON THE MAP AS OF #206 — declared from `ROLL_REFUSAL_COPY`, entrance-qualified `roll.*`, each citing its own throw. They are DECLARED but not DRIVEN: the census sends a sentence at an existing Cast through `castingV2.refine`, and these are raised inside `castingV2.createRoll` before a roll row exists, so each carries its reason in UNREACHABLE_DOORS instead of a corpus row. A brief-carrying corpus row is the map's next growth ring, and it would be free at all five. The SIGN entrance is still outside the declared set entirely (fable-1357 §2).
 
@@ -375,7 +375,7 @@ Derived from the architecture Atlas's own extractor. A procedure with no road is
 | roll.not_a_being | roll-refusal |  | briefRefusalCopy.test.ts, conceptDescribeCopy.test.ts, creativeRegisterScope.test.ts |
 | roll.reader_outage | roll-refusal |  | briefCompiler.test.ts, briefRefusalCopy.test.ts, readerOutageRefusal.test.ts, refineInterpreterCeiling.test.ts, styleRefusal.test.ts |
 | roll.uninterpretable | roll-refusal |  | briefCompiler.test.ts, briefRefusalCopy.test.ts |
-| roll.unsupported_cohort | roll-refusal |  | briefCompiler.test.ts, briefRefusalCopy.test.ts, cohortWallRetry.test.ts, creativeRegisterScope.test.ts, likenessRefusal.test.ts, styleRefusal.test.ts |
+| roll.unsupported_cohort | roll-refusal |  | briefCompiler.test.ts, briefRefusalCopy.test.ts, cohortWallRetry.test.ts, creativeRegisterScope.test.ts, styleRefusal.test.ts |
 | scope_mismatch | service-refusal |  | refineService.test.ts |
 | scope_unknown | service-refusal |  | facePanel.test.ts, refineService.test.ts |
 | session_closed | service-refusal |  | rollService.test.ts |

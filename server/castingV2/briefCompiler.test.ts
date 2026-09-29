@@ -202,32 +202,27 @@ describe("the precedence fix", () => {
     });
     expect(unpathed.wardrobeLine).toBeNull();
 
-    /* And the one road that still carries a sentence — a FOLLOW, wearing its
-       parent's. The poison does not displace it either. */
-    const following = await castingBriefCompiler({
-      briefText: "a handyman in his 30s",
-      candidateCount: 8,
-      rollSeed: "seed-volunteered-follow",
-      inheritedWardrobe: { line: HOUSE_WARDROBE_LINE },
-      engine,
-    });
-    expect(following.wardrobeLine).toBe(HOUSE_WARDROBE_LINE);
+    /*
+      ⚠ THE FOLLOW HALF OF THIS ARM IS GONE (#1490 act 1), AND SO IS EVERY
+      `WARDROBE:` ASSERTION — that sentence was composed by the house road and
+      there is no composed wardrobe sentence on the author road at all: the brief
+      reaches the engine verbatim, so restating the outfit would be the
+      double-statement the #132 review refused.
 
-    for (const candidate of following.candidates) {
-      /*
-        Asserted on the WARDROBE SENTENCE and not on the prompt as a whole, and
-        the difference is this fixture's own honest boundary: `characterNotes`
-        says *"wearing a red plaid flannel shirt"*, which is free text about a
-        person and reaches the SUBJECT block on every road. What must not happen
-        is that phrase becoming the code-owned outfit — the position guarantee
-        the neighbouring arm spells out.
-      */
-      expect(candidate.prompt).toContain(`WARDROBE: ${HOUSE_WARDROBE_LINE}.`);
-      expect(candidate.prompt).not.toContain("WARDROBE: plaid flannel");
-    }
-    for (const candidate of unpathed.candidates) {
-      expect(candidate.prompt).not.toContain("WARDROBE: plaid flannel");
-    }
+      ⚠ **The claim this arm exists for is now STRUCTURAL and that is said rather
+      than assumed.** The sheet's recorded outfit is `intent.statedWardrobe` —
+      extracted from HER OWN SENTENCE under full containment
+      (`parseStatedWardrobeLine`, #1222) — so a `wardrobe` field the reader
+      VOLUNTEERED cannot become it by any path: they are different fields with
+      different producers. The control above still proves the poison arrives and
+      is admitted onto the intent, so the null below is a value being dropped and
+      not a fixture that never carried one.
+
+      `statedWardrobeLine.test.ts` owns the positive side — a brief that DOES
+      state an outfit records it — so this arm is not the only thing standing
+      between the record and an empty one.
+    */
+    expect((parsedPoison.intent as { statedWardrobe?: unknown }).statedWardrobe ?? null).toBeNull();
   });
 
   it("⚠ ASSERTED AT THE WIRE — no compile asks the reader about clothes at all", async () => {
@@ -265,49 +260,37 @@ describe("the precedence fix", () => {
       });
       expect(engine.systems, JSON.stringify(extra)).toHaveLength(1);
       expect(engine.systems[0], JSON.stringify(extra)).not.toContain(marker);
-      /* And the prompt IS the real one, not an empty string the arm would
-         pass over: the unflagged base is what every production roll sends. */
-      expect(engine.systems[0], JSON.stringify(extra)).toBe(interpreterSystemPrompt());
+      /* And the prompt IS the real one, not an empty string the arm would pass
+         over: this is what every production roll sends. ⚠ THE BASELINE MOVED IN
+         #1490 ACT 1 — it was a bare `interpreterSystemPrompt()`, the unflagged
+         base, and the compiler now asks the author road's question and for the
+         stated outfit on every compile. The clothes claim this arm exists for is
+         unchanged and is the assertion above; what changed is which prompt
+         counts as "the real one". */
+      expect(engine.systems[0], JSON.stringify(extra)).toBe(
+        interpreterSystemPrompt({ wardrobe: false, ink: false, fidelity: false, author: true, statedWardrobe: true }),
+      );
     }
   });
 
-  it("⚠ a FOLLOW's inherited pair beats a fresh resolution, and its NULLS are honoured", async () => {
-    /*
-      The db layer inherits the parent roll's pair inside the transaction that
-      writes the row. The prompts are composed before that, so the compiler is
-      handed the same pair and must use it VERBATIM — otherwise eight faces are
-      painted in one outfit and recorded in another, and Sign then judges six
-      views against the record.
-    */
-    const engine = engineReturning(POISONED);
-    const inherited = await castingBriefCompiler({
-      briefText: "a handyman in his 30s",
-      candidateCount: 8,
-      rollSeed: "seed-follow",
-      inheritedWardrobe: { line: "a red apron over a plain white tee" },
-      engine,
-    });
-    expect(inherited.wardrobeLine).toBe("a red apron over a plain white tee");
-    for (const candidate of inherited.candidates) {
-      expect(candidate.prompt).toContain("WARDROBE: a red apron over a plain white tee.");
-    }
+  /*
+    ⚠ *"a FOLLOW's inherited pair beats a fresh resolution, and its NULLS are
+    honoured"* STOOD HERE AND IS DELETED (#1490 act 1) — and this one is a real
+    behaviour change rather than a dead assertion, so it is stated plainly.
 
-    /* And the null: a parent cast before the paths existed leaves the follow
-       unpathed. ⚠ This arm used to add *"even though this caller passed a
-       path"*, and step (e) removed the road that could pass one — what it
-       guards is unchanged, and the clause went with the capability. */
-    const unpathedParent = await castingBriefCompiler({
-      briefText: "a handyman in his 30s",
-      candidateCount: 8,
-      rollSeed: "seed-follow-null",
-      inheritedWardrobe: { line: null },
-      engine,
-    });
-    expect(unpathedParent.wardrobeLine).toBeNull();
-    for (const candidate of unpathedParent.candidates) {
-      expect(candidate.prompt).toContain("neutral grey or off-white");
-    }
-  });
+    It drove `inheritedWardrobe` and asserted the returned `wardrobeLine` was the
+    parent's sentence verbatim, composed into all eight as `WARDROBE: …`. On the
+    author road the returned line is `intent.statedWardrobe` — the outfit the
+    BRIEF states — and nothing is composed into the prompts. **Production cannot
+    reach the old behaviour: `rollService` stopped passing `inheritedWardrobe`
+    entirely in slice 2 (#1443)**, and the db layer inherits the parent's column
+    inside the transaction that writes the row, which is where a follow's outfit
+    actually comes from and is untouched by this act.
+
+    The compiler's `inheritedWardrobe` INPUT FIELD deliberately stays: it is
+    `deterministicBriefCompiler`'s, and that seam is act 2's subject on this same
+    card. Whether the field survives act 2 is that act's call, not this one's.
+  */
 
   it("strips the quoted caption before it can be rendered as letters", async () => {
     const parsed = parseCastingIntent(POISONED);
@@ -317,91 +300,31 @@ describe("the precedence fix", () => {
     expect(parsed.intent.role).not.toContain("Okayest");
   });
 
-  it("keeps the framing constant intact and last in every compiled prompt", async () => {
-    const compiled = await castingBriefCompiler({
-      briefText: "a handyman",
-      candidateCount: 8,
-      rollSeed: "seed-1",
-      // Drive the interpreter's output directly rather than calling a model:
-      // this feeds it the exact poisoned payload from M3 and checks what
-      // survives composition.
-      engine: engineReturning(POISONED),
-    });
+  /*
+    ⚠ *"keeps the framing constant intact and last in every compiled prompt"*
+    STOOD HERE AND IS DELETED (#1490 act 1). It read `COHORT_CONSTANT_MARKERS`
+    — the HOUSE cohort constant (`cohortConstantBlocks`) — and asserted the
+    house AUTHORITY paragraph came last, by its words *"always wins"*. The
+    author road sends a different block and a different authority: defaults that
+    a stated fact OVERRIDES, never "always wins" (#144 rule 8).
 
-    for (const candidate of compiled.candidates) {
-      for (const marker of COHORT_CONSTANT_MARKERS) {
-        expect(candidate.prompt).toContain(marker);
-      }
-      // The authority paragraph is the actual guarantee: it is stated after
-      // the character description and claims precedence over it. If anything
-      // ever appends past it, this fails.
-      const authorityAt = candidate.prompt.indexOf("AUTHORITY:");
-      expect(authorityAt).toBeGreaterThan(-1);
-      expect(candidate.prompt.slice(authorityAt)).toContain("always wins");
-      expect(candidate.prompt.trim().endsWith("it always wins.")).toBe(true);
+    ⚠ **NOT A FLOOR DROP — the surviving guard is STRICTER than this one was.**
+    `creativeRegisterScope.test.ts` asserts the whole prompt by EXACT EQUALITY
+    (`${brief}
 
-      /*
-        The honest boundary, asserted rather than glossed over. "Cluttered
-        garage" is free text describing a person who works with their hands,
-        and no sanitizer separates that from a scene instruction without a
-        blocklist that would also eat legitimate briefs. So it may still appear
-        — and when it does, it appears BEFORE a paragraph that revokes it by
-        name. Position is the guarantee; the scrub is only a reducer.
-      */
-      const leakAt = candidate.prompt.indexOf("garage");
-      if (leakAt > -1) expect(leakAt).toBeLessThan(authorityAt);
-    }
-  });
+${HOUSE_BLOCK}`), which cannot be satisfied by anything
+    appending past the authority paragraph, and separately pins every sentence of
+    that block and the forbidden tokens that must never return.
+  */
 
-  it("⚠ THE SAME GUARD, RE-POINTED AT A PATHED PROMPT (§3.4)", async () => {
-    /*
-      The arm above reads `COHORT_CONSTANT_MARKERS`, which are the UNPATHED
-      blocks — and asking those markers about a pathed prompt is asking whether
-      it contains a wardrobe sentence it was deliberately built not to contain.
-
-      §3.4 called the re-pointing "a signature and not a diff": the wardrobe
-      sentence leaving a fixed constant for a composed line cannot be a silent
-      edit, so the guard FOLLOWS it to the same composer rather than being
-      relaxed. Every block still appears verbatim, the authority paragraph is
-      still last, and nothing appends past it.
-    */
-    const compiled = await castingBriefCompiler({
-      briefText: "a barista in a red apron",
-      candidateCount: 8,
-      rollSeed: "seed-pathed",
-      /* ⚠ A FOLLOW rather than a path — step (e) retired the born road, and
-         this guard needs a NON-NULL line to follow the composer to. The one
-         that remains is the parent's, and it is the house line, which is the
-         same string this arm was always driven with. */
-      inheritedWardrobe: { line: HOUSE_WARDROBE_LINE },
-      engine: engineReturning(JSON.stringify({
-        cohort: "photoreal_human",
-        role: "a barista",
-        wardrobe: "a red apron over a plain white tee, dark straight jeans, plain low shoes",
-      })),
-    });
-    /*
-      ⚠ The line is the HOUSE line, and the reply's own apron is not in it —
-      #203 slice 2 step (d). This arm asked for a pick until that commit and
-      read its apron back here; what it guards is unchanged (a composed line
-      re-points the constant), and the reply is deliberately left naming an
-      outfit so the composition being guarded is still driven by a fixture that
-      COULD have moved it.
-    */
-    expect(compiled.wardrobeLine).toBe(HOUSE_WARDROBE_LINE);
-    expect(compiled.wardrobeLine).not.toContain("red apron");
-
-    const markers = cohortConstantBlocks(compiled.wardrobeLine);
-    for (const candidate of compiled.candidates) {
-      for (const marker of markers) {
-        expect(candidate.prompt).toContain(marker);
-      }
-      expect(candidate.prompt.trim().endsWith("it always wins.")).toBe(true);
-      /* CONTROL — the unpathed framing block no longer fits this prompt, which
-         is what makes the re-point a real move rather than a wider net. */
-      expect(candidate.prompt).not.toContain(COHORT_CONSTANT_MARKERS[0]);
-    }
-  });
+  /*
+    ⚠ *"THE SAME GUARD, RE-POINTED AT A PATHED PROMPT (§3.4)"* STOOD HERE AND IS
+    DELETED (#1490 act 1). It was the arm above re-pointed at a prompt composed
+    WITH a wardrobe sentence, and both the composition and the sentence are the
+    house road's. §3.4's rule that the guard must FOLLOW the composer rather than
+    be relaxed is honoured by the exact-equality arm named above, not weakened
+    here.
+  */
 
   it("caps free text so a long description cannot bury the constant", () => {
     const parsed = parseCastingIntent(
@@ -685,14 +608,12 @@ describe("a reader outage refuses free (#126 — founder, Crew reply #7: 'refuse
     expect(compiled.candidates).toHaveLength(8);
   });
 
-  it("the styled-brief screen still guards the unreadable path", async () => {
-    await expect(
-      castingBriefCompiler({
-        briefText: "an anime swordswoman with silver hair",
-        candidateCount: 8,
-        rollSeed: "s",
-        engine: engineReturning("I'm sorry, I can't help with that."),
-      }),
-    ).rejects.toMatchObject({ code: "unsupported_cohort" });
-  });
+  /*
+    ⚠ *"the styled-brief screen still guards the unreadable path"* STOOD HERE AND
+    IS DELETED (#1490 act 1) together with the screen itself. On the author road
+    an anime brief whose reply could not be parsed paints from her own words
+    instead of being refused — the arm above this one is that behaviour (an
+    unreadable reply still casts eight). `styleRefusal.test.ts` carries the full
+    reason and the 24 arms that went with it.
+  */
 });

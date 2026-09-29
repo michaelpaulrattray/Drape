@@ -502,8 +502,20 @@ describe("the WIRE, again — the lane reaches the eight prompts", () => {
     });
     const prompts = compiled.candidates.map((candidate) => candidate.prompt);
     expect(prompts).toHaveLength(8);
+    /*
+      ⚠ THIS ASSERTED THE COMPOSED SKIN LANE — `"SKIN: pale porcelain, heavily
+      weathered — exactly as described."` — UNTIL #1490 ACT 1, and the lane was
+      the HOUSE composition's. Her word reaches the eight prompts MORE directly
+      now, which is why the arm is re-pointed rather than deleted: the author
+      road sends her own sentence verbatim, so "pale porcelain" and "heavily
+      weathered" are in every prompt as SHE wrote them, not as a lane restated
+      them. That is this file's subject — brief fidelity — satisfied at full
+      strength.
+    */
     for (const prompt of prompts) {
-      expect(prompt).toContain("SKIN: pale porcelain, heavily weathered — exactly as described.");
+      expect(prompt.startsWith(BRIEF)).toBe(true);
+      expect(prompt).toContain("pale porcelain");
+      expect(prompt).toContain("heavily weathered");
     }
   });
 

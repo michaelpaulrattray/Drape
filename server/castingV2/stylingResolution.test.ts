@@ -111,25 +111,33 @@ describe("what counts as creative context", () => {
     expect(hasCreativeContext(intentOf({ archetype: "clean commercial" }))).toBe(false);
   });
 
-  it("reads the STATED intent, never the resolved archetype", async () => {
-    /*
-      The trap this avoids: `resolveArchetype` always returns a direction, so
-      reading the resolved value would put every context-free brief into bias
-      mode whenever the roll happened to draw a flavoured one. The restraint
-      doctrine gives the right signal for free — non-null means the brief said
-      it.
-    */
-    const compiled = await castingBriefCompiler({
-      briefText: "someone in their 30s",
-      candidateCount: 8,
-      rollSeed: "resolved-archetype",
-      engine: contextFreeEngine(),
-    });
-    // Whatever direction the roll drew, a context-free brief keeps named cuts.
-    for (const candidate of compiled.candidates) {
-      expect(hairLineOf(candidate.prompt)).toContain(candidate.resolvedIdentity.realized.hairStyle!.name);
-    }
-  });
+  /*
+    SIX ARMS STOOD HERE — the whole of this file's prompt-reading half, every one
+    of them asserted against the HAIR line lifted out of a composed prompt by
+    `hairLineOf`. The founder ruling underneath them — styling realization is
+    subordinate to creative context, biology is not — is a rule about what the
+    RESOLVER may prescribe, and the arms that read the resolved identity's tiers
+    survive.
+
+    ⚠ **DELETED WITH THE HOUSE ROAD — #1490 act 1, and FOLDED INTO #1125 rather
+    than re-pointed.** Every one of these arms asserted that a resolved and
+    persisted value left a FOOTPRINT IN THE PER-SLICE COMPOSED PROMPT. The author
+    road composes no per-slice prompt: one authored prompt paints all eight and
+    the dice records are marked `unsent` (#176), so there is no per-tier sentence
+    to look for and nothing for the arm to be right or wrong about.
+
+    ⚠ **THIS IS A FLOOR DROP AND IT IS SAID OUT LOUD.** The class these arms
+    guard is the UNOWNED-AXIS COLLAPSE — an axis nobody owns is decided by
+    whichever prior is loudest, identically on every tile — and it was caught
+    FIVE separate times by the founder's own eye. It is not abandoned: #1125
+    (`debt`, `rung:N3`) is exactly this loss, filed by the #180 ghost audit
+    BEFORE these arms fell over, and its ruling is that the question — did the
+    delivered picture carry what she asked for — is #30's, asked of a FRAME
+    rather than of a prompt string.
+
+    What survives in this file is everything that reads the PARSE or the
+    RESOLVER directly, which is the half that still decides a real record.
+  */
 
   it("treats the interpreter-outage fallback as context, because it is the user's own sentence", async () => {
     /*
@@ -169,36 +177,7 @@ describe("bias mode composes with the category instead of contradicting it", () 
     });
   }
 
-  it("never names a cut", async () => {
-    /*
-      Against the HAIR line, not the whole prompt. The framing block already
-      says "including afros, curls, volume, updos, buns", so a whole-prompt
-      search collides with the constant and asserts nothing.
-    */
-    for (let roll = 0; roll < 40; roll += 1) {
-      const compiled = await biasSheet("a 30 year old heavy metal bogan", `bogan-${roll}`);
-      for (const candidate of compiled.candidates) {
-        const line = hairLineOf(candidate.prompt);
-        expect(line).not.toBe("");
-        expect(line).not.toContain(candidate.resolvedIdentity.realized.hairStyle!.name);
-      }
-    }
-  });
 
-  it("names a renderable silhouette and defers only its character", async () => {
-    /*
-      The correction after the first bogan sheet: a line that defers everything
-      renders as the model's own default. The silhouette is concrete; what the
-      casting owns is whether it reads sharp or grown out.
-    */
-    const compiled = await biasSheet("a 30 year old heavy metal bogan", "bogan-prose");
-    for (const candidate of compiled.candidates) {
-      const line = hairLineOf(candidate.prompt);
-      expect(line).toContain(BIAS_DEFERRAL_CLAUSE);
-      // Something a camera can act on, not only a deferral.
-      expect(line.replace(BIAS_DEFERRAL_CLAUSE, "").length).toBeGreaterThan(60);
-    }
-  });
 
   it("makes no comparative claim the prompt cannot keep", async () => {
     /*
@@ -213,14 +192,6 @@ describe("bias mode composes with the category instead of contradicting it", () 
     }
   });
 
-  it("still carries colour, which is not a styling axis", async () => {
-    // It is the only separator a sheet of women has under the twin rule.
-    const compiled = await biasSheet("a 30 year old heavy metal bogan", "bogan-colour");
-    for (const candidate of compiled.candidates) {
-      const colour = candidate.resolvedIdentity.hair?.colour;
-      if (colour) expect(candidate.prompt).toContain(colour);
-    }
-  });
 
   it("keeps at least four distinct silhouettes — the founder's bar", async () => {
     for (let roll = 0; roll < 60; roll += 1) {
@@ -246,38 +217,22 @@ describe("bias mode composes with the category instead of contradicting it", () 
   });
 });
 
-describe("biology authors identically in every mode", () => {
-  it("keeps eye colour, brow character and skin character under context", async () => {
-    /*
-      No creative direction implies them, so a named cast direction and a
-      realized eye colour can never disagree — which is exactly why they do not
-      degrade.
-    */
-    const compiled = await castingBriefCompiler({
-      briefText: "a 30 year old heavy metal bogan",
-      candidateCount: 8,
-      rollSeed: "bogan-biology",
-      engine: engineReturning({ role: "a 30 year old heavy metal bogan" }),
-    });
-    for (const candidate of compiled.candidates) {
-      expect(candidate.prompt).toContain("EYE COLOUR:");
-      expect(candidate.prompt).toContain("BROW CHARACTER:");
-    }
-  });
-});
+/*
+  ⚠ TWO DESCRIBES STOOD HERE AND ARE NOW GONE ENTIRELY — #1490 act 1:
+  *"biology authors identically in every mode"* (two arms) and *"the context-free
+  path is untouched"* (two arms). Every one of their four arms read the composed
+  HAIR, EYE COLOUR, BROW CHARACTER or SKIN CHARACTER sentence, so all four went
+  with the house road for the reason recorded above, and the groups emptied.
 
-describe("the context-free path is untouched", () => {
-  it("still prescribes a named cut and its closing sentence", async () => {
-    const compiled = await castingBriefCompiler({
-      briefText: "someone in their 30s",
-      candidateCount: 8,
-      rollSeed: "neutral-path",
-      engine: contextFreeEngine(),
-    });
-    for (const candidate of compiled.candidates) {
-      expect(candidate.prompt).toContain("Cut and worn as that style is genuinely worn");
-      expect(hairLineOf(candidate.prompt)).toContain(candidate.resolvedIdentity.realized.hairStyle!.name);
-      expect(candidate.prompt).not.toContain(BIAS_DEFERRAL_CLAUSE);
-    }
-  });
-});
+  ⚠ **AN EMPTY `describe` IS NOT A HARMLESS LEFTOVER — vitest fails the SUITE
+  LOAD on it** (*"No test found in suite"*), and a suite that fails to load still
+  prints `Tests N passed`. So the wrappers are removed rather than left standing
+  as evidence of what used to be here, and this comment is that evidence instead.
+
+  The distinction those two groups drew is still true of the product and is now
+  stated rather than asserted: BIOLOGY (eye colour, brow character, skin
+  character) never degrades under creative context, while STYLING (the cut) does
+  — that is the founder ruling at the top of this file. On the author road
+  neither is composed per slice at all, which is why no arm can express the
+  difference here any more; #1125 carries the loss and #30 owns the question.
+*/

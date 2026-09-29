@@ -109,23 +109,33 @@ describe("a stated cut reaches the prompt, not just the record", () => {
     expect(NOTES_WITHOUT_IT).not.toMatch(/bald/i);
   });
 
-  it("⚠ THE CONTROL — with the lane EMPTY it says nothing, exactly as before", async () => {
-    /*
-      The change is strictly additive and this is what proves it. An interpreter
-      that leaves `cutLength` null is every roll cast before 2026-08-23, because
-      the prompt told it not to fill this field for precisely these briefs. Those
-      rolls must compose character for character as they did.
-    */
-    const eight = await prompts(HIS_BRIEF, {
-      sex: "male",
-      characterNotes: NOTES_WITHOUT_IT,
-      statedHair: { cutLength: null, colour: null, texture: null, greying: false },
-    });
-    for (const prompt of eight) expect(prompt).not.toMatch(/\bBald\b/);
-    /* And it did not author a cut instead — the coverage guard still holds, and
-       this is the founding bug of the whole deference doctrine. */
-    for (const prompt of eight) expect(prompt).not.toMatch(/HAIR: a /);
-  });
+  /*
+    TWO ARMS STOOD HERE — the founder's bald cast. Both read the composed hair
+    sentence: one that nothing is authored AROUND a stated bald head, and its
+    paired control that an empty lane says nothing at all. ⚠ The control is named
+    here on purpose, because deleting an arm and keeping its control would leave
+    a control over nothing, and deleting a control silently is how a suite starts
+    proving less than it claims.
+
+    ⚠ **DELETED WITH THE HOUSE ROAD — #1490 act 1, and FOLDED INTO #1125 rather
+    than re-pointed.** Every one of these arms asserted that a resolved and
+    persisted value left a FOOTPRINT IN THE PER-SLICE COMPOSED PROMPT. The author
+    road composes no per-slice prompt: one authored prompt paints all eight and
+    the dice records are marked `unsent` (#176), so there is no per-tier sentence
+    to look for and nothing for the arm to be right or wrong about.
+
+    ⚠ **THIS IS A FLOOR DROP AND IT IS SAID OUT LOUD.** The class these arms
+    guard is the UNOWNED-AXIS COLLAPSE — an axis nobody owns is decided by
+    whichever prior is loudest, identically on every tile — and it was caught
+    FIVE separate times by the founder's own eye. It is not abandoned: #1125
+    (`debt`, `rung:N3`) is exactly this loss, filed by the #180 ghost audit
+    BEFORE these arms fell over, and its ruling is that the question — did the
+    delivered picture carry what she asked for — is #30's, asked of a FRAME
+    rather than of a prompt string.
+
+    What survives in this file is everything that reads the PARSE or the
+    RESOLVER directly, which is the half that still decides a real record.
+  */
 
   it("⚠ HER WORD VERBATIM — the coverage case, which is the one that was broken", async () => {
     /*
@@ -154,24 +164,4 @@ describe("a stated cut reaches the prompt, not just the record", () => {
     for (const prompt of eight) expect(prompt).toMatch(/completely bald/i);
   });
 
-  it("⚠ DOES NOT AUTHOR AROUND IT — no length, no texture, no worn state", async () => {
-    /*
-      The half the deference doctrine already owned and must keep. Saying her
-      word must not become licence to hang the engine's own adjectives off it:
-      "HAIR: bald" is a fact she gave us, "a tousled shoulder-length bald" is the
-      contradiction D-79 was rolled back for.
-    */
-    const eight = await prompts(HIS_BRIEF, {
-      sex: "male",
-      characterNotes: NOTES_WITHOUT_IT,
-      statedHair: { cutLength: "Bald", colour: null, texture: null, greying: false },
-    });
-    for (const prompt of eight) {
-      const hair = /HAIR:[^.]*\./.exec(prompt)?.[0] ?? "";
-      expect(hair, "the hair sentence").toMatch(/\bBald\b/);
-      /* The realized vocabulary's own words for a cut. None of them may appear
-         in a sentence about a cut she stated. */
-      expect(hair).not.toMatch(/shoulder-length|cropped|tousled|swept|layered|bob\b/i);
-    }
-  });
 });

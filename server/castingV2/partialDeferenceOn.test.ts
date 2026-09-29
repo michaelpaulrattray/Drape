@@ -78,13 +78,31 @@ describe("the gothic bogan — the golden that pinned this gap", () => {
     statedHair: { cutLength: "long" },
   };
 
-  it("honours the stated length on all eight, and authors nothing over it", async () => {
-    const compiled = await sheet(brief, intent, "bogan-on");
-    for (const candidate of compiled.candidates) {
-      const line = hairLine(candidate.prompt);
-      expect(line).toContain("long");
-    }
-  });
+  /*
+    FOUR ARMS STOOD HERE — the stated length honoured on all eight, the greying
+    said on all eight, no colour authored over a stated one, and the unsaid parts
+    still varying. All four read the composed hair sentence across the eight
+    prompts. The variation arm is the collapse class itself.
+
+    ⚠ **DELETED WITH THE HOUSE ROAD — #1490 act 1, and FOLDED INTO #1125 rather
+    than re-pointed.** Every one of these arms asserted that a resolved and
+    persisted value left a FOOTPRINT IN THE PER-SLICE COMPOSED PROMPT. The author
+    road composes no per-slice prompt: one authored prompt paints all eight and
+    the dice records are marked `unsent` (#176), so there is no per-tier sentence
+    to look for and nothing for the arm to be right or wrong about.
+
+    ⚠ **THIS IS A FLOOR DROP AND IT IS SAID OUT LOUD.** The class these arms
+    guard is the UNOWNED-AXIS COLLAPSE — an axis nobody owns is decided by
+    whichever prior is loudest, identically on every tile — and it was caught
+    FIVE separate times by the founder's own eye. It is not abandoned: #1125
+    (`debt`, `rung:N3`) is exactly this loss, filed by the #180 ghost audit
+    BEFORE these arms fell over, and its ruling is that the question — did the
+    delivered picture carry what she asked for — is #30's, asked of a FRAME
+    rather than of a prompt string.
+
+    What survives in this file is everything that reads the PARSE or the
+    RESOLVER directly, which is the half that still decides a real record.
+  */
 
   it("keeps the COLOUR authored — the half full-axis deference was destroying", async () => {
     /*
@@ -107,16 +125,6 @@ describe("the gothic bogan — the golden that pinned this gap", () => {
     expect(colours.size).toBeGreaterThan(1);
   });
 
-  it("still varies the parts the brief left unsaid", async () => {
-    /*
-      The counter-case that stops "honour the length" being satisfied by
-      collapsing to one repeated long look — which is the original complaint
-      wearing a pass.
-    */
-    const compiled = await sheet(brief, intent, "bogan-variety");
-    const lines = new Set(compiled.candidates.map((candidate) => hairLine(candidate.prompt)));
-    expect(lines.size).toBeGreaterThan(2);
-  });
 });
 
 describe("salt and pepper — greying is a process, never a shade", () => {
@@ -128,18 +136,6 @@ describe("salt and pepper — greying is a process, never a shade", () => {
     statedHair: { greying: true },
   };
 
-  it("says the greying on all eight", async () => {
-    const compiled = await sheet(brief, intent, "salt-on");
-    for (const candidate of compiled.candidates) {
-      /*
-        Asserted on the RENDER rather than the word. The founder's finding was
-        that the bare word rendered too subtly — about two tiles a sheet did not
-        read as greying at all — so the D1-style expansion is the thing that has
-        to reach the prompt, exactly as the iris and finish prose do.
-      */
-      expect(hairLine(candidate.prompt).toLowerCase()).toContain("steel-grey strands");
-    }
-  });
 
   it("leaves a real base colour underneath, and cuts still vary", async () => {
     /*
@@ -160,20 +156,6 @@ describe("salt and pepper — greying is a process, never a shade", () => {
 });
 
 describe("the parts the brief did settle stay settled", () => {
-  it("authors no colour when the brief named one", async () => {
-    const compiled = await sheet(
-      "a woman with pastel pink hair",
-      { sex: "female", statedHair: { colour: "pastel pink" } },
-      "pink-on",
-    );
-    for (const candidate of compiled.candidates) {
-      const line = hairLine(candidate.prompt);
-      expect(line).toContain("pastel pink");
-      for (const authored of ["brown", "blonde", "auburn", "black", "chestnut"]) {
-        expect(line, `authored ${authored} over a stated colour`).not.toContain(authored);
-      }
-    }
-  });
 
   it("still says nothing at all for a coverage brief", async () => {
     // There is no cut on a bald man, and this is the founding bug of the
