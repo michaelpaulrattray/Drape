@@ -21,6 +21,7 @@ import {
   livePullRequestState,
   livePullRequests,
   liveRecent,
+  liveWaitingOnYou,
 } from "./liveDesk";
 import type { LiveQueueItem, LiveQueueReading } from "./liveQueue";
 
@@ -500,5 +501,96 @@ describe("what is already happening to each card — his order 2026-09-26, \"so 
       readAt: "2026-09-26T02:30:00Z",
     }, RUNGS, { facts: [], why: null });
     expect(desk.builds.items).toEqual([]);
+  });
+});
+
+/**
+ * WHAT IS WAITING ON HIM (#1467) — the section his page exists to answer.
+ *
+ * Every arm's fixture is a shape the real queue held on 2026-09-29, when the
+ * edition's own list had rotted to 143 of 143 `done` and the section read
+ * "Nothing is waiting on you" over two cards that said otherwise. The two
+ * arms that matter most are the ones that keep a card OFF his desk: a held
+ * card whose sentence names a slice rather than a person, and a card with the
+ * sentence but no live hold.
+ */
+describe("what is waiting on him, read off the cards themselves", () => {
+  const heldOnHim = item({
+    number: 1492,
+    title: "A creature's three-quarter and close-up refuse on every retry",
+    labels: ["bug", "blocked", "rung:N2"],
+    holdReason: "Michael's ruling on the retry shape (A / B / C in the body). No seat picks a shape.",
+    createdAt: "2026-09-29T10:00:00Z",
+  });
+
+  it("a held card whose own sentence names him is on the list, with that sentence", () => {
+    expect(liveWaitingOnYou(reading([heldOnHim]))).toEqual([{
+      issueNumber: 1492,
+      title: "A creature's three-quarter and close-up refuse on every retry",
+      reason: "Michael's ruling on the retry shape (A / B / C in the body). No seat picks a shape.",
+      filedAt: "2026-09-29T10:00:00Z",
+      url: "https://github.com/x/y/issues/1492",
+      urgent: false,
+    }]);
+  });
+
+  it("⚠ a held card whose sentence ENDS by saying it is not his stays off it", () => {
+    /* #129's live line, verbatim. A reader scanning for a pronoun anywhere
+       puts this on his desk while its filer says the opposite — which is why
+       `holdOwnerFromReason` is anchored on the first word. */
+    const rows = [item({
+      number: 129,
+      labels: ["patrol", "blocked", "casting-upkeep"],
+      holdReason: "slice 1's rows — PR #1007 merged (9d517932); slice 2's patrol needs refused AND passed prompts on record first. Not waiting on him.",
+    })];
+    expect(liveWaitingOnYou(reading(rows))).toEqual([]);
+  });
+
+  it("the sentence alone is not enough — the hold label is what makes it live", () => {
+    /* #298's split, and the fossil it tolerates: a card once held keeps its
+       marker line for ever, and nothing renders it while the label is gone. */
+    const rows = [item({ ...heldOnHim, labels: ["bug", "rung:N2"] })];
+    expect(liveWaitingOnYou(reading(rows))).toEqual([]);
+  });
+
+  it("a hold with no written reason is unknown, and unknown is never his", () => {
+    const rows = [
+      item({ number: 1337, labels: ["seat:retro", "blocked"] }),
+      item({ number: 1468, labels: ["seat:retro", "blocked"], holdReason: null }),
+    ];
+    expect(liveWaitingOnYou(reading(rows))).toEqual([]);
+  });
+
+  it("`needs-sitting` counts as a live hold, because a sitting is with HIM", () => {
+    const rows = [item({
+      number: 1132,
+      labels: ["needs-sitting"],
+      holdReason: "you — one sitting, the whole switch list in one go.",
+    })];
+    expect(liveWaitingOnYou(reading(rows)).map((row) => row.issueNumber)).toEqual([1132]);
+  });
+
+  it("a closed card is not waiting on anybody, whatever its labels still say", () => {
+    const closed = item({ ...heldOnHim, status: "closed", closedAt: "2026-09-29T12:00:00Z" });
+    expect(liveWaitingOnYou(reading([], [closed]))).toEqual([]);
+  });
+
+  it("a pull request is never a needs-you row", () => {
+    const rows = [item({ ...heldOnHim, kind: "pr" })];
+    expect(liveWaitingOnYou(reading(rows))).toEqual([]);
+  });
+
+  it("the desk carries the list, in card order, beside the held cards it overlaps", () => {
+    const rows = [
+      item({ number: 1492, labels: ["blocked"], holdReason: "Michael's ruling on the retry shape" }),
+      item({ number: 1434, labels: ["seat:janitor", "blocked"], holdReason: "you — a yes or no, and no is a fine answer." }),
+      item({ number: 129, labels: ["blocked"], holdReason: "slice 1's rows — not waiting on him." }),
+    ];
+    const desk = deriveLiveDesk(reading(rows), RUNGS);
+    expect(desk.waitingOnYou.map((row) => row.issueNumber)).toEqual([1434, 1492]);
+    /* `heldCards` is the wider population and stays exactly what it was — the
+       page subtracts an edition card with it, and these two answer different
+       questions about the same three cards. */
+    expect(desk.heldCards).toEqual([129, 1434, 1492]);
   });
 });

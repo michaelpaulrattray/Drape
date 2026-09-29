@@ -31,7 +31,14 @@ import {
   type CrewCardCommentFact,
 } from "../../shared/crewCardBuildState";
 import type { HandVerdictFreshness } from "../../shared/handVerdict";
-import { CREW_HOLD_LABELS, CREW_HOLD_WORD, heldStateFromLabels, type CrewHeldState } from "../../shared/crewNextUpHold";
+import {
+  CREW_HOLD_LABELS,
+  CREW_HOLD_WORD,
+  heldStateFromLabels,
+  heldStatesFromLabels,
+  holdOwnerFromReason,
+  type CrewHeldState,
+} from "../../shared/crewNextUpHold";
 import { rankFromLabels, sortOrderedBand } from "../../shared/crewOrderedBand";
 import { CREW_PIPELINE_GROUPS } from "../../shared/crewPipelineGroups";
 import { exclusionFor, type CrewQueueExclusions } from "../../shared/crewQueueExclusions";
@@ -65,6 +72,21 @@ export type LiveNextUpItem = {
   readonly title: string;
   readonly urgent: boolean;
   readonly held?: { readonly state: CrewHeldState; readonly because?: string };
+};
+
+/**
+ * A card waiting on HIM, read off the card itself — see `liveWaitingOnYou`.
+ * The shape a needs-you row can be built from with nothing else: what it is,
+ * why it is his, when it was filed, and where to read it.
+ */
+export type LiveWaitingOnYou = {
+  readonly issueNumber: number;
+  readonly title: string;
+  /** The filer's `**Waiting on:**` sentence, marker already stripped. */
+  readonly reason: string;
+  readonly filedAt: string;
+  readonly url: string;
+  readonly urgent: boolean;
 };
 
 export type LivePullRequestState = "draft" | "held" | "passed" | "gate";
@@ -129,6 +151,13 @@ export type LiveDesk = {
    * never a second spelling of "blocked".
    */
   readonly heldCards: readonly number[];
+  /**
+   * Cards whose own hold sentence says they are waiting on HIM (#1467) — the
+   * live half of *Needs you*, joined with the edition's prose on the issue
+   * number by `needsYouFor`. See `liveWaitingOnYou` for why the sentence is
+   * read rather than a label, and for the one thing it cannot see.
+   */
+  readonly waitingOnYou: readonly LiveWaitingOnYou[];
   /**
    * Ladder cards CLOSED inside the window, with the rung their label named —
    * so a rung can say "2 finished" beside "5 waiting" and show them struck
@@ -328,6 +357,71 @@ export function liveNextUp(reading: LiveQueueReading): LiveNextUpItem[] {
 }
 
 /**
+ * ⚠ **THE CARDS THAT SAY THEMSELVES THEY ARE WAITING ON HIM (#1467).**
+ *
+ * *Needs you* is the one question this page exists to answer, and it was the
+ * last section still answered entirely by hand: an edition's `needsYou` list,
+ * written at the end of a shift and deployed. Working law 4's mirror, and it
+ * had drifted all the way. **Measured on edition 575, the night this landed:
+ * 143 of 143 needs-you cards and 117 of 117 eye items marked `done`, so the
+ * section rendered *"Nothing is waiting on you"* — while #1434 asked him for a
+ * yes or no and #1492 asked him to pick a retry shape.** Neither was on his
+ * page; both had said so on their own card for days.
+ *
+ * So a held card whose own `**Waiting on:**` sentence names HIM appears here,
+ * whatever any edition says — the label makes the hold live, the sentence says
+ * whose it is, and `holdOwnerFromReason` is anchored on its first word for the
+ * reason that function's docblock gives. The edition still owns the PROSE: a
+ * card it has written up keeps its product-impact paragraph, its options and
+ * its recommendation, and is not duplicated here (`crewTypes.ts` joins the two
+ * on the issue number).
+ *
+ * ⚠ **THE STATED LIMIT, AND IT IS THE PROGRAM'S OWN RULE RATHER THAN A GAP:
+ * ONLY THE CARD BODY IS READ.** `liveQueue` takes the reason from the body
+ * (`holdReasonFromBody`) because that is where the founder-ordered clause puts
+ * it — *"A comment is a record; the body is what gets read."* A hold sentence
+ * written only in a comment is invisible to this, deliberately: the comment
+ * reader's window is 48 hours and three pages, so a reason older than that
+ * would appear on his desk for two days and then vanish, which is worse than a
+ * rule.
+ *
+ * ⚠ **AND THE REMAINDER IS NAMED BY NOTHING YET, WHICH IS STATED HERE RATHER
+ * THAN PROMISED AWAY.** A held card whose sentence cannot be read — absent, or
+ * about something that is not a person — is simply not drawn, and no report
+ * lists it. The obvious home is `crew-desk-sweep.mts`'s stale-hold block, but
+ * that block's population is `planDeskHoldLabels`' `ordered` — the
+ * **founder-ordered** cards alone — and neither of the two cards this card was
+ * filed about is founder-ordered. Widening it is its own slice with its own
+ * reading, filed on #1467; writing a docblock that says a control exists is how
+ * this repository has twice come to believe in one that does not (invariant 7).
+ * Until then the honest floor is: **a card that does not say whose hold it is
+ * does not reach his page**, which is the same direction #298 chose for a
+ * reason that has not changed.
+ */
+export function liveWaitingOnYou(reading: LiveQueueReading): LiveWaitingOnYou[] {
+  const items: LiveWaitingOnYou[] = [];
+  for (const item of openIssues(reading)) {
+    /* ⚠ ANY hold label, not `blocked` alone — `needs-sitting` is a hold whose
+       whole meaning is a sitting with HIM. The sentence is what decides; the
+       label only says the hold is still live (#298's split). */
+    if (heldStatesFromLabels(item.labels).length === 0) continue;
+    const reason = item.holdReason;
+    /* The filer's own sentence, with the marker already taken off by
+       `holdReasonFromBody`. `null` is `unknown`, which is never his. */
+    if (reason === null || holdOwnerFromReason(reason) !== "you") continue;
+    items.push({
+      issueNumber: item.number,
+      title: item.title,
+      reason,
+      filedAt: item.createdAt,
+      url: item.url,
+      urgent: item.labels.includes(URGENT_LABEL),
+    });
+  }
+  return items.sort((a, b) => a.issueNumber - b.issueNumber);
+}
+
+/**
  * ⚠ **A FRESH VERDICT OUTRANKS THE HELD LABEL — his desk correction of
  * 2026-09-26.** *Waiting for review* and *reviewed, now merging* are the two
  * states he actually acts differently on, and In flight drew them with one word
@@ -472,6 +566,7 @@ export function deriveLiveDesk(
       .filter((item) => item.labels.includes(CREW_HOLD_LABELS.blocked))
       .map((item) => item.number)
       .sort((a, b) => a - b),
+    waitingOnYou: liveWaitingOnYou(reading),
     closedCards: reading.recent
       .filter((item) => item.kind === "issue" && item.status !== "open")
       .map((item) => item.number)

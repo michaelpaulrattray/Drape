@@ -354,10 +354,27 @@ describe("#493 — every open card is drawn in exactly one section", () => {
   });
 });
 
+type WaitingRow = {
+  issueNumber: number;
+  title: string;
+  reason: string;
+  filedAt: string;
+  url: string;
+  urgent: boolean;
+};
+
 describe("what still needs him — answered leaves the desk, not only closed (his question, 2026-09-25)", () => {
-  const liveWith = (closedCards: number[], heldCards: number[]) =>
-    ({ available: true, stale: false, why: null, desk: { closedCards, heldCards } }) as unknown as Parameters<typeof needsYouFor>[0];
+  const liveWith = (closedCards: number[], heldCards: number[], waitingOnYou: WaitingRow[] = []) =>
+    ({ available: true, stale: false, why: null, desk: { closedCards, heldCards, waitingOnYou } }) as unknown as Parameters<typeof needsYouFor>[0];
   const card = (issueNumber: number | null) => ({ issueNumber, id: `c${issueNumber}` }) as unknown as Parameters<typeof needsYouFor>[1][number];
+  const waiting = (issueNumber: number, reason: string): WaitingRow => ({
+    issueNumber,
+    title: `Card ${issueNumber}`,
+    reason,
+    filedAt: "2026-09-29T10:00:00Z",
+    url: `https://github.com/x/y/issues/${issueNumber}`,
+    urgent: false,
+  });
 
   it("keeps a card that is open AND held; drops one that is open and no longer held (answered); drops a closed one", () => {
     const rows = [card(1208), card(1220), card(1207), card(null)];
@@ -369,6 +386,40 @@ describe("what still needs him — answered leaves the desk, not only closed (hi
     const rows = [card(1208), card(1220)];
     const off = { available: false, why: "x" } as unknown as Parameters<typeof needsYouFor>[0];
     expect(needsYouFor(off, rows).map((c) => c.issueNumber)).toEqual([1208, 1220]);
+  });
+
+  it("a card whose own hold sentence names him is drawn even though no edition wrote it up (#1467)", () => {
+    /* The measured night: every card in the edition was marked `done`, so the
+       subtraction above had nothing to keep and the section read "Nothing is
+       waiting on you" over #1492's open question. */
+    const drawn = needsYouFor(
+      liveWith([], [1492], [waiting(1492, "Michael's ruling on the retry shape (A / B / C in the body).")]),
+      [],
+    );
+    expect(drawn).toHaveLength(1);
+    expect(drawn[0].issueNumber).toBe(1492);
+    /* The reply box and the thread key on the id, so it has to be one his
+       answer can be filed under — and one the row can be sure of. */
+    expect(drawn[0].id).toBe("card-1492");
+    expect(drawn[0].state).toBe("open");
+    /* Product impact leads the row: the filer's own sentence, nothing composed. */
+    expect(drawn[0].productImpact).toBe("Michael's ruling on the retry shape (A / B / C in the body).");
+    expect(drawn[0].options).toEqual([]);
+    expect(drawn[0].recommendation).toBeNull();
+  });
+
+  it("a card the edition HAS written up keeps its prose and is not listed twice", () => {
+    const rows = [card(1492)];
+    const drawn = needsYouFor(
+      liveWith([], [1492], [waiting(1492, "Michael's ruling on the retry shape")]),
+      rows,
+    );
+    expect(drawn.map((c) => c.id)).toEqual(["c1492"]);
+  });
+
+  it("with no live read the bare half is absent — nothing can vouch for it", () => {
+    const off = { available: false, why: "x" } as unknown as Parameters<typeof needsYouFor>[0];
+    expect(needsYouFor(off, [])).toEqual([]);
   });
 
   it("an eye item leaves when its card is closed, and stays while it is open", () => {

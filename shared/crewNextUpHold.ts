@@ -364,3 +364,68 @@ export function planDeskHoldLabels(input: {
 
   return { apply, stale };
 }
+
+/**
+ * ⚠ **WHO THE HOLD IS WAITING ON, READ FROM THE FILER'S OWN SENTENCE (#1467).**
+ *
+ * The header above says `you` is not a label and must stay derived, for a
+ * reason that still holds: a label would let the queue claim he owes an answer
+ * he has already given. **What it derived `you` FROM was the edition's
+ * hand-written needs-you list, and that half rotted exactly the way every other
+ * hand-kept list in this repository has.** Measured on edition 575, the night
+ * this landed: **143 of 143 needs-you cards and 117 of 117 eye items were
+ * marked `done`**, so his *What needs you* section was EMPTY — while two open
+ * cards said in as many words that they were waiting on him (#1434: *"you — a
+ * yes or no, and no is a fine answer."*; #1492: *"Michael's ruling on the retry
+ * shape"*). **A question he could not see is the silence direction, and it is
+ * the one this repository keeps paying for.**
+ *
+ * So `you` is still derived — from the card's OWN hold sentence rather than
+ * from a file a shift rewrites at 3am. The hold label says the hold is live
+ * (#298's split: the state is a label, the reason is prose shown only while the
+ * label stands), and this says whose it is.
+ *
+ * # ⚠ IT IS ANCHORED ON THE FIRST WORD, AND THAT IS THE WHOLE INSTRUMENT
+ *
+ * The negative control is on the record and it is why a `contains` test is
+ * never written here: **#129's live reason ENDS with the words *"Not waiting on
+ * him."*** — a sentence whose whole point is that the card is NOT his. Any
+ * reader scanning for a pronoun anywhere puts that card on his desk while its
+ * own filer is saying the opposite. The marker line's grammar is *"waiting on
+ * WHOM"*, so the answer is the first word after it and nothing else.
+ *
+ * A leading article and light markdown emphasis are stepped over (*"the
+ * founder's word"*, *"**you** — a yes or no"*); a possessive is trimmed
+ * (*"Michael's ruling"*). Everything else is `other`, and an absent or empty
+ * reason is `unknown` — ⚠ **never `you`**. A held card whose filer did not say
+ * whose it is has not said it is his, and the remainder is reported to a shift
+ * by `crew-desk-sweep.mts` rather than guessed at on his page.
+ */
+export type CrewHoldOwner = "you" | "other" | "unknown";
+
+/**
+ * The first words that mean HIM. Small on purpose: this list is the difference
+ * between a row on his desk and silence, so every entry is a word a filer has
+ * actually opened the sentence with.
+ */
+const FOUNDER_HOLD_WORDS: ReadonlySet<string> = new Set([
+  "you", "your", "yours", "michael", "founder", "his", "him", "he",
+]);
+
+/** Stepped over before the first word is read — never part of the answer. */
+const HOLD_REASON_ARTICLES: ReadonlySet<string> = new Set(["the", "a", "an"]);
+
+export function holdOwnerFromReason(reason: string | null | undefined): CrewHoldOwner {
+  if (typeof reason !== "string") return "unknown";
+  /* Emphasis, quoting and the strike-through a superseded line carries are
+     punctuation around the sentence rather than part of it. */
+  const words = reason
+    .toLowerCase()
+    .replace(/[*_~`"'’(\[]/g, " ")
+    .split(/[^a-z]+/)
+    .filter((word) => word.length > 0);
+  if (words.length === 0) return "unknown";
+  const first = HOLD_REASON_ARTICLES.has(words[0]) ? words[1] : words[0];
+  if (first === undefined) return "unknown";
+  return FOUNDER_HOLD_WORDS.has(first) ? "you" : "other";
+}

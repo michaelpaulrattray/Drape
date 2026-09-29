@@ -9,6 +9,7 @@ import {
   CREW_HOLD_WORD,
   heldStateFromLabels,
   heldStatesFromLabels,
+  holdOwnerFromReason,
   holdReasonFromBody,
   planDeskHoldLabels,
   resolveHold,
@@ -338,5 +339,72 @@ describe("a hold whose reason has gone is REPORTED, never cleared", () => {
       deskOpen: [],
     });
     expect(plan.stale).toEqual([]);
+  });
+});
+
+/**
+ * WHOSE HOLD IS IT — `holdOwnerFromReason` (#1467).
+ *
+ * ⚠ **THE CORPUS IS THE REAL ONE.** Every sentence in the first block is a
+ * live `**Waiting on:**` line read off an open card on 2026-09-29, not a
+ * fixture written to suit the reader. That matters most for the one that is
+ * the whole reason this function is anchored rather than searching: **#129's
+ * line ENDS with the words "Not waiting on him."** A reader looking for a
+ * pronoun anywhere puts that card on his desk while its filer says the
+ * opposite, which is the failure that would make the section untrustworthy on
+ * its first day.
+ */
+describe("who a hold is waiting on, read from the filer's own sentence", () => {
+  it("the real sentences that mean HIM", () => {
+    /* #1434, verbatim. */
+    expect(holdOwnerFromReason("you — a yes or no, and no is a fine answer.")).toBe("you");
+    /* #1492, verbatim — a possessive, and his name rather than the pronoun. */
+    expect(holdOwnerFromReason("Michael's ruling on the retry shape (A / B / C in the body). No seat picks a shape."))
+      .toBe("you");
+  });
+
+  it("the real sentences that do NOT, including the one that names him at the end", () => {
+    /* #129, verbatim — the negative control this whole instrument turns on. */
+    expect(holdOwnerFromReason(
+      "slice 1's rows — PR #1007 merged (9d517932); slice 2's patrol needs refused AND passed prompts on record first. Not waiting on him.",
+    )).toBe("other");
+    /* #1098, verbatim — a leading article, and a seat rather than a person. */
+    expect(holdOwnerFromReason(
+      "the **Janitor patrol** (clock every 3 days; last run 2026-09-21, so ~24 Sep).",
+    )).toBe("other");
+  });
+
+  it("an absent or wordless reason is unknown, and unknown is never his", () => {
+    expect(holdOwnerFromReason(null)).toBe("unknown");
+    expect(holdOwnerFromReason(undefined)).toBe("unknown");
+    expect(holdOwnerFromReason("")).toBe("unknown");
+    expect(holdOwnerFromReason("   ")).toBe("unknown");
+    expect(holdOwnerFromReason("#535")).toBe("unknown");
+  });
+
+  it("steps over emphasis and a leading article, and trims a possessive", () => {
+    expect(holdOwnerFromReason("**you** — a yes or no")).toBe("you");
+    expect(holdOwnerFromReason("~~you~~ — superseded")).toBe("you");
+    expect(holdOwnerFromReason("the founder's word on the shape")).toBe("you");
+    expect(holdOwnerFromReason("His eye on the frames")).toBe("you");
+    expect(holdOwnerFromReason("your answer on option B")).toBe("you");
+  });
+
+  it("a hold on something that is not a person reads as other", () => {
+    expect(holdOwnerFromReason("a DESIGN DECISION (#541 rule 3) — the retention shape")).toBe("other");
+    expect(holdOwnerFromReason("#535, not independently buildable")).toBe("other");
+    expect(holdOwnerFromReason("the gate going green on PR #1234")).toBe("other");
+    expect(holdOwnerFromReason("N2b closing — the milestone gate")).toBe("other");
+  });
+
+  it("reads the whole answer out of the marker line the body carries", () => {
+    /* The two halves joined: what the page actually does is take the body's
+       line and ask whose it is, so the pair is driven end to end here. */
+    const body = [
+      "## Why this is held",
+      `${CREW_HOLD_MARKER} you — a yes or no, and no is a fine answer.`,
+    ].join("\n");
+    expect(holdOwnerFromReason(holdReasonFromBody(body))).toBe("you");
+    expect(holdOwnerFromReason(holdReasonFromBody("no marker anywhere in this body"))).toBe("unknown");
   });
 });
