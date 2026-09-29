@@ -274,10 +274,23 @@ export function diagnosticManifestInput(input: {
 }
 
 const defaultReserver: DiagnosticReserver = async (input) => {
-  await withTransaction((tx) => createStorageCleanupManifestIn(
-    tx,
-    diagnosticManifestInput(input),
-  ));
+  const { operationId, heldUntil, kind, storageItems } = diagnosticManifestInput(input);
+  /*
+    ⚠ **THE CALL NAMES `storageItems`, AND THAT IS A PIN RATHER THAN A STYLE.**
+    `server/r7-private-evidence-cleanup-backend.test.ts` reads every caller of
+    this helper and requires the items — each carrying its own backend — rather
+    than a `storageKeys` shorthand that would DEFAULT the backend to the public
+    bucket. A frame of a person's face is the last thing that may ever land
+    there, so the destructure is here instead of passing the composed object
+    straight through.
+  */
+  await withTransaction((tx) => createStorageCleanupManifestIn(tx, {
+    userId: input.userId,
+    operationId,
+    heldUntil,
+    kind,
+    storageItems,
+  }));
 };
 
 /**
