@@ -1,7 +1,7 @@
 {
-  "edition": 575,
-  "updatedAt": "2026-09-29T18:45:00.000Z",
-  "shift": "Foreman (night shift) — the old casting lane is now completely out of the product, and the paperwork finally agrees with the code. Nothing you can see changed tonight and nothing was spent. The five pieces of the old lane came out between Sunday and Monday; the last job was to make every document and map say so, and that mattered more than it sounds. The map our own agents read FIRST was still telling them the old road survived inside the studio, and the file a shift opens to work this job still said, in bold, that you had not asked for the retirement — about nine hours after you said “Delete it”. Both are fixed. While checking, I found that the refusal we show when somebody asks for something we cannot cast has no test behind it any more: the test that used to cover it was pointed at a different refusal during the clean-up and nobody noticed. I proved it by breaking that line on purpose — 5,741 tests stayed green. Reading it end to end, that refusal can no longer happen at all on today's road, so nothing is broken for you; it is dead wiring, and I refused to write a test that would have looked like cover for it. The decision about removing it is now recorded where it belongs. Also settled one small leftover about a piece of shared text — in the file itself rather than on a card, so nobody has to work it out again.",
+  "edition": 576,
+  "updatedAt": "2026-09-29T20:25:00.000Z",
+  "shift": "Foreman (night shift) — two questions that were waiting on you have been sitting on their cards for days and never reached this page. They are on it now, at the top, with a box to answer in: one is a yes or no about tidying up old code branches, the other asks you to pick how a retry should work when a creature's view keeps failing. Here is why you never saw them. Everything else on this page reads the work queue itself every thirty seconds, but the “what needs you” section was still being typed out by hand at the end of each shift and shipped with the code. Over time every one of its 143 entries had been ticked off as done — so the section quite honestly told you nothing was waiting on you, while two cards said otherwise in their own words. From tonight it reads the cards. If a job is held up and its own note says it is held up on you, it appears here whether or not anybody wrote it up, and it leaves the moment your answer is recorded. Nothing you can see anywhere else changed and nothing was spent. A second agent shipped a separate fix the same hour: when something goes wrong in a customer's browser, the report now says which build it came from and which part of the app threw it, instead of an unreadable line of compressed code.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -268,6 +268,10 @@
         {
           "state": "in-progress",
           "title": "The old casting lane is finished, and the record now says so (#180). Everything that chose between the old way of casting and the new one is out of the product — five pieces, ending Monday — and this last piece was the writing-up. It is not housekeeping: the map our agents read first still described the old road as alive inside the studio, and the working document still said you had not asked for the retirement, nine hours after you said “Delete it”. Both now say what actually happened, with every piece checked against the code rather than copied from a report. What keeps this card open is NOT a deletion, and that is written at the top of it so nobody goes looking for one: a list of old “look” words that is still genuinely in use and waits on the suggested-words feature being built, and the refining half, which you yourself timed for the next milestone."
+        },
+        {
+          "state": "done",
+          "title": "Your desk stops being typed out by hand where it matters most (#1467). The “what needs you” section is now read off the jobs themselves — if a job is held up and its own note says it is held up on you, it shows here with the question and a box to answer in, even if no shift ever wrote it up. It found two straight away that had been waiting days: the branch-cleanup yes or no (#1434) and the creature retry shape (#1492). The old list is still used where a shift HAS written a proper card, so nothing you already had was lost, and nothing is listed twice."
         }
       ]
     },
@@ -351,7 +355,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-29T18:37:42.637Z",
+      "readAt": "2026-09-29T20:21:32.452Z",
       "items": [
         {
           "issueNumber": 1129,
@@ -9010,6 +9014,14 @@
       "status": "merged",
       "prNumber": 1522,
       "note": "Merged ee436909. Comments only; two wrong details in the paragraph it replaces corrected at the code."
+    },
+    {
+      "id": "waiting-on-you-1467",
+      "title": "What needs you is read off the cards themselves — two questions that had never reached your page",
+      "status": "merged",
+      "prNumber": 1527,
+      "note": "Merged d1eebb08. Relay hand verdict on head acabbe1d: nothing to change.",
+      "cardId": null
     }
   ],
   "problems": [
@@ -9288,7 +9300,7 @@
     236
   ],
   "nextUp": {
-    "readAt": "2026-09-29T18:37:42.636Z",
+    "readAt": "2026-09-29T20:21:32.452Z",
     "items": [
       {
         "issueNumber": 180,
