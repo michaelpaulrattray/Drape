@@ -466,7 +466,26 @@ export const SIGNED_VIEW_SIZE = { width: 2352, height: 3504 } as const;
 const SIGNED_VIEW_MAX_REFERENCES = 14;
 
 /**
- * THE SIGN'S VIEW ENGINE — GPT Image 2.5 Sunburst at `high`, on the edit door.
+ * GPT Image 2.5 Sunburst at `high`, on the edit door.
+ *
+ * ⚠ **NOTHING CALLS THIS TODAY, AND THAT IS SAID HERE RATHER THAN LEFT TO BE
+ * DISCOVERED (#1278 path E, 2026-09-29).** It was the Sign's view engine for
+ * two days. Path E moved the delivered views back to Nano Banana Pro on his
+ * later word — *"NBP2k was a better quality rersult though"* — and gave
+ * Sunburst the WARDROBE PLATE instead, which is a generation and goes through
+ * {@link createFalSunburstPlateEngine} and the text-to-image door. So this
+ * factory is wired to nothing but its own suite (`falSignViewWire.test.ts`).
+ *
+ * **It is kept rather than deleted, deliberately, and the reason is a date:**
+ * his ruling on which engine dresses and which engine renders has moved three
+ * times in four days (#1394 keep NBP, #1459 move to Sunburst, path E split the
+ * two jobs), each move measured on his own fixtures. This is the tested,
+ * courted Sunburst-at-2352x3504 door, and re-deriving it from memory the next
+ * time he moves would be the worse trade. **An unwired export left unnamed is
+ * this repository's own path-three defect**, so it is named here and on #1278
+ * instead of sitting quietly with a green suite in front of it.
+ *
+ * The record below is unchanged and is what the courts measured.
  *
  * **His word, 2026-09-27 (terminal), verbatim and entire**, closing the outfit
  * court (#1451) on his own Sifr after the engine court (#1394):
@@ -604,6 +623,164 @@ export function createFalSunburstViewEngine(config: {
       /* The angle folded into the instruction exactly as `falQueue` folds it,
          because both courts composed their prompts through THAT function and
          the words are the one thing this swap must not change. */
+      return edit({ ...request, prompt: `${request.prompt}\n\nView: ${request.viewAngle}.` });
+    },
+  };
+}
+
+/**
+ * THE OUTFIT PLATE'S ASK — one landscape frame holding two panels.
+ *
+ * ⚠ **IT IS AN ASK, AND THIS DOOR IS MEASURED TO CLAMP IT** — which is why
+ * nothing downstream may compute a panel's width from this constant. #1394's
+ * sheet arm asked `4688x1760` and was answered `3840x1440` EVERY TIME: the
+ * ratio survived to three decimal places (2.664 asked, 2.667 returned) and the
+ * long side landed on 3840. So the door preserves aspect and caps the long
+ * side, and a caller that trusts its own ask cuts the plate in the wrong place.
+ * {@link splitOutfitPlate} reads the returned bytes instead.
+ *
+ * The number chosen is the one that changes least: 3:2 landscape at the same
+ * pixel budget as a signed view (8.19 MP against 8.24 MP), long side 3504 —
+ * inside the observed 3840 cap, so it is the one shape of ask this door has
+ * been seen to honour unscaled. Each panel is then 3:4 portrait, which is what
+ * a head-to-feet figure wants. Both sides are multiples of 16, which the door
+ * requires.
+ *
+ * MEASURED THROUGH THE REAL DOOR (#1278 path E, 2026-09-29): see the drive
+ * receipt on the card. A future change to this constant re-measures rather
+ * than reasoning from the arithmetic above.
+ */
+export const OUTFIT_PLATE_SIZE = { width: 3504, height: 2336 } as const;
+
+/**
+ * THE OUTFIT PLATE'S ENGINE — GPT Image 2.5 Sunburst at `high`, his creativity
+ * choice, on a road no customer's delivered picture comes out of.
+ *
+ * **His ruling, 2026-09-29 (terminal), path E, verbatim on the two engines:**
+ *
+ * > *"Sunburst was only chosen because it was more creative in outfit design.
+ * > NBP2k was a better quality rersult though."*
+ *
+ * So the two courts he ran do not cancel: #1451 said Sunburst invents the
+ * better outfit, #1394 said Nano Banana Pro renders the better picture, and
+ * path E keeps both by giving each the job it won. **This engine draws the
+ * WARDROBE PLATE and nothing a customer is handed**; the delivered views go
+ * back to `createFalIdentityEngine` at `2K` in the same change.
+ *
+ * # Why it is a separate factory from {@link createFalSunburstViewEngine}
+ *
+ * ⚠ **TWO REASONS, AND THE SECOND ONE IS THE ONE A READER WOULD GET WRONG.**
+ *
+ * The first is size: that factory pins {@link SIGNED_VIEW_SIZE} and refuses any
+ * resolution but `2K`, deliberately, so a caller cannot be answered a size it
+ * did not ask for. A plate is landscape and twice as wide, so it cannot ride
+ * that constant — and loosening the view engine to take a size would put the
+ * Sign's own picture size behind a parameter for the sake of a road that is
+ * not the Sign's picture.
+ *
+ * The second is the DOOR. A signed view is an EDIT: it has the anchor to hold a
+ * face against. **A plate has nothing to edit** — it is one generation from
+ * words, which is his own phrasing — so it goes through `text-to-image`, the
+ * same endpoint every roll renders on. Measured rather than reasoned: pointed
+ * at the edit door, the first real call came back **422, "Number of image URLs
+ * must be at least 1"**. Same model, same `quality: "high"`, different door.
+ *
+ * # What it costs, stated beside the choice (disappearing-technology law, 3)
+ *
+ *   price     one extra render per Sign, $0.14–$0.15 at this size — the band
+ *             `createFalSunburstViewEngine` records, unchanged here because
+ *             the pixel budget is within 1% of a signed view's. House money;
+ *             no customer credit moves, and the Sign's 450 is untouched.
+ *   latency   ~52 s, one render, and it runs IN PARALLEL with the three views
+ *             that do not wait for it — so what a customer waits is not 52 s
+ *             added, it is the plate's render standing where the full-length
+ *             pair's would have started.
+ *   quality   his eye, on a real Sign's strip (law 9). Not claimed here.
+ */
+export function createFalSunburstPlateEngine(config: {
+  apiKey: string;
+  model?: string;
+  timeoutMs?: number;
+  pollIntervalMs?: number;
+  queue?: ProviderQueue;
+}): IdentityEngine {
+  if (!config.apiKey) {
+    /* Refused at construction for the reason its sibling is: a Sign that
+       reaches dispatch has already taken 450 credits. */
+    throw new ProviderError("capability", "the outfit plate needs FAL_KEY to render");
+  }
+  const model = config.model ?? FAL_GPT_IMAGE_25_SUNBURST;
+  const timeoutMs = config.timeoutMs ?? 300_000;
+  const pollIntervalMs = config.pollIntervalMs ?? 1_500;
+  const queue =
+    config.queue ?? new ProviderQueue({ name: "fal-outfit-plate", concurrency: 1, maxQueueDepth: 32 });
+
+  async function edit(request: IdentityEditRequest): Promise<ImageResult> {
+    if (request.resolution !== "2K") {
+      throw new ProviderError(
+        "capability",
+        `the outfit plate engine renders one plate size only — asked for ${request.resolution}`,
+      );
+    }
+    /*
+      ⚠ **IT REFUSES A REFERENCE RATHER THAN IGNORING ONE, AND THE DOOR BELOW IS
+      WHY THE FIRST DRAFT OF THIS WAS WRONG.** A plate is a GENERATION from
+      words — his design says *"one Sunburst high generation"* — so it goes
+      through `text-to-image`, which has no `image_urls` field at all. Pointed
+      at the EDIT door instead (the signed view's door, which looked like the
+      obvious sibling) it came back **422: "Number of image URLs must be at
+      least 1"** on the first real call, because an edit with nothing to edit is
+      not a request that door can serve. A silent drop here would be the
+      unowned-axis defect on a paid road: a caller handing this a reference
+      would be answered a picture that had never seen it.
+    */
+    if (request.references.length > 0) {
+      throw new ProviderError(
+        "capability",
+        "the outfit plate is generated from words and takes no reference images",
+      );
+    }
+
+    return queue.run("outfitPlate", () =>
+      withRetry(
+        "fal.outfitPlate",
+        async () => {
+          const job = await runFalImageJob({
+            apiKey: config.apiKey,
+            endpoint: model,
+            body: {
+              prompt: request.prompt,
+              image_size: OUTFIT_PLATE_SIZE,
+              num_images: 1,
+              quality: "high",
+              output_format: "png",
+            },
+            timeoutMs,
+            pollIntervalMs,
+            signal: request.signal,
+          });
+
+          return {
+            bytes: job.bytes,
+            contentType: job.contentType,
+            width: job.width,
+            height: job.height,
+            latencyMs: job.latencyMs,
+            /* The endpoint that painted, never a constant — same reason as the
+               view engine's: a gap reads as UNPRICED, not as another price. */
+            estimatedCostUsd: measuredUsdPerImage(model),
+            provenance: { provider: "fal" as const, model, providerRef: job.requestId },
+          };
+        },
+        { signal: request.signal },
+      ),
+    );
+  }
+
+  return {
+    id: `fal:${model}:plate`,
+    editWithReferences: edit,
+    async generateView(request: IdentityEditRequest & { viewAngle: string }): Promise<ImageResult> {
       return edit({ ...request, prompt: `${request.prompt}\n\nView: ${request.viewAngle}.` });
     },
   };

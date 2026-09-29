@@ -76,6 +76,8 @@ import {
   renderViewAttempts,
   type PackageOrchestratorDependencies,
 } from "./packageOrchestrator";
+import { castingOutfitPlateEngine } from "./signEngine";
+import { PLATE_ANGLES, plateSideFor, renderOutfitPlate } from "./outfitPlate";
 import { carriedFeatureWords, carriedInkCrops } from "./signService";
 import { conformanceProvenance } from "./viewConformance";
 import { assertNotFrozen } from "./spendGuards";
@@ -382,9 +384,50 @@ export async function retryCastView(
             operationId,
           }),
     ]);
+    /*
+      A TRY AGAIN ON A FULL-LENGTH VIEW GETS ITS OWN PLATE (#1278 path E).
+
+      His design says the plate is *"Sign/retry scratch only"*, and the reason
+      is the same one that makes the Sign's own engine shared between the two
+      roads: a retried view that renders master-only, beside four siblings that
+      wore a plate, is the hem-and-shoes lottery he reported — re-run on the one
+      slot a customer is already unhappy about.
+
+      ⚠ **It is a NEW plate, never a kept one**, which is his rule *"New
+      wardrobe later → new plate, don't reuse an old one"* holding by
+      construction: nothing stores a plate, so nothing can reuse one. A retry
+      minutes after the Sign renders its own, and a retry after a wardrobe
+      change renders one of the new wardrobe — with no cache to be wrong.
+
+      ⚠ **And it costs the CUSTOMER nothing.** The retry's price is the view's
+      50 credits, unchanged; the plate is house money, like the view's own
+      render. A plate that does not land leaves this exactly where it was
+      before path E — master-only, and the retry still runs.
+    */
+    const platePanel = (PLATE_ANGLES as readonly string[]).includes(input.angle)
+      ? await Promise.resolve()
+          .then(() => renderOutfitPlate({
+            /* Built INSIDE the promise for the reason `packageOrchestrator`
+               spells out: the door throws on a missing credential, and eagerly
+               that throw is synchronous — it would fail a retry the customer
+               has already been charged for, over a reference picture they were
+               never going to see. */
+            engine: (dependencies.outfitPlateEngine ?? castingOutfitPlateEngine)(),
+            wardrobeLine,
+            description: source.briefText,
+            operationId,
+          }))
+          .catch(() => null)
+      : null;
+    const plateSide = platePanel
+      ? plateSideFor(input.angle as (typeof PLATE_ANGLES)[number])
+      : null;
     rendered = await renderViewAttempts(
       dependencies,
       {
+        ...(platePanel && plateSide
+          ? { outfitPlatePanel: platePanel[plateSide], outfitPlateSide: plateSide }
+          : {}),
         userId: input.userId,
         operationId,
         modelId: read.modelId,
