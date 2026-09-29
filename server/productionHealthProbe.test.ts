@@ -211,11 +211,19 @@ describe("the rite hands it a fetch policy, never the other way round", () => {
   it("⚠ the health read carries a TIMEOUT — a bare fetch is 306.6s against a hung host", () => {
     /* #1177 measured it (node 24, undici's headersTimeout). Without this the
        probe's own patience is five minutes per read, and it would report nothing
-       at all in the meantime. */
+       at all in the meantime.
+
+       ⚠ THE SAME CLAIM, READ AT A DIFFERENT CALL (#1517). This was
+       `AbortSignal.timeout(10_000)`; that form never clears its timer when the
+       fetch resolves, and the statement after this probe is `die(health.why)`,
+       which is `process.exit(1)` — so it left a pending libuv handle across an
+       exit. `fetchWithClearedTimeout` is the same bound with the timer cleared on
+       both roads. The BOUND is what this arm is about and it is unchanged; the
+       clear is proven in `server/exitSafeFetch.test.ts` against a real server. */
     const call = /probeProductionHealth\(\{[\s\S]*?\n\}\);/.exec(rite);
     expect(call, "the probe call could not be found — this arm is measuring nothing").not.toBeNull();
     expect(call![0]).toContain("/api/health");
-    expect(call![0]).toMatch(/AbortSignal\.timeout\(\s*10_000\s*\)/);
+    expect(call![0]).toMatch(/fetchWithClearedTimeout\([\s\S]*?,\s*10_000\s*\)/);
   });
 
   it("the probe owns no fetch policy of its own", () => {
