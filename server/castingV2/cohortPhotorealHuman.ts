@@ -70,21 +70,42 @@
  * RESOLVER (`resolveCandidateIdentity`, the taste pass, the styling resolution)
  * decides who gets cast on every author-road roll and writes it to
  * `resolvedIdentity` — the follow anchor, the refine pronouns and the facet
- * values all read that. And `PHOTOREAL_HUMAN_BLOCKS` is consumed by the
- * signed-VIEW road (`castViewPackage.ts`). Neither is prompt composition.
+ * values all read that. And `PHOTOREAL_HUMAN_BLOCKS` is consumed by TWO live
+ * roads, not one: `houseBlock.ts`, the locked block appended to EVERY
+ * author-road prompt, and `castViewPackage.ts`, the signed VIEW road. (This
+ * sentence named only the second until 2026-09-30.) Neither is prompt
+ * composition in this file's sense.
  *
- * ⚠ **ONE THING ACT 2 CREATED AND DELIBERATELY DID NOT FINISH, SO IT IS NAMED
- * HERE RATHER THAN LEFT TO BE DISCOVERED: `photorealHumanConstant` NOW HAS TEST
- * CALLERS ONLY.** Its last production caller was `composeCandidatePrompt`'s
- * `return`. Measured at the tree: 30 call sites across 5 suites
+ * ⚠ **ONE THING ACT 2 CREATED, NAMED HERE RATHER THAN LEFT TO BE DISCOVERED:
+ * `photorealHumanConstant` HAS TEST CALLERS ONLY.** Its last production caller
+ * was `composeCandidatePrompt`'s `return`. Measured at the tree, and re-measured
+ * unchanged on 2026-09-30: 30 call sites across **four** suites
  * (`wardrobeConstant` 15, `castViewPackage` 8, `castingFrame` 4,
- * `creativeRegisterScope` 3), and `cohortConstantBlocks` and
- * `COHORT_CONSTANT_MARKERS` sit behind it in the same position. **The
- * disposition is not obvious and this file's own precedent cuts both ways** —
- * the note at `PHOTOREAL_HUMAN_CONSTANT`'s grave below deleted a name for
- * exactly this shape, while these 30 arms assert the constant the signed-view
- * road actually ships. That is a reading with a population, not a sweep, so it
- * is carded rather than folded in (his rule on #1398).
+ * `creativeRegisterScope` 3 — this paragraph said FIVE while listing four), with
+ * `cohortConstantBlocks` (7) and `COHORT_CONSTANT_MARKERS` (5) behind it in the
+ * same position. Forty-two sites.
+ *
+ * ✅ **SETTLED 2026-09-30 (#1504): IT STAYS, AND IT IS TEST-ONLY BY DESIGN.**
+ * The disposition was genuinely open — the grave note at
+ * `PHOTOREAL_HUMAN_CONSTANT` below deleted a name for exactly this shape — and
+ * what decides it is WHAT THE THIRTY ARMS ASSERT. They are not junk keeping a
+ * dead string alive. `cohortConstantBlocks` composes from this module's own
+ * `CAPTURE` / `SKIN_AND_FEATURES` / `IDENTITY_INTEGRITY` / `NEGATIVES` /
+ * `FRAMING_FIXED` constants, and `PHOTOREAL_HUMAN_BLOCKS` hands THOSE SAME
+ * constants to the two roads that do ship — the locked block on every
+ * author-road roll, and the signed views. So the arms guard sentences a
+ * customer's picture is actually made of, reached through a helper that spells
+ * the join once instead of thirty times.
+ *
+ * ⚠ **The thing the grave note guards against is ABSENT here, which is why its
+ * precedent does not carry**: it warns about two DIFFERENT spellings of one
+ * sentence drifting apart, and this helper is DERIVED from `cohortConstantBlocks`
+ * rather than re-listing it — `wardrobeConstant.test.ts` pins exactly that
+ * equality. The alternative on the card was re-pointing all forty-two sites at
+ * the join by hand: it buys the removal of one name and costs forty-two edits on
+ * arms that guard shipped prose. Recorded here rather than only on the card, so
+ * the next reader does not re-derive it (#1398's rule: the answer is written in
+ * place, and nothing else is folded in with it).
  *
  * ⚠ **The card that produced this paragraph asked for a DELETION and was
  * refused four times**, each time at the bytes: the search it quotes excluded
@@ -987,6 +1008,10 @@ export function cohortConstantBlocks(wardrobeLine: string | null): readonly stri
  * and negatives sentences in particular read as live product and are not: the
  * asserted grey tee and the `No jackets, no accessories` clause are the house
  * road's, not the author road's.
+ *
+ * ✅ **TEST-ONLY BY DESIGN since #1504 (2026-09-30) — a recorded decision, not
+ * an omission.** The module docblock carries the grounds. A production caller
+ * appearing here is a change to be argued for, never a repair of this state.
  */
 export function photorealHumanConstant(wardrobeLine: string | null): string {
   return cohortConstantBlocks(wardrobeLine).join("\n");
@@ -1009,9 +1034,11 @@ export function photorealHumanConstant(wardrobeLine: string | null): string {
   ⚠ Put in the PAST TENSE by #1490 act 2, which deleted `composeCandidatePrompt`
   — the caller this note describes. The note is kept because the QUESTION it
   records is live again one name along: `photorealHumanConstant` itself now has
-  test callers only, which is the same shape, and the module docblock at the top
-  of this file carries the measured population and says why it is carded rather
-  than cut here.
+  test callers only, which is the same shape — and the module docblock at the top
+  of this file carries the measured population and the SETTLED answer (#1504,
+  2026-09-30): that one stays, test-only by design, because the sentences its
+  arms assert are the ones `PHOTOREAL_HUMAN_BLOCKS` ships on every roll and every
+  signed view. The difference between the two cases is derivation, not size.
 */
 
 /**
