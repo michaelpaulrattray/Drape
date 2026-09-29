@@ -226,8 +226,14 @@ const describe = (tree: (typeof trees)[number], held: ReadonlyMap<number, number
           : "no longer exists"}.`
         + " Nobody's live work; safe to kill."
       : "")
+    /* ⚠ NOT "no launch directory in its command lines", which is what this said
+       until #1483 and is now false of half the population: a worktree launch
+       DOES carry one, junction-resolved to the main tree, and it is skipped
+       precisely because it cannot be trusted. Telling a shift the lines were
+       bare sends it to re-read a process table that will show it a path. */
     + (state === "unknown"
-      ? "\n         (no launch directory in its command lines — whose it is cannot be read here)"
+      ? "\n         (no launch directory this reader can trust — whose it is cannot be read"
+        + " here; its own log or working directory is where that is written)"
       : "");
 };
 
