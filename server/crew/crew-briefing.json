@@ -1,7 +1,7 @@
 {
-  "edition": 576,
-  "updatedAt": "2026-09-29T20:25:00.000Z",
-  "shift": "Foreman (night shift) — two questions that were waiting on you have been sitting on their cards for days and never reached this page. They are on it now, at the top, with a box to answer in: one is a yes or no about tidying up old code branches, the other asks you to pick how a retry should work when a creature's view keeps failing. Here is why you never saw them. Everything else on this page reads the work queue itself every thirty seconds, but the “what needs you” section was still being typed out by hand at the end of each shift and shipped with the code. Over time every one of its 143 entries had been ticked off as done — so the section quite honestly told you nothing was waiting on you, while two cards said otherwise in their own words. From tonight it reads the cards. If a job is held up and its own note says it is held up on you, it appears here whether or not anybody wrote it up, and it leaves the moment your answer is recorded. Nothing you can see anywhere else changed and nothing was spent. A second agent shipped a separate fix the same hour: when something goes wrong in a customer's browser, the report now says which build it came from and which part of the app threw it, instead of an unreadable line of compressed code.",
+  "edition": 577,
+  "updatedAt": "2026-09-29T21:20:00.000Z",
+  "shift": "Foreman (night shift) — two questions that had been sitting on their own cards for days are now on this page, at the top, with a box to answer in. One asks whether a job the crew has decided not to build should stay on the list with a mark against it or be closed. The other asks whether the crew's own instruction file can go into the public code repository, given it holds your rulings. Neither had ever appeared here, and one has been waiting since Friday. Here is why. Last night's change made this section read the jobs themselves instead of a list typed out by hand — but it can only show a job that says, in its own note, who it is waiting for. These two said nothing at all. So they were invisible to you and untakeable by the crew at the same time, which is the worst of both. From tonight the crew is told at the end of every shift about any job held up with no reason written down, so a question cannot go quiet like this again. The rows that were already here read better too: they used to begin mid-sentence, and now they start with “Waiting on”. Separately, the job you ordered about errors and analytics is finished and closed. Crashes on the server and in a customer's browser both reach us, the money moments are recorded, and your admin page links out to both dashboards — your own “links, no fourth key”. Nothing was spent and nothing a customer can see changed.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -272,6 +272,14 @@
         {
           "state": "done",
           "title": "Your desk stops being typed out by hand where it matters most (#1467). The “what needs you” section is now read off the jobs themselves — if a job is held up and its own note says it is held up on you, it shows here with the question and a box to answer in, even if no shift ever wrote it up. It found two straight away that had been waiting days: the branch-cleanup yes or no (#1434) and the creature retry shape (#1492). The old list is still used where a shift HAS written a proper card, so nothing you already had was lost, and nothing is listed twice."
+        },
+        {
+          "title": "And the same section now catches its own blind spot (#1467). Reading the jobs themselves only works if a job says who it is waiting for — two of them said nothing, so they reached nobody: not this page, and not a crew member either, because a job marked as held is one nobody may pick up. Both are now in front of you. The crew is warned about any future one at the end of every shift, and it is deliberately not allowed to invent the missing reason itself, because a reason nobody meant is worse than none.",
+          "state": "in-progress"
+        },
+        {
+          "title": "The job you ordered about errors and analytics is finished (#509). A crash on the server and a crash in a customer's browser both reach us with the build they came from; the money moments are recorded once each, with no amounts and never a customer's own words; and your admin page links out to both dashboards rather than copying numbers onto itself — your “links, no fourth key”. Checked before closing: with the keys removed it says plainly that nothing is being recorded, so no screen can ever show you a comfortable zero that only means it was switched off.",
+          "state": "done"
         }
       ]
     },
@@ -355,7 +363,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-29T20:21:32.452Z",
+      "readAt": "2026-09-29T21:17:26.008Z",
       "items": [
         {
           "issueNumber": 1129,
@@ -9022,6 +9030,14 @@
       "prNumber": 1527,
       "note": "Merged d1eebb08. Relay hand verdict on head acabbe1d: nothing to change.",
       "cardId": null
+    },
+    {
+      "id": "held-card-named-1467",
+      "title": "A held job that never says who it is waiting for gets named, and the rows on your desk read as sentences",
+      "status": "merged",
+      "prNumber": 1530,
+      "note": "Merged 5d684498 — #1467 slice 2; two silent questions reached your desk.",
+      "cardId": null
     }
   ],
   "problems": [
@@ -9300,16 +9316,11 @@
     236
   ],
   "nextUp": {
-    "readAt": "2026-09-29T20:21:32.452Z",
+    "readAt": "2026-09-29T21:17:26.007Z",
     "items": [
       {
         "issueNumber": 180,
         "title": "N2: THE GHOST AUDIT — enumerate every piece of old-lane machinery still running under the author road (categories, dice, archetypes, personas); the Follow ghost (#176) is specimen #1 (founder flag, 2026-08-27)",
-        "urgent": false
-      },
-      {
-        "issueNumber": 509,
-        "title": "Errors and product analytics before real users — one error tracker, one event stream, and one honest strip on the admin Overview",
         "urgent": false
       },
       {
