@@ -72,8 +72,8 @@ on:
 # superseded push from a failed one. deployments:read for Railway's own
 # in_progress/success statuses (#1518) — GitHub's API, no third-party secret.
 permissions:
-  contents: read
-  deployments: read
+  contents: read # the branch tip and the commit comparison that tell a superseded push from a failed one
+  deployments: read # Railway's own in_progress/success/inactive statuses on the GitHub Deployment it posts per sha (#1518) — GitHub's API, no third-party secret
 
 # cancel-in-progress is FALSE, deliberately (review of #584, finding 2): a
 # RUNNING verify is never killed mid-verdict, so the #434 trap — a cancelled
