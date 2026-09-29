@@ -127,7 +127,7 @@ const SABOTAGES: Sabotage[] = [
        page-wide one — so the edit matched nothing, the law was never
        sabotaged, and the arm reported a pass on an untouched instrument.
        Re-aimed at the reading the law actually performs. */
-    edits: [["      stated: statesExpiry(section.innerText),", "      stated: true,"]],
+    edits: [["      stated: section.innerText.toLowerCase().includes(needle),", "      stated: true,"]],
     expect: [
       "an unsigned-sheets section that never says when the sheets expire",
       "an unsigned-sheets section that arrives with a query and never says when the sheets expire",

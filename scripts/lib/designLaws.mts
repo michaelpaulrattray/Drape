@@ -722,7 +722,10 @@ export async function assertRetentionStated(
        product sentence fragment and escaping it would be a trap nobody would
        ever see fire. */
     const needle = expiryPhrase.toLowerCase();
-    const statesExpiry = (text: string) => text.toLowerCase().includes(needle);
+    /* No named inner function inside this callback: tsx compiles a named arrow
+       to `__name(fn, "statesExpiry")`, and `__name` does not exist in the page,
+       so the law threw ReferenceError on the gate (#1464, gate run 36528511781).
+       The test is inlined at its one use below. */
     /*
       THE DEEPEST PAINTED ELEMENTS WHOSE PAINTED TEXT HOLDS THE PHRASE — read
       across their text nodes, normalised, the way the wait above reads
@@ -747,7 +750,7 @@ export async function assertRetentionStated(
     }
     const readings = Array.from(sections).map((section) => ({
       scope: section.tagName.toLowerCase() + (section.className ? `.${String(section.className).split(/\s+/)[0]}` : ""),
-      stated: statesExpiry(section.innerText),
+      stated: section.innerText.toLowerCase().includes(needle),
     }));
     return { stated: readings.every((r) => r.stated), scopes: readings.map((r) => `${r.scope}${r.stated ? "" : " (no expiry copy)"}`) };
   }, [PAINTED_HOLDERS_SOURCE, CASTING_SESSION_IDLE_PHRASE] as [string, string]);
