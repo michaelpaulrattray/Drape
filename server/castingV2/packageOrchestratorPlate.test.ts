@@ -51,7 +51,7 @@ vi.mock("./viewThumbnailMint", () => ({ mintViewThumbnail: vi.fn(async () => und
 
 const { buildCastPackage } = await import("./packageOrchestrator");
 const { CAST_PACKAGE_VIEWS } = await import("./castViewPackage");
-const { PLATE_ANGLES, PLATE_VIEW_ASPECT_RATIO } = await import("./outfitPlate");
+const { PLATE_ANGLES, PLATE_VIEW_ASPECT_RATIO, outfitPlateClause } = await import("./outfitPlate");
 const { pronounsForSex } = await import("./castPronouns");
 type OutfitPlateEngine = import("./outfitPlate").OutfitPlateEngine;
 
@@ -183,12 +183,32 @@ describe("the two full-length views wear the plate, and nothing else does", () =
       input,
     );
 
-    expect(requestFor(generateView, "frontFull").prompt).toContain(
-      "reference 2 is a wardrobe plate showing the outfit for this shoot, from the front",
-    );
-    expect(requestFor(generateView, "backFull").prompt).toContain(
-      "reference 2 is a wardrobe plate showing the outfit for this shoot, from behind",
-    );
+    /*
+      ⚠ **DERIVED FROM `outfitPlateClause`, NOT RETYPED** (working law 4;
+      changed in #1471 after a retyped copy of the sentence reddened this arm on
+      a wording change it had no opinion about). What this arm is actually FOR
+      is the ordinal and the side — that frontFull was handed the front panel at
+      the position the picture really landed at, and backFull the back one — and
+      the wording itself is pinned in `outfitPlate.test.ts`, where it belongs.
+      Asserting the composed clause keeps the ordinal and the side real while
+      making the sentence a detail of one module again.
+    */
+    const clauseFor = (side: "front" | "back") =>
+      outfitPlateClause({
+        ordinal: 2,
+        side,
+        /* The fallback the orchestrator applies, read from the same function
+           rather than assumed. This fixture declares no `pronouns` at all — the
+           field is optional on the input — so the null form is the one the
+           views in this arm were really composed with. */
+        pronouns: pronounsForSex(null),
+      });
+
+    expect(requestFor(generateView, "frontFull").prompt).toContain(clauseFor("front"));
+    expect(requestFor(generateView, "backFull").prompt).toContain(clauseFor("back"));
+    /* And the two are genuinely different sentences, so a side mix-up cannot
+       pass by both arms reading the same string. */
+    expect(clauseFor("front")).not.toBe(clauseFor("back"));
   });
 
   it("leaves the other three views exactly as they were — one reference, no plate sentence", async () => {

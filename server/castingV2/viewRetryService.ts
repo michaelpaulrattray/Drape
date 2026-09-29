@@ -413,6 +413,9 @@ export async function retryCastView(
                has already been charged for, over a reference picture they were
                never going to see. */
             engine: (dependencies.outfitPlateEngine ?? castingOutfitPlateEngine)(),
+            /* #1471 — the same anchor this retry is about to render the view
+               from, fetched above before the claim. */
+            anchor,
             wardrobeLine,
             description: source.briefText,
             operationId,

@@ -166,43 +166,62 @@ describe("the engine a signed view is actually rendered by", () => {
     expect(landed).toEqual([{ engine: DEFAULT_IDENTITY_EDIT_MODEL, provider: "fal" }]);
   }, 20_000);
 
-  it("⚠ THE PLATE REACHES SUNBURST'S TEXT-TO-IMAGE DOOR — the other half of path E", async () => {
+  it("⚠ THE PLATE REACHES SUNBURST'S EDIT DOOR, CARRYING THE MASTER — his ruling on #1471", async () => {
     /*
-      THE ARM THE 422 BOUGHT. The plate's first draft was pointed at Sunburst's
-      EDIT door — the signed view's door, and the obvious sibling — and the
-      first real call came back **422: "Number of image URLs must be at least
-      1"**, because an edit with nothing to edit is not a request that door can
-      serve. A plate is one GENERATION from words, which is his own phrasing,
-      so it goes through `text-to-image` and carries NO references at all.
+      ⚠ **THIS ARM ASSERTED THE TEXT-TO-IMAGE DOOR AND `not.toHaveProperty
+      ("image_urls")` FOR ONE DAY**, and it was a faithful reading of path E as
+      merged: a plate was one GENERATION from words, so it could not go through
+      a door that answers `422: "Number of image URLs must be at least 1"` to an
+      empty list. **His ruling reversed the premise, verbatim and entire:**
 
-      Both facts are asserted at the wire rather than at a constant: the
-      endpoint, and that the body has no `image_urls` field for a reference to
-      hide in.
+      > *"no the plate must reference the master image otherwise it wouldnt be
+      > able to invent the outfit correctly"*
+
+      So the plate is an EDIT of her master now, and this arm is written to
+      redden if the words-only road returns: the endpoint must be the edit door,
+      and the reference must be IN the body — both read off the outgoing
+      request rather than off a constant beside it (invariant 5), because a
+      caller that built the right list and an engine that dropped it look
+      identical everywhere else.
     */
     const captured = stubFalTransport();
     const plateEngine = castingOutfitPlateEngine();
 
     await plateEngine.editWithReferences({
       prompt: "a wardrobe plate",
-      references: [],
+      references: [{ bytes: PIXEL, contentType: "image/png" }],
       resolution: "2K",
     });
 
     expect(captured).toHaveLength(1);
-    expect(captured[0]?.url).toBe(`${QUEUE_BASE}/${FAL_GPT_IMAGE_25_SUNBURST}`);
-    expect(captured[0]?.url).not.toBe(`${QUEUE_BASE}/${FAL_GPT_IMAGE_25_SUNBURST_EDIT}`);
+    expect(captured[0]?.url).toBe(`${QUEUE_BASE}/${FAL_GPT_IMAGE_25_SUNBURST_EDIT}`);
+    expect(captured[0]?.url).not.toBe(`${QUEUE_BASE}/${FAL_GPT_IMAGE_25_SUNBURST}`);
     expect(captured[0]?.body.quality).toBe("high");
+    /* The plate's own landscape ask, NOT the signed view's portrait one: same
+       door, two shapes, and that is the only field the two factories differ in. */
     expect(captured[0]?.body.image_size).toEqual(OUTFIT_PLATE_SIZE);
-    expect(captured[0]?.body).not.toHaveProperty("image_urls");
+    expect(captured[0]?.body.image_size).not.toEqual(SIGNED_VIEW_SIZE);
+    /* The master actually went out — one reference, as a data URL, at the wire. */
+    const urls = captured[0]?.body.image_urls as string[];
+    expect(urls).toHaveLength(1);
+    expect(urls[0]).toBe(`data:image/png;base64,${PIXEL.toString("base64")}`);
   }, 20_000);
 
-  it("the plate REFUSES a reference rather than dropping one on a paid road", async () => {
+  it("the plate REFUSES an EMPTY reference list rather than sending one the door 422s", async () => {
+    /*
+      ⚠ **The exact inverse of the refusal that stood here yesterday** (*"takes
+      no reference images"*). An edit with nothing to edit is the one request
+      this door cannot serve, measured on the real door during #1278's build.
+      Refused before dispatch, it becomes a sentence `renderOutfitPlate` turns
+      into "no plate"; sent, it becomes a 422 after the Sign's 450 credits have
+      already moved.
+    */
     stubFalTransport();
     await expect(castingOutfitPlateEngine().editWithReferences({
       prompt: "a wardrobe plate",
-      references: [{ bytes: PIXEL, contentType: "image/png" }],
+      references: [],
       resolution: "2K",
-    })).rejects.toThrow(/takes no reference images/);
+    })).rejects.toThrow(/needs at least one reference image/);
   }, 20_000);
 
   it("the view's words still travel — the angle line the two courts measured", async () => {
