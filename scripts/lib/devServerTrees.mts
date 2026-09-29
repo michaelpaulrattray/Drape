@@ -206,6 +206,48 @@ function isDevServerProcess(row: ProcessRow): boolean {
  * than guessed at in code. If one ever appears, this is the door it came
  * through.
  *
+ * ⚠ **AND A `.pnpm/` PATH IS NOT EVIDENCE OF A LAUNCH DIRECTORY AT ALL — IT
+ * NAMES THE JUNCTION TARGET, WHICH IS ALWAYS THE MAIN TREE (#1483).**
+ *
+ * Every seat worktree is minted with its `node_modules` as a **junction** into
+ * the main tree's. Node resolves the **realpath** of a module it loads, so a
+ * path that arrives through module resolution has had that junction walked
+ * before it ever reaches a command line: the tree anybody launched from is gone
+ * from it, and the main tree — which is registered, and exists, and is
+ * somebody's live work — is what is left. `launchDirectoryState` then takes its
+ * registered-set branch and answers `live`.
+ *
+ * **Measured on two servers running at once, 2026-09-29, in one reading:**
+ *
+ *     # launched from C:/Users/Admin/drape-shift-seat-1-20260929-190459
+ *     node.exe node_modules/tsx/dist/cli.mjs server/_core/index.ts   → null (relative)
+ *     node.exe --require C:/Users/Admin/Drape/node_modules/.pnpm/tsx@4.23.13/…/preflight.cjs
+ *                                                                    → C:/Users/Admin/Drape  ← WRONG
+ *     # launched from C:/Users/Admin/Drape
+ *     node "C:/Users/Admin/Drape/node_modules/.bin//../.pnpm/tsx@4.23.13/…/cli.mjs" "watch" …
+ *                                                                    → C:/Users/Admin/Drape  ← right
+ *
+ * The two answered the same directory and only one of them was true, so the
+ * listing could not tell them apart. **The difference is which KIND of path
+ * survives**, and the first segment after `node_modules/` is what says:
+ *
+ * - `.bin/…` is **literal** — pnpm's shim is a `.CMD` file invoked by the path
+ *   the caller typed, and its own directory is where it was actually invoked,
+ *   so the worktree survives even though the remainder then traverses
+ *   `../.pnpm/`. A directly-typed script path is literal for the same reason:
+ *   argv is never resolved.
+ * - `.pnpm/…` is **junction-resolved** — nothing reaches it except through
+ *   node, and node has already walked the link.
+ *
+ * So a `.pnpm/`-first remainder is skipped, and a tree whose only absolute
+ * candidate was one is a tree this reader **cannot place**: it answers null and
+ * the state is `unknown`. ⚠ **That is a WRONG ANSWER LOST, never a dangerous
+ * one gained** — `unknown` is not one of `launchDirectoryIsGone`'s three, so
+ * nothing new becomes "safe to kill", which is this module's whole doctrine.
+ * The specimen is #1483's: root `17520` ran **2 d 23 h 41 m** holding `:3144`
+ * from a worktree that was both unregistered and an empty shell — two of the
+ * three states the ABANDONED line exists to catch — and the line never printed.
+ *
  * Returns forward-slashed, which every Windows file API accepts.
  */
 export function launchDirectoryOf(commandLine: string): string | null {
@@ -220,7 +262,16 @@ export function launchDirectoryOf(commandLine: string): string | null {
      is the shape that shows it. */
   const paths = /(?<![A-Za-z0-9])([A-Za-z]:\/[^"';\s]*?)\/node_modules\/([^"';\s]*)/g;
   for (const match of line.matchAll(paths)) {
-    if (/\btsx\b/i.test(match[2])) return match[1];
+    if (!/\btsx\b/i.test(match[2])) continue;
+    /* ⚠ THE JUNCTION, AND SEE THE HEADER (#1483). A remainder that STARTS at
+       `.pnpm/` came through node's module resolution, which walks the link, so
+       it names the main tree whatever tree was launched from. `.bin/…/../.pnpm/…`
+       is a different thing wearing similar letters — that one is literal, and
+       it is how an ordinary `pnpm dev` stays placeable. Anchored at the first
+       segment for exactly that reason: a substring test would throw the good
+       one away with the bad, and every `pnpm dev` on this machine carries both. */
+    if (/^\.pnpm\//.test(match[2])) continue;
+    return match[1];
   }
   return null;
 }

@@ -31,22 +31,15 @@ import {
   settledDismissalFor,
   type HeldOutcome,
 } from "@/features/operations/outcomeSlot";
-import { useSheetSession, type UnlockableField } from "@/features/castingV2/sheetState";
+import { useSheetSession } from "@/features/castingV2/sheetState";
 import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/singleFlight";
 import {
   displayText,
-  sameBrief,
   shownRollChanged,
   typed,
   type BriefDraft,
 } from "@/features/castingV2/briefDraft";
-import {
-  BOX_EDITED_MARK,
-  boxDiffersFromSheet,
-  chipEditOutcome,
-  pendingAdjustments,
-  rollAdjustments,
-} from "@/features/castingV2/chipEdit";
+import { BOX_EDITED_MARK, boxDiffersFromSheet } from "@/features/castingV2/chipEdit";
 import { classifyDispatchFailure, failureActionLabel } from "@/features/castingV2/dispatchFailure";
 import { cancelStory } from "@/features/castingV2/cancelNotice";
 import { refineOutcomeNote } from "@/features/castingV2/refineOutcomeNote";
@@ -149,8 +142,6 @@ export default function CastingSheet() {
     endMutation,
     undoable,
     setUndoable,
-    unlocked,
-    unlock,
     rollDispatched,
     startingRoll,
     setStartingRoll,
@@ -161,10 +152,6 @@ export default function CastingSheet() {
     setOptimisticKept,
     setOptimisticDiscarded,
     clearOptimistic,
-    overrides,
-    setOverride,
-    clearOverrides,
-    undoOverride,
     provisionalRollIndex,
     beginProvisionalRoll,
     optimisticCancelled,
@@ -597,11 +584,18 @@ export default function CastingSheet() {
     edit would, and Roll again stays pure (his §17: it casts what is in the
     box). The fold rides the same press: an instruction typed into the box is
     applied in place, never appended, never on the way to the engine.
+
+    ⚠ **THE DOOR IT ASKS MOVED WITH THE OLD LANE (#1444) AND THE ANSWER DID
+    NOT.** This read `config.authorRoadEnabled`, which slice 2 had already
+    re-sourced to `captureCastingV2Enabled` — the SAME call this field is, in
+    the same object literal (`server/routes/castingV2.ts`'s `config`). So the
+    two have been one value for every account since that deploy, and reading
+    the one that is not named for a retired road is a rename, not a change.
   */
   const reimagine = useReimagine({
     value: brief,
     onValue: (text) => setDraft(typed(text)),
-    enabled: config.data?.authorRoadEnabled === true,
+    enabled: config.data?.enabled === true,
   });
   const draftAnchor = useRef<string | null>(null);
   useEffect(() => {
@@ -812,32 +806,23 @@ export default function CastingSheet() {
     beginProvisionalRoll(rolls.length + 1);
 
     /*
-      A REWRITTEN BRIEF BEATS A STANDING ADJUSTMENT.
+      ⚠ **A STANDING ADJUSTMENT CANNOT REACH THIS ROLL ANY MORE (#1444), AND
+      THE LESSON IT COST IS KEPT BECAUSE IT IS ABOUT WHAT NOT TO REBUILD.**
 
-      Overrides persist across rolls on purpose: a roll re-reads the brief each
-      time, so an adjustment that did not persist would be silently re-derived
-      away by the interpreter. That is right while the sentence is unchanged.
-
-      It is wrong the moment the user edits the sentence. The founder typed
+      Overrides persisted across rolls on purpose: a roll re-reads the brief
+      each time, so an adjustment that did not persist would be silently
+      re-derived away by the interpreter. That was right while the sentence was
+      unchanged, and wrong the moment the user edited it — the founder typed
       "a young ... model" and the sheet cast men in their 50s, because an
       earlier age adjustment was still standing and, by design, ran last and
       won. Their own freshly typed word lost to a control they had touched
       minutes before and could no longer see.
 
-      So the rule gains its other half: an adjustment outranks the
-      interpreter's RE-READING of the same sentence, not a new one. Rewrite the
-      brief and the adjustments are spent — the sentence is the statement of
-      intent, and it was just restated.
+      The reading sentence has carried no control since #535, and this roll
+      now sends nothing but the brief, so there is no second statement of
+      intent to outrank a first. **Any surface that brings a standing
+      adjustment back inherits that rule with it: a rewritten brief spends it.**
     */
-    /*
-      Nothing to reconcile here any more.
-
-      Editing the sentence spends the adjustments, and that now happens on the
-      keystroke rather than at dispatch — so by the time a roll is fired, the
-      store already holds the truth. Clearing again here would be a second
-      mechanism for one rule, which is how the two halves drift apart later.
-    */
-    const sendOverrides = overrides;
 
     /*
       The chip decides which paid mutation fires.
@@ -907,10 +892,8 @@ export default function CastingSheet() {
             anchor photograph holds the family, so adjustments have nothing to
             reach — the server drops them anyway, and a client that sent them
             would be posting controls the product ignores. The STYLE still
-            rides: it picks the locked block. Off the author road the
-            adjustments ride exactly as before.
+            rides: it picks the locked block.
           */
-          ...rollAdjustments({ authorRoad, unlocked, overrides: sendOverrides }),
           ...(nextStyle ? { style: nextStyle } : {}),
         },
         options,
@@ -922,21 +905,22 @@ export default function CastingSheet() {
           sessionId,
           briefText: brief,
           /*
-            ⚠ **ON THE AUTHOR ROAD NOTHING RIDES BESIDE THE BRIEF (#534).**
-            The box IS the next brief — a chip edit has already written itself
-            into it — so an `overrides` field here could only restate the box
-            or contradict it, and his condition is that the two can never
+            ⚠ **NOTHING RIDES BESIDE THE BRIEF (#534).** The box IS the next
+            brief, so an `overrides` field here could only restate the box or
+            contradict it, and his condition is that the two can never
             disagree. Removing the channel is the structural form of that: not
             a promise that they agree, a wire with nowhere for a disagreement
-            to live. Off the author road they ride exactly as before, because
-            the house road composes from the intent and never read these facts
-            out of the brief's text at all.
+            to live.
 
-            `rollAdjustments` is the one owner of that rule, shared with the
-            follow branch above, which has sent nothing since #177 Row A for
-            its own reason. Two branches each carrying a copy is how they drift.
+            ⚠ **IT USED TO BE A BRANCH AND IS NOW THE ONLY SHAPE (#1444).**
+            `rollAdjustments({ authorRoad, … })` stood here, sending the
+            store's `unlock`/`overrides` off the author road and nothing on it;
+            `authorRoad` came from `config.authorRoadEnabled`, and
+            `CASTING_V2_SCOPE` has been `all` since the V2 rollout, so every
+            production roll has taken the empty arm. `chipEditOutcome.test`'s
+            wire arm below reads THIS payload rather than a constant near it
+            (enforcement invariant 5).
           */
-          ...rollAdjustments({ authorRoad, unlocked, overrides: sendOverrides }),
           ...(nextStyle ? { style: nextStyle } : {}),
         },
         options,
@@ -1027,17 +1011,18 @@ export default function CastingSheet() {
     non-null, which never happened on a roll anybody can open.
   */
   /*
-    THE AUTHOR ROAD RETIRES THE PATH SWITCH on this account (#131 slice E,
-    ruling rule 11) and draws the IMAGINATION meter where it stood — not while
-    reading history, because the gear is a statement about the NEXT roll. It
-    used to hide during a standing follow and while a chip edit was queued,
-    because both sent the next roll to the house composer; since #154 the
-    author carries a follow and the chip edits as the family clause, so the
-    gear is drawn on every live sheet on this road and reads what the next
-    roll will use.
+    THE GEAR IS DRAWN ON EVERY LIVE SHEET — not while reading history, because
+    it is a statement about the NEXT roll, and that is the whole condition now.
+
+    ⚠ **IT USED TO ASK THE FLAG FIRST (#1444).** `config.authorRoadEnabled`
+    stood in front of this, from the days when the other road put a path switch
+    here instead; `CASTING_V2_SCOPE` has been `all` since the V2 rollout, so
+    the flag answered yes for every account and what a customer saw does not
+    move. It also used to hide during a standing follow and while a chip edit
+    was queued, because both sent the next roll to the house composer; since
+    #154 the author carries a follow and the chip edits as the family clause.
   */
-  const authorRoad = config.data?.authorRoadEnabled === true;
-  const dockSettingsVisible = authorRoad && !viewingHistory;
+  const dockSettingsVisible = !viewingHistory;
   /*
     The style, preselected from the SHEET (#142): the sheet's own where it
     recorded one, else photoreal. Null exactly where no control is drawn, so
@@ -2551,67 +2536,26 @@ export default function CastingSheet() {
             facts={roll.data.facts}
             followLabel={followLabel}
             /*
-              THIS sheet's road, read off the sheet's own register rather than
-              the config (#230): `authorRoad` is the register's validated
-              `kind` (one authored prompt painted these), which is exactly the
-              condition that makes the differ-by caption false — and, since
-              his read-only ruling (#535), the condition under which the
-              sentence draws no pickers at all. Derived, never mirrored.
+              THIS sheet's road, read off the sheet's own ROW rather than the
+              config (#230): `authorRoad` is the register's validated `kind`
+              (one authored prompt painted these), which is exactly the
+              condition that makes the differ-by caption false. Derived, never
+              mirrored — and PERMANENT: 220 of 306 production sheets read
+              through it, so it is the one `authorRoad` in this feature that
+              the old-lane retirement does not touch (#1444).
             */
             authorRoad={roll.data.authorRoad}
             /*
-              What the user has queued but the sheet in front of them cannot
-              show, because rolls are immutable — and never more than the roll
-              will actually carry (review of #567, finding 1). On the author
-              road that is nothing, because the box already holds the edit.
+              ⚠ **THREE MORE PROPS STOOD HERE AND ALL THREE WERE THE FLAG
+              (#1444).** `pending` drew what was queued but not yet cast,
+              `vary` said whether a fact could be adjusted at all, and
+              `onAdjust` was the channel a picker wrote back through — each fed
+              from `config.authorRoadEnabled`, and each already unreachable:
+              his read-only ruling (#535) holds every fact on the author road,
+              and `CASTING_V2_SCOPE` has been `all` since the V2 rollout. The
+              sentence is the record of what was cast, and the box below is the
+              only editor.
             */
-            pending={pendingAdjustments({ authorRoad, unlocked, overrides })}
-            vary={{ authorRoad, followHeld: standingFollowId !== null }}
-            onAdjust={(adjustment) => {
-              /*
-                NONE OF THESE TOAST ANY MORE (D-110), and this is the clearest
-                case in the product: the echo renders the queued change in
-                place, in the sentence it belongs to — "20s → 50s · next roll"
-                for a set, "→ varying · next roll" for an unpin, and the span
-                reverting to an ordinary fact for an undo.
-
-                The toasts were saying the same words a few inches lower.
-                "20s → 50s · next roll" and "50s — applies to your next roll"
-                are one sentence twice, and only one of them is attached to the
-                fact it describes.
-
-                ⚠ **AND ON THE AUTHOR ROAD A SET NO LONGER QUEUES ANYTHING AT
-                ALL (#534, his reply #134: "a chip edit writes straight into
-                the prompt box, the box is the next brief").** It rewrites the
-                box, in front of them, and the box is what the roll sends — so
-                the queued-change arrow never draws there, because there is no
-                queue to draw. His §16 is why it must not: the top of the sheet
-                is the PAST and "the top never lies about the pictures", so the
-                fact in the sentence keeps saying what these eight were cast
-                from, and the ONE note about the difference is the mark beside
-                the record. `chipEdit.ts` owns which road does which, and its
-                suite drives both directions of his merge condition.
-              */
-              if (adjustment.kind === "undo") {
-                undoOverride(adjustment.field);
-                return;
-              }
-              if (adjustment.kind === "vary") {
-                unlock(adjustment.field as UnlockableField);
-                return;
-              }
-              const outcome = chipEditOutcome({
-                authorRoad,
-                brief,
-                field: adjustment.field,
-                value: adjustment.value as string,
-              });
-              if (outcome.kind === "box") {
-                setDraft(typed(outcome.text));
-                return;
-              }
-              if (outcome.kind === "override") setOverride(outcome.field, outcome.value as never);
-            }}
           />
         ) : null}
         {/*
@@ -2870,12 +2814,13 @@ export default function CastingSheet() {
                 it sends the box through the studio's writer and lands the
                 idea back in the box, editable, with undo. Dimmed while a
                 follow chip is up (his §17: the family holds the look; hover
-                says how to free it). Off the author road the plain box needs
-                no glyph, and none is drawn (D-180).
+                says how to free it).
+
+                ⚠ **IT WAS BEHIND THE FLAG AND IS NOT ANY MORE (#1444)** — the
+                road that had no glyph is retired, and the press's own door
+                (`reimagine`, above) answers the same predicate the flag did.
               */}
-              {authorRoad ? (
-                <ReimagineButton state={reimagine} followHeld={standingFollowId !== null} />
-              ) : null}
+              <ReimagineButton state={reimagine} followHeld={standingFollowId !== null} />
               <BriefField
                 value={brief}
                 disabled={reimagine.pending}
@@ -2885,32 +2830,20 @@ export default function CastingSheet() {
                   reimagine.typed();
                   setDraft(typed(next));
                   /*
-                    THE ECHO REVERTS THE MOMENT YOU START TYPING.
+                    ⚠ **A KEYSTROKE USED TO SPEND THE QUEUED ADJUSTMENTS HERE,
+                    AND THERE ARE NONE TO SPEND (#1444).** `clearOverrides()`
+                    stood at the end of this handler: the echo had pickers,
+                    a picker queued a change for the NEXT roll, and typing a
+                    new sentence had to condemn it — otherwise the echo went on
+                    promising "20s → 50s · next roll" throughout the typing,
+                    describing a future that was not going to happen.
 
-                    Editing the sentence spends the queued adjustments — that
-                    part was already true, but it only happened when the roll
-                    was dispatched. So the echo went on promising "20s → 50s ·
-                    next roll" throughout the typing, for a change that was
-                    already condemned. It described a future that was not going
-                    to happen.
-
-                    Doing it on the keystroke makes the rule teach itself:
-                    touch the sentence and you watch the adjustments fall away,
-                    which is the whole precedence law demonstrated rather than
-                    documented.
+                    The reading sentence has had no picker since #535 and the
+                    roll now sends nothing but the brief, so nothing can be
+                    queued and there is nothing for a keystroke to revert.
+                    **The rule survives its machinery and is written down where
+                    a rebuild would meet it: `sendRoll`'s own comment.**
                   */
-                  /*
-                    Divergence asks the same question the draft's spend rule
-                    asks, so it asks it the same way. Two notions of "the same
-                    sentence" is how the box and the adjustments would come to
-                    disagree about whether the brief had been rewritten.
-                  */
-                  const diverged = !sameBrief(next, shownBrief);
-                  // Silent by design (D-110). The comment above is the whole
-                  // reason: the user WATCHES the adjustments fall out of the
-                  // echo as they type. A toast announcing it is a caption on
-                  // something already happening in front of them.
-                  if (diverged && Object.keys(overrides).length > 0) clearOverrides();
                 }}
                 /*
                   THE BRIEF BOX STILL STEERS DURING A FOLLOW, and the founder

@@ -11516,6 +11516,10 @@
       "path": "server/castingV2/authorModel.test.ts"
     },
     {
+      "id": "test:server/castingV2/authorRoadFlagRetired.test.ts",
+      "path": "server/castingV2/authorRoadFlagRetired.test.ts"
+    },
+    {
       "id": "test:server/castingV2/axisRegistry.test.ts",
       "path": "server/castingV2/axisRegistry.test.ts"
     },
@@ -11822,6 +11826,10 @@
     {
       "id": "test:server/castingV2/heritagePromotion.test.ts",
       "path": "server/castingV2/heritagePromotion.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/houseRoadUnreachable.test.ts",
+      "path": "server/castingV2/houseRoadUnreachable.test.ts"
     },
     {
       "id": "test:server/castingV2/inheritedVerdict.test.ts",
@@ -16780,33 +16788,8 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/castingV2/chipEdit.ts",
-      "to": "module:client/src/features/castingV2/sheetState.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/castingV2/chipEdit.ts",
-      "to": "module:shared/briefRewrite.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:client/src/features/castingV2/components/BriefEcho.tsx",
       "to": "module:client/src/features/castingV2/briefEcho.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/castingV2/components/BriefEcho.tsx",
-      "to": "module:client/src/features/castingV2/sheetState.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/castingV2/components/BriefEcho.tsx",
-      "to": "module:client/src/foundation/Popover.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/castingV2/components/BriefEcho.tsx",
-      "to": "module:shared/castingVocabularies.ts",
       "kind": "imports"
     },
     {

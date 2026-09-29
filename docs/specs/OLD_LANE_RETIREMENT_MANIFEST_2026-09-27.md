@@ -60,9 +60,29 @@ Downstream, the same split runs through the feature modules:
 | module | its `authorRoad` is | fate |
 |---|---|---|
 | `client/src/features/castingV2/chipEdit.ts` (`:70`, `:87`, `:119`) | the FLAG — fed from `CastingSheet:1039` | dies |
-| `client/src/features/castingV2/briefEcho.ts` (`:202`, `:358`) | the FLAG — via `BriefEcho`'s prop | dies |
+| `client/src/features/castingV2/briefEcho.ts` (`:202`, `:358`) | ⚠ **the ROW** — via `BriefEcho`'s prop. **This row said "the FLAG" until 2026-09-29 and contradicted the row below it** | **STAYS** |
 | `client/src/features/castingV2/components/BriefEcho.tsx` (`:130`, `:144`, `:156`) | **BOTH** — `authorRoad` prop is the ROW (`:2561`), `VaryPolicy.authorRoad` is the FLAG (`:2569`) | split |
 | `client/src/features/castingV2/sheetNotice.ts` (`:35`, `:42`, `:124`) | the ROW — its own docblock says `RollProjection.authorRoad` | **stays** |
+
+⚠ **THE `briefEcho.ts` ROW WAS WRONG AND THE TABLE CONTRADICTED ITSELF — corrected
+2026-09-29 (#1445), read at the code on `main` at `568e1edc`.** It called those two
+lines the FLAG; the row directly under it says the `BriefEcho` prop they are fed
+from is the ROW. Both cannot be true. The chain, end to end:
+
+```
+CastingSheet.tsx:2561          authorRoad={roll.data.authorRoad}   <- the ROW
+BriefEcho.tsx:144,156          authorRoad                          <- the PROP
+BriefEcho.tsx:162              composeEcho(facts, { followLabel, authorRoad })
+briefEcho.ts:202,358           options.authorRoad                  <- the OPTION
+```
+
+**This is precisely the mistake this manifest's own headline finding exists to
+prevent**, one table below the sentence that names it: collapsing those two lines
+by the word would have re-read **all 220 house-road sheets as authored ones**,
+inside the grammar the sheet's sentence is built from, with no test naming the
+word. #1444 refused it at the code and `server/castingV2/authorRoadFlagRetired.test.ts`
+now pins both halves. **A document that names the trap can still fall into it two
+rows later; the tree is what settles it (working law 7c).**
 
 ## ⚠ THE SECOND ORDERING FACT: THE FLAG HAS A CHILD, AND THE CHILD CRASHES THE BOOT
 
@@ -231,6 +251,35 @@ this slice, **after** the client has stopped reading it for one deploy.
 finding at the top of this manifest is this slice's whole risk.
 
 ### SLICE 4 — the house composer's prose-to-engine reader
+
+⚠ **SLICE 4 RAN 2026-09-29 AND ITS ONE ACT IS ACTUALLY TWO, IN A FORCED ORDER.**
+The decision the card asked for is recorded in `composeCandidatePrompt`'s own
+docblock and in `deterministicBriefCompiler`'s. In short, measured on the tree
+rather than carried:
+
+- **Act 1 — the house BRANCH of `castingBriefCompiler`.** Collapsing it reddens
+  **101 arms across 20 suites**. ⚠ **The card says 86 across 17; that was read at
+  slice 2's tree and is stale.** Three suites the card never named are in it, and
+  one of them — `creativeRegisterScope.test.ts`, 7 arms — is still testing the
+  OFF position of a flag slice 2 deleted.
+- **Act 2 — `deterministicBriefCompiler` and `composeCandidatePrompt`.** ~16
+  further call sites across 6 suites, `rollService.test.ts` among them.
+- **Act 2 cannot go first.** `resolveSheet` composes unconditionally, so deleting
+  the deterministic seam leaves the composer exactly where it was.
+
+**Neither act was taken, and the reason is the arms rather than the code.** Most
+of the 101 carry TWO assertions — one about what the RESOLVER decided (live, and
+still written to `resolvedIdentity` on every author-road roll) and one about what
+the house PROMPT carried (dead). Separating them is #180's category reading and
+is rung-sized. What slice 4 shipped instead is the pin that stops the road coming
+back by accident (`server/castingV2/houseRoadUnreachable.test.ts` — one production
+caller, the literal at the wire, and both roads driven so the pin is not vacuous)
+and the hazard note on the deterministic seam, which until now invited production
+callers to a compiler that delivers house prompts.
+
+⚠ **AND THE MOTIVE IS CLARITY, NOT SPEED.** The discarded composition costs
+**0.22 ms per roll** (0.0275 ms × 8; 2000 calls, p50 0.0225, p99 0.134) against a
+roll of 40–120 seconds. No card out of this should promise him a faster roll.
 
 `composeCandidatePrompt` (`server/castingV2/cohortPhotorealHuman.ts`) is the
 **only** reader of the three prose tables' `thesis` / `avoid` / `whisper`
