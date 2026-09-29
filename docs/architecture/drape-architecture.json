@@ -11824,6 +11824,10 @@
       "path": "server/castingV2/heritagePromotion.test.ts"
     },
     {
+      "id": "test:server/castingV2/houseRoadUnreachable.test.ts",
+      "path": "server/castingV2/houseRoadUnreachable.test.ts"
+    },
+    {
       "id": "test:server/castingV2/inheritedVerdict.test.ts",
       "path": "server/castingV2/inheritedVerdict.test.ts"
     },
