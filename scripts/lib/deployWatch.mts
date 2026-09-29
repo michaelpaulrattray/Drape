@@ -98,6 +98,79 @@ export function decideWatch(priorId: string | null, rows: DeploymentRow[], sha: 
 }
 
 /**
+ * What the WATCH concluded, once it has stopped — which is not the same question
+ * as what the deployment's status is.
+ *
+ * ⚠ THIS TYPE EXISTS BECAUSE THE RITE HAD NO ARM FOR ONE OF ITS OWN OUTCOMES
+ * (#1519). The watch loop remembers a `running` row so the receipt can name the
+ * deployment, and the only check after the loop was:
+ *
+ *   if (deployment.status !== "SUCCESS") die(`the deploy ended ${deployment.status}`);
+ *
+ * So a live deploy and a dead one reached the same refusal. On 2026-09-30 the
+ * rite printed **`the deploy ended DEPLOYING`** and exited 1 after 2,147s — and
+ * the deploy had not ended, the WATCH had: eight minutes later it succeeded on
+ * its own, production going from uptime 2,566s on the previous build to
+ * `04f234d0` at uptime 226s.
+ *
+ * **The sentence is false in the direction that invites the wrong act.** *"The
+ * deploy ended DEPLOYING"* reads as *it is over and it did not succeed*, so a
+ * shift either re-runs the rite on a push that already landed, or reports the
+ * deploy as failed — working law 1 inverted, a tool manufacturing a claim the
+ * artifact contradicts. **No window is long enough to make "the deploy ended"
+ * true of a deploy that is still running**, which is why the naming is the fix
+ * and the window is the smaller second question.
+ */
+export type WatchOutcome =
+  /** Terminal and SUCCESS. */
+  | { kind: "success" }
+  /** Terminal and not SUCCESS — the deploy really did end, badly. */
+  | { kind: "failed"; status: string; why: string }
+  /** ⚠ NOT terminal: the watch stopped looking, the build did not stop. */
+  | { kind: "unsettled"; status: string; why: string };
+
+/**
+ * Judge the watch, given whether it BROKE on a terminal state and what the last
+ * row it saw said.
+ *
+ * `settled` is the loop's own answer and cannot be derived from `status`: a
+ * status this module does not know is non-terminal by `TERMINAL`'s reckoning, and
+ * the loop is the only thing that knows whether it left through the `break` or
+ * out of the bottom.
+ */
+export function watchOutcome(input: {
+  settled: boolean;
+  status: string;
+  elapsedSeconds: number;
+  ceilingSeconds: number;
+  shortSha: string;
+  ref: string;
+  service: string;
+  baseUrl: string;
+}): WatchOutcome {
+  const { settled, status, elapsedSeconds, ceilingSeconds, shortSha, ref, service, baseUrl } = input;
+  if (!settled) {
+    return {
+      kind: "unsettled",
+      status,
+      why:
+        `the WATCH gave up after ${elapsedSeconds}s — the deploy did NOT end, it was still ${status}.\n` +
+        `    The push LANDED and origin/${ref} carries ${shortSha}; nothing needs re-pushing, and re-running\n` +
+        `    the rite would deploy the same commit again for no reason.\n` +
+        `  what is unknown: how this build ended. The watch stopped looking, not the build.\n` +
+        `  read it at: railway deployment list --service ${service}  (or the Railway dashboard),\n` +
+        `    and \`${baseUrl}/api/health\` — a \`build\` of ${shortSha} with a LOW uptime is the new\n` +
+        `    process serving; the old one answers 200 with its uptime still climbing (#296).\n` +
+        `  if it succeeded, this run's only defect is a missing receipt. The ceiling is ` +
+        `${Math.round(ceilingSeconds / 60)} minutes\n` +
+        `    and the slowest deploy measured is 41.3 (#1519) — a build past this is worth a card, not a retry.`,
+    };
+  }
+  if (status !== "SUCCESS") return { kind: "failed", status, why: `the deploy ended ${status}` };
+  return { kind: "success" };
+}
+
+/**
  * Every deployment of `railway deployment list --json`, newest first. A row
  * without a string id and status is dropped; text that is not a JSON array
  * (an older CLI's table, an error message) reads as an EMPTY listing, which

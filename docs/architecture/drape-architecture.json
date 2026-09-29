@@ -13652,6 +13652,10 @@
       "path": "server/ritePushSequence.test.ts"
     },
     {
+      "id": "test:server/riteWatchOutcome.test.ts",
+      "path": "server/riteWatchOutcome.test.ts"
+    },
+    {
       "id": "test:server/riteWorktree.test.ts",
       "path": "server/riteWorktree.test.ts"
     },

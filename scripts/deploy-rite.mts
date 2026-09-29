@@ -91,7 +91,7 @@ import { dirtyEntriesFrom, judgeDirtyTree } from "./lib/dirtyTreeGuard.mts";
 import { inWorktreeOf } from "./lib/riteWorktree.mts";
 import { openDatabase } from "./lib/dbConnection.mts";
 import { productionDatabaseUrl, readFounderActivity } from "./lib/founderActivity.mts";
-import { decideWatch, foreignServiceContext, listedRows } from "./lib/deployWatch.mts";
+import { decideWatch, foreignServiceContext, listedRows, watchOutcome } from "./lib/deployWatch.mts";
 import { comparePositions, parseVariableLines } from "./lib/productionFlagPositions.mts";
 import {
   DECLARED_BUT_UNMIGRATED,
@@ -120,6 +120,7 @@ import {
   readFalTraffic,
 } from "./lib/falSpend.mts";
 import {
+  DEPLOY_SOURCE_REF,
   deployRefOrderProblem,
   divergedRefMessage,
   pushFailureMessage,
@@ -1121,10 +1122,42 @@ if (DRY) { say(""); say("DRY RUN — stopping before the watch."); process.exit(
 
 /* ── 3. watch to a terminal state ───────────────────────────────────────── */
 
+/*
+  ⚠ THE WATCH IS A DEADLINE NOW, NOT A COUNT OF ATTEMPTS (#1519).
+
+  It was `for (attempt < 90)` with `wait(20_000)` inside — 1,800s of sleeping
+  PLUS 90 `railway deployment list` calls at ~3–4s each, so the window it
+  actually gave was ~2,070–2,160s while every document (and this file) called it
+  a 30-minute watch. The rite's own refusal line measured **2,147s**, which is
+  where #1519's arithmetic closed. A window that is an emergent product of a
+  sleep and a CLI's latency cannot be stated truthfully, and the same defect is
+  in `deploy-verify.yml` under #1518: a number that is not the number.
+
+  ⚠ AND THE LENGTH IS MEASURED RATHER THAN DOUBLED, which is what #1519 asked
+  for. Two readings, both taken for that card:
+
+    · the rite's own receipts, 868 SUCCESS deploys — p50 108s, p99 239s, max
+      1,823s (30.4 min). Only TWO ever exceeded 15 minutes.
+    · Railway's GitHub Deployment statuses for 2026-09-29, which include the
+      merge-burst deploys the rite never watches — **max 2,478s (41.3 min)**.
+
+  So the tail that matters is 41 minutes, not 30, and it appears under
+  CONTENTION: quiet-period deploys are 90–126s, and the six slow ones all fall
+  inside one three-hour burst. 50 minutes clears the observed maximum with
+  headroom; it is a backstop, and the honest sentence below is the actual fix.
+*/
+const WATCH_CEILING_MS = 50 * 60 * 1000;
+const WATCH_POLL_MS = 20_000;
+
 say("");
 const started = Date.now();
 let deployment: { id: string; status: string } | null = null;
-for (let attempt = 0; attempt < 90; attempt += 1) {
+/* ⚠ WHY A FLAG AND NOT `deployment.status`: a `running` row is remembered so the
+   receipt can name the deployment, so after the loop `deployment` holds a
+   non-terminal status in exactly the case this card is about. Only the loop
+   knows whether it BROKE on a terminal state or fell out of the bottom. */
+let watchSettled = false;
+for (let attempt = 0; Date.now() - started < WATCH_CEILING_MS; attempt += 1) {
   /*
     ONE LINE, PARSED AS A LINE. The watched-claim incident was a pattern that
     matched a status on one line and a sha on another; the newest deployment is
@@ -1141,20 +1174,27 @@ for (let attempt = 0; attempt < 90; attempt += 1) {
   if (decision.kind === "settled" || decision.kind === "running") {
     deployment = { id: decision.id, status: decision.status };
   }
-  if (decision.kind === "settled") break;
+  if (decision.kind === "settled") {
+    watchSettled = true;
+    break;
+  }
   if (attempt % 6 === 5) {
-    if (decision.kind === "not-mine") say(`  waiting for Railway to create the deployment (${attempt * 20}s)`);
+    /* Elapsed is READ, not multiplied. `attempt * 20` was the same arithmetic
+       fiction as the window itself: it ignored every second the CLI spent, so a
+       line claiming 100s was printed at ~118s. */
+    const waited = Math.round((Date.now() - started) / 1000);
+    if (decision.kind === "not-mine") say(`  waiting for Railway to create the deployment (${waited}s)`);
     /* A NEW row on ANOTHER commit is somebody else's deploy — his own flag-flip
        redeploy from the dashboard, typically. Say so and keep waiting for the
        row built from THIS push rather than adopting his. */
     if (decision.kind === "foreign") {
-      say(`  newest deployment ${decision.id.slice(0, 8)} is on ${decision.commitHash.slice(0, 8)}, not ${shortSha} — not mine, waiting (${attempt * 20}s)`);
+      say(`  newest deployment ${decision.id.slice(0, 8)} is on ${decision.commitHash.slice(0, 8)}, not ${shortSha} — not mine, waiting (${waited}s)`);
     }
     if (decision.kind === "unattributed") {
-      say(`  newest deployment ${decision.id.slice(0, 8)} carries no commit hash — cannot be attributed to this push, waiting (${attempt * 20}s)`);
+      say(`  newest deployment ${decision.id.slice(0, 8)} carries no commit hash — cannot be attributed to this push, waiting (${waited}s)`);
     }
   }
-  await wait(20_000);
+  await wait(WATCH_POLL_MS);
 }
 if (!deployment) {
   die(priorDeployment
@@ -1162,8 +1202,47 @@ if (!deployment) {
     : "no deployment row could be read at all");
 }
 const elapsed = Math.round((Date.now() - started) / 1000);
+/*
+  ⚠ THE EXHAUSTION CASE IS ITS OWN OUTCOME WITH ITS OWN WORDS (#1519), AND IT IS
+  NOT A STATUS AT ALL.
+
+  What happened on 2026-09-30: the rite printed `the deploy ended DEPLOYING` and
+  exited 1 after 2,147s. **The deploy had not ended — the WATCH had.** Eight
+  minutes later it succeeded on its own: production went from uptime 2,566s on
+  the previous build to `04f234d0` at uptime 226s, the reset that distinguishes a
+  new process from an old one answering 200.
+
+  The line below used to be the only arm here, so a live deploy and a dead one
+  reached the same `die()`. And the sentence is false in the direction that
+  invites the wrong act: *"the deploy ended DEPLOYING"* reads as *the deploy is
+  over and did not succeed*, so a shift either re-runs the rite on a push that
+  already landed, or reports the deploy as failed — working law 1 inverted, a
+  tool manufacturing a claim the artifact contradicts.
+
+  The receipt line above is printed FIRST either way, on purpose: the deployment
+  id and the elapsed time are the two things a reader needs to go and look,
+  whichever outcome follows.
+*/
 say(`  deployment ${deployment.id.slice(0, 8)} → ${deployment.status} after ${elapsed}s`);
-if (deployment.status !== "SUCCESS") die(`the deploy ended ${deployment.status}`);
+/*
+  THE VERDICT IS `scripts/lib/deployWatch.mts`'s, not written out here — the same
+  split, for the same reason, as `productionHealthProbe.mts` two sections below:
+  nothing drove this decision, so a new arm written in place would have been a
+  change to the deploy's own gate with no test that could fail. It is a pure
+  function of (did the loop settle, what did the last row say), and
+  `server/riteWatchOutcome.test.ts` drives all three roads including the sentences.
+*/
+const outcome = watchOutcome({
+  settled: watchSettled,
+  status: deployment.status,
+  elapsedSeconds: elapsed,
+  ceilingSeconds: WATCH_CEILING_MS / 1000,
+  shortSha,
+  ref: DEPLOY_SOURCE_REF,
+  service: SERVICE,
+  baseUrl: BASE,
+});
+if (outcome.kind !== "success") die(outcome.why);
 
 /* ── 4. health, THREE TIMES — a deploy reporting SUCCESS is a claim ─────── */
 
