@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import type { CastPronouns } from "./castPronouns";
 
 /* One Cast, one set of words for her — §5e made these sentences a function
@@ -178,6 +179,41 @@ vi.mock("../db/castingV2", () => ({
          is selected, exactly as the real read has them. */
       rollPath,
       rollWardrobeLine,
+    };
+  }),
+  /*
+    THE READER A REFINE USES WHEN THE ASK NAMES ITS VERSION (#1499).
+
+    Its sibling above keys on `candidateRow.selectedVariantPublicId` — the
+    SERVER's pointer. This one keys on the id the ASK carried, which is the
+    whole difference and is what makes the race arm below able to fail: the
+    fixture sets the pointer to one version and the ask to another, and only a
+    service reading this one lands on the right parent.
+
+    It journals a distinct entry so an arm can see WHICH reader answered rather
+    than inferring it from the result.
+  */
+  getOwnedCandidateOnVersion: vi.fn(async (_userId: number, _candidatePublicId: string, variantPublicId: string | null) => {
+    journal.push("read:onVersion");
+    if (!candidateRow) return { found: false, missing: "candidate" };
+    const named = variantPublicId === null
+      ? null
+      : variantRows.find((v) => v.publicId === variantPublicId && v.status === "ready");
+    /* A NAMED version that is not there is its own answer — never the pointer
+       and never the original, which is the defect this reader closes. */
+    if (variantPublicId !== null && !named) return { found: false, missing: "version" };
+    return {
+      found: true,
+      face: {
+        candidate: candidateRow,
+        variantId: named ? (named.id as number) : null,
+        variantPublicId: named ? (named.publicId as string) : null,
+        imageKey: named ? named.imageKey : candidateRow.imageKey,
+        thumbKey: null,
+        internalPrompt: named ? named.internalPrompt : candidateRow.internalPrompt,
+        rollPath,
+        rollWardrobeLine,
+      },
     };
   }),
 }));
@@ -3990,6 +4026,176 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       mock: { calls: Array<[Record<string, unknown>]> };
     }).mock.calls.at(-1)?.[0];
     expect(claimed?.parentVariantPublicId).toBe("variant-born");
+  });
+
+  /*
+    ─────────────────────────────────────────────────────────────────────────
+    THE EDIT LANDS ON THE VERSION SHE IS LOOKING AT (#1499).
+
+    A customer clicks a version on the rail. The picture swaps at once — that is
+    deliberate, and it is what makes the rail feel instant — but the server has
+    not been told yet; `selectVariant` is a round trip. Press Refine inside that
+    window and the two ends of one paid ceremony answer *which version is she
+    on* differently: the panel, the photograph and the lit chip all read the
+    click-aware answer, and the service re-read the stored pointer. She paid for
+    an edit to the picture on her screen and got an edit to the previous one.
+
+    Found by #1478's law-7 sweep. Nobody has hit it — it needs a click and a
+    press inside the same second or two — and the cost when somebody does is one
+    refine's credits spent on the wrong face.
+
+    ⚠ **THESE ARMS DRIVE THE DISAGREEMENT RATHER THAN REASONING ABOUT THE
+    ORDERING**, which is the card's own done-condition: the fixture puts the
+    stored pointer on one version and the ask on another, and the assertion is
+    the PARENT the service actually claimed against. An arm that only checked
+    the field arrived would pass on a service that read it and then threw it
+    away.
+    ───────────────────────────────────────────────────────────────────────── */
+  describe("the version an ask names is the version it is applied to", () => {
+    /** Two landed versions, so "the one she left" and "the one she clicked" are both real. */
+    const twoVersions = () => {
+      variantRows = [
+        {
+          id: 720,
+          publicId: "variant-left",
+          candidateId: 1,
+          imageKey: "casting-v2/variants/left.png",
+          internalPrompt: candidateRow.internalPrompt as Record<string, unknown>,
+          instructions: ["dangly cross earrings"],
+          deltas: { free: { statedAccessories: ["dangly cross earrings"] } },
+          stepDeltas: [{ free: { statedAccessories: ["dangly cross earrings"] } }],
+          status: "ready",
+        },
+        {
+          id: 721,
+          publicId: "variant-clicked",
+          candidateId: 1,
+          imageKey: "casting-v2/variants/clicked.png",
+          internalPrompt: candidateRow.internalPrompt as Record<string, unknown>,
+          instructions: ["a silver hoop"],
+          deltas: { free: { statedAccessories: ["a silver hoop"] } },
+          stepDeltas: [{ free: { statedAccessories: ["a silver hoop"] } }],
+          status: "ready",
+        },
+      ];
+    };
+
+    const parentOfLastClaim = async () => {
+      const variants = await import("../db/castingV2Variants");
+      return (variants.claimVariant as unknown as {
+        mock: { calls: Array<[Record<string, unknown>]> };
+      }).mock.calls.at(-1)?.[0]?.parentVariantPublicId ?? null;
+    };
+
+    it("THE RACE: the pointer still names the version she left, and the edit lands on the one she clicked", async () => {
+      twoVersions();
+      /* The `selectVariant` write is in flight: the row still says she is on
+         the version she left. This is the exact state the card describes, and
+         it is constructed rather than timed. */
+      candidateRow.selectedVariantPublicId = "variant-left";
+
+      await refineCandidate(hairDown, {
+        ...input,
+        instruction: "wear her hair down",
+        onVersion: "variant-clicked",
+      });
+
+      expect(await parentOfLastClaim()).toBe("variant-clicked");
+      /* And the pointer reader was not consulted at all — the two roads are
+         exclusive, so a service that read both and preferred the wrong one
+         cannot pass by accident. */
+      expect(journal).toContain("read:onVersion");
+      expect(journal).not.toContain("read");
+    });
+
+    it("the control: the same fixture with NO version named still follows the pointer", async () => {
+      /*
+        WORKING LAW 2, AND IT IS THE ARM THAT MAKES THE ONE ABOVE MEAN
+        SOMETHING. A service that simply always claimed against the last landed
+        version would pass the race arm; this one puts the pointer on the OTHER
+        version with nothing named and requires the pointer's answer. It is also
+        the deploy-skew road: a bundle from before this deploy sends no version.
+      */
+      twoVersions();
+      candidateRow.selectedVariantPublicId = "variant-left";
+
+      await refineCandidate(hairDown, { ...input, instruction: "wear her hair down" });
+
+      expect(await parentOfLastClaim()).toBe("variant-left");
+      expect(journal).toContain("read");
+      expect(journal).not.toContain("read:onVersion");
+    });
+
+    it("null is the ORIGINAL and is not an absence — it anchors on the master over a pointer that names a version", async () => {
+      /*
+        The half #1478 was about, from the other side: he stepped back to the
+        original to compare. `selectVariant` means the master by `null` and has
+        since it shipped, so this road needs no second way of saying it — and
+        `?? null` anywhere on the way in would turn *did not say* into *the
+        original* and anchor every old bundle's edit on the master.
+      */
+      twoVersions();
+      candidateRow.selectedVariantPublicId = "variant-left";
+
+      await refineCandidate(hairDown, {
+        ...input,
+        instruction: "wear her hair down",
+        onVersion: null,
+      });
+
+      expect(await parentOfLastClaim()).toBeFalsy();
+      expect(journal).toContain("read:onVersion");
+    });
+
+    it("a version this face does not have refuses FREE, and never falls back to the pointer", async () => {
+      /*
+        THE ARM THE FIX WOULD BE DISHONEST WITHOUT. A named version that does
+        not resolve — purged, another account's, another candidate's, not ready
+        — must say so. Falling back to the pointer here would be the original
+        defect wearing the fix's name, and it would be invisible: the customer
+        would get an edit to some other version and no sentence at all.
+
+        `version_missing` is an existing door and this is a second raise site by
+        decision: the customer state is the same one its first site names.
+      */
+      twoVersions();
+      candidateRow.selectedVariantPublicId = "variant-left";
+
+      const shut = await doorShut(refineCandidate(hairDown, {
+        ...input,
+        instruction: "wear her hair down",
+        onVersion: "variant-someone-elses",
+      }));
+
+      expect(shut.reason).toBe("version_missing");
+      expect(shut.message).toMatch(/isn't available any more/i);
+      expect(shut.message).toMatch(/nothing was charged/i);
+      /* Free: above `admit` and above the claim, like every refusal on this
+         stretch — so the ledger never moved and no variant was claimed. */
+      expect(journal).not.toContain("claim");
+      expect(journal).not.toContain("charge");
+    });
+
+    it("the procedure hands the field through, and does not collapse its three states", async () => {
+      /*
+        DECLARED AS A PROXY. Everything above drives the SERVICE, so a procedure
+        that accepted the field and dropped it on the floor would leave all four
+        arms green and the customer's race exactly as it was — the field would
+        be in the schema, in the payload, and nowhere else.
+
+        There is no router-level driver for `castingV2.refine` in this tree, so
+        this reads the source, the way this repository's client-side arms do and
+        for the same reason. What it pins is the one line that can silently
+        undo the fix, and the one operator that can silently change its meaning:
+        `?? null` there would turn *did not say* into *the original* and anchor
+        every in-flight bundle's edit on the master.
+      */
+      const routes = await readFile(new URL("../routes/castingV2.ts", import.meta.url), "utf8");
+      const code = routes.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+      expect(code).toContain("onVersion: publicId.nullable().optional(),");
+      expect(code).toContain("onVersion: input.onVersion,");
+      expect(code).not.toContain("onVersion: input.onVersion ??");
+    });
   });
 
   it("carries a minted crop as its own reference, in the recipe's own order", async () => {

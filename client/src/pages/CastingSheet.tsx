@@ -1798,6 +1798,25 @@ export default function CastingSheet() {
         clientRequestId: requestId,
         candidateId: viewerCandidateId,
         instruction,
+        /*
+          WHICH VERSION OF HER THIS ASK IS ABOUT (#1499), and it is the SAME
+          fact the photograph, the panel and the lit chip are drawing.
+
+          It used to send no version at all, and the service re-read the
+          server's `selectedVariantId`. Those two answers disagree for exactly
+          as long as a `selectVariant` write is in flight — which is the second
+          or two after a click, and the burst note further up already records
+          that clicks settle seconds later. Press Refine inside that window and
+          the edit landed on the version she had just left, paid for.
+
+          `shownVariantId` is `selectedVariantFor(...)`, which prefers a click
+          whose write has not landed yet. `null` is the original and travels as
+          null, because the wire's other version-naming procedure
+          (`selectVariant`) has meant exactly that by null since it shipped;
+          sending nothing would mean "I did not say" and put the service back on
+          the pointer.
+        */
+        onVersion: shownVariantId,
         ...(answering ? { answering: answering.about } : {}),
         ...(sent ? { scope: sent } : {}),
         ...(replayOf ? { replayOf } : {}),
