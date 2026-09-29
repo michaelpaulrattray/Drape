@@ -352,18 +352,28 @@ export const ARCHETYPES = {
 export type ArchetypeKey = keyof typeof ARCHETYPES;
 export const ARCHETYPE_KEYS = Object.keys(ARCHETYPES) as ArchetypeKey[];
 
-/** The only cohort M5 compiles. Anything else is refused, not approximated. */
+/**
+ * The cohort the adapter resolves a reading against. It is ONE name, and since
+ * #1495 a reply outside it is `unreadable` rather than a refusal — a `being` is
+ * cast, so the only way past this list is the reader answering a question it
+ * was not asked.
+ */
 const SUPPORTED_COHORTS = ["photoreal_human"] as const;
 type CohortKey = (typeof SUPPORTED_COHORTS)[number];
 
 /**
- * WHY A BRIEF WAS WALLED AT THE SUBJECT (#131 slice C). Off the author road
- * there is one name, `unsupported_cohort`, and it covers everything the
- * certified adapter cannot paint. On it there are two, and they are the two
- * refusals the ruling KEEPS: `likeness` (a real person or a named character)
- * and `not_a_being` (an object, a vehicle, a scene — "a car").
+ * WHY A BRIEF WAS WALLED AT THE SUBJECT (#131 slice C). There are TWO names and
+ * they are the two refusals the ruling KEEPS: `likeness` (a real person or a
+ * named character) and `not_a_being` (an object, a vehicle, a scene — "a car").
+ *
+ * ⚠ A third stood here until #1495 — `unsupported_cohort`, the two-valued
+ * question's wall, covering everything the certified adapter could not paint.
+ * Its own road said *"off the author road"*, and there has been no off since
+ * #1490 act 1 made `author: true` a literal on the only production call. The
+ * name goes with the question; `roll.unsupported_cohort` leaves the capability
+ * map in the same commit.
  */
-export type SubjectRefusal = "unsupported_cohort" | "likeness" | "not_a_being";
+export type SubjectRefusal = "likeness" | "not_a_being";
 
 /**
  * WHAT KIND OF BEING the author-road reader said the brief casts. `human` is
@@ -1400,12 +1410,13 @@ export function parseCastingIntent(
     parses of one request come to disagree with each other.
   */
   notesMax: number = NOTES_MAX,
-  /**
-   * `author` — read the four-valued subject answer (#131 slice C). A
-   * parameter for the same reason `notesMax` is: this function is pure and the
-   * flag is captured once at the roll.
-   */
-  options?: { author?: boolean },
+  /*
+    ⚠ `options?: { author?: boolean }` STOOD HERE AND IS GONE (#1495). It chose
+    which vocabulary this function read back — four-valued on, two-valued off —
+    and every production caller reached it through `interpretBrief`, which
+    passed a literal `true` from #1490 act 1 onward. The four-valued reading is
+    the only reading now, so there is no choice left to hand in.
+  */
 ): IntentParseResult {
   let payload = raw;
   if (typeof raw === "string") {
@@ -1424,23 +1435,24 @@ export function parseCastingIntent(
 
   const cohort = typeof wire.cohort === "string" ? wire.cohort.trim().toLowerCase() : "photoreal_human";
   let subject: SubjectReading = "human";
-  if (options?.author === true) {
-    /*
-      THE AUTHOR ROAD READS FOUR (#131 slice C). The two refusals the ruling
-      keeps come back by name; a `being` casts, and the record says so. An
-      answer outside the four is `unreadable` — the reader ignored the question
-      it was asked, and the compiler's fallback (verbatim brief, static bundle)
-      is the road that costs the customer nothing they did not ask for.
-    */
-    if (cohort === "likeness" || cohort === "not_a_being") return { ok: false, reason: cohort };
-    if (cohort === "being") subject = "being";
-    else if (!SUPPORTED_COHORTS.includes(cohort as CohortKey)) return { ok: false, reason: "unreadable" };
-  } else if (!SUPPORTED_COHORTS.includes(cohort as CohortKey)) {
-    // Honest capability: a certified adapter exists for one cohort, so an
-    // anime brief is refused for free rather than rendered as a photograph of
-    // someone vaguely anime-adjacent.
-    return { ok: false, reason: "unsupported_cohort" };
-  }
+  /*
+    FOUR VALUES, AND SINCE #1495 THERE IS NO OTHER READING (#131 slice C). The
+    two refusals the ruling keeps come back by name; a `being` casts, and the
+    record says so. An answer outside the four is `unreadable` — the reader
+    ignored the question it was asked, and the compiler's fallback (verbatim
+    brief, static bundle) is the road that costs the customer nothing they did
+    not ask for.
+
+    ⚠ An `else` branch stood beside this one and returned `unsupported_cohort`
+    for any cohort the certified adapter could not paint — the two-valued
+    question's wall. It was guarded by `options?.author === true`, an option
+    whose only production caller passed a literal `true`, so nothing could take
+    it. It is gone with the question that fed it, and the door it raised leaves
+    the capability map in the same commit.
+  */
+  if (cohort === "likeness" || cohort === "not_a_being") return { ok: false, reason: cohort };
+  if (cohort === "being") subject = "being";
+  else if (!SUPPORTED_COHORTS.includes(cohort as CohortKey)) return { ok: false, reason: "unreadable" };
 
   return {
     ok: true,

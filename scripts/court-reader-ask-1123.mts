@@ -71,7 +71,9 @@ import { CARD_FIELDS, CONTROL_FIELDS, DEAD_FIELDS, trimAsk } from "./lib/readerA
 /**
  * The ask production sends today, READ FROM THE COMPOSER rather than quoted.
  *
- * `author` is a literal `true` since #1443 retired
+ * There is no `author` option any more: #1495 retired the two-valued cohort
+ * question, so the four-valued subject question IS the ask. It was a literal
+ * `true` here from #1443, which retired
  * `CASTING_CREATIVE_REGISTER_SCOPE` with the old lane (his word on #1398:
  * "Delete it") — the paragraph here named it as one of three flags standing at
  * `all`, which is why the sentence moved rather than the object. The other two
@@ -84,7 +86,6 @@ const READER_OPTIONS = {
   wardrobe: false,
   ink: true,
   fidelity: true,
-  author: true,
   statedWardrobe: true,
 } as const;
 
@@ -314,7 +315,7 @@ function armEngine(
       const system = ARMS[arm].ask;
       const result = await real.complete({ ...request, system });
       callIndex += 1;
-      const parsed = parseCastingIntent(result.text, fixture.brief, NOTES_MAX_FIDELITY, { author: true });
+      const parsed = parseCastingIntent(result.text, fixture.brief, NOTES_MAX_FIDELITY);
       sink.push({
         arm,
         fixtureId: fixture.id,

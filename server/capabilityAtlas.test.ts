@@ -19,7 +19,7 @@ import {
   duplicateDoorFindings, entranceCoverageFindings, listFiles, outcomeId,
   pinCandidates, pinningTests, pinsIn, reachesDoors, readCommittedAtlas, reasonOfNote, renderCapabilityPage, committedPageIsFresh, lfOnly,
   CAPABILITY_MD, CASTING_ENTRANCE, bareDoorId, declaredReferenceRefusals, declaredUploadRefusals, type Finding,
-  importedModules, narrowSharedBareIdPins, sharedBareDoorIds, type DeclaredId,
+  importedModules, narrowSharedBareIdPins, rollRaiseSitesIn, sharedBareDoorIds, type DeclaredId,
 } from "../scripts/lib/capabilityAtlas.mts";
 import { ROADS, UNMAPPED_ENTRANCES, type Road } from "../scripts/capability-atlas-roads.mts";
 import { CORPUS, type CorpusRow } from "../scripts/capability-atlas-corpus.mts";
@@ -821,8 +821,10 @@ describe("one word may be three doors, and each keeps only its own pins", () => 
 describe("the roll entrance's walls are on the map", () => {
   it("POSITIVE CONTROL — every member of the roll copy table is a declared door", () => {
     const declared = declaredRollRefusals();
+    /* ⚠ FIVE UNTIL #1495: `roll.unsupported_cohort` is retired with the
+       two-valued cohort question that was its only source. */
     expect(declared).toEqual([
-      "roll.likeness", "roll.not_a_being", "roll.reader_outage", "roll.uninterpretable", "roll.unsupported_cohort",
+      "roll.likeness", "roll.not_a_being", "roll.reader_outage", "roll.uninterpretable",
     ]);
     expect(declared.length).toEqual(Object.keys(ROLL_REFUSAL_COPY).length);
     const atlas = buildStaticAtlas(CORPUS);
@@ -836,43 +838,69 @@ describe("the roll entrance's walls are on the map", () => {
     }
   });
 
-  it("⚠ THE MULTI-LINE RAISE IS SEEN — the shape a line-wise reader would have half-missed", () => {
+  it("⚠ THE MULTI-LINE RAISE IS SEEN — the shape a line-wise reader would half-miss", () => {
     /*
-      THE HAZARD THIS ARM EXISTS FOR. Three of the five raises fit on one line
-      (`throw new BriefRefusal("likeness", LIKENESS_MESSAGE);`) and
-      `unsupported_cohort`'s puts `new BriefRefusal(` and the id on separate
-      lines. A line-wise regex — the shape every other reader in this file uses
-      — finds sites for three members and ZERO for one, and sites-empty is not
-      an error anywhere, so the half-blind version ships green.
+      THE HAZARD THIS ARM EXISTS FOR. A raise fits on one line
+      (`throw new BriefRefusal("likeness", LIKENESS_MESSAGE);`) or it wraps,
+      putting `new BriefRefusal(` and the id on separate lines. A line-wise
+      regex — the shape every other reader in this file uses — finds sites for
+      the flat members and ZERO for a wrapped one, and sites-empty is not an
+      error anywhere, so the half-blind version ships green.
 
-      Asserted at the CITATION rather than at the regex: the site must be
-      present and must name the line the ID is on, which is the line a reader
-      would open.
+      ⚠ **THIS ARM READ THE LIVE TREE UNTIL #1495 AND ITS SPECIMEN HAS LEFT
+      IT.** The wrapped raise was `unsupported_cohort`'s, and that wall is
+      retired with the two-valued cohort question; every remaining raise is
+      flat. **A guard whose subject leaves the tree does not weaken, it goes
+      absent** — the honest choices were to delete the arm, to pin some other
+      raise into staying awkward, or to drive the reader ITSELF. This is the
+      third, and it is strictly stronger than what it replaces: the capability
+      is proven on text this file controls, so it no longer depends on the
+      product keeping a line break nobody has a reason to keep, and it can
+      carry a NEGATIVE control the old arm could not.
 
-      ⚠ THIS EXPECTED **TWO** SITES IN THIS FILE UNTIL #1490 ACT 1, AND THE
-      COUNT WAS A FIXTURE RATHER THAN THE SUBJECT. The styled-brief SCREEN was
-      the second multi-line raise, and it is deleted with the house road; one
-      remains, the reader's own cohort wall. The arm is STRONGER for the change
-      rather than weaker — it now proves the multi-line SHAPE it is named for
-      instead of inferring it from a count, by requiring that
-      `new BriefRefusal(` sits on an EARLIER line than the cited one.
+      (The count in this arm was a fixture rather than the subject once before —
+      it expected TWO sites until #1490 act 1 deleted the styled-brief screen —
+      which is the same lesson one size down.)
     */
+    const members = new Set(["likeness", "not_a_being", "reader_outage", "uninterpretable"]);
+
+    /* POSITIVE — the wrapped shape, cited at the line the ID is on. */
+    const wrapped = [
+      "if (!outcome.ok) {",
+      "  throw new BriefRefusal(",
+      '    "likeness",',
+      "    LIKENESS_MESSAGE,",
+      "  );",
+      "}",
+    ].join("\n");
+    expect(rollRaiseSitesIn(wrapped, members).get("likeness")).toEqual([3]);
+
+    /* POSITIVE — the flat shape, which a line-wise reader would also find. */
+    const flat = 'throw new BriefRefusal("not_a_being", NOT_A_BEING_MESSAGE);';
+    expect(rollRaiseSitesIn(flat, members).get("not_a_being")).toEqual([1]);
+
+    /* NEGATIVE — a wrapped raise QUOTED IN A DOCBLOCK is not a site. This is
+       the control the live-tree arm could never have: no product file was
+       going to carry one on purpose, so the comment guard was asserted by
+       hope. Both lines carry `*`, which is why testing the cited line is
+       enough for either shape. */
+    const quoted = [
+      "/**",
+      " * The shape, for a reader:",
+      " *   throw new BriefRefusal(",
+      ' *     "reader_outage",',
+      " */",
+    ].join("\n");
+    expect(rollRaiseSitesIn(quoted, members).has("reader_outage")).toBe(false);
+
+    /* NEGATIVE — an id outside the copy table is not a door, whatever it looks
+       like. The membership set is DERIVED from the table, never typed. */
+    expect(rollRaiseSitesIn('throw new BriefRefusal("unsupported_cohort", MSG);', members).size).toEqual(0);
+
+    /* AND THE LIVE READING still resolves: every declared roll wall cites a
+       real throw in the entrance's own file. */
     const atlas = buildStaticAtlas(CORPUS);
-    const cohort = atlas.declared.find((d) => d.id === "roll.unsupported_cohort")!;
-    const throwSites = cohort.sites.filter((s) => s.includes("briefCompiler.ts:"));
-    expect(throwSites.length, JSON.stringify(cohort.sites)).toEqual(1);
     const source = readFileSync(join(__dirname, "castingV2", "briefCompiler.ts"), "utf8").split("\n");
-    for (const site of throwSites) {
-      const line = Number(site.split(":").pop());
-      expect(source[line - 1], site).toContain('"unsupported_cohort"');
-      /* THE SHAPE, asserted rather than assumed: the raise OPENS on an earlier
-         line than the one cited, which is precisely what a line-wise reader
-         cannot see. If this raise is ever collapsed onto one line, re-read this
-         arm rather than relaxing it — the hazard would be gone and the file
-         would need a different fixture to keep guarding the reader. */
-      expect(source[line - 2], site).toContain("new BriefRefusal(");
-    }
-    /* And the single-line members still land on their own throws. */
     for (const [id, member] of [["roll.likeness", "likeness"], ["roll.not_a_being", "not_a_being"], ["roll.reader_outage", "reader_outage"]] as const) {
       const entry = atlas.declared.find((d) => d.id === id)!;
       const at = entry.sites.find((s) => s.includes("briefCompiler.ts:"))!;
@@ -889,12 +917,20 @@ describe("the roll entrance's walls are on the map", () => {
       }
     }
     /*
-      THE AMBIGUITY THE QUALIFICATION EXISTS FOR: `castingIntent.ts` carries
-      `reason: "unsupported_cohort"` — the INTERPRETER's internal verdict that
-      feeds the customer's wall. Declared bare, that line would attach to the
-      door. It must not, and no bare `unsupported_cohort` door may exist.
+      THE AMBIGUITY THE QUALIFICATION EXISTS FOR: `castingIntent.ts` carries the
+      INTERPRETER's internal verdicts as `reason:` shapes, under the same names
+      the customer's walls have. Declared bare, those lines would attach to the
+      doors. They must not.
+
+      ⚠ THIS ARM NAMED `unsupported_cohort` UNTIL #1495, which retired it — and
+      the specimen is now the two LIVE walls rather than a retired one, which is
+      the stronger fixture. The retired name is kept beside them for one reason:
+      a bare door of that word reappearing would mean the retirement had been
+      half-undone somewhere, and this is the cheapest place to see it.
     */
-    expect(atlas.declared.map((d) => d.id)).not.toContain("unsupported_cohort");
+    for (const bare of ["likeness", "not_a_being", "unsupported_cohort"]) {
+      expect(atlas.declared.map((d) => d.id), bare).not.toContain(bare);
+    }
     for (const entry of atlas.declared.filter((d) => !d.id.startsWith("roll."))) {
       for (const site of entry.sites) {
         expect(`${entry.id} :: ${site}`).not.toMatch(/briefCompiler\.ts:/);

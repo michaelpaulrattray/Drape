@@ -478,3 +478,59 @@ deletion work:**
    Unchanged, and N3's by his word.
 
 **So a shift opening #180 today should not go looking for a deletion to make.**
+
+---
+
+## THE LAST GHOST IS OUT — #1495, 2026-09-30
+
+**The interpreter's `author` option, `parseCastingIntent`'s two-valued branch
+and the `unsupported_cohort` raise are deleted.** They were the remainder this
+record handed forward one module out from the compiler, and they went in one act
+because the type system made them one: narrowing `SubjectRefusal` takes the
+compiler's raise with it, and the raise's copy constant and declared door with
+that.
+
+### The bar, and why a deletion needed one
+
+A prompt DELETION and a prompt CHANGE look the same in a diff, and this one
+moved the text the reader is asked. So the acceptance bar was byte equality, not
+review: `interpreterSystemPrompt` over all 32 option combinations on `main` and
+all 16 that survive, each of the 16 sha256-identical to its `author: true` twin.
+**16 of 16.** Nothing reaches a reader differently.
+
+### What the record got right, and the one thing it got short
+
+The FLOOR caveat above earned itself. The population was read as *"six suites,
+of which four drive the two-valued reach"*, with the honest note that the reader
+is a grep over four names. **The typecheck found two more consumers neither the
+grep nor the card had**: `server/readerAskTrim.test.ts` (it composes the
+production ask and named `author: true` in an options object, not in any of the
+four searched strings) and `scripts/court-reader-ask-1123.mts`, a TRACKED court
+script, which named it twice. Seven suites and one script, not six suites.
+
+**The lesson is the one the caveat already stated and is worth having paid for
+once: a grep over NAMES cannot see a consumer that uses the thing without
+naming it.** What found them was the compiler, because the option was typed.
+
+### The two arms that had to be re-pointed rather than deleted, and why
+
+Deleting a fixture's subject is not the same as deleting the property the arm
+holds, and two arms here held properties that outlive their fixture:
+
+- **`cohortWallRetry.test.ts`** drove the whole double-check mechanism with
+  `{ cohort: "other" }`. That is now an `unreadable` reply, and `unreadable`
+  deliberately buys NO second read — so every arm in the file would have gone on
+  driving the retry with an input the retry does not apply to. Re-pointed at
+  `likeness`, which is what its own court actually drove.
+- **`styleRefusal.test.ts`**'s null-shaped reply arm exists because a reply with
+  nulls everywhere was once thrown away whole. The retired vocabulary was only
+  its carrier.
+
+And one instrument arm lost its specimen rather than its subject: the capability
+atlas's multi-line-raise guard read the LIVE tree, and `unsupported_cohort`'s
+wrapped raise was the last multi-line raise in the entrance. **A guard whose
+subject leaves the tree does not weaken, it goes absent.** The reading was
+extracted into `rollRaiseSitesIn` and is driven on synthetic text now, with the
+negative control the live-tree version could never have had (a wrapped raise
+inside a docblock is not a site — no product file was going to carry one on
+purpose).

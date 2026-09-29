@@ -43,7 +43,6 @@ const productionAsk = (): string => interpreterSystemPrompt({
   wardrobe: false,
   ink: true,
   fidelity: true,
-  author: true,
   statedWardrobe: true,
 });
 

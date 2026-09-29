@@ -3,10 +3,18 @@
  *
  * Two jobs. First, the customer sentences are PINNED AT THEIR BYTES — #206 is
  * maintenance, so a sentence changing is a product change wearing a refactor's
- * clothes. `unsupported_cohort`'s was pinned by nothing at all before this
+ * clothes. `unsupported_cohort`'s was pinned by nothing at all before that
  * commit: it was an inline literal written out TWICE, verbatim, at two raise
  * sites, so either copy could have been reworded and nothing would have gone
  * red (working law 4 — a mirrored list mid-drift).
+ *
+ * ⚠ **THAT WALL IS RETIRED — #1495, with the two-valued cohort question that
+ * was its only source — so the table is FOUR, and the arm that pinned its bytes
+ * now pins its ABSENCE instead.** The inversion is deliberate: once a sentence
+ * has no raise site, a byte pin keeps dead copy looking alive, while the real
+ * risk is the same one #206 found — somebody re-typing it inline at a new site.
+ * The five-wall arithmetic in the paragraphs below is #206's reading and is
+ * left as the record of what it found.
  *
  * Second, the STRUCTURAL property the capability atlas rests on: this module is
  * imported by the generator, and the Atlas's charter is that it never runs app
@@ -15,31 +23,31 @@
  * hold, since `import type` is erased and dropping the word `type` would be
  * invisible.
  */
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
 import { BRIEF_TOO_SHORT_MESSAGE } from "@shared/briefLength";
 
-import { ROLL_REFUSAL_COPY, LIKENESS_MESSAGE, NOT_A_BEING_MESSAGE, READER_OUTAGE_MESSAGE, UNSUPPORTED_COHORT_MESSAGE } from "./briefRefusalCopy";
+import { ROLL_REFUSAL_COPY, LIKENESS_MESSAGE, NOT_A_BEING_MESSAGE, READER_OUTAGE_MESSAGE } from "./briefRefusalCopy";
 
 const HERE = __dirname;
 
-describe("the roll entrance's five walls each have a sentence", () => {
-  it("the table is exactly the five, and every member resolves", () => {
+describe("the roll entrance's four walls each have a sentence", () => {
+  it("the table is exactly the four, and every member resolves", () => {
     expect(Object.keys(ROLL_REFUSAL_COPY).sort()).toEqual([
-      "likeness", "not_a_being", "reader_outage", "uninterpretable", "unsupported_cohort",
+      "likeness", "not_a_being", "reader_outage", "uninterpretable",
     ]);
     for (const [code, sentence] of Object.entries(ROLL_REFUSAL_COPY)) {
       expect(sentence.length, code).toBeGreaterThan(20);
     }
   });
 
-  it("⚠ FOUR of the five say 'you have not been charged' — and the fifth is the odd one out", () => {
+  it("⚠ THREE of the four say 'you have not been charged' — and the fourth is the odd one out", () => {
     /*
-      All five are free by construction: `rollService` compiles BEFORE it
-      claims, so there is no operation and no ledger entry to unwind. Four of
+      All four are free by construction: `rollService` compiles BEFORE it
+      claims, so there is no operation and no ledger entry to unwind. Three of
       them SAY so.
 
       ⚠ `uninterpretable` does not, and this arm was written expecting it to.
@@ -61,22 +69,42 @@ describe("the roll entrance's five walls each have a sentence", () => {
     expect(silent).toEqual(["uninterpretable"]);
   });
 
-  it("⚠ pins the bytes of the sentence that had NO pin — and both raise sites read it", () => {
+  it("⚠ THE RETIRED WALL'S SENTENCE IS GONE, AND CANNOT COME BACK AS A LITERAL", () => {
     /*
-      `unsupported_cohort` was two inline copies of one sentence. This is the
-      arm that would have caught one of them drifting, and the arm below is the
-      one that catches a THIRD copy being written.
+      ⚠ THIS ARM PINNED `unsupported_cohort`'s BYTES UNTIL #1495. The wall is
+      retired with the two-valued cohort question that was its only source, so
+      a byte pin on its sentence now pins a sentence nothing can say — and a
+      pin on dead copy is how dead copy keeps a live reputation.
+
+      What replaces it points the other way and is the arm the retirement
+      actually needs. Deleting a customer sentence is easy; the failure this
+      guards is somebody LATER re-typing it inline at a new raise site, which
+      is precisely the defect #206 found here in the first place (the same
+      sentence written out twice, pinned by nothing). So: the words appear
+      nowhere under `server/castingV2`, and no member of the table answers to
+      the retired name.
+
+      ⚠ It reads the SOURCE rather than the table, because a re-typed literal
+      would not be a table member — which is the whole shape of the thing it is
+      watching for. Read over the directory, not over one file, because the
+      sentence had two homes when it was alive.
     */
-    expect(UNSUPPORTED_COHORT_MESSAGE).toBe(
-      "Casting makes photographic people, and only ones who are nobody in particular — not a named person, not a character from a game or film, and not anime or illustration yet. Describe the kind of face you want and we'll cast that. You have not been charged.",
-    );
-    expect(ROLL_REFUSAL_COPY.unsupported_cohort).toBe(UNSUPPORTED_COHORT_MESSAGE);
+    expect(Object.keys(ROLL_REFUSAL_COPY)).not.toContain("unsupported_cohort");
+
+    const WORDS = "Casting makes photographic people, and only ones who are nobody in particular";
+    const carrying = readdirSync(HERE)
+      .filter((name) => name.endsWith(".ts"))
+      .filter((name) => readFileSync(join(HERE, name), "utf8").includes(WORDS));
+    /*
+      This file is the one place the sentence is allowed to appear, because
+      naming it is what makes the arm readable — and a guard that cannot quote
+      its own subject is a guard nobody can check.
+    */
+    expect(carrying).toEqual(["briefRefusalCopy.test.ts"]);
 
     const compiler = readFileSync(join(HERE, "briefCompiler.ts"), "utf8");
-    /* Both throws now name the constant, and the literal appears nowhere. */
-    const named = [...compiler.matchAll(/UNSUPPORTED_COHORT_MESSAGE/g)].length;
-    expect(named).toBeGreaterThanOrEqual(3); // the import + two raise sites
-    expect(compiler).not.toContain("Casting makes photographic people, and only ones who are nobody in particular");
+    expect(compiler).not.toContain("UNSUPPORTED_COHORT_MESSAGE");
+    expect(compiler).not.toContain('new BriefRefusal(\n      "unsupported_cohort"');
   });
 
   it("pins the two founder-kept subject walls at their bytes", () => {

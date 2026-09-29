@@ -37,7 +37,7 @@
  */
 import { createModuleLogger } from "../logging/logger";
 import { BRIEF_TEXT_MIN, BRIEF_TOO_SHORT_MESSAGE } from "@shared/briefLength";
-import { LIKENESS_MESSAGE, NOT_A_BEING_MESSAGE, READER_OUTAGE_MESSAGE, UNSUPPORTED_COHORT_MESSAGE, type BriefRefusalCode } from "./briefRefusalCopy";
+import { LIKENESS_MESSAGE, NOT_A_BEING_MESSAGE, READER_OUTAGE_MESSAGE, type BriefRefusalCode } from "./briefRefusalCopy";
 import type { TextEngine } from "../providers/types";
 import {
   EMPTY_STATED_HAIR,
@@ -307,7 +307,6 @@ export {
   LIKENESS_MESSAGE,
   NOT_A_BEING_MESSAGE,
   READER_OUTAGE_MESSAGE,
-  UNSUPPORTED_COHORT_MESSAGE,
   ROLL_REFUSAL_COPY,
   type BriefRefusalCode,
 } from "./briefRefusalCopy";
@@ -1121,7 +1120,12 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     wardrobe: false,
     ink: input.readInk === true,
     fidelity: input.briefFidelity === true,
-    author: true,
+    /*
+      ⚠ `author: true` STOOD HERE AND IS GONE (#1495). #1490 act 1 wrote it as a
+      LITERAL — which is exactly what made the two-valued question unreachable,
+      and therefore what made this retirement readable at the code rather than
+      argued. There is one subject question now, so there is nothing to ask for.
+    */
     /*
       THE STATED OUTFIT IS READ ON THE AUTHOR ROAD (#1222) — the record of what
       this cast is born wearing, extracted from her own sentence under full
@@ -1171,17 +1175,22 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     throw new BriefRefusal("reader_outage", READER_OUTAGE_MESSAGE);
   }
 
-  if (!outcome.ok && outcome.reason === "unsupported_cohort") {
-    throw new BriefRefusal(
-      "unsupported_cohort",
-      UNSUPPORTED_COHORT_MESSAGE,
-    );
-  }
   /*
     THE AUTHOR ROAD'S TWO WALLS (#131 slice C). Both are the reader's
     judgement taken twice (`cohortWallRetried`), both are free before the
     claim, and there is no third: a creature, a robot, an anime girl, a sci-fi
     human all CAST here, which is the mission's whole point.
+
+    ⚠ A THIRD RAISE STOOD ABOVE THESE TWO AND IS GONE (#1495):
+    `unsupported_cohort`, raised when the interpreter's verdict named a cohort
+    the certified adapter could not cast. Only the TWO-valued parse ever
+    produced that verdict, and #1490 act 1 made `author: true` a literal on the
+    one and only production call to `interpretBrief` — so from that commit the
+    raise was unreachable, and #1520 proved it at the bytes rather than by
+    reading: its condition made unreachable on one line left 5,741 tests green,
+    while the identical sabotage on `likeness` three lines down reddened two
+    arms. The question that fed it is retired here, which takes the raise, the
+    `SubjectRefusal` member, the copy constant and the declared door with it.
   */
   if (!outcome.ok && outcome.reason === "likeness") {
     throw new BriefRefusal("likeness", LIKENESS_MESSAGE);

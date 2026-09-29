@@ -31,7 +31,24 @@ import type { TextEngine } from "../providers/types";
 
 import { interpretBrief } from "./interpreter";
 
-const REFUSAL = JSON.stringify({ cohort: "other" });
+/**
+ * A REFUSING READ.
+ *
+ * ⚠ **THIS WAS `{ cohort: "other" }` UNTIL #1495, AND THE CHANGE MATTERS MORE
+ * THAN A FIXTURE SWAP USUALLY DOES.** "other" was the TWO-VALUED cohort
+ * question's whole second answer, and that question is retired: the reader is
+ * asked four values now, so "other" is not a refusal at all — it is a reply to
+ * a question nobody asked, which reads as `unreadable`, and `unreadable`
+ * deliberately buys NO second read (the last arm in this file is the one that
+ * says so). Left alone, every arm here would have gone on driving the retry
+ * with an input the retry does not apply to.
+ *
+ * `likeness` is the honest replacement rather than the nearest one: this suite's
+ * own docblock records the court measuring *"a named character refused BOTH
+ * reads twice"*, and three of the four briefs below are named characters. The
+ * fixture now says what the court actually drove.
+ */
+const REFUSAL = JSON.stringify({ cohort: "likeness" });
 const CAST = JSON.stringify({
   cohort: "photoreal_human",
   role: "a cybernetic augmented man",
@@ -83,7 +100,7 @@ describe("two refusals", () => {
     const outcome = await interpretBrief({ briefText: "Master Chief from Halo", engine });
     expect(outcome.ok).toBe(false);
     if (outcome.ok) return;
-    expect(outcome.reason).toBe("unsupported_cohort");
+    expect(outcome.reason).toBe("likeness");
   });
 
   /*
