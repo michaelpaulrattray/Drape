@@ -356,8 +356,55 @@ export function needsYouFor(live: CrewLiveView, cards: readonly CrewNeedsYouCard
     and stops asking him. A card the edition filed with no issue number is
     kept — nothing live can vouch for it either way.
   */
-  return cards.filter((card) =>
+  const kept = cards.filter((card) =>
     card.issueNumber === null || (!closed.has(card.issueNumber) && held.has(card.issueNumber)));
+  /*
+    AND THE HALF NO EDITION HAS WRITTEN UP (#1467). Everything above SUBTRACTS:
+    it can only ever make the section shorter than the file a shift last wrote,
+    so a question nobody wrote up is a question he never sees. Measured on
+    edition 575: every one of the 143 cards in that file was marked `done`, the
+    section said *"Nothing is waiting on you"*, and two open cards said on their
+    own card that they were waiting on him. A card whose own hold sentence names
+    him is therefore drawn whatever the edition says, and one the edition HAS
+    written up keeps its prose — the join is on the issue number, so a card is
+    never listed twice.
+  */
+  const written = new Set(kept.map((card) => card.issueNumber).filter((n): n is number => n !== null));
+  const bare = live.desk.waitingOnYou
+    .filter((item) => !written.has(item.issueNumber))
+    .map(needsYouCardFromHold);
+  return [...kept, ...bare];
+}
+
+/**
+ * A held card rendered as a needs-you card, with nothing invented.
+ *
+ * ⚠ **ITS `id` IS WHAT MAKES THE REPLY BOX WORK**, and it is the card number
+ * rather than a slug because there is no shift to coin one: `crew_replies.cardId`
+ * is *"bounded at 64 and validated for NOTHING ELSE"* (`server/routes/crew.ts`),
+ * the thread under each card is `replies.filter(r => r.cardId === card.id)`, and
+ * `#N` is the one identity this row and his answer can both be sure of. So he
+ * answers these exactly where he answers every other card.
+ *
+ * ⚠ **AND THE PROSE IS THE FILER'S SENTENCE, NOT A COMPOSED ONE.** `productImpact`
+ * leads the row by his standing order; here it is the `**Waiting on:**` line
+ * that made this card his, which is the most honest thing available and the only
+ * thing that is not a guess. A bare row is visibly terser than a written-up card
+ * — that difference is true, and it is the signal that a shift still owes this
+ * one a proper write-up.
+ */
+function needsYouCardFromHold(item: CrewLiveDesk["waitingOnYou"][number]): CrewNeedsYouCard {
+  return {
+    id: `card-${item.issueNumber}`,
+    title: item.title,
+    productImpact: item.reason,
+    workedExample: null,
+    options: [],
+    recommendation: null,
+    state: "open",
+    filedAt: item.filedAt,
+    issueNumber: item.issueNumber,
+  };
 }
 
 /**
