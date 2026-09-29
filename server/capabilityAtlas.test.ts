@@ -17,7 +17,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildStaticAtlas, declaredCastingProcedures, declaredConceptRefusals, declaredInterpreterRefusals, declaredRollRefusals, declaredServiceRefusals, drivenFindings,
   duplicateDoorFindings, entranceCoverageFindings, listFiles, outcomeId,
-  pinCandidates, pinningTests, reachesDoors, readCommittedAtlas, reasonOfNote, renderCapabilityPage, committedPageIsFresh, lfOnly,
+  pinCandidates, pinningTests, pinsIn, reachesDoors, readCommittedAtlas, reasonOfNote, renderCapabilityPage, committedPageIsFresh, lfOnly,
   CAPABILITY_MD, CASTING_ENTRANCE, type Finding,
 } from "../scripts/lib/capabilityAtlas.mts";
 import { ROADS, UNMAPPED_ENTRANCES, type Road } from "../scripts/capability-atlas-roads.mts";
@@ -310,6 +310,109 @@ describe("the static half reads what the source declares", () => {
         expect(`${site} :: ${line.trim()}`).not.toMatch(/:: (\*|\/\/|\/\*)/);
       }
     }
+  });
+
+  /*
+    #1494 — A BACKTICKED PROSE MENTION OF A DOOR ID IS NOT A PIN.
+
+    `pinningTests` accepted three quote forms and one of them was a BACKTICK,
+    which is exactly how this repository writes an identifier inside a comment.
+    So its own docblock — "as a QUOTED literal, so `busy` in prose does not count
+    as a pin" — pinned `busy` in the sentence denying it, and an ordinary
+    explanatory comment in `styleRefusal.test.ts` naming two walls took them from
+    5 and 3 proving tests to 6 and 4. It inflates coverage in the direction
+    nobody checks: a door reading five pins reads as well driven, and a shift
+    deciding whether a wall needs an arm believes it.
+
+    The sibling reader had already fixed this class for CITATIONS (the arm above)
+    and left it open for PINS.
+  */
+  it("NEGATIVE CONTROL — a door NAMED IN A COMMENT is not pinned by that file (#1494)", () => {
+    /*
+      Driven through `pinsIn` with fixtures rather than through the filesystem
+      scan, for the reason `pinCandidates`'s arms are: a backstop whose only road
+      runs through a real tree is a backstop nobody can prove blocks (working
+      law 3). Writing a comment into a real suite and watching the map is how the
+      defect got in; it is not how the repair is proven.
+
+      All three quote forms are driven in all three comment shapes, because the
+      defect was ONE of nine cells and the other eight were never checked.
+    */
+    for (const quoted of ['"busy"', "'busy'", "`busy`"]) {
+      for (const [shape, line] of [
+        ["docblock body", ` * a wall such as ${quoted} shuts when the queue is full`],
+        ["whole-line //", `// a wall such as ${quoted} shuts when the queue is full`],
+        ["block opener", `/* a wall such as ${quoted} shuts when the queue is full`],
+      ] as const) {
+        const pins = pinsIn([["server/castingV2/fixture.test.ts", line]], ["busy"]);
+        expect(pins.get("busy"), `${shape} with ${quoted}`).toEqual([]);
+      }
+    }
+
+    /*
+      ⚠ THE POSITIVE HALF, AND IT IS THE HALF THAT MATTERS: the repair must not
+      work by dropping the backtick form, or by dropping pins generally. A real
+      assertion in each of the three forms still pins — including the backticked
+      one, which on a line of CODE is a template literal the test really uses —
+      and a trailing comment on a line of code still counts, because the code is
+      there. Without these, deleting the search entirely would pass the arm above.
+    */
+    for (const quoted of ['"busy"', "'busy'", "`busy`"]) {
+      const pins = pinsIn([["server/castingV2/fixture.test.ts", `expect(r.reason).toBe(${quoted});`]], ["busy"]);
+      expect(pins.get("busy"), `code line with ${quoted}`).toEqual(["server/castingV2/fixture.test.ts"]);
+    }
+    expect(
+      pinsIn([["server/castingV2/fixture.test.ts", 'expect(r.reason).toBe("busy"); // the queue wall']], ["busy"])
+        .get("busy"),
+    ).toEqual(["server/castingV2/fixture.test.ts"]);
+
+    /*
+      AND A FILE THAT EXPLAINS A DOOR IN PROSE AND ALSO ASSERTS IT KEEPS ITS PIN.
+      This is the shape almost every real suite is in, and an arm that only drove
+      the two pure cases would be green for a reader that dropped any file with a
+      comment in it.
+    */
+    expect(
+      pinsIn([[
+        "server/castingV2/fixture.test.ts",
+        ` * the queue wall is \`busy\`\nexpect(r.reason).toBe("busy");`,
+      ]], ["busy"]).get("busy"),
+    ).toEqual(["server/castingV2/fixture.test.ts"]);
+  });
+
+  it("every pin on the map has the door on a line of CODE — swept, not spot-checked (#1494)", () => {
+    /*
+      The whole-map half, in the shape the citations arm above uses: asserted
+      over every declared door rather than on the specimens, because the next
+      comment to name a door has not been written yet. Re-read from DISK and
+      re-tested here rather than asked of the reader, so a repair that stops
+      stripping reddens this too.
+
+      Measured at the repair: 63 doors, 173 → 167 pins, six doors moved one file
+      each, none reached zero, and the unpinned count stayed at 0. Each of the
+      six mentions was that file's ONLY one, so the file asserted nothing about
+      the door it was credited with proving.
+    */
+    let checked = 0;
+    for (const entry of buildStaticAtlas(CORPUS).declared) {
+      /* Pins are searched on the BARE member name and attached to the QUALIFIED
+         entry (the concept and roll entrances) — `buildStaticAtlas`'s own
+         comment. The bare name is what a test quotes, so it is what is looked
+         for here. */
+      const bare = entry.id.replace(/^(concept|roll)\./, "");
+      const quoted = [`"${bare}"`, `'${bare}'`, `\`${bare}\``];
+      for (const file of entry.pinnedBy) {
+        const onCode = readFileSync(file, "utf8")
+          .split("\n")
+          .filter((line) => !/^\s*(\*|\/\/|\/\*)/.test(line))
+          .some((line) => quoted.some((q) => line.includes(q)));
+        expect(onCode, `${file} pins ${entry.id} from prose only`).toBe(true);
+        checked += 1;
+      }
+    }
+    /* The scan proves nothing if it swept nothing — the population is asserted
+       as a floor, not as the 167 of the day, so closing a door does not redden it. */
+    expect(checked).toBeGreaterThan(100);
   });
 
   it("NEGATIVE CONTROL — this file's own mention of an id is never counted as its pin", () => {

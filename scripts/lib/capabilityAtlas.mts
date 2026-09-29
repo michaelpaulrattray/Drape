@@ -156,6 +156,60 @@ export const listFiles = (dir: string, match: (name: string) => boolean): string
 const rel = (file: string): string => path.relative(repoRoot, file).split(path.sep).join("/");
 
 /**
+ * A COMMENT LINE IS NEITHER A DECLARATION, A CITATION, NOR A PIN — the one
+ * predicate every reader in this file applies, declared above all of them.
+ *
+ * ⚠ **ITS LIMIT IS DECLARED RATHER THAN IMPLIED**: this skips a line whose
+ * first non-space character OPENS a comment, which is every docblock body and
+ * every whole-line `//`. A trailing comment on a line of code still counts —
+ * and should, the code is there — and an id inside a string literal always
+ * did. A template literal whose continuation line happens to begin with `*` is
+ * read as a comment too, and that direction is the safe one for every reader
+ * here: a door reads UNPINNED or undeclared and asks for an arm, rather than
+ * reading proven when it is not.
+ *
+ * ⚠ **AND THE BIGGEST HALF OF THAT LIMIT IS MEASURED RATHER THAN GUESSED — IT
+ * DOES NOT SEE A `/* … *\/` BLOCK WHOSE CONTINUATION LINES CARRY NO `*`, WHICH
+ * IS THIS REPOSITORY'S DOMINANT COMMENT STYLE (#1494).** A line-SHAPE
+ * test cannot: only a walk carrying "am I inside a block" can, and that is a
+ * different reader. **So every verdict here is a FLOOR, not coverage** — the
+ * rule this repository writes down for a hand sweep, applied to the guard
+ * itself. Measured with a real block tracker the day the line-shape repair
+ * landed: **167 pins under this reader, 153 under a block-aware one — 14 more
+ * across 8 doors still taken from prose.** It was NOT widened in that commit for
+ * the reason the measurement itself gives: block-awareness **empties
+ * `scope_mismatch`**, whose only pin is two sentences in `refineService.test.ts`
+ * — so that door has never had an arm and the widening owes one. A repair that
+ * drops a door to zero is worse than the inflation it fixes (the card's own
+ * bar), so the remainder is its own card carrying this measurement — a missing
+ * arm for `scope_mismatch` first, the reader widened second — and not a silent
+ * widening here. The instrument that produced the figure is named on that card;
+ * a block tracker that does not tokenise is fooled by `/*` inside a STRING, so
+ * whatever ships there owes a fixture arm for that case, and `pinsIn` below is
+ * drivable with fixtures precisely so it costs nothing to write.
+ */
+function isCommentLine(line: string): boolean {
+  return /^\s*(\*|\/\/|\/\*)/.test(line);
+}
+
+/**
+ * The strip itself, on text that is already in hand — `codeLinesOf` and
+ * `codeLinesIfPresent` below are its two file-reading doors, and `pinsIn` is its
+ * third consumer since #1494.
+ *
+ * ⚠ **IT IS ONE FUNCTION BECAUSE IT WAS THREE COPIES OF ONE LINE, AND THE
+ * THIRD COPY IS WHAT #1494 WAS ABOUT.** Working law 4: a second list shadowing
+ * a source of truth always drifts from it, and the drift here is not
+ * hypothetical — the comment rule has now been fixed THREE TIMES on three
+ * readers of this file, each time as a fresh instance (see the class note on
+ * `codeLinesOf`). A repair that added a fourth copy would be the same mistake
+ * wearing the fix's clothes.
+ */
+function codeLinesIn(text: string): string {
+  return text.split("\n").filter((line) => !isCommentLine(line)).join("\n");
+}
+
+/**
  * Reads a source file as CODE LINES ONLY.
  *
  * ⚠ **#206 — THE COMMENT GUARD WAS ON THE CITATION READER AND NOT ON THE
@@ -175,9 +229,23 @@ const rel = (file: string): string => path.relative(repoRoot, file).split(path.s
  * a door on the map that does not exist, while a phantom citation only points
  * at the wrong line of a door that does. Measured when this landed: filtering
  * removes exactly the phantom and no real door (`_shift206_population.json`).
+ *
+ * ⚠ **AND THE CLASS HAS NOW BEEN FIXED THREE TIMES ON THREE READERS OF THIS ONE
+ * FILE, EACH TIME AS A FRESH INSTANCE — #1494 IS THE THIRD, AND IT IS WHY THE
+ * STRIP IS ONE FUNCTION NOW.** The citation reader first (two docblocks cited as
+ * raise sites), the population readers second (the paragraph above, which is
+ * where the class should have been named and was not), and the PIN reader third:
+ * `pinningTests` accepted a BACKTICKED literal, which is how this repository
+ * writes an identifier inside a comment, so an explanatory sentence naming a
+ * wall counted as a test PROVING that wall can shut. Working law 7 — fix the
+ * class, not the instance — and the sweep it asks for is the whole point: every
+ * reader in this file that asks "does this text name a door" goes through
+ * `codeLinesIn`, so a FOURTH reader cannot be written with the defect by
+ * omission. `server/capabilityAtlas.test.ts` drives the rule with fixtures on
+ * both sides.
  */
 function codeLinesOf(file: string): string {
-  return fs.readFileSync(file, "utf8").split("\n").filter((line) => !isCommentLine(line)).join("\n");
+  return codeLinesIn(fs.readFileSync(file, "utf8"));
 }
 
 /**
@@ -197,7 +265,7 @@ function codeLinesOf(file: string): string {
 function codeLinesIfPresent(file: string): string | null {
   const text = readIfPresent(file);
   if (text === null) return null;
-  return text.split("\n").filter((line) => !isCommentLine(line)).join("\n");
+  return codeLinesIn(text);
 }
 
 /** Every `refusal("id"` in the service modules — the door's own name. */
@@ -444,9 +512,23 @@ export function entranceCoverageFindings(input: {
   return findings;
 }
 
-/** The scope flags, read off their own `_SCOPE_ENV` constants. */
+/**
+ * The scope flags, read off their own `_SCOPE_ENV` constants.
+ *
+ * ⚠ **THE LAW-7 SWEEP OF #1494 FOUND THIS READER STILL ON RAW TEXT, and it is a
+ * POPULATION reader — the shape #206's note above calls the worse-shaped half,
+ * because a phantom in a population is a flag on the map that does not exist.**
+ * A docblock in `castingV2Scope.ts` writing `_SCOPE_ENV = "CASTING_X_SCOPE"` to
+ * explain the shape would have declared `CASTING_X_SCOPE`, which is #206's
+ * incident exactly, one reader over. **Measured before the change and after:
+ * 21 flags either way, none lost and none phantom** — so it was inert at this
+ * tree and open by construction, which is what `pinningTests` was until an
+ * ordinary comment made it fire. Fixed rather than filed because it is one
+ * word: `codeLinesOf` is the FIXED-NAME door, so a missing declared source
+ * still throws.
+ */
 export function declaredFlags(): string[] {
-  const text = fs.readFileSync(path.join(SOURCE_DIR, "castingV2Scope.ts"), "utf8");
+  const text = codeLinesOf(path.join(SOURCE_DIR, "castingV2Scope.ts"));
   const ids = new Set<string>();
   /* `[A-Z0-9_]` — the first cut read `[A-Z_]` and silently dropped
      CASTING_V2_SCOPE, the parent of every other flag, on its digit. */
@@ -626,28 +708,98 @@ export function pinCandidates(
 }
 
 /**
- * Which test files name an id — as a QUOTED literal, so `busy` in prose does not
- * count as a pin, and only among the files `pinCandidates` allows.
+ * Which test files name an id — as a QUOTED literal ON A LINE OF CODE, and only
+ * among the files `pinCandidates` allows.
  *
  * A refusal with no pin is a door nobody has proven can shut. The reach rule
  * that decides who may pin, and the measurements behind it, are documented on
  * `pinCandidates` and `reachesDoors` above.
+ *
+ * ⚠ **AND UNTIL 2026-09-29 THIS DOCBLOCK'S OWN FIRST SENTENCE WAS FALSE OF THE
+ * FORM THIS REPOSITORY WRITES PROSE IN — #1494.** It read *"as a QUOTED
+ * literal, so `busy` in prose does not count as a pin"*, and the three accepted
+ * forms were `"id"`, `'id'` and a **BACKTICKED** one — which is exactly how
+ * every identifier is written inside a comment here. **So the sentence denying
+ * the defect committed it**: the word it quoted as an example of what does not
+ * count was, in that very line, pinning that door. Found the day #1490 wrote an
+ * ordinary explanatory comment naming two walls in code-quotes and **the map
+ * credited that file with proving both** — 5 → 6 and 3 → 4 pins on the strength
+ * of a sentence that asserts nothing. #1490 de-quoted its own prose to keep the
+ * map honest at that commit; this is the instrument.
+ *
+ * ⚠ **THE SIBLING READER HAD ALREADY FIXED THIS CLASS FOR CITATIONS AND LEFT IT
+ * OPEN FOR PINS** — `raiseSites`'s *"A COMMENT IS NOT A RAISE SITE"* paragraph,
+ * 2 of 160 sites. One predicate now serves both, which is the actual repair:
+ * the defect was not the regex, it was that only one of two readers had one.
+ *
+ * ⚠ **AND IT WAS MEASURED BEFORE AND AFTER PER DOOR, because a repair that
+ * silently drops a door to zero pins is worse than the inflation it fixes** —
+ * the same bar the reach rule above cleared. At the tree of 2026-09-29, both
+ * readings taken through this function itself: **63 doors, 173 → 167 pins, SIX
+ * doors move, and no door reaches zero — the unpinned count is 0 before and 0
+ * after.** Each of the six lost exactly one file, every one of them a docblock
+ * line, and in every case it was that file's ONLY mention of the door, so the
+ * file genuinely asserted nothing about it:
+ *
+ *   `empty`          6 → 5  `referenceSlotCatalogue.test.ts:571`
+ *   `no_being`       2 → 1  `conceptDescribeCopy.test.ts:14`
+ *   `notASlot`       9 → 8  `vocabularyPin.test.ts:90`
+ *   `not_a_being`    3 → 2  `conceptDescribeCopy.test.ts:15`
+ *   `wall_likeness`  7 → 6  `refineInterpreterReferenceEntrance.test.ts:8`
+ *   `wall_unbacked`  4 → 3  `vocabularyPin.test.ts:67`
+ *
+ * **The thinnest survivor was read rather than counted**: `no_being`'s one
+ * remaining pin is three `toEqual({ ok: false, reason: "no_being" })` arms in
+ * `conceptDescribe.test.ts`. So the repair orphans nothing — it only stops a
+ * coverage number counting a sentence.
  */
 export function pinningTests(ids: string[]): Map<string, string[]> {
   const tests = listFiles(path.join(repoRoot, "server"), (n) => n.endsWith(".test.ts"));
-  const texts = pinCandidates(
-    /* A suite that left between the listing and the read pins nothing — the same
-       answer as a suite that never named the door — so it is dropped rather than
-       throwing. `flatMap` is how the empty answer says so without a second pass. */
-    tests.flatMap((file) => {
-      const text = readIfPresent(file);
-      return text === null ? [] : [[rel(file), text] as const];
-    }),
+  return pinsIn(
+    pinCandidates(
+      /* A suite that left between the listing and the read pins nothing — the same
+         answer as a suite that never named the door — so it is dropped rather than
+         throwing. `flatMap` is how the empty answer says so without a second pass. */
+      tests.flatMap((file) => {
+        const text = readIfPresent(file);
+        return text === null ? [] : [[rel(file), text] as const];
+      }),
+    ),
+    ids,
   );
+}
+
+/**
+ * The id search itself, over `[relative path, source]` pairs — which files name
+ * each id on a line of CODE.
+ *
+ * Separate from `pinningTests` for the reason `pinCandidates` is, and stated
+ * there: **a backstop whose only road runs through a real filesystem scan is a
+ * backstop nobody can prove blocks** (working law 3). The comment rule is the
+ * whole point of this function, and until it could be driven with a fixture the
+ * only way to test it was to write a comment into a real suite and watch the
+ * map — which is how the defect got in.
+ *
+ * `pinCandidates` keeps reading the RAW text and runs BEFORE this: its two
+ * filters ask what a file IMPORTS and whether it names the census's own module,
+ * and both want the whole file. Stripping comments first would make a
+ * self-exclusion admit MORE files, which is the wrong direction for an exclusion.
+ */
+export function pinsIn(
+  entries: ReadonlyArray<readonly [string, string]>,
+  ids: readonly string[],
+): Map<string, string[]> {
+  /*
+    Joining the surviving lines with "\n" is exactly equivalent to testing each
+    line in turn — a quoted id is a single-line token, so no match can span the
+    join — and it keeps this at one `includes` per (file, id) instead of one per
+    line, which is what the whole-text read cost before.
+  */
+  const code = entries.map(([file, text]) => [file, codeLinesIn(text)] as const);
   const out = new Map<string, string[]>();
   for (const id of ids) {
     const quoted = [`"${id}"`, `'${id}'`, `\`${id}\``];
-    out.set(id, texts.filter(([, text]) => quoted.some((q) => text.includes(q))).map(([file]) => file));
+    out.set(id, code.filter(([, text]) => quoted.some((q) => text.includes(q))).map(([file]) => file));
   }
   return out;
 }
@@ -669,16 +821,12 @@ export function pinningTests(ids: string[]): Map<string, string[]> {
  * LAST site, so the repair orphans nothing; it only stops a citation pointing
  * at prose when it claims to point at the throw.
  *
- * ⚠ **ITS LIMIT IS DECLARED RATHER THAN IMPLIED**: this skips a line whose
- * first non-space character OPENS a comment, which is every docblock body and
- * every whole-line `//`. A trailing comment on a line of code still counts —
- * and should, the code is there — and an id inside a string literal always
- * did. A real tokenizer is not bought for two lines.
+ * The predicate itself, and the limit it declares, are on `isCommentLine` at the
+ * top of this file, above every reader that applies it. This reader stays
+ * LINE-WISE rather than calling `codeLinesIn` because it cites a LINE NUMBER,
+ * and stripping lines renumbers the file — the citation would point at the
+ * wrong line, which is the defect this guard exists to remove.
  */
-function isCommentLine(line: string): boolean {
-  return /^\s*(\*|\/\/|\/\*)/.test(line);
-}
-
 export function raiseSites(): Map<string, string[]> {
   const sites = new Map<string, string[]>();
   const add = (id: string, site: string) => sites.set(id, [...(sites.get(id) ?? []), site]);

@@ -84,8 +84,7 @@
         "id": "concept.no_being",
         "kind": "concept-refusal",
         "pinnedBy": [
-          "server/castingV2/conceptDescribe.test.ts",
-          "server/castingV2/conceptDescribeCopy.test.ts"
+          "server/castingV2/conceptDescribe.test.ts"
         ],
         "sites": [
           "server/castingV2/conceptDescribe.ts:1271",
@@ -191,7 +190,6 @@
           "server/castingV2/faceScan.test.ts",
           "server/castingV2/faceScanService.test.ts",
           "server/castingV2/readerOutageRefusal.test.ts",
-          "server/castingV2/referenceSlotCatalogue.test.ts",
           "server/castingV2/refineRefusals.test.ts"
         ],
         "sites": [
@@ -361,8 +359,7 @@
           "server/castingV2/openLaneKind.test.ts",
           "server/castingV2/referenceSlotCatalogue.test.ts",
           "server/castingV2/refineService.test.ts",
-          "server/castingV2/repaintAsks.test.ts",
-          "server/castingV2/vocabularyPin.test.ts"
+          "server/castingV2/repaintAsks.test.ts"
         ],
         "sites": [
           "server/castingV2/cannotSayCopy.ts:141"
@@ -527,7 +524,6 @@
         "kind": "roll-refusal",
         "pinnedBy": [
           "server/castingV2/briefRefusalCopy.test.ts",
-          "server/castingV2/conceptDescribeCopy.test.ts",
           "server/castingV2/creativeRegisterScope.test.ts"
         ],
         "sites": [
@@ -776,7 +772,6 @@
           "server/castingV2/inkReferenceGate.test.ts",
           "server/castingV2/referenceWordsLane.test.ts",
           "server/castingV2/refineDelta.test.ts",
-          "server/castingV2/refineInterpreterReferenceEntrance.test.ts",
           "server/castingV2/refineRefusals.test.ts",
           "server/castingV2/stageWallBackstop.test.ts"
         ],
@@ -814,8 +809,7 @@
         "pinnedBy": [
           "server/castingV2/priorContextDoor.test.ts",
           "server/castingV2/refineRefusals.test.ts",
-          "server/castingV2/stageWallBackstop.test.ts",
-          "server/castingV2/vocabularyPin.test.ts"
+          "server/castingV2/stageWallBackstop.test.ts"
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:537",
