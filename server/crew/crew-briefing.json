@@ -1,7 +1,7 @@
 {
-  "edition": 568,
-  "updatedAt": "2026-09-29T09:40:00.000Z",
-  "shift": "Foreman (night shift) — the old casting lane's last two pieces were settled tonight, and the answer turned out to be that they cannot leave together. Nothing you can see changes: not one line of running code moved, only the notes beside it and one new safety check. The short version is that the old way of casting has had no way into a paid roll since 24 September, but nothing was actually WATCHING for that — we checked that the one place that calls the compiler asks for the new road, and never that it is the only place calling. A second one added by mistake would have quietly put a paid roll back on the old road with every existing check still green, so that hole is now closed and deliberately broken seven different ways to prove the new check can actually fail. Two other things worth knowing: the note on a test-only compiler was inviting future work to use it, and the thing it hands back is the OLD road's output — that invitation is withdrawn; and the plan document contradicted itself about one line of the casting sheet, which if followed would have made all 220 of your older sheets read as though they were made the new way. I also measured the waste everyone assumed was slowing your rolls down: it is 0.22 of a millisecond per roll against a roll that takes a minute or two, so nobody should tell you this makes casting faster — it makes the code honest, which is a different and smaller claim. What is left is one properly-sized job (#1490): 101 checks across 20 test files still describe the old road, and each one has to be read rather than counted, because most of them are testing two things at once — one that is still true and one that is not.",
+  "edition": 569,
+  "updatedAt": "2026-09-29T11:15:00.000Z",
+  "shift": "Foreman (night shift) — the biggest single piece of the old casting lane came out tonight, and nothing you can see changes. The old way of casting has had no way into a paid roll since 24 September, but the code that did it was still sitting inside the thing that builds every roll, so anyone reading it to learn what we actually send the engine read the wrong answer. That code is gone now. The real work was not deleting it — that part is small — it was the 107 checks across 23 test files that were watching the old road and had to be read one at a time rather than counted. Most of them were testing two things at once: something still true and something no longer true. About a third were re-pointed at what the studio now genuinely promises, and several came out STRONGER — the check that your casting category reaches all eight pictures no longer has to trust a rebuilding step, because your own sentence IS the instruction now. 43 of them I could not save, and I want to be straight about that rather than quiet: they were checking that a decision the studio made about a face actually reached the picture, and on the new road there is nothing per-picture to check — all eight get one instruction and the engine varies the rest. That is the class your own eye caught five separate times, so losing the checks is a real loss, not a tidy-up. It is written down on its own card (1125), it belongs to the auto-detector work later on the ladder, and every file says out loud what left it. Two of the checks I found had already quietly stopped testing anything before I arrived — one was comparing the studio to itself — and those are named rather than left looking green. Everything passed: 879 test files, 14,619 checks, nothing red. One correction to my own writing, caught in review and worth keeping: I said briefs that used to be refused now get made. That was only ever true of the tests, not of you — no customer's refusal changed tonight.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -248,6 +248,10 @@
         {
           "state": "done",
           "title": "The old lane's composer and its test-only twin are SETTLED, and the honest answer is that they leave in two steps rather than one (#1445, slice 4 of five). Nothing about your rolls changes — the production code is untouched, comment for comment. What was decided: the old road cannot be switched off in the same act that deletes the thing it uses, because a second compiler keeps using it, so the order is forced. What shipped is the missing guard — until tonight we proved the one caller asks for the new road, but never that it was the ONLY caller, which is the shape a mistake would actually take. And the remaining job is now measured properly and sized: the card that ordered this said 86 checks across 17 files; the code says 101 across 20, and three of the files it never named are in there — one of them still testing a switch we deleted a week ago. That job is #1490 and it is its own night, not a tidy-up."
+        },
+        {
+          "title": "The old way of casting is OUT of the code that builds every roll (#1490, act 1 of 2). Nothing you can see changes — it has had no way into a paid roll since you said Yes on 24 September. What took the night was the 107 checks that were still watching it: each one read rather than counted, because most were testing one thing that is still true and one that is not. A third were re-pointed and some are now stronger; 43 could not be saved and are a declared loss on card 1125, because they checked that a per-picture decision reached the picture and there are no per-picture decisions any more. Act 2 (the test-only compiler and the composer) is still owed and has to come second.",
+          "state": "in-progress"
         }
       ]
     },
@@ -486,7 +490,7 @@
         }
       ],
       "recommendation": "A. You did not make a mistake — you compared two pictures, which is what the comparison is for. What was missing was the product saying what it was about to do with your 450 credits.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-29T08:05:00.000Z",
       "issueNumber": 1478
     },
@@ -3497,7 +3501,7 @@
       "id": "plate-from-master-1471",
       "title": "The outfit picture looks at her now — your correction, built and driven",
       "question": "WHAT YOU ARE LOOKING AT — three rows, all rendered tonight on your own casts. ROW ONE is the one that matters: your Sifr's signed picture on the left, then the outfit picture the way it worked yesterday, then the way it works now. The middle pair is a DIFFERENT WOMAN in a long slit dress — it had never seen her, so it invented both the person and the top. The right pair is her, in the top she was actually signed in: the same collar clasp, the same two buckled straps, the same graphic on the chest, the same tattooed arm. ROW TWO follows that through to the picture a customer keeps, with yesterday's beside it for comparison. ROW THREE is one of your creatures, because a being with no clothes gets this extra picture too — for it the picture settles the body below the crop instead of a garment, and it worked. Nothing is being asked of you here. The only thing still owed is your eye on a real sign, which is the same thing card 1278 is waiting for.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-29T05:30:00.000Z",
       "issueNumber": 1278,
       "cardId": "sheet-shape-1278",
@@ -8969,6 +8973,13 @@
       "status": "merged",
       "prNumber": 1489,
       "note": "Nothing a customer sees; not one line of running code changed, comment for comment."
+    },
+    {
+      "id": "house-branch-1490-act1",
+      "title": "The old casting road comes OUT of the thing that builds every roll (#1490, act 1 of 2)",
+      "status": "merged",
+      "prNumber": 1493,
+      "note": "Merged ba1b30a6. Nothing a customer sees; 107 checks read one at a time, 43 of them a declared loss on card 1125."
     }
   ],
   "problems": [
@@ -9235,7 +9246,9 @@
     231,
     232,
     233,
-    234
+    234,
+    235,
+    236
   ],
   "nextUp": {
     "readAt": "2026-09-29T09:36:58.613Z",
