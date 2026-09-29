@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowRight } from "lucide-react";
 
 import { CastingModal } from "@/foundation/CastingModal";
+import { SIGN_VERSION_COPY, type SignVersion } from "@/features/castingV2/signVersion";
 import { CAST_NAME_MAX_LENGTH } from "@shared/inputLimits";
 
 /**
@@ -35,6 +36,7 @@ import { CAST_NAME_MAX_LENGTH } from "@shared/inputLimits";
 export function SignConfirm({
   indexLabel,
   imageUrl,
+  signsVersion,
   priceCredits,
   busy,
   onConfirm,
@@ -50,6 +52,18 @@ export function SignConfirm({
   indexLabel: string;
   /** Her face, at the size a decision this size deserves. */
   imageUrl: string | null;
+  /**
+   * WHICH VERSION THAT FACE IS, when she has more than one (#1478, his ruling
+   * **A**). `null` says nothing — she has never been edited, so there is no
+   * version to name and naming one would invent the question.
+   *
+   * `signVersion.ts` holds the rule and the words; this component only draws
+   * them. It is `null` while the answer is still being fetched and `null` if
+   * the fetch fails, which is deliberate: the line is a claim about where 450
+   * credits are going, and silence is today's product while a wrong sentence
+   * would be a new defect.
+   */
+  signsVersion: SignVersion | null;
   priceCredits: number;
   busy: boolean;
   onConfirm: (name: string) => void;
@@ -104,6 +118,19 @@ export function SignConfirm({
               }}
             />
           </div>
+
+          {/*
+            WHAT THIS IS ABOUT TO MAKE PERMANENT (#1478) — said last, because
+            the button is next.
+
+            Rendered only when she has been edited at all. On a face with one
+            picture the sentence would name a distinction she does not have,
+            which is the disappearing-technology law's own failure mode; the
+            reasoning and the words both live in `signVersion.ts`.
+          */}
+          {signsVersion ? (
+            <p className="dpc-modal__version">{SIGN_VERSION_COPY[signsVersion]}</p>
+          ) : null}
 
           {/*
             Approximate, and the tilde stays: generation cost varies, and a

@@ -37,7 +37,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 51
+      "moduleCount": 52
     },
     {
       "id": "domain:client-shared",
@@ -1521,6 +1521,12 @@
     {
       "id": "module:client/src/features/castingV2/signTarget.ts",
       "path": "client/src/features/castingV2/signTarget.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/signVersion.ts",
+      "path": "client/src/features/castingV2/signVersion.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -10628,6 +10634,10 @@
       "path": "client/src/features/castingV2/signTarget.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/signVersion.test.ts",
+      "path": "client/src/features/castingV2/signVersion.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/singleFlight.test.ts",
       "path": "client/src/features/castingV2/singleFlight.test.ts"
     },
@@ -17014,6 +17024,11 @@
     },
     {
       "from": "module:client/src/features/castingV2/components/SignConfirm.tsx",
+      "to": "module:client/src/features/castingV2/signVersion.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/SignConfirm.tsx",
       "to": "module:client/src/foundation/CastingModal.tsx",
       "kind": "imports"
     },
@@ -19975,6 +19990,11 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/signTarget.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/signVersion.ts",
       "kind": "imports"
     },
     {
