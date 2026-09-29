@@ -10546,6 +10546,27 @@ describe("an ink design IS scopable — the door, at the wire", () => {
     ).then(() => null, (error: unknown) => error);
 
     expect(refused, "an eye ask inside an ink scope is still refused").not.toBeNull();
+    /*
+      ⚠ AND THE DOOR IS NAMED BY ITS OWN ID HERE, WHICH IT WAS NOT UNTIL #1498.
+
+      This arm has DRIVEN `scope_mismatch` since the day it was written — it
+      fires the wall and asserts the sentence only that wall can compose. What
+      it never did was say the id on a line of code, and the capability map
+      counts pins by exactly that. So the map's only two mentions of the door
+      were both PROSE (this file, twice), which is to say the wall the census
+      called proven had never been proven by anything the census could see.
+
+      One line, at the arm that was already doing the work. The alternative —
+      writing a fresh arm — would have put a second driver beside a working one
+      for the sake of a counter, which is the duplicate-arm shape this suite's
+      own sabotage campaign deleted two of.
+
+      It matters now because the pin reader has stopped counting prose:
+      MEASURED, widening it with this line absent takes `scope_mismatch` to ZERO
+      pins and the unpinned set from 16 to 17, and a repair that silently
+      empties a door is worse than the inflation it fixes (#1494's own bar).
+    */
+    expect(refusalOf(refused)?.reason, "the wall must name itself, not only speak").toBe("scope_mismatch");
     expect(String((refused as { message?: string }).message ?? refused))
       .toMatch(/left upper arm tattoo/);
     expect(String((refused as { message?: string }).message ?? refused),

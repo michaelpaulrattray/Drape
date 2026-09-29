@@ -207,9 +207,50 @@ function isCommentLine(line: string): boolean {
  * readers of this file, each time as a fresh instance (see the class note on
  * `codeLinesOf`). A repair that added a fourth copy would be the same mistake
  * wearing the fix's clothes.
+ *
+ * ⚠ **AND IT CARRIES A BLOCK NOW, WHICH IS THE HALF `isCommentLine` CANNOT DO
+ * (#1498).** A line-shape test asks whether a line STARTS a comment; it cannot
+ * see the line above it, so it cannot know it is inside one. This repository's
+ * dominant style is a `/* … *\/` block whose continuation lines carry no `*`
+ * prefix, and every one of those read as code. Only a walk carrying *am I
+ * inside a block* can tell, which is this function and not that predicate.
+ *
+ * **The OPEN condition is deliberately unchanged** — a block begins only where
+ * `isCommentLine` already said one does, at a line whose first non-space
+ * characters are `/*`. That is what closes the trap the measurement on #1498
+ * named in advance: **a `/*` inside a STRING LITERAL cannot open a block here,
+ * because it is never at the start of its line.** What remains, stated rather
+ * than discovered, is a template literal whose own continuation line begins
+ * with `/*` — and that direction is the safe one every reader in this file
+ * already fails toward: a door reads unpinned and asks for an arm, rather than
+ * reading proven when it is not.
+ *
+ * **Blanked, not dropped.** The old form filtered lines out; this keeps the
+ * line count, so a reader that cites a LINE NUMBER can share the rule instead
+ * of writing a fourth copy of it. Nothing that reads this today cares — they
+ * all `includes` over the join — and the next one will.
  */
 function codeLinesIn(text: string): string {
-  return text.split("\n").filter((line) => !isCommentLine(line)).join("\n");
+  const out: string[] = [];
+  let inBlock = false;
+  for (const line of text.split("\n")) {
+    if (inBlock) {
+      const close = line.indexOf("*/");
+      if (close === -1) { out.push(""); continue; }
+      inBlock = false;
+      /* What follows the close IS code, and on a line that `isCommentLine`
+         would have thrown away whole. */
+      out.push(line.slice(close + 2));
+      continue;
+    }
+    if (!isCommentLine(line)) { out.push(line); continue; }
+    /* It opens a block and does not close it on the same line — everything
+       under it is prose until a `*\/` says otherwise. `//` and a bare `*`
+       continuation open nothing, exactly as before. */
+    if (/^\s*\/\*/.test(line) && !line.includes("*/")) inBlock = true;
+    out.push("");
+  }
+  return out.join("\n");
 }
 
 /**

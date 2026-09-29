@@ -141,7 +141,6 @@
         "id": "concept.unreadable",
         "kind": "concept-refusal",
         "pinnedBy": [
-          "server/castingV2/cohortWallRetry.test.ts",
           "server/castingV2/conceptDescribe.test.ts",
           "server/castingV2/conceptDescribeCopy.test.ts",
           "server/castingV2/creativeRegisterScope.test.ts",
@@ -153,13 +152,10 @@
           "server/castingV2/makeupFromReference.test.ts",
           "server/castingV2/openLaneAccept.test.ts",
           "server/castingV2/openLaneKind.test.ts",
-          "server/castingV2/readerFrameBound.test.ts",
           "server/castingV2/readerOutageRefusal.test.ts",
           "server/castingV2/referenceAttachService.test.ts",
-          "server/castingV2/referenceClassGate.test.ts",
           "server/castingV2/referenceMediumDoor.test.ts",
           "server/castingV2/referenceWordsLane.test.ts",
-          "server/castingV2/refineInterpreterCeiling.test.ts",
           "server/castingV2/refineService.test.ts",
           "server/castingV2/truncatedReplyReaders.test.ts",
           "server/castingV2/uploadRefusalCopy.test.ts",
@@ -188,7 +184,6 @@
         "pinnedBy": [
           "server/castingV2/diagnosticCapture.test.ts",
           "server/castingV2/faceScan.test.ts",
-          "server/castingV2/faceScanService.test.ts",
           "server/castingV2/readerOutageRefusal.test.ts",
           "server/castingV2/refineRefusals.test.ts"
         ],
@@ -250,9 +245,7 @@
         "id": "gate_ink_unkeepable",
         "kind": "interpreter-refusal",
         "pinnedBy": [
-          "server/castingV2/refineDelta.test.ts",
-          "server/castingV2/refineRefusals.test.ts",
-          "server/castingV2/refineService.test.ts"
+          "server/castingV2/refineRefusals.test.ts"
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:588",
@@ -357,8 +350,6 @@
           "server/castingV2/mintedSlots.test.ts",
           "server/castingV2/openKindPolicy.test.ts",
           "server/castingV2/openLaneKind.test.ts",
-          "server/castingV2/referenceSlotCatalogue.test.ts",
-          "server/castingV2/refineService.test.ts",
           "server/castingV2/repaintAsks.test.ts"
         ],
         "sites": [
@@ -597,7 +588,6 @@
         "id": "scope_unknown",
         "kind": "service-refusal",
         "pinnedBy": [
-          "server/castingV2/facePanel.test.ts",
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
@@ -663,8 +653,7 @@
         "charge": "refunded",
         "pinnedBy": [
           "server/castingV2/cannotSayCopy.test.ts",
-          "server/castingV2/repaintAsks.test.ts",
-          "server/castingV2/vacantPhrase.test.ts"
+          "server/castingV2/repaintAsks.test.ts"
         ],
         "sites": [
           "server/castingV2/repaintAsks.ts:639",
@@ -691,8 +680,6 @@
         "pinnedBy": [
           "server/castingV2/cannotSayCopy.test.ts",
           "server/castingV2/inkBeyondTodayAsk.test.ts",
-          "server/castingV2/inkDesignForAsk.test.ts",
-          "server/castingV2/refineService.test.ts",
           "server/castingV2/repaintAsks.test.ts"
         ],
         "sites": [
@@ -703,7 +690,6 @@
         "id": "unreadable",
         "kind": "interpreter-refusal",
         "pinnedBy": [
-          "server/castingV2/cohortWallRetry.test.ts",
           "server/castingV2/conceptDescribe.test.ts",
           "server/castingV2/conceptDescribeCopy.test.ts",
           "server/castingV2/creativeRegisterScope.test.ts",
@@ -715,13 +701,10 @@
           "server/castingV2/makeupFromReference.test.ts",
           "server/castingV2/openLaneAccept.test.ts",
           "server/castingV2/openLaneKind.test.ts",
-          "server/castingV2/readerFrameBound.test.ts",
           "server/castingV2/readerOutageRefusal.test.ts",
           "server/castingV2/referenceAttachService.test.ts",
-          "server/castingV2/referenceClassGate.test.ts",
           "server/castingV2/referenceMediumDoor.test.ts",
           "server/castingV2/referenceWordsLane.test.ts",
-          "server/castingV2/refineInterpreterCeiling.test.ts",
           "server/castingV2/refineService.test.ts",
           "server/castingV2/truncatedReplyReaders.test.ts",
           "server/castingV2/uploadRefusalCopy.test.ts",
@@ -762,7 +745,6 @@
         "id": "upload.tooSmall",
         "kind": "upload-refusal",
         "pinnedBy": [
-          "server/castingV2/inkDeliveryCrop.test.ts",
           "server/castingV2/inkUploadDoor.test.ts",
           "server/castingV2/referenceAttachService.test.ts",
           "server/castingV2/uploadRefusalCopy.test.ts",
@@ -777,7 +759,6 @@
         "id": "upload.unreadable",
         "kind": "upload-refusal",
         "pinnedBy": [
-          "server/castingV2/cohortWallRetry.test.ts",
           "server/castingV2/conceptDescribe.test.ts",
           "server/castingV2/conceptDescribeCopy.test.ts",
           "server/castingV2/creativeRegisterScope.test.ts",
@@ -789,13 +770,10 @@
           "server/castingV2/makeupFromReference.test.ts",
           "server/castingV2/openLaneAccept.test.ts",
           "server/castingV2/openLaneKind.test.ts",
-          "server/castingV2/readerFrameBound.test.ts",
           "server/castingV2/readerOutageRefusal.test.ts",
           "server/castingV2/referenceAttachService.test.ts",
-          "server/castingV2/referenceClassGate.test.ts",
           "server/castingV2/referenceMediumDoor.test.ts",
           "server/castingV2/referenceWordsLane.test.ts",
-          "server/castingV2/refineInterpreterCeiling.test.ts",
           "server/castingV2/refineService.test.ts",
           "server/castingV2/truncatedReplyReaders.test.ts",
           "server/castingV2/uploadRefusalCopy.test.ts",
