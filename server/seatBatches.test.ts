@@ -109,8 +109,22 @@ function commentRow(card: number, body: string, at: string) {
   return { issue_url: `https://api.github.com/repos/michaelpaulrattray/Drape/issues/${card}`, body, created_at: at };
 }
 
-function population(cards: SeatCandidateCard[], switches = ALL_ON, board = CLEAN_BOARD) {
-  return seatPopulation({ cards, switches, board, areaIndex: INDEX });
+/**
+ * ⚠ `focusRung` DEFAULTS TO `null` HERE, AND THAT IS THE STRICT SETTING (#1496).
+ *
+ * With no focus named, every rung card is held — so an existing arm that
+ * happened to carry a `rung:` label keeps the behaviour it was written against,
+ * and a NEW arm about the narrower rule has to name the focus rung on purpose.
+ * The alternative (defaulting to the focus's rung) would have quietly relaxed
+ * arms nobody re-read.
+ */
+function population(
+  cards: SeatCandidateCard[],
+  switches = ALL_ON,
+  board = CLEAN_BOARD,
+  focusRung: string | null = null,
+) {
+  return seatPopulation({ cards, switches, board, areaIndex: INDEX, focusRung });
 }
 
 /* ── THE AREA INDEX ────────────────────────────────────────────────────────── */
@@ -175,10 +189,91 @@ describe("what a background seat may take", () => {
     expect(cutSeatBatches({ cards: takeable, maxSeats: 4, batchSize: 5 }).seatCount).toBe(0);
   });
 
-  it("never takes a card on a rung, even carrying a switch label", () => {
+  /*
+    ⚠ THIS ARM USED TO READ "never takes a card on a rung" AND THAT RULE IS GONE
+    (#1496). What it proves now is the strict END of the narrower rule: with no
+    focus named, a rung card is still held. The rest of the rule has its own
+    block below.
+  */
+  it("holds a rung card when nothing names the current focus", () => {
     const { takeable, skipped } = population([card(12, ["bug", "rung:N2"])]);
     expect(takeable).toEqual([]);
-    expect(skipped[0]!.why).toContain("rung");
+    expect(skipped[0]!.why).toContain("nothing names the current focus");
+  });
+
+  /*
+    ── THE MILESTONE GATE ON THE SEAT LANE (#1496) ──────────────────────────
+
+    His word was *"file it urgently we need to increase through put"*, and the
+    measured cost of the old blanket rule was six consecutive passes at
+    seatCount 1, 0, 1, 1, 0, 1 with thirteen rung cards held.
+
+    ⚠ EVERY ARM HERE HAS ITS OPPOSITE BESIDE IT, because the two ways to get
+    this wrong are a throughput fix that frees nothing and a throughput fix that
+    lets a seat start N3 tonight. The first is invisible; the second breaks THE
+    MILESTONE GATE, which is his law.
+
+    ⚠ AND THEY ARE DRIVEN THROUGH `seatPopulation`, NOT ONLY THROUGH
+    `orderedBandForSeats` — that is the whole finding of this card. The ordered
+    gate filters on `founder-ordered` before it looks at anything, so eleven of
+    the thirteen cards #1496 listed never reach it. An arm that only drove the
+    ordered lane would pass while the real population stayed shut.
+  */
+  it("TAKES a rung card that sits on the focus card's own rung — the throughput this card is for", () => {
+    const { takeable, skipped } = population(
+      [card(12, ["bug", "rung:N2"])], ALL_ON, CLEAN_BOARD, "N2",
+    );
+    expect(takeable.map((c) => c.number)).toEqual([12]);
+    expect(skipped).toEqual([]);
+  });
+
+  it("HOLDS a card on a LATER rung while the focus is on N2 — the milestone gate", () => {
+    const { takeable, skipped } = population(
+      [card(12, ["bug", "rung:N3"])], ALL_ON, CLEAN_BOARD, "N2",
+    );
+    expect(takeable).toEqual([]);
+    expect(skipped[0]!.why).toContain("milestone gate");
+  });
+
+  /* Both in one population, so the arm proves the gate SEPARATES them rather
+     than that it happens to answer each one alone. */
+  it("separates them in one reading: N2 offered, N2b and N3 held, focus on N2", () => {
+    const { takeable, skipped } = population(
+      [
+        card(12, ["bug", "rung:N2"]),
+        card(13, ["bug", "rung:N2b"]),
+        card(14, ["bug", "rung:N3"]),
+      ],
+      ALL_ON, CLEAN_BOARD, "N2",
+    );
+    expect(takeable.map((c) => c.number)).toEqual([12]);
+    expect(skipped.map((c) => c.number).sort()).toEqual([13, 14]);
+  });
+
+  /* `rung:N2b` is not `rung:N2` — a prefix test would call it a match and open
+     the next rung on his ladder, which is precisely what he asked about
+     ("they wont start n3 automatically though right"). */
+  it("does not treat N2b as N2 — the comparison is the whole label, not a prefix", () => {
+    const { takeable } = population(
+      [card(12, ["bug", "rung:N2b"])], ALL_ON, CLEAN_BOARD, "N2",
+    );
+    expect(takeable).toEqual([]);
+  });
+
+  it("holds a card carrying TWO rungs even when one of them is the focus rung", () => {
+    const { takeable, skipped } = population(
+      [card(12, ["bug", "rung:N2", "rung:N3"])], ALL_ON, CLEAN_BOARD, "N2",
+    );
+    expect(takeable).toEqual([]);
+    expect(skipped[0]!.why).toContain("milestone gate");
+  });
+
+  /* A card with no rung at all is untouched by any of this. */
+  it("leaves a card with no rung label exactly where it was", () => {
+    const { takeable } = population(
+      [card(12, ["bug"])], ALL_ON, CLEAN_BOARD, "N2",
+    );
+    expect(takeable.map((c) => c.number)).toEqual([12]);
   });
 
   it("never takes a blocked, parked, fable-held or sitting-held card", () => {
@@ -456,12 +551,43 @@ describe("his ordered band, split between the lanes", () => {
     expect(result.held.find((h) => h.number === 101)!.why).toContain("no area named");
   });
 
-  it("never offers an ordered card on a rung", () => {
+  /*
+    ⚠ THE ORDERED LANE ASKS THE SAME QUESTION, AND ITS FOCUS RUNG COMES FROM THE
+    TOP CARD ITSELF (#1496) — not from a constant, so moving the focus moves the
+    seats with it and nothing here is edited.
+  */
+  it("holds an ordered card on a LATER rung than the focus card's", () => {
+    const result = band(
+      [
+        ordered(100, "server/casting/queue.ts", ["rung:N2"]),
+        ordered(101, "client/src/features/boards/Canvas.tsx", ["rung:N3"]),
+      ],
+      () => ({ kind: "independent" }),
+    );
+    expect(result.offered).toEqual([]);
+    expect(result.held.find((h) => h.number === 101)!.why).toContain("milestone gate");
+  });
+
+  it("OFFERS an ordered card sitting on the focus card's own rung", () => {
+    const result = band(
+      [
+        ordered(100, "server/casting/queue.ts", ["rung:N2"]),
+        ordered(101, "client/src/features/boards/Canvas.tsx", ["rung:N2"]),
+      ],
+      () => ({ kind: "independent" }),
+    );
+    expect(result.offered.map((c) => c.number)).toEqual([101]);
+  });
+
+  /* The focus card itself carrying no rung is the unreadable case, and it holds
+     everything rather than freeing everything. */
+  it("holds every rung card when the focus card names no rung", () => {
     const result = band(
       [ordered(100, "server/casting/queue.ts"), ordered(101, "client/src/features/boards/Canvas.tsx", ["rung:N3"])],
       () => ({ kind: "independent" }),
     );
     expect(result.offered).toEqual([]);
+    expect(result.held.find((h) => h.number === 101)!.why).toContain("nothing names the current focus");
   });
 
   it("HIS MASTER SWITCH STOPS THE ORDERED LANE TOO, and an unreadable {} stops it", () => {
@@ -531,10 +657,45 @@ describe("the cut derives rather than mirrors", () => {
       ["heldStateFromLabels", /heldStateFromLabels\(card\.labels\)/],
       ["CREW_HOLD_WORD", /CREW_HOLD_WORD\[hold\]/],
       ["the master switch", /input\.switches\[CREW_WORK_MASTER_KEY\]/],
+      ["rungHoldFor, at BOTH gates", /rungHoldFor\(card\.labels, input\.focusRung\)/],
+      ["rungHoldFor, at BOTH gates", /rungHoldFor\(card\.labels, focusRung\)/],
+      ["focusRungOf", /focusRungOf\(focus\)/],
     ];
     for (const [owner, call] of checks) {
       expect(call.test(source), `${owner} must be CALLED here, not merely imported`).toBe(true);
     }
+  });
+
+  /*
+    ⚠ THE ARM THAT CLOSES A SURVIVING SABOTAGE, AND IT IS THE WHOLE POINT OF
+    #1496 (foreman-20260929-1141).
+
+    Driven before it was written: replacing `focusRung: focusRungOf(ordered.focus)`
+    in the CLI with `focusRung: null` left **all 52 arms green**. Every test in
+    this file drives the pure functions directly, so none of them can see the
+    caller's wiring — and with the focus rung unthreaded the background lane
+    holds every rung card exactly as it did before, which is #1496's own failure
+    mode: a throughput fix that frees nothing and closes as done.
+
+    The eleven cards that card listed reach the lane through `seatPopulation`,
+    and `seatPopulation` can only apply the milestone gate if something HANDS IT
+    the focus rung. That handing-over happens in one place and nothing else
+    watches it.
+
+    **Its limit, stated rather than left to be assumed:** this reads source, so
+    it proves the call is written, not that the value flowing through it is the
+    right one. The pure arms above prove the rule; this proves the rule is
+    reached. Neither is the other.
+  */
+  it("THE CLI THREADS THE FOCUS RUNG INTO THE BACKGROUND GATE — a rule nothing calls is a rule that frees nothing", () => {
+    const cli = readFileSync("scripts/cut-seat-batches.mts", "utf8");
+    expect(
+      /focusRung:\s*focusRungOf\(ordered\.focus\)/.test(cli),
+      "seatPopulation must be handed the focus card's rung, or the milestone gate holds every rung card and this card's throughput fix is inert",
+    ).toBe(true);
+    /* And it must still be the ORDERED lane's focus that supplies it — the two
+       calls are order-dependent and the comment at the call site says so. */
+    expect(cli.indexOf("orderedBandForSeats({")).toBeLessThan(cli.indexOf("seatPopulation({"));
   });
 
   it("names no work label, hold label or domain of its own — IN EVERY FILE OF THE FEATURE", () => {

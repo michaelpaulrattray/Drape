@@ -69,6 +69,7 @@ import {
   citedOpenCards,
   cutSeatBatches,
   ORDERED_BAND_LABEL,
+  focusRungOf,
   orderedBandForSeats,
   readIndependence,
   seatPopulation,
@@ -367,6 +368,16 @@ const ordered = orderedBandForSeats({
 
 const background = seatPopulation({
   cards: candidates.filter((card) => !card.labels.includes(ORDERED_LABEL)),
+  /*
+    THE FOCUS CARD'S RUNG, so the background lane applies the same milestone
+    gate the ordered lane does (#1496).
+
+    It reads `ordered.focus` — which is why the call above must stay ABOVE this
+    one. Nothing was reordered to make that true; it already was. When the
+    ordered band is empty or his master switch is off, `focus` is null and every
+    rung card stays held, which is the direction the milestone gate wants.
+  */
+  focusRung: focusRungOf(ordered.focus),
   switches,
   board,
   areaIndex,
