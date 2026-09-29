@@ -5,6 +5,7 @@ import {
   castPackageWardrobeSpec,
   composePackageViewPrompt,
   packageViewExpectation,
+  wardrobeSpecFor,
 } from "./castViewPackage";
 import { castWardrobeLine } from "./wardrobeLine";
 
@@ -146,5 +147,105 @@ describe("castWardrobeLine", () => {
     ]) {
       expect(castWardrobeLine(schema), JSON.stringify(schema)).toBeNull();
     }
+  });
+});
+
+/**
+ * #1479 — THE REFERENCE'S OWN JEWELLERY IS HERS, ON EVERY ROAD.
+ *
+ * His Sign of "Bingu" (cast 61, 2026-09-29) lost its `backFull` to the wardrobe
+ * axis — `model_assets` 361, `failed`, *"This view came back in the wrong
+ * clothing"* — on this judge note:
+ *
+ * > *"The layered dark draped fabric robe and scarf match, but the
+ * > earrings/dangling jewelry visible at the ears are an addition not covered by
+ * > the wardrobe description."*
+ *
+ * The anchor shows those earrings. The view carried them faithfully and was
+ * refused and refunded for it.
+ *
+ * ⚠ **The judge was obeying us.** Read at the rows, that Sign ran on roll 309
+ * with `wardrobeLine = "dark draped fabric"` — the STORED-LINE road, whose
+ * sentence said *"Judge the clothing against this description"* and
+ * *"ADDITIONS are failures wherever they appear: jewellery…"*, with no reference
+ * exception at all. The other two sentences had been narrowed twice (#1207,
+ * #1278 part 1); this one was skipped both times on the recorded ground that it
+ * had never run. #1278 part 1 is what made it run.
+ *
+ * So these arms are pointed at the CLASS rather than at the line: every wardrobe
+ * sentence the product can send, on every road, must say that what the reference
+ * shows is hers.
+ */
+describe("#1479 · every wardrobe sentence defers to the reference photograph", () => {
+  const LINE_WITHOUT_JEWELLERY = "dark draped fabric";
+  const DESCRIPTION = "a layered dark draped fabric robe with a heavy scarf";
+
+  /**
+   * THE POPULATION IS DERIVED, NEVER LISTED (working law 4).
+   *
+   * Three roads through `wardrobeSpecFor` × every package view. Listing the
+   * three constants by name is what let one of them be forgotten twice: a
+   * fourth road added later joins this set by existing, and a road that stops
+   * deferring to the reference reddens here rather than on a customer's Sign.
+   */
+  const everySentenceTheProductCanSend = (): Array<{ road: string; angle: string; text: string }> =>
+    CAST_PACKAGE_VIEWS.flatMap((angle) => [
+      { road: "nothing written down", angle, text: wardrobeSpecFor(angle, null, null) },
+      { road: "the cast's own brief", angle, text: wardrobeSpecFor(angle, null, DESCRIPTION) },
+      { road: "a stored line", angle, text: wardrobeSpecFor(angle, LINE_WITHOUT_JEWELLERY, null) },
+    ]);
+
+  it("says what the reference shows is hers — on all three roads, every view", () => {
+    const sentences = everySentenceTheProductCanSend();
+    /* A floor, so a `flatMap` that silently returned nothing cannot pass. */
+    expect(sentences.length, "three roads over every package view").toBeGreaterThanOrEqual(15);
+    for (const { road, angle, text } of sentences) {
+      expect(text, `${road} · ${angle}`).toMatch(
+        /the reference (photograph itself shows her wearing|DOES show) is this person's own/,
+      );
+    }
+  });
+
+  it("⚠ NO sentence carries an unconditional addition list — the exact clause that refused his earrings", () => {
+    for (const { road, angle, text } of everySentenceTheProductCanSend()) {
+      /* The sentence as it stood, verbatim, so this arm names the defect rather
+         than describing it. */
+      expect(text, `${road} · ${angle}`).not.toContain("ADDITIONS are failures wherever they appear");
+      /* And the general shape of it: an addition list must always be qualified
+         by what the reference shows. */
+      if (text.includes("ADDITIONS —")) {
+        expect(text, `${road} · ${angle}`).toContain("that the reference does not show");
+      }
+    }
+  });
+
+  it("keeps the check that EARNS its refunds — an addition in neither record still fails", () => {
+    /*
+      The half a one-sided fix would have deleted. A sentence that only said
+      "the reference's things are hers" would have stopped the axis failing
+      anything at all, which is refund noise traded for a blind judge. Both
+      directions, on the road that broke.
+    */
+    const spec = castPackageWardrobeSpec(LINE_WITHOUT_JEWELLERY);
+    for (const addition of ["jewellery", "a hat", "a bag", "a prop", "printed text or logo"]) {
+      expect(spec, addition).toContain(addition);
+    }
+    expect(spec).toContain("are a failure wherever they appear");
+    /* And it is judged against BOTH records now, not the words alone — the
+       clause the judge quoted back at us when it refused him. */
+    expect(spec).toContain("this description and the reference photograph together");
+    expect(spec).not.toContain("Judge the clothing against this description.");
+  });
+
+  it("the described road still needs BOTH records silent, which #1278 part 1 established", () => {
+    /* Unchanged by this fix and asserted here so the unification cannot quietly
+       loosen it: with a description in hand, an addition fails only when the
+       photograph does not show it AND the words do not name it. */
+    const described = wardrobeSpecFor("frontFull", null, DESCRIPTION);
+    expect(described).toContain("does not show AND the description does not name");
+    /* With NO description there is no second record to consult, so the
+       conjunction must not appear — a sentence promising the judge a
+       description it was never given is an instruction it cannot follow. */
+    expect(wardrobeSpecFor("frontFull", null, null)).not.toContain("AND the description does not name");
   });
 });
