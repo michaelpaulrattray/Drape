@@ -477,17 +477,40 @@ export default function CastingSheet() {
    * Everything the customer LOOKS at reads this; everything she SPENDS reads
    * the latch. The two are deliberately separate and the split is the fix.
    */
-  const showingProvisional = showingProvisionalRoll({ awaitingNewRoll, viewedRollId });
+  /**
+   * A ROLL IS BEING CAST ON THIS SHEET — FROM THE SERVER, NOT ONLY FROM THIS
+   * TAB'S MEMORY OF ITS OWN CLICK (#1454).
+   *
+   * `awaitingNewRoll` is a latch this component owns, so it dies with the
+   * component. His report: *"if i exit the sheet and then come back into it
+   * sheet 4 will not show at all until its finished generating the cards"* — he
+   * came back to a sheet drawing itself as idle over a roll he had paid for.
+   * The roll's row does not exist yet either, so `rolls` has nothing to draw;
+   * the sheet itself now carries the fact, and `castingNow` is the server
+   * saying a brief is compiling here.
+   *
+   * ONLY THE LOOKING HALF READS THIS. Everything that spends still reads
+   * `awaitingNewRoll` alone — card 1232's split, and the arms in
+   * `rollOnScreen.test.ts` hold it.
+   */
+  const rollInFlight = awaitingNewRoll || (session.data?.castingNow ?? false);
+
+  const showingProvisional = showingProvisionalRoll({ rollInFlight, viewedRollId });
 
   /**
    * The roll being paid for, or nothing.
    *
-   * Gated on `awaitingNewRoll` rather than read raw, so the provisional chrome
+   * Gated on the in-flight fact rather than read raw, so the provisional chrome
    * cannot outlive the dispatch it belongs to: a failure clears the flag and
    * the pill goes with it, through the same classified-failure contract that
    * unwinds the tiles.
+   *
+   * ⚠ THE FALLBACK IS NOT COSMETIC (#1454). `provisionalRollIndex` is seeded by
+   * the click, so on a load that did not make the click it is 0 and the pill
+   * would vanish on exactly the road this card is about. The next index is what
+   * the header has always fallen back to; both now read it.
    */
-  const provisionalIndex = awaitingNewRoll ? provisionalRollIndex || null : null;
+  const provisionalIndex = rollInFlight ? provisionalRollIndex || rolls.length + 1 : null;
 
   const roll = trpc.castingV2.getRoll.useQuery(
     { rollId: shownRollId ?? "" },
@@ -2406,26 +2429,46 @@ export default function CastingSheet() {
             {/*
               The roll being paid for, before its row exists.
 
-              Quiet rather than loud: it is the active pill, but dashed and
-              non-interactive, because navigating to a roll that has no rows yet
-              would show an empty sheet. It becomes the real pill when the row
-              lands, and disappears with the classified-failure contract if
-              creation fails — the same unwind the tiles use.
+              Quiet rather than loud: dashed, so the rail says this one is not
+              finished. It becomes the real pill when the row lands, and
+              disappears with the classified-failure contract if creation fails
+              — the same unwind the tiles use.
 
               IT IS SELECTED ONLY WHILE IT IS THE ONE ON SCREEN (card 1232).
               It stays in the rail for the whole dispatch either way — that is
               where the live dot lives, and taking it away would hide the fact
               that a roll is being cast at all. What moves is the "you are
               here" mark, which follows the tiles to 01 and back.
+
+              ⚠ AND IT IS A BUTTON — IT WAS A `span` UNTIL #1454, WHICH IS HALF
+              OF WHAT HE REPORTED: *"i cannot move back to sheet 4 to view the
+              loading state cards"*. The reason it gave for being inert —
+              navigating to a roll with no rows would show an empty sheet — was
+              answering a question nobody asks of it: pressing it navigates to
+              NOTHING, it clears the chosen roll, which is the same act "Back to
+              the latest roll" performs and the same act the click that started
+              the roll performed. There were no rows to show either way.
+
+              And the other button was not there to help him. `viewingHistory`
+              is `shownRollId !== activeRollId`, and while 04 has no row
+              `activeRollId` is still 03 — so clicking 03 mid-cast is not
+              "viewing history" and the back button does not render at all. The
+              rail was the only road and it was a `span`. A map pill that cannot
+              be pressed is a control she has to learn (the
+              disappearing-technology law, clause 6).
             */}
             {provisionalIndex ? (
-              <span
+              <button
+                type="button"
+                role="tab"
+                aria-selected={showingProvisional}
                 className={`dpc-rollrail__item${showingProvisional ? " is-shown" : ""} dpc-rollrail__item--provisional`}
-                aria-label={`Roll ${String(provisionalIndex).padStart(2, "0")}, still being created`}
+                aria-label={`Roll ${String(provisionalIndex).padStart(2, "0")}, still being cast`}
+                onClick={() => setViewedRollId(null)}
               >
                 {String(provisionalIndex).padStart(2, "0")}
                 <span className="dpc-rollrail__live" aria-hidden="true" />
-              </span>
+              </button>
             ) : null}
             {viewingHistory ? (
               <button

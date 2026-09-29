@@ -357,6 +357,67 @@ describeWithDatabase("Casting V2 roll domain (disposable DB)", () => {
     });
   });
 
+  describe("the casting stamp is handed over by the roll's own birth (#1454)", () => {
+    /*
+      A sheet records that it is compiling a brief, because for that window the
+      roll it is compiling has no row and `getSession` has nothing to return —
+      his report, 2026-09-27. The moment the row lands, the row says it better,
+      so the stamp must die in the SAME statement that makes the row visible.
+
+      This is a statement-level fact and it lives here for that reason: the
+      service suite mocks `createRollWithCandidates`, so it can only prove that
+      the service does not ALSO clear it. Whether the transaction does is MySQL's
+      answer, and this is where MySQL is asked.
+    */
+    it("a roll's birth clears the stamp in the statement that moves activeRollId", async () => {
+      const session = await newSession(owner);
+      await db.markSessionCasting(owner, session.publicId, new Date());
+
+      const [before] = await connection.query<RowDataPacket[]>(
+        "SELECT castingSince FROM casting_sessions WHERE publicId = ?",
+        [session.publicId],
+      );
+      /* The positive control: without it a clear that never had anything to
+         clear would pass the arm below by doing nothing. */
+      expect(before[0].castingSince).not.toBeNull();
+
+      await newRoll(owner, session.publicId);
+
+      const [after] = await connection.query<RowDataPacket[]>(
+        "SELECT castingSince, activeRollId FROM casting_sessions WHERE publicId = ?",
+        [session.publicId],
+      );
+      expect(after[0].castingSince).toBeNull();
+      /* And the two moved together, which is the whole reason they share a
+         statement: a stamp cleared without an active roll, or an active roll
+         with the stamp still standing, is a sheet telling two stories. */
+      expect(after[0].activeRollId).not.toBeNull();
+    });
+
+    it("the stamp is owner-scoped in the statement that writes it", async () => {
+      const session = await newSession(owner);
+      /* A stranger naming this sheet's public id writes nothing — invariant 1,
+         proven at the statement rather than at a check above it. */
+      await db.markSessionCasting(stranger, session.publicId, new Date());
+
+      const [theirs] = await connection.query<RowDataPacket[]>(
+        "SELECT castingSince FROM casting_sessions WHERE publicId = ?",
+        [session.publicId],
+      );
+      expect(theirs[0].castingSince).toBeNull();
+
+      /* The positive control the arm above needs: the OWNER writing the same id
+         does land, so the null is the ownership predicate and not a writer that
+         never works. */
+      await db.markSessionCasting(owner, session.publicId, new Date());
+      const [mine] = await connection.query<RowDataPacket[]>(
+        "SELECT castingSince FROM casting_sessions WHERE publicId = ?",
+        [session.publicId],
+      );
+      expect(mine[0].castingSince).not.toBeNull();
+    });
+  });
+
   describe("a session with no rolls is not a sheet yet", () => {
     /*
       Founder bug, 2026-08-01: "if you produce a sheet with 0 rolls — for
