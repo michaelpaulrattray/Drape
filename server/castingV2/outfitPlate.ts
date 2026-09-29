@@ -77,6 +77,35 @@ const log = createModuleLogger("castingV2/outfitPlate");
 /** Which half of the plate a view is handed. */
 export type OutfitPlateSide = "front" | "back";
 
+/**
+ * WHERE A VIEW'S OUTFIT REFERENCE CAME FROM (#1474).
+ *
+ * `plate` — a panel cut from a wardrobe plate rendered for this very request.
+ * `delivered` — the other full-length view, already rendered and already the
+ * customer's. A retry takes the second whenever one exists, because the outfit
+ * of record is the picture they are holding, not one invented again.
+ */
+export type OutfitReferenceKind = "plate" | "delivered";
+
+/**
+ * THE ONE PICTURE THAT SETTLES WHAT A FULL-LENGTH VIEW IS WEARING, and the two
+ * facts a prompt needs about it.
+ *
+ * ⚠ **It is one object because the three were three fields that had to agree**
+ * (#1474). The orchestrator carried `outfitPlatePanel` and `outfitPlateSide`
+ * separately, both optional, with the clause defaulting the side to `"front"`
+ * when it was missing — safe only for as long as every outfit reference was a
+ * front panel handed to a front view. A retry's reference is the OPPOSITE view,
+ * so the default became a coin-flip instruction to copy garments from a side the
+ * picture does not show. Nothing can be half-set now.
+ */
+export type OutfitReference = {
+  readonly image: ReferenceImage;
+  /** Which way THIS PICTURE faces — not the view receiving it. */
+  readonly side: OutfitPlateSide;
+  readonly kind: OutfitReferenceKind;
+};
+
 /** A split plate, held in memory and written nowhere. */
 export type OutfitPlate = {
   readonly front: ReferenceImage;
@@ -140,6 +169,26 @@ export function plateSideFor(angle: (typeof PLATE_ANGLES)[number]): OutfitPlateS
 }
 
 /**
+ * THE OTHER FULL-LENGTH VIEW — the one that already knows what she is wearing.
+ *
+ * ⚠ **This is the whole of #1474 in one function.** A Try again on `backFull`
+ * used to mint a FRESH plate, and a fresh plate is a fresh invention: the
+ * retried back could come back in a mini beside a delivered front in a midi —
+ * his own hem-and-shoes complaint, re-run on the one slot a customer has
+ * already said they dislike. The outfit of record exists at retry time and it
+ * is a picture the customer is holding: the delivered sibling.
+ *
+ * Derived from {@link PLATE_ANGLES} rather than written out, so a third
+ * full-length angle could never leave this pairing behind — there are exactly
+ * two, and each one's sibling is the other.
+ */
+export function siblingPlateAngleFor(
+  angle: (typeof PLATE_ANGLES)[number],
+): (typeof PLATE_ANGLES)[number] {
+  return angle === "frontFull" ? "backFull" : "frontFull";
+}
+
+/**
  * THE LAYOUT SENTENCE — the only authored prose in this module, and it is
  * deliberately silent about cameras.
  *
@@ -158,7 +207,15 @@ const PLATE_LAYOUT =
   + "half of the frame completely.";
 
 /**
- * What a view is told the plate panel IS.
+ * What a view is told its outfit reference IS.
+ *
+ * ⚠ **IT DESCRIBES TWO DIFFERENT PICTURES NOW — #1474.** A Sign's two
+ * full-length views are dressed by a plate panel; a **Try again** on either of
+ * them is dressed by its delivered SIBLING, because the outfit of record at
+ * retry time is a picture the customer is already holding. The shared body of
+ * the clause is written once and the two sentences that differ are chosen from
+ * `kind`, so the two roads cannot drift into saying different things about what
+ * to copy.
  *
  * ⚠ **The ordinal is passed in, never counted here.** A view's references are
  * the anchor, then her delivered ink crops, then this — so the plate's position
@@ -191,22 +248,56 @@ const PLATE_LAYOUT =
  * on it. A clause that named only garments would have a creature's plate
  * contribute nothing to the views it was rendered for.
  */
-export function outfitPlateClause(input: {
+export function outfitReferenceClause(input: {
   ordinal: number;
+  /**
+   * WHICH WAY THE REFERENCE PICTURE FACES — never which way this view faces.
+   *
+   * ⚠ **The two were the same thing until #1474 and they are opposites on the
+   * new road.** A plate panel is cut for the view that receives it, so
+   * `backFull` got the back panel and the sentence was true either way. A
+   * DELIVERED sibling is the other view: `backFull` is dressed by the front,
+   * and a clause reading this as the view's own side would tell a paid render
+   * to copy garments from a side its reference does not show.
+   */
   side: OutfitPlateSide;
+  kind: OutfitReferenceKind;
   pronouns: CastPronouns;
 }): string {
   const { pronouns } = input;
   const half = input.side === "front" ? "from the front" : "from behind";
+  const what = input.kind === "plate"
+    ? "is a wardrobe plate"
+    : "is a photograph already delivered for this shoot";
+  /*
+    THE ONE SENTENCE THE PLATE ROAD NEVER NEEDS.
+
+    A plate panel faces the same way as the view holding it, so "copy the
+    garments exactly" is unambiguous. A delivered sibling faces the OTHER way,
+    and there "exactly" could be read as "reproduce this picture" — a front view
+    answered with a back.
+
+    ⚠ **It states the REFERENCE'S LIMIT and never the output's camera.** Where
+    the camera stands is already declared by the view's own directive, three
+    lines up in the same prompt (`FULL BODY FROM BEHIND, walking away from
+    camera`), and saying it twice is the shape his own measured law warns about
+    — context is not additive. So this says what reference N can and cannot
+    show, and what to do about the part it cannot.
+  */
+  const around = input.kind === "plate"
+    ? ""
+    : ` Reference ${input.ordinal} shows that outfit ${half} only: where this photograph shows `
+      + `what reference ${input.ordinal} does not, continue the same garments around the body `
+      + `rather than inventing different ones.`;
   return (
-    `THE OUTFIT — reference ${input.ordinal} is a wardrobe plate: the same person as reference 1, `
+    `THE OUTFIT — reference ${input.ordinal} ${what}: the same person as reference 1, `
     + `head to feet, in the outfit for this shoot, seen ${half}. Copy the GARMENTS from it exactly: `
     + `the cut, the length, the hem, the fastenings and hardware, the layers, the wear and the `
     + `damage, and the footwear. Where there are no garments, copy in the same way what stands in `
     + `for them — the skin, hide, fur, scales, markings and feet it shows below the crop of `
-    + `reference 1. Reference 1 is the record for ${pronouns.possessive} face, hair and build: `
-    + `where the two pictures differ on ${pronouns.possessive} likeness, reference 1 wins, and `
-    + `reference ${input.ordinal} settles only the clothes and the body below that crop.`
+    + `reference 1.${around} Reference 1 is the record for ${pronouns.possessive} face, hair and `
+    + `build: where the two pictures differ on ${pronouns.possessive} likeness, reference 1 wins, `
+    + `and reference ${input.ordinal} settles only the clothes and the body below that crop.`
   );
 }
 
@@ -375,7 +466,7 @@ export async function renderOutfitPlate(input: {
 
         And the face worry it traded against is answered by the same change
         rather than accepted: the plate is now HER, so the two references a view
-        carries agree on identity instead of competing, and `outfitPlateClause`
+        carries agree on identity instead of competing, and `outfitReferenceClause`
         still names reference 1 as the record for the likeness.
 
         ONE reference, deliberately. Her delivered ink crops are NOT sent: they

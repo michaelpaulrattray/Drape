@@ -41,6 +41,7 @@
  */
 import { TRPCError } from "@trpc/server";
 
+import type { ModelAsset } from "../../drizzle/schema";
 import type { CastViewAngle } from "../../shared/boardTypes";
 import { recordRefund } from "../casting/atomicCredits";
 import {
@@ -70,14 +71,20 @@ import { markGenerationOperationRunning } from "../db/generationOperations";
 import { createModuleLogger } from "../logging/logger";
 import { storageDelete, storageReadBytes } from "../storage";
 import { castPronouns } from "./castPronouns";
-import { castSlotRetryOffer, projectSignedCast } from "./castProjection";
+import { castSlotRetryOffer, landedViewAsset, projectSignedCast } from "./castProjection";
 import { CAST_PACKAGE_VIEW_PRICE, castPackageView } from "./castViewPackage";
 import {
   renderViewAttempts,
   type PackageOrchestratorDependencies,
 } from "./packageOrchestrator";
 import { castingOutfitPlateEngine } from "./signEngine";
-import { PLATE_ANGLES, plateSideFor, renderOutfitPlate } from "./outfitPlate";
+import {
+  PLATE_ANGLES,
+  plateSideFor,
+  renderOutfitPlate,
+  siblingPlateAngleFor,
+  type OutfitReference,
+} from "./outfitPlate";
 import { carriedFeatureWords, carriedInkCrops } from "./signService";
 import { conformanceProvenance } from "./viewConformance";
 import { assertNotFrozen } from "./spendGuards";
@@ -92,6 +99,15 @@ export type ViewRetryServiceDependencies = PackageOrchestratorDependencies & {
   commitRetried?: typeof commitRetriedViewAsset;
   readSource?: typeof readCastViewRenderSource;
   readAnchorBytes?: typeof storageReadBytes;
+  /**
+   * THE DELIVERED SIBLING'S BYTES — its own seam, not the anchor's (#1474).
+   *
+   * Separate so an arm can make her face readable and her sibling view
+   * unreadable at the same time, which is exactly the fallback that matters:
+   * an object that has gone away must drop this retry to a fresh plate, not
+   * refuse a render the customer can still be given.
+   */
+  readOutfitBytes?: typeof storageReadBytes;
   /** What the room would show right now — the authority on what may be asked
    *  for again, injected so a test drives the decision rather than a fixture
    *  of it. */
@@ -101,6 +117,23 @@ export type ViewRetryServiceDependencies = PackageOrchestratorDependencies & {
 export type CastSlotsRead = {
   modelId: number;
   slots: ReturnType<typeof projectSignedCast>["slots"];
+  /**
+   * THE STORAGE KEY OF EACH DELIVERED FULL-LENGTH VIEW THAT HAS ONE (#1474).
+   *
+   * ⚠ **It comes out of the SAME read the slots do, and through the same
+   * selection law.** `landedViewAsset` is `slotEvidence` asked for one angle —
+   * the function the room itself uses to decide which picture a slot shows — so
+   * the view a retry copies its garments out of cannot come to differ from the
+   * view the customer is looking at. A second "newest filled one" written in SQL
+   * here would be working law 4's parallel copy, on the one claim this whole
+   * change rests on.
+   *
+   * An angle is ABSENT from the map — never present and null — where its slot
+   * has never landed, or where its row carries a URL and no key: bytes cannot be
+   * fetched without a key, and a retry then mints a plate exactly as it did
+   * before this existed.
+   */
+  deliveredOutfitKeys: Partial<Record<(typeof PLATE_ANGLES)[number], string>>;
 };
 
 export type ViewRetryInput = {
@@ -147,6 +180,34 @@ export const VIEW_RETRY_ALREADY_ASKING_MESSAGE =
   "That view is already being asked for. Nothing was charged.";
 
 /**
+ * THE STORAGE KEY OF EACH DELIVERED FULL-LENGTH VIEW (#1474) — pure, so it can
+ * be driven.
+ *
+ * ⚠ **It is exported for one reason and the reason is a measured one.** The
+ * impure half of this read cannot be reached by the unit suite — it needs five
+ * database readers — so if the mapping lived inside it, the only thing standing
+ * behind *"a `backFull` retry is handed the FRONT view's key"* would be
+ * TypeScript, and TypeScript cannot see a transposition: both sides are
+ * `string`. A swapped pair would dress a retry from the very picture the
+ * customer pressed Try again to be rid of, and every arm would still be green.
+ * That is exactly the hollow-fake shape #1471 found one seam over.
+ *
+ * `landedViewAsset` is the room's own selection law (working law 4); an angle
+ * whose row carries a URL and no key is left out, because bytes cannot be
+ * fetched without a key and a retry then mints a plate as it always did.
+ */
+export function deliveredOutfitKeysFrom(
+  assets: readonly ModelAsset[],
+): Partial<Record<(typeof PLATE_ANGLES)[number], string>> {
+  const keys: Partial<Record<(typeof PLATE_ANGLES)[number], string>> = {};
+  for (const angle of PLATE_ANGLES) {
+    const key = landedViewAsset(assets, angle)?.storageKey ?? null;
+    if (key !== null && key !== "") keys[angle] = key;
+  }
+  return keys;
+}
+
+/**
  * What the room would show for this Cast right now.
  *
  * The SAME reads and the SAME projection `getCast` runs, minus the siblings —
@@ -168,7 +229,100 @@ async function readCastSlots(userId: number, castPublicId: string): Promise<Cast
     listRunningViewRetryAngles({ userId, modelId: model.id, castId: castPublicId }),
   ]);
   const projection = projectSignedCast({ model, assets, lineage, promisedAngles, retryingAngles });
-  return { modelId: model.id, slots: projection.slots };
+  return {
+    modelId: model.id,
+    slots: projection.slots,
+    /* #1474 — derived from the assets this function already read, never from a
+       second query. */
+    deliveredOutfitKeys: deliveredOutfitKeysFrom(assets),
+  };
+}
+
+/**
+ * DRESS A RETRIED FULL-LENGTH VIEW — the delivered sibling, else a fresh plate,
+ * else her master alone (#1474).
+ *
+ * Three rungs, and each one down is strictly the road the product already shipped:
+ *
+ * 1. **The delivered sibling.** `backFull` is dressed by the delivered
+ *    `frontFull` and the other way about. This is the outfit of record — a
+ *    picture the customer has already been given and paid for — so the retried
+ *    slot comes back in the outfit its four siblings are wearing instead of a
+ *    newly invented one.
+ * 2. **A fresh plate**, exactly as before this existed, when no sibling has
+ *    landed: a first Try again on a Sign where the other full-length view failed,
+ *    or a Cast old enough to predate path E.
+ * 3. **Nothing**, when the plate does not land either — master-only, which is
+ *    the road the product shipped before path E and is a complete delivery.
+ *
+ * ⚠ **NOT ONE OF THE THREE MAY FAIL THE RETRY.** The customer has been charged
+ * for a view, not for a reference photograph they will never see, so every fault
+ * on this path — a vanished storage object, a refusing door, a missing
+ * credential — drops one rung and renders. That is `renderOutfitPlate`'s own rule
+ * 3 extended to the rung above it.
+ */
+async function dressRetriedFullLengthView(input: {
+  dependencies: ViewRetryServiceDependencies;
+  angle: (typeof PLATE_ANGLES)[number];
+  deliveredOutfitKeys: Partial<Record<(typeof PLATE_ANGLES)[number], string>>;
+  anchor: { bytes: Buffer; contentType: string };
+  wardrobeLine: string | null;
+  description: string | null;
+  operationId: number | string | null;
+}): Promise<OutfitReference | null> {
+  const siblingAngle = siblingPlateAngleFor(input.angle);
+  const siblingKey = input.deliveredOutfitKeys[siblingAngle];
+  if (siblingKey !== undefined) {
+    try {
+      const read = await (input.dependencies.readOutfitBytes ?? storageReadBytes)(siblingKey);
+      log.info(
+        { operationId: input.operationId, angle: input.angle, siblingAngle },
+        "[viewRetryService] the retried view wears its delivered sibling's outfit — no plate rendered",
+      );
+      return {
+        image: { bytes: read.bytes, contentType: read.contentType },
+        /* ⚠ THE SIBLING'S OWN SIDE, which is the OPPOSITE of the view being
+           rendered. A `backFull` retry is dressed by a picture facing FRONT, and
+           the clause has to say so or it tells the engine to copy garments from a
+           side its reference does not show. */
+        side: plateSideFor(siblingAngle),
+        kind: "delivered",
+      };
+    } catch (error) {
+      /* The row says a picture is there and the bucket disagrees. Not a refusal:
+         drop to a plate, which is what a Cast with no sibling gets anyway. */
+      log.warn(
+        {
+          operationId: input.operationId,
+          angle: input.angle,
+          siblingAngle,
+          err: error instanceof Error ? error.message : String(error),
+        },
+        "[viewRetryService] the delivered sibling view could not be read — falling back to a fresh plate",
+      );
+    }
+  }
+  const plate = await Promise.resolve()
+    .then(() => renderOutfitPlate({
+      /* Built INSIDE the promise for the reason `packageOrchestrator` spells
+         out: the door throws on a missing credential, and eagerly that throw is
+         synchronous — it would fail a retry the customer has already been
+         charged for, over a reference picture they were never going to see. */
+      engine: (input.dependencies.outfitPlateEngine ?? castingOutfitPlateEngine)(),
+      /* #1471 — the same anchor this retry is about to render the view from,
+         fetched above before the claim. */
+      anchor: input.anchor,
+      wardrobeLine: input.wardrobeLine,
+      description: input.description,
+      operationId: input.operationId,
+    }))
+    .catch(() => null);
+  if (plate === null) return null;
+  const side = plateSideFor(input.angle);
+  /* A plate panel is cut FOR this view, so here the view's side and the
+     picture's side are the same thing — the coincidence the old two-field shape
+     rested on, and the reason it broke when the sibling road arrived. */
+  return { image: plate[side], side, kind: "plate" };
 }
 
 export async function retryCastView(
@@ -385,52 +539,49 @@ export async function retryCastView(
           }),
     ]);
     /*
-      A TRY AGAIN ON A FULL-LENGTH VIEW GETS ITS OWN PLATE (#1278 path E).
+      WHAT A RETRIED FULL-LENGTH VIEW IS DRESSED BY — AND IT IS THE DELIVERED
+      SIBLING FIRST, NOT A FRESH PLATE (#1474).
 
-      His design says the plate is *"Sign/retry scratch only"*, and the reason
-      is the same one that makes the Sign's own engine shared between the two
-      roads: a retried view that renders master-only, beside four siblings that
-      wore a plate, is the hem-and-shoes lottery he reported — re-run on the one
-      slot a customer is already unhappy about.
+      ⚠ **This block argued the other way until #1474 and the argument was one
+      step short of its own conclusion.** It read: *"a retried view that renders
+      master-only, beside four siblings that wore a plate, is the hem-and-shoes
+      lottery he reported"* — true, and the right worry. But a FRESH plate is a
+      fresh invention, so it re-runs that same lottery on the one slot the
+      customer has already said they dislike: the retried back can come back in
+      a mini beside a delivered front in a midi. **The outfit of record exists at
+      retry time and it is a picture the customer is already holding** — the
+      other full-length view.
 
-      ⚠ **It is a NEW plate, never a kept one**, which is his rule *"New
-      wardrobe later → new plate, don't reuse an old one"* holding by
-      construction: nothing stores a plate, so nothing can reuse one. A retry
-      minutes after the Sign renders its own, and a retry after a wardrobe
-      change renders one of the new wardrobe — with no cache to be wrong.
+      ⚠ **HIS RULE STILL HOLDS AND IS NOT BEING TRADED.** *"New wardrobe later
+      → new plate, don't reuse an old one"* is about not keeping a PLATE, and
+      nothing here keeps one: no plate is stored, no wardrobe card is written,
+      and the reference is a delivered VIEW rather than a cached reference. A
+      refine that changes what she wears produces new views at the next Sign,
+      and a retry then copies those.
 
-      ⚠ **And it costs the CUSTOMER nothing.** The retry's price is the view's
-      50 credits, unchanged; the plate is house money, like the view's own
-      render. A plate that does not land leaves this exactly where it was
-      before path E — master-only, and the retry still runs.
+      ⚠ **AND IT COSTS LESS, WHICH IS A CONSEQUENCE RATHER THAN THE REASON.**
+      The sibling road spends no house money and waits on no second render — the
+      plate was measured at 55.9–70.8 s (#1471) and this is one storage read.
+      The customer's price is the view's 50 credits, unchanged either way.
     */
-    const platePanel = (PLATE_ANGLES as readonly string[]).includes(input.angle)
-      ? await Promise.resolve()
-          .then(() => renderOutfitPlate({
-            /* Built INSIDE the promise for the reason `packageOrchestrator`
-               spells out: the door throws on a missing credential, and eagerly
-               that throw is synchronous — it would fail a retry the customer
-               has already been charged for, over a reference picture they were
-               never going to see. */
-            engine: (dependencies.outfitPlateEngine ?? castingOutfitPlateEngine)(),
-            /* #1471 — the same anchor this retry is about to render the view
-               from, fetched above before the claim. */
-            anchor,
-            wardrobeLine,
-            description: source.briefText,
-            operationId,
-          }))
-          .catch(() => null)
+    const plateAngle = (PLATE_ANGLES as readonly string[]).includes(input.angle)
+      ? (input.angle as (typeof PLATE_ANGLES)[number])
       : null;
-    const plateSide = platePanel
-      ? plateSideFor(input.angle as (typeof PLATE_ANGLES)[number])
-      : null;
+    const outfitReference = plateAngle === null
+      ? null
+      : await dressRetriedFullLengthView({
+          dependencies,
+          angle: plateAngle,
+          deliveredOutfitKeys: read.deliveredOutfitKeys,
+          anchor,
+          wardrobeLine,
+          description: source.briefText,
+          operationId,
+        });
     rendered = await renderViewAttempts(
       dependencies,
       {
-        ...(platePanel && plateSide
-          ? { outfitPlatePanel: platePanel[plateSide], outfitPlateSide: plateSide }
-          : {}),
+        ...(outfitReference ? { outfitReference } : {}),
         userId: input.userId,
         operationId,
         modelId: read.modelId,

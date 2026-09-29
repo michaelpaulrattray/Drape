@@ -30,7 +30,8 @@ import sharp from "sharp";
 
 import {
   composeOutfitPlatePrompt,
-  outfitPlateClause,
+  outfitReferenceClause,
+  siblingPlateAngleFor,
   plateSideFor,
   renderOutfitPlate,
   splitOutfitPlate,
@@ -256,15 +257,15 @@ describe("the clause that hands a view its panel", () => {
   it("names the ordinal it is GIVEN, so a cast with tattoos points at the right picture", () => {
     /* The plate rides after her ink crops. Three crops put it at reference 5,
        and a clause that counted for itself would name her elbow. */
-    const withInk = outfitPlateClause({ ordinal: 5, side: "front", pronouns });
+    const withInk = outfitReferenceClause({ ordinal: 5, side: "front", kind: "plate", pronouns });
     expect(withInk).toContain("reference 5 is a wardrobe plate");
     expect(withInk).toContain("reference 5 settles only the clothes");
-    expect(outfitPlateClause({ ordinal: 2, side: "front", pronouns })).toContain("reference 2");
+    expect(outfitReferenceClause({ ordinal: 2, side: "front", kind: "plate", pronouns })).toContain("reference 2");
   });
 
   it("says which half it is", () => {
-    expect(outfitPlateClause({ ordinal: 2, side: "front", pronouns })).toContain("from the front");
-    expect(outfitPlateClause({ ordinal: 2, side: "back", pronouns })).toContain("from behind");
+    expect(outfitReferenceClause({ ordinal: 2, side: "front", kind: "plate", pronouns })).toContain("from the front");
+    expect(outfitReferenceClause({ ordinal: 2, side: "back", kind: "plate", pronouns })).toContain("from behind");
   });
 
   it("says the plate IS her, and still makes reference 1 the record for the likeness", () => {
@@ -276,7 +277,7 @@ describe("the clause that hands a view its panel", () => {
       negative half is the arm that matters: it reddens if the stranger sentence
       ever returns.
     */
-    const clause = outfitPlateClause({ ordinal: 2, side: "front", pronouns });
+    const clause = outfitReferenceClause({ ordinal: 2, side: "front", kind: "plate", pronouns });
     expect(clause).toContain("the same person as reference 1");
     expect(clause).not.toContain("is not her");
     expect(clause).not.toContain("NOT a photograph of her");
@@ -292,9 +293,70 @@ describe("the clause that hands a view its panel", () => {
       IS the lower-body continuation. A clause naming only garments would have
       that plate contribute nothing to the two views it was rendered for.
     */
-    const clause = outfitPlateClause({ ordinal: 2, side: "back", pronouns });
+    const clause = outfitReferenceClause({ ordinal: 2, side: "back", kind: "plate", pronouns });
     expect(clause).toContain("Where there are no garments");
     expect(clause).toMatch(/skin, hide, fur, scales, markings and feet/);
+  });
+
+  it("⚠ a DELIVERED sibling is described as one, and gets the sentence a plate never needs (#1474)", () => {
+    /*
+      A retry dresses itself from the other full-length view — a picture the
+      customer is already holding. Two things must differ from the plate wording:
+      the noun (it is not a plate) and the fact that the reference faces the
+      OTHER WAY from the view being made, so "copy exactly" cannot be read as
+      "reproduce this picture".
+    */
+    const delivered = outfitReferenceClause({ ordinal: 2, side: "front", kind: "delivered", pronouns });
+    expect(delivered).toContain("reference 2 is a photograph already delivered for this shoot");
+    expect(delivered).not.toContain("wardrobe plate");
+    expect(delivered).toContain("continue the same garments around the body");
+    expect(delivered).toContain("rather than inventing different ones");
+    /* The limit it states is the REFERENCE's, named by ordinal on both ends so a
+       cast with tattoos cannot have it pointing at an elbow. */
+    expect(outfitReferenceClause({ ordinal: 5, side: "back", kind: "delivered", pronouns }))
+      .toContain("Reference 5 shows that outfit from behind only");
+  });
+
+  it("⚠ does NOT restate the output camera — context is not additive", () => {
+    /*
+      The view's own directive already says where the camera stands (`FULL BODY
+      FROM BEHIND, walking away from camera`), three lines up in the same prompt.
+      His own measured law is that a second copy of a rule does not reinforce it.
+      So the delivered sentence describes what the reference can show and never
+      issues a camera instruction of its own.
+    */
+    const delivered = outfitReferenceClause({ ordinal: 2, side: "front", kind: "delivered", pronouns });
+    expect(delivered).not.toMatch(/walking away/i);
+    expect(delivered).not.toMatch(/FULL BODY/);
+    /* And it says the outfit is the same one rather than describing a new shot. */
+    expect(delivered).toContain("the same garments");
+  });
+
+  it("the plate wording is UNCHANGED by #1474 — a Sign sends what it always sent", () => {
+    /*
+      The inertness half, and the reason it is worth an arm of its own: the two
+      kinds share one function now, so a future edit to the delivered sentence
+      could silently move the Sign's. Every plate clause in this file pins the
+      wording; this pins the one property those cannot — that the plate kind
+      carries NONE of the delivered kind's additions.
+    */
+    const plate = outfitReferenceClause({ ordinal: 2, side: "front", kind: "plate", pronouns });
+    expect(plate).not.toContain("already delivered");
+    expect(plate).not.toContain("continue the same garments around the body");
+    expect(plate).not.toContain("shows that outfit from the front only");
+  });
+
+  it("siblingPlateAngleFor pairs the two full-length views and nothing else (#1474)", () => {
+    /* Derived from PLATE_ANGLES rather than written out, so the pairing cannot
+       be left behind if a third full-length angle is ever declared. */
+    expect(siblingPlateAngleFor("frontFull")).toBe("backFull");
+    expect(siblingPlateAngleFor("backFull")).toBe("frontFull");
+    /* It is an involution: the sibling's sibling is you. A pairing that failed
+       this would dress a retry from itself. */
+    for (const angle of PLATE_ANGLES) {
+      expect(siblingPlateAngleFor(siblingPlateAngleFor(angle))).toBe(angle);
+      expect(siblingPlateAngleFor(angle)).not.toBe(angle);
+    }
   });
 
   it("hands frontFull the front panel and backFull the back one", () => {
