@@ -50,6 +50,7 @@
 import { readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
+import { listenOnFetchablePort, portOf } from "./testing/fetchablePort";
 import ts from "typescript";
 
 import { readListedSource } from "./testing/listedSource";
@@ -227,9 +228,10 @@ describe("fetchWithClearedTimeout", () => {
       response.statusCode = 204;
       response.end();
     });
-    await new Promise<void>((done) => server.listen(0, "127.0.0.1", done));
-    const address = server.address();
-    const port = typeof address === "object" && address !== null ? address.port : 0;
+    /* Through the helper, never `listen(0)` directly: `fetch` refuses the Fetch
+       standard's bad ports, and the OS can hand one back (server/testing/fetchablePort). */
+    await listenOnFetchablePort((port) => server.listen(port, "127.0.0.1"));
+    const port = portOf(server);
 
     try {
       const before = process.getActiveResourcesInfo().filter((k) => k === "Timeout").length;
@@ -255,9 +257,10 @@ describe("fetchWithClearedTimeout", () => {
     const server = createServer(() => {
       /* deliberately never responds */
     });
-    await new Promise<void>((done) => server.listen(0, "127.0.0.1", done));
-    const address = server.address();
-    const port = typeof address === "object" && address !== null ? address.port : 0;
+    /* Through the helper, never `listen(0)` directly: `fetch` refuses the Fetch
+       standard's bad ports, and the OS can hand one back (server/testing/fetchablePort). */
+    await listenOnFetchablePort((port) => server.listen(port, "127.0.0.1"));
+    const port = portOf(server);
 
     try {
       const began = Date.now();
