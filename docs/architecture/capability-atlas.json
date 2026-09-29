@@ -142,24 +142,7 @@
         "kind": "concept-refusal",
         "pinnedBy": [
           "server/castingV2/conceptDescribe.test.ts",
-          "server/castingV2/conceptDescribeCopy.test.ts",
-          "server/castingV2/creativeRegisterScope.test.ts",
-          "server/castingV2/hairColourFromReference.test.ts",
-          "server/castingV2/hairReferenceCutter.test.ts",
-          "server/castingV2/inkReferenceCutter.test.ts",
-          "server/castingV2/inkUploadDoor.test.ts",
-          "server/castingV2/judgeFrame.test.ts",
-          "server/castingV2/makeupFromReference.test.ts",
-          "server/castingV2/openLaneAccept.test.ts",
-          "server/castingV2/openLaneKind.test.ts",
-          "server/castingV2/readerOutageRefusal.test.ts",
-          "server/castingV2/referenceAttachService.test.ts",
-          "server/castingV2/referenceMediumDoor.test.ts",
-          "server/castingV2/referenceWordsLane.test.ts",
-          "server/castingV2/refineService.test.ts",
-          "server/castingV2/truncatedReplyReaders.test.ts",
-          "server/castingV2/uploadRefusalCopy.test.ts",
-          "server/db/referenceReadDemand.test.ts"
+          "server/castingV2/conceptDescribeCopy.test.ts"
         ],
         "sites": [
           "server/castingV2/conceptDescribe.ts:1272",
@@ -398,11 +381,8 @@
         "id": "reader_outage",
         "kind": "interpreter-refusal",
         "pinnedBy": [
-          "server/castingV2/briefCompiler.test.ts",
-          "server/castingV2/briefRefusalCopy.test.ts",
           "server/castingV2/readerOutageRefusal.test.ts",
-          "server/castingV2/refineInterpreterCeiling.test.ts",
-          "server/castingV2/styleRefusal.test.ts"
+          "server/castingV2/refineInterpreterCeiling.test.ts"
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:625",
@@ -539,7 +519,6 @@
           "server/castingV2/briefCompiler.test.ts",
           "server/castingV2/briefRefusalCopy.test.ts",
           "server/castingV2/readerOutageRefusal.test.ts",
-          "server/castingV2/refineInterpreterCeiling.test.ts",
           "server/castingV2/styleRefusal.test.ts"
         ],
         "sites": [
@@ -690,25 +669,13 @@
         "id": "unreadable",
         "kind": "interpreter-refusal",
         "pinnedBy": [
-          "server/castingV2/conceptDescribe.test.ts",
-          "server/castingV2/conceptDescribeCopy.test.ts",
           "server/castingV2/creativeRegisterScope.test.ts",
           "server/castingV2/hairColourFromReference.test.ts",
-          "server/castingV2/hairReferenceCutter.test.ts",
-          "server/castingV2/inkReferenceCutter.test.ts",
-          "server/castingV2/inkUploadDoor.test.ts",
-          "server/castingV2/judgeFrame.test.ts",
           "server/castingV2/makeupFromReference.test.ts",
           "server/castingV2/openLaneAccept.test.ts",
           "server/castingV2/openLaneKind.test.ts",
           "server/castingV2/readerOutageRefusal.test.ts",
-          "server/castingV2/referenceAttachService.test.ts",
-          "server/castingV2/referenceMediumDoor.test.ts",
-          "server/castingV2/referenceWordsLane.test.ts",
-          "server/castingV2/refineService.test.ts",
-          "server/castingV2/truncatedReplyReaders.test.ts",
-          "server/castingV2/uploadRefusalCopy.test.ts",
-          "server/db/referenceReadDemand.test.ts"
+          "server/castingV2/refineService.test.ts"
         ],
         "sites": [
           "server/castingV2/castingIntent.ts:1381",
@@ -759,25 +726,10 @@
         "id": "upload.unreadable",
         "kind": "upload-refusal",
         "pinnedBy": [
-          "server/castingV2/conceptDescribe.test.ts",
-          "server/castingV2/conceptDescribeCopy.test.ts",
-          "server/castingV2/creativeRegisterScope.test.ts",
-          "server/castingV2/hairColourFromReference.test.ts",
-          "server/castingV2/hairReferenceCutter.test.ts",
           "server/castingV2/inkReferenceCutter.test.ts",
           "server/castingV2/inkUploadDoor.test.ts",
-          "server/castingV2/judgeFrame.test.ts",
-          "server/castingV2/makeupFromReference.test.ts",
-          "server/castingV2/openLaneAccept.test.ts",
-          "server/castingV2/openLaneKind.test.ts",
-          "server/castingV2/readerOutageRefusal.test.ts",
           "server/castingV2/referenceAttachService.test.ts",
-          "server/castingV2/referenceMediumDoor.test.ts",
-          "server/castingV2/referenceWordsLane.test.ts",
-          "server/castingV2/refineService.test.ts",
-          "server/castingV2/truncatedReplyReaders.test.ts",
-          "server/castingV2/uploadRefusalCopy.test.ts",
-          "server/db/referenceReadDemand.test.ts"
+          "server/castingV2/uploadRefusalCopy.test.ts"
         ],
         "sites": [
           "server/castingV2/inkUploadDoor.ts:136",
@@ -2173,6 +2125,20 @@
         "message": "no corpus row reaches it: needs a branch wearing TWO tattoos; no cast in either world has ever worn two at once (opus-966 §1) and the multi-tattoo fixture is §10 item 3b's build — a row could reach it via: item 3b's keying work, which needs two-tattoo state to test itself"
       },
       {
+        "id": "shared-bare:reader_outage",
+        "severity": "warn",
+        "kind": "shared-bare-door-id",
+        "subject": "reader_outage",
+        "message": "\"reader_outage\" is the bare id of 2 declared doors (reader_outage, roll.reader_outage) — a test quotes the bare word, so each door's pins are narrowed to the suites that reach its own raise sites"
+      },
+      {
+        "id": "shared-bare:unreadable",
+        "severity": "warn",
+        "kind": "shared-bare-door-id",
+        "subject": "unreadable",
+        "message": "\"unreadable\" is the bare id of 3 declared doors (concept.unreadable, unreadable, upload.unreadable) — a test quotes the bare word, so each door's pins are narrowed to the suites that reach its own raise sites"
+      },
+      {
         "id": "unreached:absorbed",
         "severity": "warn",
         "kind": "unreached",
@@ -3347,6 +3313,20 @@
       "kind": "not-driven",
       "subject": "ref.ink.sleeve",
       "message": "needs state \"reference-attached\", which this fixture cannot supply"
+    },
+    {
+      "id": "shared-bare:reader_outage",
+      "severity": "warn",
+      "kind": "shared-bare-door-id",
+      "subject": "reader_outage",
+      "message": "\"reader_outage\" is the bare id of 2 declared doors (reader_outage, roll.reader_outage) — a test quotes the bare word, so each door's pins are narrowed to the suites that reach its own raise sites"
+    },
+    {
+      "id": "shared-bare:unreadable",
+      "severity": "warn",
+      "kind": "shared-bare-door-id",
+      "subject": "unreadable",
+      "message": "\"unreadable\" is the bare id of 3 declared doors (concept.unreadable, unreadable, upload.unreadable) — a test quotes the bare word, so each door's pins are narrowed to the suites that reach its own raise sites"
     },
     {
       "id": "unreached-driven:gate_ink_coverage_unread",
