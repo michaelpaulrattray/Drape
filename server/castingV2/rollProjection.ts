@@ -190,6 +190,18 @@ export type SessionProjection = {
   status: CastingSession["status"];
   originType: CastingSession["originType"];
   activeRollId: string | null;
+  /**
+   * A ROLL IS BEING CAST ON THIS SHEET RIGHT NOW AND HAS NO ROW YET (#1454).
+   *
+   * A boolean, not the timestamp behind it, because the only question the sheet
+   * has is *is something happening here* — handing the client an instant and a
+   * staleness rule to apply would put the machinery on the page and give two
+   * readers one arithmetic to agree about.
+   *
+   * False the moment the roll's row lands, because from then on `rolls` says it
+   * better: the row carries the index, the status and the live dot.
+   */
+  castingNow: boolean;
   signedCastCount: number;
   createdAt: string;
   expiresAt: string | null;
@@ -642,7 +654,43 @@ export function projectShortlist(
   }));
 }
 
-export function projectSession(session: CastingSession): SessionProjection {
+/**
+ * HOW LONG A `castingSince` STAMP IS BELIEVED (#1454).
+ *
+ * The stamp is cleared on every road out of the compile — the roll's birth, a
+ * refused brief, any other throw — so in ordinary life it never ages. This
+ * bound is for the one road that cannot clear anything: a process killed
+ * mid-compile, which a deploy does routinely and which this repository already
+ * designs for (`deployCollision.test.ts`).
+ *
+ * Generous against the compile it covers, and deliberately so. The author road
+ * is 40–120 s (#466) and the brief bound admits 4,000 characters, so a tight
+ * window would take the pill off a roll that is genuinely still being compiled
+ * — the very defect this field exists to fix. Being late to forget a dead stamp
+ * costs a dashed pill that goes away by itself; being early costs the fix.
+ */
+export const CASTING_ROLL_COMPILE_STALE_MS = 5 * 60 * 1000;
+
+/**
+ * A STAMP IS A CLAIM WITH AN EXPIRY, AND BOTH FORMS OF ABSENCE ARE ABSENCE.
+ *
+ * ⚠ The first shape of this read was `stamp !== null`, and it threw on the
+ * whole `getSession` road — `Cannot read properties of undefined (reading
+ * 'getTime')`. A row read out of MySQL gives `null` for an empty column, and a
+ * session object built anywhere else gives `undefined`; `!== null` lets the
+ * second through into the arithmetic. Found by `castingV2SheetGone.test.ts`'s
+ * positive control, which is the arm that exists to catch exactly this.
+ *
+ * So the question is asked once, here, in a form neither absence can pass —
+ * and it is a named function rather than an inline expression so the arms can
+ * drive both forms without going through a session fixture.
+ */
+export function castingNowAt(stamp: Date | null | undefined, now: Date): boolean {
+  if (!stamp) return false;
+  return now.getTime() - stamp.getTime() < CASTING_ROLL_COMPILE_STALE_MS;
+}
+
+export function projectSession(session: CastingSession, now: Date = new Date()): SessionProjection {
   return {
     sessionId: session.publicId,
     status: session.status,
@@ -651,6 +699,14 @@ export function projectSession(session: CastingSession): SessionProjection {
     // projection carries the active roll's *public* id, resolved by the
     // caller that already loaded it.
     activeRollId: null,
+    /*
+      A STAMP IS A CLAIM WITH AN EXPIRY, AND THE EXPIRY IS APPLIED HERE (#1454).
+
+      Read at the only place that turns the column into an answer, so no caller
+      can reach the raw instant and decide for itself — the parallel-copy shape
+      working law 4 is about, one field earlier than usual.
+    */
+    castingNow: castingNowAt(session.castingSince, now),
     signedCastCount: session.signedCastCount,
     createdAt: session.createdAt.toISOString(),
     expiresAt: session.expiresAt ? session.expiresAt.toISOString() : null,

@@ -28,6 +28,18 @@
  *   provisional header, the selected pill, and the CASTING label. Only these
  *   move, and only LOOKING is freed.
  *
+ * # The input is `rollInFlight`, and it used to be `awaitingNewRoll` (#1454)
+ *
+ * The page's `awaitingNewRoll` is one tab's memory of its own click, and it is
+ * still exactly the right answer for the SPENDING half above. It is the wrong
+ * answer for the LOOKING half, because leaving the sheet and coming back
+ * destroys it: the founder reported the sheet drawing itself as idle while a
+ * roll he had paid for was still compiling. The sheet now also asks the server
+ * (`castingNow`), and the view reads whichever of the two says a roll is
+ * happening. The field is renamed rather than quietly widened — a parameter
+ * called `awaitingNewRoll` carrying "or the server says so" is a name that has
+ * stopped describing its value.
+ *
  * # Why `viewedRollId === null` is the reading
  *
  * The provisional roll has no id until its row lands, so it cannot be named.
@@ -43,16 +55,16 @@
 
 export function showingProvisionalRoll(input: {
   /**
-   * A dispatch is in flight and its roll has not appeared yet — the page's
-   * `awaitingNewRoll`. False and nothing here is provisional, whatever is
-   * being viewed.
+   * A roll is being cast on this sheet and its row has not appeared yet — this
+   * tab's own dispatch, or the server saying so on any load. False and nothing
+   * here is provisional, whatever is being viewed.
    */
-  awaitingNewRoll: boolean;
+  rollInFlight: boolean;
   /**
    * The roll she has chosen to look at, or null for "the newest". Null during
    * a dispatch is the roll being paid for, because that roll has no id yet.
    */
   viewedRollId: string | null;
 }): boolean {
-  return input.awaitingNewRoll && input.viewedRollId === null;
+  return input.rollInFlight && input.viewedRollId === null;
 }

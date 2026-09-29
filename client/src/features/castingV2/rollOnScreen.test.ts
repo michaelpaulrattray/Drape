@@ -22,9 +22,9 @@ import { showingProvisionalRoll } from "./rollOnScreen";
 describe("which roll is on screen while one is being paid for", () => {
   it("nothing is provisional when no dispatch is in flight", () => {
     /* The ordinary sheet: her faces, her header, her pill. */
-    expect(showingProvisionalRoll({ awaitingNewRoll: false, viewedRollId: null })).toBe(false);
+    expect(showingProvisionalRoll({ rollInFlight: false, viewedRollId: null })).toBe(false);
     /* And the same while she reads an older roll — history is not a dispatch. */
-    expect(showingProvisionalRoll({ awaitingNewRoll: false, viewedRollId: "roll-01" })).toBe(false);
+    expect(showingProvisionalRoll({ rollInFlight: false, viewedRollId: "roll-01" })).toBe(false);
   });
 
   it("the roll being paid for is on screen when she has chosen nothing else", () => {
@@ -34,7 +34,7 @@ describe("which roll is on screen while one is being paid for", () => {
       id yet to be named by. This is the state that must show eight skeletons,
       the "casting 8" header and the dashed pill as selected.
     */
-    expect(showingProvisionalRoll({ awaitingNewRoll: true, viewedRollId: null })).toBe(true);
+    expect(showingProvisionalRoll({ rollInFlight: true, viewedRollId: null })).toBe(true);
   });
 
   it("choosing a roll to look at takes the provisional chrome off the screen", () => {
@@ -44,7 +44,7 @@ describe("which roll is on screen while one is being paid for", () => {
       disabled — but she asked for 01, so 01's tiles and 01's header are what
       the page must draw.
     */
-    expect(showingProvisionalRoll({ awaitingNewRoll: true, viewedRollId: "roll-01" })).toBe(false);
+    expect(showingProvisionalRoll({ rollInFlight: true, viewedRollId: "roll-01" })).toBe(false);
   });
 
   it("an empty string is a chosen roll, not an absent one", () => {
@@ -54,7 +54,7 @@ describe("which roll is on screen while one is being paid for", () => {
       a roll she had asked for; `=== null` is the reading, and this pins it.
       (`nullish-default-misses-empty-string` is this repository's own scar.)
     */
-    expect(showingProvisionalRoll({ awaitingNewRoll: true, viewedRollId: "" })).toBe(false);
+    expect(showingProvisionalRoll({ rollInFlight: true, viewedRollId: "" })).toBe(false);
   });
 });
 
@@ -78,7 +78,7 @@ describe("the page asks the view question about the view", () => {
   it("every surface the customer LOOKS at reads the roll on screen", async () => {
     const source = code(await readFile(SHEET, "utf8"));
     expect(source).toContain(
-      "const showingProvisional = showingProvisionalRoll({ awaitingNewRoll, viewedRollId });",
+      "const showingProvisional = showingProvisionalRoll({ rollInFlight, viewedRollId });",
     );
     /* The grid. Skeletons over her faces is the symptom he reported. */
     expect(source).toContain(
@@ -112,7 +112,74 @@ describe("the page asks the view question about the view", () => {
       here" mark moves.
     */
     expect(source).toContain(
-      "const provisionalIndex = awaitingNewRoll ? provisionalRollIndex || null : null;",
+      "const provisionalIndex = rollInFlight ? provisionalRollIndex || rolls.length + 1 : null;",
     );
+  });
+});
+
+/**
+ * THE SHEET ASKS THE SERVER TOO, AND THE PILL IS A ROAD (#1454).
+ *
+ * His report, 2026-09-27: *"i cannot move back to sheet 4 to view the loading
+ * state cards, additionally if i exit the sheet and then come back into it
+ * sheet 4 will not show at all until its finished generating the cards"*.
+ *
+ * Two facts, one feeling. The latch above is a memory this component owns, so
+ * a reload destroys it and the sheet draws itself as idle over a roll that is
+ * still compiling; and the pill that says where the work is was a `span`, while
+ * the other road back — "Back to the latest roll" — cannot render in this state
+ * at all, because `activeRollId` still names the PREVIOUS roll until the new
+ * row lands.
+ *
+ * Source arms for the same reason the ones above are: there is no render
+ * harness in this client. Law 6's drive in the running app is what stands in
+ * for one, and the frames are on the PR.
+ */
+describe("a roll being cast survives leaving the sheet", () => {
+  it("the in-flight fact reads the server as well as this tab's own click", async () => {
+    const source = code(await readFile(SHEET, "utf8"));
+    /*
+      THE WHOLE OF THE RE-ENTRY HALF. `awaitingNewRoll` alone cannot answer on a
+      load that did not make the click, and the roll's row does not exist yet —
+      so without the server's answer there is nothing on the page to draw.
+    */
+    expect(source).toContain(
+      "const rollInFlight = awaitingNewRoll || (session.data?.castingNow ?? false);",
+    );
+  });
+
+  it("the spending half is NOT widened by it", async () => {
+    const source = code(await readFile(SHEET, "utf8"));
+    /*
+      THE CONTROL THAT STOPS THIS BECOMING A MONEY DEFECT, and the reason it is
+      its own arm rather than a line in the one above: `rollInFlight` is true in
+      every tab of a sheet that is compiling, so folding it into the paid
+      affordances would disable Roll again on a sheet whose roll this tab never
+      started — and, worse, ENABLE it the moment a stale stamp ages out.
+      Spending reads the latch this tab holds. Nothing else.
+    */
+    expect(source).not.toContain("paidBusy={rollInFlight}");
+    expect(source).not.toContain("disabled={rollInFlight}");
+    expect(source).not.toContain('{rollInFlight ? "Rolling…" : "Roll again"}');
+  });
+
+  it("the provisional pill is the way back to the roll being cast", async () => {
+    const source = await readFile(SHEET, "utf8");
+    /*
+      Read on the RAW source, comments and all, because what is pinned is one
+      JSX element and the `code()` strip would take its neighbours' prose with
+      it and leave the two halves of this element unanchored to each other.
+
+      It presses back to the roll being paid for — `setViewedRollId(null)`,
+      which is the same act "Back to the latest roll" performs and the same act
+      the click that started the roll performed. A `span` here is his report.
+    */
+    const marker = "dpc-rollrail__item--provisional";
+    const opensAt = source.lastIndexOf("<", source.indexOf(marker + "`"));
+    const pill = source.slice(opensAt, opensAt + 700);
+    expect(pill.startsWith("<button")).toBe(true);
+    expect(pill).toContain("onClick={() => setViewedRollId(null)}");
+    /* And it is still the dashed, unfinished one — a road back, not a landed roll. */
+    expect(pill).toContain(marker);
   });
 });
