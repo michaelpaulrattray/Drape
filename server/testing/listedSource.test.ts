@@ -313,20 +313,30 @@ const BARE_READS_ALLOWED: Record<string, string[]> = {
     + " #345 note at the site)",
   ],
   /*
-     ⚠ EIGHT ROWS, NOT ONE BLANKET LINE — the card's own bar (#594), because the
-     whole question about this module is WHICH of its ten reads were listed
+     ⚠ A ROW PER READ, NOT ONE BLANKET LINE — the card's own bar (#594), because
+     the whole question about this module is WHICH of its reads were listed
      entries. Read call by call: three were (the two `listFiles(SOURCE_DIR)`
      sweeps and the `listFiles(server)` sweep behind `pinningTests`) and now go
-     through `readIfPresent`; these eight are FIXED names and must keep throwing.
+     through `readIfPresent`; the rest are FIXED names and must keep throwing.
      A census whose declared-source file has vanished is broken, and reporting a
      short door list as a complete one is the failure the whole atlas exists to
      prevent — so the tolerance stops exactly at the walk.
+
+     ⚠ **THIS NOTE SAID *EIGHT ROWS* WHILE THE LIST HELD NINE, AND THE COUNT IS
+     OUT OF THE PROSE NOW** — #1203 added the `ARCHITECTURE_JSON` row and the
+     sentence counting them was not moved with it, which is the drift this file's
+     own guard exists to catch one level down. #1494 then removed the
+     `castingV2Scope.ts` row: `declaredFlags` had been the last population reader
+     still on RAW text, and routing it through `codeLinesOf` — so a docblock
+     writing `_SCOPE_ENV = "CASTING_X_SCOPE"` in prose can no longer declare a
+     phantom flag — retired its bare read. **The guard reddened on the
+     over-accounting, which is it working**: a stale allow row is a licence a
+     future bare read would inherit silently.
   */
   "scripts/lib/capabilityAtlas.mts": [
-    "codeLinesOf — the STRICT twin, kept for its two fixed callers"
-    + " (refineInterpreter.ts, refineDelta.ts); the listed-entry callers use"
-    + " codeLinesIfPresent",
-    "castingV2Scope.ts — the flag declarations, by fixed name",
+    "codeLinesOf — the STRICT twin, kept for its fixed callers"
+    + " (refineInterpreter.ts, refineDelta.ts, castingV2Scope.ts); the"
+    + " listed-entry callers use codeLinesIfPresent",
     "ROLL_ENTRANCE_FILE — behind its own existsSync, which throws a NAMED error"
     + " saying the five walls would silently lose every citation",
     "briefRefusalCopy.ts — the roll copy table, by fixed name",
