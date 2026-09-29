@@ -40,8 +40,10 @@ import {
   buildClientTrackerOptions,
   captureClientError,
   clientErrorTrackerStatus,
+  clientRelease,
   resetClientErrorTrackerForTests,
   setClientErrorUser,
+  startClientErrorTracker,
 } from "./errorTracker";
 
 const DSN = "https://publickey@o1.ingest.de.sentry.io/2";
@@ -323,5 +325,137 @@ describe("⚠ the SDK is imported DESTRUCTURED, which is worth 111 kB of every c
     expect(code).toContain('await import("@sentry/browser")');
     expect(bindsDestructured(code)).toBe(true);
     expect(bindsNamespace(code)).toBe(false);
+  });
+});
+
+/**
+ * WHICH BUILD THREW IT (#1420) — the release tag, on the object handed to `init`.
+ *
+ * `clientRelease()` reads `__DRAPE_RELEASE__`, which `vite.config.ts` defines
+ * and NOTHING ELSE does — so under vitest the identifier does not exist at all.
+ * That is not a gap in the arms, it is the branch most worth driving: a BARE
+ * reference to an undeclared name throws `ReferenceError` inside the send path,
+ * and the `typeof` guard is the only thing standing between that and a tracker
+ * that dies the first time it reports. The other branch is driven through the
+ * parameter, the way `bootLineFor` already drives its mode.
+ *
+ * The WIRE half of this — that the config really defines the name from
+ * `RAILWAY_GIT_COMMIT_SHA`, in both directions — is `server/clientReleaseWiring.test.ts`,
+ * which reads the config object itself rather than a constant near it.
+ */
+describe("the release tag — which build a report came from", () => {
+  it("⚠ reads as empty rather than THROWING where the define never ran", () => {
+    expect(() => clientRelease()).not.toThrow();
+    expect(clientRelease()).toBe("");
+  });
+
+  it("carries the release when the build knew it", () => {
+    expect(buildClientTrackerOptions("d0beb8f5c55b36df7d674d55965a23b8d54ad69b")).toMatchObject({
+      release: "d0beb8f5c55b36df7d674d55965a23b8d54ad69b",
+    });
+  });
+
+  it("⚠ omits the KEY entirely when it did not — an empty release is a group, not an absence", () => {
+    const options = buildClientTrackerOptions("");
+    expect("release" in options).toBe(false);
+    /* `release: undefined` would satisfy `toMatchObject` and `toBeUndefined`
+       alike, and `server/errorTrackerOptionsDeclared.test.ts` derives its
+       population from `Object.keys` of this object — so the presence of the KEY
+       is the thing to assert, not the value. */
+    expect(Object.keys(options)).not.toContain("release");
+  });
+
+  it("names it on the boot line, so a reader need not open the bundle", () => {
+    expect(bootLineFor({ ready: true }, "production", "abc1234")).toBe(
+      "[Errors] browser errors reporting to Sentry · production · release abc1234",
+    );
+    expect(bootLineFor({ ready: true }, "production", "")).toBe(
+      "[Errors] browser errors reporting to Sentry · production",
+    );
+  });
+});
+
+/**
+ * ⚠ THE COMPONENT STACK REACHES THE SDK'S SCOPE (#1420), AND THIS IS THE ONLY
+ * ARM IN THIS FILE THAT STARTS THE TRACKER.
+ *
+ * Everything above reads `buildClientTrackerOptions()`, because every claim
+ * above is a claim about the object handed to `init`. This one is not: the
+ * component stack never touches that object — it is set on a SCOPE, inside
+ * `captureClientError`, at the moment a report is made. A suite that only read
+ * the options could not see it at all, and the scrub's own arms
+ * (`server/errorEventScrub.test.ts`) prove only that it MAY travel, never that
+ * anything puts it there. Invariant 7 — a control that is not invoked does not
+ * exist — pointed at a data path instead of a protection.
+ *
+ * `@sentry/browser` is faked rather than run: the real SDK needs a browser and
+ * what it would prove past this point is Sentry's business, not ours. What is
+ * driven is OUR code — the real `startClientErrorTracker` and the real
+ * `captureClientError` — against a scope that records what it is handed.
+ */
+const fakeSdk = vi.hoisted(() => {
+  const scope = {
+    tags: {} as Record<string, string>,
+    contexts: {} as Record<string, unknown>,
+    setTag(key: string, value: string) {
+      scope.tags[key] = value;
+    },
+    setContext(key: string, context: unknown) {
+      scope.contexts[key] = context;
+    },
+  };
+  return {
+    scope,
+    captured: [] as unknown[],
+    reset() {
+      scope.tags = {};
+      scope.contexts = {};
+      fakeSdk.captured.length = 0;
+    },
+  };
+});
+
+vi.mock("@sentry/browser", () => ({
+  init: () => {},
+  withScope: (callback: (scope: unknown) => void) => callback(fakeSdk.scope),
+  captureException: (error: unknown) => {
+    fakeSdk.captured.push(error);
+  },
+  setUser: () => {},
+}));
+
+describe("⚠ what a render crash actually carries to the SDK", () => {
+  const COMPONENT_STACK = "\n    at RollSheet\n    at CastingStudio\n    at ErrorBoundary";
+
+  beforeEach(async () => {
+    fakeSdk.reset();
+    await startClientErrorTracker();
+  });
+
+  it("sets the component stack under `react`, where Sentry renders it as one", () => {
+    captureClientError(new Error("Cannot read properties of null"), {
+      kind: "render",
+      route: "/casting",
+      componentStack: COMPONENT_STACK,
+    });
+    expect(fakeSdk.scope.contexts.react).toEqual({ componentStack: COMPONENT_STACK });
+    expect(fakeSdk.captured).toHaveLength(1);
+  });
+
+  it("⚠ sets NO react context when there is no component stack — a window error has none", () => {
+    captureClientError(new Error("boom"), { kind: "window.error", route: "/casting" });
+    expect(fakeSdk.scope.contexts).toEqual({});
+  });
+
+  it("keeps the route, the kind and the world as TAGS, which is where a facet belongs", () => {
+    captureClientError(new Error("boom"), {
+      kind: "render",
+      route: "/casting",
+      componentStack: COMPONENT_STACK,
+    });
+    expect(fakeSdk.scope.tags).toMatchObject({ route: "/casting", kind: "render" });
+    /* A multi-line stack in a tag is unreadable and unsearchable both, so it
+       must not have leaked into one on the way past. */
+    expect(Object.values(fakeSdk.scope.tags)).not.toContain(COMPONENT_STACK);
   });
 });

@@ -50,16 +50,34 @@
  * beside the capability). On a browser it would also pull `browserTracing`'s
  * instrumentation of every fetch and every navigation into the chunk.
  *
- * # NO `release`, AND IT IS AN ABSENCE RATHER THAN AN OVERSIGHT
+ * # `release`, BAKED IN AT BUILD TIME — AND THE UNREAD FACT IS NOW ASKED RATHER
+ * # THAN GUESSED (#1420)
  *
  * The server tags events with `RAILWAY_GIT_COMMIT_SHA`, read at runtime. A
- * browser has no runtime access to it: it would have to be baked in at build
- * time, and **whether Railway's build step has that variable is a fact this
- * shift did not read**, so wiring a `release` from it would be a guess in the
- * one place a guess is least visible. It is also worth little alone — this
- * bundle is minified, so a stack trace is unreadable until SOURCE MAPS are
- * uploaded, and that is the change a release tag pays for. Both together are
- * one follow-up card, not a line here.
+ * browser has no runtime access to it, so it is baked in by `vite.config.ts`'s
+ * `define` as `__DRAPE_RELEASE__` and read by `clientRelease()` below.
+ *
+ * ⚠ **#1418 left this out because whether Railway's BUILD step carries that
+ * variable was a fact it had not read, and that fact is STILL not readable at
+ * an artifact** — the production build log prints vite's asset list and
+ * railpack's copy steps and no environment at all (read at the 2026-09-29
+ * deploy's real log). Railway's own reference says the Git variables go *"to
+ * all builds and deployments"*, which is the vendor's claim and not this
+ * repository's evidence bar. **So the build was made to SAY which happened**:
+ * `releaseStampPlugin` prints either the sha it baked in or that the variable
+ * was absent, on every real build. The next production build's log settles it
+ * permanently, and until then the honest answer travels either way — a build
+ * with no sha sends NO `release` key rather than an empty one, because an empty
+ * release is a Sentry group that every unlabelled build falls into.
+ *
+ * ⚠ **IT IS STILL WORTH LESS ALONE THAN IT WILL BE, AND SAYING SO IS THE POINT
+ * OF #1420's OWN FRAMING.** This bundle is minified, so a stack trace stays
+ * unreadable until SOURCE MAPS are uploaded — and that upload needs a Sentry
+ * auth token, which is a production variable and therefore the founder's. What
+ * a release tag buys on its own is real and smaller: an error report now says
+ * WHICH BUILD threw it, so a crash from a three-week-old tab is distinguishable
+ * from a crash in what just shipped. It is also the thing a source map is keyed
+ * to, so it has to exist first whichever order the work lands in.
  *
  * # THE CHANNELS THAT DO NOT PASS THE SCRUB, ENUMERATED (the server's practice)
  *
@@ -133,9 +151,38 @@ import {
  * exactly the shape somebody would later "simplify" the destructuring back into.
  */
 interface SentryFunctions {
-  withScope: (callback: (scope: { setTag: (key: string, value: string) => void }) => void) => void;
+  withScope: (
+    callback: (scope: {
+      setTag: (key: string, value: string) => void;
+      /* React's component stack rides here — see `captureClientError`. It is a
+         METHOD on the scope, not a fourth import, so it costs the chunk nothing. */
+      setContext: (key: string, context: Record<string, unknown> | null) => void;
+    }) => void,
+  ) => void;
   captureException: (error: unknown) => void;
   setUser: (user: { id: string } | null) => void;
+}
+
+/**
+ * ⚠ DEFINED BY `vite.config.ts`, AND BY NOTHING ELSE. `declare const` rather
+ * than a `.d.ts` so the declaration sits beside the only guard that matters:
+ * vitest and both server tsconfigs never run vite's `define`, so this
+ * identifier does not exist at runtime there and a BARE reference would throw
+ * `ReferenceError` inside the send path. `typeof` on an undeclared name is the
+ * one read that is safe, and vite's textual replacement keeps it correct
+ * (`typeof "abc123"` is still `"string"`).
+ */
+declare const __DRAPE_RELEASE__: string | undefined;
+
+/**
+ * The commit this bundle was built from, or `""` when the build did not know.
+ *
+ * ONE reader, for the same reason `clientSentryDsn()` is one reader: the option
+ * handed to `init` and anything that later wants to say which build this is
+ * must not be able to disagree.
+ */
+export function clientRelease(): string {
+  return typeof __DRAPE_RELEASE__ === "string" ? __DRAPE_RELEASE__.trim() : "";
 }
 
 interface TrackerState {
@@ -228,9 +275,10 @@ export const DROPPED_DEFAULT_INTEGRATIONS: readonly string[] = ["BrowserSession"
  * object handed to `init`, so `client/src/monitoring/errorTracker.test.ts`
  * drives THIS function's result rather than restating the literals beside it.
  */
-export function buildClientTrackerOptions(): {
+export function buildClientTrackerOptions(release = clientRelease()): {
   dsn: string;
   environment: string;
+  release?: string;
   tracesSampleRate: number;
   sendClientReports: boolean;
   dataCollection: {
@@ -254,6 +302,14 @@ export function buildClientTrackerOptions(): {
       knows — which build produced it. Sentry groups on it either way.
     */
     environment: import.meta.env.MODE,
+    /*
+      WHICH BUILD THREW IT (#1420). SPREAD rather than assigned, so an unknown
+      release leaves the key OFF the object entirely — `release: undefined` and
+      no `release` at all are the same thing to the SDK today, and they are not
+      the same thing to `errorTrackerOptionsDeclared.test.ts`, which derives its
+      population from `Object.keys` of this object.
+    */
+    ...(release.length > 0 ? { release } : {}),
     /* Errors, not tracing — see the header. */
     tracesSampleRate: 0,
     /* Declared in the header as a channel that does not pass the gate. */
@@ -367,9 +423,17 @@ export async function startClientErrorTracker(): Promise<string> {
  * and could therefore only ever reach ONE branch; it was titled as a control and
  * proved nothing, which is the shape working law 2 exists to catch.
  */
-export function bootLineFor(tracker: Pick<TrackerState, "ready">, mode = import.meta.env.MODE): string {
+export function bootLineFor(
+  tracker: Pick<TrackerState, "ready">,
+  mode = import.meta.env.MODE,
+  release = clientRelease(),
+): string {
+  /* The release is named here for the same reason the server half names it: a
+     reader must be able to tell WHICH BUILD is reporting without opening the
+     bundle. Absent, it is silent rather than "release none" — the line already
+     carries one honest absence and two would read as an error. */
   return tracker.ready
-    ? `[Errors] browser errors reporting to Sentry · ${mode}`
+    ? `[Errors] browser errors reporting to Sentry · ${mode}${release ? ` · release ${release}` : ""}`
     : "[Errors] VITE_SENTRY_DSN is not set — browser errors are logged locally and reported nowhere";
 }
 
@@ -388,6 +452,17 @@ export function captureClientError(error: unknown, context: ClientErrorContext =
       if (context.route) scope.setTag("route", context.route);
       if (context.kind) scope.setTag("kind", context.kind);
       scope.setTag("world", import.meta.env.MODE);
+      /*
+        WHICH PART OF THE TREE WAS RENDERING (#1420), under the key Sentry's own
+        React integration uses — `contexts.react.componentStack` — so the value
+        is rendered as a component stack in the product rather than sitting in a
+        blob somebody has to know to open. A TAG would have been the smaller
+        change and is the wrong one: tags are indexed, faceted and capped short,
+        and a multi-line stack in one is unreadable and unsearchable both.
+      */
+      if (context.componentStack) {
+        scope.setContext("react", { componentStack: context.componentStack });
+      }
       /* A non-Error reason (an unhandled rejection of a string, which this app
          does receive) is wrapped rather than stringified into a message, so it
          still carries a stack. */

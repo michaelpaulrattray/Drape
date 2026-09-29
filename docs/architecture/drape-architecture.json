@@ -12668,6 +12668,10 @@
       "path": "server/clientInputCaps.test.ts"
     },
     {
+      "id": "test:server/clientReleaseWiring.test.ts",
+      "path": "server/clientReleaseWiring.test.ts"
+    },
+    {
       "id": "test:server/closingKeyword.test.ts",
       "path": "server/closingKeyword.test.ts"
     },

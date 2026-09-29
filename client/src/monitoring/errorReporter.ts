@@ -82,6 +82,16 @@ export interface ClientErrorContext {
   route?: string;
   /** `render`, `window.onerror`, `unhandledrejection` — how it reached us. */
   kind?: string;
+  /**
+   * React's component stack, for a boundary-caught render crash only (#1420).
+   *
+   * ⚠ This module still touches no network and decides nothing about what may
+   * leave — it only REMEMBERS the string until a transport exists, exactly as
+   * it remembers the error itself. `shared/errorEventScrub.ts` is where it is
+   * redacted, capped and allowed to travel, and it is reached only from the
+   * lazy half. Nothing here may grow into a second opinion about that.
+   */
+  componentStack?: string;
 }
 
 /** The lazy half, once it has loaded, seen through the only door it needs. */

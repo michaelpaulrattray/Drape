@@ -11,6 +11,11 @@
  *      whose default is a console line. `App.tsx` wraps the whole app in this
  *      component, so until this change every render crash in the product — React
  *      #310 among them, which has happened here — reached nobody at all.
+ *      ⚠ **And since #1420 it hands over the COMPONENT STACK with it**, which is
+ *      the only thing in the report that says which part of the tree was
+ *      rendering — the error's own stack names React's internals. The arm below
+ *      asserted the exact opposite until that card, correctly, and carries the
+ *      reason the answer moved.
  *   2. **`main.tsx` actually calls `startClientErrorReporting`.** Invariant 7: a
  *      control that is not invoked does not exist, and this repository has paid
  *      for that four times on the Crew page alone.
@@ -91,15 +96,55 @@ describe("⚠ a render crash the boundary catches reaches the tracker", () => {
 
     expect(calls).toHaveLength(1);
     expect(calls[0]?.error).toBe(error);
-    expect(calls[0]?.context).toEqual({ kind: "render", route: "/casting" });
+    expect(calls[0]?.context).toEqual({
+      kind: "render",
+      route: "/casting",
+      componentStack: REACT_ERROR_INFO.componentStack,
+    });
   });
 
-  it("⚠ does NOT pass React's component stack — the projection has no field for it", () => {
-    /* Carrying it would be a widening of what leaves the building, and it is
-       filed rather than smuggled in beside a wiring change. */
+  /**
+   * ⚠ **THIS ARM READ `does NOT pass React's component stack` UNTIL #1420, AND
+   * THE REVERSAL IS THE POINT OF THAT CARD.**
+   *
+   * It was right when it was written: `shared/errorEventScrub.ts`'s projection
+   * had no field for the component stack, so passing one could not have
+   * travelled — and giving it a field is a widening of what leaves the building,
+   * which #1418 filed rather than smuggled in beside a wiring change. The field
+   * exists now (`contexts.react.componentStack`, the key Sentry's own React
+   * integration uses), with its own arms in `server/errorEventScrub.test.ts`
+   * proving what it redacts, caps and refuses.
+   *
+   * So this is now the arm that holds the link NOTHING ELSE covers: the scrub
+   * proves the stack MAY travel and `client/src/monitoring/errorTracker.test.ts`
+   * proves `captureClientError` puts it on the scope, but neither can see
+   * whether the one call site that HAS the stack passes it. Invariant 7 pointed
+   * at a data path instead of a protection.
+   */
+  it("⚠ passes React's component stack — the field this call site exists for", () => {
     const calls = catchOne(new Error("boom"));
-    expect(JSON.stringify(calls[0]?.context)).not.toContain("componentStack");
-    expect(JSON.stringify(calls[0]?.context)).not.toContain("CastingV2");
+    expect(calls[0]?.context.componentStack).toBe(REACT_ERROR_INFO.componentStack);
+    /* The error's own stack names React's internals and no component of ours;
+       this is the only thing that says WHICH PART OF THE TREE was rendering. */
+    expect(calls[0]?.context.componentStack).toContain("CastingV2");
+  });
+
+  it("⚠ sends `undefined` rather than `null` when React has no stack to give", () => {
+    /* `ErrorInfo.componentStack` is typed `string | null`, and a `null` would
+       reach the scope as a react context carrying nothing. The scrub drops it
+       either way; the honest shape is never to set it, which is what the
+       `?? undefined` at the call site is for. */
+    const calls: { error: unknown; context: ClientErrorContext }[] = [];
+    startClientErrorReporting(new EventTarget(), vi.fn(), vi.fn() as never);
+    registerClientErrorSink((thrown, context) => calls.push({ error: thrown, context }));
+
+    new ErrorBoundary({ children: null }).componentDidCatch(new Error("boom"), {
+      componentStack: null,
+    } as React.ErrorInfo);
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.context.componentStack).toBeUndefined();
+    expect(calls[0]?.context).toMatchObject({ kind: "render", route: "/casting" });
   });
 
   it("still logs to the console — the existing behaviour is added to, not replaced", () => {
