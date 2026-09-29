@@ -9,8 +9,16 @@ Run 2026-09-23 (foreman-20260923-1542), read at `origin/main@272392db`. Every ro
 read at the code, not carried from a document (law 7c); the one behavioural claim is
 **driven** rather than reasoned (law 7b), and its driver is named where it is made.
 
-> ⚠ **STOP — READ *THE RE-READ, 2026-09-26* AT THE FOOT OF THIS FILE BEFORE ACTING ON
-> ANYTHING ABOVE IT.** `CASTING_CREATIVE_REGISTER_SCOPE` went to `all` on **2026-09-24**,
+> ⚠ **STOP — READ THE LAST SECTION OF THIS FILE FIRST, *THE RETIREMENT SHIPPED,
+> 2026-09-30*, THEN *THE RE-READ, 2026-09-26* ABOVE IT. EVERYTHING BEFORE THOSE TWO IS
+> HISTORY.** The retirement this audit was written to enumerate HAS HAPPENED — his word on
+> #1398 (*"Delete it"*), shipped across six commits between 27 and 29 September — so a shift
+> opening this file for a deletion to make will not find one; the closing section says what
+> #180 still owes instead.
+>
+> ⚠ **AND THE RE-READ IS ITSELF SUPERSEDED IN ITS OWN CLOSING SECTION**, which says in bold
+> that the retirement *"has not been asked for"* and *"CANNOT START TONIGHT"*. Both died about
+> nine hours after they were written. `CASTING_CREATIVE_REGISTER_SCOPE` went to `all` on **2026-09-24**,
 > one day after this audit ran, so the section immediately below — the one this whole
 > document turns on — is FALSE, and **ten of the rows in the table have moved**. Two of
 > them now read as deletions and are load-bearing. The re-read says which, with the
@@ -361,3 +369,112 @@ the answer to it.** Two further facts belong beside it when it is asked:
   governs: no derived list stands behind it.
 - **It did not touch the refine road.** His timing correction of 2026-08-28 puts
   that half at N3's opening act, and that is unchanged.
+
+---
+
+# ⚠ THE RETIREMENT SHIPPED — 2026-09-30, AND THE RE-READ ABOVE IS HISTORY TOO
+
+**Slice 5 of the old-lane retirement — *"the record closes"* — is this section.**
+It has no card of its own on purpose (the manifest says why): it IS #180's close
+for the deletion half, and it is written here because this is the file a shift
+opens to work that card.
+
+## ⚠ TWO SENTENCES ABOVE WERE FALSE FOR THREE DAYS, AND THEY ARE THE TWO A SHIFT ACTS ON
+
+The re-read's closing section — *So what #180 actually still owes, and why it
+stops here* — ends on these, in bold:
+
+| written 2026-09-26 | true from 2026-09-26 23:06:38Z |
+|---|---|
+| *"the retirement has not been asked for"* | **It was asked and answered the same evening** — his Crew reply #228 on #1398, verbatim and entire: *"Delete it"* |
+| *"⚠ AND IT CANNOT START TONIGHT, for a reason that is not caution"* | **It started that night** and finished on 2026-09-29 |
+
+The re-read is kept exactly as written, for its own stated reason: a correction
+that deletes its own premise cannot be checked. **But it was carrying a bold
+`CANNOT START` on the only document that describes this card's work, about nine
+hours after his word settled it** — and that is the class this file has now been
+bitten by twice in one week, in the same file. The first time a flag moved under
+the document; this time his ruling did.
+
+## WHAT ACTUALLY SHIPPED, read at `git log` on `main` rather than off the PR bodies
+
+| slice | card | merged as | what it took |
+|---|---|---|---|
+| 1 | #1442 | `8a216bf6` (PR #1449) | the manifest, and `CASTING_CONCEPT_UPLOAD_SCOPE` re-parented onto `CASTING_V2_SCOPE` |
+| 2 | #1443 | `050212c0` (PR #1460) | the register constant, its two error classes, the parser, the capture, the boot fence, the compiler's `creativeRegister` input and every branch that read it |
+| 3 | #1444 | `746f509f` (PR #1487) | the client's `authorRoadEnabled` wire field and the four flag reads behind it |
+| 4 | #1445 | `7dd18aa6` (PR #1489) | **no code.** It read the composer at the tree, split it into two forced-order acts, and corrected its own arm count on the way — 86 across 17 was stale; the tree said **101 across 20** |
+| 4, act 1 | #1490 | `ba1b30a6` (PR #1493) | the house BRANCH out of `castingBriefCompiler` — 107 arms across 23 suites, each with a verdict |
+| 4, act 2 | #1490 | `c94e01be` (PR #1507) | `composeCandidatePrompt` (272 lines) and `deterministicBriefCompiler` (73) — 74 arms across 9 |
+| 5 | — | this section | the record |
+
+**Verified at the tree rather than carried**: `git grep` over non-test server
+files finds `composeCandidatePrompt` and `deterministicBriefCompiler` only in
+past-tense docblocks; `server/_core/env.ts` carries the boot fence's grave note
+in place of the fence; `scripts/lib/productionFlagPositions.mts` records the
+register row's DELETION rather than a position; `CLAUDE.md`'s flag index row and
+`docs/architecture/FEATURE_FLAGS.md`'s entry both already read as history.
+
+## ⚠ ONE ARTIFACT WAS STILL SAYING THE OLD THING, AND IT IS THE ONE AN AGENT READS
+
+`scripts/capability-atlas-corpus.mts` and `scripts/capability-atlas-roads.mts`
+each told a reader of `roll.unsupported_cohort` that *"the house arm survives in
+the compiler as a declared test seam — 86 arms across 17 suites drive it, and
+retiring them is #180 and slice 4 (#1445)"*. Read at the code on 2026-09-30, no
+part of that survives:
+
+- **There is no compiler seam.** `castingBriefCompiler` passes `author: true`
+  unconditionally on the one and only production call to `interpretBrief`.
+- **The count was already wrong when it was written** — #1445 re-read it as 101
+  arms across 20 suites — and act 1 then collapsed every one of them.
+- **#1445 is closed.** The card that owns what survives is **#1495**.
+- What survives is one module further out: the INTERPRETER's own `author`
+  option, whose unset position leaves `COHORT_INSTRUCTION` on the prompt
+  (`interpreterSystemPrompt`) and lets `parseCastingIntent` return this reason.
+
+⚠ **And the sharper half, which neither artifact said: the COMPILER'S RAISE is
+now driven by no arm at all.** Every arm that produces this reason stops at the
+interpreter's verdict, so what holds the raise is two BYTE pins —
+`briefRefusalCopy.test.ts` counting the constant in the compiler's source, and
+`capabilityAtlas.test.ts` reading the declared door at its own `file:line`. The
+bytes cannot move silently; the BEHAVIOUR is unowned, and that is now on #1495
+rather than implied by a sentence about a seam.
+
+⚠ **AND THAT WAS DRIVEN RATHER THAN GREPPED (law 7b, 2026-09-30).** The raise's
+condition was made unreachable in a way TypeScript accepts, on one line so the line
+count held and the atlas's own byte pins still resolved —
+`String(outcome.reason) === "unsupported_cohortXX"` — and
+`vitest run server/castingV2 server/capabilityAtlas.test.ts` returned **281 files /
+5,741 tests, 0 failed**. **The POSITIVE control is the same sabotage on the `likeness`
+raise three lines down: 2 arms red across 2 suites** (`creativeRegisterScope.test.ts`,
+`likenessRefusal.test.ts`). So the instrument can see a compiler raise die, and this one
+has nobody watching it. ⚠ A first attempt used `if (false && …)` and reddened only
+`typecheckGate.test.ts` — a TYPE error, not a behaviour arm, and it would have been the
+wrong receipt for this claim.
+
+**Measured 2026-09-30, with its reader named** — `git grep -c` over `*.test.ts`
+for `COHORT_INSTRUCTION` / `COHORT_SCHEMA_LINE` / `author: false` /
+`unsupported_cohort`: **six suites**, of which **four drive the two-valued reach,
+7 arms between them** (`creativeRegisterScope.test.ts` 4,
+`cohortWallRetry.test.ts` 1, `styleRefusal.test.ts` 1, `briefCompiler.test.ts` 1)
+and two assert the door's declaration and its sentence instead. ⚠ **It is a
+FLOOR**: the reader is a grep over four names, so a suite reaching the two-valued
+position without naming any of them is invisible to it.
+
+## WHAT #180 STILL OWES, AND IT IS NOT A DELETION
+
+The retirement is finished. **Two things keep this card open, and neither is N2
+deletion work:**
+
+1. **The legacy LOOK vocabulary** — the first concrete act recorded on #180
+   (2026-09-05). Read at the code 2026-09-30, `LOOK_KEYS` is still live with real
+   readers: the interpreter's own ask (`interpreter.ts`), the brand wall
+   (`properNouns.ts`), the per-slice dice (`cohortPhotorealHuman.ts`), the brief
+   rewrite and `briefCompiler`'s anchor check. Its replacement is **#535 §12's
+   generated chips, which are not built**, so it waits on that and not on this
+   card.
+2. **The refine-road half** — his own timing correction on this card
+   (2026-08-28), verbatim: *"the REFINE-ROAD half re-runs as N3's OPENING ACT."*
+   Unchanged, and N3's by his word.
+
+**So a shift opening #180 today should not go looking for a deletion to make.**

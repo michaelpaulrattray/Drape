@@ -19,6 +19,24 @@ re-read (`GHOST_AUDIT_2026-09-23.md`, from the line headed *THE RE-READ*) is
 this manifest's source for the row counts and for the two rows that read as
 deletions and are not.
 
+> ✅ **DONE — ALL FIVE SLICES SHIPPED BETWEEN 27 AND 29 SEPTEMBER 2026, AND THIS
+> DOCUMENT IS NOW A RECORD RATHER THAN A PLAN.** Slice 4 took two forced-order
+> acts rather than one (#1490), which the manifest did not foresee and #1445
+> found by reading the composer at the tree.
+>
+> ⚠ **THE COMMIT-BY-COMMIT TABLE IS DELIBERATELY NOT HERE.** It lives once, in
+> `GHOST_AUDIT_2026-09-23.md`'s closing section *THE RETIREMENT SHIPPED,
+> 2026-09-30* — which is #180's own slice 5 — because two lists of the same six
+> commits is working law 4, and this repository has spent the whole of this
+> retirement being bitten by documents that disagreed with each other. That
+> section also carries what #180 still owes, which is no longer a deletion.
+>
+> **What this file is still good for**, unchanged and worth keeping: the
+> headline finding that `authorRoad` names TWO things and only one dies, the
+> boot-order fact about the register's only child, and the FLOOR note at the
+> foot — which slice 2 then proved real by finding three things no grep in here
+> could.
+
 ---
 
 ## ⚠ THE ONE FINDING THAT DECIDES WHETHER THIS RETIREMENT IS SAFE
