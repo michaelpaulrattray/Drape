@@ -21,7 +21,7 @@ _Called as:_ `castingV2.config` · `castingV2.createSession` · `castingV2.openS
 |---|---|---|---|---|---|
 | `roll.likeness` | roll-refusal |  | server/castingV2/briefCompiler.ts:1187<br>server/castingV2/briefRefusalCopy.ts:116 | 5 test(s) | _documented-unreachable or gap — see findings_ |
 | `roll.not_a_being` | roll-refusal |  | server/castingV2/briefCompiler.ts:1190<br>server/castingV2/briefRefusalCopy.ts:122 | 2 test(s) | _documented-unreachable or gap — see findings_ |
-| `roll.reader_outage` | roll-refusal |  | server/castingV2/briefCompiler.ts:1171<br>server/castingV2/briefRefusalCopy.ts:128 | 5 test(s) | _documented-unreachable or gap — see findings_ |
+| `roll.reader_outage` | roll-refusal |  | server/castingV2/briefCompiler.ts:1171<br>server/castingV2/briefRefusalCopy.ts:128 | 4 test(s) | _documented-unreachable or gap — see findings_ |
 | `roll.uninterpretable` | roll-refusal |  | server/castingV2/briefCompiler.ts:1085<br>server/castingV2/briefRefusalCopy.ts:108 | 2 test(s) | _documented-unreachable or gap — see findings_ |
 | `roll.unsupported_cohort` | roll-refusal |  | server/castingV2/briefCompiler.ts:1176<br>server/castingV2/briefRefusalCopy.ts:110 | 5 test(s) | _documented-unreachable or gap — see findings_ |
 
@@ -70,8 +70,8 @@ _Called as:_ `castingV2.refine`
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
 | `empty` | interpreter-refusal |  | server/castingV2/refineDelta.ts:626<br>server/castingV2/refineInterpreter.ts:898<br>(+1) | 5 test(s) | guard.empty |
-| `unreadable` | interpreter-refusal |  | server/castingV2/castingIntent.ts:1381<br>server/castingV2/castingIntent.ts:1417<br>(+14) | 23 test(s) | light.softer, guard.gibberish, guard.scope.ink.none |
-| `reader_outage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:625<br>server/castingV2/refineInterpreter.ts:912<br>(+2) | 5 test(s) | _documented-unreachable or gap — see findings_ |
+| `unreadable` | interpreter-refusal |  | server/castingV2/castingIntent.ts:1381<br>server/castingV2/castingIntent.ts:1417<br>(+14) | 8 test(s) | light.softer, guard.gibberish, guard.scope.ink.none |
+| `reader_outage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:625<br>server/castingV2/refineInterpreter.ts:912<br>(+2) | 2 test(s) | _documented-unreachable or gap — see findings_ |
 | `wall_likeness` | interpreter-refusal |  | server/castingV2/refineDelta.ts:498<br>server/castingV2/refineDelta.ts:1609<br>(+2) | 6 test(s) | guard.likeness |
 | `wall_content` | interpreter-refusal |  | server/castingV2/refineDelta.ts:538<br>server/castingV2/refineInterpreter.ts:1647<br>(+1) | 6 test(s) | guard.content |
 | `wall_stage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:513<br>server/castingV2/refineDelta.ts:1619<br>(+2) | 9 test(s) | background.white |
@@ -205,7 +205,7 @@ _Called as:_ `castingV2.concept.describe`
 | `concept.not_about_the_person` | concept-refusal |  | server/castingV2/conceptDescribeCopy.ts:82 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `concept.not_a_casting_note` | concept-refusal |  | server/castingV2/conceptDescribeCopy.ts:87 | 2 test(s) | _documented-unreachable or gap — see findings_ |
 | `concept.ran_long` | concept-refusal |  | server/castingV2/conceptDescribeCopy.ts:111 | 2 test(s) | _documented-unreachable or gap — see findings_ |
-| `concept.unreadable` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1272<br>server/castingV2/conceptDescribe.ts:1309<br>(+1) | 23 test(s) | _documented-unreachable or gap — see findings_ |
+| `concept.unreadable` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1272<br>server/castingV2/conceptDescribe.ts:1309<br>(+1) | 3 test(s) | _documented-unreachable or gap — see findings_ |
 | `concept.no_transport` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1208<br>server/castingV2/conceptDescribeCopy.ts:114 | 4 test(s) | _documented-unreachable or gap — see findings_ |
 
 > ⚠ THIS ROAD'S DOORS REACHED THE MAP BEFORE THE ROAD DID — the six were declared with #192 and every one of them is documented-unreachable (the corpus sends sentences, not pictures), while the ENTRANCE they belong to had no road until #1203. That is the forward/backward asymmetry in one specimen: the map could prove every door it named was real and could not notice it had never named the road. The FLAG and the two byte doors above the six are still outside the declared set: `NOT_FOUND` off `captureCastingConceptUploadEnabled`, and the shared `referenceAttachBytesRefusal` / `BYTES_NOT_AN_IMAGE_MESSAGE` pair, which are the ink door's own sentences reused rather than restated.
@@ -343,7 +343,7 @@ Derived from the architecture Atlas's own extractor. A procedure with no road is
 | concept.not_a_casting_note | concept-refusal |  | conceptDescribe.test.ts, conceptDescribeCopy.test.ts |
 | concept.not_about_the_person | concept-refusal |  | conceptDescribe.test.ts |
 | concept.ran_long | concept-refusal |  | conceptDescribe.test.ts, conceptDescribeCopy.test.ts |
-| concept.unreadable | concept-refusal |  | cohortWallRetry.test.ts, conceptDescribe.test.ts, conceptDescribeCopy.test.ts, creativeRegisterScope.test.ts, hairColourFromReference.test.ts, hairReferenceCutter.test.ts, inkReferenceCutter.test.ts, inkUploadDoor.test.ts, judgeFrame.test.ts, makeupFromReference.test.ts, openLaneAccept.test.ts, openLaneKind.test.ts, readerFrameBound.test.ts, readerOutageRefusal.test.ts, referenceAttachService.test.ts, referenceClassGate.test.ts, referenceMediumDoor.test.ts, referenceWordsLane.test.ts, refineInterpreterCeiling.test.ts, refineService.test.ts, truncatedReplyReaders.test.ts, uploadRefusalCopy.test.ts, server/db/referenceReadDemand.test.ts |
+| concept.unreadable | concept-refusal |  | conceptDescribe.test.ts, conceptDescribeCopy.test.ts, readerFrameBound.test.ts |
 | departure | cannot-say | refunded | cannotSayCopy.test.ts |
 | empty | interpreter-refusal |  | diagnosticCapture.test.ts, faceScan.test.ts, faceScanService.test.ts, readerOutageRefusal.test.ts, refineRefusals.test.ts |
 | gate_ink_coverage_unread | interpreter-refusal |  | refineDelta.test.ts, refineRefusals.test.ts, refineService.test.ts |
@@ -362,7 +362,7 @@ Derived from the architecture Atlas's own extractor. A procedure with no road is
 | nothingAsked | cannot-say | free | cannotSayCopy.test.ts, repaintAsks.test.ts |
 | noWords | cannot-say | refunded | cannotSayCopy.test.ts, mintedSlots.test.ts, repaintAsks.test.ts, viewFeatureWords.test.ts |
 | perSideRemoval | cannot-say | refunded | cannotSayCopy.test.ts, repaintAsks.test.ts |
-| reader_outage | interpreter-refusal |  | briefCompiler.test.ts, briefRefusalCopy.test.ts, readerOutageRefusal.test.ts, refineInterpreterCeiling.test.ts, styleRefusal.test.ts |
+| reader_outage | interpreter-refusal |  | readerOutageRefusal.test.ts, refineInterpreterCeiling.test.ts |
 | reference.pictureCap | reference-refusal |  | uploadRefusalCopy.test.ts |
 | refine_limit | service-refusal |  | refineService.test.ts |
 | removal | cannot-say | refunded | cannotSayCopy.test.ts, repaintAsks.test.ts |
@@ -374,7 +374,7 @@ Derived from the architecture Atlas's own extractor. A procedure with no road is
 | removal_unnamed | service-refusal |  | refineService.test.ts |
 | roll.likeness | roll-refusal |  | briefRefusalCopy.test.ts, colourContextDoor.test.ts, creativeRegisterScope.test.ts, likenessRefusal.test.ts, stageWallBackstop.test.ts |
 | roll.not_a_being | roll-refusal |  | briefRefusalCopy.test.ts, creativeRegisterScope.test.ts |
-| roll.reader_outage | roll-refusal |  | briefCompiler.test.ts, briefRefusalCopy.test.ts, readerOutageRefusal.test.ts, refineInterpreterCeiling.test.ts, styleRefusal.test.ts |
+| roll.reader_outage | roll-refusal |  | briefCompiler.test.ts, briefRefusalCopy.test.ts, readerOutageRefusal.test.ts, styleRefusal.test.ts |
 | roll.uninterpretable | roll-refusal |  | briefCompiler.test.ts, briefRefusalCopy.test.ts |
 | roll.unsupported_cohort | roll-refusal |  | briefCompiler.test.ts, briefRefusalCopy.test.ts, cohortWallRetry.test.ts, creativeRegisterScope.test.ts, styleRefusal.test.ts |
 | scope_mismatch | service-refusal |  | refineService.test.ts |
@@ -387,10 +387,10 @@ Derived from the architecture Atlas's own extractor. A procedure with no road is
 | uncatalogued | cannot-say | refunded | cannotSayCopy.test.ts, repaintAsks.test.ts, vacantPhrase.test.ts |
 | unnamedObject | cannot-say | refunded | cannotSayCopy.test.ts, mintedSlots.test.ts, repaintAsks.test.ts |
 | unplacedInk | cannot-say | refunded | cannotSayCopy.test.ts, inkBeyondTodayAsk.test.ts, inkDesignForAsk.test.ts, refineService.test.ts, repaintAsks.test.ts |
-| unreadable | interpreter-refusal |  | cohortWallRetry.test.ts, conceptDescribe.test.ts, conceptDescribeCopy.test.ts, creativeRegisterScope.test.ts, hairColourFromReference.test.ts, hairReferenceCutter.test.ts, inkReferenceCutter.test.ts, inkUploadDoor.test.ts, judgeFrame.test.ts, makeupFromReference.test.ts, openLaneAccept.test.ts, openLaneKind.test.ts, readerFrameBound.test.ts, readerOutageRefusal.test.ts, referenceAttachService.test.ts, referenceClassGate.test.ts, referenceMediumDoor.test.ts, referenceWordsLane.test.ts, refineInterpreterCeiling.test.ts, refineService.test.ts, truncatedReplyReaders.test.ts, uploadRefusalCopy.test.ts, server/db/referenceReadDemand.test.ts |
+| unreadable | interpreter-refusal |  | creativeRegisterScope.test.ts, hairColourFromReference.test.ts, makeupFromReference.test.ts, openLaneAccept.test.ts, openLaneKind.test.ts, readerOutageRefusal.test.ts, refineInterpreterCeiling.test.ts, refineService.test.ts |
 | upload.tooLarge | upload-refusal |  | inkUploadDoor.test.ts, uploadRefusalCopy.test.ts |
 | upload.tooSmall | upload-refusal |  | inkDeliveryCrop.test.ts, inkUploadDoor.test.ts, referenceAttachService.test.ts, uploadRefusalCopy.test.ts, server/db/castingV2ReferenceLibrary.test.ts |
-| upload.unreadable | upload-refusal |  | cohortWallRetry.test.ts, conceptDescribe.test.ts, conceptDescribeCopy.test.ts, creativeRegisterScope.test.ts, hairColourFromReference.test.ts, hairReferenceCutter.test.ts, inkReferenceCutter.test.ts, inkUploadDoor.test.ts, judgeFrame.test.ts, makeupFromReference.test.ts, openLaneAccept.test.ts, openLaneKind.test.ts, readerFrameBound.test.ts, readerOutageRefusal.test.ts, referenceAttachService.test.ts, referenceClassGate.test.ts, referenceMediumDoor.test.ts, referenceWordsLane.test.ts, refineInterpreterCeiling.test.ts, refineService.test.ts, truncatedReplyReaders.test.ts, uploadRefusalCopy.test.ts, server/db/referenceReadDemand.test.ts |
+| upload.unreadable | upload-refusal |  | inkReferenceCutter.test.ts, inkUploadDoor.test.ts, referenceAttachService.test.ts, uploadRefusalCopy.test.ts |
 | upload.unsupportedFormat | upload-refusal |  | inkUploadDoor.test.ts, referenceAttachService.test.ts, uploadRefusalCopy.test.ts |
 | version_missing | service-refusal |  | refineService.test.ts |
 | wall_content | interpreter-refusal |  | colourContextDoor.test.ts, priorContextDoor.test.ts, referenceWordsLane.test.ts, refineRefusals.test.ts, refineService.test.ts, stageWallBackstop.test.ts |
@@ -404,7 +404,7 @@ Derived from the architecture Atlas's own extractor. A procedure with no road is
 
 `CASTING_BORN_INK_SCOPE` · `CASTING_BRIEF_FIDELITY_SCOPE` · `CASTING_CONCEPT_UPLOAD_SCOPE` · `CASTING_FACE_SCAN_SCOPE` · `CASTING_HAIR_REFERENCE_SCOPE` · `CASTING_INK_CUT_SCOPE` · `CASTING_INK_REFERENCE_SCOPE` · `CASTING_INK_REGION_CROP_SCOPE` · `CASTING_INK_STUDIO_SCOPE` · `CASTING_INK_TRANSFORM_SCOPE` · `CASTING_INK_WORDS_SCOPE` · `CASTING_OPEN_LANE_SCOPE` · `CASTING_REFERENCE_ATTACH_SCOPE` · `CASTING_REFERENCE_LIBRARY_SCOPE` · `CASTING_REFINE_DISPATCH_SCOPE` · `CASTING_REPAINT_SCOPE` · `CASTING_RETRY_SCOPE` · `CASTING_ROLL_ENGINE_SCOPE` · `CASTING_SCAN_TABLE_SCOPE` · `CASTING_SIDE_PHRASING_SCOPE` · `CASTING_V2_SCOPE`
 
-## Findings (55)
+## Findings (57)
 
 - **warn** `belief-mismatch` guard.typo — "give her a nose rign" — believed asked:did-you-mean, observed would-render
 - **info** `documented-unreachable` already_signed — no corpus row reaches it: answers a refine sent at a SIGNED cast — request state, not sentence content — a row could reach it via: a signed-cast fixture, if sign-state rows are ever wanted; pinned by its C5 service arm
@@ -447,6 +447,8 @@ Derived from the architecture Atlas's own extractor. A procedure with no road is
 - **info** `documented-unreachable` whichInkToChange — no corpus row reaches it: needs a branch wearing TWO tattoos; no cast in either world has ever worn two at once (opus-966 §1) and the multi-tattoo fixture is §10 item 3b's build — a row could reach it via: item 3b's keying work, which needs two-tattoo state to test itself
 - **info** `not-driven` ref.hair.whole — needs state "reference-attached", which this fixture cannot supply
 - **info** `not-driven` ref.ink.sleeve — needs state "reference-attached", which this fixture cannot supply
+- **warn** `shared-bare-door-id` reader_outage — "reader_outage" is the bare id of 2 declared doors (reader_outage, roll.reader_outage) — a test quotes the bare word, so each door's pins are narrowed to the suites that reach its own raise sites
+- **warn** `shared-bare-door-id` unreadable — "unreadable" is the bare id of 3 declared doors (concept.unreadable, unreadable, upload.unreadable) — a test quotes the bare word, so each door's pins are narrowed to the suites that reach its own raise sites
 - **warn** `unreached` gate_ink_coverage_unread — a corpus row expects "gate_ink_coverage_unread" and the drive never produced it — the door may be unreachable
 - **warn** `unreached` absorbed — KNOWN DEBT: no corpus row expects "absorbed" — the map's named remainder (founder law: this list only shrinks)
 - **warn** `unreached` absorbed_departure — KNOWN DEBT: no corpus row expects "absorbed_departure" — the map's named remainder (founder law: this list only shrinks)

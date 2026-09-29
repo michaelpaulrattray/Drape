@@ -117,6 +117,7 @@ export type Finding = {
     | "documented-unreachable"    // an id UNREACHABLE_DOORS carries a reason for
     | "coverage-contradiction"    // an id both documented-unreachable AND expected by a row
     | "duplicate-door-id"         // two declared sources claiming one id — see #192
+    | "shared-bare-door-id"       // two declared doors claiming one BARE id — see #1506
     | "stale-unreachable-doc"     // a drive PRODUCED an id documented as unreachable
     | "road-cites-unknown-door"   // the roads map names a door the source does not declare
     | "road-cites-unknown-procedure" // a road names a procedure the entrance does not expose
@@ -688,15 +689,43 @@ export function reachesDoors(relPath: string, text: string): boolean {
     `vi.mock("…")` is covered by the same alternation, because mocking a module
     is naming it as the subject just as plainly as importing it.
   */
-  const specifiers = [
-    ...text.matchAll(/\bfrom\s+["']([^"']+)["']/g),
-    ...text.matchAll(/\b(?:import|require|vi\.mock|vi\.doMock)\s*\(\s*["']([^"']+)["']/g),
-  ];
-  for (const match of specifiers) {
-    const resolved = resolveSpecifier(relPath, match[1]!);
-    if (resolved && resolved.startsWith(`${DOOR_MODULE_DIR}/`)) return true;
+  for (const resolved of importedModules(relPath, text)) {
+    if (resolved.startsWith(`${DOOR_MODULE_DIR}/`)) return true;
   }
   return false;
+}
+
+/**
+ * EVERY MODULE IN THIS TREE A FILE NAMES — the resolved, extension-less set.
+ *
+ * Extracted from `reachesDoors` when `narrowSharedBareIdPins` below needed the
+ * same walk for a narrower question (#1506). ⚠ **It is SHARED rather than
+ * copied on purpose**: the alternation here has been corrected twice at real
+ * cost — once to resolve the specifier instead of searching it for a token
+ * (PR #615 finding 1), once to admit the dynamic and `vi.mock` shapes (PR #615
+ * round 2) — and a second copy would have inherited neither. Working law 4:
+ * the second reader derives, it does not mirror.
+ *
+ * Extension-less because `resolveSpecifier` returns what the specifier spells
+ * (`./conceptDescribe`), while a raise site cites a real file
+ * (`…/conceptDescribe.ts`); `moduleKey` below is the one place that difference
+ * is reconciled, so neither caller carries a `.ts` of its own.
+ */
+export function importedModules(relPath: string, text: string): Set<string> {
+  const out = new Set<string>();
+  for (const match of [
+    ...text.matchAll(/\bfrom\s+["']([^"']+)["']/g),
+    ...text.matchAll(/\b(?:import|require|vi\.mock|vi\.doMock)\s*\(\s*["']([^"']+)["']/g),
+  ]) {
+    const resolved = resolveSpecifier(relPath, match[1]!);
+    if (resolved) out.add(moduleKey(resolved));
+  }
+  return out;
+}
+
+/** A path with any TypeScript extension taken off, so a specifier and a raise site compare. */
+function moduleKey(relPath: string): string {
+  return relPath.replace(/\.m?ts$/, "");
 }
 
 /**
@@ -1120,6 +1149,137 @@ export function duplicateDoorFindings(declared: readonly DeclaredId[]): Finding[
   return findings;
 }
 
+/**
+ * THE DOORS THAT SHARE ONE BARE ID — grouped, and only where more than one
+ * claims it.
+ *
+ * `duplicateDoorFindings` above catches two sources claiming one QUALIFIED id.
+ * This is its sibling one word over: `concept.unreadable`, `unreadable` and
+ * `upload.unreadable` are three well-declared doors that collide on the word a
+ * test actually quotes, which is the only word the pin reader can search for.
+ *
+ * Derived from `bareDoorId`, so it follows `DOOR_ENTRANCE_PREFIXES` and cannot
+ * drift from the reader that strips the prefix.
+ */
+export function sharedBareDoorIds(
+  declared: readonly DeclaredId[],
+): Map<string, DeclaredId[]> {
+  const byBare = new Map<string, DeclaredId[]>();
+  for (const entry of declared) {
+    const bare = bareDoorId(entry.id);
+    byBare.set(bare, [...(byBare.get(bare) ?? []), entry]);
+  }
+  return new Map([...byBare].filter(([, rows]) => rows.length > 1));
+}
+
+/**
+ * ONE WORD, THREE DOORS — AND UNTIL #1506 ALL THREE WORE EACH OTHER'S PINS.
+ *
+ * ⚠ **THE DEFECT, MEASURED AT THE COMMITTED MAP BEFORE THE REPAIR.** Pins are
+ * searched on the BARE member name because that is what a test quotes — a suite
+ * writes `"unreadable"`, never the atlas's own `upload.unreadable` (#192's
+ * reasoning, unchanged and still right). But three declared doors answer to
+ * that word, so `pins.get("unreadable")` handed the SAME 23 files to all three:
+ * `judgeFrame.test.ts` (a frame-size enum), `referenceMediumDoor.test.ts` (a
+ * medium reader's own answer) and `conceptDescribe.test.ts` alike, each one
+ * proving at most one of the three and credited with all of them. **2 bare ids,
+ * 5 door entries, 51 of the map's 229 pin entries counted more than once.**
+ *
+ * This is #545's class (a file that merely SPELLS an id is not a pin) one level
+ * down: there the stranger was another feature, here the stranger is the door
+ * next to it. And it is #1494's class (inflation toward *proven*) in the same
+ * place — that one fixed a COMMENT read as code; this one fixes one word read
+ * as three doors.
+ *
+ * ⚠ **RENAMING CANNOT ANSWER IT, WHICH IS WHY THE READER HAD TO MOVE.** #1505
+ * met the same trap on `cap` and answered by renaming one door. `unreadable` is
+ * the honest word on all three entrances — the reply could not be read — and
+ * renaming one to satisfy a census would be the map editing the product.
+ *
+ * **THE RULE: for a shared bare id, a suite pins the door whose OWN RAISE SITES
+ * it reaches.** Derived, never a list: `raiseSites` already extracts `file:line`
+ * per qualified door and already qualifies a concept site as the concept
+ * entrance's (#192), so the modules that raise `upload.unreadable` are a fact
+ * the map has carried all along. Nothing new is declared here; a fifth entrance
+ * or a moved raise follows automatically.
+ *
+ * ⚠ **IT NARROWS ONLY A COLLIDING BARE ID.** A door whose word nothing else
+ * claims keeps every pin it had — 62 of the 68 doors do not move at all. A
+ * blanket "every pin must reach its own raiser" would be a different and much
+ * larger change, and the reach rule's own measurement is the warning: requiring
+ * a casting import of EVERY pin dropped 156 of 194 and emptied 27 doors.
+ *
+ * ⚠ **AND IT MAY NOT EMPTY A DOOR SILENTLY — the bar #1494 set and #1505
+ * inherited.** Two arms, and they answer different failures. A door with no
+ * raise sites at all is *structurally* unpinnable: the narrowing could never
+ * credit it, so it refuses to narrow that door and raises an **error**, the
+ * same answer `pinCandidates` gives a resolver that matches nothing (a scan
+ * with nothing to match looks exactly like a clean one). A door that has
+ * raisers and simply keeps no pin drops to zero and `unpinned-refusal` fires on
+ * it — loud and wrong over quiet and wrong, which is the direction every reader
+ * in this file already fails toward. Measured at the tree of 2026-09-29, no
+ * door takes either road.
+ *
+ * ⚠ **ITS LIMIT, STATED RATHER THAN DISCOVERED: two entrances raised by ONE
+ * module cannot be told apart this way.** `upload.*` and `reference.*` are both
+ * declared in `uploadRefusalCopy.ts`, so the day they collide on a bare id this
+ * reader will credit both — the finding will still fire, and it is the finding
+ * that would ask for the repair. They share no bare id today.
+ */
+export function narrowSharedBareIdPins(
+  declared: readonly DeclaredId[],
+  readSource: (relPath: string) => string | null,
+): { declared: DeclaredId[]; findings: Finding[] } {
+  const shared = sharedBareDoorIds(declared);
+  if (shared.size === 0) return { declared: [...declared], findings: [] };
+
+  const findings: Finding[] = [];
+  const narrowed = new Map<string, string[]>();
+
+  for (const [bare, rows] of shared) {
+    findings.push({
+      id: `shared-bare:${bare}`,
+      severity: "warn",
+      kind: "shared-bare-door-id",
+      subject: bare,
+      message:
+        `"${bare}" is the bare id of ${rows.length} declared doors `
+        + `(${rows.map((r) => r.id).join(", ")}) — a test quotes the bare word, so each door's `
+        + "pins are narrowed to the suites that reach its own raise sites",
+    });
+
+    for (const entry of rows) {
+      const owners = new Set(entry.sites.map((site) => moduleKey(site.replace(/:\d+$/, ""))));
+      if (owners.size === 0) {
+        findings.push({
+          id: `shared-bare-unraised:${entry.id}`,
+          severity: "error",
+          kind: "shared-bare-door-id",
+          subject: entry.id,
+          message:
+            `"${entry.id}" shares the bare id "${bare}" with another door and cites no raise site, `
+            + "so its pins cannot be told from its neighbour's — every one of them would be that "
+            + "neighbour's. Give it a raise site, or qualify the ids so they stop colliding",
+        });
+        continue; /* left un-narrowed: an honest inflation beats a silent emptying */
+      }
+      const kept = entry.pinnedBy.filter((file) => {
+        const text = readSource(file);
+        /* Listed, then gone — the same answer `pinningTests` gives it. */
+        return text === null ? false : [...importedModules(file, text)].some((m) => owners.has(m));
+      });
+      narrowed.set(entry.id, kept);
+    }
+  }
+
+  return {
+    declared: declared.map((entry) =>
+      narrowed.has(entry.id) ? { ...entry, pinnedBy: narrowed.get(entry.id)! } : entry,
+    ),
+    findings,
+  };
+}
+
 export function buildStaticAtlas(corpus: readonly CorpusRow[] = CORPUS): StaticAtlas {
   const service = declaredServiceRefusals();
   const interpreter = declaredInterpreterRefusals().filter((id) => !service.includes(id));
@@ -1144,7 +1304,7 @@ export function buildStaticAtlas(corpus: readonly CorpusRow[] = CORPUS): StaticA
     ...service, ...interpreter, ...cannot, ...conceptBare, ...rollBare, ...uploadBare, ...referenceBare,
   ]);
   const sites = raiseSites();
-  const declared: DeclaredId[] = [
+  const attached: DeclaredId[] = [
     ...service.map((id) => ({ id, kind: "service-refusal" as const, pinnedBy: pins.get(id) ?? [], sites: sites.get(id) ?? [] })),
     ...interpreter.map((id) => ({ id, kind: "interpreter-refusal" as const, pinnedBy: pins.get(id) ?? [], sites: sites.get(id) ?? [] })),
     ...cannot.map((id) => ({
@@ -1185,7 +1345,16 @@ export function buildStaticAtlas(corpus: readonly CorpusRow[] = CORPUS): StaticA
     })),
   ].sort((a, b) => a.id.localeCompare(b.id));
 
-  const findings: Finding[] = [...duplicateDoorFindings(declared)];
+  /*
+    #1506 — THE PINS ARE ATTACHED ON THE BARE NAME ABOVE, AND WHERE THAT NAME
+    BELONGS TO MORE THAN ONE DOOR THEY ARE SEPARATED HERE. It runs before the
+    `unpinned-refusal` sweep below on purpose: a door the narrowing leaves with
+    nothing must be reported as unpinned in the SAME run, not in the next one.
+  */
+  const narrowing = narrowSharedBareIdPins(attached, (file) => readIfPresent(path.join(repoRoot, file)));
+  const declared = narrowing.declared;
+
+  const findings: Finding[] = [...duplicateDoorFindings(declared), ...narrowing.findings];
   for (const entry of declared) {
     if (entry.pinnedBy.length === 0) {
       findings.push({

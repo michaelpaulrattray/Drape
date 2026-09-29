@@ -19,6 +19,7 @@ import {
   duplicateDoorFindings, entranceCoverageFindings, listFiles, outcomeId,
   pinCandidates, pinningTests, pinsIn, reachesDoors, readCommittedAtlas, reasonOfNote, renderCapabilityPage, committedPageIsFresh, lfOnly,
   CAPABILITY_MD, CASTING_ENTRANCE, bareDoorId, declaredReferenceRefusals, declaredUploadRefusals, type Finding,
+  importedModules, narrowSharedBareIdPins, sharedBareDoorIds, type DeclaredId,
 } from "../scripts/lib/capabilityAtlas.mts";
 import { ROADS, UNMAPPED_ENTRANCES, type Road } from "../scripts/capability-atlas-roads.mts";
 import { CORPUS, type CorpusRow } from "../scripts/capability-atlas-corpus.mts";
@@ -586,6 +587,133 @@ describe("the concept upload's doors are on the map", () => {
     ];
     expect(duplicateDoorFindings(colliding).map((f) => f.subject)).toEqual(["unreadable"]);
     expect(duplicateDoorFindings(colliding)[0]!.severity).toEqual("error");
+  });
+});
+
+/*
+  #1506 — THE SAME COLLISION ONE WORD OVER, and the arm above is why it needed
+  its own: `duplicateDoorFindings` asks about the QUALIFIED id, and the
+  qualification that satisfied it — `concept.unreadable` beside `unreadable` —
+  left the BARE word still shared. Pins are searched on the bare word (#192,
+  because that is what a test quotes), so all three doors of that name were
+  handed the same 23 files: 51 of the map's 229 pin entries counted more than
+  once, and a suite asserting a frame SIZE of `"unreadable"` credited with
+  proving three casting doors can shut.
+
+  Every arm here drives the reader with a fixture rather than asserting a
+  property of a tree that happens to be clean — working law 3, and the reason
+  `narrowSharedBareIdPins` takes its source reader as an argument.
+*/
+describe("one word may be three doors, and each keeps only its own pins", () => {
+  const door = (id: string, kind: DeclaredId["kind"], pinnedBy: string[], sites: string[]): DeclaredId =>
+    ({ id, kind, pinnedBy, sites });
+
+  /* Two doors of one word, raised in different modules — the shape of the real one. */
+  const CONCEPT = door("concept.unreadable", "concept-refusal", ["a.test.ts", "b.test.ts", "c.test.ts"], ["x/conceptDescribe.ts:12"]);
+  const UPLOAD = door("upload.unreadable", "upload-refusal", ["a.test.ts", "b.test.ts", "c.test.ts"], ["x/inkUploadDoor.ts:99"]);
+  const SOURCES: Record<string, string> = {
+    "a.test.ts": 'import { describe } from "./x/conceptDescribe";\nexpect(r).toBe("unreadable");',
+    "b.test.ts": 'import { door } from "./x/inkUploadDoor";\nexpect(r).toBe("unreadable");',
+    /* Neither raiser — a stranger's enum that happens to equal the word. */
+    "c.test.ts": 'import { bound } from "./x/judgeFrame";\nexpect(rec).toEqual({ size: "unreadable" });',
+  };
+  const read = (f: string) => SOURCES[f] ?? null;
+
+  it("POSITIVE CONTROL — the live map really does hold a shared bare id, so this reader has a subject", () => {
+    const shared = sharedBareDoorIds(buildStaticAtlas(CORPUS).declared);
+    expect([...shared.keys()].sort()).toEqual(["reader_outage", "unreadable"]);
+    expect(shared.get("unreadable")!.map((d) => d.id).sort())
+      .toEqual(["concept.unreadable", "unreadable", "upload.unreadable"]);
+  });
+
+  it("NEGATIVE CONTROL — a bare id only one door claims is not grouped, and its pins never move", () => {
+    const alone = [door("roll.likeness", "roll-refusal", ["a.test.ts", "c.test.ts"], ["x/briefCompiler.ts:3"])];
+    expect(sharedBareDoorIds(alone).size).toEqual(0);
+    const out = narrowSharedBareIdPins(alone, read);
+    expect(out.findings).toEqual([]);
+    expect(out.declared[0]!.pinnedBy).toEqual(["a.test.ts", "c.test.ts"]);
+  });
+
+  it("THE REPAIR — each door keeps the suites that reach ITS OWN raise sites, and the lists differ", () => {
+    const out = narrowSharedBareIdPins([CONCEPT, UPLOAD], read);
+    const pins = (id: string) => out.declared.find((d) => d.id === id)!.pinnedBy;
+    expect(pins("concept.unreadable")).toEqual(["a.test.ts"]);
+    expect(pins("upload.unreadable")).toEqual(["b.test.ts"]);
+    /* The whole defect in one assertion: before the repair these were equal. */
+    expect(pins("concept.unreadable")).not.toEqual(pins("upload.unreadable"));
+    /* And the stranger pins NEITHER — it reaches no raiser of either door. */
+    expect(pins("concept.unreadable")).not.toContain("c.test.ts");
+    expect(pins("upload.unreadable")).not.toContain("c.test.ts");
+  });
+
+  it("the finding names every door sharing the word, so the next collision cannot arrive silently", () => {
+    const out = narrowSharedBareIdPins([CONCEPT, UPLOAD], read);
+    const shared = out.findings.filter((f) => f.kind === "shared-bare-door-id");
+    expect(shared.map((f) => f.subject)).toEqual(["unreadable"]);
+    expect(shared[0]!.severity).toEqual("warn");
+    expect(shared[0]!.message).toContain("concept.unreadable");
+    expect(shared[0]!.message).toContain("upload.unreadable");
+  });
+
+  it("A DOOR WITH NO RAISE SITE IS AN ERROR, NOT A SILENT EMPTYING — the #1494 bar", () => {
+    /*
+      The narrowing credits a suite that reaches the door's raisers. A door
+      citing none could never be credited by it, so narrowing would take every
+      pin it has and the map would read `unpinned` over a door whose arms are
+      fine. That is a broken instrument rather than a finding about the product,
+      and it refuses the way `pinCandidates` refuses a resolver matching nothing.
+    */
+    const unraised = door("upload.unreadable", "upload-refusal", ["a.test.ts", "b.test.ts"], []);
+    const out = narrowSharedBareIdPins([CONCEPT, unraised], read);
+    const errors = out.findings.filter((f) => f.severity === "error");
+    expect(errors.map((f) => f.subject)).toEqual(["upload.unreadable"]);
+    expect(errors[0]!.kind).toEqual("shared-bare-door-id");
+    /* Left exactly as it was — an honest inflation, loudly flagged, beats a quiet zero. */
+    expect(out.declared.find((d) => d.id === "upload.unreadable")!.pinnedBy).toEqual(["a.test.ts", "b.test.ts"]);
+  });
+
+  it("a pin whose file has left between the listing and the read counts for nobody", () => {
+    const out = narrowSharedBareIdPins(
+      [door("concept.unreadable", "concept-refusal", ["gone.test.ts"], ["x/conceptDescribe.ts:12"]),
+        door("upload.unreadable", "upload-refusal", ["gone.test.ts"], ["x/inkUploadDoor.ts:99"])],
+      read,
+    );
+    expect(out.declared.every((d) => d.pinnedBy.length === 0)).toBe(true);
+  });
+
+  it("the import walk is SHARED with reachesDoors, not a second copy of it", () => {
+    /*
+      Working law 4. The alternation has been corrected twice at real cost —
+      resolve the specifier rather than search it for a token, and admit the
+      dynamic and `vi.mock` shapes — and a mirrored copy would have inherited
+      neither correction. So the narrowing's reader is driven through the same
+      four shapes here, and `reachesDoors` is asserted to agree on each.
+    */
+    const dynamic = 'const { x } = await import("./x/conceptDescribe");';
+    const mocked = 'vi.mock("./x/conceptDescribe");';
+    const statik = 'import { x } from "./x/conceptDescribe";';
+    const required = 'const x = require("./x/conceptDescribe");';
+    for (const text of [statik, dynamic, mocked, required]) {
+      expect([...importedModules("t.test.ts", text)], text).toContain("x/conceptDescribe");
+    }
+    /* A package specifier is not a path in this tree and may not resolve to one. */
+    expect([...importedModules("t.test.ts", 'import { z } from "zod";')]).toEqual([]);
+    /* The extension is off on both sides, which is what lets a site and a specifier compare. */
+    expect([...importedModules("t.test.ts", 'import { x } from "./x/conceptDescribe.ts";')])
+      .toEqual(["x/conceptDescribe"]);
+  });
+
+  it("THE LIVE READING — the real map's shared words are separated, and no door was emptied to do it", () => {
+    const atlas = buildStaticAtlas(CORPUS);
+    for (const [bare, rows] of sharedBareDoorIds(atlas.declared)) {
+      const lists = rows.map((r) => [...r.pinnedBy].sort().join("|"));
+      expect(new Set(lists).size, `${bare}: every door of this word still carries one list`)
+        .toEqual(rows.length);
+      for (const r of rows) expect(r.pinnedBy.length, `${r.id} kept a pin`).toBeGreaterThan(0);
+    }
+    /* No door anywhere lost its last pin to this repair. */
+    expect(atlas.findings.filter((f) => f.kind === "unpinned-refusal")).toEqual([]);
+    expect(atlas.findings.filter((f) => f.severity === "error")).toEqual([]);
   });
 });
 
