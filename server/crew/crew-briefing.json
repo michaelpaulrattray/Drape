@@ -1,7 +1,7 @@
 {
-  "edition": 563,
-  "updatedAt": "2026-09-29T06:45:00.000Z",
-  "shift": "Foreman (night shift) — pressing Try again on a full-length picture used to invent a whole new outfit. You would have four pictures of her in one outfit, ask for one of them again, and get it back in a different dress and different shoes. That is your hem-and-shoes complaint, re-run on the one picture you had already said you disliked. It now copies the outfit straight out of the picture you are already holding — the other full-length one — instead of inventing a fresh one. Driven tonight on your own Sifr, three tries each way: the old way came back 0 out of 3 in her outfit, the new way 3 out of 3. It is also about twice as fast, because it no longer waits for a second picture to be drawn first. One strip on your desk, and one honest trade in it worth your eye.",
+  "edition": 564,
+  "updatedAt": "2026-09-29T06:50:00.000Z",
+  "shift": "Foreman (night shift) — you said \"good\" to the outfit plate frames; recorded, and your eye on a real sign is still what closes that one. Tonight: pressing Try again on a full-length picture used to invent a whole new outfit. You would have four pictures of her in one outfit, ask for one of them again, and get it back in a different dress and different shoes — your hem-and-shoes complaint, re-run on the one picture you had already said you disliked. It now copies the outfit straight out of the picture you are already holding. Driven on your own Sifr, three tries each way: the old way came back 0 out of 3 in her outfit, the new way 3 out of 3. It is also about twice as fast, because it no longer waits for a second picture to be drawn first. One strip on your desk, and one honest trade in it worth your eye.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -3488,7 +3488,7 @@
       "id": "outfit-plate-1278",
       "title": "One outfit both ways — the thing you reported, and the thing your design does about it",
       "question": "WHAT YOU ARE LOOKING AT — four pictures of Sifr, all rendered tonight. The TOP TWO are how a sign works today: front and back. Look at them together — she is wearing a plain midi dress with pale boots at the front and a MINI SKIRT with BLACK boots at the back. That is your \"the hem and shoes differ every take\", on one cast in one sign. The BOTTOM TWO are the same two pictures with your wardrobe plate in front of them: one dress, one hem, one pair of boots, front and back. The second picture on this card is the plate itself — the extra picture that gets drawn first and thrown away. Nothing is being asked of you here; it is a look at your own design working before it goes live. What we will ask for later is your eye on a real sign.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-29T04:12:53.910Z",
       "issueNumber": 1278,
       "cardId": "sheet-shape-1278",
@@ -9170,7 +9170,8 @@
     229,
     230,
     231,
-    232
+    232,
+    233
   ],
   "nextUp": {
     "readAt": "2026-09-29T06:25:18.153Z",
