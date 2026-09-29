@@ -419,13 +419,19 @@ export function declaredConceptRefusals(): string[] {
  * the reason the concept reader states above.
  *
  * ⚠ **QUALIFIED `roll.*` THOUGH NOTHING COLLIDES TODAY, AND THE REASON IS AN
- * AMBIGUITY RATHER THAN A COLLISION.** `castingIntent.ts` carries
- * `reason: "unsupported_cohort"` — the INTERPRETER's internal verdict that feeds
- * the customer-facing wall. `raiseSites` collects bare `reason:` shapes from
- * every file in the tree, so declaring these bare would auto-attach the internal
+ * AMBIGUITY RATHER THAN A COLLISION.** `castingIntent.ts` carries the
+ * INTERPRETER's internal verdicts as `reason:` shapes — `likeness` and
+ * `not_a_being` are each the name of an internal outcome AND of a
+ * customer-facing wall. `raiseSites` collects bare `reason:` shapes from every
+ * file in the tree, so declaring these bare would auto-attach the internal
  * outcome's line to the customer's door: exactly the conflation #206 made in
  * prose, shipped into the artifact. Qualified, the door cites the line that
  * SPEAKS to the customer and the internal verdict stays what it is.
+ *
+ * ⚠ The specimen this paragraph named was `reason: "unsupported_cohort"`, and
+ * #1495 retired it. The ambiguity did not go with it — the two live walls carry
+ * the same doubled name — so the qualification is unchanged and the example is
+ * simply a live one now.
  */
 export function declaredRollRefusals(): string[] {
   return Object.keys(ROLL_REFUSAL_COPY).sort().map((id) => `roll.${id}`);
@@ -988,6 +994,50 @@ export function pinsIn(
  * and stripping lines renumbers the file — the citation would point at the
  * wrong line, which is the defect this guard exists to remove.
  */
+/**
+ * THE ROLL ENTRANCE'S RAISE SITES, READ OUT OF ONE FILE'S TEXT — extracted from
+ * `raiseSites` so the SHAPE it reads can be driven directly (#1495).
+ *
+ * ⚠ **WHY IT IS ITS OWN FUNCTION NOW, AND IT IS A LAW-2 REPAIR RATHER THAN A
+ * TIDY-UP.** The hazard this reader exists for is that the roll entrance raises
+ * in BOTH shapes: `throw new BriefRefusal("likeness", MSG);` on one line, and
+ * a wrapped form putting `new BriefRefusal(` and the id on different lines. A
+ * line-wise regex — the shape every other reader in this file uses — finds the
+ * single-line members and ZERO for a wrapped one, and sites-empty is an error
+ * nowhere, so the half-blind version ships green. The match is therefore over
+ * WHOLE TEXT and the citation is the line the ID lands on.
+ *
+ * ⚠ **UNTIL #1495 THE ONLY PROOF OF THAT WAS A LIVE SPECIMEN** — the suite
+ * found `unsupported_cohort`'s wrapped raise in the real file and asserted its
+ * two lines. That raise is retired with the two-valued cohort question, and
+ * every remaining raise fits on one line. **A guard whose subject has left the
+ * tree does not become a weaker guard, it becomes an absent one**, and the arm
+ * would have been deleted or quietly relaxed. So the capability is proven on
+ * SYNTHETIC text instead, which is strictly stronger: it no longer depends on
+ * the product keeping an awkward line break, and it can carry the negative
+ * control the old arm could not (a wrapped raise inside a DOCBLOCK is not a
+ * site, and no live file was ever going to hold one of those on purpose).
+ *
+ * @param text    the source of the file that raises
+ * @param members the ids that count — derived from the copy table, never typed
+ * @returns id (bare, no `roll.` prefix) to the 1-based lines its id sits on
+ */
+export function rollRaiseSitesIn(text: string, members: ReadonlySet<string>): Map<string, number[]> {
+  const found = new Map<string, number[]>();
+  const lines = text.split("\n");
+  for (const match of text.matchAll(/new\s+BriefRefusal\(\s*"([a-z][a-z0-9_]*)"/g)) {
+    const id = match[1]!;
+    if (!members.has(id)) continue;
+    /* The line the id is on — which is what gets cited, so it is what is
+       tested for comment-hood. A wrapped raise inside a docblock has `*` on
+       both lines, so testing the cited line covers both shapes. */
+    const at = text.slice(0, match.index! + match[0].length).split("\n").length;
+    if (isCommentLine(lines[at - 1] ?? "")) continue;
+    found.set(id, [...(found.get(id) ?? []), at]);
+  }
+  return found;
+}
+
 export function raiseSites(): Map<string, string[]> {
   const sites = new Map<string, string[]>();
   const add = (id: string, site: string) => sites.set(id, [...(sites.get(id) ?? []), site]);
@@ -1048,6 +1098,13 @@ export function raiseSites(): Map<string, string[]> {
     class CLAUDE.md's Atlas section names. So the match is over WHOLE TEXT and
     the citation is the line the ID lands on.
 
+    ⚠ **THAT WRAPPED SPECIMEN IS GONE — #1495 RETIRED `unsupported_cohort` —
+    AND THE READING IS NOT RELAXED BECAUSE OF IT.** The loop moved into
+    `rollRaiseSitesIn` above, whose docblock carries the whole reason: the
+    capability is driven on synthetic text now rather than inferred from a live
+    file that happens to hold an awkward line break. Every remaining raise in
+    the entrance is flat, and if that were the proof, there would be none.
+
     A docblock quoting the raise is still not a site: the id's own line is
     tested with the same `isCommentLine` guard the line-wise readers use, which
     covers both the single-line and the wrapped shape (a wrapped raise inside a
@@ -1066,15 +1123,8 @@ export function raiseSites(): Map<string, string[]> {
     );
   }
   const rollText = fs.readFileSync(rollFile, "utf8");
-  const rollLines = rollText.split("\n");
-  for (const match of rollText.matchAll(/new\s+BriefRefusal\(\s*"([a-z][a-z0-9_]*)"/g)) {
-    const id = match[1]!;
-    if (!rollMembers.has(id)) continue;
-    /* The line the id is on — which is what gets cited, so it is what is
-       tested for comment-hood. */
-    const at = rollText.slice(0, match.index! + match[0].length).split("\n").length;
-    if (isCommentLine(rollLines[at - 1] ?? "")) continue;
-    add(`roll.${id}`, `${rel(rollFile)}:${at}`);
+  for (const [id, lines] of rollRaiseSitesIn(rollText, rollMembers)) {
+    for (const at of lines) add(`roll.${id}`, `${rel(rollFile)}:${at}`);
   }
   /* The copy table's key lines are sites too — the concept entrance's pattern,
      and here it is what gives `uninterpretable` a citation for its SENTENCE as

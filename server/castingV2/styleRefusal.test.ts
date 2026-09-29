@@ -67,11 +67,20 @@ const STYLED_BRIEFS = [
 ];
 
 describe("a null in the reply never discards it", () => {
+  /*
+    ⚠ THE COHORT HERE WAS `"other"` AND THE EXPECTED REASON WAS
+    `unsupported_cohort` UNTIL #1495. Neither was this arm's subject: it exists
+    because a reply with nulls in every optional field was once thrown away
+    whole, so what it holds is that the NULLS do not discard the reading. The
+    retired two-valued vocabulary was only the carrier. `likeness` is a live
+    refusal carrying the same null shape, so the arm keeps its own subject
+    instead of following the deletion out of the file.
+  */
   it("parses a refusal whose optional fields came back null", () => {
-    // The exact shape that was thrown away: correct cohort, null everywhere else.
+    // The exact shape that was thrown away: a real verdict, null everywhere else.
     const parsed = parseCastingIntent(
       JSON.stringify({
-        cohort: "other",
+        cohort: "likeness",
         role: null,
         characterNotes: null,
         sex: null,
@@ -86,7 +95,7 @@ describe("a null in the reply never discards it", () => {
         reads: null,
       }),
     );
-    expect(parsed).toEqual({ ok: false, reason: "unsupported_cohort" });
+    expect(parsed).toEqual({ ok: false, reason: "likeness" });
   });
 
   it("still parses a photoreal reply whose arrays came back null", () => {

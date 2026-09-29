@@ -1,7 +1,31 @@
 # ASK TWICE BEFORE YOU WALL — the cohort wall's double check
 
-⚠ **STATUS: DESIGN REPORT, AWAITING COUNTERSIGN. NOTHING IS BUILT.** Ordered
-fable-1588 from a live founder walling mid-dogfood.
+⚠ **THE MECHANISM THIS DESIGN ASKED FOR IS BUILT AND LIVE. THE WALL IT WAS
+WRITTEN ABOUT IS NOT — `unsupported_cohort` WAS RETIRED 2026-09-30 (#1495),
+WITH THE TWO-VALUED COHORT QUESTION THAT WAS ITS ONLY SOURCE.** Read every
+`unsupported_cohort` below as history; the double check itself is unchanged and
+now guards the two walls the Prompt Author ruling keeps, `likeness` and
+`not_a_being`. Three specific things this document says that are no longer true
+of the tree:
+
+- **§2 PATH A is gone.** `parseCastingIntent` no longer maps anything outside
+  `SUPPORTED_COHORTS` to a refusal — the reader is asked four values, a `being`
+  CASTS, and an answer outside the four is `unreadable`, which falls back on the
+  customer's own words rather than refusing them.
+- **§2b's retry condition was never a list of names** and is still not: the
+  guard is `parsed.reason !== "unreadable"`, which is why a retiring wall could
+  not take the second read with it. That is the one line of this design that
+  aged perfectly.
+- **§2c's complaint stands, unchanged and unpaid.** Nothing counts a subject
+  wall; `cohortWallRetried` in the service log is still the only record, and the
+  log line keeps that word so a grep written from this document keeps working.
+
+The retirement changed nothing a customer meets: `briefCompiler` had passed the
+four-valued question as a literal since #1490 act 1, and all 16 surviving prompt
+combinations are byte-identical to their predecessors.
+
+⚠ **STATUS AS WRITTEN: DESIGN REPORT, AWAITING COUNTERSIGN. NOTHING IS BUILT.**
+Ordered fable-1588 from a live founder walling mid-dogfood.
 
 ✅ **AND ITS COURT HAS NOW RUN (2026-08-24, $0.4968, 16 calls, tree
 `d1bd3316` clean) — see §0. Both questions answered, and the rate is WORSE than

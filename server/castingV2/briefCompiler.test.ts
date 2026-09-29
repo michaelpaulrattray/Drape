@@ -303,7 +303,7 @@ describe("the precedence fix", () => {
          unchanged and is the assertion above; what changed is which prompt
          counts as "the real one". */
       expect(engine.systems[0], JSON.stringify(extra)).toBe(
-        interpreterSystemPrompt({ wardrobe: false, ink: false, fidelity: false, author: true, statedWardrobe: true }),
+        interpreterSystemPrompt({ wardrobe: false, ink: false, fidelity: false, statedWardrobe: true }),
       );
     }
   });
@@ -378,12 +378,25 @@ ${HOUSE_BLOCK}`), which cannot be satisfied by anything
 });
 
 describe("the interpreter's outcomes", () => {
-  it("refuses an uncastable cohort rather than approximating it", async () => {
+  /*
+    ⚠ THIS ARM READ *"refuses an uncastable cohort rather than approximating
+    it"* AND ASSERTED `unsupported_cohort` UNTIL #1495. Its subject is retired:
+    "other" was the two-valued question's word for everything the certified
+    adapter could not paint, and an anime swordswoman CASTS in this studio now
+    (his word, 2026-09-23). The arm is kept pointed at the same reply, because
+    what happens to the retired vocabulary is exactly what a reader of this
+    retirement will want to know — and the answer is that it is an answer to a
+    question nobody asked, so it reads as unreadable and the compile falls back
+    on the customer's own words. It does NOT wall, and it does not charge.
+  */
+  it("treats the retired 'other' vocabulary as an unreadable reply, not a wall", async () => {
     const outcome = await interpretBrief({
       briefText: "an anime swordswoman",
       engine: engineReturning(JSON.stringify({ cohort: "other", role: "anime swordswoman" })),
     });
-    expect(outcome).toEqual({ ok: false, reason: "unsupported_cohort" });
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.reason).toBe("unavailable");
   });
 
   it("falls back rather than failing when the reply is unreadable", async () => {

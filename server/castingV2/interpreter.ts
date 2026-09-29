@@ -482,62 +482,48 @@ export const NOTES_CAP_RELEASED =
   + "and add nothing the brief does not contain.";
 
 /**
- * THE SUBJECT QUESTION — one slot in the system prompt, two shapes (#131
- * slice C, the ruling's §6).
+ * THE SUBJECT QUESTION — one slot in the system prompt, and since #1495 ONE
+ * shape (#131 slice C, the ruling's §6).
  *
- * ⚠ **BOTH SHAPES STILL EXIST HERE AND ONLY ONE OF THEM IS ASKED — #1443, slice
- * 2 of the old-lane retirement.** `briefCompiler` now hands `author: true` on
- * every roll, so the four-valued question below is the only one that reaches a
- * reader; the two-valued one keeps its constants because `parseCastingIntent`'s
- * own arms drive both, and because this slot is where working law 5 is proven
- * (the swap asserts it applied at the prompt rather than near it).
+ * ⚠ **THE TWO-VALUED COHORT QUESTION IS GONE, AND WITH IT THE SWAP AND THE
+ * `author` OPTION — #1495, the last ghost of the old lane in this module.**
+ * The paragraphs this block used to carry described a road with an OUTSIDE:
+ * `COHORT_SCHEMA_LINE` and `COHORT_INSTRUCTION` were the base text, and the
+ * four-valued question below was swapped in over them for a flagged account.
+ * `briefCompiler` has handed `author: true` as a LITERAL since #1490 act 1, on
+ * the one and only production call to `interpretBrief`, so for the whole of
+ * that period the swap ran on every roll and its unswapped position was
+ * reachable from nowhere but a test. The four-valued text is the base now and
+ * the reader is asked it directly.
  *
- * The paragraph that follows described a population that no longer exists: it
- * opened *"Outside `CASTING_CREATIVE_REGISTER_SCOPE`"*, and there is no outside
- * any more. **One door leaves the map with it, recorded in the capability atlas
- * in the same commit: `roll.unsupported_cohort` can no longer be raised by the
- * roll road at all**, because only the two-valued parse answers it.
+ * ⚠ **THE BAR THIS RETIREMENT WAS HELD TO, because a prompt change and a prompt
+ * DELETION look the same in a diff: every option combination composes the same
+ * bytes it composed before.** Measured at `interpreterSystemPrompt` across all
+ * 32 combinations of the five options on `main`, and all 16 that survive here —
+ * each of the 16 sha256-identical to its `author: true` twin. Nothing reaches a
+ * reader differently; what left is a branch nothing could take.
  *
- * The two-valued cohort question asked the reader today's question, and "other"
- * walled the roll as
- * `unsupported_cohort` — creature, anime, robot and named likeness alike,
- * because the only certified adapter paints photographic humans and the house
- * composer would bill for a photograph of someone vaguely anime-adjacent. On
- * THE AUTHOR ROAD the customer's words reach the engine verbatim, so that
- * premise is gone, and the ruling (`PROMPT_AUTHOR_RULING_2026-08-26.md` §6)
- * kills the stage wall and keeps exactly two refusals: no likeness of a real
- * person or a named character (KEPT), and ONE new wall — *this is a casting
- * studio; a subject that is not a being refuses free before the charge*
- * (founder, verbatim: "someone asking for an object should be refused like a
- * car"). So the flagged reader is asked a FOUR-valued question in the SAME
- * slot, and the compiler reads the four: `photoreal_human` and `being` cast,
- * `likeness` and `not_a_being` refuse free.
+ * **One door leaves the map with it, in this same commit:
+ * `roll.unsupported_cohort`.** It was the two-valued question's wall — creature,
+ * anime, robot and named likeness alike, because the only certified adapter
+ * paints photographic humans and the house composer would have billed for a
+ * photograph of someone vaguely anime-adjacent. On THE AUTHOR ROAD the
+ * customer's words reach the engine verbatim, so that premise is gone, and the
+ * ruling (`PROMPT_AUTHOR_RULING_2026-08-26.md` §6) keeps exactly two refusals:
+ * no likeness of a real person or a named character (KEPT), and ONE wall it
+ * added — *this is a casting studio; a subject that is not a being refuses free
+ * before the charge* (founder, verbatim: "someone asking for an object should
+ * be refused like a car"). The compiler reads the four: `photoreal_human` and
+ * `being` cast, `likeness` and `not_a_being` refuse free.
  *
- * The unflagged prompt is composed from the SAME constants, so it is
- * byte-identical to the text that stood here before they were named; the
- * flagged one is made by `String.replace` that ASSERTS it applied — the
- * fidelity swap's own reason, one block up. Both texts are exported so the
- * suite asserts the swap at the request rather than at a constant near it.
+ * ⚠ **AND THE SENTENCE THAT DOOR SAID WAS ALREADY UNTRUE OF THE PRODUCT.** It
+ * told a customer *"not anime or illustration yet"*, which his own word retired
+ * (2026-09-23: *"we already do creatures perfectly fine all types of
+ * creatures"*). An unreachable door is a dead branch; an unreachable door
+ * holding copy the product contradicts is a dead branch that would lie if it
+ * ever fired.
  */
-export const COHORT_SCHEMA_LINE = `"cohort": "photoreal_human" | "other",`;
 export const SUBJECT_SCHEMA_LINE = `"cohort": "photoreal_human" | "being" | "likeness" | "not_a_being",`;
-export const COHORT_INSTRUCTION = `- "cohort": "photoreal_human" for any real-looking human. Use "other" for
-  anime, illustration, animals, robots, fantasy creatures, or any brief that is
-  not a photograph of a person.
-  ALSO use "other" when the brief asks for a SPECIFIC PERSON OR CHARACTER —
-  a named actor, musician, athlete or public figure, or a named fictional
-  character from a game, film, comic or show. "Master Chief from Halo", "a
-  Spider-Man look-alike", "someone who looks like <name>" are all "other".
-  This holds however it is phrased: "look-alike", "inspired by", "in the style
-  of", "vibes of", "reminds me of" are the same request wearing softer words.
-  Two reasons, and both matter. We do not manufacture a likeness of a real
-  person or someone else's character — the same principle that says a
-  customer's own cast is theirs. And we cannot: the frame is a plain studio
-  portrait with no costume, armour, mask or props, so the thing that makes
-  that character recognisable is exactly what the frame strips away.
-  A GENRE is not a character. "a space marine", "a superhero type", "a fantasy
-  ranger" describe a kind of person and are ordinary photoreal briefs — cast
-  them normally.`;
 export const SUBJECT_INSTRUCTION = `- "cohort": WHAT KIND OF SUBJECT the brief asks to cast. This studio casts
   BEINGS — photoreal humans first, and also sci-fi humans, creatures,
   monsters, aliens, robots, androids, and illustrated or anime people. Use
@@ -580,7 +566,6 @@ export function interpreterSystemPrompt(
     wardrobe?: boolean;
     ink?: boolean;
     fidelity?: boolean;
-    author?: boolean;
     statedWardrobe?: boolean;
   },
 ): string {
@@ -595,22 +580,17 @@ export function interpreterSystemPrompt(
     }
     base = base.replace(NOTES_CAP_SENTENCE, NOTES_CAP_RELEASED);
   }
-  if (options?.author === true) {
-    /* The subject swap asserts it applied, for the fidelity swap's reason. */
-    for (const [from, to] of [
-      [COHORT_SCHEMA_LINE, SUBJECT_SCHEMA_LINE],
-      [COHORT_INSTRUCTION, SUBJECT_INSTRUCTION],
-    ] as const) {
-      if (!base.includes(from)) {
-        throw new Error(
-          `[interpreter] the cohort text beginning "${from.slice(0, 32)}" is not in the system prompt `
-          + "— the author-road subject swap cannot apply, and shipping the two-valued question to a "
-          + "flagged account would wall every creature brief silently",
-        );
-      }
-      base = base.replace(from, to);
-    }
-  }
+  /*
+    ⚠ THE SUBJECT SWAP STOOD HERE AND IS GONE (#1495). It replaced the
+    two-valued cohort text with the four-valued subject text and ASSERTED that
+    it applied, which was the right shape while there were two texts: a
+    `String.replace` matching nothing returns its input silently, so an edit to
+    the base would have shipped a prompt nobody chose. There is one text now —
+    `SUBJECT_SCHEMA_LINE` and `SUBJECT_INSTRUCTION` are interpolated into
+    `SYSTEM_PROMPT` directly — so there is nothing left to apply and nothing
+    left to assert. The fidelity swap above still carries the pattern and is
+    the live specimen of it.
+  */
   const blocks: string[] = [];
   if (options?.fidelity === true) blocks.push(SKIN_LANE_BLOCK);
   if (options?.wardrobe === true) blocks.push(WARDROBE_BLOCK);
@@ -626,7 +606,7 @@ const SYSTEM_PROMPT = `You read a casting brief and extract only what it actuall
 Reply with a single JSON object and nothing else:
 
 {
-  ${COHORT_SCHEMA_LINE}
+  ${SUBJECT_SCHEMA_LINE}
   "role": string | null,
   "characterNotes": string | null,
   "sex": ${SEXES.map((value) => `"${value}"`).join(" | ")} | null,
@@ -881,7 +861,7 @@ WHAT TO EXTRACT
   putting it here instead would weaken a thing the user actually said.
   Leave both null when the brief names no category, or names one that implies
   nothing. A tendency you invent narrows the casting for no reason.
-${COHORT_INSTRUCTION}
+${SUBJECT_INSTRUCTION}
 
 WHAT TO IGNORE COMPLETELY — the engine owns these, and anything you say about
 them is discarded before it reaches the image model:
@@ -1033,9 +1013,11 @@ export function resetInterpreterForTests(): void {
  * between a product decision and an outage:
  *
  *   - an intent;
- *   - `unsupported_cohort` — a real answer. The brief asks for something no
- *     certified adapter can cast, so the caller refuses for free rather than
- *     producing a photograph of someone vaguely anime-adjacent;
+ *   - `likeness` or `not_a_being` — a real answer, and the ruling's two walls.
+ *     The brief asks for a named person or character, or for something that is
+ *     not a being at all, so the caller refuses for free. (⚠ A third stood here
+ *     until #1495 — `unsupported_cohort`, the two-valued cohort question's wall
+ *     — and it is retired with that question.);
  *   - `unavailable` — the transport failed, or the reply was unreadable, and
  *     `cause` says which. Not the user's problem — and since #126 (founder:
  *     "refuse-free") not a reason to charge them either: a brief that was
@@ -1112,12 +1094,18 @@ const NOTES_OVERFLOW = "notesOverflow";
  * counts every brief the cohort classifier refused on its first read, and each
  * line says whether the second read cast it or agreed.
  *
- * ⚠ **It is the ONLY record this wall has ever had.** `unsupported_cohort` is
- * thrown as a `BriefRefusal` before a roll row exists, so there is no row, no
+ * ⚠ **It is the ONLY record this wall has ever had.** A subject wall is thrown
+ * as a `BriefRefusal` before a roll row exists, so there is no row, no
  * operation, no ledger entry and no counter anywhere — the product could not
- * answer *how often does the cohort wall fire* in either world. That absence is
- * what let a ~30% misfire rate on a real brief go unnoticed until the founder
- * met it twice in an hour.
+ * answer *how often does the subject wall fire* in either world. That absence
+ * is what let a ~30% misfire rate on a real brief go unnoticed until the
+ * founder met it twice in an hour.
+ *
+ * ⚠ The wall this line was written about was `unsupported_cohort`, retired in
+ * #1495 with the two-valued cohort question. The counter is unchanged and so is
+ * the gap it names: `likeness` and `not_a_being` are counted here and nowhere
+ * else, and the log line still carries the word `cohortWallRetried` so a grep
+ * that has been run before keeps working.
  */
 const COHORT_WALL_RETRIED = "cohortWallRetried";
 
@@ -1250,15 +1238,15 @@ export async function interpretBrief(input: {
    * takes it, which the budget court watched happen 3 drives out of 3.
    */
   fidelity?: boolean;
-  /**
-   * ASK THE FOUR-VALUED SUBJECT QUESTION — the author road (#131 slice C).
-   *
-   * Absent means no, and no means the cohort question and the wall it feeds
-   * are today's to the byte. On, the same slot asks `photoreal_human` /
-   * `being` / `likeness` / `not_a_being` (`SUBJECT_INSTRUCTION`), a `being`
-   * is cast, and the two refusals the ruling keeps come back by name.
-   */
-  author?: boolean;
+  /*
+    ⚠ `author?: boolean` STOOD HERE AND IS GONE (#1495). It chose which subject
+    question went on the wire — four-valued on, two-valued off — and "absent
+    means no" was its stated default. `briefCompiler` passed it a LITERAL `true`
+    from #1490 act 1 onward, on the one and only production call to this
+    function, so the `false` position was reachable from no road a customer
+    could walk. The four-valued question is the question now; there is no option
+    because there is no other question to choose.
+  */
   /**
    * READ THE OUTFIT THE BRIEF ITSELF STATES — the author road's record of what
    * this cast is born wearing (#1222).
@@ -1286,7 +1274,6 @@ export async function interpretBrief(input: {
         wardrobe: input.wardrobe === true,
         ink: input.ink === true,
         fidelity: input.fidelity === true,
-        author: input.author === true,
         statedWardrobe: input.statedWardrobe === true,
       }),
       user: input.briefText,
@@ -1346,8 +1333,7 @@ export async function interpretBrief(input: {
 
   try {
     const result = await runOnce();
-    const parseOptions = { author: input.author === true };
-    let parsed = parseCastingIntent(result.text, input.briefText, notesMax, parseOptions);
+    let parsed = parseCastingIntent(result.text, input.briefText, notesMax);
     recordParseOutcome(!parsed.ok, result.truncated === true);
 
     /*
@@ -1369,7 +1355,7 @@ export async function interpretBrief(input: {
         "[interpreter] reply was CUT OFF at the token ceiling — retrying rather than dropping the brief's locks",
       );
       const retry = await runOnce();
-      const reparsed = parseCastingIntent(retry.text, input.briefText, notesMax, parseOptions);
+      const reparsed = parseCastingIntent(retry.text, input.briefText, notesMax);
       recordParseOutcome(!reparsed.ok, retry.truncated === true);
       if (reparsed.ok) {
         return {
@@ -1420,14 +1406,20 @@ export async function interpretBrief(input: {
                     Fail-closed, unchanged
       */
       /*
-        Since #131 slice C the wall has three names on the author road
-        (`likeness`, `not_a_being`) and one off it (`unsupported_cohort`); all
-        of them are a MODEL'S JUDGEMENT and all of them get the second read.
-        `unreadable` is not a judgement and never did.
+        The wall has TWO names — `likeness` and `not_a_being` — both a MODEL'S
+        JUDGEMENT, and both get the second read. `unreadable` is not a
+        judgement and never did.
+
+        ⚠ This read *"three names on the author road … and one off it
+        (`unsupported_cohort`)"* until #1495. There is no off: the two-valued
+        question is retired, and its wall with it. Nothing about the retry
+        moves — the condition below has always been "not `unreadable`" rather
+        than a list of names, which is why a retiring wall could not silently
+        take the second read with it.
       */
       if (parsed.reason !== "unreadable") {
         const second = await runOnce();
-        const reread = parseCastingIntent(second.text, input.briefText, notesMax, parseOptions);
+        const reread = parseCastingIntent(second.text, input.briefText, notesMax);
         const rescued = reread.ok;
         /*
           COUNTED WHATEVER HAPPENS, because the absence of a count is what let
@@ -1561,7 +1553,7 @@ export async function interpretBrief(input: {
       roleStats.nullOnCompile += 1;
       roleStats.reaskRan += 1;
       const retry = await runOnce();
-      const reparsed = parseCastingIntent(retry.text, input.briefText, notesMax, parseOptions);
+      const reparsed = parseCastingIntent(retry.text, input.briefText, notesMax);
       recordParseOutcome(!reparsed.ok, retry.truncated === true);
       const rescuedRole = reparsed.ok ? reparsed.intent.role : null;
       if (rescuedRole !== null) {
@@ -1587,7 +1579,7 @@ export async function interpretBrief(input: {
     if (needsAestheticRetry(input.briefText, intent)) {
       log.info({ stage: "interpreter" }, "[interpreter] aesthetic reference landed nowhere — re-sampling once");
       const retry = await runOnce();
-      const reparsed = parseCastingIntent(retry.text, input.briefText, notesMax, parseOptions);
+      const reparsed = parseCastingIntent(retry.text, input.briefText, notesMax);
       // Counted like any other attempt. A denominator that skips the retries
       // is a rate nobody can act on — this one keeps the same brief's second
       // reply in the same window as its first.

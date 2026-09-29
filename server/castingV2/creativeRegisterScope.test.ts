@@ -649,8 +649,6 @@ describe("the WIRE — a FOLLOW is the ROW A road (#177): the photo rides, the c
 /* ================================================= slice C — the walls */
 
 import {
-  COHORT_INSTRUCTION,
-  COHORT_SCHEMA_LINE,
   SUBJECT_INSTRUCTION,
   SUBJECT_SCHEMA_LINE,
   interpretBrief,
@@ -694,50 +692,72 @@ async function refusalOf(run: () => Promise<unknown>): Promise<BriefRefusal> {
 }
 
 describe("slice C — the subject question, at the prompt (working law 5)", () => {
-  it("off, the reader is asked today's two-valued cohort question — the swap's own constants are the unflagged text", () => {
-    const base = interpreterSystemPrompt();
-    expect(base).toContain(COHORT_SCHEMA_LINE);
-    expect(base).toContain(COHORT_INSTRUCTION);
-    expect(base).not.toContain(SUBJECT_SCHEMA_LINE);
-    expect(base).not.toContain(`"not_a_being"`);
-    expect(base).not.toContain(`"being"`);
-    expect(base).not.toContain(`"likeness"`);
-  });
+  /*
+    ⚠ TWO ARMS STOOD HERE AND ARE ONE NOW (#1495). They drove the two POSITIONS
+    of the `author` swap: unflagged asks the two-valued cohort question, flagged
+    swaps the four-valued one in, and everything else is byte-identical. The
+    swap is retired — the four-valued text is the base — so there is one
+    position, and an arm that drove a second one would be driving a road that
+    does not exist.
 
-  it("on, the same slot asks the four-valued question, and only that slot moves", () => {
-    const off = interpreterSystemPrompt({ wardrobe: true, ink: true, fidelity: true });
-    const on = interpreterSystemPrompt({ wardrobe: true, ink: true, fidelity: true, author: true });
-    expect(on).toContain(SUBJECT_SCHEMA_LINE);
-    expect(on).toContain(SUBJECT_INSTRUCTION);
-    expect(on).not.toContain(COHORT_SCHEMA_LINE);
-    expect(on).not.toContain(COHORT_INSTRUCTION);
-    /* Everything else is byte-identical: put the old text back and the two are equal. */
-    expect(on.replace(SUBJECT_SCHEMA_LINE, COHORT_SCHEMA_LINE).replace(SUBJECT_INSTRUCTION, COHORT_INSTRUCTION)).toBe(off);
+    The property those arms were really holding is working law 5: the question
+    is asserted ON THE PROMPT the request carries, never at a constant near it.
+    That survives here and in the wire arms below; what is gone is the choice.
+
+    ⚠ THE BYTE-EQUALITY HALF CANNOT LIVE IN A SUITE and was not faked into one.
+    "Everything else is unchanged" is a claim about THIS tree against the
+    PREVIOUS one, which no arm inside one tree can ask. It was driven instead:
+    `interpreterSystemPrompt` over all 32 option combinations on `main` and all
+    16 here, each of the 16 sha256-identical to its `author: true` twin. The
+    receipt is on the PR.
+  */
+  it("the reader is asked the four-valued subject question, and there is no other question to ask", () => {
+    const base = interpreterSystemPrompt();
+    expect(base).toContain(SUBJECT_SCHEMA_LINE);
+    expect(base).toContain(SUBJECT_INSTRUCTION);
     /* The four values are in the model's ear, and so is the founder's example. */
     for (const value of ["photoreal_human", "being", "likeness", "not_a_being"]) expect(SUBJECT_INSTRUCTION).toContain(`"${value}"`);
     expect(SUBJECT_INSTRUCTION).toContain("a red sports car");
     expect(SUBJECT_INSTRUCTION).toContain("cast the being");
+    /*
+      And the retired vocabulary is not hiding in the schema line under another
+      option: `"other"` was the two-valued question's whole second answer, so
+      its absence from every combination is the cheapest proof the swap is gone
+      rather than merely defaulted on.
+    */
+    for (const options of [
+      {}, { wardrobe: true }, { ink: true }, { fidelity: true }, { statedWardrobe: true },
+      { wardrobe: true, ink: true, fidelity: true, statedWardrobe: true },
+    ]) {
+      expect(interpreterSystemPrompt(options), JSON.stringify(options)).not.toContain(`"photoreal_human" | "other"`);
+    }
   });
 });
 
-describe("slice C — parseCastingIntent reads four on the author road and two off it", () => {
-  it("off the author road, anything but photoreal_human is unsupported_cohort — 'being' included", () => {
-    for (const cohort of ["other", "being", "likeness", "not_a_being"]) {
-      expect(parseCastingIntent(intentWith(cohort), THIN)).toEqual({ ok: false, reason: "unsupported_cohort" });
-    }
-    const human = parseCastingIntent(intentWith("photoreal_human"), THIN);
-    expect(human.ok && human.subject).toBe("human");
-  });
-
-  it("on it, a being casts and says so, the two kept walls come back by name, and an answer outside the four is unreadable", () => {
-    const being = parseCastingIntent(intentWith("Being"), THIN, undefined, { author: true });
+describe("slice C — parseCastingIntent reads four, and there is no second vocabulary", () => {
+  /*
+    ⚠ THE `off the author road` ARM STOOD HERE AND IS DELETED (#1495): it drove
+    `parseCastingIntent` with no options and asserted `unsupported_cohort` for
+    everything but `photoreal_human`, `being` INCLUDED. That reading is retired
+    with the question that produced it — a `being` casts, which is the mission's
+    own sentence — and the option that selected it had one production caller
+    passing a literal `true`.
+  */
+  it("a being casts and says so, the two kept walls come back by name, and an answer outside the four is unreadable", () => {
+    const being = parseCastingIntent(intentWith("Being"), THIN);
     expect(being.ok && being.subject).toBe("being");
     expect(being.ok && being.intent.cohort).toBe("photoreal_human");
-    const human = parseCastingIntent(intentWith("photoreal_human"), THIN, undefined, { author: true });
+    const human = parseCastingIntent(intentWith("photoreal_human"), THIN);
     expect(human.ok && human.subject).toBe("human");
-    expect(parseCastingIntent(intentWith("likeness"), THIN, undefined, { author: true })).toEqual({ ok: false, reason: "likeness" });
-    expect(parseCastingIntent(intentWith("not_a_being"), THIN, undefined, { author: true })).toEqual({ ok: false, reason: "not_a_being" });
-    expect(parseCastingIntent(intentWith("other"), THIN, undefined, { author: true })).toEqual({ ok: false, reason: "unreadable" });
+    expect(parseCastingIntent(intentWith("likeness"), THIN)).toEqual({ ok: false, reason: "likeness" });
+    expect(parseCastingIntent(intentWith("not_a_being"), THIN)).toEqual({ ok: false, reason: "not_a_being" });
+    /*
+      ⚠ `"other"` IS THE RETIRED VOCABULARY'S ONLY WORD, and this is where its
+      new answer is pinned: it is not a wall any more, it is a reply to a
+      question nobody asked, so it reads as `unreadable` and the compile falls
+      back on the customer's own words rather than refusing them.
+    */
+    expect(parseCastingIntent(intentWith("other"), THIN)).toEqual({ ok: false, reason: "unreadable" });
   });
 
   it("the parse never carries a creativeRegister key any more", () => {
@@ -746,35 +766,40 @@ describe("slice C — parseCastingIntent reads four on the author road and two o
   });
 });
 
-describe("slice C — interpretBrief asks the question its caller named, and asks the wall twice", () => {
-  it("author: true puts the four-valued prompt on the wire; a 'being' reply is an intent with subject 'being'", async () => {
+describe("slice C — interpretBrief asks the four-valued question, and asks the wall twice", () => {
+  it("the four-valued prompt is on the wire; a 'being' reply is an intent with subject 'being'", async () => {
     const engine = engineReading([intentWith("being")]);
-    const out = await interpretBrief({ briefText: "a lizard man with emerald scales", engine, author: true });
+    const out = await interpretBrief({ briefText: "a lizard man with emerald scales", engine });
     expect(sent(engine, "interpret")[0]?.system).toContain(SUBJECT_INSTRUCTION);
     expect(out.ok && out.subject).toBe("being");
   });
 
-  it("off, the wire carries today's question, and a 'being' reply walls as unsupported_cohort after a second read", async () => {
-    const engine = engineReading([intentWith("being"), intentWith("being")]);
-    const out = await interpretBrief({ briefText: "a lizard man with emerald scales", engine });
-    expect(sent(engine, "interpret")[0]?.system).toContain(COHORT_INSTRUCTION);
-    expect(sent(engine, "interpret")).toHaveLength(2);
-    expect(out).toEqual({ ok: false, reason: "unsupported_cohort" });
-  });
+  /*
+    ⚠ THE `off` ARM STOOD HERE AND IS DELETED (#1495). It drove the same lizard
+    man with no `author` option and asserted that the wire carried the
+    two-valued question and that the reply walled as `unsupported_cohort` after
+    a second read. Both halves of it are retired: there is one question, and a
+    lizard man CASTS.
 
+    ⚠ WHAT IT ALSO HELD, AND WHERE THAT WENT: it was one of the two arms proving
+    the wall is read TWICE before it refuses (`cohortWallRetried`). That
+    property is NOT dropped — the `not_a_being` arm below asserts the second
+    read on a live wall, `cohortWallRetry.test.ts` drives the mechanism in its
+    own right, and neither depends on the retired vocabulary.
+  */
   it("not_a_being twice is walled by that name; a first-read wobble rescued by the second read casts", async () => {
     const walled = engineReading([intentWith("not_a_being"), intentWith("not_a_being")]);
-    expect(await interpretBrief({ briefText: "a red sports car", engine: walled, author: true })).toEqual({ ok: false, reason: "not_a_being" });
+    expect(await interpretBrief({ briefText: "a red sports car", engine: walled })).toEqual({ ok: false, reason: "not_a_being" });
     expect(sent(walled, "interpret")).toHaveLength(2);
 
     const wobble = engineReading([intentWith("not_a_being"), intentWith("being")]);
-    const out = await interpretBrief({ briefText: "a red sports car with a face", engine: wobble, author: true });
+    const out = await interpretBrief({ briefText: "a red sports car with a face", engine: wobble });
     expect(out.ok && out.subject).toBe("being");
   });
 
   it("likeness twice is walled by that name", async () => {
     const engine = engineReading([intentWith("likeness"), intentWith("likeness")]);
-    expect(await interpretBrief({ briefText: "Master Chief from Halo", engine, author: true })).toEqual({ ok: false, reason: "likeness" });
+    expect(await interpretBrief({ briefText: "Master Chief from Halo", engine })).toEqual({ ok: false, reason: "likeness" });
   });
 });
 
@@ -859,14 +884,14 @@ describe("slice C — the WIRE through the compiler: two walls on the author roa
       briefText: RICH, candidateCount: 8, rollSeed: "c-follow", engine, followIdentity: FOLLOW as never,
     });
     expect(sent(engine, "interpret")[0]?.system).toContain(SUBJECT_INSTRUCTION);
-    expect(sent(engine, "interpret")[0]?.system).not.toContain(COHORT_INSTRUCTION);
+    /* The retired question's schema line cannot be on the wire, because there
+       is no longer any text in the module that says it. */
+    expect(sent(engine, "interpret")[0]?.system).not.toContain(`"photoreal_human" | "other"`);
 
     /* ⚠ THE `off` HALF — the same follow asked today's two-valued COHORT
-       question — IS DELETED (#1490 act 1). The compiler passes `author: true`
-       unconditionally now, so no compile can put `COHORT_INSTRUCTION` on the
-       wire. The interpreter's own `author: false` option still exists and is
-       still driven directly in this file; that it has no caller left is a
-       finding for #180 rather than this act's work. */
+       question — WAS DELETED BY #1490 act 1, and the option that could have
+       asked it is deleted by #1495: there is one subject question in the
+       module now. The finding this comment handed to #180 is discharged. */
   });
 });
 

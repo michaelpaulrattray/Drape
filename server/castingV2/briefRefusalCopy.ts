@@ -87,27 +87,39 @@ export const READER_OUTAGE_MESSAGE =
   "The studio couldn't read your brief just now — the reader that turns your words into a casting call did not answer. "
   + "Nothing was cast and you have not been charged. Try again in a moment.";
 
-/**
- * ⚠ **THIS SENTENCE WAS WRITTEN OUT TWICE, INLINE, AND EXPORTED NOWHERE** —
- * once for the interpreter's own `unsupported_cohort` verdict and once for a
- * styled brief whose reader was unavailable off the author road. Both raise
- * sites now read this constant.
- */
-export const UNSUPPORTED_COHORT_MESSAGE =
-  "Casting makes photographic people, and only ones who are nobody in particular — not a named person, not a character from a game or film, and not anime or illustration yet. Describe the kind of face you want and we'll cast that. You have not been charged.";
+/*
+  ⚠ `UNSUPPORTED_COHORT_MESSAGE` STOOD HERE AND IS GONE (#1495), and with it the
+  `unsupported_cohort` member of the table below. It said:
+
+      "Casting makes photographic people, and only ones who are nobody in
+      particular — not a named person, not a character from a game or film, and
+      not anime or illustration yet. Describe the kind of face you want and
+      we'll cast that. You have not been charged."
+
+  Two things about it, and the second is why this is a correction rather than a
+  tidy-up. It was the TWO-VALUED cohort question's wall, and that question is
+  retired in this commit, so nothing can raise it. And its sentence had outlived
+  the product it described: *"not anime or illustration yet"* was true when a
+  single certified adapter painted photographic humans, and his word of
+  2026-09-23 retired it — *"we already do creatures perfectly fine all types of
+  creatures"*. An anime brief CASTS here now. So the door was unreachable AND
+  its copy contradicted the studio; had it ever fired it would have told a
+  customer something the product does not believe.
+
+  The five-wall count in the paragraphs above is the count as it was at #206,
+  and is left as the record of what that commit found. There are four.
+*/
 
 /**
  * EVERY WALL THE ROLL ENTRANCE PUTS UP, AND WHAT IT SAYS.
  *
- * All five are raised BEFORE the claim, so every one of them is free: the
+ * All four are raised BEFORE the claim, so every one of them is free: the
  * compiler runs before `rollService` claims anything, which is why a refusal
  * here can be honest instead of apologetic.
  */
 export const ROLL_REFUSAL_COPY = {
   /** The brief carries no subject the compiler can work with. */
   uninterpretable: BRIEF_TOO_SHORT_MESSAGE,
-  /** A cohort exists in the sentence that no adapter is certified for (§I). */
-  unsupported_cohort: UNSUPPORTED_COHORT_MESSAGE,
   /**
    * The brief asks for a real person or a named character — the one wall the
    * author road KEEPS from the cohort question (ruling §6 rule 5; a
