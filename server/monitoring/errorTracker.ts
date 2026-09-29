@@ -406,6 +406,26 @@ export function errorTrackerStatus(): Readonly<TrackerState> {
 }
 
 /**
+ * Is there a Sentry project to LINK to (#1441)?
+ *
+ * ⚠ **NOT `errorTrackerStatus().configured`, AND THE DIFFERENCE IS A BOOT
+ * ORDER.** That field is written by `startErrorTracker()`, so a caller reaching
+ * it before boot has finished — or in a process that never starts the tracker,
+ * which is every test — reads `false` over a perfectly configured service. This
+ * asks the same question of the same variable through the same reader `init`
+ * uses, and its answer does not depend on when it is asked.
+ *
+ * The one thing it does NOT mean is that anything has been reported. It means
+ * the key exists, which is exactly the condition a link to somebody else's
+ * dashboard needs: a link to a project nothing reports to is #1419's *"0 errors
+ * today"* lie wearing a different hat, and a link that hides itself while the
+ * service is keyed and quiet is just a link nobody clicked.
+ */
+export function errorReportingConfigured(): boolean {
+  return dsn().length > 0;
+}
+
+/**
  * Test seam only: forget everything this module remembers between arms. Named
  * the way this repository's other five such seams are named, because
  * `scripts/check-cleanup-dispositions.mts` reads that convention off the NAME —

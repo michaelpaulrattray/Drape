@@ -10,6 +10,7 @@ import {
 import { TableHead } from "@/foundation";
 import { staffDateOnly } from "@/foundation/staffDate";
 import { axisTick, tooltipStyle, useChartTokens } from "./chartTokens";
+import { visibleDashboardLinks, type MonitoringConfigured } from "./dashboards";
 
 /**
  * LAST 24 HOURS — the four KPIs (brief 07 §6) — and the generation chart (§7).
@@ -132,12 +133,21 @@ function Kpi({
 export function HealthMetrics({
   data,
   chartData,
+  monitoring,
 }: {
   data: HealthData;
   chartData?: DailyGenerationStats[];
+  /** Which dashboards exist to link to — `admin.getOverview`'s own reading. */
+  monitoring?: MonitoringConfigured;
 }) {
   const series = chartData ?? [];
   const isCritical = data.successRate < 80;
+  /* ⚠ WHICH LINKS TO DRAW IS A PURE FUNCTION, AND IT IS NOT IN THIS FILE FOR A
+     REASON: `vitest.config.ts` runs the client's suites in a node environment
+     with no DOM, so a decision made inside JSX is a decision no arm can reach.
+     The rule it encodes — a link only where something is actually reporting —
+     is the one worth an arm, so it lives where one can drive it. */
+  const links = visibleDashboardLinks(monitoring);
 
   /* The queue line under GENERATIONS — unchanged words, unchanged thresholds. */
   const queueFoot =
@@ -152,7 +162,34 @@ export function HealthMetrics({
 
   return (
     <section className="dp-ov__section">
-      <TableHead eyebrow="Last 24 hours" />
+      {/* ⚠ `undefined` when there is nothing to draw, never an empty array or a
+          fragment of nulls: `TableHead` decides on TRUTHINESS, and both of those
+          are truthy — either would draw an empty filters slot beside the
+          hairline on every developer's machine, where no key is set. */}
+      <TableHead eyebrow="Last 24 hours">
+        {links.length > 0
+          ? links.map((link) => (
+              <a
+                key={link.label}
+                className="dp-ov__dashlink"
+                href={link.href}
+                /* A new tab: his page polls every 30s and holds its scroll, and
+                   navigating away from it to read somebody else's dashboard
+                   loses both. */
+                target="_blank"
+                rel="noreferrer"
+                /* ⚠ The vendor's name lives HERE and nowhere else — present when
+                   he wonders which tab just opened, absent from the page he
+                   reads every morning. The disappearing-technology law applies
+                   to a staff surface too: a page three people see is exactly
+                   where an engine name goes unchallenged. */
+                title={link.vendor}
+              >
+                {link.label}
+              </a>
+            ))
+          : undefined}
+      </TableHead>
       <div className="dp-ov__kpigrid">
         <Kpi
           label="SUCCESS RATE"

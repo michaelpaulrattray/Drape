@@ -17,6 +17,8 @@ import {
   getDailyCreditFlow,
   getChangeRequestDistribution,
 } from "../../db/adminTimeSeriesQueries";
+import { errorReportingConfigured } from "../../monitoring/errorTracker";
+import { productEventsConfigured } from "../../monitoring/productEvents";
 
 /** Captured at module load — gives us server uptime. */
 const serverStartTime = new Date();
@@ -57,6 +59,25 @@ export const overviewRouter = router({
       system: {
         activeBanners,
         serverStartedAt: serverStartTime,
+      },
+      /*
+        WHETHER THERE IS A DASHBOARD TO LINK TO (#1441) — his *"Links — no
+        fourth key"* on #1419.
+
+        ⚠ **TWO BOOLEANS AND NOTHING ELSE, AND THAT IS THE WHOLE POINT OF THE
+        ANSWER HE GAVE.** The alternative he declined was a fourth Sentry key
+        that could READ his errors back, so this procedure could print a count
+        on his page. It does not, so nothing here can go stale: the page draws
+        a link, the vendor draws the truth.
+
+        Read fresh on every call rather than captured at module load like
+        `serverStartTime` above, because a key can be pasted onto the service
+        between two requests — and the page polls every 30 seconds, so the link
+        appears on its own rather than on a redeploy.
+      */
+      monitoring: {
+        errorsConfigured: errorReportingConfigured(),
+        eventsConfigured: productEventsConfigured(),
       },
       fetchedAt: new Date(),
     };

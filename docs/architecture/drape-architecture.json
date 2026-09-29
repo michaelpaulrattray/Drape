@@ -7,7 +7,7 @@
     {
       "id": "domain:admin",
       "name": "admin",
-      "moduleCount": 60
+      "moduleCount": 61
     },
     {
       "id": "domain:api",
@@ -585,6 +585,12 @@
     {
       "id": "module:client/src/features/admin/overview/chartTokens.ts",
       "path": "client/src/features/admin/overview/chartTokens.ts",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/admin/overview/dashboards.ts",
+      "path": "client/src/features/admin/overview/dashboards.ts",
       "domain": "admin",
       "lifecycle": "active"
     },
@@ -10432,6 +10438,10 @@
       "path": "client/src/features/admin/components/crew/waitingCardState.test.ts"
     },
     {
+      "id": "test:client/src/features/admin/overview/dashboards.test.ts",
+      "path": "client/src/features/admin/overview/dashboards.test.ts"
+    },
+    {
       "id": "test:client/src/features/admin/overview/section07-guard.test.ts",
       "path": "client/src/features/admin/overview/section07-guard.test.ts"
     },
@@ -10882,6 +10892,10 @@
     {
       "id": "test:server/adminOverview.test.ts",
       "path": "server/adminOverview.test.ts"
+    },
+    {
+      "id": "test:server/adminOverviewMonitoringLinks.test.ts",
+      "path": "server/adminOverviewMonitoringLinks.test.ts"
     },
     {
       "id": "test:server/adminTimeSeries.test.ts",
@@ -14993,6 +15007,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/admin/overview/dashboards.ts",
+      "to": "module:client/src/monitoring/errorReporter.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/admin/overview/GovernanceCard.tsx",
       "to": "module:client/src/features/admin/ChangeRequestConstants.tsx",
       "kind": "imports"
@@ -15010,6 +15029,11 @@
     {
       "from": "module:client/src/features/admin/overview/HealthMetrics.tsx",
       "to": "module:client/src/features/admin/overview/chartTokens.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/overview/HealthMetrics.tsx",
+      "to": "module:client/src/features/admin/overview/dashboards.ts",
       "kind": "imports"
     },
     {
@@ -31160,6 +31184,16 @@
     {
       "from": "module:server/routes/admin/overview.ts",
       "to": "module:server/db/announcementQueries.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/admin/overview.ts",
+      "to": "module:server/monitoring/errorTracker.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/admin/overview.ts",
+      "to": "module:server/monitoring/productEvents.ts",
       "kind": "imports"
     },
     {
