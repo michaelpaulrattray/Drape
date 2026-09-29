@@ -671,6 +671,25 @@ export function projectShortlist(
  */
 export const CASTING_ROLL_COMPILE_STALE_MS = 5 * 60 * 1000;
 
+/**
+ * A STAMP IS A CLAIM WITH AN EXPIRY, AND BOTH FORMS OF ABSENCE ARE ABSENCE.
+ *
+ * ⚠ The first shape of this read was `stamp !== null`, and it threw on the
+ * whole `getSession` road — `Cannot read properties of undefined (reading
+ * 'getTime')`. A row read out of MySQL gives `null` for an empty column, and a
+ * session object built anywhere else gives `undefined`; `!== null` lets the
+ * second through into the arithmetic. Found by `castingV2SheetGone.test.ts`'s
+ * positive control, which is the arm that exists to catch exactly this.
+ *
+ * So the question is asked once, here, in a form neither absence can pass —
+ * and it is a named function rather than an inline expression so the arms can
+ * drive both forms without going through a session fixture.
+ */
+export function castingNowAt(stamp: Date | null | undefined, now: Date): boolean {
+  if (!stamp) return false;
+  return now.getTime() - stamp.getTime() < CASTING_ROLL_COMPILE_STALE_MS;
+}
+
 export function projectSession(session: CastingSession, now: Date = new Date()): SessionProjection {
   return {
     sessionId: session.publicId,
@@ -687,9 +706,7 @@ export function projectSession(session: CastingSession, now: Date = new Date()):
       can reach the raw instant and decide for itself — the parallel-copy shape
       working law 4 is about, one field earlier than usual.
     */
-    castingNow:
-      session.castingSince !== null
-      && now.getTime() - session.castingSince.getTime() < CASTING_ROLL_COMPILE_STALE_MS,
+    castingNow: castingNowAt(session.castingSince, now),
     signedCastCount: session.signedCastCount,
     createdAt: session.createdAt.toISOString(),
     expiresAt: session.expiresAt ? session.expiresAt.toISOString() : null,

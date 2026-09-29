@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { CastingSession } from "../../drizzle/schema";
-import { CASTING_ROLL_COMPILE_STALE_MS, projectSession } from "./rollProjection";
+import { CASTING_ROLL_COMPILE_STALE_MS, castingNowAt, projectSession } from "./rollProjection";
 
 /**
  * A SHEET SAYS IT IS CASTING, AND THE SAYING HAS AN EXPIRY (#1454).
@@ -41,6 +41,25 @@ describe("castingNow", () => {
   it("a sheet with no stamp is not casting", () => {
     /* Every row that exists today, and every sheet between rolls. */
     expect(projectSession(at(-1), NOW).castingNow).toBe(false);
+  });
+
+  it("BOTH forms of absence are absence — null from a row, undefined from anywhere else", () => {
+    /*
+      ⚠ THIS ARM IS A REPAIR, NOT A PRECAUTION. The first shape of the reader
+      asked `stamp !== null`, which `undefined` passes, and the next line took
+      `.getTime()` of it — so `getSession` threw for any caller holding a
+      session object that was not read out of MySQL. Every fixture in this
+      repository is such an object, and `castingV2SheetGone.test.ts`'s positive
+      control went red the moment the reader shipped.
+
+      Driven at the reader rather than through a session, because a fixture
+      typed as `CastingSession` cannot express the `undefined` that caused it.
+    */
+    expect(castingNowAt(null, NOW)).toBe(false);
+    expect(castingNowAt(undefined, NOW)).toBe(false);
+    /* The positive control beside them, or a reader that answers false to
+       everything passes both. */
+    expect(castingNowAt(new Date(NOW.getTime() - 1_000), NOW)).toBe(true);
   });
 
   it("a stamp written a moment ago IS casting", () => {
