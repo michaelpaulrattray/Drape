@@ -57,6 +57,16 @@
   Dashed while unresolved. Everything in this section is unresolved by
   construction — an item leaves the list the moment it is handled — so there is
   no solid variant here; see NeedsHuman.tsx's header.
+
+  ⚠ IT DECLARED `text-decoration: none` AND THAT LINE WAS INERT — dropped by
+  #1529's sweep rather than rooted. This card is rendered as a `<Link>`, so
+  `.dp-root a` (0,2,0) beat this single class (0,1,0) and supplied the identical
+  `none`: the only sibling the sweep found whose loss changed NOTHING on screen.
+  Raising the whole rule to `.dp-root a.dp-attn` would have tied its layout —
+  the flex, the padding, the dashed border — to being an anchor inside the shell,
+  which is a worse thing to promise than a colour. The house rule owns anchor
+  underlines; a card that stops being a link still wants no underline, and
+  nothing but an `<a>` has one to remove.
 */
 .dp-attn {
   display: flex;
@@ -67,7 +77,6 @@
   border-radius: var(--r-xl);
   background: var(--surface);
   cursor: pointer;
-  text-decoration: none;
   transition: border-color 120ms ease;
 }
 
@@ -618,16 +627,26 @@
   color: var(--accentInk);
 }
 
-.dp-ov__link {
+/*
+  ROOTED FOR THE REASON THE BLOCK AT THE FOOT OF THIS FILE SETS OUT (#1529,
+  found by its sweep — the same defect as the dashboard links, one section up
+  the page). Unrooted this lost `--metaStrong` to `.dp-root a`'s `--ink`, so
+  "All audit entries" printed at the weight of the section heading beside it,
+  and `.dp-root a:hover` then took it to `--linkHover` — hovering it made it
+  lighter. The chevron is this link's affordance, so it takes no underline; what
+  it needed was for its own two colours to apply at all.
+*/
+.dp-root a.dp-ov__link {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   font: 400 11.5px var(--font-sans);
   color: var(--metaStrong);
-  text-decoration: none;
+  text-decoration-line: none;
 }
 
-.dp-ov__link:hover {
+.dp-root a.dp-ov__link:hover,
+.dp-root a.dp-ov__link:focus-visible {
   color: var(--ink);
 }
 
