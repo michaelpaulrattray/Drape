@@ -1,7 +1,7 @@
 {
-  "edition": 574,
-  "updatedAt": "2026-09-29T17:04:13.739Z",
-  "shift": "Janitor (patrol #11, closing note) — the background helper I reported an hour ago is fixed, so the row about it is now marked done. What happened after my report: the cause turned out to be in how the watcher is re-started — it was being armed with a 30-minute timer, and when that timer ended it left the old copy running, so every restart added one more. It has been changed to stop itself just before each restart, and to check that only one is running before arming the next. Seven more had already piled up in the half hour after I cleared them, which is the clearest evidence that clearing them was never going to be enough on its own. One copy is running now, which is correct. The check at the next tidying round is simply whether it is still one. Nothing in the product changed tonight and nothing was spent.",
+  "edition": 575,
+  "updatedAt": "2026-09-29T18:45:00.000Z",
+  "shift": "Foreman (night shift) — the old casting lane is now completely out of the product, and the paperwork finally agrees with the code. Nothing you can see changed tonight and nothing was spent. The five pieces of the old lane came out between Sunday and Monday; the last job was to make every document and map say so, and that mattered more than it sounds. The map our own agents read FIRST was still telling them the old road survived inside the studio, and the file a shift opens to work this job still said, in bold, that you had not asked for the retirement — about nine hours after you said “Delete it”. Both are fixed. While checking, I found that the refusal we show when somebody asks for something we cannot cast has no test behind it any more: the test that used to cover it was pointed at a different refusal during the clean-up and nobody noticed. I proved it by breaking that line on purpose — 5,741 tests stayed green. Reading it end to end, that refusal can no longer happen at all on today's road, so nothing is broken for you; it is dead wiring, and I refused to write a test that would have looked like cover for it. The decision about removing it is now recorded where it belongs. Also settled one small leftover about a piece of shared text — in the file itself rather than on a card, so nobody has to work it out again.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -264,6 +264,10 @@
         {
           "title": "Your throughput order is live (#1496): the crew's helpers can take cards on the current focus's own rung instead of none at all — one helper with one card became two with ten, on tonight's real queue — and nothing further along the ladder can be picked up, so N2b, N2c and N3 still wait for your word.",
           "state": "done"
+        },
+        {
+          "state": "in-progress",
+          "title": "The old casting lane is finished, and the record now says so (#180). Everything that chose between the old way of casting and the new one is out of the product — five pieces, ending Monday — and this last piece was the writing-up. It is not housekeeping: the map our agents read first still described the old road as alive inside the studio, and the working document still said you had not asked for the retirement, nine hours after you said “Delete it”. Both now say what actually happened, with every piece checked against the code rather than copied from a report. What keeps this card open is NOT a deletion, and that is written at the top of it so nobody goes looking for one: a list of old “look” words that is still genuinely in use and waits on the suggested-words feature being built, and the refining half, which you yourself timed for the next milestone."
         }
       ]
     },
@@ -347,7 +351,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-29T14:36:57.406Z",
+      "readAt": "2026-09-29T18:37:42.637Z",
       "items": [
         {
           "issueNumber": 1129,
@@ -364,12 +368,6 @@
         {
           "issueNumber": 1503,
           "title": "A stated covering no longer reaches the engine: D-124's repair went inert when the author road became every account's road",
-          "kind": "rung",
-          "rung": "N2"
-        },
-        {
-          "issueNumber": 1504,
-          "title": "photorealHumanConstant has test callers only since act 2 deleted its last caller — the uncalled-export shape, with 42 call sites behind it",
           "kind": "rung",
           "rung": "N2"
         },
@@ -8998,6 +8996,20 @@
       "status": "merged",
       "prNumber": 1493,
       "note": "Merged ba1b30a6. Nothing a customer sees; 107 checks read one at a time, 43 of them a declared loss on card 1125."
+    },
+    {
+      "id": "old-lane-record-180",
+      "title": "The old casting lane's record closes, and the map stops describing a road that is gone (#180)",
+      "status": "merged",
+      "prNumber": 1520,
+      "note": "Merged a5576571. Documents and the agent-facing map only; no behaviour. Found one refusal with no test behind it — filed as #1521."
+    },
+    {
+      "id": "photoreal-constant-1504",
+      "title": "A shared piece of prompt text gets its answer written in the file instead of on a card (#1504)",
+      "status": "merged",
+      "prNumber": 1522,
+      "note": "Merged ee436909. Comments only; two wrong details in the paragraph it replaces corrected at the code."
     }
   ],
   "problems": [
@@ -9276,7 +9288,7 @@
     236
   ],
   "nextUp": {
-    "readAt": "2026-09-29T14:36:57.406Z",
+    "readAt": "2026-09-29T18:37:42.636Z",
     "items": [
       {
         "issueNumber": 180,
