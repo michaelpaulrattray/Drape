@@ -103,11 +103,18 @@ describe("telling a watcher from the server it keeps restarting", () => {
         launchedFrom: "C:/Users/Admin/Drape",
       },
       {
+        /* ⚠ `null`, and it changed at #1483 — EVERY path in this tree is
+           `.pnpm`-first, and a `.pnpm` path is node's realpath, which has
+           already walked the worktree junction. It is indistinguishable from
+           the same launch made out of a seat tree, so the reader cannot place
+           it and says so. Its neighbour 14660 above keeps its answer because it
+           carries a `.bin` path, which is literal — that contrast is the whole
+           of the repair and is why both trees stay in this one arm. */
         rootPid: 22316,
         startedAt: at("13:51"),
         childPids: [21752],
         watched: true,
-        launchedFrom: "C:/Users/Admin/Drape",
+        launchedFrom: null,
       },
     ]);
   });
@@ -843,7 +850,15 @@ describe("⚠ a tree's ports include the ROOT's own (#784 review)", () => {
         startedAt: at911("07:40:00"),
         childPids: [],
         watched: false,
-        launchedFrom: "C:/Users/Admin/Drape",
+        /* ⚠ `null` since #1483 — its one path is a `.pnpm` loader URL, which is
+           node's realpath and names the junction target whatever tree ran it.
+           ⚠ AND THIS ARM STOPPED DRIVING THE LOOKBEHIND WHEN THAT CHANGED: the
+           `e:` misread the lookbehind exists to prevent lands on a `.pnpm`
+           remainder here, so the skip now hides it and an implementation with
+           the lookbehind deleted would pass this. Its replacement is
+           "⚠ THE LOOKBEHIND, on a remainder the `.pnpm` skip cannot mask"
+           below, driven at `launchDirectoryOf` and not through a tree. */
+        launchedFrom: null,
       },
     ]);
   });
@@ -875,5 +890,182 @@ describe("⚠ a tree's ports include the ROOT's own (#784 review)", () => {
   it("CONTROL — a tree holding nothing reports nothing", () => {
     const [watched] = devServerTrees(PNPM_DEV);
     expect(portsOfTree(watched, new Map([[99999, [3000]]]))).toEqual([]);
+  });
+});
+
+/**
+ * ⚠ A `.pnpm` PATH NAMES THE JUNCTION TARGET, SO IT IS NOT A LAUNCH DIRECTORY
+ * (#1483).
+ *
+ * Every seat worktree is minted with its `node_modules` as a junction into the
+ * main tree's, and node resolves the realpath of a module it loads — so a path
+ * that reached a command line through module resolution has had that junction
+ * walked out of it. The reader answered `C:/Users/Admin/Drape`, which is
+ * registered and exists, so `launchDirectoryState` said `live` and the listing
+ * printed nothing. #1483's specimen sat 2 d 23 h 41 m on `:3144` that way, from
+ * a worktree that was both unregistered AND an empty shell.
+ *
+ * ⚠ **THE THREE TABLES BELOW ARE MEASURED, IN ONE SITTING, ON REAL PROCESSES —
+ * 2026-09-29, two dev servers running at once on this machine.** The point of
+ * driving all three is that the defect and the thing that must not break are
+ * the SAME letters in a different order: every one of them contains `.pnpm`,
+ * and only the first segment after `node_modules/` tells them apart.
+ */
+const at929 = (hhmmss: string) => new Date(`2026-09-29T${hhmmss}.000Z`);
+
+/** Launched from a seat worktree, unwatched — #1483's specimen, reproduced. */
+const WORKTREE_LONE: ProcessRow[] = [
+  {
+    pid: 33564,
+    parentPid: 4,
+    name: "node.exe",
+    startedAt: at929("09:10:18"),
+    /* Relative, so it offers nothing — which is why the child below decided it. */
+    commandLine: '"C:\\Program Files\\nodejs\\node.exe" node_modules/tsx/dist/cli.mjs server/_core/index.ts',
+  },
+  {
+    pid: 31952,
+    parentPid: 33564,
+    name: "node.exe",
+    startedAt: at929("09:10:19"),
+    commandLine: '"C:\\Program Files\\nodejs\\node.exe" --require C:\\Users\\Admin\\Drape\\node_modules\\.pnpm\\tsx@4.23.13\\node_modules\\tsx\\dist\\preflight.cjs --import file:///C:/Users/Admin/Drape/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx/dist/loader.mjs server/_core/index.ts',
+  },
+];
+
+/** The founder's own `pnpm dev`, from the main tree — the control that matters. */
+const MAIN_TREE_DEV: ProcessRow[] = [
+  {
+    pid: 312,
+    parentPid: 4,
+    name: "node.exe",
+    startedAt: at929("09:10:44"),
+    commandLine: 'node   "C:\\Users\\Admin\\Drape\\node_modules\\.bin\\\\..\\.pnpm\\cross-env@10.1.0\\node_modules\\cross-env\\dist\\bin\\cross-env.js" NODE_ENV=development tsx watch server/_core/index.ts',
+  },
+  {
+    pid: 3744,
+    parentPid: 312,
+    name: "node.exe",
+    startedAt: at929("09:10:45"),
+    commandLine: 'node   "C:\\Users\\Admin\\Drape\\node_modules\\.bin\\\\..\\.pnpm\\tsx@4.23.13\\node_modules\\tsx\\dist\\cli.mjs" "watch" "server/_core/index.ts"',
+  },
+  {
+    pid: 23412,
+    parentPid: 3744,
+    name: "node.exe",
+    startedAt: at929("09:10:46"),
+    commandLine: '"C:\\Program Files\\nodejs\\node.exe" --require C:\\Users\\Admin\\Drape\\node_modules\\.pnpm\\tsx@4.23.13\\node_modules\\tsx\\dist\\preflight.cjs --import file:///C:/Users/Admin/Drape/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx/dist/loader.mjs server/_core/index.ts',
+  },
+];
+
+/** An ordinary `pnpm dev` INSIDE a seat worktree — right before, right after. */
+const WORKTREE_DEV: ProcessRow[] = [
+  {
+    pid: 36668,
+    parentPid: 4,
+    name: "node.exe",
+    startedAt: at929("09:07:31"),
+    commandLine: 'node   "C:\\Users\\Admin\\drape-shift-seat-1-20260929-190459\\node_modules\\.bin\\\\..\\.pnpm\\cross-env@10.1.0\\node_modules\\cross-env\\dist\\bin\\cross-env.js" NODE_ENV=development tsx watch server/_core/index.ts',
+  },
+  {
+    pid: 27620,
+    parentPid: 36668,
+    name: "node.exe",
+    startedAt: at929("09:07:32"),
+    commandLine: 'node   "C:\\Users\\Admin\\drape-shift-seat-1-20260929-190459\\node_modules\\.bin\\\\..\\.pnpm\\tsx@4.23.13\\node_modules\\tsx\\dist\\cli.mjs" "watch" "server/_core/index.ts"',
+  },
+  {
+    pid: 53352,
+    parentPid: 27620,
+    name: "node.exe",
+    startedAt: at929("09:07:33"),
+    commandLine: '"C:\\Program Files\\nodejs\\node.exe" --require C:\\Users\\Admin\\Drape\\node_modules\\.pnpm\\tsx@4.23.13\\node_modules\\tsx\\dist\\preflight.cjs --import file:///C:/Users/Admin/Drape/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx/dist/loader.mjs server/_core/index.ts',
+  },
+];
+
+describe("⚠ a `.pnpm` path is the junction target, not a launch directory (#1483)", () => {
+  const SEAT = "C:/Users/Admin/drape-shift-seat-1-20260929-190459";
+  const anywhere = { exists: () => true, isEmpty: () => false };
+  const mainTreeRegistered = new Set([normaliseTreePath("C:/Users/Admin/Drape")]);
+
+  it("⚠ THE DEFECT — the measured worktree row still ANSWERS the main tree", () => {
+    /* Driven at the row, so the arm names the wrong answer rather than only the
+       absence of it. This is the byte that cost three days of uptime: the
+       process was started in `SEAT` and its command line says `Drape`. */
+    const child = WORKTREE_LONE.find((row) => row.pid === 31952);
+    expect(child).toBeDefined();
+    expect(child!.commandLine).toContain("node_modules\\.pnpm\\tsx@4.23.13");
+    expect(child!.commandLine).not.toContain("drape-shift-seat-1");
+    /* And the repair: a realpath is not evidence of where anybody stood. */
+    expect(launchDirectoryOf(child!.commandLine)).toBeNull();
+  });
+
+  it("⚠ so the tree is UNPLACEABLE, and unplaceable is not killable", () => {
+    const [tree] = devServerTrees(WORKTREE_LONE);
+    expect(tree.rootPid).toBe(33564);
+    expect(tree.launchedFrom).toBeNull();
+    /* The whole doctrine in two lines: the wrong `live` is gone and nothing
+       took its place that would let a shift kill somebody's work. `unknown` is
+       the state that already existed for "I cannot tell". */
+    expect(launchDirectoryState(tree.launchedFrom, anywhere, mainTreeRegistered)).toBe("unknown");
+    expect(launchDirectoryIsGone("unknown")).toBe(false);
+  });
+
+  it("⚠ NEGATIVE CONTROL — the founder's own main-tree `pnpm dev` is untouched", () => {
+    /* The arm the card said matters more than the positive one: calling this
+       tree unplaceable, or worse abandoned, costs real work. It survives
+       because pnpm's `.bin` shim is invoked by the path the caller typed. */
+    const [tree] = devServerTrees(MAIN_TREE_DEV);
+    expect(tree.launchedFrom).toBe("C:/Users/Admin/Drape");
+    expect(launchDirectoryState(tree.launchedFrom, anywhere, mainTreeRegistered)).toBe("live");
+  });
+
+  it("⚠ NEGATIVE CONTROL — a `pnpm dev` inside a worktree still names the WORKTREE", () => {
+    /* The common case, and the one a substring test for `.pnpm` would have
+       destroyed: this tree carries BOTH kinds of path, and the literal one
+       comes first. It was right before this change and has to stay right. */
+    const [tree] = devServerTrees(WORKTREE_DEV);
+    expect(tree.launchedFrom).toBe(SEAT);
+  });
+
+  it("⚠ the skip is ANCHORED at the first segment — `.bin/../.pnpm` is literal", () => {
+    /*
+      The trap this arm exists for. Every path in every table above contains the
+      letters `.pnpm`, so a reader that skipped on `includes(".pnpm")` would
+      throw away the `.bin` shim too — and then NOTHING on this machine could be
+      placed, which fails toward unplaceable rather than toward live and would
+      have looked like a working fix in the two arms above.
+    */
+    const shim = 'node "C:/Users/Admin/seat/node_modules/.bin//../.pnpm/tsx@4.23.13/node_modules/tsx/dist/cli.mjs" "watch" "server/_core/index.ts"';
+    const resolved = 'node.exe --require C:/Users/Admin/Drape/node_modules/.pnpm/tsx@4.23.13/node_modules/tsx/dist/preflight.cjs';
+    expect(launchDirectoryOf(shim)).toBe("C:/Users/Admin/seat");
+    expect(launchDirectoryOf(resolved)).toBeNull();
+  });
+
+  it("⚠ a directly-typed module path is literal too, and is still read", () => {
+    /* argv is never resolved, so a path somebody typed survives whatever it
+       points at. Skipping this one would lose a true answer for nothing. */
+    expect(launchDirectoryOf('node "C:/Users/Admin/seat/node_modules/tsx/dist/cli.mjs" server/_core/index.ts'))
+      .toBe("C:/Users/Admin/seat");
+  });
+
+  it("⚠ THE LOOKBEHIND, on a remainder the `.pnpm` skip cannot mask", () => {
+    /*
+      ⚠ THIS ARM REPLACES COVERAGE THE FIX TOOK AWAY, and it is the reason the
+      change is not a straight win. The lookbehind in `launchDirectoryOf` stops
+      `file:///C:/…` matching at the `e:` of `file:` and answering
+      `e:///C:/Users/Admin/Drape` — a directory that can never exist, so the
+      caller would say ABANDONED and "safe to kill" over a LIVE server, which is
+      the worst direction this module has.
+
+      Its only driver was the LONE fixture, whose URL is a `.pnpm` one — so the
+      new skip now swallows that misread before the lookbehind is consulted, and
+      deleting the lookbehind would leave every other arm in this file green.
+      This URL is a NON-`.pnpm` one for exactly that reason: the skip cannot
+      reach it, so the lookbehind is the only thing standing between the reader
+      and `e:///…`.
+    */
+    const url = 'node.exe --import file:///C:/Users/Admin/Drape/node_modules/tsx/dist/loader.mjs server/_core/index.ts';
+    expect(launchDirectoryOf(url)).toBe("C:/Users/Admin/Drape");
+    expect(launchDirectoryOf(url)).not.toContain("e:///");
   });
 });
