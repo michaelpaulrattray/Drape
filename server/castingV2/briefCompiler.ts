@@ -1568,8 +1568,27 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
 };
 
 /**
- * Kept as an explicit seam for tests and for any caller that must compile
- * without a network round trip. Same shape, no interpreter.
+ * The no-interpreter seam. Same shape, no network round trip.
+ *
+ * ⚠ **TEST-ONLY, AND SINCE #1445 THAT IS A RULE RATHER THAN A DESCRIPTION.**
+ * This docblock used to read *"for tests and for any caller that must compile
+ * without a network round trip"*, and that second clause was an open invitation
+ * to a hazard nobody had noticed: **this compiler delivers the HOUSE road's
+ * prompts.** It calls `resolveSheet` and returns its candidates untouched, so
+ * `composeCandidatePrompt`'s output reaches whoever called it — while
+ * `castingBriefCompiler` overwrites every prompt with the authored sentence on
+ * the road every account is actually on (his *"Yes"*, 2026-09-24).
+ *
+ * So a production caller added here would not merely skip the reader. It would
+ * quietly put a paid roll back on the retired lane — eight separately composed
+ * constants instead of the customer's own words — with the reader never asked
+ * and nothing at the wire looking wrong. `houseRoadUnreachable.test.ts` pins
+ * the live compiler's caller population for exactly this reason; **this seam is
+ * the other door into the same room, and the rule is that it stays shut.**
+ *
+ * Its retirement is act 2 of slice 4 and is carded: it cannot go before the
+ * house branch does, because `resolveSheet` would keep composing without it.
+ * See `composeCandidatePrompt`'s docblock for the forced order and the counts.
  */
 export const deterministicBriefCompiler: BriefCompiler = async (input) => {
   const briefText = normalizeBrief(input.briefText);

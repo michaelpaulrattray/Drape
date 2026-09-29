@@ -2805,8 +2805,48 @@ function coveringFor(statedText: string): string {
  * since #1443 took that flag out there is no other road for it to be true of.
  * The module docblock's last paragraph carries the whole reading. The one caller
  * whose output IS delivered is `deterministicBriefCompiler`, which has no
- * production caller — it is the no-interpreter test seam, and slice 4 (#1445) is
- * where both of them are settled.
+ * production caller — it is the no-interpreter test seam.
+ *
+ * ⚠ **SLICE 4 (#1445) SETTLED BOTH, AND THE ANSWER IS THAT THEY LEAVE IN TWO
+ * ACTS IN A FORCED ORDER — NOT ONE.** The card was written as a single act; the
+ * two have DIFFERENT consumer sets, and reading them apart is what this slice
+ * bought:
+ *
+ *  - **Act 1 — the house BRANCH.** `castingBriefCompiler` still carries both
+ *    roads, and `resolveSheet` composes unconditionally, so the composer is
+ *    delivered to anything that reaches the compiler without `authorRoad: true`.
+ *    Nothing in production does (`houseRoadUnreachable.test.ts` pins the
+ *    population at one caller, and the two roads are driven there so the pin is
+ *    not vacuous). Collapsing the branch reddens **101 arms across 20 suites**,
+ *    measured on this tree — the card's *86 across 17* was read at slice 2's
+ *    tree and is stale.
+ *  - **Act 2 — `deterministicBriefCompiler` and this function.** It calls
+ *    `resolveSheet` too, so it keeps composing after act 1 and keeps delivering
+ *    the result. **~16 further call sites across 6 suites**, `rollService.test.ts`
+ *    among them, where it stands in as `compileBrief`.
+ *
+ * ⚠ **THE ORDER IS FORCED AND ACT 2 CANNOT GO FIRST.** Deleting the
+ * deterministic seam does not retire this function: `resolveSheet` would still
+ * compose for the house branch. So the branch dies first, then the seam, then
+ * this. A commit that starts at the other end removes a test seam and leaves the
+ * composer exactly where it was.
+ *
+ * **Why neither act happened in slice 4.** The 101 arms are not junk and are not
+ * uniformly re-pointable: measured arm by arm, most carry TWO assertions — one
+ * about what the RESOLVER decided (live, still written to `resolvedIdentity` on
+ * every author-road roll) and one about what the house PROMPT carried (dead).
+ * `categorySurvival` is the worked example: its `intent.role` assertion is the
+ * founder incident it was written for and survives; its two `candidate.prompt`
+ * assertions are the retired block. Separating them is #180's category reading,
+ * which is a rung-sized act — and the one thing that would be worse than doing
+ * it is doing it at speed on the compiler that composes every paid roll.
+ *
+ * ⚠ **AND THE REASON TO RETIRE THIS IS CLARITY, NOT SPEED — MEASURED, SO THE
+ * NEXT CARD DOES NOT PROMISE HIM A FASTER ROLL.** The discarded composition
+ * costs **0.0275 ms per candidate, 0.22 ms per roll** (2000 calls, p50 0.0225,
+ * p99 0.134) against a roll that takes 40–120 seconds. A customer feels none of
+ * it. What it costs is that a shift reading this file to learn what the product
+ * sends reads the wrong answer, which is the whole of #1217.
  */
 export function composeCandidatePrompt(input: {
   /** The user's own sentence — the reliable place to ask "did they say hair?". */
