@@ -1,6 +1,6 @@
 {
-  "edition": 569,
-  "updatedAt": "2026-09-29T11:15:00.000Z",
+  "edition": 570,
+  "updatedAt": "2026-09-29T11:26:00.000Z",
   "shift": "Foreman (night shift) — the biggest single piece of the old casting lane came out tonight, and nothing you can see changes. The old way of casting has had no way into a paid roll since 24 September, but the code that did it was still sitting inside the thing that builds every roll, so anyone reading it to learn what we actually send the engine read the wrong answer. That code is gone now. The real work was not deleting it — that part is small — it was the 107 checks across 23 test files that were watching the old road and had to be read one at a time rather than counted. Most of them were testing two things at once: something still true and something no longer true. About a third were re-pointed at what the studio now genuinely promises, and several came out STRONGER — the check that your casting category reaches all eight pictures no longer has to trust a rebuilding step, because your own sentence IS the instruction now. 43 of them I could not save, and I want to be straight about that rather than quiet: they were checking that a decision the studio made about a face actually reached the picture, and on the new road there is nothing per-picture to check — all eight get one instruction and the engine varies the rest. That is the class your own eye caught five separate times, so losing the checks is a real loss, not a tidy-up. It is written down on its own card (1125), it belongs to the auto-detector work later on the ladder, and every file says out loud what left it. Two of the checks I found had already quietly stopped testing anything before I arrived — one was comparing the studio to itself — and those are named rather than left looking green. Everything passed: 879 test files, 14,619 checks, nothing red. One correction to my own writing, caught in review and worth keeping: I said briefs that used to be refused now get made. That was only ever true of the tests, not of you — no customer's refusal changed tonight.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -335,7 +335,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-29T09:36:58.613Z",
+      "readAt": "2026-09-29T11:23:58.892Z",
       "items": [
         {
           "issueNumber": 1129,
@@ -344,14 +344,14 @@
           "rung": "N2"
         },
         {
-          "issueNumber": 1444,
-          "title": "Old lane retirement slice 3 of 5: the client's authorRoadEnabled wire field goes — and the row-derived authorRoad in the same two files does not",
+          "issueNumber": 1490,
+          "title": "Old lane retirement, the last act: the house branch comes out of the compiler — 101 arms across 20 suites, in two forced-order acts",
           "kind": "rung",
           "rung": "N2"
         },
         {
-          "issueNumber": 1490,
-          "title": "Old lane retirement, the last act: the house branch comes out of the compiler — 101 arms across 20 suites, in two forced-order acts",
+          "issueNumber": 1495,
+          "title": "N2 ghost: interpretBrief still accepts author:false, and nothing in production can reach it",
           "kind": "rung",
           "rung": "N2"
         },
@@ -512,7 +512,7 @@
         }
       ],
       "recommendation": "Nothing to decide. Have a look if you want an early read; otherwise this comes back to you when you next sign a cast.",
-      "state": "waiting",
+      "state": "done",
       "filedAt": "2026-09-27T05:09:56.168Z",
       "issueNumber": 1278
     },
@@ -3501,7 +3501,7 @@
       "id": "plate-from-master-1471",
       "title": "The outfit picture looks at her now — your correction, built and driven",
       "question": "WHAT YOU ARE LOOKING AT — three rows, all rendered tonight on your own casts. ROW ONE is the one that matters: your Sifr's signed picture on the left, then the outfit picture the way it worked yesterday, then the way it works now. The middle pair is a DIFFERENT WOMAN in a long slit dress — it had never seen her, so it invented both the person and the top. The right pair is her, in the top she was actually signed in: the same collar clasp, the same two buckled straps, the same graphic on the chest, the same tattooed arm. ROW TWO follows that through to the picture a customer keeps, with yesterday's beside it for comparison. ROW THREE is one of your creatures, because a being with no clothes gets this extra picture too — for it the picture settles the body below the crop instead of a garment, and it worked. Nothing is being asked of you here. The only thing still owed is your eye on a real sign, which is the same thing card 1278 is waiting for.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-29T05:30:00.000Z",
       "issueNumber": 1278,
       "cardId": "sheet-shape-1278",
@@ -3527,7 +3527,7 @@
       "id": "outfit-plate-1278",
       "title": "One outfit both ways — the thing you reported, and the thing your design does about it",
       "question": "WHAT YOU ARE LOOKING AT — four pictures of Sifr, all rendered tonight. The TOP TWO are how a sign works today: front and back. Look at them together — she is wearing a plain midi dress with pale boots at the front and a MINI SKIRT with BLACK boots at the back. That is your \"the hem and shoes differ every take\", on one cast in one sign. The BOTTOM TWO are the same two pictures with your wardrobe plate in front of them: one dress, one hem, one pair of boots, front and back. The second picture on this card is the plate itself — the extra picture that gets drawn first and thrown away. Nothing is being asked of you here; it is a look at your own design working before it goes live. What we will ask for later is your eye on a real sign.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-29T04:12:53.910Z",
       "issueNumber": 1278,
       "cardId": "sheet-shape-1278",
@@ -6382,7 +6382,7 @@
       "id": "sheet-cut-1278-part2",
       "title": "One character sheet cut into four views, beside four views drawn one at a time — which keeps her outfit the same?",
       "question": "WHAT YOU ARE JUDGING — consistency across the views, which is the full-length views bug you raised: the front and the back coming back in different bottoms. Each strip is ONE ROW OF EIGHT. The LEFT FOUR are the four views (front, left profile, right profile, back) cut out of a single Sunburst render of a character sheet. The RIGHT FOUR are the same four views drawn as four separate renders. The sheet is one call instead of four, and each cut view has about a third of the pixels of a single render — a lower-resolution picture per view; identity read 11 of 16 on the sheet. Compare the trousers and shoes across the left four against the right four. Tell me whether the left four's outfit consistency is worth the smaller pictures, or whether the right four win.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-26T23:31:44.907Z",
       "issueNumber": 1278,
       "cardId": null,
@@ -9251,17 +9251,8 @@
     236
   ],
   "nextUp": {
-    "readAt": "2026-09-29T09:36:58.613Z",
+    "readAt": "2026-09-29T11:23:58.892Z",
     "items": [
-      {
-        "issueNumber": 1278,
-        "title": "A signed view is dressed by an extraction and a prohibition list, never by the brief — the full-length views come back modest, generic and inconsistent; the brief dresses the view and the full-length views render as one sheet (his eye 2026-09-26)",
-        "urgent": true,
-        "held": {
-          "state": "blocked",
-          "because": "YOU — your eye on a real Sign’s strip (and Desk frames if you want the early court). Path E is **merged to main** (PR #1470, SHA `53426c12`, ~14:16 AEST). Head…"
-        }
-      },
       {
         "issueNumber": 180,
         "title": "N2: THE GHOST AUDIT — enumerate every piece of old-lane machinery still running under the author road (categories, dice, archetypes, personas); the Follow ghost (#176) is specimen #1 (founder flag, 2026-08-27)",
