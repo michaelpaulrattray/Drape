@@ -13052,6 +13052,10 @@
       "path": "server/lobby.test.ts"
     },
     {
+      "id": "test:server/memoryIndexAudit.test.ts",
+      "path": "server/memoryIndexAudit.test.ts"
+    },
+    {
       "id": "test:server/model-gallery.test.ts",
       "path": "server/model-gallery.test.ts"
     },
