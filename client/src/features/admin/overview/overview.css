@@ -772,3 +772,56 @@
   color: var(--metaStrong);
   word-break: break-word;
 }
+
+/*
+  THE TWO DASHBOARD LINKS in the LAST 24 HOURS head (#1441) — his "Links — no
+  fourth key" on #1419.
+
+  ⚠ THE SELECTOR CARRIES `.dp-root a` ON PURPOSE, AND THE FIRST VERSION OF THIS
+  BLOCK DID NOT — IT WAS WRITTEN AS `.dp-ov__dashlink` ALONE AND SILENTLY LOST.
+  This design system already owns anchors: `.dp-root a` sets `color: var(--ink)`
+  and `text-decoration-line: none` at specificity (0,2,0), so a single class at
+  (0,1,0) is overridden whatever it declares. Measured in the running app rather
+  than reasoned about — the rule MATCHED and every one of its declarations was
+  discarded, which is the shape that photographs as "the CSS did not load".
+  (0,2,1) here beats it outright rather than tying and depending on file order.
+
+  The house grammar is kept where it is right and dialled where it is not: the
+  colour is `--faint` at rest, not `--ink`, because the four figures below are
+  what this section is for and two links printed at full ink weight would be the
+  loudest thing in it. §3's rule is that colour belongs to the attention states
+  (`--critical`, `--attention` on a KPI), so these carry none — the underline is
+  what says "clickable" instead.
+
+  Sized to the eyebrow beside it rather than to the body: the head is a label
+  row, and a link at body size next to a 10.5px eyebrow reads as a heading of
+  its own.
+
+  ⚠ AND THE UNDERLINE IS `currentColor`, WHICH WAS DECIDED AT THE FRAMES AND NOT
+  AT THE TOKEN LIST. The first two attempts drew it at `--rule` (#F0F0F2) and
+  then `--border` (#ECECEE) — the crew page's link grammar — and at 10.5px on
+  white BOTH ARE INVISIBLE: the links rendered as a second eyebrow, right
+  aligned, in the same register as the "LAST 24 HOURS" beside them, with nothing
+  saying they could be clicked. That fails the disappearing-technology gate's
+  first question outright, because the thing he would have to learn is that
+  those two words are a link. Photographed side by side in the real head at
+  device scale to choose between them.
+
+  `currentColor` is also the one that cannot drift: it follows the text into the
+  hover state and into the dark theme with no second declaration to keep in step
+  (working law 4), which is why the hover rule below sets `color` alone.
+*/
+.dp-root a.dp-ov__dashlink {
+  font: 400 10.5px var(--font-sans);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--faint);
+  text-decoration-line: underline;
+  text-decoration-color: currentColor;
+  text-underline-offset: 3px;
+}
+
+.dp-root a.dp-ov__dashlink:hover,
+.dp-root a.dp-ov__dashlink:focus-visible {
+  color: var(--ink);
+}

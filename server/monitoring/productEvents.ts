@@ -367,6 +367,19 @@ export function productEventStreamStatus(): Readonly<StreamState> {
 }
 
 /**
+ * Is there a PostHog project to LINK to (#1441)?
+ *
+ * The twin of `errorReportingConfigured()` in `./errorTracker.ts`, and it is
+ * deliberately NOT `productEventStreamStatus().configured` for the reason
+ * written there: that field is written at boot, so it answers "has the stream
+ * started" rather than "is there a project", and the two differ in every test
+ * and for the whole of startup.
+ */
+export function productEventsConfigured(): boolean {
+  return apiKey().length > 0;
+}
+
+/**
  * Test seam only: put a client in place without importing the SDK, so the
  * transport's own arms can read exactly what `capture` was handed.
  *

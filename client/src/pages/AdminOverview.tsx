@@ -167,7 +167,11 @@ export default function AdminOverview() {
             <NeedsHuman governance={data.governance} alerts={data.alerts} />
 
             {/* 2 · Last 24 hours */}
-            <HealthMetrics data={data.health} chartData={ts?.dailyGenerations} />
+            <HealthMetrics
+              data={data.health}
+              chartData={ts?.dailyGenerations}
+              monitoring={data.monitoring}
+            />
 
             {/* 3 · Charts.
                 ⚠ NO EYEBROW HERE, ON PURPOSE. §4 names exactly four:
