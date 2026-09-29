@@ -472,9 +472,16 @@ const SIGNED_VIEW_MAX_REFERENCES = 14;
  * DISCOVERED (#1278 path E, 2026-09-29).** It was the Sign's view engine for
  * two days. Path E moved the delivered views back to Nano Banana Pro on his
  * later word — *"NBP2k was a better quality rersult though"* — and gave
- * Sunburst the WARDROBE PLATE instead, which is a generation and goes through
- * {@link createFalSunburstPlateEngine} and the text-to-image door. So this
- * factory is wired to nothing but its own suite (`falSignViewWire.test.ts`).
+ * Sunburst the WARDROBE PLATE instead. So this factory is wired to nothing but
+ * its own suite (`falSignViewWire.test.ts`).
+ *
+ * ⚠ **This paragraph read "…which is a generation and goes through the
+ * text-to-image door" until #1471 (2026-09-29) and that half is now false.**
+ * The plate edits from the master on HIS ruling, so
+ * {@link createFalSunburstPlateEngine} is on THIS door, with this body, and
+ * differs from this factory in `image_size` alone. What still separates them is
+ * only the size, and what still leaves this one unwired is only that the
+ * delivered views are Nano Banana Pro's.
  *
  * **It is kept rather than deleted, deliberately, and the reason is a date:**
  * his ruling on which engine dresses and which engine renders has moved three
@@ -649,6 +656,23 @@ export function createFalSunburstViewEngine(config: {
  * MEASURED THROUGH THE REAL DOOR (#1278 path E, 2026-09-29): see the drive
  * receipt on the card. A future change to this constant re-measures rather
  * than reasoning from the arithmetic above.
+ *
+ * ⚠ **RE-MEASURED ON THE EDIT DOOR, WITH A PORTRAIT MASTER BESIDE IT (#1471,
+ * 2026-09-29) — and it had to be, because two precedents pointed opposite
+ * ways.** The plate moved doors when his ruling gave it the master, and the
+ * master is portrait (1024x1536): #1394 had this door CLAMPING a landscape ask
+ * (4688x1760 → 3840x1440), while path E's own aspect finding had Nano Banana
+ * Pro DRAGGING its output toward a reference's shape. Either behaviour would
+ * cut every plate down the wrong column, silently.
+ *
+ *     asked 3504x2336, master 1024x1536   → returned 3504x2336   (Sifr, #55)
+ *     asked 3504x2336, master 1024x1536   → returned 3504x2336   (creature, #58)
+ *
+ * **The ask survives a portrait reference on this door**, read at the returned
+ * BYTES rather than at the provider's report — which matters, because
+ * `runFalImageJob` answered `width: null, height: null` on all four renders of
+ * that court. A reader trusting the report would have called both plates
+ * clamped.
  */
 export const OUTFIT_PLATE_SIZE = { width: 3504, height: 2336 } as const;
 
@@ -667,23 +691,43 @@ export const OUTFIT_PLATE_SIZE = { width: 3504, height: 2336 } as const;
  * WARDROBE PLATE and nothing a customer is handed**; the delivered views go
  * back to `createFalIdentityEngine` at `2K` in the same change.
  *
- * # Why it is a separate factory from {@link createFalSunburstViewEngine}
+ * # ⚠ IT WAS A GENERATION FROM WORDS FOR ONE DAY, AND HIS RULING ENDED THAT
  *
- * ⚠ **TWO REASONS, AND THE SECOND ONE IS THE ONE A READER WOULD GET WRONG.**
+ * **His word, 2026-09-29 (terminal), verbatim and entire (#1471):**
  *
- * The first is size: that factory pins {@link SIGNED_VIEW_SIZE} and refuses any
+ * > *"no the plate must reference the master image otherwise it wouldnt be able
+ * > to invent the outfit correctly"*
+ *
+ * Path E shipped the plate on `text-to-image` with `references: []`, reasoning
+ * that a plate is *of the outfit, not of her*. **Two things were wrong with
+ * that and he named the first himself.** A plate drawn from words alone cannot
+ * see the top she was SIGNED in, so on any cast whose signed close-up shows a
+ * garment the brief does not describe exactly, the plate invents a different
+ * one — and the full-length view is then told to take the clothes from the
+ * plate, which is the product contradicting a picture the customer has already
+ * accepted. The second is that the plate's own wardrobe paragraph
+ * (`CAST_PACKAGE_WARDROBE_SPEC…`) says *"the SAME outfit the reference
+ * photograph shows"* — a sentence addressed to a reference the request did not
+ * carry.
+ *
+ * So the plate is an EDIT now, on the same door `createFalSunburstViewEngine`
+ * uses and the road #1451 measured — the one his eye chose on the outfit court
+ * (*"sunburst produced the best result easily"*). The master is its reference;
+ * the person in the plate is therefore HER, and the two references a
+ * full-length view carries agree on identity by construction rather than by
+ * instruction.
+ *
+ * # Why it is still a separate factory from {@link createFalSunburstViewEngine}
+ *
+ * ⚠ **The DOOR is no longer one of the reasons — SIZE is, and it is the whole
+ * of it.** That factory pins {@link SIGNED_VIEW_SIZE} and refuses any
  * resolution but `2K`, deliberately, so a caller cannot be answered a size it
  * did not ask for. A plate is landscape and twice as wide, so it cannot ride
  * that constant — and loosening the view engine to take a size would put the
- * Sign's own picture size behind a parameter for the sake of a road that is
- * not the Sign's picture.
- *
- * The second is the DOOR. A signed view is an EDIT: it has the anchor to hold a
- * face against. **A plate has nothing to edit** — it is one generation from
- * words, which is his own phrasing — so it goes through `text-to-image`, the
- * same endpoint every roll renders on. Measured rather than reasoned: pointed
- * at the edit door, the first real call came back **422, "Number of image URLs
- * must be at least 1"**. Same model, same `quality: "high"`, different door.
+ * Sign's own picture size behind a parameter for the sake of a road that is not
+ * the Sign's picture. The two factories now differ in exactly one field of the
+ * body, `image_size`, and that is honest: they are the same door asked for two
+ * shapes.
  *
  * # What it costs, stated beside the choice (disappearing-technology law, 3)
  *
@@ -709,7 +753,7 @@ export function createFalSunburstPlateEngine(config: {
        reaches dispatch has already taken 450 credits. */
     throw new ProviderError("capability", "the outfit plate needs FAL_KEY to render");
   }
-  const model = config.model ?? FAL_GPT_IMAGE_25_SUNBURST;
+  const model = config.model ?? FAL_GPT_IMAGE_25_SUNBURST_EDIT;
   const timeoutMs = config.timeoutMs ?? 300_000;
   const pollIntervalMs = config.pollIntervalMs ?? 1_500;
   const queue =
@@ -723,22 +767,32 @@ export function createFalSunburstPlateEngine(config: {
       );
     }
     /*
-      ⚠ **IT REFUSES A REFERENCE RATHER THAN IGNORING ONE, AND THE DOOR BELOW IS
-      WHY THE FIRST DRAFT OF THIS WAS WRONG.** A plate is a GENERATION from
-      words — his design says *"one Sunburst high generation"* — so it goes
-      through `text-to-image`, which has no `image_urls` field at all. Pointed
-      at the EDIT door instead (the signed view's door, which looked like the
-      obvious sibling) it came back **422: "Number of image URLs must be at
-      least 1"** on the first real call, because an edit with nothing to edit is
-      not a request that door can serve. A silent drop here would be the
-      unowned-axis defect on a paid road: a caller handing this a reference
-      would be answered a picture that had never seen it.
+      ⚠ **IT REFUSES AN EMPTY REFERENCE LIST, AND THAT REFUSAL IS THE EXACT
+      INVERSE OF THE ONE THAT STOOD HERE YESTERDAY (#1471).** The plate was
+      generated from words for one day and his ruling ended it, verbatim: *"no
+      the plate must reference the master image otherwise it wouldnt be able to
+      invent the outfit correctly"*. So this door is the EDIT door now, and an
+      edit with nothing to edit is the one request it cannot serve — measured on
+      the real door during #1278's build, **422: "Number of image URLs must be
+      at least 1"**. Refusing before dispatch turns that 422 into a sentence,
+      and `renderOutfitPlate` turns the sentence into "no plate" rather than
+      into a failed Sign.
     */
-    if (request.references.length > 0) {
+    if (request.references.length < 1) {
       throw new ProviderError(
         "capability",
-        "the outfit plate is generated from words and takes no reference images",
+        "the outfit plate is edited from the master and needs at least one reference image",
       );
+    }
+    /*
+      The same ceiling its sibling carries, taken from the same constant rather
+      than typed again — see {@link SIGNED_VIEW_MAX_REFERENCES}, whose docblock
+      says plainly that the number is Nano Banana Pro's and is unverified for
+      this door. Carrying it is the choice that changes nothing; inventing a
+      different number for the same endpoint would be the guess.
+    */
+    if (request.references.length > SIGNED_VIEW_MAX_REFERENCES) {
+      throw new ProviderError("capability", "too many reference images for the outfit plate engine");
     }
 
     return queue.run("outfitPlate", () =>
@@ -750,6 +804,10 @@ export function createFalSunburstPlateEngine(config: {
             endpoint: model,
             body: {
               prompt: request.prompt,
+              image_urls: request.references.map(
+                (reference) =>
+                  `data:${reference.contentType};base64,${reference.bytes.toString("base64")}`,
+              ),
               image_size: OUTFIT_PLATE_SIZE,
               num_images: 1,
               quality: "high",

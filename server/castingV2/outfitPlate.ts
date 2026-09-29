@@ -62,8 +62,10 @@ import sharp from "sharp";
 import type { ReferenceImage } from "../providers/types";
 import type { CastPronouns } from "./castPronouns";
 import {
+  VIEW_IDENTITY_SENTENCE,
   belowWaistFor,
   castPackageView,
+  referenceRuleFor,
   viewDescriptionOf,
   wardrobeSpecFor,
 } from "./castViewPackage";
@@ -116,6 +118,14 @@ export const PLATE_ANGLES = ["frontFull", "backFull"] as const;
  * their shape is whatever their references imply — is a real question and it is
  * NAMED rather than quietly fixed here.
  *
+ * ⚠ **STILL TRUE WITH THE PLATE EDITED FROM THE MASTER (#1471, 2026-09-29).**
+ * The plate changed doors and provenance, not SHAPE — its panels are 3:4 either
+ * way (1752x2336, read at the bytes) — so the drag this pins is the same drag,
+ * and the pin still answers it: `frontFull` came back **1696x2528** on both
+ * court fixtures, matching the three views that carry no plate. Re-measured
+ * rather than assumed, because the reference beside the anchor is now a
+ * different picture than the one these three readings were taken with.
+ *
  * ⚠ **`aspectRatio` had never been set by any caller on any road before this**
  * (`falQueue.ts` has passed it through to `aspect_ratio` the whole time), so
  * the vocabulary was unverified in this repository. `2:3` is the value the door
@@ -156,11 +166,30 @@ const PLATE_LAYOUT =
  * would name the wrong picture on any Cast with ink. Same discipline as
  * `inkViewCropClause`, for the same reason it has it.
  *
- * ⚠ **And it says the plate is NOT her.** The plate is a Sunburst render: a
- * plausible person in the right clothes, and emphatically not the customer's
- * cast. Reference 1 is the photograph of the actual signed face, and this
- * sentence has to hold the two jobs apart or the plate becomes a face swap on
- * a paid view.
+ * ⚠ **IT SAID THE PLATE WAS NOT HER UNTIL #1471, AND HIS RULING MADE THAT
+ * FALSE.** While the plate was drawn from words it really was a stranger in the
+ * right clothes, so the clause had to hold two people apart — *"the person in
+ * it is not her"* — a mitigation in words over a real identity fight. The plate
+ * edits from the master now, so **the person in it IS her**, and leaving that
+ * sentence standing would have a paid view told something false about its own
+ * reference: at best wasted words, at worst an instruction to make the two
+ * pictures differ.
+ *
+ * ⚠ **What survives the correction is the part that was always load-bearing:
+ * ONE source for identity.** Reference 1 is the signed master and it is the
+ * record for the face, the hair and the build; the plate is here to settle the
+ * clothes and the half of the body the master's crop cannot show. The relay's
+ * reading on his ruling, on the card: *"keep the clause; it is right either
+ * way"* — so the instruction is kept and only the false assertion under it is
+ * replaced.
+ *
+ * ⚠ **AND IT NO LONGER SAYS "GARMENTS" AND STOP — his second point on the card
+ * (2026-09-29).** There is no no-wardrobe gate on this road and there should
+ * not be: a creature, a cast in a loincloth, a cast in bare skin gets a plate
+ * too, and for those the plate IS the lower-body continuation — the hide, the
+ * fur, the scales, the feet — invented once so the two full-length views agree
+ * on it. A clause that named only garments would have a creature's plate
+ * contribute nothing to the views it was rendered for.
  */
 export function outfitPlateClause(input: {
   ordinal: number;
@@ -170,25 +199,40 @@ export function outfitPlateClause(input: {
   const { pronouns } = input;
   const half = input.side === "front" ? "from the front" : "from behind";
   return (
-    `THE OUTFIT — reference ${input.ordinal} is a wardrobe plate showing the outfit for this shoot, `
-    + `${half}. Copy the GARMENTS from it exactly: the cut, the length, the hem, the fastenings and `
-    + `hardware, the layers, the wear and the damage, and the footwear. `
-    + `It is NOT a photograph of ${pronouns.object} and the person in it is not `
-    + `${pronouns.object}: take the face, the hair, the body and the skin from reference 1 alone, `
-    + `and take only the clothes from reference ${input.ordinal}.`
+    `THE OUTFIT — reference ${input.ordinal} is a wardrobe plate: the same person as reference 1, `
+    + `head to feet, in the outfit for this shoot, seen ${half}. Copy the GARMENTS from it exactly: `
+    + `the cut, the length, the hem, the fastenings and hardware, the layers, the wear and the `
+    + `damage, and the footwear. Where there are no garments, copy in the same way what stands in `
+    + `for them — the skin, hide, fur, scales, markings and feet it shows below the crop of `
+    + `reference 1. Reference 1 is the record for ${pronouns.possessive} face, hair and build: `
+    + `where the two pictures differ on ${pronouns.possessive} likeness, reference 1 wins, and `
+    + `reference ${input.ordinal} settles only the clothes and the body below that crop.`
   );
 }
 
 /**
  * THE PLATE'S PROMPT, composed from the product's own two directives.
  *
- * ⚠ **The identity sentence a view opens with is deliberately ABSENT.** A view
- * says *"keep this exact person unchanged … as the reference photograph"*; the
- * plate has no reference photograph and is not of a particular person, so that
- * sentence would deny its own inputs. What it gets instead is the brief — the
- * same words the master was rolled from (#1278 part 1) — and the house
- * paragraphs, so the plate is lit and framed the way every other picture this
- * product makes is.
+ * ⚠ **THE IDENTITY SENTENCE IS PRESENT NOW, AND ITS ABSENCE WAS THE DEFECT
+ * #1471 WAS FILED ABOUT.** While the plate was drawn from words this docblock
+ * said the sentence was *"deliberately ABSENT"* because *"the plate has no
+ * reference photograph"* — sound reasoning about a request that carried none,
+ * and dead the moment his ruling gave the plate the master:
+ *
+ * > *"no the plate must reference the master image otherwise it wouldnt be able
+ * > to invent the outfit correctly"* — 2026-09-29, terminal
+ *
+ * So the plate opens the way every other request carrying her photograph opens,
+ * with {@link VIEW_IDENTITY_SENTENCE} and {@link referenceRuleFor} — **read by
+ * name from `castViewPackage`, never retyped**, because two prompts that must
+ * say one thing about who the person is are exactly what working law 4 is for.
+ *
+ * ⚠ **AND THE WARDROBE PARAGRAPH IS TRUE OF THIS REQUEST AT LAST.** It says
+ * *"the SAME outfit the reference photograph shows … Inside the frame of the
+ * reference, the reference is the record"* — a sentence that was addressed to
+ * nothing for one day. Its other half, *"below its frame the description
+ * governs"*, is the plate's actual job in one line: the master fixes the top,
+ * the brief steers the rest, and the plate settles it ONCE for both views.
  *
  * ⚠ **The wardrobe spec is composed for `frontFull` and sent once.** It is the
  * same sentence both full-length views would each have composed for themselves,
@@ -203,6 +247,15 @@ export function composeOutfitPlatePrompt(
   const front = castPackageView("frontFull");
   const back = castPackageView("backFull");
   return [
+    /*
+      The identity pair FIRST and the layout second, which is the order every
+      view sends and is load-bearing here for one extra reason: the layout
+      sentence opens by calling the frame a WARDROBE PLATE, and a request that
+      announced itself as a wardrobe diagram before it said whose body it is
+      invites exactly the floating-garment picture his ruling declined.
+    */
+    VIEW_IDENTITY_SENTENCE,
+    referenceRuleFor(brief),
     PLATE_LAYOUT,
     ...(brief === null ? [] : [`DESCRIPTION: ${brief}`]),
     `LEFT PANEL — ${front.directive}${belowWaistFor("frontFull", wardrobeLine, brief)}`,
@@ -284,6 +337,17 @@ export type OutfitPlateEngine = {
  */
 export async function renderOutfitPlate(input: {
   engine: OutfitPlateEngine;
+  /**
+   * HER SIGNED MASTER — the plate's one reference, and required since #1471.
+   *
+   * ⚠ **It is not optional and there is no master-less branch**, which is the
+   * shape his ruling asks for. A plate with nothing to edit is the request the
+   * door answers `422` to, so an absent master must not become a quietly
+   * words-only plate — that is the exact road he closed. Both call sites
+   * already hold the anchor before they reach here: the Sign has fetched it to
+   * render five views from, and a retry has fetched it before it claims.
+   */
+  anchor: ReferenceImage;
   wardrobeLine: string | null;
   description: string | null;
   operationId?: number | string | null;
@@ -294,16 +358,31 @@ export async function renderOutfitPlate(input: {
     const image = await input.engine.editWithReferences({
       prompt: composeOutfitPlatePrompt(input.wardrobeLine, input.description),
       /*
-        NO REFERENCES, AND IT IS A DECISION RATHER THAN AN OMISSION.
+        THE MASTER, AND IT IS HIS RULING RATHER THAN THIS MODULE'S READING.
 
-        The plate is of the OUTFIT, not of her. Handing it the anchor would have
-        it draw her face into a picture whose only job is to settle a hem — and
-        the view that then copies "the clothes" from it would be copying a
-        second engine's opinion of her face along the edge of every garment.
-        Her identity has exactly one source on this road and it is reference 1
-        of the view itself.
+        ⚠ **This list was `[]` for one day and the comment here argued for it**
+        — that the plate is *of the OUTFIT, not of her*, and that handing it the
+        anchor would put a second engine's opinion of her face along the edge of
+        every garment. **His word, 2026-09-29, verbatim and entire:** *"no the
+        plate must reference the master image otherwise it wouldnt be able to
+        invent the outfit correctly"*.
+
+        He is describing a failure the old reading could not see. A plate drawn
+        from words cannot see the top she was SIGNED in, so it invents one — and
+        the view is then told to take the clothes from the plate, which is the
+        product contradicting a picture the customer has already accepted, above
+        the waist, by design.
+
+        And the face worry it traded against is answered by the same change
+        rather than accepted: the plate is now HER, so the two references a view
+        carries agree on identity instead of competing, and `outfitPlateClause`
+        still names reference 1 as the record for the likeness.
+
+        ONE reference, deliberately. Her delivered ink crops are NOT sent: they
+        are named by POSITION in the view's own clause, and a plate is not a
+        view — the tattoos ride the view, where they are judged.
       */
-      references: [],
+      references: [input.anchor],
       resolution: "2K",
       ...(input.signal ? { signal: input.signal } : {}),
     });

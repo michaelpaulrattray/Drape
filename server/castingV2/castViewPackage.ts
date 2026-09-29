@@ -69,8 +69,32 @@ export function viewDescriptionOf(text: string | null | undefined): string | nul
   return trimmed === "" ? null : trimmed;
 }
 
-/** Which reference rule this view sends — undescribed, or described. */
-function referenceRuleFor(description: string | null): string {
+/**
+ * THE IDENTITY SENTENCE — one copy, read by every request that carries her
+ * photograph.
+ *
+ * ⚠ **It was a literal inside {@link composePackageViewPrompt} until #1471.**
+ * The wardrobe plate now edits FROM THE MASTER (his ruling, 2026-09-29) and so
+ * needs the same sentence, and a second typed copy of it is precisely the drift
+ * working law 4 is about — two prompts that must say one thing about who the
+ * person is, drifting apart one careful edit at a time. Named here, both roads
+ * send the same bytes and a change reaches both.
+ */
+export const VIEW_IDENTITY_SENTENCE =
+  "Keep this exact person unchanged: the same face, bone structure, skin, hair, facial hair and build "
+  + "as the reference photograph. This is the same individual in a different photograph, never a "
+  + "similar-looking person.";
+
+/**
+ * Which reference rule a request carrying her photograph sends — undescribed,
+ * or described.
+ *
+ * ⚠ **Exported since #1471, for the same reason as the sentence above**: the
+ * plate carries the master now, so it is a request the rule is true of, and it
+ * reads the choice here rather than re-deciding it. The choice and the
+ * description have to move together on every road that sends both.
+ */
+export function referenceRuleFor(description: string | null): string {
   return description === null ? REFERENCE_IS_THE_DOCUMENT : REFERENCE_WITH_DESCRIPTION;
 }
 
@@ -931,9 +955,7 @@ export function composePackageViewPrompt(
   const view = VIEWS[angle];
   const brief = viewDescriptionOf(description);
   return [
-    "Keep this exact person unchanged: the same face, bone structure, skin, hair, facial hair and build "
-    + "as the reference photograph. This is the same individual in a different photograph, never a "
-    + "similar-looking person.",
+    VIEW_IDENTITY_SENTENCE,
     referenceRuleFor(brief),
     /*
       #1278 part 1 — the cast's own words, and the position is load-bearing in two

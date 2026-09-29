@@ -457,6 +457,10 @@ export async function buildCastPackage(
         master-only, which is what a missing plate is supposed to cost.
       */
       engine: (dependencies.outfitPlateEngine ?? castingOutfitPlateEngine)(),
+      /* #1471, his ruling: the plate EDITS the master. The same anchor the five
+         views render from, so the plate cannot come to be of a different
+         picture than the views it dresses. */
+      anchor: input.anchor,
       wardrobeLine: input.wardrobeLine ?? null,
       description: input.description ?? null,
       operationId: input.operationId,

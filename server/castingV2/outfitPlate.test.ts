@@ -17,9 +17,13 @@
  *    wrong ends in `null`, and the one exception — a cancellation — is the arm
  *    that matters most, because swallowing it would leave two paid views
  *    rendering against a dead operation.
- * 4. **The plate is not of her.** It goes out with no references at all and its
- *    clause says so, because a plate carrying the anchor would put a second
- *    engine's opinion of her face along the edge of every garment.
+ * 4. **The plate IS her, and it edits the master** (his ruling 2026-09-29,
+ *    #1471: *"no the plate must reference the master image otherwise it
+ *    wouldnt be able to invent the outfit correctly"*). Property 4 read the
+ *    exact opposite for one day — *"it goes out with no references at all"* —
+ *    so the arms below are written to redden if the words-only road ever comes
+ *    back: the anchor must be IN the request, the identity sentence must be in
+ *    the prompt, and the clause must stop calling the plate a stranger.
  */
 import { describe, expect, it } from "vitest";
 import sharp from "sharp";
@@ -33,7 +37,11 @@ import {
   PLATE_ANGLES,
   type OutfitPlateEngine,
 } from "./outfitPlate";
-import { castPackageView } from "./castViewPackage";
+import {
+  VIEW_IDENTITY_SENTENCE,
+  castPackageView,
+  referenceRuleFor,
+} from "./castViewPackage";
 import { pronounsForSex } from "./castPronouns";
 import { OUTFIT_PLATE_SIZE } from "../providers/falImages";
 
@@ -62,6 +70,22 @@ async function twoPanelPlate(width: number, height: number): Promise<Buffer> {
     .png()
     .toBuffer();
 }
+
+/**
+ * HER MASTER — the one reference every plate request carries since #1471.
+ *
+ * A real PNG rather than a stub, because `renderOutfitPlate` hands it to an
+ * engine and an arm that asserts "the anchor went out" is worth nothing if the
+ * bytes it compares are a sentinel no door would accept.
+ */
+const ANCHOR = {
+  bytes: Buffer.from(
+    "89504e470d0a1a0a0000000d4948445200000001000000010806000000"
+    + "1f15c4890000000d4944415478da6364f8cf000001030100b5e2e6b50000000049454e44ae426082",
+    "hex",
+  ),
+  contentType: "image/png",
+} as const;
 
 /** What colour a panel is, read at its middle pixel rather than asserted. */
 async function middlePixel(bytes: Buffer): Promise<{ r: number; g: number; b: number }> {
@@ -170,15 +194,53 @@ describe("the panels copy the product's own cameras — his rule, never a retype
   });
 
   it("carries the cast's own brief, and composes no DESCRIPTION label when there is none", () => {
-    expect(prompt).toContain("DESCRIPTION: a street-level futurist, stylish and a little worn");
-    expect(composeOutfitPlatePrompt(null, null)).not.toContain("DESCRIPTION:");
-    expect(composeOutfitPlatePrompt(null, "   ")).not.toContain("DESCRIPTION:");
+    /*
+      ⚠ THE NEGATIVE HALF IS ANCHORED ON THE LABEL'S OWN LINE, NOT ON THE
+      SUBSTRING, AND #1471 IS WHY. `not.toContain("DESCRIPTION:")` was honest
+      while the plate opened on its layout sentence; the prompt now opens with
+      the reference rule, and the UNDESCRIBED form of that rule begins *"THE
+      REFERENCE PHOTOGRAPH IS THE DESCRIPTION: there is no written description
+      of this person"*. So the loose assertion reddens on a prompt that is
+      perfectly correct — the `negation contains the token` class, one prompt
+      down. What the arm actually means is "no `DESCRIPTION: <brief>` line", and
+      that is what it now reads.
+    */
+    const labelled = (text: string) =>
+      text.split(/\n/).filter((line) => line.startsWith("DESCRIPTION: "));
+
+    expect(labelled(prompt)).toEqual(["DESCRIPTION: a street-level futurist, stylish and a little worn"]);
+    expect(labelled(composeOutfitPlatePrompt(null, null))).toEqual([]);
+    expect(labelled(composeOutfitPlatePrompt(null, "   "))).toEqual([]);
+    /* And the positive control the loose form never had: the undescribed prompt
+       really does carry the sentence that made the old assertion red. */
+    expect(composeOutfitPlatePrompt(null, null)).toContain("THE REFERENCE PHOTOGRAPH IS THE DESCRIPTION:");
   });
 
-  it("never tells a plate to keep a face it was never shown", () => {
-    /* The view's opening sentence. A plate has no reference photograph, so
-       sending it would be a prompt denying its own inputs. */
-    expect(prompt).not.toContain("Keep this exact person unchanged");
+  it("opens with the identity sentence, because the plate HAS her photograph now", () => {
+    /*
+      ⚠ THIS ARM READ `not.toContain` UNTIL #1471 and it was right about the
+      road it was written for: a plate drawn from words has no reference
+      photograph, so that sentence would have denied its own inputs. His ruling
+      gave the plate the master, so the sentence is true and the absence is the
+      defect. Both directions matter, which is why the arm asserts the identity
+      pair and the WARDROBE paragraph that names the same reference.
+    */
+    expect(prompt).toContain(VIEW_IDENTITY_SENTENCE);
+    expect(prompt).toContain(referenceRuleFor("a street-level futurist, stylish and a little worn"));
+    expect(prompt).toContain("the SAME outfit the reference photograph shows");
+  });
+
+  it("reads both sentences from castViewPackage rather than carrying a copy", () => {
+    /*
+      Working law 4, driven rather than trusted: the two sentences are compared
+      against the module that declares them, so a retyped copy here — the drift
+      the export exists to prevent — reddens on the first word that differs.
+    */
+    const described = composeOutfitPlatePrompt(null, "a street-level futurist");
+    const undescribed = composeOutfitPlatePrompt(null, null);
+    expect(described).toContain(referenceRuleFor("a street-level futurist"));
+    expect(undescribed).toContain(referenceRuleFor(null));
+    expect(referenceRuleFor(null)).not.toBe(referenceRuleFor("a street-level futurist"));
   });
 
   it("asks for two panels of one scale, and bans the furniture of a contact sheet", () => {
@@ -196,7 +258,7 @@ describe("the clause that hands a view its panel", () => {
        and a clause that counted for itself would name her elbow. */
     const withInk = outfitPlateClause({ ordinal: 5, side: "front", pronouns });
     expect(withInk).toContain("reference 5 is a wardrobe plate");
-    expect(withInk).toContain("take only the clothes from reference 5");
+    expect(withInk).toContain("reference 5 settles only the clothes");
     expect(outfitPlateClause({ ordinal: 2, side: "front", pronouns })).toContain("reference 2");
   });
 
@@ -205,10 +267,34 @@ describe("the clause that hands a view its panel", () => {
     expect(outfitPlateClause({ ordinal: 2, side: "back", pronouns })).toContain("from behind");
   });
 
-  it("says the plate is NOT her, and points identity back at reference 1", () => {
+  it("says the plate IS her, and still makes reference 1 the record for the likeness", () => {
+    /*
+      ⚠ THIS ARM ASSERTED THE OPPOSITE UNTIL #1471 — *"It is NOT a photograph
+      of her"* — and that sentence was true only while the plate was drawn from
+      words. A plate edited from the master IS her, so the old wording would
+      have a paid view told something false about its own reference. The
+      negative half is the arm that matters: it reddens if the stranger sentence
+      ever returns.
+    */
     const clause = outfitPlateClause({ ordinal: 2, side: "front", pronouns });
-    expect(clause).toContain("It is NOT a photograph of her");
-    expect(clause).toContain("from reference 1 alone");
+    expect(clause).toContain("the same person as reference 1");
+    expect(clause).not.toContain("is not her");
+    expect(clause).not.toContain("NOT a photograph of her");
+    /* The part of the old clause that survives: one source for identity. */
+    expect(clause).toContain("Reference 1 is the record for her face, hair and build");
+    expect(clause).toContain("reference 1 wins");
+  });
+
+  it("covers a cast with no garments at all — his second point on #1471", () => {
+    /*
+      There is no "no wardrobe, no plate" gate and there should not be one: a
+      creature, a loincloth, bare skin gets a plate too, and for those the plate
+      IS the lower-body continuation. A clause naming only garments would have
+      that plate contribute nothing to the two views it was rendered for.
+    */
+    const clause = outfitPlateClause({ ordinal: 2, side: "back", pronouns });
+    expect(clause).toContain("Where there are no garments");
+    expect(clause).toMatch(/skin, hide, fur, scales, markings and feet/);
   });
 
   it("hands frontFull the front panel and backFull the back one", () => {
@@ -219,7 +305,7 @@ describe("the clause that hands a view its panel", () => {
 });
 
 describe("no fault of the plate's ever fails the Sign", () => {
-  const ask = { wardrobeLine: null, description: null } as const;
+  const ask = { wardrobeLine: null, description: null, anchor: ANCHOR } as const;
 
   it("lands a plate and cuts it, on the happy road", async () => {
     const plate = await renderOutfitPlate({
@@ -231,7 +317,14 @@ describe("no fault of the plate's ever fails the Sign", () => {
     expect(plate?.source).toEqual({ width: 876, height: 584 });
   });
 
-  it("sends NO references — the plate is of the outfit, not of her", async () => {
+  it("sends HER MASTER, and exactly one reference — his ruling on #1471", async () => {
+    /*
+      ⚠ THIS ARM ASSERTED `toEqual([])` UNTIL #1471. The words-only plate is
+      the road his ruling closed, so the arm is written to redden if it comes
+      back: the anchor's own bytes must be what went out, and the list must be
+      exactly one long — her delivered ink crops belong to the VIEW, which is
+      where they are named by position and judged.
+    */
     let sent: unknown = "never called";
     await renderOutfitPlate({
       engine: {
@@ -243,7 +336,27 @@ describe("no fault of the plate's ever fails the Sign", () => {
       ...ask,
     });
 
-    expect(sent).toEqual([]);
+    expect(sent).toEqual([ANCHOR]);
+  });
+
+  it("⚠ a plate the door refuses for want of a reference is still only a missing plate", async () => {
+    /*
+      The engine refuses an empty reference list before dispatch (#1471), and
+      that refusal must land exactly where every other plate fault lands: `null`,
+      no throw, the Sign renders master-only. Driven through the real refusal's
+      shape rather than a generic Error, because the whole point of moving the
+      refusal earlier was that it must NOT become a failed Sign.
+    */
+    const plate = await renderOutfitPlate({
+      engine: {
+        editWithReferences: async () => {
+          throw new Error("the outfit plate is edited from the master and needs at least one reference image");
+        },
+      },
+      ...ask,
+    });
+
+    expect(plate).toBeNull();
   });
 
   it("answers null when the engine refuses", async () => {
