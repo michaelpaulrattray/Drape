@@ -1,7 +1,7 @@
 {
-  "edition": 560,
-  "updatedAt": "2026-09-27T05:33:00.755Z",
-  "shift": "Foreman (night shift) — the waiting picture is HER now, and it is live. The loader you drew across an evening of boards is finished and on the site: while a refine renders, her own picture carries dust that sits on her hair, her face and her arms, never sits still, lights up as a ripple crossing the frame every ten seconds, and scatters where your mouse goes. The bar and the stage word are exactly as they were. Worth your hands — start a refine on any face and watch the picture. One question on your desk and one for your eye, and they are different things: the desk one is about the signed-view sheet and nothing gets built until you answer; the eye one is just a look at the loader, with one small honest flaw named rather than hidden.",
+  "edition": 561,
+  "updatedAt": "2026-09-29T04:12:53.910Z",
+  "shift": "Foreman (night shift) — the outfit stops changing between pictures, and your word on the loader is in. Your path E is built and in review. On your own Sifr tonight, the way a sign works TODAY gave her a plain midi dress with pale boots from the front and a mini skirt with BLACK boots from the back — same cast, same sign, two different outfits, which is exactly what you reported. With your wardrobe plate in front of it she wears one dress, one hem and one pair of boots both ways. Two pictures on your desk for a look; nothing to decide. Separately, your “Leave it” on the loader closed that card — the dust stays exactly as you tuned it.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -323,7 +323,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-27T05:10:39.681Z",
+      "readAt": "2026-09-29T04:13:36.074Z",
       "items": [
         {
           "issueNumber": 1129,
@@ -457,28 +457,23 @@
   "needsYou": [
     {
       "id": "sheet-shape-1278",
-      "title": "One word: when we fix the outfit on a signed cast, do we redraw each picture or cut them out of one?",
-      "productImpact": "Right now, when you sign a cast, each full-length picture is drawn on its own. That is why the outfit comes back a bit different every time — a different hem, different shoes. You reported it and it is the card being fixed.\n\nThe fix is to draw one picture of all her views together, so the outfit is the same in every one by construction. What happens NEXT is the part I need you to settle, because there are two very different answers and you have said something that points at each.\n\nOne of them delivers the views by cutting up that single picture. Everything matches, it is the cheapest and fastest — and each view ends up about a third the size we give you today, so it is a visibly softer picture. You asked about exactly this when you saw the test frames: \"the cut view is around 1/3 of the pixels meaning its a lower resolution image?\" You never said whether that was acceptable.\n\nThe other uses that single picture only as a REFERENCE, and then draws each view again at full size from it. Everything still matches, the pictures stay as sharp as they are today, and you also get the reference sheet itself as something you can download. It costs about four renders instead of one — roughly 50c of our money per sign instead of 15c.\n\nWhen you chose, you said \"my preference is the sheet-as-reference shape\". That is the name of the second one on the list you were answering. But the plan written down since then describes the first one. Nobody noticed the two had swapped, and they are different products, so I am asking rather than guessing.",
-      "workedExample": "Sign a cast whose brief describes a specific outfit. Today the front and the back come back wearing noticeably different versions of it. Under either fix they match. Under the cut-it-up one, they also come back softer than the pictures you get today.",
+      "title": "Your own answer is built — one look, no decision",
+      "productImpact": "You answered this one yourself this morning with a design of your own: no cutting a sheet up at all. One extra picture is drawn first to settle what she is wearing, and then the full-length pictures are drawn at full size with that outfit picture beside them. It is built and in review. There is nothing to decide here — the only thing still owed is your eye, and the pictures for it are on this card.",
+      "workedExample": "On your own Sifr tonight, the way it works today gave her a plain midi dress with pale boots from the front and a mini skirt with black boots from the back. With the new picture in front of it she wears one dress, one hem and one pair of boots both ways.",
       "options": [
         {
           "key": "A",
-          "label": "Sheet as reference, then draw each view full size",
-          "consequence": "Everything matches AND stays as sharp as today. You also get a downloadable reference sheet of the cast. Costs about 50c of our money per sign instead of 15c, and takes a little longer."
+          "label": "Have a look now, at the four pictures on this card",
+          "consequence": "An early read on your own design. These are a test render, not a real sign — if something about them is wrong, saying so now is cheaper than saying it after it ships."
         },
         {
           "key": "B",
-          "label": "Cut the views out of the one picture",
-          "consequence": "Everything matches. Cheapest and fastest. Each view is about a third the size we deliver today — a visibly softer picture on something that costs 450 credits."
-        },
-        {
-          "key": "C",
-          "label": "Show me both on one of my casts first",
-          "consequence": "A test on Sifr, both ways, side by side for your eye. Costs a few dollars of our money and a day. Nothing is built until you have looked."
+          "label": "Wait and look at a real sign once it is live",
+          "consequence": "Nothing to do. This comes back to you the next time you sign a cast, which is what actually closes it either way."
         }
       ],
-      "recommendation": "RECOMMENDED: A. It is what your own words named, and it is the only one that fixes the outfit without making the picture worse — the whole complaint was that signed views do not look like the cast you signed, and a third of the pixels is a second way of saying that. B is worth taking only if the extra cost genuinely bothers you at this volume, and at four signs a week it does not. C if you would rather see it than decide it, and I will run it without asking again.",
-      "state": "open",
+      "recommendation": "Nothing to decide. Have a look if you want an early read; otherwise this comes back to you when you next sign a cast.",
+      "state": "waiting",
       "filedAt": "2026-09-27T05:09:56.168Z",
       "issueNumber": 1278
     },
@@ -3448,6 +3443,27 @@
   ],
   "eyeItems": [
     {
+      "id": "outfit-plate-1278",
+      "title": "One outfit both ways — the thing you reported, and the thing your design does about it",
+      "question": "WHAT YOU ARE LOOKING AT — four pictures of Sifr, all rendered tonight. The TOP TWO are how a sign works today: front and back. Look at them together — she is wearing a plain midi dress with pale boots at the front and a MINI SKIRT with BLACK boots at the back. That is your \"the hem and shoes differ every take\", on one cast in one sign. The BOTTOM TWO are the same two pictures with your wardrobe plate in front of them: one dress, one hem, one pair of boots, front and back. The second picture on this card is the plate itself — the extra picture that gets drawn first and thrown away. Nothing is being asked of you here; it is a look at your own design working before it goes live. What we will ask for later is your eye on a real sign.",
+      "state": "open",
+      "filedAt": "2026-09-29T04:12:53.910Z",
+      "issueNumber": 1278,
+      "cardId": "sheet-shape-1278",
+      "frames": [
+        {
+          "key": "crew-eye/52c744b7-be53-49db-8201-66938471f654.jpg",
+          "arm": "today above, your design below",
+          "caption": "TOP ROW: how a sign renders her today — front, then back. BOTTOM ROW: the same two with the wardrobe plate as a reference. Same cast, same brief, same evening, six real renders."
+        },
+        {
+          "key": "crew-eye/9bc81e41-93e3-40e4-a69b-add4d2ce0bbc.jpg",
+          "arm": "the plate itself",
+          "caption": "The extra picture that gets drawn first: one frame, two halves, the same outfit front and back at the same size. It is never shown to anyone and never saved — it exists only long enough for the two full-length pictures to copy the clothes out of it."
+        }
+      ]
+    },
+    {
       "id": "sign-view-tier-1373-crop",
       "title": "The same face out of each picture, side by side — is the detail worth half a minute?",
       "question": "WHAT YOU ARE JUDGING — one question: is the picture on the right better enough to be worth waiting half a minute longer for, every time you sign a cast? This is the same region of his face cut out of each picture, with the LEFT one blown up to the same size so you are comparing like with like. Left is the setting we have today. Right is the setting your word asks for. Look at the hair at the edges, the beard, the skin. Two words is enough — yes it is worth it, or no it is not.",
@@ -6389,7 +6405,7 @@
       "id": "loader-dust-55",
       "title": "Her picture as dust — the loader you drew, finished",
       "question": "Two things to look at, and only the second is a question. FIRST, the loader itself: this is your board E, built. While a refine renders, her picture carries dust that sits on HER rather than scattered evenly over the frame, moving the whole time, with your ripple every ten seconds and your mouse scatter. SECOND, and this is the question: the middle panel is how the studio works out where she is — white is her, black is the wall. Look at her t-shirt. It is almost exactly the same brightness as the studio wall behind her, so by the rule you set (dust goes where the picture differs from its backdrop) her whole torso reads as wall, and the dust thins across her middle. That is your rule meeting a pale garment, not something broken. I would leave it — the eye goes to the head and the arms anyway, and a little dust in the air is what stops it looking like a cut-out of her. If you want the whole of her lit, it is one more line: catch her OUTLINE as well as her brightness, and then a white shirt on a white wall still gets dust. Your call, and nothing waits on it.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-27T05:09:33.258Z",
       "issueNumber": 55,
       "cardId": null,
@@ -6403,6 +6419,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "outfit-plate-1278",
+      "title": "One outfit both ways — the Sign's wardrobe plate (#1278 path E)",
+      "status": "in-review",
+      "prNumber": 1470,
+      "note": "Money surface — held for the hand review."
+    },
     {
       "id": "money-edges-509",
       "title": "A payment, a plan change, a failed payment, a dispute and a bug report reach the same place (#509 part 2's money edges)",
@@ -9089,10 +9112,11 @@
     227,
     228,
     229,
-    230
+    230,
+    232
   ],
   "nextUp": {
-    "readAt": "2026-09-27T05:10:39.680Z",
+    "readAt": "2026-09-29T04:13:36.073Z",
     "items": [
       {
         "issueNumber": 1278,
@@ -9100,7 +9124,7 @@
         "urgent": true,
         "held": {
           "state": "blocked",
-          "because": "YOU — which shape. Your word *\"my preference is the sheet-as-reference shape\"* names the option that renders each view at full size from the sheet; the plan fi…"
+          "because": "his desk card `sheet-shape-1278` is open"
         }
       },
       {
@@ -9121,6 +9145,21 @@
       {
         "issueNumber": 509,
         "title": "Errors and product analytics before real users — one error tracker, one event stream, and one honest strip on the admin Overview",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1464,
+        "title": "Casting sheets are kept for thirty quiet days, not seven — his word 2026-09-27; one idle-clock constant, its docblocks, and a one-off extension of live sheets",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1467,
+        "title": "The Desk's needs-you and for-your-eyes sections are hand-written into editions while everything else derives from GitHub — one source of truth for 'is this waiting on him'",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1469,
+        "title": "N2c: Shoots, the cast library's named collections (All · Unfiled · shoots · +), Approach A, after N2b — his word 2026-09-29",
         "urgent": false
       }
     ]
