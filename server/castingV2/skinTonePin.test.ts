@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { composeCandidatePrompt, resolveCandidateIdentity } from "./cohortPhotorealHuman";
+import { resolveCandidateIdentity } from "./cohortPhotorealHuman";
 import {
   EMPTY_STATED_HAIR,
   EMPTY_STATED_SKIN,
@@ -55,34 +55,54 @@ const BASE: CastingIntent = {
 
 const PORCELAIN = { tone: "pale porcelain", character: "heavily weathered" };
 
-/** The eight SUBJECT lines a brief produces, which is where heritage lands. */
-function subjectLines(intent: CastingIntent, seed = "pin-seed"): string[] {
-  return Array.from({ length: 8 }, (_, position) => {
-    const prompt = composeCandidatePrompt({
-      intent,
-      resolved: resolveCandidateIdentity(intent, position, seed),
-      archetype: "street cast",
-      seed: position,
-    });
-    const line = prompt.split("\n").find((row) => row.startsWith("SUBJECT:"));
-    if (line === undefined) throw new Error("no SUBJECT line in the composed prompt");
-    return line;
-  });
+/**
+ * The eight heritages a brief resolves — asked of the RESOLVER, since #1490 act 2.
+ *
+ * ⚠ **THESE ARMS READ A COMPOSED PROMPT STRING UNTIL ACT 2, AND THE RULING THEY
+ * CARRY NEVER LIVED THERE.** The helper was `subjectLines`: it composed the house
+ * road's prompt and pulled the `SUBJECT:` line out of it, because in August 2026
+ * that line was where an invented heritage reached the engine. Act 2 deleted the
+ * composer — on the author road the customer's own words reach the engine and no
+ * SUBJECT line is composed at all — so a prompt-string assertion here would have
+ * had nothing to read.
+ *
+ * His ruling is unaffected, and that is the point: *"a typed skin tone should pin
+ * all 8"* is a fact about WHO GETS CAST, and who gets cast is
+ * `resolveCandidateIdentity`'s answer — written to `resolvedIdentity` on every
+ * author-road roll, and read from there by the follow anchor, the refine pronouns
+ * and the facet values. So the arms move one layer in, to the decision itself,
+ * where they no longer pass or fail on how a retired block phrased the result.
+ *
+ * ⚠ **One arm did NOT survive the move and is recorded rather than quietly
+ * dropped** — *"THE GRAMMAR — a SUBJECT line with no heritage is well-formed,
+ * asserted on the STRING"*. It guarded a dangling separator (`apparent age 44-46
+ * years, .`) in a template that no longer exists, and there is no string left for
+ * it to assert on. Its subject died with the composer; it is not re-pointable,
+ * because a resolver returning `[]` has no punctuation.
+ */
+function resolvedHeritages(intent: CastingIntent, seed = "pin-seed") {
+  return Array.from({ length: 8 }, (_, position) =>
+    resolveCandidateIdentity(intent, position, seed).heritage,
+  );
 }
 
-const HERITAGE_WORDS = [
-  "heritage",
-];
+/** The heritages as comparable strings, for the spread arm. */
+function heritageNames(intent: CastingIntent, seed = "pin-seed"): string[] {
+  return resolvedHeritages(intent, seed).map((components) =>
+    components.map((component) => `${component.heritage}:${component.pct}`).join("+"),
+  );
+}
 
 describe("a stated skin tone pins the sheet", () => {
-  it("⚠ THE PIN — with a tone stated and heritage unstated, NO slice names a heritage", () => {
-    const lines = subjectLines({ ...BASE, statedSkin: PORCELAIN });
+  it("⚠ THE PIN — with a tone stated and heritage unstated, NO slice resolves a heritage", () => {
+    const heritages = resolvedHeritages({ ...BASE, statedSkin: PORCELAIN });
 
-    expect(lines).toHaveLength(8);
-    for (const line of lines) {
-      for (const word of HERITAGE_WORDS) {
-        expect(line, `no invented heritage may outrank her stated tone: ${line}`).not.toContain(word);
-      }
+    expect(heritages).toHaveLength(8);
+    for (const components of heritages) {
+      expect(
+        components,
+        `no invented heritage may outrank her stated tone: ${JSON.stringify(components)}`,
+      ).toEqual([]);
     }
   });
 
@@ -94,8 +114,7 @@ describe("a stated skin tone pins the sheet", () => {
      * ordinary sheet into eight people of one heritage — a far worse defect
      * than the one being fixed, and invisible without this arm.
      */
-    const lines = subjectLines(BASE);
-    const named = lines.filter((line) => line.includes("heritage"));
+    const named = heritageNames(BASE).filter((name) => name !== "");
 
     expect(named.length, "every slice should still carry a heritage").toBe(8);
     expect(
@@ -117,27 +136,10 @@ describe("a stated skin tone pins the sheet", () => {
       heritage: [{ heritage: "West African", pct: 100 }],
     };
 
-    const lines = subjectLines(intent);
-    for (const line of lines) {
-      expect(line, "the stated heritage must survive").toContain("West African heritage");
-    }
-  });
-
-  it("⚠ THE GRAMMAR — a SUBJECT line with no heritage is well-formed, asserted on the STRING", () => {
-    /*
-     * `describeHeritage` has always returned "" for an empty list, but the
-     * template held the comma — `…${describeAge(…)}, ${describeHeritage(…)}.`
-     * — so the first brief to resolve with no heritage would have shipped
-     * `apparent age 44-46 years, .` into a paid prompt. Nothing could do that
-     * until a stated tone could suppress the spread, so this arm is the whole
-     * guard against a defect that ships as a typo rather than an exception.
-     */
-    const lines = subjectLines({ ...BASE, statedSkin: PORCELAIN });
-
-    for (const line of lines) {
-      expect(line, `dangling separator in: ${line}`).not.toMatch(/,\s*\./);
-      expect(line, `doubled separator in: ${line}`).not.toMatch(/,\s*,/);
-      expect(line.trim().endsWith(".") || line.includes(". "), `unterminated: ${line}`).toBe(true);
+    for (const components of resolvedHeritages(intent)) {
+      expect(components, "the stated heritage must survive").toEqual([
+        { heritage: "West African", pct: 100 },
+      ]);
     }
   });
 });

@@ -19,11 +19,11 @@ _Called as:_ `castingV2.config` · `castingV2.createSession` · `castingV2.openS
 
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
-| `roll.likeness` | roll-refusal |  | server/castingV2/briefCompiler.ts:1189<br>server/castingV2/briefRefusalCopy.ts:116 | 5 test(s) | _documented-unreachable or gap — see findings_ |
-| `roll.not_a_being` | roll-refusal |  | server/castingV2/briefCompiler.ts:1192<br>server/castingV2/briefRefusalCopy.ts:122 | 2 test(s) | _documented-unreachable or gap — see findings_ |
-| `roll.reader_outage` | roll-refusal |  | server/castingV2/briefCompiler.ts:1173<br>server/castingV2/briefRefusalCopy.ts:128 | 5 test(s) | _documented-unreachable or gap — see findings_ |
-| `roll.uninterpretable` | roll-refusal |  | server/castingV2/briefCompiler.ts:1087<br>server/castingV2/briefCompiler.ts:1499<br>(+1) | 2 test(s) | _documented-unreachable or gap — see findings_ |
-| `roll.unsupported_cohort` | roll-refusal |  | server/castingV2/briefCompiler.ts:1178<br>server/castingV2/briefRefusalCopy.ts:110 | 5 test(s) | _documented-unreachable or gap — see findings_ |
+| `roll.likeness` | roll-refusal |  | server/castingV2/briefCompiler.ts:1187<br>server/castingV2/briefRefusalCopy.ts:116 | 5 test(s) | _documented-unreachable or gap — see findings_ |
+| `roll.not_a_being` | roll-refusal |  | server/castingV2/briefCompiler.ts:1190<br>server/castingV2/briefRefusalCopy.ts:122 | 2 test(s) | _documented-unreachable or gap — see findings_ |
+| `roll.reader_outage` | roll-refusal |  | server/castingV2/briefCompiler.ts:1171<br>server/castingV2/briefRefusalCopy.ts:128 | 5 test(s) | _documented-unreachable or gap — see findings_ |
+| `roll.uninterpretable` | roll-refusal |  | server/castingV2/briefCompiler.ts:1085<br>server/castingV2/briefRefusalCopy.ts:108 | 2 test(s) | _documented-unreachable or gap — see findings_ |
+| `roll.unsupported_cohort` | roll-refusal |  | server/castingV2/briefCompiler.ts:1176<br>server/castingV2/briefRefusalCopy.ts:110 | 5 test(s) | _documented-unreachable or gap — see findings_ |
 
 > THE ROLL ENTRANCE'S FIVE WALLS ARE ON THE MAP AS OF #206 — declared from `ROLL_REFUSAL_COPY`, entrance-qualified `roll.*`, each citing its own throw. They are DECLARED but not DRIVEN: the census sends a sentence at an existing Cast through `castingV2.refine`, and these are raised inside `castingV2.createRoll` before a roll row exists, so each carries its reason in UNREACHABLE_DOORS instead of a corpus row. A brief-carrying corpus row is the map's next growth ring, and it would be free at all five. The SIGN entrance is still outside the declared set entirely (fable-1357 §2).
 
@@ -70,7 +70,7 @@ _Called as:_ `castingV2.refine`
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
 | `empty` | interpreter-refusal |  | server/castingV2/refineDelta.ts:626<br>server/castingV2/refineInterpreter.ts:898<br>(+1) | 5 test(s) | guard.empty |
-| `unreadable` | interpreter-refusal |  | server/castingV2/castingIntent.ts:1372<br>server/castingV2/castingIntent.ts:1408<br>(+14) | 23 test(s) | light.softer, guard.gibberish, guard.scope.ink.none |
+| `unreadable` | interpreter-refusal |  | server/castingV2/castingIntent.ts:1381<br>server/castingV2/castingIntent.ts:1417<br>(+14) | 23 test(s) | light.softer, guard.gibberish, guard.scope.ink.none |
 | `reader_outage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:625<br>server/castingV2/refineInterpreter.ts:912<br>(+2) | 5 test(s) | _documented-unreachable or gap — see findings_ |
 | `wall_likeness` | interpreter-refusal |  | server/castingV2/refineDelta.ts:498<br>server/castingV2/refineDelta.ts:1609<br>(+2) | 6 test(s) | guard.likeness |
 | `wall_content` | interpreter-refusal |  | server/castingV2/refineDelta.ts:538<br>server/castingV2/refineInterpreter.ts:1647<br>(+1) | 6 test(s) | guard.content |
@@ -201,12 +201,12 @@ _Called as:_ `castingV2.concept.describe`
 
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
-| `concept.no_being` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1271<br>server/castingV2/conceptDescribeCopy.ts:79 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `concept.no_being` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1280<br>server/castingV2/conceptDescribeCopy.ts:79 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `concept.not_about_the_person` | concept-refusal |  | server/castingV2/conceptDescribeCopy.ts:82 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `concept.not_a_casting_note` | concept-refusal |  | server/castingV2/conceptDescribeCopy.ts:87 | 2 test(s) | _documented-unreachable or gap — see findings_ |
 | `concept.ran_long` | concept-refusal |  | server/castingV2/conceptDescribeCopy.ts:111 | 2 test(s) | _documented-unreachable or gap — see findings_ |
-| `concept.unreadable` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1263<br>server/castingV2/conceptDescribe.ts:1300<br>(+1) | 23 test(s) | _documented-unreachable or gap — see findings_ |
-| `concept.no_transport` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1199<br>server/castingV2/conceptDescribeCopy.ts:114 | 4 test(s) | _documented-unreachable or gap — see findings_ |
+| `concept.unreadable` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1272<br>server/castingV2/conceptDescribe.ts:1309<br>(+1) | 23 test(s) | _documented-unreachable or gap — see findings_ |
+| `concept.no_transport` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1208<br>server/castingV2/conceptDescribeCopy.ts:114 | 4 test(s) | _documented-unreachable or gap — see findings_ |
 
 > ⚠ THIS ROAD'S DOORS REACHED THE MAP BEFORE THE ROAD DID — the six were declared with #192 and every one of them is documented-unreachable (the corpus sends sentences, not pictures), while the ENTRANCE they belong to had no road until #1203. That is the forward/backward asymmetry in one specimen: the map could prove every door it named was real and could not notice it had never named the road. The FLAG and the two byte doors above the six are still outside the declared set: `NOT_FOUND` off `captureCastingConceptUploadEnabled`, and the shared `referenceAttachBytesRefusal` / `BYTES_NOT_AN_IMAGE_MESSAGE` pair, which are the ink door's own sentences reused rather than restated.
 

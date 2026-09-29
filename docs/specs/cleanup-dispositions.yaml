@@ -269,9 +269,22 @@
 
 - symbol: deterministicBriefCompiler
   file: server/castingV2/briefCompiler.ts
-  verdict: KEEP
-  why: its docblock: an explicit seam for tests and for any caller that must compile without a network round trip
-  argued: 5a
+  verdict: TAKEN
+  why: "DELETED by #1490 act 2. This row read KEEP on the ground that its docblock declared *an explicit seam for tests and for any caller that must compile without a network round trip* \u2014 and #1445 withdrew the second half of that sentence as a hazard, because the seam delivered the RETIRED house road's prompts: a production caller added there would have put a paid roll back on eight composed constants with the reader never asked. What made it takeable was act 1 removing the house branch, and what replaced it is not a stand-in but the real compiler: its 47 rollService arms now drive `castingBriefCompiler` through the `engine` seam its own docblock declares, so the suite kept its speed and its refusal to spend while gaining the road production is on. \u26a0 The money argument this row rested on had already moved \u2014 `vitest.setup.ts` strips `OPENROUTER_API_KEY` and names that very suite as the reason \u2014 and driven rather than assumed: with the reader unbound, 47 arms redden with `cause: unconfigured` rather than spending a cent"
+  argued: "#1490"
+- symbol: statedCovering
+  file: server/castingV2/statedCovering.ts
+  verdict: FILED
+  why: "UNCALLED AS OF #1490 act 2, which deleted its last production caller (`coveringFor` inside the house composer). \u26a0 It is not litter and it must not be swept: it is the READER half of D-124, a measured founder finding \u2014 a stated faith covering rendered 8 of 8 as *a draped fashion scarf with hair showing at the front*, a different garment from the one asked for, and the repair was to describe the garment plainly instead of handing the engine a loose noun. Read at the code: the `no hats` exclusion and its `STATED COVERINGS are the ONE exception` carve-out BOTH live in the house constant, and `houseBlock.ts` \u2014 what the author road appends to every prompt \u2014 carries neither, so nothing dangling ships. What is true instead is that on the live road a typed hijab reaches the engine as her own two words and gets whatever the model's prior does with them, which is the condition D-124 was written against"
+  argued: "#1503"
+  owner: "the covering road's owner \u2014 #1503 asks whether the author road should carry a covering directive at all, which is a question about what the product promises a customer who types one, not a cleanup pick. The card recommends measuring first: a two-arm court on today's roll engine, frames to his eye (law 9), because the engine has changed since D-124 was measured and the recommendation depends on what it actually does now"
+
+- symbol: coveringDirective
+  file: server/castingV2/statedCovering.ts
+  verdict: FILED
+  why: "UNCALLED AS OF #1490 act 2, for the same reason and in the same commit as `statedCovering` above \u2014 they are the parse and the prose of one channel and they move together. This is the half that writes D-124's sentence (*COMPLETELY covered \u2026 never a loosely draped fashion scarf*), and its four arms are untouched and still driven, so what the product WOULD say is still pinned even though nothing says it"
+  argued: "#1503"
+  owner: "the covering road's owner \u2014 same card, same question: #1503. Listed as its own row rather than folded into its sibling because the table is keyed per symbol, and a channel that comes back will want both halves judged, not one"
 
 - symbol: censusIsOpen
   file: server/castingV2/callCensus.ts

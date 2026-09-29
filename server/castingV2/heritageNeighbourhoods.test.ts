@@ -21,10 +21,51 @@ import {
 } from "./heritageNeighbourhoods";
 import { applySheetTaste } from "./realizedAxes";
 import { resolveCandidateIdentity, briefStatesHair } from "./cohortPhotorealHuman";
-import { deterministicBriefCompiler } from "./briefCompiler";
+import { castingBriefCompiler } from "./briefCompiler";
+import type { TextEngine } from "../providers/types";
 import { signatureOf } from "./varianceBudget";
 import { HAIR_COLOUR_WEIGHTS, stylesFor } from "./hairStyles";
 import type { CastingIntent, HeritageComponent, ResolvedIdentity } from "./castingIntent";
+
+/**
+ * A READER THAT PINS NOTHING — the open-brief condition, since #1490 act 2.
+ *
+ * ⚠ **WHAT THESE ARMS NEEDED FROM `deterministicBriefCompiler` WAS NOT "NO
+ * NETWORK" BUT "NOTHING PINNED".** That seam asked no reader, so its intent came
+ * from `fallbackIntent`: the brief text became the `role` and every other axis
+ * stayed null — the open palette a spread or twin arm must have. A reader that
+ * answered with a sex, an age and a heritage would narrow the palette, and a
+ * twin-breaker arm would then pass because there was nothing left to break.
+ *
+ * So the condition is reproduced through the live compiler rather than through a
+ * second compiler: the brief as the role, nothing else stated.
+ */
+function openReader(brief: string): TextEngine {
+  return {
+    id: "test:open-brief",
+    complete: async () => ({
+      text: JSON.stringify({
+        cohort: "photoreal_human",
+        role: brief,
+        sex: null,
+        ageBand: null,
+        agePhase: null,
+        heritage: [],
+        energy: null,
+        variationAxis: null,
+        reads: null,
+      }),
+      latencyMs: 1,
+      provenance: { provider: "openrouter" as const, model: "test", servedModel: "test" },
+    }),
+  };
+}
+
+/** The live compiler on an open brief — the seam's replacement, one line. */
+function compileOpen(input: { briefText: string; candidateCount: number; rollSeed: string }) {
+  return castingBriefCompiler({ ...input, engine: openReader(input.briefText) } as never);
+}
+
 
 /**
  * The twin-breaker, and the neighbourhood computation under it.
@@ -245,7 +286,7 @@ describe("the twin-breaker on a sheet", () => {
   it("leaves no twin at all on an open brief, where the palette has room", async () => {
     for (const brief of ["a model", "a male model", "a skincare founder in his 40s"]) {
       for (let roll = 0; roll < 120; roll += 1) {
-        const compiled = await deterministicBriefCompiler({
+        const compiled = await compileOpen({
           briefText: brief,
           candidateCount: 8,
           rollSeed: `twin-${brief}-${roll}`,
@@ -302,7 +343,7 @@ describe("the twin-breaker on a sheet", () => {
       disagree with the prompt actually sent.
     */
     const brief = "a bearded skincare founder in his 40s";
-    const compiled = await deterministicBriefCompiler({ briefText: brief, candidateCount: 8, rollSeed: "stated-fh" });
+    const compiled = await compileOpen({ briefText: brief, candidateCount: 8, rollSeed: "stated-fh" });
     const intent = { heritage: [], sex: "male", reads: [] } as unknown as CastingIntent;
     void intent;
     const raw = compiled.candidates.map((candidate) => candidate.resolvedIdentity);
@@ -507,14 +548,34 @@ describe("a brow is not a hair statement", () => {
   });
 
   it("authors hair again for the founder's brief", async () => {
-    const compiled = await deterministicBriefCompiler({
+    /*
+      ⚠ **THIS ARM READ THE COMPOSED PROMPT UNTIL #1490 ACT 2, AND ITS SUBJECT
+      MOVED RATHER THAN DIED.** It compiled the founder's brief and asserted a
+      ` HAIR: ` line was present in every prompt — carefully, masking
+      `FACIAL HAIR:` first so the substring could not match the wrong line. With
+      the house composer deleted there is no hair line in any prompt, so the
+      string form of the question has no answer.
+
+      The question itself is the founder's and is unchanged: *a brow statement
+      must not stand the hair author down.* Where that is decided is the styling
+      resolution — `briefStatesHair` reads her own words, and only a real hair
+      statement writes `"stated"` and stops the resolver authoring a cut. So the
+      arm asserts the resolution is NOT `"stated"` on a brief whose only
+      hair-adjacent word is `bleached brows`, which is the same claim at the
+      place that now makes it.
+    */
+    const compiled = await compileOpen({
       briefText: "A beauty creator in her late 20s, bleached brows",
       candidateCount: 8,
       rollSeed: "brow-authors",
     });
     for (const candidate of compiled.candidates) {
-      const cleaned = candidate.prompt.split("FACIAL HAIR:").join("FH:");
-      expect(cleaned).toContain(" HAIR: ");
+      expect(
+        candidate.resolvedIdentity.stylingResolution,
+        "a brow is not a hair statement, so the resolver must still author the cut",
+      ).not.toBe("stated");
+      /* And it really did author one — an absent cut would satisfy the line above. */
+      expect(candidate.resolvedIdentity.realized.hairStyle).not.toBeNull();
     }
   });
 
@@ -529,7 +590,7 @@ describe("a brow is not a hair statement", () => {
       it: measured at 0 across 300 rolls.
     */
     for (let roll = 0; roll < 100; roll += 1) {
-      const compiled = await deterministicBriefCompiler({
+      const compiled = await compileOpen({
         briefText: "A beauty creator in her late 20s, bleached brows",
         candidateCount: 8,
         rollSeed: `brow-twin-${roll}`,
@@ -570,7 +631,7 @@ describe("a brow is not a hair statement", () => {
     */
     let residual = 0;
     for (let roll = 0; roll < 100; roll += 1) {
-      const compiled = await deterministicBriefCompiler({
+      const compiled = await compileOpen({
         briefText: "A beauty creator in her late 20s, bleached brows",
         candidateCount: 8,
         rollSeed: `brow-twin-${roll}`,

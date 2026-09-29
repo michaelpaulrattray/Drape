@@ -7,7 +7,7 @@ import {
   hasCreativeContext,
   stylingResolutionFor,
 } from "./stylingResolution";
-import { castingBriefCompiler, deterministicBriefCompiler } from "./briefCompiler";
+import { castingBriefCompiler } from "./briefCompiler";
 import { ARCHETYPE_KEYS, type CastingIntent } from "./castingIntent";
 import type { TextEngine } from "../providers/types";
 
@@ -141,18 +141,44 @@ describe("what counts as creative context", () => {
 
   it("treats the interpreter-outage fallback as context, because it is the user's own sentence", async () => {
     /*
-      `fallbackIntent` sets `role` to the brief text itself, so the fallback
-      path is always in bias mode. That is the right reading rather than an
-      accident: the whole sentence IS the creative context, and prescribing a
-      cut over it would contradict whatever the user wrote.
+      `fallbackIntent` sets `role` to the brief text itself, so the fallback path
+      is always in bias mode. That is the right reading rather than an accident:
+      the whole sentence IS the creative context, and prescribing a cut over it
+      would contradict whatever the user wrote.
+
+      ⚠ **THE ARM READ A HAIR LINE OUT OF A COMPOSED PROMPT UNTIL #1490 ACT 2,
+      AND THE ROAD IT NOW DRIVES HAD TO BE MEASURED RATHER THAN GUESSED.** The
+      deleted seam took the fallback path unconditionally; reaching it on the live
+      compiler means an UNPARSED reply, and "unparsed" is narrower than it looks.
+      Driven, all three cases, on this tree:
+
+        reply                 interpreted   role                 resolution
+        not JSON at all       false         the brief text       bias
+        JSON, wrong shape     true          null                 prescribe
+        JSON, empty object    true          null                 prescribe
+
+      Only the first is this arm's road — a reply the reader could not parse at
+      all. The other two ARE interpreted, just emptily, and resolve to
+      `prescribe`; an arm built on either would have asserted the opposite of
+      what it means and passed. So the engine below returns prose, not JSON.
     */
-    const compiled = await deterministicBriefCompiler({
+    const compiled = await castingBriefCompiler({
       briefText: "a 30 year old heavy metal bogan",
       candidateCount: 8,
       rollSeed: "fallback-bias",
-    });
+      engine: {
+        id: "test:unparsed",
+        complete: async () => ({
+          text: "I cannot help with that request.",
+          latencyMs: 1,
+          provenance: { provider: "openrouter" as const, model: "test", servedModel: "test" },
+        }),
+      },
+    } as never);
+    /* The road is the unparsed one, asserted rather than assumed. */
+    expect((compiled.compiledBrief as { interpreted?: boolean }).interpreted).toBe(false);
     for (const candidate of compiled.candidates) {
-      expect(hairLineOf(candidate.prompt)).toContain(BIAS_DEFERRAL_CLAUSE);
+      expect(candidate.resolvedIdentity.stylingResolution).toBe("bias");
     }
   });
 

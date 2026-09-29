@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { coveringDirective, statedCovering } from "./statedCovering";
-import { composeCandidatePrompt, resolveCandidateIdentity } from "./cohortPhotorealHuman";
 import type { CastingIntent } from "./castingIntent";
 
 describe("statedCovering — reads the user's own sentence, never a faith", () => {
@@ -43,65 +42,38 @@ describe("statedCovering — reads the user's own sentence, never a faith", () =
   });
 });
 
-function promptFor(briefText: string, characterNotes: string | null = null): string {
-  const intent = {
-    cohort: "photoreal_human",
-    role: null,
-    characterNotes,
-    sex: null,
-    ageBand: null,
-    agePhase: null,
-    heritage: [],
-    build: null,
-    energy: null,
-    archetype: null,
-    variationAxis: null,
-    look: null,
-    reads: [],
-  } as unknown as CastingIntent;
-  return composeCandidatePrompt({
-    briefText,
-    intent,
-    resolved: resolveCandidateIdentity(intent, 0, "covering"),
-    archetype: "raw editorial",
-    seed: 1,
-  });
-}
+/*
+  ⚠ **THE FOUR PROMPT ARMS THAT STOOD HERE ARE GONE WITH THEIR SUBJECT — #1490
+  ACT 2 — AND WHAT THEY WERE GUARDING IS NOW A FILED QUESTION, NOT A SILENCE.**
 
-describe("the covering channel in the composed prompt", () => {
-  it("puts the directive in the prompt when the brief states one", () => {
-    const prompt = promptFor("a woman in her 30s wearing a hijab");
-    expect(prompt).toContain("STATED COVERING:");
-    expect(prompt).toContain("COMPLETELY covered");
-  });
+  They were: *puts the directive in the prompt when the brief states one*, *carves
+  the covering out of the headwear and hat exclusions*, *says nothing at all when
+  no covering was stated*, and *survives into a follow, where the sentence is gone
+  and the notes remain*. All four composed a house-road prompt through
+  `composeCandidatePrompt` and read the `STATED COVERING:` block out of it. Act 2
+  deleted that composer, so there is no string left for them to assert on.
 
-  /*
-    The latent fragility D-124 names. The prompt bans hats and excludes headwear
-    from the accessories licence, and the constant speaks LAST with authority —
-    so without a carve-out the covering renders only by luck of routing. This is
-    the assertion that makes the law hold because something guarantees it.
-  */
-  it("carves the covering out of the headwear and hat exclusions", () => {
-    const prompt = promptFor("a woman in her 30s wearing a hijab");
-    expect(prompt).toContain("no hats");
-    expect(prompt).toContain("STATED COVERINGS are the ONE exception");
-    expect(prompt).toContain("overrules every no-hats and no-headwear line");
-  });
+  ⚠ **READ AT THE CODE BEFORE THEY WERE CUT, BECAUSE THE OBVIOUS FEAR WAS THE
+  WRONG ONE.** The worry was that the live prompt would be left telling an engine
+  *"where a STATED COVERING block appears…"* with no such block ever present. It
+  does not: that sentence and the `no hats` exclusion it carves out BOTH live in
+  `cohortPhotorealHuman.ts`'s constant — the HOUSE road's block — and
+  `houseBlock.ts`, which is what the author road appends to every prompt, carries
+  neither. So nothing dangling ships.
 
-  it("says nothing at all when no covering was stated", () => {
-    const prompt = promptFor("a Muslim woman in her 30s");
-    expect(prompt).not.toContain("STATED COVERING:");
-    /* The exclusions are untouched in the unstated case, which is the default. */
-    expect(prompt).toContain("no hats");
-  });
+  ⚠ **WHAT IS TRUE INSTEAD IS WORTH MORE, AND IT IS FILED RATHER THAN FOLDED IN
+  (his rule on #1398).** D-124's repair — a stated covering described as the
+  garment rather than left as a loose noun, because the founder's sheet came back
+  with a draped fashion scarf — has not reached an engine since the author road
+  became every account's road. `server/castingV2/statedCovering.ts` now has ZERO
+  production readers: its last one was `coveringFor`, deleted in this act. On the
+  live road a typed hijab reaches the engine as her own two words and gets
+  whatever the model's prior does with them, which is exactly the condition D-124
+  was written against.
 
-  /*
-    A follow inherits characterNotes without the original sentence. Reading the
-    same stated union every other deference check reads is what stops a covering
-    falling off the family it was stated into.
-  */
-  it("survives into a follow, where the sentence is gone and the notes remain", () => {
-    const prompt = promptFor("", "she wears a hijab, warm and direct");
-    expect(prompt).toContain("STATED COVERING:");
-  });
-});
+  That is a capability decision, not a cleanup: whether the author road should
+  carry a covering directive at all is a question about what the product promises
+  a customer who types one. The parser below is therefore KEPT, unchanged and
+  still driven — it is the half that would be reconnected, and deleting it would
+  delete the founder's repair instead of asking about it.
+*/

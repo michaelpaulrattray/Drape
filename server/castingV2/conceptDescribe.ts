@@ -322,8 +322,17 @@
  * That is the founder's own success test failing quietly — *"a prompt to create
  * someone SIMILAR"* — because heritage is the single strongest type fact and a
  * brief without it casts a different person. It is house vocabulary rather than
- * a new claim: `describeHeritage` already writes it into the family clause, and
- * the compiled brief has carried a heritage field since long before this road.
+ * a new claim: the family clause names heritage among the facts it keeps
+ * (`familyClause.ts`), and the compiled brief has carried a heritage field since
+ * long before this road.
+ *
+ * ⚠ This sentence cited `describeHeritage` until #1490 act 2, and the citation
+ * was already wrong: that function composed the retired house road's SUBJECT
+ * line, and the family clause has been a fixed sentence since #154. Act 2
+ * deleted it — with `heritageClause`, `describeHair`, `statedCutSentence` and
+ * `coveringFor`, all five unreachable once the composer went — so the pointer
+ * is corrected to the module that actually makes the claim rather than removed,
+ * because the claim itself still holds.
  * The instruction asks for it now, and the re-drive is on the record.
  *
  * # ITS ONE DECLARED LIMIT
