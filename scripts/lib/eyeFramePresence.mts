@@ -255,3 +255,72 @@ export const judgeEyeFramePresence = async (
   }
   return { ok: false, why: parts.join(" · "), checked: keys.length, missing, unread };
 };
+
+/**
+ * THE SAME FACT ASKED ONE STEP EARLIER — AT THE UPLOAD, NOT AT THE PUSH (#1509).
+ *
+ * ⚠ **THE CHECK ABOVE IS REAL AND A SEAT NEVER MEETS IT.** `judgeEyeFramePresence`
+ * runs inside the deploy rite, so a frame reaches it only on the road that ships
+ * a briefing edition. A builder seat proving working law 6 on a pull request
+ * takes a different road entirely: upload, paste the link in a comment, move on
+ * — and nothing on that road ever asks whether the object is there.
+ *
+ * It cost exactly what the #320 incidents cost, in a new place. PR #1508's
+ * law-6 comment carried six `crew-eye/<uuid>.png` links and **all six answered
+ * Not Found**; the frames existed only in the seat's `%TEMP%`, and the pull
+ * request said *"all six looked at rather than merely taken"* about pictures
+ * nobody but that machine could open. The reviewer saw no picture at all.
+ *
+ * This is the shape #606 named for the atlas hooks — *a repair that covers the
+ * road it was written for and silently fails on the one people actually walk*.
+ * The answer there was a second GATE rather than a wider hook, and it is the
+ * answer here: the publisher asks for itself, so every road that uploads a
+ * frame is covered, including the ones nobody has thought of yet.
+ *
+ * # ⚠ IT ASSERTS AT THE WIRE, AND THAT IS NOT A FLOURISH (invariant 5)
+ *
+ * The caller pastes `storagePut`'s returned URL. Checking a URL this module
+ * REBUILT would prove a different string than the one the reviewer clicks —
+ * `buildPublicUrl` percent-encodes each segment, so a rebuild that skipped it
+ * would pass while the posted link 404s. So the rebuilt URL is compared to the
+ * returned one and a mismatch REFUSES rather than checking the wrong address.
+ *
+ * # WHAT IT DOES NOT DO
+ *
+ * It does not decide whether the bucket is the RIGHT one — `--bucket` is that
+ * control, and it runs before a byte moves. This answers only *"is the thing I
+ * am about to paste actually there"*, which is the question `storagePut`'s
+ * return value looks like an answer to and is not: **the key is a CLAIM, the
+ * object is the FACT.**
+ */
+export const judgeUploadedFrame = async (
+  key: string,
+  returnedUrl: string,
+  base: string | undefined | null,
+  head: (url: string) => Promise<number | null>,
+): Promise<EyeFramePresence> => {
+  if (!base) {
+    return {
+      ok: false,
+      why:
+        "this environment names no R2_PUBLIC_URL, so the frame that was just written cannot be read back — "
+        + "the link would go into a comment unverified, which is the whole defect",
+      checked: 1,
+      missing: [],
+      unread: [key],
+    };
+  }
+  const rebuilt = `${base.replace(/\/+$/, "")}/${key.split("/").map(encodeURIComponent).join("/")}`;
+  if (rebuilt !== returnedUrl) {
+    return {
+      ok: false,
+      why:
+        `the URL this check would read (${rebuilt}) is not the URL the upload returned (${returnedUrl}) — `
+        + "reading it would prove a different address than the one a comment will carry",
+      checked: 1,
+      missing: [],
+      unread: [key],
+    };
+  }
+  return await judgeEyeFramePresence([key], base, head);
+};

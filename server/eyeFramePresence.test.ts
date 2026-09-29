@@ -28,6 +28,7 @@ import {
   EYE_FRAME_RETRY_GIVE_UP_AFTER,
   eyeFrameKeysOf,
   judgeEyeFramePresence,
+  judgeUploadedFrame,
 } from "../scripts/lib/eyeFramePresence.mts";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -340,5 +341,185 @@ describe("the upload script cannot silently write to the wrong bucket (#320 fix 
     expect(keyLine).toBeGreaterThan(nextLine);
     /* Nothing prints between the key and the exit. */
     expect(upload.slice(keyLine, exit)).not.toMatch(/console\.(log|error|info)\([\s\S]*console\.(log|error|info)\(/);
+  });
+});
+
+/*
+  #1509 — THE SAME FACT, ASKED ON THE ROAD THE RITE CANNOT SEE.
+
+  The rite's check above is real, and a builder seat never meets it: a seat
+  proving working law 6 on a pull request uploads a frame, pastes the link and
+  never ships an edition. PR #1508's law-6 comment carried six links and all
+  six answered Not Found, over frames that existed only in that machine's
+  %TEMP%, under a body saying they had been looked at.
+
+  Working law 2 — every arm here has its own reason asserted, so a refusal for
+  some other cause cannot print PROVEN over this one. The `head` is injected,
+  so none of this touches a network.
+*/
+describe("an uploaded frame is read back before its link can be pasted (#1509)", () => {
+  const KEY = "crew-eye/11111111-2222-3333-4444-555555555555.png";
+  const URL = `${BASE}/${KEY}`;
+  const present = async () => 200;
+  const notFound = async () => 404;
+  const unanswerable = async () => null;
+
+  it("POSITIVE CONTROL — a frame the bucket serves passes, and says so", async () => {
+    const verdict = await judgeUploadedFrame(KEY, URL, BASE, present);
+    expect(verdict.ok).toBe(true);
+    expect(verdict.checked).toEqual(1);
+    expect(verdict.missing).toEqual([]);
+    expect(verdict.unread).toEqual([]);
+  });
+
+  it("THE INCIDENT — a key the bucket answers 404 for REFUSES, and names the key", async () => {
+    const verdict = await judgeUploadedFrame(KEY, URL, BASE, notFound);
+    expect(verdict.ok).toBe(false);
+    expect(verdict.missing).toEqual([KEY]);
+    expect(verdict.why).toContain("NOT in the production bucket");
+  });
+
+  it("an unanswerable bucket is UNREAD, not present — it fails closed (invariant 7)", async () => {
+    const verdict = await judgeUploadedFrame(KEY, URL, BASE, unanswerable);
+    expect(verdict.ok).toBe(false);
+    expect(verdict.unread).toEqual([KEY]);
+    expect(verdict.why).toContain("UNREAD");
+  });
+
+  it("no R2_PUBLIC_URL REFUSES rather than skipping — an unchecked link is the defect", async () => {
+    for (const base of [undefined, null, ""]) {
+      const verdict = await judgeUploadedFrame(KEY, URL, base, present);
+      expect(verdict.ok, String(base)).toBe(false);
+      expect(verdict.why).toContain("R2_PUBLIC_URL");
+    }
+  });
+
+  it("ASSERTS AT THE WIRE — it refuses to read an address the upload did not return", async () => {
+    /*
+      Invariant 5. The caller pastes `storagePut`'s URL; a check against a URL
+      this module rebuilt would prove a different string. The arm that matters
+      is the ENCODING one: `buildPublicUrl` percent-encodes each segment, so a
+      rebuild that skipped it would pass while the posted link 404s.
+    */
+    const verdict = await judgeUploadedFrame(KEY, `${BASE}/crew-eye/something-else.png`, BASE, present);
+    expect(verdict.ok).toBe(false);
+    expect(verdict.why).toContain("is not the URL the upload returned");
+    /* And it agrees with `buildPublicUrl` on a key needing encoding. */
+    const spaced = "crew-eye/a b.png";
+    expect((await judgeUploadedFrame(spaced, `${BASE}/crew-eye/a%20b.png`, BASE, present)).ok).toBe(true);
+    expect((await judgeUploadedFrame(spaced, `${BASE}/crew-eye/a b.png`, BASE, present)).ok).toBe(false);
+  });
+
+  it("a trailing slash on the base is not a different bucket", async () => {
+    expect((await judgeUploadedFrame(KEY, URL, `${BASE}/`, present)).ok).toBe(true);
+  });
+});
+
+describe("the upload script refuses a frame it cannot read back (#1509)", () => {
+  const upload = readFileSync(path.join(repoRoot, "scripts/crew-upload-eye-frame.mts"), "utf8");
+
+  /*
+    THE REFUSAL BLOCK, READ TO ITS CLOSING BRACE RATHER THAN TO A SUBSTRING.
+    Two arms here were first written slicing to `indexOf("process.exit(1)")`,
+    and both were wrong in different ways: the script's argument parser exits
+    that way EIGHT times above this block, and the block's own docblock now
+    QUOTES `process.exit(1)` when naming the rite's identical hazard. A slice
+    that ends at a mention rather than at a statement reads as coverage.
+  */
+  const refusalBlock = (() => {
+    const start = upload.indexOf("if (!landed.ok) {");
+    expect(start, "the refusal block is still there to read").toBeGreaterThan(-1);
+    const end = upload.indexOf("\n}", start);
+    return upload.slice(start, end);
+  })();
+
+  it("THE VERDICT IS WHAT GATES THE OUTPUT — not merely that the judge was called", () => {
+    /*
+      ⚠ THIS ARM EXISTS BECAUSE THE SABOTAGE CAMPAIGN FOUND ITS ABSENCE.
+      The arm below asserts the judge is CALLED with the right arguments, and a
+      mutation that left the call in place while feeding the branch a literal
+      `{ ok: true }` passed all 37 arms. A call whose answer nothing reads is
+      the same shape as invariant 7's control that is never invoked — it looks
+      exactly like coverage from the source.
+
+      So: the value the refusal branches on must BE the awaited judge call.
+    */
+    expect(upload).toMatch(/const landed = await judgeUploadedFrame\(/);
+    expect(upload).toContain("if (!landed.ok) {");
+  });
+
+  it("calls the judge after the put, on the key and URL the put returned", () => {
+    expect(upload).toContain("judgeUploadedFrame(");
+    const call = upload.slice(upload.indexOf("judgeUploadedFrame("));
+    expect(call).toContain("result.key");
+    expect(call).toContain("result.url");
+    expect(call).toContain("process.env.R2_PUBLIC_URL");
+    /* The put must happen first — a check before the write proves nothing. */
+    expect(upload.indexOf("await storagePut(")).toBeLessThan(upload.indexOf("judgeUploadedFrame("));
+  });
+
+  it("a refusal EXITS NONZERO and prints nothing key-shaped on the way out", () => {
+    /* The exit is the block's LAST statement, so nothing runs after the refusal. */
+    expect(refusalBlock.trimEnd().endsWith("process.exit(1);")).toBe(true);
+    /*
+      #265 read the other way. Callers pipe this through `| tail -1`, and a
+      shell pipeline reports the LAST command's status — so a refusal whose
+      final line looked like a key would be harvested with the failure masked.
+    */
+    expect(refusalBlock).not.toMatch(/console\.log\(/);
+    expect(refusalBlock).not.toMatch(/`key: /);
+  });
+
+  it("names the on-disk path on BOTH roads, so a link is always traceable to its driver run", () => {
+    expect(refusalBlock).toContain("on disk:");
+    const success = upload.slice(upload.indexOf("READ BACK FROM THE BUCKET"));
+    expect(success).toContain("on disk:");
+    expect(success).toContain("resolvePath(filePath)");
+  });
+
+  it("hands the judge a head that times out, for the reason the rite's does (#1177)", () => {
+    const call = upload.slice(upload.indexOf("judgeUploadedFrame("));
+    /* Anchored on the abort itself, not on `setTimeout`, because the refusal
+       road below has a timer of its own and a looser match would read it. */
+    const abort = call.match(/setTimeout\(\(\) => controller\.abort\(\), (\d[\d_]*)\)/);
+    expect(abort).not.toBeNull();
+    const ms = Number(abort![1]!.replaceAll("_", ""));
+    expect(ms).toBeGreaterThanOrEqual(5_000);
+    expect(ms).toBeLessThanOrEqual(30_000);
+    /* And the timer is cleared, which is why an explicit controller is used at
+       all rather than the rite's terser `AbortSignal.timeout`. */
+    expect(call).toContain("clearTimeout(timer)");
+  });
+
+  it("the refusal DRAINS before it exits, or node aborts instead of refusing", () => {
+    /*
+      MEASURED, not feared. `process.exit` while the sockets the HEAD opened are
+      still closing aborts node on Windows — `Assertion failed: !(handle->flags
+      & UV_HANDLE_CLOSING)` — and the process reports 3221226505 rather than 1,
+      which a caller cannot tell from a bug. Deterministic: 3 of 3 runs of the
+      real script against a host answering anything but 200.
+
+      The condition is NOT observable from JS: `getActiveResourcesInfo()` calls
+      the socket gone after 5ms and the crash still fired at that point. So a
+      duration is the only instrument available, and this arm exists because the
+      await looks exactly like something worth tidying away.
+    */
+    const drain = refusalBlock.match(/setTimeout\(resolve, (\d[\d_]*)\)/);
+    expect(drain, "the refusal road waits before it exits").not.toBeNull();
+    const ms = Number(drain![1]!.replaceAll("_", ""));
+    /* 50ms was the shortest measured clean; 250 is the shipped margin. Below
+       the floor the crash returns, and it returns silently. */
+    expect(ms).toBeGreaterThanOrEqual(50);
+    /* On the FAILURE road only — the success road must not pay it. */
+    const success = upload.slice(upload.indexOf("READ BACK FROM THE BUCKET"));
+    expect(success).not.toMatch(/setTimeout\(resolve/);
+  });
+
+  it("STILL prints the key last — the read-back did not move it (#265)", () => {
+    const keyLine = upload.indexOf("console.log(`key: ${result.key}`)");
+    for (const line of ["READ BACK FROM THE BUCKET", "on disk: ${resolvePath(filePath)}", "url: ${result.url}"]) {
+      expect(upload.indexOf(line), line).toBeGreaterThan(-1);
+      expect(upload.indexOf(line), `${line} prints before the key`).toBeLessThan(keyLine);
+    }
   });
 });
