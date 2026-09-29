@@ -132,6 +132,7 @@ import { BRIEFING_PATH, generatedFilesFrom, judgeQuietEdition, QUIET_REFUSAL, ty
 import { judgeBriefingConformance } from "./lib/briefingConformance.mts";
 import { eyeFrameKeysOf, judgeEyeFramePresence } from "./lib/eyeFramePresence.mts";
 import { probeProductionHealth } from "./lib/productionHealthProbe.mts";
+import { fetchWithClearedTimeout, settleSockets } from "./lib/exitSafeFetch.mts";
 import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
 /*
@@ -827,13 +828,34 @@ function productionUrl(): string | undefined {
          undici's `headersTimeout`). Unbounded that cost is paid ONCE for all
          314 keys in parallel; bounded, it would be paid once per wave. Ten
          seconds is ~100x a live HEAD against this bucket, so a real answer is
-         never cut off, and the module owns no fetch policy of its own. */
+         never cut off, and the module owns no fetch policy of its own.
+
+         ⚠ AND THE TIMER IS CLEARED, WHICH IS THE #1517 FIX (was
+         `AbortSignal.timeout`). That form never clears its timer when the fetch
+         resolves, so it leaves a pending libuv handle — and `die()` below is
+         `process.exit(1)`, which on Windows can abort node itself while a handle
+         is still closing, reporting 3221226505 instead of 1. #1509 made exactly
+         this repair on `crew-upload-eye-frame.mts` and left the rite on the
+         terser form because *"the rite keeps running afterwards"*; that premise
+         was false of this block, whose next statement exits. */
       async (url) =>
-        await fetch(url, { method: "HEAD", signal: AbortSignal.timeout(10_000) })
+        await fetchWithClearedTimeout(url, { method: "HEAD" }, 10_000)
           .then((response) => response.status)
           .catch(() => null),
     );
   if (!frames.ok && !DRY) {
+    /*
+      AND THE SOCKETS ARE WAITED OUT BEFORE THE EXIT (#1517) — a socket handle
+      cannot be cleared the way the timer above can, only given a moment.
+      ⚠ STATED HONESTLY: this is INSURANCE, not a reproduced defect. #1517 could
+      not reproduce the crash in this block's own shape — 12 runs, the real bucket
+      answering 404 and an unresolvable host, with and without the drain, all
+      exited 1 — because #1509's reproduction is `storagePut` + the judge and the
+      rite calls no `storagePut`. 12 quiet runs are weak evidence of immunity for
+      a race, and a quarter second on a road that has already refused costs
+      nothing, so it sits HERE rather than on the happy road.
+    */
+    await settleSockets("the eye-frame HEADs");
     die(`an eye frame this edition names is not in the production bucket — the push does not fire; his card would draw broken images (#320).
     ${frames.why}
   repair: re-upload the frame(s) against the PRODUCTION R2 variables, put the new key(s) in ${BRIEFING_PATH}, commit, re-run`);
@@ -1165,7 +1187,10 @@ const health = await probeProductionHealth({
   wait,
   read: async () => {
     try {
-      const response = await fetch(`${BASE}/api/health`, { signal: AbortSignal.timeout(10_000) });
+      /* The timer is CLEARED here too (#1517) — `if (!health.ok) die(…)` is the
+         statement after this probe returns, so an uncleared `AbortSignal.timeout`
+         handle sits open across a `process.exit`. Same repair, same owner. */
+      const response = await fetchWithClearedTimeout(`${BASE}/api/health`, {}, 10_000);
       /* A response that cannot be parsed is still an ANSWER — `body: null` says
          so, and the probe refuses on it rather than retrying. */
       const body = await response.json().catch(() => null);
@@ -1175,7 +1200,14 @@ const health = await probeProductionHealth({
     }
   },
 });
-if (!health.ok) die(health.why);
+if (!health.ok) {
+  /* The same insurance on the same road, for the reason in the eye-frame block
+     above and in `scripts/lib/exitSafeFetch.mts` (#1517): the refusal has already
+     been decided, so a quarter second costs nothing, and the exit code is the
+     only thing a caller can read. */
+  await settleSockets("the production health probes");
+  die(health.why);
+}
 const healths = health.readings;
 const latencies = healths.map((entry) => entry.db);
 // Both terms from the same reading — this loop sleeps, and the local clock is

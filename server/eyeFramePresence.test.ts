@@ -30,6 +30,9 @@ import {
   judgeEyeFramePresence,
   judgeUploadedFrame,
 } from "../scripts/lib/eyeFramePresence.mts";
+/* DERIVED, NOT MIRRORED (#1517): the drain's duration is imported from its owner
+   so this arm cannot pass over a stale copy of the number. */
+import { SOCKET_SETTLE_MS } from "../scripts/lib/exitSafeFetch.mts";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const realBriefing = readFileSync(path.join(repoRoot, "server/crew/crew-briefing.json"), "utf8");
@@ -274,8 +277,23 @@ describe("the rite actually calls it (invariant 7)", () => {
     expect(rite).toContain('from "./lib/eyeFramePresence.mts"');
     expect(rite).toContain("judgeEyeFramePresence(");
     expect(rite).toContain("eyeFrameKeysOf(");
-    /* Not a warning: the refusal is `die`, gated only by --dry. */
-    expect(rite).toMatch(/if \(!frames\.ok && !DRY\) \{\s*\n\s*die\(/);
+    /*
+      Not a warning: the refusal is `die`, gated only by --dry.
+
+      ⚠ THE BRANCH BODY IS READ RATHER THAN THE LINE AFTER THE BRACE (#1517).
+      This was `/if \(!frames\.ok && !DRY\) \{\s*\n\s*die\(/` — `die` on the very
+      next line — and #1517 put a socket drain and its reason inside the branch
+      above the `die`, which is correct and reddened this arm. The guarantee being
+      made is that the branch REFUSES, not that it refuses on a particular line,
+      so the body is what the arm reads now.
+    */
+    const branch = rite.indexOf("if (!frames.ok && !DRY) {");
+    expect(branch).toBeGreaterThan(-1);
+    const body = rite.slice(branch, rite.indexOf("say(`  eye frames:", branch));
+    expect(body).toContain("die(");
+    /* And it is not quietly downgraded to a warning while the `die` sits in a
+       comment: the refusal's own words must be inside the call. */
+    expect(body).toMatch(/die\(`an eye frame this edition names/);
   });
 
   it("reads R2_PUBLIC_URL off the SERVICE, never off process.env", () => {
@@ -294,11 +312,17 @@ describe("the rite actually calls it (invariant 7)", () => {
    * owns no fetch policy, so the timeout has to live here — and if it is ever
    * removed, the bound it makes safe stays behind and the rite gets slower on
    * exactly the day it is already in trouble.
+   *
+   * ⚠ THE TIMEOUT IS THE SAME CLAIM, READ AT A DIFFERENT CALL (#1517). It was
+   * `AbortSignal.timeout(10_000)` and is now `fetchWithClearedTimeout(…, 10_000)`,
+   * because that form never cleared its timer and the statement after this block
+   * is `process.exit`. The BOUND asserted here is unchanged and is the whole point
+   * of the arm; `server/exitSafeFetch.test.ts` owns the arm about the clear.
    */
   it("hands the judge a head that times out, which is what makes the bound safe", () => {
     const block = rite.slice(rite.indexOf("AND THE EYE FRAMES IT NAMES"), rite.indexOf("AND THE SCRIPT GUARDS"));
-    expect(block).toContain("AbortSignal.timeout(");
-    const timeout = block.match(/AbortSignal\.timeout\((\d[\d_]*)\)/);
+    expect(block).toContain("fetchWithClearedTimeout(");
+    const timeout = block.match(/fetchWithClearedTimeout\([^;]*?,\s*(\d[\d_]*)\)/);
     expect(timeout).not.toBeNull();
     const ms = Number(timeout![1]!.replaceAll("_", ""));
     /* Long enough that a real answer is never cut off, short enough that a
@@ -479,16 +503,24 @@ describe("the upload script refuses a frame it cannot read back (#1509)", () => 
 
   it("hands the judge a head that times out, for the reason the rite's does (#1177)", () => {
     const call = upload.slice(upload.indexOf("judgeUploadedFrame("));
-    /* Anchored on the abort itself, not on `setTimeout`, because the refusal
-       road below has a timer of its own and a looser match would read it. */
-    const abort = call.match(/setTimeout\(\(\) => controller\.abort\(\), (\d[\d_]*)\)/);
-    expect(abort).not.toBeNull();
-    const ms = Number(abort![1]!.replaceAll("_", ""));
+    /*
+      ⚠ READ AT THE SHARED OWNER NOW (#1517). The controller and its
+      `clearTimeout` used to be written out here, and the rite carried
+      `AbortSignal.timeout` on the argument that *"the rite keeps running
+      afterwards"* — which was false of the rite. Both are on
+      `scripts/lib/exitSafeFetch.mts`, so the bound is still asserted here and the
+      CLEAR is asserted once, where the clearing happens.
+    */
+    const timeout = call.match(/fetchWithClearedTimeout\([^;]*?,\s*(\d[\d_]*)\)/);
+    expect(timeout).not.toBeNull();
+    const ms = Number(timeout![1]!.replaceAll("_", ""));
     expect(ms).toBeGreaterThanOrEqual(5_000);
     expect(ms).toBeLessThanOrEqual(30_000);
-    /* And the timer is cleared, which is why an explicit controller is used at
-       all rather than the rite's terser `AbortSignal.timeout`. */
-    expect(call).toContain("clearTimeout(timer)");
+    /* The clear is the owner's job and is proven there against a real server, on
+       both the answer road and the timeout road. What is checked here is that this
+       script goes through the owner rather than rolling its own. */
+    expect(upload).toContain('from "./lib/exitSafeFetch.mts"');
+    expect(upload).not.toContain("new AbortController()");
   });
 
   it("the refusal DRAINS before it exits, or node aborts instead of refusing", () => {
@@ -503,16 +535,24 @@ describe("the upload script refuses a frame it cannot read back (#1509)", () => 
       the socket gone after 5ms and the crash still fired at that point. So a
       duration is the only instrument available, and this arm exists because the
       await looks exactly like something worth tidying away.
+
+      ⚠ THE DURATION MOVED TO ITS OWNER AND THIS ARM DERIVES IT (#1517). It used
+      to read the literal out of this file with `/setTimeout\(resolve, (\d+)\)/`;
+      three scripts had each arrived at 250 independently, which is working law 4,
+      so `scripts/lib/exitSafeFetch.mts` holds it. Importing the constant is the
+      difference between deriving and mirroring: if the owner ever drops below the
+      measured floor, this arm fails too rather than passing over a stale copy.
     */
-    const drain = refusalBlock.match(/setTimeout\(resolve, (\d[\d_]*)\)/);
-    expect(drain, "the refusal road waits before it exits").not.toBeNull();
-    const ms = Number(drain![1]!.replaceAll("_", ""));
-    /* 50ms was the shortest measured clean; 250 is the shipped margin. Below
-       the floor the crash returns, and it returns silently. */
-    expect(ms).toBeGreaterThanOrEqual(50);
+    expect(refusalBlock, "the refusal road waits before it exits").toContain(
+      "await settleSockets(",
+    );
+    /* 50ms was the shortest measured clean; 250 is the shipped margin. Below the
+       floor the crash returns, and it returns silently. */
+    expect(SOCKET_SETTLE_MS).toBeGreaterThanOrEqual(50);
     /* On the FAILURE road only — the success road must not pay it. */
     const success = upload.slice(upload.indexOf("READ BACK FROM THE BUCKET"));
     expect(success).not.toMatch(/setTimeout\(resolve/);
+    expect(success).not.toContain("await settleSockets(");
   });
 
   it("STILL prints the key last — the read-back did not move it (#265)", () => {
