@@ -240,13 +240,76 @@ export const CASTING_V2_SIGN_PRICE_CREDITS =
  * shown to the judge. The garment is still asked for; it just stops being
  * grounds for a refund nobody could have earned.
  */
+/**
+ * THE ADDITION SENTENCE, AND ITS ONE EXCEPTION — written once because three
+ * copies of it drifted and the drift cost a customer a slice (#1479).
+ *
+ * # What went wrong
+ *
+ * All three wardrobe sentences below carry the same addition list. Two of them
+ * were narrowed — in August, then again on 2026-09-25 (#1207) and 2026-09-26
+ * (#1278 part 1) — so that an addition fails only when the reference does not
+ * show it. The third, `castPackageWardrobeSpec`, was left with an UNCONDITIONAL
+ * list: *"ADDITIONS are failures wherever they appear: jewellery, a hat…"*
+ *
+ * ⚠ **It was left behind because it was DEAD, and #1278 part 1 brought it to
+ * life.** Its own docblock recorded the reasoning — *"`castPackageWardrobeSpec`'s
+ * composed-from-a-line road has never once run"*, measured at 5 of 5 signed
+ * Casts with no stored line — so narrowing it looked like work on a road nobody
+ * was on. That is the path-three shape this repository already has three
+ * instances of: a clause that was safe only because it was unreachable, made
+ * reachable by a change aimed at something else, with no failing test to say so.
+ *
+ * # What it cost, read at the rows
+ *
+ * His Sign of "Bingu" (cast 61, 2026-09-29 06:37Z) ran on roll 309, which
+ * carries `wardrobeLine = "dark draped fabric"` — so the stored-line road, on
+ * its first real outing. The anchor shows dangling earrings. `model_assets` 361
+ * (`backFull`) came back `failed`, *"This view came back in the wrong
+ * clothing"*, on the judge's note: *"The layered dark draped fabric robe and
+ * scarf match, but the earrings/dangling jewelry visible at the ears are an
+ * addition not covered by the wardrobe description."*
+ *
+ * **The judge did exactly what it was told.** It was told to judge the clothing
+ * against the description and that jewellery is a failure wherever it appears,
+ * and the description — a five-word line — does not mention earrings. A view
+ * that faithfully carried the anchor's own jewellery was refused and refunded.
+ *
+ * # Why it is one function rather than three corrected strings
+ *
+ * Correcting the third string would leave three copies of one rule, which is
+ * working law 4 and is precisely how this defect was born: two were fixed and
+ * the third was not, and nothing could notice. The exception now has ONE owner,
+ * so a future narrowing cannot reach two sentences and miss the third.
+ *
+ * @param alsoJudgedAgainstADescription whether a second record — a stored line
+ * or the cast's own brief — is being judged alongside the photograph. When
+ * there is one, an addition must be absent from BOTH to be a failure.
+ */
+function wardrobeAdditionsClause(alsoJudgedAgainstADescription: boolean): string {
+  return "ADDITIONS — jewellery, a hat, a bag, a prop, or any printed text or logo "
+    + "that the reference does not show"
+    + (alsoJudgedAgainstADescription ? " AND the description does not name" : "")
+    + " — are a failure wherever they appear. "
+    /*
+      AND THE POSITIVE HALF, STATED RATHER THAN IMPLIED. "An addition is what
+      neither record has" leaves the judge to infer that what the reference DOES
+      have is therefore hers; the Bingu note is what that inference looks like
+      when it is not drawn. The close-up's own sentence has said this in so many
+      words since it was written (*"anything the reference DOES show is this
+      person's own and must be there"*), and it is the one wardrobe sentence
+      that has never refused a customer's own jewellery.
+    */
+    + "Anything the reference photograph itself shows her wearing is this person's own and is "
+    + "never an addition, whether or not it is named in words.";
+}
+
 export const CAST_PACKAGE_WARDROBE_SPEC =
   "the SAME outfit the reference photograph shows — the same garments, in the same colours, "
   + "unchanged across every view. "
   + "The reference is a chest-up photograph, so it shows nothing below the waist: anything "
   + "below the frame of the reference CANNOT be compared to it and must not fail this check. "
-  + "Judge only what both images show, plus ADDITIONS — jewellery, a hat, a bag, a prop, or "
-  + "any printed text or logo that the reference does not show is a failure wherever it appears.";
+  + `Judge only what both images show, plus ${wardrobeAdditionsClause(false)}`;
 
 /**
  * THE SAME SENTENCE WITH THE CAST'S BRIEF ON RECORD — #1278 part 1.
@@ -289,9 +352,7 @@ export const CAST_PACKAGE_WARDROBE_SPEC_DESCRIBED =
   + "description governs: the cut, length, hardware, footwear and weathering it names are this "
   + "outfit's own wherever they appear, and where it leaves them open any reading in keeping with "
   + "the garments, materials and colours above the crop is correct. "
-  + "Judge the clothing against both records together. ADDITIONS — jewellery, a hat, a bag, a "
-  + "prop, or printed text or a logo that the reference does not show AND the description does "
-  + "not name — are a failure wherever they appear.";
+  + `Judge the clothing against both records together. ${wardrobeAdditionsClause(true)}`;
 
 /**
  * THE SAME SENTENCE, WRITTEN FROM A STORED LINE (design §3.3, item 6).
@@ -318,15 +379,29 @@ export const CAST_PACKAGE_WARDROBE_SPEC_DESCRIBED =
  * ⚠ **The judge and the generator read THIS function, one call each, so they
  * cannot drift** — which is the whole reason the line has one owner. A Cast
  * signed after a wardrobe edit is judged against what it is wearing.
+ *
+ * ⚠ **ITEM 2 ABOVE IS NOW HALF-SUPERSEDED, AND THE HALF THAT SURVIVED COST A
+ * SLICE (#1479, 2026-09-29).** It argued that the rest of the addition list
+ * *"CAN stay because `wardrobeDoor.ts` refuses hats, props, logos and printed
+ * text in the line: the two cannot disagree."* That is true of the LINE and
+ * says nothing about the PHOTOGRAPH — and the photograph is the other record.
+ * A stored line is a handful of words about the clothes; the anchor may show
+ * earrings, a pendant, a headpiece, none of which any wardrobe line would
+ * mention and none of which `wardrobeDoor.ts` has an opinion about. So the
+ * door's refusals never protected this clause from the case that actually
+ * arrived: an addition the reference itself shows.
+ *
+ * The list still stands, and the exception it now carries is
+ * `wardrobeAdditionsClause`'s — one owner, three sentences, so the next
+ * narrowing cannot reach two of them and miss this one again.
  */
 export function castPackageWardrobeSpec(wardrobeLine: string | null): string {
   if (wardrobeLine === null) return CAST_PACKAGE_WARDROBE_SPEC;
   return `exactly this outfit, unchanged across every view: ${wardrobeLine}. `
     + "This description covers the whole figure — what is worn on the upper body, on the lower body "
     + "and on the feet — so it applies below the frame of the reference photograph as well as inside "
-    + "it. Judge the clothing against this description. "
-    + "ADDITIONS are failures wherever they appear: jewellery, a hat, a bag, a prop, or any printed "
-    + "text or logo.";
+    + "it. Judge the clothing against this description and the reference photograph together. "
+    + wardrobeAdditionsClause(true);
 }
 
 /**
