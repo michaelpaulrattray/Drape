@@ -1,7 +1,7 @@
 {
-  "edition": 566,
-  "updatedAt": "2026-09-29T08:30:59.018Z",
-  "shift": "Foreman (night shift) — two things came out of your bad Sign this morning, and they turned out to be different animals. The first: one of your three thrown-away pictures was thrown away wrongly. The checker that decides whether a picture came back in the right clothes was told that jewellery is never allowed — and your creature is wearing heavy brass earrings in his own signed photograph. So a picture that copied him faithfully was called wrong and refunded, and you had to ask again. Driven on his own picture: the old rule threw out his own earrings 2 times in 4, the new rule keeps them 4 times out of 4, and a fake logo pasted on to check we have not gone soft is still thrown out 3 times out of 3. That is in review. The second is your nose edit, and it is NOT what it looked like. We read the records of that minute before building anything. You had clicked back to the original picture 17 seconds before you pressed Sign — so at the moment you signed, the original really was what was on your screen, and it signed what was on your screen. The fix we had written down would have signed the original too. So nothing was built, and there is one plain question for you on your desk instead.",
+  "edition": 567,
+  "updatedAt": "2026-09-29T08:50:00.000Z",
+  "shift": "Foreman (night shift) — first, the fix your own page needed: last night's note went into the one line that says who wrote the briefing, and that line is a stamp, not a place for a report. It is one paragraph again, every word kept, and while it was broken it was also stopping every piece of work in the crew from merging. Then tonight's real job: the old casting lane's last switch comes out of the app. Every account has been on the new lane for months, but the code still asked the question on every page load and carried a whole second set of controls for an answer nobody gets — including a row of clickable facts above your brief that has not been clickable since you asked for it to be read-only. To prove you would see nothing change, the casting page and a sheet were photographed on two copies of the app running side by side, old code and new, in both light and dark: all six pictures came out identical to the pixel. That one is waiting on a review before it goes live.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -240,6 +240,10 @@
         {
           "state": "in-progress",
           "title": "Your word on the outfit test is built and live (#1459). \"Sunburst produced the best result easily\" — so the five pictures a cast gets when you sign it are now made by GPT Image 2.5 Sunburst instead of Nano Banana, at the bigger size that engine actually returns. The costs you already accepted: about 45 seconds longer per sign, and slightly less skin and hair detail. Nothing else moved — the price is the same to within a cent and a half, a picture that fails is still refunded on its own, and nothing anywhere names an engine to you. Still open until you have signed one of your own casts and looked at the five."
+        },
+        {
+          "state": "in-progress",
+          "title": "The old way of casting stops being ASKED ABOUT at all (#1444, slice 3 of five) — and the proof it costs you nothing is a photograph. Until tonight the app asked the studio, on every page load, which of the two casting roads your account was on, and carried a second set of controls for the answer nobody has had for months: a row of clickable facts above your brief, a queued-change arrow, and a second channel that could send the studio an edit your brief did not mention. All of it comes out. To show you would see nothing change, the casting page and a sheet were photographed on two copies of the app running side by side — the old code and the new — in both light and dark: all six pictures are identical to the pixel, and the two copies were proven to be different code before that was believed. It is written, driven and waiting on a review."
         }
       ]
     },
@@ -323,7 +327,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-29T07:45:42.149Z",
+      "readAt": "2026-09-29T08:45:59.727Z",
       "items": [
         {
           "issueNumber": 1129,
@@ -8937,9 +8941,23 @@
     {
       "id": "wardrobe-reference-1479",
       "title": "A picture is no longer thrown away for jewellery he is already wearing (#1479)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1482,
       "note": "Open and ready; held for the reviewer because it touches a money-path file."
+    },
+    {
+      "id": "crew-stamp-1485",
+      "title": "The edition stamp's byline is one line again, so every piece of crew work can merge",
+      "status": "merged",
+      "prNumber": 1486,
+      "note": "Merged 544c0f26 on the gate; a two-paragraph note in a one-line stamp had turned every PR red."
+    },
+    {
+      "id": "wire-field-1444",
+      "title": "The client stops asking which road this account is on — old-lane retirement slice 3",
+      "status": "in-review",
+      "prNumber": 1487,
+      "note": "Customer-visible, so it waits for the relay's eye; before/after frames on both themes are on the PR."
     }
   ],
   "problems": [
@@ -9209,7 +9227,7 @@
     234
   ],
   "nextUp": {
-    "readAt": "2026-09-29T07:45:42.149Z",
+    "readAt": "2026-09-29T08:45:59.726Z",
     "items": [
       {
         "issueNumber": 1278,
