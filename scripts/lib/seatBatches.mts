@@ -67,18 +67,37 @@
  * before it starts rather than rediscovering it. Inventing a stricter rule in a
  * derived reader is how six readers come to disagree again.
  *
- * ⚠ **THE RUNG LIMB IS THE ONE RULE THIS FILE ADDS, AND IT IS DELIBERATELY
- * STRICTER THAN THE SENTENCE IT SERVES.** The instruction was *never a card on
- * a rung AHEAD of the current focus*; the rule below is **never a card on a
- * rung at all**. The reason is that `pipelineGroupFor` cannot answer the
- * narrower question for this population — it files a card carrying a switch
- * label under `switched` before it ever looks at `rung:`, so `#1222`
- * (`bug` + `urgent` + `rung:N2`) reads as switch work there — and deriving
- * "which rung is the focus" mechanically would mean parsing PROGRAM.md prose,
- * which is a report and not an artifact (law 1). A rung card IS milestone work
- * whatever else it carries, so the focus lane is the right lane for it and the
- * stricter rule cannot be wrong in the expensive direction. The prefix comes
- * from `RUNG_LABEL_PREFIX` rather than the letters `rung:` typed again here.
+ * ⚠ **THE RUNG LIMB IS THE ONE RULE THIS FILE ADDS, AND SINCE #1496 IT IS THE
+ * SENTENCE IT SERVES RATHER THAN A STRICTER STAND-IN FOR IT.** The instruction
+ * was always *never a card on a rung AHEAD of the current focus*; the rule here
+ * was *never a card on a rung at all*, and `rungHoldFor` below is now the
+ * narrower one the instruction actually asked for.
+ *
+ * **The stricter version was not laziness — it had a stated reason, and the
+ * reason has been discharged rather than overruled.** It read: deriving "which
+ * rung is the focus" mechanically would mean parsing PROGRAM.md prose, which is
+ * a report and not an artifact (law 1). That was correct about PROGRAM.md and
+ * incomplete about the sources available: **the top of his ordered band IS the
+ * focus card, and its rung is a LABEL on it.** A label is an artifact. So
+ * `focusRungOf` reads the rung off that card and nothing here names a rung.
+ *
+ * ⚠ **WHAT THE STRICT RULE COST, MEASURED, is why it moved** (his word, 2026-09-29:
+ * *"file it urgently we need to increase through put"*): over six consecutive
+ * passes `seatCount` was **1, 0, 1, 1, 0, 1** while thirteen rung cards sat
+ * held, so the entire milestone backlog ran through one agent with up to four
+ * seats idle. "Cannot be wrong in the expensive direction" was true of
+ * correctness and false of throughput, which is the cost nobody was counting.
+ *
+ * ⚠ **AND IT IS ASKED AT BOTH GATES, WHICH IS WHERE #1496's OWN BODY WAS
+ * WRONG.** It cited only `orderedBandForSeats`; that function filters on
+ * `ORDERED_LABEL` first, so it never sees a background card. Eleven of the
+ * thirteen cards the card listed reach the lane through `seatPopulation`
+ * instead — relaxing the ordered gate alone moves nothing and closes as done.
+ * `pipelineGroupFor` still cannot answer this question for this population (it
+ * files a switch-labelled card under `switched` before it looks at `rung:`, so
+ * `#1222` reads as switch work there), which is why the predicate is local. The
+ * prefix comes from `RUNG_LABEL_PREFIX` rather than the letters `rung:` typed
+ * again here.
  *
  * # WHY BATCHES ARE CUT BY AREA
  *
@@ -319,6 +338,83 @@ const CATEGORY_LABEL = new Map(CREW_WORK_CATEGORIES.map((c) => [c.key, c.queueLa
 /** The exclusion vocabulary's own words, keyed for the skip sentence. */
 const EXCLUSION_WORDS = new Map(QUEUE_EXCLUSION_REASONS.map((r) => [r.key, r.label] as const));
 
+/** Every rung this card's labels name — usually none or one. */
+function rungsNamedBy(labels: readonly string[]): string[] {
+  return labels
+    .filter((label) => label.startsWith(RUNG_LABEL_PREFIX))
+    .map((label) => label.slice(RUNG_LABEL_PREFIX.length));
+}
+
+/**
+ * The rung the CURRENT FOCUS sits on, read off the focus card's own labels.
+ *
+ * ⚠ **This is what discharges the objection that kept the old blanket rule in
+ * place, and it is worth reading before touching it.** The header above argued
+ * that "which rung is the focus" could not be answered mechanically, because
+ * the only thing that said so was PROGRAM.md prose — a REPORT, not an artifact
+ * (law 1). That objection was correct about PROGRAM.md and wrong about the
+ * available sources: the top of his ordered band IS the focus card, its rung is
+ * a GitHub LABEL on it, and a label is an artifact. So the rung is derived from
+ * the card the focus lane is actually about (#180, `rung:N2` today) and never
+ * from a hard-coded letter — move the focus and the seats follow it, with
+ * nothing here edited.
+ */
+export function focusRungOf(card: { readonly labels: readonly string[] } | null): string | null {
+  if (card === null) return null;
+  const [rung] = rungsNamedBy(card.labels);
+  return rung ?? null;
+}
+
+/**
+ * MAY A SEAT BE OFFERED THIS RUNG CARD? — one predicate, asked by both gates
+ * (#1496, his word: *"file it urgently we need to increase through put"*).
+ *
+ * Returns the hold sentence, or `null` when the card may be offered.
+ *
+ * # Why the rule changed
+ *
+ * It used to be *never a card on a rung at all*, and that serialised the whole
+ * milestone backlog through one agent while up to four seats sat idle: measured
+ * over six consecutive passes, `seatCount` was 1, 0, 1, 1, 0, 1. Most rung
+ * cards today are independent slices that share nothing but the label — a Sign
+ * box, a prompt tightening, a judge axis — and the independence and area gates
+ * below already answer whether two of them can run side by side.
+ *
+ * # ⚠ AND WHY IT IS *EQUALS THE FOCUS RUNG*, NOT *DROP THE CLAUSE*
+ *
+ * Dropping it outright would let a seat start **N3 tonight**. Open at the time
+ * this was written: `rung:N2` 13, `rung:N2b` 1, `rung:N2c` 1, `rung:N3` 10,
+ * `rung:N4` 1, `rung:N4b` 1, `rung:N6` 3, `rung:N8` 1 — and THE MILESTONE GATE
+ * (`PROGRAM.md`) says completing a milestone never authorises starting the next
+ * one; N2b and N2c open on his word after N2 closes, and nothing else does.
+ * This clause is the gate's only mechanical expression on the seat lane.
+ *
+ * # EVERY rung label must match, not merely one
+ *
+ * A card tagged both `rung:N2` and `rung:N3` is held. Fail closed is the
+ * milestone gate's own direction, and the alternative lets a later rung in
+ * through a second label nobody looked at.
+ *
+ * # No focus ⇒ every rung card held
+ *
+ * An empty or unreadable ordered band must not open the seat lane to every rung
+ * on the ladder. Same direction as the master-switch arm in
+ * `orderedBandForSeats`: the reading that cannot be trusted stops the seats
+ * rather than freeing them.
+ */
+export function rungHoldFor(
+  labels: readonly string[],
+  focusRung: string | null,
+): string | null {
+  const rungs = rungsNamedBy(labels);
+  if (rungs.length === 0) return null;
+  if (focusRung === null) {
+    return "on a rung, and nothing names the current focus — the milestone gate holds it";
+  }
+  if (rungs.every((rung) => rung === focusRung)) return null;
+  return `a later rung (${rungs.join(", ")}) than the focus (${focusRung}) — the milestone gate; opens on his word`;
+}
+
 /**
  * THE SEAT LANE'S POPULATION — which of these cards a background seat may take
  * right now, and one plain sentence for every card it may not.
@@ -329,6 +425,17 @@ const EXCLUSION_WORDS = new Map(QUEUE_EXCLUSION_REASONS.map((r) => [r.key, r.lab
  */
 export function seatPopulation(input: {
   readonly cards: readonly SeatCandidateCard[];
+  /**
+   * The rung the focus card sits on, or `null` when nothing names a focus.
+   *
+   * ⚠ **THIS GATE IS THE ONE THAT MATTERS AND #1496's BODY NAMED THE OTHER
+   * ONE.** Measured at the labels of the thirteen cards that card listed as
+   * wrongly held: **eleven of them are background work and reach the lane
+   * through HERE**, not through `orderedBandForSeats`, which filters on
+   * `ORDERED_LABEL` before it looks at anything else. Relaxing only the ordered
+   * gate would have moved nothing and closed as done.
+   */
+  readonly focusRung: string | null;
   readonly switches: CrewWorkSwitchState;
   readonly board: SeatBuildBoard;
   readonly areaIndex: SeatAreaIndex;
@@ -355,8 +462,9 @@ export function seatPopulation(input: {
         : (EXCLUSION_WORDS.get(exclusion) ?? exclusion));
       continue;
     }
-    if (card.labels.some((label) => label.startsWith(RUNG_LABEL_PREFIX))) {
-      note("on a rung — milestone work, the focus lane's");
+    const rungHold = rungHoldFor(card.labels, input.focusRung);
+    if (rungHold !== null) {
+      note(rungHold);
       continue;
     }
     if (input.board.holdsOffOffer(card.number)) {
@@ -587,11 +695,16 @@ export function orderedBandForSeats(input: {
     why: "the top of NEXT UP — the focus shift takes it, never a seat",
   });
 
+  /* The focus card's OWN rung, read off its labels — the artifact that makes
+     the narrower rule possible at all. See `focusRungOf`. */
+  const focusRung = focusRungOf(focus);
+
   const offered: SeatTakeableCard[] = [];
   for (const card of rest) {
     const note = (why: string) => held.push({ number: card.number, title: card.title, why });
-    if (card.labels.some((label) => label.startsWith(RUNG_LABEL_PREFIX))) {
-      note("on a rung — milestone work, the focus lane's");
+    const rungHold = rungHoldFor(card.labels, focusRung);
+    if (rungHold !== null) {
+      note(rungHold);
       continue;
     }
     const independence = input.independenceOf(card);
