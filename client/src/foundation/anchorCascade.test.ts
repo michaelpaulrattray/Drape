@@ -45,6 +45,15 @@ import { describe, expect, it } from "vitest";
  * - **It reads LITERAL class names.** A `className` assembled at runtime from a
  *   variable is invisible to it. Every anchor in the tree today is literal or
  *   `cn("literal", cond && "literal")`, which it does read.
+ * - ⚠ **IT ASSUMES EVERY ANCHOR IS INSIDE `.dp-root`, AND THREE OF ITS FIRST
+ *   FOUR FINDINGS WERE NOT (#1531).** A surface rendered through `createPortal`
+ *   hangs off `document.body`, so the blanket it is judged against never
+ *   matches the element — the casting viewer and the plan modal are both
+ *   portalled. There the unrooted rule is CORRECT, and "fixing" it by rooting
+ *   makes the selector match nothing at all: the plan modal's support link lost
+ *   its colour and its underline to that repair before a render caught it.
+ *   **Check `el.closest(".dp-root")` in the running app before acting on a
+ *   finding**; `PORTALLED` below is the measured remainder.
  * - **It cannot see a render.** A rule can out-specify the blanket and still be
  *   invisible — `--rule` (#F0F0F2) as an underline on white is ~1.08:1, which is
  *   exactly what #1528 photographed and rejected. Specificity is the half a
@@ -81,39 +90,50 @@ const COMPANION_CARRIED = new Set([
 ]);
 
 /**
- * THE ENUMERATED REMAINDER, AND IT ONLY SHRINKS (#1531).
+ * THE ANCHORS THE BLANKET NEVER REACHES, BECAUSE THEY ARE NOT INSIDE `.dp-root`
+ * (#1531) — AND THIS IS A FALSE-POSITIVE CLASS OF THIS GUARD, NOT A DEBT.
  *
- * #1529's sweep reached four classes outside the staff surfaces it was fixing —
- * two of them live, visible defects. They are NOT exempted because they are
- * fine; they are named because fixing them is a customer-visible diff on three
- * more stylesheets, which is the relay's eye on rendered frames in both themes
- * and a different review road from the card that found them. Each is measured on
- * #1531 with its verdict, so this set is a debt with a receipt rather than a
- * guard being talked out of a finding.
+ * #1529's sweep reached four classes outside the staff surfaces it was fixing
+ * and #1531 was filed to pay them. **Driven in the running app, both themes,
+ * with the stylesheets before and after, three of the four were not defects at
+ * all**, and the fourth's stated reason was wrong. What the source cannot see:
+ * `CandidateViewer` is `createPortal`'d to `document.body` (its own docblock
+ * says so) and the plan modal is portalled too, so **`.dp-root a` is not in
+ * play for either** — the rule it "loses to" never matches the element.
  *
- * ⚠ **An entry that stops being needed is a FAILURE, not a pass** — the arm
- * below reddens when a class here has nothing left to report, so the set cannot
- * outlive the debt the way an exemption list does.
+ * Measured at `getComputedStyle`, light → dark, on the unfixed tree:
  *
- * The card number is stored BARE rather than as `"#1531"`: `token-guard.test.ts`
- * reads a `#` followed by four hex digits as a hardcoded colour, and every issue
- * number from #100 up is valid hex. Its own message says to move the reference
- * into a comment — which is right for prose and wrong for a value, so the `#` is
- * added where the line is printed instead.
+ * - `dp-btn--onmedia` — the casting viewer's download glyph: `rgb(255,255,255)`
+ *   in both themes, i.e. `--onScrim`, the value its block declares. The card
+ *   said it rendered `#111112` and was "almost invisible" beside a white close
+ *   button; both controls measure white, and rooting the rule changed nothing.
+ * - `dp-plan__request-link` — the billing modal's support link:
+ *   `rgb(17,17,18)` / `rgb(237,237,239)` with `text-decoration-line: underline`.
+ *   The card said it had no underline. It has one. ⚠ **Rooting this rule as
+ *   `.dp-root a.dp-plan__request-link` BROKE it** — outside `.dp-root` the
+ *   rooted selector matches nothing, so the anchor fell back to Tailwind
+ *   preflight's `a { color: inherit }` and painted its parent's `--metaStrong`
+ *   with the underline gone. The fix was the defect.
+ *
+ * So these two keep their unrooted blocks, which are correct where they render,
+ * and the guard is told why rather than being made to pass by a change that
+ * makes the product worse. The other two of the four are resolved in the tree:
+ * `dp-btn--quiet` was a REAL defect (it renders inside `.dp-root`) and is fixed
+ * in `foundation.css`; `dpc-viewer__download`'s `text-decoration` was dead and
+ * is deleted.
+ *
+ * ⚠ **THE EXEMPTION CANNOT WIDEN QUIETLY.** Each entry records every anchor
+ * call site its class had when it was MEASURED, and the arm below reddens if
+ * that set changes — a second `<a>` wearing `dp-btn--onmedia`, anywhere, may
+ * well be inside `.dp-root`, where the blanket does reach it and the finding is
+ * real again. Files rather than `file:line`, so an edit above the element does
+ * not redden a guard for moving a line.
  */
-const KNOWN_DEBT = new Map<string, number>([
-  // LIVE: the download glyph on the casting viewer's dark scrim paints `--ink`
-  // instead of `--onScrim`, while the close button beside it — a <button>, so
-  // the blanket never reached it — is white.
-  ["dp-btn--onmedia", 1531],
-  // LIVE: the "a higher plan" link in the billing modal loses its underline.
-  ["dp-plan__request-link", 1531],
-  // LIVE: a quiet row action rendered as a <Link> paints `--ink` rather than
-  // `--metaStrong`, so it stands at the weight of the row's own copy.
-  ["dp-btn--quiet", 1531],
-  // LATENT: a redundant `text-decoration: none` on an icon-only anchor; the
-  // blanket supplies the identical value, so nothing renders differently.
-  ["dpc-viewer__download", 1531],
+const PORTALLED = new Map<string, readonly string[]>([
+  // The viewer is portalled to document.body; measured white in both themes.
+  ["dp-btn--onmedia", ["features/castingV2/components/CandidateViewer.tsx"]],
+  // The plan modal is portalled; measured --ink + underline in both themes.
+  ["dp-plan__request-link", ["features/billing/ChangePlanModal.tsx"]],
 ]);
 
 /** Every source file under client/src, read once. */
@@ -268,7 +288,7 @@ function anchorClassesOn(rule: Rule, onAnchors: Map<string, string[]>): string[]
   const rightmost = rule.selector.split(/[\s>+~]+/).filter(Boolean).pop() ?? "";
   return [...rightmost.matchAll(/\.([\w-]+)/g)]
     .map((m) => m[1])
-    .filter((c) => onAnchors.has(c) && !COMPANION_CARRIED.has(c));
+    .filter((c) => onAnchors.has(c) && !COMPANION_CARRIED.has(c) && !PORTALLED.has(c));
 }
 
 /**
@@ -361,23 +381,37 @@ describe("a rule that styles an anchor out-specifies the blanket anchor rule", (
   });
 
   it("no rule styling an anchor's colour or underline is overridden by the blanket", () => {
-    const live = read.findings.filter((f) => !f.classes.every((c) => KNOWN_DEBT.has(c)));
     expect(
-      describeFindings(live, read.onAnchors),
+      describeFindings(read.findings, read.onAnchors),
       "each rule above matches but has every colour/text-decoration declaration discarded — " +
         "root it as `.dp-root a.<class>`, and write its :hover arm rooted too (a tie is settled by " +
-        "stylesheet order, not by intent). See this file's header.",
+        "stylesheet order, not by intent). ⚠ FIRST check the element is actually inside `.dp-root`: " +
+        /* Card 1531's number is deliberately NOT written with its `#` inside this
+           string: `token-guard.test.ts` reads `#` + four hex digits as a hardcoded
+           colour, and every issue number from 100 up is valid hex. It strips
+           comments, so the header above may say `#1531` freely — a message a
+           customer never sees is not worth an exemption in a colour guard. */
+        "a portalled surface is not, and rooting its rule there BREAKS it (card 1531). See this file's header.",
     ).toEqual([]);
   });
 
-  it("every KNOWN_DEBT entry still has something to report — the set only shrinks", () => {
-    const reported = new Set(read.findings.flatMap((f) => f.classes));
-    const idle = [...KNOWN_DEBT.keys()].filter((c) => !reported.has(c));
+  it("a PORTALLED class has not gained an anchor the measurement never saw", () => {
+    /* The exemption is only as good as the population it was measured over. A
+       new `<a>` wearing one of these classes may sit INSIDE `.dp-root`, where
+       the blanket does reach it — so the set of files is pinned and a change
+       sends a human back to `getComputedStyle` rather than passing quietly. */
+    const drift = [...PORTALLED.entries()].flatMap(([cls, files]) => {
+      const seen = (read.onAnchors.get(cls) ?? []).map((at) => at.split(":")[0]!).sort();
+      const pinned = [...files].sort();
+      return seen.length === pinned.length && seen.every((f, i) => f === pinned[i])
+        ? []
+        : [`${cls}: measured over [${pinned.join(", ")}], now on [${seen.join(", ")}]`];
+    });
     expect(
-      idle.map((c) => `${c} (card #${KNOWN_DEBT.get(c)})`),
-      "these classes are in KNOWN_DEBT and the sweep no longer finds anything wrong with them — " +
-        "the debt is paid, so delete the line. An exemption that outlives its reason is how a guard " +
-        "stops being one.",
+      drift,
+      "a class exempted as portalled is now on an anchor that was not there when it was measured — " +
+        "drive the new one and read `getComputedStyle(el).color` with `el.closest('.dp-root')`. If it " +
+        "IS inside the shell, the finding is real and the exemption must not cover it.",
     ).toEqual([]);
   });
 
