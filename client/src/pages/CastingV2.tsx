@@ -310,13 +310,19 @@ export default function CastingV2() {
   }, [sheetGone, castingOpen]);
   /*
     RE-IMAGINE on the hero's brief box (#535). The hook lives up here with the
-    other unconditional hooks; the glyph itself is drawn only on the author
-    road, off the same capture the server's door checks.
+    other unconditional hooks; it asks the same capture the server's door
+    checks.
+
+    ⚠ **IT ASKED `authorRoadEnabled` UNTIL #1444 AND THE VALUE DID NOT MOVE.**
+    Slice 2 had already re-sourced that field to `captureCastingV2Enabled`,
+    which is the very call `enabled` is, in the same object literal
+    (`server/routes/castingV2.ts`'s `config`) — so this is a rename off a
+    retired road's name, not a change of door.
   */
   const reimagine = useReimagine({
     value: brief,
     onValue: setBrief,
-    enabled: config.data?.authorRoadEnabled === true,
+    enabled: config.data?.enabled === true,
   });
   const openSessions = trpc.castingV2.openSessions.useQuery(
     {},
@@ -537,17 +543,18 @@ export default function CastingV2() {
   */
   const conceptUploadEnabled = config.data.conceptUploadEnabled === true;
   /*
-    WHETHER THIS ACCOUNT IS ON THE AUTHOR ROAD — server-owned, asked not
-    decided. `=== true` rather than a truthy read, so a config still loading,
-    or an older bundle against a server without the field, draws the quiet
-    state rather than a control that would do nothing.
+    ⚠ **THE ROAD QUESTION STOOD HERE AND IS RETIRED (#1444, slice 3 of the
+    old-lane retirement).** `const authorRoad = config.data.authorRoadEnabled
+    === true` gated three things on this page — the Re-imagine press, the
+    settings gear, and whether `style` rode the roll — and every one of them
+    is drawn for every account, because `CASTING_V2_SCOPE` has been `all`
+    since the V2 rollout and slice 2 re-sourced the field to that same scope.
 
-    The two paths' toggle stood beside this and is RETIRED (#203, his ruling
+    The two paths' toggle stood beside it and is RETIRED too (#203, his ruling
     2026-08-28: *"yeah we will retire the wardrobe/basics path obviously"*).
     The engine dresses the cast from the brief, so there is no path to choose
-    on the way to the button.
+    on the way to the button — and now no road either.
   */
-  const authorRoad = config.data.authorRoadEnabled === true;
 
   /*
     THE ONE ROLL FLOW — and it takes its brief as an ARGUMENT now (#196, his
@@ -628,8 +635,8 @@ export default function CastingV2() {
           clientRequestId: createClientRequestId(),
           sessionId: session.sessionId,
           briefText: briefText.trim(),
-          /* The settings travel only where the gear was drawn. */
-          ...(authorRoad ? { style } : {}),
+          /* The settings travel with the gear, which every account is drawn (#1444). */
+          style,
         })
         .then(() => setStartingRoll(session.sessionId, false))
         .catch((error: unknown) =>
@@ -816,7 +823,7 @@ export default function CastingV2() {
                 box for her to read, edit or undo, and Cast it stays the only
                 thing that spends. Author road only, absent elsewhere (D-180).
               */}
-              {authorRoad ? <ReimagineButton state={reimagine} /> : null}
+              <ReimagineButton state={reimagine} />
               <Button
                 variant="primary"
                 size="small"
@@ -851,11 +858,13 @@ export default function CastingV2() {
                   what clickable controls wear, so the shape says press.
                 · **THE VALUE IN MONO**, which ties it to the receipt beside it.
 
-              ⚠ **THE CHIP IS ABSENT RATHER THAN DISABLED OFF THE AUTHOR ROAD**
-              (D-180); the row itself is drawn for everyone, because the receipt
-              is. (`Start from photos` used to sit at the right of this row —
-              card 1107, his word: "build option C" — the brief box is the drop
-              door now.)
+              ⚠ **THE CHIP IS DRAWN FOR EVERY ACCOUNT NOW (#1444)** — it was
+              ABSENT rather than disabled off the author road (D-180), and that
+              road is retired, so there is no arm left to be absent on. The row
+              itself was always drawn for everyone, because the receipt is.
+              (`Start from photos` used to sit at the right of this row — card
+              1107, his word: "build option C" — the brief box is the drop door
+              now.)
 
               RIGHT is THE RECEIPT (#435, his brief 10 §2d) — what you get and
               what it costs, under the box that buys it. His reason: *"Every
@@ -871,13 +880,7 @@ export default function CastingV2() {
               system's machine-value face and these are machine values.
             */}
             <div className="dpc-hero__actions">
-              {authorRoad ? (
-                <CastSettingsButton
-                  idPrefix="dpc-hero"
-                  style={style}
-                  onStyle={setStyle}
-                />
-              ) : null}
+              <CastSettingsButton idPrefix="dpc-hero" style={style} onStyle={setStyle} />
               <span className="dpc-hero__receiptrule" aria-hidden="true" />
               <span className="dp-chrome dpc-hero__receiptvals">
                 {candidatesPerRoll ? `${candidatesPerRoll} CANDIDATES` : null}

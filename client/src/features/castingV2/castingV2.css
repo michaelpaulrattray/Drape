@@ -1078,7 +1078,6 @@
 }
 
 .dpc-echo__prose { color: var(--metaStrong); }
-.dpc-echo__fact { color: var(--ink); }
 /*
   READ-ONLY CHIPS, SAID ONCE (#154): under the echo on a plain authored sheet,
   where "let it vary" is withheld because the sentence goes to the engine
@@ -1643,19 +1642,9 @@
   border-radius: var(--r-lg);
 }
 
-/*
-  A queued adjustment, shown on the span rather than announced by a toast.
-
-  Rolls are immutable, so a change can only land on the next roll — the
-  sentence has to say that without pretending the current sheet changed. The
-  old value recedes, the new one takes full ink, and the timing is chrome.
-*/
-.dpc-echo__was { color: var(--meta); text-decoration: line-through; text-decoration-thickness: 1px; }
-.dpc-echo__will { color: var(--ink); border-bottom: 1px solid var(--accentSolid); }
-.dpc-echo__when { color: var(--faint); font-size: 10.5px; letter-spacing: 0.06em; }
-
-/* The casting category: a lock, so full ink — but no underline, because it is
-   free text and has no picker behind it. */
+/* Every fact in the reading sentence: full ink, and no underline, because the
+   sentence carries no picker at all (his read-only ruling) — the connective
+   prose beside it is the only other treatment there is. */
 .dpc-echo__role { color: var(--ink); }
 
 /*
@@ -1856,10 +1845,6 @@
   flex: 0 0 clamp(210px, 24vw, 268px);
   scroll-snap-align: start;
 }
-
-/* A queued change is a trigger, not dead text — the whole span opens the picker. */
-.dpc-echo__pendingTrigger { border-bottom: 0; white-space: nowrap; }
-.dpc-echo__pendingTrigger:hover .dpc-echo__will { border-bottom-color: var(--ink); }
 
 /* ---- FOLLOWING: the standing follow chip (§F) ---- */
 
