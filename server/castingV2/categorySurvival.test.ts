@@ -117,10 +117,31 @@ describe("every golden brief with a category keeps it", () => {
         engine: droppingEngine(),
       });
       const intent = (compiled.compiledBrief as { intent?: { role?: string | null } }).intent ?? {};
+      /*
+        THE FOUNDER INCIDENT, AND IT IS LIVE ON EVERY ROAD. `role` is the
+        record the chips, the sheet's record line and gate B5's
+        category-owns-physique rule all read. The repair is deterministic and
+        does not care what the model returned — that is this file's subject.
+      */
       expect(intent.role, "role was dropped and not repaired").toBeTruthy();
+      /*
+        ⚠ TWO ASSERTIONS STOOD HERE AND BOTH WERE HOUSE-ROAD (#1490 act 1):
+        `toContain("CASTING CATEGORY")` and `toContain(intent.role)` read the
+        COMPOSED block back out of the eight prompts, and `role` is the only
+        field that produced it. That block is gone with the house branch — it
+        is #180's own ghost, which is the card this suite's failure belongs to.
+
+        What replaces it is the author road's actual guarantee, and it is
+        STRONGER rather than weaker: the category does not have to survive a
+        composition step at all, because the customer's own sentence IS the
+        prompt's opening. Asserted against `briefSent` rather than `brief`
+        because the brand scrub runs first — "miu miu" is in this very
+        population, and the record is the wire (#173 finding 2).
+      */
+      const register = (compiled.compiledBrief as { register?: { briefSent?: string } }).register;
+      expect(register?.briefSent, "an author row always records what was sent").toBeTruthy();
       for (const candidate of compiled.candidates) {
-        expect(candidate.prompt).toContain("CASTING CATEGORY");
-        expect(candidate.prompt).toContain(intent.role!);
+        expect(candidate.prompt.startsWith(register!.briefSent!)).toBe(true);
       }
     },
   );

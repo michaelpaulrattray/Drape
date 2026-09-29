@@ -65,16 +65,31 @@ describe("the brand scrub, at the compile path", () => {
     }
   });
 
-  it("keeps the sentence around the removed name", async () => {
-    // "Versace editorial style" becomes "editorial style", not a hole.
-    const compiled = await castingBriefCompiler({
-      briefText: "an editorial model",
-      candidateCount: 8,
-      rollSeed: "scrub-keeps",
-      engine: engineReturning({ role: "male fashion model, Versace editorial style" }),
-    });
-    expect(compiled.candidates[0].prompt).toContain("editorial style");
-  });
+  /*
+    THREE ARMS STOOD HERE — `FACIAL HAIR:` emitted for a male sheet in both
+    resolutions, `EYE COLOUR:` on every candidate because biology never degrades,
+    and the sentence surviving around a removed name. Each names a house block by
+    its label, and no such label is composed on the author road.
+
+    ⚠ **DELETED WITH THE HOUSE ROAD — #1490 act 1, and FOLDED INTO #1125 rather
+    than re-pointed.** Every one of these arms asserted that a resolved and
+    persisted value left a FOOTPRINT IN THE PER-SLICE COMPOSED PROMPT. The author
+    road composes no per-slice prompt: one authored prompt paints all eight and
+    the dice records are marked `unsent` (#176), so there is no per-tier sentence
+    to look for and nothing for the arm to be right or wrong about.
+
+    ⚠ **THIS IS A FLOOR DROP AND IT IS SAID OUT LOUD.** The class these arms
+    guard is the UNOWNED-AXIS COLLAPSE — an axis nobody owns is decided by
+    whichever prior is loudest, identically on every tile — and it was caught
+    FIVE separate times by the founder's own eye. It is not abandoned: #1125
+    (`debt`, `rung:N3`) is exactly this loss, filed by the #180 ghost audit
+    BEFORE these arms fell over, and its ruling is that the question — did the
+    delivered picture carry what she asked for — is #30's, asked of a FRAME
+    rather than of a prompt string.
+
+    What survives in this file is everything that reads the PARSE or the
+    RESOLVER directly, which is the half that still decides a real record.
+  */
 });
 
 describe("the realized lines are present, not merely absent", () => {
@@ -88,18 +103,6 @@ describe("the realized lines are present, not merely absent", () => {
     return castingBriefCompiler({ briefText: brief, candidateCount: 8, rollSeed, engine: engineReturning(wire) });
   }
 
-  it("emits FACIAL HAIR for a male sheet, in both resolutions", async () => {
-    for (const [label, wire] of [
-      ["prescribe", { role: null, archetype: null, look: null, variationAxis: null, sex: "male" }],
-      ["bias", { role: "a heavy metal bogan", sex: "male" }],
-    ] as const) {
-      const compiled = await sheetOf("a man in his 30s", wire as Record<string, unknown>, `fh-${label}`);
-      const lines = compiled.candidates
-        .map((c) => c.prompt.match(/FACIAL HAIR: [^.]*\./)?.[0])
-        .filter((line): line is string => Boolean(line));
-      expect(lines.length, `${label}: no FACIAL HAIR lines at all`).toBeGreaterThanOrEqual(6);
-    }
-  });
 
   it("emits SKIN CHARACTER often enough to be doing something", async () => {
     /*
@@ -119,12 +122,6 @@ describe("the realized lines are present, not merely absent", () => {
     expect(lines, "no SKIN CHARACTER line on 80 candidates").toBeGreaterThan(10);
   });
 
-  it("emits EYE COLOUR on every candidate, because biology never degrades", async () => {
-    const compiled = await sheetOf("a heavy metal bogan", { role: "a heavy metal bogan" }, "eyes-bias");
-    for (const candidate of compiled.candidates) {
-      expect(candidate.prompt).toContain("EYE COLOUR:");
-    }
-  });
 });
 
 describe("the female stated-hair limit, pinned rather than described", () => {

@@ -458,23 +458,37 @@ describe("the roll entrance's walls are on the map", () => {
     /*
       THE HAZARD THIS ARM EXISTS FOR. Three of the five raises fit on one line
       (`throw new BriefRefusal("likeness", LIKENESS_MESSAGE);`) and
-      `unsupported_cohort`'s two put `new BriefRefusal(` and the id on separate
+      `unsupported_cohort`'s puts `new BriefRefusal(` and the id on separate
       lines. A line-wise regex — the shape every other reader in this file uses
       — finds sites for three members and ZERO for one, and sites-empty is not
       an error anywhere, so the half-blind version ships green.
 
-      Asserted at the CITATION rather than at the regex: both of
-      `unsupported_cohort`'s sites must be present and must name the line the
-      ID is on, which is the line a reader would open.
+      Asserted at the CITATION rather than at the regex: the site must be
+      present and must name the line the ID is on, which is the line a reader
+      would open.
+
+      ⚠ THIS EXPECTED **TWO** SITES IN THIS FILE UNTIL #1490 ACT 1, AND THE
+      COUNT WAS A FIXTURE RATHER THAN THE SUBJECT. The styled-brief SCREEN was
+      the second multi-line raise, and it is deleted with the house road; one
+      remains, the reader's own cohort wall. The arm is STRONGER for the change
+      rather than weaker — it now proves the multi-line SHAPE it is named for
+      instead of inferring it from a count, by requiring that
+      `new BriefRefusal(` sits on an EARLIER line than the cited one.
     */
     const atlas = buildStaticAtlas(CORPUS);
     const cohort = atlas.declared.find((d) => d.id === "roll.unsupported_cohort")!;
     const throwSites = cohort.sites.filter((s) => s.includes("briefCompiler.ts:"));
-    expect(throwSites.length, JSON.stringify(cohort.sites)).toEqual(2);
+    expect(throwSites.length, JSON.stringify(cohort.sites)).toEqual(1);
     const source = readFileSync(join(__dirname, "castingV2", "briefCompiler.ts"), "utf8").split("\n");
     for (const site of throwSites) {
       const line = Number(site.split(":").pop());
       expect(source[line - 1], site).toContain('"unsupported_cohort"');
+      /* THE SHAPE, asserted rather than assumed: the raise OPENS on an earlier
+         line than the one cited, which is precisely what a line-wise reader
+         cannot see. If this raise is ever collapsed onto one line, re-read this
+         arm rather than relaxing it — the hazard would be gone and the file
+         would need a different fixture to keep guarding the reader. */
+      expect(source[line - 2], site).toContain("new BriefRefusal(");
     }
     /* And the single-line members still land on their own throws. */
     for (const [id, member] of [["roll.likeness", "likeness"], ["roll.not_a_being", "not_a_being"], ["roll.reader_outage", "reader_outage"]] as const) {

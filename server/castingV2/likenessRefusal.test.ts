@@ -56,16 +56,30 @@ describe("the refusal is free and says the way out", () => {
       engine: {
         id: "test",
         complete: async () => ({
-          text: JSON.stringify({ cohort: "other", reads: null }),
+          /*
+            ⚠ THIS DROVE THE READER WITH `cohort: "other"` UNTIL #1490 ACT 1,
+            which is the HOUSE road's two-valued vocabulary and produced
+            an unsupported cohort. The author road asks the FOUR-valued subject
+            question, and a named character comes back as `likeness` by name —
+            one of the two walls the ruling KEEPS (#131 slice C). The wall is
+            the same wall and it is still free; only the word the reader says
+            has changed.
+          */
+          text: JSON.stringify({ cohort: "likeness", reads: null }),
           latencyMs: 1,
           provenance: { provider: "openrouter" as const, model: "t", servedModel: "t" },
         }),
       } satisfies TextEngine,
     });
-    await expect(compile).rejects.toMatchObject({ code: "unsupported_cohort" });
+    await expect(compile).rejects.toMatchObject({ code: "likeness" });
     await compile.catch((error: Error) => {
       expect(error.message).toContain("nobody in particular");
-      expect(error.message).toContain("not a character from a game or film");
+      /* ⚠ The wall's own words, and they are the LIKENESS message's rather than
+         the retired cohort message's (#1490 act 1) — it says "game, film or
+         show". Asserted as the bytes the customer reads, not near them. */
+      expect(error.message).toContain("not a character from a game, film or show");
+      /* The way out, which is what this arm's title promises. */
+      expect(error.message).toContain("Describe the kind of face you want");
       // The refusal must always say the money is safe — it runs before the claim.
       expect(error.message).toContain("not been charged");
     });

@@ -234,13 +234,32 @@ describe("the Versace stack, reproduced", () => {
     }
   });
 
-  it("no longer sends five identical hair lines", async () => {
-    const compiled = (await versaceFollow("cap-versace-lines")) as unknown as {
-      candidates: Array<{ prompt: string }>;
-    };
-    const lines = compiled.candidates.map((c) => c.prompt.match(/ HAIR: [^.]*\./)?.[0] ?? "");
-    const worst = Math.max(...[...new Set(lines)].map((l) => lines.filter((x) => x === l).length));
-    // A pair is family; three is a wall.
-    expect(worst).toBeLessThanOrEqual(SIGNATURE_CAP);
-  });
+  /*
+    ONE ARM STOOD HERE — the signature cap measured over the composed prompts, so
+    that a paid sheet whose pick does not matter cannot ship. ⚠ On the author road
+    all eight prompts are IDENTICAL BY DESIGN and the engine varies what the
+    sentence leaves open, so a prompt-signature cap cannot express this file's
+    subject at all: the variance that matters is now in the FRAMES, which is
+    #1125's own argument and #30's question. The arms that read the resolved
+    identities' spread survive above.
+
+    ⚠ **DELETED WITH THE HOUSE ROAD — #1490 act 1, and FOLDED INTO #1125 rather
+    than re-pointed.** Every one of these arms asserted that a resolved and
+    persisted value left a FOOTPRINT IN THE PER-SLICE COMPOSED PROMPT. The author
+    road composes no per-slice prompt: one authored prompt paints all eight and
+    the dice records are marked `unsent` (#176), so there is no per-tier sentence
+    to look for and nothing for the arm to be right or wrong about.
+
+    ⚠ **THIS IS A FLOOR DROP AND IT IS SAID OUT LOUD.** The class these arms
+    guard is the UNOWNED-AXIS COLLAPSE — an axis nobody owns is decided by
+    whichever prior is loudest, identically on every tile — and it was caught
+    FIVE separate times by the founder's own eye. It is not abandoned: #1125
+    (`debt`, `rung:N3`) is exactly this loss, filed by the #180 ghost audit
+    BEFORE these arms fell over, and its ruling is that the question — did the
+    delivered picture carry what she asked for — is #30's, asked of a FRAME
+    rather than of a prompt string.
+
+    What survives in this file is everything that reads the PARSE or the
+    RESOLVER directly, which is the half that still decides a real record.
+  */
 });

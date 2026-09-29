@@ -1392,22 +1392,24 @@ describe("no roll is born on a path", () => {
     });
 
     /**
-     * ⚠ THE ROAD, ASSERTED AT THE WIRE — #1443, and this arm is the whole reason
-     * the compiler's `authorRoad` input may stay OPTIONAL.
+     * ⚠ THIS ARM ASSERTED `authorRoad: true` AT THE WIRE UNTIL #1490 ACT 1, AND
+     * ITS HAZARD IS NOW STRUCTURAL RATHER THAN GUARDED.
      *
-     * Slice 2 deleted `CASTING_CREATIVE_REGISTER_SCOPE`, so nothing reads a flag
-     * to decide a road any more: this service passes a literal `true`. The
-     * compiler's input still DEFAULTS to the retired house road, because 86 arms
-     * across 17 suites drive it that way and retiring them is #180's ghost audit
-     * and slice 4 (#1445). That default is the hazard, and it is the hazard this
-     * arm exists for: a production caller that stopped passing the road would
-     * compose a sheet no engine has been sent since 2026-09-24, silently, with
-     * every other arm in this file still green.
+     * It existed because the compiler's input DEFAULTED to the retired house
+     * road: a production caller that stopped passing the road would have
+     * composed a sheet no engine had been sent since 2026-09-24, silently, with
+     * every other arm in this file still green. Act 1 deleted the branch AND the
+     * input field, so there is no default to fall into and no road to select —
+     * the assertion cannot be made and does not need to be.
      *
-     * Read off the object the compiler was HANDED (invariant 5), never off a
-     * constant near it.
+     * ⚠ **WHAT SURVIVES IS THE OTHER HALF, WIDENED**: no retired road-selecting
+     * key reaches the compiler at all. `creativeRegister` was the flag's own
+     * input name (slice 2) and `authorRoad` is act 1's; a service still sending
+     * either would be handing the compiler a key it does not read, which reads
+     * as a road being chosen and is not one. Read off the object the compiler
+     * was HANDED (invariant 5), never off a constant near it.
      */
-    it("⚠ hands the compiler the AUTHOR ROAD, as a literal — the flag is gone and the default is the retired one (#1443)", async () => {
+    it("⚠ hands the compiler NO road-selecting key — both retired input names are absent at the wire", async () => {
       seedCandidates();
       const seen: Record<string, unknown>[] = [];
       await createRoll(
@@ -1420,11 +1422,8 @@ describe("no roll is born on a path", () => {
         } as never,
         { ...INPUT } as never,
       );
-      expect(seen[0]?.authorRoad).toBe(true);
-      /* And the flag's own input name is gone with the flag — a service still
-         sending `creativeRegister` would be handing the compiler a key it no
-         longer reads, which reads as a road being chosen and is not one. */
       expect("creativeRegister" in seen[0]!).toBe(false);
+      expect("authorRoad" in seen[0]!).toBe(false);
     });
 
     /**
@@ -1466,8 +1465,11 @@ describe("no roll is born on a path", () => {
         expect("inheritedWardrobe" in compilerInput).toBe(false);
         expect("pickWardrobe" in compilerInput).toBe(false);
         expect("path" in compilerInput).toBe(false);
-        /* And a FOLLOW is the author road too (#154), stated at the wire. */
-        expect(compilerInput.authorRoad).toBe(true);
+        /* ⚠ `expect(compilerInput.authorRoad).toBe(true)` stood here — a FOLLOW
+           is the author road too (#154) — and #1490 act 1 removed the field it
+           read. A follow takes the one road there is; the absence is asserted
+           with the other retired keys above rather than twice. */
+        expect("authorRoad" in compilerInput).toBe(false);
         const calls = (castingDb.createRollWithCandidates as any).mock.calls;
         expect(calls.length, "nothing reached the insert").toBeGreaterThan(0);
         expect(calls[calls.length - 1][0].inheritWardrobe).toBe(false);

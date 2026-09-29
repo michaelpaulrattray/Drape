@@ -56,22 +56,31 @@ async function biasSheet(rollSeed: string) {
 }
 
 describe("worn state varies instead of collapsing", () => {
-  it("does not send eight identical worn states on a bias sheet", async () => {
-    /*
-      The Versace sheet, reproduced as a test. Count floor, not absence: a
-      suite that only checked "no 'as this casting wears it'" would pass
-      happily when the whole axis stopped emitting.
-    */
-    let sheetsWithVariety = 0;
-    for (let i = 0; i < 6; i += 1) {
-      const prompts = await biasSheet(`worn-${i}`);
-      const states = new Set(
-        prompts.map((c) => (c.prompt.match(/Worn ([a-z- ]+)\./)?.[1] ?? "loose").trim()),
-      );
-      if (states.size > 1) sheetsWithVariety += 1;
-    }
-    expect(sheetsWithVariety).toBe(6);
-  });
+  /*
+    THREE ARMS STOOD HERE — the bias tier's worn-state spread, the recorded
+    texture being SAID rather than merely persisted, and straight hair reaching a
+    sheet the editorial prior never sent it on. They are instances four and five
+    of the collapse this file is named for, read at the composed prompt.
+
+    ⚠ **DELETED WITH THE HOUSE ROAD — #1490 act 1, and FOLDED INTO #1125 rather
+    than re-pointed.** Every one of these arms asserted that a resolved and
+    persisted value left a FOOTPRINT IN THE PER-SLICE COMPOSED PROMPT. The author
+    road composes no per-slice prompt: one authored prompt paints all eight and
+    the dice records are marked `unsent` (#176), so there is no per-tier sentence
+    to look for and nothing for the arm to be right or wrong about.
+
+    ⚠ **THIS IS A FLOOR DROP AND IT IS SAID OUT LOUD.** The class these arms
+    guard is the UNOWNED-AXIS COLLAPSE — an axis nobody owns is decided by
+    whichever prior is loudest, identically on every tile — and it was caught
+    FIVE separate times by the founder's own eye. It is not abandoned: #1125
+    (`debt`, `rung:N3`) is exactly this loss, filed by the #180 ghost audit
+    BEFORE these arms fell over, and its ruling is that the question — did the
+    delivered picture carry what she asked for — is #30's, asked of a FRAME
+    rather than of a prompt string.
+
+    What survives in this file is everything that reads the PARSE or the
+    RESOLVER directly, which is the half that still decides a real record.
+  */
 
   it("puts hair UP on open sheets, which never happened before", async () => {
     /*
@@ -136,29 +145,7 @@ describe("worn state varies instead of collapsing", () => {
 });
 
 describe("texture reaches the prompt at bias tier", () => {
-  it("says the texture it recorded, rather than persisting a value it never sent", async () => {
-    const prompts = await biasSheet("texture-1");
-    for (const candidate of prompts) {
-      expect(candidate.prompt).toMatch(/Naturally (straight|wavy|curly|coiled)\./);
-    }
-  });
 
-  it("sends straight hair, which the editorial prior never did on its own", async () => {
-    /*
-      The founder's actual observation: never a straight-haired model on a
-      category sheet, though straight carries the largest weight in most
-      heritage palettes. If this goes to zero the axis has stopped rendering.
-    */
-    let straight = 0;
-    let total = 0;
-    for (let i = 0; i < 6; i += 1) {
-      for (const candidate of await biasSheet(`straight-${i}`)) {
-        total += 1;
-        if (/Naturally straight\./.test(candidate.prompt)) straight += 1;
-      }
-    }
-    expect(straight / total).toBeGreaterThan(0.2);
-  });
 
   it("still says nothing about hair when the brief stated its own", async () => {
     // Deference is unchanged by any of this — the user's words silence it all.

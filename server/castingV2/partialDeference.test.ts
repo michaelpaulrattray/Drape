@@ -339,22 +339,33 @@ describe("a clothing guard must not eat a haircut", () => {
     expect(parsed.ok && parsed.intent.statedHair.cutLength).toBe(cut);
   });
 
-  it.each(cuts)("composes a hair sentence carrying it: %s", async (brief, cut) => {
-    const out = await sheet(brief, {
-      statedHair: { cutLength: cut, colour: null, texture: null, greying: false },
-    });
-    for (const candidate of out.candidates) {
-      const line = hairLine(candidate.prompt);
-      /*
-        The failure this catches is not "the wrong length" — it is NO HAIR
-        SENTENCE AT ALL, which is what a swallowed cut produces. Assert the
-        sentence exists and carries her word, in that order, because an empty
-        string passing a `toContain` on an empty needle is how this would hide.
-      */
-      expect(line, `${brief} — no hair sentence was composed`).not.toBe("");
-      expect(line.toLowerCase()).toContain(cut.toLowerCase());
-    }
-  });
+  /*
+    AN `it.each` OF THREE STOOD HERE — a stated cut length composing a hair
+    sentence that carries her word. ⚠ The arm immediately above it is the live
+    half and is untouched: the PARSE reads her stated cut onto
+    `intent.statedHair.cutLength`. D-79's ruling is that her word is honoured;
+    on the author road it is honoured by being SENT VERBATIM rather than by being
+    recomposed into a sentence.
+
+    ⚠ **DELETED WITH THE HOUSE ROAD — #1490 act 1, and FOLDED INTO #1125 rather
+    than re-pointed.** Every one of these arms asserted that a resolved and
+    persisted value left a FOOTPRINT IN THE PER-SLICE COMPOSED PROMPT. The author
+    road composes no per-slice prompt: one authored prompt paints all eight and
+    the dice records are marked `unsent` (#176), so there is no per-tier sentence
+    to look for and nothing for the arm to be right or wrong about.
+
+    ⚠ **THIS IS A FLOOR DROP AND IT IS SAID OUT LOUD.** The class these arms
+    guard is the UNOWNED-AXIS COLLAPSE — an axis nobody owns is decided by
+    whichever prior is loudest, identically on every tile — and it was caught
+    FIVE separate times by the founder's own eye. It is not abandoned: #1125
+    (`debt`, `rung:N3`) is exactly this loss, filed by the #180 ghost audit
+    BEFORE these arms fell over, and its ruling is that the question — did the
+    delivered picture carry what she asked for — is #30's, asked of a FRAME
+    rather than of a prompt string.
+
+    What survives in this file is everything that reads the PARSE or the
+    RESOLVER directly, which is the half that still decides a real record.
+  */
 
   /*
     THE NEGATIVE CONTROL, and it is the guard's real job. A model answering

@@ -15,12 +15,21 @@ import type { TextEngine } from "../providers/types";
  * caller read that as "interpreter unavailable", and the fallback cast the
  * brief as a photoreal human.
  *
- * Two independent guards, tested separately, because either alone would have
- * let it through:
- *   1. The schema tolerates null everywhere, so a correct refusal is never
- *      discarded on a technicality.
- *   2. The fallback screens the brief itself, so an interpreter outage cannot
- *      become a photoreal charge for a styled brief.
+ * Two independent guards stood here, tested separately because either alone
+ * would have let it through. ⚠ **ONE OF THEM IS GONE WITH THE HOUSE ROAD
+ * (#1490 act 1) AND IT WAS NOT WEAKENED — IT WAS MADE UNNECESSARY.**
+ *   1. **LIVE.** The schema tolerates null everywhere, so a correct refusal is
+ *      never discarded on a technicality.
+ *   2. ⚠ **RETIRED.** The fallback screened the brief itself, so an
+ *      interpreter outage could not become a photoreal charge for a styled
+ *      brief. On the author road the brief reaches the engine VERBATIM: an
+ *      anime brief paints anime whether or not the reply parsed, so there is
+ *      no photoreal charge to prevent and nothing to screen. The 24 arms that
+ *      drove it are deleted below, with their reason in place.
+ *
+ * What protects the money now is the OUTAGE refusal (#126, his "always"): a
+ * brief the reader never read is refused FREE, before anything is claimed. It
+ * is untouched by that retirement and is driven below on both populations.
  */
 
 function engineReturning(text: string): TextEngine {
@@ -92,32 +101,46 @@ describe("a null in the reply never discards it", () => {
 });
 
 describe("stated style refuses, across phrasings", () => {
-  it.each(STYLED_BRIEFS)("refuses %j when the interpreter identifies it", async (brief) => {
-    const compile = castingBriefCompiler({
-      briefText: brief,
-      candidateCount: 8,
-      rollSeed: "style",
-      engine: engineReturning(JSON.stringify({ cohort: "other", reads: null })),
-    });
-    await expect(compile).rejects.toMatchObject({ code: "unsupported_cohort" });
-  });
+  /*
+    ⚠ TWENTY-FOUR ARMS STOOD HERE — TWO `it.each(STYLED_BRIEFS)` BLOCKS, BOTH
+    DELETED WITH THE HOUSE ROAD (#1490 act 1), AND THEY ARE THE ONLY ARMS IN
+    THIS FILE THAT MOVED.
 
+    Both asserted a REFUSAL this product no longer makes, and neither was
+    weakened — the road underneath them was removed by his ruling:
+
+      · *"refuses %j when the interpreter identifies it"* drove the reader with
+        `{ cohort: "other" }`, which is the HOUSE road's question. The author
+        road asks the four-valued SUBJECT question instead and has exactly two
+        walls, likeness and not-a-being (#131 slice C). A stated style is
+        not one of them.
+      · *"…when the interpreter ANSWERED and the reply could not be read"* drove
+        the styled-brief SCREEN, deleted from `briefCompiler` in the same
+        commit. Its premise was that the FALLBACK ignores a stated style and
+        bills for it; on the author road the brief reaches the engine verbatim,
+        so there is nothing to screen.
+
+    ⚠ **The defect this file was written for cannot recur in that shape, which
+    is why the arms go rather than move.** An anime brief no longer becomes a
+    photoreal charge — it becomes ANIME, which is what was asked for and is the
+    mission's own sentence. What still protects the money is the outage refusal
+    below, and it is untouched.
+
+    The arm beneath records the new truth so the deletion is not a silent loss
+    of coverage: the same briefs that used to be refused now CAST.
+  */
   it.each(STYLED_BRIEFS)(
-    "refuses %j when the interpreter ANSWERED and the reply could not be read — the screen's only population now",
+    "casts %j rather than refusing it — the author road's two walls are likeness and not_a_being, and a stated style is neither",
     async (brief) => {
-      /*
-        The guard that matters most. Without it, every one of these becomes a
-        photoreal roll the user pays for — which is the shape of the original
-        defect. Since #126 a DEAD reader refuses free before this screen (see
-        below), so the screen's whole population is the unparsed reply.
-      */
-      const compile = castingBriefCompiler({
+      const compiled = await castingBriefCompiler({
         briefText: brief,
         candidateCount: 8,
         rollSeed: "style",
-        engine: engineReturning("I'm sorry, I can't help with that."),
+        engine: engineReturning(JSON.stringify({ subject: "human", reads: null })),
       });
-      await expect(compile).rejects.toMatchObject({ code: "unsupported_cohort" });
+      expect(compiled.candidates).toHaveLength(8);
+      /* Her own words reach the engine verbatim — that is why this casts. */
+      expect(compiled.candidates[0]!.prompt.startsWith(brief)).toBe(true);
     },
   );
 

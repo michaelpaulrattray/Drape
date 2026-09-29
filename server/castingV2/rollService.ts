@@ -711,18 +711,12 @@ export async function createRoll(
          `deterministicBriefCompiler` still hands it on (slice 4's, #1445). */
       readInk,
       briefFidelity,
-      /*
-        THE ROAD, AS A LITERAL — #1443. It was `creativeRegister`, captured off
-        `CASTING_CREATIVE_REGISTER_SCOPE` at the top of this function; the flag is
-        deleted and the answer it gave every account since 2026-09-24 is this.
-        ⚠ ASSERTED AT THE WIRE, not near it (invariant 5): `rollService.test.ts`
-        reads it off the object the compiler was handed, because the compiler's
-        input still DEFAULTS to the retired house road — 86 arms across 17 suites
-        drive it that way and retiring them is #180's and slice 4's work — so a
-        production caller that stopped passing this would compose a sheet no
-        engine has received since the flag went to `all`.
-      */
-      authorRoad: true,
+      /* ⚠ `authorRoad: true` STOOD HERE AND IS GONE (#1490 act 1) — and it is the
+         FIELD that left, not the road. The compiler has one road now: the house
+         branch is deleted, so there is nothing for a literal to select and a
+         caller can no longer get the retired composition by forgetting a flag.
+         What `rollService.test.ts` asserted at the wire has become structural,
+         which is why that arm retires here rather than moving. */
       style: input.style,
       followIndexLabel,
       followIdentity,

@@ -202,24 +202,32 @@ describe("hair is authored, not left to the image model", () => {
     expect(old.some((r) => r.hair?.colour === "grey" || r.hair?.colour === "white")).toBe(true);
   });
 
-  it("reaches the prompt, so the record does not lie about it", async () => {
-    const compiled = await castingBriefCompiler({
-      briefText: "a retired boxer with a broken nose",
-      candidateCount: 8,
-      rollSeed: "hair-prompt",
-      engine: {
-        id: "test",
-        complete: async () => ({
-          text: JSON.stringify({ cohort: "photoreal_human", role: "retired boxer", reads: null }),
-          latencyMs: 1,
-          provenance: { provider: "openrouter" as const, model: "t", servedModel: "t" },
-        }),
-      } satisfies TextEngine,
-    });
-    for (const candidate of compiled.candidates) {
-      expect(candidate.prompt).toMatch(/HAIR: /);
-    }
-  });
+  /*
+    FOUR ARMS STOOD HERE, all reading the composed `HAIR:` and `PRESENCE:`
+    sentences — including the D-79 ruling's own "greying at the temples" case.
+    ⚠ The anchor itself is NOT unguarded: `creativeRegisterScope.test.ts` drives
+    a follow at the wire and asserts the whole prompt by exact equality, which is
+    where the Row A clause and the photograph's primacy (#177) are proven now.
+
+    ⚠ **DELETED WITH THE HOUSE ROAD — #1490 act 1, and FOLDED INTO #1125 rather
+    than re-pointed.** Every one of these arms asserted that a resolved and
+    persisted value left a FOOTPRINT IN THE PER-SLICE COMPOSED PROMPT. The author
+    road composes no per-slice prompt: one authored prompt paints all eight and
+    the dice records are marked `unsent` (#176), so there is no per-tier sentence
+    to look for and nothing for the arm to be right or wrong about.
+
+    ⚠ **THIS IS A FLOOR DROP AND IT IS SAID OUT LOUD.** The class these arms
+    guard is the UNOWNED-AXIS COLLAPSE — an axis nobody owns is decided by
+    whichever prior is loudest, identically on every tile — and it was caught
+    FIVE separate times by the founder's own eye. It is not abandoned: #1125
+    (`debt`, `rung:N3`) is exactly this loss, filed by the #180 ghost audit
+    BEFORE these arms fell over, and its ruling is that the question — did the
+    delivered picture carry what she asked for — is #30's, asked of a FRAME
+    rather than of a prompt string.
+
+    What survives in this file is everything that reads the PARSE or the
+    RESOLVER directly, which is the half that still decides a real record.
+  */
 });
 
 describe("the anchor never becomes a lock the user did not write", () => {
@@ -309,45 +317,6 @@ describe("the variation generator actually varies", () => {
 });
 
 describe("a locked look still lets presence differentiate", () => {
-  it("puts presence in the prompt when the look is pinned flat", async () => {
-    /*
-      The sameness bug. The rule was "one axis or the other, never both
-      shouting" — right when the LOOK varies across the eight, because then the
-      whisper is the difference. Wrong when the brief pins a look: all eight got
-      an identical look block, presence was computed and never reached the
-      prompt, and the only things left differing were heritage and hair. Inside
-      a locked heritage that is almost nothing, which is why the founder's sheet
-      came back as eight men with the same hair, the same eyes and no
-      personality.
-    */
-    const compiled = await castingBriefCompiler({
-      briefText: "a male fashion model, commanding glamour",
-      candidateCount: 8,
-      rollSeed: "locked-look",
-      engine: {
-        id: "test",
-        complete: async () => ({
-          text: JSON.stringify({
-            cohort: "photoreal_human",
-            role: "male fashion model",
-            sex: "male",
-            look: "commanding glamour",
-            variationAxis: "look",
-            reads: null,
-          }),
-          latencyMs: 1,
-          provenance: { provider: "openrouter" as const, model: "t", servedModel: "t" },
-        }),
-      } satisfies TextEngine,
-    });
-
-    for (const candidate of compiled.candidates) {
-      expect(candidate.prompt).toContain("PRESENCE:");
-    }
-    // And the presences genuinely differ, or the fix is decorative.
-    const presences = new Set(compiled.candidates.map((c) => c.resolvedIdentity.energy));
-    expect(presences.size).toBeGreaterThanOrEqual(6);
-  });
 
   it("still suppresses presence when the look is the varying axis", async () => {
     // Eight different houses' casting, each with its own whisper — stacking a
@@ -444,42 +413,5 @@ describe("stated hair outranks authored hair", () => {
     expect(await promptFor("creator", notes)).not.toContain("Cut and worn as that style is genuinely worn");
   });
 
-  it("authors a cut on 'greying at the temples' — that is the D-79 ruling", async () => {
-    // Stating a process about the colour must no longer silence the cut. This
-    // is the assertion that would have failed before the re-ship.
-    expect(await promptFor("creator", "greying at the temples")).toContain(
-      "Cut and worn as that style is genuinely worn",
-    );
-  });
 
-  it("still authors hair when the brief says nothing about it", async () => {
-    /*
-      The follow inheritance depends on hair being authored, so deference must
-      be narrow: silence still gets a hair, or eight candidates share one.
-
-      Asserted mode-agnostically. This brief states a role, so under the
-      styling-tier ruling it composes at BIAS resolution — silhouette rather
-      than a named cut. What matters here is that a hair line exists at all,
-      which is the property the follow depends on; which tier it speaks at is
-      `stylingResolution.test.ts`'s subject.
-    */
-    /*
-      Scoped to the extracted HAIR line, not the whole prompt. The bias BEARD
-      prose ends on the same deferral clause, so a whole-prompt search would be
-      satisfied by a facial-hair line while the hair line was silent — a pass on
-      hash luck rather than on the property being tested.
-    */
-    const prompt = await promptFor("oncology nurse", "tired at the end of a shift");
-    const cleaned = prompt.split("FACIAL HAIR:").join("FH:");
-    const at = cleaned.indexOf(" HAIR: ");
-    const hairLine = at < 0 ? "" : cleaned.slice(at, cleaned.indexOf(".", at) + 1);
-    expect(hairLine, "no authored HAIR line at all").not.toBe("");
-    const authored =
-      hairLine.includes("Cut and worn as that style is genuinely worn") ||
-      hairLine.includes("as this casting wears it") ||
-      // The prescription line's closer sits after the full stop this slice ends
-      // on, so a named cut is the other legitimate shape.
-      hairLine.length > 12;
-    expect(authored, "no authored hair line in either tier").toBe(true);
-  });
 });

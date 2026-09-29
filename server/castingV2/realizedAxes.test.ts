@@ -229,23 +229,34 @@ describe("a stated fact outranks a realized one", () => {
     expect(await promptFor(`a creator with ${notes}`, notes)).not.toContain(marker);
   });
 
-  it("still realizes the axes the brief said nothing about", async () => {
-    const prompt = await promptFor("a creator with green eyes", "green eyes");
-    expect(prompt).not.toContain("EYE COLOUR:");
-    expect(prompt).toContain("BROW CHARACTER:");
-  });
+  /*
+    THREE ARMS STOOD HERE — `BROW CHARACTER:` and `EYE COLOUR:` reaching the
+    prompt on a brief that states neither, and the engineered iris render being
+    injected rather than a bare colour name. This file's opening paragraph is the
+    founder's brown-eyed sheet, which is the collapse class at its origin, and
+    the arms that read the RESOLVED identity's realized axes survive.
 
-  it("realizes everything on a brief that states none of them", async () => {
-    const prompt = await promptFor("an oncology nurse", "tired at the end of a shift");
-    expect(prompt).toContain("EYE COLOUR:");
-    expect(prompt).toContain("BROW CHARACTER:");
-  });
+    ⚠ **DELETED WITH THE HOUSE ROAD — #1490 act 1, and FOLDED INTO #1125 rather
+    than re-pointed.** Every one of these arms asserted that a resolved and
+    persisted value left a FOOTPRINT IN THE PER-SLICE COMPOSED PROMPT. The author
+    road composes no per-slice prompt: one authored prompt paints all eight and
+    the dice records are marked `unsent` (#176), so there is no per-tier sentence
+    to look for and nothing for the arm to be right or wrong about.
 
-  it("injects the engineered iris render, not just the colour name", async () => {
-    // D1's whole point: "hazel" alone renders as generic brown.
-    const prompt = await promptFor("an oncology nurse", null);
-    expect(prompt).toMatch(/EYE COLOUR: [a-z -]+ — .*(striation|limbal|flecks|micro-texture|pupil)/);
-  });
+    ⚠ **THIS IS A FLOOR DROP AND IT IS SAID OUT LOUD.** The class these arms
+    guard is the UNOWNED-AXIS COLLAPSE — an axis nobody owns is decided by
+    whichever prior is loudest, identically on every tile — and it was caught
+    FIVE separate times by the founder's own eye. It is not abandoned: #1125
+    (`debt`, `rung:N3`) is exactly this loss, filed by the #180 ghost audit
+    BEFORE these arms fell over, and its ruling is that the question — did the
+    delivered picture carry what she asked for — is #30's, asked of a FRAME
+    rather than of a prompt string.
+
+    What survives in this file is everything that reads the PARSE or the
+    RESOLVER directly, which is the half that still decides a real record.
+  */
+
+
 });
 
 describe("a follow inherits the realized axes", () => {
