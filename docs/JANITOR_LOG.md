@@ -22,6 +22,23 @@ founder 2026-08-26, *"do it"*). What lives here and nowhere else:
 2. **The dead-code readings** — knip's counts per run are in
    `docs/JANITOR_KNIP.md`'s table; this file records what was DONE with
    them (cards filed, ceilings found, attempted-and-reverted deletions).
+3. **The memory index's accounting** (#1472) —
+   `npx tsx scripts/memory-index-audit.mts`, on this same three-day clock.
+   It walks the four indexes of the shared file memory
+   (`C:\Users\Admin\.claude\projects\C--Users-Admin-Drape\memory\`) and reports a memory no index
+   points at, a pointer with no file, two pointers at one file, and two entries
+   on one line. Exit **2** means there is something to fix; the run records the
+   counts here.
+   ⚠ **THIS SEAT IS THE ONLY CALLER THERE CAN EVER BE, and that is structural
+   rather than a gap.** The subject is outside the repository, under no version
+   control, and CI has never seen it — so no suite in `server/` can read it and
+   no gate will ever notice the index breaking. It breaks SILENTLY: `MEMORY.md`
+   is read with a limit, and a pointer past the end of it is dropped from
+   context with no error. On 2026-09-26 the file stood at 26,134 bytes and the
+   invisible tail held `gh-secondary-limit-rest-works`; the next shift spent its
+   first ten minutes re-deriving that lesson from scratch.
+   `server/memoryIndexAudit.test.ts` proves the READER against fixture trees,
+   which is the half that can be automated; this clock is the other half.
 
 Every Janitor run BEGINS by reading this file and ENDS by appending to it.
 Findings are deduped against the queue, open and closed. knip, the Atlas
