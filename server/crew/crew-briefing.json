@@ -1,7 +1,7 @@
 {
-  "edition": 571,
-  "updatedAt": "2026-09-29T12:43:03.098Z",
-  "shift": "Foreman (night shift) — two things tonight, and the first one is yours. When you sign a face, the box now tells you WHICH picture it is about to make permanent: \"This signs your edit\", or — the one that caught you — \"This signs your original, not your edit\", with her face beside it and above the price. Your Bingu nose edit is exactly the case it is for: you had clicked back to the original to compare, seventeen seconds before you signed, so the original really was the picture on your screen. Nothing was random and nothing was broken — the product simply never said what it was about to spend your 450 credits on. It does now. A face you have never edited says nothing at all, deliberately: naming \"your original\" to someone who only has one picture invents a question rather than answering one, and of the nine casts ever signed not one had an edit on it. I looked at all three cases in both themes before it shipped. The second thing is the crew itself: you said to increase throughput, and the reason it was low is that the team held every card on a rung for the one main shift, so up to four helpers sat idle while thirteen cards waited. They can now take cards on the SAME rung the current focus is on, and nothing further along — I checked against the real queue, and no N2b, N2c or N3 card can be picked up, which is what you asked about. Measured before and after on tonight's actual cards: one helper with one card became two helpers with ten. One honest note on that one: the card I was given named the wrong place in the code, and building it as written would have freed nothing at all while looking finished — eleven of its own thirteen examples were held somewhere else entirely. That is written on the card.",
+  "edition": 572,
+  "updatedAt": "2026-09-29T14:37:48.768Z",
+  "shift": "Foreman (night shift) — one thing tonight and it is invisible to you, which is the point. The old way of casting people is now gone from the code, completely. Since you said Yes on 24 September every roll has taken the new road — your own words going to the engine — but the old machinery was still sitting there underneath, being built eight times per roll and thrown away every time. Nothing was broken by it. What it cost was confusion: anyone reading that file to find out what we actually send your engine read the wrong answer, and that is how a real mistake gets made later. It is out now, and the file says plainly that nothing in it reaches an engine any more. The work was almost all in the 74 checks that were still watching the old road. I read every one rather than counting them: 64 were about something still true and now point at the place that decides it, and 9 could not be saved and say so in writing where they used to be. The biggest group — 47 checks covering your billing, refunds and cancellations — now run through the real thing instead of a stand-in, so they are stronger than they were. Two things I found on the way and did NOT quietly fix, because both are questions for you rather than clean-up. The first matters: if somebody types \"a woman wearing a hijab\", we used to describe that garment to the engine properly, because you found it coming back as a loose fashion scarf instead. That description has not been reaching the engine since the new road took over — her own two words are all that gets there now. Nobody has been let down by it that I can see, and it may not even matter on today's engine, which is newer than the one you tested it on. So the right next step is a cheap test with pictures for your eye, not me guessing. That is card 1503. The second is smaller and technical and is card 1504. One correction worth telling you: the job card estimated about 16 checks and there were 74. I measured before building rather than trusting the number, which is why it took a night and not an hour.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -250,8 +250,12 @@
           "title": "The old lane's composer and its test-only twin are SETTLED, and the honest answer is that they leave in two steps rather than one (#1445, slice 4 of five). Nothing about your rolls changes — the production code is untouched, comment for comment. What was decided: the old road cannot be switched off in the same act that deletes the thing it uses, because a second compiler keeps using it, so the order is forced. What shipped is the missing guard — until tonight we proved the one caller asks for the new road, but never that it was the ONLY caller, which is the shape a mistake would actually take. And the remaining job is now measured properly and sized: the card that ordered this said 86 checks across 17 files; the code says 101 across 20, and three of the files it never named are in there — one of them still testing a switch we deleted a week ago. That job is #1490 and it is its own night, not a tidy-up."
         },
         {
-          "title": "The old way of casting is OUT of the code that builds every roll (#1490, act 1 of 2). Nothing you can see changes — it has had no way into a paid roll since you said Yes on 24 September. What took the night was the 107 checks that were still watching it: each one read rather than counted, because most were testing one thing that is still true and one that is not. A third were re-pointed and some are now stronger; 43 could not be saved and are a declared loss on card 1125, because they checked that a per-picture decision reached the picture and there are no per-picture decisions any more. Act 2 (the test-only compiler and the composer) is still owed and has to come second.",
-          "state": "in-progress"
+          "title": "The old way of casting is OUT of the code that builds every roll (#1490, act 1 of 2). Nothing you can see changes — it has had no way into a paid roll since you said Yes on 24 September. What took the night was the 107 checks that were still watching it: each one read rather than counted, because most were testing one thing that is still true and one that is not. A third were re-pointed and some are now stronger; 43 could not be saved and are a declared loss on card 1125, because they checked that a per-picture decision reached the picture and there are no per-picture decisions any more. Act 2 landed the same week and is the step below.",
+          "state": "done"
+        },
+        {
+          "state": "done",
+          "title": "And the old way of casting is now gone from the code COMPLETELY (#1490, act 2 of 2 — the card is closed). The part that actually wrote the old instructions, and its test-only twin, are both deleted, along with five helper pieces that nothing could reach once they went. Your rolls do not change in any way — this machinery was being built eight times per roll and discarded every time, and it cost a fortieth of a millisecond, so this is not a speed improvement and I am not claiming one. What it buys is honesty: that file described a road the product does not take, and anyone reading it to learn what we send your engine got the wrong answer. Of the 74 checks watching it, 64 now point at the place that really decides the thing they were written for, and 9 are gone with a written reason in their place. The 47 covering your billing and refunds now run through the real compiler rather than a stand-in. Two findings went onto their own cards instead of being folded in: the covering question (#1503, which needs your eye on pictures) and one technical leftover (#1504). The change was reviewed twice by hand before it merged."
         },
         {
           "title": "Sign now names the version it is about to make permanent (#1478) — your Bingu nose edit. The box says \"This signs your edit\" or \"This signs your original, not your edit\", with her picture beside it and above the price. A face never edited says nothing, so the ordinary Sign is unchanged.",
@@ -343,7 +347,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-29T11:23:58.892Z",
+      "readAt": "2026-09-29T14:36:57.406Z",
       "items": [
         {
           "issueNumber": 1129,
@@ -352,14 +356,20 @@
           "rung": "N2"
         },
         {
-          "issueNumber": 1490,
-          "title": "Old lane retirement, the last act: the house branch comes out of the compiler — 101 arms across 20 suites, in two forced-order acts",
+          "issueNumber": 1495,
+          "title": "N2 ghost: interpretBrief still accepts author:false, and nothing in production can reach it",
           "kind": "rung",
           "rung": "N2"
         },
         {
-          "issueNumber": 1495,
-          "title": "N2 ghost: interpretBrief still accepts author:false, and nothing in production can reach it",
+          "issueNumber": 1503,
+          "title": "A stated covering no longer reaches the engine: D-124's repair went inert when the author road became every account's road",
+          "kind": "rung",
+          "rung": "N2"
+        },
+        {
+          "issueNumber": 1504,
+          "title": "photorealHumanConstant has test callers only since act 2 deleted its last caller — the uncalled-export shape, with 42 call sites behind it",
           "kind": "rung",
           "rung": "N2"
         },
@@ -498,7 +508,7 @@
         }
       ],
       "recommendation": "A. You did not make a mistake — you compared two pictures, which is what the comparison is for. What was missing was the product saying what it was about to do with your 450 credits.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-29T08:05:00.000Z",
       "issueNumber": 1478
     },
@@ -9015,7 +9025,7 @@
     {
       "id": "backup-delete-arm-cannot-run-1436",
       "severity": "warning",
-      "state": "open",
+      "state": "resolved",
       "title": "The tidying job you gave us the go-ahead for has never actually run, and cannot (#1436)",
       "detail": "This is our own housekeeping, not the product — nothing a customer sees is affected.\n\nYou told us the crew could throw away its own expired backups itself rather than bringing you a list every time. That was built the same day. Tonight was the first time anybody tried it, and it refuses every time it is asked — so in the day since it landed it has never once run, and the record of what it deleted is still empty.\n\nWhy: before deleting anything it checks that the working folder is tidy, and it counts the crew's ~640 scratch files as untidiness. Those files are supposed to be there. So the check can never pass on this machine, which is the only machine the backups are on.\n\nIt is worth fixing properly rather than working around: the tidiness check protects nothing here — we read the code, and every decision the job makes comes from the project's saved history and from the backup files themselves, never from the working folder. What it is holding up is small (about 0.9 MB across five old backups), so there is no rush, but a safety check that can only ever say no is the kind a crew learns to route around."
     }
@@ -9259,7 +9269,7 @@
     236
   ],
   "nextUp": {
-    "readAt": "2026-09-29T11:23:58.892Z",
+    "readAt": "2026-09-29T14:36:57.406Z",
     "items": [
       {
         "issueNumber": 180,
