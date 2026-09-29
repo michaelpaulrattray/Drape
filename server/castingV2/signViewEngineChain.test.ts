@@ -19,7 +19,12 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { FAL_GPT_IMAGE_25_SUNBURST_EDIT, SIGNED_VIEW_SIZE } from "../providers/falImages";
+import {
+  FAL_GPT_IMAGE_25_SUNBURST,
+  FAL_GPT_IMAGE_25_SUNBURST_EDIT,
+  OUTFIT_PLATE_SIZE,
+  SIGNED_VIEW_SIZE,
+} from "../providers/falImages";
 import { DEFAULT_IDENTITY_EDIT_MODEL } from "../providers/falQueue";
 import { QUEUE_BASE } from "../providers/falTransport";
 import type { CastViewAngle } from "../../shared/boardTypes";
@@ -43,6 +48,7 @@ vi.mock("../db/generations", () => ({
 }));
 
 const { committedPackageAngles, renderViewAttempts } = await import("./packageOrchestrator");
+const { castingOutfitPlateEngine, resetSignEnginesForTests } = await import("./signEngine");
 
 /** A 1x1 PNG, as bytes. */
 const PIXEL = Buffer.from(
@@ -109,6 +115,12 @@ function dependencies() {
 beforeEach(() => {
   castAssets.length = 0;
   process.env.FAL_KEY = "test-key";
+  /* The memoized engines are dropped between arms, because the plate arms and
+     the view arms build different ones off the same variable. `viewEngine` and
+     `plateEngine` were both missing from this reset until path E — a reset
+     that silently resets less than it names is how one arm inherits another's
+     engine and both pass for the wrong reason. */
+  resetSignEnginesForTests();
 });
 
 afterEach(() => {
@@ -116,7 +128,7 @@ afterEach(() => {
 });
 
 describe("the engine a signed view is actually rendered by", () => {
-  it("THE SIGN'S OWN ATTEMPT LOOP REACHES SUNBURST'S EDIT DOOR — no override (#1459)", async () => {
+  it("THE SIGN'S OWN ATTEMPT LOOP REACHES NANO BANANA PRO'S EDIT DOOR — no override (#1278 path E)", async () => {
     const captured = stubFalTransport();
     const landed: Array<{ engine: string; provider: string }> = [];
 
@@ -132,18 +144,65 @@ describe("the engine a signed view is actually rendered by", () => {
 
     expect(result.status).toBe("landed");
     expect(captured).toHaveLength(1);
-    expect(captured[0]?.url).toBe(`${QUEUE_BASE}/${FAL_GPT_IMAGE_25_SUNBURST_EDIT}`);
-    /* Named, because the regression this guards is the specific one: the views
-       falling back to the engine his eye moved off on the outfit court. */
-    expect(captured[0]?.url).not.toBe(`${QUEUE_BASE}/${DEFAULT_IDENTITY_EDIT_MODEL}`);
-    expect(captured[0]?.body.quality).toBe("high");
-    expect(captured[0]?.body.image_size).toEqual({ width: 2352, height: 3504 });
+    /*
+      ⚠ **THIS ARM READ SUNBURST'S EDIT DOOR UNTIL 2026-09-29 AND THE CHANGE IS
+      HIS, NOT A REGRESSION.** #1459 moved the delivered views onto Sunburst on
+      his word closing the outfit court; path E moves them back, on his later
+      word once he had both answers in front of him: *"Sunburst was only chosen
+      because it was more creative in outfit design. NBP2k was a better quality
+      rersult though."* So the OUTFIT comes from Sunburst — as a plate, one
+      render, never delivered — and the PICTURE comes from Nano Banana Pro. The
+      regression this now guards is the same shape pointed the other way: a
+      delivered view quietly rendering on the plate's engine.
+    */
+    expect(captured[0]?.url).toBe(`${QUEUE_BASE}/${DEFAULT_IDENTITY_EDIT_MODEL}`);
+    expect(captured[0]?.url).not.toBe(`${QUEUE_BASE}/${FAL_GPT_IMAGE_25_SUNBURST_EDIT}`);
+    expect(captured[0]?.body.resolution).toBe("2K");
 
     /* And the row will SAY so: the provenance handed to the landing is what
        `model_assets.provenance.engine` records, which is how a Sunburst view
        and a Nano Banana Pro view are told apart in the record rather than from
        memory. */
-    expect(landed).toEqual([{ engine: FAL_GPT_IMAGE_25_SUNBURST_EDIT, provider: "fal" }]);
+    expect(landed).toEqual([{ engine: DEFAULT_IDENTITY_EDIT_MODEL, provider: "fal" }]);
+  }, 20_000);
+
+  it("⚠ THE PLATE REACHES SUNBURST'S TEXT-TO-IMAGE DOOR — the other half of path E", async () => {
+    /*
+      THE ARM THE 422 BOUGHT. The plate's first draft was pointed at Sunburst's
+      EDIT door — the signed view's door, and the obvious sibling — and the
+      first real call came back **422: "Number of image URLs must be at least
+      1"**, because an edit with nothing to edit is not a request that door can
+      serve. A plate is one GENERATION from words, which is his own phrasing,
+      so it goes through `text-to-image` and carries NO references at all.
+
+      Both facts are asserted at the wire rather than at a constant: the
+      endpoint, and that the body has no `image_urls` field for a reference to
+      hide in.
+    */
+    const captured = stubFalTransport();
+    const plateEngine = castingOutfitPlateEngine();
+
+    await plateEngine.editWithReferences({
+      prompt: "a wardrobe plate",
+      references: [],
+      resolution: "2K",
+    });
+
+    expect(captured).toHaveLength(1);
+    expect(captured[0]?.url).toBe(`${QUEUE_BASE}/${FAL_GPT_IMAGE_25_SUNBURST}`);
+    expect(captured[0]?.url).not.toBe(`${QUEUE_BASE}/${FAL_GPT_IMAGE_25_SUNBURST_EDIT}`);
+    expect(captured[0]?.body.quality).toBe("high");
+    expect(captured[0]?.body.image_size).toEqual(OUTFIT_PLATE_SIZE);
+    expect(captured[0]?.body).not.toHaveProperty("image_urls");
+  }, 20_000);
+
+  it("the plate REFUSES a reference rather than dropping one on a paid road", async () => {
+    stubFalTransport();
+    await expect(castingOutfitPlateEngine().editWithReferences({
+      prompt: "a wardrobe plate",
+      references: [{ bytes: PIXEL, contentType: "image/png" }],
+      resolution: "2K",
+    })).rejects.toThrow(/takes no reference images/);
   }, 20_000);
 
   it("the view's words still travel — the angle line the two courts measured", async () => {

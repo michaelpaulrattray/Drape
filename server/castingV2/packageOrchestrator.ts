@@ -122,7 +122,17 @@ import {
   composeViewFeatureWordsClause,
   type CarriedFeatureWords,
 } from "./viewFeatureWords";
-import { castingViewConformanceJudge, castingViewEngine } from "./signEngine";
+import { castingOutfitPlateEngine, castingViewConformanceJudge, castingViewEngine } from "./signEngine";
+import {
+  PLATE_ANGLES,
+  PLATE_VIEW_ASPECT_RATIO,
+  outfitPlateClause,
+  plateSideFor,
+  renderOutfitPlate,
+  type OutfitPlate,
+  type OutfitPlateEngine,
+  type OutfitPlateSide,
+} from "./outfitPlate";
 import { conformanceProvenance, type ViewConformanceJudge, type ViewConformanceVerdict } from "./viewConformance";
 
 const log = createModuleLogger("castingV2/packageOrchestrator");
@@ -221,6 +231,15 @@ export type PackageOrchestratorDependencies = {
    * only asserts the attempt count cannot tell "spaced" from "hammered".
    */
   wait?: (ms: number) => Promise<void>;
+  /**
+   * THE WARDROBE PLATE'S ENGINE (#1278 path E).
+   *
+   * Separate from `identityEngine` because they are deliberately two different
+   * models — his creativity choice draws the outfit, his quality choice draws
+   * the picture — and a suite that stubbed one would otherwise silently stub
+   * both and prove nothing about the split.
+   */
+  outfitPlateEngine?: () => OutfitPlateEngine;
 };
 
 type PackageSlotOutcome =
@@ -326,6 +345,24 @@ export type BuildPackageInput = {
    * cyberpunk casts, zero photograph-direction phrases.
    */
   description?: string | null;
+  /**
+   * THE PANEL OF THE WARDROBE PLATE THIS VIEW WEARS (#1278 path E).
+   *
+   * Set only for `frontFull` and `backFull`, and only when the plate landed:
+   * `buildCastPackage` renders one two-panel plate, cuts it in memory and hands
+   * each of those two views its own half. Every other view, and every view on
+   * a Sign whose plate failed, composes exactly the prompt and the references
+   * it composed before path E existed — which is the property the whole
+   * fallback rests on and the one the arms are pointed at.
+   *
+   * ⚠ **It rides AFTER her ink crops in the reference list, never before.** The
+   * crops' own clause quotes ordinals starting at 2, so inserting anything
+   * between the anchor and them would renumber sentences that name her tattoos
+   * by position.
+   */
+  outfitPlatePanel?: ReferenceImage | null;
+  /** Which half it is, so the clause can say front or back without guessing. */
+  outfitPlateSide?: OutfitPlateSide;
 };
 
 async function defaultStoreImage(input: {
@@ -395,8 +432,78 @@ export async function buildCastPackage(
     })),
   );
 
+  /*
+    THE PLATE STARTS NOW AND NOTHING WAITS FOR IT EXCEPT THE TWO VIEWS THAT
+    NEED IT (#1278 path E, his design).
+
+    His own first line is the schedule: *"Close-ups / head-shoulder views start
+    immediately in parallel on Nano Banana Pro 2K (master + brief). No plate
+    wait."* So this promise is created and DELIBERATELY NOT AWAITED here — the
+    three views that do not wear the plate are dispatched in the same tick they
+    always were, and a customer's close-up is not one second later than it was
+    yesterday. What the plate costs in wait is paid only by the full-length
+    pair, and only up to the point their own render would have started.
+  */
+  const plate = Promise.resolve()
+    .then(() => renderOutfitPlate({
+      /*
+        ⚠ **THE ENGINE IS BUILT INSIDE THE PROMISE, NOT IN THE ARGUMENT LIST.**
+        `castingOutfitPlateEngine()` THROWS on a missing `FAL_KEY` — the door's
+        own refusal, and the right one — and built eagerly here that throw is
+        SYNCHRONOUS inside `buildCastPackage`, before a single view has been
+        dispatched. Five audit rows would already exist, 450 credits would
+        already be taken, and nothing would have refused or refunded any of it.
+        Wrapped, the same throw lands in the catch below and the Sign renders
+        master-only, which is what a missing plate is supposed to cost.
+      */
+      engine: (dependencies.outfitPlateEngine ?? castingOutfitPlateEngine)(),
+      wardrobeLine: input.wardrobeLine ?? null,
+      description: input.description ?? null,
+      operationId: input.operationId,
+    }))
+    .catch((error: unknown) => {
+    /*
+      ⚠ **THE PLATE MAY NEVER TAKE THE SIGN DOWN WITH IT, AND THIS IS THE ONLY
+      PLACE THAT CAN GUARANTEE IT.** `renderOutfitPlate` already answers `null`
+      for every fault it can name — but it re-throws a CANCELLATION on purpose,
+      and a rejected promise here would reject the `Promise.all` below, so the
+      two full-length views would never be attempted at all: their audit rows
+      already exist, their credits are already taken, and nothing would have
+      refused or refunded them. They would sit non-terminal until the recovery
+      sweep. **A view that is never attempted is the one failure mode this road
+      has no refund path for**, so the catch is not decoration — it is the arm
+      between an aborted plate and two paid slots in limbo.
+    */
+      log.warn(
+        { operationId: input.operationId, err: error instanceof Error ? error.message : String(error) },
+        "[packageOrchestrator] the wardrobe plate threw — the full-length views render from the master alone",
+      );
+      return null as OutfitPlate | null;
+    });
+
   const outcomes = await Promise.all(
-    promised.map(({ angle, auditId }) => buildOneView(dependencies, input, angle, auditId)),
+    promised.map(({ angle, auditId }) => {
+      const waitsForPlate = (PLATE_ANGLES as readonly CastViewAngle[]).includes(angle);
+      if (!waitsForPlate) return buildOneView(dependencies, input, angle, auditId);
+      /*
+        His third line: *"When the plate lands: frontFull and backFull on NBP 2K
+        at full Sign size, references = master + plate panel (+ brief), in
+        parallel."* And his fourth: a plate that does not land leaves these two
+        rendering master-only, which is `settled` being `null` — the input is
+        then the one every view composed before path E, field for field.
+      */
+      const side = plateSideFor(angle as (typeof PLATE_ANGLES)[number]);
+      return plate.then((settled) =>
+        buildOneView(
+          dependencies,
+          settled === null
+            ? input
+            : { ...input, outfitPlatePanel: settled[side], outfitPlateSide: side },
+          angle,
+          auditId,
+        ),
+      );
+    }),
   );
 
   const committed = outcomes
@@ -645,6 +752,30 @@ export async function renderViewAttempts<T>(
         pronouns: input.pronouns ?? pronounsForSex(null),
       });
       /*
+        THE WARDROBE PLATE'S PANEL RIDES LAST (#1278 path E).
+
+        ⚠ **Its ordinal is DERIVED from the array it is talking about**, exactly
+        as the crops' clause derives theirs, and for the same reason one line
+        up: a Cast with three tattoos has her plate at reference 5, and a
+        sentence carrying a constant would point every such view at a picture of
+        her elbow and call it the outfit.
+
+        Absent — every view but the two full-length ones, and both of those on a
+        Sign whose plate did not land — this pushes nothing and composes the
+        empty string, so the request is byte-identical to the one this road sent
+        before path E. That inertness is asserted rather than described
+        (`packageOrchestrator.test.ts`).
+      */
+      const platePanel = input.outfitPlatePanel ?? null;
+      if (platePanel) references.push(platePanel);
+      const plateClause = platePanel
+        ? outfitPlateClause({
+            ordinal: 2 + crops.length,
+            side: input.outfitPlateSide ?? "front",
+            pronouns: input.pronouns ?? pronounsForSex(null),
+          })
+        : "";
+      /*
         THE WORDS FOR WHAT THE ANCHOR CANNOT SHOW ride in the same place the
         crops' clause does, so there is one shape for "things that travel
         beside the anchor" rather than two. Both are appended rather than
@@ -689,9 +820,17 @@ export async function renderViewAttempts<T>(
         );
       }
       const image = await engine.generateView({
+        /*
+          THE PLATE MOVES THE DELIVERED PICTURE'S SHAPE UNLESS IT IS PINNED —
+          measured, and `PLATE_VIEW_ASPECT_RATIO`'s docblock carries the three
+          readings. Absent a plate this spreads nothing, so the other three
+          views send the request they always sent, byte for byte.
+        */
+        ...(platePanel ? { aspectRatio: PLATE_VIEW_ASPECT_RATIO } : {}),
         prompt: [
           composePackageViewPrompt(angle, input.wardrobeLine ?? null, input.description ?? null),
           cropClause,
+          plateClause,
           wordsClause,
         ]
           .filter((part) => part !== "")
