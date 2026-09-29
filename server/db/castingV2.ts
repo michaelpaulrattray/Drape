@@ -815,6 +815,122 @@ export async function getOwnedCandidateWithSelectedFace(
 }
 
 /**
+ * THE VERSION THE ASK NAMED, RESOLVED THROUGH THE OWNED CANDIDATE (#1499).
+ *
+ * Its sibling above answers *which face is SELECTED* — the server's own
+ * pointer. That is the right question for a surface reading the server's state
+ * and the wrong one for a paid act, because the pointer is a round trip behind
+ * the click: she taps a version, the picture swaps at once (which is what makes
+ * the rail feel instant), and for the second or two the `selectVariant` write
+ * is in flight the two ends of a refine disagree about who she is editing. She
+ * would pay for an edit to the picture on her screen and get an edit to the
+ * previous one.
+ *
+ * So a refine that NAMES its version resolves through this instead. Same join,
+ * same owner predicates, one different key: the variant's own public id rather
+ * than `candidates.selectedVariantId`.
+ *
+ * **`null` is the ORIGINAL and is not an absence.** It is `selectVariant`'s own
+ * vocabulary — that procedure has taken `variantId: publicId.nullable()` with
+ * null meaning the master since it shipped — so this road needs no second way
+ * of saying it. A caller with nothing to say passes no version at all and gets
+ * the pointer reader above; that is the deploy-skew road and it is today's
+ * behaviour exactly.
+ *
+ * ⚠ **IT ANSWERS WHICH THING WAS NOT FOUND, AND THE DISTINCTION IS THE POINT.**
+ * A named version that does not resolve — purged, another account's, another
+ * candidate's, not `ready` — must NOT quietly fall back to the pointer, because
+ * falling back is the defect this function exists to close. The caller needs to
+ * tell that apart from a missing candidate to say something true about it, and
+ * a bare `null` cannot.
+ */
+export type OwnedCandidateOnVersion =
+  | { found: true; face: OwnedCandidateFace }
+  | { found: false; missing: "candidate" | "version" };
+
+export async function getOwnedCandidateOnVersion(
+  userId: number,
+  candidatePublicId: string,
+  variantPublicId: string | null,
+): Promise<OwnedCandidateOnVersion> {
+  assertPositiveId(userId, "userId");
+  const db = await requireDb();
+  const [row] = await db
+    .select({
+      candidate: castingCandidates,
+      variantId: castingCandidateVariants.id,
+      variantPublicId: castingCandidateVariants.publicId,
+      variantImageKey: castingCandidateVariants.imageKey,
+      variantThumbKey: castingCandidateVariants.thumbKey,
+      variantInternalPrompt: castingCandidateVariants.internalPrompt,
+      rollPath: castingRolls.path,
+      rollWardrobeLine: castingRolls.wardrobeLine,
+    })
+    .from(castingCandidates)
+    /*
+      THE NAMED VERSION, RE-ANCHORED TO THIS CANDIDATE AND THIS OWNER IN THE
+      STATEMENT THAT FINDS IT — invariant 1 on a join, and invariant 2's
+      re-anchoring of a child id in one breath: verifying the candidate does not
+      validate a variant id sent beside it. A caller holding a stranger's
+      version id can therefore only fail to resolve it, which is a refusal and
+      never a leak.
+
+      `variantPublicId === null` is the ORIGINAL, and the join is written so
+      that case matches nothing rather than being skipped — the predicate is
+      false for every row, so the null-face branch below is reached by the same
+      road an absent refinement reaches it by.
+    */
+    .leftJoin(castingCandidateVariants, and(
+      variantPublicId === null
+        ? sql`1 = 0`
+        : eq(castingCandidateVariants.publicId, variantPublicId),
+      eq(castingCandidateVariants.userId, userId),
+      eq(castingCandidateVariants.candidateId, castingCandidates.id),
+      eq(castingCandidateVariants.status, "ready"),
+    ))
+    .leftJoin(castingRolls, and(
+      eq(castingRolls.id, castingCandidates.rollId),
+      eq(castingRolls.userId, userId),
+    ))
+    .where(and(
+      eq(castingCandidates.publicId, candidatePublicId),
+      eq(castingCandidates.userId, userId),
+      eq(castingCandidates.status, "ready"),
+    ))
+    .limit(1);
+  if (!row) return { found: false, missing: "candidate" };
+  /* A version was NAMED and the join did not find it. Never the pointer, and
+     never the original — both would be an answer about somebody else's
+     picture. */
+  if (variantPublicId !== null && !row.variantId) return { found: false, missing: "version" };
+  const roll = { rollPath: row.rollPath, rollWardrobeLine: row.rollWardrobeLine };
+  /* All of the face or none of it — never a variant's image with the
+     original's record, which is the mix that makes a record lie. */
+  return {
+    found: true,
+    face: row.variantId
+      ? {
+        candidate: row.candidate,
+        variantId: row.variantId,
+        variantPublicId: row.variantPublicId,
+        imageKey: row.variantImageKey,
+        thumbKey: row.variantThumbKey,
+        internalPrompt: row.variantInternalPrompt,
+        ...roll,
+      }
+      : {
+        candidate: row.candidate,
+        variantId: null,
+        variantPublicId: null,
+        imageKey: row.candidate.imageKey,
+        thumbKey: row.candidate.thumbKey,
+        internalPrompt: row.candidate.internalPrompt,
+        ...roll,
+      },
+  };
+}
+
+/**
  * WHAT THE BRIEF SAID SHE WEARS — the base-worn inventory (D-206).
  *
  * The founder typed "remove her glasses" at a face visibly wearing glasses and

@@ -77,7 +77,7 @@ import {
 import { isRefineStep, type RefineStep } from "../../shared/refineSteps";
 import { isRefineFigure, type RefineFigure } from "../../shared/refineFigure";
 import { cutRefineFigure } from "./refineFigure";
-import { getBriefForOwnedCandidate, getOwnedCandidateWithSelectedFace } from "../db/castingV2";
+import { getBriefForOwnedCandidate, getOwnedCandidateOnVersion, getOwnedCandidateWithSelectedFace } from "../db/castingV2";
 import { readBriefFacts } from "./rollProjection";
 import { createModuleLogger } from "../logging/logger";
 import {
@@ -410,6 +410,32 @@ export type RefineInput = {
    * user was actually shown.
    */
   answering?: string;
+  /**
+   * WHICH VERSION OF HER THIS ASK IS ABOUT (#1499).
+   *
+   * A version's public id, or `null` for the original — `selectVariant`'s own
+   * vocabulary, so the product has one way of naming the master and not two.
+   *
+   * ⚠ **ABSENT IS NOT `null`, AND THE THREE STATES ARE THE WHOLE FEATURE.**
+   * Absent means *this caller did not say*, and it resolves through the
+   * server's own `selectedVariantId` pointer, which is exactly what every
+   * refine did before this field existed — so a bundle from before this deploy
+   * behaves identically. `null` is a CLAIM that she is looking at the original.
+   *
+   * It exists because the pointer is a round trip behind the click. She taps a
+   * version, the picture swaps immediately, and for as long as the
+   * `selectVariant` write is in flight the panel and the service answer *which
+   * version is she on* differently — so a refine pressed inside that window is
+   * applied to the version she just left. Found by #1478's law-7 sweep; nobody
+   * has hit it, and the cost when they do is one refine's credits spent on the
+   * wrong picture.
+   *
+   * Shaped at the door, PROVED here — the same division as `scope` and
+   * `replayOf`. A version that does not resolve through this owned candidate
+   * refuses FREE rather than falling back to the pointer: falling back is the
+   * defect, and doing it quietly is the defect with the fix's name on it.
+   */
+  onVersion?: string | null;
   /**
    * THE RECTANGLE SHE POINTED AT (fable-444, ruling C).
    *
@@ -1224,13 +1250,56 @@ async function refineCandidateCounted(
 
   /* ---- free refusals: nothing claimed, nothing charged ---- */
 
-  const source = await getOwnedCandidateWithSelectedFace(input.userId, input.candidatePublicId);
-  if (!source) {
+  /*
+    WHO THIS ASK IS ABOUT, AND THE ASK GETS TO SAY (#1499).
+
+    Two readers, one question, and the ask decides which one answers it. When
+    it names a version, that version is resolved through this owned candidate —
+    the click-aware answer, and the one the photograph, the panel and the lit
+    chip on her screen were all drawing from. When it says nothing, the
+    server's own pointer answers, which is what every refine did before this
+    field existed and is what an in-flight bundle still does.
+
+    The read is the same join either way, so nothing downstream can tell which
+    road it came by — `source` is one shape with one meaning: the face this
+    edit is anchored on.
+  */
+  const resolved = input.onVersion === undefined
+    ? await getOwnedCandidateWithSelectedFace(input.userId, input.candidatePublicId)
+      .then((face) => (face ? { found: true, face } as const : { found: false, missing: "candidate" } as const))
+    : await getOwnedCandidateOnVersion(input.userId, input.candidatePublicId, input.onVersion);
+  if (!resolved.found && resolved.missing === "version") {
+    /*
+      SHE NAMED A VERSION THIS FACE DOES NOT HAVE — purged, another account's,
+      another candidate's, or not finished rendering.
+
+      Free by construction: above `admit` and above the claim, like every
+      refusal on this stretch. And a refusal rather than a fallback, which is
+      the whole of #1499: silently editing whichever version the pointer happens
+      to name is the thing that was wrong, and doing it after a fix that claims
+      to have closed it would be worse than leaving it open.
+
+      ⚠ **`version_missing` IS AN EXISTING DOOR AND THIS IS A SECOND RAISE SITE,
+      BY DECISION RATHER THAN BY COLLISION.** Its first is the free answer whose
+      selection moved under it (~1,150 lines below), and the state a customer is
+      in is the same one word for word — *the version you named is not there* —
+      so the sentence is the sibling's with the next step added. A second id for
+      one customer state would put a near-duplicate on the capability map and
+      split a door's pins across two names, which is the shape that makes a
+      coverage number mean less than it says.
+    */
+    throw refusal("version_missing", {
+      code: "NOT_FOUND",
+      message: "That version isn't available any more. Nothing was charged — reopen the face and try again.",
+    });
+  }
+  if (!resolved.found) {
     throw refusal("candidate_missing", {
       code: "NOT_FOUND",
       message: "That candidate is no longer available.",
     });
   }
+  const source = resolved.face;
   if (!source.candidate.imageKey) {
     throw refusal("master_missing", {
       code: "PRECONDITION_FAILED",
