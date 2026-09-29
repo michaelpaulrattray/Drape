@@ -33,6 +33,7 @@ import type { CastViewAngle } from "../../shared/boardTypes";
 import { createModuleLogger } from "../logging/logger";
 import { ProviderError, type ReferenceImage, type TextEngine } from "../providers/types";
 import { packageViewExpectation } from "./castViewPackage";
+import { pronounsForSex, type CastPronouns } from "./castPronouns";
 import { boundForJudge, type JudgedFrame } from "./judgeFrame";
 
 const log = createModuleLogger("castingV2/viewConformance");
@@ -123,6 +124,14 @@ type ViewConformanceInput = {
    * absent keeps today's sentence, which is every Cast with no source roll.
    */
   description?: string | null;
+  /**
+   * WHOSE FACE THIS IS — #1480 finding A, third site, on his own audit order
+   * (*"ensure the checker isn't running on legacy rules"*).
+   *
+   * Absent keeps `they`, which is this product's answer for a person whose
+   * pronouns are not known and is what every caller sent before it existed.
+   */
+  pronouns?: CastPronouns;
   signal?: AbortSignal;
 };
 
@@ -184,11 +193,30 @@ const verdictSchema = z.object({
  * which is the refund noise `CLOSE_UP_WARDROBE`'s own docblock was written
  * about.
  */
-const JUDGE_SYSTEM = [
+/**
+ * ⚠ **THE JUDGE TAKES THE CAST'S PRONOUNS TOO — #1480 finding A, third site,
+ * and it was found by HIS OWN AUDIT ORDER**: *"ensure the checker isn't running
+ * on legacy rules"*.
+ *
+ * Its identity rule named *"the MARKINGS AND MAKEUP **her** skin carries … the
+ * makeup **she** is wearing"* — fixed pronouns handed to the checker for every
+ * cast, male or creature, on the same day the generator's own reference
+ * paragraph was found doing it. The two move in one commit on purpose: a
+ * generator told *his* and a judge told *her* are describing two people, and
+ * the axis that would notice is the one axis whose whole job is identity.
+ *
+ * ⚠ **This IS a change to the judge's system prompt and therefore to every
+ * verdict on every signed cast, which is not a thing to slip in** (#1229 is a
+ * whole card about not doing it lightly). It is admitted here because it is a
+ * CORRECTNESS fix he ordered by name, and because it moves no threshold: the
+ * three axes, their questions, their verdict vocabulary and the note rule are
+ * byte-identical, and for a female cast the composed bytes are identical too.
+ */
+const judgeSystemFor = (pronouns: CastPronouns): string => [
   "You inspect photographs for a casting studio before they are delivered to the customer.",
   "You are given two images: IMAGE 1 is the signed reference photograph of the person, and IMAGE 2 is a new photograph that is supposed to be the same person, delivered against a written specification.",
   "Judge three things independently. Do not let one influence another.",
-  "1. identity — is the person in IMAGE 2 the same individual as in IMAGE 1? Judge bone structure, facial proportions, skin, hair and build, and also the MARKINGS AND MAKEUP her skin carries: tattoos and ink, piercings, scars, birthmarks and freckling, and the makeup she is wearing. Anything of that kind visible in IMAGE 1 must be present in IMAGE 2 wherever IMAGE 2's frame reaches it — a bare, unmade version of the same face is a FAIL, not a match. Judge only where both frames reach: a marking outside IMAGE 2's crop is not missing. A similar-looking person of the same type is a FAIL.",
+  `1. identity — is the person in IMAGE 2 the same individual as in IMAGE 1? Judge bone structure, facial proportions, skin, hair and build, and also the MARKINGS AND MAKEUP ${pronouns.possessive} skin carries: tattoos and ink, piercings, scars, birthmarks and freckling, and the makeup ${pronouns.subject} ${pronouns.plural ? "are" : "is"} wearing. Anything of that kind visible in IMAGE 1 must be present in IMAGE 2 wherever IMAGE 2's frame reaches it — a bare, unmade version of the same face is a FAIL, not a match. Judge only where both frames reach: a marking outside IMAGE 2's crop is not missing. A similar-looking person of the same type is a FAIL.`,
   "2. angle — does IMAGE 2 show the framing the specification asks for? Judge only what the specification names.",
   "3. wardrobe — does IMAGE 2 show the clothing the specification names, unchanged from IMAGE 1 where both are visible?",
   "Answer ONLY with a JSON object of the form",
@@ -276,7 +304,7 @@ export function createViewConformanceJudge(config: ViewConformanceJudgeConfig): 
     try {
       const reply = await config.engine.complete({
         about: "verify",
-        system: JUDGE_SYSTEM,
+        system: judgeSystemFor(input.pronouns ?? pronounsForSex(null)),
         user: [
           "SPECIFICATION for IMAGE 2:",
           `Framing: ${expectation.framing}`,
