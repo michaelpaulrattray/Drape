@@ -668,3 +668,45 @@ describe("try again on one view — what moves, and in what order", () => {
     expect(journal).toEqual([]);
   });
 });
+
+describe("a retry's plate is edited from her master too — #1471", () => {
+  it("hands the plate engine the anchor this retry is about to render from", async () => {
+    /*
+      ⚠ **THE RETRY ROAD HAD NO PLATE ARM AT ALL**, and #1471 gave
+      `renderOutfitPlate` a required `anchor`. TypeScript proves a value was
+      passed; only a driven arm proves it is the RIGHT picture — the anchor
+      this retry fetched — rather than some other buffer in scope.
+
+      The default fixture's angle is `backFull`, which is a plate angle, so the
+      plate road is the one these arms were already walking; what was missing
+      was anyone looking at what went out.
+    */
+    const requests: Array<{ references: Array<{ bytes: Buffer; contentType: string }> }> = [];
+    const plateBytes = await (await import("sharp")).default({
+      create: { width: 8, height: 4, channels: 3, background: { r: 1, g: 2, b: 3 } },
+    }).png().toBuffer();
+
+    await retryCastView(
+      dependencies([slot()], {
+        outfitPlateEngine: () => ({
+          editWithReferences: async (request: {
+            references: Array<{ bytes: Buffer; contentType: string }>;
+          }) => {
+            requests.push({ references: request.references });
+            return { bytes: plateBytes, contentType: "image/png" };
+          },
+        }),
+      } as Partial<ViewRetryServiceDependencies>),
+      input,
+    );
+
+    expect(requests).toHaveLength(1);
+    /* `storageReadBytes` is mocked to answer `Buffer.from("anchor")` for
+       `anchorStorageKey` — so this is the retry's own master, read back at the
+       wire rather than assumed from the call site. */
+    expect(requests[0].references).toHaveLength(1);
+    expect(requests[0].references[0].bytes).toEqual(Buffer.from("anchor"));
+    /* The words-only road, named so its return reddens here. */
+    expect(requests[0].references).not.toEqual([]);
+  });
+});

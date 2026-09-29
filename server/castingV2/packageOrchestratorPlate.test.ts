@@ -51,7 +51,7 @@ vi.mock("./viewThumbnailMint", () => ({ mintViewThumbnail: vi.fn(async () => und
 
 const { buildCastPackage } = await import("./packageOrchestrator");
 const { CAST_PACKAGE_VIEWS } = await import("./castViewPackage");
-const { PLATE_ANGLES, PLATE_VIEW_ASPECT_RATIO, outfitPlateClause } = await import("./outfitPlate");
+const { PLATE_ANGLES, PLATE_VIEW_ASPECT_RATIO, composeOutfitPlatePrompt, outfitPlateClause } = await import("./outfitPlate");
 const { pronounsForSex } = await import("./castPronouns");
 type OutfitPlateEngine = import("./outfitPlate").OutfitPlateEngine;
 
@@ -138,11 +138,89 @@ function plateEngine(bytes: Buffer): OutfitPlateEngine {
   return { editWithReferences: async () => ({ bytes, contentType: "image/png" }) };
 }
 
+/**
+ * The same fake, but it KEEPS the request — #1471.
+ *
+ * ⚠ **The plain fake above discards it, and that was a real gap on the one
+ * claim this change is about.** His ruling makes the plate an edit of HER
+ * master; an orchestrator that built the right plate prompt and handed the
+ * engine some other picture — or none — would pass every arm in this file,
+ * because the plate bytes are a fixture and the views downstream never see
+ * what the plate was drawn from.
+ */
+function recordingPlateEngine(bytes: Buffer): {
+  engine: OutfitPlateEngine;
+  requests: Array<{ prompt: string; references: Array<{ bytes: Buffer; contentType: string }> }>;
+} {
+  const requests: Array<{ prompt: string; references: Array<{ bytes: Buffer; contentType: string }> }> = [];
+  return {
+    requests,
+    engine: {
+      editWithReferences: async (request) => {
+        requests.push({ prompt: request.prompt, references: request.references });
+        return { bytes, contentType: "image/png" };
+      },
+    },
+  };
+}
+
 function requestFor(generateView: ReturnType<typeof recordView>, angle: CastViewAngle) {
   const call = generateView.mock.calls.find(([request]) => request.viewAngle === angle);
   if (!call) throw new Error(`no request was sent for ${angle}`);
   return call[0];
 }
+
+describe("the plate is edited from HER master — his ruling on #1471", () => {
+  it("hands the plate engine the same anchor the five views render from", async () => {
+    /*
+      ⚠ **THE ARM THIS FILE DID NOT HAVE.** Path E sent the plate
+      `references: []` and his ruling reversed it:
+
+      > *"no the plate must reference the master image otherwise it wouldnt be
+      > able to invent the outfit correctly"*
+
+      Read at the outgoing request (invariant 5), not at the call site that
+      builds it, and compared against `input.anchor` itself — so a plate drawn
+      from words, from nothing, or from some OTHER picture each redden, and the
+      three failures are told apart by the assertion that fails.
+    */
+    const recording = recordingPlateEngine(plateBytes);
+    await buildCastPackage(
+      deps({
+        identityEngine: () => ({ id: "e", editWithReferences: vi.fn(), generateView: recordView() }),
+        outfitPlateEngine: () => recording.engine,
+      }),
+      input,
+    );
+
+    expect(recording.requests).toHaveLength(1);
+    const references = recording.requests[0].references;
+    /* Not empty — the words-only road, named so its return reddens here. */
+    expect(references).not.toEqual([]);
+    /* Exactly one, and it is HER: the ink crops belong to the view, not the plate. */
+    expect(references).toHaveLength(1);
+    expect(references[0].bytes).toEqual(input.anchor.bytes);
+    expect(references[0].contentType).toBe(input.anchor.contentType);
+  });
+
+  it("composes the plate's prompt with the identity sentence the master makes true", async () => {
+    const recording = recordingPlateEngine(plateBytes);
+    await buildCastPackage(
+      deps({
+        identityEngine: () => ({ id: "e", editWithReferences: vi.fn(), generateView: recordView() }),
+        outfitPlateEngine: () => recording.engine,
+      }),
+      input,
+    );
+
+    /* Derived from the composer rather than retyped: what this arm is for is
+       that the ORCHESTRATOR sent the product's plate prompt, not a prompt of
+       its own. The wording is pinned in `outfitPlate.test.ts`. */
+    expect(recording.requests[0].prompt).toBe(
+      composeOutfitPlatePrompt(null, input.description),
+    );
+  });
+});
 
 describe("the two full-length views wear the plate, and nothing else does", () => {
   it("hands frontFull the LEFT half and backFull the RIGHT half, as the last reference", async () => {
