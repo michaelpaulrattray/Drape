@@ -1,9 +1,9 @@
 # DEPLOY VERIFY (#508 D5) — observability for the deploy-on-merge road, never
 # the road itself. After the founder's flip, Railway builds production from
 # `main` directly; this job answers "did this push actually become live?" with
-# zero secrets: it polls the public health endpoint until the `build` field
-# carries this push's sha (served since #508 — the reading that dissolves the
-# #296 trap, where a 200 from the OLD process read as "shipped").
+# zero third-party secrets: it polls the public health endpoint until the `build`
+# field carries this push's sha (served since #508 — the reading that dissolves
+# the #296 trap, where a 200 from the OLD process read as "shipped").
 #
 # - Gated on the repo variable DEPLOY_ON_MERGE=live, set at flip time (step 5
 #   of the flip in docs/specs/DEPLOY_ON_MERGE_DESIGN.md). Before the flip a
@@ -17,16 +17,63 @@
 # - If GitHub Actions is down, deploys flow anyway — only this receipt is
 #   missing. That asymmetry is the design (D1/D5): no third party sits on the
 #   road to production.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# ⚠ #1518 — IT USED TO GO RED ON A DEPLOY THAT WAS MERELY SLOW, AND THE NUMBER
+# WAS NOT THE ONLY THING WRONG WITH IT.
+#
+# The window was a flat `15 minutes`, and the exhaustion message ASSERTED a
+# cause: "This merge did NOT become live — a failed build, a healthcheck
+# refusal, or Railway missed the push." On a slow build that sentence is simply
+# false, and the real cause was not among the three it offered.
+#
+# Measured at the artifact rather than from the card (the card said two runs;
+# it was six). Every GitHub Deployment Railway posted on 2026-09-29, read with
+# `scripts/_1518-deployment-states-disposable.mts`:
+#
+#   quiet periods, 20 deploys      90s – 126s   (1.5 – 2.1 min)
+#   the 15:49–18:19 merge burst    671s – 2479s (11.2 – 41.3 min)
+#
+# SIX of 26 successful deploys crossed the 15-minute window, and two of them
+# took FORTY-ONE minutes. Two confirmed false reds, at the statuses:
+#
+#   b3624986  in_progress 17:31:16Z → success 17:50:33Z (19m17s)
+#             deploy-verify said "never served" at 17:46:22Z — 4 min early
+#   466cf03e  in_progress 16:20:28Z → success 17:01:28Z (41m00s)
+#             deploy-verify said "never served" at 16:48:32Z — 13 min early
+#
+# ⚠ AND THE CARD'S SUGGESTED FIX RESTED ON A FALSE PREMISE: it offered reading
+# Railway's CLI, "no secret beyond the token the job may already hold". This job
+# holds no Railway token and the repository has none — `gh secret list` is
+# CLAUDE_CODE_OAUTH_TOKEN and SOCKET_CLI_API_TOKEN, and no workflow in the tree
+# mentions RAILWAY. Adding one would put a third-party credential on a job whose
+# own header makes secretlessness a design property, and that is the founder's
+# call, not a bug fix's. It is left on the card as the decision it is.
+#
+# What IS available costs no secret at all: Railway's GitHub integration posts a
+# GITHUB DEPLOYMENT per sha, with statuses of its own. Reading them needs only
+# `deployments: read` on the GITHUB_TOKEN this job already has — GitHub's own
+# record of what Railway told GitHub, not a third party on the road.
+#
+# ⚠ THE STATE VOCABULARY IS MEASURED, NOT GUESSED: across 30 deployments the
+# states Railway actually posts are `in_progress`, `success` and `inactive`.
+# **No `failure` or `error` was observed**, so what Railway posts on a failed
+# build is NOT confirmed here — which decides the failure direction of every
+# branch below: an unrecognised or unreadable state WAITS, and only the hard
+# ceiling can turn it red. A new state name can therefore never become a new
+# false red, which is the whole defect this change exists to remove.
 name: deploy-verify
 
 on:
   push:
     branches: [main]
 
-# contents:read is all the job needs: two read-only API calls (branch tip,
-# commit comparison) to tell a superseded push from a failed one.
+# contents:read for the branch tip and the commit comparison that tell a
+# superseded push from a failed one. deployments:read for Railway's own
+# in_progress/success statuses (#1518) — GitHub's API, no third-party secret.
 permissions:
-  contents: read
+  contents: read # the branch tip and the commit comparison that tell a superseded push from a failed one
+  deployments: read # Railway's own in_progress/success/inactive statuses on the GitHub Deployment it posts per sha (#1518) — GitHub's API, no third-party secret
 
 # cancel-in-progress is FALSE, deliberately (review of #584, finding 2): a
 # RUNNING verify is never killed mid-verdict, so the #434 trap — a cancelled
@@ -45,17 +92,68 @@ jobs:
     name: Production serves this commit
     if: ${{ vars.DEPLOY_ON_MERGE == 'live' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # ⚠ THIS MUST STAY ABOVE THE CEILING BELOW, AND IT WAS THE SILENT HALF OF
+    # #1518: it was 20 while the loop's deadline was 15, so raising the loop
+    # alone would have been killed by the job at 20 minutes with NO message at
+    # all — a worse verdict than the wrong one it replaced. The suite pins the
+    # relationship rather than the pair of numbers.
+    timeout-minutes: 70
     steps:
       - name: Wait for production to serve this commit
         env:
           BASE: https://drape-production-0232.up.railway.app
           SHA: ${{ github.sha }}
           GH_TOKEN: ${{ github.token }}
+          # The hard ceiling, in minutes. Measured: the slowest deploy on record
+          # is 41.3 minutes (#1518's reading of the 2026-09-29 burst), so 60 is
+          # real headroom rather than a doubled guess — and since the wait is now
+          # gated on Railway saying `in_progress`, the ceiling is a backstop for
+          # pathology rather than the instrument that decides.
+          CEILING_MINUTES: "60"
         run: |
           set -u
           echo "waiting for $BASE/api/health to answer build=$SHA"
-          deadline=$(( $(date +%s) + 15*60 ))
+          echo "ceiling: ${CEILING_MINUTES} minutes (slowest deploy on record: 41.3 min)"
+          began=$(date +%s)
+          deadline=$(( began + CEILING_MINUTES*60 ))
+
+          # ── the Railway deployment state, read at most once a minute ────────
+          # ⚠ THROTTLED ON PURPOSE. Every `gh api` here spends the ONE account's
+          # shared hourly budget, which the builder seats have already tripped
+          # three times in one evening. The health read is free (our own service)
+          # so it stays at 15s; the GitHub reads move to 60s, which also cuts
+          # what this job already spent on its supersede check from ~60 calls per
+          # 15 minutes to ~15.
+          # ⚠ EXPLICIT "NEXT AT" STAMPS RATHER THAN A MODULO ON elapsed. A
+          # `elapsed % 60 -lt 15` test assumes each pass takes exactly 15s; the
+          # health read and up to three API calls make a pass take 15–20s, and a
+          # pass that lands on 58s then 76s skips the window entirely and reads as
+          # a state that never changed. Stamps cannot drift.
+          dep_state="unread"
+          dep_seen_success="no"
+          tip=""
+          next_github=0
+          next_progress=$(( began + 120 ))
+          read_github() {
+            tip=$(gh api "repos/${GITHUB_REPOSITORY}/branches/main" --jq .commit.sha 2>/dev/null || echo "")
+            dep_id=$(gh api "repos/${GITHUB_REPOSITORY}/deployments?sha=${SHA}&per_page=1" --jq '.[0].id // empty' 2>/dev/null || echo "")
+            if [ -z "$dep_id" ]; then
+              # No record at all. Could be Railway never picking the push up, or
+              # the integration being quiet. Both WAIT — see the header: an
+              # unknown signal may never be what turns this red.
+              dep_state="none"
+              return 0
+            fi
+            states=$(gh api "repos/${GITHUB_REPOSITORY}/deployments/${dep_id}/statuses?per_page=20" --jq '.[].state' 2>/dev/null || echo "")
+            if [ -z "$states" ]; then
+              dep_state="unread"
+              return 0
+            fi
+            # Newest first, so the head of the list is the current state.
+            dep_state=$(echo "$states" | head -n 1)
+            if echo "$states" | grep -qx "success"; then dep_seen_success="yes"; fi
+          }
+
           while :; do
             body=$(curl -sS --max-time 10 "$BASE/api/health" || echo '{}')
             build=$(echo "$body" | jq -r '.build // empty')
@@ -65,20 +163,85 @@ jobs:
               echo "live: build=$build status=$status uptime=${uptime}s (UPTIME ANCHOR $(date -u +%H:%M:%SZ) at ${uptime}s)"
               break
             fi
+
+            now=$(date +%s)
+            elapsed=$(( now - began ))
+            # Once a minute: the branch tip and Railway's own state.
+            if [ "$now" -ge "$next_github" ]; then
+              read_github
+              next_github=$(( now + 60 ))
+            fi
+
             # Superseded? If main's tip is no longer this sha and production
             # serves a commit that is an ancestor-of-main newer than ours,
             # this push was replaced while we waited — green, said plainly.
-            tip=$(gh api "repos/${GITHUB_REPOSITORY}/branches/main" --jq .commit.sha 2>/dev/null || echo "")
             if [ -n "$tip" ] && [ "$tip" != "$SHA" ] && [ -n "$build" ] && [ "$build" != "$SHA" ]; then
               if gh api "repos/${GITHUB_REPOSITORY}/compare/$SHA...$build" --jq .status 2>/dev/null | grep -qx "ahead"; then
                 echo "superseded: production serves $build, which is ahead of $SHA on main — this push was replaced mid-wait"
                 exit 0
               fi
             fi
+
+            # ⚠ RAILWAY'S OWN VERDICT, WHICH IS THE POINT OF #1518. Two of these
+            # branches END the wait, and both of them are things the old job could
+            # only ever discover by burning its whole window.
+            case "$dep_state" in
+              failure|error)
+                # A build that really failed is a finding NOW, not in an hour.
+                echo "::error::Railway reported the deployment of $SHA as '$dep_state' after ${elapsed}s"
+                echo "This merge did NOT become live: Railway's own deployment status for this commit is '$dep_state'."
+                echo "Production is serving build=${build:-none} status=${status:-none}."
+                echo "Read the build log for this deployment in the Railway dashboard."
+                exit 1
+                ;;
+              inactive)
+                # Replaced before it ever went live. Only a supersede if main has
+                # actually moved on — otherwise it is a real problem wearing a
+                # tidy state name, and it falls through to the ceiling.
+                if [ "$dep_seen_success" = "no" ] && [ -n "$tip" ] && [ "$tip" != "$SHA" ]; then
+                  echo "superseded before going live: Railway marked this deployment inactive and main has moved past $SHA"
+                  exit 0
+                fi
+                ;;
+            esac
+
             if [ "$(date +%s)" -ge "$deadline" ]; then
-              echo "::error::production never served $SHA within 15 minutes (last read: build=${build:-none} status=${status:-none})"
-              echo "This merge did NOT become live — a failed build, a healthcheck refusal (old build still serving), or Railway missed the push."
+              # ⚠ WHAT WAS OBSERVED, NEVER A CAUSE THIS JOB CANNOT SEE (#1518).
+              # The old message asserted the merge did not become live and offered
+              # three causes, none of which was the real one on the night it was
+              # measured. This says what it read and what it cannot tell apart.
+              echo "::error::production never served $SHA within ${CEILING_MINUTES} minutes"
+              echo "  production is serving: build=${build:-none} status=${status:-none} uptime=${uptime:-none}s"
+              echo "  Railway's deployment state for this commit: ${dep_state}"
+              case "$dep_state" in
+                in_progress|pending|queued)
+                  echo "  Railway says this commit is STILL BUILDING after ${CEILING_MINUTES} minutes, which is longer"
+                  echo "  than any deploy on record (slowest measured: 41.3 min). The push landed; the build"
+                  echo "  had not finished when this job gave up, so the deploy may yet succeed."
+                  ;;
+                none)
+                  echo "  NO Railway deployment was ever recorded for this commit. Either Railway did not pick"
+                  echo "  the push up, or its GitHub integration is quiet. Check the Railway dashboard for a"
+                  echo "  deployment of this sha before treating it as a failed build."
+                  ;;
+                unread)
+                  echo "  Railway's state could NOT be read (API error, or the deployments:read permission is"
+                  echo "  missing). This verdict rests on the health endpoint alone."
+                  ;;
+                *)
+                  echo "  Railway's state is '${dep_state}', which this job does not have a branch for."
+                  ;;
+              esac
+              echo "  What this job cannot tell you: whether a build still in progress will finish. That"
+              echo "  answer is in the Railway dashboard's build log for this deployment."
               exit 1
+            fi
+
+            # Progress, every two minutes, so a long wait reads as supervised
+            # rather than hung — the same reason a still-casting tile says so.
+            if [ "$now" -ge "$next_progress" ]; then
+              echo "  ${elapsed}s: production serves build=${build:-none}; Railway state=${dep_state}"
+              next_progress=$(( now + 120 ))
             fi
             sleep 15
           done

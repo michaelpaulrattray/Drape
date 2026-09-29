@@ -12888,6 +12888,10 @@
       "path": "server/deployTriggerClaims.test.ts"
     },
     {
+      "id": "test:server/deployVerifyWindow.test.ts",
+      "path": "server/deployVerifyWindow.test.ts"
+    },
+    {
       "id": "test:server/deployWatchDecision.test.ts",
       "path": "server/deployWatchDecision.test.ts"
     },
