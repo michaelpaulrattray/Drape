@@ -937,9 +937,15 @@ export async function getBriefForOwnedCandidate(
  * `rollPath` and `rollWardrobeLine`, and the refine and Sign roads still resolve
  * them through `currentWardrobeLine`. The COLUMNS are kept — they are the
  * evidence of which rolls predate the author road — and reading a stored
- * sentence outlives composing a new one. `briefCompiler`'s own
- * `inheritedWardrobe` input also stays, because `deterministicBriefCompiler`
- * still hands it on and that compiler's fate is slice 4's (#1445).
+ * sentence outlives composing a new one.
+ *
+ * ⚠ **THIS ENDED *"`briefCompiler`'s own `inheritedWardrobe` input also stays,
+ * because `deterministicBriefCompiler` still hands it on and that compiler's fate
+ * is slice 4's (#1445)"* — AND THAT FATE ARRIVED: #1490 act 2 deleted the
+ * compiler, so the input went with it in the same commit.** The reason was
+ * discharged rather than overruled, which is why this is a correction in place
+ * and not a deletion: what the sentence was protecting is gone, and the COLUMNS
+ * it protects above are untouched.
  */
 
 /**

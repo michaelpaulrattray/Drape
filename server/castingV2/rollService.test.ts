@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import type { TextEngine } from "../providers/types";
 
 /**
  * The roll service's money and its ordering (plan §F, §H).
@@ -287,7 +288,7 @@ const { createRoll, cancelRoll } = await import("./rollService");
 const { getOwnedCastingSession } = vi.mocked(await import("../db/castingV2"));
 const { refusalTagOf } = await import("./refusalTag");
 const { BRIEF_TEXT_MAX_AUTHOR_ROAD, BRIEF_TOO_LONG_AUTHOR_ROAD_MESSAGE } = await import("./briefLength");
-const { deterministicBriefCompiler, castingBriefCompiler, READER_OUTAGE_MESSAGE } = await import("./briefCompiler");
+const { castingBriefCompiler, READER_OUTAGE_MESSAGE } = await import("./briefCompiler");
 const {
   candidateChargeReference,
   candidateUnseenChargeReference,
@@ -312,6 +313,58 @@ function seedCandidates(count = 8) {
     status: "queued",
   }));
 }
+
+/**
+ * A READER THAT NEVER LEAVES THE PROCESS — this suite's compiler, since #1490
+ * act 2 deleted `deterministicBriefCompiler`.
+ *
+ * ⚠ **WHY THE SEAM IS NOT SIMPLY REPLACED BY A FAKE COMPILER.** The deleted seam
+ * was a second implementation of "compile a brief", and `rollService`'s own
+ * arms are the ones that would never notice it drifting from the real one: they
+ * are about the billing sequence, the settlement, the cancel and the dispatch
+ * collisions, and they read the compile only through a spy on its INPUT. A
+ * hand-written stand-in returning a plausible `CompiledRollBrief` would pass all
+ * 47 of them while the real compiler changed shape underneath — which is working
+ * law 4 (a second list shadowing a source of truth) pointed at a contract.
+ *
+ * So these arms now drive the compiler production drives, through the `engine`
+ * test seam its own docblock declares for exactly this, and the only thing faked
+ * is the interpreter's reply. That is a strictly stronger position than the one
+ * act 2 removed: the suite kept its speed and its refusal to spend, and gained
+ * the real composition road.
+ *
+ * The reply is fixed and deliberately dull — the sheet's contents are not what
+ * any arm in this file asserts, and a reply that varied would make a billing
+ * test fail for a casting reason.
+ */
+const inProcessReader: TextEngine = {
+  id: "test:roll-service-reader",
+  complete: async () => ({
+    text: JSON.stringify({
+      cohort: "photoreal_human",
+      role: "cyclist",
+      sex: "female",
+      ageBand: "20s",
+      agePhase: "mid",
+      heritage: [{ heritage: "Northern European", pct: 100 }],
+      energy: "dry",
+      variationAxis: "look",
+      reads: null,
+    }),
+    latencyMs: 1,
+    provenance: { provider: "openrouter" as const, model: "test", servedModel: "test" },
+  }),
+};
+
+/**
+ * The live compiler with the in-process reader bound to it.
+ *
+ * ⚠ It takes the service's own input unchanged and adds ONE key. A helper that
+ * rewrote anything else would be lying to the four arms in this file that read
+ * the compile's input through a spy and assert on which keys are present.
+ */
+const compileInProcess = (input: Record<string, unknown>) =>
+  castingBriefCompiler({ ...input, engine: inProcessReader } as never);
 
 /** What each dispatch handed the engine — the anchored arms read `references` off it. */
 const engineSent: Array<{ prompt: string; references?: readonly { bytes: Buffer }[] }> = [];
@@ -340,13 +393,27 @@ function baseDependencies(fails: (position: number) => boolean = () => false) {
   return {
     engine: engineWhere(fails),
     /*
-      Compile without an interpreter. These tests are about the billing
-      sequence, and the default compiler now reaches for a text transport —
-      which, with a real key in `.env`, turns a 17ms unit suite into 32
-      seconds of live API calls against someone's account. A unit test that
-      silently spends money is not a unit test.
+      Compile with the reader doubled in-process — `compileInProcess` above.
+
+      ⚠ **THIS COMMENT ARGUED FROM A HAZARD THAT HAS SINCE MOVED, AND THE
+      CORRECTION IS WHY THE SEAM COULD GO.** It read: *"the default compiler now
+      reaches for a text transport — which, with a real key in `.env`, turns a
+      17ms unit suite into 32 seconds of live API calls against someone's
+      account."* That incident is real and is the M5 one; it is now held at
+      `vitest.setup.ts`, which STRIPS `OPENROUTER_API_KEY` from the environment
+      of every unit run and names this very suite as the reason. So the money
+      argument no longer needs a second compiler to carry it.
+
+      Driven rather than reasoned (#1490 act 2): with the `engine` binding
+      removed from `compileInProcess`, **47 of these 63 arms go red** with
+      `cause: "unconfigured"` — the compiler refuses the roll free rather than
+      casting from the brief alone (#126, his *"always"*). So a future arm that
+      forgets to bind a reader spends nothing AND cannot pass. That is two
+      independent holds where the deleted seam was one, which is what made
+      re-pointing these arms onto the live compiler the stronger answer rather
+      than merely the tidier one.
     */
-    compileBrief: deterministicBriefCompiler,
+    compileBrief: compileInProcess,
     admit: () => ({ admitted: true as const }),
     markRunning: vi.fn(async () => {
       journal.push("running");
@@ -1447,7 +1514,7 @@ describe("no roll is born on a path", () => {
       const asked: boolean[] = [];
       const compileBrief = async (compilerInput: Record<string, unknown>) => {
         asked.push("pickWardrobe" in compilerInput);
-        return deterministicBriefCompiler(compilerInput as never);
+        return compileInProcess(compilerInput);
       };
       return { asked, compileBrief };
     }
@@ -1482,7 +1549,7 @@ describe("no roll is born on a path", () => {
           ...(baseDependencies() as object),
           compileBrief: async (compilerInput: Record<string, unknown>) => {
             seen.push(compilerInput);
-            return deterministicBriefCompiler(compilerInput as never);
+            return compileInProcess(compilerInput);
           },
         } as never,
         { ...INPUT } as never,
@@ -1517,7 +1584,7 @@ describe("no roll is born on a path", () => {
           ...(baseDependencies() as object),
           compileBrief: async (compilerInput: Record<string, unknown>) => {
             seen.push(compilerInput);
-            return deterministicBriefCompiler(compilerInput as never);
+            return compileInProcess(compilerInput);
           },
         } as never,
         { ...INPUT } as never,
@@ -1553,7 +1620,7 @@ describe("no roll is born on a path", () => {
             ...(baseDependencies() as object),
             compileBrief: async (compilerInput: Record<string, unknown>) => {
               seen.push(compilerInput);
-              return deterministicBriefCompiler(compilerInput as never);
+              return compileInProcess(compilerInput);
             },
           } as never,
           { ...INPUT, followCandidatePublicId: FOLLOW_CANDIDATE_PUBLIC_ID },
@@ -1638,7 +1705,7 @@ describe("the ROW A follow (#177) — on the author road the photo rides, or the
         ...(baseDependencies() as object),
         compileBrief: async (compilerInput: Record<string, unknown>) => {
           seen.push(compilerInput);
-          return deterministicBriefCompiler(compilerInput as never);
+          return compileInProcess(compilerInput);
         },
       } as never,
       { ...INPUT, followCandidatePublicId: FOLLOW_PARENT, ...overridesAndUnlock },

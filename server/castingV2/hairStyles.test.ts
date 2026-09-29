@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { applySheetTaste, realizeAxes } from "./realizedAxes";
-import { composeCandidatePrompt, resolveCandidateIdentity } from "./cohortPhotorealHuman";
-import { castingBriefCompiler, deterministicBriefCompiler } from "./briefCompiler";
+import { resolveCandidateIdentity } from "./cohortPhotorealHuman";
+import { castingBriefCompiler } from "./briefCompiler";
 import type { TextEngine } from "../providers/types";
 import { ARCHETYPES, type CastingIntent, type HeritageComponent } from "./castingIntent";
 import {
@@ -14,6 +14,48 @@ import {
 } from "./hairStyles";
 
 import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
+
+/**
+ * A READER THAT PINS NOTHING — the open-brief condition, since #1490 act 2.
+ *
+ * ⚠ **THE ARMS BELOW USED `deterministicBriefCompiler`, AND WHAT THEY NEEDED
+ * FROM IT WAS NOT "NO NETWORK" BUT "NOTHING PINNED".** That seam never asked a
+ * reader, so its intent came from `fallbackIntent`: the brief text became the
+ * `role` and every other axis stayed null, which is exactly the open palette a
+ * collision or spread arm has to have. Swapping in a reader that answers with a
+ * sex, an age and a heritage would quietly narrow the palette and the arm would
+ * pass for the wrong reason.
+ *
+ * So this reproduces that condition through the live compiler instead: the brief
+ * as the role, nothing else stated. The arms keep their meaning and gain the road
+ * production is actually on.
+ */
+function openReader(brief: string): TextEngine {
+  return {
+    id: "test:open-brief",
+    complete: async () => ({
+      text: JSON.stringify({
+        cohort: "photoreal_human",
+        role: brief,
+        sex: null,
+        ageBand: null,
+        agePhase: null,
+        heritage: [],
+        energy: null,
+        variationAxis: null,
+        reads: null,
+      }),
+      latencyMs: 1,
+      provenance: { provider: "openrouter" as const, model: "test", servedModel: "test" },
+    }),
+  };
+}
+
+/** The live compiler on an open brief — the seam's replacement, one line. */
+function compileOpen(input: { briefText: string; candidateCount: number; rollSeed: string }) {
+  return castingBriefCompiler({ ...input, engine: openReader(input.briefText) } as never);
+}
+
 
 /* Its arms do real work in process — a tree sweep, a sheet compile, a sharp
    encode — and under the parallel run that cost multiplies by fifteen or twenty
@@ -153,48 +195,26 @@ describe("hair colour at colourist resolution", () => {
 });
 
 describe("the skin finish", () => {
-  function promptWith(options: { archetype: keyof typeof ARCHETYPES; brief: string }) {
-    const intent = {
-      cohort: "photoreal_human",
-      role: null,
-      characterNotes: null,
-      sex: null,
-      ageBand: null,
-      agePhase: null,
-      heritage: [],
-      build: null,
-      energy: null,
-      archetype: null,
-      variationAxis: null,
-      look: null,
-      reads: [],
-    } as unknown as CastingIntent;
-    return composeCandidatePrompt({
-      briefText: options.brief,
-      intent,
-      resolved: resolveCandidateIdentity(intent, 0, "finish"),
-      archetype: options.archetype,
-      seed: 1,
-    });
-  }
+  /*
+    ⚠ **THREE PROMPT ARMS STOOD HERE AND WENT WITH THEIR SUBJECT — #1490 ACT 2.**
 
-  it("injects the engineered prose, not the bare word", () => {
-    // A9's craft is the expansion. "matte" alone renders as nothing specific.
-    const prompt = promptWith({ archetype: "raw editorial", brief: "an oncology nurse" });
-    expect(prompt).toContain("SKIN FINISH:");
-    expect(prompt).toContain(FINISH_RENDER.matte);
-  });
+    They were *injects the engineered prose, not the bare word*, *lets the
+    archetype decide when the brief says nothing*, and *lets a stated finish
+    outrank the archetype*. All three composed a house-road prompt and read the
+    `SKIN FINISH:` block out of it, asserting A9's engineered expansion reached
+    the engine and that a stated finish beat the archetype's.
 
-  it("lets the archetype decide when the brief says nothing", () => {
-    expect(promptWith({ archetype: "clean commercial", brief: "a teacher" })).toContain(FINISH_RENDER.dewy);
-    expect(promptWith({ archetype: "screen presence", brief: "a teacher" })).toContain(FINISH_RENDER.luminous);
-  });
+    The block is composed by nothing now. `FINISH_RENDER` and `statedFinish` are
+    still declared in this module's own source (`hairStyles.ts`), and the parse
+    arm directly below is untouched — so the READING of a finish out of her
+    words is still driven. What is gone is the sentence that carried it to an
+    engine, and with it the precedence those three arms proved.
 
-  it("lets a stated finish outrank the archetype", () => {
-    const prompt = promptWith({ archetype: "clean commercial", brief: "a teacher with matte unpowdered skin" });
-    expect(prompt).toContain(FINISH_RENDER.matte);
-    expect(prompt).not.toContain(FINISH_RENDER.dewy);
-  });
+    ⚠ **This is the same FLOOR DROP the docblock further down already declares,
+    and the same filed card: #1125.** It is not a new loss and it is not a
+    silent one — the question *did the delivered picture carry the finish she
+    asked for* is #30's, asked of a FRAME rather than of a prompt string.
+  */
 
   it("reads a finish out of ordinary phrasing", () => {
     expect(statedFinish("a sweaty boxer between rounds")).toBe("oily");
@@ -360,17 +380,34 @@ describe("the sheet-level taste rules", () => {
     expect([...names][0]).toBe(parent.realized.hairStyle!.name);
   });
 
-  it("says nothing about hair at all when the brief already decided it", async () => {
-    const compiled = await deterministicBriefCompiler({
+  it("records the deference as STATED when the brief already decided the hair", async () => {
+    /*
+      ⚠ **THIS ARM ASSERTED ON A PROMPT STRING AND, AFTER #1490 ACT 2 SWAPPED THE
+      COMPILER, IT PASSED WHILE PROVING NOTHING.** It read: *"says nothing about
+      hair at all when the brief already decided it"*, and it checked that the
+      composed prompt did not contain the house hair line's closing clause. With
+      the composer deleted no prompt contains that clause on ANY brief — driven,
+      not assumed: swapping the brief to `"a woman"`, which states no hair
+      whatsoever, left the old arm green.
+
+      That is the shape worth naming, because it is not the ordinary red. A
+      deletion turns some arms red and turns others VACUOUS, and only the red ones
+      announce themselves. This one survived its own subject.
+
+      The FACT it was written for is alive and is recorded rather than composed:
+      the styling resolution. `briefStatesHair` is the code-owned gate over her
+      own words, and when it fires the resolver stands down from authoring a cut
+      and writes `stylingResolution: "stated"` onto every candidate — which is
+      what a follow, a refine and the facet values read. So the arm asks the
+      record instead of the prose, and it discriminates again.
+    */
+    const compiled = await compileOpen({
       briefText: "a woman with a shaved head",
       candidateCount: 8,
       rollSeed: "stated-hair",
     });
     for (const candidate of compiled.candidates) {
-      // Keyed on the hair line's own closing clause, not on "HAIR:" — the
-      // constant's "FACIAL HAIR:" contains that substring, and an assertion
-      // that matches the wrong line is an assertion that proves nothing.
-      expect(candidate.prompt).not.toContain("Cut and worn as that style is genuinely worn");
+      expect(candidate.resolvedIdentity.stylingResolution).toBe("stated");
     }
   });
 });
@@ -418,7 +455,7 @@ describe("the colour pair-breaker", () => {
     "leaves no breakable collision on an open brief — %j",
     async (brief) => {
       for (let roll = 0; roll < 150; roll += 1) {
-        const compiled = await deterministicBriefCompiler({
+        const compiled = await compileOpen({
           briefText: brief,
           candidateCount: 8,
           rollSeed: `pair-${brief}-${roll}`,
@@ -532,17 +569,22 @@ describe("the colour pair-breaker", () => {
     expect(moved).toBeGreaterThan(0);
   });
 
-  it("carries the shifted colour into the prompt, not just the record", async () => {
-    for (let roll = 0; roll < 60; roll += 1) {
-      const compiled = await deterministicBriefCompiler({
-        briefText: "a model",
-        candidateCount: 8,
-        rollSeed: `prompt-${roll}`,
-      });
-      for (const candidate of compiled.candidates) {
-        const colour = candidate.resolvedIdentity.hair?.colour;
-        if (colour) expect(candidate.prompt).toContain(colour);
-      }
-    }
-  });
+  /*
+    ⚠ **`carries the shifted colour into the prompt, not just the record` IS GONE,
+    AND IT IS THE ONE ARM HERE THE PRODUCT NOW CONTRADICTS RATHER THAN MERELY
+    RETIRES — #1490 act 2.**
+
+    It asserted that when the taste pass shifted a candidate's hair colour, the
+    shifted colour appeared in that candidate's prompt — the record and the wire
+    agreeing. On the author road they deliberately do NOT agree: one authored
+    sentence paints all eight, the per-slice dice never reach the wire, and every
+    resolved record is therefore stamped `unsent: true` (#176) precisely so no
+    downstream reader mistakes what was ROLLED for what was DELIVERED.
+
+    So re-pointing it would mean asserting the opposite of the design, and
+    keeping it would mean asserting a prompt that is the same string for all
+    eight contains eight different colours. The pair-breaker arms above it, which
+    read the RECORD, are untouched and still prove the shift happens.
+  */
+
 });

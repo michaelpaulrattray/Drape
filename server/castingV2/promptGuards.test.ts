@@ -11,12 +11,48 @@ import { HAIR_PARTS, type HairPart } from "../../shared/castingRealization";
 const NO_HAIR_PARTS: ReadonlySet<HairPart> = new Set();
 const ALL_HAIR_PARTS: ReadonlySet<HairPart> = new Set(HAIR_PARTS);
 
-import { castingBriefCompiler, deterministicBriefCompiler } from "./briefCompiler";
+import { castingBriefCompiler } from "./briefCompiler";
 import { applySheetTaste } from "./realizedAxes";
 import { resolveCandidateIdentity } from "./cohortPhotorealHuman";
 import { sameNeighbourhood, colourBucket } from "./heritageNeighbourhoods";
 import type { CastingIntent } from "./castingIntent";
 import type { TextEngine } from "../providers/types";
+
+/**
+ * A READER THAT PINS NOTHING — the open-brief condition, since #1490 act 2.
+ *
+ * ⚠ The arm below used `deterministicBriefCompiler`, and what it needed was not
+ * "no network" but "nothing pinned": that seam asked no reader, so its intent came
+ * from `fallbackIntent` — the brief as the `role`, every other axis null. A reader
+ * answering with a sex, an age and a heritage would narrow the palette and the arm
+ * would pass for the wrong reason. This reproduces the condition through the live
+ * compiler instead.
+ */
+function openReader(brief: string): TextEngine {
+  return {
+    id: "test:open-brief",
+    complete: async () => ({
+      text: JSON.stringify({
+        cohort: "photoreal_human",
+        role: brief,
+        sex: null,
+        ageBand: null,
+        agePhase: null,
+        heritage: [],
+        energy: null,
+        variationAxis: null,
+        reads: null,
+      }),
+      latencyMs: 1,
+      provenance: { provider: "openrouter" as const, model: "test", servedModel: "test" },
+    }),
+  };
+}
+
+/** The live compiler on an open brief — the seam's replacement, one line. */
+function compileOpen(input: { briefText: string; candidateCount: number; rollSeed: string }) {
+  return castingBriefCompiler({ ...input, engine: openReader(input.briefText) } as never);
+}
 
 /**
  * Guards that assert what reaches the COMPOSED PROMPT.
@@ -104,22 +140,35 @@ describe("the realized lines are present, not merely absent", () => {
   }
 
 
-  it("emits SKIN CHARACTER often enough to be doing something", async () => {
+  it("realizes a skin character often enough to be doing something", async () => {
     /*
-      Most skin is deliberately "plain" and emits nothing — that is the
-      seasoning-not-costume weighting. So the floor is across several sheets
-      rather than within one, which is the honest form of the assertion.
+      ⚠ **THIS ARM COUNTED A PROMPT LINE UNTIL #1490 ACT 2 AND NOW COUNTS THE
+      RECORD, WHICH IS WHERE THE FACT LIVES.** It compiled ten sheets and counted
+      candidates whose prompt contained `SKIN CHARACTER:`. That line was composed
+      by the house road only, and the author road never sent it — so after act 2
+      there is nothing to count in a prompt.
+
+      The value itself is alive and is read downstream: `realized.skinCharacter`
+      is written per candidate and travels into the facet values and a follow's
+      inheritance. So the floor is asserted on the record.
+
+      The FORM of the assertion is deliberately unchanged, because it is the
+      honest one: most skin is "plain" and realizes nothing — that is the
+      seasoning-not-costume weighting — so the floor is across several sheets
+      rather than within one.
     */
-    let lines = 0;
+    let realized = 0;
     for (let roll = 0; roll < 10; roll += 1) {
-      const compiled = await deterministicBriefCompiler({
+      const compiled = await compileOpen({
         briefText: "an oncology nurse",
         candidateCount: 8,
         rollSeed: `skin-${roll}`,
       });
-      lines += compiled.candidates.filter((c) => c.prompt.includes("SKIN CHARACTER:")).length;
+      realized += compiled.candidates.filter(
+        (candidate) => candidate.resolvedIdentity.realized.skinCharacter != null,
+      ).length;
     }
-    expect(lines, "no SKIN CHARACTER line on 80 candidates").toBeGreaterThan(10);
+    expect(realized, "no skin character realized on 80 candidates").toBeGreaterThan(10);
   });
 
 });

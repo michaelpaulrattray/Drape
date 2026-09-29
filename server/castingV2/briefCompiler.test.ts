@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { castingBriefCompiler, deterministicBriefCompiler, FALLBACK_CARRIES_CHARS, READER_OUTAGE_MESSAGE } from "./briefCompiler";
+import { castingBriefCompiler, FALLBACK_CARRIES_CHARS, READER_OUTAGE_MESSAGE } from "./briefCompiler";
 import {
   lockFactsOf,
   EMPTY_STATED_HAIR,
@@ -14,12 +14,47 @@ import {
 import {
   COHORT_CONSTANT_MARKERS,
   cohortConstantBlocks,
-  composeCandidatePrompt,
   resolveCandidateIdentity,
 } from "./cohortPhotorealHuman";
 import { interpretBrief, interpreterSystemPrompt } from "./interpreter";
 import type { TextEngine } from "../providers/types";
 import { HOUSE_WARDROBE_LINE } from "./wardrobeLine";
+
+/**
+ * A READER THAT PINS NOTHING — the open-brief condition, since #1490 act 2.
+ *
+ * ⚠ The arm below used `deterministicBriefCompiler`, and what it needed was not
+ * "no network" but "nothing pinned": that seam asked no reader, so its intent came
+ * from `fallbackIntent` — the brief as the `role`, every other axis null. A reader
+ * answering with a sex, an age and a heritage would narrow the palette and the arm
+ * would pass for the wrong reason. This reproduces the condition through the live
+ * compiler instead.
+ */
+function openReader(brief: string): TextEngine {
+  return {
+    id: "test:open-brief",
+    complete: async () => ({
+      text: JSON.stringify({
+        cohort: "photoreal_human",
+        role: brief,
+        sex: null,
+        ageBand: null,
+        agePhase: null,
+        heritage: [],
+        energy: null,
+        variationAxis: null,
+        reads: null,
+      }),
+      latencyMs: 1,
+      provenance: { provider: "openrouter" as const, model: "test", servedModel: "test" },
+    }),
+  };
+}
+
+/** The live compiler on an open brief — the seam's replacement, one line. */
+function compileOpen(input: { briefText: string; candidateCount: number; rollSeed: string }) {
+  return castingBriefCompiler({ ...input, engine: openReader(input.briefText) } as never);
+}
 
 /** A text engine that returns exactly what a test wants the interpreter to say. */
 function engineReturning(text: string): TextEngine {
@@ -466,34 +501,36 @@ describe("locks", () => {
 
 describe("compilation", () => {
   it("is stable for one seed and different for the next", async () => {
-    const first = await deterministicBriefCompiler({
-      briefText: "a chef",
-      candidateCount: 8,
-      rollSeed: "request-a",
-    });
-    const replay = await deterministicBriefCompiler({
-      briefText: "a chef",
-      candidateCount: 8,
-      rollSeed: "request-a",
-    });
-    const second = await deterministicBriefCompiler({
-      briefText: "a chef",
-      candidateCount: 8,
-      rollSeed: "request-b",
-    });
+    /*
+      ⚠ **THIS ARM COMPARED PROMPTS AND CANNOT ANY MORE — #1490 act 2 — AND THE
+      REASON IS THE AUTHOR ROAD, NOT THE DELETION.** It compiled the same brief
+      twice on one seed and once on another, and compared
+      `candidates.map((spec) => spec.prompt)`. On the author road all eight
+      candidates share ONE authored prompt, and that prompt is composed from the
+      brief rather than from the seed — so two different seeds produce the SAME
+      prompt list, and the "different for the next" half would assert a falsehood.
+
+      What the arm is for is determinism of the CASTING: a replay must recompile
+      the same eight people, and a new seed must cast different ones. That is
+      `resolvedIdentity`, which is seed-derived, so the comparison moves there.
+    */
+    const cast = (rollSeed: string) =>
+      compileOpen({ briefText: "a chef", candidateCount: 8, rollSeed }).then((compiled) =>
+        compiled.candidates.map((spec) => JSON.stringify(spec.resolvedIdentity)),
+      );
+
+    const first = await cast("request-a");
+    const replay = await cast("request-a");
+    const second = await cast("request-b");
 
     // A replay recompiles identically; rolling again casts new people.
-    expect(replay.candidates.map((spec) => spec.prompt)).toEqual(
-      first.candidates.map((spec) => spec.prompt),
-    );
-    expect(second.candidates.map((spec) => spec.prompt)).not.toEqual(
-      first.candidates.map((spec) => spec.prompt),
-    );
+    expect(replay).toEqual(first);
+    expect(second).not.toEqual(first);
   });
 
   it("refuses a brief too short to cast from, for free", async () => {
     await expect(
-      deterministicBriefCompiler({ briefText: "hi", candidateCount: 8, rollSeed: "s" }),
+      compileOpen({ briefText: "hi", candidateCount: 8, rollSeed: "s" }),
     ).rejects.toMatchObject({ code: "uninterpretable" });
   });
 
@@ -509,16 +546,30 @@ describe("compilation", () => {
     expect(new Set(sheet.map((resolved) => resolved.ageBand)).size).toBeGreaterThan(1);
   });
 
-  it("keeps the user's own archetype words in every prompt", () => {
-    const prompt = composeCandidatePrompt({
-      intent: { ...BASE_INTENT, role: "punk drummer" },
-      resolved: resolveCandidateIdentity(BASE_INTENT, 0, "seed"),
-      archetype: "quiet luxury",
-      seed: 0,
+  it("keeps the user's own archetype words in every prompt", async () => {
+    /*
+      C6's fidelity gate: a named social archetype may never be quietly replaced
+      by a generic fashion type.
+
+      ⚠ **IT DROVE THE HOUSE COMPOSER UNTIL #1490 ACT 2, AND THE GATE IT GUARDS
+      IS STRONGER ON THE ROAD THAT REPLACED IT.** The old arm composed one prompt
+      with `role: "punk drummer"` against the archetype `"quiet luxury"` and
+      checked the user's words survived the shelf archetype's prose. On the author
+      road there is no shelf prose to survive: the brief reaches the engine
+      verbatim and the locked block is appended after it, which is what "no hidden
+      prompt, ever" means (#131 slice D).
+
+      So the gate is asserted where it now holds — her words, in every one of the
+      eight prompts, unparaphrased.
+    */
+    const compiled = await compileOpen({
+      briefText: "a punk drummer in her 30s",
+      candidateCount: 8,
+      rollSeed: "c6-seed",
     });
-    // C6's fidelity gate: a named social archetype may never be quietly
-    // replaced by a generic fashion type.
-    expect(prompt).toContain("punk drummer");
+    for (const candidate of compiled.candidates) {
+      expect(candidate.prompt).toContain("punk drummer");
+    }
   });
 });
 
