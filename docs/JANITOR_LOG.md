@@ -2074,3 +2074,180 @@ model call, no production variable.
    this machine **a Bash heredoc and `node -e` both eat a doubled backslash** —
    three manifest paths were mangled and repaired this run; write file bodies with
    an editor tool, or build separators with `String.fromCharCode(92)`.
+
+## Between runs — #1481 worked off a builder-seat batch, 2026-09-29 (not a patrol; the clock had not fired)
+
+Seat: Janitor. Shift `seat1-20260929-180812`, one card, launched by the crew's runner.
+Card **#1481** — two orphaned dev-server stacks and a gap between the shift
+directories on disk and the ones git registers. Run 10 §D handed the second half of
+this over by name (*"Run 11 takes it"*); the card was filed at a focus shift's close
+and is worked here.
+
+⚠ **THIS ENTRY DELIBERATELY CARRIES NO `## Run` HEADING.** The Janitor's clock fires
+**2026-09-30** and `scripts/patrol-clocks.mts` derives the last run from the newest
+`## Run N — <date>` heading in this file — so a run heading here would read as a
+patrol performed today and push the real one to 2026-10-02, skipping it silently.
+This is the shape the six earlier `## Between runs` entries exist for.
+
+### A. The population — the card's six processes were twelve, across the same two stacks
+
+Read at `Win32_Process` command lines, creation timestamps and the parent chain, then
+re-derived as trees. The card counted the `node` processes; these are the trees.
+
+| stack | root | started | processes | tree it ran from | registered? |
+|---|---|---|---|---|---|
+| A | `17520` | 2026-09-26 08:28:46Z | **4** — `bash` 30828, `node` 17520, `node` 6136, `esbuild` 44152 | `drape-shift-seat-2-20260926-171737` | **no** — and a zero-file shell |
+| B | `48208` | 2026-09-27 00:57:31Z | **8** — `sh` 44780, `node` 42032, `cmd` 49228, `node` 27212, `cmd` 48160, `node` 48208, `cmd` 14380, `node` 44692 | `drape-shift-seat-1-20260927-104013` | yes, and populated |
+
+**Both launching parents (`45644`, `44348`) are dead**, which is what makes them
+orphans rather than somebody's foreground server. Total working set across all
+twelve: **64.4 MB** — so the *memory* cost is modest and the 2026-07-30/31 "lagged
+the machine" complaint is **not** reproduced by this pair. What they cost is below.
+
+### B. ⚠ Stack A was LISTENING, and both the card and run 10 recorded that it served nothing
+
+The card's words were *"Neither stack is listening on a `:300x` port, so neither is
+serving anything"* — literally true and **the wrong conclusion**. Stack A asked for
+`3141` and its own log says `Port 3141 is busy, using port 3144 instead`; a `:300x`
+filter cannot see it. What it actually held:
+
+- **LISTENING on `:3144`**, with two **established** connections to
+  `66.33.22.223:52008` — the **dev MySQL**, held open for three days.
+- **`/api/health` TIMED OUT** on an 8-second probe. So it was a listening socket that
+  could not answer: wedged, not idle. Run 10 §F read it as *"an idle dev server looks
+  exactly like an unused one"* from `netstat` showing **no** established connections;
+  by today it had two.
+- Its own source tree was deleted **30 minutes after it booted** — first
+  `ERR_MODULE_NOT_FOUND` at **2026-09-26 08:58:49Z**, a full 13 hours before run 10
+  began, so run 10 inherited that state and did not cause it.
+- It then logged three module-resolution stack traces every 300 s for the rest of its
+  life: **860 health-check cycles, 4,820,081 bytes** of log, last written
+  **2026-09-29 08:14:30Z** — while this shift was reading it. Uptime at the kill:
+  **2 d 23 h 46 m**, of which **2 d 23 h 16 m was already broken**.
+
+Trimmed copy (head + tail, the middle stated) kept OUT of the tree at
+`output/_janitor1481/orphan-dev-3144-seat2.trimmed.log` before the kill, per run 10's
+precedent. Stack B's `tsx watch` was alive with **no child process**, so it too was
+serving nothing and holding no port.
+
+**Both killed by the sanctioned road** — `dev-servers.mts --kill 17520`, then
+`--kill 48208`; `0 dev server tree(s) left`. Verified after: all twelve pids gone,
+`:3144` free, and both `:52008` connections released (the one connection left to that
+host is on `:23768`, which is production and another process).
+
+### C. ⚠ THE READER CALLED STACK A `live`, AND THAT IS WHY IT SURVIVED PR #1438 — filed as #1483
+
+The last reading before the kill, from the tool built for exactly this:
+
+```
+root  17520  started 26/09/2026, 6:28:43 pm  children [6136]  :3144
+       ⚠ NO WATCHER — started off the entrypoint, so nothing restarts it
+```
+
+No ABANDONED line — although its launch tree was **unregistered AND an empty shell**,
+two of the three states `launchDirectoryIsGone` exists to catch.
+
+`launchDirectoryOf` (`scripts/lib/devServerTrees.mts:211`) reads the launch directory
+out of the **command line**, matching a `<drive>:/…/node_modules/…` prefix
+(`:221`). Root `17520`'s own command line is relative, so the value came from child
+`6136`: `--require C:\Users\Admin\Drape\node_modules\.pnpm\tsx@4.23.13\…`. **A
+worktree's `node_modules` is a junction into the main tree, and node resolves the
+loader's realpath** — so the surviving path names the main tree, which is registered,
+and `launchDirectoryState` (`:482`) returns `live`. The registration limb PR #1438
+added is correct; **the value handed to it was already wrong.**
+
+⚠ **Run 10 held both halves of this in one run and did not join them.** §F spared
+`17520` on the stated ground *"Launched from the MAIN tree, which exists and is live"*
+— while §D, five pages earlier, recorded that
+`drape-shift-seat-2-20260926-171737` answered `Device or resource busy` because *"a
+process holds it as its current working directory, and no reader on this machine names
+it"*. **§D's unnamed holder was §F's spared process.** The cost of not joining them
+was three more days of uptime, two held database connections and 4.8 MB of log.
+
+Proof of the real launch tree is the server's own log, which names it 860 times:
+`Cannot find module 'C:\Users\Admin\drape-shift-seat-2-20260926-171737\server\db\connection'`.
+
+**The lead, left on #1483 as a lead and not a design:** stack B was classified
+*correctly*, because pnpm's `node_modules/.bin/…` shims are invoked by literal path
+and the worktree survives into the command line, whereas `node_modules/.pnpm/…` paths
+reached through module resolution are junction-resolved and always name the target. A
+tree whose only absolute candidate is a `.pnpm/` path is one this reader cannot place,
+and `unknown` already exists for that. Whatever is built must keep failing toward
+LIVE — a main-tree `pnpm dev` carries `.bin` paths too, so it stays placeable, and
+that negative control matters more than the positive one.
+
+### D. The two unregistered directories — cleared, and the holder is proven both ways
+
+**Before: 14 directories named `drape-shift-*` against 12 registered.** (A 15th glob
+hit, `drape-shift-frames-624-2026-09-18.zip`, is a FILE and not a worktree; the card's
+13-against-11 is the same gap of two, one directory smaller, read before this shift's
+own worktree existed.)
+
+| directory | reading | disposition |
+|---|---|---|
+| `drape-shift-55dust` | unregistered, **zero files**, 27 Sep | **removed** — `rmdir` succeeded at the first ask |
+| `drape-shift-seat-2-20260926-171737` | unregistered, **zero files**, stack A's cwd | **removed after the kill**; `rmdir` before it answered `Device or resource busy` |
+
+⚠ **That pair is a positive and a negative control in one pass, which is why both are
+recorded.** Two directories in the same state — unregistered, zero files — and
+opposite answers to the same command: the one with a process on it refused, the one
+without it removed instantly. Then the same command on the same directory **succeeded
+the moment the process was killed**. So the holder is the cause, driven rather than
+argued, and `Device or resource busy` is confirmed as the signature of exactly this.
+Neither directory could lose content: both held zero files before anything was run.
+
+**After: 13 on disk, 13 registered, set difference EMPTY in both directions.**
+Registered rose 12 → 13 during the shift because another seat minted a worktree while
+this ran — the population moves underneath a reading, so the gap is the number to
+carry, not the totals.
+
+### E. The repository's `node_modules` — unmoved, and the measure reconciled
+
+`rmdir` cannot recurse and cannot traverse a reparse point, and both directories were
+verified zero-file first, so nothing could have reached the junction. Read anyway,
+because the downside is the whole dependency tree: **`ls -A` → 64**, `.bin/vitest`
+present, `.pnpm` **571** entries, and `require.resolve("vitest/package.json")`
+resolving **through the junction from a worktree**.
+
+⚠ **64 is identical to run 10 §D's reading either side of its own deletes**, which is
+the comparison worth making. A first `ls` here read **57** and that is the
+*without-dotfiles* measure — the seven dot entries (`.bin`, `.cache`, `.modules.yaml`,
+`.pnpm`, `.pnpm-workspace-state-v1.json`, `.vite`, `.vite-temp`) are the difference.
+Runs 4/5's *"77 entries"* is a third measure at a two-week-older tree; **quote which
+counting a `node_modules` figure used, or it reads as damage.**
+
+### F. Left, with the reason, for run 11 on its own clock
+
+1. **`drape-shift-seat-1-20260927-104013`** — stack B's tree, now with no process on
+   it. It is a **registered** worktree on `team/two-service-ceremony-1448`, card
+   **#1448 CLOSED**. Removing a registered worktree belongs to the branch sweep (run
+   10 §C), not to this card, and this file's doctrine keeps a registered tree so a
+   running seat is never disturbed. Its tip is not an ancestor of `origin/main`, which
+   under squash merges is **expected and is not evidence the work is unmerged** —
+   check the PR, not the ancestry.
+2. **#1483** — the reader defect in §C. Filed, not built: #1481's own scope note asks
+   for the sweep and says the standing shape is a separate question.
+3. **The class #1481 declined to ask is still unasked and unowned** — whether a seat
+   that starts `pnpm dev` should be made to stop it at close. Two shifts have now hit
+   the `Device or resource busy` failure that follows from not doing so, and a third
+   (this one) reproduced it on demand. It needs a card or a ruling; it does not need a
+   shift to invent one quietly.
+
+### G. The count the next run starts from
+
+| reading | run 10 (2026-09-27) | this entry (2026-09-29) |
+|---|---|---|
+| `drape-shift-*` directories on disk / registered | — | **13 / 13, gap 0** (was 14 / 12, gap 2) |
+| dev server trees running | 2 (1 killed, 1 left) | **0** |
+| orphan dev-server stacks outside a live tree | 1 left deliberately | **0** |
+| unregistered `drape-shift-*` leftovers | 1 (busy, handed to run 11) | **0** |
+| `node_modules` at the main tree, `ls -A` | 64 | **64** |
+
+### H. Anti-boredom check
+
+The card existed before the shift (**#1481**, filed 2026-09-29 by the Foreman night
+shift at close), and run 10 §D named its second half as run 11's. Nothing was built
+that the card did not ask for: the reader defect became **#1483** rather than a fix,
+and the standing-shape question became §F.3 rather than a guard. No production
+variable, flag, database row or customer surface was touched; the only repository
+change is this entry.
