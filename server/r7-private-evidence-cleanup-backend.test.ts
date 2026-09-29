@@ -106,6 +106,19 @@ describe("R7-7C5A private evidence cleanup backend", () => {
       // images live in the public bucket, evidence does not, and a manifest
       // that left the backend implicit could delete from the wrong one.
       "server/castingV2/candidateRetention.ts",
+      // The refused render's keeper (#1492) registers every frame of one capture
+      // BEFORE any of them is written and names `private_evidence_r2` for each —
+      // which is what this pin requires and is the whole point on this road: a
+      // frame of a person's face must never be able to reach the public bucket,
+      // and a manifest that left the backend implicit would default it there.
+      // ⚠ It was outside this list until 2026-09-30 because it reserved through
+      // `reserveStorageCleanupItemForOperation` instead, which named the backend
+      // correctly and created an UNHELD batch under the render's own operation
+      // id. Measured at the production rows: seven frames written, seven
+      // deleted, zero surviving, all time — the worker collected each one within
+      // sixty seconds of the refusal it was kept to explain. It holds its own
+      // manifest now, which is what puts it here.
+      "server/castingV2/diagnosticCapture.ts",
       // ⚠ THE PLATE MINT WAS HERE AND IS GONE (#1158 slice 2). It registered a
       // plate's key before the engine's bytes were stored, and it was the only
       // writer of `casting_ink_plates`. His ruling of 2026-09-24 retired the ink

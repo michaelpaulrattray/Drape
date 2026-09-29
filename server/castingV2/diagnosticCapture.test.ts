@@ -12,13 +12,16 @@ import { describe, expect, it } from "vitest";
 import {
   CASTING_DIAGNOSTIC_CAPTURE_SCOPE_ENV,
   DIAGNOSTIC_KEY_PREFIX,
+  DIAGNOSTIC_RETENTION_MS,
   DiagnosticCaptureConfigurationError,
   MAX_DIAGNOSTIC_BYTES,
   assertDiagnosticCaptureConfigured,
   captureRefusedRender,
   diagnosticCaptureEnabledFor,
   diagnosticKey,
+  diagnosticManifestInput,
 } from "./diagnosticCapture";
+import { REFUSAL_LOOP_RETENTION_MS } from "./refusalLoopCapture";
 
 const CONFIGURED: NodeJS.ProcessEnv = {
   R2_ENDPOINT: "https://example.r2.cloudflarestorage.com",
@@ -38,9 +41,8 @@ function recordingReserver() {
   const reserved: string[] = [];
   return {
     reserved,
-    reserve: async ({ storageKey }: { storageKey: string }) => {
-      reserved.push(storageKey);
-      return "batch-1";
+    reserve: async ({ storageKeys }: { storageKeys: readonly string[] }) => {
+      reserved.push(...storageKeys);
     },
   };
 }
@@ -97,7 +99,7 @@ describe("what it keeps, and where", () => {
          block below. Without it the default reserver would reach for a database
          this suite deliberately does not have, and the frames would be skipped
          — which is the correct fail-closed behaviour, not this test's subject. */
-      reserve: async () => "batch-1",
+      reserve: async () => undefined,
       writer,
       env,
     });
@@ -124,7 +126,7 @@ describe("what it keeps, and where", () => {
         { name: "huge", bytes: Buffer.alloc(MAX_DIAGNOSTIC_BYTES + 1) },
         frame("fine"),
       ],
-      reserve: async () => "batch-1",
+      reserve: async () => undefined,
       writer,
       env,
     });
@@ -215,7 +217,19 @@ describe("the boot guard refuses rather than degrading", () => {
  * cannot come into existence, because the write does not happen.
  */
 describe("a captured frame cannot exist unregistered", () => {
-  it("reserves each key BEFORE writing it", async () => {
+  /*
+    ⚠ THIS ARM USED TO ASSERT THE PAIRWISE ORDER — reserve:painted, write:painted,
+    reserve:composite, write:composite — and it was RE-POINTED rather than
+    deleted by #1492, because the guarantee got stronger and not weaker.
+
+    Per-key reservation is gone: it could not carry a hold (the whole defect),
+    and it left a real window in which frame two existed unregistered while only
+    frame one's reservation had committed. There is now ONE transaction covering
+    every key in the capture, so the thing to assert is that EVERY key is
+    reserved before ANY byte is written. A pairwise assertion against this shape
+    would have to be satisfied by going back to the weaker one.
+  */
+  it("reserves EVERY key before ANY of them is written", async () => {
     const { wrote, writer } = recordingWriter();
     const order: string[] = [];
     const result = await captureRefusedRender({
@@ -223,19 +237,70 @@ describe("a captured frame cannot exist unregistered", () => {
       operationId: "op-order",
       reason: "composite_fault",
       frames: [frame("painted"), frame("composite")],
-      reserve: async ({ storageKey }) => { order.push(`reserve:${storageKey}`); return "batch-1"; },
+      reserve: async ({ storageKeys }) => { order.push(`reserve:${storageKeys.join(",")}`); },
       writer: async ({ key, bytes }) => { order.push(`write:${key}`); wrote.push({ key, bytes: bytes.byteLength }); },
       env: { ...CONFIGURED, [CASTING_DIAGNOSTIC_CAPTURE_SCOPE_ENV]: "users:1" },
     });
 
     expect(result.captured).toBe(true);
     expect(wrote).toHaveLength(2);
-    /* Pairwise, not merely "both happened": every write is immediately preceded
-       by the reservation of its own key. */
-    for (let index = 0; index < order.length; index += 2) {
-      expect(order[index]!.startsWith("reserve:")).toBe(true);
-      expect(order[index + 1]).toBe(order[index]!.replace("reserve:", "write:"));
-    }
+    /* One reservation, first, naming both keys — then the writes. */
+    expect(order).toEqual([
+      "reserve:casting-v2/diagnostics/1/op-order/painted.png,"
+      + "casting-v2/diagnostics/1/op-order/composite.png",
+      "write:casting-v2/diagnostics/1/op-order/painted.png",
+      "write:casting-v2/diagnostics/1/op-order/composite.png",
+    ]);
+  });
+
+  it("reserves ONCE for the whole capture, not once per frame", async () => {
+    let calls = 0;
+    const { writer } = recordingWriter();
+    await captureRefusedRender({
+      userId: 1,
+      operationId: "op-once",
+      reason: "composite_fault",
+      frames: [frame("painted"), frame("composite"), frame("applied")],
+      reserve: async () => { calls += 1; },
+      writer,
+      env: { ...CONFIGURED, [CASTING_DIAGNOSTIC_CAPTURE_SCOPE_ENV]: "users:1" },
+    });
+    expect(calls, "three frames, one committed reservation").toBe(1);
+  });
+
+  it("does not reserve a frame it is never going to write", async () => {
+    /* A key in the manifest whose object was never put is tolerated by every
+       cleanup path — but a frame rejected on SIZE is known to be unwritable
+       before the reservation, so naming it is just litter for the worker. */
+    const reservedKeys: string[] = [];
+    const { writer } = recordingWriter();
+    await captureRefusedRender({
+      userId: 1,
+      operationId: "op-sized",
+      reason: "composite_fault",
+      frames: [frame("huge", MAX_DIAGNOSTIC_BYTES + 1), frame("fine")],
+      reserve: async ({ storageKeys }) => { reservedKeys.push(...storageKeys); },
+      writer,
+      env: { ...CONFIGURED, [CASTING_DIAGNOSTIC_CAPTURE_SCOPE_ENV]: "users:1" },
+    });
+    expect(reservedKeys.map((key) => key.split("/").pop())).toEqual(["fine.png"]);
+  });
+
+  it("reserves nothing when NO frame is within bounds", async () => {
+    let calls = 0;
+    const { wrote, writer } = recordingWriter();
+    const result = await captureRefusedRender({
+      userId: 1,
+      operationId: "op-none",
+      reason: "composite_fault",
+      frames: [frame("empty", 0)],
+      reserve: async () => { calls += 1; },
+      writer,
+      env: { ...CONFIGURED, [CASTING_DIAGNOSTIC_CAPTURE_SCOPE_ENV]: "users:1" },
+    });
+    expect(calls, "an empty manifest is not a manifest").toBe(0);
+    expect(wrote).toEqual([]);
+    expect(result.captured).toBe(false);
   });
 
   it("does NOT store the frame when the reservation fails", async () => {
@@ -285,5 +350,83 @@ describe("a captured frame cannot exist unregistered", () => {
       env: { ...CONFIGURED, [CASTING_DIAGNOSTIC_CAPTURE_SCOPE_ENV]: "off" },
     });
     expect(reserved, "a dark path that reserves is not dark").toEqual([]);
+  });
+});
+
+/*
+ * AND THE HALF THAT WAS MISSING FOR THIRTEEN MONTHS — #1492.
+ *
+ * Registering the frames kept them from accumulating forever and nobody asked
+ * the other question. Read at the production rows: SEVEN frames written, seven
+ * deleted, zero surviving, all time — because a manifest born unheld is
+ * claimable the moment its operation stops being `running`, which is what a
+ * refusal is, and the worker sweeps every sixty seconds. Its sibling under the
+ * same flag, born held, has 112 items and has lost none.
+ *
+ * So the capture that passes every arm above is still worthless unless it keeps
+ * what it captures, and these are the arms for that.
+ */
+describe("a kept frame is kept long enough to be looked at", () => {
+  it("is born HELD for the retention window, not pending", async () => {
+    let heldUntil: Date | null = null;
+    const { writer } = recordingWriter();
+    const now = new Date("2026-09-30T00:00:00.000Z");
+    await captureRefusedRender({
+      userId: 1,
+      operationId: "op-held",
+      reason: "composite_fault",
+      frames: [frame("composite")],
+      reserve: async (input) => { heldUntil = input.heldUntil; },
+      writer,
+      env: { ...CONFIGURED, [CASTING_DIAGNOSTIC_CAPTURE_SCOPE_ENV]: "users:1" },
+      now,
+    });
+    expect(heldUntil, "an unheld manifest is swept within a minute").not.toBeNull();
+    expect(heldUntil!.getTime() - now.getTime()).toBe(DIAGNOSTIC_RETENTION_MS);
+  });
+
+  it("holds for thirty days — the window its sibling already chose", () => {
+    expect(DIAGNOSTIC_RETENTION_MS).toBe(30 * 24 * 60 * 60 * 1000);
+    /* One home for the policy, not two literals under one flag (law 4). */
+    expect(REFUSAL_LOOP_RETENTION_MS).toBe(DIAGNOSTIC_RETENTION_MS);
+  });
+
+  it("registers under a SYNTHETIC operation id, never the render's own", () => {
+    /*
+      `storage_cleanup_batches.operationId` is uniquely indexed, so a batch
+      under the render's id squats the one row that operation may ever have —
+      and the refine road creates one for its landing two stages later. The
+      refusal loop's own comment is where this rule is written down.
+    */
+    const first = diagnosticManifestInput({
+      userId: 1,
+      storageKeys: ["casting-v2/diagnostics/1/op-real/painted.png"],
+      heldUntil: new Date("2026-10-30T00:00:00.000Z"),
+    });
+    const second = diagnosticManifestInput({
+      userId: 1,
+      storageKeys: ["casting-v2/diagnostics/1/op-real/composite.png"],
+      heldUntil: new Date("2026-10-30T00:00:00.000Z"),
+    });
+
+    expect(first.operationId).not.toBe("op-real");
+    expect(first.operationId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+    );
+    /* Two captures under one render must not collide on that unique column. */
+    expect(second.operationId).not.toBe(first.operationId);
+    /* And the render is not lost by leaving the column alone — it is in the key. */
+    expect(first.storageItems[0]!.storageKey).toContain("op-real");
+  });
+
+  it("keeps every frame on the PRIVATE bucket, under the diagnostic kind", () => {
+    const input = diagnosticManifestInput({
+      userId: 1,
+      storageKeys: ["a.png", "b.png"],
+      heldUntil: new Date("2026-10-30T00:00:00.000Z"),
+    });
+    expect(input.kind).toBe("casting_diagnostic_cleanup");
+    expect(input.storageItems.map((item) => item.storageBackend))
+      .toEqual(["private_evidence_r2", "private_evidence_r2"]);
   });
 });

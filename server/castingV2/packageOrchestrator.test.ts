@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ProviderError } from "../providers/types";
+/* The REAL composition the failed-slot row is stored with — #1492's seam arm
+   below drives the writer's own function rather than a copy of it. */
+import { slotFailureStatus } from "./slotFailureRecord";
 import type { ViewConformanceVerdict } from "./viewConformance";
 import { pronounsForSex } from "./castPronouns";
 import { MAX_CLAUSE_CHARACTERS } from "./viewFeatureWords";
@@ -90,6 +93,14 @@ const committed: string[] = [];
 const failures: Array<Record<string, unknown>> = [];
 const storedKeys: string[] = [];
 const deletedKeys: string[] = [];
+/** Every refused frame this loop handed to the keeper (#1492). */
+const captured: Array<{
+  userId: number;
+  operationId: string;
+  reason: string;
+  names: string[];
+  bytes: string[];
+}> = [];
 /**
  * Every wait the orchestrator ASKED for between arrival retries, in order.
  *
@@ -149,6 +160,21 @@ function deps(overrides: Record<string, unknown> = {}) {
       return { success: true as const };
     }),
     wait: vi.fn(async (ms: number) => { waitedMs.push(ms); }),
+    capture: vi.fn(async (input: {
+      userId: number;
+      operationId: string;
+      reason: string;
+      frames: ReadonlyArray<{ name: string; bytes: Buffer }>;
+    }) => {
+      captured.push({
+        userId: input.userId,
+        operationId: input.operationId,
+        reason: input.reason,
+        names: input.frames.map((frame) => frame.name),
+        bytes: input.frames.map((frame) => frame.bytes.toString()),
+      });
+      return { captured: true, keys: input.frames.map((frame) => frame.name) };
+    }),
     ...overrides,
   };
 }
@@ -168,6 +194,7 @@ beforeEach(() => {
   failures.length = 0;
   storedKeys.length = 0;
   deletedKeys.length = 0;
+  captured.length = 0;
   waitedMs.length = 0;
   generations.length = 0;
   refundRecords = true;
@@ -363,12 +390,182 @@ describe("one regeneration, then named-and-refunded", () => {
     expect(failure.earlierAttempts?.[0].axes.angle.pass).toBe(false);
   });
 
+  /*
+    ⚠ AND IT REACHES A ROW — #1492, AND FOR THIRTEEN MONTHS IT DID NOT.
+
+    The arm above asserts against the INJECTED `recordFailure`, so it proves the
+    composer and stops at the seam. On the other side of that seam the real
+    writer re-listed the fields it inserts — `reason`, `refunded`,
+    `refundReference`, and a conditional spread for `conformance` — knew nothing
+    of `earlierAttempts`, and dropped it. D-114's promise, *"a slot that failed
+    twice now says so, and says what the first draw was rejected for"*, was true
+    of this file and false of the database, and nothing anywhere went red.
+
+    So this arm takes the record the orchestrator ACTUALLY composed above and
+    runs it through the REAL composition the writer stores. A field added to one
+    side and missed on the other cannot survive it, which is the only property
+    worth having here.
+  */
+  it("stores the earlier attempt, not merely composes it", async () => {
+    let call = 0;
+    const judge = () => vi.fn(async (request: { angle: string }) => {
+      if (request.angle !== "sideClose") return pass;
+      call += 1;
+      return call === 1
+        ? { ...fail, axes: { ...fail.axes, angle: { pass: false, verdict: "differs", note: "first draw" } } }
+        : fail;
+    });
+    await buildCastPackage(deps({ judge }), input);
+
+    const marker = failures.find((entry) => entry.angle === "sideClose");
+    const stored = slotFailureStatus(
+      marker!.failure as Parameters<typeof slotFailureStatus>[0],
+      "2026-09-30T00:00:00.000Z",
+    ) as {
+      state: string;
+      reason: string;
+      refunded: number;
+      refundReference: string;
+      conformance?: { axes: Record<string, { pass: boolean }> };
+      earlierAttempts?: Array<{ axes: Record<string, { pass: boolean }> }>;
+      at: string;
+    };
+
+    /* The row the room already reads is untouched. */
+    expect(stored.state).toBe("failed");
+    expect(stored.refunded).toBe(50);
+    expect(stored.conformance?.axes.angle.pass).toBe(true);
+    expect(stored.at).toBe("2026-09-30T00:00:00.000Z");
+    /* And the draw nobody heard about is IN THE ROW. */
+    expect(stored.earlierAttempts).toHaveLength(1);
+    expect(stored.earlierAttempts?.[0].axes.angle.pass).toBe(false);
+  });
+
+  it("stores no empty key for a verdict that does not exist", () => {
+    /* Derivation must not turn "there was no judged attempt" into a field
+       carrying nothing — the old conditional spreads existed for this reason
+       and the derived version has to keep it. */
+    const stored = slotFailureStatus(
+      { reason: "The view could not be generated", refunded: 50, refundReference: "ref" },
+      "2026-09-30T00:00:00.000Z",
+    );
+    expect(Object.keys(stored).sort())
+      .toEqual(["at", "reason", "refundReference", "refunded", "state"]);
+  });
+
   it("leaves no orphaned object behind a failed view", async () => {
     const judge = () => vi.fn(async (request: { angle: string }) =>
       request.angle === "backFull" ? fail : pass);
     await buildCastPackage(deps({ judge }), input);
     // Both attempts at backFull stored an object; both were deleted.
     expect(deletedKeys).toHaveLength(2);
+  });
+});
+
+/*
+  THE PICTURE THE JUDGE TURNED DOWN IS KEPT — #1492, his own Jingu.
+
+  He retried two views several times, every attempt refused on `angle`, and the
+  record could say "angle" and nothing else: the frame is deleted one line after
+  the verdict and the judge's note never leaves the process. So there was
+  nothing for his eye to overrule (law 9) and nothing for a court to read.
+
+  ⚠ These arms are on `renderViewAttempts`'s refusal branch rather than on
+  either road, because ONE call site serves both the Sign's five views and a Try
+  again — and the retry is the half he was actually stuck in.
+*/
+describe("a refused view keeps its frame", () => {
+  it("hands the refused frame to the keeper before deleting the object", async () => {
+    const judge = () => vi.fn(async (request: { angle: string }) =>
+      request.angle === "backFull" ? fail : pass);
+    await buildCastPackage(deps({ judge }), input);
+
+    /* Two judged attempts at backFull, so two frames — and the PAIR is the
+       point: it is what shows whether the engine drew the same wrong thing
+       twice, which is exactly the question his three retries could not answer. */
+    expect(captured).toHaveLength(2);
+    expect(captured.every((entry) => entry.userId === 1)).toBe(true);
+    expect(captured.every((entry) => entry.operationId === OPERATION_ID)).toBe(true);
+    /* The bytes are the engine's own, not the stored object read back. */
+    expect(captured.map((entry) => entry.bytes)).toEqual([["view"], ["view"]]);
+  });
+
+  it("names the angle AND the attempt, so the second never overwrites the first", async () => {
+    const judge = () => vi.fn(async (request: { angle: string }) =>
+      request.angle === "backFull" ? fail : pass);
+    await buildCastPackage(deps({ judge }), input);
+
+    /*
+      ⚠ `diagnosticKey` is `…/<userId>/<operationId>/<name>.png`, and ONE Sign
+      renders five angles under ONE operation id with up to two judged attempts
+      each. A name that carried only the angle would silently overwrite, and a
+      capture that keeps one of two frames is worse than none — it looks like
+      evidence.
+    */
+    expect(captured.flatMap((entry) => entry.names))
+      .toEqual(["view-backFull-attempt1", "view-backFull-attempt2"]);
+  });
+
+  it("says which axes refused it, so the frame is not an unlabelled picture", async () => {
+    const judge = () => vi.fn(async (request: { angle: string }) =>
+      request.angle === "closeUp" ? fail : pass);
+    await buildCastPackage(deps({ judge }), input);
+
+    /* `fail`'s own shape: identity refuses, angle and wardrobe pass. */
+    expect(captured[0]!.reason).toBe("view_refused:identity");
+  });
+
+  it("keeps NOTHING when every view passes", async () => {
+    await buildCastPackage(deps(), input);
+    expect(captured, "a clean Sign writes no diagnostics").toEqual([]);
+  });
+
+  it("keeps nothing for a view that never ARRIVED — there is no frame to keep", async () => {
+    /*
+      The budgets are two roads (#1208): an arrival failure has no picture at
+      all, so there is nothing to capture and no refusal to diagnose. Asserted
+      so a later widening to the arrival road is a deliberate act rather than a
+      side effect.
+    */
+    const identityEngine = () => ({
+      id: "test-identity",
+      editWithReferences: vi.fn(),
+      generateView: vi.fn(async () => { throw new ProviderError("render_fault", "gone"); }),
+    });
+    await buildCastPackage(deps({ identityEngine }), input);
+    expect(captured).toEqual([]);
+  });
+
+  it("cannot break the Sign when the keeper throws", async () => {
+    /*
+      It runs at the moment a customer is being refused and refunded. A capture
+      failure that became a different error would make the diagnostics worse
+      than useless — and the production capture never throws, so this arm is
+      about THIS call site rather than about that promise.
+    */
+    const judge = () => vi.fn(async (request: { angle: string }) =>
+      request.angle === "backFull" ? fail : pass);
+    const capture = vi.fn(async () => { throw new Error("private bucket on fire"); });
+    const result = await buildCastPackage(deps({ judge, capture }), input);
+
+    expect(result.failed).toEqual(["backFull"]);
+    /* The money still moved and the other four still landed. */
+    expect(refunds).toHaveLength(1);
+    expect(committed).toHaveLength(4);
+    /*
+      ⚠ AND THE ROAD IS UNCHANGED, WHICH IS THE ARM THAT MATTERS AND THE ONE
+      THIS SUITE ALMOST DID NOT HAVE.
+
+      The capture sits inside the attempt loop's `try`, so a keeper that threw
+      would be caught as an ARRIVAL failure: it would spend the wrong budget,
+      skip the `drop` two lines down and leave an orphaned object in the public
+      bucket — a diagnostic making a real mess of the refusal it exists to
+      document. `.catch()` at the call site is what stops it, and these two
+      numbers are what prove the catch is there.
+    */
+    expect(deletedKeys, "a refused view's object is deleted, keeper or no keeper")
+      .toHaveLength(2);
+    expect(failures.find((entry) => entry.angle === "backFull")).toBeDefined();
   });
 });
 

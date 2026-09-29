@@ -289,6 +289,24 @@ const COLLECTORS: Readonly<Record<string, string>> = {
     something needs the words to outlive the window, this moves to KEEPERS.
   */
   "server/castingV2/refusalLoopCapture.ts": "a refused roll's sent words, collected when the 30-day hold lapses",
+  /*
+    #1492, 2026-09-30 — AND IT ARRIVED IN THIS POPULATION BY BEING FIXED, which
+    is worth reading before anyone moves it.
+
+    It kept its frames through `reserveStorageCleanupItemForOperation`, so it
+    owned no batch of its own and sat outside this sweep entirely. What that
+    bought was a batch born UNHELD under the render's own operation id: claimable
+    the instant the refusal settled, and read at the production rows — seven
+    frames written, seven deleted, zero surviving, all time. It now registers its
+    own held manifest exactly as its sibling above does, which is what puts it
+    here.
+
+    A COLLECTOR on the same grounds, and the same sentence applies: no row
+    references a diagnostic frame, so there is nothing to hand a receipt to. The
+    day one needs to outlive the window, this moves to KEEPERS and this table is
+    what refuses to let that happen quietly.
+  */
+  "server/castingV2/diagnosticCapture.ts": "the frame behind a refused render, collected when the 30-day hold lapses",
   /* The nine older-road collectors, read one at a time on 2026-08-19. Every one
      records the batch id ONTO its row — the pointer, not the receipt — and not
      one of them deletes a batch. */

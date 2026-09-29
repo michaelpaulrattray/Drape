@@ -67,6 +67,7 @@ import { createStorageCleanupManifestIn } from "../db/storageCleanup";
 import { parsePrivateEvidenceStorageConfig } from "../casting/evidence/privateEvidenceStorage";
 import {
   CASTING_DIAGNOSTIC_CAPTURE_SCOPE_ENV,
+  DIAGNOSTIC_RETENTION_MS,
   diagnosticCaptureEnabledFor,
   privateEvidenceWriter,
   type DiagnosticWriter,
@@ -77,8 +78,16 @@ const log = createModuleLogger("castingV2/refusalLoopCapture");
 /** Keys live under this prefix and nowhere else. */
 export const REFUSAL_LOOP_KEY_PREFIX = "casting-v2/refusal-loop";
 
-/** The design's window: 30 days, then the worker collects object and row. */
-export const REFUSAL_LOOP_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+/**
+ * The design's window: 30 days, then the worker collects object and row.
+ *
+ * ⚠ **DERIVED SINCE #1492, NOT RESTATED.** The frames this flag's other half
+ * keeps were found to have no retention at all, and fixing that meant naming
+ * one — which would have made two 30-day literals for one flag's retention
+ * policy, the second list working law 4 is about. The policy has one home now
+ * and it is the flag's own module.
+ */
+export const REFUSAL_LOOP_RETENTION_MS = DIAGNOSTIC_RETENTION_MS;
 
 /** The provider class that means REFUSED, as opposed to failed for any other reason. */
 export const REFUSAL_FAILURE_CLASS = "content_policy";
