@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { Model, ModelAsset } from "../../drizzle/schema";
 import {
   FAILED_SLOT_CONFESSION,
+  landedViewAsset,
   projectSignedCast,
   TOTAL_LOSS_CONFESSION,
 } from "./castProjection";
@@ -591,5 +592,62 @@ describe("the failure copy promises nothing that does not exist (#1208)", () => 
     const removed = "This view didn't arrive — refunded; repairs come with revisions";
     const caught = UNBUILT_PROMISES.some((promise) => removed.toLowerCase().includes(promise));
     expect(caught).toBe(true);
+  });
+});
+
+describe("landedViewAsset — the picture a slot is actually showing (#1474)", () => {
+  /*
+    A retried full-length view dresses itself from its delivered sibling, and the
+    entire worth of that is that the two pictures the customer ends up holding
+    wear one outfit. So the reader that finds the sibling must answer with the
+    SAME asset the room DISPLAYS. These arms are about that agreement, not about
+    a selection rule of their own.
+  */
+
+  it("⚠ answers the same asset the projection shows for that slot — one law, not two", async () => {
+    /*
+      THE ARM THAT MATTERS. Anything else here could be satisfied by a second
+      "newest filled one" written from scratch; this one reddens if the two ever
+      diverge, which is the drift working law 4 exists for.
+    */
+    const assets = ledger(
+      anchor(),
+      asset({ id: 300, viewType: "frontFull", storageUrl: "https://cdn.example/old.png" }),
+      asset({ id: 400, viewType: "frontFull", storageUrl: "https://cdn.example/new.png" }),
+      failed("backFull"),
+    );
+    const projected = projectSignedCast({ model: model(), assets, lineage });
+    const slot = projected.slots.find((candidate) => candidate.angle === "frontFull");
+
+    const landed = landedViewAsset(assets, "frontFull");
+    expect(landed).not.toBeNull();
+    /* The room shows a URL and the reference road needs a KEY; the agreement is
+       that they are the SAME ROW, which is what this asserts. */
+    expect(slot?.url).toBe(landed?.storageUrl);
+  });
+
+  it("newest filled wins", () => {
+    const assets = ledger(
+      asset({ id: 300, viewType: "backFull", storageUrl: "https://cdn.example/old.png" }),
+      asset({ id: 400, viewType: "backFull", storageUrl: "https://cdn.example/new.png" }),
+    );
+    expect(landedViewAsset(assets, "backFull")?.id).toBe(400);
+  });
+
+  it("a written-off slot has landed nothing — a confession is not an outfit", () => {
+    /* Without this a retry would try to dress itself from a failure marker,
+       whose `storageUrl` is the empty string. */
+    expect(landedViewAsset(ledger(failed("frontFull")), "frontFull")).toBeNull();
+  });
+
+  it("the 1K anchor is not a delivered view — her face is no record of a hem", () => {
+    /* `anchor()` is a `frontClose` at 1K. Asked for its own angle it must still
+       answer null, because the anchor is identified by its resolution and role,
+       never by being the only row there. */
+    expect(landedViewAsset(ledger(anchor()), "frontClose")).toBeNull();
+  });
+
+  it("an angle with no rows at all is null, not a throw", () => {
+    expect(landedViewAsset(ledger(anchor()), "backFull")).toBeNull();
   });
 });

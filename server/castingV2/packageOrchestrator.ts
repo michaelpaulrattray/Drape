@@ -126,12 +126,12 @@ import { castingOutfitPlateEngine, castingViewConformanceJudge, castingViewEngin
 import {
   PLATE_ANGLES,
   PLATE_VIEW_ASPECT_RATIO,
-  outfitPlateClause,
+  outfitReferenceClause,
   plateSideFor,
   renderOutfitPlate,
   type OutfitPlate,
   type OutfitPlateEngine,
-  type OutfitPlateSide,
+  type OutfitReference,
 } from "./outfitPlate";
 import { conformanceProvenance, type ViewConformanceJudge, type ViewConformanceVerdict } from "./viewConformance";
 
@@ -346,23 +346,30 @@ export type BuildPackageInput = {
    */
   description?: string | null;
   /**
-   * THE PANEL OF THE WARDROBE PLATE THIS VIEW WEARS (#1278 path E).
+   * WHAT THIS VIEW IS WEARING, AS A PICTURE (#1278 path E, #1474).
    *
-   * Set only for `frontFull` and `backFull`, and only when the plate landed:
-   * `buildCastPackage` renders one two-panel plate, cuts it in memory and hands
-   * each of those two views its own half. Every other view, and every view on
-   * a Sign whose plate failed, composes exactly the prompt and the references
-   * it composed before path E existed — which is the property the whole
-   * fallback rests on and the one the arms are pointed at.
+   * Set only for `frontFull` and `backFull`, and only when something was found
+   * to dress them with. Two roads reach it and they are NOT the same picture:
+   *
+   * - **A Sign** renders one two-panel wardrobe plate, cuts it in memory and
+   *   hands each of those two views its own half — `kind: "plate"`.
+   * - **A Try again** on either of them is dressed by its DELIVERED SIBLING, the
+   *   other full-length view the customer is already holding —
+   *   `kind: "delivered"`. It renders no plate at all when a sibling exists,
+   *   which is #1474: a fresh plate is a fresh invention, and it would put the
+   *   retried slot in a different outfit from the four already delivered.
+   *
+   * Every other view, and either of these two with nothing to dress them,
+   * composes exactly the prompt and the references it composed before path E
+   * existed — which is the property the whole fallback rests on and the one the
+   * arms are pointed at.
    *
    * ⚠ **It rides AFTER her ink crops in the reference list, never before.** The
    * crops' own clause quotes ordinals starting at 2, so inserting anything
    * between the anchor and them would renumber sentences that name her tattoos
    * by position.
    */
-  outfitPlatePanel?: ReferenceImage | null;
-  /** Which half it is, so the clause can say front or back without guessing. */
-  outfitPlateSide?: OutfitPlateSide;
+  outfitReference?: OutfitReference | null;
 };
 
 async function defaultStoreImage(input: {
@@ -502,7 +509,13 @@ export async function buildCastPackage(
           dependencies,
           settled === null
             ? input
-            : { ...input, outfitPlatePanel: settled[side], outfitPlateSide: side },
+            : {
+                ...input,
+                /* A plate panel is cut FOR this view, so the picture faces the
+                   way the view does — which is why `side` answers both
+                   questions here and answers only one on the retry road. */
+                outfitReference: { image: settled[side], side, kind: "plate" },
+              },
           angle,
           auditId,
         ),
@@ -770,12 +783,21 @@ export async function renderViewAttempts<T>(
         before path E. That inertness is asserted rather than described
         (`packageOrchestrator.test.ts`).
       */
-      const platePanel = input.outfitPlatePanel ?? null;
-      if (platePanel) references.push(platePanel);
-      const plateClause = platePanel
-        ? outfitPlateClause({
+      const outfitReference = input.outfitReference ?? null;
+      if (outfitReference) references.push(outfitReference.image);
+      const plateClause = outfitReference
+        ? outfitReferenceClause({
             ordinal: 2 + crops.length,
-            side: input.outfitPlateSide ?? "front",
+            /* ⚠ **Read off the reference, never defaulted.** This was
+               `input.outfitPlateSide ?? "front"` while the side and the image
+               were two optional fields that had to agree: a caller that set one
+               and forgot the other got a clause claiming the picture faced the
+               front. Harmless while every reference WAS the front panel of a
+               front view; a 50/50 lie about which side to copy the moment a
+               retry's reference became the opposite view (#1474). They are one
+               object now, so there is nothing left to default. */
+            side: outfitReference.side,
+            kind: outfitReference.kind,
             pronouns: input.pronouns ?? pronounsForSex(null),
           })
         : "";
@@ -830,7 +852,7 @@ export async function renderViewAttempts<T>(
           readings. Absent a plate this spreads nothing, so the other three
           views send the request they always sent, byte for byte.
         */
-        ...(platePanel ? { aspectRatio: PLATE_VIEW_ASPECT_RATIO } : {}),
+        ...(outfitReference ? { aspectRatio: PLATE_VIEW_ASPECT_RATIO } : {}),
         prompt: [
           composePackageViewPrompt(angle, input.wardrobeLine ?? null, input.description ?? null),
           cropClause,
