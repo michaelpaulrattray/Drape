@@ -60,6 +60,7 @@ import { extname, resolve as resolvePath } from "node:path";
 
 import { storagePut } from "../server/storage";
 import { judgeUploadedFrame } from "./lib/eyeFramePresence.mts";
+import { fetchWithClearedTimeout, settleSockets } from "./lib/exitSafeFetch.mts";
 
 const CONTENT_TYPES: Record<string, string> = {
   ".png": "image/png",
@@ -153,25 +154,25 @@ const landed = await judgeUploadedFrame(
      host that accepts the connection and never answers takes 306.6s to reject
      on node 24, which would hang a seat mid-batch.
 
-     ⚠ AN EXPLICIT CONTROLLER RATHER THAN `AbortSignal.timeout`, AND IT WAS A
-     REAL CRASH RATHER THAN A PREFERENCE. The rite can use the terser form
-     because it keeps running afterwards; this script calls `process.exit(1)`
-     on the very next statement, and exiting while a timer handle is still
-     closing aborts node itself — `Assertion failed: !(handle->flags &
+     ⚠ A CLEARED TIMER RATHER THAN `AbortSignal.timeout`, AND IT WAS A REAL
+     CRASH RATHER THAN A PREFERENCE. This script calls `process.exit(1)` on the
+     very next statement, and exiting while a timer handle is still closing
+     aborts node itself — `Assertion failed: !(handle->flags &
      UV_HANDLE_CLOSING)`, exit code 3221226505 instead of 1, measured on the
      unresolvable-host arm. A refusal that reports a crash code is a refusal a
-     caller cannot tell from a bug. Clearing the timer leaves nothing open. */
-  async (url) => {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 10_000);
-    try {
-      return (await fetch(url, { method: "HEAD", signal: controller.signal })).status;
-    } catch {
-      return null;
-    } finally {
-      clearTimeout(timer);
-    }
-  },
+     caller cannot tell from a bug.
+
+     ⚠ THE CONTROLLER USED TO BE WRITTEN OUT HERE, AND THE SENTENCE BESIDE IT
+     WAS WRONG (#1517). It read *"The rite can use the terser form because it
+     keeps running afterwards"* — but the rite calls `die()`, which is
+     `process.exit(1)`, on the statement after its own judge and again after its
+     health probe. So the rite had this exact hazard on the strength of a premise
+     about the rite that was not true. Both are on the shared owner now, which is
+     also the only place the duration is written down. */
+  async (url) =>
+    await fetchWithClearedTimeout(url, { method: "HEAD" }, 10_000)
+      .then((response) => response.status)
+      .catch(() => null),
 );
 if (!landed.ok) {
   /* ⚠ NOTHING KEY-SHAPED IS PRINTED ON THE WAY OUT, and that is the #265 trap
@@ -195,8 +196,9 @@ if (!landed.ok) {
     + "  whose R2_PUBLIC_URL names the bucket you just wrote to.",
   );
   /*
-    ⚠ THE REFUSAL DRAINS BEFORE IT EXITS, AND THIS IS A MEASURED NUMBER RATHER
-    THAN A SUPERSTITION.
+    ⚠ THE REFUSAL DRAINS BEFORE IT EXITS, AND THE NUMBER IS MEASURED RATHER
+    THAN A SUPERSTITION — `scripts/lib/exitSafeFetch.mts` carries the whole
+    measurement table and is the ONE owner of the duration.
 
     `process.exit` while the sockets the HEAD opened are still closing aborts
     node itself on Windows — `Assertion failed: !(handle->flags &
@@ -204,27 +206,14 @@ if (!landed.ok) {
     Deterministic: 3 of 3 runs of this script against a host that answers
     anything but 200, and 4 of 4 with `connection: close` asked for.
 
-    ⚠ **THE CONDITION IS NOT OBSERVABLE FROM JAVASCRIPT, WHICH IS THE ONLY
-    REASON THIS IS A DURATION.** `process.getActiveResourcesInfo()` reports the
-    `TCPSocketWrap` gone after 5ms and the crash still fired 1 of 3 at that
-    point — libuv is closing a handle JS can no longer see. Measured across the
-    alternatives: `setImmediate` 3/3 crash, `setTimeout(0)` 3/3, `setTimeout(1)`
-    3/3, a top-level `throw` 3/3 (node's own handler exits the same way),
-    **50ms clean, 250ms clean, and `process.exitCode` with a natural drain clean
-    3/3** — that last is the honest fix and the script-exit guard refuses it
-    (a command script's terminal statement must be `process.exit`, #216).
-
-    So: 250ms, fifty times the observed handle lifetime, **on the failure road
-    only** — a road that has already refused, where a quarter second costs
-    nothing and a crash code costs a caller the ability to tell a refusal from
-    a bug.
-
-    ⚠ **THE RITE HAS THE SAME HAZARD AND IS NOT FIXED HERE** — `die()` calls
-    `process.exit(1)` immediately after this same judge, so an `unread` verdict
-    could crash it instead of printing its refusal. It is a different script on
-    a different road and it is filed rather than changed under this card.
+    ⚠ **THE RITE HAD THE SAME HAZARD AND THIS COMMENT USED TO SAY SO AND LEAVE
+    IT** — `die()` calls `process.exit(1)` immediately after this same judge, so
+    an `unread` verdict crashed it instead of printing its refusal. **Fixed under
+    #1517**, and the 250 that was written out here moved into the shared owner in
+    the same act: two copies of a measured constant on two error paths nobody
+    exercises is working law 4, and the copy that drifts is the one nobody runs.
   */
-  await new Promise((resolve) => setTimeout(resolve, 250));
+  await settleSockets("the read-back HEAD");
   process.exit(1);
 }
 

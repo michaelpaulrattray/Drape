@@ -35,6 +35,7 @@ import {
   PRODUCTION_PUBLIC_BUCKET_BASE,
 } from "./lib/eyeFrameGate.mts";
 import { BRIEFING_PATH } from "./lib/quietEdition.mts";
+import { fetchWithClearedTimeout, settleSockets } from "./lib/exitSafeFetch.mts";
 
 const args = process.argv.slice(2);
 const KNOWN = ["--base-ref"];
@@ -132,8 +133,12 @@ const HEAD_RETRY_PAUSE_MS = 400;
    only one of them explains a wall-clock reading to whoever reads this log next. */
 let retried = 0;
 const head = async (url: string): Promise<number | null> => {
+  /* ⚠ THE TIMER IS CLEARED (#1517, was `AbortSignal.timeout`). That form never
+     clears its timer when the fetch resolves, so with 321 keys it left 321
+     pending handles for this script to exit through — and the settle below is a
+     WINDOW, which is a weaker thing to rely on than having nothing open. */
   const ask = async (): Promise<number | null> =>
-    await fetch(url, { method: "HEAD", signal: AbortSignal.timeout(10_000) })
+    await fetchWithClearedTimeout(url, { method: "HEAD" }, 10_000)
       .then((response) => response.status)
       .catch(() => null);
   const first = await ask();
@@ -176,10 +181,23 @@ const head = async (url: string): Promise<number | null> => {
  * The success path has always looked fine — 321 requests leave the pool settled
  * by the time it exits — but that is luck rather than design, so both roads take
  * the same door.
+ *
+ * ⚠ **AND THE NUMBER LIVES IN ONE PLACE NOW, NOT THREE (#1517).** This script,
+ * `crew-upload-eye-frame.mts` and `deploy-rite.mts` are one class — a fetch, then
+ * a prompt exit — and each had arrived at 250 independently, with its own
+ * measurement table beside it. Three copies of a measured constant on three error
+ * paths nobody exercises is working law 4, and the copy that drifts is the one
+ * nobody runs. `scripts/lib/exitSafeFetch.mts` owns the duration and carries all
+ * three tables; the PLACEMENT stays this script's own call, for the reason in the
+ * paragraph above (both roads, one terminal door).
+ *
+ * ⚠ **The wrong exit code is not always the same number**, which is worth
+ * knowing before believing a reading: this script measured **127** on 2026-09-26
+ * and #1509 measured **3221226505** on 2026-09-29, both on node 24 on this
+ * machine. What is stable is that it is not the code the script asked for.
  */
-const EXIT_SETTLE_MS = 250;
 const settle = async (): Promise<void> => {
-  await new Promise((resolve) => setTimeout(resolve, EXIT_SETTLE_MS));
+  await settleSockets("every HEAD this run made");
 };
 
 /*
@@ -191,7 +209,7 @@ const settle = async (): Promise<void> => {
   stale would otherwise send every HEAD at a bucket nobody serves from and report
   323 missing frames, which is a false alarm indistinguishable from the real one.
 */
-const csp = await fetch(PRODUCTION_ORIGIN, { method: "HEAD", signal: AbortSignal.timeout(10_000) })
+const csp = await fetchWithClearedTimeout(PRODUCTION_ORIGIN, { method: "HEAD" }, 10_000)
   .then((response) => response.headers.get("content-security-policy"))
   .catch(() => null);
 const agreement = judgeBucketBaseAgainstCsp(PRODUCTION_PUBLIC_BUCKET_BASE, csp);

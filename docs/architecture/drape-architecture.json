@@ -12944,6 +12944,10 @@
       "path": "server/errorTrackerOptionsDeclared.test.ts"
     },
     {
+      "id": "test:server/exitSafeFetch.test.ts",
+      "path": "server/exitSafeFetch.test.ts"
+    },
+    {
       "id": "test:server/export.test.ts",
       "path": "server/export.test.ts"
     },
