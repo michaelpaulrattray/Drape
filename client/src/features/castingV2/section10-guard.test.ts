@@ -598,10 +598,20 @@ describe("what the hero must NOT grow back (§2f)", () => {
 
   it("each door is absent, never disabled, where the server did not open it", async () => {
     const page = code(await read(PAGE));
-    // D-180: a disabled control is a question with no answer wearing a tap target.
-    // The settings chip's row is drawn only on the author road.
-    expect(page).toContain("authorRoad ? (");
+    /*
+      D-180: a disabled control is a question with no answer wearing a tap
+      target.
+
+      ⚠ THE SETTINGS CHIP LEFT THIS ARM'S POPULATION, AND IT LEFT BY THE
+      RIGHT DOOR. It used to be drawn only on the author road, so this asserted
+      the branch `authorRoad ? (` stood in the page; slice 3 of the old-lane
+      retirement removed that road, and the chip is now drawn for every
+      account, so there is no door to be absent behind. What still holds of it
+      is the half that was always the point: nothing in this row is ever
+      DISABLED.
+    */
     const actions = page.slice(page.indexOf('className="dpc-hero__actions"'));
+    expect(actions.slice(0, 900)).toContain("CastSettingsButton");
     expect(actions.slice(0, 900)).not.toContain("disabled");
     /*
       THE PHOTO DOOR IS THE BRIEF BOX (card 1107, his word: "build option C").

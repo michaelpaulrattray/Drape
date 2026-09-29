@@ -2,236 +2,108 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { rewriteBrief } from "@shared/briefRewrite";
-import {
-  BOX_EDITED_MARK,
-  boxDiffersFromSheet,
-  chipEditOutcome,
-  pendingAdjustments,
-  rollAdjustments,
-} from "./chipEdit";
+import { BOX_EDITED_MARK, boxDiffersFromSheet } from "./chipEdit";
 
 /**
- * ⚠ **HIS STATED MERGE CONDITION (#534, Crew reply #134, 2026-09-05):**
- * *"Chips and box can never disagree, and the guard must prove that before it
- * merges."*
+ * ⚠ **HIS STATED MERGE CONDITION (Crew reply #134, 2026-09-05):** *"Chips and
+ * box can never disagree, and the guard must prove that before it merges."*
  *
- * A guard that reads one way does not meet it, so this drives BOTH directions.
- * The two are different KINDS of claim and only one of them is about a value:
+ * This suite used to prove it in two directions, because there were two
+ * channels to the engine and the question was whether they could contradict
+ * each other. **There is one channel now — `briefText`, the box — and this
+ * asks the stronger question instead: that no second one exists.**
  *
- *   **Chip → box.** A chip edit's fact is in the box afterwards, stated in the
- *   box's own words. Driven per field over the whole echo vocabulary, so no
- *   field is covered by luck.
+ * ## What happened to the other direction, and why it is not a loss
  *
- *   **Box → wire.** After a hand edit of the box there is no second channel
- *   left that could carry the old fact. This is the direction the first build
- *   of this card failed on and the one his frame caught: the record said
- *   "CHANGED ON THIS ROLL · Age — 40s" while the dock still read "in their
- *   30s", because the chip edit was a STORE beside the box rather than a write
- *   into it. It is asserted as an ABSENCE at the outgoing payload (enforcement
- *   invariant 5) rather than as agreement between two values, because a wire
- *   with one channel on it cannot disagree with itself.
+ * `chipEditOutcome` turned a chip click into new box text, and the arms below
+ * drove it per field over the whole echo vocabulary. **The day after he wrote
+ * the reply above he removed the chips** — *"make the top sentence read-only
+ * with no pickers at all, and make the prompt box the only place I edit"* — so
+ * nothing has been able to call it since that shipped. Slice 3 of the old-lane
+ * retirement deleted it along with `rollAdjustments` and `pendingAdjustments`,
+ * both of which decided what a QUEUED adjustment sends and shows.
  *
- * The house road is asserted UNCHANGED beside both, because it is the arm that
- * would otherwise be broken silently: an account off the author road composes
- * per-candidate prose from the intent, and its overrides must still ride.
+ * **What those arms proved is still proved, one layer up and structurally:**
+ * `readOnlyEcho.test.ts` holds that the reading sentence carries no picker, no
+ * button and no write channel, so there is no click to resolve; the wire arms
+ * below read the page's own outgoing payloads. A rewriter with no caller is not
+ * a covered behaviour, it is a dead export (invariant 7).
+ *
+ * ## The wire arms read the PAGE, not a helper
+ *
+ * Enforcement invariant 5: *a contract about what gets sent is proven on the
+ * outgoing request, not on a constant near it.* The helper those arms used to
+ * drive is gone, and a suite that replaced it with its own copy of the rule
+ * would be asserting its own opinion. So they read `CastingSheet.tsx`'s two
+ * mutation payloads — both of them, because the follow branch and the plain
+ * roll each carried their own arm of this and drifting apart is exactly what
+ * one owner was there to prevent.
  */
 
 const HIS_BRIEF = "a fitness creator in their 30s, close-cropped hair";
+const SHEET = join(process.cwd(), "client/src/pages/CastingSheet.tsx");
 
-/**
- * Every field the echo offers a picker for, with the box his brief produces.
- *
- * The wording is PINNED rather than searched for a substring, and that is the
- * point of the table: the value a chip carries is a vocabulary key, and the
- * word the box says is English ("male" lands as "Cast a man."). A `contains`
- * assertion over the key passes on a box that never mentions the fact — the
- * first draft of this arm did exactly that and reported the sex chip broken.
- */
-const CHIP_LANDS_AS = [
-  { field: "sex", value: "male", box: `${HIS_BRIEF}. Cast a man.` },
-  { field: "ageBand", value: "40s", box: "a fitness creator in their 40s, close-cropped hair" },
-  { field: "heritage", value: "Nordic", box: `${HIS_BRIEF}. Of Nordic heritage.` },
-  { field: "build", value: "athletic", box: `${HIS_BRIEF}. Athletic build.` },
-  { field: "energy", value: "warm", box: `${HIS_BRIEF}. A warm, unhurried presence.` },
-  { field: "look", value: "quiet luxury", box: `${HIS_BRIEF}. A quiet luxury look.` },
-] as const;
+/** Prose quotes the retired channel by name on purpose — strip it before asking. */
+function code(source: string): string {
+  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+}
 
-/** A brief that STATES every one of those facts, so each edit replaces rather than appends. */
-const STATED = "a Nordic woman in her 30s with an athletic build, a severe minimal look";
+/** The object literal handed to one of the sheet's paid mutations. */
+function payloadAfter(sheet: string, call: string): string {
+  const at = sheet.indexOf(call);
+  expect(at, `${call} must be dispatched from the sheet`).toBeGreaterThan(-1);
+  const from = sheet.indexOf("{", at);
+  return sheet.slice(from, sheet.indexOf("options,", from));
+}
 
-/* The card is #534 — named in the docblock above rather than in this title,
-   because the foundation's token guard reads a `#534` in CODE as a hex literal
-   and its own message says to move the reference into a comment. */
-describe("a chip edit writes into the box, and the box is the only channel", () => {
-  describe("direction 1 — chip to box", () => {
-    it("his own frame: the age chip rewrites the sentence, and 30s is nowhere in it", () => {
-      const outcome = chipEditOutcome({ authorRoad: true, brief: HIS_BRIEF, field: "ageBand", value: "40s" });
-      expect(outcome.kind).toBe("box");
-      const text = outcome.kind === "box" ? outcome.text : "";
-      expect(text).toBe("a fitness creator in their 40s, close-cropped hair");
-      /* The defect his frame showed was the OLD value surviving beside the new one. */
-      expect(text).not.toContain("30s");
-    });
+describe("the box is the only channel to the engine", () => {
+  describe("the wire — read at the sheet's own payloads", () => {
+    const sheet = code(readFileSync(SHEET, "utf8"));
 
-    it("every field the echo offers lands in the box — none of them by luck", () => {
-      for (const { field, value, box } of CHIP_LANDS_AS) {
-        const outcome = chipEditOutcome({ authorRoad: true, brief: HIS_BRIEF, field, value });
-        expect(outcome.kind, field).toBe("box");
-        expect(outcome.kind === "box" ? outcome.text : null, field).toBe(box);
+    it("positive control: both paid mutations are dispatched and both carry the box", () => {
+      /*
+        Every assertion below this is an ABSENCE, and an absence over a string
+        that was never found passes. This is what stops the whole section going
+        green on a page that stopped rolling altogether.
+      */
+      for (const call of ["createRoll.mutate(", "follow.mutate("]) {
+        const payload = payloadAfter(sheet, call);
+        expect(payload, `${call} sends the box`).toContain("briefText");
+        expect(payload, `${call} sends the roll's own claim`).toContain("clientRequestId");
       }
     });
 
-    it("where the brief STATES the fact, the edit replaces it and the old value is gone", () => {
+    it("neither mutation carries an adjustment channel beside the brief", () => {
       /*
-        The append path leaves the brief's own wording standing beside a new
-        sentence (a declared limit of `rewriteBrief`). The replace path is the
-        one his frame was about — the old value surviving is precisely the
-        disagreement — so it gets its own table over a brief that states
-        everything.
+        `overrides` and `unlock` were the house road's edit channel. The server
+        still ACCEPTS both — removing a wire input is the unsafe direction and
+        is its own act — so nothing but this arm stands between a future edit
+        and a second statement of intent riding beside the sentence.
       */
-      const replaced = [
-        { field: "sex", value: "male", box: "a Nordic man in his 30s with an athletic build, a severe minimal look", gone: "woman" },
-        { field: "ageBand", value: "40s", box: "a Nordic woman in her 40s with an athletic build, a severe minimal look", gone: "30s" },
-        { field: "heritage", value: "Slavic", box: "a Slavic woman in her 30s with an athletic build, a severe minimal look", gone: "Nordic" },
-        { field: "build", value: "heavy", box: "a Nordic woman in her 30s with a heavy build, a severe minimal look", gone: "athletic" },
-        { field: "look", value: "quiet luxury", box: "a Nordic woman in her 30s with an athletic build, a quiet luxury look", gone: "severe minimal" },
-      ] as const;
-      for (const { field, value, box, gone } of replaced) {
-        const outcome = chipEditOutcome({ authorRoad: true, brief: STATED, field, value });
-        const text = outcome.kind === "box" ? outcome.text : "";
-        expect(text, field).toBe(box);
-        expect(text, `${field}: the old value must not survive`).not.toContain(gone);
+      for (const call of ["createRoll.mutate(", "follow.mutate("]) {
+        const payload = payloadAfter(sheet, call);
+        expect(payload, `${call} sends no overrides`).not.toContain("overrides");
+        expect(payload, `${call} sends no unlock`).not.toContain("unlock");
+        expect(payload, `${call} spreads no adjustment helper`).not.toContain("rollAdjustments");
       }
     });
 
-    it("a second edit compounds on the first rather than reverting it", () => {
-      const first = chipEditOutcome({ authorRoad: true, brief: HIS_BRIEF, field: "ageBand", value: "40s" });
-      const box = first.kind === "box" ? first.text : "";
-      const second = chipEditOutcome({ authorRoad: true, brief: box, field: "sex", value: "male" });
-      const text = second.kind === "box" ? second.text : "";
-      /* Both edits stand — the box is the running brief, not a one-shot render of one chip. */
-      expect(text).toContain("40s");
-      expect(text.toLowerCase()).toContain("man");
-      expect(text).not.toContain("30s");
-    });
-
-    it("re-picking the value the brief already states leaves the box byte-identical", () => {
-      const outcome = chipEditOutcome({ authorRoad: true, brief: HIS_BRIEF, field: "ageBand", value: "30s" });
-      /* Not a claim about the outcome's shape — a claim that nothing was corrupted. */
-      const text = outcome.kind === "box" ? outcome.text : HIS_BRIEF;
-      expect(text).toBe(HIS_BRIEF);
-    });
-
-    it("agePhase is the seventh EchoField and no picker can fire it — pinned, because if one ever does the click is eaten", () => {
+    it("and the page holds no store slice that could fill one", () => {
       /*
-        Round 2 of the review, informational finding: the table above covers
-        six of `EchoField`'s seven. `writersOf` has no agePhase-only writer
-        (the phase rides the ageBand edit), so on the author road the outcome
-        is `none` — no box change, no store, no feedback — while the same
-        click off that road becomes a live override.
-
-        It is DORMANT, not live: `briefEcho.ts`'s span builder folds the phase
-        into the ageBand span's text and never emits `field: "agePhase"`, so
-        nothing can reach it today. But the vocabulary, the heading and the
-        popover machinery all exist for it, and `none` had no coverage at all.
-        This arm states the current contract so the day a span emits agePhase
-        the difference is a failing test rather than a click that does nothing.
+        The reader's half of the same rule. A payload with no adjustments and a
+        page still holding the store is one edit away from carrying them again,
+        and that edit would look like a fix rather than a regression.
       */
-      expect(chipEditOutcome({ authorRoad: true, brief: HIS_BRIEF, field: "agePhase", value: "late" }))
-        .toEqual({ kind: "none" });
-      /* And off the author road the same click is a live override — the asymmetry, stated. */
-      expect(chipEditOutcome({ authorRoad: false, brief: HIS_BRIEF, field: "agePhase", value: "late" }))
-        .toEqual({ kind: "override", field: "agePhase", value: "late" });
-    });
-
-    it("the client runs the SAME rewriter the compiler ran, not a second copy of it", () => {
-      /*
-        Working law 4. If this ever stops being true, a chip edit shows the
-        customer one sentence and sends the engine another — the exact defect,
-        moved one layer down.
-      */
-      const outcome = chipEditOutcome({ authorRoad: true, brief: HIS_BRIEF, field: "heritage", value: "Nordic" });
-      const direct = rewriteBrief(HIS_BRIEF, { heritage: "Nordic" });
-      expect(outcome.kind === "box" ? outcome.text : null).toBe(direct?.text ?? null);
-    });
-  });
-
-  describe("direction 2 — box to wire: nothing else can carry a fact", () => {
-    it("on the author road a roll sends NO adjustments, whatever is in the store", () => {
-      /*
-        The store can be non-empty for real reasons — a sheet cast on the house
-        road, then the flag flipped; a stale slice from before this change
-        deployed. His condition has to hold in that state too, so the arm feeds
-        it a FULL store rather than an empty one.
-      */
-      const payload = rollAdjustments({
-        authorRoad: true,
-        unlocked: ["ageBand", "sex"],
-        overrides: { ageBand: "40s", sex: "female" },
-      });
-      expect(payload).toEqual({});
-      expect(Object.keys(payload)).toHaveLength(0);
-    });
-
-    it("positive control: off the author road the same store DOES ride — so the arm above is not vacuous", () => {
-      const payload = rollAdjustments({
-        authorRoad: false,
-        unlocked: ["ageBand", "sex"],
-        overrides: { ageBand: "40s", sex: "female" },
-      });
-      expect(payload.unlock).toEqual(["ageBand", "sex"]);
-      expect(payload.overrides).toEqual({ ageBand: "40s", sex: "female" });
-    });
-
-    it("and the ECHO cannot promise more than the wire carries — the same stale store draws no arrow (review finding 1)", () => {
-      /*
-        The display half of the same class. A store CAN be non-empty on the
-        author road (a chip queued on the house road, then the flag widened
-        while the tab was open), and the echo used to read it directly — so it
-        drew "30s → 40s · next roll" over a roll that sends nothing. Derived
-        from `rollAdjustments` now, so the two cannot come apart again.
-      */
-      const pending = pendingAdjustments({
-        authorRoad: true,
-        unlocked: ["ageBand", "sex"],
-        overrides: { ageBand: "40s", sex: "female" },
-      });
-      expect(pending).toEqual({ overrides: {}, unlocked: [] });
-    });
-
-    it("positive control: off the author road the echo still draws the queued change", () => {
-      const pending = pendingAdjustments({
-        authorRoad: false,
-        unlocked: ["ageBand"],
-        overrides: { ageBand: "40s" },
-      });
-      expect(pending).toEqual({ overrides: { ageBand: "40s" }, unlocked: ["ageBand"] });
-    });
-
-    it("off the author road an empty store still sends nothing — undefined, not an empty object", () => {
-      const payload = rollAdjustments({ authorRoad: false, unlocked: [], overrides: {} });
-      expect(payload.unlock).toBeUndefined();
-      expect(payload.overrides).toBeUndefined();
-    });
-
-    it("a chip edit off the author road stays a store and does NOT touch the box", () => {
-      /*
-        The mirror of the whole card: on the house road the engine never reads
-        these facts out of the brief text, so rewriting the box would change
-        what the customer reads and nothing that is sent — the same
-        disagreement, pointing the other way.
-      */
-      const outcome = chipEditOutcome({ authorRoad: false, brief: HIS_BRIEF, field: "ageBand", value: "40s" });
-      expect(outcome).toEqual({ kind: "override", field: "ageBand", value: "40s" });
+      expect(sheet, "the page no longer reads the store's overrides").not.toContain("setOverride");
+      expect(sheet, "the page no longer reads the store's unlocks").not.toContain("unlock(");
+      expect(sheet, "no chip click is resolved any more").not.toContain("chipEditOutcome");
     });
   });
 
   describe("the mark — the only note about a difference (his §16)", () => {
     it("is silent until the box leaves the sheet, and says so once it has", () => {
       expect(boxDiffersFromSheet(HIS_BRIEF, HIS_BRIEF)).toBe(false);
-      const edited = chipEditOutcome({ authorRoad: true, brief: HIS_BRIEF, field: "ageBand", value: "40s" });
-      expect(boxDiffersFromSheet(edited.kind === "box" ? edited.text : "", HIS_BRIEF)).toBe(true);
+      expect(boxDiffersFromSheet(`${HIS_BRIEF} in a linen shirt`, HIS_BRIEF)).toBe(true);
     });
 
     it("whitespace alone is not an edit — it asks the draft's own question", () => {
@@ -249,13 +121,10 @@ describe("a chip edit writes into the box, and the box is the only channel", () 
     'Changed on this roll'; I made the change, I don't need it repeated").
 
     Read at the page's source because the thing being asserted is an ABSENCE
-    from a surface, and this suite runs in a node environment with no DOM. It
-    is deliberately the weaker half of the guard — the two behavioural
-    directions above are the strong half, and his eye on the sheet closes the
-    card either way.
+    from a surface, and this suite runs in a node environment with no DOM.
   */
   describe("the sheet renders no second account of the change", () => {
-    const sheet = readFileSync(join(process.cwd(), "client/src/pages/CastingSheet.tsx"), "utf8");
+    const sheet = readFileSync(SHEET, "utf8");
 
     it("carries no 'Changed on this roll' label and reads no briefChanges field", () => {
       expect(sheet).not.toContain("Changed on this roll<");

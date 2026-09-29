@@ -1,23 +1,4 @@
-import {
-  AGE_BANDS,
-  AGE_PHASES,
-  BUILDS,
-  ENERGY_KEYS,
-  HERITAGES,
-  LOOK_KEYS,
-  SEXES,
-} from "@shared/castingVocabularies";
-import { Popover } from "@/foundation/Popover";
-
-
-import {
-  composeEcho,
-  echoText,
-  type BriefFacts,
-  type EchoField,
-  type EchoSpan,
-} from "../briefEcho";
-import type { LockOverrides } from "../sheetState";
+import { composeEcho, echoText, type BriefFacts, type EchoSpan } from "../briefEcho";
 
 /**
  * What the sheet says back after a brief compiles.
@@ -46,71 +27,13 @@ import type { LockOverrides } from "../sheetState";
  *   grammar could not spend.
  */
 
-/*
-  Straight from the shared module — never a hand-copied list.
-
-  The first draft of this file wrote them out by hand and got three heritages
-  wrong, offering values the server would have refused. Nobody would have found
-  that until a user picked one and the roll failed validation.
-*/
-const VOCABULARIES: Record<EchoField, readonly string[]> = {
-  sex: SEXES,
-  ageBand: AGE_BANDS,
-  agePhase: AGE_PHASES,
-  heritage: HERITAGES,
-  build: BUILDS,
-  energy: ENERGY_KEYS,
-  look: LOOK_KEYS,
-};
 
 /**
- * Everyday words for the popover heading, matching the sentence's register.
+ * ⚠ **THE SENTENCE IS READ-ONLY — NO PICKERS AT ALL, AND THAT IS NOW
+ * UNCONDITIONAL** (#535, his ruling 2026-09-06, verbatim: *"make the top
+ * sentence read-only with no pickers at all, and make the prompt box the only
+ * place I edit"*).
  *
- * It was exported for the sheet's "Changed on this roll" record; that record
- * died with #534 and the sheet dropped the import, so the only readers left
- * are in this file. Still exported because it is this module's public
- * vocabulary and a future surface naming an axis should take it from here
- * rather than writing a second list.
- */
-export const ECHO_FIELD_HEADINGS: Record<EchoField, string> = {
-  sex: "Sex",
-  ageBand: "Age",
-  agePhase: "Age phase",
-  heritage: "Heritage",
-  build: "Build",
-  energy: "Presence",
-  look: "Look",
-};
-
-export type EchoAdjustment =
-  | { kind: "set"; field: EchoField; value: LockOverrides[EchoField] & string }
-  | { kind: "vary"; field: EchoField }
-  /** Drop a queued change and keep whatever the sheet already cast. */
-  | { kind: "undo"; field: EchoField };
-
-/**
- * Adjustments the user has made that the sheet in front of them cannot show.
- *
- * Rolls are immutable, so an adjustment can only ever change the NEXT roll —
- * and until this existed the only feedback was a toast, which is gone in three
- * seconds and leaves the sentence still reading the old value. The founder's
- * word for it was degenerate, and they were right: you could adjust a fact
- * twice and have no way to know either had registered.
- *
- * So the span itself shows the change, in the founder's own copy:
- * "early 20s → teens · next roll".
- */
-export type PendingAdjustments = {
-  overrides: Partial<Record<EchoField, string>>;
-  unlocked: readonly string[];
-};
-
-/**
- * Whether the facts are adjustable at all, keyed on the NEXT roll's road.
- *
- * ⚠ **ON THE AUTHOR ROAD THE SENTENCE IS READ-ONLY — NO PICKERS AT ALL**
- * (#535, his ruling 2026-09-06, verbatim: *"make the top sentence read-only
- * with no pickers at all, and make the prompt box the only place I edit"*).
  * His two named defects were exactly this surface's offers: the options came
  * from the old generic lists ("slim build" offered on an ogre), and an edit
  * was appended to the sentence's end instead of rewritten into it. The
@@ -118,46 +41,43 @@ export type PendingAdjustments = {
  * it never changes, because the pictures never change; the *"edited below,
  * not cast yet"* mark is the only link between it and the box. The guard his
  * §19 asked for ("chips and box can never disagree") is trivially true in
- * this shape and is replaced by its structural form: the sentence renders
- * from the roll's recorded brief only, and no control on it can write —
- * which the suite pins by rendering.
+ * this shape and is its structural form: the sentence renders from the roll's
+ * recorded brief only, and no control on it can write.
  *
- * Off the author road, everything as it always was: the house road composes
- * per-candidate prose from the intent, its overrides are its only edit
- * channel, and that machinery retires with the road itself, not with this
- * card.
+ * ⚠ **WHAT WAS HERE UNTIL SLICE 3 OF THE OLD-LANE RETIREMENT (#1444), AND WHY
+ * IT IS NOT A BEHAVIOUR CHANGE.** His ruling was delivered as a POLICY OBJECT
+ * — `VaryPolicy { authorRoad }` — fed from the config's `authorRoadEnabled`,
+ * with `factsHeld` short-circuiting every span to plain text on the author
+ * road and the whole picker apparatus (`varyOffered`, `PendingAdjustments`,
+ * `EchoAdjustment`, two `Popover` arms and an `onAdjust` channel) standing
+ * behind it for the house road. **`CASTING_V2_SCOPE` has been `all` since the
+ * V2 rollout**, so `factsHeld` has returned `true` for every account and not
+ * one of those arms has been reachable; the flag's removal is what exposes
+ * that, not what causes it. The pickers go with the road that was their only
+ * reader — the same sentence the block above used to end on, now spent.
+ *
+ * The house road's own edit channel (the sheet store's `overrides`/`unlocked`
+ * slice, and `createRoll`'s matching inputs) is NOT removed here: a store
+ * slice and a wire input are each their own deploy-skew act. The page stops
+ * reading them in this slice.
  */
-export type VaryPolicy = { authorRoad: boolean; followHeld?: boolean };
-
-export function varyOffered(policy: VaryPolicy | undefined, _field: EchoField): boolean {
-  return !policy || !policy.authorRoad;
-}
-
-/** True when the sentence offers no controls at all — the author road (his read-only ruling, #535). */
-export function factsHeld(policy: VaryPolicy | undefined): boolean {
-  return policy?.authorRoad === true;
-}
-
 export function BriefEcho({
   facts,
   followLabel,
   authorRoad,
-  pending,
-  vary,
-  onAdjust,
 }: {
   facts: BriefFacts;
   followLabel?: string | null;
   /**
-   * THIS sheet's own road (#230) — it drops the differ-by caption, which is
-   * false on a sheet one authored prompt painted. Distinct from `vary`, which
-   * is a policy about the NEXT roll.
+   * ⚠ **THIS sheet's own road (#230), READ OFF THE ROLL ROW — not the config,
+   * and not the retired flag.** It drops the differ-by caption, which is false
+   * on a sheet one authored prompt painted, and 220 of 306 production sheets
+   * read through it. It is the one `authorRoad` in this feature that is
+   * PERMANENT: the sibling that came from `config.authorRoadEnabled` (a
+   * `vary` policy about the NEXT roll) retired with the flag in #1444, and the
+   * two sitting in one component was that slice's whole risk.
    */
   authorRoad?: boolean;
-  pending?: PendingAdjustments;
-  /** Absent means every pinned fact may be let vary (the house road). */
-  vary?: VaryPolicy;
-  onAdjust: (adjustment: EchoAdjustment) => void;
 }) {
   const spans = composeEcho(facts, { followLabel, authorRoad });
   if (spans.length === 0) return null;
@@ -171,169 +91,45 @@ export function BriefEcho({
     */
     <p className="dpc-echo" aria-label={echoText(spans)}>
       {spans.map((span, index) => (
-        <EchoSpanView key={index} span={span} facts={facts} pending={pending} vary={vary} onAdjust={onAdjust} />
+        <EchoSpanView key={index} span={span} />
       ))}
     </p>
   );
 }
 
-function EchoSpanView({
-  span,
-  facts,
-  pending,
-  vary,
-  onAdjust,
-}: {
-  span: EchoSpan;
-  facts: BriefFacts;
-  pending?: PendingAdjustments;
-  vary?: VaryPolicy;
-  onAdjust: (adjustment: EchoAdjustment) => void;
-}) {
+/**
+ * One span, drawn. Every kind renders as plain text, and nothing here can
+ * write — his read-only ruling (#535) in its structural form.
+ *
+ * ⚠ **THE FOUR ARMS THAT STOOD BELOW THIS ONE ARE GONE WITH THE FLAG (#1444),
+ * AND EVERY ONE OF THEM WAS ALREADY UNREACHABLE.** They were the house road's
+ * pickers: a `Popover` per pinned fact with the shared vocabulary as its
+ * options, a second `Popover` treatment for a queued change (*"early 20s →
+ * teens · next roll"*), and a `Let it vary` footer withheld by `varyOffered`.
+ * `factsHeld` returned `true` for every account from the moment
+ * `CASTING_V2_SCOPE` reached `all`, so every span short-circuited here — the
+ * category and stated arms below were the only ones a customer has seen in a
+ * year, and they returned exactly what this returns now.
+ *
+ * ⚠ **THE HISTORY THOSE ARMS CARRIED IS KEPT, BECAUSE IT IS ABOUT WHAT NOT TO
+ * REBUILD** — read it in git at this file's parent commit. Its two paid
+ * lessons: a queued change must stay CHANGEABLE (he mis-clicked Mediterranean
+ * to Slavic and could not correct it — a control that cannot be corrected is
+ * worse than one that can be pressed twice), and the pending treatment must key
+ * on a DIFFERENCE rather than on an override merely existing, or a landed
+ * override reads *"severe minimal → severe minimal · next roll"* forever and
+ * the fact becomes permanently uneditable. Any future picker on this sentence
+ * starts from those two, not from a blank page.
+ */
+function EchoSpanView({ span }: { span: EchoSpan }) {
   if (span.kind === "text") return <span className="dpc-echo__prose">{span.text}</span>;
-
   /*
-    The casting category. Full ink like any other lock, and deliberately not a
-    button: every adjustable fact opens a closed vocabulary, and a category is
-    free text. An underline here would promise a picker that cannot exist —
-    the brief box is where a category changes.
+    Everything else reads at full ink and is deliberately not a button. A
+    pinned fact, the casting category and a stated accessory each opened a
+    different reason for that — a category and a stated fact are the user's own
+    free text, so an underline would promise a picker that cannot exist, and a
+    pinned fact is the record of what was cast, which the brief box below is
+    the only place to change. One arm now, because they all say the same thing.
   */
-  if (span.kind === "role") return <span className="dpc-echo__role">{span.text}</span>;
-  /*
-    A stated accessory reads at full ink like the category, and for the same
-    reason it is not clickable: it is the user's own free text, and an
-    underline would promise a picker that cannot exist. The brief box is where
-    a stated fact changes.
-  */
-  if (span.kind === "stated") return <span className="dpc-echo__role">{span.text}</span>;
-
-  const { field } = span;
-  const current = currentValue(facts, field);
-  /*
-    ⚠ **EVERY SPAN WITH A FIELD IS A PINNED FACT NOW (#1288).** Until the "left
-    to the roll" clause was retired there was a second kind — `open`, a varying
-    axis the reader could click to PIN — and this whole block branched on which
-    it was: the label read *"Pin build, currently left to the roll"*, the heading
-    carried *"· varying"*, the trigger wore `dp-pop__trigger--open`, and the
-    footer's "Let it vary" was withheld. The clause was that kind's only
-    producer, so those branches are unreachable and are gone rather than kept as
-    a shape nothing can enter.
-
-    ⚠ **WHAT THE READER LOSES WITH THEM, SAID PLAINLY:** off the author road, a
-    fact you let vary now leaves the sentence with no span to pin it back from.
-    Both halves of that loop lived on the same road — `varyOffered` returns false
-    on the author road, which is every account's road since the register widened
-    to `all` — so on the road anybody is actually on, the sentence has been
-    read-only and neither half was reachable. It retires with the house road, not
-    with this clause.
-  */
-
-  /*
-    THE AUTHOR ROAD'S SENTENCE IS READ-ONLY (#535, his ruling — see
-    `VaryPolicy`): every fact reads at full ink like the category, no picker,
-    no queued arrow, because the prompt box below is the only editor and the
-    sentence is the record of what was cast. This also covers the standing
-    follow, which was read-only first (#177 Row A) for its own reason.
-  */
-  if (factsHeld(vary)) return <span className="dpc-echo__role">{span.text}</span>;
-
-  /*
-    An override that has LANDED is not pending any more.
-
-    Overrides are standing corrections — they persist across rolls by design, so
-    the interpreter cannot re-derive them away. But the pending treatment was
-    keyed on the override merely existing, so once the next roll came back
-    carrying the new value the span read "severe minimal → severe minimal ·
-    next roll": a change to itself, forever. And because a pending span is
-    read-only, the fact became permanently uneditable — two decisions that were
-    each defensible alone and wrong together.
-
-    So the treatment is keyed on a DIFFERENCE, not on the presence of an
-    override. When the roll already shows the queued value, there is nothing
-    pending and the span goes back to being an ordinary adjustable fact.
-  */
-  const queued = pending?.overrides[field];
-  const queuedValue = queued && queued !== current ? queued : undefined;
-  const queuedVary = !queuedValue && pending?.unlocked.includes(field) === true;
-  if (queuedValue || queuedVary) {
-    /*
-      A QUEUED CHANGE IS STILL CHANGEABLE.
-
-      It was read-only, on the reasoning that adjusting an already-queued fact
-      would need an undo the design lacked. That was wrong in the plainest
-      possible way: the founder mis-clicked Mediterranean to Slavic and could
-      not correct it. A control that cannot be corrected is worse than one that
-      can be pressed twice — and the undo it supposedly lacked is simply the
-      value the roll already has, which is right there.
-
-      So the queued value opens the same picker, showing what is queued as
-      current, with a way back to what the sheet actually cast.
-    */
-    return (
-      <Popover
-        label={`Change ${ECHO_FIELD_HEADINGS[field].toLowerCase()}, queued as ${queuedValue ?? "varying"}`}
-        heading={`${ECHO_FIELD_HEADINGS[field]} · queued`}
-        className="dpc-echo__pendingTrigger"
-        options={VOCABULARIES[field].map((value) => ({
-          value,
-          label: value,
-          current: value === queuedValue,
-        }))}
-        footer={{
-          label: current ? `Undo — keep ${current}` : "Undo this change",
-          onSelect: () => onAdjust({ kind: "undo", field }),
-        }}
-        onSelect={(value) =>
-          onAdjust({ kind: "set", field, value: value as LockOverrides[EchoField] & string })
-        }
-      >
-        <span className="dpc-echo__was">{span.text}</span>
-        <span aria-hidden="true"> → </span>
-        <span className="dpc-echo__will">{queuedValue ?? "varying"}</span>
-        <span className="dp-chrome dpc-echo__when"> · next roll</span>
-      </Popover>
-    );
-  }
-
-  return (
-    <Popover
-      label={`Change ${ECHO_FIELD_HEADINGS[field].toLowerCase()}, currently ${span.text}`}
-      heading={ECHO_FIELD_HEADINGS[field]}
-      className="dpc-echo__fact"
-      options={VOCABULARIES[field].map((value) => ({
-        value,
-        label: value,
-        current: value === current,
-      }))}
-      /*
-        "Let it vary" only exists where something is pinned, which since #1288
-        is every span that reaches here. Offering it on an axis already varying
-        would have been a control whose only outcome is nothing happening — and
-        on the author road (#154) the same is true of a fact the verbatim
-        sentence itself states, so `varyOffered` withholds it there and the
-        sheet says why once, under the echo.
-      */
-      footer={
-        varyOffered(vary, field)
-          ? {
-              label: `Let ${ECHO_FIELD_HEADINGS[field].toLowerCase()} vary`,
-              onSelect: () => onAdjust({ kind: "vary", field }),
-            }
-          : null
-      }
-      onSelect={(value) =>
-        // The popover only ever offers values from VOCABULARIES[field], which is
-        // the shared list the server validates against — so this narrowing is
-        // asserting what the options array already guarantees.
-        onAdjust({ kind: "set", field, value: value as LockOverrides[EchoField] & string })
-      }
-    >
-      {span.text}
-    </Popover>
-  );
-}
-
-function currentValue(facts: BriefFacts, field: EchoField): string | null {
-  if (field === "heritage") return facts.locks.heritage?.[0] ?? null;
-  return (facts.locks as Record<string, string | undefined>)[field] ?? null;
+  return <span className="dpc-echo__role">{span.text}</span>;
 }
