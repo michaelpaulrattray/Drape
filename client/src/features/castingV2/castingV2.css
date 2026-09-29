@@ -938,6 +938,7 @@
   transition:
     border-color var(--t-fast) var(--ease),
     background var(--t-fast) var(--ease),
+    opacity var(--t-fast) var(--ease),
     color var(--t-fast) var(--ease);
 }
 
@@ -1649,14 +1650,24 @@
 
 /*
   The provisional roll pill: present, active, and visibly not yet real.
-  Dashed rather than solid, and inert — navigating to a roll with no rows
-  would show an empty sheet.
+  Dashed rather than solid, so the rail says this one has not landed.
+
+  ⚠ IT WAS ALSO INERT (`cursor: default`) UNTIL #1454, AND THAT WAS THE HALF OF
+  HIS REPORT THE STYLING CARRIED. It is the way back to the roll being cast —
+  the only one, because while that roll has no row the sheet is not "viewing
+  history" and the back button does not render. It takes the ordinary pointer
+  the other pills take.
+
+  It keeps its own opacity rather than the rail's hover treatment alone: it is
+  quieter than a landed roll because it is not one yet, and pressing it is
+  navigation, so nothing about it should read as an action with a cost.
 */
 .dpc-rollrail__item--provisional {
   border-style: dashed;
-  cursor: default;
   opacity: 0.78;
 }
+
+.dpc-rollrail__item--provisional:hover { opacity: 1; }
 
 /* ---- the unsigned sheet card's contact strip ---- */
 

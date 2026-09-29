@@ -64,7 +64,6 @@ import {
 } from "./castingIntent";
 import {
   AGE_BANDS,
-  composeCandidatePrompt,
   resolveArchetype,
   resolveCandidateIdentity,
   briefStatesHair,
@@ -200,6 +199,20 @@ export type CandidateSpec = {
    */
   resolvedIdentity: ResolvedIdentity & { unsent?: true };
 };
+
+/**
+ * One of the eight as the RESOLVER leaves it — who was cast, and nothing about
+ * what any engine is told.
+ *
+ * It is `CandidateSpec` without `prompt`, and the absence is the whole point
+ * (#1490 act 2). `resolveSheet` used to compose a house prompt per candidate
+ * and the live compiler overwrote every one of them with the authored sentence
+ * one statement later; the composition is gone, so the sheet can no longer
+ * carry a field nothing reads. The prompt is added by the compiler, from the
+ * one place it is decided, which is what makes a second answer to "what are we
+ * sending" impossible here rather than merely unused.
+ */
+export type SheetCandidate = Omit<CandidateSpec, "prompt">;
 
 export type CompiledRollBrief = {
   /** Persisted to `casting_rolls.compiledBrief`. Internal (§G). */
@@ -370,28 +383,6 @@ export type BriefCompilerInput = {
     composing from it, not the remembering.
   */
   /**
-   * On a FOLLOW: the parent sheet's stored sentence, read owner-scoped before
-   * the compile and used VERBATIM — including its null.
-   *
-   * A follow inherits the column (§3.1) and the db layer performs that
-   * inheritance in the statement that writes the row. It cannot help the
-   * PROMPT, which is composed first — so without this the eight would be
-   * PAINTED in a freshly resolved outfit and RECORDED in the parent's, and
-   * then five signed views judged against a line they were never painted in.
-   *
-   * ⚠ **Verbatim means the NULL too.** Following a candidate from a sheet cast
-   * before the paths existed must produce an unpathed prompt, because the db is
-   * about to write that parent's NULL — resolving a line here would be the same
-   * divergence with its sign flipped.
-   *
-   * ⚠ **The parent's `path` used to travel beside the line and does not any
-   * more (step (e)).** Nothing here ever read it: the line is taken verbatim
-   * whenever this field is present, so the path could not change the answer,
-   * and a field with no reader reads as a live capability (invariant 7) — the
-   * same call slice 2 step (d) made about `wardrobeEditsEnabled`.
-   */
-  inheritedWardrobe?: { line: string | null };
-  /**
    * ASK THE INTERPRETER ABOUT TATTOOS THE BRIEF DESCRIBED — 7b(a), inside
    * `CASTING_BORN_INK_SCOPE`.
    *
@@ -457,8 +448,16 @@ function normalizeBrief(briefText: string): string {
 
 /**
  * The intent used when the interpreter answered and its reply could not be
- * read as an intent (`cause: "unparsed"`) — and, through
- * `deterministicBriefCompiler`, when no interpreter is asked at all.
+ * read as an intent (`cause: "unparsed"`).
+ *
+ * ⚠ That clause listed a SECOND road until #1490 act 2 — *"and, through
+ * `deterministicBriefCompiler`, when no interpreter is asked at all"*. The seam is
+ * deleted, so an unparsed reply is now the ONLY way in, and the narrowing matters
+ * to anyone reading this to learn when a sheet loses the brief's facts: it takes a
+ * reader that answered and could not be understood. A reader that never answered
+ * is refused free instead (#126, his *"always"*), and a reader that answered
+ * emptily is `interpreted: true` with nothing pinned — driven, all three cases, in
+ * `stylingResolution.test.ts`.
  *
  * The user's sentence becomes the role and nothing is pinned, so the adapter
  * varies every axis. A sheet cast this way is less precisely targeted than an
@@ -881,14 +880,17 @@ function resolveSheet(input: {
   rollSeed: string;
   anchor?: FollowAnchor;
   /* `path` stood here and is gone with the born road — #203 slice 2 step (e). */
-  /** A follow's inherited sentence, used verbatim when present — null too (§3.1). */
-  inheritedWardrobe?: { line: string | null };
-}): { candidates: CandidateSpec[]; variance: VarianceReport; wardrobeLine: string | null } {
+}): { candidates: SheetCandidate[]; variance: VarianceReport } {
   const { intent, briefText, archetype, rollSeed, anchor } = input;
   /*
     Derived ONCE, before anything resolves, and handed to every reader — the
-    resolver, the taste pass and the composer. Three readers deriving their own
-    answer to "what did the brief settle" is the shape that produced gate 21.
+    resolver and the taste pass. Three readers deriving their own answer to
+    "what did the brief settle" is the shape that produced gate 21.
+
+    ⚠ It read "the resolver, the taste pass and the composer" until #1490 act 2
+    took the composer out. The rule is unchanged and the population shrank by
+    one; the sentence is corrected rather than deleted because the reason it
+    exists is the gate, not the count.
   */
   const deference = hairDeferenceFor({ briefText, intent });
   const resolved = Array.from({ length: input.candidateCount }, (_, position) =>
@@ -1048,23 +1050,19 @@ function resolveSheet(input: {
     Until that court has run, a volunteered field is still refused at the door
     rather than being silently believed.
   */
-  const wardrobeLine = input.inheritedWardrobe ? input.inheritedWardrobe.line : null;
+  /*
+    ⚠ `wardrobeLine` WAS COMPUTED AND RETURNED HERE AND IS GONE — #1490 act 2.
 
+    It read the `inheritedWardrobe` input and handed the line back to the caller.
+    Its only consumer was `deterministicBriefCompiler`, which returned it as the
+    compile's `wardrobeLine`; the live compiler has always answered that question
+    from `intent.statedWardrobe` instead (the brief's own stated outfit, #1222) and
+    never read this one. With the seam deleted the value had no reader at all.
+  */
   return {
     variance,
-    wardrobeLine,
     candidates: sheet.map((identity, position) => ({
       position,
-      prompt: composeCandidatePrompt({
-        briefText,
-        intent,
-        resolved: identity,
-        archetype,
-        seed: position,
-        wardrobeLine,
-        // Anchored styling renders at full fidelity: the user chose that cut.
-        anchored: anchor != null,
-      }),
       resolvedIdentity: withHonestRecord(identity, sheetResolution, statedFacialHairHere, authoredParts, {
         eyes: statedAxis("eyes", stated),
         brows: statedAxis("brows", stated),
@@ -1272,7 +1270,6 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     candidateCount: input.candidateCount,
     rollSeed: input.rollSeed,
     anchor: effectiveAnchor ?? undefined,
-    inheritedWardrobe: input.inheritedWardrobe,
   });
   /*
     THE REGISTER — decided once per roll (`authorRoad`, above the reader
@@ -1467,79 +1464,5 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
       second time.
     */
     wardrobeLine: intent.statedWardrobe,
-  };
-};
-
-/**
- * The no-interpreter seam. Same shape, no network round trip.
- *
- * ⚠ **TEST-ONLY, AND SINCE #1445 THAT IS A RULE RATHER THAN A DESCRIPTION.**
- * This docblock used to read *"for tests and for any caller that must compile
- * without a network round trip"*, and that second clause was an open invitation
- * to a hazard nobody had noticed: **this compiler delivers the HOUSE road's
- * prompts.** It calls `resolveSheet` and returns its candidates untouched, so
- * `composeCandidatePrompt`'s output reaches whoever called it — while
- * `castingBriefCompiler` overwrites every prompt with the authored sentence on
- * the road every account is actually on (his *"Yes"*, 2026-09-24).
- *
- * So a production caller added here would not merely skip the reader. It would
- * quietly put a paid roll back on the retired lane — eight separately composed
- * constants instead of the customer's own words — with the reader never asked
- * and nothing at the wire looking wrong. `houseRoadUnreachable.test.ts` pins
- * the live compiler's caller population for exactly this reason; **this seam is
- * the other door into the same room, and the rule is that it stays shut.**
- *
- * Its retirement is act 2 of slice 4 and is carded: it cannot go before the
- * house branch does, because `resolveSheet` would keep composing without it.
- * See `composeCandidatePrompt`'s docblock for the forced order and the counts.
- */
-export const deterministicBriefCompiler: BriefCompiler = async (input) => {
-  const briefText = normalizeBrief(input.briefText);
-  if (briefText.length < BRIEF_TEXT_MIN) {
-    throw new BriefRefusal("uninterpretable", BRIEF_TOO_SHORT_MESSAGE);
-  }
-  const intent = applyUnlocks(fallbackIntent(briefText), input.unlock ?? []);
-  const archetype = resolveArchetype(intent, input.rollSeed);
-  // The same helper the real compiler uses. Two hand-written loops is how the
-  // fallback path drifts into producing sheets the main path would not.
-  const { candidates, variance, wardrobeLine } = resolveSheet({
-    intent,
-    briefText,
-    archetype,
-    candidateCount: input.candidateCount,
-    rollSeed: input.rollSeed,
-    inheritedWardrobe: input.inheritedWardrobe,
-  });
-
-  return {
-    /*
-      `interpreted: false` is literally true here and it matters.
-
-      This compiler never asks the interpreter, so a sheet it produces has lost
-      every fact the brief stated — exactly the condition the sheet's highest
-      confession describes. It is test-only today, and its own doc invites live
-      callers; if one ever arrives, the confession must already be honest rather
-      than depend on somebody remembering to add it. Absent would have projected
-      as "nothing to confess".
-    */
-    compiledBrief: { compiler: "deterministic-v1", interpreted: false, briefText, intent, archetype },
-    lockContract: {},
-    cohortKey: "photoreal_human",
-    styleKey: null,
-    styleProfile: null,
-    /* No register here: this compiler never takes the author road, so every chip stays as it always was. */
-    chips: buildChips(intent, input.followIndexLabel ?? null, { authorRoad: false }),
-    candidates,
-    variance,
-    size: CANDIDATE_RENDER.size,
-    quality: CANDIDATE_RENDER.quality,
-    /* No interpreter runs here at all, so the brief said nothing this compiler
-       could hear — `fallbackIntent` answers null and this hands that on rather
-       than composing a second null beside it. */
-    statedInk: intent.statedInk,
-    /* `null` unless this is a FOLLOW, and then it is the parent's own stored
-       sentence — the same answer the real compiler gives, because since #203
-       slice 2 step (e) there is no born road for either of them to differ on. */
-    wardrobeLine,
   };
 };

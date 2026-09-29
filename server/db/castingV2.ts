@@ -226,6 +226,47 @@ export async function getOwnedCastingSession(
 }
 
 /**
+ * THE SHEET IS CASTING — SAY SO BEFORE THERE IS A ROLL TO SAY IT WITH (#1454).
+ *
+ * `createRoll` compiles the brief before it writes the roll row, and the
+ * compile is a text call the customer waits through. For that window nothing on
+ * the server knows a roll is happening, so a second tab — or the same tab after
+ * leaving and coming back — draws the sheet as idle while 160 credits are
+ * committed. His report, 2026-09-27.
+ *
+ * **This writes a fact and takes no authority.** It is not a lock and not a
+ * claim: two tabs may stamp the same sheet, the later write simply wins, and
+ * whether a roll may start is still the dispatch latch's and the operation
+ * gate's question alone. Nothing downstream reads this column to decide
+ * anything about money.
+ *
+ * Owner-scoped in the statement that writes it (invariant 1) and keyed on the
+ * PUBLIC id, so the caller never has to resolve an internal one first. A
+ * foreign or unknown id updates nothing rather than refusing: a stamp that
+ * cannot be written is not a reason to fail a roll the real ownership checks
+ * are about to adjudicate anyway.
+ *
+ * Pass `null` to clear it. Every road out of the compile clears it: the roll's
+ * own birth does it inside `createRollWithCandidates`'s session update, and
+ * `createRoll` clears it on a refusal or any other throw.
+ */
+export async function markSessionCasting(
+  userId: number,
+  sessionPublicId: string,
+  at: Date | null,
+): Promise<void> {
+  assertPositiveId(userId, "userId");
+  const db = await requireDb();
+  await db
+    .update(castingSessions)
+    .set({ castingSince: at })
+    .where(and(
+      eq(castingSessions.publicId, sessionPublicId),
+      eq(castingSessions.userId, userId),
+    ));
+}
+
+/**
  * Slides the idle window. Navigation never destroys work (§G.6), so activity
  * only ever pushes expiry further out; it can never bring it closer.
  */
@@ -456,6 +497,18 @@ export async function createRollWithCandidates(input: CreateRollInput): Promise<
       .update(castingSessions)
       .set({
         activeRollId: roll.id,
+        /*
+          THE "I AM CASTING" STAMP DIES WITH THE ROW IT WAS STANDING IN FOR
+          (#1454), in this statement rather than a later one.
+
+          From the instant this transaction commits the roll row says everything
+          the stamp said and more — its index, its status, its live dot — so a
+          stamp that outlived it would be a second answer to a question the rows
+          already answer, which is the shape that drifts. Cleared beside
+          `activeRollId` because the two facts change at the same moment and for
+          the same reason.
+        */
+        castingSince: null,
         expiresAt: new Date(now.getTime() + CASTING_SESSION_IDLE_MS),
       })
       .where(and(eq(castingSessions.id, session.id), eq(castingSessions.userId, input.userId)));
@@ -815,6 +868,122 @@ export async function getOwnedCandidateWithSelectedFace(
 }
 
 /**
+ * THE VERSION THE ASK NAMED, RESOLVED THROUGH THE OWNED CANDIDATE (#1499).
+ *
+ * Its sibling above answers *which face is SELECTED* — the server's own
+ * pointer. That is the right question for a surface reading the server's state
+ * and the wrong one for a paid act, because the pointer is a round trip behind
+ * the click: she taps a version, the picture swaps at once (which is what makes
+ * the rail feel instant), and for the second or two the `selectVariant` write
+ * is in flight the two ends of a refine disagree about who she is editing. She
+ * would pay for an edit to the picture on her screen and get an edit to the
+ * previous one.
+ *
+ * So a refine that NAMES its version resolves through this instead. Same join,
+ * same owner predicates, one different key: the variant's own public id rather
+ * than `candidates.selectedVariantId`.
+ *
+ * **`null` is the ORIGINAL and is not an absence.** It is `selectVariant`'s own
+ * vocabulary — that procedure has taken `variantId: publicId.nullable()` with
+ * null meaning the master since it shipped — so this road needs no second way
+ * of saying it. A caller with nothing to say passes no version at all and gets
+ * the pointer reader above; that is the deploy-skew road and it is today's
+ * behaviour exactly.
+ *
+ * ⚠ **IT ANSWERS WHICH THING WAS NOT FOUND, AND THE DISTINCTION IS THE POINT.**
+ * A named version that does not resolve — purged, another account's, another
+ * candidate's, not `ready` — must NOT quietly fall back to the pointer, because
+ * falling back is the defect this function exists to close. The caller needs to
+ * tell that apart from a missing candidate to say something true about it, and
+ * a bare `null` cannot.
+ */
+export type OwnedCandidateOnVersion =
+  | { found: true; face: OwnedCandidateFace }
+  | { found: false; missing: "candidate" | "version" };
+
+export async function getOwnedCandidateOnVersion(
+  userId: number,
+  candidatePublicId: string,
+  variantPublicId: string | null,
+): Promise<OwnedCandidateOnVersion> {
+  assertPositiveId(userId, "userId");
+  const db = await requireDb();
+  const [row] = await db
+    .select({
+      candidate: castingCandidates,
+      variantId: castingCandidateVariants.id,
+      variantPublicId: castingCandidateVariants.publicId,
+      variantImageKey: castingCandidateVariants.imageKey,
+      variantThumbKey: castingCandidateVariants.thumbKey,
+      variantInternalPrompt: castingCandidateVariants.internalPrompt,
+      rollPath: castingRolls.path,
+      rollWardrobeLine: castingRolls.wardrobeLine,
+    })
+    .from(castingCandidates)
+    /*
+      THE NAMED VERSION, RE-ANCHORED TO THIS CANDIDATE AND THIS OWNER IN THE
+      STATEMENT THAT FINDS IT — invariant 1 on a join, and invariant 2's
+      re-anchoring of a child id in one breath: verifying the candidate does not
+      validate a variant id sent beside it. A caller holding a stranger's
+      version id can therefore only fail to resolve it, which is a refusal and
+      never a leak.
+
+      `variantPublicId === null` is the ORIGINAL, and the join is written so
+      that case matches nothing rather than being skipped — the predicate is
+      false for every row, so the null-face branch below is reached by the same
+      road an absent refinement reaches it by.
+    */
+    .leftJoin(castingCandidateVariants, and(
+      variantPublicId === null
+        ? sql`1 = 0`
+        : eq(castingCandidateVariants.publicId, variantPublicId),
+      eq(castingCandidateVariants.userId, userId),
+      eq(castingCandidateVariants.candidateId, castingCandidates.id),
+      eq(castingCandidateVariants.status, "ready"),
+    ))
+    .leftJoin(castingRolls, and(
+      eq(castingRolls.id, castingCandidates.rollId),
+      eq(castingRolls.userId, userId),
+    ))
+    .where(and(
+      eq(castingCandidates.publicId, candidatePublicId),
+      eq(castingCandidates.userId, userId),
+      eq(castingCandidates.status, "ready"),
+    ))
+    .limit(1);
+  if (!row) return { found: false, missing: "candidate" };
+  /* A version was NAMED and the join did not find it. Never the pointer, and
+     never the original — both would be an answer about somebody else's
+     picture. */
+  if (variantPublicId !== null && !row.variantId) return { found: false, missing: "version" };
+  const roll = { rollPath: row.rollPath, rollWardrobeLine: row.rollWardrobeLine };
+  /* All of the face or none of it — never a variant's image with the
+     original's record, which is the mix that makes a record lie. */
+  return {
+    found: true,
+    face: row.variantId
+      ? {
+        candidate: row.candidate,
+        variantId: row.variantId,
+        variantPublicId: row.variantPublicId,
+        imageKey: row.variantImageKey,
+        thumbKey: row.variantThumbKey,
+        internalPrompt: row.variantInternalPrompt,
+        ...roll,
+      }
+      : {
+        candidate: row.candidate,
+        variantId: null,
+        variantPublicId: null,
+        imageKey: row.candidate.imageKey,
+        thumbKey: row.candidate.thumbKey,
+        internalPrompt: row.candidate.internalPrompt,
+        ...roll,
+      },
+  };
+}
+
+/**
  * WHAT THE BRIEF SAID SHE WEARS — the base-worn inventory (D-206).
  *
  * The founder typed "remove her glasses" at a face visibly wearing glasses and
@@ -884,9 +1053,15 @@ export async function getBriefForOwnedCandidate(
  * `rollPath` and `rollWardrobeLine`, and the refine and Sign roads still resolve
  * them through `currentWardrobeLine`. The COLUMNS are kept — they are the
  * evidence of which rolls predate the author road — and reading a stored
- * sentence outlives composing a new one. `briefCompiler`'s own
- * `inheritedWardrobe` input also stays, because `deterministicBriefCompiler`
- * still hands it on and that compiler's fate is slice 4's (#1445).
+ * sentence outlives composing a new one.
+ *
+ * ⚠ **THIS ENDED *"`briefCompiler`'s own `inheritedWardrobe` input also stays,
+ * because `deterministicBriefCompiler` still hands it on and that compiler's fate
+ * is slice 4's (#1445)"* — AND THAT FATE ARRIVED: #1490 act 2 deleted the
+ * compiler, so the input went with it in the same commit.** The reason was
+ * discharged rather than overruled, which is why this is a correction in place
+ * and not a deletion: what the sentence was protecting is gone, and the COLUMNS
+ * it protects above are untouched.
  */
 
 /**

@@ -30,6 +30,24 @@ import { describe, expect, it } from "vitest";
  * So these arms still pin "no two you-are-here marks", against the expression
  * that is true today. `rollOnScreen.test.ts` owns the predicate itself and the
  * arm that the paid affordances did NOT move with it.
+ *
+ * ⚠ AND THE DASHED PILL IS A BUTTON SINCE #1454 — HIS OWN REPORT OVERTURNED
+ * THE "INERT ON PURPOSE" READING THAT USED TO SIT IN THIS FILE.
+ *
+ * This suite carried, in its own words, *"I can't click onto 4 for that second
+ * or two is the design, not the bug"*. On 2026-09-27 he reported the opposite:
+ * *"i cannot move back to sheet 4 to view the loading state cards"*. The
+ * argument for inertness — a click would show an empty sheet — was answering a
+ * question nobody asks of this pill: pressing it navigates to NOTHING, it
+ * clears the chosen roll (`setViewedRollId(null)`), which is the same act the
+ * click that started the roll performed. There were no rows to show either way.
+ *
+ * What made it worse than a missing affordance is that it was the ONLY road:
+ * while the new roll has no row, `activeRollId` still names the previous one,
+ * so `viewingHistory` is false and "Back to the latest roll" does not render at
+ * all. 1110's rule is still untouched — exactly one pill is selected, and it is
+ * the one whose tiles are up. What changed is that pressing this one is how you
+ * get those tiles back.
  */
 const SHEET = new URL("../../pages/CastingSheet.tsx", import.meta.url);
 
@@ -53,7 +71,7 @@ describe("the roll rail: one selected pill while a roll is being paid for", () =
     expect(rail.slice(0, 1600)).toContain('className={`dpc-rollrail__item${shown ? " is-shown" : ""}`}');
   });
 
-  it("the provisional pill is the selected one while its tiles are up, and it is inert", async () => {
+  it("the provisional pill is the selected one while its tiles are up, and it is the way back to them", async () => {
     const source = code(await readFile(SHEET, "utf8"));
     const rail = source.slice(source.indexOf('role="tablist" aria-label="Rolls in this sheet"'));
     /* Bounded at the block's own close, so the arm cannot read the history button after it. */
@@ -69,21 +87,36 @@ describe("the roll rail: one selected pill while a roll is being paid for", () =
       '`dpc-rollrail__item${showingProvisional ? " is-shown" : ""} dpc-rollrail__item--provisional`',
     );
     /*
-      Inert, on purpose and unchanged: the roll has no rows yet, so a click
-      would show an empty sheet. It becomes the real pill when the row lands.
-      "I can't click onto 4" for that second or two is the design, not the bug.
+      ⚠ PRESSABLE, AND THIS ARM IS THE REVERSAL OF WHAT STOOD HERE (#1454).
+      It read `not.toContain("onClick")` and `toContain("<span")` — his report
+      is that he could not get back to the roll being cast, and this element is
+      the only road there. It navigates to the roll being paid for, which is the
+      absence of a chosen roll and needs no rows to exist.
     */
-    expect(provisional).not.toContain("onClick");
-    expect(provisional).toContain("<span");
+    expect(provisional).toContain("onClick={() => setViewedRollId(null)}");
+    expect(provisional).toContain("<button");
+    /* A tab in a tablist, like the pills beside it, so the mark and the role
+       agree about which one you are on. */
+    expect(provisional).toContain('role="tab"');
+    expect(provisional).toContain("aria-selected={showingProvisional}");
   });
 
   it("the provisional pill only exists while a dispatch is in flight", async () => {
     const source = code(await readFile(SHEET, "utf8"));
     /*
       The same gate from the other side: if the provisional pill could outlive
-      `awaitingNewRoll`, the real pills would stand down with nothing selected.
-      The two are one fact read twice, and this pins the second reading.
+      the roll being cast, the real pills would stand down with nothing
+      selected. The two are one fact read twice, and this pins the second
+      reading.
+
+      ⚠ THE FACT IS `rollInFlight` SINCE #1454, NOT `awaitingNewRoll`, AND THE
+      FALLBACK CAME WITH IT. `awaitingNewRoll` is this component's memory of its
+      own click, so on a load that did not make the click it is false and
+      `provisionalRollIndex` is 0 — which is precisely the road his report is
+      about (leave the sheet mid-cast, come back, and nothing says a roll is
+      happening). The sheet asks the server too, and falls back to the next
+      index the header has always fallen back to.
     */
-    expect(source).toContain("const provisionalIndex = awaitingNewRoll ? provisionalRollIndex || null : null;");
+    expect(source).toContain("const provisionalIndex = rollInFlight ? provisionalRollIndex || rolls.length + 1 : null;");
   });
 });

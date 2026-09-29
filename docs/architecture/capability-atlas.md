@@ -19,11 +19,11 @@ _Called as:_ `castingV2.config` · `castingV2.createSession` · `castingV2.openS
 
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
-| `roll.likeness` | roll-refusal |  | server/castingV2/briefCompiler.ts:1189<br>server/castingV2/briefRefusalCopy.ts:116 | 5 test(s) | _documented-unreachable or gap — see findings_ |
-| `roll.not_a_being` | roll-refusal |  | server/castingV2/briefCompiler.ts:1192<br>server/castingV2/briefRefusalCopy.ts:122 | 2 test(s) | _documented-unreachable or gap — see findings_ |
-| `roll.reader_outage` | roll-refusal |  | server/castingV2/briefCompiler.ts:1173<br>server/castingV2/briefRefusalCopy.ts:128 | 5 test(s) | _documented-unreachable or gap — see findings_ |
-| `roll.uninterpretable` | roll-refusal |  | server/castingV2/briefCompiler.ts:1087<br>server/castingV2/briefCompiler.ts:1499<br>(+1) | 2 test(s) | _documented-unreachable or gap — see findings_ |
-| `roll.unsupported_cohort` | roll-refusal |  | server/castingV2/briefCompiler.ts:1178<br>server/castingV2/briefRefusalCopy.ts:110 | 5 test(s) | _documented-unreachable or gap — see findings_ |
+| `roll.likeness` | roll-refusal |  | server/castingV2/briefCompiler.ts:1187<br>server/castingV2/briefRefusalCopy.ts:116 | 5 test(s) | _documented-unreachable or gap — see findings_ |
+| `roll.not_a_being` | roll-refusal |  | server/castingV2/briefCompiler.ts:1190<br>server/castingV2/briefRefusalCopy.ts:122 | 2 test(s) | _documented-unreachable or gap — see findings_ |
+| `roll.reader_outage` | roll-refusal |  | server/castingV2/briefCompiler.ts:1171<br>server/castingV2/briefRefusalCopy.ts:128 | 5 test(s) | _documented-unreachable or gap — see findings_ |
+| `roll.uninterpretable` | roll-refusal |  | server/castingV2/briefCompiler.ts:1085<br>server/castingV2/briefRefusalCopy.ts:108 | 2 test(s) | _documented-unreachable or gap — see findings_ |
+| `roll.unsupported_cohort` | roll-refusal |  | server/castingV2/briefCompiler.ts:1176<br>server/castingV2/briefRefusalCopy.ts:110 | 5 test(s) | _documented-unreachable or gap — see findings_ |
 
 > THE ROLL ENTRANCE'S FIVE WALLS ARE ON THE MAP AS OF #206 — declared from `ROLL_REFUSAL_COPY`, entrance-qualified `roll.*`, each citing its own throw. They are DECLARED but not DRIVEN: the census sends a sentence at an existing Cast through `castingV2.refine`, and these are raised inside `castingV2.createRoll` before a roll row exists, so each carries its reason in UNREACHABLE_DOORS instead of a corpus row. A brief-carrying corpus row is the map's next growth ring, and it would be free at all five. The SIGN entrance is still outside the declared set entirely (fable-1357 §2).
 
@@ -44,16 +44,16 @@ _Called as:_ `castingV2.refine`
 
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
-| `candidate_missing` | service-refusal |  | server/castingV2/refineService.ts:1229 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `already_signed` | service-refusal |  | server/castingV2/refineService.ts:1246 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `busy` | service-refusal |  | server/castingV2/refineService.ts:4898<br>server/castingV2/rollEngine.ts:122<br>(+1) | 2 test(s) | _documented-unreachable or gap — see findings_ |
-| `refine_limit` | service-refusal |  | server/castingV2/refineService.ts:4357 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `master_missing` | service-refusal |  | server/castingV2/refineService.ts:1235 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `version_missing` | service-refusal |  | server/castingV2/refineService.ts:2566 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `history_unreadable` | service-refusal |  | server/castingV2/refineService.ts:3663 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `history_predates_undo` | service-refusal |  | server/castingV2/refineService.ts:2960 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `step_moved` | service-refusal |  | server/castingV2/refineService.ts:2640 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `kind_unserved` | service-refusal |  | server/castingV2/refineService.ts:2694 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `candidate_missing` | service-refusal |  | server/castingV2/refineService.ts:1297 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `already_signed` | service-refusal |  | server/castingV2/refineService.ts:1315 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `busy` | service-refusal |  | server/castingV2/refineService.ts:4967<br>server/castingV2/rollEngine.ts:122<br>(+1) | 2 test(s) | _documented-unreachable or gap — see findings_ |
+| `refine_limit` | service-refusal |  | server/castingV2/refineService.ts:4426 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `master_missing` | service-refusal |  | server/castingV2/refineService.ts:1304 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `version_missing` | service-refusal |  | server/castingV2/refineService.ts:1291<br>server/castingV2/refineService.ts:2635 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `history_unreadable` | service-refusal |  | server/castingV2/refineService.ts:3732 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `history_predates_undo` | service-refusal |  | server/castingV2/refineService.ts:3029 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `step_moved` | service-refusal |  | server/castingV2/refineService.ts:2709 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `kind_unserved` | service-refusal |  | server/castingV2/refineService.ts:2763 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 
 - `busy` is the admit door (a real TOO_MANY_REQUESTS, invariant 6); reaching it in the census reads as would-render.
 - `refine_limit` is the 24-instruction ceiling — removals are still allowed there; only growth is blocked.
@@ -70,7 +70,7 @@ _Called as:_ `castingV2.refine`
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
 | `empty` | interpreter-refusal |  | server/castingV2/refineDelta.ts:626<br>server/castingV2/refineInterpreter.ts:898<br>(+1) | 5 test(s) | guard.empty |
-| `unreadable` | interpreter-refusal |  | server/castingV2/castingIntent.ts:1372<br>server/castingV2/castingIntent.ts:1408<br>(+14) | 23 test(s) | light.softer, guard.gibberish, guard.scope.ink.none |
+| `unreadable` | interpreter-refusal |  | server/castingV2/castingIntent.ts:1381<br>server/castingV2/castingIntent.ts:1417<br>(+14) | 23 test(s) | light.softer, guard.gibberish, guard.scope.ink.none |
 | `reader_outage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:625<br>server/castingV2/refineInterpreter.ts:912<br>(+2) | 5 test(s) | _documented-unreachable or gap — see findings_ |
 | `wall_likeness` | interpreter-refusal |  | server/castingV2/refineDelta.ts:498<br>server/castingV2/refineDelta.ts:1609<br>(+2) | 6 test(s) | guard.likeness |
 | `wall_content` | interpreter-refusal |  | server/castingV2/refineDelta.ts:538<br>server/castingV2/refineInterpreter.ts:1647<br>(+1) | 6 test(s) | guard.content |
@@ -81,8 +81,8 @@ _Called as:_ `castingV2.refine`
 | `gate_ink_uncarried` | interpreter-refusal |  | server/castingV2/refineDelta.ts:569<br>server/castingV2/refineDelta.ts:569<br>(+4) | 3 test(s) | ink.words.chest |
 | `gate_ink_unkeepable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:588<br>server/castingV2/refineDelta.ts:588<br>(+3) | 3 test(s) | _documented-unreachable or gap — see findings_ |
 | `gate_ink_coverage_unread` | interpreter-refusal |  | server/castingV2/refineDelta.ts:596<br>server/castingV2/refineDelta.ts:596<br>(+3) | 3 test(s) | ink.words.chest.basics |
-| `scope_unknown` | service-refusal |  | server/castingV2/refineService.ts:1316<br>server/castingV2/refineService.ts:1354 | 2 test(s) | guard.scope.unknown |
-| `scope_mismatch` | service-refusal |  | server/castingV2/refineService.ts:4877 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `scope_unknown` | service-refusal |  | server/castingV2/refineService.ts:1385<br>server/castingV2/refineService.ts:1423 | 2 test(s) | guard.scope.unknown |
+| `scope_mismatch` | service-refusal |  | server/castingV2/refineService.ts:4946 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 
 - wall_stage = PROVABLY the shoot (the lexicon backed the claim); wall_unbacked = the model claimed out-of-scope and the lexicon could not confirm — one wall was two walls wearing one name until census card C1.
 - gate_ink_document asks 'is there a document for this design'; its answers are the anchor itself, a pointed-at photograph, the delivered crop, and (words road) the delivery about to be minted.
@@ -107,13 +107,13 @@ _Called as:_ `castingV2.refine`
 | `inkNotKept` | cannot-say | free | server/castingV2/cannotSayCopy.ts:408 | 1 test(s) | ink.transform.dangling |
 | `inkBeyondToday` | cannot-say | free | server/castingV2/cannotSayCopy.ts:272 | 2 test(s) | _documented-unreachable or gap — see findings_ |
 | `unplacedInk` | cannot-say | refunded | server/castingV2/cannotSayCopy.ts:248 | 5 test(s) | _documented-unreachable or gap — see findings_ |
-| `removal_absent` | service-refusal |  | server/castingV2/refineService.ts:3431 | 1 test(s) | ink.remove.none, skin.freckles.remove.none |
-| `removal_unnamed` | service-refusal |  | server/castingV2/refineService.ts:3003 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `removal_not_in_brief` | service-refusal |  | server/castingV2/refineService.ts:3412 | 1 test(s) | acc.glasses.remove.none, acc.remove.branch.other |
-| `removal_uncheckable` | service-refusal |  | server/castingV2/refineService.ts:3189<br>server/castingV2/refineService.ts:3206 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `removal_reread_unmatched` | service-refusal |  | server/castingV2/refineService.ts:3507 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `removal_unnameable` | service-refusal |  | server/castingV2/refineService.ts:4327 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `already_original` | service-refusal |  | server/castingV2/refineService.ts:2594 | 1 test(s) | guard.undo |
+| `removal_absent` | service-refusal |  | server/castingV2/refineService.ts:3500 | 1 test(s) | ink.remove.none, skin.freckles.remove.none |
+| `removal_unnamed` | service-refusal |  | server/castingV2/refineService.ts:3072 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `removal_not_in_brief` | service-refusal |  | server/castingV2/refineService.ts:3481 | 1 test(s) | acc.glasses.remove.none, acc.remove.branch.other |
+| `removal_uncheckable` | service-refusal |  | server/castingV2/refineService.ts:3258<br>server/castingV2/refineService.ts:3275 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `removal_reread_unmatched` | service-refusal |  | server/castingV2/refineService.ts:3576 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `removal_unnameable` | service-refusal |  | server/castingV2/refineService.ts:4396 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `already_original` | service-refusal |  | server/castingV2/refineService.ts:2663 | 1 test(s) | guard.undo |
 
 - THE ID POINTS AND THE ROW DECIDES: a chain naming a crop with no row is skipped loudly by the carry (the rescue needs the name to stand) and answered free at the transform door (inkNotKept) — never scrubbed, because scrubbing deletes the pointer the minted-loss rescue lives on (C4b, closed not-to-be-built).
 - free.ink is ONE subject holding every tattoo (the keying work, §10 3b, splits it); the gate skips items warranted only by the prior so a carried tattoo cannot wall a new ask.
@@ -201,12 +201,12 @@ _Called as:_ `castingV2.concept.describe`
 
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
-| `concept.no_being` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1271<br>server/castingV2/conceptDescribeCopy.ts:79 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `concept.no_being` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1280<br>server/castingV2/conceptDescribeCopy.ts:79 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `concept.not_about_the_person` | concept-refusal |  | server/castingV2/conceptDescribeCopy.ts:82 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `concept.not_a_casting_note` | concept-refusal |  | server/castingV2/conceptDescribeCopy.ts:87 | 2 test(s) | _documented-unreachable or gap — see findings_ |
 | `concept.ran_long` | concept-refusal |  | server/castingV2/conceptDescribeCopy.ts:111 | 2 test(s) | _documented-unreachable or gap — see findings_ |
-| `concept.unreadable` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1263<br>server/castingV2/conceptDescribe.ts:1300<br>(+1) | 23 test(s) | _documented-unreachable or gap — see findings_ |
-| `concept.no_transport` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1199<br>server/castingV2/conceptDescribeCopy.ts:114 | 4 test(s) | _documented-unreachable or gap — see findings_ |
+| `concept.unreadable` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1272<br>server/castingV2/conceptDescribe.ts:1309<br>(+1) | 23 test(s) | _documented-unreachable or gap — see findings_ |
+| `concept.no_transport` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1208<br>server/castingV2/conceptDescribeCopy.ts:114 | 4 test(s) | _documented-unreachable or gap — see findings_ |
 
 > ⚠ THIS ROAD'S DOORS REACHED THE MAP BEFORE THE ROAD DID — the six were declared with #192 and every one of them is documented-unreachable (the corpus sends sentences, not pictures), while the ENTRANCE they belong to had no road until #1203. That is the forward/backward asymmetry in one specimen: the map could prove every door it named was real and could not notice it had never named the road. The FLAG and the two byte doors above the six are still outside the declared set: `NOT_FOUND` off `captureCastingConceptUploadEnabled`, and the shared `referenceAttachBytesRefusal` / `BYTES_NOT_AN_IMAGE_MESSAGE` pair, which are the ink door's own sentences reused rather than restated.
 
@@ -363,6 +363,7 @@ Derived from the architecture Atlas's own extractor. A procedure with no road is
 | noWords | cannot-say | refunded | cannotSayCopy.test.ts, mintedSlots.test.ts, repaintAsks.test.ts, viewFeatureWords.test.ts |
 | perSideRemoval | cannot-say | refunded | cannotSayCopy.test.ts, repaintAsks.test.ts |
 | reader_outage | interpreter-refusal |  | briefCompiler.test.ts, briefRefusalCopy.test.ts, readerOutageRefusal.test.ts, refineInterpreterCeiling.test.ts, styleRefusal.test.ts |
+| reference.pictureCap | reference-refusal |  | uploadRefusalCopy.test.ts |
 | refine_limit | service-refusal |  | refineService.test.ts |
 | removal | cannot-say | refunded | cannotSayCopy.test.ts, repaintAsks.test.ts |
 | removal_absent | service-refusal |  | refusalTag.test.ts |
@@ -387,6 +388,10 @@ Derived from the architecture Atlas's own extractor. A procedure with no road is
 | unnamedObject | cannot-say | refunded | cannotSayCopy.test.ts, mintedSlots.test.ts, repaintAsks.test.ts |
 | unplacedInk | cannot-say | refunded | cannotSayCopy.test.ts, inkBeyondTodayAsk.test.ts, inkDesignForAsk.test.ts, refineService.test.ts, repaintAsks.test.ts |
 | unreadable | interpreter-refusal |  | cohortWallRetry.test.ts, conceptDescribe.test.ts, conceptDescribeCopy.test.ts, creativeRegisterScope.test.ts, hairColourFromReference.test.ts, hairReferenceCutter.test.ts, inkReferenceCutter.test.ts, inkUploadDoor.test.ts, judgeFrame.test.ts, makeupFromReference.test.ts, openLaneAccept.test.ts, openLaneKind.test.ts, readerFrameBound.test.ts, readerOutageRefusal.test.ts, referenceAttachService.test.ts, referenceClassGate.test.ts, referenceMediumDoor.test.ts, referenceWordsLane.test.ts, refineInterpreterCeiling.test.ts, refineService.test.ts, truncatedReplyReaders.test.ts, uploadRefusalCopy.test.ts, server/db/referenceReadDemand.test.ts |
+| upload.tooLarge | upload-refusal |  | inkUploadDoor.test.ts, uploadRefusalCopy.test.ts |
+| upload.tooSmall | upload-refusal |  | inkDeliveryCrop.test.ts, inkUploadDoor.test.ts, referenceAttachService.test.ts, uploadRefusalCopy.test.ts, server/db/castingV2ReferenceLibrary.test.ts |
+| upload.unreadable | upload-refusal |  | cohortWallRetry.test.ts, conceptDescribe.test.ts, conceptDescribeCopy.test.ts, creativeRegisterScope.test.ts, hairColourFromReference.test.ts, hairReferenceCutter.test.ts, inkReferenceCutter.test.ts, inkUploadDoor.test.ts, judgeFrame.test.ts, makeupFromReference.test.ts, openLaneAccept.test.ts, openLaneKind.test.ts, readerFrameBound.test.ts, readerOutageRefusal.test.ts, referenceAttachService.test.ts, referenceClassGate.test.ts, referenceMediumDoor.test.ts, referenceWordsLane.test.ts, refineInterpreterCeiling.test.ts, refineService.test.ts, truncatedReplyReaders.test.ts, uploadRefusalCopy.test.ts, server/db/referenceReadDemand.test.ts |
+| upload.unsupportedFormat | upload-refusal |  | inkUploadDoor.test.ts, referenceAttachService.test.ts, uploadRefusalCopy.test.ts |
 | version_missing | service-refusal |  | refineService.test.ts |
 | wall_content | interpreter-refusal |  | colourContextDoor.test.ts, priorContextDoor.test.ts, referenceWordsLane.test.ts, refineRefusals.test.ts, refineService.test.ts, stageWallBackstop.test.ts |
 | wall_likeness | interpreter-refusal |  | colourContextDoor.test.ts, inkReferenceGate.test.ts, referenceWordsLane.test.ts, refineDelta.test.ts, refineRefusals.test.ts, stageWallBackstop.test.ts |
@@ -399,7 +404,7 @@ Derived from the architecture Atlas's own extractor. A procedure with no road is
 
 `CASTING_BORN_INK_SCOPE` · `CASTING_BRIEF_FIDELITY_SCOPE` · `CASTING_CONCEPT_UPLOAD_SCOPE` · `CASTING_FACE_SCAN_SCOPE` · `CASTING_HAIR_REFERENCE_SCOPE` · `CASTING_INK_CUT_SCOPE` · `CASTING_INK_REFERENCE_SCOPE` · `CASTING_INK_REGION_CROP_SCOPE` · `CASTING_INK_STUDIO_SCOPE` · `CASTING_INK_TRANSFORM_SCOPE` · `CASTING_INK_WORDS_SCOPE` · `CASTING_OPEN_LANE_SCOPE` · `CASTING_REFERENCE_ATTACH_SCOPE` · `CASTING_REFERENCE_LIBRARY_SCOPE` · `CASTING_REFINE_DISPATCH_SCOPE` · `CASTING_REPAINT_SCOPE` · `CASTING_RETRY_SCOPE` · `CASTING_ROLL_ENGINE_SCOPE` · `CASTING_SCAN_TABLE_SCOPE` · `CASTING_SIDE_PHRASING_SCOPE` · `CASTING_V2_SCOPE`
 
-## Findings (50)
+## Findings (55)
 
 - **warn** `belief-mismatch` guard.typo — "give her a nose rign" — believed asked:did-you-mean, observed would-render
 - **info** `documented-unreachable` already_signed — no corpus row reaches it: answers a refine sent at a SIGNED cast — request state, not sentence content — a row could reach it via: a signed-cast fixture, if sign-state rows are ever wanted; pinned by its C5 service arm
@@ -419,6 +424,7 @@ Derived from the architecture Atlas's own extractor. A procedure with no road is
 - **info** `documented-unreachable` master_missing — no corpus row reaches it: answers a cast whose master object is gone — storage state no fixture manufactures honestly — a row could reach it via: pinned by its C5 service arm
 - **info** `documented-unreachable` notASlot — no corpus row reaches it: the catalogue's no-picture answer; makeup — its historical population — now renders (measured, drive-4), and no current master-state ask reaches a facet the catalogue refuses a picture for — a row could reach it via: a facet that regains the no-picture classification, or a driven ask found to reach it
 - **info** `documented-unreachable` reader_outage — no corpus row reaches it: REFINE's own reader outage — the sentence was never read because the call threw, the deadline passed, or no engine is configured. The twin of `roll.reader_outage` on the refine road, and of `concept.unreadable`; free, before the claim, exactly as the `unreadable` beside it always was. What changed is only WHOSE fault it names: `unreadable` means a reply came back and could not be read, and its sentence tells her to try naming what she wants changed, which is advice she cannot follow when the failure is ours — a row could reach it via: deliberately never as a corpus row, on the same ground the two doors above state: manufacturing a reader outage in the census would test the harness and not the product. Its pin is its own driven arm in `readerOutageRefusal.test.ts`, which throws the exact ProviderError a 402 produces and asserts the classifier's mapping beside it
+- **info** `documented-unreachable` reference.pictureCap — no corpus row reaches it: answers an attach at a Cast already holding all the pictures it may — a real TOO_MANY_REQUESTS (invariant 6), raised from a database count rather than from the bytes. The attach is the only upload entrance that KEEPS what it takes, so it is the only one that can run out of room; `castingV2.concept.describe` stores nothing and has no cap to hit — a row could reach it via: a corpus row that could attach EIGHT pictures to one Cast and then a ninth — a state built from eight prior writes, which is a fixture rather than a row whatever entrance the grammar gains. Driven today by `inkReferenceMint.test.ts`, which holds the sentence to naming no move the customer cannot make
 - **info** `documented-unreachable` refine_limit — no corpus row reaches it: answers the 24-instruction ceiling — needs 24 paid variants on one cast (the census never renders) — a row could reach it via: pinned by its C5 service arm; verify-bot's ceiling cast proved it live (opus-969)
 - **info** `documented-unreachable` removal_reread_unmatched — no corpus row reaches it: needs the ambiguity re-read to produce a removal whose noun then matches no step — a two-model-disagreement state that cannot be scripted through the real interpreter deterministically — a row could reach it via: deliberately never: pinned by its service arm (C5); a census row would be a coin flip (the model's read is the unstable thing)
 - **info** `documented-unreachable` removal_uncheckable — no corpus row reaches it: needs the removal-verification reader to be unavailable mid-ask — an infrastructure failure state no fixture manufactures honestly — a row could reach it via: deliberately never: its pin is its service arm (C5), and manufacturing reader outages in the census would test the harness, not the product
@@ -433,6 +439,10 @@ Derived from the architecture Atlas's own extractor. A procedure with no road is
 - **info** `documented-unreachable` session_missing — no corpus row reaches it: answers a roll naming a sheet the account does not own, or none — the ownership sentence and code, said before any text call instead of after a paid one — a row could reach it via: the brief-carrying row the roll.* doors above wait for; pinned by its rollService arm
 - **info** `documented-unreachable` step_moved — no corpus row reaches it: answers a chip removal whose index went stale mid-click — a race no scripted sentence makes — a row could reach it via: pinned by its C5 service arm
 - **info** `documented-unreachable` unplacedInk — no corpus row reaches it: raised at the pre-claim ink door only for a DOCUMENTED ask with no placement; every master-state words ask dies earlier at the document gate (measured, drive-4), and the documented states (reference attached, delivered ink) resolve their placement before that door — a row could reach it via: a reference-attached fixture whose take carries no placement
+- **info** `documented-unreachable` upload.tooLarge — no corpus row reaches it: answers a file over the byte ceiling, judged BEFORE the decode so a huge file costs nothing to refuse. The route's own zod input cap sits above it at the same number, so the common case never reaches this door at all — which is why it is the one of the four whose absence from the map mattered least and is still a door — a row could reach it via: the same picture-carrying row, carrying more bytes than `INK_DESIGN_MAX_BYTES`. Driven today by `inkUploadDoor.test.ts` at the boundary and one byte over it
+- **info** `documented-unreachable` upload.tooSmall — no corpus row reaches it: answers a picture under the edge floor — one that can describe that there was something rather than what it was. The floor exists because an attached picture is destined to become a CROP in a repaint recipe, so refusing at the door beats delivering a blur — a row could reach it via: the same picture-carrying row at 255px. Driven today by `inkUploadDoor.test.ts` and by `referenceAttachService.test.ts`, which drives the whole attach with an undersized png
+- **info** `documented-unreachable` upload.unreadable — no corpus row reaches it: answers bytes sharp could not open at all, or a payload that was never base64 — the one sentence both live upload roads say, `castingV2.concept.describe` (every account) and `castingV2.reference.attach`. It is NOT the interpreter's `unreadable`, which means a reply came back unreadable, and the qualification is what keeps the two apart on this map — a row could reach it via: a corpus row grammar that carries a PICTURE instead of a sentence — the same second driven entrance `concept.no_being` and its four siblings need, and free at every one of these doors. Driven today by `uploadRefusalCopy.test.ts`, which calls both byte doors and asserts the sentence they hand back
+- **info** `documented-unreachable` upload.unsupportedFormat — no corpus row reaches it: answers bytes that decoded cleanly and are not one of the three formats we take. The format is what the BYTES are, never what the payload claimed — this door is given no declared mime and no filename, so there is no field for a claim to arrive in — a row could reach it via: the same picture-carrying row; a fixture PDF renamed .png is the cheapest of the four to drive and would prove the format rule rather than the transport. Driven today by `inkUploadDoor.test.ts`
 - **info** `documented-unreachable` version_missing — no corpus row reaches it: answers a replay marker naming a version that is not the predecessor — request shape — a row could reach it via: pinned by its C5 service arm
 - **info** `documented-unreachable` whichInkToChange — no corpus row reaches it: needs a branch wearing TWO tattoos; no cast in either world has ever worn two at once (opus-966 §1) and the multi-tattoo fixture is §10 item 3b's build — a row could reach it via: item 3b's keying work, which needs two-tattoo state to test itself
 - **info** `not-driven` ref.hair.whole — needs state "reference-attached", which this fixture cannot supply

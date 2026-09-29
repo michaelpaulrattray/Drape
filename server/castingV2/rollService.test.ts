@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import type { TextEngine } from "../providers/types";
 
 /**
  * The roll service's money and its ordering (plan §F, §H).
@@ -70,6 +71,17 @@ vi.mock("../db/castingV2", async (importOriginal) => ({
     };
   }),
   listRollCandidates: vi.fn(async () => rows.candidates),
+  /*
+    THE SHEET'S "I AM CASTING" STAMP (#1454), journalled rather than counted.
+
+    It exists to be READ by a second load, and what makes it worth anything is
+    WHEN it is written: before the compile, which is the window his report is
+    about. So it goes in the same journal as `rows`, `running` and `charge` — an
+    order, not a call count.
+  */
+  markSessionCasting: vi.fn(async (_userId: number, _sessionPublicId: string, at: Date | null) => {
+    journal.push(at === null ? "casting:off" : "casting:on");
+  }),
   /* The sheet, read before the compile (#854). `open` is the fixture's default;
      the door arms override it to `expired`, `abandoned` and null. */
   getOwnedCastingSession: vi.fn(async () => ({ id: 10, status: "open" })),
@@ -276,7 +288,7 @@ const { createRoll, cancelRoll } = await import("./rollService");
 const { getOwnedCastingSession } = vi.mocked(await import("../db/castingV2"));
 const { refusalTagOf } = await import("./refusalTag");
 const { BRIEF_TEXT_MAX_AUTHOR_ROAD, BRIEF_TOO_LONG_AUTHOR_ROAD_MESSAGE } = await import("./briefLength");
-const { deterministicBriefCompiler, castingBriefCompiler, READER_OUTAGE_MESSAGE } = await import("./briefCompiler");
+const { castingBriefCompiler, READER_OUTAGE_MESSAGE } = await import("./briefCompiler");
 const {
   candidateChargeReference,
   candidateUnseenChargeReference,
@@ -301,6 +313,58 @@ function seedCandidates(count = 8) {
     status: "queued",
   }));
 }
+
+/**
+ * A READER THAT NEVER LEAVES THE PROCESS — this suite's compiler, since #1490
+ * act 2 deleted `deterministicBriefCompiler`.
+ *
+ * ⚠ **WHY THE SEAM IS NOT SIMPLY REPLACED BY A FAKE COMPILER.** The deleted seam
+ * was a second implementation of "compile a brief", and `rollService`'s own
+ * arms are the ones that would never notice it drifting from the real one: they
+ * are about the billing sequence, the settlement, the cancel and the dispatch
+ * collisions, and they read the compile only through a spy on its INPUT. A
+ * hand-written stand-in returning a plausible `CompiledRollBrief` would pass all
+ * 47 of them while the real compiler changed shape underneath — which is working
+ * law 4 (a second list shadowing a source of truth) pointed at a contract.
+ *
+ * So these arms now drive the compiler production drives, through the `engine`
+ * test seam its own docblock declares for exactly this, and the only thing faked
+ * is the interpreter's reply. That is a strictly stronger position than the one
+ * act 2 removed: the suite kept its speed and its refusal to spend, and gained
+ * the real composition road.
+ *
+ * The reply is fixed and deliberately dull — the sheet's contents are not what
+ * any arm in this file asserts, and a reply that varied would make a billing
+ * test fail for a casting reason.
+ */
+const inProcessReader: TextEngine = {
+  id: "test:roll-service-reader",
+  complete: async () => ({
+    text: JSON.stringify({
+      cohort: "photoreal_human",
+      role: "cyclist",
+      sex: "female",
+      ageBand: "20s",
+      agePhase: "mid",
+      heritage: [{ heritage: "Northern European", pct: 100 }],
+      energy: "dry",
+      variationAxis: "look",
+      reads: null,
+    }),
+    latencyMs: 1,
+    provenance: { provider: "openrouter" as const, model: "test", servedModel: "test" },
+  }),
+};
+
+/**
+ * The live compiler with the in-process reader bound to it.
+ *
+ * ⚠ It takes the service's own input unchanged and adds ONE key. A helper that
+ * rewrote anything else would be lying to the four arms in this file that read
+ * the compile's input through a spy and assert on which keys are present.
+ */
+const compileInProcess = (input: Record<string, unknown>) =>
+  castingBriefCompiler({ ...input, engine: inProcessReader } as never);
 
 /** What each dispatch handed the engine — the anchored arms read `references` off it. */
 const engineSent: Array<{ prompt: string; references?: readonly { bytes: Buffer }[] }> = [];
@@ -329,13 +393,27 @@ function baseDependencies(fails: (position: number) => boolean = () => false) {
   return {
     engine: engineWhere(fails),
     /*
-      Compile without an interpreter. These tests are about the billing
-      sequence, and the default compiler now reaches for a text transport —
-      which, with a real key in `.env`, turns a 17ms unit suite into 32
-      seconds of live API calls against someone's account. A unit test that
-      silently spends money is not a unit test.
+      Compile with the reader doubled in-process — `compileInProcess` above.
+
+      ⚠ **THIS COMMENT ARGUED FROM A HAZARD THAT HAS SINCE MOVED, AND THE
+      CORRECTION IS WHY THE SEAM COULD GO.** It read: *"the default compiler now
+      reaches for a text transport — which, with a real key in `.env`, turns a
+      17ms unit suite into 32 seconds of live API calls against someone's
+      account."* That incident is real and is the M5 one; it is now held at
+      `vitest.setup.ts`, which STRIPS `OPENROUTER_API_KEY` from the environment
+      of every unit run and names this very suite as the reason. So the money
+      argument no longer needs a second compiler to carry it.
+
+      Driven rather than reasoned (#1490 act 2): with the `engine` binding
+      removed from `compileInProcess`, **47 of these 63 arms go red** with
+      `cause: "unconfigured"` — the compiler refuses the roll free rather than
+      casting from the brief alone (#126, his *"always"*). So a future arm that
+      forgets to bind a reader spends nothing AND cannot pass. That is two
+      independent holds where the deleted seam was one, which is what made
+      re-pointing these arms onto the live compiler the stronger answer rather
+      than merely the tidier one.
     */
-    compileBrief: deterministicBriefCompiler,
+    compileBrief: compileInProcess,
     admit: () => ({ admitted: true as const }),
     markRunning: vi.fn(async () => {
       journal.push("running");
@@ -481,6 +559,95 @@ describe("the sequence", () => {
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     expect(journal).not.toContain("claim");
     expect(journal).not.toContain("charge");
+  });
+
+  /*
+    THE SHEET SAYS IT IS CASTING FOR THE WINDOW BEFORE ITS ROLL ROW EXISTS
+    (#1454, his report 2026-09-27: *"if i exit the sheet and then come back into
+    it sheet 4 will not show at all until its finished generating the cards"*).
+
+    The roll row is written after the compile, and the compile is a text call —
+    ~13 s on a short brief, 40–120 s on the author road (#466). For that window
+    `getSession` has nothing to return, so a second load draws the sheet as idle
+    over a roll that is being paid for. The stamp is the fact that fills it.
+
+    These arms are about ORDER and CLEANUP, which is the whole of it: a stamp
+    written after the compile would be a stamp for a window that has closed, and
+    a stamp a refusal leaves behind is a pill over a roll that is not happening.
+    They ride the same journal as the money sequence because they are the same
+    kind of claim.
+
+    ⚠ NOTHING HERE TOUCHES MONEY, and that is asserted rather than assumed:
+    every arm below also reads `claim` and `charge`, so a stamp that somehow
+    came to gate spending reddens here first.
+  */
+  describe("the sheet says it is casting before the roll row exists", () => {
+    it("stamps BEFORE the compile — which is the window, and the only reason it exists", async () => {
+      const dependencies = baseDependencies() as { compileBrief: (input: unknown) => unknown };
+      const seenAtCompile: string[] = [];
+      await createRoll(
+        {
+          ...(dependencies as object),
+          compileBrief: (input: unknown) => {
+            /* What the journal held at the moment the text call started. A stamp
+               written after this line would be invisible for the whole wait. */
+            seenAtCompile.push(...journal);
+            return dependencies.compileBrief(input);
+          },
+        } as never,
+        INPUT,
+      );
+      expect(seenAtCompile).toContain("casting:on");
+      /* And before the money, because the compile is before the money. */
+      expect(seenAtCompile).not.toContain("claim");
+      expect(seenAtCompile).not.toContain("charge");
+    });
+
+    it("hands over to the roll's own row rather than clearing itself", async () => {
+      await createRoll(baseDependencies(), INPUT);
+      const stamps = journal.filter((entry) => entry.startsWith("casting:") || entry === "rows");
+      /*
+        `createRollWithCandidates` clears the stamp inside the transaction that
+        writes the row — the one road where the rows take over the telling, so
+        the service must NOT also clear it. Two clears would be two places
+        deciding when the pill goes, which is how a pair drifts.
+      */
+      expect(stamps).toEqual(["casting:on", "rows"]);
+    });
+
+    it("a refused brief leaves the sheet exactly as the click found it", async () => {
+      await expect(
+        createRoll({ ...(baseDependencies() as object) } as never, { ...INPUT, briefText: "x" }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      /*
+        THE ARM THAT DECIDED THE SHAPE OF THIS FIX. The card proposed writing the
+        roll ROW here instead; a refused brief would then leave a permanent
+        failed `04` in the rail and a sheet in the lobby, which is the founder
+        bug `listOpenCastingSessions` was written against on 2026-08-01. A stamp
+        has nothing to unwind — it goes back to null and the refusal is free and
+        traceless, exactly as it is today.
+      */
+      expect(journal.filter((entry) => entry.startsWith("casting:")))
+        .toEqual(["casting:on", "casting:off"]);
+      expect(journal).not.toContain("rows");
+      expect(journal).not.toContain("claim");
+      expect(journal).not.toContain("charge");
+    });
+
+    it("a door that refuses before the compile never stamps at all", async () => {
+      /*
+        The negative control, and it is not decoration: a stamp at the TOP of
+        `createRoll` would pass every arm above and put a casting pill on a sheet
+        whose Roll again was refused in milliseconds for being expired. Nothing
+        above the compile makes anybody wait, so nothing above the compile is
+        worth telling a second reader about.
+      */
+      getOwnedCastingSession.mockResolvedValueOnce({ id: 10, status: "expired" } as never);
+      await expect(createRoll(baseDependencies(), INPUT)).rejects.toMatchObject({
+        code: "PRECONDITION_FAILED",
+      });
+      expect(journal.filter((entry) => entry.startsWith("casting:"))).toEqual([]);
+    });
   });
 
   /*
@@ -1347,7 +1514,7 @@ describe("no roll is born on a path", () => {
       const asked: boolean[] = [];
       const compileBrief = async (compilerInput: Record<string, unknown>) => {
         asked.push("pickWardrobe" in compilerInput);
-        return deterministicBriefCompiler(compilerInput as never);
+        return compileInProcess(compilerInput);
       };
       return { asked, compileBrief };
     }
@@ -1382,7 +1549,7 @@ describe("no roll is born on a path", () => {
           ...(baseDependencies() as object),
           compileBrief: async (compilerInput: Record<string, unknown>) => {
             seen.push(compilerInput);
-            return deterministicBriefCompiler(compilerInput as never);
+            return compileInProcess(compilerInput);
           },
         } as never,
         { ...INPUT } as never,
@@ -1417,7 +1584,7 @@ describe("no roll is born on a path", () => {
           ...(baseDependencies() as object),
           compileBrief: async (compilerInput: Record<string, unknown>) => {
             seen.push(compilerInput);
-            return deterministicBriefCompiler(compilerInput as never);
+            return compileInProcess(compilerInput);
           },
         } as never,
         { ...INPUT } as never,
@@ -1453,7 +1620,7 @@ describe("no roll is born on a path", () => {
             ...(baseDependencies() as object),
             compileBrief: async (compilerInput: Record<string, unknown>) => {
               seen.push(compilerInput);
-              return deterministicBriefCompiler(compilerInput as never);
+              return compileInProcess(compilerInput);
             },
           } as never,
           { ...INPUT, followCandidatePublicId: FOLLOW_CANDIDATE_PUBLIC_ID },
@@ -1538,7 +1705,7 @@ describe("the ROW A follow (#177) — on the author road the photo rides, or the
         ...(baseDependencies() as object),
         compileBrief: async (compilerInput: Record<string, unknown>) => {
           seen.push(compilerInput);
-          return deterministicBriefCompiler(compilerInput as never);
+          return compileInProcess(compilerInput);
         },
       } as never,
       { ...INPUT, followCandidatePublicId: FOLLOW_PARENT, ...overridesAndUnlock },

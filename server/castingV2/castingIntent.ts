@@ -673,7 +673,16 @@ export const NOTES_MAX_FIDELITY = BRIEF_TEXT_MAX_AUTHOR_ROAD;
  * with almost no legitimate use in a character description.
  *
  * This reduces leakage. It does not guarantee absence, and the guarantee that
- * does the real work is positional — see `composeCandidatePrompt`.
+ * does the real work is positional.
+ *
+ * ⚠ **THAT POINTER NAMED `composeCandidatePrompt` UNTIL #1490 ACT 2, AND WHERE
+ * THE POSITIONAL GUARANTEE LIVES HAS MOVED RATHER THAN GONE.** The composer put
+ * the code-owned constant LAST, after the two capped free-text fields, so the
+ * rules a model might contradict were stated after it and claimed precedence over
+ * it. The author road does the same thing in the same order and by code: the
+ * customer's words first, the family clause when one is carried, the locked house
+ * block last (`promptAuthor.ts`, `houseBlock.ts`). So read those for the
+ * guarantee; the composer is gone and the ordering is not.
  */
 export function stripQuotedSpans(value: string): string {
   return (

@@ -1,0 +1,22 @@
+-- A SHEET REMEMBERS THAT IT IS CASTING, FOR THE WINDOW BEFORE THE ROLL ROW
+-- EXISTS (issue #1454, his report 2026-09-27).
+--
+-- What he hit, in his own words: *"if i exit the sheet and then come back into
+-- it sheet 4 will not show at all until its finished generating the cards"*.
+--
+-- Read at the code: `createRoll` compiles the brief BEFORE it writes the roll,
+-- and the compile is a text call — ~13 s on a short brief and 40–120 s on the
+-- author road (#466). `getSession` returns every roll row whatever its status
+-- (`listSessionRolls` has no filter), so the rail draws 04 with a live dot for
+-- the whole of the eight-tile generation. The blind window is the COMPILE
+-- alone, and for that window there is no row to return — the loading tiles and
+-- the dashed pill live only in the tab that pressed the button.
+--
+-- This column is the missing fact, stamped at the click and cleared by the
+-- roll's own birth. ADDITIVE and NULLABLE: NULL means this sheet is not
+-- compiling anything, which is true of every row that exists today.
+--
+-- Nothing reads it to decide whether a roll may start, what is charged or what
+-- is refunded. The dispatch latch, the operation gate and the credit ledger are
+-- untouched by this migration and by the change that ships with it.
+ALTER TABLE `casting_sessions` ADD COLUMN `castingSince` timestamp NULL;

@@ -180,9 +180,13 @@ export const DELIBERATELY_ABSENT: Record<string, { readonly why: string }> = {
   },
   "referenceAttachDoor.test.ts": {
     why:
-      "`referenceAttachDoor.ts` names it in the ⚠ paragraph recording that this very " +
+      "`uploadRefusalCopy.ts` names it in the ⚠ paragraph recording that this very " +
       "pointer never resolved (#647) — the same self-documenting shape as planLadder. " +
-      "The correction cannot be written without naming what was corrected.",
+      "The correction cannot be written without naming what was corrected. " +
+      "It sat in `referenceAttachDoor.ts` until #209 item 1 moved the cap sentence " +
+      "into the copy table the capability map imports; the paragraph travelled WITH " +
+      "the sentence, because a note about a sentence's guard is orphaned by leaving it " +
+      "behind — and this arm is what said so.",
   },
   "foo.test.ts": {
     why:

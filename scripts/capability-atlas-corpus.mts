@@ -366,6 +366,35 @@ export const UNREACHABLE_DOORS: ReadonlyArray<{ id: string; reason: string; beco
   { id: "concept.no_transport",
     reason: "answers an upload made with no text engine configured at all — a deployment state, not a picture and not a sentence",
     becomesReachable: "deliberately never as a corpus row: the census runs against a configured service by construction; pinned by its own arm" },
+  /* ── #209 item 1: THE UPLOAD ENTRANCE'S FOUR BYTE DOORS AND THE ATTACH'S CAP
+     — the map's third and fourth entrances, and the doors that had NO ID AT ALL
+     until this commit. Every other gap #206 closed was a reader's blind spot;
+     these were `code:` strings with no declared table, so no population change
+     could ever have found them.
+
+     They share ONE reason for being here and it is the concept entrance's,
+     structurally: the corpus sends a SENTENCE at an EXISTING Cast through
+     `castingV2.refine`. All five are raised on BYTES A CUSTOMER UPLOADED,
+     before anything is stored, read or charged — there is no picture in the row
+     grammar and no field for one. Every one is free.
+
+     Each is pinned by its own driven arm rather than by a corpus row, and the
+     suite is named in the reason rather than assumed. ── */
+  { id: "upload.unreadable",
+    reason: "answers bytes sharp could not open at all, or a payload that was never base64 — the one sentence both live upload roads say, `castingV2.concept.describe` (every account) and `castingV2.reference.attach`. It is NOT the interpreter's `unreadable`, which means a reply came back unreadable, and the qualification is what keeps the two apart on this map",
+    becomesReachable: "a corpus row grammar that carries a PICTURE instead of a sentence — the same second driven entrance `concept.no_being` and its four siblings need, and free at every one of these doors. Driven today by `uploadRefusalCopy.test.ts`, which calls both byte doors and asserts the sentence they hand back" },
+  { id: "upload.unsupportedFormat",
+    reason: "answers bytes that decoded cleanly and are not one of the three formats we take. The format is what the BYTES are, never what the payload claimed — this door is given no declared mime and no filename, so there is no field for a claim to arrive in",
+    becomesReachable: "the same picture-carrying row; a fixture PDF renamed .png is the cheapest of the four to drive and would prove the format rule rather than the transport. Driven today by `inkUploadDoor.test.ts`" },
+  { id: "upload.tooLarge",
+    reason: "answers a file over the byte ceiling, judged BEFORE the decode so a huge file costs nothing to refuse. The route's own zod input cap sits above it at the same number, so the common case never reaches this door at all — which is why it is the one of the four whose absence from the map mattered least and is still a door",
+    becomesReachable: "the same picture-carrying row, carrying more bytes than `INK_DESIGN_MAX_BYTES`. Driven today by `inkUploadDoor.test.ts` at the boundary and one byte over it" },
+  { id: "upload.tooSmall",
+    reason: "answers a picture under the edge floor — one that can describe that there was something rather than what it was. The floor exists because an attached picture is destined to become a CROP in a repaint recipe, so refusing at the door beats delivering a blur",
+    becomesReachable: "the same picture-carrying row at 255px. Driven today by `inkUploadDoor.test.ts` and by `referenceAttachService.test.ts`, which drives the whole attach with an undersized png" },
+  { id: "reference.pictureCap",
+    reason: "answers an attach at a Cast already holding all the pictures it may — a real TOO_MANY_REQUESTS (invariant 6), raised from a database count rather than from the bytes. The attach is the only upload entrance that KEEPS what it takes, so it is the only one that can run out of room; `castingV2.concept.describe` stores nothing and has no cap to hit",
+    becomesReachable: "a corpus row that could attach EIGHT pictures to one Cast and then a ninth — a state built from eight prior writes, which is a fixture rather than a row whatever entrance the grammar gains. Driven today by `inkReferenceMint.test.ts`, which holds the sentence to naming no move the customer cannot make" },
   /* ── #206: THE ROLL ENTRANCE'S FIVE WALLS — the map's second entrance, and the
      one whose absence mattered most, because two of these are founder
      boundaries the Prompt Author ruling explicitly KEEPS.

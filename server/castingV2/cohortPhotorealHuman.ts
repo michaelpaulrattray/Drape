@@ -49,27 +49,52 @@
  * retirement, on his word on #1398: *"Delete it"*. So the sentence this
  * paragraph used to end on is no longer true**: it said this is *"the road the
  * product falls back to if that flag ever moves"*, and there is no flag left to
- * move. What reaches an engine from here is `deterministicBriefCompiler`'s
- * output and nothing else. **Its fate is SLICE 4 (#1445), deliberately and on
- * its own card** — his rule on the retirement is that nothing new is folded
- * into it, and deciding what happens to a compiler a test seam still uses is a
- * decision, not a sweep. It is LIVE code until that card lands.
+ * move.
  *
- * **What this paragraph is for:** a shift reading this file to learn what the
- * product sends is reading the wrong answer, and the cost of that is the whole
- * of #1217. The road that is actually running is `houseBlock.ts` plus the
- * author's sentence. `PHOTOREAL_HUMAN_BLOCKS` is a separate matter and is
- * genuinely live — the signed-VIEW road consumes it (`castViewPackage.ts`).
+ * ✅ **AND NOTHING COMPOSED IN THIS FILE REACHES AN ENGINE ANY MORE — #1490
+ * ACT 2, 2026-09-29. THAT IS #1217 DISCHARGED, AND THE PARAGRAPH IS KEPT
+ * BECAUSE THE READING IT RECORDS IS WHAT MADE THE ACT SAFE.** This ended *"What
+ * reaches an engine from here is `deterministicBriefCompiler`'s output and
+ * nothing else. Its fate is SLICE 4 (#1445) … It is LIVE code until that card
+ * lands."* The card landed in two acts, in the forced order it named: act 1
+ * (`ba1b30a6`) took the house BRANCH out of `castingBriefCompiler`, and act 2
+ * deleted `deterministicBriefCompiler`, `composeCandidatePrompt`, and the
+ * composition `resolveSheet` performed and the live compiler threw away.
+ *
+ * **So the answer to *what does this file send* is now simply NOTHING**, and a
+ * shift reading it can no longer read the wrong answer — which was the whole
+ * cost #1217 named. The road that is actually running is `houseBlock.ts` plus
+ * the author's sentence.
+ *
+ * **What IS still live in here, and it is worth being exact about:** the
+ * RESOLVER (`resolveCandidateIdentity`, the taste pass, the styling resolution)
+ * decides who gets cast on every author-road roll and writes it to
+ * `resolvedIdentity` — the follow anchor, the refine pronouns and the facet
+ * values all read that. And `PHOTOREAL_HUMAN_BLOCKS` is consumed by the
+ * signed-VIEW road (`castViewPackage.ts`). Neither is prompt composition.
+ *
+ * ⚠ **ONE THING ACT 2 CREATED AND DELIBERATELY DID NOT FINISH, SO IT IS NAMED
+ * HERE RATHER THAN LEFT TO BE DISCOVERED: `photorealHumanConstant` NOW HAS TEST
+ * CALLERS ONLY.** Its last production caller was `composeCandidatePrompt`'s
+ * `return`. Measured at the tree: 30 call sites across 5 suites
+ * (`wardrobeConstant` 15, `castViewPackage` 8, `castingFrame` 4,
+ * `creativeRegisterScope` 3), and `cohortConstantBlocks` and
+ * `COHORT_CONSTANT_MARKERS` sit behind it in the same position. **The
+ * disposition is not obvious and this file's own precedent cuts both ways** —
+ * the note at `PHOTOREAL_HUMAN_CONSTANT`'s grave below deleted a name for
+ * exactly this shape, while these 30 arms assert the constant the signed-view
+ * road actually ships. That is a reading with a population, not a sweep, so it
+ * is carded rather than folded in (his rule on #1398).
  *
  * ⚠ **The card that produced this paragraph asked for a DELETION and was
- * refused four times**, each time at the bytes: the search it quotes excludes
- * this very file, which is the only one holding a call site. `photorealHumanConstant` is called unconditionally at
- * `composeCandidatePrompt`'s `return`, which `briefCompiler.ts:1070` calls per
- * candidate inside `resolveSheet`, which `briefCompiler.ts:1336` awaits above
- * the register decision. **The caller never went away; the author road discards
- * the result.** That is #1204's class one step on: an instrument counting
- * importers cannot see a road whose call site stayed while its *condition*
- * stopped being satisfiable.
+ * refused four times**, each time at the bytes: the search it quotes excluded
+ * this very file, which was the only one holding a call site — `photorealHumanConstant` was called
+ * unconditionally at `composeCandidatePrompt`'s `return`, which the live
+ * compiler reached per candidate inside `resolveSheet`. **The caller never went
+ * away; the author road discarded the result.** That is #1204's class one step
+ * on: an instrument counting importers cannot see a road whose call site stayed
+ * while its *condition* stopped being satisfiable. Act 2 is what finally made
+ * the deletion correct, and the four refusals were each right on the day.
  */
 import {
   DEFAULT_HAIR_COLOURS,
@@ -118,7 +143,6 @@ import {
 import type { CastPronouns } from "./castPronouns";
 import { describeRealizedAxes, realizeAxes } from "./realizedAxes";
 import { resolveHairAxes, type HairTiers } from "./hairResolver";
-import { coveringDirective, statedCovering } from "./statedCovering";
 import {
   HERITAGE_DEFINE_FLOOR,
   HERITAGE_LEAN_FLOOR,
@@ -973,14 +997,21 @@ export function photorealHumanConstant(wardrobeLine: string | null): string {
   what asked the question.
 
   It was `CONSTANT_BLOCKS.join()` — the one code-owned constant, read by
-  `composeCandidatePrompt`. Once composition takes a wardrobe line, that caller
-  reads `photorealHumanConstant(line)` instead, and the constant was left with
+  `composeCandidatePrompt`. Once composition took a wardrobe line, that caller
+  read `photorealHumanConstant(line)` instead, and the constant was left with
   test callers only: the uncalled-export shape, in a file where a second name
   for the same sentence is exactly how the framing text once drifted. The
   sweep listed it as `unread` on the first `pnpm check` after the wiring, the
   door refused, and the honest disposition was to delete rather than to write a
   row keeping a name alive for its tests. Callers wanting today's constant ask
   for it by its meaning: `photorealHumanConstant(null)`.
+
+  ⚠ Put in the PAST TENSE by #1490 act 2, which deleted `composeCandidatePrompt`
+  — the caller this note describes. The note is kept because the QUESTION it
+  records is live again one name along: `photorealHumanConstant` itself now has
+  test callers only, which is the same shape, and the module docblock at the top
+  of this file carries the measured population and says why it is carded rather
+  than cut here.
 */
 
 /**
@@ -2532,573 +2563,6 @@ function describePartialHair(input: {
     palette is already pulled dark and this says the rest out loud.
   */
   return ` HAIR: ${article}${description}${worn}${components}.${greying} Cut and worn as that style is genuinely worn, not a salon-neutral version of it.`;
-}
-
-/**
- * ⚠ WHAT SHE SAID ABOUT THE CUT, SAID TO THE ENGINE — and it is new on
- * 2026-08-23 because the premise it replaces was measured false.
- *
- * # The premise, quoted from the two places that held it
- *
- * This file said it twice, in as many words. At the coverage guard: *"the
- * user's own words carry it through the role and character fields — the path
- * that has always worked."* At the stated-cut guard: *"the honest degrade is
- * whole-axis silence: the user's own words still reach the picture through the
- * role and character fields, exactly as they did before this feature existed."*
- *
- * **Both sentences rest on `characterNotes` carrying her word, and it does not.**
- * Driven through the real entrance, three briefs, survival counted as *present
- * in all eight compiled prompts*:
- *
- * ```
- * "bald"    1 of 3      "buzzed"  1 of 4      "shaved"  4 of 4
- * ```
- *
- * `characterNotes` is written by a model asked to summarise a brief, so every
- * specific word is at the mercy of a paraphrase. The founder's own roll came
- * back **eight of eight with hair** on a brief whose first word is *Bald* —
- * because the summary dropped it and nothing else in the prompt said it, while
- * several lines presuppose hair (*"clear space between the topmost hair and the
- * top edge"*).
- *
- * # What this does, and the line it does not cross
- *
- * `statedHair` was a SUPPRESSION SIGNAL: it stopped the engine authoring a cut
- * and never said what the cut was. That is right about authoring and wrong
- * about silence — **a lane that silences is not a lane that speaks.** So the
- * suppressed axis now carries HER OWN WORD.
- *
- * ⚠ **The VALUE is hers and only the frame is ours** (D-172, source
- * containment). `statedHair.cutLength` is filled from her sentence and checked
- * against it by the interpreter, so what is emitted here is a word she typed —
- * never a paraphrase of it, never a synonym, and never a word inferred from the
- * brief by this file.
- *
- * ⚠ **And it is strictly additive.** With no stated cut it returns nothing and
- * every caller behaves exactly as it did — which is every roll cast before
- * today, because the interpreter was told not to fill this field for precisely
- * the briefs that needed it most.
- */
-function statedCutSentence(stated: StatedHair): string {
-  const word = typeof stated.cutLength === "string" ? stated.cutLength.trim() : "";
-  if (word.length === 0) return "";
-  return ` HAIR: ${word} — exactly as described, and nothing added to the scalp that `
-    + "this description does not describe.";
-}
-
-function describeHair(
-  hair: Hair | null,
-  deference: HairDeference,
-  texture: string | null,
-  style: HairStyle | null,
-  resolution: StylingResolution,
-  modifiers: HairModifiers | null = null,
-  wornState: WornState | null = null,
-): string {
-  /*
-    Nothing authored survives suppression; the record says so too.
-
-    The test is the CUT, not the texture. Those used to be one condition, and
-    separating them is what lets a shaved head stop claiming a grain: its
-    texture is legitimately null now (`resolveTexture`), and the old guard would
-    have read that as deference and deleted the whole hair line — turning a
-    record fix into a silent loss of the one sentence that says the head is
-    shaved at all.
-  */
-  if (!style) return "";
-
-  /*
-    A NULL HAIR RECORD IS NOT AN ABSENT CUT.
-
-    Under partial deference the colour can be suppressed on its own — the brief
-    named it, so nothing is authored — while the cut is still ours to describe.
-    Bailing on `!hair` here would let a stated COLOUR silence the LENGTH, which
-    is the whole-axis behaviour this feature exists to end, reintroduced one
-    layer down.
-  */
-  if (!hair && !PARTIAL_DEFERENCE_ENABLED) return "";
-
-  /*
-    COVERAGE IS TOTAL, and it is checked before anything else.
-
-    There is no cut on a bald man. Authoring one is the founding bug of the
-    whole deference doctrine, so a coverage word silences the axis outright.
-
-    ⚠ **AND SILENCE IS NOT WHAT IT USED TO BE.** This comment used to end *"the
-    user's own words carry it through the role and character fields — the path
-    that has always worked"*, and that path was measured at 1 in 3 for "bald".
-    Nothing authored still survives suppression; what changes is that her own
-    word is now SAID rather than assumed to arrive by another road. See
-    `statedCutSentence`.
-  */
-  if (deference.coverage) return statedCutSentence(deference.stated);
-
-  const spoken = deference.spoken;
-
-  /*
-    The brief owns hair the moment it mentions it — the pre-D-79 rule, and what
-    the kill switch returns to. Saying nothing here is the whole of it: the
-    user's words are already in the prompt, and adding a second, randomly-chosen
-    hair sentence beside them is how "shaved head" became curls.
-
-    Under partial deference this narrows from the AXIS to the PART, which is the
-    ruling: "silver at the temples" states a colour and leaves the cut, the
-    length and the texture genuinely unsaid, so silencing all four to honour one
-    is what collapsed a sheet to a single repeated look.
-  */
-  if (deference.mentioned) {
-    /*
-      OFF is exactly today: the brief owns hair the moment it mentions it, and
-      the whole axis goes quiet. Keyed on the MENTION rather than on the parts,
-      because a greying brief attributes no part and must still defer here.
-    */
-    if (!PARTIAL_DEFERENCE_ENABLED) return "";
-    /*
-      Bias tier keeps the old whole-axis behaviour for now. Its line is a
-      silhouette handed to the casting rather than a described cut, so splicing
-      a stated colour into it would need its own prose and its own founder
-      grading — Path B territory, not this slice's.
-    */
-    if (resolution === "bias") return "";
-    return describePartialHair({
-      hair,
-      deference,
-      style,
-      texture,
-      modifiers,
-      wornState,
-    });
-  }
-
-  if (!hair) return "";
-
-  /*
-    BIAS MODE. The brief carried creative context, so a named cut would compete
-    with the category the user actually asked for — and win, being the more
-    specific instruction. Silhouette and length instead, handed back to the
-    casting.
-
-    Its own sentence, deliberately, rather than the prescription template with
-    the name removed: that template closes on "cut and worn as that style is
-    genuinely worn", which dangles when no style is named, and a dangling
-    referent is an instruction the model discards.
-
-    Colour still travels — it is not a styling axis, and it is the only
-    separator a sheet of women has.
-  */
-  if (resolution === "bias") {
-    /*
-      WORN STATE IS SAID EVEN HERE, and this is the fix rather than a detail.
-
-      The bias prose used to end "how it is worn off the face, as this casting
-      wears it" — which hands the axis to the category prior, and a prior has
-      exactly one favourite answer. A Versace follow came back with eight
-      identical pulled-back heads the parent did not even have. Nobody owned
-      the axis, so the loudest voice in the room decided it, once, for
-      everyone.
-
-      Worn state is silhouette-level, so naming it does not compete with the
-      casting the way a named cut would. It is the one styling component that
-      belongs at this tier, and on a heavily-locked sheet it is often the only
-      thing left that separates two tiles at arm's length.
-    */
-    const line = HAIR_BIAS_PROSE[style.family] ?? HAIR_BIAS_PROSE["mid-length"];
-    const worn = wornState && wornState !== "loose" ? ` Worn ${wornState.replace(/^worn /, "")}.` : "";
-    /*
-      TEXTURE TOO, and it convicts itself the same way.
-
-      Texture was resolved and PERSISTED at this tier and then never rendered —
-      the bias line carried family and colour only. So on category briefs, which
-      is most real briefs, texture fell to the editorial prior, which leans wavy
-      and curly: the founder has never seen a straight-haired model on a
-      category sheet, while straight carries the largest weight in most heritage
-      palettes.
-
-      It also closes a record-vs-prompt gap rather than only a taste one. A row
-      saying "straight" beside a prompt that never asked for it is a record that
-      lies, and M7's registry reads these rows as sole truth. Saying it makes it
-      true.
-
-      Silhouette-level like worn state, so it is bias-legal for the same reason:
-      how the hair GROWS is not a styling instruction that competes with the
-      casting the user asked for.
-    */
-    /*
-      A shaved silhouette has no grain to name, and now says so by omission
-      rather than by rendering the word "null" into a paid prompt. Every other
-      family always resolves one.
-    */
-    const grain = style.texture ?? texture;
-    const naturally = grain ? ` Naturally ${grain}.` : "";
-    return ` ${line}${worn}${naturally} Natural colour: ${hair.colour}.`;
-  }
-  /*
-    The named cut, not the silhouette.
-
-    "Mid-length brown hair, the exact cut open" was an invitation the model
-    answered the same way eight times — its own salon-neutral default at that
-    length. D9's craft is that a cut has a NAME, and the name is what carries a
-    person's taste. The closing sentence is the other half: a named cut rendered
-    generically is the same collapse wearing a label, so the prompt asks for the
-    cut as it is actually worn.
-  */
-  /*
-    Grammar, because the prompt is prose the model reads. "a ash blonde straight
-    bob" and "a black coiled locs" both came out of the first draft — a wrong
-    article is noise in a sentence whose every other word is doing work.
-  */
-  /*
-    A style whose name already carries its texture does not get it twice.
-    "a black curly curly crop" came out of the first live sheet — the kind of
-    thing that reads as a typo to a model and gets weighted like an emphasis.
-  */
-  /*
-    A shaved cut names no grain (its own branch below says colour alone), so the
-    description falls back to colour + name rather than splicing a null into the
-    middle of the sentence.
-  */
-  const grain = style.texture ?? texture;
-  const description =
-    grain === null || style.name.includes(grain)
-      ? `${hair.colour} ${style.name}`
-      : `${hair.colour} ${grain} ${style.name}`;
-  const plural = PLURAL_STYLES.has(style.name);
-  const article = plural ? "" : /^[aeiou]/.test(description) ? "an " : "a ";
-  /*
-    D10's components, composed into the same sentence as the cut.
-
-    Their own clause rather than their own line: they are how this person wears
-    THIS cut, and splitting them off would read as a second instruction the
-    model can weigh against the first. "a brown wavy long, curtain fringe,
-    centre-parted" is one description of one head of hair.
-  */
-  const components = describeModifiers(modifiers);
-  /*
-    Only when the cut's own name does not already say it — "a ponytail, in a
-    ponytail" is the kind of doubling a model reads as emphasis.
-  */
-  const worn = style.worn ? "" : describeWornState(wornState);
-  const cut =
-    style.family === "shaved"
-      ? ` HAIR: a ${style.name}, ${hair.colour} where it is grown out.`
-      : ` HAIR: ${article}${description}${worn}${components}.`;
-  return `${cut} Cut and worn as that style is genuinely worn, not a salon-neutral version of it.`;
-}
-
-/**
- * The heritage clause AND its separator, or neither.
- *
- * ⚠ THE SEPARATOR HAS TO TRAVEL WITH THE CLAUSE. `describeHeritage` has always
- * returned "" for an empty list, but the SUBJECT template held the comma —
- * `…${describeAge(…)}, ${describeHeritage(…)}.` — so the first brief to resolve
- * with no heritage would have shipped `apparent age 44-46 years, .` into a paid
- * prompt. Nothing did that before a stated skin tone could suppress the spread,
- * which is exactly why it is worth a named function rather than a template
- * tweak: it fails as a typo in a customer's prompt, not as an exception, and it
- * has an arm asserting on the composed STRING.
- */
-function heritageClause(components: HeritageComponent[]): string {
-  const described = describeHeritage(components);
-  return described === "" ? "" : `, ${described}`;
-}
-
-function describeHeritage(components: HeritageComponent[]): string {
-  if (components.length === 0) return "";
-  if (components.length === 1) return `${components[0].heritage} heritage`;
-  // A15: no raw numbers in the prompt. Percentages are control signal, and
-  // image models render digits as artefacts or mis-weight them, so the blend
-  // is expressed as dominance language instead — the legacy dominance-band
-  // craft the heritage ruling names for porting.
-  const [dominant, secondary] = components;
-  const band = dominant.pct >= 70 ? "predominantly" : "mostly";
-  return `${band} ${dominant.heritage} heritage with ${secondary.heritage} features`;
-}
-
-/**
- * The covering directive, or nothing.
- *
- * Reads `statedText` — the user's own words — which is the code-owned gate
- * D-89 established: the code owns WHETHER a thing was said, and the interpreter
- * only ever owns what. It reads the same union every other deference check
- * reads, so a covering cannot fall off a follow, which inherits the notes
- * without the original sentence.
- */
-function coveringFor(statedText: string): string {
-  const covering = statedCovering(statedText);
-  return covering ? coveringDirective(covering) : "";
-}
-
-/**
- * The final per-candidate prompt.
- *
- * Order is the contract. Character first, direction second, the code-owned
- * constant last with its authority paragraph — so that on the one axis where a
- * language model's output could still misbehave (two capped free-text fields),
- * the rules it might contradict are stated after it and claim precedence over
- * it explicitly.
- *
- * ⚠ **CALLED ON EVERY ROLL; ITS RESULT REACHES NO ENGINE (#1217).**
- * `briefCompiler` calls this per candidate inside `resolveSheet`, which the live
- * compiler calls unconditionally — and then overwrites every `prompt` with the
- * authored sentence. It was `because CASTING_CREATIVE_REGISTER_SCOPE is all`;
- * since #1443 took that flag out there is no other road for it to be true of.
- * The module docblock's last paragraph carries the whole reading. The one caller
- * whose output IS delivered is `deterministicBriefCompiler`, which has no
- * production caller — it is the no-interpreter test seam.
- *
- * ⚠ **SLICE 4 (#1445) SETTLED BOTH, AND THE ANSWER IS THAT THEY LEAVE IN TWO
- * ACTS IN A FORCED ORDER — NOT ONE.** The card was written as a single act; the
- * two have DIFFERENT consumer sets, and reading them apart is what this slice
- * bought:
- *
- *  - **Act 1 — the house BRANCH.** `castingBriefCompiler` still carries both
- *    roads, and `resolveSheet` composes unconditionally, so the composer is
- *    delivered to anything that reaches the compiler without `authorRoad: true`.
- *    Nothing in production does (`houseRoadUnreachable.test.ts` pins the
- *    population at one caller, and the two roads are driven there so the pin is
- *    not vacuous). Collapsing the branch reddens **101 arms across 20 suites**,
- *    measured on this tree — the card's *86 across 17* was read at slice 2's
- *    tree and is stale.
- *  - **Act 2 — `deterministicBriefCompiler` and this function.** It calls
- *    `resolveSheet` too, so it keeps composing after act 1 and keeps delivering
- *    the result. **~16 further call sites across 6 suites**, `rollService.test.ts`
- *    among them, where it stands in as `compileBrief`.
- *
- * ⚠ **THE ORDER IS FORCED AND ACT 2 CANNOT GO FIRST.** Deleting the
- * deterministic seam does not retire this function: `resolveSheet` would still
- * compose for the house branch. So the branch dies first, then the seam, then
- * this. A commit that starts at the other end removes a test seam and leaves the
- * composer exactly where it was.
- *
- * **Why neither act happened in slice 4.** The 101 arms are not junk and are not
- * uniformly re-pointable: measured arm by arm, most carry TWO assertions — one
- * about what the RESOLVER decided (live, still written to `resolvedIdentity` on
- * every author-road roll) and one about what the house PROMPT carried (dead).
- * `categorySurvival` is the worked example: its `intent.role` assertion is the
- * founder incident it was written for and survives; its two `candidate.prompt`
- * assertions are the retired block. Separating them is #180's category reading,
- * which is a rung-sized act — and the one thing that would be worse than doing
- * it is doing it at speed on the compiler that composes every paid roll.
- *
- * ⚠ **AND THE REASON TO RETIRE THIS IS CLARITY, NOT SPEED — MEASURED, SO THE
- * NEXT CARD DOES NOT PROMISE HIM A FASTER ROLL.** The discarded composition
- * costs **0.0275 ms per candidate, 0.22 ms per roll** (2000 calls, p50 0.0225,
- * p99 0.134) against a roll that takes 40–120 seconds. A customer feels none of
- * it. What it costs is that a shift reading this file to learn what the product
- * sends reads the wrong answer, which is the whole of #1217.
- */
-export function composeCandidatePrompt(input: {
-  /** The user's own sentence — the reliable place to ask "did they say hair?". */
-  briefText?: string;
-  intent: CastingIntent;
-  resolved: ResolvedIdentity;
-  archetype: ArchetypeKey;
-  seed: number;
-  /** True on a follow — anchored styling renders at full fidelity. */
-  anchored?: boolean;
-  /**
-   * WHAT THIS SHEET IS WEARING — the roll's born line (design §3.3).
-   *
-   * `null` or absent is every roll the product has cast so far, and now every
-   * roll there can ever be: the constant composes exactly as it always has,
-   * character for character. ⚠ **This said "every roll outside
-   * `CASTING_TWO_PATHS_SCOPE`" until 2026-09-26, and that flag was DELETED
-   * outright on 2026-09-25** (#203 slice 2 step (e) — `interpreter.ts:226`
-   * records it), so there is no longer any roll that can be inside it. The
-   * sentence gets stronger rather than staler, exactly as the same correction
-   * at this file's `wardrobeLine` docblock (line ~197) already says. A non-null
-   * line now reaches here only from a FOLLOW carrying its parent's stored
-   * sentence.
-   *
-   * It is the ROLL's line rather than a branch's, and that is not a shortcut —
-   * no branch exists when a sheet is cast, so `currentWardrobeLine`'s edited
-   * arm has nothing to read here. The refine recipe is where that function
-   * earns its name.
-   */
-  wardrobeLine?: string | null;
-}): string {
-  const { intent, resolved, archetype } = input;
-  /* The user's own words, in one string — every deference check reads this. */
-  const statedText = [input.briefText ?? "", intent.role ?? "", intent.characterNotes ?? ""].join(" ");
-  const direction = ARCHETYPES[archetype];
-  /*
-    At what resolution the styling axes speak, decided once per candidate from
-    the STATED intent. Precedence: stated > category > styling-bias > prior.
-  */
-  const resolution: StylingResolution = stylingResolutionFor({
-    intent,
-    briefStatesHair: briefStatesHair(statedText),
-    anchored: input.anchored === true,
-  });
-
-  /*
-    CASTING CATEGORY — a stated role is a LOCK, not a flavour (founder gate,
-    2026-07-31, B5).
-
-    The brief "female model early 20s editorial fashion model" returned people
-    who were not plausibly editorial models. The old line — "They read as: X"
-    — invited the model to treat the role as an energy to suggest rather than
-    a category to cast within, so diversity wandered straight out of the
-    category it was supposed to vary inside.
-
-    Legacy enforced this implicitly: every prompt was written from a casting
-    director's chair, and a casting director does not put forward someone who
-    would be rejected at the door. Made explicit here. Variation still runs
-    across heritage, features and energy — but *within* the category, never
-    out of it.
-  */
-  const category = intent.role
-    ? [
-        `CASTING CATEGORY (ABSOLUTE): This person is cast as — ${intent.role}.`,
-        "Every candidate must be a genuinely plausible, castable member of that category: the bone structure, proportions, grooming and bearing a professional casting director would require before putting them forward for it.",
-        "Vary heritage, features, colouring and energy WITHIN this category. Never cast outside it. A candidate who would not be credible in this role is a failed candidate, however interesting the face.",
-        "Keep the user's own words for the category — do not substitute a generic type for the specific one they named.",
-        /*
-          THE GROOMING REGISTER — founder finding, and the third confirmed face
-          of the same wall.
-
-          A skincare-founder sheet split cleanly on POLISH: the groomed tiles
-          were kept and the off-register ones (half-up locs, a man-bun with a
-          goatee) were rejected. Heritage variety was never the issue. Ordinary
-          occupations correctly earn no composed direction, so their only
-          styling authority was the bias line's soft "as this casting wears it",
-          and that sheet proves it too weak to govern.
-
-          The category already owns physique and bearing here; it now owns the
-          register the styling has to clear. Note it governs ACCEPTABILITY, not
-          a particular cut — the cuts must still differ across the eight, which
-          is what stops this becoming the prescription D-80 removed.
-
-          INTERIM, and honestly so: full category-coherent styling is the
-          treatment stage's job. This is the third face of the D-80 wall after
-          subcultural legibility and designed faces, and Path B is the answer to
-          all three.
-        */
-        "The grooming and styling must be in register for this category: the cut, and the way it is worn, has to be something a professional casting director would accept when putting this person forward for it. Within that register the eight must still differ — this governs what is acceptable, never which cut.",
-        /*
-          THE AGE OUTLIER BELONGS TO THE SAME WORLD — founder finding.
-
-          A young-leaning casting still draws the occasional older candidate,
-          and that is the tendencies working: an unusual casting is surprising
-          rather than wrong. But the older tile was arriving styled as an older
-          person IN GENERAL rather than as an older person in THIS world, so the
-          twitch grandpa read as though he had wandered in from another decade.
-
-          The lean decides who is in the room; this decides that everyone in the
-          room shares a present tense. It is deliberately about currency rather
-          than about youth — the point is not to make the sixty-year-old look
-          young, it is to stop him looking like a photograph from 1974.
-        */
-        "Candidates who sit outside this casting's usual age still belong to its world: their grooming, styling and self-presentation are contemporary to this casting, not to a different generation. Age them honestly in the face and the skin — never in the era they appear to be styled from.",
-      ].join(" ")
-    : "";
-
-  const subject = [
-    `SUBJECT: A ${resolved.build ? `${resolved.build} ` : ""}${resolved.sex === "nonbinary" ? "androgynous person" : resolved.sex}, ${describeAge(resolved.ageBand, resolved.agePhase)}${heritageClause(resolved.heritage)}.${describeBuild(resolved.build, intent.role)}${describeHair(resolved.hair, hairDeferenceFor({ briefText: input.briefText, intent }), resolved.realized.hairTexture, resolved.realized.hairStyle, resolution, resolved.realized.hairModifiers, resolved.realized.wornState)}${describeRealizedAxes(resolved.realized, (axis) => statedAxis(axis, statedText), resolution)}`,
-    intent.characterNotes ? `Character detail: ${intent.characterNotes}.` : "",
-    /*
-      ⚠ THE STATED SKIN LANE SPEAKS — her own word, said plainly
-      (`CASTING_V2_BRIEF_FIDELITY_BUILD.md` section 3c; the shape is the stopped
-      design's section 5).
-
-      **A lane that silences is not a lane that speaks.** `statedHair` failed
-      for a year in exactly that way — it stood the engine down from authoring a
-      cut and never said what the cut was, and his bald cast came back with
-      hair. So this half is not optional and does not ship without the deference
-      half beside it: filling `statedSkin` and saying nothing would buy a
-      quieter engine on a fact nobody states, which is strictly worse than
-      today.
-
-      Placed AFTER character detail for `coveringFor`'s reason — it qualifies
-      the user's own words rather than competing with them — and it renders
-      NOTHING at all unless the brief itself named skin. Every value in it is
-      hers: `parseStatedSkin` drops any phrase carrying a word she did not type,
-      so this frame is the only thing the product contributes.
-
-      Outside `CASTING_BRIEF_FIDELITY_SCOPE` the lane is empty on every roll,
-      because the interpreter was never asked — so this line does not exist for
-      an unflagged account and the prompt is byte-identical to today's.
-    */
-    statedSkinSentence(intent.statedSkin),
-    /*
-      A STATED FAITH COVERING, as the garment rather than as a noun (D-124).
-
-      It already rendered — 8 of 8 on a paid verification — but it rendered as a
-      draped scarf with hair showing at the front, which is a different garment
-      from the one that was asked for. A loose noun in character detail gets
-      whatever the model's prior does with the word; the A9 / broken-nose
-      pattern says describe it plainly instead.
-
-      Placed AFTER character detail so it qualifies the user's own words rather
-      than competing with them, and it renders nothing at all unless the brief
-      itself names a covering — nothing is ever inferred from a faith, a name or
-      a heritage.
-    */
-    coveringFor(statedText),
-    /*
-      A LOCKED look still needs presence to vary. This is the sameness bug.
-
-      The rule used to be "one axis or the other, never both shouting" — a look
-      carries its own expression whisper (C3), so stacking a disposition line on
-      top would give the image model two instructions for one face. That is
-      right when the look is what VARIES across the eight: each candidate gets a
-      different house's casting, and the whisper is the difference.
-
-      It is wrong when the brief LOCKS a look. Then all eight get an identical
-      look block, presence is computed and silently never reaches the prompt,
-      and the only things left differing are heritage and hair — inside a locked
-      heritage, that is almost nothing. The founder's sheet came back eight men
-      with the same hair, the same eyes and no personality, and this is why.
-
-      So: a varying look suppresses presence, a locked look does not. When the
-      look is fixed, the whisper is the same for everyone and cannot be the
-      difference, so disposition has to be.
-    */
-    resolved.look && !intent.look
-      ? `LOOK: ${LOOKS[resolved.look].thesis} ${LOOKS[resolved.look].avoid} EXPRESSION WHISPER: ${LOOKS[resolved.look].whisper}`
-      : resolved.look
-        ? `LOOK: ${LOOKS[resolved.look].thesis} ${LOOKS[resolved.look].avoid} PRESENCE: ${ENERGIES[resolved.energy]}. Hold the look; let this presence differentiate this particular person from the others cast alongside them.`
-        : `PRESENCE: ${ENERGIES[resolved.energy]}.`,
-  ]
-    .filter(Boolean)
-    .join(" ");
-
-  /*
-    SKIN FINISH — A9's engineered prose, re-homed (item 7).
-
-    Precedence: what the brief said beats what the archetype chose. A user who
-    types "dewy" has decided; the archetype only decides when nobody has.
-
-    Once per ROLL, not per candidate: a sheet is one casting call under one
-    lighting setup, so eight candidates must be comparable. The CAPTURE block's
-    person-level clause still modulates on top of this — a weathered outdoor
-    face and a groomed indoor one respond to the same flash differently — which
-    is why this names the room's finish rather than each person's skin.
-  */
-  const finish = statedFinish(statedText) ?? direction.finish;
-  const finishBlock = `SKIN FINISH: ${FINISH_RENDER[finish]}`;
-
-  /*
-    The composed direction, beside the shelf entry rather than instead of it.
-
-    Precedence: stated facts > category > shelf archetype > composed direction >
-    styling-bias > prior. Below the shelf because a reviewed constant outranks
-    generated prose; above styling-bias for the same reason bias exists at all.
-
-    Never in CASTING CATEGORY — that block is the user's own words and is
-    absolute. An aesthetic reference is a direction, not a category.
-  */
-  const composed =
-    COMPOSED_DIRECTION_ENABLED && intent.composedDirection
-      ? ` REFERENCE DIRECTION: ${intent.composedDirection.thesis} ${intent.composedDirection.avoid}`
-      : "";
-  const directionBlock = `DIRECTION: ${direction.thesis} ${direction.avoid}${composed} ${finishBlock}`;
-
-  // Category first: it decides who is eligible at all, before direction shapes
-  // how they are cast and before the constant fixes how they are photographed.
-  return [category, subject, directionBlock, photorealHumanConstant(input.wardrobeLine ?? null)]
-    .filter(Boolean)
-    .join("\n");
 }
 
 /** Exported for the contract test: the constant must survive composition. */

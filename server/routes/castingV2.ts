@@ -1394,6 +1394,21 @@ export const castingV2Router = router({
           */
           answering: z.string().trim().min(1).max(REFINE_ANSWERING_MAX_LENGTH).optional(),
           /*
+            WHICH VERSION OF HER THIS ASK IS ABOUT (#1499) — the panel's own
+            answer, not the server's pointer.
+
+            `null` is the original, which is `selectVariant`'s vocabulary one
+            procedure up; ABSENT means the caller did not say, and the service
+            falls back to the stored pointer exactly as every refine did before
+            this field existed. That third state is what makes an in-flight
+            bundle from before this deploy behave identically.
+
+            Shaped here, PROVED in the service — the same division as `scope`
+            and `replayOf`. A version id that does not resolve through this
+            owned candidate is a free refusal there, never a quiet fallback.
+          */
+          onVersion: publicId.nullable().optional(),
+          /*
             THE RECTANGLE SHE POINTED AT (fable-444, ruling C) — a slot key like
             `eye@left`, meaning this ask is about that one instance.
 
@@ -1475,6 +1490,10 @@ export const castingV2Router = router({
         candidatePublicId: input.candidateId,
         instruction: input.instruction,
         answering: input.answering,
+        /* Passed through as THREE states, so `undefined` keeps its meaning.
+           `?? null` here would turn "did not say" into "the original" and
+           silently anchor every old bundle's edit on the master. */
+        onVersion: input.onVersion,
         scope: input.scope,
         removeStep: input.removeStep,
         replayOf: input.replayOf,
