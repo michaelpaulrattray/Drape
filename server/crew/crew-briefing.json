@@ -1,7 +1,7 @@
 {
-  "edition": 578,
-  "updatedAt": "2026-09-29T22:35:00.000Z",
-  "shift": "Foreman (night shift) — the last piece of the old casting lane is out of the studio, and it took an out-of-date promise with it. Since you said Yes on 24 September, every cast has been read by the new four-way question — is this a person, a creature, a real somebody, or not a being at all. The OLD two-way question was still sitting in the code beside it, unreachable, and so was the refusal it fed: a message that told a customer “Casting makes photographic people … not anime or illustration yet”. That sentence stopped being true when you said we cast creatures perfectly fine. Nobody could ever have seen it — but if it had ever appeared it would have told a customer something this studio no longer believes, so it is gone rather than tidied. Nothing on any screen changes, and the proof is not an opinion: the exact words we send the brief reader were compared before and after, all sixteen combinations, and every one is identical to the byte. Your reviewer re-ran that comparison independently and got the same answer. Nothing was spent.",
+  "edition": 579,
+  "updatedAt": "2026-09-30T00:05:00.000Z",
+  "shift": "Foreman (night shift) — when a view came back wrong, we threw the picture away. You retried two of Jingu's views several times yesterday and every one was refused; all the studio could tell you afterwards was the word “angle”. The picture the checker turned down was deleted the moment it was judged, so there was nothing for your eyes to look at and nothing to learn from. That is fixed: a refused view now keeps its picture, one per view per attempt, for thirty days — so you can see for yourself whether the checker was right, and the pair of pictures shows whether the engine drew the same wrong thing twice. Two more of the same kind turned up while reading it. We HAD a keeper for refused pictures, approved on your account since August, and it kept nothing: seven pictures written, seven deleted, every one swept about a minute later — so building on top of it would have shipped something that looked alive and held nothing. And a failed view's record was supposed to keep the first attempt beside the last; it never once reached the database. All three are fixed. Then you answered four questions in four minutes — thank you — and all four are recorded and unblocked; the branch cleanup you said Yes to is already done and checked. Nothing was spent.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -284,6 +284,10 @@
         {
           "title": "And the very last of the old casting lane is out (#1495). One question reaches the brief reader now instead of two. The old two-way question — photographic person, or “other” — has been unreachable since your Yes on 24 September, and the refusal it fed went with it. That refusal is the part worth your attention: it said “not anime or illustration yet”, which had quietly become untrue of your own studio. A message nobody can reach is dead weight; a message nobody can reach that contradicts the product would have embarrassed us the day something changed and it came back to life. The bar for the change was bytes rather than judgement — sixteen of sixteen versions of the reader's instructions are identical before and after — and the one job this leaves behind is named rather than folded in: the studio still asks the reader to pick an outfit field nobody uses, and taking that out DOES change the words on the wire, so it stays its own job (#1123).",
           "state": "done"
+        },
+        {
+          "state": "done",
+          "title": "A refused view keeps its picture now (#1492, part one of two). When the studio checks a view and turns it down, you get a refund and a sentence — and until today the picture itself was deleted, so nobody could tell whether the checker was right. Your Jingu retries are the reason: eight renders, all refused, and the record could only say “angle”. From now a refused view keeps its picture for thirty days, one per view per attempt, on our private storage — both when signing and when you press Try again. Two older faults of the same kind were found and fixed in the same change: the keeper we already had was throwing its pictures away within a minute, and a failed view's first attempt was never written down at all. You then chose how retries should work — the retry tells the engine what went wrong last time rather than simply asking again — and that is part two, with your test on Jingu and Bingu before it ships."
         }
       ]
     },
@@ -9050,6 +9054,14 @@
       "prNumber": 1533,
       "note": "Merged 8d57e4d7 — #1495 and #1521 closed; 16 of 16 prompt combinations byte-identical.",
       "cardId": null
+    },
+    {
+      "id": "refused-view-keeps-its-frame-1492",
+      "title": "A refused view keeps its picture, and a kept picture is actually kept",
+      "status": "merged",
+      "prNumber": 1536,
+      "note": "Merged ea6c407b — #1492 part 1; 7 frames written and 7 deleted on production, all time, was the finding.",
+      "cardId": null
     }
   ],
   "problems": [
@@ -9325,7 +9337,11 @@
     233,
     234,
     235,
-    236
+    236,
+    237,
+    238,
+    239,
+    240
   ],
   "nextUp": {
     "readAt": "2026-09-29T21:17:26.007Z",
