@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 184
+      "moduleCount": 185
     },
     {
       "id": "domain:castingV2",
@@ -4563,6 +4563,12 @@
     {
       "id": "module:server/castingV2/thumbnails.ts",
       "path": "server/castingV2/thumbnails.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/uploadLimits.ts",
+      "path": "server/castingV2/uploadLimits.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -25214,6 +25220,11 @@
     },
     {
       "from": "module:server/castingV2/inkUploadDoor.ts",
+      "to": "module:server/castingV2/uploadLimits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inkUploadDoor.ts",
       "to": "module:server/castingV2/uploadRefusalCopy.ts",
       "kind": "imports"
     },
@@ -26040,6 +26051,16 @@
     {
       "from": "module:server/castingV2/referenceAttachDoor.ts",
       "to": "module:server/castingV2/inkUploadDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceAttachDoor.ts",
+      "to": "module:server/castingV2/uploadLimits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceAttachDoor.ts",
+      "to": "module:server/castingV2/uploadRefusalCopy.ts",
       "kind": "imports"
     },
     {
@@ -28280,6 +28301,11 @@
     {
       "from": "module:server/castingV2/thumbnails.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/uploadRefusalCopy.ts",
+      "to": "module:server/castingV2/uploadLimits.ts",
       "kind": "imports"
     },
     {
@@ -35531,10 +35557,10 @@
       "message": "Names 3 of Raster's 3 fields (server/castingV2/maskedComposite.ts), 3 of Mask's 3 fields (server/castingV2/maskedComposite.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/referenceAttachDoor.ts:60",
+      "id": "finding:redeclared-shape:server/castingV2/referenceAttachDoor.ts:59",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/referenceAttachDoor.ts:60",
+      "subject": "server/castingV2/referenceAttachDoor.ts:59",
       "message": "Names 2 of InkUploadRefusal's 2 fields (server/castingV2/inkUploadDoor.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

@@ -28,11 +28,12 @@
 import { randomUUID } from "node:crypto";
 
 import {
-  INK_DESIGNS_PER_CANDIDATE,
   inkDesignBytesRefusal,
   type InkDesignDecoded,
   type InkDesignFormat,
 } from "./inkUploadDoor";
+import { INK_DESIGNS_PER_CANDIDATE } from "./uploadLimits";
+import { REFERENCE_ATTACH_REFUSAL_COPY, type UploadRefusalCode } from "./uploadRefusalCopy";
 
 /**
  * How many pictures one Cast may hold — **the ink designs and the attachments
@@ -50,11 +51,9 @@ export const REFERENCE_PICTURES_PER_CANDIDATE = INK_DESIGNS_PER_CANDIDATE;
 /** One prefix, so an operator can see every attached picture in one place. */
 export const REFERENCE_ATTACHMENT_KEY_PREFIX = "casting-v2/reference";
 
-type ReferenceAttachRefusalCode =
-  | "unreadable"
-  | "unsupportedFormat"
-  | "tooLarge"
-  | "tooSmall";
+/* The byte reader's four, taken from the copy table rather than retyped — the
+   narrowing below is asserted against the same union (#209 item 1). */
+type ReferenceAttachRefusalCode = UploadRefusalCode;
 
 /** A refusal carries the customer's sentence, not a code the client re-words. */
 export type ReferenceAttachRefusal = {
@@ -117,30 +116,14 @@ export function referenceAttachmentKey(format: InkDesignFormat): string {
 /**
  * What a customer is told when this Cast already holds as many as it may.
  *
- * ⚠ **IT USED TO SAY "REMOVE ONE TO ADD ANOTHER", AND THERE IS NO REMOVAL**
- * (found in the running app 2026-08-20, ruled fable-1173 §2). `ink.remove`
- * takes a design; nothing takes an attachment — they are only ever swept with
- * the Cast. So the sentence named a move a customer cannot make, which is
- * D-180's dead end, and the only exit it left was deleting the Cast.
+ * ⚠ **THE SENTENCE MOVED TO `uploadRefusalCopy.ts` WITH #209 ITEM 1 AND IS
+ * RE-EXPORTED HERE**, so its callers and `inkReferenceMint.test.ts`'s two arms
+ * are untouched. It moved because a customer sentence with no id is a door the
+ * capability map cannot hold: on the map it is now `reference.pictureCap`, and the
+ * table it lives in is what the atlas imports.
  *
- * **The trap worth naming is HOW it got here**: this sentence was copied from
- * the ink upload door's alongside the NUMBER it derives
- * (`REFERENCE_PICTURES_PER_CANDIDATE` comes from that door's own cap, law 4,
- * correctly). At the origin it is TRUE — a design can be removed. At the
- * destination it is false. **A derived number is safe to copy and the prose
- * around it is not**, because the prose is about what else exists there.
- *
- * So it now says only what is true today. The customer-facing DETACH is filed
- * as its own chunk (fable-1173 §2); when it lands, this sentence names it.
- *
- * ⚠ This paragraph used to end "…and `referenceAttachDoor.test.ts` is where the
- * two are kept in step", present tense, about a file that has never existed
- * (#647). The refusal string above is driven TODAY by
- * `inkReferenceMint.test.ts`, which is the only suite that reads it. A reader
- * who follows a pointer, finds nothing, and concludes the guard was never
- * written has just re-filed a live control as a dead one — the wrong-road class
- * `CLAUDE.md`'s law-7 section is about.
+ * Its own history — it once named a removal that does not exist, and why a
+ * derived NUMBER is safe to copy while the prose around it is not — is kept
+ * with the sentence, where a reader about to reword it will meet it.
  */
-export const REFERENCE_PICTURES_PER_CANDIDATE_REFUSAL =
-  `This Cast is holding all ${REFERENCE_PICTURES_PER_CANDIDATE} pictures it can hold. `
-  + "Start a new Cast to work from more.";
+export const REFERENCE_PICTURES_PER_CANDIDATE_REFUSAL = REFERENCE_ATTACH_REFUSAL_COPY.pictureCap;
