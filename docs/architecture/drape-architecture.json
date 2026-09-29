@@ -10774,6 +10774,10 @@
       "path": "client/src/features/staff/stores/useStaffAutoRefreshStore.test.ts"
     },
     {
+      "id": "test:client/src/foundation/anchorCascade.test.ts",
+      "path": "client/src/foundation/anchorCascade.test.ts"
+    },
+    {
       "id": "test:client/src/foundation/anchoredPanel.test.ts",
       "path": "client/src/foundation/anchoredPanel.test.ts"
     },

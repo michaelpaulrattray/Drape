@@ -719,6 +719,27 @@
   letter-spacing: normal; /* stacked on .dp-chrome (#807) — see .dp-crew__mono */
   color: var(--faint);
 }
+/*
+  THE SAME CHIP AS A LINK (#1529). Four of the five `.dp-crew__ref` call sites
+  are `<span>`, so this class cannot be rooted in place the way `.dp-crew__link`
+  is — the fifth (CrewPipeline's `for #1234`) is an `<a>`, and there `.dp-root a`
+  was overriding `--faint` to `--ink`: a reference number printed louder than
+  the title above it, which is the opposite of what the row's hierarchy wants.
+  So the anchor case is restored to the colour the block above declares, and it
+  gets the underline for the same reason `.dp-crew__link` does — a `#1234` chip
+  that is clickable looked identical to the four that are not, and nothing said
+  which. Same answer as #1528 at the same 10.5px: faint text, currentColor rule.
+*/
+.dp-root a.dp-crew__ref {
+  color: var(--faint);
+  text-decoration-line: underline;
+  text-decoration-color: currentColor;
+  text-underline-offset: 3px;
+}
+.dp-root a.dp-crew__ref:hover,
+.dp-root a.dp-crew__ref:focus-visible {
+  color: var(--ink);
+}
 
 .dp-crew__stack {
   display: flex;
@@ -858,13 +879,31 @@
   on hover only — the chip's words are already the promise, and a standing
   underline would make the one linked chip louder than the urgent word beside
   it.
+
+  ⚠ ROOTED BY #1529's SWEEP, AND THIS ONE WAS RIGHT ONLY BY COINCIDENCE. The two
+  blocks above are single classes at (0,1,0), so `.dp-root a` (0,2,0) supplied
+  this anchor's colour and both `color` declarations were discarded. It looked
+  correct because the blanket's `--ink` happens to be what `--hold--you` asks
+  for, and CrewNextUp only ever renders the ANCHOR in the `you` shape — the
+  `--metaStrong` variant is always a `<span>`. Luck, not intent: flip the blanket
+  and the chip changes with no rule in this file having moved. Stated here rather
+  than left as a comment on a selector, because the next reader's question is
+  why a `color` is repeated.
+
+  The pair cannot be rooted in place — four of the five `.dp-crew__hold` call
+  sites are `<span>` — so this is the anchor's own rule, naming both classes in
+  one declaration so neither ties the other on stylesheet order. The hover arm is
+  (0,3,1) against `.dp-root a:hover`'s (0,2,1) for the same reason.
 */
-a.dp-crew__hold {
-  text-decoration: none;
+.dp-root a.dp-crew__hold,
+.dp-root a.dp-crew__hold--you {
+  color: var(--ink);
+  text-decoration-line: none;
 }
 
-a.dp-crew__hold:hover {
-  text-decoration: underline;
+.dp-root a.dp-crew__hold:hover,
+.dp-root a.dp-crew__hold:focus-visible {
+  text-decoration-line: underline;
   text-underline-offset: 2px;
 }
 
@@ -1465,17 +1504,39 @@ a.dp-crew__hold:hover {
 .dp-crew__row--new {
   box-shadow: -10px 0 0 -8px var(--ink);
 }
-/* Titles that are links read as text with the rule underneath, never blue:
-   the page's whole voice is one ink. */
-.dp-crew__link {
+/*
+  Titles that are links read as text with the underline underneath, never blue:
+  the page's whole voice is one ink.
+
+  ⚠ THE SELECTOR CARRIES `.dp-root a` ON PURPOSE AND THIS BLOCK DID NOT UNTIL
+  #1529 — IT WAS `.dp-crew__link` ALONE AND EVERY DECLARATION IN IT WAS
+  DISCARDED. `.dp-root a` (foundation/tokens.css) sets `color: var(--ink)` and
+  `text-decoration: none` at (0,2,0); a single class at (0,1,0) loses whatever
+  it declares. The rule MATCHED, so nothing looked wrong in the stylesheet and
+  nothing failed at build time — measured in the running app: eight of these on
+  his Crew page, every one computing `text-decoration-line: none`. (0,2,1) here
+  beats the house rule outright rather than tying on (0,2,1) and depending on
+  which stylesheet the bundler emitted last. `.dp-root a:hover` is (0,2,1) too,
+  so the hover arm is written at (0,3,1) for the same reason.
+  `foundation/anchorCascade.test.ts` is the derived guard; it found six siblings.
+
+  ⚠ AND THE UNDERLINE IS `currentColor`, NOT `--rule`, WHICH IS #1528's ANSWER
+  ARRIVED AT THE FRAMES AND NOT AT THE TOKEN LIST. `--rule` (#F0F0F2) against
+  white is ~1.08:1 — invisible at any size — so raising the specificity alone
+  would have fixed the cascade and left the links still reading as plain text.
+  `currentColor` is also the one that cannot drift: it follows the text into the
+  hover state and into the dark theme with no second declaration to keep in
+  step (working law 4).
+*/
+.dp-root a.dp-crew__link {
   color: inherit;
-  text-decoration: underline;
-  text-decoration-color: var(--rule);
+  text-decoration-line: underline;
+  text-decoration-color: currentColor;
   text-underline-offset: 3px;
 }
-.dp-crew__link:hover,
-.dp-crew__link:focus-visible {
-  text-decoration-color: var(--ink);
+.dp-root a.dp-crew__link:hover,
+.dp-root a.dp-crew__link:focus-visible {
+  color: var(--linkHover);
 }
 
 /* ── ONE CARD FOR WHAT IS HAPPENING (#1201) ─────────────────────────────────
@@ -1502,7 +1563,18 @@ a.dp-crew__hold:hover {
   background: var(--surface);
   border-bottom: 1px solid var(--rule);
 }
-.dp-crew__navlink {
+/*
+  ROOTED FOR THE SAME REASON AS `.dp-crew__link` (#1529, found by its sweep).
+  Unrooted, `.dp-root a` painted every section label at full `--ink` and
+  `.dp-root a:hover` then took it to `--linkHover` — so the menu read as seven
+  headings, and hovering one made it LIGHTER instead of darker. Both halves of
+  the rest/hover pair were inert; the rest state needed (0,2,1) and the hover
+  state (0,3,1), because `.dp-root a:hover` is (0,2,1) and a tie would have been
+  settled by stylesheet order. No underline here on purpose: this is a nav bar
+  with counts and a working hover, so it has its affordance without one, and
+  seven underlined mono labels would be the loudest thing on the page.
+*/
+.dp-root a.dp-crew__navlink {
   display: inline-flex;
   align-items: baseline;
   gap: var(--s-2);
@@ -1510,10 +1582,10 @@ a.dp-crew__hold:hover {
   letter-spacing: 0.13em;
   text-transform: uppercase;
   color: var(--metaStrong);
-  text-decoration: none;
+  text-decoration-line: none;
 }
-.dp-crew__navlink:hover,
-.dp-crew__navlink:focus-visible {
+.dp-root a.dp-crew__navlink:hover,
+.dp-root a.dp-crew__navlink:focus-visible {
   color: var(--ink);
 }
 .dp-crew__navcount {
