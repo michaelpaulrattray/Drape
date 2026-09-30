@@ -2079,6 +2079,8 @@ each axis rejects, a forced-fail switch so the refusal path is testable
 end-to-end, and the verdict persisted on the slot so a dispute is answerable
 from the record. Prompt compliance as the sole check is the settled anti-pattern.
 
+⚠ **ONE OF THOSE THREE AXES STILL TAKES A PICTURE AWAY, AND SINCE 2026-09-30 IT IS THE ONLY ONE — his ruling (#1612 part 2, terminal).** His question: *"dont you think having really strict checkers is unreliable?"*; on the two changes put back to him: *"i agree with you"*. **IDENTITY keeps this paragraph entire** — `differs` and `unsure` both refuse, refund the slice and drop the frame, and the axis is still negative-fixtured and still reachable by the forced-fail switch, so conformance can still fail. **ANGLE and WARDROBE stop being vetoes**: a verdict that did not hold on either DELIVERS the picture, charged, marked unchecked, with the free Try again. **What settled it is a reading of the rows rather than an argument**: every refusal this product had ever made, all time, was 8 views — 5 wardrobe, 3 angle, **0 identity** — so the two axes that had never once caught the thing refusal exists for had taken away eight pictures customers paid for, and four of the eight are same-day cards where the reading was demonstrably wrong about what it was looking at (#1582, #1594, #1595, #1611). *Theatre unless it can fail* is intact; what changed is which failure is worth a customer's picture. The rule is one function, `viewConformanceRefuses`.
+
 **Surfaced for the founder at the gate rather than decided here:** a permanently
 failed view has no repair path until M12 — no per-slot purchase exists and "roll
 again" does not apply to views. That is ratified rather than an oversight.
