@@ -168,7 +168,7 @@ export function createViewerOpener(input: {
 }) {
   const { page } = input;
   return async function openViewer(): Promise<void> {
-    await page.goto(`${input.base}/casting/s/${input.sessionId}`, { waitUntil: "networkidle2" });
+    await page.goto(`${input.base}/app/casting/s/${input.sessionId}`, { waitUntil: "networkidle2" });
     await page.waitForSelector(".dpc-card", { timeout: 60_000 });
 
     /*

@@ -65,7 +65,7 @@ page.on("response", (response) => {
   void response.text().then((body) => answers.push({ ms, body: body.slice(0, 400) })).catch(() => {});
 });
 
-await page.goto(`${BASE}/casting/s/${SESSION}`, { waitUntil: "networkidle2", timeout: 240_000 });
+await page.goto(`${BASE}/app/casting/s/${SESSION}`, { waitUntil: "networkidle2", timeout: 240_000 });
 await page.waitForSelector(`button[aria-label="View candidate ${TILE} larger"]`, { timeout: 240_000 });
 await page.click(`button[aria-label="View candidate ${TILE} larger"]`);
 await page.waitForSelector(".dpc-refine__field", { timeout: 120_000 });

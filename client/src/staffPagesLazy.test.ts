@@ -54,6 +54,16 @@ const isStaffPath = (path: string) =>
  * Every routed page in a source, as (path, component), in both shapes the
  * router uses today. A `<Route path="/admin">` carrying a Redirect matches
  * neither and is not a page.
+ *
+ * ⚠ A FORWARD IS NOT A PAGE IN EITHER SHAPE, AND THE PARAMETERISED ONE HAD TO
+ * BE SAID OUT LOUD (#1583). The sentence above was written when every forward
+ * in the router was the bare `<Route path="/app/models"><Redirect …/></Route>`,
+ * which matches neither pattern by luck rather than by rule. #1583's forwards
+ * carry an id through — `{(params) => <Redirect to={…} replace />}` — and that
+ * IS the children shape, so three redirects would have been collected as three
+ * customer "pages" named `Redirect`. Nothing would have gone red: the arms ask
+ * whether a page is lazy, and `const Redirect = lazy(` exists nowhere. It would
+ * simply have counted forwards as pages and said so to the next reader.
  */
 const routedComponents = (source: string) => [
   ...[...source.matchAll(/<Route path="([^"]+)" component=\{([A-Za-z0-9]+)\} \/>/g)].map((m) => ({
@@ -66,7 +76,7 @@ const routedComponents = (source: string) => [
     component: m[2],
     shape: "children" as const,
   })),
-];
+].filter((r) => r.component !== "Redirect");
 
 const lazyDeclaration = (component: string) =>
   `const ${component} = staffPage(() => import("./pages/${component}"));`;
@@ -135,7 +145,7 @@ const MEASURED_LAZY_CUSTOMER_ROUTES: Record<
   string,
   { wrapper: string; page: string; fallback: string; card: string }
 > = {
-  "/app/board/:id": { wrapper: "BoardRoute", page: "BoardPage", fallback: "BoardLoadingFrame", card: "#1036" },
+  "/app/canvas/:id": { wrapper: "BoardRoute", page: "BoardPage", fallback: "BoardLoadingFrame", card: "#1036" },
 };
 
 describe("#744 — the customer pages stay static, on purpose", () => {
@@ -146,11 +156,11 @@ describe("#744 — the customer pages stay static, on purpose", () => {
   it("finds the customer routes it is supposed to find, in both shapes", () => {
     const paths = customer.map((r) => r.path);
     expect(paths).toContain("/app");
-    expect(paths).toContain("/casting");
-    expect(paths).toContain("/app/board/:id");
+    expect(paths).toContain("/app/casting");
+    expect(paths).toContain("/app/canvas/:id");
     /* The children shape — the sheet and the room — must be seen too (finding 3). */
     expect(customer.filter((r) => r.shape === "children").map((r) => r.path)).toEqual(
-      expect.arrayContaining(["/casting/s/:sessionId", "/casting/cast/:castId"]),
+      expect.arrayContaining(["/app/casting/s/:sessionId", "/app/casting/cast/:castId"]),
     );
   });
 

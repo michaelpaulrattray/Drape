@@ -55,7 +55,7 @@ function itemMeta(item: RecentWorkItem): string {
 function resumeUrl(item: RecentWorkItem): string {
   switch (item.tool) {
     case 'canvas':
-      return `/app/board/${item.boardId}`;
+      return `/app/canvas/${item.boardId}`;
     case 'wardrobe':
       return `/studio?tool=wardrobe&sessionId=${item.sessionId}`;
     case 'casting':

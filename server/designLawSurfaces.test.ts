@@ -81,6 +81,8 @@ describe("against the real tree", () => {
   it("reads the routes out of App.tsx, and there are many of them", () => {
     const routes = readRouterRoutes();
     expect(routes.length).toBeGreaterThan(15);
+    expect(routes.some((r) => r.path === "/app/casting")).toBe(true);
+    /* And the forward it moved from, which is a real <Route> too (#1583). */
     expect(routes.some((r) => r.path === "/casting")).toBe(true);
     expect(routes.some((r) => r.path === "/admin/users")).toBe(true);
     /* The catch-all is a real <Route> and must be seen as pathless, not lost. */
@@ -158,7 +160,7 @@ describe("against the real tree", () => {
   it("the staff pages and the lobby are actually in the plan", () => {
     const plan = planSurfaces("http://localhost:3000");
     const driven = plan.visit.map((v) => v.plan.path);
-    for (const path of ["/app", "/app/boards", "/admin/users", "/admin/overview", "/moderator"]) {
+    for (const path of ["/app", "/app/canvas", "/admin/users", "/admin/overview", "/moderator"]) {
       expect(driven, path).toContain(path);
     }
     /* And they are marked as needing an admin session, or the drive measures a
@@ -178,7 +180,7 @@ describe("against the real tree", () => {
 
   it("a surface held back for a fixture NAMES the fixture", () => {
     const plan = planSurfaces("http://localhost:3000");
-    expect(plan.awaitingFixture.map((a) => a.path)).toContain("/casting/s/:sessionId");
+    expect(plan.awaitingFixture.map((a) => a.path)).toContain("/app/casting/s/:sessionId");
     for (const a of plan.awaitingFixture) {
       expect(a.fixture, a.path).not.toBe("(unnamed)");
     }
@@ -187,7 +189,7 @@ describe("against the real tree", () => {
   it("given its fixtures, every parameterised surface becomes visitable", () => {
     const plan = planSurfaces("http://localhost:3000", { session: "s1", cast: "c1", board: "b1" });
     expect(plan.awaitingFixture).toEqual([]);
-    expect(plan.visit.some((v) => v.url.endsWith("/casting/s/s1"))).toBe(true);
+    expect(plan.visit.some((v) => v.url.endsWith("/app/casting/s/s1"))).toBe(true);
   });
 
   it("the sheet claims the brief echo, and NOTHING claims retention copy", () => {
@@ -205,7 +207,7 @@ describe("against the real tree", () => {
     */
     const claims = (subject: string) =>
       SURFACES.filter((s) => s.kind === "drive" && s.requires?.includes(subject as never)).map((s) => s.path);
-    expect(claims("briefEcho")).toEqual(["/casting/s/:sessionId"]);
+    expect(claims("briefEcho")).toEqual(["/app/casting/s/:sessionId"]);
     expect(claims("retentionCopy")).toEqual([]);
   });
 
@@ -220,6 +222,6 @@ describe("against the real tree", () => {
     const claiming = SURFACES.filter(
       (s) => s.kind === "drive" && s.requires?.includes("dock"),
     ).map((s) => s.path);
-    expect(claiming.sort()).toEqual(["/admin/foundation", "/casting/s/:sessionId"]);
+    expect(claiming.sort()).toEqual(["/admin/foundation", "/app/casting/s/:sessionId"]);
   });
 });

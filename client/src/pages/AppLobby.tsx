@@ -80,7 +80,7 @@ export default function AppLobby() {
     string,
     { view: ReactElement; crumb: string; rail: RailDestinationId }
   > = {
-    '/app/boards': {
+    '/app/canvas': {
       view: (
         <LobbyStub
           title="Canvas"

@@ -38,7 +38,7 @@ const token = await new SignJWT({ openId: owners[0].openId, appId, name: "Hover 
   .sign(new TextEncoder().encode(secret));
 
 const { browser, page } = await openDrivenPage({ base: BASE, token, width: 1440, height: 1000 });
-await page.goto(`${BASE}/casting/s/${SESSION}`, { waitUntil: "networkidle2", timeout: 180_000 });
+await page.goto(`${BASE}/app/casting/s/${SESSION}`, { waitUntil: "networkidle2", timeout: 180_000 });
 await page.waitForSelector(`button[aria-label="View candidate ${TILE} larger"]`, { timeout: 180_000 });
 await page.click(`button[aria-label="View candidate ${TILE} larger"]`);
 await page.waitForSelector(".dpc-face", { timeout: 90_000 });

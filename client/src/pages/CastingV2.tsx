@@ -650,7 +650,7 @@ export default function CastingV2() {
 
       // Navigating IS the confirmation, so no toast — the toast law fires on
       // actions that leave you where you were, never on ones that move you.
-      navigate(`/casting/s/${session.sessionId}`);
+      navigate(`/app/casting/s/${session.sessionId}`);
     } catch (error) {
       // Only a failure reopens the latch. On success we navigate away, and
       // this page unmounts — reopening it there would briefly re-arm a button
@@ -1073,7 +1073,7 @@ export default function CastingV2() {
                 <button
                   type="button"
                   className="dpc-sheetcard__open"
-                  onClick={() => navigate(`/casting/s/${entry.sessionId}`)}
+                  onClick={() => navigate(`/app/casting/s/${entry.sessionId}`)}
                 >
                   {/*
                     Faces, so the card looks like the sheet it opens.
@@ -1221,7 +1221,7 @@ export default function CastingV2() {
                     items={[
                       {
                         label: "Open sheet",
-                        onSelect: () => navigate(`/casting/s/${entry.sessionId}`),
+                        onSelect: () => navigate(`/app/casting/s/${entry.sessionId}`),
                       },
                       {
                         label: "Copy link",
@@ -1408,7 +1408,7 @@ export default function CastingV2() {
             <button
               type="button"
               className="dpc-castcard"
-              onClick={() => navigate(`/casting/cast/${cast.castId}`)}
+              onClick={() => navigate(`/app/casting/cast/${cast.castId}`)}
             >
               <span className="dpc-castcard__frame">
                 {/*

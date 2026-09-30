@@ -98,7 +98,7 @@ for (const theme of ["dark", "light"] as const) {
   /* `drape_theme`, the key the provider actually persists — and a fresh load
      per theme rather than a class toggled in place. */
   await page.evaluateOnNewDocument(`(() => { try { window.localStorage.setItem("drape_theme", ${JSON.stringify(theme)}); } catch {} })()`);
-  await page.goto(`${BASE}/casting/s/${session}`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${BASE}/app/casting/s/${session}`, { waitUntil: "domcontentloaded" });
 
   /* THE ROLL FIRST — see {@link ROLL_LABEL}. The rail is tabs of `01`, `02`, …
      and the sheet opens on the newest. */

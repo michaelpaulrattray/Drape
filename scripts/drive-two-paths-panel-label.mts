@@ -171,7 +171,7 @@ try {
       { name: "wardrobe", tile: wardrobe.position + 1, expect: "as dressed" as string | null },
       { name: "basics", tile: basics.position + 1, expect: null },
     ]) {
-      await page.goto(`${BASE}/casting/s/${SESSION}`, { waitUntil: "domcontentloaded" });
+      await page.goto(`${BASE}/app/casting/s/${SESSION}`, { waitUntil: "domcontentloaded" });
       /* Walk to the roll this candidate is on — the sheet opens on the newest. */
       const rollLabel = subject.name === "wardrobe" ? "04" : "03";
       await page.waitForFunction(

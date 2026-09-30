@@ -369,16 +369,16 @@ for (const dpr of [1, 2]) {
     await page.goto(`${BASE}/app/library`, { waitUntil: "networkidle2", timeout: 240_000 });
     await take("lobby /app/library");
 
-    await page.goto(`${BASE}/app/boards`, { waitUntil: "networkidle2", timeout: 240_000 });
+    await page.goto(`${BASE}/app/canvas`, { waitUntil: "networkidle2", timeout: 240_000 });
     await take("lobby /app/boards");
 
     if (boards[0]) {
-      await page.goto(`${BASE}/app/board/${boards[0].id}`, { waitUntil: "networkidle2", timeout: 240_000 });
+      await page.goto(`${BASE}/app/canvas/${boards[0].id}`, { waitUntil: "networkidle2", timeout: 240_000 });
       await take(`board canvas /app/board/${boards[0].id}`);
     }
 
     if (sessions[0]) {
-      await page.goto(`${BASE}/casting/s/${sessions[0].session}`, { waitUntil: "networkidle2", timeout: 240_000 });
+      await page.goto(`${BASE}/app/casting/s/${sessions[0].session}`, { waitUntil: "networkidle2", timeout: 240_000 });
       await take("casting sheet grid", undefined, 'button[aria-label^="View candidate"]');
       /* The viewer is where a paid frame is actually looked at. Open whichever
          tile the sheet offers rather than guessing a position. */
@@ -397,7 +397,7 @@ for (const dpr of [1, 2]) {
     }
 
     if (casts[0]) {
-      await page.goto(`${BASE}/casting/cast/${casts[0].agencyId}`, { waitUntil: "networkidle2", timeout: 240_000 });
+      await page.goto(`${BASE}/app/casting/cast/${casts[0].agencyId}`, { waitUntil: "networkidle2", timeout: 240_000 });
       await take(`cast room (SIGNED ${casts[0].agencyId})`, undefined, ".dpc-master__main, .dpc-strip__frame");
       const opened = await page.evaluate(`(() => {
         const shot = document.querySelector(".dpc-master__main, .dpc-strip__frame");

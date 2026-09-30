@@ -107,7 +107,7 @@ async function run(theme: "dark" | "light"): Promise<void> {
   await page.evaluateOnNewDocument(
     `(() => { try { window.localStorage.setItem("drape_theme", ${JSON.stringify(theme)}); } catch {} })()`,
   );
-  await page.goto(`${BASE}/casting/s/${SESSION}`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${BASE}/app/casting/s/${SESSION}`, { waitUntil: "domcontentloaded" });
 
   const tile = await page
     .waitForSelector('button[aria-label^="View candidate"]', { timeout: 120_000 })

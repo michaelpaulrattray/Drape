@@ -114,6 +114,141 @@ describe("App routes — the library moved and its old address still answers (#1
   });
 });
 
+describe("App routes — one address family under /app, and every old address forwards (#1583)", () => {
+  /*
+    His word, 2026-09-30: *"yes i want that shape"*. The signed-in product moved
+    under `/app` because the domain's root belongs to the marketing site, and
+    casting was the last top-level entrance.
+
+    ⚠ EACH PAIR IS READ OUT OF ONE BLOCK, for #1545's reason and one more.
+    #1545's: two independent token reads both pass on a tree where the route and
+    the redirect exist but are not paired. The second is this card's own — five
+    addresses moved at once, and four of the five differ from their destination
+    by an inserted `/app` alone. A `toContain("/app/casting")` is satisfied by
+    the string sitting INSIDE `<Route path="/app/casting/s/:sessionId">`, so
+    three of these arms would pass on a router that had lost the very route they
+    name.
+  */
+  const forward = (from: string) =>
+    new RegExp(`<Route path="${from.replace(/[/:]/g, (c) => `\\${c}`)}">([\\s\\S]*?)</Route>`).exec(appSource);
+
+  /** new address → [how it is routed, the old address that must forward to it] */
+  const MOVED: Array<{ now: string; routedAs: string; from: string; forwardsWith: string }> = [
+    {
+      now: "/app/casting",
+      routedAs: '<Route path="/app/casting" component={CastingV2} />',
+      from: "/casting",
+      forwardsWith: '<Redirect to="/app/casting" replace />',
+    },
+    {
+      now: "/app/casting/s/:sessionId",
+      routedAs: '<Route path="/app/casting/s/:sessionId">',
+      from: "/casting/s/:sessionId",
+      forwardsWith: "<Redirect to={`/app/casting/s/${params.sessionId}`} replace />",
+    },
+    {
+      now: "/app/casting/cast/:castId",
+      routedAs: '<Route path="/app/casting/cast/:castId">',
+      from: "/casting/cast/:castId",
+      forwardsWith: "<Redirect to={`/app/casting/cast/${params.castId}`} replace />",
+    },
+    {
+      now: "/app/canvas",
+      routedAs: '<Route path="/app/canvas" component={AppLobby} />',
+      from: "/app/boards",
+      forwardsWith: '<Redirect to="/app/canvas" replace />',
+    },
+    {
+      now: "/app/canvas/:id",
+      routedAs: '<Route path="/app/canvas/:id" component={BoardRoute} />',
+      from: "/app/board/:id",
+      forwardsWith: "<Redirect to={`/app/canvas/${params.id}`} replace />",
+    },
+  ];
+
+  it("finds the five moved addresses it is supposed to find", () => {
+    /* A matcher that silently matches nothing is a green suite proving nothing. */
+    expect(MOVED).toHaveLength(5);
+  });
+
+  for (const { now, routedAs, from, forwardsWith } of MOVED) {
+    it(`routes ${now}, and keeps ${from} answering as a forward to it`, () => {
+      expect(appSource, `${now} must be routed — this is the address the product now uses`).toContain(
+        routedAs,
+      );
+
+      const block = forward(from);
+      expect(
+        block,
+        `${from} must still have a Route block — a rename that drops it breaks every saved link, his own test casts and every driver in scripts/`,
+      ).not.toBeNull();
+      expect(
+        block?.[1],
+        `${from} must forward to ${now}, replacing the history entry so Back does not bounce off it`,
+      ).toContain(forwardsWith);
+    });
+  }
+
+  it("serves no page at an old address — one door, not two", () => {
+    /*
+      The negative half, and the one that would catch a forward added BESIDE a
+      live route rather than in place of it. Only `component=` is asked about: a
+      Route block carrying a Redirect is exactly what the arms above require.
+    */
+    for (const { from } of MOVED) {
+      expect(appSource, `${from} must forward, never serve`).not.toMatch(
+        new RegExp(`<Route path="${from.replace(/[/:]/g, (c) => `\\${c}`)}" component=`),
+      );
+    }
+  });
+
+  it("leaves no old address in the rail — a stale href sends every click through a redirect", () => {
+    const rail = read(resolve(__dirname, "foundation/Rail.tsx"));
+    expect(rail).toContain('href: "/app/casting"');
+    expect(rail).toContain('href: "/app/canvas"');
+    expect(rail).not.toMatch(/href: "\/casting"/);
+    expect(rail).not.toMatch(/href: "\/app\/boards"/);
+  });
+
+  it("leaves no old address anywhere in the customer's own navigation", () => {
+    /*
+      THE SWEEP, and it is the arm that actually holds this card shut. The five
+      pairs above prove the router; this proves nothing in the product still
+      POINTS at an old address — which is the drift a forward quietly absorbs,
+      because a stale link keeps working and nobody ever sees it fail.
+
+      The population is DERIVED by walking the tree, never a list of the files
+      this card happened to touch. `App.tsx` is the one exception and it is
+      excluded BY NAME with its reason: the forwards themselves are the only
+      place an old address is supposed to survive.
+    */
+    const CLIENT_SRC = resolve(__dirname);
+    const walk = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+        const full = resolve(dir, e.name);
+        if (e.isDirectory()) return walk(full);
+        return /\.tsx?$/.test(e.name) && !/\.test\.tsx?$/.test(e.name) ? [full] : [];
+      });
+
+    const files = walk(CLIENT_SRC).filter((f) => f !== resolve(CLIENT_SRC, "App.tsx"));
+    expect(files.length, "the walker found no source files — a sweep over nothing is green and proves nothing").toBeGreaterThan(50);
+
+    /*
+      Anchored on the opening quote of a string literal, so `/casting-hero/deck/…`
+      (an asset under `public/`, not an address) and `../pages/casting/…` (a file
+      path) are never matched. Comments are stripped first: a docblock recording
+      where a page USED to live is history, and #261's own is still true.
+    */
+    const OLD = /(['"`])(\/casting(?:\/|\1)|\/app\/boards\1|\/app\/board\/)/;
+    const offenders = files
+      .filter((f) => OLD.test(code(read(f))))
+      .map((f) => f.slice(CLIENT_SRC.length + 1).replace(/\\/g, "/"))
+      .sort();
+
+    expect(offenders, "these still point at an address the product no longer serves (#1583)").toEqual([]);
+  });
+});
+
 describe("App routes — the specimen sheet is a staff surface (#261)", () => {
   it("no longer answers inside the customer's casting namespace", () => {
     /*
