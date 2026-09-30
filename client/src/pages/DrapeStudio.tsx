@@ -228,7 +228,7 @@ export default function DrapeStudio() {
     refetchCreditsWithWarning,
     // Lobby-started casting returns to the Cast library when the durable mint
     // completes. Wardrobe remains a separate deliberate tool choice.
-    onMinted: () => navigate('/app/models'),
+    onMinted: () => navigate('/app/library'),
   });
 
   const dismissCastModal = useCallback((typedName: string) => {

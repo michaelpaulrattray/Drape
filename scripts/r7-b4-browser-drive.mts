@@ -96,10 +96,10 @@ const fillInput = async (page: typeof pageA, label: string, value: string) => {
 
 try {
   console.log('[browser] warming tab B library');
-  await pageB.goto(`${baseUrl}/app/models`, { waitUntil: 'domcontentloaded' });
+  await pageB.goto(`${baseUrl}/app/library`, { waitUntil: 'domcontentloaded' });
   await waitForText(pageB, 'R7-B4 Verify Cast');
   console.log('[browser] opening tab A library');
-  await pageA.goto(`${baseUrl}/app/models`, { waitUntil: 'domcontentloaded' });
+  await pageA.goto(`${baseUrl}/app/library`, { waitUntil: 'domcontentloaded' });
   await waitForText(pageA, 'R7-B4 Verify Cast');
 
   console.log('[browser] opening model chooser');

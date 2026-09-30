@@ -44,8 +44,8 @@ describe('R7-3A minted Cast Profile', () => {
     expect(profile).toContain('Fork to edit');
     expect(profile).toContain('Fork from Canvas');
     expect(profile).toContain('this Cast stays unchanged');
-    expect(profile).toContain("navigate('/app/models')");
-    expect(profile).toContain('Export from Model Library');
+    expect(profile).toContain("navigate('/app/library')");
+    expect(profile).toContain('Export from Library');
   });
 
   it('removes the left form and composer for minted sessions in both hosts', () => {

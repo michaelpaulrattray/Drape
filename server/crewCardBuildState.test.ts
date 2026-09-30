@@ -130,6 +130,91 @@ describe("what a comment on a card says", () => {
       .toBeNull();
   });
 
+  /*
+    ── #180's OWN COMMENT BODIES, QUOTED (#1559) ────────────────────────────
+
+    The card ordering this work asked for exactly these: the real bodies, both
+    directions, with the negative control kept. #180 was released at 18:19Z on
+    2026-09-29 and read as `claimed` until the next morning — every seat pass in
+    between stepped over a founder-ordered N2 card that nobody was on.
+
+    The shift wrote precisely what the standing orders ask for. What could not
+    read it is that `RELEASE_RE` carried no `m` flag, so `^` meant the start of
+    the whole comment and a release under a heading was invisible.
+  */
+  const RELEASE_UNDER_HEADING = [
+    "## SLICE 5 IS SHIPPED — `a5576571` (PR #1520). The retirement is finished.",
+    "",
+    "**RELEASED — Foreman (night shift), 2026-09-29T18:19Z.** The body now leads with",
+    "what shipped and what is left, so the next shift does not open this card looking",
+    "for machinery to remove.",
+    "",
+    "### What slice 5 turned out to be",
+    "",
+    "Not paperwork.",
+    "",
+  ].join("\n");
+
+  /* #180's OTHER missed release, three days earlier and the same shape — so the
+     defect had already cost a pass before the one that was noticed. */
+  const RELEASE_UNDER_HEADING_EARLIER = [
+    "## Read at the code, and the card's premise holds.",
+    "",
+    "**RELEASED — Foreman (night shift), 2026-09-26.** Nothing was built on this card.",
+    "",
+  ].join("\n");
+
+  /*
+    ⚠ THE NEGATIVE CONTROL THE CARD NAMED, and it guards the expensive
+    direction. A missed release idles a seat; a FALSE release cancels a live
+    claim and two seats build the same card. This is a shift reporting on a
+    release in ordinary prose — the word, the dash and a seat name all present,
+    mid-sentence — and it must stay nothing at all.
+  */
+  const RELEASE_PROSE = [
+    "⚠ Worth knowing for whoever takes this: the previous shift posted",
+    "RELEASED — Foreman (night shift) on #1492 while its part 2 was still held, so a",
+    "reader that treats any mention of RELEASED as a handback would have reopened a",
+    "card that was never free.",
+    "",
+  ].join("\n");
+
+  it("⚠ reads a RELEASE written under a heading — #180's own body, the twelve hours this cost", () => {
+    expect(crewCardCommentFact({ card: 180, body: RELEASE_UNDER_HEADING, createdAt: "2026-09-29T18:19:46Z" }))
+      .toEqual({ kind: "release", card: 180, at: "2026-09-29T18:19:46Z" });
+    expect(crewCardCommentFact({ card: 180, body: RELEASE_UNDER_HEADING_EARLIER, createdAt: "2026-09-26T11:46:34Z" })?.kind)
+      .toBe("release");
+  });
+
+  it("and prose ABOUT releasing is still not a release — the direction that would cost a collision", () => {
+    expect(crewCardCommentFact({ card: 180, body: RELEASE_PROSE, createdAt: "2026-09-30T02:00:00Z" }))
+      .toBeNull();
+  });
+
+  it("reads a claim, a release and a refusal through ordinary block decoration", () => {
+    /* The three matchers share one population now, so each is driven through the
+       same decoration rather than one being assumed to follow the others. */
+    const through = (body: string) =>
+      crewCardCommentFact({ card: 180, body, createdAt: "2026-09-30T02:00:00Z" })?.kind;
+    expect(through(["Some prose first.", "", "> CLAIMED — seat-desk-2, 02:15Z", ""].join("\n"))).toBe("claim");
+    expect(through(["Some prose first.", "", "- **RELEASED — seat-desk-2**", ""].join("\n"))).toBe("release");
+    expect(through(["Some prose first.", "", "### NOT BUILT — the premise is wrong at the code", ""].join("\n"))).toBe("refusal");
+    /* And the seat still comes back off a decorated claim line. */
+    expect(crewCardCommentFact({
+      card: 180,
+      body: ["## Handover", "", "> CLAIMED — seat-desk-2, 02:15Z", ""].join("\n"),
+      createdAt: "2026-09-30T02:00:00Z",
+    })).toEqual({ kind: "claim", card: 180, seat: "seat-desk-2", at: "2026-09-30T02:00:00Z" });
+  });
+
+  it("keeps the precedence a body carrying two of them always had", () => {
+    /* Refusal beats release beats claim whatever order the LINES are in — the
+       old reader asked the whole body in that order, and this must not have
+       quietly become "whichever line comes first". */
+    const body = ["> CLAIMED — seat-desk-2, 02:15Z", "", "## NOT BUILT — read at the bytes", ""].join("\n");
+    expect(crewCardCommentFact({ card: 180, body, createdAt: "2026-09-30T02:00:00Z" })?.kind).toBe("refusal");
+  });
+
   it("an unusable row is nothing, never a fact", () => {
     expect(crewCardCommentFact({ card: 0, body: CLAIM_BODY, createdAt: "2026-09-26T02:15:15Z" })).toBeNull();
     expect(crewCardCommentFact({ card: 1094, body: CLAIM_BODY, createdAt: "" })).toBeNull();

@@ -132,6 +132,56 @@ describe("the reason comes from ONE line of the body", () => {
       .toBe("a sitting of its own");
   });
 
+  it("⚠ reads a marker inside a BLOCKQUOTE — #1414's own line, the question his desk could not draw", () => {
+    /*
+      #1414 carried `> **Waiting on:** YOU — your eye on two frames, and nothing
+      else.` and this function read `line.trim().startsWith(CREW_HOLD_MARKER)`.
+      After `.trim()` that line starts with `>`, not with `**`, so the marker was
+      invisible and **the card sat held on his eye with nothing on his desk
+      asking for it** — the exact silence this module's own docblock names, one
+      function below the sentence.
+
+      The live card was repaired BY HAND on 2026-09-30 (the marker lifted out of
+      the quote), so the shape is quoted here from #1559's record rather than
+      re-fetched: the fixture must outlive the repair, which is the whole reason
+      a guard exists for it.
+    */
+    const body = [
+      "## The two frames",
+      "",
+      `> ${CREW_HOLD_MARKER} YOU — your eye on two frames, and nothing else.`,
+      "",
+      "More prose that is not the reason.",
+    ].join("\n");
+    expect(holdReasonFromBody(body)).toBe("YOU — your eye on two frames, and nothing else.");
+  });
+
+  it("reads it through a heading, a bullet and a nested quote too — the rest of the class", () => {
+    const through = (decoration: string) =>
+      holdReasonFromBody(`intro\n\n${decoration}${CREW_HOLD_MARKER} his word on the shape`);
+    for (const decoration of ["> ", ">> ", "> > ", "- ", "* ", "  > - ", "### "]) {
+      expect(holdReasonFromBody(`intro\n\n${decoration}${CREW_HOLD_MARKER} his word on the shape`),
+        `decoration ${JSON.stringify(decoration)}`).toBe("his word on the shape");
+      expect(through(decoration)).toBe("his word on the shape");
+    }
+  });
+
+  it("⚠ and the marker's OWN asterisks are never eaten — the repair's own failure mode", () => {
+    /*
+      THE CONTROL THAT MATTERS MOST ON THIS FUNCTION. The obvious stripper takes
+      every leading `>`, `#`, `-` AND `*`; the marker is literally
+      `**Waiting on:**`, so that stripper hands this function `Waiting on:**`
+      and the line is unfindable again — one silence traded for another, wearing
+      a fix's clothes. `shared/crewMarkdownLead.ts` strips BLOCK decoration only,
+      and this arm is what says so from the consumer's side.
+    */
+    expect(CREW_HOLD_MARKER.startsWith("**"), "the premise of this arm").toBe(true);
+    expect(holdReasonFromBody(`${CREW_HOLD_MARKER} plainly, with no decoration at all`))
+      .toBe("plainly, with no decoration at all");
+    /* A bullet is `*` followed by a space; the marker's `**` is not one. */
+    expect(holdReasonFromBody(`* ${CREW_HOLD_MARKER} a bulleted hold`)).toBe("a bulleted hold");
+  });
+
   /**
    * ⚠ **THE FIRST MARKER WINS.** A body that says it twice is a card mid-edit;
    * taking the first keeps the answer stable while somebody is typing, and

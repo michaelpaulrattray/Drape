@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 71
+      "moduleCount": 72
     },
     {
       "id": "domain:staff",
@@ -5977,6 +5977,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:shared/crewMarkdownLead.ts",
+      "path": "shared/crewMarkdownLead.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:shared/crewNextUpHold.ts",
       "path": "shared/crewNextUpHold.ts",
       "domain": "shared",
@@ -10480,6 +10486,10 @@
       "path": "client/src/features/billing/annualPath664-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/boards/castVocabulary.test.ts",
+      "path": "client/src/features/boards/castVocabulary.test.ts"
+    },
+    {
       "id": "test:client/src/features/casting/castingPrices.test.ts",
       "path": "client/src/features/casting/castingPrices.test.ts"
     },
@@ -12810,6 +12820,10 @@
     {
       "id": "test:server/crewHeartbeat.test.ts",
       "path": "server/crewHeartbeat.test.ts"
+    },
+    {
+      "id": "test:server/crewMarkdownLead.test.ts",
+      "path": "server/crewMarkdownLead.test.ts"
     },
     {
       "id": "test:server/crewNamingWindow.test.ts",
@@ -33831,6 +33845,11 @@
     },
     {
       "from": "module:shared/crewCardBuildState.ts",
+      "to": "module:shared/crewMarkdownLead.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/crewCardBuildState.ts",
       "to": "module:shared/crewShiftState.ts",
       "kind": "imports"
     },
@@ -33842,6 +33861,11 @@
     {
       "from": "module:shared/crewCardResolution.ts",
       "to": "module:shared/crewCardState.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/crewNextUpHold.ts",
+      "to": "module:shared/crewMarkdownLead.ts",
       "kind": "imports"
     },
     {
