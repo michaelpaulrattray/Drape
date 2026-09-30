@@ -20,6 +20,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { CREW_HELD_STATES, CREW_HOLD_REASON_MAX } from "../../shared/crewNextUpHold.js";
+import { withoutComments } from "../testing/withoutComments";
 
 import {
   crewBriefingSchema,
@@ -393,7 +394,7 @@ describe("the briefing file", () => {
     expect(moduleSource).toContain('from "./crew-briefing.json"');
     /* The code half only — the header KEEPS the story of the broken shape, so
        comments are stripped before the absences are asserted. */
-    const code = moduleSource.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    const code = withoutComments(moduleSource);
     expect(code, "the module survived the stripper").toContain("export function readCrewBriefing");
     for (const forbidden of ["readFileSync", "import.meta.url", "fileURLToPath"]) {
       expect(
