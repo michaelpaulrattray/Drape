@@ -417,6 +417,45 @@ export async function flushErrorTracker(timeoutMs = 2000): Promise<void> {
 }
 
 /**
+ * Drain the transport and SHUT IT DOWN — for a short-lived process only.
+ *
+ * ⚠ **`flushErrorTracker` DOES NOT CLOSE ANYTHING, AND THAT IS NOT A NAMING
+ * QUIBBLE.** `flush` waits for the queue and leaves the client enabled with its
+ * transport and the OpenTelemetry instrumentation it installed still holding
+ * handles. In the server that is correct — the process keeps reporting. In a
+ * SCRIPT it is the resident-process class `server/scriptExitDiscipline.test.ts`
+ * exists for: work finished, event loop still alive, and `process.exit` then
+ * tearing the stack down underneath itself.
+ *
+ * The probe's first production run (#1542, 2026-09-30) died at exit with
+ * `Assertion failed: !(handle->flags & UV_HANDLE_CLOSING)` in libuv's
+ * `win/async.c` AFTER printing its verdict, and the exit code it actually
+ * returned was 1 rather than the 2 its contract promises — so a rite step keyed
+ * on the code would have read a finding as an ordinary failure. Closing the
+ * client is the SDK's own documented teardown and is what this gives a script.
+ *
+ * ⚠ **IT IS NOT CLAIMED AS THE PROVEN CURE FOR THAT ASSERTION.** The crash
+ * needs a real Sentry ingest endpoint to reproduce — a DSN pointed at localhost
+ * exits cleanly with 2, measured — so it cannot be driven on a development
+ * machine. This is the correct teardown on its own terms; the probe additionally
+ * prints its intended exit code as a LINE, so the verdict no longer depends on
+ * surviving teardown at all. Whether the assertion is gone is read at the next
+ * production run, on the card.
+ *
+ * Nothing in the server calls this and nothing should: the tracker must outlive
+ * every request.
+ */
+export async function closeErrorTracker(timeoutMs = 5000): Promise<void> {
+  try {
+    if (!sentry || !state.ready) return;
+    await sentry.close(timeoutMs);
+  } catch {
+    /* A close that fails changes nothing a caller can act on, and a script that
+       threw on the way out would lose the verdict it just printed. */
+  }
+}
+
+/**
  * What any surface must ask before it draws a number. `configured: false` is the
  * answer that forbids "0 errors today" — see the header.
  */

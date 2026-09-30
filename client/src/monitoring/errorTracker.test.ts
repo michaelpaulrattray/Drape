@@ -260,6 +260,17 @@ describe("nothing throws before the SDK exists", () => {
     expect(() => setClientErrorUser(null)).not.toThrow();
     expect(clientErrorTrackerStatus().sent).toBe(0);
   });
+
+  /* ⚠ THE ARM THAT MAKES THE RETURN VALUE MEAN SOMETHING (#1542). An id is a
+     caller's evidence the SDK took the event, so the no-tracker road must hand
+     back NOTHING rather than a string nobody can look up. This runs before the
+     fake SDK is installed — the only arm in this file that starts the tracker
+     is further down, which is why `undefined` here is the real unreported
+     road and not a stub of it. */
+  it("⚠ returns NO event id when there is no tracker — undefined means not reported", () => {
+    expect(captureClientError(new Error("too early"), { route: "/casting" })).toBeUndefined();
+    expect(captureClientError("a string reason")).toBeUndefined();
+  });
 });
 
 /**
@@ -407,6 +418,10 @@ const fakeSdk = vi.hoisted(() => {
   return {
     scope,
     captured: [] as unknown[],
+    /* The id the fake SDK hands back, so an arm can assert the value TRAVELLED
+       rather than that something truthy came out — a hard-coded `expect.any
+       (String)` would pass on the marker, the message or the route. */
+    eventId: "c0ffee1542c0ffee1542c0ffee154200",
     reset() {
       scope.tags = {};
       scope.contexts = {};
@@ -418,8 +433,13 @@ const fakeSdk = vi.hoisted(() => {
 vi.mock("@sentry/browser", () => ({
   init: () => {},
   withScope: (callback: (scope: unknown) => void) => callback(fakeSdk.scope),
+  /* RETURNS an id, because the real one does (`@sentry/core`'s
+     `captureException(exception, hint?): string`). A fake that returned nothing
+     would let `captureClientError` pass its own arms while handing every caller
+     `undefined` — the fake is the only thing standing where the SDK stands. */
   captureException: (error: unknown) => {
     fakeSdk.captured.push(error);
+    return fakeSdk.eventId;
   },
   setUser: () => {},
 }));
@@ -457,5 +477,32 @@ describe("⚠ what a render crash actually carries to the SDK", () => {
     /* A multi-line stack in a tag is unreadable and unsearchable both, so it
        must not have leaked into one on the way past. */
     expect(Object.values(fakeSdk.scope.tags)).not.toContain(COMPONENT_STACK);
+  });
+
+  /**
+   * ⚠ THE KEY A VENDOR READ-BACK IS ASKED ABOUT (#1542).
+   *
+   * The founder read Sentry's *"no event, ever"* onboarding panel over a service
+   * whose boot line said it was reporting. The server half could not answer him
+   * either until #1562 stopped discarding this id — and this half was still
+   * discarding it, typed `=> void` one line after the SDK produced it.
+   *
+   * The arm asserts the id the SDK RETURNED comes back out, not merely that a
+   * string did: a truthy check would pass on the message, the route or the
+   * marker, and this value's whole job is to be the one thing Sentry's API can
+   * be queried with.
+   */
+  it("⚠ hands back Sentry's own event id, so a quiet feed can be asked about", () => {
+    const eventId = captureClientError(new Error("Cannot read properties of null"), {
+      kind: "render",
+      route: "/casting",
+    });
+    expect(eventId).toBe(fakeSdk.eventId);
+    expect(fakeSdk.captured).toHaveLength(1);
+  });
+
+  it("returns the id for a non-Error reason too — it is wrapped, not dropped", () => {
+    expect(captureClientError("a string reason")).toBe(fakeSdk.eventId);
+    expect(fakeSdk.captured[0]).toBeInstanceOf(Error);
   });
 });

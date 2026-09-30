@@ -159,7 +159,16 @@ interface SentryFunctions {
       setContext: (key: string, context: Record<string, unknown> | null) => void;
     }) => void,
   ) => void;
-  captureException: (error: unknown) => void;
+  /**
+   * ⚠ **RETURNS SENTRY'S EVENT ID, AND THIS WAS TYPED `=> void` UNTIL #1542.**
+   * The real signature is `captureException(exception, hint?): string` — read at
+   * `@sentry/core@11.0.0`'s `exports.d.ts` — and declaring it `void` threw that
+   * id away one line after the SDK produced it. It is the only key a vendor
+   * read-back can be asked about, so without it a quiet feed is unanswerable:
+   * the server half discarded it in exactly the same way and that is the hole
+   * `captureServerError` was opened to close.
+   */
+  captureException: (error: unknown) => string;
   setUser: (user: { id: string } | null) => void;
 }
 
@@ -444,10 +453,30 @@ export function bootLineFor(
  * The route comes from the CALLER rather than from `window.location` here,
  * because by the time a render crash is reported the boundary knows the path it
  * was rendering and this module would be reading whatever the URL says now.
+ *
+ * # Returns Sentry's own event id, or `undefined` when nothing was reported
+ *
+ * ⚠ **THE MIRROR OF #1562, ON THE HALF THAT STILL DISCARDED IT (#1542).** The
+ * founder read Sentry's *"Get Started … no event, ever"* panel over a service
+ * that had printed `reporting to Sentry` for three days, and the one thing that
+ * could have told a dead pipe from a genuinely quiet one — the id the SDK hands
+ * back — was being thrown away on both sides. The server side was fixed first
+ * and its probe then answered the question in one run; this side could not be
+ * asked at all, because there was no key to ask about.
+ *
+ * `undefined` means NOT REPORTED, and it means it for the two reasons that
+ * differ: no DSN, so the tracker was never installed, or the SDK threw on the
+ * way past. Neither is "reported and the id is unknown" — a caller may treat an
+ * id as proof the SDK took it, exactly as `captureServerError`'s does.
+ *
+ * The local variable, rather than `withScope`'s return value, is deliberate:
+ * this is the SHAPE `captureServerError` already ships, and one shape read two
+ * ways across a pair of files is the drift working law 4 is about.
  */
-export function captureClientError(error: unknown, context: ClientErrorContext = {}): void {
+export function captureClientError(error: unknown, context: ClientErrorContext = {}): string | undefined {
+  let eventId: string | undefined;
   try {
-    if (!sentry || !state.ready) return;
+    if (!sentry || !state.ready) return undefined;
     sentry.withScope((scope) => {
       if (context.route) scope.setTag("route", context.route);
       if (context.kind) scope.setTag("kind", context.kind);
@@ -466,11 +495,12 @@ export function captureClientError(error: unknown, context: ClientErrorContext =
       /* A non-Error reason (an unhandled rejection of a string, which this app
          does receive) is wrapped rather than stringified into a message, so it
          still carries a stack. */
-      sentry?.captureException(error instanceof Error ? error : new Error(String(error)));
+      eventId = sentry?.captureException(error instanceof Error ? error : new Error(String(error)));
     });
   } catch (reportingError) {
     console.warn("[Errors] the tracker threw while reporting an error", reportingError);
   }
+  return eventId;
 }
 
 /**

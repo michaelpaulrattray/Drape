@@ -185,6 +185,82 @@ export function probeMarker(sha: string | undefined, nonce: string): string {
   return `probe:${sha ?? "unknown"}:${nonce}`;
 }
 
+/** Where a probe learned which build it is probing. */
+export type ProbeBuildSource = "deployment" | "checkout" | "unknown";
+
+export interface ProbeBuild {
+  /** The commit, or `undefined` when neither road could answer. */
+  readonly sha: string | undefined;
+  readonly source: ProbeBuildSource;
+  /** One line for the receipt, saying WHICH tree the sha names. */
+  readonly note: string;
+}
+
+/**
+ * Which build is being probed, and how that was learned.
+ *
+ * ⚠ **THE FIRST PRODUCTION RUN OF THE PROBE PRINTED `probe:unknown:…` AND THAT
+ * IS THE WHOLE REASON THIS EXISTS (#1542, the relay's finding of 2026-09-30).**
+ * `RAILWAY_GIT_COMMIT_SHA` is injected into a container Railway BUILT; it is
+ * NOT injected by `railway run`, which is how the probe is actually fired — so
+ * the one road the instrument is designed to be used on was the one road where
+ * it could not name its subject. An event in the feed that cannot say which
+ * build produced it is a finding you cannot act on.
+ *
+ * # Why the SOURCE travels beside the sha, and is not an implementation detail
+ *
+ * The two roads name two different trees. Under a deployment the sha IS the
+ * running build. Under `railway run` from a worktree the git HEAD is the LOCAL
+ * checkout, which names the probed build only if it is what is deployed — true
+ * of the relay's own run at `2af09827`, and silently false the moment somebody
+ * probes production from a branch. Reporting a checkout sha as though it were
+ * the deployment's is exactly the class of confident-and-wrong reading this
+ * repository keeps paying for, so the note says which one it is and the caller
+ * cannot print the sha without it.
+ *
+ * `gitHead` is injected rather than called here: this module is imported by the
+ * server and must never spawn a process, and a reader that shells out cannot be
+ * driven over its own failure arm.
+ */
+export function readProbeBuild(
+  /* ⚠ A STRUCTURAL RECORD, NOT `Pick<NodeJS.ProcessEnv, …>`. That is what this
+     was first written as, and `pnpm check:scripts` refused it: the scripts
+     tsconfig sees `ProcessEnv` as a bare `Dict<string>` with no declared
+     members, so a `Pick` makes the key REQUIRED and `process.env` stops being
+     assignable. The main typecheck passes it — the two configs load different
+     ambient types — which is the whole reason that second check exists. */
+  env: { readonly RAILWAY_GIT_COMMIT_SHA?: string | undefined },
+  gitHead: () => string | undefined,
+): ProbeBuild {
+  const deployed = env.RAILWAY_GIT_COMMIT_SHA?.trim();
+  if (deployed) {
+    return {
+      sha: deployed,
+      source: "deployment",
+      note: "RAILWAY_GIT_COMMIT_SHA — the build Railway is running.",
+    };
+  }
+
+  const head = gitHead()?.trim();
+  if (head) {
+    return {
+      sha: head,
+      source: "checkout",
+      note:
+        "git rev-parse HEAD — this working tree, NOT the deployment. It names the probed build only if this " +
+        "checkout is what is deployed; compare it against /api/health's `build` before treating it as one.",
+    };
+  }
+
+  return {
+    sha: undefined,
+    source: "unknown",
+    note:
+      "neither RAILWAY_GIT_COMMIT_SHA nor a git HEAD could be read, so the marker cannot say which build " +
+      "produced the event. The run is still valid; only its attribution is missing.",
+  };
+}
+
 /**
  * The probe's error message. A single place so the suite can drive the real
  * scrub over the real text rather than agreeing with a copy of it.
