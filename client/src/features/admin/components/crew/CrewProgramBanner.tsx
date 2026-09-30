@@ -106,15 +106,16 @@ const rungSetKey = (key: string) => `rung:${key}`;
 const finishedSetKey = (key: string | null) => `finished:${key ?? "unplaced"}`;
 
 export function CrewProgramBanner({
-  program, ladderCards, finished, closedCards, queueRead, now, cardIntents, onIntent, intentPendingCard,
+  program, ladderCards, finished, isCardClosed, queueRead, now, cardIntents, onIntent, intentPendingCard,
 }: {
   program: CrewBriefingView["program"];
   /** The ladder's cards — live from GitHub when it answers, the edition's list otherwise (#1193). */
   ladderCards: CrewLadderCardsSource;
   /** Ladder cards that finished in the window, on their rung — drawn struck through (#1201). */
   finished: readonly { readonly issueNumber: number; readonly title: string; readonly rung: string | null }[];
-  /** Cards GitHub has closed; a milestone step naming one reads as done (#1201). */
-  closedCards: readonly number[];
+  /** Whether GitHub has closed a card; a milestone step naming a closed one
+   *  reads as done (#1201, its reading fixed in #1586). */
+  isCardClosed: (issueNumber: number) => boolean;
   queueRead: CrewQueueRead;
   now: number;
   cardIntents: CrewCardIntentsView;
@@ -140,7 +141,7 @@ export function CrewProgramBanner({
   */
   const [showDone, setShowDone] = useState(false);
   /* A step naming a closed card reads as done, whatever the edition says (#1201). */
-  const steps = program.milestone ? stepsWithLiveState(program.milestone.steps, closedCards) : [];
+  const steps = program.milestone ? stepsWithLiveState(program.milestone.steps, isCardClosed) : [];
   const finishedOn = (rungKey: string | null) => finished.filter((card) => card.rung === rungKey);
   const toggleRung = (key: string) =>
     setOpenRungs((current) => {

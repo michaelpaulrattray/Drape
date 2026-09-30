@@ -121,7 +121,7 @@ import { CrewEyeGallery } from "@/features/admin/components/crew/CrewEyeGallery"
 import { CrewNeedsYou } from "@/features/admin/components/crew/CrewNeedsYou";
 import { CrewPipeline } from "@/features/admin/components/crew/CrewPipeline";
 import { CrewSinceYouLooked } from "@/features/admin/components/crew/CrewSinceYouLooked";
-import { eyeItemsFor, ladderCardsFor, needsYouFor, nextUpFor, problemsFor, queueReadOf } from "@/features/admin/components/crew/crewTypes";
+import { cardIsClosed, eyeItemsFor, ladderCardsFor, needsYouFor, nextUpFor, problemsFor, queueReadOf } from "@/features/admin/components/crew/crewTypes";
 import { useLastSeen } from "@/features/admin/components/crew/useLastSeen";
 import { CrewProblems } from "@/features/admin/components/crew/CrewProblems";
 import { CrewBackgroundWork } from "@/features/admin/components/crew/CrewBackgroundWork";
@@ -417,7 +417,7 @@ export default function AdminCrew() {
               program={data.briefing.program}
               ladderCards={ladderCardsFor(live, data.briefing)}
               finished={live.available ? live.desk.finishedLadder : []}
-              closedCards={live.available ? live.desk.closedCards : []}
+              isCardClosed={cardIsClosed(live)}
               queueRead={queueRead}
               now={now}
               cardIntents={data.cardIntents}

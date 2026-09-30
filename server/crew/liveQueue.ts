@@ -29,10 +29,21 @@
  * is what travels.
  *
  * ⚠ THE SEARCH RESPONSE IS A FLOOR WHEN `total_count` EXCEEDS THE PAGE. The
- * reader takes one page of 100 and says `truncated: true` past it rather than
- * paging — 48 open items on the day this landed — because a second page is a
- * second allowance call and the honest answer to "there are more than 100" is
- * the word, not the list.
+ * reader takes one page of 100 and says so past it rather than paging — 48
+ * open items on the day this landed — because a second page is a second
+ * allowance call and the honest answer to "there are more than 100" is the
+ * word, not the list.
+ *
+ * ⚠ **AND `truncated` IS TWO FACTS, NOT ONE — SPLIT 2026-09-30 (#1586).** It
+ * was one boolean OR-ing both queries, and the two overflow on completely
+ * different schedules: the OPEN query has never truncated (37 items the day
+ * this was written, 48 the day it landed), while the CLOSED window overflowed
+ * by 32 that same morning — **132 items closed inside 48 hours against a page
+ * of 100**, on a repository where four builder seats close twenty-odd cards a
+ * day. A reader that needs to know *is this card closed* can only answer from
+ * the open set's completeness, and the combined boolean made that
+ * unaskable: it read `true` because the half nobody was relying on had
+ * overflowed. See `liveDesk`'s `openComplete` for what now depends on it.
  */
 import { holdReasonFromBody } from "../../shared/crewNextUpHold";
 
@@ -78,8 +89,14 @@ export type LiveQueueReading = {
   readonly readAt: string;
   readonly open: readonly LiveQueueItem[];
   readonly recent: readonly LiveQueueItem[];
-  /** True when GitHub reported more matches than one page holds — a floor, not a list. */
-  readonly truncated: boolean;
+  /**
+   * Which of the two searches reported more matches than one page holds — a
+   * floor, not a list. **Per query on purpose** (#1586): `recent` overflows
+   * routinely and `open` never has, and only `open`'s completeness can answer
+   * whether a card's absence from the open set proves it closed. One boolean
+   * over both made that question unaskable.
+   */
+  readonly truncated: { readonly open: boolean; readonly recent: boolean };
 };
 
 export type LiveQueue =
@@ -235,7 +252,10 @@ export function createLiveQueueReader(options: LiveQueueReaderOptions = {}): Liv
         readAt: new Date(startedMs).toISOString(),
         open: open.items,
         recent: recent.items,
-        truncated: open.total > open.items.length || recent.total > recent.items.length,
+        truncated: {
+          open: open.total > open.items.length,
+          recent: recent.total > recent.items.length,
+        },
       };
       lastGoodAtMs = startedMs;
       lastFailure = null;
