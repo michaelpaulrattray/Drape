@@ -165,12 +165,24 @@ export const WIRED_DESPITE_SHUTDOWN: readonly AcknowledgedModelDebt[] = [
   {
     id: "gemini-3-pro-image-preview",
     card: "#1537",
-    why: "Reached by the wardrobe/VTO road and three casting image paths. Re-pointing changes what the product renders and retiring the door is a product decision — both are the founder's, and #1537 puts them to him.",
+    why:
+      "ANSWERED 2026-09-30 — his word, verbatim and entire: 'SWITCH IT OFF'. The wardrobe try-on " +
+      "door is SHUT (`shared/wardrobeTryOnDoor.ts`), so no wardrobe road reaches this id any more: " +
+      "six procedures refuse at the mouth and the five pipeline entries refuse again as the " +
+      "structural backstop. The id stays in the registry because he chose neither of the card's " +
+      "two options — no re-point, no retirement — and the road returns on N8 as a build. " +
+      "⚠ WHAT IS STILL WIRED IS THE LEGACY CASTING STUDIO'S three image paths " +
+      "(`server/casting/geminiGeneration.ts`, `geminiViews.ts`, `aiService.ts`), reachable only " +
+      "at /studio, which is admin-only since #364. That is N8's retirement (#29) and was never " +
+      "this card's scope; it is named here so the next reader does not take this line as covering it.",
   },
   {
     id: "gemini-3.1-flash-image-preview",
     card: "#1537",
-    why: "The image fallback's second leg and the garment digitiser's engine; it dies or moves with the id above, on the same decision.",
+    why:
+      "ANSWERED 2026-09-30 with the id above, on the same word. It was the garment digitiser's " +
+      "engine and that door is shut; it remains the image fallback's second leg on the legacy " +
+      "casting road, which is N8's.",
   },
 ];
 

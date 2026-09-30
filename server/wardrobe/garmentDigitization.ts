@@ -18,6 +18,7 @@ import {
   uploadBase64ToS3,
 } from "./utils";
 import { createModuleLogger } from "../logging/logger";
+import { assertWardrobeTryOnOpen } from "./tryOnDoor";
 
 const log = createModuleLogger("wardrobe/garmentDigitization");
 
@@ -40,6 +41,14 @@ export async function digitizeGarment(
   label: string,
   userId: string,
 ): Promise<DigitizationResult> {
+  /*
+    ⚠ **THE DOOR, AS A STRUCTURE RATHER THAN A LIST** (#1537, his word
+    *"SWITCH IT OFF"*, 2026-09-30). Digitising a garment renders on `IMAGE_FLASH`, shut down 2026-06-25.
+    The router refuses first, so a customer never pays for this; this throw is
+    what makes the refusal true of any FUTURE caller as well, which a gate that
+    lives only at today's entrance is not.
+  */
+  assertWardrobeTryOnOpen();
   return withImageQueue(async () => {
     const ai = getAiClient();
     const garmentPart = await toInlinePart(imageUrl);

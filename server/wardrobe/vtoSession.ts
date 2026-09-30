@@ -11,6 +11,7 @@
 import { IMAGE_PRO } from "@shared/modelRegistry";
 import { getAiClient, SAFETY_SETTINGS, toInlinePart } from "./utils";
 import { createModuleLogger } from "../logging/logger";
+import { assertWardrobeTryOnOpen } from "./tryOnDoor";
 
 const log = createModuleLogger("wardrobe/vtoSession");
 
@@ -60,6 +61,15 @@ export async function seedSession(
   resultUrl: string,
   outfitDescription?: string,
 ): Promise<void> {
+  /*
+    ⚠ **THE DOOR, AS A STRUCTURE RATHER THAN A LIST** (#1537, his word
+    *"SWITCH IT OFF"*, 2026-09-30). Seeding the chat asks `IMAGE_PRO` for text, shut down 2026-06-25 — a
+    dead id answers nothing whatever the response shape.
+    The router refuses first, so a customer never pays for this; this throw is
+    what makes the refusal true of any FUTURE caller as well, which a gate that
+    lives only at today's entrance is not.
+  */
+  assertWardrobeTryOnOpen();
   const ai = getAiClient();
 
   const modelPart = await toInlinePart(modelImageUrl);

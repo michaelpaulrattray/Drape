@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 72
+      "moduleCount": 73
     },
     {
       "id": "domain:staff",
@@ -152,7 +152,7 @@
     {
       "id": "domain:wardrobe",
       "name": "wardrobe",
-      "moduleCount": 36
+      "moduleCount": 37
     }
   ],
   "modules": [
@@ -5809,6 +5809,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/wardrobe/tryOnDoor.ts",
+      "path": "server/wardrobe/tryOnDoor.ts",
+      "domain": "wardrobe",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/wardrobe/utils.ts",
       "path": "server/wardrobe/utils.ts",
       "domain": "wardrobe",
@@ -6255,6 +6261,12 @@
     {
       "id": "module:shared/viewThumbnails.ts",
       "path": "shared/viewThumbnails.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/wardrobeTryOnDoor.ts",
+      "path": "shared/wardrobeTryOnDoor.ts",
       "domain": "shared",
       "lifecycle": "active"
     }
@@ -14146,6 +14158,10 @@
       "path": "server/wardrobe/vtoSession.test.ts"
     },
     {
+      "id": "test:server/wardrobeTryOnDoor.test.ts",
+      "path": "server/wardrobeTryOnDoor.test.ts"
+    },
+    {
       "id": "test:server/workerCap.test.ts",
       "path": "server/workerCap.test.ts"
     }
@@ -19057,6 +19073,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/wardrobe/components/LayersPanel.tsx",
+      "to": "module:shared/wardrobeTryOnDoor.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/wardrobe/components/QualityBadge.tsx",
       "to": "module:client/src/features/wardrobe/types.ts",
       "kind": "imports"
@@ -19229,6 +19250,11 @@
     {
       "from": "module:client/src/features/wardrobe/stores/useWardrobeStore.ts",
       "to": "module:client/src/features/wardrobe/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/wardrobe/vtoErrorCopy.ts",
+      "to": "module:shared/wardrobeTryOnDoor.ts",
       "kind": "imports"
     },
     {
@@ -33348,6 +33374,11 @@
     },
     {
       "from": "module:server/routes/wardrobe.ts",
+      "to": "module:server/wardrobe/tryOnDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/wardrobe.ts",
       "to": "module:server/wardrobe/utils.ts",
       "kind": "imports"
     },
@@ -33653,6 +33684,11 @@
     },
     {
       "from": "module:server/wardrobe/garmentDigitization.ts",
+      "to": "module:server/wardrobe/tryOnDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/garmentDigitization.ts",
       "to": "module:server/wardrobe/utils.ts",
       "kind": "imports"
     },
@@ -33664,6 +33700,11 @@
     {
       "from": "module:server/wardrobe/garmentRefinement.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/garmentRefinement.ts",
+      "to": "module:server/wardrobe/tryOnDoor.ts",
       "kind": "imports"
     },
     {
@@ -33767,6 +33808,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/wardrobe/tryOnDoor.ts",
+      "to": "module:shared/wardrobeTryOnDoor.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/wardrobe/utils.ts",
       "to": "module:server/casting/geminiClient.ts",
       "kind": "imports"
@@ -33803,6 +33849,11 @@
     },
     {
       "from": "module:server/wardrobe/vtoGeneration.ts",
+      "to": "module:server/wardrobe/tryOnDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/vtoGeneration.ts",
       "to": "module:server/wardrobe/utils.ts",
       "kind": "imports"
     },
@@ -33814,6 +33865,11 @@
     {
       "from": "module:server/wardrobe/vtoSession.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/vtoSession.ts",
+      "to": "module:server/wardrobe/tryOnDoor.ts",
       "kind": "imports"
     },
     {

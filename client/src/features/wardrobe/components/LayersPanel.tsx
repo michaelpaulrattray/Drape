@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { useWardrobeStore } from "../stores/useWardrobeStore";
 import { SLOT_DISPLAY_NAMES } from "../constants";
+import { WARDROBE_TRY_ON_CLOSED, WARDROBE_TRY_ON_OPEN } from "@shared/wardrobeTryOnDoor";
 import type { GarmentSlotType } from "../types";
 import { parseStyleNote, buildStyleNote, extractColors } from "./layerHelpers";
 import { buildHierarchy } from "../layerUtils";
@@ -444,6 +445,25 @@ export function LayersPanel({
 
       {/* Action Buttons */}
       <div className="px-4 py-3 flex flex-col gap-2" style={{ borderTop: "1px solid #E8E4DF" }}>
+        {!WARDROBE_TRY_ON_OPEN ? (
+          /*
+            ⚠ **THE DOOR, SAID BEFORE THE PRESS RATHER THAN AFTER IT** (#1537,
+            his word 2026-09-30: *"SWITCH IT OFF"*). A button that can be
+            pressed and then refuses is the feature FAILING, which is the one
+            thing his instruction rules out; a sentence where the button was is
+            the feature being unavailable. Nothing else in this panel moves —
+            garments still list, select, rename and delete, because the door
+            closes what reaches a dead engine and nothing a customer owns.
+
+            The copy is `WARDROBE_TRY_ON_CLOSED` itself, not a second sentence
+            beside it, and it names no vendor and no model: the
+            disappearing-technology law's one narrow prohibition is an engine
+            name on a path somebody must walk, and a closed door is such a path.
+          */
+          <p style={{ fontSize: 11, color: "#52524B", lineHeight: 1.5, margin: 0 }}>
+            {WARDROBE_TRY_ON_CLOSED}
+          </p>
+        ) : (
         <button
           onClick={onGenerate}
           disabled={isGenerating || selectedGarments.length === 0 || !!hasProcessingSelected}
@@ -458,8 +478,9 @@ export function LayersPanel({
             <><Sparkles size={12} />Dress Model</>
           )}
         </button>
+        )}
 
-        {hasDirtyStyles && hasResult && onApplyStyleChanges && (
+        {WARDROBE_TRY_ON_OPEN && hasDirtyStyles && hasResult && onApplyStyleChanges && (
           <button
             onClick={onApplyStyleChanges}
             disabled={isGenerating}
