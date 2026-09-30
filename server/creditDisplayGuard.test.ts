@@ -38,7 +38,7 @@ import {
   censusKey,
   creditDisplaySites,
   creditSitesIn,
-  population,
+  creditDisplayPopulation,
 } from "./testing/creditDisplaySites";
 import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
 
@@ -78,7 +78,7 @@ describe("the negative control — the tree as it stands passes", () => {
   });
 
   it("walks the product's source and not its tests or its own reader", () => {
-    const files = population(repoRoot);
+    const files = creditDisplayPopulation(repoRoot);
     expect(files.some((file) => /\.test\.tsx?$/.test(file))).toBe(false);
     expect(files).not.toContain(THE_HELPER);
     expect(files.some((file) => file.startsWith("server/testing/"))).toBe(false);
@@ -252,7 +252,7 @@ describe("the census is held to its contract", () => {
   });
 
   it("names only files the guard actually walks", () => {
-    const walked = new Set(population(repoRoot));
+    const walked = new Set(creditDisplayPopulation(repoRoot));
     const orphans = UNROUTED.map((row) => row.file).filter((file) => !walked.has(file));
     expect(Array.from(new Set(orphans))).toEqual([]);
   });

@@ -530,7 +530,7 @@ function countFloors(file: string, source: string): { formatCalls: number; inter
 }
 
 /** Every file this guard reads — exported so the suite can assert the population. */
-export function population(repoRoot: string): string[] {
+export function creditDisplayPopulation(repoRoot: string): string[] {
   return execFileSync("git", ["ls-files", "*.ts", "*.tsx"], {
     encoding: "utf8",
     cwd: repoRoot,
@@ -552,7 +552,7 @@ export function creditDisplaySites(repoRoot: string): CreditDisplayReading {
   let formatCalls = 0;
   let interpolations = 0;
 
-  for (const file of population(repoRoot)) {
+  for (const file of creditDisplayPopulation(repoRoot)) {
     const source = readListedSource(join(repoRoot, file));
     if (source === null) continue;
     files += 1;
