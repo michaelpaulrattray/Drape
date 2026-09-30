@@ -29,6 +29,7 @@
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { withoutComments } from "./testing/withoutComments";
 
 import { describe, expect, it } from "vitest";
 
@@ -196,9 +197,7 @@ function sourceOf(relative: string): string {
  * table"**, not "does the word appear in the file".
  */
 function stripComments(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, " ")
-    .replace(/^[ \t]*\/\/.*$/gm, " ");
+  return withoutComments(source);
 }
 
 /**
