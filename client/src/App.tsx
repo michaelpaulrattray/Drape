@@ -99,7 +99,7 @@ function BoardRoute() {
 
 
 /** Lobby views share one transition key so the rail doesn't remount between them. */
-const LOBBY_ROUTES = new Set(['/app', '/app/boards', '/app/models', '/app/garments', '/app/looks']);
+const LOBBY_ROUTES = new Set(['/app', '/app/boards', '/app/library', '/app/garments', '/app/looks']);
 
 function Router() {
   const [location] = useLocation();
@@ -124,9 +124,20 @@ function Router() {
             {/* Lobby (rail + views) */}
             <Route path="/app" component={AppLobby} />
             <Route path="/app/boards" component={AppLobby} />
-            <Route path="/app/models" component={AppLobby} />
+            <Route path="/app/library" component={AppLobby} />
             <Route path="/app/garments" component={AppLobby} />
             <Route path="/app/looks" component={AppLobby} />
+            {/*
+              The library's old address, kept answering (#1545). His word,
+              2026-09-30: "library hasnt been designed yet regardless it should
+              read /library not /models". A rename that drops the old address
+              breaks every bookmark, every link in a sent email and the crew's
+              own notes, so the rename is a MOVE and this is its forwarding
+              address. `replace` so Back does not bounce off the redirect.
+            */}
+            <Route path="/app/models">
+              <Redirect to="/app/library" replace />
+            </Route>
 
             {/* Board-based canvas */}
             <Route path="/app/board/:id" component={BoardRoute} />

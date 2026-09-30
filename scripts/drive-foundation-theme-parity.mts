@@ -68,7 +68,7 @@ const WIDTHS = [
 // every primitive in one place. It moved OUT of /casting on 2026-09-01 (#261):
 // a house-only specimen sheet had no business inside the customer's namespace,
 // and it now answers at /admin/foundation behind the admin role guard.
-const DEFAULT_ROUTES = ["/admin/foundation", "/casting", "/app", "/app/boards", "/app/models"];
+const DEFAULT_ROUTES = ["/admin/foundation", "/casting", "/app", "/app/boards", "/app/library"];
 
 const ROUTES = (process.env.THEME_SHOT_ROUTES ?? DEFAULT_ROUTES.join(","))
   .split(",")

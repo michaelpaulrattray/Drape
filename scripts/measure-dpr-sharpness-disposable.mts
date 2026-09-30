@@ -366,8 +366,8 @@ for (const dpr of [1, 2]) {
     await page.goto(`${BASE}/app`, { waitUntil: "networkidle2", timeout: 240_000 });
     await take("lobby /app");
 
-    await page.goto(`${BASE}/app/models`, { waitUntil: "networkidle2", timeout: 240_000 });
-    await take("lobby /app/models");
+    await page.goto(`${BASE}/app/library`, { waitUntil: "networkidle2", timeout: 240_000 });
+    await take("lobby /app/library");
 
     await page.goto(`${BASE}/app/boards`, { waitUntil: "networkidle2", timeout: 240_000 });
     await take("lobby /app/boards");

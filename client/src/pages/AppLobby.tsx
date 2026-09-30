@@ -20,7 +20,7 @@
  * we'll be redesigning all of these from scratch later."*
  *
  * ⚠ **The five URLs still resolve.** A stubbed page is still a place — the rail
- * keeps all eight destinations, and `/app/models`, `/app/garments` and
+ * keeps all eight destinations, and `/app/library`, `/app/garments` and
  * `/app/looks` render the Library stub rather than 404ing.
  *
  * ⚠ **`HomeView`, `LibraryView` and `BoardsView` are UNMOUNTED, not deleted,
@@ -90,7 +90,7 @@ export default function AppLobby() {
       crumb: 'Canvas',
       rail: 'canvas',
     },
-    '/app/models': LIBRARY,
+    '/app/library': LIBRARY,
     '/app/garments': LIBRARY,
     '/app/looks': LIBRARY,
   };

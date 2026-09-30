@@ -122,7 +122,7 @@ export function CastPickerModal({ boardId, itemId, onClose, onCastNew }: CastPic
       <div className="relative w-[640px] max-w-[92vw] max-h-[80vh] flex flex-col bg-canvas-surface border-hairline border-canvas-border-strong rounded-canvas-md">
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-4 pb-3">
-          <span className="text-canvas-md font-medium text-canvas-ink">Your models</span>
+          <span className="text-canvas-md font-medium text-canvas-ink">Your casts</span>
           <button
             type="button"
             onClick={onClose}
@@ -140,7 +140,7 @@ export function CastPickerModal({ boardId, itemId, onClose, onCastNew }: CastPic
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search models..."
+              placeholder="Search casts..."
               autoFocus
               className="flex-1 min-w-0 px-3 py-2 bg-canvas-surface-inset rounded-canvas-md text-canvas-sm text-canvas-ink placeholder:text-canvas-ink-faint focus:outline-none"
             />
@@ -159,7 +159,7 @@ export function CastPickerModal({ boardId, itemId, onClose, onCastNew }: CastPic
             <div className="py-12 flex flex-col items-center text-canvas-ink-faint">
               <User className="w-4 h-4 opacity-50" strokeWidth={1.2} />
               <span className="text-canvas-xs mt-1.5">
-                {search.trim() ? "No models match" : "No models yet"}
+                {search.trim() ? "No casts match" : "No casts yet"}
               </span>
               {!search.trim() && (
                 <button
@@ -167,7 +167,7 @@ export function CastPickerModal({ boardId, itemId, onClose, onCastNew }: CastPic
                   onClick={onCastNew}
                   className="mt-2.5 text-canvas-xs text-canvas-ink-soft hover:text-canvas-ink transition-colors"
                 >
-                  Cast your first model
+                  Cast someone
                 </button>
               )}
             </div>

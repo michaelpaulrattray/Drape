@@ -235,11 +235,11 @@ export function NodeInfoPanel({ itemId, position, onClose }: NodeInfoPanelProps)
                   an ordinary unlinked item. The item snapshot above remains
                   the historical evidence; the model document is not exposed. */}
               {!data.model && data.sourceArchived && (
-                <Section title="Model">
+                <Section title="Cast">
                   <InfoRow
                     icon={<User size={13} />}
                     label="Source"
-                    value="Unavailable — the linked model was removed"
+                    value="Unavailable — the linked cast was removed"
                   />
                 </Section>
               )}
@@ -247,7 +247,7 @@ export function NodeInfoPanel({ itemId, position, onClose }: NodeInfoPanelProps)
               {/* Model info — only if linked */}
               {!!data.model && (
                 <>
-                  <Section title="Model">
+                  <Section title="Cast">
                     <InfoRow icon={<User size={13} />} label="Name" value={data.model.name ?? '—'} />
                     {/* Review correction 5: a missing ID is only "Not minted"
                         when the STATUS says unminted — a minted (active/legacy

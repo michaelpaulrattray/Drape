@@ -26,6 +26,13 @@
  * refuses everyone but an admin, and it refuses by answering 404 rather than by
  * saying no (a refusal page tells a stranger there is something there).
  *
+ * #1545: `/app/models` — the library's address — became `/app/library` on his
+ * word (*"library hasnt been designed yet regardless it should read /library not
+ * /models"*). A rename is a MOVE, not a deletion: every bookmark, every link in
+ * a sent email and the crew's own notes point at the old one, so the arms below
+ * assert BOTH halves exactly as #68's and #261's do — the new address is routed,
+ * and the old address still answers, as a `replace` redirect rather than a 404.
+ *
  * Reads are newline-normalized on purpose: these assertions are about tokens
  * on one line, and a CRLF working copy (issue #71) must not fail them.
  */
@@ -61,6 +68,49 @@ describe("App routes — the admin entrance (#68)", () => {
   it("still holds the real admin pages one segment deeper", () => {
     expect(appSource).toContain('<Route path="/admin/overview"');
     expect(appSource).toContain('<Route path="/admin/users"');
+  });
+});
+
+describe("App routes — the library moved and its old address still answers (#1545)", () => {
+  /*
+    ⚠ The two halves are asserted TOGETHER, out of the same block, rather than
+    as two `toContain`s on two tokens. Two independent token reads both pass on a
+    tree where the route and the redirect exist but are not paired — a
+    `/app/models` route sitting empty, or a redirect pointing at the address it
+    came from — and "the old address answers" is exactly the claim that would
+    then be false while green. `#68`'s arms above read two tokens because its
+    redirect target is a page that cannot be confused with its source; a rename's
+    can, because the two strings differ by one word.
+  */
+  const modelsRoute = /<Route path="\/app\/models">([\s\S]*?)<\/Route>/.exec(appSource);
+
+  it("routes the library at its new address", () => {
+    expect(appSource).toContain('<Route path="/app/library" component={AppLobby} />');
+  });
+
+  it("keeps the old address registered — a bookmark is not a 404", () => {
+    expect(
+      modelsRoute,
+      "/app/models must still have a Route block — a rename that drops it breaks every saved link",
+    ).not.toBeNull();
+  });
+
+  it("forwards it to the new address, replacing the history entry", () => {
+    expect(modelsRoute?.[1]).toContain('<Redirect to="/app/library" replace />');
+  });
+
+  it("no longer renders the lobby AT the old address — one door, not two", () => {
+    /* Two live addresses for one page is the drift this card is about; the old
+       one must FORWARD, never serve. */
+    expect(appSource).not.toContain('<Route path="/app/models" component={AppLobby} />');
+  });
+
+  it("leaves no /app/models link behind in the customer's own navigation", () => {
+    /* The rail is the only thing that ever pointed here, and a stale href would
+       send a click through the redirect forever rather than to the real door. */
+    const rail = read(resolve(__dirname, "foundation/Rail.tsx"));
+    expect(rail).toContain('href: "/app/library"');
+    expect(rail).not.toContain('"/app/models"');
   });
 });
 

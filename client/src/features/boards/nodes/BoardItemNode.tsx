@@ -48,7 +48,7 @@ const TYPE_ICONS: Record<BoardItemNodeData['type'], typeof ScanFace> = {
 };
 
 const TYPE_LABELS: Record<BoardItemNodeData['type'], string> = {
-  model: 'Model',
+  model: 'Cast',
   garment: 'Garment',
   vto_result: 'Look',
   reference: 'Reference',

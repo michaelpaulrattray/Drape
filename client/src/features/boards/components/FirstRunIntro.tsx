@@ -50,7 +50,7 @@ export function FirstRunIntro({
         {/* The workflow composition — static art, not live nodes */}
         <div className="flex items-start gap-10">
           {/* 1 — a cast card */}
-          <GhostCard caption="Cast a model from a sentence" onClick={onDismiss}>
+          <GhostCard caption="Cast a person from a sentence" onClick={onDismiss}>
             <div className={`${ghostFrame} flex items-center justify-center`} style={{ width: 96, height: 128 }}>
               <User className="w-6 h-6 text-canvas-ink-faint opacity-50" strokeWidth={1.2} />
             </div>
@@ -95,7 +95,7 @@ export function FirstRunIntro({
             className="px-4 py-2 rounded-canvas-pill text-canvas-md font-medium bg-canvas-ink hover:opacity-90 transition-opacity"
             style={{ color: 'var(--color-canvas-surface)' }}
           >
-            Cast your first model
+            Cast someone
           </button>
           <button
             type="button"
