@@ -145,6 +145,7 @@ import {
   CREW_WORK_CATEGORIES,
   CREW_WORK_MASTER_KEY,
   homeWorkCategoryFor,
+  isFixWork,
   type CrewWorkSwitchState,
 } from "../../shared/crewWorkSwitches.js";
 
@@ -522,6 +523,38 @@ export function focusRungFromLadder(
  * on the ladder. Same direction as the master-switch arm in
  * `orderedBandForSeats`: the reading that cannot be trusted stops the seats
  * rather than freeing them.
+ *
+ * # ⚠ EXCEPT ON A FIX, WHERE A RUNG LABEL IS A LOCATOR AND NOT A CLAIM (#1553)
+ *
+ * **The rung label on a `bug` or `small-fix` card says WHOSE TERRITORY the fix
+ * lives in — which rung's completion card should mention it — not that the fix
+ * is that milestone's work.** This function could not tell the two apart, so a
+ * defect on a live surface became unbuildable the moment somebody labelled it
+ * helpfully. Read at `.agents/shift-logs/seat-plan-20260930-113014.json`, the
+ * first pass after #1544, three of his own fixes were held in one pass:
+ *
+ * | card | held sentence | what it actually was |
+ * |---|---|---|
+ * | #1542 | *on rung N6, and the milestone is N2* | a server saying "reporting to Sentry" while nothing arrived |
+ * | #1537 | *on rung N8, and the milestone is N2* | a live route calling a model Google shut down 2026-06-25 |
+ * | #1420 | *on rung N6, and the milestone is N2* | the crash report nobody could read — he had added the token that morning |
+ *
+ * Not one of the three adds a feature, and **MAINTENANCE MODE says exactly this
+ * work runs with NO focus at all.** The instances were freed by hand the same
+ * day, by stripping the labels; this is the class.
+ *
+ * ⚠ **AND IT IS ASKED FIRST, BEFORE THE NO-FOCUS BRANCH, WHICH IS THE ONLY
+ * PLACE IT CAN GO.** Maintenance mode is precisely the state where no focus
+ * exists — a fix exempted only once a focus is named would still be frozen on
+ * exactly the nights the founder's law says it should run.
+ *
+ * ⚠ **WHAT IT DOES NOT OPEN, AND THE MILESTONE GATE IS UNTOUCHED BY IT.** A
+ * feature-shaped card carries `design-unbuilt` or `roadmap` and no work label,
+ * so `isFixWork` answers false and the hold stands — in the ORDERED band, where
+ * a rung card usually has no work label at all, this exemption changes nothing
+ * whatsoever. What guards a feature card MISLABELLED `bug` is not this gate: it
+ * is the Retro's double-label reading and his own one-work-label-per-card rule,
+ * which is where a wrong label is a wrong label rather than a hole here.
  */
 export function rungHoldFor(
   labels: readonly string[],
@@ -529,6 +562,7 @@ export function rungHoldFor(
 ): string | null {
   const rungs = rungsNamedBy(labels);
   if (rungs.length === 0) return null;
+  if (isFixWork(labels)) return null;
   if (focusRung === null) {
     return "on a rung, and nothing names the current focus — the milestone gate holds it";
   }
