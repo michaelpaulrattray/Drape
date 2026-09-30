@@ -86,26 +86,32 @@ vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
  * a docblock cannot carry one. That is also why the table above says "anchored,
  * line-start only" in words.
  *
- * # ⚠ It hunts the RAW source, and that is a finding rather than a shortcut
+ * # ⚠ It hunts the RAW source, and the reason CHANGED under it (#1635)
  *
  * The first draft stripped each file with `withoutComments` before looking, on
  * the reasonable-sounding ground that prose quoting the shape is not a
  * declaration of it. The sabotage driver caught it: a bare stripper restored
  * into `creditToolKind.test.ts` landed on disk and the guard stayed GREEN.
  *
- * The reason is worth carrying, because it is a limit of the shared reader that
- * nothing else states. `withoutComments` knows string literals and comments; it
- * does NOT know REGEX literals. A block-comment-stripping regex ends with a
- * backslash, a slash and a slash — which the reader reads as the start of a
- * line comment, so it deletes the rest of that line. The two strippers are
- * almost always written on ONE line, so stripping comments first hid the shape
- * on exactly the line it lives on.
+ * **The cause was a limit of the shared reader, and #1635 CLOSED it.** That
+ * reader knew string literals and comments and not REGEX LITERALS: a
+ * block-comment-stripping regex ends with a backslash, a slash and a slash,
+ * which it read as the start of a line comment, so it deleted the rest of that
+ * line — and the two strippers are almost always written on ONE line, so
+ * stripping comments first hid the shape on exactly the line it lives on.
+ * `withoutComments` now reads regex literals and nested template substitutions,
+ * proven against the TypeScript parser over every tracked file on every run
+ * (`server/testing/withoutComments.test.ts`). The arm below pins the NEW
+ * reading, so this paragraph cannot rot back into a fact.
  *
- * So the hunt reads the file as written, and keys on the CALL — the needle
- * immediately preceded by `.replace(` — rather than on the pattern alone. A
- * docblock discussing the shape in prose does not match that; one pasting a
- * whole call would, and would be right to, because this repository's own
- * history is of a quoted shape being copied back into use.
+ * ⚠ **The hunt still reads the RAW source, and that is now a CHOICE rather
+ * than a workaround — which is worth saying plainly, because the reason it was
+ * forced no longer exists.** It keys on the CALL — the needle immediately
+ * preceded by `.replace(` — rather than on the pattern alone. A docblock
+ * discussing the shape in prose does not match that; one pasting a whole call
+ * would, and would be right to, **because this repository's own history is of a
+ * quoted shape being copied back into use.** That second reason was always the
+ * load-bearing one and it is untouched by #1635, so the hunt does not move.
  */
 
 const REPO_ROOT = path.resolve(__dirname, "..");
@@ -178,7 +184,13 @@ describe("no guard strips `//` to end of line (#1629)", () => {
     // written together, so a reader blind to the pair is blind in practice.
     const together = `  return source.replace(/\\/\\*[\\s\\S]*?\\*\\//g, "").replace(${FORBIDDEN[2]!.needle}, "");`;
     expect(declaresAForbiddenShape(together)).toBe(true);
-    expect(withoutComments(together).includes(FORBIDDEN[2]!.needle)).toBe(false);
+    // ⚠ THIS ASSERTION IS THE OTHER WAY ROUND SINCE #1635, AND THE FLIP IS THE
+    // POINT. It used to pin the shared reader EATING this line — the limit that
+    // forced the raw-source hunt. The reader now reads the regex literal, so
+    // the call survives being stripped. The hunt stays raw for its second
+    // reason (a quoted call is this tree's real history); the assertion moves
+    // because a guard may not go on asserting a defect that has been fixed.
+    expect(withoutComments(together).includes(FORBIDDEN[2]!.needle)).toBe(true);
   });
 
   it("negative control: the URL-aware and anchored shapes are NOT caught", () => {

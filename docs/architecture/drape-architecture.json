@@ -14098,6 +14098,10 @@
       "path": "server/testing/migrationColumns.test.ts"
     },
     {
+      "id": "test:server/testing/withoutComments.test.ts",
+      "path": "server/testing/withoutComments.test.ts"
+    },
+    {
       "id": "test:server/timeoutFailureIdentity.test.ts",
       "path": "server/timeoutFailureIdentity.test.ts"
     },
