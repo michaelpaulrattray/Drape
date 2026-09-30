@@ -393,6 +393,129 @@ describe("the price reading — where money is SET (#1359)", () => {
   });
 });
 
+/**
+ * THE THIRD POSITION IN THE SENTENCE — where a refund is DECIDED BY A BRANCH
+ * (#1622).
+ *
+ * The symbol reading below matches a diff that adds or removes a LINE naming a
+ * primitive. It cannot see a diff that changes the CONTROL FLOW deciding
+ * whether an existing refund line is ever REACHED, and `money-surfaces.sh`
+ * carries the measurement that settled what to do about it.
+ */
+describe("the refund-decision reading — a branch that decides WHETHER (#1622)", () => {
+  /**
+   * `packageOrchestrator.ts` holds `await (dependencies.refund ?? recordRefund)(…)`
+   * inside its per-view failure path. It is on the list BY NAME on the same
+   * argument `atomicCredits.ts` is: it decides whether the refund primitive is
+   * called at all for a signed view, and it can do that while touching no call
+   * line.
+   */
+  it("the module that decides whether a signed view is refunded is a money diff", () => {
+    expect(pathRe.test("server/castingV2/packageOrchestrator.ts")).toBe(true);
+  });
+
+  /**
+   * THE NEGATIVE CONTROL, AND IT IS THE WHOLE ARGUMENT FOR THE ENTRY ABOVE.
+   *
+   * Real lines, copied from `git diff -U0 origin/main...` on PR #1621 — the
+   * change that rewrote the branch above that refund. Not one of them names a
+   * primitive, so the symbol half was silent and the PR's triage comment read
+   * *"An ordinary diff"*. If this arm ever goes green because a line here
+   * started matching, the path entry is no longer what is catching this class
+   * and the reasoning above wants re-reading.
+   */
+  const SPECIMEN_LINES_PR_1621 = [
+    "-        lastReason = conformanceReason(failedAxes, verdict);",
+    "+  viewConformanceRefuses,",
+    "-import { conformanceProvenance, type ViewConformanceJudge, type ViewConformanceVerdict } from \"./viewConformance\";",
+  ];
+
+  it("the symbol half cannot see that change, which is why the path entry exists", () => {
+    for (const line of SPECIMEN_LINES_PR_1621) {
+      expect(symbolRe.test(line), `${line} — the symbol half was believed blind to this`).toBe(false);
+    }
+  });
+
+  /*
+    ⚠ THE REMAINDER, DERIVED RATHER THAN TYPED — the same shape as the price
+    guard above, pointed at the refund adjudicators.
+
+    Adding all of them was MEASURED at 17 of 60 merged PRs, the exact rate #958
+    rejected for `paths + whole casting dirs`, so the bulk widening was declined
+    and these 18 stay off the list. That is a stated remainder, not a closed
+    hole — and the thing a stated remainder must not do is GROW in silence.
+
+    So the population is read out of the Atlas's own import graph: every module
+    that reaches `server/casting/atomicCredits.ts`. A new adjudicator reddens
+    here on its first day and has to be either put on MONEY_PATHS or named
+    below with the decision. The Atlas is the right reader rather than a grep:
+    `refineRefundLedger.ts` MENTIONS `recordRefund` in a docblock and calls
+    nothing, and a text search counts it.
+  */
+  const CREDIT_PRIMITIVE = "module:server/casting/atomicCredits.ts";
+  const ADJUDICATORS_OFF_THE_LIST = new Set([
+    "server/casting/evidence/evidencePackageExecution.ts",
+    "server/casting/evidence/inkCandidateGeneration.ts",
+    "server/casting/mintPackage.ts",
+    "server/casting/operationRecovery.ts",
+    "server/castingV2/refineRecovery.ts",
+    "server/castingV2/refineService.ts",
+    "server/castingV2/retryRecovery.ts",
+    "server/castingV2/retryService.ts",
+    "server/castingV2/rollRecovery.ts",
+    "server/castingV2/rollService.ts",
+    "server/castingV2/signRecovery.ts",
+    "server/castingV2/signService.ts",
+    "server/castingV2/viewRetryRecovery.ts",
+    "server/castingV2/viewRetryService.ts",
+    "server/lib/boardOps.ts",
+    "server/routes/generation/castingImaging.ts",
+    "server/routes/generation/castingRefinement.ts",
+    "server/routes/wardrobe.ts",
+  ]);
+
+  function adjudicators(): string[] {
+    const atlas = JSON.parse(read("docs/architecture/drape-architecture.json")) as {
+      edges?: { from?: string; to?: string; kind?: string }[];
+    };
+    const reaching = (atlas.edges ?? [])
+      .filter((e) => e.kind === "imports" && e.to === CREDIT_PRIMITIVE)
+      .map((e) => (e.from ?? "").replace(/^module:/, ""))
+      .filter((m) => /^(server|shared)\//.test(m) && !/\.test\.tsx?$/.test(m));
+    /* A collector that can come up empty reports a complete answer either way. */
+    if (reaching.length === 0) {
+      throw new Error(`the Atlas records no importer of ${CREDIT_PRIMITIVE} — reader broken`);
+    }
+    return [...new Set(reaching)].sort();
+  }
+
+  it("every module that reaches the credit primitive is on the list or a stated remainder", () => {
+    const missing = adjudicators()
+      .filter((m) => !pathRe.test(m) && !ADJUDICATORS_OFF_THE_LIST.has(m));
+    expect(
+      missing,
+      "these modules reach the credit primitive and a diff touching only them is not read as "
+        + `money: ${missing.join(", ")}. Add them to MONEY_PATHS, or name them in `
+        + "ADJUDICATORS_OFF_THE_LIST — and re-measure the 60-PR rate before widening in bulk.",
+    ).toEqual([]);
+  });
+
+  /**
+   * And the remainder cannot rot into a silencer: an entry must still exist,
+   * must still reach the primitive, and must still be absent from the path
+   * list — so "left off deliberately" can never come to mean "left off and
+   * forgotten".
+   */
+  it("each stated remainder is real, still an adjudicator, and genuinely off the list", () => {
+    const reaching = new Set(adjudicators());
+    for (const module of ADJUDICATORS_OFF_THE_LIST) {
+      expect(() => read(module), `${module} no longer exists, so drop it`).not.toThrow();
+      expect(reaching.has(module), `${module} no longer reaches the primitive, so drop it`).toBe(true);
+      expect(pathRe.test(module), `${module} is now on MONEY_PATHS, so drop it`).toBe(false);
+    }
+  });
+});
+
 describe("the symbol reading — where money is decided", () => {
   /**
    * Real lines, taken from the five PRs the path list missed. Not invented
