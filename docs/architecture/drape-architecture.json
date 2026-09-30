@@ -33703,6 +33703,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/testing/childProcessSuites.ts",
+      "to": "module:server/testing/withoutComments.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/testing/errorMessageInterpolations.ts",
       "to": "module:server/testing/listedSource.ts",
       "kind": "imports"
@@ -33715,6 +33720,11 @@
     {
       "from": "module:server/testing/sourceSweepSuites.ts",
       "to": "module:server/testing/childProcessSuites.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/testing/sourceSweepSuites.ts",
+      "to": "module:server/testing/withoutComments.ts",
       "kind": "imports"
     },
     {

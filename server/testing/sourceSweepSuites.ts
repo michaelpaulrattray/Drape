@@ -2,7 +2,8 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { codeOnly, relativeSpecifiers, resolveRelative } from "./childProcessSuites";
+import { relativeSpecifiers, resolveRelative } from "./childProcessSuites";
+import { codeOnly } from "./withoutComments";
 
 /**
  * WHICH SUITES SWEEP THE SOURCE TREE — the population, derived from the tree
@@ -44,33 +45,39 @@ import { codeOnly, relativeSpecifiers, resolveRelative } from "./childProcessSui
 */
 
 /*
-  ⚠ AND THE THIRD LIMIT IS THE MOST WORTH READING, BECAUSE IT IS THE ONE I GOT
-  WRONG FIRST: `codeOnly`'S DOCUMENTED BLIND SPOT IS LIVE ON THIS QUESTION
-  TODAY, ON ONE NAMED FILE.
+  ✅ AND THE THIRD LIMIT IS CLOSED — #1638, and the paragraph it replaces is
+  kept in git because the ROAD is the lesson rather than the sentence.
 
-  A `grep -l readListedSource` over the tracked test files returns FIFTEEN. This
-  reader returns FOURTEEN, and the missing one is
+  It read: a `grep -l readListedSource` over the tracked test files returns
+  FIFTEEN, this reader returns FOURTEEN, and the missing one is
   `server/deployTriggerClaims.test.ts` — which imports the reader by its plain
-  name and calls it at line 214.
+  name and calls it. The cause, read at the bytes: that file carries a REGEX
+  LITERAL CONTAINING A BACKTICK (its `push to \`main\` deploys` claim matcher),
+  `codeOnly` had no regex-literal mode, so the backtick flipped it into TEMPLATE
+  mode — and unlike a quoted literal **a template is not ended by a newline**.
+  Eleven lines went, the call with them, and the file left the population with
+  nothing going red.
 
-  The cause, read at the bytes rather than assumed: that file carries a REGEX
-  LITERAL containing a BACKTICK (its `push to \`main\` deploys` claim matcher).
-  `codeOnly` does not distinguish a regex literal from division — a limit its
-  own header states — so the backtick flips it into TEMPLATE mode, and unlike a
-  single- or double-quoted literal **a template is not ended by a newline**. It
-  therefore swallows eleven lines including the call, and the file leaves the
-  population with nothing going red.
+  **The reader reads regex literals now** (`testing/withoutComments.ts`, where
+  `codeOnly` moved so that the reading is not written twice), and the file is IN
+  the population, DECLARING the floor. Measured at the tree the day it landed:
+  this deriver 39 → 40, `childProcessSuites` 56 → 56, and **nothing undeclared
+  in either** — so the widening indicts nobody.
 
-  ⚠ **`childProcessSuites`'S HEADER RECORDS THIS REMAINDER AS HAVING "no live
-  instance today" — TRUE OF ITS OWN QUESTION AND NOT OF THIS ONE.** A spawn call
-  inside a template is what it grepped for; a tree-read call inside a template's
-  BLAST RADIUS is a different population, and it has an instance.
+  ⚠ **WHAT THAT PARAGRAPH GOT RIGHT IS WORTH MORE THAN THE FIX, AND IT STILL
+  STANDS: `childProcessSuites`'s header recorded the same remainder as having
+  "no live instance today", which was TRUE OF ITS OWN QUESTION AND NOT OF THIS
+  ONE.** A spawn call inside a template is what it had grepped for; a tree-read
+  call inside a template's BLAST RADIUS is a different population, and it had an
+  instance. **A limit measured on one deriver's question is not measured for its
+  sibling's**, which is why the reader now carries its own census rather than
+  each consumer carrying a belief about it.
 
-  It is stated rather than fixed here because fixing it means teaching the
-  stripper to recognise regex literals, which that module explicitly declines as
-  genuinely hard, and because the consequence is bounded and known: the file is
-  DECLARED, on measurement, like the other suites the reader cannot see. **A
-  clean reading from this deriver is a floor. It is not a census.**
+  ⚠ **AND A CLEAN READING FROM THIS DERIVER IS STILL A FLOOR.** What bounds it
+  now is stated where it can be read: one hop, a static relative specifier, a
+  plainly-named import — the three limits above — plus the reader's own declared
+  remainder on `.tsx` files holding a quote inside JSX text, of which this
+  population contains none (there are no `*.test.tsx` files at all).
 */
 
 /** The one module a member must reach, repo-relative and forward-slashed. */

@@ -2,6 +2,8 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
+import { codeOnly } from "./withoutComments";
+
 /**
  * WHICH SUITES DRIVE A REAL CHILD PROCESS — the population, derived from the
  * tree rather than listed (#548).
@@ -30,11 +32,8 @@ const CHILD_PROCESS_CALLS = [
 ];
 
 /**
- * Strip comments and string/template literals before asking whether a file
- * spawns anything.
- *
- * ⚠ **THIS IS THE WHOLE DIFFERENCE BETWEEN A POPULATION AND A GREP, AND THE
- * TREE HOLDS ITS OWN CONTROLS** — live files rather than fixtures, which is why
+ * WHY THE CALL IS READ FROM STRIPPED CODE, AND THE TREE HOLDS ITS OWN CONTROLS
+ * — live files rather than fixtures, which is why
  * `childProcessTestTimeouts.test.ts` asserts on them by name:
  *
  *   server/crewNamingWindow.test.ts     "handed to `execFileSync`, not a
@@ -49,38 +48,9 @@ const CHILD_PROCESS_CALLS = [
  * both. It is the same discipline `prosePointerDiscipline.test.ts` already
  * applies for the same reason.
  *
- * ⚠ **IT HAS NO REGEX-LITERAL MODE, AND THAT LIMIT IS STATED HERE BECAUSE THE
- * UNSTATED VERSION OF IT WAS A LIVE DEFECT** (PR #650's review, finding 1,
- * confirmed by driving it rather than by reading the argument). A quote inside
- * a regex literal — `` /["']x/ ``, which is this repository's house style for
- * source guards — used to flip the stripper into string mode, where it then
- * consumed REAL CODE until the next matching quote. Measured at the minimal
- * shape: a `spawnSync` call one line below such a regex vanished from the
- * stripped output entirely, so its file would have left the population with
- * nothing going red. **That is the silent direction**, and on this module's own
- * bytes the correct verdict hung on a single apostrophe in a docblock.
- *
- * Distinguishing a regex literal from division is genuinely hard and is NOT
- * attempted. Instead the damage is BOUNDED: an unescaped newline ends a
- * single- or double-quoted literal by JavaScript's own rule, so the stripper
- * returns to code mode at the end of the line whatever the regex did. **A
- * corrupted read can therefore cost one line and never a file.** What survives
- * as a real remainder: a spawn call on the SAME line as, and after, a
- * quote-bearing regex literal — which no arm here would see.
- *
- * ⚠ **AND A SECOND REMAINDER, STATED BECAUSE THE SECOND REVIEW FOUND THE
- * ACCOUNTING ABOVE INCOMPLETE RATHER THAN WRONG: a template literal is
- * stripped WHOLE, interpolations included.** A spawn call inside `${…}` —
- * `` `x ${execFileSync("git")} y` `` — vanishes from the stripped code and
- * takes its file out of the population, which is again the silent direction.
- * Grepped at the tree: **no live instance today**, so this is a limit rather
- * than a defect. It is written down because the whole discipline of this
- * module is that a floor is DECLARED, not discovered — an unstated limit is
- * the fidelity law's silent shortcut, and stating it is the cheap half.
- *
  * ⚠ **SAID PRECISELY, BECAUSE THE SABOTAGE RUN SHOWED THE LOOSER SENTENCE WAS
  * FLATTERING ITSELF: those two files are held out by the IMPORT half, not by
- * this stripper.** Neither imports `node:child_process` at all, so turning
+ * the stripper.** Neither imports `node:child_process` at all, so turning
  * `codeOnly` into a no-op leaves both correctly excluded and the two arms
  * naming them stay green. They are honest controls for the POPULATION and they
  * are not coverage for the stripping. What covers the stripping is the pair of
@@ -101,50 +71,21 @@ const CHILD_PROCESS_CALLS = [
  * and the hop puts it back for the right one — recorded because a control that
  * was never checked against the artifact is how a guard comes to assert
  * something false about its own tree.
+ *
+ * ⚠ **`codeOnly` ITSELF USED TO LIVE HERE AND IT MOVED TO
+ * `testing/withoutComments.ts` (#1638) — WHAT MOVED WITH IT IS THE LIMIT THIS
+ * BLOCK USED TO DECLARE AND NO LONGER HAS TO.** It was a SECOND walk carrying
+ * the regex-literal blindness #1635 had just closed in the shared one, and this
+ * docblock's own words for the repair were that distinguishing a regex literal
+ * from division "is genuinely hard and is NOT attempted". #1635 attempted it
+ * and proved it against the TypeScript parser over every tracked file, so the
+ * stated reason for declining was gone — and the damage was NOT bounded to a
+ * line as this block claimed, because a backtick inside a regex leaves the walk
+ * in TEMPLATE mode, which a newline does not end. **Eight tracked files were
+ * being read as all but empty.** The two contracts are one walk with one
+ * parameter now, and the reason `codeOnly` drops a literal's contents is stated
+ * at its own declaration, where its consumers can find it.
  */
-export function codeOnly(source: string): string {
-  let out = "";
-  let i = 0;
-  type Mode = "code" | "line" | "block" | "single" | "double" | "template";
-  let mode: Mode = "code";
-
-  while (i < source.length) {
-    const two = source.slice(i, i + 2);
-    if (mode === "code") {
-      if (two === "//") { mode = "line"; i += 2; continue; }
-      if (two === "/*") { mode = "block"; i += 2; continue; }
-      if (source[i] === "'") { mode = "single"; i += 1; continue; }
-      if (source[i] === '"') { mode = "double"; i += 1; continue; }
-      if (source[i] === "`") { mode = "template"; i += 1; continue; }
-      out += source[i];
-      i += 1;
-      continue;
-    }
-    if (mode === "line") {
-      if (source[i] === "\n") { mode = "code"; out += "\n"; }
-      i += 1;
-      continue;
-    }
-    if (mode === "block") {
-      if (two === "*/") { mode = "code"; i += 2; continue; }
-      /* Newlines are kept so a later reader's line numbers still mean something. */
-      if (source[i] === "\n") out += "\n";
-      i += 1;
-      continue;
-    }
-    /* Inside a literal: honour the escape, then look for the closer. */
-    if (source[i] === "\\") { i += 2; continue; }
-    /* ⚠ AN UNESCAPED NEWLINE ENDS A SINGLE- OR DOUBLE-QUOTED LITERAL, FULL
-       STOP — this is JavaScript's own rule, not a heuristic, and it is what
-       bounds the regex-literal blind spot below to a single line. */
-    if (source[i] === "\n" && mode !== "template") { mode = "code"; out += "\n"; i += 1; continue; }
-    const closer = mode === "single" ? "'" : mode === "double" ? '"' : "`";
-    if (source[i] === closer) { mode = "code"; }
-    if (source[i] === "\n") out += "\n";
-    i += 1;
-  }
-  return out;
-}
 
 /**
  * Does this module's own code start a process? BOTH halves must hold.

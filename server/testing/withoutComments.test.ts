@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 import { containedIn, trackedFiles } from "../../scripts/lib/trackedFiles.mts";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./childProcessTimeout";
 import { readListedSource } from "./listedSource";
-import { withoutComments } from "./withoutComments";
+import { codeOnly, withoutComments } from "./withoutComments";
 
 /* Two derived populations claim this suite and it declares one floor for both.
    It reads the whole tracked source tree off disk through `readListedSource`
@@ -62,6 +62,7 @@ vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const BACKSLASH = String.fromCharCode(92);
 const BACKTICK = String.fromCharCode(96);
+const NEWLINE = String.fromCharCode(10);
 
 /**
  * THE SECOND READER, AND IT DOES NOT SHARE A RESOLVER WITH THE FIRST.
@@ -151,12 +152,14 @@ function flatWalkAsItStoodBefore1635(source: string): string {
   return out;
 }
 
-function scannedFiles(): string[] {
+function scannedFiles(extension?: "ts" | "tsx"): string[] {
   const contains = containedIn(REPO_ROOT);
   const out: string[] = [];
   for (const absolute of trackedFiles(REPO_ROOT)) {
     const relative = path.relative(REPO_ROOT, absolute).split(path.sep).join("/");
     if (!/\.(ts|tsx)$/.test(relative)) continue;
+    if (extension === "ts" && relative.endsWith(".tsx")) continue;
+    if (extension === "tsx" && !relative.endsWith(".tsx")) continue;
     if (!contains(absolute)) continue;
     out.push(relative);
   }
@@ -293,5 +296,309 @@ describe("withoutComments — the one comment stripper (#1635)", () => {
       disagreements.push(`${relative}: reads ${delta > 0 ? `${delta} characters SHORT` : `${-delta} characters LONG`}`);
     }
     expect(disagreements.sort()).toEqual([]);
+  });
+});
+
+/**
+ * THE SECOND CONTRACT, PROVEN AGAINST THE COMPILER TOO (#1638).
+ *
+ * `codeOnly` drops a literal's CONTENTS as well as the comments around it, so
+ * that a call-shaped string is not read as a call. Three tree-walking derivers
+ * key their populations on it (#548, #741), and it used to be a SECOND WALK in
+ * `childProcessSuites.ts` carrying exactly the blindness #1635 closed in the
+ * first one — measured at **8 tracked files left inside a literal at end of
+ * file**, dropping 5,398 to 18,420 non-whitespace characters each.
+ *
+ * ⚠ **A WRONG REGEX READ COSTS THE FIRST CONTRACT NOTHING AND THE SECOND ONE
+ * THE SPAN, WHICH IS WHY POINTING THE PARSER AT BOTH FOUND THREE MORE
+ * MISREADS.** `withoutComments` keeps a span either way, so a `/` mistaken for
+ * a regex start is invisible in its output; `codeOnly` deletes it. The three,
+ * all live and all now fixed in the shared reader: a non-null assertion
+ * (`stencil.width! / stencil.height!`), a negation after a keyword
+ * (`return !/x/.test(s)`) and a JSX closing tag (`</div>`).
+ */
+
+/**
+ * Every span `codeOnly` must blank: the parser's comment ranges, and its
+ * literal TOKENS. The `${` and `}` of a template are punctuation of the
+ * surrounding expression rather than literal text — the parser folds them into
+ * `TemplateHead`/`Middle`/`Tail`, so they are trimmed back off here, which is
+ * exactly the reading the walk takes.
+ */
+const LITERAL_TOKENS = new Map<ts.SyntaxKind, { lead: number; trail: number }>([
+  [ts.SyntaxKind.StringLiteral, { lead: 0, trail: 0 }],
+  [ts.SyntaxKind.NoSubstitutionTemplateLiteral, { lead: 0, trail: 0 }],
+  [ts.SyntaxKind.RegularExpressionLiteral, { lead: 0, trail: 0 }],
+  [ts.SyntaxKind.TemplateHead, { lead: 0, trail: 2 }],
+  [ts.SyntaxKind.TemplateMiddle, { lead: 1, trail: 2 }],
+  [ts.SyntaxKind.TemplateTail, { lead: 1, trail: 0 }],
+]);
+
+function parserCodeOnly(source: string, fileName: string): string {
+  const scriptKind = fileName.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
+  const sourceFile = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, scriptKind);
+  const spans: [number, number][] = [];
+  const collect = (ranges: ts.CommentRange[] | undefined) => {
+    for (const range of ranges ?? []) spans.push([range.pos, range.end]);
+  };
+  const visit = (node: ts.Node) => {
+    for (const child of node.getChildren(sourceFile)) {
+      collect(ts.getLeadingCommentRanges(source, child.getFullStart()));
+      collect(ts.getTrailingCommentRanges(source, child.getEnd()));
+      const trim = LITERAL_TOKENS.get(child.kind);
+      if (trim) spans.push([child.getStart(sourceFile) + trim.lead, child.end - trim.trail]);
+      visit(child);
+    }
+  };
+  visit(sourceFile);
+  spans.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  let out = "";
+  let at = 0;
+  for (const [pos, end] of spans) {
+    if (end <= at) continue;
+    const from = Math.max(at, pos);
+    out += source.slice(at, from) + source.slice(from, end).replace(/[^\n]/g, "");
+    at = end;
+  }
+  return out + source.slice(at);
+}
+
+/**
+ * Does this file hold a quote inside JSX TEXT? That is the reader's one
+ * declared remainder, and this asks the PARSER rather than matching a shape —
+ * so the arm below compares two derived sets instead of a set against a list.
+ */
+function hasQuotedJsxText(source: string, fileName: string): boolean {
+  const sourceFile = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  let found = false;
+  const visit = (node: ts.Node) => {
+    if (found) return;
+    if (node.kind === ts.SyntaxKind.JsxText) {
+      if (/['"]/.test(source.slice(node.getStart(sourceFile), node.end))) found = true;
+      return;
+    }
+    node.forEachChild(visit);
+  };
+  visit(sourceFile);
+  return found;
+}
+
+/**
+ * `codeOnly` AS IT STOOD IN `childProcessSuites.ts` BEFORE #1638, kept as the
+ * positive control's subject. A control needs a thing to fail, and describing
+ * the old walk in prose would leave the comparison unproven — the same reason
+ * `flatWalkAsItStoodBefore1635` sits above.
+ */
+function secondWalkAsItStoodBefore1638(source: string): string {
+  let out = "";
+  let i = 0;
+  type Mode = "code" | "line" | "block" | "single" | "double" | "template";
+  let mode: Mode = "code";
+  while (i < source.length) {
+    const two = source.slice(i, i + 2);
+    if (mode === "code") {
+      if (two === "//") { mode = "line"; i += 2; continue; }
+      if (two === "/*") { mode = "block"; i += 2; continue; }
+      if (source[i] === "'") { mode = "single"; i += 1; continue; }
+      if (source[i] === '"') { mode = "double"; i += 1; continue; }
+      if (source[i] === BACKTICK) { mode = "template"; i += 1; continue; }
+      out += source[i];
+      i += 1;
+      continue;
+    }
+    if (mode === "line") {
+      if (source[i] === NEWLINE) { mode = "code"; out += NEWLINE; }
+      i += 1;
+      continue;
+    }
+    if (mode === "block") {
+      if (two === "*/") { mode = "code"; i += 2; continue; }
+      if (source[i] === NEWLINE) out += NEWLINE;
+      i += 1;
+      continue;
+    }
+    if (source[i] === BACKSLASH) { i += 2; continue; }
+    if (source[i] === NEWLINE && mode !== "template") { mode = "code"; out += NEWLINE; i += 1; continue; }
+    const closer = mode === "single" ? "'" : mode === "double" ? '"' : BACKTICK;
+    if (source[i] === closer) { mode = "code"; }
+    if (source[i] === NEWLINE) out += NEWLINE;
+    i += 1;
+  }
+  return out;
+}
+
+describe("codeOnly — the same walk, with the literals dropped (#1638)", () => {
+  it("drops a literal's contents, and that IS the contract", () => {
+    const source = [
+      "// spawnSync('a')",
+      "/* execFileSync('b') */",
+      'const fake = "spawnSync(\'c\')";',
+      "spawnSync('the-real-one');",
+    ].join(NEWLINE);
+    const read = codeOnly(source);
+    expect(read).toContain("spawnSync(");
+    /* One call survives, not four: the count is the assertion. */
+    expect(read.match(/spawnSync\(|execFileSync\(/g)).toHaveLength(1);
+  });
+
+  it("a regex literal's contents go too, because a pattern is not a call", () => {
+    /* The direction that cannot manufacture a member. `/spawnSync\(/` is a
+       thing the file MATCHES ON; a real call cannot sit inside one. */
+    const source = "const RE = /spawnSync" + BACKSLASH + "(/; const kept = 1;";
+    const read = codeOnly(source);
+    expect(read).not.toContain("spawnSync");
+    expect(read).toContain("const kept = 1;");
+  });
+
+  it("a `${…}` holds CODE, and the old walk swallowed it whole", () => {
+    /* The remainder `childProcessSuites`'s header declared as having "no live
+       instance today" — closed here rather than carried, because the frame
+       stack that fixes the BOUNDARY answers this for free. */
+    const source = "const line = " + BACKTICK + "a ${execFileSync(" + BACKTICK + "git" + BACKTICK + ")} b" + BACKTICK + ";";
+    expect(codeOnly(source)).toContain("execFileSync(");
+    expect(secondWalkAsItStoodBefore1638(source)).not.toContain("execFileSync(");
+  });
+
+  it("line numbers survive a dropped literal", () => {
+    /* The promise a consumer reporting a line number relies on. */
+    const source = ["const a = 1;", "const t = " + BACKTICK + "one", "two", "three" + BACKTICK + ";", "const b = 2;"].join(NEWLINE);
+    expect(codeOnly(source).split(NEWLINE).length).toBe(source.split(NEWLINE).length);
+  });
+
+  /* ---- the three misreads the second contract exposed ---- */
+
+  it("a non-null assertion divides; a negation opens a regex", () => {
+    /* Both shapes are live and they differ only in what precedes the `!`. The
+       first swallowed 46 characters of `faceScanService.test.ts`.
+
+       ⚠ THE FIXTURE IS THAT FILE'S REAL LINE, AND THE FIRST DRAFT OF IT WAS
+       INERT — the sabotage driver said so. It carried ONE division, and a
+       regex scan that finds no closing slash before the newline backs out on
+       its own, so the arm passed with the discriminator deleted. It takes TWO
+       divisions on one line for the second `/` to close the false regex, which
+       is why the real line is the fixture rather than a tidied one. */
+    const divides =
+      "expect(stencil.width! / stencil.height!).toBeCloseTo(entry.box.width / entry.box.height, KEPT_TOKEN);";
+    expect(codeOnly(divides)).toContain("toBeCloseTo");
+    expect(codeOnly(divides)).toContain("KEPT_TOKEN");
+    const negates = "const bad = !/^NOT MEASURED/.test(text); const kept = KEPT_TOKEN;";
+    const read = codeOnly(negates);
+    expect(read, "the pattern is a literal and goes").not.toContain("NOT MEASURED");
+    expect(read).toContain("KEPT_TOKEN");
+    /* And a negation after a KEYWORD, which a one-character reading got wrong
+       the other way — three files read LONG on the first attempt. */
+    expect(codeOnly("return !/^NOT MEASURED/.test(text);")).not.toContain("NOT MEASURED");
+    /* `!!/re/` is still a regex: `!` does not end a value. */
+    expect(codeOnly("const ok = !!/^a/.test(s);")).not.toContain("^a");
+  });
+
+  it("a JSX closing tag is not a regex literal", () => {
+    /* `<a></a><b></b>` read `/a><b></` as a regex and deleted the text between
+       the tags. Both halves of `</` are answered: `>` may only be followed by a
+       regex when it is an arrow, and a `/` straight after a `<` is a tag. */
+    const source = "<a>KEPT_ONE</a><b>KEPT_TWO</b>";
+    const read = codeOnly(source);
+    expect(read).toContain("KEPT_ONE");
+    expect(read).toContain("KEPT_TWO");
+    expect(secondWalkAsItStoodBefore1638("<a>KEPT_ONE</a><b>KEPT_TWO</b>")).toContain("KEPT_ONE");
+    /* The arrow still opens one, and it is this tree's commonest predecessor. */
+    expect(codeOnly("const f = (s: string) => /^SECRET/.test(s);")).not.toContain("SECRET");
+  });
+
+  /* ---- the compiler, over the real tree ---- */
+
+  it("positive control: the comparison CATCHES the walk this one replaced", () => {
+    /* Law 2. Each fixture is a shape the previous walk got wrong, and the
+       parser is the arbiter of both readings rather than this file's opinion. */
+    const fixtures = [
+      "const CLAIM = /push to " + BACKTICK + "main" + BACKTICK + " deploys/;" + NEWLINE +
+        "/** a docblock */" + NEWLINE + "spawnSync('x');" + NEWLINE,
+      "const line = " + BACKTICK + "a ${execFileSync(" + BACKTICK + "git" + BACKTICK + ")} b" + BACKTICK + ";" + NEWLINE,
+      "const RE = /spawnSync" + BACKSLASH + "(/;" + NEWLINE,
+    ];
+    for (const fixture of fixtures) {
+      const expected = squeeze(parserCodeOnly(fixture, "fixture.ts"));
+      expect(squeeze(secondWalkAsItStoodBefore1638(fixture)), fixture).not.toBe(expected);
+      expect(squeeze(codeOnly(fixture)), fixture).toBe(expected);
+    }
+  });
+
+  it("agrees with the TypeScript parser on every tracked .ts file", () => {
+    const files = scannedFiles("ts");
+    /* The floor, before the verdict counts — and the files whose readings moved. */
+    expect(files.length).toBeGreaterThan(1_500);
+    expect(files).toContain("server/deployTriggerClaims.test.ts");
+    expect(files).toContain("server/selfInvocationCheck.test.ts");
+    expect(files).toContain("shared/crewNextUpHold.ts");
+
+    const disagreements: string[] = [];
+    for (const relative of files) {
+      const source = readListedSource(path.join(REPO_ROOT, relative));
+      if (source === null) continue;
+      let expected: string;
+      try {
+        expected = parserCodeOnly(source, relative);
+      } catch {
+        continue;
+      }
+      const actual = squeeze(codeOnly(source));
+      if (actual === squeeze(expected)) continue;
+      const delta = squeeze(expected).length - actual.length;
+      disagreements.push(`${relative}: reads ${delta > 0 ? `${delta} characters SHORT` : `${-delta} characters LONG`}`);
+    }
+    expect(disagreements.sort()).toEqual([]);
+  });
+
+  it("no literal is left open at end of file — the card's own probe, at zero", () => {
+    /* #1638's measurement: append a sentinel on its own line and ask whether it
+       survives. It does not when the walk is still inside a literal at EOF,
+       which is the unbounded swallow. It returned EIGHT before the repair. */
+    const SENTINEL = "ZZ_SENTINEL_1638_ZZ";
+    const swallowed: string[] = [];
+    for (const relative of scannedFiles()) {
+      const source = readListedSource(path.join(REPO_ROOT, relative));
+      if (source === null) continue;
+      if (!codeOnly(`${source}${NEWLINE}${SENTINEL}${NEWLINE}`).includes(SENTINEL)) swallowed.push(relative);
+    }
+    expect(swallowed.sort()).toEqual([]);
+  });
+
+  it("the ONE declared remainder is JSX text, and it is a census rather than a floor", () => {
+    /* ⚠ A CHARACTER WALK CANNOT READ JSX. `<p>doesn't exist.</p>` is TEXT to
+       the parser and a string literal to any walk, so under `drop` the rest of
+       the element goes. The limit is declared with its population, and the two
+       sets are DERIVED and compared rather than a set being checked against a
+       hand-kept list — a list would drift the first time a component gained an
+       apostrophe. Measured the day this landed: 15 of 257. */
+    const differ: string[] = [];
+    const quoted: string[] = [];
+    for (const relative of scannedFiles("tsx")) {
+      const source = readListedSource(path.join(REPO_ROOT, relative));
+      if (source === null) continue;
+      if (hasQuotedJsxText(source, relative)) quoted.push(relative);
+      let expected: string;
+      try {
+        expected = parserCodeOnly(source, relative);
+      } catch {
+        continue;
+      }
+      if (squeeze(codeOnly(source)) !== squeeze(expected)) differ.push(relative);
+    }
+    expect(
+      differ.sort(),
+      "a .tsx file reading differently for any reason but a quote inside JSX text is a new finding",
+    ).toEqual(quoted.sort());
+
+    /* ⚠ AND THE REASON IT COSTS THE THREE DERIVERS NOTHING: none of them ever
+       reads one. Both populations are `git ls-files "*.test.ts" "*.test.tsx"`,
+       and the tree holds no `*.test.tsx` at all. This arm is the tripwire for
+       the day it does — if that file holds a quote inside JSX text, its reading
+       is wrong and either the reader learns JSX or the file is exempted with
+       its reason. A `.test.tsx` WITHOUT such a quote leaves it green, which is
+       the correct answer rather than a convenient one. */
+    expect(
+      differ.filter((relative) => relative.endsWith(".test.tsx")),
+      "a test file whose reading is wrong is in a derived population and cannot be left declared",
+    ).toEqual([]);
   });
 });

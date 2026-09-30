@@ -386,7 +386,11 @@ export function populationDerivers(modules: ReadonlyArray<readonly [string, stri
  * functions as a call. Both halves are required: the call alone would indict a
  * docblock anywhere that mentions `childProcessSuites(` (this repository's
  * prose names its instruments), and the import alone would indict a suite
- * borrowing `codeOnly`, which strips comments and starts no enumeration.
+ * borrowing `resolveRelative`, which resolves a specifier and starts no
+ * enumeration. (That example named `codeOnly` until #1638 moved it to
+ * `server/testing/withoutComments.ts`; `populationDerivers` never counted
+ * either one, because it keeps only the exports whose own body runs the
+ * `git ls-files` call.)
  *
  * Stated limit: the call is read on the suite's whole text, prose included,
  * so a suite that imports the module and only WRITES ABOUT the call is

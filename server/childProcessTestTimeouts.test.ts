@@ -2,8 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-import { childProcessSuites, codeOnly, declaresTheTimeout } from "./testing/childProcessSuites";
+import { childProcessSuites, declaresTheTimeout } from "./testing/childProcessSuites";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+import { codeOnly } from "./testing/withoutComments";
 
 /* ⚠ THIS SUITE IS IN ITS OWN POPULATION, AND IT SAID SO ITSELF. Each arm runs
    `git ls-files` over the tree — measured at ~450 ms apiece under load — so it
@@ -130,9 +131,16 @@ describe("the reading can be wrong in both directions, and is checked in both (#
        `spawnSync` below vanished from the stripped output, which would have
        dropped its whole file out of the population with nothing going red.
 
-       The repair does not try to parse regex literals (division makes that
-       genuinely hard); it bounds them, because an unescaped newline ends a
-       single- or double-quoted literal by JavaScript's own rule. */
+       ⚠ **THIS COMMENT SAID THE REPAIR "does not try to parse regex literals
+       (division makes that genuinely hard)" AND ONLY BOUNDED THEM TO A LINE.
+       BOTH HALVES WERE WRONG BY #1638.** The bound was not a bound: a BACKTICK
+       inside a regex leaves the walk in TEMPLATE mode, which a newline does
+       not end, so the damage ran to end of file on eight tracked files. And
+       the reading IS attempted now — `withoutComments.ts` holds one walk with
+       two contracts, proven against the TypeScript parser over every tracked
+       `.ts` file on every run. The arm below is unchanged and still passes;
+       what changed is that it is no longer the only thing standing between
+       this deriver and a swallowed file. */
     const stripped = codeOnly(
       [
         'import { spawnSync } from "node:child_process";',
@@ -141,6 +149,27 @@ describe("the reading can be wrong in both directions, and is checked in both (#
       ].join("\n"),
     );
     expect(stripped).toContain("spawnSync(");
+  });
+
+  it("POSITIVE CONTROL — a BACKTICK-bearing regex does not swallow to end of file (#1638)", () => {
+    /* ⚠ THE SHAPE THE "bounded to one line" CLAUSE ABOVE COULD NOT SEE, and it
+       is the one that was live: a backtick inside a regex literal put the walk
+       in TEMPLATE mode, and a template is not ended by a newline. Eight tracked
+       files were being read as all but empty this way —
+       `server/selfInvocationCheck.test.ts` worst at 18,420 non-whitespace
+       characters. The fixture is the real shape: `deployTriggerClaims.test.ts`
+       matches a claim about pushing to a backticked branch name. */
+    const BACKTICK = String.fromCharCode(96);
+    const stripped = codeOnly(
+      [
+        'import { spawnSync } from "node:child_process";',
+        `const CLAIM = /push to ${BACKTICK}main${BACKTICK} deploys/;`,
+        "/** a docblock, which must still be stripped */",
+        'spawnSync("git", ["status"]);',
+      ].join("\n"),
+    );
+    expect(stripped, "the call after the regex must survive").toContain("spawnSync(");
+    expect(stripped, "and the docblock after it must still go").not.toContain("a docblock");
   });
 
   it("POSITIVE CONTROL — the escape inside a literal does not end it early", () => {
