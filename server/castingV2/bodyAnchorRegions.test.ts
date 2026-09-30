@@ -84,7 +84,7 @@ describe("which framings show a place", () => {
 
   it("shows the torso in every framing but the close-up", () => {
     /* Wings anchor at the shoulder blades, so they present in a head-and-shoulders
-       portrait — a partly-in-shot region presents. A close-up is eyebrows-to-chin
+       portrait — a partly-in-shot region presents. A close-up is eyebrows-to-the-bottom-of-the-face
        and shows none of it. */
     expect(anchorPresentsIn("torso", "closeUp")).toBe(false);
     for (const framing of ["master", "frontClose", "threeQuarter", "sideClose", "frontFull"] as const) {
