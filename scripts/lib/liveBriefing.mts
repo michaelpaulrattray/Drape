@@ -39,8 +39,26 @@
  */
 import type { DeploymentRow } from "./deployWatch.mts";
 
-/** One thing a reply can be addressed to — a needs-you card or an eye item. */
-export type BriefingHostRow = { id: string; title: string; state?: string };
+/**
+ * One thing a reply can be addressed to — a needs-you card or an eye item.
+ *
+ * ⚠ **`issueNumber` IS OPTIONAL HERE BECAUSE IT IS NULLABLE IN THE SCHEMA, NOT
+ * BECAUSE IT IS RARE** (#1539). `crewBriefingSchema` declares it
+ * `.nullable()` on both arrays, and edition 580 carries 10 `needsYou` rows
+ * without one against 133 with. A reader that assumed the number was always
+ * there would put his reply on whatever card sorted next.
+ *
+ * Nothing had to be parsed to add it: `parseBriefingFacts` passes both arrays
+ * through raw, so the field has always arrived — only this type omitted it,
+ * which is the shape of every mirror-drift this module has already been bitten
+ * by (see the note below on `needsYou` standing in for the union).
+ */
+export type BriefingHostRow = {
+  id: string;
+  title: string;
+  state?: string;
+  issueNumber?: number | null;
+};
 
 /**
  * The two fields a reply read needs, plus the cards it decorates with.

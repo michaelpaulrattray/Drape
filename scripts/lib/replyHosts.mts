@@ -61,6 +61,16 @@ export type ReplyHost = {
   kind: "card" | "eye item";
   /** One of `CREW_CARD_STATES`, or null in a briefing that omits it. */
   state: string | null;
+  /**
+   * The GitHub card behind it, or null — the schema makes it nullable and 10
+   * of edition 580's 143 `needsYou` rows have none (#1539, the reply mirror).
+   *
+   * It is carried HERE rather than indexed a second time beside this one: the
+   * mirror needs *which issue* for the same reply this index already answers
+   * *which item* for, and a second walk of the same two arrays is working law 4
+   * waiting to happen.
+   */
+  issueNumber: number | null;
 };
 
 /** A minimal reply row — the two columns this judgement needs. */
@@ -84,6 +94,11 @@ export function hostIndex(facts: BriefingFacts | null): Map<string, ReplyHost> {
         title: typeof row.title === "string" ? row.title : row.id,
         kind,
         state: typeof row.state === "string" ? row.state : null,
+        /* `typeof` rather than a truthiness test: issue 0 does not exist, but a
+           reader that treats 0 and null the same is one that would treat a
+           future 0-ish sentinel the same too. Anything that is not a number is
+           no issue number. */
+        issueNumber: typeof row.issueNumber === "number" ? row.issueNumber : null,
       });
     }
   };
