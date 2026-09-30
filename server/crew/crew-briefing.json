@@ -1,317 +1,57 @@
 {
-  "edition": 593,
-  "updatedAt": "2026-09-30T20:27:42.000Z",
-  "shift": "Foreman (night shift) - tonight was about the checks that decide whether a change is allowed to go live. A second seat had finished two pieces of work and closed for the night with both sitting unmerged; I read them line by line, merged them, and watched production restart onto them. Then I took the next piece of the same job myself and finished it. The plain version of what all three fix: these checks read our own source code to decide whether a rule has been kept, and they were cutting short at the first thing that LOOKED like a comment - so anything after that point was invisible to them. A check that reads less than it thinks passes for the wrong reason, and nothing goes red when it does. The one worth telling you about: a page comment in the legacy studio reads \"sealed: nothing on this page navigates for anyone else\" - and the check whose whole job is to prove that page is sealed was matching on that sentence rather than on the code under it. It is now reading the code alone. Three changes merged, nothing a customer can see, and one card closed with its receipt.",
+  "edition": 594,
+  "updatedAt": "2026-09-30T22:17:10.000Z",
+  "shift": "The relay (his terminal, this morning) - N2 is wrapped. You said \"close\" on its last card, the light check, and it closed as overtaken by the checker ruling you gave last night: only the wrong person can take a picture away. On your word, \"after n2 is wrapped up start the pricing/money work then proceed onto n2b and n2c\", the ladder now reads N2 done, pricing first, then personality and voice, then Campaigns, and the ten pricing cards are on offer to the seats from this morning. Every one of them is money, so every pull request waits for a hand verdict before it merges. Your N2 test drive is in For Your Eyes as seven numbered steps with two pictures of where to start; it asks nothing, and a step that does not match becomes a bug. The close-up boundary you answered \"this looks good\" on is marked answered. Two rules from this morning are in the program: a bug jumps the queue only when a customer can hit it, so the crew cannot spend a night on its own tooling while a focus is set; and pricing is held to its ten cards, with anything else found along the way filed as a plain bug. Four pull requests that waited overnight for a verdict were reviewed and merged: the second half of the checker change, two gate rules, and one test-tooling fix. The Sentry key you replaced works for both jobs, uploading and reading, proven from the build log and a probe that checked itself.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
       "state": "confirmed",
-      "title": "N2 — the flags go home (every half-rolled-out switch either widens to everyone or is retired with its machinery)",
-      "quote": "okay make those three changes then start n2",
-      "quotedAt": "2026-09-23T14:00:00+10:00"
+      "title": "P1 — Pricing, phase 1: the new credit prices, the free grant, the renewal fix and checkout on Stripe's prices (money: every PR held for the relay's verdict)",
+      "quote": "after n2 is wrapped up start the pricing/money work then proceed onto n2b and n2c",
+      "quotedAt": "2026-10-01T07:40:00+10:00"
     },
     "milestone": {
-      "title": "N2 — the flags go home: what is on your account becomes what a customer gets",
+      "title": "P1 — pricing, phase 1: the approved prices and plans, shown at the new scale, with the free plan and the renewal fix",
       "steps": [
         {
-          "title": "The six jobs you named are carded and waiting: retire the wardrobe/basics path (#203), the ghost audit of old-lane machinery still running (#180), the 96 legacy rows (#179), the un-named refusals on the map (#209), hair's owed measurements before its switch widens (#62), the ink-cut preview that widens its own switch (#10)",
-          "state": "done"
+          "state": "waiting",
+          "title": "One display helper: every credit number you see is the ledger ÷ 5, prices rounding up and balances rounding down (#1600)"
         },
         {
-          "title": "⚠ EVERY WIDEN IS YOUR WORD — and you have said how you want them put to you: \"One sitting — prepare every switch with its evidence and I'll go down the list in one go.\" 20 switches stand on your account alone; the list is being prepared and you see it complete, not half-done",
-          "state": "done"
+          "state": "waiting",
+          "title": "The price table: Roll 240 · Follow 320 · Sign 1,700 · Refine 350 · Try again 350, in one place, with one free retry per unchecked view (#1601)"
         },
         {
-          "title": "First N2 brief cut and finished — the ghost audit (#180): fourteen facts traced, one customer-visible bug found and driven, four cards filed",
-          "state": "done"
+          "state": "waiting",
+          "title": "Plan grants and the free grant: the new monthly amounts, 2,700 credits once for free, and every existing free account raised to it (#1602)"
         },
         {
-          "title": "The audit's first two fixes are shipped: the broken sentence on the sheet (#1122) and two dead fields off the wire (#1124). Four of the audit's cards remain, one of them a question for you (#1129)",
-          "state": "done"
+          "state": "waiting",
+          "title": "Free signup with no card and no phone: the grant lands on a verified email or Google sign-in, guarded by quiet limits (#1603)"
         },
         {
-          "title": "The N1 milestone-close deep review over the whole rung's diff (1,080 commits) — asked for on #1121; it runs in parallel and does not hold N2 up",
-          "state": "done"
+          "state": "waiting",
+          "title": "The renewal fix: a monthly refresh never overwrites credits you bought (#1604)"
         },
         {
-          "title": "The wardrobe/basics retirement has started: the ENTRANCE is closed (#203) — no path switch on either page, and no roll is born on one. The setting now governs nothing. The read paths are next",
-          "state": "done"
+          "state": "waiting",
+          "title": "Checkout on Stripe's own prices: the yearly price you see is the one you are charged (#1605)"
         },
         {
-          "title": "THE SWITCH LIST IS ON YOUR DESK — all twenty settings audited and read at the live rows, resolved into thirteen answers: four on, one retired, eight held. You went down the whole list and answered every one (#1132). Cards 1 to 13 below",
-          "state": "done"
+          "state": "waiting",
+          "title": "Top-up packs for plan holders: 5,000 = $12 · 10,000 = $24 · 25,000 = $60, only after the renewal fix (#1606)"
         },
         {
-          "title": "Two things the audit found and filed on the way: the safety check for one switch is written onto a row that gets deleted (#1133), and the new engine's cost per picture has never been read (#1134). Neither blocks the four widens",
-          "state": "done"
+          "state": "waiting",
+          "title": "Plan cards in Rinoa's four lines, with Yuna's final pass (#1607)"
         },
         {
-          "title": "The retirement's first READ path is out: a refusal that told a customer \"this one was cast on Basics — cast on Wardrobe to change what someone is wearing\" is gone. Nobody could follow that instruction any more. Eight places in the studio ask a path question, not the three the plan knew about, and all eight are now written down with the order they come out in",
-          "state": "done"
+          "state": "waiting",
+          "title": "The retry-settled log line, monitoring only (#1608)"
         },
         {
-          "title": "Two more of the eight: the instruction the studio sends when it reads your refine sentence no longer changes shape depending on which path a cast was bought on, and the face panel's Wardrobe section — which no account has ever been shown — is gone. The instruction was checked character by character before and after and did not move a single letter",
-          "state": "done"
-        },
-        {
-          "title": "A fourth of the eight is out: two rows on the face chart — her build and her skin — could carry a small label saying the picture they were read from shows her dressed. It only ever appeared on a cast bought on the Wardrobe path, so no account has ever seen it, and that path can no longer be bought. Gone with it: the panel can no longer be told what a cast is wearing at all, and one database read per chart went with it",
-          "state": "done"
-        },
-        {
-          "state": "done",
-          "title": "A fifth and sixth of the eight are out, and one of them nearly went wrong: the sheet no longer carries a line naming which path it was cast on, and the ask box no longer promises it can change what someone is wearing. That promise was switched off by a condition that is now dead — and deleting only the dead half would have switched the promise ON for every customer, for something the studio cannot actually do. The whole sentence went instead. Checked in the running app, before and after, in both themes: nothing on the page moved."
-        },
-        {
-          "state": "done",
-          "title": "A seventh piece of the eight is out: the studio no longer asks the brief reader to choose an outfit for a sheet. It could not have picked one since the path was retired, so the words sent to the reader are unchanged — and that is now PROVEN on the message itself rather than argued, because on a paid roll every fact on the sheet comes out of that one reply. The last piece is the two database columns, which go last."
-        },
-        {
-          "state": "done",
-          "title": "And a tidy-up worth reporting because of what it turned up: the studio was sending the app two switches nobody reads — one for a menu you had removed, one for a count in the Sign window that stopped being drawn on 3 August, in a change about deleting a Cast. The card named the first; counting all thirteen switches found the second, fourteen lines away and seven weeks dead. Both are gone, and the count is now kept automatically so the next one shows up the day it happens."
-        },
-        {
-          "title": "✅ YOU WENT DOWN THE LIST — eleven replies in twelve minutes, and the five you said yes to are on for everyone: your own words straight to the engine, upload-a-picture, long briefs keeping their facts, Retry on a failed picture, and asking for something we have never heard of. The wardrobe/basics setting is unset. Three of the thirteen are still unanswered and are waiting on you",
-          "state": "done"
-        },
-        {
-          "title": "✅ YOU FINISHED THE LIST — all thirteen answered. Five settings are on for everyone and live now; the wardrobe/basics setting is unset; you ordered three retirements (the tattoo studio, the segment pair, and the wardrobe capability, which was already going); and four are held, each with the one thing that would change your mind written down. Nothing on the list is waiting on you",
-          "state": "done"
-        },
-        {
-          "title": "The tattoo studio's retirement turned out to be four steps, not one — and the read is the finding. Two of its settings looked like settings nothing uses, and one of them was in fact the thing keeping YOUR picture-cut road switched on. Turning it off would have quietly changed what gets stored when you point at a tattoo in a photo you attached, with no test failing. Step one is out and changes nothing: the picture-cut road now answers to its own setting instead of the retired one",
-          "state": "done"
-        },
-        {
-          "title": "Step two of the tattoo studio's retirement, and it caught the thing that would have gone wrong quietly. When you delete a cast, a cleanup runs and removes every picture attached to it. That cleanup was asking the tattoo studio's switch whether those pictures could exist — but the studio is the road being retired, and the one still open is attaching a photo of your own. So the moment the studio's switch came off, the cleanup would have stopped collecting, and a photograph you attached could have outlived the cast it was promised to leave with. No test would have gone red. It now asks about both roads, and the check that proves it is red on the old code",
-          "state": "done"
-        },
-        {
-          "state": "done",
-          "title": "Step three of the tattoo studio's retirement, and it is the one you can point at: its two settings are GONE from the live site. Nothing on any screen changed — the four tattoo roads you kept (a tattoo from your words, a tattoo from a picture you attach, changing one you already have, being born with one) all answer exactly as they did, checked for three accounts before and after. The two had to go together: one refuses to start up without the other, so removing just one would have taken the site down."
-        },
-        {
-          "state": "done",
-          "title": "Step four of the tattoo studio's retirement, and it is bookkeeping you will never see: the image provider lets us have 20 jobs running at once, and one of those was reserved for drawing an uploaded tattoo onto a cast. That road is gone, so the reservation is given up — we now use 19 of the 20. Nothing you do gets slower; every other job keeps exactly what it had. The spare one is deliberately left unused rather than handed to another job, because that would be quietly giving that job more capacity under a tidy-up's name. Reviewed by hand, merged and live."
-        },
-        {
-          "state": "done",
-          "title": "And the useful part of that step was finding we had been wrong. Four of our own notes — including the plan for this very job — said this reservation was switched on at the live site and that turning it off would be a change to the running site. We read the live site properly, twice, with checks that would have caught a bad reading: it has NEVER been switched on there, and there was no change to make. What let it survive is that our start-up log prints the number either way, so it looked like proof and was not. The gap that hid it is now its own job on the list."
-        },
-        {
-          "title": "Step five of the tattoo studio's retirement, and the last of the code itself: the leftover instructions it stopped using are deleted. Nothing on any screen changes — none of them had been reachable by anybody for weeks. What makes it worth a line is that our own list of them said FIVE and there were SIX, and a seventh was not on any list at all because the tool that finds unused code cannot see that particular shape. It was found by reading, not by the tool.",
-          "state": "done"
-        },
-        {
-          "title": "And deleting them left two small pieces of writing stranded — the sentences a customer would read if she sent us a picture for something we do not do yet. We are KEEPING those, deliberately, because they belong to the picture road you put on hold rather than to the tattoo studio we are retiring. They are written down as waiting on that road, with what would settle them either way.",
-          "state": "done"
-        },
-        {
-          "state": "done",
-          "title": "The last step of the tattoo studio's retirement, and it touches the part you pay for. When you signed a cast, the five finished angles were built by a step that first went and looked up \"the tattoos this cast is wearing\" in the tattoo studio's own records. That lookup is now gone. It never once found anything: there are no records in it on the live site or on our test site, nothing has been able to write to it since last night, and a separate switch you set in August turned every answer away regardless — three separate reasons it has never put a tattoo into anybody's finished angles."
-        },
-        {
-          "state": "done",
-          "title": "The thing worth trusting here is that we did not just believe that. We took the exact words a cast is sent to the engine — for a cast that really is wearing a tattoo — before the change and again after it, and they came back identical down to the character, with the same pictures attached in the same order. Tattoos that were actually applied to a cast still ride into the angles exactly as before; that road was untouched and now it is the only one."
-        },
-        {
-          "title": "The part of the studio that was meant to remember your earlier edits is being retired, on your word — and the reason it costs you nothing is that it never once remembered anything. It was switched on for your account, and the road every render actually takes could never feed it, so it has held zero rows since the day it was built. What genuinely carries your work forward is the reference library, which is a different thing entirely and is untouched.",
-          "state": "done"
-        },
-        {
-          "state": "done",
-          "title": "And now the screen it fed is gone with it. There was a small list under your picture called \"things this version is keeping\" — it never once had anything in it, for two separate reasons either of which was enough on its own, so nothing you look at changes. We opened a cast in both light and dark to be sure of that rather than to assume it. One thing in there was NOT part of the retirement and nearly went with it: the small piece of plumbing that lets the face panel's outlines load at all. It was moved to safety, with its own tests."
-        },
-        {
-          "state": "done",
-          "title": "The last of that retirement is written and waiting on a review: the two settings behind it, the start-up checks that read them, and the storage code underneath, all removed. Nothing you can see changes — and the reason it is safe is that we proved the settings were live on your account and bought nothing: the store they controlled has held zero rows since it was built, on the live site and ours, and the road every render takes could never have written to it."
-        },
-        {
-          "state": "done",
-          "title": "The part worth telling you: FOUR times in this one job, something still in use was hiding inside a name we were deleting. The sharpest was the check that proves a cast belongs to you before the face panel will show it — it was sitting in a file named after the thing being retired, and deleting that file, which its name invited, would have taken the check with it. It was moved to safety and then driven in the running app from two accounts: yours opens the cast, a stranger asking for the very same cast is turned away."
-        },
-        {
-          "state": "done",
-          "title": "And that drive is the only proof there was. We deliberately broke that ownership check to see what would notice, and ran every test we have: nothing failed. It has never had a test, before or after the move — so the running app was the only thing that could tell us the move was sound. That gap is now its own job rather than something quietly fixed inside a tidy-up."
-        },
-        {
-          "title": "And now it has two. The check that proves a cast belongs to you — the one we broke on purpose last night and nothing noticed — is driven from both ends: one arm reads the code on every single change and refuses a statement that has stopped naming the owner, the other builds a throwaway database, puts a stranger's cast in front of your account and proves it comes back empty. We broke it again to check each arm notices. Both do, and the throwaway database was dropped either way",
-          "state": "done"
-        },
-        {
-          "title": "The wardrobe/basics path is now completely gone (#203) — and this was the last piece of it. Back when a cast was bought you could choose whether she was born in an outfit or in plain black basics. That choice was switched off weeks ago and you unset its setting yourself on Wednesday; what went tonight is the machinery underneath it and the setting itself, so there is nothing left that could turn it back on by accident. Nothing about casting changes for you: every roll already behaved this way. ⚠ What we deliberately KEPT is the part worth knowing — the record of which thirteen old rolls were bought on a path stays exactly as it is, because it is the only way to tell a cast made before the new studio from one made after it, and a cast born in basics still reads correctly when you refine her today.",
-          "state": "done"
-        },
-        {
-          "title": "A view you paid for that never turned up now gets asked for again, up to three times, before we give up — and the failed tile stops promising a repair we do not have (#1208, your \"yes\"). On your Sifr cast two of five views came back dead, with the tile saying \"repairs come with revisions\". Revisions do not exist and have not for over a year, so that sentence is gone; what replaces it says only what is true. ⚠ The half that still needs you is the free Try again button — there is one question about it on your desk. What did NOT change, deliberately: when the checker looks at a view and decides it is wrong, it still gets exactly one more go, which is your August ruling and this card did not ask to undo it.",
-          "state": "done"
-        },
-        {
-          "title": "And a limit that had stopped applying to anybody was retired (#1204, your \"yes ill let the crew remove it\"). Briefs used to have two length limits, one for each road a cast could take. When you switched the new road on for everyone on Wednesday, the old road's limit could no longer be reached by any account — but it kept running, kept passing its own tests, and kept being described in the code as a live rule. Nothing you do changes; what goes is a second rule nobody could meet and the tests that made it look healthy.",
-          "state": "done"
-        },
-        {
-          "state": "done",
-          "title": "The checker that looks at every view you pay for had stopped answering, and the views went out anyway (#1220). Three of your signed views — two on Sifr2, one on Sifr, all today — were handed over and charged 50 credits each with nobody having looked at them, and one of those was the close-up you told us was wrong. The checker was never unreachable: it thinks before it answers, and it was using up all the room it had to think, so it never got as far as writing an answer down. It now answers without thinking out loud, and it gets longer to reply. Measured on your own two frames: it answered in 23 and 36 seconds where before it answered not at all — and it fails your close-up, so with this in place that view would have been sent back and re-done instead of sold to you."
-        },
-        {
-          "state": "done",
-          "title": "And it was worth checking the other readers while we were in there. Nine places in the studio show a picture to a model and ask it a question. Only the hard questions make it stop and think — driven rather than guessed: a simple \"what is this person wearing\" answered in under four seconds with no thinking at all, while the two-picture comparison used every token it had, every time. So one other reader is in the same family and is now carded (#1228); the seven simple ones measured clear, and that is a floor rather than a clean bill of health."
-        },
-        {
-          "title": "A view that went wrong now has a way back, and it is LIVE (#1208, #1220). A view that didn't arrive gets Try again · 50 CR — you were refunded when it failed, so asking again costs the same as any view, and the 50 comes back if it fails again. A view we couldn't check now says so and gets Try again · free — that one was charged and you kept it. Views that arrived and passed have no button at all. Your rule, in your words: you pay 50 for each view you keep. Reviewed by hand before it merged, because it moves money.",
-          "state": "done"
-        },
-        {
-          "state": "done",
-          "title": "Every face on a sheet carried its number TWICE — \"01 … 01\", bottom-left and bottom-right — and now it carries it once (#1241, your brief). The left slot held a one-word description of the candidate, and since the new casting road went live for everyone that slot has been empty on every roll by design, so all anyone ever saw was the number again. The description is gone from the studio end to end and the column that held it is dropped on both databases — your standing approval, for that one act. On production it had not been written since 2 August: seven values across 411 rows. Two things inside the sweep were RENAMED rather than deleted, because deleting either blind would have cost you something real — the caption under a picture in a cast's room carries HER NAME and your sentence for a sibling whose sheet has expired, and the follow field has carried the face's NUMBER since your own \"following 08\" ruling."
-        },
-        {
-          "state": "done",
-          "title": "One thing that job left behind, on purpose: the sheet's own sentence still ends \"and differ by disposition\" on the old casting road (#1251). It cannot reach you — your #230 ruling already deleted that line on the road every account is on — and it is still true where it does render. Changing it is a dozen test arms and a second rule of yours, so it is carded with three options and a recommendation rather than folded into a cleanup under its name."
-        },
-        {
-          "title": "Switched-off buttons now look switched off (#1237, your word) — and it is live. A button that cannot be pressed was drawn at full brightness with the hand pointer still promising a press, in 43 places, two of them on the billing pages; it was never a decision anyone made, just a rule nobody wrote. One change in the shared rule fixed all 43. Doing it turned up three more of the same fault: fourteen buttons that brightened under the mouse while switched off, four in the Sign, delete, rename and concept windows with no switched-off look at all, and three still showing the “no entry” pointer against your word for a normal one — two of those on this page. The frames are under FOR YOUR EYES and your eye is the last word on how faint it should be.",
-          "state": "done"
-        },
-        {
-          "state": "done",
-          "title": "Try again now looks and behaves like what it is — and one part of it was costing money (#1235, your three reports). Pressing it used to change the button's word to \"Asking…\" and nothing else moved: the picture stayed, the caption stayed, and the other views' buttons all went dead until it finished. Worse, the studio itself did not know a view was being made — so if you left the room and came back, the button was sitting there again as if nothing was happening, and pressing it a second time bought the SAME view twice: two renders, 100 credits, one slot. Now the tile goes into exactly the casting state every other view being made uses, the caption and the button leave while it works, each view is independent so you can ask for three at once, and the room keeps watching so the new picture arrives without a reload. A second press on a view already being made is refused for free — \"That view is already being asked for. Nothing was charged.\" Test drive: Sifr2, press Try again on a view, leave the page and come back."
-        },
-        {
-          "state": "done",
-          "title": "Pressing Try again twice in the same instant could still buy one view twice, and now it cannot (#1257). It is live. You could already press it twice slowly and be refused — that was fixed on your third report. What was left was the narrow version: two tabs open on the same cast, or a press from an old tab arriving while another is already running. The studio was asking \"is one running?\" and then, before writing down that one was, going off to fetch her signed face out of storage — a few hundred milliseconds where a second press sees the same answer and buys the same picture again. It now claims the slot the way the five other paid buttons in the studio claim theirs: the claim itself is the lock, so there is no gap to slip through. Per VIEW, not per cast — asking for her profile while her close-up renders is something you are meant to be able to do, and a cast-wide lock would have broken it again. And the refusal says the same sentence you would have got pressing slowly, rather than a line written for a log. Nobody has hit this: yours is the only account that has ever cast."
-        },
-        {
-          "state": "done",
-          "title": "The checker that confirms a refined picture really contains what you asked for was being cut off mid-sentence — and now it has room to finish (#1228). When you refine a picture we ask a reader to confirm the new version actually has what you asked for. It was only ever given room for a short answer, and a reading that covers eight things needs roughly twice that — so the answer arrived half-written, could not be read at all, and the picture was handed over and charged for with nothing having checked it. Measured on your own Sifr2 close-up through the real reader: eight things asked, three readings, every one of them over the old limit, and at the old limit the answer came back unusable twice out of twice. The room it gets now grows with how much was asked, and it costs nothing extra on the smaller readings — which is most of them. Nobody was caught by this: the records that would have shown it are deleted on a schedule, so it was found by measuring the real thing rather than by a complaint. Six other readers have the same gap and none of them is known to have hit it; they are written down as #1272 rather than changed on a hunch."
-        },
-        {
-          "state": "done",
-          "title": "Two of the studio's readers could blame your photograph for our own limit, and now they cannot (#1272). When you attach a picture to copy a hair colour or a makeup look from, we ask a reader to describe what is in it. If that description ran past the room we had given it, the answer arrived half-written and unreadable, and you were told “We couldn't read that picture — try another one” — about a picture that was never the problem. You would have swapped it and it would have failed again. Both readers now say the thing that is true: “I couldn't read that picture just now — try again in a moment.” Those words were already in the studio; nothing new was written for you to read. Six more readers had the same gap and were quietly filing half an answer as a fact about your cast — the worst of them could record that it had SEEN something in a picture when its answer had in fact been cut off before it could say so. Nobody is known to have been caught by any of it: it was found by measuring rather than by a complaint, and the records that would have shown it are deleted on a schedule. Two things worth knowing about how it went. Checking the list on the card found THREE more readers than the card named — including one of the two above, the closest twin of the worst one — because those files discuss the problem in their own notes, and a search for the word had read a note as a fix. And the ninth reader sits on the paid refine road: it is carded as #1275 rather than changed inside a cleanup, because fixing it means choosing which sentence you see after you have spent credits, and that is your call rather than ours."
-        },
-        {
-          "state": "done",
-          "title": "The crew's own map of the studio had a hole in it, and the hole was Re-imagine — the button that rewrites your brief in your own words, which has been on for every account since you turned it on. It was not on the map at all: no description of what it does, no list of what it can refuse, nothing. The check that is supposed to catch exactly this stayed green for three weeks, and now we know why. The map could always prove that everything it MENTIONED was real. Nothing ever asked whether it had mentioned everything. That is now checked both ways: the map is compared against the list of every way a customer can reach the studio — 28 of them — and a way in that no part of the map describes is a hard failure that stops the build. Two were missing, not one: Re-imagine, and Upload a concept. Both are written up properly now, from the code rather than from memory. Nothing you can see changed — this is the crew reading its own product accurately, which is what stops the next feature shipping invisible to the people maintaining it. (#1203)"
-        },
-        {
-          "state": "done",
-          "title": "And the unchecked-view worry is settled at the rows. Yesterday three of your signed views arrived with nobody having checked them — the checker had run out of room to answer — and you were charged for them. That was fixed the same day; what was left was counting whether it still happens. It does not. Every view made since the fix carries a real verdict from a named checker, and across this product's entire history that fault has occurred exactly three times: the three you hit. The honest caveat is that only five views have been made since, because only one person casts here — so if it ever comes back the record will say so in the same place, and reopening is one line. (#1220)"
-        },
-        {
-          "state": "done",
-          "title": "And you answered the switched-off buttons yourself while this shift was running — one word, \"good\". So that is closed: a button that is switched off now looks switched off, in all 43 places, including the two on the money pages. Nothing is waiting on you on that one any more. (#1237)"
-        },
-        {
-          "state": "done",
-          "title": "You answered the Sifr dress frames too, and your split is done exactly as you wrote it. The fault that card was about — her brief says a white dress and the signed full-length view put her in overall trousers and boots — is fixed, and all four takes now wear the dress, so that card is closed. The two things you said are still wrong are not that card: the dress comes back a plain, modest version of what your brief describes, and the hem and the shoes change from take to take. Both are the next card (#1278), and your own words on how to fix the second one are now written on it: one picture of four angles made in a single go, cut into the four slots, instead of four separate pictures that each invent the bottom half. That was the open question on that card and you have answered it. It still gets put in front of your eyes before it replaces anything, and the price of the one big picture will be named beside the quality. (#1222 closed, #1278)"
-        },
-        {
-          "title": "Your signed views are photographed under the same rules your master was made under (#1240) — the old instructions that guessed her colouring and banned letters on her skin are off the road. Eight close-ups rendered both ways are in your gallery; one look closes it, and #1278 is unblocked either way",
-          "state": "done"
-        },
-        {
-          "state": "in-progress",
-          "title": "Your cast's own brief now dresses her signed views (#1278). You said her dress comes back a plain modest version of what the brief describes. It was not the engine: a signed view was being told, in one breath, that there is no written description of this person, to add nothing her photo does not show including no damage, that nothing below the waist can be judged, and — from the change that landed yesterday — that where the description is silent it should default to a plain studio frame. Four instructions all asking for the plainest possible reading, one of them forbidding the very worn look her brief asks for. She came back plain because we asked for it. Her own words now go with the picture. On your own Sifr, eight takes: trousers in four of four before, a dress in four of four after. The frames and the full reading are on the card; they go to your eye with part 2's, so you judge the finished thing once rather than in halves."
-        },
-        {
-          "state": "done",
-          "title": "The data clean-up you approved (#179) turned out to be unnecessary — and finding that out uncovered something worse. That job was meant to stop one thing: you refining one of your older casts and being handed invented facts about her, the way you once followed a Mediterranean-looking man and got eight Indian \"relatives\" back. Good news first: that cannot happen. Every one of your 404 author-road tiles on production is already marked as \"this was never sent to the engine\", all 404 of them, and the old unmarked ones are long gone. Nothing needed changing and nothing was changed. The worse part: the clean-up script could not have run even if it had been needed — it asked the database for a column we deleted last night, so it would have died instantly. Six other scripts of ours were in the same state, and the check that was supposed to catch exactly this was reading 11 of our 515 scripts and calling it a clean sweep. That is fixed, two of the scripts are repaired, and the remaining four are written down as #1364."
-        },
-        {
-          "state": "done",
-          "title": "Two things on the refine road and the ghost audit. When you type a refine instruction, the studio reads it with a model, and that reading has a length limit of ours. If the reply got cut off at OUR limit, you were told \"try naming what you want changed\" — advice about a sentence that was never the problem, on a road you have paid for. It now says what it says when anything else of ours fails: try again in a moment, nothing was charged (#1275). And the audit of the old casting lane (#180) was re-read, because its own central sentence stopped being true the day after it was written — see the question on your desk."
-        },
-        {
-          "state": "done",
-          "title": "You held the picture-quality change and named the engine you actually want (#1373 → #1394). The five pictures a signed cast gets have always been made by Nano Banana, and \"best setting\" on that engine could only mean its 4K tier — which is what was built and put in front of you. Your answer was that Nano Banana is not the engine for these at all, so the question is no longer which tier: it is whether they move to GPT Image 2.5 Sunburst. The court re-runs on your terms — same cast, same views, the old picture beside the new one, price and time beside each — and you judge the frames. Nothing ships until you do."
-        },
-        {
-          "state": "in-progress",
-          "title": "The checker that looks at every view you pay for could not read a BIG picture — and that is what your picture-quality change was really waiting on (#1408). Every signed view is checked against the face you signed before you are charged for it, and the check works by sending the checker two photographs: her signed face and the new view. It was sending them at full size, about 12 megabytes for the pair. When the picture gets bigger that stops working — the court you asked for last night could get NO reading at all on any of the 4K pictures or any of the Sunburst ones, and one of today's took 149 seconds against a 75-second limit. When the checker cannot answer we hand the picture over anyway and charge for it, with nobody having looked, so moving your views to a better picture would have meant every view arriving unchecked. The checker now looks at a bounded copy: the largest size the checker itself can actually use, saved in a format about a quarter of the weight. A 4K view reaches it at 3 megabytes instead of 53, and it answered in 8.5 seconds. ⚠ What we did NOT do is shrink the picture to the size an older version of the checker used — the obvious move, and it would have thrown away a third of the detail, when her tattoos, piercings, freckles and makeup are exactly what the check looks at. And we proved it still works rather than assuming: shown a DIFFERENT woman's face it still says no, and shown her own it still says yes and names her freckles, her ear piercings and her tattoo sleeve. ⚠ One correction, made rather than left to be found: the first version of this report blamed three views of yours from Thursday on this problem. They were not — they were the three already fixed on Thursday, and every view since has carried a real verdict. This job is groundwork for the quality change, not a leak being plugged. Nothing you receive changes: your picture is stored and delivered before the check happens, so only the copy the checker looks at is affected."
-        },
-        {
-          "title": "You answered the old-lane question with \"Delete it\" (#1398) — so the old way of casting comes out of the product, in five careful slices with nothing new folded in. The written manifest went first, because a deletion is the one thing the gate cannot give back, and it caught two things that would have gone wrong: the name of the road being deleted is also the name of the road your 220 older sheets read through, in the same file — and the setting has a child that would have crash-looped the site if the parent left first. Slice 1 (that child moved out of the way, nothing anybody can see) is live; the audit card #180 carries the rest",
-          "state": "done"
-        },
-        {
-          "title": "The switch that chose between the old way of casting and the new one is now GONE from the product (#1443, slice 2 of five). Nothing you can see changes: it has been answering the same way for every account since 24 September, and every roll now takes the new road because the code says so rather than because a setting does. The setting itself comes off the live site right after this, in that order on purpose — the other way round would have taken the site down on every restart. ⚠ And the honest half: this slice was also meant to delete the OLD road's machinery, and it did not. We wrote that deletion, ran the whole test suite over it, and 86 checks across 17 files went red — they are the checks that watch the old way's categories and styling, which is exactly what the audit you ordered (#180) is for. Deciding which of those 86 to retire is that audit's job, not a cleanup's side effect, so it was measured and handed over rather than guessed at. One thing found on the way, by deliberately breaking things to see what noticed: the Re-imagine button's own door had NO test at all — deleting the whole check left 241 tests green — and the switch that draws it on your brief boxes had none either. Both have real tests now.",
-          "state": "in-progress"
-        },
-        {
-          "state": "in-progress",
-          "title": "Your word on the outfit test is built and live (#1459). “Sunburst produced the best result easily” — so the outfit your cast wears in her signed pictures is invented the way you chose. ⚠ AND THE PICTURES THEMSELVES WENT BACK the next day, on your own word that the other one’s detail was better (“NBP2k was a better quality rersult though”): inventing her outfit and drawing her five pictures are two separate steps now (#1278, path E). Her outfit is designed once from her master picture; her five pictures are then drawn from it at the bigger size, with the more organic skin and hair you preferred. ⚠ This line said the five pictures were made by one named engine “instead of” the other, and that was true for two days and false from the 29th — it is the sentence your own question caught (#1586). The price is the same to within a cent and a half, a picture that fails is still refunded on its own, and nothing anywhere names an engine to you. Still open until you have signed one of your own casts and looked at the five."
-        },
-        {
-          "state": "in-progress",
-          "title": "The old way of casting stops being ASKED ABOUT at all (#1444, slice 3 of five) — and the proof it costs you nothing is a photograph. Until tonight the app asked the studio, on every page load, which of the two casting roads your account was on, and carried a second set of controls for the answer nobody has had for months: a row of clickable facts above your brief, a queued-change arrow, and a second channel that could send the studio an edit your brief did not mention. All of it comes out. To show you would see nothing change, the casting page and a sheet were photographed on two copies of the app running side by side — the old code and the new — in both light and dark: all six pictures are identical to the pixel, and the two copies were proven to be different code before that was believed. It is written, driven and waiting on a review."
-        },
-        {
-          "state": "done",
-          "title": "The old lane's composer and its test-only twin are SETTLED, and the honest answer is that they leave in two steps rather than one (#1445, slice 4 of five). Nothing about your rolls changes — the production code is untouched, comment for comment. What was decided: the old road cannot be switched off in the same act that deletes the thing it uses, because a second compiler keeps using it, so the order is forced. What shipped is the missing guard — until tonight we proved the one caller asks for the new road, but never that it was the ONLY caller, which is the shape a mistake would actually take. And the remaining job is now measured properly and sized: the card that ordered this said 86 checks across 17 files; the code says 101 across 20, and three of the files it never named are in there — one of them still testing a switch we deleted a week ago. That job is #1490 and it is its own night, not a tidy-up."
-        },
-        {
-          "title": "The old way of casting is OUT of the code that builds every roll (#1490, act 1 of 2). Nothing you can see changes — it has had no way into a paid roll since you said Yes on 24 September. What took the night was the 107 checks that were still watching it: each one read rather than counted, because most were testing one thing that is still true and one that is not. A third were re-pointed and some are now stronger; 43 could not be saved and are a declared loss on card 1125, because they checked that a per-picture decision reached the picture and there are no per-picture decisions any more. Act 2 landed the same week and is the step below.",
-          "state": "done"
-        },
-        {
-          "state": "done",
-          "title": "And the old way of casting is now gone from the code COMPLETELY (#1490, act 2 of 2 — the card is closed). The part that actually wrote the old instructions, and its test-only twin, are both deleted, along with five helper pieces that nothing could reach once they went. Your rolls do not change in any way — this machinery was being built eight times per roll and discarded every time, and it cost a fortieth of a millisecond, so this is not a speed improvement and I am not claiming one. What it buys is honesty: that file described a road the product does not take, and anyone reading it to learn what we send your engine got the wrong answer. Of the 74 checks watching it, 64 now point at the place that really decides the thing they were written for, and 9 are gone with a written reason in their place. The 47 covering your billing and refunds now run through the real compiler rather than a stand-in. Two findings went onto their own cards instead of being folded in: the covering question (#1503, which needs your eye on pictures) and one technical leftover (#1504). The change was reviewed twice by hand before it merged."
-        },
-        {
-          "title": "Sign now names the version it is about to make permanent (#1478) — your Bingu nose edit. The box says \"This signs your edit\" or \"This signs your original, not your edit\", with her picture beside it and above the price. A face never edited says nothing, so the ordinary Sign is unchanged.",
-          "state": "done"
-        },
-        {
-          "title": "Your throughput order is live (#1496): the crew's helpers can take cards on the current focus's own rung instead of none at all — one helper with one card became two with ten, on tonight's real queue — and nothing further along the ladder can be picked up, so N2b, N2c and N3 still wait for your word.",
-          "state": "done"
-        },
-        {
-          "state": "in-progress",
-          "title": "The old casting lane is finished, and the record now says so (#180). Everything that chose between the old way of casting and the new one is out of the product — five pieces, ending Monday — and this last piece was the writing-up. It is not housekeeping: the map our agents read first still described the old road as alive inside the studio, and the working document still said you had not asked for the retirement, nine hours after you said “Delete it”. Both now say what actually happened, with every piece checked against the code rather than copied from a report. What keeps this card open is NOT a deletion, and that is written at the top of it so nobody goes looking for one: a list of old “look” words that is still genuinely in use and waits on the suggested-words feature being built, and the refining half, which you yourself timed for the next milestone."
-        },
-        {
-          "state": "done",
-          "title": "Your desk stops being typed out by hand where it matters most (#1467). The “what needs you” section is now read off the jobs themselves — if a job is held up and its own note says it is held up on you, it shows here with the question and a box to answer in, even if no shift ever wrote it up. It found two straight away that had been waiting days: the branch-cleanup yes or no (#1434) and the creature retry shape (#1492). The old list is still used where a shift HAS written a proper card, so nothing you already had was lost, and nothing is listed twice."
-        },
-        {
-          "title": "And the same section now catches its own blind spot (#1467). Reading the jobs themselves only works if a job says who it is waiting for — two of them said nothing, so they reached nobody: not this page, and not a crew member either, because a job marked as held is one nobody may pick up. Both are now in front of you. The crew is warned about any future one at the end of every shift, and it is deliberately not allowed to invent the missing reason itself, because a reason nobody meant is worse than none.",
-          "state": "in-progress"
-        },
-        {
-          "title": "The job you ordered about errors and analytics is finished (#509). A crash on the server and a crash in a customer's browser both reach us with the build they came from; the money moments are recorded once each, with no amounts and never a customer's own words; and your admin page links out to both dashboards rather than copying numbers onto itself — your “links, no fourth key”. Checked before closing: with the keys removed it says plainly that nothing is being recorded, so no screen can ever show you a comfortable zero that only means it was switched off.",
-          "state": "done"
-        },
-        {
-          "title": "And the very last of the old casting lane is out (#1495). One question reaches the brief reader now instead of two. The old two-way question — photographic person, or “other” — has been unreachable since your Yes on 24 September, and the refusal it fed went with it. That refusal is the part worth your attention: it said “not anime or illustration yet”, which had quietly become untrue of your own studio. A message nobody can reach is dead weight; a message nobody can reach that contradicts the product would have embarrassed us the day something changed and it came back to life. The bar for the change was bytes rather than judgement — sixteen of sixteen versions of the reader's instructions are identical before and after — and the one job this leaves behind is named rather than folded in: the studio still asks the reader to pick an outfit field nobody uses, and taking that out DOES change the words on the wire, so it stays its own job (#1123).",
-          "state": "done"
-        },
-        {
-          "state": "done",
-          "title": "A refused view keeps its picture now (#1492, part one of two). When the studio checks a view and turns it down, you get a refund and a sentence — and until today the picture itself was deleted, so nobody could tell whether the checker was right. Your Jingu retries are the reason: eight renders, all refused, and the record could only say “angle”. From now a refused view keeps its picture for thirty days, one per view per attempt, on our private storage — both when signing and when you press Try again. Two older faults of the same kind were found and fixed in the same change: the keeper we already had was throwing its pictures away within a minute, and a failed view's first attempt was never written down at all. You then chose how retries should work — the retry tells the engine what went wrong last time rather than simply asking again — and that is part two, with your test on Jingu and Bingu before it ships."
-        },
-        {
-          "title": "Your crew had throttled itself back to one worker and we found out why (#1541). On Monday you asked for more jobs moving at once. The rule that stops helpers running ahead into next month's work was working out the current milestone from whichever job sits at the top of your Next Up list — so when that job was a piece of our own tooling with no milestone on it, the rule concluded there was no current milestone and froze all nine N2 jobs. It failed the opposite way earlier the same night as well, and printed a reason that was untrue: it called N2 'later' than N6. The crew now reads the current milestone off the ladder on this page — which only changes when one of us writes down something you said — so it cannot be moved by the order you happen to ask for things in. On your real queue: ten jobs held before, four after, and every one of the four is genuinely on a later rung. The simpler fix the job asked for was declined and the reason is on the card: it would have let the crew start Campaigns on its own the day the last N2 job closed.",
-          "state": "done"
-        },
-        {
-          "title": "Your replies now reach their cards by themselves (#1539). You type on this page; about a minute later the card says it, in your words, under your name. Built the way that needs no new password on the customer-facing server — the instant version is still there for the asking.",
-          "state": "done"
-        },
-        {
-          "state": "in-progress",
-          "title": "Your library says Library now, and its address does too (#1545) — your word to your research team, built and waiting on a review. The old address forwards, so nothing you have bookmarked or sent breaks. Sixteen places on your canvas stopped calling a person a model: the picker says Your casts, and the two messages that used to point you at Models now point at your Library. The screen you were told to rename was already named right — that old library page was switched off weeks ago pending its redesign, proven by reading the file your browser downloads, where not one of its twelve mentions appears. Left alone on purpose: your plan screen's \"every model and every tool\", where model means the engine. And filed for later (#1565): the studio's own error sentences still say model in fifty-one places, and you read those word for word."
-        },
-        {
-          "title": "A quiet gap in the casting road turned out to be closed already, and measuring it was the only way to know (#1503). When you ask for a hijab or a turban, the studio used to add a written description of the garment on top of your words — your own February finding, where the scarf came back styled rather than worn. That stopped being sent when everyone moved onto the road that sends your words straight through. Rather than guess whether it still mattered, I rendered eighty pictures today across five garments, with the description and without. All five come back right either way, so the engine now does this from your sentence alone. The strip is on your desk and the question under it is whether to leave it that way.",
-          "state": "in-progress"
-        },
-        {
-          "state": "in-progress",
-          "title": "Your product has one address family now, and casting has joined it (#1583) — your word, \"yes i want that shape\". The signed-in product lives under one /app roof because the front of the site belongs to your marketing pages. Casting was the last thing still sitting at the top level: it is /app/casting now, a sheet is /app/casting/s/…, a signed cast is /app/casting/cast/…, and the canvas list moved from /app/boards to /app/canvas with each canvas at /app/canvas/… . THE PART THAT MATTERS TO YOU IS THAT NOTHING BREAKS: all five old addresses still answer and forward, and the three that name a particular sheet or cast carry that name across, so an old link to one sheet opens that sheet and not the front page. I proved that by driving each old address through a real browser and reading where it ended up, because a page can look right while the old address is still in the bar, and no photograph can tell those apart. Waiting on a look before it goes live."
-        },
-        {
-          "title": "Only one thing can take a picture away from you now: it is not her (#1612, the second half of this morning's ruling). The checker looks at three things — is this the person you signed, is the framing what was asked for, are the clothes right — and until tonight any one of them could throw a picture away and refund you. I read every refusal this studio has ever made before touching it: eight, all time. Five on clothes, three on framing, NONE on the person. From now on framing and clothes never cost you a picture — you get it, marked Unchecked, with a free Try again — and only the face still refuses, including when the checker is unsure about the face. All eight old refusals were replayed and all eight now deliver. Nothing on your screen changes. ⚠ Two things worth knowing: a picture the checker frowns at is no longer re-drawn behind your back, because re-drawing means throwing away the picture you could have had — that choice is yours now, for free; and your 20 older views that predate the checker keep exactly the price they had, which I measured rather than assumed. Written, and waiting on a review before it goes live because it moves money.",
-          "state": "in-progress"
+          "state": "waiting",
+          "title": "Go-live checklist for the relay's and your hand: live Stripe objects, Railway variables, the existing-account raise (#1609)"
         }
       ]
     },
@@ -324,6 +64,11 @@
       {
         "key": "N2",
         "title": "The ratchet clears — every half-rolled-out flag goes home",
+        "state": "done"
+      },
+      {
+        "key": "P1",
+        "title": "Pricing, phase 1 — the new credit prices, the free grant and the renewal fix (founder-ordered 2026-09-30; FIRST after N2, then N2b, then N2c — his word 2026-10-01)",
         "state": "current"
       },
       {
@@ -334,11 +79,6 @@
       {
         "key": "N2c",
         "title": "Campaigns — the cast library's named collections",
-        "state": "queued"
-      },
-      {
-        "key": "P1",
-        "title": "Pricing, phase 1 — the new credit prices, the free grant and the renewal fix (founder-ordered 2026-09-30; next after N2)",
         "state": "queued"
       },
       {
@@ -405,8 +145,14 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-30T18:39:44.669Z",
+      "readAt": "2026-09-30T22:08:58.831Z",
       "items": [
+        {
+          "issueNumber": 1644,
+          "title": "N2 is wrapped — the completion card and your test-drive list (the flags went home; what is on your account is what a customer gets)",
+          "kind": "rung",
+          "rung": "N2"
+        },
         {
           "issueNumber": 1242,
           "title": "N2b — Personality and voice are born at Sign, as editable text: two drafted lines on the cast's page, badged Drafted for you, free to edit (founder-ordered 2026-09-25)",
@@ -3611,17 +3357,37 @@
         }
       ],
       "recommendation": "Take the look first - it is a minute and it settles it. The reading key is worth doing afterwards so you are never asked this again.",
-      "state": "waiting",
+      "state": "done",
       "filedAt": "2026-09-30T18:40:42.000Z",
       "issueNumber": 1542
     }
   ],
   "eyeItems": [
     {
+      "id": "n2-test-drive-1644",
+      "title": "Your N2 test drive — seven things to try, none of them waiting on you",
+      "question": "YOUR N2 TEST DRIVE — seven things to try, in your own time. N2 is closed already; nothing waits on this. Each step says what to do, what you should see, and which card it proves. If a step does not match, reply here with its number and what you saw, and it becomes a bug.\n\n1. SIGN A CAST THAT IS NOT SHAPED LIKE A PERSON — Jingu, or roll a new creature and sign it. You should get all five views, including the close-up and the three-quarter that used to be refused for not having two eyes (#1582, #1612).\n\n2. SIGN A CAST WITH AN ASYMMETRIC OUTFIT — one bare shoulder, one draped sleeve. The side profile should arrive instead of being refunded at random (#1579).\n\n3. ON A SIGNED CAST, LOOK UNDER A VIEW'S NAME. A view that could not be checked shows one muted line, Unchecked · Try again, and pressing it costs nothing; a refunded view shows Refunded · Try again with its price before you press (#1220, #1347).\n\n4. OPEN AN OLD LINK — type /casting, or /app/boards, or an old /casting/cast/… link you have saved. Each should land on the new /app address with nothing broken (#1583, #1545).\n\n5. SIGN A CAST WHOSE BRIEF NAMES A DRESS OR A ROBE. The two full-length views should wear what the brief describes, not a plain modest version of it (#1278).\n\n6. REPLY ON ANY DESK CARD. Within about a minute the card on GitHub should carry your words under your name (#1539).\n\n7. CLICK ERRORS ON THE ADMIN OVERVIEW. Sentry should show real events for the project, not its welcome screen — the pipe is proven live end to end (#1542).\n\nThe two pictures are where steps 1–5 start: the casting tab, and a signed cast's room.",
+      "state": "open",
+      "filedAt": "2026-10-01T00:20:00.000Z",
+      "issueNumber": 1644,
+      "frames": [
+        {
+          "key": "crew-eye/ee0328dc-1e42-47be-91c0-86932e34f4fd.png",
+          "arm": "the casting tab — steps 1, 2, 5",
+          "caption": "Casting: describe who you need, press Cast it, then sign one. Steps 1, 2 and 5 all start from this page."
+        },
+        {
+          "key": "crew-eye/34906567-b488-4075-a92d-e815af4f9eae.png",
+          "arm": "a signed cast's room — step 3",
+          "caption": "A signed cast's room: the five views sit under the master. Step 3 is the one muted line under a view's name."
+        }
+      ]
+    },
+    {
       "id": "framing-band-1612",
       "title": "Where we draw the line between a close-up and a portrait — your six, in order",
       "question": "WHAT YOU ARE LOOKING AT — six close-ups you already own, put in order of how much picture sits below the face. That number under each one is the whole measurement: 0.07 means barely any picture below the chin, 0.56 means over half a face's worth of neck and shoulders. The black line is where the studio now draws the boundary. Left of it we keep the picture and say nothing; right of it you get the picture anyway with a free Try again beside it.\n\nTHE ONE THING WORTH YOUR EYE is the pair either side of the line — Sifr at 0.20 and the second Sifr2 at 0.52. Everything further out is obvious in both directions: Jericho and Kai are plainly close-ups, and the two you reported yourself are plainly portraits. Those two are the ones a person could argue about, and the line sits in a wide empty gap between them rather than being squeezed against either.\n\nIf you would rather it sat tighter — so Sifr at 0.20 also got a free Try again — say so and it is one number. Nothing here throws a picture away: the strictest this can ever do is hand you the picture and offer another go.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-30T11:20:00.000Z",
       "issueNumber": 1612,
       "frames": [
@@ -9260,7 +9026,7 @@
     {
       "id": "unsure-delivers-1612",
       "title": "Only identity takes a picture away — framing and wardrobe now deliver (#1612 part 2)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1621,
       "note": "Money surface: held for the relay, never merged by a shift."
     },
@@ -9601,7 +9367,7 @@
     247
   ],
   "nextUp": {
-    "readAt": "2026-09-30T18:39:44.669Z",
+    "readAt": "2026-09-30T22:08:58.830Z",
     "items": [
       {
         "issueNumber": 1469,
