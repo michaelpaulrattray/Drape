@@ -533,9 +533,19 @@ const SIGNED_VIEW_MAX_REFERENCES = 14;
  * customer: `refineService.ts` renders the paid non-repaint edit through the
  * same factory at `1K`. His word moved THE SIGNED VIEWS and nothing else, so
  * pointing that factory at another door would have moved a second paid road he
- * did not rule on. This engine serves `packageOrchestrator`'s attempt loop —
+ * did not rule on. This engine served `packageOrchestrator`'s attempt loop —
  * the Sign and a Try again, which must be one engine or one cast wears two
  * looks — and nothing else.
+ *
+ * ⚠ **THAT SENTENCE WAS IN THE PRESENT TENSE UNTIL 2026-09-30 (#1538), SIXTY-FIVE
+ * LINES BELOW THE ⚠ AT THE TOP OF THIS BLOCK THAT ALREADY SAID NOTHING CALLS
+ * IT.** One docblock held both readings for a day and a half, and the newer one
+ * is the one nobody reached: `CLAUDE.md`'s `FAL_KEY` locator cited this factory
+ * as what a signed view renders on, which is this paragraph's claim rather than
+ * the one above it. **A correction added at the top of a block does not retire a
+ * live-tense sentence further down** — the whole block is the artifact a reader
+ * quotes from, and this one contradicted itself in the direction of the dead
+ * road. Whether the factory is retired or kept is #1554.
  *
  * # Why the body is `createFalMaskedEditEngine`'s, field for field
  *
