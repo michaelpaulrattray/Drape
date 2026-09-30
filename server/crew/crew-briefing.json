@@ -1,7 +1,7 @@
 {
-  "edition": 582,
-  "updatedAt": "2026-09-30T04:05:00.000Z",
-  "shift": "Foreman (night shift) — your library now reads Library, at an address that says library, and on the canvas a person is a cast rather than a model. You told your research team the page should read /library, not /models, and that is what it does: the old address still works, so nothing you have ever bookmarked or linked breaks — it just forwards. Two things are worth telling you because they changed the job. First, the page title you were told about was already right: the old library screen was switched off weeks ago while it waits to be redesigned, and the screen you actually see was already headed Library. We proved that by reading the file your browser downloads rather than the code, and not one of that old screen's twelve mentions of the word is in it. So the real work moved to your canvas, where the word WAS reaching you — sixteen places, including the picker that now says Your casts and searches casts, and two messages that used to send you to Models and now say your Library. Second, four of those sixteen were missed on the first pass and found by a new check we wrote for exactly this, which is the check earning its keep on its first day. Left alone on purpose: your plan screen's \"every model and every tool\", because there model means the engine, which is the one thing that word should mean. One question for you further down about the picture gallery on this page, and one new job filed: the studio's own error sentences still say model in fifty-one places, and you read those word for word. Nothing was spent.",
+  "edition": 583,
+  "updatedAt": "2026-09-30T04:49:50.000Z",
+  "shift": "Foreman (night shift) — the studio used to add a written description behind the scenes when you asked for a hijab, a turban, a niqab, a chador or a kippah, because back in February those came back wrong: styled like a fashion scarf with hair showing at the front, which you spotted yourself. That description stopped being sent a few weeks ago when everyone moved onto the road that sends your own words straight to the engine. Nobody has been let down by it that we know of, but nothing was protecting it either. So rather than guess, I measured it: eighty pictures today, five garments, eight each with the description and eight without. Every single one came back right, both ways. The engine has got better since February and now gets all five right from your words alone. There is a picture on your desk with all of it laid out — today's version on the left, the version with the description on the right — and one question underneath it, which is whether to leave it as it is. My recommendation is yes, leave it, because adding the description back bought nothing I can see and makes every one of those prompts longer. Your eye is the real test though, so have a look before you answer. It cost about a dollar twenty of our own money and no credits of yours.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -300,6 +300,10 @@
         {
           "state": "in-progress",
           "title": "Your library says Library now, and its address does too (#1545) — your word to your research team, built and waiting on a review. The old address forwards, so nothing you have bookmarked or sent breaks. Sixteen places on your canvas stopped calling a person a model: the picker says Your casts, and the two messages that used to point you at Models now point at your Library. The screen you were told to rename was already named right — that old library page was switched off weeks ago pending its redesign, proven by reading the file your browser downloads, where not one of its twelve mentions appears. Left alone on purpose: your plan screen's \"every model and every tool\", where model means the engine. And filed for later (#1565): the studio's own error sentences still say model in fifty-one places, and you read those word for word."
+        },
+        {
+          "title": "A quiet gap in the casting road turned out to be closed already, and measuring it was the only way to know (#1503). When you ask for a hijab or a turban, the studio used to add a written description of the garment on top of your words — your own February finding, where the scarf came back styled rather than worn. That stopped being sent when everyone moved onto the road that sends your words straight through. Rather than guess whether it still mattered, I rendered eighty pictures today across five garments, with the description and without. All five come back right either way, so the engine now does this from your sentence alone. The strip is on your desk and the question under it is whether to leave it that way.",
+          "state": "in-progress"
         }
       ]
     },
@@ -388,7 +392,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-30T02:28:42.405Z",
+      "readAt": "2026-09-30T04:50:29.682Z",
       "items": [
         {
           "issueNumber": 1129,
@@ -3547,6 +3551,28 @@
       "recommendation": "DONE AND LIVE. You said: “Give switched-off buttons a quieter look and a normal pointer”, and that is exactly what shipped — one change in the shared button rule, so all 43 read honestly, the two on the billing pages included.\n\nThree more things came out of doing it, all small and all the same fault: fourteen buttons still brightened when the mouse passed over them even while switched off; four buttons in the Sign, delete, rename and concept windows had no switched-off look at all; and three places still showed the “no entry” pointer instead of a normal one — two of them on this page.\n\nTHE ONLY THING LEFT IS YOUR EYE. The frames under FOR YOUR EYES show the same five buttons working and switched off, in both themes. If the faded look reads right to you, this closes. If it is too faint or not faint enough, say so and it is one number.",
       "state": "done",
       "filedAt": "2026-09-25T08:30:00.000Z"
+    },
+    {
+      "id": "stated-covering-1503",
+      "title": "A hijab, a turban, a niqab: do we still need to describe the garment, or are your words enough now?",
+      "productImpact": "When somebody types \"a woman in her 30s wearing a hijab\", the studio used to quietly add a written description of the garment on top of their words — how it sits, that the hair is fully covered, that it is not a fashion scarf.\n\nIt did that because of something you found in February. The pictures came back with the scarf styled like an accessory and hair showing at the front. Your words at the time were that it looked desert-scarf-like rather than faith-based. Describing the garment plainly fixed it.\n\nA few weeks ago everyone moved onto the road that sends your own words straight to the engine, and that extra description stopped being sent. Nobody has been let down by it that we know of. But nothing was protecting it either, and nobody had checked whether it was still needed.\n\nSo I checked it properly instead of guessing.",
+      "workedExample": "Eighty pictures, rendered today on the engine your casting actually uses. Five garments — hijab, turban, niqab, chador and kippah. For each one, eight pictures the way the studio works today, and eight more with the old description added back.\n\nEvery single one came back right, both ways. Forty out of forty on today's version. The hijab sits properly with the hair covered, the turban is wound rather than draped, the niqab covers below the eyes, the chador is a full cloak, the kippah sits flat on the crown. Nothing was refused. The two versions took the same time.\n\nIn other words the problem you found in February does not happen any more, and the description is no longer doing any work.\n\nThe picture on this page shows all five, today's version on the left and the described version on the right, so you can judge it yourself rather than take my word for it.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Leave it as it is — your words go to the engine on their own",
+          "consequence": "Nothing to build. This is what the studio does today, and today it gets all five right. If you take this I will add one small safety net afterwards so these garments cannot quietly start failing again if someone later adds a \"no hats\" rule to the studio's standard instructions — that was the real reason the description existed."
+        },
+        {
+          "key": "B",
+          "label": "Put the description back",
+          "consequence": "Safe, but it bought nothing measurable in eighty pictures, and it adds about half a page of text to every one of those prompts. Longer prompts change other things we have not measured, which is a rule you set yourself."
+        }
+      ],
+      "recommendation": "A — leave it as it is. The engine has moved on since February and now does this correctly from your own sentence. Adding the description back costs prompt space and bought nothing I could see in any of the eighty pictures. But this is a judgement about how the pictures look, so your eye beats my reading of them: look at the strip first.",
+      "state": "open",
+      "filedAt": "2026-09-30T04:49:50.000Z",
+      "issueNumber": 1503
     }
   ],
   "eyeItems": [
@@ -6566,6 +6592,22 @@
           "caption": "LEFT: the photograph. MIDDLE: where the studio thinks she is — white is her, black is the wall, and her t-shirt is black because it matches the wall. RIGHT: the waiting picture, with the dust on her and your bar and stage word underneath. Photographed in the running app; no credits spent."
         }
       ]
+    },
+    {
+      "id": "covering-court-1503",
+      "title": "Five garments, with and without the written description — is your eye happy with the left-hand side?",
+      "question": "Each row is one garment. On the LEFT is what the studio sends today: your own words and nothing else about the garment. On the RIGHT is the same thing with the written description added back — the one we used to send after you found the problem in February.\n\nThe thing to look for is the one you named at the time: hair showing at the front, or a scarf that reads as styling rather than as the garment itself.\n\nMy reading is that both sides are right on all five, which would mean the description is no longer needed. But a machine reading a picture is only a reason to go and look, never the answer — so this is your call, and the question underneath it on this page waits on it.\n\nOn the hijab row, the dark patch at the crown on the left-hand pictures is an under-cap worn beneath the scarf, not loose hair. That is worth saying because at a glance it can read as the exact fault we were looking for.",
+      "state": "open",
+      "filedAt": "2026-09-30T04:49:50.000Z",
+      "issueNumber": 1503,
+      "cardId": "stated-covering-1503",
+      "frames": [
+        {
+          "key": "crew-eye/e2adc517-93aa-40a9-8ac5-7e37097a068e.png",
+          "arm": "left today · right described",
+          "caption": "Five rows, one garment each: hijab, turban, niqab, chador, kippah. Four pictures from today's studio on the left, four with the written description added on the right. Eight of eight delivered on every arm of all five; nothing refused. Eighty renders on house money, about $1.20; no credits of yours."
+        }
+      ]
     }
   ],
   "pipeline": [
@@ -9405,17 +9447,25 @@
     240
   ],
   "nextUp": {
-    "readAt": "2026-09-30T02:28:42.404Z",
+    "readAt": "2026-09-30T04:50:29.681Z",
     "items": [
       {
         "issueNumber": 180,
         "title": "N2: THE GHOST AUDIT — enumerate every piece of old-lane machinery still running under the author road (categories, dice, archetypes, personas); the Follow ghost (#176) is specimen #1 (founder flag, 2026-08-27)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "#535's generated chips for the LOOK half, and N3 opening for the refine half — not on him, and not on a shift."
+        }
       },
       {
         "issueNumber": 1467,
         "title": "The Desk's needs-you and for-your-eyes sections are hand-written into editions while everything else derives from GitHub — one source of truth for 'is this waiting on him'",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "YOU — one word: do you want the picture gallery to fill itself in, or leave it as it is?"
+        }
       },
       {
         "issueNumber": 1469,
