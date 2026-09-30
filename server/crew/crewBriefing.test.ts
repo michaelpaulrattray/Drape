@@ -646,9 +646,9 @@ describe("#493 — the briefing cannot list one card in two homes", () => {
       exactly one would refuse the edition that correctly says "between rungs".
     */
     const base = valid();
-    const current = base.program.ladder.filter((rung) => rung.state === "current");
+    const current = base.program.ladder.filter((rung: { state: string }) => rung.state === "current");
     expect(current.length, "the real briefing names exactly one — the negative control for this arm").toBe(1);
-    const second = base.program.ladder.find((rung) => rung.state !== "current");
+    const second = base.program.ladder.find((rung: { state: string }) => rung.state !== "current");
     expect(second, "the ladder needs a second rung for this arm to be able to fail").toBeDefined();
     second!.state = "current";
     expect(() => crewBriefingSchema.parse(base)).toThrow(/at most one rung as `current`/);
@@ -656,7 +656,7 @@ describe("#493 — the briefing cannot list one card in two homes", () => {
 
   it("a ladder that names NO current rung parses — the milestone gate clears the focus (#1541)", () => {
     const base = valid();
-    for (const rung of base.program.ladder) {
+    for (const rung of base.program.ladder as { state: string }[]) {
       if (rung.state === "current") rung.state = "queued";
     }
     expect(() => crewBriefingSchema.parse(base)).not.toThrow();
