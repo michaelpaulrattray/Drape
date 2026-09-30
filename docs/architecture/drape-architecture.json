@@ -13366,10 +13366,6 @@
       "path": "server/providers/falMaskedEditWire.test.ts"
     },
     {
-      "id": "test:server/providers/falSignViewWire.test.ts",
-      "path": "server/providers/falSignViewWire.test.ts"
-    },
-    {
       "id": "test:server/providers/providerContract.test.ts",
       "path": "server/providers/providerContract.test.ts"
     },

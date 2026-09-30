@@ -2,10 +2,14 @@
  * WHAT A SIGNED VIEW IS REALLY RENDERED BY — the whole chain, at the wire
  * (#1459).
  *
- * `falSignViewWire.test.ts` proves the ENGINE dispatches to Sunburst's edit
- * door. This proves the ROAD reaches that engine: `renderViewAttempts` built
- * with no `identityEngine` override, so the default the Sign and a Try again
- * actually take is the thing under test.
+ * ⚠ **THIS FILE IS NOW THE WHOLE OF IT.** It read *"`falSignViewWire.test.ts`
+ * proves the ENGINE dispatches to Sunburst's edit door. This proves the ROAD
+ * reaches that engine"* until 2026-09-30, when #1554 deleted that suite with
+ * the factory it drove, on his word (*"DELETE"*). The engine it proved had not
+ * been the Sign's since path E; what survives here is the ROAD arm, which was
+ * always the one that answers *what does a customer's Sign actually render on*:
+ * `renderViewAttempts` built with no `identityEngine` override, so the default
+ * the Sign and a Try again actually take is the thing under test.
  *
  * ⚠ **THAT SEAM WAS OPEN AND NOTHING WAS IN IT.** Every one of the eight
  * `identityEngine:` injections in this tree hands the loop a double, so before
@@ -197,8 +201,10 @@ describe("the engine a signed view is actually rendered by", () => {
     expect(captured[0]?.url).toBe(`${QUEUE_BASE}/${FAL_GPT_IMAGE_25_SUNBURST_EDIT}`);
     expect(captured[0]?.url).not.toBe(`${QUEUE_BASE}/${FAL_GPT_IMAGE_25_SUNBURST}`);
     expect(captured[0]?.body.quality).toBe("high");
-    /* The plate's own landscape ask, NOT the signed view's portrait one: same
-       door, two shapes, and that is the only field the two factories differ in. */
+    /* The plate's own landscape ask, NOT the signed view's portrait one. The
+       two were the same door asked for two shapes until #1554 deleted the view
+       factory on his word; the negative arm is kept because the shape it
+       forbids is still a shape this endpoint will honour. */
     expect(captured[0]?.body.image_size).toEqual(OUTFIT_PLATE_SIZE);
     expect(captured[0]?.body.image_size).not.toEqual(SIGNED_VIEW_SIZE);
     /* The master actually went out — one reference, as a data URL, at the wire. */
@@ -223,6 +229,28 @@ describe("the engine a signed view is actually rendered by", () => {
       resolution: "2K",
     })).rejects.toThrow(/needs at least one reference image/);
   }, 20_000);
+
+  it("both Sunburst sizes are multiples of 16, which the door requires", () => {
+    /*
+      ⚠ **CARRIED HERE BY #1554 — and it was never covering the LIVE road.**
+      `falSignViewWire.test.ts` died with `createFalSunburstViewEngine` on his
+      word (*"DELETE"*), and it held the tree's only mechanical check that a
+      Sunburst `image_size` meets the door's multiple-of-16 requirement. That
+      check read `SIGNED_VIEW_SIZE` alone; `OUTFIT_PLATE_SIZE` — the size a
+      customer's Sign actually asks for, every time — had none at all, while
+      both constants' docblocks assert the requirement in prose.
+
+      So the deletion is not allowed to lower the ceiling (the fidelity law),
+      and the arm that comes across covers the live constant first. The door
+      itself refuses a non-multiple before dispatch (`falImages.ts`'s creative
+      and masked-edit engines both check `% 16`), so a bad constant here would
+      surface as a refusal on a road that has already taken 450 credits.
+    */
+    expect(OUTFIT_PLATE_SIZE.width % 16).toBe(0);
+    expect(OUTFIT_PLATE_SIZE.height % 16).toBe(0);
+    expect(SIGNED_VIEW_SIZE.width % 16).toBe(0);
+    expect(SIGNED_VIEW_SIZE.height % 16).toBe(0);
+  });
 
   it("the view's words still travel — the angle line the two courts measured", async () => {
     const captured = stubFalTransport();
