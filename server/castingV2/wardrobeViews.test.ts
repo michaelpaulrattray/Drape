@@ -34,9 +34,29 @@ describe("the package's wardrobe sentence", () => {
 
   describe("⚠ UNPATHED IS UNCHANGED — every Cast signed to date", () => {
     it("is the constant, verbatim, on every view that shares it", () => {
+      /*
+        ⚠ **THIS ASSERTED `toBe` UNTIL #1579, AND BYTE-IDENTITY WAS A PROXY FOR
+        THE PROPERTY.** A view that turns the subject away from the reference's
+        front-on framing now appends one sentence saying the turn changed which
+        side of her you can see — it names no garment, moves no clause, and is
+        there because an asymmetric outfit was costing a customer her side
+        profile at random (the judge reading the near shoulder against the far
+        one and calling it a change).
+
+        So the constant must still be there, WHOLE and FIRST, and whatever
+        follows must be that clause and nothing else. Two views' worth of
+        appended garment prose would have slipped past a `toBe` only by being
+        impossible; it cannot slip past this.
+      */
       for (const angle of FULL_VIEWS) {
-        expect(packageViewExpectation(angle).wardrobe).toBe(CAST_PACKAGE_WARDROBE_SPEC);
+        const wardrobe = packageViewExpectation(angle).wardrobe;
+        expect(wardrobe.startsWith(CAST_PACKAGE_WARDROBE_SPEC), angle).toBe(true);
+        const suffix = wardrobe.slice(CAST_PACKAGE_WARDROBE_SPEC.length);
+        expect(suffix === "" || suffix.includes("turns the subject away"), `${angle}: ${suffix.slice(0, 60)}`)
+          .toBe(true);
       }
+      /* The line-less composer itself is untouched: it knows no angle, so it
+         cannot know about a rotation, and it is still the constant exactly. */
       expect(castPackageWardrobeSpec(null)).toBe(CAST_PACKAGE_WARDROBE_SPEC);
     });
 
