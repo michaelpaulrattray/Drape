@@ -672,13 +672,46 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
       + "both eyes looking directly into the lens. The entire hair silhouette is inside the frame "
       + "with clear headroom above it — nothing on the head is clipped.",
   },
+  /*
+    ⚠ **THE SECOND INSTANCE OF #1414's CLASS, SWEPT RATHER THAN WAITED FOR
+    (working law 7, 2026-09-30).** `sideClose`'s docblock below carries the
+    finding: a framing spec whose primary test is a NUMBER OF DEGREES asks a
+    judge the one kind of question it answers badly, and the axis becomes a coin
+    on any frame near the boundary.
+
+    Swept across all seven entries, **exactly two state a degree** — that one and
+    this one. Every other spec is already landmarks (*"the chin inside the
+    frame"*, *"nothing cropped at the top or bottom"*, *"face not visible"*), so
+    the class is two instances and this is the other.
+
+    **This one was the milder of the two and is measured so**: the court read
+    `threeQuarter` (asset 370) 5 of 5 `matches`, stable. It is milder because the
+    number already came hedged (*"about 45 degrees"*) and two landmarks already
+    rode beside it in a parenthesis. The repair is to promote them out of the
+    parenthesis and make the degree stop being the test, which is a restatement
+    of the same standard rather than a change to it.
+
+    ⚠ **THE DIRECTION IS NOT LOOSENED AND MUST NOT BE.** A mirrored three-quarter
+    is a REAL defect and the judge catches it correctly today — on his own Jingu
+    (#1492, 2026-09-29) it returned *"head turned toward the subject's right
+    (nose toward left edge) rather than the specified left-turn"*, which is the
+    right answer to the right question. The mirror now has its own sentence
+    instead of being derived from the parenthesis, so a refusal SAYS mirrored;
+    that is the same verdict, spelled out.
+  */
   threeQuarter: {
     angle: "threeQuarter",
     label: VIEW_ANGLE_LABELS.threeQuarter,
     spec: {
       framing:
-        "a head-and-shoulders portrait with the head turned about 45 degrees to the subject's "
-        + "left (their nose toward the right edge of the frame), both eyes still visible",
+        "a head-and-shoulders portrait with the head turned toward the subject's LEFT — their "
+        + "nose toward the RIGHT edge of the frame — and BOTH eyes still visible. "
+        + "Judge the direction and what is visible rather than estimating the turn in degrees: "
+        + "square to the camera, with the nose toward neither edge, FAILS; a turn far enough to "
+        + "hide one eye is a side profile and FAILS; and a head turned toward the subject's "
+        + "RIGHT, nose toward the LEFT edge, is the mirror of what was asked and FAILS. "
+        + "Anything between square and profile, turned the way asked, is the 45-degree "
+        + "three-quarter this specifies.",
       wardrobe: WARDROBE,
     },
     directive:
@@ -711,13 +744,83 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
     */
     belowWaist: true,
   },
+  /*
+    ⚠ **THE ANGLE AXIS WAS 2-OF-3 AGAINST ITSELF ON THIS VIEW, AND THE SPEC IS
+    WHY — #1414, 2026-09-30.**
+
+    The judge was asked about one pair three times with everything identical,
+    `temperature: 0`, and answered `differs` / `matches` / `differs` on ANGLE
+    while identity and wardrobe held. Measured properly afterwards — 5 reads x
+    7 pairs x 3 axes = 105, through the real judge on real production frames —
+    **every one of the eight non-matching verdicts in the whole court was the
+    ANGLE axis on a `sideClose`**, and identity and wardrobe were stable on 7
+    pairs out of 7.
+
+    **What that cost a customer cuts both ways.** `packageOrchestrator` refunds
+    and DROPS a view whose axis fails, regenerates once, and then its answer
+    stands. On an unstable axis two coin flips in a row take away a correct side
+    profile — the refund is honest, the picture is gone — and the same coin
+    keeps a wrong one.
+
+    # It was not drift, and it was not the picture
+
+    The cheapest hypothesis was a wording defect between the judge's spec and
+    the generator's directive. **Read at the code, there is none**: both come
+    from this one entry and say the same thing. And his eye ruled on the frames
+    (law 9, 2026-09-30, verbatim): *"one angle is a side profile the other is a
+    3/4 side angle."*
+
+    **The cause is in the eight notes, which all say one thing in different
+    words** — *"slightly less than a full 90-degree turn"*, *"close to a true
+    profile but ... suggesting a slightly less than full 90-degree turn"*,
+    *"only slightly beyond three-quarter view"*. **The judge was ESTIMATING
+    DEGREES, because the specification made a degree its test.** A binary
+    verdict on a continuous quantity is a coin wherever a frame lands near the
+    boundary, and which frame is near it is not fixed.
+
+    # The repair is this file's own rule, applied where it had not been
+
+    `closeUp`'s bounds docblock, above in this same table, already wrote it down:
+
+      > "So both bounds are stated as LANDMARK PREDICATES rather than as
+      > proportions. A judge reliably answers 'is the chin inside the frame' and
+      > 'are the shoulders in frame'; it answers 'does the face fill 80% of the
+      > height' badly."
+
+    A turn in degrees is that second kind of question. So the landmark becomes
+    the TEST rather than a consequence clause hanging off the number: the far
+    eye is hidden or it is not, and both of those are yes-or-no by looking —
+    which is also what makes §I's "unsure fails" work for us instead of against
+    us.
+
+    ⚠ **THIS DOES NOT WIDEN WHAT PASSES, AND THE DISTINCTION IS THE WHOLE
+    CARE.** *Only one eye showing* and *ninety degrees* describe the same
+    photograph — at a true profile the far eye is behind the nose and brow. What
+    changes is only which of the two the reader is asked to judge. A frame with
+    both eyes plainly visible still FAILS, and the sentence now says so in its
+    own words instead of leaving it to be derived from a number.
+
+    ⚠ **The three options the card put on the table are NOT taken and none of
+    them is implied here** — two reads with a tie-break, widening `unsure`, or
+    making the axis advisory. Each changes what *"checked against the face you
+    signed"* promises and what a view is refunded for, and that is a decision
+    for him. This changes the question the judge is asked, not the standard it
+    holds a picture to. `#1220`'s rule is untouched for the same reason: a
+    flaky axis is not fixed by rolling it again.
+
+    The generator's `directive` below is deliberately unchanged. A GENERATOR can
+    be aimed at a number; only a READER has to estimate one.
+  */
   sideClose: {
     angle: "sideClose",
     label: VIEW_ANGLE_LABELS.sideClose,
     spec: {
       framing:
-        "a head-and-shoulders TRUE side profile — the face turned a full 90 degrees so only one eye "
-        + "is visible, not a three-quarter turn",
+        "a head-and-shoulders TRUE side profile, not a three-quarter turn. "
+        + "Judge this by WHAT IS VISIBLE rather than by estimating the turn in degrees: exactly "
+        + "ONE eye is showing, and the far eye is hidden behind the nose and the brow. "
+        + "If BOTH eyes are visible, or the far cheek is presented to the camera as a cheek "
+        + "rather than reading as the edge of the face, that is a three-quarter turn and it FAILS.",
       wardrobe: WARDROBE,
     },
     directive:

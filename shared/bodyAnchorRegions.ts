@@ -137,9 +137,14 @@ const PRESENTS_IN: Record<AnchorFraming, readonly BodyAnchorRegion[]> = {
      The shoulder blades are in shot, so `torso` presents; the arms are the
      marginal call and go the safe way. */
   frontClose: ["head", "neck", "torso", "wholeBody"],
-  /* "a head-and-shoulders portrait with the head turned about 45 degrees". */
+  /* "a head-and-shoulders portrait with the head turned toward the subject's
+     LEFT ... and BOTH eyes still visible". (#1414 restated this spec on its
+     landmarks rather than on a degree estimate; the framing it describes, and
+     so the regions below, are unchanged.) */
   threeQuarter: ["head", "neck", "torso", "wholeBody"],
-  /* "a head-and-shoulders TRUE side profile — the face turned a full 90 degrees". */
+  /* "a head-and-shoulders TRUE side profile ... exactly ONE eye is showing, and
+     the far eye is hidden behind the nose and the brow". (#1414, as above: the
+     same photograph, asked about by its landmark instead of by its angle.) */
   sideClose: ["head", "neck", "torso", "wholeBody"],
   /* "the whole body from the top of the hair to the feet". */
   frontFull: [...BODY_ANCHOR_REGIONS],

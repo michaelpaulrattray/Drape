@@ -115,13 +115,103 @@ describe("the canonical view package", () => {
       untouched — including the reference-relative wardrobe the maiden voyage
       forced, which it inherited from the shared constant rather than carrying
       its own copy. A per-view wardrobe string would have rotted here silently.
+
+      ⚠ **This arm asserted `toContain("45 degrees")` until #1414 (2026-09-30),
+      and that is the assertion the card is about.** The degree is no longer the
+      TEST — it is the illustration at the end of the sentence — so the arm now
+      holds the two landmarks the judge is actually asked to read. The number
+      survives in the string and is still asserted below, because removing it
+      entirely would lose the one thing that says WHICH turn between square and
+      profile this view means.
     */
     const threeQuarter = castPackageView("threeQuarter");
     expect(threeQuarter.label).toBe("Three-quarter");
-    expect(threeQuarter.spec.framing).toContain("45 degrees");
-    expect(threeQuarter.spec.framing).toContain("both eyes still visible");
+    expect(threeQuarter.spec.framing).toContain("45-degree");
+    /* `BOTH` is capitalised in the spec on purpose — the same emphasis
+       `sideClose` carries on the landmark that is its test (#1414). */
+    expect(threeQuarter.spec.framing).toContain("BOTH eyes still visible");
     // Reference-relative, never an absolute colour (the maiden-voyage defect).
     expect(threeQuarter.spec.wardrobe).not.toMatch(/mid-grey|off-white/);
+  });
+
+  /**
+   * ⚠ **THE TWO ANGLE SPECS ARE LANDMARK PREDICATES, NOT DEGREE ESTIMATES —
+   * #1414, and this arm is the only thing standing between that finding and the
+   * next person who "tightens" one of these sentences.**
+   *
+   * The measurement, through the real judge on real production frames, ten
+   * identical reads of `cast56 sideClose` (asset 324) per arm, `temperature: 0`:
+   *
+   *     spec                          angle axis
+   *     "a full 90 degrees"           7/10 non-matching, UNSTABLE
+   *     "exactly ONE eye is showing"  0/10 non-matching, stable
+   *
+   * Asset 324 is a clean side profile — looked at, not inferred (law 9) — so
+   * the old spec was not merely unstable on it, it was mostly WRONG, and a
+   * customer lost a correct view and 50 credits to it more often than not.
+   *
+   * The cause is in the judge's own notes, which all said one thing: *"slightly
+   * less than a full 90-degree turn"*. It was estimating degrees because the
+   * spec made a degree the test, and `closeUp`'s own bounds docblock in
+   * `castViewPackage.ts` had already written down why that fails —
+   * **landmark predicates, never proportions.**
+   *
+   * So: each spec must ask about something a reader can SEE, and must name the
+   * failure directions. The arm is written on the landmark words rather than on
+   * whole sentences, because the realistic regression is somebody re-centring
+   * one of these on its number again.
+   */
+  it("judges an angle by what is VISIBLE, never by an estimate in degrees (#1414)", () => {
+    const sideClose = castPackageView("sideClose").spec.framing;
+    // The landmark that IS the test: one eye, and the far one accounted for.
+    expect(sideClose).toContain("ONE eye is showing");
+    expect(sideClose).toContain("far eye is hidden");
+    // The failure direction, named — an axis told to fail when unsure needs one.
+    expect(sideClose).toContain("BOTH eyes are visible");
+    // And the estimate is banned in as many words, on both specs.
+    expect(sideClose).toContain("rather than by estimating the turn in degrees");
+
+    const threeQuarter = castPackageView("threeQuarter").spec.framing;
+    expect(threeQuarter).toContain("rather than estimating the turn in degrees");
+    expect(threeQuarter).toContain("BOTH eyes still visible");
+    expect(threeQuarter).toContain("a turn far enough to hide one eye is a side profile and FAILS");
+
+    /*
+      ⚠ THE DIRECTION IS NOT LOOSENED BY ANY OF THIS AND MUST NOT BE. A mirrored
+      three-quarter is a REAL defect the judge catches correctly today — on his
+      own Jingu (#1492) it returned "head turned toward the subject's right
+      (nose toward left edge) rather than the specified left-turn". The spec
+      names the mirror explicitly now so the refusal SAYS mirrored, which is the
+      same verdict spelled out rather than a widening.
+    */
+    expect(threeQuarter).toContain("toward the subject's LEFT");
+    expect(threeQuarter).toContain("nose toward the RIGHT edge");
+    expect(threeQuarter).toContain("is the mirror of what was asked and FAILS");
+
+    /*
+      AND THE SWEEP IS PINNED, not left to a reader's memory (working law 7).
+      Two specs stated a degree and both are repaired; every other framing spec
+      is already landmarks. A new one that makes a number its primary test is
+      the class coming back, so no OTHER spec may name degrees at all.
+
+      ⚠ **THE POPULATION IS EVERY ANGLE THE TABLE ANSWERS FOR, NOT
+      `CAST_PACKAGE_VIEWS` — AND THE FIRST SHAPE OF THIS ARM USED THAT AND
+      SURVIVED ITS OWN SABOTAGE.** A degree estimate injected into `frontClose`
+      passed green, because `frontClose` is retired FROM THE PROFILE and so is
+      absent from that list — while every signed Cast still owns a `frontClose`
+      slot (`activateSignedCast` seals one from the 1K anchor), and any Cast
+      signed under v2 or v3 owns a paid 2K view there whose spec is still handed
+      to the judge. A retired-from-the-profile view is not a retired view, and a
+      guard that cannot see one is reporting on a smaller product than the one
+      that ships.
+    */
+    for (const angle of CAST_VIEW_ANGLES) {
+      if (angle === "threeQuarter") continue;
+      expect(
+        castPackageView(angle).spec.framing,
+        `${angle}: a framing spec states a landmark, never a number of degrees (#1414)`,
+      ).not.toMatch(/\d+\s*[-\s]?degree/i);
+    }
   });
 
   it("derives the Sign price from the number of views it actually promises", () => {
