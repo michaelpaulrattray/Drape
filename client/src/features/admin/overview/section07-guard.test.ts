@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 import { attentionItems } from "./NeedsHuman";
 import { actionLabel } from "./actionLabel";
 
+import { withoutComments } from "../../../../../server/testing/withoutComments";
+
 /**
  * Brief 07's rules, as assertions rather than as review memory
  * (`docs/specs/Casting-ui-ux-design/drape-redesign/07-admin-overview.md`).
@@ -37,8 +39,7 @@ const PAGE = path.resolve(CLIENT_SRC, "pages/AdminOverview.tsx");
 const read = (file: string) => fs.readFileSync(file, "utf8");
 
 /** Strip comments, so a docblock explaining a rule cannot trip the rule. */
-const code = (text: string) =>
-  text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const code = (text: string) => withoutComments(text);
 
 const CSS = read(path.join(HERE, "overview.css"));
 const PAGE_TEXT = read(PAGE);

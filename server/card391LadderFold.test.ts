@@ -16,6 +16,8 @@ import {
 import { mapPlanToTier } from "./stripe/stripeService";
 import { billingRouter } from "./routes/billing";
 
+import { withoutComments } from "./testing/withoutComments";
+
 /**
  * CARD #391 — THE LADDER FOLD, held where each half of his ruling can fail.
  *
@@ -53,8 +55,7 @@ const HIDDEN = HIDDEN_PLAN_TIERS as readonly string[];
 const HERE = new URL(".", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
 
 /** Source with comments stripped — a rule written in prose is not a rule shipped. */
-const code = (text: string) =>
-  text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const code = (text: string) => withoutComments(text);
 
 /** The real input parser of a procedure — the same object the wire runs. */
 function parserOf(name: string): { parse: (input: unknown) => unknown } {

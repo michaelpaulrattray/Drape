@@ -23,6 +23,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { withoutComments } from "./testing/withoutComments";
+
 const repoRoot = path.join(__dirname, "..");
 
 /**
@@ -41,7 +43,7 @@ const repoRoot = path.join(__dirname, "..");
  */
 function read(relative: string): string {
   const text = fs.readFileSync(path.join(repoRoot, relative), "utf8");
-  return text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  return withoutComments(text);
 }
 
 describe("the mint is wired into the one place a view's bytes are stored", () => {

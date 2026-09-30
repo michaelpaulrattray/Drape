@@ -29,11 +29,12 @@ import { describe, expect, it } from "vitest";
 import { globSync } from "node:fs";
 import { join, sep } from "node:path";
 
+import { withoutComments } from "../../../server/testing/withoutComments";
+
 const CLIENT = join(import.meta.dirname, "..");
 
 /** Strip comments, so a docblock explaining the rule cannot trip the rule. */
-const code = (text: string) =>
-  text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const code = (text: string) => withoutComments(text);
 
 /**
  * A user-visible sign-out label: the words between JSX tags, or the value of a

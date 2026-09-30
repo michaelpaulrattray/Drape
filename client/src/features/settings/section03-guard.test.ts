@@ -2,6 +2,8 @@ import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { withoutComments } from "../../../../server/testing/withoutComments";
+
 /**
  * SECTION 03's contract, held at the source.
  *
@@ -21,8 +23,7 @@ const SECTIONS_DIR = join(HERE, "sections");
 
 const read = (path: string) => readFileSync(path, "utf8");
 /** Strip block and line comments — a rule quoted in prose is not a rule shipped. */
-const code = (text: string) =>
-  text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const code = (text: string) => withoutComments(text);
 
 describe("section 03 — five modals became three surfaces", () => {
   it("the five retired modals are GONE, not restyled", () => {

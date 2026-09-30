@@ -16,6 +16,8 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { withoutComments } from "../../../server/testing/withoutComments";
+
 const CLIENT = join(import.meta.dirname, "..");
 const PAGES = join(CLIENT, "pages");
 
@@ -25,8 +27,7 @@ const pageFiles = () =>
     .map((name) => ({ name, text: readFileSync(join(PAGES, name), "utf8") }));
 
 /** Strip comments, so a docblock explaining the rule cannot trip the rule. */
-const code = (text: string) =>
-  text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const code = (text: string) => withoutComments(text);
 
 describe("#278 — every in-app page gets the chrome, from one composition", () => {
   it("no page mounts AppShell directly — pages mount AppChrome", () => {

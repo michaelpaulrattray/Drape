@@ -5,6 +5,8 @@ import { describe, expect, it } from "vitest";
 import { showsMenuCount } from "@/foundation/menuCount";
 import { readFlagCounts } from "./useModeratorFlagCounts";
 
+import { withoutComments } from "../../../../server/testing/withoutComments";
+
 /**
  * card 416 — THE ACCOUNT MENU'S TWO BADGES, WHICH WERE WIRED TO NOTHING.
  *
@@ -43,8 +45,7 @@ const SERVER = path.resolve(HERE, "..", "..", "..", "..", "server");
 const read = (relative: string) => fs.readFileSync(path.resolve(CLIENT_SRC, relative), "utf8");
 
 /** Strip comments, so a docblock explaining a rule cannot trip the rule. */
-const code = (text: string) =>
-  text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const code = (text: string) => withoutComments(text);
 
 /** Every non-test source file under a root, walked rather than listed. */
 function sources(root: string): { name: string; text: string }[] {

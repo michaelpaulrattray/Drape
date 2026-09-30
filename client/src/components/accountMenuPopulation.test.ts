@@ -50,12 +50,13 @@ import { globSync } from "node:fs";
 import { join, sep } from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { withoutComments } from "../../../server/testing/withoutComments";
+
 const CLIENT = join(import.meta.dirname, "..");
 
 /** Strip comments, so this file's own prose — and the freeze note on the
  *  legacy header — cannot be read as markup. */
-const code = (text: string) =>
-  text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const code = (text: string) => withoutComments(text);
 
 /**
  * A user-visible sign-out label: the words between JSX tags, or a string prop.

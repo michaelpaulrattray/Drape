@@ -40,6 +40,8 @@ import { describe, expect, it, vi } from "vitest";
 import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
 import { readListedSource } from "../testing/listedSource";
 
+import { withoutComments } from "../testing/withoutComments";
+
 /* This suite reads every source file in the server tree, which is well past
    vitest's 5s default under parallel load (#741). */
 vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
@@ -85,8 +87,8 @@ function serverSourceFiles(): string[] {
  * castingBriefCompiler`) rather than calling it in place.
  */
 function reachesTheCompiler(text: string): boolean {
-  const withoutComments = text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
-  const withoutOwnDeclaration = withoutComments.replace(/export const castingBriefCompiler\b[^=]*=/g, "");
+  const stripped = withoutComments(text);
+  const withoutOwnDeclaration = stripped.replace(/export const castingBriefCompiler\b[^=]*=/g, "");
   return /\bcastingBriefCompiler\b/.test(withoutOwnDeclaration);
 }
 

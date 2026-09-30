@@ -10,6 +10,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
    about what the pane SAYS, which is what card 387 was about. */
 import { spendWindowCopy } from "./usageWindow";
 
+import { withoutComments } from "../../../../server/testing/withoutComments";
+
 /**
  * #387 — his five corrections to the built Settings panes, held where each one
  * can actually fail.
@@ -34,8 +36,7 @@ const HERE = new URL(".", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$
 const REPO = join(HERE, "..", "..", "..", "..");
 const read = (path: string) => readFileSync(path, "utf8");
 /** Strip comments — a rule quoted in prose is not a rule shipped. */
-const code = (text: string) =>
-  text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const code = (text: string) => withoutComments(text);
 
 afterEach(() => vi.useRealTimers());
 

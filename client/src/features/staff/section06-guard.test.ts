@@ -3,6 +3,8 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { CHANGE_REQUEST_APPROVAL_REQUIREMENTS } from "@shared/changeRequestApproval";
 
+import { withoutComments } from "../../../../server/testing/withoutComments";
+
 /**
  * Brief 06's rules, as assertions rather than as review memory
  * (`docs/specs/Casting-ui-ux-design/drape-redesign/06-staff-tables.md`).
@@ -38,8 +40,7 @@ const MODERATOR = path.resolve(CLIENT_SRC, "features/moderator");
 const read = (relative: string) => fs.readFileSync(path.resolve(CLIENT_SRC, relative), "utf8");
 
 /** Strip comments, so a docblock explaining a rule cannot trip the rule. */
-const code = (text: string) =>
-  text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const code = (text: string) => withoutComments(text);
 
 const PRIMITIVES = read("foundation/primitives.tsx");
 const FOUNDATION_CSS = read("foundation/foundation.css");

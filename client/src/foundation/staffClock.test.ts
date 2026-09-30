@@ -10,6 +10,8 @@ import {
   staffFullDateTime,
 } from "./staffDate";
 
+import { withoutComments } from "../../../server/testing/withoutComments";
+
 /**
  * THE STAFF WORLD'S CLOCK IS 24-HOUR — a house rule, not a section rule.
  *
@@ -106,8 +108,7 @@ const CLIENT_SRC = path.resolve(HERE, "..");
 const read = (file: string) => fs.readFileSync(file, "utf8");
 
 /** Strip comments, so a docblock quoting a bad shape cannot trip the rule. */
-const code = (text: string) =>
-  text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const code = (text: string) => withoutComments(text);
 
 /**
  * ⚠ **THE ROOTS ARE THE STAFF WORLD, AND THE LIST IS DELIBERATELY NARROW.**

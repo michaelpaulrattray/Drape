@@ -1,6 +1,8 @@
 import { readdir, readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 
+import { withoutComments } from "../../../server/testing/withoutComments";
+
 /**
  * THE PROMOTION GUARDS (#262) — the two things his ruling can lose silently.
  *
@@ -29,8 +31,7 @@ const FOUNDATION = new URL("./", import.meta.url);
  * bug, and the cheapest way to green it would be to delete the explanation.
  * A guard that punishes the reasoning is a guard that erases it.
  */
-const code = (text: string) =>
-  text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const code = (text: string) => withoutComments(text);
 
 const sources = async () => {
   const names = (await readdir(FOUNDATION)).filter(

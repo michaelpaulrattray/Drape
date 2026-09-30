@@ -1,6 +1,8 @@
 import { readFile, readdir } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 
+import { withoutComments } from "./testing/withoutComments";
+
 /**
  * A FIXTURE HOOK WITHOUT THE EXECUTABLE BIT IS IGNORED, AND THE ARM STILL
  * REPORTS A VERDICT (#673).
@@ -42,8 +44,7 @@ const SERVER = new URL("./", import.meta.url);
 
 /** Comments are stripped before anything is asserted: both files above QUOTE the
  *  defect in order to explain it, and quoting must never read as committing. */
-const code = (text: string) =>
-  text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const code = (text: string) => withoutComments(text);
 
 /**
  * The names git looks for. A file written under one of these basenames is a

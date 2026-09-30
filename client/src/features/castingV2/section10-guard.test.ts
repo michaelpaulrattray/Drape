@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 
 import { CONCEPT_BRIEF_PLACEHOLDER_CLAUSE } from "./conceptUpload";
 
+import { withoutComments } from "../../../../server/testing/withoutComments";
+
 /**
  * SECTION 10 — the casting hero column and the Cast settings modal (#435, his
  * brief `docs/specs/Casting-ui-ux-design/drape-redesign/10-casting-hero-and-settings.md`).
@@ -54,8 +56,7 @@ const read = async (url: URL) => {
 };
 
 /** Comments carry the reasoning and quote the very things some arms forbid. */
-const code = (text: string) =>
-  text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const code = (text: string) => withoutComments(text);
 
 /**
  * The selector list of a split-out CSS block — everything before its first `{`.
