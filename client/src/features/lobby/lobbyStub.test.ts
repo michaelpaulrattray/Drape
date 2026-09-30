@@ -34,6 +34,23 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
+/**
+ * ⚠ **THE SHARED READER, USED AT THE TWO SITES BELOW (#1636).** The private
+ * pair it replaces — a block regex and an anchored line regex — knows nothing
+ * about STRING LITERALS: a `/*` inside a quoted string opens a comment it
+ * never opened and everything to the next one is deleted from what this guard
+ * then reads. Measured across the tree, the block half alone read 41 of 1,969
+ * files short. **A guard that reads less passes for the wrong reason** — and
+ * both arms here are NEGATIVE ones (`not.toContain`, `not.toMatch`), which is
+ * the direction where reading less passes silently: a control this suite
+ * forbids could sit in text the reader had already deleted.
+ *
+ * Both inputs are `LobbyStub.tsx`, read at the two call sites rather than
+ * assumed, so a JS/TS reader is the right one. A stylesheet must never come
+ * through here: `//` is not a comment in CSS.
+ */
+import { withoutComments } from "../../../../server/testing/withoutComments";
+
 const source = (path: string) => readFileSync(resolve(process.cwd(), path), "utf8");
 
 const APP = "client/src/App.tsx";
@@ -85,7 +102,7 @@ describe("#302 — the lobby is stubbed, and stays a place", () => {
     const stub = source(STUB);
     /* Read the CODE, not the docblock: the docblock quotes him saying the word
        "button", and a naive search of the whole file would fail on his words. */
-    const code = stub.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    const code = withoutComments(stub);
     expect(code).toContain("<h1");
     expect(code).toContain("{title}");
     expect(code).toContain("{note}");
@@ -105,7 +122,7 @@ describe("#302 — the lobby is stubbed, and stays a place", () => {
       README forbids ("weights 400 and 500 only"). The arm is on the CLASS: no
       hand-set type of any kind, so the next edit cannot reintroduce it.
     */
-    const code = source(STUB).replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    const code = withoutComments(source(STUB));
     expect(code).toContain('className="dp-headline"');
     expect(code.match(/className="dp-body"/g) ?? []).toHaveLength(2);
     for (const handSet of ["fontSize", "fontWeight", "letterSpacing", "lineHeight", "font:"]) {

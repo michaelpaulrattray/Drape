@@ -40,6 +40,8 @@ import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { withoutComments } from "../../server/testing/withoutComments";
+
 const PAGES_DIR = resolve(__dirname, "pages");
 
 const read = (path: string) => readFileSync(path, "utf8").replace(/\r\n/g, "\n");
@@ -52,9 +54,29 @@ const pageFiles = () =>
     .filter((name) => name.endsWith(".tsx"))
     .map((name) => ({ name, text: code(read(resolve(PAGES_DIR, name))) }));
 
-/** Comments quote the rule; matching on them would pass on the promise. */
-const code = (s: string) =>
-  s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\{\/\*[\s\S]*?\*\/\}/g, "").replace(/^\s*\/\/.*$/gm, "");
+/**
+ * Comments quote the rule; matching on them would pass on the promise.
+ *
+ * ⚠ **THE SHARED READER, AND THE ORDER IS LOAD-BEARING (#1636).** The private
+ * trio it replaces — a block regex, a JSX-comment regex and an anchored line
+ * regex — knows nothing about STRING LITERALS: a `/*` inside a quoted string
+ * opens a comment it never opened and everything to the next one is deleted
+ * from what this guard then reads. Measured across the tree, the block half
+ * alone read 41 of 1,969 files short. **A guard that reads less passes for the
+ * wrong reason** — and this suite's arms are about addresses, which are
+ * quoted strings.
+ *
+ * The JSX-comment strip runs FIRST so the whole `{…}` leaves; the shared
+ * reader would take the block comment and leave a bare `{}` behind. That
+ * ordering is slice 1's finding on `foundation/section00-guard.test.ts`,
+ * applied here rather than rediscovered.
+ *
+ * Every input is `.tsx` — `App.tsx` and the files under `pages/` — read at the
+ * call sites rather than assumed, so a JS/TS reader is the right one. A
+ * stylesheet must never come through here: `//` is not a comment in CSS, so an
+ * unquoted `url(https://…)` would be truncated at the scheme.
+ */
+const code = (s: string) => withoutComments(s.replace(/\{\/\*[\s\S]*?\*\/\}/g, ""));
 
 describe("App routes — the admin entrance (#68)", () => {
   it("routes the bare /admin address", () => {
@@ -370,5 +392,44 @@ describe("App routes — the legacy studio is sealed, not deleted (#364)", () =>
       .map(({ name }) => name);
 
     expect(offenders).toEqual([]);
+  });
+});
+
+describe("the reader these arms match on (#1636)", () => {
+  /*
+    A CONTROL, not a demonstration. Two things about `code` above are
+    load-bearing and neither is visible at any call site, so a later edit could
+    undo either one with every arm in this file still green:
+
+      1. the JSX-comment strip runs FIRST, so the whole `{…}` leaves rather
+         than a bare `{}` — the shared reader alone would take the comment and
+         leave the braces;
+      2. the shared reader takes a TRAILING line comment, which the
+         line-start-anchored shape it replaces could not see. Measured on the real pages
+         the day this landed: three such comments across the eighteen, one of
+         them `if (!isAdmin) return; // sealed: … (#364)` — prose naming this
+         suite's own subject, sitting in what these arms read.
+
+    And the positive control matters more than either: a reader that reads
+    LESS passes for the wrong reason, so a quoted address must survive intact.
+  */
+  const specimen = [
+    'const seal = true; // sealed: nothing on this page navigates for anyone else',
+    "<div>{/* a JSX comment naming /studio */}</div>",
+    'const href = "https://example.test/studio";',
+  ].join("\n");
+
+  it("takes the whole JSX comment expression, braces included", () => {
+    expect(code(specimen)).not.toContain("a JSX comment");
+    expect(code(specimen)).not.toContain("{}");
+  });
+
+  it("takes a trailing line comment the anchored shape could not see", () => {
+    expect(code(specimen)).not.toContain("sealed: nothing on this page");
+    expect(code(specimen)).toContain("const seal = true;");
+  });
+
+  it("and leaves a quoted address whole — reading less is the other failure", () => {
+    expect(code(specimen)).toContain('"https://example.test/studio"');
   });
 });
