@@ -1,7 +1,7 @@
 {
-  "edition": 594,
-  "updatedAt": "2026-09-30T22:17:10.000Z",
-  "shift": "The relay (his terminal, this morning) - N2 is wrapped. You said \"close\" on its last card, the light check, and it closed as overtaken by the checker ruling you gave last night: only the wrong person can take a picture away. On your word, \"after n2 is wrapped up start the pricing/money work then proceed onto n2b and n2c\", the ladder now reads N2 done, pricing first, then personality and voice, then Campaigns, and the ten pricing cards are on offer to the seats from this morning. Every one of them is money, so every pull request waits for a hand verdict before it merges. Your N2 test drive is in For Your Eyes as seven numbered steps with two pictures of where to start; it asks nothing, and a step that does not match becomes a bug. The close-up boundary you answered \"this looks good\" on is marked answered. Two rules from this morning are in the program: a bug jumps the queue only when a customer can hit it, so the crew cannot spend a night on its own tooling while a focus is set; and pricing is held to its ten cards, with anything else found along the way filed as a plain bug. Four pull requests that waited overnight for a verdict were reviewed and merged: the second half of the checker change, two gate rules, and one test-tooling fix. The Sentry key you replaced works for both jobs, uploading and reading, proven from the build log and a probe that checked itself.",
+  "edition": 595,
+  "updatedAt": "2026-09-30T23:35:00.000Z",
+  "shift": "Foreman night shift — the pricing work has started. The first piece is built: one place in the code that works out every credit number you see, so a price and a balance can never disagree with each other again. It shows you nothing new today, and that is deliberate — the new prices and the new scale have to arrive in the same release, or a Roll would read 32 credits for an hour. So this piece waits, and the prices come with it. While building it I counted every screen and message that puts a credit number in front of you: 106 of them across 48 files. That count is now written into a check that will not let the number grow, so the next shift has a finish line it can measure instead of an opinion. The work is a money change, so it does not go live on the checks alone — it is waiting for a review by hand, which is the rule you set for everything in this pricing rung. Your two notes from last night are marked as seen: the close-up boundary you approved, and the light check you told me to close. Nothing else needs you.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -145,14 +145,8 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-30T22:08:58.831Z",
+      "readAt": "2026-09-30T23:25:01.637Z",
       "items": [
-        {
-          "issueNumber": 1644,
-          "title": "N2 is wrapped — the completion card and your test-drive list (the flags went home; what is on your account is what a customer gets)",
-          "kind": "rung",
-          "rung": "N2"
-        },
         {
           "issueNumber": 1242,
           "title": "N2b — Personality and voice are born at Sign, as editable text: two drafted lines on the cast's page, badged Drafted for you, free to edit (founder-ordered 2026-09-25)",
@@ -9071,6 +9065,13 @@
       "status": "merged",
       "prNumber": 1640,
       "note": "Six sites read, five swapped; 138 characters of trailing prose left the checks' sight, one of it naming its own arm's subject; 112 arms before, 118 after, 0 verdicts moved."
+    },
+    {
+      "id": "credit-display-helper-1600",
+      "title": "One place works out every credit number you see (#1600, the first pricing piece)",
+      "status": "in-review",
+      "prNumber": 1649,
+      "note": "Built and checked, showing nothing new on purpose — the new scale has to arrive with the new prices. Waiting on a review by hand, because every pricing change is money."
     }
   ],
   "problems": [
@@ -9364,10 +9365,12 @@
     244,
     245,
     246,
-    247
+    247,
+    248,
+    249
   ],
   "nextUp": {
-    "readAt": "2026-09-30T22:08:58.830Z",
+    "readAt": "2026-09-30T23:25:01.636Z",
     "items": [
       {
         "issueNumber": 1469,
@@ -9436,6 +9439,16 @@
       {
         "issueNumber": 1612,
         "title": "The view checker measures framing and only refuses on identity: geometry from the segmenter for every framing band, and an unsure framing or wardrobe verdict delivers the picture unchecked instead of dropping it — his ruling 2026-09-30",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1646,
+        "title": "A milestone's test drive renders on the Desk as its own block — steps in full, matched / did not match per step — so he never opens GitHub to drive a milestone (his 'yes', 2026-10-01)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1647,
+        "title": "A bug jumps the queue only when a customer can hit it — a tooling, test or gate bug waits behind the focus like everything else (his 'i like your idea', 2026-10-01)",
         "urgent": false
       }
     ]
