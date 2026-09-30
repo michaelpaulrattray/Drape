@@ -18,12 +18,15 @@ import { describe, expect, it } from "vitest";
 
 import {
   CREW_CLAIM_LIVE_MS,
+  CREW_NOT_BUILT_LABEL,
   buildStateHoldsOffOffer,
   handVerdictForPullRequest,
   crewCardBuildPhrase,
   crewCardBuildState,
   crewCardBuildViews,
   crewCardCommentFact,
+  isNotBuiltLabelled,
+  notBuiltCards,
   indexCardBuilds,
   pullRequestBuildsCard,
 } from "../shared/crewCardBuildState";
@@ -192,8 +195,116 @@ describe("the one judgement", () => {
     })).toBeNull();
   });
 
+
   it("a card nobody is on has no state at all — the quiet row", () => {
     expect(crewCardBuildState({ card: 999, openPullRequests: [PR_1326], facts: [], nowMs: NOW })).toBeNull();
+  });
+});
+
+/**
+ * THE `not-built` LABEL — a refusal's durable home (#1337).
+ *
+ * His word, 2026-09-29, on *"should a refused card stay open with a mark on it,
+ * or close?"*: **A**. So the label had to become a fact the judgement reads, and
+ * the whole of what is interesting is WHERE IT SITS: the comment facts are dated
+ * and the label is not, so it cannot join the newest-wins sort and is instead the
+ * answer everything else falls through to.
+ *
+ * ⚠ **THE TWO ARMS THAT MATTER ARE THE FALL-THROUGHS.** Before this card a
+ * RELEASE and a STALE CLAIM both answered `null` — *ordinary untouched work* —
+ * and that was correct while a refusal was only ever a comment newer than them.
+ * With a mark that does not age out, answering `null` over it is the defect.
+ */
+describe("the refusal label", () => {
+  const base = { card: 1217, openPullRequests: [] as const, nowMs: NOW };
+
+  it("⚠ a labelled card with NO comment at all reads refused — the window's floor, closed", () => {
+    /* This is the case the paged comment reader could never answer: the refusal
+       is months old, nobody re-commented, and the listing has moved past it. */
+    expect(crewCardBuildState({ ...base, facts: [], notBuilt: new Set([1217]) }))
+      .toEqual({ kind: "refused", at: null });
+    /* THE NEGATIVE CONTROL: without the label the very same call is a quiet row,
+       so the arm above is not passing on something else. */
+    expect(crewCardBuildState({ ...base, facts: [], notBuilt: new Set([9999]) })).toBeNull();
+    /* And a caller that never read the labels behaves as it did before #1337. */
+    expect(crewCardBuildState({ ...base, facts: [] })).toBeNull();
+  });
+
+  it("⚠ A LIVE CLAIM OUTRANKS THE LABEL — somebody's hands are on it right now", () => {
+    const live = new Date(NOW - 60 * 60 * 1000).toISOString();
+    expect(crewCardBuildState({ ...base, facts: [claim(1217, live)], notBuilt: new Set([1217]) }))
+      .toMatchObject({ kind: "claimed", seat: "seat-desk" });
+  });
+
+  it("⚠ A RELEASE FALLS THROUGH TO THE LABEL rather than erasing it", () => {
+    /* A release cancels a CLAIM. It has never been a withdrawal of a refusal, and
+       reading it as one would let a released card read as untouched work over a
+       mark nobody removed. */
+    expect(crewCardBuildState({
+      ...base,
+      facts: [claim(1217, "2026-09-26T00:18:00Z"), release(1217, "2026-09-26T01:00:00Z")],
+      notBuilt: new Set([1217]),
+    })).toEqual({ kind: "refused", at: null });
+  });
+
+  it("⚠ A CLAIM THAT AGED OUT FALLS THROUGH TO THE LABEL TOO", () => {
+    const stale = new Date(NOW - CREW_CLAIM_LIVE_MS - 1_000).toISOString();
+    expect(crewCardBuildState({ ...base, facts: [claim(1217, stale)], notBuilt: new Set([1217]) }))
+      .toEqual({ kind: "refused", at: null });
+    /* Unlabelled, the same stale claim is still nothing — the pre-#1337 answer. */
+    expect(crewCardBuildState({ ...base, facts: [claim(1217, stale)] })).toBeNull();
+  });
+
+  it("a comment refusal keeps its OWN timestamp; the label has none to keep", () => {
+    expect(crewCardBuildState({
+      ...base,
+      facts: [refusal(1217, "2026-09-26T00:21:50Z")],
+      notBuilt: new Set([1217]),
+    })).toEqual({ kind: "refused", at: "2026-09-26T00:21:50Z" });
+  });
+
+  it("an open pull request still outranks the label — the artifact that cannot be stale", () => {
+    expect(crewCardBuildState({
+      card: 1248,
+      openPullRequests: [PR_1326],
+      facts: [],
+      notBuilt: new Set([1248]),
+      nowMs: NOW,
+    })).toMatchObject({ kind: "pull-request" });
+  });
+
+  it("⚠ THE LABEL DOES NOT WITHHOLD THE CARD — his ruling was A, not B", () => {
+    /* B was "it closes". A is "it stays open with a mark", and the mark must
+       therefore leave the card takeable: a shift reads the reason and decides. */
+    const state = crewCardBuildState({ ...base, facts: [], notBuilt: new Set([1217]) });
+    expect(buildStateHoldsOffOffer(state)).toBe(false);
+    expect(crewCardBuildPhrase(state!, NOW)).toBe("not built — the reason is on the card");
+  });
+
+  it("the spelling has ONE owner, and the set is derived from the rows", () => {
+    expect(CREW_NOT_BUILT_LABEL).toBe("not-built");
+    expect(isNotBuiltLabelled(["seat:retro", CREW_NOT_BUILT_LABEL])).toBe(true);
+    expect(isNotBuiltLabelled(["seat:retro"])).toBe(false);
+    expect(isNotBuiltLabelled(undefined)).toBe(false);
+    /* The shape both `gh issue list --json number,labels` and the Desk's live
+       reading carry, so no caller shapes it and two cannot shape it differently. */
+    expect([...notBuiltCards([
+      { number: 1217, labels: ["not-built", "seat:janitor"] },
+      { number: 1218, labels: ["seat:janitor"] },
+      { number: 0, labels: ["not-built"] },
+      { labels: ["not-built"] },
+    ])]).toEqual([1217]);
+  });
+
+  it("the views carry it too, so his page and a shift read one phrase", () => {
+    const views = crewCardBuildViews({
+      cards: [1217, 1218],
+      openPullRequests: [],
+      facts: [],
+      notBuilt: new Set([1217]),
+      nowMs: NOW,
+    });
+    expect(views).toEqual([{ issueNumber: 1217, phrase: "not built — the reason is on the card" }]);
   });
 });
 

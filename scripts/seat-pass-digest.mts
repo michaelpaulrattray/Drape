@@ -18,7 +18,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { readOpenPullRequests } from "./lib/cardClaimWarning.mts";
-import { buildBoard, readCardComments } from "./lib/cardBuildState.mts";
+import { buildBoard, readCardComments, readNotBuiltCards } from "./lib/cardBuildState.mts";
 import {
   renderPassDigest,
   type PassCardHandout,
@@ -37,7 +37,7 @@ const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
      reads go through `readCardComments` / `readOpenPullRequests`, which use `gh`'s
      own `{owner}/{repo}` placeholders — so they cannot name another repository's
      comments beside this one's cards, and a hardcoded owner cannot go stale. */
-  value: ["plan", "out", "started", "open-prs", "comments", "seat-failures"],
+  value: ["plan", "out", "started", "open-prs", "comments", "not-built", "seat-failures"],
   boolean: ["quiet"],
 });
 
@@ -85,9 +85,11 @@ const nowMs = Date.now();
 */
 const prRows = readOpenPullRequests(ARGS.value("open-prs"));
 const commentFacts = readCardComments(ARGS.value("comments"), null, nowMs);
+const notBuiltRows = readNotBuiltCards(ARGS.value("not-built"));
 const board = buildBoard({
   openPullRequests: prRows ?? { unreadable: "`gh pr list` could not be read" },
   comments: commentFacts ?? { unreadable: "the claims and refusals could not be read" },
+  notBuilt: notBuiltRows ?? { unreadable: "the refused cards could not be read" },
   nowMs,
 });
 

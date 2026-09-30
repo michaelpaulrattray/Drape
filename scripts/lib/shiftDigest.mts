@@ -870,6 +870,15 @@ export type DigestInputs = {
    * caller that asked and found a quiet board.
    */
   readonly cardComments: CrewCardCommentFact[] | Unreadable;
+  /**
+   * THE CARDS CARRYING `not-built` (#1337) — a refusal's durable home.
+   *
+   * ⚠ **THE COMMENT READ ABOVE CANNOT ANSWER THIS ON ITS OWN.** It pages a
+   * window, so a card refused before that window and never re-commented reads as
+   * ordinary untouched work — which is exactly the row a shift then spends its
+   * night re-deciding. Required for the same reason as `cardComments`.
+   */
+  readonly notBuiltCards: ReadonlySet<number> | Unreadable;
   /** `patrol-clocks.mts`'s own output, embedded rather than reimplemented. */
   readonly patrolClocks: string | Unreadable;
   readonly since: PreviousShift | Unreadable;
@@ -975,6 +984,7 @@ export function buildDigest(inputs: DigestInputs): string {
     const board: CardBuildBoard = buildBoard({
       openPullRequests: prs,
       comments: inputs.cardComments,
+      notBuilt: inputs.notBuiltCards,
       nowMs: inputs.now.getTime(),
     });
     const offered = inputs.nextUp.filter((row) => !board.holdsOffOffer(row.number)).length;
@@ -1056,7 +1066,7 @@ export function buildDigest(inputs: DigestInputs): string {
     /* The claims-and-refusals half, whose own three answers are the same three:
        a live claim printed as a phrase on the row, a listing read and quiet, and
        a listing NOBODY READ. Only the last needs a line. */
-    out.push(...commentsUnreadableLines(inputs.cardComments, "  "));
+    out.push(...commentsUnreadableLines(inputs.cardComments, "  ", inputs.notBuiltCards));
     if (inputs.truncated?.nextUp) {
       /* ⚠ The cap is on the POPULATION, not on the band (#774): the band is
          filtered out of a whole-open-queue read, and `gh` returns the NEWEST

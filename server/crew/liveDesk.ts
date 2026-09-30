@@ -26,6 +26,7 @@ import {
   crewCardBuildState,
   crewCardBuildViews,
   handVerdictForPullRequest,
+  notBuiltCards,
   type CrewBuildPullRequest,
   type CrewCardBuildView,
   type CrewCardCommentFact,
@@ -546,14 +547,22 @@ function liveBuildBoard(
   const parsed = Date.parse(reading.readAt);
   const nowMs = Number.isFinite(parsed) ? parsed : Date.now();
   const cards = openIssues(reading).map((item) => item.number);
+  /* ⚠ **THE REFUSAL LABEL COSTS THIS READER NOTHING (#1337).** The search that
+     gives his page its cards already carries every card's labels, so the durable
+     half of a refusal is read here with no second call and no window — which is
+     precisely what the paged comment reader could not offer. A shift's board
+     takes its own `gh` read for the same fact (`scripts/lib/cardBuildState.mts`)
+     because a script holds no such reading; one spelling, one derivation
+     (`notBuiltCards`), two places that already had the rows. */
+  const notBuilt = notBuiltCards(openIssues(reading));
   const heldOffOffer = new Set<number>();
   for (const card of cards) {
-    if (buildStateHoldsOffOffer(crewCardBuildState({ card, openPullRequests: pulls, facts, nowMs }))) {
+    if (buildStateHoldsOffOffer(crewCardBuildState({ card, openPullRequests: pulls, facts, nowMs, notBuilt }))) {
       heldOffOffer.add(card);
     }
   }
   return {
-    items: crewCardBuildViews({ cards, openPullRequests: pulls, facts, nowMs }),
+    items: crewCardBuildViews({ cards, openPullRequests: pulls, facts, nowMs, notBuilt }),
     heldOffOffer,
   };
 }
