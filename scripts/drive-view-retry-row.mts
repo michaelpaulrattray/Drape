@@ -56,7 +56,7 @@ const client = (db as unknown as {
 
 /*
   THE FIXTURE'S OWN SIGNED CAST, read rather than hard-coded: a Cast is keyed by
-  `models.agencyId` (what `/casting/cast/:castId` takes) and is signed when a
+  `models.agencyId` (what `/app/casting/cast/:castId` takes) and is signed when a
   `casting_candidates` row points at it through `signedCastId`.
 */
 const [castRows] = await client.query(
@@ -231,7 +231,7 @@ for (const theme of ["light", "dark"] as const) {
     window.localStorage.setItem("drape_theme", value);
     document.documentElement.setAttribute("data-theme", value);
   }, theme);
-  await page.goto(`${BASE}/casting/cast/${cast.castId}`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${BASE}/app/casting/cast/${cast.castId}`, { waitUntil: "domcontentloaded" });
 
   /* Wait on the ROW, never on the clock — the remote database makes the first
      paint slow, and a fixed sleep photographs skeletons. */

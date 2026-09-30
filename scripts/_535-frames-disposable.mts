@@ -103,7 +103,7 @@ for (const theme of ["dark", "light"] as const) {
   }, theme);
 
   /* -- 1 · the hero -- */
-  await page.goto(`${base}/casting`, { waitUntil: "networkidle2", timeout: 120_000 });
+  await page.goto(`${base}/app/casting`, { waitUntil: "networkidle2", timeout: 120_000 });
   await page.waitForSelector(".dpc-hero__field .dpc-brieffield", { timeout: 60_000 });
   await setReactValue(".dpc-hero__field .dpc-brieffield", TYPED);
   await page.evaluate((btn) => {
@@ -142,7 +142,7 @@ for (const theme of ["dark", "light"] as const) {
   await page.screenshot({ path: `output/535-frames/hero-after-${theme}.png` });
 
   /* -- 3 · the sheet's dock: the glyph where the sparkle sits; the gear reads Style alone -- */
-  await page.goto(`${base}/casting/s/${SHEET_SESSION}`, { waitUntil: "networkidle2", timeout: 120_000 });
+  await page.goto(`${base}/app/casting/s/${SHEET_SESSION}`, { waitUntil: "networkidle2", timeout: 120_000 });
   /* Wait for the RECORD, not just the dock — the page settles queries after first paint (#534's driver). */
   await page.waitForSelector(".dpc-prompt__summary", { timeout: 60_000 });
   await page.waitForSelector(".dp-dock-fade .dpc-briefrow", { timeout: 60_000 });
@@ -163,7 +163,7 @@ for (const theme of ["dark", "light"] as const) {
   await page.screenshot({ path: `output/535-frames/sheet-dock-${theme}.png` });
 
   /* -- 4 · the concept-upload review: the description is a brief box too -- */
-  await page.goto(`${base}/casting`, { waitUntil: "networkidle2", timeout: 120_000 });
+  await page.goto(`${base}/app/casting`, { waitUntil: "networkidle2", timeout: 120_000 });
   await page.waitForSelector(".dpc-hero__photos", { timeout: 60_000 });
   await page.click(".dpc-hero__photos");
   await page.waitForSelector(".dpc-entry__file", { timeout: 20_000 });

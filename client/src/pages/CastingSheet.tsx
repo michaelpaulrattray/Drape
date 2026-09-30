@@ -86,7 +86,7 @@ import { SignConfirm } from "@/features/castingV2/components/SignConfirm";
 /**
  * The casting sheet (plan §J, handoff chapter 07).
  *
- * A route rather than a mode on `/casting`, because a session is a durable
+ * A route rather than a mode on `/app/casting`, because a session is a durable
  * seven-day object: closing the tab cancels nothing, the back button means
  * what it says, and the sheet resumes from server truth rather than from
  * whatever the last render happened to hold.
@@ -120,7 +120,7 @@ const POLL_MS = 2_500;
 const IDLE_POLL_MS = 12_000;
 const TERMINAL_ROLL_STATUSES = new Set(["complete", "partial", "failed", "cancelled"]);
 export default function CastingSheet() {
-  const [, params] = useRoute("/casting/s/:sessionId");
+  const [, params] = useRoute("/app/casting/s/:sessionId");
   const [, navigate] = useLocation();
   /*
     `?focus=<candidatePublicId>` — arriving from a sibling tile in someone's
@@ -2280,7 +2280,7 @@ export default function CastingSheet() {
   */
   const goneSentence = sheetGoneRefusal(session.error);
   useEffect(() => {
-    if (goneSentence) navigate("/casting", { replace: true, state: sheetGoneState(goneSentence) });
+    if (goneSentence) navigate("/app/casting", { replace: true, state: sheetGoneState(goneSentence) });
   }, [goneSentence, navigate]);
 
   /*
@@ -2375,7 +2375,7 @@ export default function CastingSheet() {
     <AppChrome breadcrumb="Casting / Sheet" current="casting" width="working">
       <div className="dp-dock-scroll dp-stack" style={{ gap: 22 }}>
         <div className="dp-row" style={{ justifyContent: "space-between" }}>
-          <Button variant="quiet" size="small" onClick={() => navigate("/casting")}>
+          <Button variant="quiet" size="small" onClick={() => navigate("/app/casting")}>
             <ArrowLeft size={12} strokeWidth={2} aria-hidden="true" />
             Casting
           </Button>
@@ -2719,7 +2719,7 @@ export default function CastingSheet() {
                 size="small"
                 onClick={() => {
                   setDispatchFailure(null);
-                  navigate("/casting");
+                  navigate("/app/casting");
                 }}
               >
                 {failureActionLabel(visibleFailure.kind)}
@@ -2883,7 +2883,7 @@ export default function CastingSheet() {
                   }
                   onDiscard={() => onDiscard(candidate.candidateId)}
                   onFollow={() => dispatchRoll("follow", candidate.candidateId)}
-                  onOpenCast={(castId) => navigate(`/casting/cast/${castId}`)}
+                  onOpenCast={(castId) => navigate(`/app/casting/cast/${castId}`)}
                   onRetry={retryOffered ? () => onRetry(candidate.candidateId) : undefined}
                   retryPriceCredits={retryPrice}
                   /*
@@ -3524,7 +3524,7 @@ export default function CastingSheet() {
               {
                 onSuccess: (result) => {
                   setSigning(null);
-                  navigate(`/casting/cast/${result.castPublicId}`);
+                  navigate(`/app/casting/cast/${result.castPublicId}`);
                 },
                 onError: (error) => {
                   setSigning(null);

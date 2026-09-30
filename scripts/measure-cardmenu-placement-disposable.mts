@@ -73,7 +73,7 @@ try {
     are ABSENT until the card is pointed at (the reveal ladder's first rung), so
     the driver hovers like a person before it can find the control at all.
   */
-  await page.goto(`${BASE}/casting`, { waitUntil: "networkidle2", timeout: 240_000 });
+  await page.goto(`${BASE}/app/casting`, { waitUntil: "networkidle2", timeout: 240_000 });
   await page.waitForSelector(".dpc-menuhost", { timeout: 120_000 });
   await page.hover(".dpc-menuhost");
   await page.waitForSelector(".dpc-cardmenu__trigger", { timeout: 30_000 });
@@ -83,7 +83,7 @@ try {
   await page.keyboard.press("Escape");
 
   /* THE RAIL CHIP's menu — the one that should change. */
-  await page.goto(`${BASE}/casting/s/${session}`, { waitUntil: "networkidle2", timeout: 240_000 });
+  await page.goto(`${BASE}/app/casting/s/${session}`, { waitUntil: "networkidle2", timeout: 240_000 });
   await page.waitForSelector(`button[aria-label="View candidate ${tile} larger"]`, { timeout: 240_000 });
   await page.click(`button[aria-label="View candidate ${tile} larger"]`);
   await page.waitForSelector(".dpc-refine__step", { timeout: 120_000 });

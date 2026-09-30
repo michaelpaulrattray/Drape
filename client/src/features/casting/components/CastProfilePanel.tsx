@@ -297,7 +297,7 @@ export function CastProfilePanel({
             Fork to edit
           </button>
         ) : (
-          <button type="button" onClick={() => navigate('/app/boards')} className="w-full rounded-canvas-md border-hairline border-canvas-border-strong px-3 py-2.5 text-canvas-md font-medium text-canvas-ink hover:bg-canvas-surface-inset">
+          <button type="button" onClick={() => navigate('/app/canvas')} className="w-full rounded-canvas-md border-hairline border-canvas-border-strong px-3 py-2.5 text-canvas-md font-medium text-canvas-ink hover:bg-canvas-surface-inset">
             Fork from Canvas <ExternalLink size={12} className="ml-1 inline" />
           </button>
         )}

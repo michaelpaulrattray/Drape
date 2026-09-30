@@ -42,9 +42,10 @@ const STUB = "client/src/features/lobby/LobbyStub.tsx";
 
 /**
  * The five URLs `AppLobby` answers. All five stay; the library's moved from
- * `/app/models` to `/app/library` (#1545) and the old one redirects.
+ * `/app/models` to `/app/library` (#1545) and the canvas's from `/app/boards` to
+ * `/app/canvas` (#1583); both old addresses redirect.
  */
-const LOBBY_URLS = ["/app", "/app/boards", "/app/library", "/app/garments", "/app/looks"];
+const LOBBY_URLS = ["/app", "/app/canvas", "/app/library", "/app/garments", "/app/looks"];
 
 describe("#302 — the lobby is stubbed, and stays a place", () => {
   it("routes all five lobby URLs to AppLobby, so a stubbed page is not a 404", () => {

@@ -134,7 +134,7 @@ const readings: ClickReading[] = [];
 const notes: Record<string, string> = {};
 
 try {
-  const url = `${BASE}/casting/s/${SESSION}`;
+  const url = `${BASE}/app/casting/s/${SESSION}`;
   await page.goto(url, { waitUntil: "domcontentloaded", timeout: 90_000 });
   /*
     The sheet LOADED, or an honest refusal. Wait on the THING (the verify

@@ -251,7 +251,7 @@ for (const theme of ["dark", "light"] as const) {
   }, theme);
 
   /* ───────────────────────── 1 + 2 · the lobby, in the flag ─────────────── */
-  await page.goto(`${BASE}/casting`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${BASE}/app/casting`, { waitUntil: "domcontentloaded" });
   await settled(page, "Meet eight of them");
 
   const resting = await readToggle(page, ".dpc-hero__copy");
@@ -303,7 +303,7 @@ for (const theme of ["dark", "light"] as const) {
   console.log(`  shot ${await shoot(page, `2-lobby-basics-${theme}`)}`);
 
   /* ───────────────────────── 4 + 5 · a Wardrobe sheet ───────────────────── */
-  await page.goto(`${BASE}/casting/s/${SESSION}`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${BASE}/app/casting/s/${SESSION}`, { waitUntil: "domcontentloaded" });
   await settled(page, "Roll again");
   /*
     ⚠ WAIT ON THE RAIL, NOT ON THE DOCK — the verify skill's first reading, and
@@ -446,7 +446,7 @@ for (const theme of ["dark", "light"] as const) {
   console.log(`  shot ${await shoot(page, `6-sheet-basics-${theme}`)}`);
 
   /* ───────────────────── 7 · AN UNPATHED SHEET — the control ────────────── */
-  await page.goto(`${BASE}/casting/s/${UNPATHED}`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${BASE}/app/casting/s/${UNPATHED}`, { waitUntil: "domcontentloaded" });
   await settled(page, "Roll again");
   /* The dock's own row arrives with the config and the roll, both of which are
      round trips after "Roll again" has painted — wait on the thing (the verify
@@ -478,7 +478,7 @@ for (const theme of ["dark", "light"] as const) {
     await shutPage.evaluateOnNewDocument((one: string) => {
       localStorage.setItem("drape_theme", one);
     }, theme);
-    await shutPage.goto(`${BASE}/casting`, { waitUntil: "domcontentloaded" });
+    await shutPage.goto(`${BASE}/app/casting`, { waitUntil: "domcontentloaded" });
     await settled(shutPage, "Meet eight of them");
     const shut = await readToggle(shutPage, ".dpc-hero__copy");
     check(!shut.present,

@@ -142,7 +142,7 @@ try {
   await waitForText(pageB, 'R7-B4 Verify Cast Renamed', 15_000);
 
   console.log('[browser] opening Canvas board');
-  await pageB.goto(`${baseUrl}/app/board/${boardId}`, { waitUntil: 'domcontentloaded' });
+  await pageB.goto(`${baseUrl}/app/canvas/${boardId}`, { waitUntil: 'domcontentloaded' });
   await waitForText(pageB, 'R7-B4 Verify Board');
   await waitForSvgCount(pageB, 'img[src^="data:image/svg+xml"]', 3);
   const boardSources = await pageB.evaluate(() =>

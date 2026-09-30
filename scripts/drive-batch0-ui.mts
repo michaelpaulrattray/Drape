@@ -107,7 +107,7 @@ const browser = await puppeteer.launch({
 try {
   const page = await browser.newPage();
   await page.setCookie({ name: "app_session_id", value: token, domain: "localhost", path: "/" });
-  await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
+  await page.goto(`${BASE}/app/canvas/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
 
   // ── UI1: archived-source placement degrades to "Source unavailable" ────
   await page.waitForFunction(

@@ -149,7 +149,7 @@ const health = await fetch(`${BASE}/api/health`).then(
 say(`   health: ${health}`);
 if (!health.startsWith("200")) await finish(1, "STOPPED: no server on the port this rung is aimed at");
 
-await page.goto(`${BASE}/casting/s/${SESSION}`, { waitUntil: "domcontentloaded" });
+await page.goto(`${BASE}/app/casting/s/${SESSION}`, { waitUntil: "domcontentloaded" });
 if (!(await page.waitForSelector('button[aria-label^="View candidate"]', { timeout: 120_000 }).catch(() => null))) {
   await finish(1, "STOPPED: no candidate tiles");
 }

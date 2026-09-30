@@ -1521,3 +1521,9 @@
   verdict: KEEP
   why: "a guard's population, so a production-importer reading of it is zero by construction and says nothing (the server/testing/ precedent, 13a) — it is the vocabulary TWO guards on two different customer surfaces read, server/landingEngineNames.test.ts (the landing page, #1560) and client/src/features/castingV2/candidateFailureWords.test.ts (a failed tile's chip, #1551). It exists BECAUSE the second guard was about to keep a second copy of the same six words: the engine this product rolls on moved three times in September 2026 (#1340, #1459, #1278 path E), and a guard whose vocabulary was written against the previous engine reads green over the new one's name — working law 4, with the drift already measured on this exact list. Deleting it returns the words to one copy per guard, which is the mirror, and takes the derived arm with it that holds every fal model id the provider modules declare against the list"
   argued: "#1560"
+
+- symbol: STATED_COVERING_WORDS
+  file: server/castingV2/statedCovering.ts
+  verdict: KEEP
+  why: the garments #1574's guard is driven over, exported so that population is this module's own list rather than a second typed copy of it (working law 4) — the same reason CAST_PUBLIC_ID_PATTERN is kept, and a sixth covering added above joins the guard instead of slipping past it
+  argued: "#1574 (the net under his 2026-09-30 ruling on #1503)"

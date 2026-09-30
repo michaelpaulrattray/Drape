@@ -236,7 +236,7 @@ export function CandidateTile({
       <div className="dp-stack dpc-tile" style={{ gap: 9 }}>
         <a
           className="dpc-card dpc-card--openable dpc-card--signed"
-          href={candidate.castId ? `/casting/cast/${candidate.castId}` : undefined}
+          href={candidate.castId ? `/app/casting/cast/${candidate.castId}` : undefined}
           onClick={(event) => {
             if (!candidate.castId || !onOpenCast) return;
             event.preventDefault();

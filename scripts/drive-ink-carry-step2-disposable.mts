@@ -55,7 +55,7 @@ const stop = async (why: string) => {
   process.exit(1);
 };
 
-await page.goto(`${BASE}/casting/s/${SESSION}`, { waitUntil: "domcontentloaded" });
+await page.goto(`${BASE}/app/casting/s/${SESSION}`, { waitUntil: "domcontentloaded" });
 const tile = await page.waitForSelector('button[aria-label^="View candidate"]', { timeout: 120_000 })
   .catch(() => null);
 if (!tile) await stop("no candidate tile");

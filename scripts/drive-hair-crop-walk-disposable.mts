@@ -75,7 +75,7 @@ const token = await new SignJWT({
 
 const { browser, page } = await openDrivenPage({ base: BASE, token, width: 1440, height: 960 });
 
-await page.goto(`${BASE}/casting/s/${SESSION}`, { waitUntil: "domcontentloaded" });
+await page.goto(`${BASE}/app/casting/s/${SESSION}`, { waitUntil: "domcontentloaded" });
 const tile = await page
   .waitForSelector('button[aria-label^="View candidate"]', { timeout: 120_000 })
   .catch(() => null);
