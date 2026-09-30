@@ -35,6 +35,8 @@
  * `server/trackerVerdict.test.ts`.
  */
 
+import { SENTRY_ORG, SENTRY_SERVER_PROJECT } from "../../shared/monitoringProjects";
+
 /** What a vendor read-back was able to say about a specific event id. */
 export type VendorLookup =
   /** The vendor's API confirmed the event id exists in the project. */
@@ -316,4 +318,100 @@ export function readProbeBuild(
  */
 export function probeErrorMessage(marker: string): string {
   return `Klieg tracker probe — deliberate test exception, not a customer error (${marker})`;
+}
+
+/** Which declaration a slug came from, for the receipt. */
+export type ProbeSlugSource = "declared" | "environment";
+
+export interface ProbeSlugs {
+  readonly org: string;
+  readonly project: string;
+  readonly orgSource: ProbeSlugSource;
+  readonly projectSource: ProbeSlugSource;
+  /** What was actually used, for the receipt — never a reconstruction. */
+  readonly note: string;
+}
+
+/**
+ * WHICH SENTRY ORG AND PROJECT THE READ-BACK ASKS ABOUT.
+ *
+ * ⚠ **THIS FUNCTION EXISTS BECAUSE THE PROBE DECLINED TO MEASURE WHEN IT HAD
+ * EVERYTHING IT NEEDED, AND THAT IS THE MIRROR OF THE DEFECT IT WAS BUILT FOR.**
+ * Driven through the deploy rite's own invocation on 2026-10-01
+ * (`railway run --service Drape -- npx tsx scripts/probe-error-tracker.mts`),
+ * against a pipe that is demonstrably live, it returned:
+ *
+ *     lookup   not-checked — SENTRY_AUTH_TOKEN is set but SENTRY_ORG/SENTRY_PROJECT are not.
+ *     VERDICT  accepted-unverified  (finding)
+ *     EXIT     2
+ *
+ * The same run with the two slugs supplied by hand returned `arrived` / `EXIT 0`
+ * on attempt 3. So the pipe was healthy, the token carried `event:read`, and the
+ * only thing between the rite and a true verdict was two strings **this
+ * repository already declares**. Under #1643 that `EXIT 2` is a `problems` entry,
+ * so merging the rite step without this would have withheld
+ * `RITE EXIT STATUS: OK` from **every deploy from now on** — an instrument
+ * manufacturing the alarm it exists to raise honestly, which is the exact failure
+ * `readProbeStep`'s own header refuses one case of and would have shipped in
+ * another.
+ *
+ * # ⚠ Why importing the declaration is not the second copy the probe's docblock feared
+ *
+ * That docblock said the ids *"come from the environment and have no defaults
+ * here"* because the declaration lived in
+ * `client/src/features/admin/overview/dashboards.ts`, whose header carries his
+ * *"Links — no fourth key"* ruling and says **that module** must never grow a
+ * reader. Two things make this different, and both are read at the code rather
+ * than argued:
+ *
+ * 1. **The declaration MOVED** (#1420 part 1). It is `shared/monitoringProjects.ts`
+ *    — a module with NO imports, created precisely so a second reader that cannot
+ *    reach the client module takes the ids from the one declaration; `vite.config.ts`
+ *    is the first such reader and this is the second. `dashboards.ts` now
+ *    re-exports. **Importing the one declaration is the opposite of keeping a
+ *    second copy** — spelling `klieg-labs` into a script would have been working
+ *    law 4's parallel list, and that is what this avoids.
+ * 2. **His "no fourth key" ruling was about his PAGE, and the key already exists
+ *    because he provisioned it.** He declined a credentialled read-back *on the
+ *    admin overview*, so that page cannot carry numbers that disagree with the
+ *    dashboard. This probe is not that page: it already reads Sentry's API with
+ *    `SENTRY_AUTH_TOKEN`, which he put on the service himself, and his eye
+ *    validated that road on #1542. Nothing here widens what the probe reaches —
+ *    it only stops it declining to look.
+ *
+ * ⚠ **AND THE FETCH STAYS OUT OF BOTH DECLARING MODULES.** `monitoringProjects.ts`'s
+ * header forbids *it* growing a reader that fetches; the constants flow into this
+ * pure verdict module and the `fetch` stays in the script, where it already was.
+ *
+ * # The environment still wins
+ *
+ * A set `SENTRY_ORG`/`SENTRY_PROJECT` overrides, so a probe can be pointed at the
+ * browser project or a renamed org without a deploy. ⚠ **A BLANK variable is
+ * NOT an override** — a Railway variable that exists with an empty value reads as
+ * `""`, and `??` would pass that straight through to build
+ * `…/projects//events/…`, a 404 read as `lost-in-transit` on a healthy pipe. It
+ * is trimmed and an empty result falls back to the declaration.
+ */
+export function readProbeSlugs(env: {
+  readonly SENTRY_ORG?: string | undefined;
+  readonly SENTRY_PROJECT?: string | undefined;
+}): ProbeSlugs {
+  const fromEnvOrg = env.SENTRY_ORG?.trim();
+  const fromEnvProject = env.SENTRY_PROJECT?.trim();
+
+  const orgSource: ProbeSlugSource = fromEnvOrg ? "environment" : "declared";
+  const projectSource: ProbeSlugSource = fromEnvProject ? "environment" : "declared";
+  const org = fromEnvOrg || SENTRY_ORG;
+  const project = fromEnvProject || SENTRY_SERVER_PROJECT;
+
+  const both = orgSource === projectSource ? orgSource : null;
+  const note =
+    both === "declared"
+      ? `${org}/${project}, from shared/monitoringProjects.ts — the ids this repository declares.`
+      : both === "environment"
+        ? `${org}/${project}, both from the environment, overriding the declared ids.`
+        : `${org}/${project} — org from the ${orgSource === "environment" ? "environment" : "declaration"},`
+          + ` project from the ${projectSource === "environment" ? "environment" : "declaration"}.`;
+
+  return { org, project, orgSource, projectSource, note };
 }

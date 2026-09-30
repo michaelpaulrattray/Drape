@@ -34,15 +34,35 @@
  * that goes green when it could not perform its measurement is the lying control
  * this repository has paid for three times over.
  *
- * # The ids are NOT copied into this file
+ * ⚠ **AND THE MIRROR OF THAT IS ALSO A DEFECT, WHICH IS WHAT 2026-10-01 FIXED:
+ * AN INSTRUMENT THAT DECLINES TO MEASURE WHEN IT CAN.** Refusing to guess a
+ * missing credential is honest; refusing to read an id the tree declares is a
+ * finding reported over a healthy pipe, and it sends the next reader to audit a
+ * DSN that is fine. The token is still never assumed.
  *
- * `SENTRY_ORG` and `SENTRY_PROJECT` come from the environment and have no
- * defaults here. The org and both project slugs are DECLARED once, in
- * `client/src/features/admin/overview/dashboards.ts` (his own instruction on
- * #1441: *"Put the three ids in one declared constant so a renamed project is
- * one edit"*), and that module's docblock forbids it growing a vendor reader —
- * so this script neither imports it nor keeps a second copy of its values.
- * Pass them, or the read-back declines rather than guessing.
+ * # The ids are NOT copied into this file — they are IMPORTED from the one declaration
+ *
+ * ⚠ **THIS SECTION SAID THE OPPOSITE UNTIL 2026-10-01 AND IT COST THE RITE ITS
+ * VERDICT.** It read *"come from the environment and have no defaults here …
+ * pass them, or the read-back declines rather than guessing"*, citing
+ * `client/src/features/admin/overview/dashboards.ts` and his *"Links — no fourth
+ * key"* ruling. Driven through the rite's own invocation against a live pipe,
+ * that produced `not-checked` → `accepted-unverified` → `EXIT 2`, which #1643
+ * reads as a `problems` entry — so every deploy receipt would have lost
+ * `RITE EXIT STATUS: OK` forever, over two strings this repository declares.
+ *
+ * `readProbeSlugs` (`server/monitoring/trackerVerdict.ts`) carries the full
+ * reading, including why his ruling does not bind this script. In short: the
+ * declaration MOVED to `shared/monitoringProjects.ts` (#1420 part 1), a
+ * no-imports module made for exactly this — a node-side reader that cannot reach
+ * the client module — and importing the one declaration is the opposite of the
+ * second copy that section feared. His ruling was about his PAGE not growing a
+ * credentialled reader; this script has read Sentry's API with his own
+ * `SENTRY_AUTH_TOKEN` since #1542, with his eye on that road.
+ *
+ * `SENTRY_ORG`/`SENTRY_PROJECT` still OVERRIDE when set, so the probe can be
+ * pointed at the browser project without a deploy. A blank variable is not an
+ * override.
  *
  * # Usage
  *
@@ -93,6 +113,7 @@ import {
   probeErrorMessage,
   probeMarker,
   readProbeBuild,
+  readProbeSlugs,
   readTrackerProbe,
   type VendorLookup,
 } from "../server/monitoring/trackerVerdict";
@@ -139,21 +160,12 @@ interface LookupOutcome {
  */
 async function lookUpAtSentry(eventId: string): Promise<LookupOutcome> {
   const token = process.env.SENTRY_AUTH_TOKEN?.trim();
-  const org = process.env.SENTRY_ORG?.trim();
-  const project = process.env.SENTRY_PROJECT?.trim();
+  const { org, project, note: slugNote } = readProbeSlugs(process.env);
 
   if (!token) {
     return {
       lookup: "not-checked",
       note: "SENTRY_AUTH_TOKEN is not set in this process, so Sentry was never asked.",
-    };
-  }
-  if (!org || !project) {
-    return {
-      lookup: "not-checked",
-      note:
-        "SENTRY_AUTH_TOKEN is set but SENTRY_ORG/SENTRY_PROJECT are not. This script keeps no copy of the slugs " +
-        "on purpose — they are declared in client/src/features/admin/overview/dashboards.ts. Pass them and re-run.",
     };
   }
 
@@ -170,7 +182,7 @@ async function lookUpAtSentry(eventId: string): Promise<LookupOutcome> {
       if (response.status === 200) {
         return {
           lookup: "arrived",
-          note: `Sentry answered 200 for the event id on attempt ${attempts} (${org}/${project}).`,
+          note: `Sentry answered 200 for the event id on attempt ${attempts} · ${slugNote}`,
         };
       }
       if (response.status !== 404) {
