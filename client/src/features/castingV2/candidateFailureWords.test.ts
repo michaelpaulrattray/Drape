@@ -163,13 +163,19 @@ describe("a failed candidate tile speaks in outcomes, not in machinery", () => {
     }
   });
 
-  it("carries the approved words for the three kinds #1551 rewrote", () => {
+  it("carries the approved words for the three kinds that were rewritten", () => {
     /*
       The guard above would pass on any wording free of machinery, including a
-      worse one. These are what he approved on the Notion desk, so a later change
-      is a deliberate edit against a named ruling rather than a drift — and the
-      prototype frames on that page (`failure-chips-02-after-dark`,
-      `failure-chips-03-after-light`) show exactly these.
+      worse one. These are what he approved on the Notion desk (#1551), so a
+      later change is a deliberate edit against a named ruling rather than a
+      drift — and the prototype frames on that page
+      (`failure-chips-02-after-dark`, `failure-chips-03-after-light`) show
+      exactly these.
+
+      ⚠ The card number stays in THIS comment and out of the title above:
+      `client/src/foundation/token-guard.test.ts` reads a `#` followed by four
+      hex digits as a colour literal, strips comments, and `#1551` is valid hex.
+      It caught this on the first preflight run, which is the guard working.
     */
     expect(CANDIDATE_FAILURE_CHIPS.content_filter).toBe("Blocked");
     expect(CANDIDATE_FAILURE_LINES.content_filter).toBe("Blocked by a safety check · refunded");
