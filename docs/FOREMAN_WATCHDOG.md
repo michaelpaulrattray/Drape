@@ -123,6 +123,29 @@ Get-ScheduledTaskInfo -TaskName 'Drape Foreman Watchdog' |
   a second copy of a recipe drifts from the first (working law 4), and that
   drift is the whole content of #1596.
 
+## Two things the reading corrected — and the card and the runner still say otherwise
+
+Both were found by reading the live task, not by reading about it, and both are
+recorded here because a recipe that quietly disagrees with the machine is the
+defect this file exists to close. Neither is repaired here: each is a decision,
+not a tidy-up.
+
+1. **The interval is one hour, not "every few minutes".** #1610's own prose
+   says the task launches the runner "every few minutes". The live repetition
+   interval is `PT1H`. The card's substance is untouched by this — the recipe
+   above registers what the machine actually has, and the read-back command
+   prints it.
+2. **There is no logon trigger.** The runner's header
+   (`.agents/foreman/foreman-runner.ps1`) says *"Scheduled at logon + an hourly
+   watchdog restarts it if it ever dies"*. Read three ways on 2026-09-30:
+   `Get-ScheduledTask` shows exactly two Drape tasks; the Watchdog has exactly
+   one trigger, a time trigger; no task's action names `foreman-runner` but this
+   one; and `HKCU:\…\CurrentVersion\Run` has no entry. So after a reboot the
+   runner starts at the next hourly firing, not at logon. A rebuild that follows
+   the runner's comment would register a trigger this machine never had; a
+   rebuild that follows this file registers what it has. Adding a logon trigger
+   is a change to how the nights start and is the founder's call.
+
 ## Guard
 
 `server/foremanWatchdogRecipe.test.ts` holds the half that lives in tracked
