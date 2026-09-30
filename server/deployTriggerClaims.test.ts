@@ -63,9 +63,28 @@ const ROOT = process.cwd();
 /**
  * The files a shift reads for the deploy model. Deliberately narrow: this is
  * about the documents that TEACH the model, not every string in the tree.
- * `.agents/` is gitignored and unreachable from CI, so it cannot be scanned.
+ *
+ * ⚠ **THIS DOCBLOCK READ *"`.agents/` is gitignored and unreachable from CI, so
+ * it cannot be scanned"* UNTIL #1468 (2026-09-30), AND THAT WAS A STATED REASON
+ * RATHER THAN A PREFERENCE — SO WHEN THE REASON DIED THE POPULATION HAD TO MOVE.**
+ * `.agents/foreman/PROGRAM.md` is TRACKED now, on his "Yes", and it is squarely a
+ * document that teaches the deploy model: it carries the deploy-on-merge history,
+ * the milestone gate and the rulings every shift reads before it pushes. A newly
+ * reachable teaching document left out of this scan is the shape working law 7's
+ * ruling half is about — *when a ruling opens a path, ask what was bolted to it* —
+ * except running the other way for once: nothing broke, a guard simply stopped
+ * being as wide as its own reason.
+ *
+ * ⚠ **THE `MERGE_DENIAL` PATTERN'S OWN DOCBLOCK WARNS THAT WIDENING CAN MAKE IT
+ * FIRE ON A CORRECTION BEING WRITTEN DOWN (#360's class), SO IT WAS MEASURED
+ * BEFORE THE WIDENING RATHER THAN AFTER**: both patterns were run over the real
+ * file first and it hits NEITHER — zero `CLAIM` matches, zero `MERGE_DENIAL`
+ * matches, and the string `local-migration` does not appear in it at all. If a
+ * future edition of the PROGRAM needs to quote the false sentence in order to
+ * strike it, `withoutQuotation` already exempts fenced blocks, blockquotes and
+ * double-quoted spans in markdown, which is how `CLAUDE.md` does it.
  */
-const SCANNED_FILES = ["CLAUDE.md", "AGENTS.md"];
+const SCANNED_FILES = ["CLAUDE.md", "AGENTS.md", path.join(".agents", "foreman", "PROGRAM.md")];
 const SCANNED_DIRS = [
   path.join("scripts", "lib"),
   path.join("server", "castingV2"),
@@ -197,6 +216,10 @@ describe("#296 · nothing tells a shift the wrong ref deploys", () => {
     const files = filesToScan();
     expect(files.length).toBeGreaterThan(10);
     expect(files.map((f) => path.basename(f))).toContain("CLAUDE.md");
+    /* ⚠ THE CAMPAIGN POINTER IS IN THE POPULATION (#1468). A tracked teaching
+       document silently outside the scan is the whole defect this line pins, and
+       it reddens if the .gitignore negation is ever widened away under it. */
+    expect(files.map((f) => path.basename(f))).toContain("PROGRAM.md");
     expect(files.map((f) => path.basename(f))).toContain("refineRecovery.test.ts");
   });
 
