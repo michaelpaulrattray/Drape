@@ -1,7 +1,7 @@
 {
-  "edition": 579,
-  "updatedAt": "2026-09-30T00:05:00.000Z",
-  "shift": "Foreman (night shift) — when a view came back wrong, we threw the picture away. You retried two of Jingu's views several times yesterday and every one was refused; all the studio could tell you afterwards was the word “angle”. The picture the checker turned down was deleted the moment it was judged, so there was nothing for your eyes to look at and nothing to learn from. That is fixed: a refused view now keeps its picture, one per view per attempt, for thirty days — so you can see for yourself whether the checker was right, and the pair of pictures shows whether the engine drew the same wrong thing twice. Two more of the same kind turned up while reading it. We HAD a keeper for refused pictures, approved on your account since August, and it kept nothing: seven pictures written, seven deleted, every one swept about a minute later — so building on top of it would have shipped something that looked alive and held nothing. And a failed view's record was supposed to keep the first attempt beside the last; it never once reached the database. All three are fixed. Then you answered four questions in four minutes — thank you — and all four are recorded and unblocked; the branch cleanup you said Yes to is already done and checked. Nothing was spent.",
+  "edition": 580,
+  "updatedAt": "2026-09-30T01:10:00.000Z",
+  "shift": "Foreman (night shift) — your crew was quietly throttling itself, and tonight it stopped. You told us on Monday to get more work moving at once, and we did: up to four helpers now run beside the main one each pass. It lasted a single pass. The rule that keeps them off next month's work was deciding which milestone is the current one by looking at whichever job sits at the top of your Next Up list — and last night the top job was a piece of our own tooling with no milestone attached, so the rule read 'no current milestone' and held back the whole N2 queue. Nine jobs frozen, four helpers idle, and nothing anywhere said why. It went wrong the other way too, earlier the same night: a job belonging to a much later milestone sat on top, and every N2 job was held with a reason that was simply untrue — it called N2 'later' than N6. Thirteen jobs, one wrong sentence. The fix is to stop guessing: the crew now reads the current milestone from the ladder on this very page, the one that says N2 is current — because that only ever changes when one of us writes down something you said. Measured on your real queue before and after: ten jobs held, then four, and all four of those four are genuinely on later rungs — N6, N8 and Campaigns — so nothing has jumped ahead of your word. We deliberately did NOT use the simpler fix the job description suggested, because it would have let the crew start Campaigns by itself the day the last N2 job closed. And the crew's own pass notes now say which milestone they were working to, which is the only reason any of this was found at all. One more thing worth a line: Campaigns now appears on the ladder below. It was missing — you named it last week and nobody wrote it in — and as of tonight that list is what the crew reads, so a missing rung is no longer just cosmetic. Nothing was spent.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -288,6 +288,10 @@
         {
           "state": "done",
           "title": "A refused view keeps its picture now (#1492, part one of two). When the studio checks a view and turns it down, you get a refund and a sentence — and until today the picture itself was deleted, so nobody could tell whether the checker was right. Your Jingu retries are the reason: eight renders, all refused, and the record could only say “angle”. From now a refused view keeps its picture for thirty days, one per view per attempt, on our private storage — both when signing and when you press Try again. Two older faults of the same kind were found and fixed in the same change: the keeper we already had was throwing its pictures away within a minute, and a failed view's first attempt was never written down at all. You then chose how retries should work — the retry tells the engine what went wrong last time rather than simply asking again — and that is part two, with your test on Jingu and Bingu before it ships."
+        },
+        {
+          "title": "Your crew had throttled itself back to one worker and we found out why (#1541). On Monday you asked for more jobs moving at once. The rule that stops helpers running ahead into next month's work was working out the current milestone from whichever job sits at the top of your Next Up list — so when that job was a piece of our own tooling with no milestone on it, the rule concluded there was no current milestone and froze all nine N2 jobs. It failed the opposite way earlier the same night as well, and printed a reason that was untrue: it called N2 'later' than N6. The crew now reads the current milestone off the ladder on this page — which only changes when one of us writes down something you said — so it cannot be moved by the order you happen to ask for things in. On your real queue: ten jobs held before, four after, and every one of the four is genuinely on a later rung. The simpler fix the job asked for was declined and the reason is on the card: it would have let the crew start Campaigns on its own the day the last N2 job closed.",
+          "state": "done"
         }
       ]
     },
@@ -305,6 +309,11 @@
       {
         "key": "N2b",
         "title": "Personality and voice — born at Sign, as editable text",
+        "state": "queued"
+      },
+      {
+        "key": "N2c",
+        "title": "Campaigns — the cast library's named collections",
         "state": "queued"
       },
       {
@@ -371,17 +380,11 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-29T21:17:26.008Z",
+      "readAt": "2026-09-30T00:58:12.348Z",
       "items": [
         {
           "issueNumber": 1129,
           "title": "Should the sheet repeat your own sentence back as the casting category? — the decision half of #1122",
-          "kind": "rung",
-          "rung": "N2"
-        },
-        {
-          "issueNumber": 1495,
-          "title": "N2 ghost: interpretBrief still accepts author:false, and nothing in production can reach it",
           "kind": "rung",
           "rung": "N2"
         },
@@ -9062,6 +9065,13 @@
       "prNumber": 1536,
       "note": "Merged ea6c407b — #1492 part 1; 7 frames written and 7 deleted on production, all time, was the finding.",
       "cardId": null
+    },
+    {
+      "id": "seat-gate-milestone-1541",
+      "title": "The milestone comes from the ladder you declared, not the top of your Next Up list",
+      "status": "merged",
+      "prNumber": 1544,
+      "note": "Merged 14d17810 — #1541 closed; held rung cards 10 → 4 on the real cut, 9 of 9 sabotage cases red, nothing spent."
     }
   ],
   "problems": [
@@ -9344,7 +9354,7 @@
     240
   ],
   "nextUp": {
-    "readAt": "2026-09-29T21:17:26.007Z",
+    "readAt": "2026-09-30T00:58:12.348Z",
     "items": [
       {
         "issueNumber": 180,
@@ -9359,6 +9369,16 @@
       {
         "issueNumber": 1469,
         "title": "N2c: Campaigns, the cast library's named collections (All · Unfiled · campaigns · +), Approach A, after N2b — his word 2026-09-29 (noun changed from shoots the same day)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1539,
+        "title": "A Desk reply reaches its GitHub card the moment he sends it — his GitHub-reading agents see his word at once (his 'go with 1', 2026-09-30)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1545,
+        "title": "The library's address and title say /models — his word: it reads /library, and a person on that page is a cast, never a model",
         "urgent": false
       }
     ]
