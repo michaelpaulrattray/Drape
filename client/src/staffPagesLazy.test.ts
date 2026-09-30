@@ -33,11 +33,30 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { withoutComments } from "../../server/testing/withoutComments";
+
 const read = (path: string) => readFileSync(path, "utf8").replace(/\r\n/g, "\n");
 
-/** Comments quote the rule; matching on them would pass on the promise. */
-const code = (s: string) =>
-  s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\{\/\*[\s\S]*?\*\/\}/g, "").replace(/^\s*\/\/.*$/gm, "");
+/**
+ * Comments quote the rule; matching on them would pass on the promise.
+ *
+ * ⚠ **THE SHARED READER, AND THE ORDER IS LOAD-BEARING (#1636).** The private
+ * trio it replaces knows nothing about STRING LITERALS: a `/*` inside a quoted
+ * string opens a comment it never opened and everything to the next one is
+ * deleted from what this guard then reads. That matters here more than most —
+ * this suite's population is DERIVED from `App.tsx`'s own route lines, so a
+ * reader that swallows route lines does not fail an arm, it shrinks the
+ * population and reports a clean tree.
+ *
+ * The JSX-comment strip runs FIRST so the whole `{…}` leaves; the shared
+ * reader would take the block comment and leave a bare `{}` behind. That
+ * ordering is slice 1's finding on `foundation/section00-guard.test.ts`.
+ *
+ * Every input is `.tsx`/`.ts` — `App.tsx` and the modules under `src/` — read
+ * at the call sites rather than assumed. A stylesheet must never come through
+ * here: `//` is not a comment in CSS.
+ */
+const code = (s: string) => withoutComments(s.replace(/\{\/\*[\s\S]*?\*\/\}/g, ""));
 
 const SRC = resolve(__dirname);
 const appSource = code(read(resolve(SRC, "App.tsx")));
@@ -273,5 +292,36 @@ describe("#744 — the matchers can fail (working law 2)", () => {
     expect(CHART_IMPORT.test('import { Bar } from "recharts";')).toBe(true);
     expect(CHART_IMPORT.test('import { ChartContainer } from "@/components/ui/chart";')).toBe(true);
     expect(CHART_IMPORT.test("// recharts is heavy")).toBe(false);
+  });
+});
+
+describe("the reader this suite's population is derived through (#1636)", () => {
+  /*
+    A CONTROL. This suite does not merely MATCH on `code`'s output — it DERIVES
+    its population from it, so a reader that swallows a route line does not
+    fail an arm, it shrinks the population and reports a clean tree. Two
+    properties are load-bearing and invisible at the call sites: the
+    JSX-comment strip runs FIRST (the whole `{…}` leaves, not a bare `{}`), and
+    the shared reader takes a TRAILING line comment, which the
+    line-start-anchored shape it replaces could not see.
+  */
+  const specimen = [
+    '<Route path="/admin/overview" component={AdminOverview} /> // lazy since #744',
+    "<div>{/* recharts is heavy */}</div>",
+    'const doc = "https://example.test/a.tsx";',
+  ].join("\n");
+
+  it("takes the whole JSX comment expression, braces included", () => {
+    expect(code(specimen)).not.toContain("recharts is heavy");
+    expect(code(specimen)).not.toContain("{}");
+  });
+
+  it("takes a trailing line comment, and keeps the route line it sat on", () => {
+    expect(code(specimen)).not.toContain("lazy since");
+    expect(code(specimen)).toContain('<Route path="/admin/overview" component={AdminOverview} />');
+  });
+
+  it("and leaves a quoted address whole — reading less is the other failure", () => {
+    expect(code(specimen)).toContain('"https://example.test/a.tsx"');
   });
 });

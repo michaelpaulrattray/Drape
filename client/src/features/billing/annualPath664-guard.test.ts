@@ -19,10 +19,30 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { withoutComments } from "../../../../server/testing/withoutComments";
+
 const HERE = join(process.cwd(), "client", "src", "features", "billing");
 const read = (name: string) => readFileSync(join(HERE, name), "utf8");
-const code = (source: string) =>
-  source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^[ \t]*\/\/.*$/gm, "");
+
+/**
+ * Comments are stripped before matching, so a docblock telling the defect's
+ * story cannot satisfy an arm about the code.
+ *
+ * ⚠ **THE SHARED READER (#1636).** The private pair it replaces — a block
+ * regex and an anchored line regex — knows nothing about STRING LITERALS: a
+ * `/*` inside a quoted string opens a comment it never opened and everything
+ * to the next one is deleted from what this guard then reads. Measured across
+ * the tree, the block half alone read 41 of 1,969 files short. **A guard that
+ * reads less passes for the wrong reason**, and the thing this one guards is
+ * whether a billing interval reaches the server.
+ *
+ * The swap is in scope here because **every input is `.tsx`** —
+ * `ChangePlanModal.tsx` and `AddCreditsModal.tsx`, read at the three call
+ * sites rather than assumed. A stylesheet must never come through here: `//`
+ * is not a comment in CSS, so an unquoted `url(https://…)` would be truncated
+ * at the scheme — the same silence pointed the other way.
+ */
+const code = withoutComments;
 
 describe("ChangePlanModal", () => {
   const source = code(read("ChangePlanModal.tsx"));

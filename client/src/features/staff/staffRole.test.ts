@@ -37,6 +37,8 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
+import { withoutComments } from "../../../../server/testing/withoutComments";
+
 import { isStaffRole, isModeratorPanelUnauthorized, STAFF_ROLES } from "./staffRole";
 
 const ROOT = path.resolve(__dirname, "..", "..", "..", "..");
@@ -50,9 +52,21 @@ const raw = (rel: string) => readFileSync(path.join(ROOT, rel), "utf8");
  * repository writes, and `UserCard.tsx` now carries one a word away from it -
  * would have falsely reddened them. It failed toward noise rather than
  * silence, which is the right direction and still worth closing.
+ *
+ * ⚠ THE SHARED READER (#1636). The private pair it replaces knows nothing
+ * about STRING LITERALS: a block-comment opener inside a quoted string opens a
+ * comment it never opened, and everything to the next closer is deleted from
+ * what this guard then reads. Measured across the tree, the block half alone
+ * read 41 of 1,969 files short. A guard that reads less passes for the wrong
+ * reason, and this one guards who is admitted to the moderator panel.
+ *
+ * The swap is in scope here because every input is JS/TS -
+ * `ModeratorDashboard.tsx`, `useModeratorFlagCounts.ts` and `UserCard.tsx` -
+ * read at the three constants below rather than assumed. A stylesheet must
+ * never come through here: a double slash is not a comment in CSS, so an
+ * unquoted url() would be truncated at the scheme.
  */
-const read = (rel: string) =>
-  raw(rel).replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const read = (rel: string) => withoutComments(raw(rel));
 
 const DASHBOARD = "client/src/pages/ModeratorDashboard.tsx";
 const FLAG_COUNTS = "client/src/features/staff/useModeratorFlagCounts.ts";
