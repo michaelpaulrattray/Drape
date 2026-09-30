@@ -34,20 +34,55 @@
  * `PROGRAM.md`: *"creating any NEW persistent process or scheduled task is done
  * only inside that seat's own queue card, and its activation is announced on
  * the Desk the shift it happens."* #1539 is that card. Registered on this
- * machine as **"Drape Crew Reply Mirror"**, every minute, and this is the
- * command that puts it back after a rebuild — it lives here because the
+ * machine as **"Drape Crew Reply Mirror"**, every minute, and what follows is
+ * the recipe that puts it back after a rebuild — it lives here because the
  * runner's own directory is gitignored and a recipe nobody can read is a
- * recipe that is lost:
+ * recipe that is lost.
  *
- *   $a = New-ScheduledTaskAction -Execute 'cmd.exe' `
- *     -Argument '/c cd /d C:\Users\Admin\Drape && railway.cmd run --service MySQL -- npx tsx scripts/crew-mirror-replies.mts --quiet'
+ * ⚠ **IT RUNS THROUGH A HIDDEN LAUNCHER, AND THAT IS HIS WORD RATHER THAN A
+ * PREFERENCE** (2026-09-30, terminal, verbatim: *"please make the mirror run
+ * silently its really annoying having a cmd terminal popup on my screen every
+ * minute"*). A task whose action is `cmd.exe` opens a console window on his
+ * screen once a minute, because the principal is Interactive — `-WindowStyle`
+ * is not a scheduled-task setting and `Hidden` does not suppress a child
+ * console. So the action is `wscript.exe //B`, which has no console of its own,
+ * and the launcher it runs asks for window style 0.
+ *
+ * ⚠ **THE LAUNCHER IS UNDER `.agents/`, WHICH IS GITIGNORED (`.gitignore:161`),
+ * SO ITS BODY IS CARRIED HERE OR IT IS LOST.** This block read `-Execute
+ * 'cmd.exe'` from the day it shipped until 2026-09-30: the live task had been
+ * moved to the launcher by hand the same night and the written recipe was not,
+ * so the one road that survives a rebuild re-created the popup he had just
+ * asked to be rid of. Write `.agents/crew-reply-mirror-hidden.vbs` as:
+ *
+ *   ' Launches the crew reply mirror with NO console window (#1539).
+ *   ' Window style 0 = hidden; True = wait, so the task's IgnoreNew and time
+ *   ' limit still cover the whole run; the exit code passes through so a 2 (an
+ *   ' abandoned reply) still reaches the task's last-result column.
+ *   Set sh = CreateObject("WScript.Shell")
+ *   sh.CurrentDirectory = "C:\Users\Admin\Drape"
+ *   rc = sh.Run("cmd.exe /c cd /d C:\Users\Admin\Drape && railway.cmd run --service MySQL -- npx tsx scripts/crew-mirror-replies.mts --quiet", 0, True)
+ *   WScript.Quit rc
+ *
+ * then register the task against it:
+ *
+ *   $a = New-ScheduledTaskAction -Execute 'wscript.exe' `
+ *     -Argument '//B //Nologo "C:\Users\Admin\Drape\.agents\crew-reply-mirror-hidden.vbs"'
  *   $t = New-ScheduledTaskTrigger -Once -At (Get-Date) `
  *     -RepetitionInterval (New-TimeSpan -Minutes 1)
  *   Register-ScheduledTask -TaskName 'Drape Crew Reply Mirror' -Action $a -Trigger $t `
  *     -Settings (New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 10))
  *
+ * `//B` is load-bearing beside the window style: it suppresses WScript's own
+ * dialogs, so a scripting error becomes an exit code in the task's last-result
+ * column rather than a modal box waiting on his screen for a click.
+ *
  * `IgnoreNew` is the load-bearing setting: a slow pass must never have a second
  * pass start beside it and post the same reply twice off the same waterline.
+ *
+ * **Read it back at the task, never at this block** — that is the mistake above:
+ *
+ *   (Get-ScheduledTask -TaskName 'Drape Crew Reply Mirror').Actions | Format-List Execute,Arguments
  *
  * # WHY A POLLER AND NOT A HOOK IN THE SERVER
  *
