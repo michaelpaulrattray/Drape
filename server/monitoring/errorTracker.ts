@@ -361,12 +361,30 @@ function bootLine(): string {
  *
  * Awaits an in-flight start rather than dropping the event, because the errors
  * worth the most are the ones thrown while the process is still coming up.
+ *
+ * Returns **Sentry's own event id** when the SDK accepted the event, and
+ * `undefined` when there was no tracker to accept it. Every crash-path caller
+ * ignores it; it exists so the answer is CHECKABLE (#1542).
+ *
+ * ⚠ **THIS IS THE ONLY THING THAT CAN TELL SILENCE FROM A DEAD PIPE, AND IT WAS
+ * BEING THROWN AWAY.** On 2026-09-30 the founder opened Sentry and read the
+ * never-received-an-event onboarding panel over a server that had printed
+ * *"reporting to Sentry"* at every boot for three days. Two explanations fit —
+ * nothing crashed, or nothing arrives — and nothing in the product distinguished
+ * them, because the id the SDK hands back at the moment of acceptance was
+ * discarded one line after it was produced. An id in hand is what a vendor
+ * read-back can be keyed on; without one there is no question to ask Sentry.
+ *
+ * It is deliberately NOT a promise of arrival. The id means the SDK took the
+ * event and the scrub passed it — the network hop to Sentry is the next link and
+ * `scripts/probe-error-tracker.mts` is what closes it.
  */
-export async function captureServerError(error: unknown, context: ErrorContext = {}): Promise<void> {
+export async function captureServerError(error: unknown, context: ErrorContext = {}): Promise<string | undefined> {
+  let eventId: string | undefined;
   try {
-    if (!state.configured) return;
+    if (!state.configured) return undefined;
     if (starting) await starting;
-    if (!sentry || !state.ready) return;
+    if (!sentry || !state.ready) return undefined;
 
     const store = requestContext.getStore();
     sentry.withScope((scope) => {
@@ -380,11 +398,12 @@ export async function captureServerError(error: unknown, context: ErrorContext =
       /* A non-Error reason (an unhandled rejection of a string, which this
          product's `unhandledRejection` handler does receive) is wrapped rather
          than stringified into a message, so it still carries a stack. */
-      sentry?.captureException(error instanceof Error ? error : new Error(String(error)));
+      eventId = sentry?.captureException(error instanceof Error ? error : new Error(String(error)));
     });
   } catch (reportingError) {
     log.warn({ err: reportingError }, "the error tracker threw while reporting an error");
   }
+  return eventId;
 }
 
 /** Give the transport a moment to drain — used by the crash handler only. */
