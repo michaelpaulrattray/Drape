@@ -47,11 +47,15 @@ function item(overrides: Partial<LiveQueueItem> & { number: number }): LiveQueue
 }
 
 const RUNGS = ["N1", "N2", "N3"];
-const reading = (open: LiveQueueItem[], recent: LiveQueueItem[] = []): LiveQueueReading => ({
+const reading = (
+  open: LiveQueueItem[],
+  recent: LiveQueueItem[] = [],
+  truncated: { open: boolean; recent: boolean } = { open: false, recent: false },
+): LiveQueueReading => ({
   readAt: "2026-09-25T00:00:00Z",
   open,
   recent,
-  truncated: false,
+  truncated,
 });
 
 describe("the ladder's cards", () => {
@@ -248,6 +252,66 @@ describe("deriveLiveDesk", () => {
     ]), RUNGS);
     expect(desk.closedCards).toEqual([7, 1126]);
     expect(desk.finishedLadder).toEqual([]);
+  });
+
+  /*
+    #1586 — WHAT ANSWERS *IS THIS CARD CLOSED*. `closedCards` above is one
+    page of a 48-hour search and four readers were asking it a state
+    question; the reading that answers is the complement of the OPEN set,
+    which needs no window and no extra request. Measured the morning he
+    asked (*"why does it still say all these things are in progress? are
+    they?"*): 37 open against a page of 100, and 132 closed inside the
+    window against the same page.
+  */
+  it("names every OPEN number — pull requests among them, because they share one number space", () => {
+    const desk = deriveLiveDesk(reading([
+      item({ number: 1594 }),
+      item({ number: 1549, kind: "pr" }),
+      item({ number: 1469 }),
+    ], [
+      item({ number: 1583, status: "closed", closedAt: "2026-09-30T08:21:07Z" }),
+    ]), RUNGS);
+    expect(desk.openCards, "an open PR must not read as closed by being absent from the issues")
+      .toEqual([1469, 1549, 1594]);
+    expect(desk.highestCard, "the bound spans BOTH searches").toBe(1594);
+    expect(desk.openComplete).toBe(true);
+  });
+
+  it("the bound comes from the recent read too, when it holds the highest number", () => {
+    const desk = deriveLiveDesk(reading(
+      [item({ number: 10 })],
+      [item({ number: 1600, status: "closed", closedAt: "2026-09-30T08:00:00Z" })],
+    ), RUNGS);
+    expect(desk.highestCard).toBe(1600);
+  });
+
+  it("an empty reading bounds the complement at zero rather than leaving it open", () => {
+    const desk = deriveLiveDesk(reading([], []), RUNGS);
+    expect(desk.openCards).toEqual([]);
+    expect(desk.highestCard, "nothing seen — nothing may be derived closed").toBe(0);
+  });
+
+  /*
+    THE HALF THAT MATTERS: `openComplete` is the OPEN search's own
+    truncation, never the combined boolean. On the morning he asked, the
+    combined one read `true` because the CLOSED window had overflowed — so a
+    reader keyed on it would have stood down on the one day the open read was
+    perfectly complete, which is the defect wearing its own repair.
+  */
+  it("openComplete follows the OPEN search alone — a truncated CLOSED window does not disarm it", () => {
+    const overflowingWindow = deriveLiveDesk(
+      reading([item({ number: 1594 })], [], { open: false, recent: true }),
+      RUNGS,
+    );
+    expect(overflowingWindow.openComplete, "the open read was complete").toBe(true);
+    expect(overflowingWindow.counts.truncated, "the counts are still a floor").toBe(true);
+
+    const overflowingOpen = deriveLiveDesk(
+      reading([item({ number: 1594 })], [], { open: true, recent: false }),
+      RUNGS,
+    );
+    expect(overflowingOpen.openComplete, "absences are a page boundary now").toBe(false);
+    expect(overflowingOpen.counts.truncated).toBe(true);
   });
 
   it("names the ladder cards that finished in the window, on their rung, newest first (#1201)", () => {

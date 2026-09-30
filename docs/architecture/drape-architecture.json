@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 73
+      "moduleCount": 74
     },
     {
       "id": "domain:staff",
@@ -6189,6 +6189,12 @@
     {
       "id": "module:shared/modelRegistry.ts",
       "path": "shared/modelRegistry.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/monitoringProjects.ts",
+      "path": "shared/monitoringProjects.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -12924,6 +12930,10 @@
       "path": "server/crewShiftCardClaim.test.ts"
     },
     {
+      "id": "test:server/crewShiftCardClaimComments.test.ts",
+      "path": "server/crewShiftCardClaimComments.test.ts"
+    },
+    {
       "id": "test:server/crewShiftHeartbeatScope.test.ts",
       "path": "server/crewShiftHeartbeatScope.test.ts"
     },
@@ -14104,6 +14114,10 @@
       "path": "server/viteDevFsAllow.test.ts"
     },
     {
+      "id": "test:server/viteSourceMapUpload.test.ts",
+      "path": "server/viteSourceMapUpload.test.ts"
+    },
+    {
       "id": "test:server/w1-export-truth.test.ts",
       "path": "server/w1-export-truth.test.ts"
     },
@@ -15115,6 +15129,11 @@
     {
       "from": "module:client/src/features/admin/overview/dashboards.ts",
       "to": "module:client/src/monitoring/errorReporter.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/overview/dashboards.ts",
+      "to": "module:shared/monitoringProjects.ts",
       "kind": "imports"
     },
     {

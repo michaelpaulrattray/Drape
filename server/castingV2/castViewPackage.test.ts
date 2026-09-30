@@ -24,9 +24,11 @@ import {
   CAST_PACKAGE_VIEWS,
   CAST_PACKAGE_WARDROBE_SPEC,
   CAST_PACKAGE_VIEW_PRICE,
+  FACE_FROM_REFERENCE,
   castPackageView,
   composePackageViewPrompt,
   packageViewExpectation,
+  wardrobeSpecFor,
 } from "./castViewPackage";
 
 /**
@@ -93,12 +95,20 @@ describe("the canonical view package", () => {
     const closeUp = castPackageView("closeUp");
     expect(closeUp.label).toBe("Close-up");
 
-    // What must be in frame: the tight bound.
-    expect(closeUp.spec.framing).toContain("BELOW the chin");
-    expect(closeUp.spec.framing).toContain("both eyes");
+    /*
+      What must be in frame: the tight bound.
+
+      ⚠ **THESE FOUR READ "chin" AND "both eyes" UNTIL #1582.** The founder's
+      band is unchanged and so is every failure direction; what moved is whose
+      face the landmarks belong to — the reference's, not a human template's. A
+      cast with a bronze jaw and three eyes was refused for a chin and a second
+      eye it does not have.
+    */
+    expect(closeUp.spec.framing).toContain("BELOW that lower edge");
+    expect(closeUp.spec.framing).toContain("every eye the reference shows");
     // The band itself, stated by its two landmarks.
-    expect(closeUp.spec.framing).toContain("eyebrows-to-chin");
-    expect(closeUp.spec.framing).toContain("forehead-to-chin");
+    expect(closeUp.spec.framing).toContain("eyebrows-to-the-bottom-of-the-face");
+    expect(closeUp.spec.framing).toContain("forehead-to-the-bottom-of-the-face");
     // BOTH failure directions, or the judge has nothing to fail on.
     expect(closeUp.spec.framing).toContain("TOO TIGHT");
     expect(closeUp.spec.framing).toContain("TOO LOOSE");
@@ -127,9 +137,10 @@ describe("the canonical view package", () => {
     const threeQuarter = castPackageView("threeQuarter");
     expect(threeQuarter.label).toBe("Three-quarter");
     expect(threeQuarter.spec.framing).toContain("45-degree");
-    /* `BOTH` is capitalised in the spec on purpose — the same emphasis
-       `sideClose` carries on the landmark that is its test (#1414). */
-    expect(threeQuarter.spec.framing).toContain("BOTH eyes still visible");
+    /* ⚠ This read `toContain("BOTH eyes still visible")` between #1414 and
+       #1582, both on 2026-09-30. #1414 was right that the test must be a
+       landmark; #1582 is that the landmark must be the REFERENCE's face. */
+    expect(threeQuarter.spec.framing).toContain("every eye the reference shows still visible");
     // Reference-relative, never an absolute colour (the maiden-voyage defect).
     expect(threeQuarter.spec.wardrobe).not.toMatch(/mid-grey|off-white/);
   });
@@ -163,7 +174,18 @@ describe("the canonical view package", () => {
    */
   it("judges an angle by what is VISIBLE, never by an estimate in degrees (#1414)", () => {
     const sideClose = castPackageView("sideClose").spec.framing;
-    // The landmark that IS the test: one eye, and the far one accounted for.
+    /*
+      The landmark that IS the test: one eye, and the far one accounted for.
+
+      ⚠ **#1582 TRIED TO CONDITION THESE FOR A THREE-EYED CAST, COURTED IT, AND
+      LEFT THEM ALONE — so they are asserted here exactly as #1414 wrote them.**
+      Two shapes of that repair were measured worse on a correct picture (0/5
+      non-matching becoming 5/5 and then 3/5 on cast56's delivered side profile),
+      because any sentence that sets a reader inventorying the reference's
+      features is poison on the one view whose test is that half of them must be
+      HIDDEN. `sideClose` declares `concealmentTest` for it; the numbers are in
+      `castViewPackage.ts`.
+    */
     expect(sideClose).toContain("ONE eye is showing");
     expect(sideClose).toContain("far eye is hidden");
     // The failure direction, named — an axis told to fail when unsure needs one.
@@ -173,8 +195,14 @@ describe("the canonical view package", () => {
 
     const threeQuarter = castPackageView("threeQuarter").spec.framing;
     expect(threeQuarter).toContain("rather than estimating the turn in degrees");
-    expect(threeQuarter).toContain("BOTH eyes still visible");
-    expect(threeQuarter).toContain("a turn far enough to hide one eye is a side profile and FAILS");
+    expect(threeQuarter).toContain("every eye the reference shows still visible");
+    /* ⚠ #1582: *"hide one eye"* was a human landmark, so the test is now the far
+       SIDE of the face with the eye kept as its worked case. A turn that hides
+       it is still a side profile and still FAILS — the same verdict, asked about
+       a face rather than about a template. */
+    expect(threeQuarter).toContain("hide the far side of the face");
+    expect(threeQuarter).toContain("far enough to hide "
+      + "one eye — is a side profile and FAILS");
 
     /*
       ⚠ THE DIRECTION IS NOT LOOSENED BY ANY OF THIS AND MUST NOT BE. A mirrored
@@ -211,6 +239,133 @@ describe("the canonical view package", () => {
         castPackageView(angle).spec.framing,
         `${angle}: a framing spec states a landmark, never a number of degrees (#1414)`,
       ).not.toMatch(/\d+\s*[-\s]?degree/i);
+    }
+  });
+
+  /**
+   * ⚠ **A FACE SPEC NAMES THE REFERENCE'S FEATURES, NEVER A HUMAN FACE'S —
+   * #1582, and his own reaction is why it is a bug and not a stated limit**
+   * (2026-09-30, verbatim): *"this is legacy!! why does this kind of stuff still
+   * exist we now all full creative casts"*.
+   *
+   * Four framing specs told the judge to look for *"BOTH eyes"*, *"exactly ONE
+   * eye"* and *"a margin of skin visible BELOW the chin"*, and §I's default is
+   * that an axis the judge is unsure about FAILS. So his own Jingu — **three
+   * eyes, and a bronze apparatus where a chin would be** — lost views and was
+   * refunded 50 credits a time for not having a face she was never cast with.
+   * Her refusals said it in their own words: *"the third eye is barely
+   * visible"*, *"cutting off the chin and mouth apparatus at the bottom edge"*.
+   *
+   * **The population is DERIVED from two flags the views declare, not listed
+   * here** — `belowWaist` (a face spec is one that does not reach below the
+   * waist) and `concealmentTest` (the one view whose test is what must be
+   * HIDDEN). Both are per-view declarations in the table, deliberately, so a
+   * sixth view states its own answer. The population is asserted by VALUE too: a
+   * new face view that forgets the clause joins it automatically and reddens, and
+   * a mis-derivation that silently selected nothing cannot pass by selecting
+   * nothing.
+   *
+   * ⚠ **AND THE FULL-LENGTH THREE ARE EXCLUDED ON PURPOSE, WHICH IS THE ONE
+   * THING NOT TO "TIDY" HERE.** Their anchor is a chest-up master that does not
+   * reach the feet, so *"a feature the reference does not show is never
+   * required"* would read there as permission to crop the legs off — the exact
+   * opposite of what those specs exist to catch. They name `hair`, `feet` and
+   * `toes` as CROP landmarks and that remainder is recorded on the card, not
+   * answered by borrowing this sentence.
+   *
+   * ⚠ **`sideClose` IS EXCLUDED BY A COURT, NOT BY TASTE, AND THE ARM BELOW
+   * PINS THAT ITS BYTES DID NOT MOVE.** Two shapes of this repair rewrote it and
+   * both were measured worse on a correct picture — 0/5 non-matching becoming 5/5
+   * and then 3/5 on cast56's delivered side profile, the frame #1414 celebrated.
+   * A clause telling a reader to inventory the reference's features is poison on
+   * the one view whose test is that half of them must be hidden. The numbers and
+   * the judge's own words are in `castViewPackage.ts`'s docblocks.
+   */
+  it("judges a face against the features the REFERENCE shows, never a human face's (#1582)", () => {
+    /* A face view: it does not reach below the waist. */
+    const faceAngles = CAST_VIEW_ANGLES.filter(
+      (angle) => castPackageView(angle).belowWaist !== true,
+    );
+    expect(faceAngles).toEqual(["closeUp", "frontClose", "threeQuarter", "sideClose"]);
+    /* Of those, the ones whose framing test is PRESENCE rather than concealment —
+       the clause's real population, derived from the second flag. */
+    const presenceAngles = faceAngles.filter(
+      (angle) => castPackageView(angle).concealmentTest !== true,
+    );
+    /* Asserted by value so that a derivation returning fewer (or nothing) is a red
+       rather than a vacuous pass. */
+    expect(presenceAngles).toEqual(["closeUp", "frontClose", "threeQuarter"]);
+
+    for (const angle of presenceAngles) {
+      const framing = castPackageView(angle).spec.framing;
+      /* The clause itself, by its bytes rather than a retyped copy of it. */
+      expect(
+        framing,
+        `${angle}: a face spec must tell the judge to read the face off the reference (#1582)`,
+      ).toContain(FACE_FROM_REFERENCE);
+
+      /*
+        AND THE RETIRED ABSOLUTES ARE GONE, NOT MERELY SOFTENED — the same
+        posture this file's close-up arm already takes on *"tight macro"*. Each
+        of these is a requirement stated about a human face with nothing
+        conditioning it, and each one refused a real cast.
+      */
+      for (const absolute of [
+        "BOTH eyes still visible",
+        "both eyes visible",
+        "both eyes remain visible",
+        "The chin, the mouth and both eyes",
+        "BELOW the chin",
+        "hide one eye is a side profile",
+      ]) {
+        expect(
+          framing,
+          `${angle}: "${absolute}" requires an anatomy a cast may not have (#1582)`,
+        ).not.toContain(absolute);
+      }
+
+      /* The generator carries the same correction. It is the milder half — a
+         generator wrong about anatomy draws something odd, where a JUDGE wrong
+         about anatomy takes the picture away and refunds it — but a directive
+         and a spec that disagree is the contradiction this table's own close-up
+         docblock was written about. */
+      expect(
+        castPackageView(angle).directive,
+        `${angle}: a directive may not command an eye count either (#1582)`,
+      ).not.toMatch(/\bboth eyes\b/i);
+    }
+
+    /*
+      ⚠ **THE POSITIVE CONTROL, AND IT IS THE HALF THAT MATTERS — the measured
+      reader is not traded away for the creature.** #1414 measured *"exactly ONE
+      eye is showing"* at 0/10 non-matching where *"a full 90 degrees"* scored
+      7/10, so that landmark is the strongest reader this axis has ever had, and
+      #1582's own court then proved that even a careful conditioning of it costs a
+      correct picture 3 to 5 refusals in 5. **So `sideClose`'s bytes are pinned
+      UNCHANGED, word for word as #1414 left them**, and a guard that only proved
+      the absolutes gone would have passed just as happily on the shape this court
+      rejected.
+    */
+    const sideClose = castPackageView("sideClose").spec.framing;
+    expect(sideClose).toContain("exactly ONE eye is showing, and the far eye is hidden behind the nose and the brow");
+    expect(sideClose).toContain("If BOTH eyes are visible, or the far cheek is presented");
+    expect(sideClose).not.toContain(FACE_FROM_REFERENCE);
+    /* And the three that DID move carry their reference-relative landmark. */
+    expect(castPackageView("threeQuarter").spec.framing).toContain("every eye the reference shows still visible");
+    expect(castPackageView("frontClose").spec.framing).toContain("every eye the reference shows");
+    expect(castPackageView("closeUp").spec.framing).toContain("BELOW that lower edge");
+
+    /*
+      AND THE CLAUSE DOES NOT REACH THE FULL-LENGTH VIEWS — the exclusion above,
+      pinned, because the failure it prevents is silent: those specs would keep
+      passing their own suite while telling the judge that feet the chest-up
+      master cannot show are not required.
+    */
+    for (const angle of CAST_VIEW_ANGLES.filter((a) => !faceAngles.includes(a))) {
+      expect(
+        castPackageView(angle).spec.framing,
+        `${angle}: a full-length spec must not borrow the face clause (#1582)`,
+      ).not.toContain(FACE_FROM_REFERENCE);
     }
   });
 
@@ -280,11 +435,31 @@ describe("the canonical view package", () => {
 
   it("holds every full view to one wardrobe, and lets the close-up be honest", () => {
     const full = CAST_PACKAGE_VIEWS.filter((angle) => angle !== "closeUp");
-    const wardrobes = new Set(full.map((angle) => packageViewExpectation(angle).wardrobe));
     // One garment contract across the views that can actually show a garment,
     // or "did the shirt change between the front and the back" is not a
     // question the judge can answer.
-    expect(wardrobes.size).toBe(1);
+    //
+    // ⚠ **THIS ARM ASSERTED BYTE-IDENTITY UNTIL #1579, AND BYTE-IDENTITY WAS
+    // ALWAYS A PROXY FOR THE PROPERTY IT IS ABOUT.** A rotated view now appends a
+    // sentence saying the turn has changed which side of her you can see — it
+    // names no garment and moves no clause of the contract, but it does make the
+    // strings differ. So the property is asserted directly instead: every view's
+    // sentence BEGINS with the same contract, and whatever follows is the
+    // rotation clause and nothing else. That is strictly stronger than the set
+    // count was — it would catch a second garment sentence smuggled in as a
+    // suffix, which `size === 1` could only have caught by accident.
+    const contract = full
+      .map((angle) => packageViewExpectation(angle).wardrobe)
+      .reduce((shortest, next) => (next.length < shortest.length ? next : shortest));
+    for (const angle of full) {
+      const wardrobe = packageViewExpectation(angle).wardrobe;
+      expect(wardrobe.startsWith(contract), `${angle}: one garment contract, appended to at most`).toBe(true);
+      const suffix = wardrobe.slice(contract.length);
+      // The suffix is the declared rotation clause or nothing — never a garment.
+      expect(suffix === "" || suffix.includes("turns the subject away"), `${angle}: ${suffix.slice(0, 60)}`).toBe(true);
+    }
+    // And the contract itself is genuinely shared rather than one view's quirk.
+    expect(new Set(full.map((angle) => packageViewExpectation(angle).wardrobe.slice(0, contract.length))).size).toBe(1);
 
     /*
       The close-up is deliberately different. At that crop the garment is often
@@ -1117,7 +1292,17 @@ describe("#1278 part 1 — a signed view is dressed by the cast's own brief", ()
     */
     let narrowed = 0;
     for (const angle of CAST_VIEW_ANGLES) {
-      if (packageViewExpectation(angle, null, null).wardrobe !== CAST_PACKAGE_WARDROBE_SPEC) continue;
+      /*
+        ⚠ **`startsWith`, NOT `!==` — AND THE DOCBLOCK ABOVE PREDICTED THIS
+        EXACT FAILURE (#1579).** A rotated view appends a sentence about which
+        side of her the turn shows, so its wardrobe string is no longer EQUAL to
+        the shared constant while still being the shared sentence. Under the old
+        equality the skip condition swallowed four of the six views and the count
+        fell to two — "a guard whose skip condition is satisfied by the defect
+        reads its own failure as not applicable", one paragraph up, arriving from
+        a direction that was not a defect at all. The floor below is unchanged.
+      */
+      if (!packageViewExpectation(angle, null, null).wardrobe.startsWith(CAST_PACKAGE_WARDROBE_SPEC)) continue;
       const described = packageViewExpectation(angle, null, SIFR).wardrobe;
       expect(described, angle).toContain("does not show AND the description does not name");
       expect(described, angle).toContain("a failure wherever they appear");
@@ -1199,5 +1384,103 @@ describe("#1278 part 1 — a signed view is dressed by the cast's own brief", ()
           .toBe(1);
       }
     }
+  });
+});
+
+/**
+ * ⚠ **A ROTATED VIEW IS TOLD THE TURN SWAPPED HER SIDES — #1579.**
+ *
+ * A cast whose outfit differs left from right — one bare shoulder, one draped
+ * sleeve — could lose her side profile and be refunded 50 credits for it, at
+ * random, on a picture that is correct. Measured on his own cast 56, ten
+ * identical reads of one delivered side view with everything held fixed: the
+ * wardrobe axis refused **2 to 4 times out of 10** while her other axes came
+ * back identical every time. The judge's own words, verbatim: *"Sleeveless
+ * harness top now shows a bare shoulder, whereas the reference had a long draped
+ * sleeve/robe covering that arm."* Both halves true, conclusion wrong — the
+ * reference shows that sleeve over the OTHER arm.
+ *
+ * **The population is DERIVED from the `rotated` flag each view declares**, not
+ * listed here, and asserted by value so a derivation that selected nothing
+ * cannot pass by selecting nothing. A front-on view must NOT carry it: a
+ * licence to expect the sides to have swapped is no use to a camera that did not
+ * move, and it is exactly the kind of clause that costs a correct picture when it
+ * reaches a view whose test it does not fit — #1582 paid 3-to-5-in-5 for that
+ * lesson on the same day, one spec along.
+ */
+describe("a rotated view knows the turn changed which side of her you see (#1579)", () => {
+  it("puts the clause on exactly the views that turn her, and on no others", () => {
+    const rotated = CAST_VIEW_ANGLES.filter((angle) => castPackageView(angle).rotated === true);
+    expect(rotated).toEqual(["threeQuarter", "sideClose", "sideFull", "backFull"]);
+
+    for (const angle of CAST_VIEW_ANGLES) {
+      const wardrobe = packageViewExpectation(angle, null, null).wardrobe;
+      const carries = wardrobe.includes("turns the subject away from the reference's front-on framing");
+      expect(carries, `${angle}: the rotation clause belongs to a rotated view and to no other`)
+        .toBe(rotated.includes(angle));
+    }
+  });
+
+  it("says what the confusion IS, so the judge has something to act on", () => {
+    const profile = packageViewExpectation("sideClose", null, null).wardrobe;
+    /* The three halves of the repair, each doing its own work: the two frames do
+       not show the same sides; judge SAMENESS rather than which side of the
+       frame; and the asymmetric outfit named as the case it is about. */
+    expect(profile).toContain("do not show the same sides of their body");
+    expect(profile).toContain("never whether a garment falls on the same side of the frame");
+    expect(profile).toContain("is not a wardrobe change");
+
+    /*
+      ⚠ **AND IT IS COMPOSED WITH THE CAST'S OWN PRONOUNS — the first draft of
+      this clause hard-coded *"her"* and `viewOutfitAuthority.test.ts` reddened
+      inside a minute** (#1480 finding A: *never calls a male cast 'her'*). Pinned
+      here as well as there, because the arm over there is about the whole prompt
+      and this one is about this clause: a reader looking at the sentence should
+      see its own arm, not have to find the general one.
+    */
+    const male = wardrobeSpecFor("sideClose", null, null, pronounsForSex("male"));
+    expect(male).toContain("do not show the same sides of his body");
+    expect(male).toContain("hidden behind him");
+    expect(male).not.toContain(" her ");
+    expect(male).not.toContain("her body");
+  });
+
+  it("⚠ licenses no outfit change — the contract it is appended to is untouched", () => {
+    /*
+      THE ARM THAT MATTERS, because a wardrobe clause that widens is a slice that
+      stops being refunded. The repair removes a FALSE failure; it must not
+      remove a true one. So the sameness contract is still there, word for word,
+      on the rotated view.
+    */
+    const profile = packageViewExpectation("sideClose", null, null).wardrobe;
+    expect(profile).toContain("the SAME outfit the reference photograph shows");
+    expect(profile).toContain("the same garments, in the same colours");
+    expect(profile.startsWith(CAST_PACKAGE_WARDROBE_SPEC)).toBe(true);
+  });
+
+  it("reaches the generator and the judge through the one function, never two", () => {
+    /*
+      `wardrobeSpecFor` has one caller on each road by design — two authors of one
+      outfit sentence is how a judge comes to fail a view for wearing what the
+      prompt asked for, which is this file's own stated law. The sentence is true
+      of the render as well as of the reading, so one copy serves both.
+    */
+    const judge = packageViewExpectation("sideClose", null, null).wardrobe;
+    const generator = composePackageViewPrompt("sideClose", null, null);
+    expect(generator).toContain(judge);
+  });
+
+  it("CONTROL — a described cast's sentence carries it too, not only the undescribed one", () => {
+    /*
+      #1278 part 1 gave the shared sentence a second form for a cast whose brief
+      is on record, and a repair that reached only one of the two would be live
+      for today's casts and silently absent for tomorrow's — the road this
+      repository has been bitten by before. Both roads, driven.
+    */
+    const described = packageViewExpectation("sideClose", null, "a white dress with industrial straps").wardrobe;
+    expect(described).not.toBe(packageViewExpectation("sideClose", null, null).wardrobe);
+    expect(described).toContain("turns the subject away from the reference's front-on framing");
+    expect(packageViewExpectation("frontFull", null, "a white dress with industrial straps").wardrobe)
+      .not.toContain("turns the subject away");
   });
 });

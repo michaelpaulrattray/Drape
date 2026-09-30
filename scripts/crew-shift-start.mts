@@ -79,12 +79,19 @@ import {
   CARD_REF_STORED_LENGTH,
   CREW_SHIFT_SEATS,
   CREW_SHIFT_WORK_KINDS,
+  cardNumberOf,
   findCardCollisions,
   resolveCloseTarget,
   type CrewShiftSeat,
   type CrewShiftWorkKind,
 } from "../shared/crewShiftState.js";
 import { readOpenPullRequests, renderCardClaimWarning } from "./lib/cardClaimWarning.mts";
+import {
+  readCardClaim,
+  readCardComments,
+  renderCardClaimNote,
+  renderCardClaimRefusal,
+} from "./lib/cardClaimComments.mts";
 import {
   CREW_WORK_CATEGORIES,
   CREW_WORK_MASTER_KEY,
@@ -101,7 +108,9 @@ const TABLE = "crew_shift_runs";
    real just as silently. Both writers are fixed in one commit, because fixing
    the instance and leaving its sibling is law 7 half done. */
 const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
-  value: ["shift", "seat", "kind", "card", "title", "intent", "note", "branch", "open-prs"],
+  value: [
+    "shift", "seat", "kind", "card", "title", "intent", "note", "branch", "open-prs", "card-comments",
+  ],
   boolean: ["dry-run", "same-card"],
 });
 
@@ -144,6 +153,85 @@ function whichWorld(): "PRODUCTION" | "DEV" {
 function refuse(message: string): never {
   console.error(`REFUSING: ${message}`);
   process.exit(1);
+}
+
+/**
+ * ⚠ **IS THIS CARD FREE? — ASKED AT EVERY MOMENT A CARD IS DECLARED ON A ROW,
+ * WHICH SINCE #1580 IS MORE THAN ONE MOMENT.**
+ *
+ * Two artifacts, two readers, one question. The ROW read is the older of the
+ * two (#608) and refuses on an open run already naming the card; the COMMENT
+ * read is new and refuses on another seat's live `CLAIMED —` line.
+ *
+ * # Why it is a function rather than a block in the start path
+ *
+ * Because the start path is no longer the only place a card is declared. A
+ * heartbeat carrying `--card` RE-declares — that is #1580's repair, and it is
+ * the half that would have prevented the incident: both colliding seats were in
+ * batches, so #1554 was the Nth card of each and **neither row ever named it**
+ * (runs #449 and #450 declared `#1503` and `#1414`). A batch had one card's
+ * worth of lock and N−1 cards of convention. Copying this block into the
+ * heartbeat would have been two guards that drift (working law 4) on the exact
+ * pair of scripts that already drifted once (#1234).
+ *
+ * ⚠ **THE ROW READ IS STILL A SELECT-THEN-WRITE, SO A SECONDS-WIDE RACE
+ * REMAINS**, named at its own call site and not closed here — the origin
+ * incidents are minutes wide (two minutes thirty-eight seconds on #1554), which
+ * is the scale both readers catch. The COMMENT read narrows nothing further: it
+ * is one `gh` call immediately before the write, so a claim landing inside that
+ * window is missed by both. That is stated rather than implied, because a guard
+ * believed to be race-proof is worse than one known not to be.
+ *
+ * `--same-card` overrides both, and both refusals name it: a crashed shift's
+ * stale row, or a seat's own claim under another name, must cost one word and
+ * never a night.
+ */
+function assertCardIsFree(input: {
+  readonly cardRef: string | null;
+  readonly openRuns: readonly any[];
+  /** A re-declaration must not collide with the row it is about to update. */
+  readonly exceptRunId?: number | null;
+  /** This shift's own id, so its own earlier claim is not read as a rival's. */
+  readonly mine: string | null;
+}): void {
+  if (ARGS.flag("same-card")) return;
+
+  const collisions = findCardCollisions(input.openRuns, input.cardRef)
+    .filter((row) => input.exceptRunId == null || Number(row.id) !== input.exceptRunId);
+  if (collisions.length > 0) {
+    const them = collisions
+      .map((row) => `   #${row.id} ${row.shift} (${row.seat}) started ${iso(row.startedAt)} — ${row.intent}`)
+      .join("\n");
+    refuse(
+      `${collisions.length === 1 ? "another OPEN run is" : `${collisions.length} OPEN runs are`}`
+      + ` already on ${input.cardRef}:\n${them}\n`
+      + "\n   Two seats on one card is a duplicated session — that is forty minutes"
+      + "\n   of the last one, caught only by a merge conflict at push time (#608)."
+      + "\n\n   Take the next card instead, and say in your entry that you stood off this one."
+      + "\n   If that run is a DEAD shift, close it:"
+      + "\n     scripts/crew-shift-close.mts --id <n> --outcome failed --note '…'"
+      + "\n   If you really are meant to share it, pass --same-card.",
+    );
+  }
+
+  /* THE CARD'S OWN COMMENTS (#1580). The row read above is silent whenever the
+     other builder's row does not name the card — which is every card but the
+     first of a batch, and the relay in his terminal, which writes no row at
+     all. An UNREADABLE board prints and never refuses. */
+  /* `cardNumberOf` and not a second `replace(/^#/)` here: the ref's spelling has
+     one owner in `shared/crewShiftState.ts`, and `readCardClaim` asks it the
+     same question a line later. Two parses of one ref is how `#0608` and `#608`
+     stopped being the same card once already (PR #691's review). */
+  const cardNumber = cardNumberOf(input.cardRef);
+  const verdict = readCardClaim({
+    cardRef: input.cardRef,
+    comments: cardNumber === null ? null : readCardComments(cardNumber, arg("card-comments")),
+    mine: input.mine,
+  });
+  const note = renderCardClaimNote(input.cardRef, verdict);
+  if (note !== null) console.log(note);
+  const taken = renderCardClaimRefusal(input.cardRef, verdict);
+  if (taken !== null) refuse(taken);
 }
 
 
@@ -205,7 +293,10 @@ try {
     const branch = arg("branch");
     const named = arg("shift");
     const [openRows] = await conn.query<any[]>(
-      `SELECT id, shift, seat, intent, branch FROM \`${TABLE}\` WHERE endedAt IS NULL ORDER BY id DESC`,
+      /* `cardRef` and `startedAt` ride along for `assertCardIsFree` (#1580): a
+         heartbeat may now RE-declare this row's card, and the collision reader
+         needs both the other rows' cards and the line it prints about them. */
+      `SELECT id, shift, seat, intent, branch, cardRef, startedAt FROM \`${TABLE}\` WHERE endedAt IS NULL ORDER BY id DESC`,
     );
     const verdict = resolveCloseTarget({
       openRuns: openRows.map((row) => ({
@@ -220,6 +311,42 @@ try {
       refuse(`${verdict.why}\n  (this is the heartbeat — open a run first, or name yours with --shift <id>.)`);
     }
     const target = openRows.find((row) => Number(row.id) === verdict.run.id)!;
+
+    /*
+      ⚠ **THE HEARTBEAT MAY RE-DECLARE THE CARD, AND THAT IS #1580's REPAIR.**
+
+      A batch names its FIRST card on the row and then builds several. Read at
+      the rows on the day of the incident: run #449 declared `#1503` and run
+      #450 declared `#1414`, while BOTH seats built **#1554** — so the #608
+      collision refusal, which compares one row's card against another's, had
+      nothing to compare and could not fire. A batch had one card's worth of
+      lock and N−1 cards of convention.
+
+      So `--card` on a heartbeat is not decoration: it moves the row to the card
+      the seat is actually on, through the SAME `assertCardIsFree` the start
+      path runs, and the standing orders' own sentence — *the heartbeat note
+      names each card as it is taken* — becomes a mechanical act instead of a
+      remembered one.
+
+      ⚠ **IT WAS SILENTLY DROPPED UNTIL NOW.** `--card` is in the strict
+      parser's value list, so a heartbeat carrying it was ACCEPTED and ignored:
+      no refusal, no warning, and a row still naming the card the seat finished
+      an hour ago. A strict parser that takes a flag and spends it nowhere is
+      the quietest kind of unwired control (invariant 7).
+
+      The row being updated is excluded from its own collision, or a second
+      heartbeat on one card would refuse against itself.
+    */
+    const reDeclared = arg("card");
+    if (reDeclared !== null) {
+      assertCardIsFree({
+        cardRef: reDeclared,
+        openRuns: openRows,
+        exceptRunId: verdict.run.id,
+        mine: named ?? String(target.shift),
+      });
+    }
+
     if (DRY_RUN) {
       /* The SAME row this would write to, resolved the same way — a dry run
          that reports against a different row than the write would touch is
@@ -230,6 +357,7 @@ try {
         + `\n  heartbeatAt now`
         + `\n  intent      ${noteMode.slice(0, 500)}`
         + `\n  branch      ${branch ?? `(unchanged — ${target.branch ?? "none"})`}`
+        + `\n  cardRef     ${reDeclared?.slice(0, CARD_REF_STORED_LENGTH) ?? `(unchanged — ${target.cardRef ?? "none"})`}`
         + "\nRe-run without --dry-run to perform it.",
       );
       await conn.end();
@@ -239,11 +367,26 @@ try {
       `UPDATE \`${TABLE}\`
           SET heartbeatAt = UTC_TIMESTAMP(),
               intent = ?,
-              branch = COALESCE(?, branch)
+              branch = COALESCE(?, branch),
+              cardRef = COALESCE(?, cardRef),
+              cardTitle = COALESCE(?, cardTitle)
         WHERE id = ?
           AND endedAt IS NULL
           AND (? IS NULL OR shift = ?)`,
-      [noteMode.slice(0, 500), branch, verdict.run.id, named, named],
+      [
+        noteMode.slice(0, 500),
+        branch,
+        /* The SAME truncation the INSERT applies, and for the reason its own
+           comment gives: `normaliseCardRef` compares at this length, so a ref
+           cut here and not there stops colliding with itself. */
+        reDeclared?.slice(0, CARD_REF_STORED_LENGTH) ?? null,
+        /* A title only moves WITH a card — a `--title` on a bare heartbeat
+           would retitle the row to something about a different card. */
+        reDeclared === null ? null : arg("title")?.slice(0, 255) ?? null,
+        verdict.run.id,
+        named,
+        named,
+      ],
     );
     if (result.affectedRows !== 1) {
       refuse(
@@ -253,6 +396,7 @@ try {
     }
     console.log(`NOTED — run #${verdict.run.id} (${verdict.run.shift}), chosen by ${verdict.how}: ${noteMode}`);
     if (branch) console.log(`branch: ${branch}`);
+    if (reDeclared) console.log(`card: ${reDeclared} — this row now names the card the seat is on`);
   } else {
     const shift = arg("shift");
     const seat = arg("seat");
@@ -376,23 +520,12 @@ try {
       ⚠ It can never cost a night: `--same-card` overrides it, and the refusal
       names the flag. So a crashed shift's stale row costs one word, which is
       the asymmetry `CREW_SHIFT_LIVE_HEARTBEAT_MS` already argues for.
+
+      ⚠ **AND IT READS THE CARD'S OWN COMMENTS TOO SINCE #1580** — see
+      `assertCardIsFree`, which is now the one place both readings live, because
+      a heartbeat can RE-declare a card and two copies of this would drift.
     */
-    const collisions = findCardCollisions(open, arg("card"));
-    if (collisions.length > 0 && !ARGS.flag("same-card")) {
-      const them = collisions
-        .map((row) => `   #${row.id} ${row.shift} (${row.seat}) started ${iso(row.startedAt)} — ${row.intent}`)
-        .join("\n");
-      refuse(
-        `${collisions.length === 1 ? "another OPEN run is" : `${collisions.length} OPEN runs are`}`
-        + ` already on ${arg("card")}:\n${them}\n`
-        + "\n   Two seats on one card is a duplicated session — that is forty minutes"
-        + "\n   of the last one, caught only by a merge conflict at push time (#608)."
-        + "\n\n   Take the next card instead, and say in your entry that you stood off this one."
-        + "\n   If that run is a DEAD shift, close it:"
-        + "\n     scripts/crew-shift-close.mts --id <n> --outcome failed --note '…'"
-        + "\n   If you really are meant to share it, pass --same-card.",
-      );
-    }
+    assertCardIsFree({ cardRef: arg("card"), openRuns: open, mine: shift });
 
     /*
       ⚠ IS A PULL REQUEST ALREADY OPEN ON THIS CARD? (#1083) — and this one
