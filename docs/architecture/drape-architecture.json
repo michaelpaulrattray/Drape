@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 48
+      "moduleCount": 49
     },
     {
       "id": "domain:wardrobe",
@@ -5739,6 +5739,12 @@
     {
       "id": "module:server/testing/suitePointers.ts",
       "path": "server/testing/suitePointers.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/testing/withoutComments.ts",
+      "path": "server/testing/withoutComments.ts",
       "domain": "unassigned",
       "lifecycle": "active"
     },
@@ -33701,6 +33707,11 @@
     {
       "from": "module:server/testing/sourceSweepSuites.ts",
       "to": "module:server/testing/childProcessSuites.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/testing/storageKeyExpressions.ts",
+      "to": "module:server/testing/withoutComments.ts",
       "kind": "imports"
     },
     {
