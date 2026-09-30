@@ -110,7 +110,7 @@ describe("R7-2D server-backed Canvas operation projection", () => {
     expect(bridge).toContain("settled.acknowledgedNow");
     expect(board).toContain("Your cast finished");
     expect(board).toContain("Place result");
-    expect(board).toContain("Keep in Models");
+    expect(board).toContain("Keep in your Library");
     expect(board).toContain("target?.kind === 'cast_config' && !target.imageUrl && !target.sourceModelId");
     expect(castNode).toContain("progressLabel={controller.progressLabel}");
     expect(imaging).toMatch(/result:\s*\{[\s\S]*?modelId: input\.modelId,[\s\S]*?assetId: assetResult\.assetId![\s\S]*?imageUrl: result\.imageUrl/);
