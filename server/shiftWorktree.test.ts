@@ -42,17 +42,24 @@ function toPosix(p: string): string {
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  branchForRemoval,
+  branchReadFailed,
+  branchToCreate,
   decideRemoval,
+  entryForPath,
   mergedPrArgs,
+  parseWorktreeList,
   prHeadFetchArgs,
   prReadFailed,
   readMergedPullRequest,
   readShippedCommits,
   removalStateFromShipReading,
+  shipReadingFor,
   junctionMustBeGone,
   looksCrlfSmudged,
   planFor,
   validateSlug,
+  worktreeListArgs,
   type RemovalState,
 } from "../scripts/lib/shiftWorktree.mts";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
@@ -110,9 +117,25 @@ describe("planFor", () => {
   it("puts the worktree beside the repository, never inside it", () => {
     const plan = planFor("thing", "C:/Users/Admin/Drape", "C:/Users/Admin");
     expect(plan.path).toBe("C:/Users/Admin/drape-shift-thing");
-    expect(plan.branch).toBe("team/thing");
     expect(plan.nodeModulesLink).toBe("C:/Users/Admin/drape-shift-thing/node_modules");
     expect(plan.path.startsWith("C:/Users/Admin/Drape/")).toBe(false);
+  });
+
+  it("⚠ CARRIES NO BRANCH — the removal path cannot reach the convention (#1613)", () => {
+    /* This arm replaced `expect(plan.branch).toBe("team/thing")`, and the swap
+       IS the repair. `team/<slug>` is true only of the branch `add` creates; a
+       worktree made on an existing branch has a directory name and a branch name
+       with nothing to do with each other, and `remove` printed the convention as
+       fact four lines above a recursive delete. Tightening the five call sites
+       would have left the derived name one property access away from every
+       future edit — so it is not on the object `remove` holds. A key-level
+       assertion rather than a type-level one, because a re-added field must
+       redden a RUN and not merely a `tsc` somebody may not have run. */
+    expect(Object.keys(planFor("thing", "C:/Users/Admin/Drape", "C:/Users/Admin"))).not.toContain("branch");
+  });
+
+  it("branchToCreate is the convention, and it is `add`'s alone", () => {
+    expect(branchToCreate("thing")).toBe("team/thing");
   });
 });
 
@@ -478,7 +501,18 @@ describe("the script's own text — the sequence a reader must be able to trust"
 
   it("registered is an exact path match on a checked listing, not a substring (finding 3)", () => {
     // `drape-shift-a` must not match the entry for `drape-shift-a-b`.
-    expect(source).toContain('line.startsWith("worktree ")');
+    // ⚠ THE RULE MOVED AND SO DID ITS GUARD (#1613). This arm used to grep the
+    // CLI for `line.startsWith("worktree ")`, which was one of TWO hand-rolled
+    // copies of the same parse here — working law 4, with the drift already
+    // visible: neither copy could say what branch an entry named. The rule now
+    // has one owner in the library and is DRIVEN rather than grepped, by "an
+    // EXACT path match" in the `#1613` describe below. What is held here is that
+    // the CLI does not grow a third copy.
+    expect(source).toContain("entryForPath(parseWorktreeList(");
+    expect(
+      source,
+      "the CLI is hand-rolling the worktree listing parse again — `parseWorktreeList` owns it (#1613)",
+    ).not.toContain('line.startsWith("worktree ")');
     expect(source).toContain("git worktree list failed");
     expect(source).not.toContain('worktree", "list", "--porcelain"]).out.replace');
   });
@@ -508,8 +542,10 @@ describe("the script's own text — the sequence a reader must be able to trust"
   });
 
   it("the mirror leftover — registered but the directory gone — prunes rather than refusing (finding 3)", () => {
-    const branch = source.indexOf("registeredButGone");
-    expect(branch).toBeGreaterThan(-1);
+    // `registeredButGone` became `staleEntry` with #1613: the same question, asked
+    // of the parsed entry rather than of a hand-rolled line test, because the
+    // pruned entry still NAMES its branch and the closing sentence now reads it.
+    expect(source.indexOf("staleEntry")).toBeGreaterThan(-1);
     expect(source).toContain("prune the stale registration");
   });
 
@@ -518,7 +554,39 @@ describe("the script's own text — the sequence a reader must be able to trust"
     // origin/main, so `@{u}..HEAD` over-refuses before a `push -u`. Safe
     // direction, but a guard that fires on healthy input trains the --force
     // habit the header warns about.
-    expect(source).toContain("origin/${plan.branch}..HEAD");
+    // ⚠ AGAINST THE BRANCH THAT WAS READ, NOT `team/<slug>` (#1613) — the
+    // derived form named a ref that does not exist for a worktree made on an
+    // existing branch, so the command failed and this correction never happened.
+    expect(source).toContain("origin/${branchRead.branch}..HEAD");
+    expect(source).not.toContain("origin/${plan.branch}..HEAD");
+  });
+
+  it("⚠ THE DERIVED BRANCH NAME IS USED ONLY BY `add` (#1613)", () => {
+    /* The card asked for this arm by name. `add` is the one place a convention
+       is right — there is nothing to read yet, and `git worktree add -b` then
+       makes the name true. Everything after the remove marker must READ.
+
+       A region read, not a whole-file grep: the file legitimately discusses the
+       convention in its header. The marker is asserted first, because a split on
+       a string that is not there yields one half and passes vacuously. */
+    const marker = "// ---- remove ---";
+    const at = source.indexOf(marker);
+    expect(at, `the "${marker}" section marker is gone — this arm would pass vacuously`).toBeGreaterThan(-1);
+    const addHalf = source.slice(0, at);
+    const removeHalf = source.slice(at);
+    expect(addHalf, "`add` must still create `team/<slug>`").toContain("branchToCreate(slug)");
+    expect(
+      removeHalf,
+      "the removal path reaches the `team/<slug>` convention again — read the branch instead (#1613)",
+    ).not.toContain("branchToCreate");
+    /* ⚠ THE INTERPOLATION, NOT THE WORDS. A first cut forbade `` `team/ ``
+       anywhere in the remove half and went red on its own docblock, which
+       DISCUSSES the convention at length and must be free to. What is forbidden
+       is building the name: `team/${…}`. Nobody writes that in prose. */
+    expect(
+      removeHalf,
+      "the removal path builds a `team/${…}` branch name instead of reading it (#1613)",
+    ).not.toContain("team/${");
   });
 
   it("proves the junction is gone BEFORE any recursive delete", () => {
@@ -708,5 +776,264 @@ describe("readShippedCommits — the commits, not the branch name (#1540)", () =
       expect(clears, `only shippedBy may clear the refusal, not ${JSON.stringify(reading)}`)
         .toBe(reading !== null && "shippedBy" in reading);
     }
+  });
+});
+
+/**
+ * ⚠ **"team/<slug>" IS NOT "THE BRANCH THIS WORKTREE IS ON" (#1613)** — the same
+ * shape as #1540 itself, one level up: the tool asked about a NAME where it could
+ * have read the THING.
+ *
+ * Found by USING the tool, minutes after #1540's repair merged. A shift removed
+ * its own worktree and `remove` printed `branch team/worktree-merged-1540` — a
+ * branch that does not exist. The worktree was on
+ * `team/worktree-merged-branch-1540`, because it had been made on an EXISTING
+ * branch, and from that moment the directory name and the branch name are
+ * independent. The relay's own release note PRESCRIBES that shape: *continue on
+ * the pull request's branch, do not start over.*
+ *
+ * **Nothing was ever at risk**, and saying so is part of the record: every
+ * consequential count runs in the worktree against `HEAD` and `@{u}`, so the `0`
+ * that run printed was correct. What broke was #1540's own brand-new feature —
+ * `gh pr list --head team/<slug>` named a branch no pull request had used, so the
+ * answer was always *no merged pull request* and the friendly outcome could never
+ * appear for this entire class of worktree. The cry-wolf refusal #1540 was filed
+ * to end came back, silently, in the safe direction.
+ */
+describe("the branch is READ, never derived (#1613)", () => {
+  const PORCELAIN = [
+    "worktree C:/Users/Admin/Drape",
+    "HEAD 1111111111111111111111111111111111111111",
+    "branch refs/heads/main",
+    "",
+    "worktree C:/Users/Admin/drape-shift-worktree-merged-1540",
+    "HEAD 2222222222222222222222222222222222222222",
+    "branch refs/heads/team/worktree-merged-branch-1540",
+    "",
+    "worktree C:/Users/Admin/drape-shift-detached",
+    "HEAD 3333333333333333333333333333333333333333",
+    "detached",
+    "",
+  ].join("\n");
+
+  it("parses one entry per worktree, with the branch each one names", () => {
+    expect(parseWorktreeList(PORCELAIN)).toEqual([
+      { path: "C:/Users/Admin/Drape", branch: "main" },
+      {
+        path: "C:/Users/Admin/drape-shift-worktree-merged-1540",
+        branch: "team/worktree-merged-branch-1540",
+      },
+      { path: "C:/Users/Admin/drape-shift-detached", branch: null },
+    ]);
+  });
+
+  it("⚠ THE MEASURED CASE — the directory name and the branch name differ", () => {
+    /* The real run's values. A reader that derived `team/<slug>` from the
+       directory would answer `team/worktree-merged-1540`; the entry says
+       otherwise, and the entry is the fact. */
+    const entry = entryForPath(parseWorktreeList(PORCELAIN), "C:/Users/Admin/drape-shift-worktree-merged-1540");
+    expect(branchForRemoval(entry)).toEqual({ branch: "team/worktree-merged-branch-1540" });
+    expect(branchToCreate("worktree-merged-1540")).toBe("team/worktree-merged-1540");
+    expect(branchForRemoval(entry)).not.toEqual({ branch: branchToCreate("worktree-merged-1540") });
+  });
+
+  it("an EXACT path match — `drape-shift-a` is not the entry for `drape-shift-a-b`", () => {
+    /* The rule the CLI's own comment carried, now with one owner. It matters on
+       a tool that ends in a recursive delete. */
+    const entries = parseWorktreeList(
+      "worktree C:/x/drape-shift-a-b\nHEAD 4444444444444444444444444444444444444444\nbranch refs/heads/team/a-b\n",
+    );
+    expect(entryForPath(entries, "C:/x/drape-shift-a")).toBeNull();
+    expect(entryForPath(entries, "C:/x/drape-shift-a-b")?.branch).toBe("team/a-b");
+  });
+
+  it("normalises backslashes on BOTH sides, because git prints either", () => {
+    const entries = parseWorktreeList("worktree C:\\x\\drape-shift-a\nbranch refs/heads/team/a\n");
+    expect(entryForPath(entries, "C:/x/drape-shift-a")?.branch).toBe("team/a");
+    expect(entryForPath(entries, "C:\\x\\drape-shift-a")?.branch).toBe("team/a");
+  });
+
+  it("reads a final entry that has no trailing blank line", () => {
+    /* Porcelain separates entries with blank lines; a parser that relied on them
+       would silently drop the last one, and a dropped entry reads exactly like
+       "git does not know this path" — which is a proceed. */
+    expect(parseWorktreeList("worktree C:/x/one\nbranch refs/heads/team/one")).toEqual([
+      { path: "C:/x/one", branch: "team/one" },
+    ]);
+  });
+
+  it("⚠ UNREADABLE, NEVER THE CONVENTION — a detached HEAD and an unknown path", () => {
+    /* The card asked for this direction by name: falling back is how this defect
+       reads as working, because a derived name is always A name. Both of these
+       are states with no branch state to protect, so neither refuses the
+       REMOVAL — it is the SENTENCE that is refused. */
+    const detached = branchForRemoval(
+      entryForPath(parseWorktreeList(PORCELAIN), "C:/Users/Admin/drape-shift-detached"),
+    );
+    expect(branchReadFailed(detached)).toBe(true);
+    if (branchReadFailed(detached)) expect(detached.unreadable).toContain("detached");
+
+    const unknown = branchForRemoval(entryForPath(parseWorktreeList(PORCELAIN), "C:/Users/Admin/drape-shift-nobody"));
+    expect(branchReadFailed(unknown)).toBe(true);
+    if (branchReadFailed(unknown)) expect(unknown.unreadable).toContain("registered");
+  });
+
+  it("the listing is asked for once, in one place (working law 5)", () => {
+    expect(worktreeListArgs()).toEqual(["worktree", "list", "--porcelain"]);
+  });
+});
+
+/**
+ * ⚠ **THE READING, AGAINST A REAL GIT — a worktree whose DIRECTORY NAME AND
+ * BRANCH NAME DIFFER (#1613).** The card asked for this arm by name, and a
+ * fixture is not enough for it: the porcelain shape above is this suite's belief
+ * about what git prints, and the whole defect was a belief about a name.
+ *
+ * So a real repository is built, a branch is created WITHOUT being checked out,
+ * and a worktree is added ON it at a directory named after a different slug —
+ * the exact shape a seat produces when it continues a released card. Then both
+ * halves are proven: the branch this module reads equals what
+ * `git rev-parse --abbrev-ref HEAD` says inside that worktree, and the convention
+ * names a branch the repository does not have.
+ */
+describe("the branch read, against a real repository (#1613)", () => {
+  /** A real git worktree whose directory slug is NOT its branch name. */
+  function withMismatchedWorktree(
+    body: (paths: { repo: string; tree: string; slug: string; realBranch: string }) => void,
+  ) {
+    const root = toPosix(mkdtempSync(join(tmpdir(), "drape-1613-")));
+    const repo = `${root}/repo`;
+    /* The measured names from the run that found this. */
+    const slug = "worktree-merged-1540";
+    const realBranch = "team/worktree-merged-branch-1540";
+    const tree = `${root}/drape-shift-${slug}`;
+    const run = (args: string[], cwd = repo) => {
+      const result = spawnSync("git", args, { cwd, encoding: "utf8" });
+      if (result.error) throw result.error;
+      expect(result.status, `git ${args.join(" ")} — ${result.stderr}`).toBe(0);
+      return (result.stdout ?? "").trim();
+    };
+    try {
+      mkdirSync(repo, { recursive: true });
+      run(["init", "-b", "main"], repo);
+      writeFileSync(join(repo, "a.txt"), "one");
+      run(["add", "a.txt"]);
+      run(["-c", "user.email=seat@drape.test", "-c", "user.name=Seat", "commit", "-m", "one"]);
+      /* Created, never checked out — so `worktree add` may take it, which is the
+         road that makes the directory name and the branch name independent. */
+      run(["branch", realBranch]);
+      run(["worktree", "add", tree, realBranch]);
+      body({ repo, tree, slug, realBranch });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }
+
+  it("⚠ equals `git rev-parse --abbrev-ref HEAD` inside the worktree", () => {
+    withMismatchedWorktree(({ repo, tree, slug, realBranch }) => {
+      const porcelain = spawnSync("git", worktreeListArgs(), { cwd: repo, encoding: "utf8" });
+      expect(porcelain.status, porcelain.stderr).toBe(0);
+      const read = branchForRemoval(entryForPath(parseWorktreeList(porcelain.stdout ?? ""), tree));
+
+      /* THE OTHER READING THE CARD NAMED, taken from git independently of the
+         porcelain parser — two readers, so neither inherits the other's blind
+         spot. */
+      const revParse = spawnSync("git", ["rev-parse", "--abbrev-ref", "HEAD"], { cwd: tree, encoding: "utf8" });
+      expect(revParse.status, revParse.stderr).toBe(0);
+      const head = (revParse.stdout ?? "").trim();
+
+      expect(head).toBe(realBranch);
+      expect(read).toEqual({ branch: head });
+
+      /* ⚠ AND THE CONVENTION NAMES A BRANCH THIS REPOSITORY DOES NOT HAVE —
+         the measured symptom, reproduced against a real git rather than argued.
+         `git rev-parse --verify` on it is the exact command the card ran. */
+      const derived = branchToCreate(slug);
+      expect(derived).not.toBe(head);
+      const verify = spawnSync("git", ["rev-parse", "--verify", "--quiet", `refs/heads/${derived}`], {
+        cwd: repo,
+        encoding: "utf8",
+      });
+      expect(
+        verify.status,
+        `${derived} exists in this fixture — it cannot demonstrate the defect`,
+      ).not.toBe(0);
+    });
+  });
+
+  it("⚠ THE MERGED ROAD FIRES on the read branch, and would not on the derived one", () => {
+    withMismatchedWorktree(({ repo, tree, slug, realBranch }) => {
+      const porcelain = spawnSync("git", worktreeListArgs(), { cwd: repo, encoding: "utf8" });
+      const read = branchForRemoval(entryForPath(parseWorktreeList(porcelain.stdout ?? ""), tree));
+      expect(branchReadFailed(read)).toBe(false);
+
+      /* A `gh` that answers only for the branch the worktree is really on — so a
+         reader still asking about `team/<slug>` comes back `notMerged`, which is
+         precisely what the tool did on the run that found this. */
+      const gh = (args: string[]) =>
+        args[args.indexOf("--head") + 1] === realBranch
+          ? { status: 0, out: JSON.stringify([{ number: 1549, mergedAt: "2026-09-30T00:00:00Z" }]), err: "" }
+          : { status: 0, out: "[]", err: "" };
+      /* Real git, in the real worktree: the fetch cannot reach a `refs/pull` ref
+         in a fixture, so the ancestry is settled locally — HEAD against itself,
+         which is the `shippedBy` road. */
+      const gitInWorktree = (args: string[]) => {
+        if (args[0] === "fetch") return { status: 0, out: "", err: "" };
+        const rewritten = args.map((arg) => (arg === "FETCH_HEAD" ? "HEAD" : arg));
+        const result = spawnSync("git", rewritten, { cwd: tree, encoding: "utf8" });
+        return { status: result.status ?? 1, out: result.stdout ?? "", err: result.stderr ?? "" };
+      };
+
+      expect(shipReadingFor(read, gh, gitInWorktree)).toEqual({ shippedBy: 1549 });
+      expect(shipReadingFor({ branch: branchToCreate(slug) }, gh, gitInWorktree)).toEqual({ notMerged: true });
+    });
+  });
+
+  it("a DETACHED worktree reads unreadable against a real git, not a branch name", () => {
+    withMismatchedWorktree(({ repo, tree }) => {
+      const detach = spawnSync("git", ["checkout", "--detach"], { cwd: tree, encoding: "utf8" });
+      expect(detach.status, detach.stderr).toBe(0);
+      const porcelain = spawnSync("git", worktreeListArgs(), { cwd: repo, encoding: "utf8" });
+      const read = branchForRemoval(entryForPath(parseWorktreeList(porcelain.stdout ?? ""), tree));
+      expect(branchReadFailed(read), "a detached worktree came back with a branch name").toBe(true);
+    });
+  });
+});
+
+/**
+ * THE FOLD THAT KEEPS AN UNREAD BRANCH OUT OF THE VERDICT (#1613).
+ *
+ * `readShippedCommits` would accept an empty or guessed name and come back
+ * `notMerged` — *asked, and nobody merged this* — which is a confident fact about
+ * a question nobody put. That is the difference `unreadable` exists to hold, and
+ * it is one character wide.
+ */
+describe("shipReadingFor — an unreadable branch is an unreadable READING (#1613)", () => {
+  const never = () => {
+    throw new Error("nothing should be asked when there is no branch to ask about");
+  };
+
+  it("does not call out at all when the branch could not be read", () => {
+    const reading = shipReadingFor({ unreadable: "this worktree is on a detached HEAD" }, never, never);
+    expect("unreadable" in reading).toBe(true);
+    if ("unreadable" in reading) expect(reading.unreadable).toContain("detached HEAD");
+  });
+
+  it("⚠ NEVER `notMerged` — that would assert nobody merged a branch nobody named", () => {
+    const reading = shipReadingFor({ unreadable: "git does not have this path registered" }, never, never);
+    expect("notMerged" in reading).toBe(false);
+    /* And it cannot clear the refusal: `unreadable` maps to a `mergedPullRequest`
+       the verdict treats as "nobody asked". */
+    expect(typeof removalStateFromShipReading(reading).mergedPullRequest).not.toBe("number");
+  });
+
+  it("asks the pull request about the branch that was READ (working law 5)", () => {
+    const asked: string[][] = [];
+    const gh = (args: string[]) => {
+      asked.push(args);
+      return { status: 0, out: "[]", err: "" };
+    };
+    shipReadingFor({ branch: "team/worktree-merged-branch-1540" }, gh, never);
+    expect(asked[0]).toEqual(mergedPrArgs("team/worktree-merged-branch-1540"));
   });
 });
