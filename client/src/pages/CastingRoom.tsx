@@ -585,9 +585,26 @@ export default function CastingRoom() {
                       geometry and its position stay, and only the sentence
                       changes to something true.
                     */}
+                    {/*
+                      THE BUILDING LINE IS ABOUT THE PERSON, NOT THE PIPELINE
+                      (#1550, approved on his Notion desk 30 Sep 2026).
+
+                      It read "Building the package — views appear as they pass
+                      their checks.", which is QA's vocabulary in the one moment
+                      the customer has just signed someone: "the package" is our
+                      noun for a row of jobs, and "checks" tells them we are
+                      inspecting their cast rather than making her. Working law 8
+                      — the user's ontology governs the copy; the checks are real
+                      and are the implementation.
+
+                      The pronoun is the cast's own (`his` / `her` / `their`,
+                      `their` when the record never stated a sex), for the reason
+                      `castPronouns.ts` was written at all: the room used to call
+                      every Cast "she", and Jericho is male.
+                    */}
                     <span className="dpc-master__retention">
                       {data.status === "building"
-                        ? "Building the package — views appear as they pass their checks."
+                        ? `Building ${data.pronouns.possessive} other views…`
                         : "Every view here was checked against the face you signed."}
                     </span>
                     <span className="dpc-master__locked">
