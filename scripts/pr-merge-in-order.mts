@@ -101,7 +101,8 @@ import {
   moneySymbolHits,
   touchesMoney,
   touchesCustomerSurface,
-  touchesReviewerWorkflow,
+  reviewRuleFiles,
+  touchesReviewerRules,
 } from "./lib/prMergeOrder.mts";
 import { gitTreeReader, readProtectedRefs } from "./lib/pushPaths.mts";
 import { openDatabase } from "./lib/dbConnection.mts";
@@ -305,6 +306,24 @@ try {
   const declaration = readFileSync(customerSurfaceDeclarationPath, "utf8");
   customerSurfacePaths = extractCustomerSurfacePattern(declaration);
   customerSurfaceExempt = extractCustomerSurfaceExemptPattern(declaration);
+} catch (error) {
+  fail((error as Error).message);
+}
+
+// ---- the review's OWN RULES, derived from what `review.yml` sources (#1627)
+// Both readings of "this diff changes the rules of the review itself" were an
+// exact match on one filename, written when the rules lived in one file. #958
+// carved `money-surfaces.sh` out of both workflows and #1328 carved out
+// `customer-surfaces.sh`; each extraction moved the bytes without moving the
+// guard that watched them, so a diff NARROWING the file that decides what
+// counts as money merged on the gate alone. A missing or unreadable workflow
+// refuses the run rather than falling back to the one-filename answer.
+const reviewWorkflowPath = join(REPO_ROOT, ".github", "workflows", REVIEW_WORKFLOW_FILE);
+if (!existsSync(reviewWorkflowPath))
+  fail(`${REVIEWER_WORKFLOW_PATH} is missing — cannot read the rules of the review itself`);
+let reviewRules: readonly string[];
+try {
+  reviewRules = reviewRuleFiles(readFileSync(reviewWorkflowPath, "utf8"));
 } catch (error) {
   fail((error as Error).message);
 }
@@ -539,7 +558,7 @@ function readPr(number: number, worktrees: Map<string, string>): PrReading {
     view.labels.some((l) => l.name === "needs-fable") ||
     touchesMoney(files, moneyPattern) ||
     moneySymbolHits(patches, moneySymbols).length > 0 ||
-    touchesReviewerWorkflow(files) ||
+    touchesReviewerRules(files, reviewRules!) ||
     touchesCustomerSurface(files, customerSurfacePaths!, customerSurfaceExempt!);
   // Stale verdicts count toward the acknowledgement pin (a word said for a
   // verdict that existed), never toward the merge.
@@ -982,7 +1001,11 @@ outer: for (const first of readings) {
   /** Was the LAST thing this PR waited on the freeze rather than the gate? */
   let heldOnFreeze = false;
   for (;;) {
-    const action: MergeAction = decideMergeAction(pr, { moneyPattern, moneySymbols });
+    const action: MergeAction = decideMergeAction(pr, {
+      moneyPattern,
+      moneySymbols,
+      reviewRules: reviewRules!,
+    });
     say(describeAction(pr, action));
 
     if (action.kind === "merge") {

@@ -57,7 +57,8 @@ import {
   supplyChainStateOf,
   touchesMoney,
   touchesCustomerSurface,
-  touchesReviewerWorkflow,
+  reviewRuleFiles,
+  touchesReviewerRules,
 } from "../scripts/lib/prMergeOrder.mts";
 import { gitTreeReader, readProtectedRefs } from "../scripts/lib/pushPaths.mts";
 import {
@@ -89,7 +90,14 @@ const reviewYml = readFileSync(join(REPO_ROOT, REVIEWER_WORKFLOW_PATH), "utf8");
 const moneyDeclaration = readFileSync(join(REPO_ROOT, MONEY_DECLARATION_PATH), "utf8");
 const MONEY = extractMoneyPattern(moneyDeclaration);
 const SYMBOLS = extractMoneySymbols(moneyDeclaration);
-const ctx: MergeContext = { moneyPattern: MONEY, moneySymbols: SYMBOLS };
+/* #1627: the rules of the review are DERIVED from what `review.yml` sources,
+   so this fixture reads the real workflow rather than naming the files. */
+const REVIEW_RULES = reviewRuleFiles(reviewYml);
+const ctx: MergeContext = {
+  moneyPattern: MONEY,
+  moneySymbols: SYMBOLS,
+  reviewRules: REVIEW_RULES,
+};
 
 const pr = (over: Partial<PrReading> = {}): PrReading => ({
   number: 551,
@@ -918,11 +926,78 @@ describe("the push this tool performs can never reach a protected ref", () => {
   });
 });
 
-describe("touchesReviewerWorkflow", () => {
+describe("the rules of the review itself (#1627)", () => {
   it("is an exact path match, not a substring", () => {
-    expect(touchesReviewerWorkflow([REVIEWER_WORKFLOW_PATH])).toBe(true);
-    expect(touchesReviewerWorkflow([".github/workflows/review.yml.bak"])).toBe(false);
-    expect(touchesReviewerWorkflow([".github/workflows/gate.yml"])).toBe(false);
+    expect(touchesReviewerRules([REVIEWER_WORKFLOW_PATH], REVIEW_RULES)).toBe(true);
+    expect(touchesReviewerRules([".github/workflows/review.yml.bak"], REVIEW_RULES)).toBe(false);
+    expect(touchesReviewerRules([".github/workflows/gate.yml"], REVIEW_RULES)).toBe(false);
+  });
+
+  /*
+    ⚠ THE CONTROL'S OWN KILL SWITCH — the whole of #1627.
+
+    `money-surfaces.sh` is the file that decides what counts as a money diff,
+    and until this card a diff editing only it was triaged as an ordinary diff
+    and merged on the gate alone. The arm names the two declarations rather
+    than asserting a count, because a set that quietly shrank to
+    `[review.yml]` is the exact failure and a count would still read as 3 if
+    something else joined while one of these left.
+  */
+  it("⚠ the declarations the workflow SOURCES are rules files too", () => {
+    expect(REVIEW_RULES).toContain(MONEY_DECLARATION_PATH);
+    expect(REVIEW_RULES).toContain(CUSTOMER_SURFACE_DECLARATION_PATH);
+    expect(REVIEW_RULES).toContain(REVIEWER_WORKFLOW_PATH);
+    expect(touchesReviewerRules([MONEY_DECLARATION_PATH], REVIEW_RULES)).toBe(true);
+    expect(touchesReviewerRules([CUSTOMER_SURFACE_DECLARATION_PATH], REVIEW_RULES)).toBe(true);
+  });
+
+  it("⚠ refuses a workflow that sources nothing rather than answering for it", () => {
+    const sourcesNothing = ["jobs:", "  triage:", "    steps: []"].join("\n");
+    expect(() => reviewRuleFiles(sourcesNothing)).toThrow(/sources no declaration/);
+  });
+
+  /*
+    And the reading is the SOURCING, not the directory: a `.github/` file the
+    workflow never sources is not a rule of the review, or every workflow in
+    the repository would be one.
+  */
+  it("reads what is sourced, not everything under .github/", () => {
+    const derived = reviewRuleFiles(
+      ["      . ./.github/money-surfaces.sh", "      cat .github/workflows/gate.yml", ""].join("\n"),
+    );
+    expect(derived).toContain(MONEY_DECLARATION_PATH);
+    expect(derived).not.toContain(".github/workflows/gate.yml");
+  });
+});
+
+describe("a diff that edits only the money classifier is HELD (#1627)", () => {
+  /*
+    The end-to-end shape, because `touchesReviewerRules` returning true proves
+    nothing about what the tool DOES with it. Before this card the same PR
+    reached `merge` — a green gate, no verdict, and the file deciding what
+    counts as money changed underneath.
+  */
+  it("stops rather than merging, and names the file", () => {
+    const action = decideMergeAction(
+      pr({ files: [MONEY_DECLARATION_PATH], review: "no-verdict" }),
+      ctx,
+    );
+    expect(action.kind).toBe("stop");
+    expect(action.kind === "stop" && action.reason).toContain(MONEY_DECLARATION_PATH);
+    expect(action.kind === "stop" && action.reason).toContain("rules of the review itself");
+  });
+
+  it("an acknowledgement is still the answer, as it is for review.yml", () => {
+    const action = decideMergeAction(
+      pr({
+        files: [MONEY_DECLARATION_PATH],
+        review: "no-verdict",
+        acknowledgedAtVerdictCount: 0,
+        verdictCount: 0,
+      }),
+      ctx,
+    );
+    expect(action.kind).not.toBe("stop");
   });
 });
 

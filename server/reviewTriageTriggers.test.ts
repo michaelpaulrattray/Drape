@@ -222,7 +222,7 @@ describe("the customer-surface rule is declared once and read twice", () => {
     for (const reader of [
       "touchesMoney(",
       "moneySymbolHits(",
-      "touchesReviewerWorkflow(",
+      "touchesReviewerRules(",
       "touchesCustomerSurface(",
     ]) {
       expect(
@@ -302,5 +302,104 @@ describe("the size trigger stays dropped", () => {
        This arm is what stops them drifting back in as unread columns. */
     expect(mergeTool).not.toMatch(/\.additions, \.deletions\] \| @json/);
     expect(mergeTool).not.toMatch(/isSafeInteger\(additions\)/);
+  });
+});
+
+/**
+ * ⚠ THE CONTROL'S OWN KILL SWITCH — #1627.
+ *
+ * Both readings of *"this diff changes the rules of the review itself"* were an
+ * exact match on `.github/workflows/review.yml`, written when the rules lived
+ * in one file. **#958 then carved `money-surfaces.sh` out of both workflows
+ * precisely so neither could keep its own copy, and #1328 carved out
+ * `customer-surfaces.sh` beside it — and each extraction moved the bytes
+ * without moving the guard that watched them.** So a diff that narrowed, or
+ * emptied, the file deciding what counts as a money diff was triaged as an
+ * ordinary diff and merged on the gate alone.
+ *
+ * Simulated at the bytes before the repair with `CHANGED='.github/money-surfaces.sh'`:
+ * the rules check was silent (exact match on one filename), `MONEY_PATHS` was
+ * silent (it lists product surfaces, correctly), the symbol half was silent
+ * (scoped `-- server shared`, deliberately), and `customer-surfaces` was silent
+ * (`^client/src/`). **None of the four is an oversight in isolation**, which is
+ * why nothing anywhere reddened.
+ *
+ * ⚠ **ZERO INSTANCES WAS LUCK, NOT DESIGN.** The file has only ever been
+ * widened — #958 created it, #1359 added the priced modules, #1622 the refund
+ * decider — and #1622's own PR is caught ONLY because its test file happens to
+ * name `recordRefund`. The one PR in this repository's history that edits the
+ * declaration for a money reason proves the gap rather than closing it.
+ *
+ * These are SOURCE reads for the reason this file's header gives: a workflow's
+ * shell cannot be driven from vitest. What each answer MEANS is driven in
+ * `server/prMergeOrder.test.ts`, against the real `review.yml`, including the
+ * end-to-end arm that a `money-surfaces.sh`-only PR is HELD rather than merged.
+ */
+describe("the rules of the review are every file it sources, not one filename (#1627)", () => {
+  const decideStep = reviewYml.slice(
+    reviewYml.indexOf("Decide whether this diff earns a review"),
+    reviewYml.indexOf("Say on the PR that a review is owed"),
+  );
+
+  /*
+    ⚠ COMMENTS OFF BEFORE THE ABSENCE ARM READS — the negation-contains-the-token
+    class, and it fired on the first run of this suite. The step's own comment
+    QUOTES the one-filename check it replaced, because deleting the record of
+    why a guard changed is how the next reader re-introduces it; an arm reading
+    that sentence as code would force the choice between a true assertion and a
+    kept history. Line comments only, matched at the start of a line, so a `#`
+    inside a shell string is left alone.
+  */
+  const decideCode = decideStep.replace(/^[ \t]*#.*$/gm, "");
+
+  it("the arm is measuring something — the decide step was located", () => {
+    expect(decideStep.length, "review.yml's decide step could not be sliced").toBeGreaterThan(500);
+    expect(decideCode, "the comment stripper emptied the step — every absence arm below would pass")
+      .toContain("GITHUB_OUTPUT");
+  });
+
+  it("⚠ the stripper drops prose and keeps code — driven before it is trusted", () => {
+    expect(decideCode).not.toContain("the rules of the review itself, and this");
+    expect(decideCode).toContain("RULES_HIT");
+  });
+
+  it("⚠ triage no longer matches ONE filename for the rules reading", () => {
+    /* The exact line that shipped the hole. An absence arm, so it is pinned to
+       the bytes it is about rather than to a paraphrase. */
+    expect(decideCode, "the one-filename rules check is back — a diff editing money-surfaces.sh would merge on the gate")
+      .not.toContain("grep -qxF '.github/workflows/review.yml'");
+  });
+
+  it("⚠ it DERIVES the set from what the workflow sources, and refuses an empty one", () => {
+    /* Derived, because a typed list beside the workflow is the second list
+       working law 4 warns about — and `reviewRuleFiles` reads the same lines
+       out of the same file, so the two readers cannot disagree. */
+    expect(decideCode).toMatch(/sed -n .*\.github\//);
+    expect(decideCode, "the derivation does not read this workflow's own sourcing").toContain(
+      ".github/workflows/review.yml",
+    );
+    /* An empty derivation must refuse, not fall back to the one-filename answer
+       — that fallback IS the hole, restored in silence. */
+    expect(decideCode).toMatch(/REFUSING: review\.yml sources no declaration/);
+    expect(decideCode).toMatch(/exit 1/);
+  });
+
+  it("⚠ both declarations are still SOURCED, which is what makes them rules", () => {
+    /* If either stops being sourced it stops being derived as a rule — loudly
+       here rather than silently on some future PR. */
+    expect(reviewYml).toContain(". ./.github/money-surfaces.sh");
+    expect(reviewYml).toContain(". ./.github/customer-surfaces.sh");
+  });
+
+  it("⚠ the rules reading still HOLDS the PR — it is not merely labelled", () => {
+    /* `held=yes` is what turns triage's comment into "this PR is HELD until the
+       verdict is posted". A rules change that only earned a label would merge
+       on the gate under the standing orders. */
+    const rulesBranch = decideCode.slice(
+      decideCode.indexOf("RULES_HIT"),
+      decideCode.indexOf(". ./.github/money-surfaces.sh"),
+    );
+    expect(rulesBranch, "the rules branch could not be sliced").toContain("review=yes");
+    expect(rulesBranch).toContain("held=yes");
   });
 });
