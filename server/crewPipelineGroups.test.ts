@@ -42,7 +42,7 @@ import {
   pipelineGroupRowKey,
   rungFromLabels,
 } from "../shared/crewPipelineGroups";
-import { exclusionFor } from "../shared/crewQueueExclusions";
+import { QUEUE_EXCLUSION_REASONS, RESEARCH_LABEL, exclusionFor } from "../shared/crewQueueExclusions";
 import { CREW_WORK_CATEGORIES, CREW_WORK_SWITCH_KEYS } from "../shared/crewWorkSwitches";
 
 /**
@@ -79,6 +79,10 @@ const REAL_SHAPES: ReadonlyArray<{ readonly why: string; readonly labels: readon
   { why: "a small fix and nothing else — #394's real shape", labels: ["small-fix"] },
   { why: "casting upkeep on a debt card — #242's real shape", labels: ["debt", "casting-upkeep"] },
   { why: "a patrol that is casting upkeep — #129's real shape", labels: ["patrol", "casting-upkeep"] },
+  /* #1548, measured off the queue 2026-09-30: #1465 and #1535 both carry
+     `research` and nothing else. That is the shape that had his research team's
+     proposals sitting under `other` being asked for a switch label. */
+  { why: "his research team's proposal — #1465 and #1535's real shape", labels: ["research"] },
 ];
 
 /**
@@ -127,6 +131,11 @@ describe("the pipeline vocabulary", () => {
     expect(CREW_PIPELINE_GROUPS.map((group) => group.queueLabel)).toEqual([
       null, // switched — any of the switch labels
       "founder-ordered",
+      /* #1548 — his research team's proposals. The LITERAL here on purpose: this
+         arm's job is pinning the spelling GitHub actually carries, so writing
+         `RESEARCH_LABEL` would make a typo in the constant pass. The derivation
+         is its own arm below, and it needs both. */
+      "research",
       "parked",
       "design-unbuilt",
       "roadmap",
@@ -200,8 +209,15 @@ describe("the pipeline vocabulary", () => {
     /* The one-place rule at the vocabulary: the sections that draw cards are
        the switches, NEXT UP, the ladder and this block — and no group is in
        two of them, because `home` is one field. */
+    /* ⚠ `research` IS FIRST HERE AS A CONSEQUENCE OF WHERE IT SITS IN THE
+       MATCHING ORDER, and that is a visible change to his page rather than a
+       detail (#1548): the block's top row is now his research team's proposals
+       and *Blocked* has moved down one. It is placed below `ordered` for the
+       one-place rule, and the drawn order follows the vocabulary because this
+       list is DERIVED from it — a presentation order of its own would be the
+       second list #493 removed. Pinned so the move is on the record. */
     expect(CREW_PIPELINE_ORPHAN_GROUPS.map((group) => group.key)).toEqual([
-      "blocked", "debt", "lost-and-found", "scope-change", "toolbelt", "patrol", "other", "unfiled",
+      "research", "blocked", "debt", "lost-and-found", "scope-change", "toolbelt", "patrol", "other", "unfiled",
     ]);
     /* POSITIVE CONTROLS — the filter actually removed something, and the
        doubling his order names cannot come back through this list. */
@@ -369,7 +385,7 @@ describe("the partition", () => {
     /* ⚠ POSITIVE CONTROL — it is not simply every group. The ones waiting on
        him by design are OUT, or the line would report his own roadmap back to
        him as work nobody can take. */
-    for (const key of ["ordered", "parked", "design-unbuilt", "roadmap", "scope-change", "blocked", "patrol"]) {
+    for (const key of ["ordered", "parked", "design-unbuilt", "roadmap", "scope-change", "blocked", "patrol", "research"]) {
       expect(CREW_UNREACHABLE_GROUP_KEYS, `${key} waits on him or on its own clock`).not.toContain(key);
     }
   });
@@ -466,5 +482,88 @@ describe("the partition", () => {
        must not share a row. */
     expect(pipelineGroupFor([])).toBe("unfiled");
     expect(pipelineGroupFor([])).not.toBe("other");
+  });
+
+  /* ── #1548: A PROPOSAL IS NOT WORK ─────────────────────────────────────────
+     What he read on his own page, 2026-09-30: two of his research team's cards
+     under *Other*, whose blurb asks whether they want a category and whose
+     `backgroundWork: true` made the page add *"Real work — it only wants a
+     switch label from you."* Both sentences are true of the population `other`
+     exists for and false of a proposal — it is decided on his Notion desk, and
+     the only thing that ever brings one into this queue is HIS approval, at
+     which point it arrives as ordinary work WITHOUT the label (the relay's scope
+     note on the card). So the page was asking him for a decision he already had
+     a better place to make. */
+
+  it("⚠ #1548 — his research team's cards leave `other` and land under Research", () => {
+    expect(pipelineGroupFor(["research"])).toBe("research");
+    /* ⚠ POSITIVE CONTROL — `other` still catches a label this vocabulary does
+       not name, so the arm above measures the new group rather than a
+       `pipelineGroupFor` that has started answering `research` to everything.
+       `urgent` alone is #219's real shape and is what `other` holds today. */
+    expect(pipelineGroupFor(["urgent"])).toBe("other");
+    expect(pipelineGroupFor(["a-label-nobody-declared"])).toBe("other");
+  });
+
+  it("⚠ #1548 — the group and the exclusion row read ONE constant, and it is the label GitHub carries", () => {
+    /* Two vocabularies name this label and a third reader (the seat cut) asks
+       about it, so the spelling is exported once and imported twice. The LITERAL
+       is asserted here as well, because a constant both sides derive from can
+       still be wrong TOGETHER — and this is the spelling measured on #1465 and
+       #1535. */
+    expect(RESEARCH_LABEL).toBe("research");
+    expect(CREW_PIPELINE_GROUPS.find((entry) => entry.key === "research")?.queueLabel)
+      .toBe(RESEARCH_LABEL);
+    expect(QUEUE_EXCLUSION_REASONS.find((entry) => entry.key === "research")?.queueLabel)
+      .toBe(RESEARCH_LABEL);
+  });
+
+  it("⚠ #1548 — a proposal is never counted as work wanting a switch label", () => {
+    /* The two halves of "no switch-label ask", and BOTH are drawn from
+       `backgroundWork: false` rather than from a third sentence (#1248's rule):
+       the reading every shift start prints as work no switch can offer, and the
+       words under the count on his page. */
+    expect(CREW_UNREACHABLE_GROUP_KEYS).not.toContain("research");
+    const research = CREW_PIPELINE_GROUPS.find((entry) => entry.key === "research")!;
+    const sentence = backgroundWorkSentence(research);
+    expect(sentence).not.toBeNull();
+    expect(sentence!.toLowerCase()).not.toContain("switch label");
+    /* ⚠ POSITIVE CONTROL — the phrase the arm above refuses is really the one
+       his page draws for a group that DOES want a switch label, so this cannot
+       pass by looking for something nothing ever says. `other` is where these
+       cards were, and it is what they were being asked. */
+    const other = CREW_PIPELINE_GROUPS.find((entry) => entry.key === "other")!;
+    expect(backgroundWorkSentence(other)!.toLowerCase()).toContain("switch label");
+  });
+
+  it("⚠ #1548 — a proposal carrying a work label is held BY NAME, not by a missing category", () => {
+    /* The shape the exclusion row exists for, and why "a proposal has no
+       category anyway" is not the control it looks like: add `bug` to one and
+       `homeWorkCategoryFor` answers `bugs`, which IS a switch's offered
+       population — so the seat cut would take his research team's proposal as
+       tonight's work. `exclusionFor` answers `research` first instead. */
+    expect(exclusionFor(["research"])).toBe("research");
+    expect(exclusionFor(["research", "bug"])).toBe("research");
+    /* It outranks `building`, which is otherwise the first row: a proposal with
+       a pull request on it is a filing mistake, and *research* is the fact he
+       can act on where *being built* would hide it. */
+    expect(exclusionFor(["research", "bug"], true)).toBe("research");
+    /* ⚠ POSITIVE CONTROL — `building` still wins where `research` is absent, so
+       the arm above measures the new row's PLACE and not a vocabulary that has
+       stopped answering `building` at all. */
+    expect(exclusionFor(["bug"], true)).toBe("building");
+  });
+
+  it("⚠ #1548 — the ONE-PLACE rule still outranks this group's words", () => {
+    /* `research` sits below `switched` AND below `ordered`, deliberately. A card
+       carrying a work label stays the switch panel's responsibility — the
+       exclusion arm above is what holds it off the offer there — and a
+       `founder-ordered` card is drawn in NEXT UP from the label query, so filing
+       it here as well would show him one card twice (#493). Neither shape should
+       exist, because an approved proposal drops this label; both are pinned so
+       the placement is a decision on the record rather than an accident of
+       array order. */
+    expect(pipelineGroupFor(["research", "bug"])).toBe(PIPELINE_SWITCHED_KEY);
+    expect(pipelineGroupFor(["research", "founder-ordered"])).toBe("ordered");
   });
 });

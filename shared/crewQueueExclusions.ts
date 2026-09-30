@@ -61,12 +61,62 @@
 import { CREW_HOLD_LABELS } from "./crewNextUpHold";
 
 /**
+ * HIS RESEARCH TEAM'S OWN LABEL — declared here because THREE readers want it
+ * and a fourth would have typed it again (#1548).
+ *
+ * His Grok team (a project manager, a standing engineering watcher, and Terra on
+ * a weekly round) posts proposals to HIS NOTION DESK. Only what he approves
+ * reaches this queue, and then it arrives as ORDINARY work opening *"Approved by
+ * Michael on the Notion desk"* — **without this label**, which is the relay's
+ * scope note on #1548 and the whole reason one label can mean *never work*.
+ *
+ * So `research` marks **a proposal or a finding nobody has acted on**, and the
+ * three readers are: the exclusion row below, the `research` pipeline group that
+ * draws it on his page (`shared/crewPipelineGroups.ts`), and the seat cut's
+ * ordered-band arm (`scripts/lib/seatBatches.mts`). It is an exported constant
+ * rather than a `.find()` over the array below — which is how `PARKED_LABEL` and
+ * `ORDERED_BAND_LABEL` are taken — because two of those three readers do not
+ * otherwise want this array at all, and a lookup by key is a second spelling of
+ * the key.
+ */
+export const RESEARCH_LABEL = "research";
+
+/**
  * One reason a card carrying a category's label is nevertheless not offered.
  *
  * `label` is the words the panel says — lower case, because it is read inside
  * a parenthesis mid-sentence: *(11 on offer, 2 already queued)*.
  */
 export const QUEUE_EXCLUSION_REASONS = [
+  {
+    key: "research",
+    /**
+     * ⚠ **FIRST, AND IT IS THE ONLY ROW HERE THAT SAYS THE CARD IS NOT WORK AT
+     * ALL** (#1548). Every other row answers *"real work, not offered right
+     * now"* — being built, queued, parked, blocked. This one answers *"this was
+     * never a work item"*, and nothing else the card carries changes that: a
+     * proposal cannot be built, cannot be parked as work, and cannot be queued
+     * by him as work while it still wears this label.
+     *
+     * **So it outranks even `building`.** If a `research` card ever acquires a
+     * pull request, *being built* would read as the work happening and hide the
+     * filing mistake; *research* is the honest fact and the one he can act on
+     * — the proposal belongs on his Notion desk, and an approved one comes back
+     * as its own card without this label.
+     *
+     * ⚠ **THE SHAPE THIS ROW ACTUALLY GUARDS IS `research` BESIDE A WORK
+     * LABEL.** A `research`-only card carries no category, so no switch count
+     * ever consults this function about it — the pipeline group draws it
+     * instead. What this row is for is the day somebody adds `bug` or
+     * `small-fix` to a proposal: `homeWorkCategoryFor` would answer with that
+     * category, the card would enter a switch's offered population, and a seat
+     * would take his research team's proposal as tonight's work. The exclusion
+     * has to be **by name** rather than by the accident of a missing category.
+     */
+    queueLabel: RESEARCH_LABEL,
+    label: "research",
+    blurb: "Your team's proposals — decided on your Notion desk, never work for a seat.",
+  },
   {
     key: "building",
     /**
@@ -82,12 +132,18 @@ export const QUEUE_EXCLUSION_REASONS = [
      * fact**, and `shared/crewCardBuildState.ts` is the one judgement that reads
      * them.
      *
-     * ⚠ **IT IS FIRST, so it outranks even `ordered`.** A card he queued AND
+     * ⚠ **IT OUTRANKS `ordered`.** A card he queued AND
      * somebody is building is subtracted either way — the offered count is the
      * same number — so the order only decides which sentence he reads, and
      * *being built* is the sharper of the two: *already queued* tells him where
      * the card sits, *being built* tells him the work is happening right now,
      * which is the thing he opened this panel to find out.
+     *
+     * ⚠ **THIS CLAUSE OPENED *"IT IS FIRST"* UNTIL #1548 PUT `research` ABOVE
+     * IT, and the argument above is untouched by that** — it is about this row
+     * against `ordered`, and both of those are about REAL WORK. `research` wins
+     * only because a proposal is not work at all, which is a different question
+     * and is stated in that row rather than here.
      */
     queueLabel: null,
     label: "being built",
@@ -207,7 +263,12 @@ const REASON_KEYS: readonly string[] = QUEUE_EXCLUSION_REASONS.map((reason) => r
  * ⚠ **FIRST MATCH WINS, AND THE ORDER IS THE VOCABULARY'S.** A card can carry
  * both labels; counting it twice would make the exclusions sum to more than the
  * cards they came from, which is the arithmetic his panel must never print.
- * `ordered` is first for the reason in its own blurb above.
+ * Each row carries its own place in that order and why; `research` is first
+ * because it is the one row that says the card is not work at all. ⚠ **This
+ * sentence read *"`ordered` is first for the reason in its own blurb above"*
+ * until #1548 and was already wrong — `building` went above `ordered` with
+ * #1094 and this line was not moved with it.** A docblock naming which row is
+ * first is a second copy of the array's order, so it names none of them now.
  *
  * Written to take the raw label list a `gh issue list --json labels` row
  * carries, so the caller does no shaping and cannot shape it differently from
