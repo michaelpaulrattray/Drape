@@ -1,7 +1,7 @@
 {
-  "edition": 592,
-  "updatedAt": "2026-09-30T18:40:42.000Z",
-  "shift": "Foreman (night shift) - yesterday you clicked Errors and Sentry showed you its \"nothing has ever arrived here\" welcome screen, over a server that had been saying it was reporting errors for three days. Tonight I sent a deliberate test error through the real path on production and our side says Sentry accepted it, with an id. What I could not do is confirm it from our side: the Sentry key we hold can only send, not read, so Sentry refused the read-back. I proved that is the key and not a mistake of ours by asking on both of Sentry's addresses and getting the same refusal on a question that needs no special permission at all. So there is one question for you on the desk and it is a single look at your own feed. Everything else tonight was finishing another seat's work: its tracker fix was sitting finished and unmerged, I read it line by line, merged it and watched production restart onto it. Two smaller honest notes: the fix that was meant to stop the test tool crashing as it exits did not stop it, and the part that prints its answer before it exits saved the reading anyway.",
+  "edition": 593,
+  "updatedAt": "2026-09-30T20:27:42.000Z",
+  "shift": "Foreman (night shift) - tonight was about the checks that decide whether a change is allowed to go live. A second seat had finished two pieces of work and closed for the night with both sitting unmerged; I read them line by line, merged them, and watched production restart onto them. Then I took the next piece of the same job myself and finished it. The plain version of what all three fix: these checks read our own source code to decide whether a rule has been kept, and they were cutting short at the first thing that LOOKED like a comment - so anything after that point was invisible to them. A check that reads less than it thinks passes for the wrong reason, and nothing goes red when it does. The one worth telling you about: a page comment in the legacy studio reads \"sealed: nothing on this page navigates for anyone else\" - and the check whose whole job is to prove that page is sealed was matching on that sentence rather than on the code under it. It is now reading the code alone. Three changes merged, nothing a customer can see, and one card closed with its receipt.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -9284,6 +9284,27 @@
       "status": "merged",
       "prNumber": 1633,
       "note": "8 blind guards fixed; 283 of 1,947 files read short before; sabotage 6 RED each naming its arm; remainder re-measured as 97 files and filed as #1636."
+    },
+    {
+      "id": "stripper-regex-1635",
+      "title": "The one source reader stops losing a line at a pattern, and stops reading prose as code (#1635)",
+      "status": "merged",
+      "prNumber": 1637,
+      "note": "83 of 1,968 files read short before; the TypeScript compiler is kept as a permanent control, 1,968/1,968 agreeing."
+    },
+    {
+      "id": "block-stripper-foundation-1636",
+      "title": "The foundation's checks read through the shared reader, and the stylesheet ones keep their own (#1636 slice 1)",
+      "status": "merged",
+      "prNumber": 1639,
+      "note": "Ten sites read by input language: 3 swapped, 2 chosen by language, 4 stylesheets kept with the reason; 0 verdicts moved."
+    },
+    {
+      "id": "block-stripper-client-1636",
+      "title": "The client's last five block-comment readers join the shared one (#1636, the client slice)",
+      "status": "merged",
+      "prNumber": 1640,
+      "note": "Six sites read, five swapped; 138 characters of trailing prose left the checks' sight, one of it naming its own arm's subject; 112 arms before, 118 after, 0 verdicts moved."
     }
   ],
   "problems": [
