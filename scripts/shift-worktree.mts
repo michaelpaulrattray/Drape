@@ -39,6 +39,22 @@
  * removal proceeds only when HEAD is an ANCESTOR of it. HEAD past that head
  * refuses and names how many commits came after the merge.
  *
+ * ⚠ **AND SINCE #1613 `remove` READS THE BRANCH RATHER THAN SPELLING IT.**
+ * `team/<slug>` is what `add` CREATES, and it is true of nothing else: make a
+ * worktree on a branch that already exists — which a seat continuing a released
+ * card is told to do — and the directory name and the branch name part company.
+ * Found by using the tool: `remove` printed `branch team/worktree-merged-1540`,
+ * a branch that does not exist, four lines above deleting a directory. Every
+ * consequential count was always taken in the worktree against `HEAD` and
+ * `@{u}`, so no work was ever at risk; what broke was the merged-PR read
+ * above — asked about a branch no pull request had used, it could only ever
+ * answer *no merged pull request*, so the friendly outcome #1540 exists to
+ * produce was dead for that whole class of worktree. `WorktreePlan` no longer
+ * carries a branch at all; `branchToCreate` is called once, by `add`. Where the
+ * branch cannot be read (an unregistered leftover, a detached HEAD) the answer
+ * is UNREADABLE and never the convention — printed as such, and folded into the
+ * refusal `decideRemoval` already had.
+ *
  * EXIT CODES:
  *     0  done (or, with --dry-run, would be done)
  *     1  refused on the TREE'S STATE — unpushed commits with no merged pull
@@ -58,14 +74,20 @@ import { copyFileSync, existsSync, readFileSync, rmSync } from "node:fs";
 import path from "node:path";
 
 import {
+  branchForRemoval,
+  branchReadFailed,
+  branchToCreate,
   decideRemoval,
+  entryForPath,
   junctionMustBeGone,
   looksCrlfSmudged,
+  parseWorktreeList,
   planFor,
   prReadFailed,
-  readShippedCommits,
   removalStateFromShipReading,
+  shipReadingFor,
   validateSlug,
+  worktreeListArgs,
   type RemovalState,
   type ShipReading,
 } from "./lib/shiftWorktree.mts";
@@ -152,6 +174,11 @@ if (command === "list") {
 const check = validateSlug(slug);
 if (!check.ok) refuse(check.reason);
 const plan = planFor(slug, repoRoot, parentDir);
+/* ⚠ THE CONVENTION, AND `add`'s ALONE (#1613). It is not on `plan`, so nothing
+   on the removal path below can reach it by a property access — which is the
+   whole repair, because tightening five call sites would have left the derived
+   name one edit away from coming back. */
+const newBranch = branchToCreate(slug);
 
 // ---- add ------------------------------------------------------------------
 if (command === "add") {
@@ -173,15 +200,15 @@ if (command === "add") {
   // NOT `-B`, which silently resets an existing branch — that is precisely the
   // destruction this tool exists to prevent, and it would throw away commits
   // the `remove` guards had just refused to destroy.
-  if (git(["rev-parse", "--verify", "--quiet", `refs/heads/${plan.branch}`]).status === 0) {
+  if (git(["rev-parse", "--verify", "--quiet", `refs/heads/${newBranch}`]).status === 0) {
     refuse(
-      `the branch ${plan.branch} already exists locally (a previous \`remove\` keeps it on purpose). Delete it with \`git branch -D ${plan.branch}\` if it holds nothing you want, or choose another slug.`,
+      `the branch ${newBranch} already exists locally (a previous \`remove\` keeps it on purpose). Delete it with \`git branch -D ${newBranch}\` if it holds nothing you want, or choose another slug.`,
     );
   }
 
   console.log(`shift-worktree add ${slug}`);
   console.log(`  path   ${plan.path}`);
-  console.log(`  branch ${plan.branch} (from origin/main)`);
+  console.log(`  branch ${newBranch} (from origin/main)`);
   console.log("");
 
   if (!dryRun) {
@@ -191,10 +218,10 @@ if (command === "add") {
   say("fetch origin/main");
 
   if (!dryRun) {
-    const added = git(["worktree", "add", plan.path, "-b", plan.branch, "origin/main"]);
+    const added = git(["worktree", "add", plan.path, "-b", newBranch, "origin/main"]);
     if (added.status !== 0) fail(`git worktree add failed: ${added.err.trim()}`);
   }
-  say(`create the worktree on ${plan.branch}`);
+  say(`create the worktree on ${newBranch}`);
 
   // The junction, not a copy: the install is over a gigabyte and every shift
   // would pay it twice a night under the overlap rule.
@@ -235,35 +262,46 @@ if (command === "add") {
 // dead-ending on its own lifecycle, which is the shape worth fixing rather than
 // the two instances.
 if (!existsSync(plan.path)) {
-  const stale = git(["worktree", "list", "--porcelain"]);
-  const registeredButGone =
-    stale.status === 0 &&
-    stale.out
-      .split(/\r?\n/)
-      .some((line) => line.startsWith("worktree ") && line.slice("worktree ".length).trim().replace(/\\/g, "/") === plan.path);
-  if (!registeredButGone) refuse(`${plan.path} does not exist`);
+  const stale = git(worktreeListArgs());
+  const staleEntry = stale.status === 0 ? entryForPath(parseWorktreeList(stale.out), plan.path) : null;
+  if (staleEntry === null) refuse(`${plan.path} does not exist`);
   console.log(`shift-worktree remove ${slug}`);
   console.log(`  the directory is already gone, but git still has it registered — pruning.`);
   if (!dryRun) git(["worktree", "prune"]);
   say("prune the stale registration");
   console.log("");
-  console.log(dryRun ? "--dry-run: nothing was changed." : `Pruned. The branch ${plan.branch} still exists locally.`);
+  /* ⚠ THE BRANCH IS READ OFF THE STALE ENTRY, NOT SPELLED (#1613). The listing
+     still names it, so this line can be true; before, it named `team/<slug>`
+     and was fiction for any worktree made on an existing branch. */
+  const staleBranch = branchForRemoval(staleEntry);
+  console.log(
+    dryRun
+      ? "--dry-run: nothing was changed."
+      : branchReadFailed(staleBranch)
+        ? `Pruned. Which branch it was on could not be read — ${staleBranch.unreadable}.`
+        : `Pruned. The branch ${staleBranch.branch} still exists locally.`,
+  );
   process.exit(0);
 }
 
 // Read the state BEFORE deciding anything, and read it from the worktree
 // itself — asking the main tree about another worktree's branch is how a
 // helper comes to be confidently wrong about whose work it is deleting.
-// ⚠ AN EXACT LINE MATCH, NOT A SUBSTRING (review finding 3). `--porcelain`
-// prints one `worktree <path>` line per tree, and a substring test lets
-// `drape-shift-a` match the entry for `drape-shift-a-b`. The status is checked
-// too: a failed listing must not read as "not registered", which is a state
-// with a different consequence.
-const listed = git(["worktree", "list", "--porcelain"]);
+// ⚠ ONE LISTING ANSWERS BOTH QUESTIONS, AND ITS PARSER LIVES IN THE LIBRARY
+// (#1613). This file held TWO hand-rolled copies of the `worktree <path>` line
+// test and was about to need a third for the branch — working law 4. The exact
+// match rather than a substring (review finding 3) and the backslash
+// normalisation are `parseWorktreeList`'s, with the reasons on it. The status is
+// still checked here: a failed listing must not read as "not registered", which
+// is a state with a different consequence.
+const listed = git(worktreeListArgs());
 if (listed.status !== 0) fail(`git worktree list failed: ${listed.err.trim()}`);
-const registered = listed.out
-  .split(/\r?\n/)
-  .some((line) => line.startsWith("worktree ") && line.slice("worktree ".length).trim().replace(/\\/g, "/") === plan.path);
+const entry = entryForPath(parseWorktreeList(listed.out), plan.path);
+const registered = entry !== null;
+/* ⚠ THE BRANCH THIS WORKTREE IS ACTUALLY ON — every later use is this, never
+   `team/<slug>`. An unregistered leftover and a detached HEAD both come back
+   unreadable rather than falling back to the convention (#1613). */
+const branchRead = branchForRemoval(entry);
 
 /**
  * ⚠ THE LEFTOVER CASE IS REACHABLE AND MUST NOT DEAD-END (review finding 1).
@@ -293,8 +331,14 @@ if (registered) {
     // over-refuses, which is the safe direction — but a guard that refuses on
     // healthy input trains the `--force` habit, so ask the remote branch too
     // and take the smaller honest count.
-    if (unpushedCommits > 0) {
-      const againstOwnRemote = git(["log", "--oneline", `origin/${plan.branch}..HEAD`], plan.path);
+    // ⚠ AND AGAINST THE BRANCH IT IS ON, NOT AGAINST `team/<slug>` (#1613).
+    // `origin/team/<slug>` is a ref that does not exist for a worktree made on
+    // an existing branch, so this command simply failed and the correction it
+    // exists for could never happen. With the branch unreadable there is
+    // nothing to ask, and the `@{u}` count stands — which over-refuses, the
+    // safe direction, rather than guessing a ref.
+    if (unpushedCommits > 0 && !branchReadFailed(branchRead)) {
+      const againstOwnRemote = git(["log", "--oneline", `origin/${branchRead.branch}..HEAD`], plan.path);
       if (againstOwnRemote.status === 0) {
         unpushedCommits = againstOwnRemote.out.split(/\r?\n/).filter((l) => l.trim().length > 0).length;
       }
@@ -329,8 +373,14 @@ if (registered) {
  * today's behaviour plus one honest sentence rather than a new dependency.
  */
 const ship: ShipReading | null = unpushedCommits > 0
-  ? readShippedCommits(
-      plan.branch,
+  ? shipReadingFor(
+      /* ⚠ THE BRANCH READ, NOT THE CONVENTION (#1613) — and this is the site
+         that actually broke. `gh pr list --head team/<slug>` named a branch no
+         pull request had ever used, so the answer was always "no merged pull
+         request" and #1540's friendly outcome was dead for every worktree made
+         on an existing branch. An unreadable branch becomes an unreadable
+         READING rather than a confident "nobody merged this". */
+      branchRead,
       (args) => runOptional("gh", args),
       /* Through `git`, in the WORKTREE, because HEAD is the branch tip and the
          rest of this block already reads it there. `git` may `fail` on a missing
@@ -353,7 +403,11 @@ const state: RemovalState = {
 
 console.log(`shift-worktree remove ${slug}`);
 console.log(`  path       ${plan.path}`);
-console.log(`  branch     ${plan.branch}`);
+/* ⚠ THE BRANCH IT IS ON, OR WHY THAT COULD NOT BE READ (#1613). This line sits
+   four lines above a recursive delete, and a shift reads it to decide whether to
+   pass `--force`; it printed `team/<slug>` and named a non-existent branch on the
+   run that found the defect. */
+console.log(`  branch     ${branchReadFailed(branchRead) ? `UNREADABLE — ${branchRead.unreadable}` : branchRead.branch}`);
 console.log(`  unpushed   ${state.unpushedCommits} commit(s)`);
 console.log(`  uncommitted ${state.dirtyFiles.length} file(s)`);
 /* ⚠ PRINTED ONLY WHEN IT WAS ASKED (#1540) — a `merged  —` line on every clean
@@ -432,5 +486,11 @@ if (!dryRun) {
 say("delete the directory and prune");
 
 console.log("");
-console.log(dryRun ? "--dry-run: nothing was changed." : `Removed. The branch ${plan.branch} still exists locally.`);
+console.log(
+  dryRun
+    ? "--dry-run: nothing was changed."
+    : branchReadFailed(branchRead)
+      ? `Removed. Which branch it was on could not be read — ${branchRead.unreadable}.`
+      : `Removed. The branch ${branchRead.branch} still exists locally.`,
+);
 process.exit(0);

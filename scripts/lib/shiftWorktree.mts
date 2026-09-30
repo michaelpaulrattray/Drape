@@ -59,12 +59,48 @@
  * · **A fresh checkout can arrive CRLF-smudged** and about eight suites that
  *   assert on substrings fail for no reason a shift can see. `add` checks and
  *   says so rather than letting the next hour go to it.
+ *
+ * ───────────────────────────────────────────────────────────────────────────
+ * ⚠ **AND `remove` READS THE BRANCH IT IS TALKING ABOUT — IT NO LONGER SPELLS
+ * ONE (#1613). `team/<slug>` IS A CONVENTION, AND A CONVENTION IS ONLY TRUE OF
+ * THE BRANCH `add` CREATED.**
+ *
+ * Found by using the tool on itself, minutes after #1540's repair merged: a
+ * shift removed its own worktree and `remove` printed
+ * `branch team/worktree-merged-1540` — **a branch that does not exist.** The
+ * worktree was on `team/worktree-merged-branch-1540`, because it had been made
+ * on an EXISTING branch (`git worktree add <path> <branch>`), and from that
+ * moment the directory name and the branch name are independent of each other.
+ * That shape is PRESCRIBED rather than exotic: a seat picking up a released
+ * card is told to continue on the pull request's branch.
+ *
+ * What it cost was #1540's own brand-new feature. `readShippedCommits` asked
+ * `gh pr list --head team/<slug>` about a branch no pull request had ever used,
+ * so the answer was always *no merged pull request* — **the friendly outcome
+ * that card exists to produce could never appear for this whole class of
+ * worktree**, and the cry-wolf refusal it was filed to end came back. The
+ * smaller-honest-count read compared against a ref that does not exist, and the
+ * printed `branch` line named fiction on a tool whose next four lines delete a
+ * directory.
+ *
+ * ⚠ **THE PLAN NO LONGER CARRIES A BRANCH AT ALL, AND THAT IS THE WHOLE
+ * REPAIR.** Tightening the five call sites would have left the derived name one
+ * property access away from every future edit on the removal path; removing it
+ * from the object `remove` HOLDS means the mistake is not reachable there.
+ * `branchToCreate` is the convention, called once, by `add` — the one place a
+ * convention is right, because there is nothing yet to read.
+ *
+ * ⚠ **AND WHERE THE READ CANNOT BE TAKEN, THE ANSWER IS "UNREADABLE", NEVER THE
+ * CONVENTION.** Falling back is how this defect read as working for a day: a
+ * derived name is always *a* name, so nothing ever looks wrong. A detached HEAD
+ * and an unregistered leftover both come back `unreadable`, which prints as such
+ * and — on the one path that decides anything — becomes a `ShipReading` of
+ * `unreadable`, i.e. the refusal that was already there.
  */
 
 /** What `add` must do, in order, so the caller cannot invent its own sequence. */
 export type WorktreePlan = {
   readonly slug: string;
-  readonly branch: string;
   readonly path: string;
   readonly nodeModulesLink: string;
   readonly envSource: string;
@@ -100,12 +136,132 @@ export function planFor(slug: string, repoRoot: string, parentDir: string): Work
   const path = `${parentDir}/drape-shift-${slug}`;
   return {
     slug,
-    branch: `team/${slug}`,
     path,
     nodeModulesLink: `${path}/node_modules`,
     envSource: `${repoRoot}/.env`,
     envTarget: `${path}/.env`,
   };
+}
+
+/**
+ * THE ONE PLACE THE `team/<slug>` CONVENTION IS RIGHT (#1613).
+ *
+ * ⚠ **IT IS FOR THE BRANCH `add` CREATES AND FOR NOTHING ELSE.** Before a
+ * worktree exists there is nothing to read, so naming it is the only option —
+ * and `add` then makes the name true by passing it to `git worktree add -b`.
+ * Every LATER question about that worktree's branch is answered by reading, not
+ * by spelling the convention a second time: a worktree can be made on a branch
+ * that already exists, and then the directory name and the branch name have
+ * nothing to do with each other. Deliberately NOT a field on `WorktreePlan`, so
+ * the removal path cannot reach it.
+ */
+export function branchToCreate(slug: string): string {
+  return `team/${slug}`;
+}
+
+/**
+ * ONE `git worktree list --porcelain` ENTRY — the path, and the branch if it has
+ * one.
+ *
+ * `branch` is `null` for a DETACHED head, which porcelain reports as a bare
+ * `detached` line. That is a real state (a bisect, a checked-out tag) and it is
+ * kept as `null` rather than as an empty string, because "no branch" and "a
+ * branch whose name I failed to read" want different sentences.
+ */
+export type WorktreeEntry = { readonly path: string; readonly branch: string | null };
+
+/** The listing that answers BOTH questions `remove` asks. One owner, one call. */
+export function worktreeListArgs(): string[] {
+  return ["worktree", "list", "--porcelain"];
+}
+
+/**
+ * ⚠ ONE PARSER FOR *IS IT REGISTERED* AND *WHAT BRANCH IS IT ON* (#1613).
+ *
+ * The CLI held TWO hand-rolled copies of the `worktree <path>` line test and was
+ * about to need a third for the branch — which is working law 4 (a second list
+ * shadowing a source of truth always drifts from it) with the drift already
+ * visible: both copies normalised backslashes and neither could have told you
+ * what branch the entry named.
+ *
+ * ⚠ **AN EXACT PATH MATCH, NOT A SUBSTRING** — the rule the CLI's own comment
+ * already carried, kept here so it has one owner: `drape-shift-a` must not match
+ * the entry for `drape-shift-a-b`, on a tool that ends in a recursive delete.
+ * Backslashes are normalised because git prints Windows paths either way
+ * depending on how the worktree was added.
+ */
+export function parseWorktreeList(porcelain: string): WorktreeEntry[] {
+  const entries: WorktreeEntry[] = [];
+  let path: string | null = null;
+  let branch: string | null = null;
+  const flush = () => {
+    if (path !== null) entries.push({ path, branch });
+    path = null;
+    branch = null;
+  };
+  for (const raw of porcelain.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (line.startsWith("worktree ")) {
+      /* A new `worktree` line ends the previous entry whether or not a blank
+         line separated them — porcelain uses blank lines, but relying on them
+         makes the parser fail silently on a trailing entry with no newline. */
+      flush();
+      path = line.slice("worktree ".length).trim().replace(/\\/g, "/");
+    } else if (line.startsWith("branch refs/heads/")) {
+      branch = line.slice("branch refs/heads/".length).trim();
+    }
+  }
+  flush();
+  return entries;
+}
+
+/** The entry for a path, or `null` when git does not know this path. */
+export function entryForPath(
+  entries: readonly WorktreeEntry[],
+  path: string,
+): WorktreeEntry | null {
+  const wanted = path.replace(/\\/g, "/");
+  return entries.find((entry) => entry.path === wanted) ?? null;
+}
+
+/**
+ * WHAT BRANCH IS THIS WORKTREE ON — read, or honestly unreadable (#1613).
+ *
+ * ⚠ **THERE IS NO THIRD ANSWER, AND THERE MUST NOT BE.** The card asked for this
+ * by name: *"where the read cannot be taken, refuse rather than fall back to the
+ * convention. Falling back is how this defect reads as working."*
+ */
+export type WorktreeBranch =
+  | { readonly branch: string }
+  | { readonly unreadable: string };
+
+/** `true` when the branch read did not land. One owner, several consumers. */
+export function branchReadFailed(
+  read: WorktreeBranch,
+): read is { readonly unreadable: string } {
+  return "unreadable" in read;
+}
+
+/**
+ * The branch `remove` may talk about, from what git said about this path.
+ *
+ * Both unreadable cases are states in which there is no branch state to protect
+ * — an unregistered path is litter git has already let go of, and a detached
+ * head has no branch to lose — so neither is a reason to REFUSE THE REMOVAL. It
+ * is the SENTENCE that is refused, not the act: `remove` prints the reason where
+ * it used to print a name it had invented, and its one decision (did these
+ * commits ship?) goes to the refusal it already had.
+ */
+export function branchForRemoval(entry: WorktreeEntry | null): WorktreeBranch {
+  if (entry === null) {
+    return {
+      unreadable: "git does not have this path registered as a worktree, so it names no branch",
+    };
+  }
+  if (entry.branch === null) {
+    return { unreadable: "this worktree is on a detached HEAD, so there is no branch to name" };
+  }
+  return { branch: entry.branch };
 }
 
 /**
@@ -381,6 +537,29 @@ export function readShippedCommits(
     return { unreadable: `HEAD is not contained by PR #${pr}'s head, yet no commit separates them` };
   }
   return { pastMerge: { pr, commits } };
+}
+
+/**
+ * THE SHIP READING, TAKEN ONLY WHEN THERE IS A BRANCH TO ASK ABOUT (#1613).
+ *
+ * ⚠ **AN UNREADABLE BRANCH BECOMES AN UNREADABLE READING, NEVER A MISSING
+ * MERGE.** `readShippedCommits` would happily accept `""` or a guessed name and
+ * come back `notMerged` — *asked, and nobody merged this* — which is a confident
+ * fact about a question that was never put. `unreadable` says *nobody asked*,
+ * and `decideRemoval` already words that case for the shift.
+ *
+ * The fold lives here rather than in the caller so the arms drive the real one
+ * (working law 4), and so the fail-closed choice has a single owner.
+ */
+export function shipReadingFor(
+  branch: WorktreeBranch,
+  gh: (args: string[]) => { status: number; out: string; err: string },
+  gitInWorktree: (args: string[]) => { status: number; out: string; err: string },
+): ShipReading {
+  if (branchReadFailed(branch)) {
+    return { unreadable: `the branch this worktree is on could not be read — ${branch.unreadable}` };
+  }
+  return readShippedCommits(branch.branch, gh, gitInWorktree);
 }
 
 /**
