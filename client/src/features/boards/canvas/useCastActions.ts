@@ -12,6 +12,7 @@ import { useGenerationJobs } from "../stores/useGenerationJobs";
 import { useOptimisticFills } from "../stores/useOptimisticFills";
 import { createClientRequestId } from "@shared/clientRequestId";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
+import { placementAnnouncement, PLACEMENT_ANNOUNCEMENT_MS } from "./placementAnnouncement";
 
 export function useCastActions(options: { boardId: number; itemId: number }) {
   const { boardId, itemId } = options;
@@ -21,8 +22,37 @@ export function useCastActions(options: { boardId: number; itemId: number }) {
   const generating = job?.status === "running";
 
   const runMutation = trpc.boardOps.runGeneration.execute.useMutation({
-    onSuccess: () => {
+    onSuccess: (result) => {
       completeJob(itemId);
+      /*
+        ⚠ **THE CAST WAS PAID FOR AND NEVER PLACED — SAY SO (#1571).**
+
+        Past the durable boundary the server keeps the cast and never refunds:
+        the picture exists, it is in the Library, and the money is right. What
+        can still fail is stamping it onto the board — and until now that was
+        told to nobody. The server writes the sentence (`boardOps.ts`), puts it
+        on the response, and **no component, hook or toast in the client read
+        it**; the only reader anywhere was a server test, which kept a dead
+        field looking alive.
+
+        So the customer saw a cast they were charged for simply not appear, with
+        the screen saying nothing at all.
+
+        ⚠ **A TOAST IS RIGHT HERE AND IT IS NOT A RELAXATION OF D-40.** That
+        rule — feedback renders where the action happened — is why the fill
+        mutation below has no success toast: the node filling IS the feedback.
+        **This is the branch where the node does NOT fill.** There is no longer
+        anywhere for feedback to render, which is exactly the case a toast
+        exists for.
+
+        `warning`, never `error`: the cast succeeded and was charged correctly,
+        and calling it an error would tell someone their money went wrong when
+        the sentence's whole job is to say it did not. 9 s matches the duration
+        this app already gives a money-adjacent sentence — a two-clause line
+        about where a paid-for cast went is not a 4-second read.
+      */
+      const announcement = placementAnnouncement(result);
+      if (announcement) toast.warning(announcement, { duration: PLACEMENT_ANNOUNCEMENT_MS });
       utils.boards.getItems.invalidate({ boardId });
       utils.credits.getBalance.invalidate();
     },
