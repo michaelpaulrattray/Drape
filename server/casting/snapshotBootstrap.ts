@@ -140,7 +140,7 @@ async function lockedOwnedModelIn(
     ))
     .limit(1)
     .for("update");
-  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
   return model;
 }
 

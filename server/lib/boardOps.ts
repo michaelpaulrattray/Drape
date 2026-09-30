@@ -571,7 +571,7 @@ export async function executeRunGeneration(input: RunGenerationInput) {
   } catch (syncError) {
     placed = false;
     placementMessage =
-      "Your cast was created and charged — find the draft in your model library. Placing it on the board failed; it was not charged twice.";
+      "Your cast was created and charged — find the draft in your Library. Placing it on the board failed; it was not charged twice.";
     log.error(
       { itemId: input.itemId, modelId, err: syncError instanceof Error ? syncError.message : String(syncError) },
       "runGeneration: board stamp failed AFTER the paid cast landed (rolled back whole) — the draft lives in the library; no refund, no retryable failure",
@@ -632,7 +632,7 @@ export async function resolveCanvasPackageView(input: {
   }
 
   const model = await getModelById(input.modelId);
-  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
   if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
   assertNotArchived(model);
   const assets = await getModelAssets(input.modelId);
@@ -664,7 +664,7 @@ export async function executeFillFromLibrary(input: {
     r6Selection: "fill_front_close",
   });
   if (!headshot?.storageUrl) {
-    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This model has no canonical imagery yet" });
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This cast has no canonical imagery yet" });
   }
 
   // Batch B: draft is the STATUS read-model, never "not minted" — an
@@ -845,7 +845,7 @@ export async function resolveModelBackedBoardOperation(input: {
     throw new TRPCError({ code: "BAD_REQUEST", message: "This node has no cast identity" });
   }
   const model = await getModelById(provenance.modelId);
-  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
   if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
   assertNotArchived(model);
   return { item, model, provenance };
@@ -866,7 +866,7 @@ export async function prepareCanvasRecastAuthority(input: {
   if (!isModelDraftStatus(resolved.model.status)) {
     throw new TRPCError({
       code: "FORBIDDEN",
-      message: "This identity is minted and immutable — fork it as a new model instead.",
+      message: "This identity is minted and immutable — fork it as a new cast instead.",
     });
   }
 
@@ -1047,7 +1047,7 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
   if (model.status !== "draft") {
     throw new TRPCError({
       code: "FORBIDDEN",
-      message: "This identity is minted and immutable — fork it as a new model instead.",
+      message: "This identity is minted and immutable — fork it as a new cast instead.",
     });
   }
 
@@ -1488,7 +1488,7 @@ export async function executeRunVariations(input: {
       );
       failures.push({
         index: i,
-        message: "Created and charged — placing it on the board failed. Find the draft in your model library; it was not charged twice.",
+        message: "Created and charged — placing it on the board failed. Find the draft in your Library; it was not charged twice.",
         refunded: 0,
       });
     }

@@ -407,7 +407,7 @@ async function reconstructPublicResult(
         imageUrl: asset.storageUrl,
         creditCost: Math.abs(child.pointsCost),
         placed: false,
-        placementMessage: "Your cast was saved in Models. Reopen it from the library to place it on the Canvas.",
+        placementMessage: "Your cast was saved in your Library. Reopen it from there to place it on the Canvas.",
       };
     }
     case "canvas_fork": {
@@ -421,7 +421,7 @@ async function reconstructPublicResult(
         modelId: child.modelId,
         imageUrl: asset.storageUrl,
         placed: false,
-        placementMessage: "Your fork was saved in Models. Reopen it from the library to place it on the Canvas.",
+        placementMessage: "Your fork was saved in your Library. Reopen it from there to place it on the Canvas.",
       };
     }
     case "not_reconstructable":

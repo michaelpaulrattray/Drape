@@ -445,7 +445,7 @@ export async function readSnapshotShadowStateIn(
       availableModelWhere(),
     ))
     .limit(1);
-  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
   const assets = await tx
     .select()
     .from(modelAssets)

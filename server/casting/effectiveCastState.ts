@@ -66,7 +66,7 @@ const TEMPORARILY_UNAVAILABLE =
 
 export class EffectiveCastStateError extends Error {
   constructor(public readonly code: EffectiveCastStateErrorCode) {
-    super(code === "model_not_found" ? "Model not found" : TEMPORARILY_UNAVAILABLE);
+    super(code === "model_not_found" ? "Cast not found" : TEMPORARILY_UNAVAILABLE);
     this.name = "EffectiveCastStateError";
   }
 }

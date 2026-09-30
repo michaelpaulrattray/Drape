@@ -136,7 +136,7 @@ export const castingExportRouter = router({
       // R6 keeps the existing owner/row path. Snapshot mode obtains the same
       // row only through the non-leaking, fail-closed effective-state resolver.
       const model = effective?.model ?? await getModelById(input.modelId);
-      if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+      if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
       if (readMode === "r6" && model.userId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
@@ -268,7 +268,7 @@ export const castingExportRouter = router({
     .mutation(async ({ ctx, input }) => {
       const readMode = captureSnapshotReadMode(ctx.user.id);
       const initialModel = await getModelById(input.modelId);
-      if (!initialModel) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+      if (!initialModel) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
       if (initialModel.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       assertNotArchived(initialModel);
 
@@ -383,7 +383,7 @@ export const castingExportRouter = router({
         }
         await enforceDailyQuota(ctx.user.id);
         lockedModel = await getModelById(input.modelId);
-        if (!lockedModel) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        if (!lockedModel) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
         if (lockedModel.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         assertNotArchived(lockedModel);
         if (operationKind === "evidence_mint") {
@@ -602,7 +602,7 @@ export const castingExportRouter = router({
       }
       const model = await getModelById(input.modelId);
       if (!model) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
       }
       if (model.userId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
@@ -705,7 +705,7 @@ export const castingExportRouter = router({
     .mutation(async ({ ctx, input }) => {
       const readMode = captureSnapshotReadMode(ctx.user.id);
       const model = await getModelById(input.modelId);
-      if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+      if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
       if (model.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       assertNotArchived(model);
       const lockKey = modelOperationLockKey(input.modelId);
@@ -858,7 +858,7 @@ export const castingExportRouter = router({
     .mutation(async ({ ctx, input }) => {
       const readMode = captureSnapshotReadMode(ctx.user.id);
       const initialModel = await getModelById(input.modelId);
-      if (!initialModel) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+      if (!initialModel) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
       if (initialModel.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       assertNotArchived(initialModel);
 
@@ -947,7 +947,7 @@ export const castingExportRouter = router({
         }
         await enforceDailyQuota(ctx.user.id);
         lockedModel = await getModelById(input.modelId);
-        if (!lockedModel) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        if (!lockedModel) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
         if (lockedModel.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         assertNotArchived(lockedModel);
         if (operationKind === "evidence_package_sync") {

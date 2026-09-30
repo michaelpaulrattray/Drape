@@ -87,7 +87,7 @@ export function computeRefreshPlan(slots: PackageSlot[], requested?: CanonicalVi
 
 async function loadModelSlots(input: { userId: number; modelId: number }) {
   const model = await getModelById(input.modelId);
-  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
   if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
   assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
   const assets = await getModelAssets(input.modelId);
@@ -254,7 +254,7 @@ export async function executeRefreshSlots(input: {
   // output with the current revision, so refresh remains the resolution leg
   // of every allowed identity edit.
   if (!anchorUrl) {
-    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This model has no headshot to refresh against" });
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This cast has no headshot to refresh against" });
   }
 
   const totalCost = input.angles.reduce((sum, a) => sum + slotCost(a), 0);
