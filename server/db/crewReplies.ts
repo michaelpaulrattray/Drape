@@ -36,6 +36,7 @@
 import { desc, eq } from "drizzle-orm";
 
 import { crewReplies, users } from "../../drizzle/schema";
+import { crewReplyAuthorLabel } from "../../shared/crewReplyMirror";
 import { getDb, type DbInstance } from "./connection";
 
 /**
@@ -118,11 +119,18 @@ function toCrewReplyView(row: {
     createdAt: row.createdAt,
     /* A deleted or unnamed author still has a thread entry — his words outlive
        the row that names him, and "a member of the crew" is honest where a
-       blank would read as a rendering fault. */
-    author:
-      row.authorDisplayName?.trim()
-      || row.authorName?.trim()
-      || "a member of the crew",
+       blank would read as a rendering fault.
+
+       ⚠ THE RULE MOVED TO `shared/crewReplyMirror.ts` AND IS NOT RE-SPELLED
+       HERE (#1539). The reply mirror names the same person on the same reply,
+       in a GitHub comment instead of on the page; two copies of this fallback
+       would drift, and the symptom would be his own name rendering one way on
+       his desk and another on his card. Behaviour is unchanged — same three
+       branches, same order. */
+    author: crewReplyAuthorLabel({
+      displayName: row.authorDisplayName,
+      name: row.authorName,
+    }),
   };
 }
 

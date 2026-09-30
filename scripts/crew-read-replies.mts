@@ -168,6 +168,24 @@ const choice = chooseBriefing(deploymentRows, treeJson, (sha) => {
 const briefing = choice.facts;
 if (!briefing) console.error("[warn] no briefing could be parsed on any road — showing the WHOLE thread and no card titles.");
 
+/**
+ * HOW FAR THE MIRROR HAS CARRIED HIS REPLIES ONTO THEIR CARDS (#1539).
+ *
+ * Read off the mirror's own state file and never computed here — one number,
+ * no network, and a machine without the mirror installed simply gets the
+ * reading this tool always gave. It is NOT the acknowledgement set and must
+ * never be confused with it: `acknowledgedReplyIds` means *the crew has read
+ * and acted on this*, and a comment posted by a poller is neither.
+ */
+const mirroredThrough = (() => {
+  try {
+    const parsed = JSON.parse(readFileSync(".agents/crew-reply-mirror.json", "utf8")) as { lastMirroredId?: unknown };
+    return typeof parsed.lastMirroredId === "number" && parsed.lastMirroredId > 0 ? parsed.lastMirroredId : null;
+  } catch {
+    return null;
+  }
+})();
+
 const acknowledged = briefing?.acknowledgedReplyIds ?? [];
 /* BOTH halves of the reply namespace, and the state each item is drawn in.
    `needsYou` alone printed "(not in the current briefing)" over 17 ids that
@@ -220,6 +238,16 @@ try {
     `briefing edition ${briefing?.edition ?? "?"} · ${acknowledged.length} acknowledged · `
     + `${total[0].n} replies in total`,
   );
+  if (mirroredThrough !== null) {
+    /* The card's own bullet: the marker exists *"so a shift quoting the same
+       reply by hand can see it is already there"*. One file read, no network
+       — a per-reply GitHub check in a shift-start tool would cost more than
+       the duplication it prevents. */
+    console.log(
+      `the reply mirror has carried replies up to #${mirroredThrough} onto their GitHub cards (#1539) — `
+      + "do not quote those onto a card again by hand; recording and acting on them is still yours.",
+    );
+  }
 
   /*
     HIS OWN STANDING ORDER, ASKED AS A READING (relay 2026-08-29 16:20):

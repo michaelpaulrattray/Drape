@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 68
+      "moduleCount": 69
     },
     {
       "id": "domain:staff",
@@ -6021,6 +6021,12 @@
     {
       "id": "module:shared/crewReplyAcknowledgement.ts",
       "path": "shared/crewReplyAcknowledgement.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/crewReplyMirror.ts",
+      "path": "shared/crewReplyMirror.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -12834,6 +12840,10 @@
     {
       "id": "test:server/crewReplyAcknowledgement.test.ts",
       "path": "server/crewReplyAcknowledgement.test.ts"
+    },
+    {
+      "id": "test:server/crewReplyMirror.test.ts",
+      "path": "server/crewReplyMirror.test.ts"
     },
     {
       "id": "test:server/crewSeatVisibility.test.ts",
@@ -29373,6 +29383,11 @@
     {
       "from": "module:server/db/crewReplies.ts",
       "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/crewReplies.ts",
+      "to": "module:shared/crewReplyMirror.ts",
       "kind": "imports"
     },
     {
