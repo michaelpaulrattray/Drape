@@ -128,7 +128,7 @@
 import { CREW_HOLD_WORD, heldStateFromLabels } from "../../shared/crewNextUpHold.js";
 import { sortOrderedBand } from "../../shared/crewOrderedBand.js";
 import { RUNG_LABEL_PREFIX, currentLadderRung } from "../../shared/crewPipelineGroups.js";
-import { exclusionFor, QUEUE_EXCLUSION_REASONS } from "../../shared/crewQueueExclusions.js";
+import { exclusionFor, QUEUE_EXCLUSION_REASONS, RESEARCH_LABEL } from "../../shared/crewQueueExclusions.js";
 import {
   backgroundWorkAllowed,
   CREW_WORK_CATEGORIES,
@@ -699,6 +699,26 @@ export function orderedBandForSeats(input: {
   for (const row of sortOrderedBand(band)) {
     const card = row.card;
     const note = (why: string) => held.push({ number: card.number, title: card.title, why });
+    /*
+      ⚠ **A PROPOSAL IS NOT WORK, AND THIS LANE IS THE ONE `exclusionFor` NEVER
+      REACHES (#1548).** `seatPopulation` above asks the exclusion vocabulary
+      about every background card, and `research` is its first row — so a
+      proposal that also carried a work label was already held there. This band
+      filters on `founder-ordered` and then asks only about parking, holds and
+      the build board, so a card carrying `research` + `founder-ordered` would
+      have been offered to a seat as tonight's work.
+
+      It should never exist: the relay's scope note on #1548 says an approved
+      proposal is filed WITHOUT this label, as ordinary work opening *"Approved
+      by Michael on the Notion desk"*. That is exactly why the arm is here
+      rather than left to the rule — the two roads into a seat must give one
+      answer about one label, and the road that has no such card today is the
+      road nobody will notice is missing it.
+    */
+    if (card.labels.includes(RESEARCH_LABEL)) {
+      note("a research proposal — it is decided on your Notion desk, never built by a seat");
+      continue;
+    }
     if (card.labels.includes(PARKED_LABEL)) {
       note("parked on your own ruling");
       continue;

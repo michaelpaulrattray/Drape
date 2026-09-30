@@ -122,6 +122,15 @@ export const RITE_DISK_READS: ReadonlyArray<{ readonly path: string; readonly wh
     why: "imported by the briefing schema judging this push, at module load",
   },
   {
+    /* The SEVENTH, and the derived arm caught it the hour it arrived (#1548):
+       the `research` group's label is declared once in the exclusion vocabulary
+       and imported by the group vocabulary, which pulled a new file into the
+       rite's graph one hop out. Nothing about this file is new to the rite —
+       what is new is that it is now reached. */
+    path: "shared/crewQueueExclusions.ts",
+    why: "reached by the briefing schema through crewPipelineGroups' RESEARCH_LABEL import, at module load",
+  },
+  {
     path: "shared/crewPipelineStatus.ts",
     why: "imported by the briefing schema judging this push, at module load",
   },

@@ -44,7 +44,15 @@ describe("the exclusion vocabulary", () => {
        quietly, so the repair is to state the new list here with its reasoning
        — never to loosen the assertion to a length or a `toContain`. */
     expect(QUEUE_EXCLUSION_REASONS.map((reason) => reason.queueLabel))
-      .toEqual([null, "founder-ordered", "parked", "blocked", "awaiting-fable", "needs-sitting"]);
+      .toEqual(["research", null, "founder-ordered", "parked", "blocked", "awaiting-fable", "needs-sitting"]);
+    /* ⚠ AND IT WENT RED A FIFTH TIME FOR #1548, WHICH ADDED `research` AT THE
+       FRONT — and it is the queue's own label like the rest: the relay applies it
+       to his research team's proposals (#1465, #1535 carry it today, both alone).
+       It is FIRST because it is the one row that says the card is not work at
+       all, where every other row says real work is not offered right now. The
+       LITERAL is written here rather than `RESEARCH_LABEL`, deliberately: this
+       arm pins the spelling GitHub actually carries, and deriving it would let a
+       typo in the constant pass. */
     /* ⚠ AND IT WENT RED A THIRD TIME FOR #1094, WHICH ADDED THE FIRST ROW — the
        `null` is the point of it. `building` is the one reason that is NOT a
        label: nobody labels a card "somebody is building this", and the fact is an

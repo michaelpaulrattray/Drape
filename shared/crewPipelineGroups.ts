@@ -42,6 +42,13 @@
  *   holds three cards labelled only `urgent`. It must exist, or a label
  *   invented in GitHub tomorrow makes cards silently vanish from his page,
  *   which is the exact failure this card was filed about one layer up.
+ *   ⚠ **AND IT IS A HOLDING PEN, NOT A HOME — #1548 IS THE WORKED EXAMPLE AND
+ *   THE PATTERN TO REPEAT.** A label invented in GitHub does land here, safely,
+ *   and its blurb then asks him for a category — which is the right question for
+ *   an unnamed work label and **the wrong one for a label that means the card is
+ *   not work.** His research team's `research` cards sat here being asked for a
+ *   switch label they must never get. The remedy each time is a NAMED group with
+ *   its own sentence, not a wider `other`.
  * - **`unfiled`** — no label at all. Today four. His card names these as *"their
  *   own small defect"* and asks for them to be triaged into one.
  *
@@ -74,6 +81,15 @@
  * group too big, and the sum would still be right — a silent wrong answer.
  */
 import { CREW_WORK_CATEGORIES } from "./crewWorkSwitches.js";
+/**
+ * ⚠ **THE `research` LABEL IS IMPORTED, NOT TYPED HERE, FOR THE PARAGRAPH
+ * ABOVE'S REASON ONE VOCABULARY OVER (#1548).** It has three readers — the
+ * `research` group below, the exclusion row that keeps a proposal off a switch's
+ * offer, and the seat cut's ordered band — and its meaning (*a proposal, never
+ * work*) is the exclusion vocabulary's to state, because that is the vocabulary
+ * whose whole subject is what may not be offered.
+ */
+import { RESEARCH_LABEL } from "./crewQueueExclusions.js";
 
 const SWITCH_LABELS: readonly string[] = CREW_WORK_CATEGORIES.map((category) => category.queueLabel);
 
@@ -201,6 +217,50 @@ export const CREW_PIPELINE_GROUPS: readonly CrewPipelineGroup[] = [
     home: "next-up",
     elsewhere: "in NEXT UP",
     /* Taken FIRST, ahead of every switch — reachable by his own clause. */
+    backgroundWork: false,
+  },
+  {
+    key: "research",
+    label: "Research",
+    queueLabel: RESEARCH_LABEL,
+    /**
+     * ⚠ **HIS OWN READING OF THE PAGE, 2026-09-30 (#1548): TWO OF HIS RESEARCH
+     * TEAM'S CARDS SAT UNDER *Other*, ASKING HIM FOR A SWITCH LABEL THEY MUST
+     * NEVER GET.** `other`'s blurb is *"worth a look, they may want a
+     * category"*, and `backgroundWork: true` made his page add *"Real work — it
+     * only wants a switch label from you."* Both sentences are true of the
+     * population `other` was built for and **false of a proposal**: #1465 and
+     * #1535 are his Grok team's findings, posted to his Notion desk, and the
+     * only thing that ever brings one here is HIS approval — at which point it
+     * arrives as ordinary work without this label (the relay's scope note on
+     * #1548). So the page was asking him to file a decision he had already been
+     * given a better place to make.
+     *
+     * ⚠ **IT SITS BELOW `ordered`, AND THAT IS THE ONE PLACEMENT THAT IS NOT
+     * FREE.** `research` + `founder-ordered` should not exist — an approved
+     * proposal drops this label — but if it ever does, filing it here would draw
+     * the card in this block while the live desk's NEXT UP still derives from
+     * the `founder-ordered` query, showing him one card twice. The one-place
+     * rule outranks this group's words. For the same reason it is below
+     * `switched`: a card carrying a work label stays the switch panel's
+     * responsibility, and `crewQueueExclusions.ts`'s own `research` row is what
+     * keeps it off the offer there — by name, not by the accident of a missing
+     * category.
+     */
+    blurb: "Your team's proposals — never work for a seat. Decided on your Notion desk; a finding you approve becomes its own card.",
+    home: "here",
+    elsewhere: null,
+    /**
+     * ⚠ **`false` IS THE WHOLE FIX, AND IT IS THE FIELD RATHER THAN A THIRD
+     * SENTENCE.** It does two things at once and neither is a claim written
+     * twice: `backgroundWorkSentence` stops asking him for a switch label and
+     * reads *"Not ordinary background work: it waits by design"*, and
+     * `CREW_UNREACHABLE_GROUP_KEYS` — which every shift start prints as work no
+     * switch can offer — stops counting these as work waiting for one. The
+     * derived sentence is imprecise about WHAT it waits on; the blurb above says
+     * *your Notion desk*, and #1248's rule is that only one of the two may make
+     * the claim.
+     */
     backgroundWork: false,
   },
   {
