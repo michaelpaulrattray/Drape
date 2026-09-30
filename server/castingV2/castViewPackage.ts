@@ -577,6 +577,19 @@ type CastPackageView = {
    * it does not contain.
    */
   belowWaist?: boolean;
+  /**
+   * ⚠ DOES THIS VIEW TURN THE SUBJECT AWAY FROM THE MASTER'S FRONT-ON FRAMING —
+   * the views a Sign buys that rotate her, and the only ones a
+   * which-side-are-you-looking-at sentence has any business reaching (#1579).
+   *
+   * Declared per view for the same reason `belowWaist` is, one line above: a
+   * sixth view states its own answer rather than being caught by a regex on
+   * "side" or "back", and absent means no — which is the safe direction here
+   * too, because a front-on view told that the sides may have swapped has been
+   * handed a licence it has no use for, and #1582 measured on the same day what
+   * a clause costs when it reaches a view whose test it does not fit.
+   */
+  rotated?: boolean;
 };
 
 const WARDROBE = CAST_PACKAGE_WARDROBE_SPEC;
@@ -718,6 +731,9 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
       "RIGHT-FACING THREE-QUARTER PORTRAIT. Head and shoulders only. The subject's nose points "
       + "diagonally toward the RIGHT EDGE OF THE OUTPUT FRAME at a 45-degree turn; both eyes remain "
       + "visible. Never mirror the direction. The entire hair silhouette stays inside the frame.",
+    /* A 45-degree turn already hides part of the far side and foreshortens the
+       rest, which is enough for the confusion #1579 measured at ninety. */
+    rotated: true,
   },
   frontFull: {
     angle: "frontFull",
@@ -827,6 +843,9 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
       "STRICT RIGHT-FACING SIDE PROFILE PORTRAIT. Head and shoulders only. The subject's nose points "
       + "toward the RIGHT EDGE OF THE OUTPUT FRAME; show one eye and a true 90-degree profile, never a "
       + "three-quarter view.",
+    /* The view #1579 was measured on: her bare shoulder is the near side here
+       and the draped sleeve hangs behind her. */
+    rotated: true,
   },
   /*
     RETIRED FROM THE PROFILE, kept in the record (package v2).
@@ -864,6 +883,9 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
       somebody un-retires it — the historical record kept, and kept consistent.
     */
     belowWaist: true,
+    /* Retired from the profile and flagged anyway, on the sibling-consistency
+       ground its `belowWaist` comment above states. */
+    rotated: true,
   },
   backFull: {
     angle: "backFull",
@@ -888,6 +910,9 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
       + "The face is not visible. Add nothing to the back or arms that neither the references "
       + "nor the words above establish.",
     belowWaist: true,
+    /* Seen from directly behind, left and right are mirrored — the plainest
+       case of the confusion #1579 measured at ninety degrees. */
+    rotated: true,
   },
 };
 
@@ -1003,16 +1028,75 @@ export function wardrobeSpecFor(
     `CLOSE_UP_WARDROBE`). Only the shared sentence has a described form.
   */
   if (base !== CAST_PACKAGE_WARDROBE_SPEC) return base;
-  if (wardrobeLine !== null) return castPackageWardrobeSpec(wardrobeLine, pronouns);
+  if (wardrobeLine !== null) return castPackageWardrobeSpec(wardrobeLine, pronouns) + sideClauseFor(angle);
   /*
     #1278 part 1. The stored-line road is FIRST because a line is the stronger
     record when one exists — though none ever has: read at the rows 2026-09-26,
     0 of 6 minted casts carry `technicalSchema.wardrobe.line`, all time, the two
     signed the day before included.
   */
-  return description === null
+  return (description === null
     ? sharedWardrobeSpec(pronouns)
-    : describedWardrobeSpec(pronouns, outfitReferenceOrdinal);
+    : describedWardrobeSpec(pronouns, outfitReferenceOrdinal))
+    + sideClauseFor(angle);
+}
+
+/**
+ * ⚠ **A ROTATED VIEW SHOWS THE OTHER SIDE OF HER, AND NOTHING TOLD THE JUDGE SO
+ * — #1579.**
+ *
+ * # What a customer was losing
+ *
+ * A cast whose outfit differs left from right — one bare shoulder, one draped
+ * sleeve — could lose her side profile and be refunded 50 credits for it, **at
+ * random, on a picture that is correct.** Measured on his own cast 56, ten
+ * identical reads of one delivered side view with everything held fixed: the
+ * wardrobe axis refused **2 to 4 times out of 10**, while her other axes came
+ * back identical every time.
+ *
+ * The judge's own words for it, verbatim: *"Sleeveless harness top now shows a
+ * bare shoulder, whereas the reference had a long draped sleeve/robe covering
+ * that arm."* **Both halves of that are true and the conclusion is wrong** — the
+ * reference does show a draped sleeve, over the OTHER arm. Her master is
+ * chest-up and front-on; the profile turns her ninety degrees, so the bare
+ * shoulder is now the near side and the robe hangs behind her.
+ *
+ * Reproduced independently while #1582 was being courted, on the same cast and
+ * the same delivered frame: the wardrobe axis refused 1 to 4 times in 5 across
+ * four separate five-read arms, with the judge saying *"The flowing dark
+ * robe/kimono layer over the shoulder seen in the reference is missing."*
+ *
+ * # Why the repair is a per-view clause and not an edit to the shared sentence
+ *
+ * The card's own reason for filing rather than fixing was that the obvious
+ * repair edits `sharedWardrobeSpec`, **which reaches every axis on every signed
+ * cast** — and #1229 is the standing card about not doing that lightly. So this
+ * is composed per angle instead, off the `rotated` flag each view declares for
+ * itself, and a front-on view's bytes do not move at all. `closeUp` never sees
+ * it: it returns before this point and has no rotation to explain.
+ *
+ * ⚠ **It removes a false failure and licenses nothing.** It says the two frames
+ * do not show the same sides of her body; it does not say a different garment is
+ * acceptable, and the *same outfit, same garments, same colours* clause it is
+ * appended to is untouched. Stated out loud because a wardrobe clause that
+ * widens is a slice that stops being refunded, and its own guard arm drives it.
+ *
+ * ⚠ **AND IT GOES TO THE GENERATOR TOO, WHICH IS THIS FILE'S OWN RULE RATHER
+ * THAN AN OVERSIGHT**: `wardrobeSpecFor` has one caller on each road by design,
+ * because two authors of one outfit sentence is how a judge comes to fail a view
+ * for wearing what the prompt asked for. The sentence is true of the render as
+ * well as of the reading — an asymmetric outfit SHOULD present its near side
+ * here — so one copy serves both.
+ */
+function sideClauseFor(angle: CastViewAngle): string {
+  if (!VIEWS[angle].rotated) return "";
+  return " This view turns the subject away from the reference's front-on framing, so the two "
+    + "photographs do not show the same sides of her body: a garment the reference shows on one "
+    + "side of her may be the far side here — hidden behind her, or foreshortened — and what is "
+    + "nearest the camera here may be the side the reference showed least. Judge whether the SAME "
+    + "outfit is present, never whether a garment falls on the same side of the frame. An outfit "
+    + "that is different on her two sides is not a wardrobe change: the turn has changed which of "
+    + "the two you can see.";
 }
 
 /**

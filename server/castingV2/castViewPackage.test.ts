@@ -280,11 +280,31 @@ describe("the canonical view package", () => {
 
   it("holds every full view to one wardrobe, and lets the close-up be honest", () => {
     const full = CAST_PACKAGE_VIEWS.filter((angle) => angle !== "closeUp");
-    const wardrobes = new Set(full.map((angle) => packageViewExpectation(angle).wardrobe));
     // One garment contract across the views that can actually show a garment,
     // or "did the shirt change between the front and the back" is not a
     // question the judge can answer.
-    expect(wardrobes.size).toBe(1);
+    //
+    // ⚠ **THIS ARM ASSERTED BYTE-IDENTITY UNTIL #1579, AND BYTE-IDENTITY WAS
+    // ALWAYS A PROXY FOR THE PROPERTY IT IS ABOUT.** A rotated view now appends a
+    // sentence saying the turn has changed which side of her you can see — it
+    // names no garment and moves no clause of the contract, but it does make the
+    // strings differ. So the property is asserted directly instead: every view's
+    // sentence BEGINS with the same contract, and whatever follows is the
+    // rotation clause and nothing else. That is strictly stronger than the set
+    // count was — it would catch a second garment sentence smuggled in as a
+    // suffix, which `size === 1` could only have caught by accident.
+    const contract = full
+      .map((angle) => packageViewExpectation(angle).wardrobe)
+      .reduce((shortest, next) => (next.length < shortest.length ? next : shortest));
+    for (const angle of full) {
+      const wardrobe = packageViewExpectation(angle).wardrobe;
+      expect(wardrobe.startsWith(contract), `${angle}: one garment contract, appended to at most`).toBe(true);
+      const suffix = wardrobe.slice(contract.length);
+      // The suffix is the declared rotation clause or nothing — never a garment.
+      expect(suffix === "" || suffix.includes("turns the subject away"), `${angle}: ${suffix.slice(0, 60)}`).toBe(true);
+    }
+    // And the contract itself is genuinely shared rather than one view's quirk.
+    expect(new Set(full.map((angle) => packageViewExpectation(angle).wardrobe.slice(0, contract.length))).size).toBe(1);
 
     /*
       The close-up is deliberately different. At that crop the garment is often
@@ -1117,7 +1137,17 @@ describe("#1278 part 1 — a signed view is dressed by the cast's own brief", ()
     */
     let narrowed = 0;
     for (const angle of CAST_VIEW_ANGLES) {
-      if (packageViewExpectation(angle, null, null).wardrobe !== CAST_PACKAGE_WARDROBE_SPEC) continue;
+      /*
+        ⚠ **`startsWith`, NOT `!==` — AND THE DOCBLOCK ABOVE PREDICTED THIS
+        EXACT FAILURE (#1579).** A rotated view appends a sentence about which
+        side of her the turn shows, so its wardrobe string is no longer EQUAL to
+        the shared constant while still being the shared sentence. Under the old
+        equality the skip condition swallowed four of the six views and the count
+        fell to two — "a guard whose skip condition is satisfied by the defect
+        reads its own failure as not applicable", one paragraph up, arriving from
+        a direction that was not a defect at all. The floor below is unchanged.
+      */
+      if (!packageViewExpectation(angle, null, null).wardrobe.startsWith(CAST_PACKAGE_WARDROBE_SPEC)) continue;
       const described = packageViewExpectation(angle, null, SIFR).wardrobe;
       expect(described, angle).toContain("does not show AND the description does not name");
       expect(described, angle).toContain("a failure wherever they appear");
@@ -1199,5 +1229,89 @@ describe("#1278 part 1 — a signed view is dressed by the cast's own brief", ()
           .toBe(1);
       }
     }
+  });
+});
+
+/**
+ * ⚠ **A ROTATED VIEW IS TOLD THE TURN SWAPPED HER SIDES — #1579.**
+ *
+ * A cast whose outfit differs left from right — one bare shoulder, one draped
+ * sleeve — could lose her side profile and be refunded 50 credits for it, at
+ * random, on a picture that is correct. Measured on his own cast 56, ten
+ * identical reads of one delivered side view with everything held fixed: the
+ * wardrobe axis refused **2 to 4 times out of 10** while her other axes came
+ * back identical every time. The judge's own words, verbatim: *"Sleeveless
+ * harness top now shows a bare shoulder, whereas the reference had a long draped
+ * sleeve/robe covering that arm."* Both halves true, conclusion wrong — the
+ * reference shows that sleeve over the OTHER arm.
+ *
+ * **The population is DERIVED from the `rotated` flag each view declares**, not
+ * listed here, and asserted by value so a derivation that selected nothing
+ * cannot pass by selecting nothing. A front-on view must NOT carry it: a
+ * licence to expect the sides to have swapped is no use to a camera that did not
+ * move, and it is exactly the kind of clause that costs a correct picture when it
+ * reaches a view whose test it does not fit — #1582 paid 3-to-5-in-5 for that
+ * lesson on the same day, one spec along.
+ */
+describe("a rotated view knows the turn changed which side of her you see (#1579)", () => {
+  it("puts the clause on exactly the views that turn her, and on no others", () => {
+    const rotated = CAST_VIEW_ANGLES.filter((angle) => castPackageView(angle).rotated === true);
+    expect(rotated).toEqual(["threeQuarter", "sideClose", "sideFull", "backFull"]);
+
+    for (const angle of CAST_VIEW_ANGLES) {
+      const wardrobe = packageViewExpectation(angle, null, null).wardrobe;
+      const carries = wardrobe.includes("turns the subject away from the reference's front-on framing");
+      expect(carries, `${angle}: the rotation clause belongs to a rotated view and to no other`)
+        .toBe(rotated.includes(angle));
+    }
+  });
+
+  it("says what the confusion IS, so the judge has something to act on", () => {
+    const profile = packageViewExpectation("sideClose", null, null).wardrobe;
+    /* The three halves of the repair, each doing its own work: the two frames do
+       not show the same sides; judge SAMENESS rather than which side of the
+       frame; and the asymmetric outfit named as the case it is about. */
+    expect(profile).toContain("do not show the same sides of her body");
+    expect(profile).toContain("never whether a garment falls on the same side of the frame");
+    expect(profile).toContain("is not a wardrobe change");
+  });
+
+  it("⚠ licenses no outfit change — the contract it is appended to is untouched", () => {
+    /*
+      THE ARM THAT MATTERS, because a wardrobe clause that widens is a slice that
+      stops being refunded. The repair removes a FALSE failure; it must not
+      remove a true one. So the sameness contract is still there, word for word,
+      on the rotated view.
+    */
+    const profile = packageViewExpectation("sideClose", null, null).wardrobe;
+    expect(profile).toContain("the SAME outfit the reference photograph shows");
+    expect(profile).toContain("the same garments, in the same colours");
+    expect(profile.startsWith(CAST_PACKAGE_WARDROBE_SPEC)).toBe(true);
+  });
+
+  it("reaches the generator and the judge through the one function, never two", () => {
+    /*
+      `wardrobeSpecFor` has one caller on each road by design — two authors of one
+      outfit sentence is how a judge comes to fail a view for wearing what the
+      prompt asked for, which is this file's own stated law. The sentence is true
+      of the render as well as of the reading, so one copy serves both.
+    */
+    const judge = packageViewExpectation("sideClose", null, null).wardrobe;
+    const generator = composePackageViewPrompt("sideClose", null, null);
+    expect(generator).toContain(judge);
+  });
+
+  it("CONTROL — a described cast's sentence carries it too, not only the undescribed one", () => {
+    /*
+      #1278 part 1 gave the shared sentence a second form for a cast whose brief
+      is on record, and a repair that reached only one of the two would be live
+      for today's casts and silently absent for tomorrow's — the road this
+      repository has been bitten by before. Both roads, driven.
+    */
+    const described = packageViewExpectation("sideClose", null, "a white dress with industrial straps").wardrobe;
+    expect(described).not.toBe(packageViewExpectation("sideClose", null, null).wardrobe);
+    expect(described).toContain("turns the subject away from the reference's front-on framing");
+    expect(packageViewExpectation("frontFull", null, "a white dress with industrial straps").wardrobe)
+      .not.toContain("turns the subject away");
   });
 });
