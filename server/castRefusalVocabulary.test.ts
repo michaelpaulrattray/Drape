@@ -62,13 +62,16 @@ import path from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
 
-import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 import { readListedSource } from "./testing/listedSource";
 
-/* Its arms walk every tracked server module, and under the parallel run that
-   cost multiplies against vitest's 5,000 ms default. File level, never per arm
-   (#741). */
-vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
+/* ⚠ THIS SUITE IS IN BOTH TIMEOUT POPULATIONS AND DECLARES THE CHILD-PROCESS
+   ONE, which is the same answer `contendedTestTimeouts.test.ts` gives for
+   itself in its own header: it runs `git ls-files` (#548's population) and then
+   reads every tracked server module through the sanctioned reader (#741's), and
+   EITHER constant lifts a file off vitest's 5 s default, which is the whole
+   property both guards are about. Both are 30_000. File level, never per arm. */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const REPO = path.resolve(__dirname, "..");
 
