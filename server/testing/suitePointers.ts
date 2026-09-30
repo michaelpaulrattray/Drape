@@ -91,6 +91,20 @@ export type PointerReading = {
  * instead of a mystery.
  */
 export const DELIBERATELY_ABSENT: Record<string, { readonly why: string }> = {
+  "falSignViewWire.test.ts": {
+    why:
+      "Deleted with `createFalSunburstViewEngine` (#1554, 2026-09-30, on his word 'DELETE'). " +
+      "It was the factory's OWN suite and its only importer: it drove that factory's wire — " +
+      "the edit-door endpoint, the pinned `SIGNED_VIEW_SIZE`, the `2K`-only refusal and the " +
+      "missing-key refusal — and referenced nothing that survives the deletion, so it was " +
+      "coverage of the thing removed rather than of anything left standing. " +
+      "⚠ THE ONE CLAIM WORTH ASKING ABOUT IS THE DOOR, AND IT IS STILL DRIVEN: " +
+      "`signViewEngineChain.test.ts` reads Sunburst's edit endpoint off the PLATE's outgoing " +
+      "request at the wire and reads Nano Banana Pro's off a delivered view's, which is the " +
+      "same pair of facts pointed at the two roads that are actually walked. That file names " +
+      "this one in its own header, in the past tense, explaining what stood there and why " +
+      "nothing is uncovered — which is the provenance a later reader needs.",
+  },
   "castingV2-segment-store-db.test.ts": {
     why:
       "Deleted with the segment store's database layer (#1160 slice 3, 2026-09-25, on his " +

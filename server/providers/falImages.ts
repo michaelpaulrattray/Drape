@@ -204,9 +204,16 @@ export const FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE = 0.099;
  * canvas costs more, and this number is the 1024x1536 sheet size only."*
  *
  * So the measurement is recorded where a SIZE can be recorded beside it — on
- * `createFalSunburstViewEngine` below, in the two court records, and in the
- * capability atlas — and a size-keyed price is the card this would need.
- * `undefined` here stays the honest answer for both roads.
+ * {@link createFalSunburstPlateEngine} below, in the two court records
+ * (`docs/specs/SIGN_ENGINE_COURT_2026-09-26.md` and
+ * `SIGN_OUTFIT_COURT_2026-09-27.md`), and in the capability atlas — and a
+ * size-keyed price is the card this would need. `undefined` here stays the
+ * honest answer for both roads.
+ *
+ * ⚠ **THIS SENTENCE NAMED `createFalSunburstViewEngine` UNTIL 2026-09-30
+ * (#1554, his word: "DELETE").** That factory is gone; the band it recorded is
+ * the same band, at a pixel budget within 1% of the plate's, and it is written
+ * out in full on the plate engine below rather than cited from a dead one.
  *
  * These numbers are repeated from `FAL_MEASURED_USD` in `scripts/lib/falSpend.mts`
  * rather than imported, for that module's own stated reason — it stays outside
@@ -444,6 +451,19 @@ export function createFalMaskedEditEngine(config: FalCreativeConfig) {
  * For scale: Nano Banana Pro's `2K` tier returned **1696x2528** (4.29 MP), so a
  * signed view is about twice the pixels it was, and the files roughly double
  * with it (measured across 24 renders in #1451: 5.0 MB against 9.4 MB).
+ *
+ * ⚠ **NOTHING ASKS FOR IT ANY MORE — IT IS A MEASUREMENT NOW, NOT AN ASK, AND
+ * THAT IS SAID HERE RATHER THAN LEFT TO BE DISCOVERED (#1554, 2026-09-30).**
+ * `createFalSunburstViewEngine` was the one caller that sent it and it is
+ * deleted on his word; the delivered views are Nano Banana Pro's at `2K` and do
+ * not name a pixel size at all. It is kept exported for the two readers that
+ * still need the number: {@link OUTFIT_PLATE_SIZE}'s docblock reasons from it
+ * (a plate is the same pixel budget in landscape, 8.19 MP against 8.24 MP), and
+ * `signViewEngineChain.test.ts` holds the plate's outgoing `image_size` NOT
+ * equal to it — the arm that reddens if the plate is ever sized as a portrait
+ * view. **An export whose only reader is a test is the shape the uncalled-export
+ * sweep exists to find, so it is dispositioned here instead of found there:
+ * the measurement is the asset, the factory was not.**
  */
 export const SIGNED_VIEW_SIZE = { width: 2352, height: 3504 } as const;
 
@@ -464,186 +484,6 @@ export const SIGNED_VIEW_SIZE = { width: 2352, height: 3504 } as const;
  * carried exactly ONE reference. The ceiling has never been approached.
  */
 const SIGNED_VIEW_MAX_REFERENCES = 14;
-
-/**
- * GPT Image 2.5 Sunburst at `high`, on the edit door.
- *
- * ⚠ **NOTHING CALLS THIS TODAY, AND THAT IS SAID HERE RATHER THAN LEFT TO BE
- * DISCOVERED (#1278 path E, 2026-09-29).** It was the Sign's view engine for
- * two days. Path E moved the delivered views back to Nano Banana Pro on his
- * later word — *"NBP2k was a better quality rersult though"* — and gave
- * Sunburst the WARDROBE PLATE instead. So this factory is wired to nothing but
- * its own suite (`falSignViewWire.test.ts`).
- *
- * ⚠ **This paragraph read "…which is a generation and goes through the
- * text-to-image door" until #1471 (2026-09-29) and that half is now false.**
- * The plate edits from the master on HIS ruling, so
- * {@link createFalSunburstPlateEngine} is on THIS door, with this body, and
- * differs from this factory in `image_size` alone. What still separates them is
- * only the size, and what still leaves this one unwired is only that the
- * delivered views are Nano Banana Pro's.
- *
- * **It is kept rather than deleted, deliberately, and the reason is a date:**
- * his ruling on which engine dresses and which engine renders has moved three
- * times in four days (#1394 keep NBP, #1459 move to Sunburst, path E split the
- * two jobs), each move measured on his own fixtures. This is the tested,
- * courted Sunburst-at-2352x3504 door, and re-deriving it from memory the next
- * time he moves would be the worse trade. **An unwired export left unnamed is
- * this repository's own path-three defect**, so it is named here and on #1278
- * instead of sitting quietly with a green suite in front of it.
- *
- * The record below is unchanged and is what the courts measured.
- *
- * **His word, 2026-09-27 (terminal), verbatim and entire**, closing the outfit
- * court (#1451) on his own Sifr after the engine court (#1394):
- *
- * > *"sunburst produced the best result easily . i guess we will have to settle
- * > on sunburst high then and compromise on that additional detail from NBP
- * > 2k"*
- *
- * It supersedes his provisional *"keep NBP 2k for signing views"* of the same
- * morning, given before the outfit frames reached his Desk. Both courts asked
- * the question the disappearing-technology law's clause 2 requires — a
- * measurement on HIS fixtures, never a leaderboard — and clause 3's other half
- * is stated here beside the choice rather than left in a document:
- *
- *   price     $0.14-$0.15 a picture at this size, which is Nano Banana Pro's
- *             published $0.15 to within a cent and a half. THREE readings, all
- *             n=1 or near it and none of them settling the last cent:
- *             #1394's price phase, a SETTLED balance either side of one render,
- *             **$0.14** (14.77 -> 14.63); #1451's 24-render window, dividing to
- *             **$0.1429** with the residue putting Sunburst at ~$0.136; and
- *             #1459's own drive through this engine, **$0.15** (21.68 ->
- *             settled 21.53). The band is stated rather than the middle of it,
- *             because fal's balance is quantised to the cent and a one-render
- *             subtraction cannot resolve finer than that. It is NOT in
- *             `FAL_MEASURED_USD_PER_IMAGE` — see the note there; that table is
- *             keyed on MODEL and this engine's price moves with the SIZE.
- *   latency   ~52 s a picture against ~29 s (#1451, p95 65.5 s). A five-view
- *             Sign at `SIGN_VIEW_CONCURRENCY` 3 is two waves either way:
- *             ~104 s against ~58 s. He accepted this cost in the same sentence
- *             he chose the engine.
- *   quality   NOT stated here. Working law 9 — his eye closed it, and the
- *             compromise is his own: *"compromise on that additional detail"*,
- *             i.e. less skin and hair texture than Nano Banana Pro 2K.
- *
- * # Why this is a SECOND engine and not a changed default
- *
- * `createFalIdentityEngine` is Nano Banana Pro, and the Sign is not its only
- * customer: `refineService.ts` renders the paid non-repaint edit through the
- * same factory at `1K`. His word moved THE SIGNED VIEWS and nothing else, so
- * pointing that factory at another door would have moved a second paid road he
- * did not rule on. This engine served `packageOrchestrator`'s attempt loop —
- * the Sign and a Try again, which must be one engine or one cast wears two
- * looks — and nothing else.
- *
- * ⚠ **THAT SENTENCE WAS IN THE PRESENT TENSE UNTIL 2026-09-30 (#1538), SIXTY-FIVE
- * LINES BELOW THE ⚠ AT THE TOP OF THIS BLOCK THAT ALREADY SAID NOTHING CALLS
- * IT.** One docblock held both readings for a day and a half, and the newer one
- * is the one nobody reached: `CLAUDE.md`'s `FAL_KEY` locator cited this factory
- * as what a signed view renders on, which is this paragraph's claim rather than
- * the one above it. **A correction added at the top of a block does not retire a
- * live-tense sentence further down** — the whole block is the artifact a reader
- * quotes from, and this one contradicted itself in the direction of the dead
- * road. Whether the factory is retired or kept is #1554.
- *
- * # Why the body is `createFalMaskedEditEngine`'s, field for field
- *
- * Because that is what #1394 and #1451 measured. Both courts sent their
- * Sunburst arms through `runFalImageJob` with this exact body (a court could
- * not use the factory itself: it pins `quality: "high"` and #1394 had to ask
- * for `"max"` as well). A swap shipping a different body would be shipping
- * something no court has seen.
- *
- * # It renders the signed-view TIER and refuses anything else
- *
- * `IdentityEditRequest.resolution` is Nano Banana Pro's tier vocabulary and
- * this door has one size. Silently ignoring the field is the unowned-axis
- * defect — a caller asking for `4K` would be answered 2352x3504 with nothing
- * saying so — so `2K`, the signed-view tier, is the only value this engine
- * accepts, and it fails before dispatch rather than after the money moves.
- */
-export function createFalSunburstViewEngine(config: {
-  apiKey: string;
-  model?: string;
-  timeoutMs?: number;
-  pollIntervalMs?: number;
-  queue?: ProviderQueue;
-}): IdentityEngine {
-  if (!config.apiKey) {
-    /* Refused at construction, in one sentence, rather than discovered inside a
-       request that has already taken a customer's 450 credits. */
-    throw new ProviderError("capability", "signing views needs FAL_KEY to render");
-  }
-  const model = config.model ?? FAL_GPT_IMAGE_25_SUNBURST_EDIT;
-  const timeoutMs = config.timeoutMs ?? 300_000;
-  const pollIntervalMs = config.pollIntervalMs ?? 1_500;
-  const queue =
-    config.queue ?? new ProviderQueue({ name: "fal-sign-views", concurrency: 3, maxQueueDepth: 32 });
-
-  async function edit(request: IdentityEditRequest): Promise<ImageResult> {
-    if (request.resolution !== "2K") {
-      throw new ProviderError(
-        "capability",
-        `the sign view engine renders the 2K signed-view tier only — asked for ${request.resolution}`,
-      );
-    }
-    if (request.references.length > SIGNED_VIEW_MAX_REFERENCES) {
-      throw new ProviderError("capability", "too many reference images for this engine");
-    }
-
-    return queue.run("signView", () =>
-      withRetry(
-        "fal.signView",
-        async () => {
-          const job = await runFalImageJob({
-            apiKey: config.apiKey,
-            endpoint: model,
-            body: {
-              prompt: request.prompt,
-              image_urls: request.references.map(
-                (reference) =>
-                  `data:${reference.contentType};base64,${reference.bytes.toString("base64")}`,
-              ),
-              image_size: SIGNED_VIEW_SIZE,
-              num_images: 1,
-              quality: "high",
-              output_format: "png",
-            },
-            timeoutMs,
-            pollIntervalMs,
-            signal: request.signal,
-          });
-
-          return {
-            bytes: job.bytes,
-            contentType: job.contentType,
-            width: job.width,
-            height: job.height,
-            latencyMs: job.latencyMs,
-            /* The endpoint that actually painted, never a constant — a gap
-               reads as UNPRICED rather than as another engine's price, and
-               this door is deliberately absent from the measured table. */
-            estimatedCostUsd: measuredUsdPerImage(model),
-            provenance: { provider: "fal" as const, model, providerRef: job.requestId },
-          };
-        },
-        { signal: request.signal },
-      ),
-    );
-  }
-
-  return {
-    id: `fal:${model}`,
-    editWithReferences: edit,
-    async generateView(request: IdentityEditRequest & { viewAngle: string }): Promise<ImageResult> {
-      /* The angle folded into the instruction exactly as `falQueue` folds it,
-         because both courts composed their prompts through THAT function and
-         the words are the one thing this swap must not change. */
-      return edit({ ...request, prompt: `${request.prompt}\n\nView: ${request.viewAngle}.` });
-    },
-  };
-}
 
 /**
  * THE OUTFIT PLATE'S ASK — one landscape frame holding two panels.
@@ -720,35 +560,49 @@ export const OUTFIT_PLATE_SIZE = { width: 3504, height: 2336 } as const;
  * photograph shows"* — a sentence addressed to a reference the request did not
  * carry.
  *
- * So the plate is an EDIT now, on the same door `createFalSunburstViewEngine`
- * uses and the road #1451 measured — the one his eye chose on the outfit court
- * (*"sunburst produced the best result easily"*). The master is its reference;
- * the person in the plate is therefore HER, and the two references a
- * full-length view carries agree on identity by construction rather than by
- * instruction.
+ * So the plate is an EDIT now, on the road #1451 measured — the one his eye
+ * chose on the outfit court (*"sunburst produced the best result easily"*). The
+ * master is its reference; the person in the plate is therefore HER, and the
+ * two references a full-length view carries agree on identity by construction
+ * rather than by instruction.
  *
- * # Why it is still a separate factory from {@link createFalSunburstViewEngine}
+ * # ⚠ IT IS THE ONLY FACTORY ON THIS DOOR THAT SIZES ITS OWN ASK — #1554
  *
- * ⚠ **The DOOR is no longer one of the reasons — SIZE is, and it is the whole
- * of it.** That factory pins {@link SIGNED_VIEW_SIZE} and refuses any
- * resolution but `2K`, deliberately, so a caller cannot be answered a size it
- * did not ask for. A plate is landscape and twice as wide, so it cannot ride
- * that constant — and loosening the view engine to take a size would put the
- * Sign's own picture size behind a parameter for the sake of a road that is not
- * the Sign's picture. The two factories now differ in exactly one field of the
- * body, `image_size`, and that is honest: they are the same door asked for two
- * shapes.
+ * `createFalSunburstViewEngine` stood beside it until 2026-09-30, pinning
+ * {@link SIGNED_VIEW_SIZE} and refusing any resolution but `2K`. It was the
+ * Sign's view engine for two days; path E gave the delivered views back to Nano
+ * Banana Pro and gave Sunburst the plate, and it sat from then on wired to
+ * nothing but its own suite. **His word closes it, verbatim and entire:
+ * *"DELETE"*.** The two differed in exactly one field of the body,
+ * `image_size`, so nothing about this door's behaviour is lost with it — what
+ * WOULD have been lost is its measured record, which is why the band below is
+ * written out here rather than cited from it.
+ *
+ * `createFalMaskedEditEngine` is the other body on this door and takes the
+ * master's own pixels rather than an `image_size`, which is why a size-keyed
+ * price cannot go in {@link FAL_MEASURED_USD_PER_IMAGE}.
  *
  * # What it costs, stated beside the choice (disappearing-technology law, 3)
  *
- *   price     one extra render per Sign, $0.14–$0.15 at this size — the band
- *             `createFalSunburstViewEngine` records, unchanged here because
- *             the pixel budget is within 1% of a signed view's. House money;
- *             no customer credit moves, and the Sign's 450 is untouched.
- *   latency   ~52 s, one render, and it runs IN PARALLEL with the three views
- *             that do not wait for it — so what a customer waits is not 52 s
- *             added, it is the plate's render standing where the full-length
- *             pair's would have started.
+ *   price     one extra render per Sign, $0.14–$0.15 at this size. THREE
+ *             readings at 2352x3504, all n=1 or near it and none of them
+ *             settling the last cent — #1394's price phase took a SETTLED
+ *             balance either side of one render, **$0.14** (14.77 → 14.63);
+ *             #1451's 24-render window divides to **$0.1429**, the residue
+ *             putting Sunburst at ~$0.136; #1459's drive through the shipped
+ *             engine read **$0.15** (21.68 → settled 21.53). The band is stated
+ *             rather than the middle of it, because fal's balance is quantised
+ *             to the cent and a one-render subtraction cannot resolve finer.
+ *             It carries over to a plate unchanged because the pixel budget is
+ *             within 1% of a signed view's (8.19 MP against 8.24 MP). House
+ *             money; no customer credit moves, and the Sign's 450 is untouched.
+ *   latency   ~52 s a picture at this size against Nano Banana Pro's ~29 s
+ *             (#1451, p95 65.5 s), and one render, running IN PARALLEL with
+ *             the three views that do not wait for it — so what a customer
+ *             waits is not 52 s added, it is the plate's render standing where
+ *             the full-length pair's would have started. Re-measured on the
+ *             EDIT door with a master to read (#1471): 70.8 s on Sifr, 55.9 s
+ *             on the creature.
  *   quality   his eye, on a real Sign's strip (law 9). Not claimed here.
  */
 export function createFalSunburstPlateEngine(config: {

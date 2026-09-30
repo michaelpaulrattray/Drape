@@ -2,10 +2,18 @@
  * WHAT A SIGNED VIEW IS REALLY RENDERED BY — the whole chain, at the wire
  * (#1459).
  *
- * `falSignViewWire.test.ts` proves the ENGINE dispatches to Sunburst's edit
- * door. This proves the ROAD reaches that engine: `renderViewAttempts` built
- * with no `identityEngine` override, so the default the Sign and a Try again
- * actually take is the thing under test.
+ * This proves the ROAD reaches its engine: `renderViewAttempts` built with no
+ * `identityEngine` override, so the default the Sign and a Try again actually
+ * take is the thing under test.
+ *
+ * ⚠ **AND IT IS THE ONLY THING PROVING IT NOW — #1554, 2026-09-30.** This
+ * paragraph opened by naming `falSignViewWire.test.ts`, which proved the
+ * FACTORY dispatched to Sunburst's edit door. That factory
+ * (`createFalSunburstViewEngine`) had had no production caller since path E,
+ * and its suite went with it on his word (*"DELETE"*). Nothing is uncovered by
+ * that: the plate arms below read the edit door at the wire, and the delivered
+ * view's arm reads Nano Banana Pro's, which is the pair of facts the deleted
+ * suite's one live claim was a third witness to.
  *
  * ⚠ **THAT SEAM WAS OPEN AND NOTHING WAS IN IT.** Every one of the eight
  * `identityEngine:` injections in this tree hands the loop a double, so before
