@@ -4,8 +4,13 @@ import { ProviderError, type TextEngine, type TextRequest } from "../providers/t
 import { CAST_PACKAGE_VIEWS } from "./castViewPackage";
 import {
   CONFORMANCE_AXES,
+  REFUSING_AXIS,
+  conformanceProvenance,
   createViewConformanceJudge,
   forcedFailAnglesFromEnv,
+  viewConformanceRefuses,
+  viewDeliveredUnchecked,
+  type ViewConformanceVerdict,
 } from "./viewConformance";
 
 /**
@@ -355,5 +360,179 @@ describe("the judge's identity axis reads her markings", () => {
     /* And it is the IDENTITY axis that gained them, not some other line. */
     const identityLine = system.split(" 2. angle")[0];
     expect(identityLine).toContain("tattoos and ink");
+  });
+});
+
+/**
+ * ⚠ **THE RULE ITSELF — #1612 part 2, his ruling 2026-09-30.**
+ *
+ * `viewConformanceRefuses` is one line of code and it decides whether a paying
+ * customer keeps a picture, so it is driven here as a pure function as well as
+ * through the loop: the orchestrator's arms prove the money, these prove the
+ * rule, and an arm at each altitude is what stops a refactor moving one without
+ * the other noticing.
+ */
+describe("which verdict takes a picture away", () => {
+  const axis = (pass: boolean, verdict: "matches" | "differs" | "unsure") =>
+    ({ pass, verdict, note: "" });
+  const verdict = (
+    axes: Partial<Record<"identity" | "angle" | "wardrobe", "matches" | "differs" | "unsure">>,
+    extra: Partial<ViewConformanceVerdict> = {},
+  ): ViewConformanceVerdict => {
+    const word = (name: "identity" | "angle" | "wardrobe") => axes[name] ?? "matches";
+    const built = {
+      identity: axis(word("identity") === "matches", word("identity")),
+      angle: axis(word("angle") === "matches", word("angle")),
+      wardrobe: axis(word("wardrobe") === "matches", word("wardrobe")),
+    };
+    return {
+      pass: CONFORMANCE_AXES.every((name) => built[name].pass),
+      method: "judge:test",
+      axes: built,
+      ...extra,
+    };
+  };
+
+  it("refuses when identity DIFFERS", () => {
+    expect(viewConformanceRefuses(verdict({ identity: "differs" }))).toBe(true);
+  });
+
+  it("refuses when identity is UNSURE — fail-closed, on this axis only", () => {
+    expect(viewConformanceRefuses(verdict({ identity: "unsure" }))).toBe(true);
+  });
+
+  it("does NOT refuse on framing alone", () => {
+    expect(viewConformanceRefuses(verdict({ angle: "differs" }))).toBe(false);
+    expect(viewConformanceRefuses(verdict({ angle: "unsure" }))).toBe(false);
+  });
+
+  it("does NOT refuse on wardrobe alone", () => {
+    expect(viewConformanceRefuses(verdict({ wardrobe: "differs" }))).toBe(false);
+    expect(viewConformanceRefuses(verdict({ wardrobe: "unsure" }))).toBe(false);
+  });
+
+  it("does NOT refuse when both of the other two fail together", () => {
+    expect(viewConformanceRefuses(verdict({ angle: "differs", wardrobe: "differs" }))).toBe(false);
+  });
+
+  it("refuses when identity fails beside them — no axis rescues another", () => {
+    expect(
+      viewConformanceRefuses(verdict({ identity: "unsure", angle: "differs", wardrobe: "differs" })),
+    ).toBe(true);
+  });
+
+  it("does not refuse a verdict where everything matched", () => {
+    expect(viewConformanceRefuses(verdict({}))).toBe(false);
+  });
+
+  /*
+    ⚠ **THE ARM THE WHOLE RULE TURNS ON.** `unjudged`'s fail-closed default
+    writes `pass: false` on ALL THREE axes, identity included — so a rule that
+    read identity without answering `unjudged` first would refuse every view a
+    flaky judge could not reach, silently reversing D-246 through a clause about
+    a different axis. It would look like a tightening and be a regression, and
+    the only thing that catches it is an arm that says so by name.
+  */
+  it("⚠ never refuses an UNJUDGED verdict, whatever its identity axis says (D-246)", () => {
+    const down = { pass: false, note: "the view could not be checked" };
+    expect(
+      viewConformanceRefuses({
+        pass: false,
+        method: "unavailable",
+        unjudged: true,
+        axes: { identity: { ...down }, angle: { ...down }, wardrobe: { ...down } },
+      }),
+    ).toBe(false);
+  });
+
+  it("⚠ CONTROL — the forced-fail switch is NOT unjudged, so it still refuses", () => {
+    const forced = { pass: false, note: "forced failure switch" };
+    expect(
+      viewConformanceRefuses({
+        pass: false,
+        method: "forced",
+        axes: { identity: { ...forced }, angle: { ...forced }, wardrobe: { ...forced } },
+      }),
+    ).toBe(true);
+  });
+
+  it("names its axis once, where the rule reads it", () => {
+    expect(REFUSING_AXIS).toBe("identity");
+    expect(CONFORMANCE_AXES).toContain(REFUSING_AXIS);
+  });
+});
+
+/**
+ * ⚠ **WAS IT DELIVERED WITHOUT A COMPLETE CHECK — read at the row.**
+ *
+ * This is what turns a slot into `Unchecked · Try again` at a price of zero, so
+ * every arm below is a money arm. Its population was measured on production
+ * before it was written: 46 landed views with a full judged record, 3 with
+ * `unavailable`, **20 with no conformance key at all**, and **0 carrying a
+ * failing axis** — the last number is why the second road below moves no
+ * history, and the third is why absence is not read as failure.
+ */
+describe("was this view delivered unchecked", () => {
+  it("YES when nobody looked — the D-246 road, an equality on a contract value", () => {
+    expect(viewDeliveredUnchecked({ conformanceMethod: "unavailable" })).toBe(true);
+  });
+
+  it("YES when somebody looked and an axis did not hold — the #1612 road", () => {
+    expect(viewDeliveredUnchecked({
+      conformanceMethod: "judge:test",
+      conformance: {
+        identity: { pass: true, note: "" },
+        angle: { pass: false, note: "loose" },
+        wardrobe: { pass: true, note: "" },
+      },
+    })).toBe(true);
+  });
+
+  it("NO when all three axes passed under a real judge", () => {
+    expect(viewDeliveredUnchecked({
+      conformanceMethod: "judge:test",
+      conformance: {
+        identity: { pass: true, note: "" },
+        angle: { pass: true, note: "" },
+        wardrobe: { pass: true, note: "" },
+      },
+    })).toBe(false);
+  });
+
+  it("⚠ NO when there is no conformance record at all — 20 live rows, unchanged", () => {
+    expect(viewDeliveredUnchecked({ provider: "fal", engine: "fal-ai/nano-banana-pro" })).toBe(false);
+    expect(viewDeliveredUnchecked({ conformanceMethod: "judge:test" })).toBe(false);
+  });
+
+  it("NO on a row with no provenance at all, rather than throwing on it", () => {
+    expect(viewDeliveredUnchecked(null)).toBe(false);
+    expect(viewDeliveredUnchecked(undefined)).toBe(false);
+    expect(viewDeliveredUnchecked("not an object")).toBe(false);
+  });
+
+  it("reads only RECORDED axes — a half-written record is not a failing one", () => {
+    expect(viewDeliveredUnchecked({
+      conformanceMethod: "judge:test",
+      conformance: { identity: { pass: true, note: "" } },
+    })).toBe(false);
+  });
+
+  /*
+    The two roads are ONE reading on purpose: `conformanceProvenance` writes the
+    record and this reads it, in the same file. The projection used to keep its
+    own copy of the equality, which is working law 4's shape on a surface where
+    drift means the room offering a free Try again the entrance charges for.
+  */
+  it("is the reading the stored provenance is written for", () => {
+    const written = conformanceProvenance({
+      pass: false,
+      method: "judge:test",
+      axes: {
+        identity: { pass: true, verdict: "matches", note: "" },
+        angle: { pass: false, verdict: "unsure", note: "" },
+        wardrobe: { pass: true, verdict: "matches", note: "" },
+      },
+    });
+    expect(viewDeliveredUnchecked(written)).toBe(true);
   });
 });

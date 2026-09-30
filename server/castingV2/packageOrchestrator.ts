@@ -26,6 +26,16 @@
  *    broken checker still took a customer's money for a picture that may have
  *    been perfect — and the frame was deleted on the way out, so nobody could
  *    ever tell which it had been.
+ *
+ *    ⚠ **AND SINCE #1612 PART 2 THE REJECTION HALF IS NARROWED TO ONE AXIS —
+ *    his ruling, 2026-09-30.** *"A view the judge looked at and rejected still
+ *    fails and refunds"* is true now only of IDENTITY. A framing or wardrobe
+ *    rejection delivers the picture, charged and marked unchecked, with the
+ *    free Try again. It is the same founder ruling one step further: the
+ *    detector was not merely unreachable sometimes, it was measurably WRONG
+ *    about framing — all 8 refusals this product ever made were framing or
+ *    wardrobe, none was identity, and four of the eight are the four cards
+ *    behind #1612. The rule and the rows are on {@link viewConformanceRefuses}.
  * 2. **TWO BUDGETS, BECAUSE "WE DECIDED IT WAS WRONG" AND "IT NEVER CAME" ARE
  *    NOT THE SAME EVENT** (founder, 2026-09-25, on his Sifr cast, #1208).
  *    Asked whether a failed view should keep retrying or offer a button, his
@@ -33,7 +43,12 @@
  *
  *    - A view the judge LOOKED AT AND REJECTED keeps its one regeneration, on
  *      the legacy back-view gate's own reasoning (D-39/D-40): a second attempt
- *      is worth its cost, a third is a slot machine.
+ *      is worth its cost, a third is a slot machine. ⚠ **Since #1612 part 2
+ *      that budget is spent on an IDENTITY rejection and nothing else** — a
+ *      framing or wardrobe rejection delivers the frame in hand, so there is
+ *      nothing to redraw and no picture to throw away in order to redraw it.
+ *      A regeneration is now only ever bought to replace a picture of the
+ *      wrong person.
  *    - A view that NEVER ARRIVED — the engine errored, the read timed out, the
  *      connection dropped — is not a slot machine and never was. It is our
  *      failure to deliver something already paid for, and it is retried up to
@@ -134,7 +149,12 @@ import {
   type OutfitPlateEngine,
   type OutfitReference,
 } from "./outfitPlate";
-import { conformanceProvenance, type ViewConformanceJudge, type ViewConformanceVerdict } from "./viewConformance";
+import {
+  conformanceProvenance,
+  viewConformanceRefuses,
+  type ViewConformanceJudge,
+  type ViewConformanceVerdict,
+} from "./viewConformance";
 
 const log = createModuleLogger("castingV2/packageOrchestrator");
 
@@ -968,6 +988,13 @@ export async function renderViewAttempts<T>(
           So it delivers, loudly. The alarm is the log line and the `unjudged`
           flag on the row; the guarantee Sign sells is not weakened, because a
           judge that DID look and DID reject still refuses below.
+
+          ⚠ **AND SINCE #1612 PART 2 IT IS NO LONGER THE ONLY DELIVERING
+          BRANCH** — a judge that looked and turned the FRAMING or the WARDROBE
+          down delivers too, in the branch below. This one is still its own
+          case and must stay first: it is the one where no opinion exists at
+          all, and `viewConformanceRefuses` reads it before it reads an axis
+          for exactly that reason.
         */
         log.error(
           { operationId: input.operationId, angle, attempt, method: verdict.method },
@@ -977,72 +1004,112 @@ export async function renderViewAttempts<T>(
       } else if (!verdict.pass) {
         const failedAxes = (Object.keys(verdict.axes) as Array<keyof typeof verdict.axes>)
           .filter((axis) => !verdict.axes[axis].pass);
-        lastReason = conformanceReason(failedAxes, verdict);
-        /*
-          KEEP THE PICTURE THE JUDGE TURNED DOWN — #1492, his own Jingu (2026-09-29).
 
-          He retried two views several times, every attempt was refused on
-          `angle`, and **the record could say "angle" and nothing else**: the
-          frame is dropped one line down and the judge's note never leaves this
-          process. So there was nothing for his eye to overrule (law 9 — *the
-          engine lies and cannot be trusted*), and nothing for a court to read
-          either. `CASTING_DIAGNOSTIC_CAPTURE_SCOPE` has stood at `users:1` on
-          production for exactly this since 2026-08-08 and this road never
-          called it.
-
-          ⚠ **ONE CALL SITE SERVES BOTH ROADS, which is why it is here and not in
-          either of them.** The Sign's five views and a Try again both render
-          through this loop, so the Sign's refusals and the retry's arrive on the
-          same terms — and the retry, which is the half he was stuck in, could
-          not have been covered from `signService` at all.
-
-          It is BEFORE the drop only for reading order; the bytes are in hand
-          either way. It cannot break the render — the capture never throws, is
-          dark on every account but his, and its failure is logged and dropped.
-        */
-        /*
-          ⚠ **`.catch()`, AND IT IS NOT BELT-AND-BRACES — THE ARM THAT FOUND
-          THIS NEEDED IT.** The capture is INSIDE this attempt loop's `try`, so
-          a keeper that threw would be caught below as an ARRIVAL failure: it
-          would spend the wrong budget (measured: three stored-and-dropped
-          objects instead of two), and the judge's refusal would be reported as
-          a view that never came back. The production capture promises never to
-          throw — and a promise in a docblock is not a control (working law 3),
-          least of all one standing between a diagnostic and a customer's money.
-        */
-        await (dependencies.capture ?? captureRefusedRender)({
-          userId: input.userId,
-          operationId: input.operationId,
-          reason: `view_refused:${failedAxes.join("+")}`,
+        if (!viewConformanceRefuses(verdict)) {
           /*
-            ⚠ **THE NAME CARRIES THE ANGLE AND THE ATTEMPT, and a key that did
-            not would be worse than no capture at all.** `diagnosticKey` is
-            `…/<userId>/<operationId>/<name>.png` — one Sign renders five angles
-            with up to two judged attempts each under ONE operation id, so a
-            bare name would have the second attempt silently overwrite the
-            picture of the first, and the pair that shows whether the engine is
-            drawing the same wrong thing twice is exactly the pair he needs.
+            ⚠ **THE JUDGE LOOKED, THE FRAMING OR THE WARDROBE DID NOT HOLD, AND
+            THE PICTURE IS STILL HERS — #1612 part 2, his ruling 2026-09-30.**
+
+            `viewConformanceRefuses` carries the whole rule and the rows behind
+            it; what belongs here is what this branch does with it, and the two
+            things it deliberately does NOT do:
+
+            1. **It does not regenerate.** The branch below spends the second
+               judged attempt on a refusal, and that is the right place for it:
+               a re-render is a gamble that throws away a picture the customer
+               could have had, and under this rule the first picture is
+               deliverable. Spending ~30–60 s and a second house render to
+               replace a deliverable frame with an unknown one — and dropping
+               the first to do it — is a decision the CUSTOMER now owns, for
+               free, through Try again. **That is the alternative that was
+               declined, and it is named rather than left as an absence.**
+            2. **It does not keep a diagnostic copy.** `captureRefusedRender`
+               below exists because a refused frame is dropped and there is
+               nothing left for his eye (#1492). This frame is not dropped —
+               it is delivered, its bytes are the customer's, and the axes that
+               did not hold are on the row beside them. A capture here would be
+               a second copy of a picture we already kept.
+
+            The row says so by construction: `conformanceProvenance` persists
+            the failing axes and `viewDeliveredUnchecked` reads them, which is
+            what turns this slot into `Unchecked · Try again` at a price of
+            zero. The customer never meets an axis name, a verdict word or a
+            percentage — the unchecked copy is the whole surface.
           */
-          frames: [{ name: `view-${angle}-attempt${attempt}`, bytes: image.bytes }],
-        }).catch((error: unknown) => {
           log.warn(
-            { err: error, operationId: input.operationId, angle, attempt },
-            "[packageOrchestrator] the refused frame was not kept — the refusal stands unchanged",
+            { operationId: input.operationId, angle, attempt, failedAxes, method: verdict.method },
+            "[packageOrchestrator] the view did not hold its framing or its wardrobe — DELIVERING it "
+            + "charged and marked unchecked with a free Try again, rather than taking away a picture "
+            + "that is still the signed likeness (#1612)",
           );
-        });
-        await drop(stored.key).catch(() => undefined);
-        stored = null;
-        log.warn(
-          { operationId: input.operationId, angle, attempt, failedAxes, method: verdict.method },
-          "[packageOrchestrator] view failed conformance",
-        );
-        /*
-          The judge LOOKED and said no. One regeneration, then its answer
-          stands — a third draw against the same judgement is the slot machine
-          D-39/D-40 named, and #1208 deliberately left this half alone.
-        */
-        if (judgedAttempts >= VIEW_JUDGED_ATTEMPTS) break;
-        continue;
+        } else {
+          lastReason = REFUSED_VIEW_REASON;
+          /*
+            KEEP THE PICTURE THE JUDGE TURNED DOWN — #1492, his own Jingu (2026-09-29).
+
+            He retried two views several times, every attempt was refused on
+            `angle`, and **the record could say "angle" and nothing else**: the
+            frame is dropped one line down and the judge's note never leaves this
+            process. So there was nothing for his eye to overrule (law 9 — *the
+            engine lies and cannot be trusted*), and nothing for a court to read
+            either. `CASTING_DIAGNOSTIC_CAPTURE_SCOPE` has stood at `users:1` on
+            production for exactly this since 2026-08-08 and this road never
+            called it.
+
+            ⚠ **ONE CALL SITE SERVES BOTH ROADS, which is why it is here and not in
+            either of them.** The Sign's five views and a Try again both render
+            through this loop, so the Sign's refusals and the retry's arrive on the
+            same terms — and the retry, which is the half he was stuck in, could
+            not have been covered from `signService` at all.
+
+            It is BEFORE the drop only for reading order; the bytes are in hand
+            either way. It cannot break the render — the capture never throws, is
+            dark on every account but his, and its failure is logged and dropped.
+          */
+          /*
+            ⚠ **`.catch()`, AND IT IS NOT BELT-AND-BRACES — THE ARM THAT FOUND
+            THIS NEEDED IT.** The capture is INSIDE this attempt loop's `try`, so
+            a keeper that threw would be caught below as an ARRIVAL failure: it
+            would spend the wrong budget (measured: three stored-and-dropped
+            objects instead of two), and the judge's refusal would be reported as
+            a view that never came back. The production capture promises never to
+            throw — and a promise in a docblock is not a control (working law 3),
+            least of all one standing between a diagnostic and a customer's money.
+          */
+          await (dependencies.capture ?? captureRefusedRender)({
+            userId: input.userId,
+            operationId: input.operationId,
+            reason: `view_refused:${failedAxes.join("+")}`,
+            /*
+              ⚠ **THE NAME CARRIES THE ANGLE AND THE ATTEMPT, and a key that did
+              not would be worse than no capture at all.** `diagnosticKey` is
+              `…/<userId>/<operationId>/<name>.png` — one Sign renders five angles
+              with up to two judged attempts each under ONE operation id, so a
+              bare name would have the second attempt silently overwrite the
+              picture of the first, and the pair that shows whether the engine is
+              drawing the same wrong thing twice is exactly the pair he needs.
+            */
+            frames: [{ name: `view-${angle}-attempt${attempt}`, bytes: image.bytes }],
+          }).catch((error: unknown) => {
+            log.warn(
+              { err: error, operationId: input.operationId, angle, attempt },
+              "[packageOrchestrator] the refused frame was not kept — the refusal stands unchanged",
+            );
+          });
+          await drop(stored.key).catch(() => undefined);
+          stored = null;
+          log.warn(
+            { operationId: input.operationId, angle, attempt, failedAxes, method: verdict.method },
+            "[packageOrchestrator] view failed conformance",
+          );
+          /*
+            The judge LOOKED and said no. One regeneration, then its answer
+            stands — a third draw against the same judgement is the slot machine
+            D-39/D-40 named, and #1208 deliberately left this half alone.
+          */
+          if (judgedAttempts >= VIEW_JUDGED_ATTEMPTS) break;
+          continue;
+        }
       }
 
       const value = await land({
@@ -1254,17 +1321,28 @@ async function judgeUnjudgedOnFailure(
   }
 }
 
-/** Customer words for a conformance failure. No judge text is ever shown. */
-function conformanceReason(
-  failedAxes: readonly string[],
-  verdict: ViewConformanceVerdict,
-): string {
-  if (verdict.unjudged) return "This view couldn't be checked";
-  if (failedAxes.includes("identity")) return "This view didn't hold the signed likeness";
-  if (failedAxes.includes("angle")) return "This view didn't come back at the angle it should";
-  if (failedAxes.includes("wardrobe")) return "This view came back in the wrong clothing";
-  return "This view didn't match what it should be";
-}
+/**
+ * THE ONE SENTENCE A REFUSED VIEW CONFESSES. No judge text is ever shown.
+ *
+ * ⚠ **IT USED TO BE A FUNCTION OF FOUR SENTENCES AND THREE OF THEM DIED WITH
+ * #1612 PART 2 — law 7's ruling sweep, asked at the closing commit rather than
+ * later: when a rule closes a path, what was bolted to it?**
+ *
+ * `conformanceReason(failedAxes, verdict)` picked identity → angle → wardrobe
+ * → a fallback. Since {@link viewConformanceRefuses} is the only road to a
+ * refusal and it refuses on identity alone, the identity clause is the only one
+ * that could ever be reached again: the angle and wardrobe sentences would have
+ * sat here looking live, unreachable, describing a refusal the product no
+ * longer makes. **They were the customer copy for the five wardrobe refusals
+ * and three angle refusals this product made in its whole history, every one of
+ * which now delivers** — the record of them is on #1612 and in git, which is
+ * where a retired sentence belongs rather than in a branch nothing can enter.
+ *
+ * The `unjudged` clause went the same way and for a sharper reason: that road
+ * has DELIVERED since D-246, so a sentence confessing it was already dead
+ * before tonight.
+ */
+const REFUSED_VIEW_REASON = "This view didn't hold the signed likeness";
 
 async function failView(
   dependencies: PackageOrchestratorDependencies,

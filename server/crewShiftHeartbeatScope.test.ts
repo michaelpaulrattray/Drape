@@ -26,12 +26,22 @@
 import { describe, expect, it } from "vitest";
 
 import { readFileSync } from "node:fs";
+import { withoutComments } from "./testing/withoutComments";
 
 const SOURCE = readFileSync("scripts/crew-shift-start.mts", "utf8");
 
-/** Strips block and line comments, so a rule quoted in prose cannot pass as code. */
+/**
+ * Strips block and line comments, so a rule quoted in prose cannot pass as
+ * code — through the shared reader (#1636), which knows string literals.
+ *
+ * ⚠ IT MUST KEEP THE LITERALS, and `heartbeatUpdate` below is the reason:
+ * it finds the UPDATE inside a TEMPLATE LITERAL and slices to the closing
+ * backtick. `withoutComments` keeps a literal and drops the comments around
+ * it, which is that contract exactly — `codeOnly`, the other half of the same
+ * walk, would empty the template and leave nothing to find.
+ */
 function stripComments(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  return withoutComments(source);
 }
 
 /** The heartbeat's UPDATE statement, as the file actually holds it. */

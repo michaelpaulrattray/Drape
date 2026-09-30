@@ -49,6 +49,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { CREW_SHIFT_STALL_MS, hasEverCheckedIn } from "../shared/crewShiftState";
+import { withoutComments } from "./testing/withoutComments";
 
 const REPO = join(__dirname, "..");
 const read = (relative: string) => readFileSync(join(REPO, relative), "utf8");
@@ -64,9 +65,7 @@ const read = (relative: string) => readFileSync(join(REPO, relative), "utf8");
  * prose or fail on history — the arm has to read what SHIPS.
  */
 function code(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, " ")
-    .replace(/^[ \t]*\/\/.*$/gm, " ");
+  return withoutComments(source);
 }
 
 /**

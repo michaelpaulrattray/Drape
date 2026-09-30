@@ -141,13 +141,44 @@ jobs:
           # A change to the review's own rules is always read (#165's
           # obligation, now a person's): the reviewer reads the change to
           # what the reviewer does.
-          if echo "$CHANGED" | grep -qxF '.github/workflows/review.yml'; then
-            echo "This diff modifies review.yml — the rules of the review itself. A review is owed."
+          #
+          # ⚠ THE RULES ARE NOT ONE FILE ANY MORE, AND THIS CHECK DID NOT KNOW
+          #   IT (#1627). It was `grep -qxF '.github/workflows/review.yml'` — an
+          #   exact match on one filename, written when the rules lived in one
+          #   file. #958 carved `money-surfaces.sh` out of both workflows so
+          #   neither could keep its own copy, and #1328 carved out
+          #   `customer-surfaces.sh` beside it; each extraction moved the bytes
+          #   without moving the guard that watched them. So a diff that
+          #   NARROWED — or emptied — the file deciding what counts as money was
+          #   triaged as an ordinary diff and merged on the gate alone. Zero
+          #   instances is luck: that file has only ever been widened.
+          #
+          # ⚠ DERIVED, NEVER TYPED (working law 4). The rules are the files this
+          #   workflow SOURCES — a `. ./.github/…` line is the triage reaching
+          #   for a declaration it will act on — so a file that joins the rules
+          #   tomorrow joins this set the day it is sourced, with no edit here.
+          #   `scripts/lib/prMergeOrder.mts`'s `reviewRuleFiles` reads the same
+          #   lines out of this same file, so the two readers cannot disagree.
+          #
+          # ⚠ IT REFUSES rather than falling back: a workflow that sources
+          #   nothing means the shape changed under the reader, and the verdict
+          #   that would follow is exactly the hole above, restored in silence.
+          RULES=$(sed -n 's|^[[:space:]]*\.[[:space:]]\{1,\}\./\(\.github/[^[:space:]]*\)$|\1|p' \
+                    .github/workflows/review.yml | sort -u)
+          if [ -z "$RULES" ]; then
+            echo "REFUSING: review.yml sources no declaration under .github/ — the rules-of-the-review reading has gone blind (#1627)." >&2
+            exit 1
+          fi
+          RULES=$(printf '%s\n%s\n' '.github/workflows/review.yml' "$RULES")
+          RULES_HIT=$(echo "$CHANGED" | grep -xF "$RULES" || true)
+          if [ -n "$RULES_HIT" ]; then
+            echo "This diff modifies the rules of the review itself. A review is owed."
+            echo "$RULES_HIT"
             {
               echo "review=yes"
               echo "deep=no"
               echo "held=yes"
-              echo "why=it changes the rules of the review itself (review.yml)"
+              echo "why=it changes the rules of the review itself ($(echo "$RULES_HIT" | tr '\n' ' ' | sed 's/ $//'))"
             } >> "$GITHUB_OUTPUT"
             exit 0
           fi

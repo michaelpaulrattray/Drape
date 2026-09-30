@@ -77,6 +77,7 @@ vi.mock("../crew/cardActivity", () => ({
 
 import { crewRouter } from "../routes/crew";
 import { eyeFrameKeys, readCrewBriefing } from "./crewBriefing";
+import { withoutComments } from "../testing/withoutComments";
 import { crewCardNeedsHim } from "../../shared/crewCardState";
 import { crewProblemIsOpen } from "../../shared/crewProblemState";
 import { pipelineNotDone } from "../../client/src/features/admin/components/crew/crewTypes";
@@ -333,9 +334,9 @@ describe("the wire carries only the rows the page can draw (#1137, #1138)", () =
        hands over, and the arm above would stay green through exactly the
        mistake it is about. Comments stripped: this file's header discusses
        the allowlist in prose. */
-    const route = readFileSync(path.join(__dirname, "..", "routes", "crewEyeFrames.ts"), "utf8")
-      .replace(/\/\*[\s\S]*?\*\//g, "")
-      .replace(/^\s*\/\/.*$/gm, "");
+    const route = withoutComments(
+      readFileSync(path.join(__dirname, "..", "routes", "crewEyeFrames.ts"), "utf8"),
+    );
     expect(route).toContain("eyeFrameKeys(readCrewBriefing())");
     expect(route).not.toContain("crewBriefingForPage");
   });
@@ -388,7 +389,7 @@ describe("projection — explicit columns only, by construction (§9 arm 5)", ()
   /* Comments stripped: the store's own header NAMES `passwordHash` as the
      incident it exists to prevent, and a guard that reads the warning as the
      leak cannot tell the two apart. The code half is what selects columns. */
-  const store = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  const store = withoutComments(source);
 
   it("⚠ CONTROL — this really is the reply store, and it resolves the author from names", () => {
     expect(store).toContain("users.displayName");

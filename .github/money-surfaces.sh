@@ -52,6 +52,56 @@
 # NOTHING NEW IS LABELLED. The widening costs no reviewer attention at all and
 # closes a hole whose first instance would have been a repricing.
 #
+# ⚠ AND WHERE A REFUND IS *DECIDED BY A BRANCH* WAS MISSING FROM BOTH HALVES
+# UNTIL 2026-09-30 (#1622). The symbol half below matches a diff that adds or
+# removes a LINE naming a primitive. It cannot see a diff that changes the
+# CONTROL FLOW deciding whether an existing refund line is ever REACHED — the
+# third position in the sentence above, after where money is DECIDED and where
+# it is SET.
+#
+# THE LIVE INSTANCE, not a hypothetical. PR #1621 rewrites the branch above
+# `await (dependencies.refund ?? recordRefund)(…)` in `packageOrchestrator.ts`
+# — it is its own card's stated money surface (#1612: *"Money surface (refund
+# paths): every PR held for the relay's hand verdict"*) — and NEITHER HALF
+# FIRED. The import at `packageOrchestrator.ts:89` and the call at :595 both
+# stand still, so `git diff -G` sees nothing; and the path half named
+# `castViewPackage.ts`, where a view's PRICE is declared, and not this file,
+# where its refund is DECIDED. Its triage comment read *"An ordinary diff"* and
+# told the shift it could merge on the gate alone.
+#
+# ⚠ WHAT WAS MEASURED, AND WHAT THE MEASUREMENT REFUSED. The obvious repair —
+# add every module that reaches a credit primitive to the path half — was
+# measured over the 60 newest merged PRs on `main`, the standard #958 and #1359
+# both met:
+#
+#     paths + symbols (the baseline)                      11 of 60
+#     + packageOrchestrator.ts by name (what shipped)     13 of 60
+#     + the 19 Atlas importers of atomicCredits.ts        17 of 60
+#     + all 31 modules naming any credit primitive        17 of 60
+#
+# ⚠ BOTH BULK OPTIONS LAND ON 17 of 60 — THE EXACT RATE #958 MEASURED FOR
+# `paths + whole casting dirs` AND REJECTED AS TOO NOISY TO BE READ. That
+# judgement stands, so the bulk widening is DECLINED here rather than quietly
+# skipped. Narrowing 31 → 19 on the principled reading (*where a refund is
+# decided*) buys nothing: both cost the same six PRs, because this repository's
+# casting work concentrates in the same few hot service files. Two of those six
+# move no credit at all — #1572 is a copy fix (*"a refusal calls a person a
+# cast"*) and #1400 is an image-sizing change.
+#
+# ⚠ AND A CLEVERER READING WAS DRIVEN AND FAILED BOTH CONTROLS — recorded so
+# the next shift does not re-try it. `git diff -W` (function context) piped
+# through the primitive list asks *"did this diff change a line inside a
+# function that reaches a refund?"*, which is this defect's own sentence made
+# mechanical. Git's `xfuncname` heuristic does not support it on TypeScript: it
+# stayed SILENT on the specimen above and FIRED on both known false positives.
+#
+# So ONE FILE IS ADDED BY NAME, on exactly the argument `atomicCredits.ts` is on
+# this list — it is the module that decides whether the refund primitive is
+# called at all for a signed view. ⚠ THE OTHER 18 ADJUDICATORS ARE A STATED
+# REMAINDER, NOT A CLOSED HOLE: `server/moneySurfaceClassifier.test.ts` derives
+# them from the Atlas's import graph and reddens when a NEW module starts
+# reaching the primitive, so the remainder cannot grow invisibly.
+#
 # ⚠ NAMED FILES, NEVER DIRECTORIES. #958 measured `paths + whole casting dirs`
 # at 17 of 60 and rejected it as too noisy to be read; that judgement stands.
 #
@@ -82,7 +132,7 @@
 # `server/moneySurfaceClassifier.test.ts` DERIVES the price-module population
 # from the Atlas rather than restating it, with those two exclusions by name, so
 # a price module added tomorrow reddens instead of arriving invisible.
-MONEY_PATHS='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/db/(billing|credits)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^server/casting/atomicCredits\.ts$|^server/casting/(castingCreditCosts|packagePricing)\.ts$|^server/casting/evidence/evidenceCandidateContract\.ts$|^server/wardrobe/creditCosts\.ts$|^server/castingV2/castViewPackage\.ts$|^client/src/features/casting/(constants|castingPrices)\.ts$|^shared/const\.ts$|^drizzle/'
+MONEY_PATHS='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/db/(billing|credits)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^server/casting/atomicCredits\.ts$|^server/casting/(castingCreditCosts|packagePricing)\.ts$|^server/casting/evidence/evidenceCandidateContract\.ts$|^server/wardrobe/creditCosts\.ts$|^server/castingV2/(castViewPackage|packageOrchestrator)\.ts$|^client/src/features/casting/(constants|castingPrices)\.ts$|^shared/const\.ts$|^drizzle/'
 
 # ── 2 · SYMBOLS — where money is DECIDED ────────────────────────────────────
 #

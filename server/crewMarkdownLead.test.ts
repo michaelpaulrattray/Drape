@@ -19,6 +19,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { blockOpeningLines, decoratedLines, stripBlockLead } from "../shared/crewMarkdownLead";
+import { withoutComments } from "./testing/withoutComments";
 
 describe("block decoration is stepped over", () => {
   it("removes the markers markdown uses to say what KIND of block a line is", () => {
@@ -182,9 +183,20 @@ describe("one place, not two — the readers source it rather than copying it", 
       leaves the old walk beside it — one road still blind, and a suite green
       because the other one answers.
     */
-    for (const { path } of consumers) {
+    for (const { path, reader } of consumers) {
       const source = readFileSync(path, "utf8");
-      const code = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+      const code = withoutComments(source);
+      /*
+        ⚠ THE POSITIVE CONTROL, ADDED BY #1636's CREW SLICE BECAUSE THIS ARM
+        PASSED OVER AN EMPTY STRING. Driven rather than reasoned: with the
+        shared reader stubbed to return the empty string, four of the six
+        suites in this group reddened and this one stayed green on all nine
+        arms. A `.not.toMatch()` is satisfied by nothing at all, so the
+        absence below was guarding whatever the reader happened to hand it.
+        Asserting that the reader's OWN call survives the strip is the
+        cheapest thing that cannot be satisfied by silence.
+      */
+      expect(code, `${path} did not survive the stripper`).toContain(`${reader}(`);
       expect(code, `${path} splits lines itself`).not.toMatch(/\.split\(\/\\r\?\\n\//);
     }
   });

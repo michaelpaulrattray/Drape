@@ -21,6 +21,7 @@ import { storagePublicUrl } from "../storage";
 import type { CastLineage } from "../db/castingV2Sign";
 import { CAST_PACKAGE_VIEW_PRICE, CAST_PACKAGE_VIEWS, castPackageLabel } from "./castViewPackage";
 import { castPronouns, type CastPronouns } from "./castPronouns";
+import { viewDeliveredUnchecked } from "./viewConformance";
 
 /**
  * `pending` — nothing has started on this slot yet.
@@ -63,7 +64,7 @@ export type CastSlotProjection = {
    */
   standIn?: true;
   /**
-   * TRUE when the picture is here and NOBODY LOOKED AT IT (D-246, #1220).
+   * TRUE when the picture is here and it was NOT FULLY CHECKED.
    *
    * The judge answering "this is wrong" and the judge not answering at all are
    * different facts about a view the customer paid for, and only the first is a
@@ -71,6 +72,17 @@ export type CastSlotProjection = {
    * until now "loudly" meant a log line and a column, which the room never
    * read. It is what makes this slot's Try again FREE: the view was charged and
    * kept, so asking for it again costs nothing.
+   *
+   * ⚠ **IT COVERS A SECOND CASE SINCE #1612 PART 2, AND THE NAME IS NOW ONE
+   * CASE NARROWER THAN THE FACT.** A view whose FRAMING or WARDROBE did not
+   * hold is delivered too (his ruling, 2026-09-30) — somebody looked, they
+   * said one axis was wrong, and the picture is still the signed likeness, so
+   * it is hers. The word the customer reads has always been *Unchecked* rather
+   * than *unjudged*, and it is true of both roads; the field keeps its name
+   * because it is on the wire and the room, the retry offer and the entrance
+   * all read it, and renaming a live projection field to improve a docblock is
+   * a change with no customer in it. {@link viewDeliveredUnchecked} is the one
+   * reading behind it.
    */
   unjudged?: true;
   /**
@@ -294,16 +306,19 @@ export const TOTAL_LOSS_CONFESSION =
   + "including the Sign itself. The face you chose is still yours.";
 
 /**
- * Did anybody look at this picture? Read at the row the judge wrote, never
- * inferred from the picture being here.
+ * Was this picture delivered without a complete check? Read at the row the
+ * judge wrote, never inferred from the picture being here.
  *
- * `conformanceMethod` is `"unavailable"` on exactly one road — the judge could
- * not answer and the orchestrator delivered anyway (D-246). Every other value
- * means a verdict exists, whichever way it went.
+ * ⚠ **THE READING ITSELF MOVED OUT OF THIS FILE — #1612 part 2.** It was one
+ * equality (`conformanceMethod === "unavailable"`) and it now has a second road
+ * (a recorded axis that did not pass, delivered anyway), so it lives beside
+ * `conformanceProvenance`, the function that WRITES the field it reads. Two
+ * readers of one record, in two files, is working law 4's shape on a surface
+ * where drift would mean the room offering a free Try again the entrance
+ * charges for — or the reverse.
  */
 function wasDeliveredUnjudged(asset: ModelAsset): boolean {
-  const provenance = asset.provenance as { conformanceMethod?: unknown } | null;
-  return provenance?.conformanceMethod === "unavailable";
+  return viewDeliveredUnchecked(asset.provenance);
 }
 
 /**
@@ -315,8 +330,12 @@ function wasDeliveredUnjudged(asset: ModelAsset): boolean {
  * - A view that failed was REFUNDED, so it has cost nothing. Asking again is
  *   an ordinary paid view. (#1208, his *"trying again deducts another 50cr.
  *   its not completely free"*.)
- * - A view that arrived UNJUDGED was charged and kept. Asking again is free.
- *   (#1220, his *"go with the free try again"*.)
+ * - A view that arrived UNCHECKED was charged and kept. Asking again is free.
+ *   (#1220, his *"go with the free try again"*.) Since #1612 part 2 that
+ *   covers two roads — nobody looked, and somebody looked and the framing or
+ *   wardrobe did not hold — and it is the SAME offer for both, because what
+ *   earns it is the same fact either way: she is holding a picture she paid
+ *   for that nothing can vouch for.
  * - The stand-in headshot is the first case wearing a picture: its own view
  *   failed and was refunded, and the anchor is standing in its place. The
  *   refund is what identifies it, not the stand-in flag — a stand-in with
