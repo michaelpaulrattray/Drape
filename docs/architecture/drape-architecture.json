@@ -92,7 +92,7 @@
     {
       "id": "domain:platform",
       "name": "platform",
-      "moduleCount": 18
+      "moduleCount": 19
     },
     {
       "id": "domain:profile",
@@ -5169,6 +5169,12 @@
     {
       "id": "module:server/monitoring/productEvents.ts",
       "path": "server/monitoring/productEvents.ts",
+      "domain": "platform",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/monitoring/trackerVerdict.ts",
+      "path": "server/monitoring/trackerVerdict.ts",
       "domain": "platform",
       "lifecycle": "active"
     },
@@ -13992,6 +13998,10 @@
     {
       "id": "test:server/timeoutFailureIdentity.test.ts",
       "path": "server/timeoutFailureIdentity.test.ts"
+    },
+    {
+      "id": "test:server/trackerVerdict.test.ts",
+      "path": "server/trackerVerdict.test.ts"
     },
     {
       "id": "test:server/typecheckOnCommit.test.ts",
