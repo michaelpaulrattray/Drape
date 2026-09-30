@@ -1,7 +1,7 @@
 {
-  "edition": 590,
-  "updatedAt": "2026-09-30T15:54:58.000Z",
-  "shift": "Foreman (night shift) — nothing you can see changed, and this one is about how we decide it is safe to DELETE things. When the crew wants to remove a piece of code nobody uses any more, it asks one question first: does anything still use this? That question was being answered by looking at the files sitting on the machine — which includes the crew's own scratch files, hundreds of them, that are not part of the product at all. So a scratch file that happened to mention something could make it look used, and a dead piece of code would be kept for the wrong reason. Worse, the same reader is what tells us whether a safety control quietly stopped being used months ago — and there a scratch file makes a dead control look alive, which is the direction that hides a problem rather than inventing one. I proved it before fixing it: one scratch file under the server folder took a count from one to two, and invented a whole new name out of nothing. It now asks the project's own record of what it contains, at every one of the four places that reads a real repository — and because that is a rule about people remembering, I made a check that fails if anyone forgets, rather than writing the rule down and hoping. Then I broke it seven different ways on purpose and every one was caught by name. Nothing about this is visible in the app, and it costs two per cent more time to run. Two more useful things fell out: an older job that was reported as blocked turned out to be unblocked hours earlier, and the reason a different job about error reporting cannot be finished is now written down — both halves of it need something from you, so it stopped being guesswork. And I checked every other reader of the same family for the same fault: none has it.",
+  "edition": 591,
+  "updatedAt": "2026-09-30T17:17:39.619Z",
+  "shift": "Foreman (night shift) — nothing you can see changed, and this one is about the automatic checks that decide whether a change is allowed to go live. About ninety of those checks work by reading our own code and asking a question of it — things like \"does any file still charge a customer without saying which tool it was for?\". Before reading, each one strips out the notes we write around the code, which is right: otherwise a note explaining a rule would set off the rule it explains. Eight of them stripped those notes the wrong way. They treated the two slashes in a web address as the start of a note, and threw away the rest of that line. So any line with a web address in it was cut short, and whatever came after it was simply invisible to the check — which passes, and nothing anywhere says otherwise. I measured it rather than assumed. Across the 1,947 code files, that way of reading makes 283 of them come up short and hides about 90,000 characters of real code. Three of the eight were blind right now rather than merely at risk — including the one that guards how we charge, which was reading 23 server files short. The proof: I hid a real charging decision behind a web address on one line. The old check said everything was fine. The fixed one caught it and named the file. All eight now read the careful way, and there is a new check that fails if anyone writes the broken kind again — with no list of exceptions, because a list of exceptions is how this grew back last time. I then broke that new check six ways on purpose and every one was caught by name, with the check passing before and after. One honest thing left, and it is the reason this took a while. The job said this was 26 copies of one mistake. Read at the code it is 97 files, and the 26 it named were the harmless ones. I wrote the real count down and left the rest as its own job, because 16 of those files read a different kind of code where the same fix would quietly break them.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -405,7 +405,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-30T15:53:27.288Z",
+      "readAt": "2026-09-30T17:17:53.178Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -9255,6 +9255,13 @@
       "status": "merged",
       "prNumber": 1630,
       "note": "Reproduced 1 → 2 importers before the fix; four readings now ask git; sabotage 7 RED + 1 green control."
+    },
+    {
+      "id": "stripper-shape-1629",
+      "title": "A guard may not strip // to end of line (#1629)",
+      "status": "merged",
+      "prNumber": 1633,
+      "note": "8 blind guards fixed; 283 of 1,947 files read short before; sabotage 6 RED each naming its arm; remainder re-measured as 97 files and filed as #1636."
     }
   ],
   "problems": [
@@ -9551,7 +9558,7 @@
     247
   ],
   "nextUp": {
-    "readAt": "2026-09-30T15:53:27.288Z",
+    "readAt": "2026-09-30T17:17:53.178Z",
     "items": [
       {
         "issueNumber": 1469,
