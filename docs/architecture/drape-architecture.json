@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 186
+      "moduleCount": 187
     },
     {
       "id": "domain:castingV2",
@@ -4617,6 +4617,12 @@
     {
       "id": "module:server/castingV2/viewFeatureWords.ts",
       "path": "server/castingV2/viewFeatureWords.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/viewRetryCorrection.ts",
+      "path": "server/castingV2/viewRetryCorrection.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -12628,6 +12634,10 @@
     {
       "id": "test:server/castingV2/viewRetryBusy.test.ts",
       "path": "server/castingV2/viewRetryBusy.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/viewRetryCorrection.test.ts",
+      "path": "server/castingV2/viewRetryCorrection.test.ts"
     },
     {
       "id": "test:server/castingV2/viewRetryOffer.test.ts",
@@ -25868,6 +25878,11 @@
     },
     {
       "from": "module:server/castingV2/packageOrchestrator.ts",
+      "to": "module:server/castingV2/viewRetryCorrection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageOrchestrator.ts",
       "to": "module:server/castingV2/viewThumbnailMint.ts",
       "kind": "imports"
     },
@@ -28534,6 +28549,16 @@
     {
       "from": "module:server/castingV2/viewFeatureWords.ts",
       "to": "module:shared/bodyAnchorRegions.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryCorrection.ts",
+      "to": "module:server/castingV2/viewConformance.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryCorrection.ts",
+      "to": "module:shared/boardTypes.ts",
       "kind": "imports"
     },
     {

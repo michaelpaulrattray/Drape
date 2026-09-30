@@ -1469,3 +1469,161 @@ describe("⚠ what the character cap pushed out is said out loud", () => {
     expect(capWarnings()).toHaveLength(0);
   });
 });
+
+/**
+ * ⚠ THE RETRY ESCALATES THE FRAMING RATHER THAN RE-ROLLING IT — #1492 shape A,
+ * **his ruling (Crew reply #240, verbatim and entire: "A")**, asserted AT THE
+ * WIRE.
+ *
+ * His own Jingu: eight renders across two views, every one refused on `angle`,
+ * because every attempt sent the identical words to an engine that had already
+ * answered them the same way. What is on trial here is that the second attempt
+ * genuinely sends something different — read off the outgoing request, never
+ * off a constant beside it (invariant 5), because a clause that is composed
+ * correctly and dropped before dispatch looks identical everywhere else.
+ *
+ * The clause's own WORDING and its silences are driven in
+ * `viewRetryCorrection.test.ts`.
+ */
+describe("a refused view is asked again with the reviewer's own words", () => {
+  const MIRRORED = "The head is turned toward the subject's right (nose toward left edge) "
+    + "rather than the specified left-turn with nose toward the right edge.";
+
+  /** A refusal on ONE named axis, with the note the judge really wrote. */
+  const refusedOn = (axis: "angle" | "wardrobe", note: string): ViewConformanceVerdict => ({
+    pass: false,
+    method: "judge:test",
+    axes: {
+      identity: { pass: true, note: "same person", verdict: "matches" },
+      angle: {
+        pass: axis !== "angle",
+        note: axis === "angle" ? note : "",
+        verdict: axis === "angle" ? "differs" : "matches",
+      },
+      wardrobe: {
+        pass: axis !== "wardrobe",
+        note: axis === "wardrobe" ? note : "",
+        verdict: axis === "wardrobe" ? "differs" : "matches",
+      },
+    },
+  });
+
+  /**
+   * A judge that refuses the FIRST look at each angle and passes the second.
+   *
+   * Keyed on the angle rather than on a global counter: five views run through
+   * this loop and a single counter would have the close-up's second attempt
+   * reading the three-quarter's verdict.
+   */
+  function judgeRefusingFirstLook(verdict: ViewConformanceVerdict) {
+    const looks = new Map<string, number>();
+    return () => vi.fn(async (judged: { angle: string }) => {
+      const seen = (looks.get(judged.angle) ?? 0) + 1;
+      looks.set(judged.angle, seen);
+      return seen === 1 ? verdict : pass;
+    });
+  }
+
+  function recordingEngine() {
+    const sent: Array<{ angle: CastViewAngle; prompt: string }> = [];
+    return {
+      sent,
+      identityEngine: () => ({
+        id: "test-identity",
+        editWithReferences: vi.fn(),
+        generateView: vi.fn(async (request: ViewRequest) => {
+          sent.push({ angle: request.viewAngle, prompt: request.prompt });
+          return {
+            bytes: Buffer.from("view"),
+            contentType: "image/png",
+            latencyMs: 1,
+            provenance: { provider: "fal" as const, model: "nbp", providerRef: "ref" },
+          };
+        }),
+      }),
+    };
+  }
+
+  it("sends the judge's own note back on the SECOND attempt, and nothing on the first", async () => {
+    const engine = recordingEngine();
+    await buildCastPackage(
+      deps({
+        identityEngine: engine.identityEngine,
+        judge: judgeRefusingFirstLook(refusedOn("angle", MIRRORED)),
+      }),
+      input,
+    );
+
+    const threeQuarter = engine.sent.filter((entry) => entry.angle === "threeQuarter");
+    expect(threeQuarter).toHaveLength(2);
+
+    /* The first attempt is byte-identical to the prompt this road sent before
+       any of this existed — the honest inertness test, not "it lacks a word". */
+    expect(threeQuarter[0]!.prompt).toBe(composePackageViewPrompt("threeQuarter"));
+
+    /* And the second is NOT, carrying the reviewer's sentence verbatim. */
+    expect(threeQuarter[1]!.prompt).not.toBe(threeQuarter[0]!.prompt);
+    expect(threeQuarter[1]!.prompt).toContain(MIRRORED);
+    expect(threeQuarter[1]!.prompt).toContain("WAS REJECTED ON ITS CAMERA ANGLE");
+  });
+
+  it("puts the correction under the DIRECTIVE it corrects, not after the house block", async () => {
+    /*
+      ⚠ #1480 finding D, applied before it could be learned twice: the outfit
+      clause was appended AFTER `AUTHORITY_LINE` — the paragraph that says what
+      beats what — so the one sentence naming the outfit's authority sat outside
+      the ordering that decides authority. This clause's own last sentence says
+      "follow the framing instruction above", and that instruction is the
+      directive; it has to be above it in the prompt for the sentence to be true.
+    */
+    const engine = recordingEngine();
+    await buildCastPackage(
+      deps({
+        identityEngine: engine.identityEngine,
+        judge: judgeRefusingFirstLook(refusedOn("angle", MIRRORED)),
+      }),
+      input,
+    );
+
+    const second = engine.sent.filter((entry) => entry.angle === "sideClose")[1]!.prompt;
+    const directiveAt = second.indexOf("STRICT RIGHT-FACING SIDE PROFILE PORTRAIT");
+    const correctionAt = second.indexOf("WAS REJECTED ON ITS CAMERA ANGLE");
+    const wardrobeAt = second.indexOf("WARDROBE:");
+
+    expect(directiveAt).toBeGreaterThan(-1);
+    expect(correctionAt).toBeGreaterThan(directiveAt);
+    expect(correctionAt).toBeLessThan(wardrobeAt);
+  });
+
+  it("is INERT when the refusal was not about the camera — the second attempt is byte-identical", async () => {
+    /*
+      The control that matters most. His ruling is about an ANGLE refusal; a
+      wardrobe refusal re-rolls exactly as it did before, and a correction
+      appearing here would be telling the engine to change the one thing the
+      reviewer said was right.
+    */
+    const engine = recordingEngine();
+    await buildCastPackage(
+      deps({
+        identityEngine: engine.identityEngine,
+        judge: judgeRefusingFirstLook(refusedOn("wardrobe", "the jacket is a different colour")),
+      }),
+      input,
+    );
+
+    for (const angle of CAST_PACKAGE_VIEWS) {
+      const attempts = engine.sent.filter((entry) => entry.angle === angle);
+      expect(attempts, angle).toHaveLength(2);
+      expect(attempts[1]!.prompt, angle).toBe(attempts[0]!.prompt);
+    }
+  });
+
+  it("is INERT when nothing was refused at all — one attempt, the composer's own words", async () => {
+    const engine = recordingEngine();
+    await buildCastPackage(deps({ identityEngine: engine.identityEngine }), input);
+
+    for (const entry of engine.sent) {
+      expect(entry.prompt, entry.angle).toBe(composePackageViewPrompt(entry.angle));
+    }
+  });
+});

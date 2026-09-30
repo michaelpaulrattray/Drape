@@ -135,6 +135,7 @@ import {
   type OutfitReference,
 } from "./outfitPlate";
 import { conformanceProvenance, type ViewConformanceJudge, type ViewConformanceVerdict } from "./viewConformance";
+import { viewAngleCorrectionClause } from "./viewRetryCorrection";
 
 const log = createModuleLogger("castingV2/packageOrchestrator");
 
@@ -887,6 +888,28 @@ export async function renderViewAttempts<T>(
             pronouns: viewPronouns,
             outfitReferenceOrdinal,
             outfitClause: plateClause,
+            /*
+              ⚠ **THE RETRY ESCALATES THE FRAMING RATHER THAN RE-ROLLING IT —
+              #1492 shape A, his ruling (Crew reply #240, verbatim: "A").**
+
+              His own Jingu: eight renders across two views, every one refused on
+              `angle`, because every attempt sent THE IDENTICAL WORDS to an
+              engine that had already answered them the same way. A retry that
+              changes nothing is a coin with the same weighting.
+
+              `verdicts` is this loop's own record of every attempt (D-114), so
+              the previous one is already in hand and **no new persistence is
+              needed** — which is the question the card left open and this
+              answers. It is the LAST element rather than a counter: a slot can
+              spend an arrival failure and a judged rejection in one build, so
+              the attempt number cannot say which verdict came last, exactly as
+              the two budgets above cannot be inferred from it.
+
+              Composes the empty string on a first attempt and wherever the
+              previous attempt's angle passed, which is every render this road
+              made before it existed.
+            */
+            retryCorrection: viewAngleCorrectionClause(verdicts[verdicts.length - 1], angle),
           }),
           cropClause,
           wordsClause,

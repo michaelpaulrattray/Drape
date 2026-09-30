@@ -1194,6 +1194,21 @@ export function composePackageViewPrompt(
     outfitReferenceOrdinal?: number | null;
     /** The outfit clause itself, composed by its owner and PLACED here (finding D). */
     outfitClause?: string;
+    /**
+     * WHAT THE LAST ATTEMPT AT THIS VIEW GOT WRONG — #1492 shape A, his ruling.
+     *
+     * Empty or absent on every first attempt and on every attempt whose
+     * predecessor passed its angle, which is every render this road made before
+     * the option existed; the composed prompt is byte-identical there, and
+     * `packageOrchestrator.test.ts` asserts that at the wire rather than here.
+     *
+     * ⚠ **It arrives COMPOSED, and that is deliberate** — `viewRetryCorrection.ts`
+     * owns the sentence because it has to read a `ViewConformanceVerdict`, and
+     * `viewConformance.ts` already imports THIS module. A signature taking the
+     * verdict would close that ring. This one takes a string and knows nothing
+     * about judging, which is the same reason `outfitClause` arrives composed.
+     */
+    retryCorrection?: string;
   } = {},
 ): string {
   const view = VIEWS[angle];
@@ -1214,6 +1229,19 @@ export function composePackageViewPrompt(
     */
     ...(brief === null ? [] : [`DESCRIPTION: ${brief}`, VIEW_DESCRIPTION_SCOPE]),
     `${view.directive}${belowWaistFor(angle, wardrobeLine, brief, outfitReferenceOrdinal)}`,
+    /*
+      ⚠ **THE RETRY'S CORRECTION SITS DIRECTLY UNDER THE DIRECTIVE IT CORRECTS
+      — #1492 shape A, and the position is #1480 finding D's lesson applied
+      before it could be learned twice.** That finding was the outfit clause
+      being appended AFTER `AUTHORITY_LINE`, the paragraph that says what beats
+      what — so the one sentence naming the outfit's authority sat outside the
+      ordering that decides authority. This clause's subject is the FRAMING, its
+      own last sentence points back at *"the framing instruction above"*, and
+      both of those are the line immediately before it. Appending it at the end
+      beside the crop and words clauses would have put a correction about the
+      camera on the far side of the house block from the camera.
+    */
+    ...(options.retryCorrection ? [options.retryCorrection] : []),
     `WARDROBE: ${wardrobeSpecFor(angle, wardrobeLine, brief, pronouns, outfitReferenceOrdinal)}`,
     /*
       ⚠ **THE OUTFIT CLAUSE SITS WITH WARDROBE — #1480 finding D.** It was
