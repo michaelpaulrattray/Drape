@@ -440,7 +440,7 @@ export function createViewConformanceJudge(config: ViewConformanceJudgeConfig): 
  * here instead, where the verdict is made.
  *
  * ⚠ **`conformanceMethod`'s VALUE is a contract and does not move.**
- * `castProjection.wasDeliveredUnjudged` matches it for equality against
+ * {@link viewDeliveredUnchecked} matches it for equality against
  * `"unavailable"`, which is what makes a Try again free on an unchecked view
  * (#1220) and what keeps that view's price at zero (D-246). The new field sits
  * beside it rather than inside it for that reason alone.
@@ -455,6 +455,84 @@ export function conformanceProvenance(verdict: ViewConformanceVerdict): {
     conformanceMethod: verdict.method,
     ...(verdict.frames ? { conformanceFrames: verdict.frames } : {}),
   };
+}
+
+/**
+ * ⚠ **THE ONE AXIS THAT TAKES A PICTURE AWAY — his ruling, 2026-09-30
+ * (terminal), #1612 part 2.**
+ *
+ * His question: *"dont you think having really strict checkers is
+ * unreliable?"*; on the two changes put back to him: *"i agree with you"*.
+ *
+ * Until this, an axis that did not say `matches` refused the view, refunded its
+ * slice and dropped the picture — three axes each holding a veto. **Read at the
+ * production rows the hour this was written, every signed Cast, all time: 8
+ * refused views, 5 of them on wardrobe and 3 on angle, and NOT ONE on
+ * identity.** So every refusal this product has ever made took a picture away
+ * for a reason that is not *it isn't her*, and four of those eight are the four
+ * measurements on the card (#1582, #1594, #1595, #1611) where the reading was
+ * simply wrong about what it was looking at.
+ *
+ * **Identity is the axis whose failure breaks the promise a signed Cast
+ * makes**, so it keeps §I's fail-closed refusal in full: `differs` refuses, and
+ * so does `unsure`, because *"I cannot tell whether this is the same person"*
+ * is not something to hand over under a signed likeness.
+ *
+ * **Framing and wardrobe deliver either way** — charged, marked unchecked, with
+ * the free Try again the product already offers on an unchecked view. The
+ * customer is not handed a worse picture by this; they are handed a picture
+ * they may well have wanted instead of a refund for one they never saw.
+ *
+ * ⚠ **`unjudged` IS NOT A REFUSAL AND IS ANSWERED FIRST, which is not
+ * decoration.** Its fail-closed default writes `pass: false` on all three axes
+ * including identity, so a rule that read identity without checking this would
+ * silently reverse D-246 and start refusing every view the judge could not
+ * reach — the exact failure D-246 exists to prevent, reintroduced through a
+ * clause about a different axis. There is a sabotage arm on precisely that.
+ */
+export function viewConformanceRefuses(verdict: ViewConformanceVerdict): boolean {
+  if (verdict.unjudged === true) return false;
+  return !verdict.axes[REFUSING_AXIS].pass;
+}
+
+/** The axis {@link viewConformanceRefuses} reads. One name, one place. */
+export const REFUSING_AXIS = "identity" as const satisfies ConformanceAxis;
+
+/**
+ * WAS THIS VIEW DELIVERED WITHOUT A COMPLETE CHECK? — read at the row, and
+ * written here beside the function that writes the row.
+ *
+ * It answers the question the room's `Unchecked · Try again` and the retry
+ * entrance's price both turn on, and it has TWO roads into it now:
+ *
+ *  - `conformanceMethod === "unavailable"` — **nobody looked at all** (D-246,
+ *    #1220). Unchanged, and still an equality on a contract value.
+ *  - **a recorded axis that did not pass** — somebody looked, framing or
+ *    wardrobe did not hold, and {@link viewConformanceRefuses} delivered it
+ *    anyway (#1612 part 2). Before that rule no landed row could be in this
+ *    state, which is why one reading used to be enough.
+ *
+ * ⚠ **A ROW WITH NO CONFORMANCE RECORD AT ALL KEEPS TODAY'S ANSWER — CHECKED —
+ * AND THAT IS A MEASURED CHOICE, NOT AN OVERSIGHT.** Read at production before
+ * this function was written: of 69 landed views, 46 carry a full judged record,
+ * 3 carry `unavailable`, and **20 carry no `conformance` key whatsoever** —
+ * views that landed before the field existed. Reading absence as *unchecked*
+ * would hand every one of those 20 a free Try again tonight, retroactively, on
+ * a money surface, for a change about something else entirely. **0 landed rows
+ * carry a failing axis today**, so the second road above moves no history at
+ * all: it can only describe views delivered from here on.
+ */
+export function viewDeliveredUnchecked(provenance: unknown): boolean {
+  if (provenance === null || typeof provenance !== "object") return false;
+  const record = provenance as { conformanceMethod?: unknown; conformance?: unknown };
+  if (record.conformanceMethod === "unavailable") return true;
+  const axes = record.conformance;
+  if (axes === null || typeof axes !== "object") return false;
+  return CONFORMANCE_AXES.some((axis) => {
+    const entry = (axes as Record<string, unknown>)[axis];
+    if (entry === null || typeof entry !== "object") return false;
+    return (entry as { pass?: unknown }).pass !== true;
+  });
 }
 
 /**

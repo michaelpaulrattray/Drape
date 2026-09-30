@@ -944,3 +944,91 @@ describe("a retry's plate is edited from her master too — #1471", () => {
     expect(requests[0].references).not.toEqual([]);
   });
 });
+
+/**
+ * ⚠ **A TRY AGAIN TAKES THE SAME RULE, BECAUSE IT TAKES THE SAME LOOP —
+ * #1612 part 2, his ruling 2026-09-30.**
+ *
+ * The Sign's five views and a Try again both render through
+ * `renderViewAttempts`, so `viewConformanceRefuses` covers both roads from one
+ * call site. These arms exist anyway, at this altitude, because the MONEY is
+ * settled here and not there: a retry charges at dispatch and refunds when the
+ * view does not arrive, so a rule that changed what "arrive" means changes what
+ * this file pays out. Arms that only lived beside the orchestrator would prove
+ * the branch and say nothing about the till.
+ */
+describe("only identity takes a retried picture away", () => {
+  const rejectingJudge = (axes: Partial<Record<"identity" | "angle" | "wardrobe", boolean>>) =>
+    (() => async () => ({
+      pass: false,
+      method: "judge:test",
+      axes: {
+        identity: { pass: axes.identity !== false, note: "" },
+        angle: { pass: axes.angle !== false, note: "" },
+        wardrobe: { pass: axes.wardrobe !== false, note: "" },
+      },
+    })) as never;
+
+  it("a PAID try again whose framing is turned down now ARRIVES — charged, kept, not refunded", async () => {
+    const refunded = slot({
+      state: "failed-refunded",
+      refundedCredits: CAST_PACKAGE_VIEW_PRICE,
+      retry: { priceCredits: CAST_PACKAGE_VIEW_PRICE, reason: "refunded" },
+    });
+    const result = await retryCastView(
+      dependencies([refunded], { judge: rejectingJudge({ angle: false }) }),
+      input,
+    );
+
+    expect(result.outcome).toBe("ready");
+    expect(result.chargedCredits).toBe(CAST_PACKAGE_VIEW_PRICE);
+    expect(result.refundedCredits).toBe(0);
+    expect(refunds).toHaveLength(0);
+    expect(committed).toHaveLength(1);
+  });
+
+  it("⚠ and one whose IDENTITY is turned down still does not arrive, and the money goes back", async () => {
+    const refunded = slot({
+      state: "failed-refunded",
+      refundedCredits: CAST_PACKAGE_VIEW_PRICE,
+      retry: { priceCredits: CAST_PACKAGE_VIEW_PRICE, reason: "refunded" },
+    });
+    const result = await retryCastView(
+      dependencies([refunded], { judge: rejectingJudge({ identity: false }) }),
+      input,
+    );
+
+    expect(result.outcome).toBe("failed");
+    expect(result.refundedCredits).toBe(CAST_PACKAGE_VIEW_PRICE);
+    expect(refunds).toHaveLength(1);
+    /* No new failure marker — the confession already on the slot is still true. */
+    expect(committed).toHaveLength(0);
+  });
+
+  /*
+    A FREE try again on an unchecked view that comes back unchecked again is
+    still delivered and still free. That is not a loophole: the customer asked
+    for a different picture and got one, and it is still a picture nothing can
+    vouch for, which is the entire basis of the free offer.
+  */
+  it("a FREE try again that comes back unchecked again delivers, and nothing is charged", async () => {
+    const free = slot({
+      state: "ready",
+      url: "https://cdn.example/view.png",
+      unjudged: true,
+      note: null,
+      refundedCredits: null,
+      retry: { priceCredits: 0, reason: "unchecked" },
+    });
+    const result = await retryCastView(
+      dependencies([free], { judge: rejectingJudge({ wardrobe: false }) }),
+      input,
+    );
+
+    expect(result.outcome).toBe("ready");
+    expect(result.chargedCredits).toBe(0);
+    expect(refunds).toHaveLength(0);
+    expect(deducts).toHaveLength(0);
+    expect(committed).toHaveLength(1);
+  });
+});

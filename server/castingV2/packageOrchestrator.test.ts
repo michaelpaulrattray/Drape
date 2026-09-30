@@ -4,7 +4,7 @@ import { ProviderError } from "../providers/types";
 /* The REAL composition the failed-slot row is stored with — #1492's seam arm
    below drives the writer's own function rather than a copy of it. */
 import { slotFailureStatus } from "./slotFailureRecord";
-import type { ViewConformanceVerdict } from "./viewConformance";
+import { viewDeliveredUnchecked, type ViewConformanceVerdict } from "./viewConformance";
 import { pronounsForSex } from "./castPronouns";
 import { MAX_CLAUSE_CHARACTERS } from "./viewFeatureWords";
 
@@ -1467,5 +1467,324 @@ describe("⚠ what the character cap pushed out is said out loud", () => {
     loggedWarnings.length = 0;
     await buildCastPackage(deps({ identityEngine: working }), { ...input, featureWords: [] });
     expect(capWarnings()).toHaveLength(0);
+  });
+});
+
+/**
+ * ⚠ **ONLY IDENTITY TAKES A PICTURE AWAY — #1612 part 2, his ruling
+ * 2026-09-30: *"i agree with you"*.**
+ *
+ * Every arm in this block is a money arm, and the population behind them is a
+ * production read rather than an argument: **8 refused views on signed casts,
+ * all time — 5 on wardrobe, 3 on angle, 0 on identity.** So before tonight this
+ * product had never once refused a view for the reason refusal exists, and
+ * every refund it ever paid was for a picture the customer never saw and might
+ * well have kept.
+ *
+ * ⚠ **THE COVERAGE HOLE THAT LET THAT SHIP IS WHY THIS BLOCK IS LONG.** The
+ * whole file's rejection fixture, `fail`, carries `identity: pass false` — so
+ * every arm above drives the one axis that still refuses, and **the change to
+ * the refusal rule passed all 5,761 existing tests without reddening one of
+ * them.** A suite that cannot tell WHICH axis refused is a suite that would
+ * have let this rule move by accident, in either direction.
+ */
+describe("only identity takes a picture away", () => {
+  /** A judge that looked, and turned down exactly the axes named. */
+  const rejecting = (
+    angle: CastViewAngle,
+    axes: Partial<Record<"identity" | "angle" | "wardrobe", "differs" | "unsure">>,
+  ) => () => vi.fn(async (request: { angle: string }) => {
+    if (request.angle !== angle) return pass;
+    const axis = (name: "identity" | "angle" | "wardrobe") =>
+      axes[name] !== undefined
+        ? { pass: false, verdict: axes[name]!, note: name }
+        : { pass: true, verdict: "matches" as const, note: "" };
+    return {
+      pass: false,
+      method: "judge:test",
+      axes: { identity: axis("identity"), angle: axis("angle"), wardrobe: axis("wardrobe") },
+    } as ViewConformanceVerdict;
+  });
+
+  it("delivers a view whose WARDROBE was turned down — charged, kept, nothing refunded", async () => {
+    await buildCastPackage(deps({ judge: rejecting("sideClose", { wardrobe: "differs" }) }), input);
+
+    expect(committed).toContain("sideClose");
+    expect(failures.some((entry) => entry.angle === "sideClose")).toBe(false);
+    /* The money: nothing came back, because nothing was taken away. */
+    expect(refunds).toHaveLength(0);
+  });
+
+  it("delivers a view whose FRAMING was turned down, and the picture is not dropped", async () => {
+    await buildCastPackage(deps({ judge: rejecting("sideClose", { angle: "differs" }) }), input);
+
+    expect(committed).toContain("sideClose");
+    expect(refunds).toHaveLength(0);
+    /*
+      ⚠ THE DROP IS THE ARM EASIEST TO MISS: the refusal road deletes the stored
+      object one line after the judge speaks. A rule that delivered but kept
+      deleting would hand the room a committed slot pointing at bytes that are
+      gone — a broken picture instead of a refund, which is worse than both.
+    */
+    expect(deletedKeys).toHaveLength(0);
+  });
+
+  it("delivers on UNSURE exactly as on differs — the same fact about the same picture", async () => {
+    await buildCastPackage(
+      deps({ judge: rejecting("sideClose", { angle: "unsure", wardrobe: "unsure" }) }),
+      input,
+    );
+
+    expect(committed).toContain("sideClose");
+    expect(refunds).toHaveLength(0);
+  });
+
+  it("⚠ still refuses and refunds when IDENTITY differs — the promise a signed Cast makes", async () => {
+    await buildCastPackage(deps({ judge: rejecting("sideClose", { identity: "differs" }) }), input);
+
+    expect(committed).not.toContain("sideClose");
+    expect(refunds).toEqual([
+      { amount: 50, reference: packageSlotChargeReference(OPERATION_ID, "sideClose") },
+    ]);
+    const marker = failures.find((entry) => entry.angle === "sideClose");
+    expect((marker?.failure as { reason: string }).reason).toBe("This view didn't hold the signed likeness");
+  });
+
+  it("⚠ refuses on an UNSURE identity too — fail-closed is the whole of §I on this axis", async () => {
+    await buildCastPackage(deps({ judge: rejecting("sideClose", { identity: "unsure" }) }), input);
+
+    expect(committed).not.toContain("sideClose");
+    expect(refunds).toHaveLength(1);
+  });
+
+  it("refuses when identity fails BESIDE framing — the other axes cannot rescue it", async () => {
+    await buildCastPackage(
+      deps({ judge: rejecting("sideClose", { identity: "differs", angle: "differs", wardrobe: "differs" }) }),
+      input,
+    );
+
+    expect(committed).not.toContain("sideClose");
+    expect(refunds).toHaveLength(1);
+  });
+
+  /*
+    ⚠ **THE REGENERATION BUDGET IS NOW ONLY EVER SPENT ON THE WRONG PERSON.**
+
+    A framing rejection used to buy a second render, which meant DROPPING the
+    frame in hand to draw an unknown one. Under this rule the frame in hand is
+    deliverable, so spending ~30–60 s and a second house render to replace it is
+    a gamble the customer now owns for free through Try again. The alternative
+    was declined deliberately, and this arm is what holds it: a delivered,
+    unchecked view costs exactly ONE generation.
+  */
+  it("spends ONE generation on a delivered-unchecked view, and the budget on an identity refusal", async () => {
+    const calls: string[] = [];
+    const counting = () => ({
+      id: "test-identity",
+      editWithReferences: vi.fn(),
+      generateView: vi.fn(async (request: { viewAngle: string }) => {
+        calls.push(request.viewAngle);
+        return {
+          bytes: Buffer.from("view"),
+          contentType: "image/png",
+          latencyMs: 1,
+          provenance: { provider: "fal" as const, model: "nbp", providerRef: "ref" },
+        };
+      }),
+    });
+
+    await buildCastPackage(
+      deps({ identityEngine: counting, judge: rejecting("sideClose", { angle: "differs" }) }),
+      input,
+    );
+    expect(calls.filter((angle) => angle === "sideClose")).toHaveLength(1);
+
+    calls.length = 0;
+    await buildCastPackage(
+      deps({ identityEngine: counting, judge: rejecting("sideClose", { identity: "differs" }) }),
+      input,
+    );
+    expect(calls.filter((angle) => angle === "sideClose")).toHaveLength(VIEW_JUDGED_ATTEMPTS);
+  });
+
+  /*
+    The refused-frame keeper (#1492) exists because a refused frame is DROPPED
+    and there is nothing left for his eye. A delivered frame is not dropped —
+    it is the customer's — so a capture here would be a second copy of a picture
+    we already kept.
+  */
+  it("keeps no diagnostic copy of a delivered view, and still keeps one of a refused one", async () => {
+    await buildCastPackage(deps({ judge: rejecting("sideClose", { wardrobe: "differs" }) }), input);
+    expect(captured).toHaveLength(0);
+
+    captured.length = 0;
+    await buildCastPackage(deps({ judge: rejecting("sideClose", { identity: "differs" }) }), input);
+    expect(captured.length).toBeGreaterThan(0);
+    expect(captured[0]!.reason).toBe("view_refused:identity");
+  });
+
+  /*
+    ⚠ **THE ROW IS WHAT MAKES THE TRY AGAIN FREE, so it is asserted at the row
+    rather than at the log** (invariant 5's shape: prove the contract where it
+    is written, not on a constant near it). `viewDeliveredUnchecked` reads the
+    failing axis off the stored provenance; a branch that delivered without
+    persisting the verdict would charge this customer twice for one view and
+    nothing in this process would say so.
+  */
+  it("writes the failing axis onto the row the projection reads", async () => {
+    const rows: Array<Record<string, unknown>> = [];
+    await buildCastPackage(
+      deps({
+        judge: rejecting("sideClose", { angle: "differs" }),
+        commitSlot: vi.fn(async (entry: Record<string, unknown>) => {
+          rows.push(entry);
+          return rows.length;
+        }),
+      }),
+      input,
+    );
+
+    const row = rows.find((entry) => entry.angle === "sideClose");
+    const provenance = row?.provenance as {
+      conformanceMethod?: string;
+      conformance?: Record<string, { pass: boolean }>;
+    };
+    expect(provenance.conformanceMethod).toBe("judge:test");
+    expect(provenance.conformance?.angle.pass).toBe(false);
+    expect(provenance.conformance?.identity.pass).toBe(true);
+    /* And the row reads as unchecked through the SAME function the room uses. */
+    expect(viewDeliveredUnchecked(provenance)).toBe(true);
+  });
+
+  /*
+    ⚠ **THE WHOLE PRODUCTION HISTORY, REPLAYED — the card's done-when 6.**
+
+    Every refusal this product has ever made, with the axis read off its own
+    stored confession (the retired reason function read identity → angle →
+    wardrobe in that order, so the sentence names the axis unambiguously):
+    5 wardrobe, 3 angle, 0 identity. All eight deliver under this rule — the 400
+    credits refunded to his account for pictures he never saw would instead have
+    been eight pictures, each with a free Try again.
+
+    ⚠ **SEVEN OF THE EIGHT ARE DRIVEN AND THE EIGHTH CANNOT BE, WHICH IS A FACT
+    ABOUT THE PACKAGE RATHER THAN A GAP IN THE ARM.** Shina's refusal was a
+    `frontClose` — the Portrait, RETIRED from the package at v3.1 (three frontal
+    crops was one too many), so no Sign renders that angle today and a fixture
+    naming it would be driving a road the product no longer has. The row stays
+    in the table with its reason asserted, because silently dropping it would
+    turn "all eight" into "the seven that were convenient" with nothing saying
+    so. Found by driving it: the first version of this arm failed on exactly
+    that row.
+  */
+  it("⚠ replays all 8 production refusals: every one of them delivers", async () => {
+    const history: Array<{ cast: string; angle: CastViewAngle; axis: "angle" | "wardrobe" }> = [
+      { cast: "52 Shina", angle: "frontClose", axis: "wardrobe" },
+      { cast: "55 Sifr", angle: "threeQuarter", axis: "wardrobe" },
+      { cast: "55 Sifr", angle: "backFull", axis: "wardrobe" },
+      { cast: "58 Jenny Craig", angle: "closeUp", axis: "angle" },
+      { cast: "59 Kai", angle: "backFull", axis: "wardrobe" },
+      { cast: "60 Gate walk", angle: "backFull", axis: "wardrobe" },
+      { cast: "64 Jingu", angle: "threeQuarter", axis: "angle" },
+      { cast: "64 Jingu", angle: "closeUp", axis: "angle" },
+    ];
+
+    let driven = 0;
+    for (const row of history) {
+      if (!CAST_PACKAGE_VIEWS.includes(row.angle)) {
+        /* The Portrait: retired, so this refusal has no road to replay. */
+        expect(row.angle, `${row.cast} — only the retired Portrait may sit out`).toBe("frontClose");
+        continue;
+      }
+      refunds.length = 0;
+      committed.length = 0;
+      failures.length = 0;
+      await buildCastPackage(deps({ judge: rejecting(row.angle, { [row.axis]: "differs" }) }), input);
+      expect(committed, `${row.cast} ${row.angle}`).toContain(row.angle);
+      expect(refunds, `${row.cast} ${row.angle}`).toHaveLength(0);
+      driven += 1;
+    }
+    /* The count is asserted so a future retirement cannot quietly empty this. */
+    expect(driven).toBe(7);
+  });
+
+  /*
+    ⚠ **THE D-246 ROAD IS UNTOUCHED, AND THIS ARM IS WHY THE RULE READS
+    `unjudged` FIRST.** A judge that could not answer writes `pass: false` on
+    all three axes INCLUDING identity — so a refusal rule that read identity
+    without checking `unjudged` would start refusing every view a flaky judge
+    could not reach, which is exactly the failure D-246 was written to end. It
+    would look like a tightening and be a regression.
+  */
+  it("⚠ CONTROL — a view nobody could judge still delivers, exactly as D-246 says", async () => {
+    const judge = () => vi.fn(async (request: { angle: string }) => {
+      if (request.angle !== "sideClose") return pass;
+      const axis = { pass: false, note: "the view could not be checked" };
+      return {
+        pass: false,
+        method: "unavailable",
+        unjudged: true,
+        axes: { identity: { ...axis }, angle: { ...axis }, wardrobe: { ...axis } },
+      } as ViewConformanceVerdict;
+    });
+    await buildCastPackage(deps({ judge }), input);
+
+    expect(committed).toContain("sideClose");
+    expect(refunds).toHaveLength(0);
+  });
+
+  /*
+    The forced-fail switch is a server-owned rehearsal of the refusal path with
+    real money on a real Cast. It writes every axis false and does NOT set
+    `unjudged`, so identity fails and it still refuses — the only behaviour that
+    makes the switch worth having.
+  */
+  it("⚠ CONTROL — the forced-fail switch still walks the refusal path", async () => {
+    const judge = () => vi.fn(async (request: { angle: string }) => {
+      if (request.angle !== "sideClose") return pass;
+      const forced = { pass: false, note: "forced failure switch" };
+      return {
+        pass: false,
+        method: "forced",
+        axes: { identity: { ...forced }, angle: { ...forced }, wardrobe: { ...forced } },
+      } as ViewConformanceVerdict;
+    });
+    await buildCastPackage(deps({ judge }), input);
+
+    expect(committed).not.toContain("sideClose");
+    expect(refunds).toHaveLength(1);
+  });
+
+  /*
+    ⚠ **MONEY CONSERVED — the arm every money-path change in this repository
+    owes**: charged = kept + refunded, across one Sign that mixes all three
+    outcomes.
+  */
+  it("⚠ conserves the money across a package with a delivery, a refusal and a pass", async () => {
+    const judge = () => vi.fn(async (request: { angle: string }) => {
+      if (request.angle === "sideClose") {
+        return {
+          pass: false,
+          method: "judge:test",
+          axes: {
+            identity: { pass: true, verdict: "matches" as const, note: "" },
+            angle: { pass: false, verdict: "differs" as const, note: "loose" },
+            wardrobe: { pass: true, verdict: "matches" as const, note: "" },
+          },
+        } as ViewConformanceVerdict;
+      }
+      if (request.angle === "backFull") return fail;
+      return pass;
+    });
+    const result = await buildCastPackage(deps({ judge }), input);
+
+    const charged = CAST_PACKAGE_VIEWS.length * 50;
+    const refunded = refunds.reduce((sum, entry) => sum + entry.amount, 0);
+    const kept = committed.length * 50;
+
+    expect(committed).toContain("sideClose");
+    expect(committed).not.toContain("backFull");
+    expect(refunded).toBe(50);
+    expect(kept + refunded).toBe(charged);
+    expect(result.refundedCredits).toBe(50);
   });
 });
