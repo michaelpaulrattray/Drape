@@ -28,10 +28,18 @@
  *    ARRIVES passes just as happily when the selector returns everything.
  *
  * ⚠ **What cannot be armed here, stated rather than left to be discovered:**
- * `.agents/foreman/PROGRAM.md` and `prompt.md` are gitignored, so CI never sees
- * them. Every arm about the PROGRAM runs on a fixture; the one arm that reads
- * the real file skips itself with a printed reason when it is absent, and is a
- * FLOOR rather than coverage.
+ * `prompt.md` is gitignored, so CI never sees the standing orders, and every arm
+ * about them runs on a fixture.
+ *
+ * ✅ **AND THAT SENTENCE NAMED `PROGRAM.md` TOO UNTIL #1468 (2026-09-30), WHICH
+ * TURNED A STATED FLOOR INTO REAL COVERAGE.** The campaign pointer is TRACKED now,
+ * on his "Yes" of 2026-09-29 — so the real-file arm below no longer skips itself in
+ * CI, and from that commit the gate genuinely asserts that the document every
+ * shift is bound by still carries a current focus, maintenance mode and the
+ * milestone gate. It was a floor for one reason only (the file was unreachable),
+ * and the reason is gone; leaving the skip in place would have left the arm
+ * passing on a file it never opened. `prompt.md` is untouched by this and its
+ * arms are fixtures exactly as before.
  */
 import {
   existsSync,
@@ -361,14 +369,18 @@ describe("splitProgram", () => {
     expect(() => splitProgram("# THE PROGRAM\n\n## Mission\n\nnothing\n")).toThrow(/current focus/i);
   });
 
-  it("reads the REAL PROGRAM when it is there, and says so when it is not", () => {
+  it("⚠ reads the REAL PROGRAM — tracked since #1468, so this is coverage and not a floor", () => {
     const full = path.join(REPO_ROOT, PROGRAM_PATH);
-    if (!existsSync(full)) {
-      /* `.agents/` is gitignored: in CI this file does not exist, and that is
-         the stated limit rather than a silent pass. */
-      console.log(`shiftDigest: ${PROGRAM_PATH} absent (gitignored) — the real-file arm is a floor and did not run`);
-      return;
-    }
+    /* ⚠ **IT NO LONGER SKIPS, AND THAT IS THE POINT OF #1468.** While `.agents/`
+       was wholly gitignored this arm returned early in CI and was honest about
+       being a floor. The file is tracked now, so an absent one is a BROKEN GUARD
+       — somebody widened the ignore rule again, or deleted the campaign pointer —
+       and the two look identical to a reader that returns. */
+    expect(
+      existsSync(full),
+      `${PROGRAM_PATH} is tracked (#1468) and is not on disk — either the .gitignore`
+      + " negation was widened away or the campaign pointer was deleted."
+    ).toBe(true);
     const split = splitProgram(readFileSync(full, "utf8"));
     expect(split.carried.some((section) => /current focus/i.test(section.heading))).toBe(true);
     expect(split.carried.some((section) => /maintenance mode/i.test(section.heading))).toBe(true);

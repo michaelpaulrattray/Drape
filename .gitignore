@@ -140,7 +140,28 @@ temp/
 # Local agent scaffolding — never committed (founder rule). The mailbox was
 # staged by name once (c47b27ba) and untracked again in 1f2d3011; this is the
 # guard that stops it being possible rather than remembered.
-.agents/
+#
+# ⚠ ONE FILE IS EXEMPT, ON HIS WORD, AND IT IS EXEMPT BY NAME (#1468, his "Yes"
+# of 2026-09-29). `.agents/foreman/PROGRAM.md` is the campaign pointer CLAUDE.md
+# already calls binding — the focus, the milestone gate, his rulings — and an
+# agent or an engineer reading only GitHub could not see any of it. He was asked
+# precisely whether it could be public while the repository is, and said yes, so
+# nothing waits for the repository to go private. From that day every ruling
+# written into it is published as it is written.
+#
+# ⚠ THE FOUR LINES BELOW ARE A STEPWISE RE-OPENING AND EVERY ONE IS LOAD-BEARING.
+# `.agents/` with a trailing slash excludes the DIRECTORY, and git never descends
+# into an excluded directory — so a bare `!.agents/foreman/PROGRAM.md` would be
+# unreachable and silently do nothing. Each level must be opened and then
+# re-closed, which is why `*` appears twice. The effect is exactly one file and
+# nothing else: `prompt.md` (the standing orders, operating detail he was NOT
+# asked about), the mailbox (receipts, never state), the `.ps1` runner family and
+# the digest all stay ignored, and `git status` was read to confirm it rather
+# than the pattern being trusted.
+.agents/*
+!.agents/foreman/
+.agents/foreman/*
+!.agents/foreman/PROGRAM.md
 .codex/
 .avela-agent-bridge/
 CLAUDE.local.md

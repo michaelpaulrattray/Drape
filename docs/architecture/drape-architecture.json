@@ -10928,6 +10928,10 @@
       "path": "server/afterPaintBudget.test.ts"
     },
     {
+      "id": "test:server/agentScaffoldingIgnored.test.ts",
+      "path": "server/agentScaffoldingIgnored.test.ts"
+    },
+    {
       "id": "test:server/announcements.test.ts",
       "path": "server/announcements.test.ts"
     },
