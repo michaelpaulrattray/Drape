@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 
 import { CHANGE_REQUEST_TYPES } from "@shared/changeRequestLabels";
 
+import { withoutComments } from "../../../../server/testing/withoutComments";
+
 /**
  * Brief 11's rules, as assertions rather than as review memory
  * (`docs/specs/Casting-ui-ux-design/drape-redesign/11-staff-dialogs.md`, #436).
@@ -50,8 +52,7 @@ const MODERATOR = path.resolve(CLIENT_SRC, "features/moderator");
 const read = (absolute: string) => fs.readFileSync(absolute, "utf8");
 
 /** Strip comments, so a docblock explaining a rule cannot trip the rule. */
-const code = (text: string) =>
-  text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const code = (text: string) => withoutComments(text);
 
 /**
  * §5's label reader — every `label=` attribute's WHOLE string (#845).

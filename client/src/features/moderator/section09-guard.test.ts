@@ -2,6 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { withoutComments } from "../../../../server/testing/withoutComments";
+
 /**
  * Brief 09's rules, as assertions rather than as review memory
  * (`docs/specs/Casting-ui-ux-design/drape-redesign/09-moderator-investigations.md`).
@@ -37,8 +39,7 @@ const PAGE = path.resolve(CLIENT_SRC, "pages/ModeratorDashboard.tsx");
 const read = (file: string) => fs.readFileSync(file, "utf8");
 
 /** Strip comments, so a docblock explaining a rule cannot trip the rule. */
-const code = (text: string) =>
-  text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const code = (text: string) => withoutComments(text);
 
 const CSS = read(path.join(HERE, "investigations.css"));
 const RECONCILIATION = read(path.join(HERE, "ReconciliationSubTab.tsx"));

@@ -65,6 +65,8 @@ import { describe, expect, it, vi } from "vitest";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 import { readListedSource } from "./testing/listedSource";
 
+import { withoutComments } from "./testing/withoutComments";
+
 /* ⚠ THIS SUITE IS IN BOTH TIMEOUT POPULATIONS AND DECLARES THE CHILD-PROCESS
    ONE, which is the same answer `contendedTestTimeouts.test.ts` gives for
    itself in its own header: it runs `git ls-files` (#548's population) and then
@@ -79,8 +81,7 @@ const REPO = path.resolve(__dirname, "..");
 const FAILURE_SENTENCE = path.join(REPO, "client", "src", "lib", "failureSentence.ts");
 
 /** Strip comments, so a docblock quoting a retired sentence is not an offence. */
-const code = (text: string) =>
-  text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const code = (text: string) => withoutComments(text);
 
 /** Every tracked, non-test `.ts` under `server/`. */
 function serverModules(): string[] {

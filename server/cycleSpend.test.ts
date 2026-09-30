@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 
 import { spendWindow } from "./db/billing";
 
+import { withoutComments } from "./testing/withoutComments";
+
 /**
  * #624 — a cycle's spend counted the whole UTC DAY its period started on.
  *
@@ -33,8 +35,7 @@ import { spendWindow } from "./db/billing";
 const HERE = new URL(".", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
 const read = (path: string) => readFileSync(path, "utf8");
 /** Strip comments — a rule quoted in prose is not a rule shipped. */
-const code = (text: string) =>
-  text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const code = (text: string) => withoutComments(text);
 
 const DAY = 86_400_000;
 

@@ -14,6 +14,8 @@ import {
 
 import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
 
+import { withoutComments } from "./testing/withoutComments";
+
 /* Its arms do real work in process — a tree sweep, a sheet compile, a sharp
    encode — and under the parallel run that cost multiplies by fifteen or twenty
    against vitest's 5,000 ms default. The measurement, and the two roads that
@@ -87,8 +89,7 @@ function sourceFiles(): string[] {
 }
 
 /** Strip comments, so a docblock explaining the rule cannot trip the rule. */
-const code = (text: string) =>
-  text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const code = (text: string) => withoutComments(text);
 
 /**
  * How many of a given key set this text pairs with a human-looking label.

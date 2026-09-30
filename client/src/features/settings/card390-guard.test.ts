@@ -11,6 +11,8 @@ import {
   priceAMonth,
 } from "./planMath";
 
+import { withoutComments } from "../../../../server/testing/withoutComments";
+
 /**
  * CARD 390 — the six form corrections, held where each one can actually fail.
  *
@@ -55,8 +57,7 @@ const TOPUP = join(CLIENT, "features", "billing", "AddCreditsModal.tsx");
 const MATH = join(CLIENT, "features", "settings", "planMath.ts");
 
 const read = (path: string) => readFileSync(path, "utf8");
-const code = (text: string) =>
-  text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const code = (text: string) => withoutComments(text);
 
 /** The paid rungs, in ladder order, straight off the product's own table. */
 const PAID = Object.values(PLAN_TIERS).filter((tier) => tier.price > 0);

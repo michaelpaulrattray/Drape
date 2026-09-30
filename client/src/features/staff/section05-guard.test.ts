@@ -34,7 +34,32 @@ const PAGES = path.resolve(CLIENT_SRC, "pages");
 
 const read = (relative: string) => fs.readFileSync(path.resolve(CLIENT_SRC, relative), "utf8");
 
-/** Strip comments, so a docblock explaining a rule cannot trip the rule. */
+/**
+ * Strip comments, so a docblock explaining a rule cannot trip the rule.
+ *
+ * ⚠ **THIS IS THE ONE FILE OF #1629's TWENTY-SIX THAT DOES NOT USE THE SHARED
+ * `withoutComments`, AND THE REASON IS MEASURED RATHER THAN ASSUMED.** The swap
+ * was made, all 26 suites were run before and after, and exactly one verdict
+ * moved: *"the two retired titles are written nowhere in the client"* went RED
+ * on THIS FILE's own docblock, where the arm below explains itself by quoting
+ * the very title it forbids — which is prose, not a surface.
+ *
+ * The cause is in the shared reader and not here: it is quote-aware and NOT
+ * regex-literal-aware, and its quote branch runs BEFORE its comment branches.
+ * The `<SurfaceBar … title=` matcher further down carries an ODD number of
+ * backticks inside a regex literal, so from that line on the walk believes it is
+ * inside a template literal and stops stripping comments for the rest of the
+ * file. Driven with a negative control (same fixture, no regex literal → the
+ * docblock IS stripped) and a positive one (with it → it is not).
+ *
+ * ⚠ **THE POPULATION IS NOT NARROWED TO GET PAST IT.** The tempting repair is to
+ * skip this file in the walk below, and that arm exists precisely because an
+ * earlier sweep's population was too small to see a third hardcoded copy on a
+ * live admin page. Lowering the floor to suit a reader is the wrong direction.
+ *
+ * The reader's blindness is filed as its own card with the tree-wide figure;
+ * this line goes when that lands.
+ */
 const code = (text: string) =>
   text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 

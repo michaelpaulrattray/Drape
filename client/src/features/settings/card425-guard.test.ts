@@ -7,6 +7,8 @@ import { OFFERED_PLAN_ORDER } from "../../../../server/stripe/stripeProducts";
 import { readBurn, readCycle } from "./planMath";
 import { recommendPlan, type LadderPlan } from "./planLadder";
 
+import { withoutComments } from "../../../../server/testing/withoutComments";
+
 /**
  * CARD 425 — his four Change plan corrections, and the two of them that turned
  * out to need no code at all.
@@ -58,8 +60,7 @@ const read = (path: string) => readFileSync(path, "utf8");
 /* Comments are stripped before every source arm — this file's own subject is
    quoted at length in the component's docblocks, and a rule written in prose is
    not a rule shipped. Card 390's guard has been red for exactly this. */
-const code = (text: string) =>
-  text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const code = (text: string) => withoutComments(text);
 
 const DAY = 24 * 60 * 60 * 1000;
 
