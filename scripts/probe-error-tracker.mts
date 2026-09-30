@@ -52,20 +52,32 @@
  * Exit 0 only on `arrived`. Any other verdict exits 2 — a finding, in the
  * gate-stall-check sense, so a rite step or `deploy-verify` can read it.
  *
+ * ⚠ **AND THE CODE IS PRINTED AS `EXIT <n>` ON STDOUT, WHICH IS THE READING TO
+ * KEY ON.** The first production run returned 1 while having printed its
+ * verdict correctly, because the process aborted in libuv on the way out; the
+ * line is decided before any teardown and cannot be taken by one. See the
+ * comment at the foot of this file.
+ *
  * # What this does NOT cover, named rather than left to be assumed
  *
  * **The BROWSER tracker.** #1542 asks for a marked exception through the browser
  * tracker too, and a browser tracker needs a browser: a served bundle, a page
  * and `VITE_SENTRY_DSN`. It is a separate instrument with a separate road (the
  * `verify` recipe), not a branch of this script, and it is still owed on the
- * card. **PostHog is not covered either and does not need to be** — the founder
+ * card. ⚠ What it no longer lacks is the KEY: `captureClientError` returns
+ * Sentry's event id as of #1542, where it was typed `=> void` and discarded —
+ * so when that road exists there is something for it to ask the vendor about.
+ * Driving it still needs a DSN this machine does not have. **PostHog is not covered either and does not need to be** — the founder
  * read its Activity view himself on 2026-09-30 and the product-event pipe is
  * proven live, which is why the card narrowed to Sentry alone.
  */
 import "dotenv/config";
 
+import { execFileSync } from "node:child_process";
+
 import {
   captureServerError,
+  closeErrorTracker,
   errorTrackerStatus,
   flushErrorTracker,
   initErrorTracker,
@@ -73,6 +85,7 @@ import {
 import {
   probeErrorMessage,
   probeMarker,
+  readProbeBuild,
   readTrackerProbe,
   type VendorLookup,
 } from "../server/monitoring/trackerVerdict";
@@ -167,12 +180,36 @@ async function lookUpAtSentry(eventId: string): Promise<LookupOutcome> {
   };
 }
 
+/**
+ * This checkout's HEAD, or `undefined` when there is no git to ask.
+ *
+ * `execFileSync` rather than a shell: no interpolation, nothing to quote, and a
+ * failure is an exception rather than a string that looks like a sha. A
+ * production container has no `.git`, which is not an error here — it is the
+ * road where `RAILWAY_GIT_COMMIT_SHA` answers instead.
+ */
+const gitHead = (): string | undefined => {
+  try {
+    return execFileSync("git", ["rev-parse", "HEAD"], {
+      cwd: new URL("..", import.meta.url),
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+  } catch {
+    return undefined;
+  }
+};
+
 const nonce = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-const sha = process.env.RAILWAY_GIT_COMMIT_SHA?.trim() || undefined;
-const marker = probeMarker(sha, nonce);
+const build = readProbeBuild(process.env, gitHead);
+const marker = probeMarker(build.sha, nonce);
 
 console.log("— error tracker probe (#1542) —");
 console.log(`marker   ${marker}`);
+/* ⚠ THE SOURCE IS PRINTED BESIDE THE SHA, NEVER THE SHA ALONE. A checkout sha
+   read as a deployment sha sends the next reader to audit the wrong build —
+   see `readProbeBuild`'s header for the two trees it can name. */
+console.log(`build    ${build.source} — ${build.note}`);
 
 const bootLine = await initErrorTracker();
 console.log(`boot     ${bootLine}`);
@@ -221,4 +258,32 @@ if (!reading.healthy) {
   console.log("Record this on #1542: the verdict, the event id, and the lookup note above.");
 }
 
-process.exit(reading.healthy ? 0 : 2);
+/**
+ * ⚠ THE EXIT CODE IS PRINTED AS A LINE, BECAUSE THE FIRST PRODUCTION RUN'S CODE
+ * WAS A LIE (#1542, the relay's second finding of 2026-09-30).
+ *
+ * That run printed `accepted-unverified` and then died at exit inside libuv
+ * (`Assertion failed: !(handle->flags & UV_HANDLE_CLOSING)`, `win/async.c`),
+ * returning **1** rather than the 2 the docblock promises — so a rite step
+ * reading the code alone would have filed a FINDING as an ordinary failure, and
+ * the verdict it had already printed correctly would have been overridden by
+ * the way the process happened to end.
+ *
+ * So the contract is carried twice, and the cheap copy is the one that cannot be
+ * taken by a teardown crash: `EXIT <n>` on stdout, decided BEFORE anything is
+ * torn down. A caller keys on this line and uses the code as agreement, not as
+ * the source. That is deliberately the opposite of the usual rule — here the
+ * exit code is the derived reading and the line is the measurement.
+ */
+const code = reading.healthy ? 0 : 2;
+console.log(`EXIT     ${code}`);
+
+/* CLOSE, not just flush: this process is about to end, and `flushErrorTracker`
+   leaves the client and its OpenTelemetry handles alive — which is right for
+   the server and is the resident-script defect for a script. It is the SDK's own
+   documented teardown and it is the shape most likely to settle the assertion
+   above; it is NOT claimed as proven, because the crash needs a real ingest
+   endpoint and a localhost DSN exits cleanly (measured 2026-10-01). */
+await closeErrorTracker(10_000);
+
+process.exit(code);

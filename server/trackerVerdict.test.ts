@@ -26,6 +26,7 @@ import { describe, expect, it } from "vitest";
 import {
   probeErrorMessage,
   probeMarker,
+  readProbeBuild,
   readTrackerProbe,
   type TrackerProbeFacts,
 } from "./monitoring/trackerVerdict";
@@ -144,6 +145,79 @@ describe("the probe's marker (#1542)", () => {
     const message = probeErrorMessage(probeMarker("abcdef1", "n"));
     expect(message).toContain("probe");
     expect(message).toContain("not a customer error");
+  });
+});
+
+/**
+ * ⚠ WHICH BUILD THE PROBE PROBED — the finding the first production run
+ * produced about itself (#1542, 2026-09-30).
+ *
+ * It printed `probe:unknown:munjylwl-jxuq79`. `RAILWAY_GIT_COMMIT_SHA` is set
+ * inside a container Railway BUILT and is not injected by `railway run`, which
+ * is the only road the probe is actually fired on — so the instrument could not
+ * name its own subject on the one road it is used.
+ *
+ * The two arms that matter are not "does it find a sha". They are that the
+ * DEPLOYMENT road wins when both are available, and that the CHECKOUT road says
+ * out loud that it is naming a local tree: a checkout sha reported as a
+ * deployment's sends the next reader to audit the wrong build, which is the
+ * confident-and-wrong reading this repository keeps paying for. `gitHead` is
+ * injected, so the failure road is driven rather than hoped for.
+ */
+describe("⚠ which build the probe probed, and how it knows (#1542)", () => {
+  const DEPLOYED = "2af098270000000000000000000000000000abcd";
+  const HEAD = "689424b6b886e94dede6555df8e4a313de0b2e9e";
+  const never = () => {
+    throw new Error("git must not be asked when the deployment sha is present");
+  };
+
+  it("takes RAILWAY_GIT_COMMIT_SHA when it is set — that IS the running build", () => {
+    const build = readProbeBuild({ RAILWAY_GIT_COMMIT_SHA: DEPLOYED }, never);
+    expect(build).toMatchObject({ sha: DEPLOYED, source: "deployment" });
+    expect(build.note).toContain("RAILWAY_GIT_COMMIT_SHA");
+  });
+
+  it("⚠ prefers the deployment over the checkout, and does not even ask git", () => {
+    /* `never` throwing is the assertion: a reader that consulted git first would
+       take the LOCAL tree's answer inside a deployed container, which is the
+       wrong sha reported with full confidence. */
+    expect(() => readProbeBuild({ RAILWAY_GIT_COMMIT_SHA: DEPLOYED }, never)).not.toThrow();
+  });
+
+  it("falls back to git HEAD when the env is absent — the `railway run` road", () => {
+    const build = readProbeBuild({}, () => HEAD);
+    expect(build).toMatchObject({ sha: HEAD, source: "checkout" });
+  });
+
+  it("⚠ SAYS the checkout sha is not the deployment's, so it cannot be misread", () => {
+    const build = readProbeBuild({}, () => HEAD);
+    expect(build.note).toContain("NOT the deployment");
+    expect(build.note).toContain("/api/health");
+  });
+
+  it("trims what either road hands back — a captured sha carries a newline", () => {
+    /* `git rev-parse HEAD` ends in one, and a marker with a newline inside it is
+       unsearchable in the feed it exists to be found in. */
+    expect(readProbeBuild({}, () => HEAD + String.fromCharCode(10)).sha).toBe(HEAD);
+    expect(readProbeBuild({ RAILWAY_GIT_COMMIT_SHA: ` ${DEPLOYED} ` }, never).sha).toBe(DEPLOYED);
+  });
+
+  it("treats an EMPTY env value as absent, not as a sha — a blank Railway variable is \"\"", () => {
+    expect(readProbeBuild({ RAILWAY_GIT_COMMIT_SHA: "" }, () => HEAD).source).toBe("checkout");
+    expect(readProbeBuild({ RAILWAY_GIT_COMMIT_SHA: "   " }, () => HEAD).source).toBe("checkout");
+  });
+
+  it("says unknown when neither road answers, and calls the RUN valid anyway", () => {
+    const build = readProbeBuild({}, () => undefined);
+    expect(build).toMatchObject({ sha: undefined, source: "unknown" });
+    /* The attribution is missing; the measurement is not. A note that read as a
+       failed run would send a reader to re-fire a probe that worked. */
+    expect(build.note).toContain("still valid");
+  });
+
+  it("feeds the marker, so an unknown build still produces a findable event", () => {
+    const build = readProbeBuild({}, () => undefined);
+    expect(probeMarker(build.sha, "run-one")).toBe("probe:unknown:run-one");
   });
 });
 
