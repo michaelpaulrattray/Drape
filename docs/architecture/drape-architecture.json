@@ -12920,6 +12920,10 @@
       "path": "server/crewShiftCardClaim.test.ts"
     },
     {
+      "id": "test:server/crewShiftCardClaimComments.test.ts",
+      "path": "server/crewShiftCardClaimComments.test.ts"
+    },
+    {
       "id": "test:server/crewShiftHeartbeatScope.test.ts",
       "path": "server/crewShiftHeartbeatScope.test.ts"
     },
