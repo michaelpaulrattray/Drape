@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { HookRun, SpawnFailure, requireShell, resolveShell, runHook, runHookAsync, runWithLimit } from "./hookDriver";
 import { readListedSource } from "./listedSource";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./childProcessTimeout";
+import { withoutComments } from "../../scripts/lib/productionMention.mts";
 
 /* This suite drives a real child process, so it declares the class's timeout
    rather than racing vitest's 5 s default under a parallel run (#548). */
@@ -246,8 +247,34 @@ describe("the class is keyed on the SHAPE now, because three greps were keyed on
    *    have been invisible on the day it was walked. Measured at the tree the
    *    day this clause landed: **no suite matches it**, so it costs nothing
    *    today and catches the first one tomorrow.
+   *
+   * ⚠ **AND IT IS ASKED OF CODE, NOT OF BYTES (#1623).** Both clauses used to
+   * read the raw source, so a DOCBLOCK answered for the file. PR #1619 was
+   * reddened by a single `exec(` inside a comment quoting a regex — prose about
+   * an earlier instrument defect — in a suite that contains no `.status` at all
+   * and drives nothing asynchronously: seven minutes of gate, and a message
+   * telling its author to declare a file that drives nothing. **A guard whose
+   * false positives land on exactly the suites that WRITE about child processes
+   * teaches shifts to declare their way out of it**, which is how a pinned
+   * population rots.
+   *
+   * `withoutComments` is the house reader for this — the uncalled-export
+   * classifier strips with it before asking whether a symbol is mentioned,
+   * which is this question one layer over — so it is imported rather than
+   * copied (working law 4; the tree already carries two private copies).
+   *
+   * ⚠ **A STRING LITERAL IS STILL CODE, and it must stay matched**: this file's
+   * own `DECLARED` entry rests on its controls being source-shaped strings the
+   * reader necessarily matches, so a stripper that reached inside quotes would
+   * drop this file out of the population and leave that entry dead. There is an
+   * arm for it below. Measured over all 819 `*.test.ts` files under `server/`
+   * at the repair: **7 matched before and the same 7 after** — none left, none
+   * joined, and all seven are declared.
    */
-  function drivesAChildDirectly(body: string): boolean {
+  function drivesAChildDirectly(source: string): boolean {
+    /* The comments come off FIRST, so the sweep and this suite's own controls
+       ask the one question of the one reading. */
+    const body = withoutComments(source);
     const synchronous = /\b(spawnSync|execFileSync|execSync)\(/.test(body) && /\.status\b/.test(body);
     const asynchronous = /(?<![.\w])(spawn|exec|execFile)\(/.test(body);
     return synchronous || asynchronous;
@@ -288,6 +315,35 @@ describe("the class is keyed on the SHAPE now, because three greps were keyed on
       drivesAChildDirectly('const r = runHook("git", []);\nexpect(r.status).toBe(0);'),
       "the reader flags a suite that uses the driver — it would flag everything",
     ).toBe(false);
+
+    /*
+      ⚠ AND THE #1623 PAIR — the reader asks about CODE, and prose is not code.
+      Both shapes of comment, because a suite that writes about child processes
+      writes about them in both, and the block form is the one that reddened
+      PR #1619. The REAL specimen is used rather than an invented one.
+    */
+    expect(
+      drivesAChildDirectly('/**\n * `exec(File)?Sync\\(\\s*"git"\\s*,` was the first shape of this.\n */\nconst a = 1;\n'),
+      "a block comment quoting a regex answers for the file again — #1619's red",
+    ).toBe(false);
+    expect(
+      drivesAChildDirectly('const a = 1; // the old sweep keyed on spawn( and missed four\n'),
+      "a line comment answers for the file",
+    ).toBe(false);
+    /*
+      ⚠ THE OTHER DIRECTION, and it is the one that would go quiet: a stripper
+      that reached inside quotes would empty this population and report a clean
+      tree forever — and it would take THIS FILE's own DECLARED entry with it,
+      since that entry exists because its controls are source-shaped strings.
+    */
+    expect(
+      drivesAChildDirectly('const fixture = \'const c = spawn("git", []);\';\n'),
+      "a source-shaped STRING stopped matching — the population is now silent",
+    ).toBe(true);
+    expect(
+      found,
+      "this file left its own population — the DECLARED entry above is now dead",
+    ).toContain("server/testing/hookDriver.test.ts");
 
     const undeclared = found.filter((file) => !(file in DECLARED));
     expect(
