@@ -91,6 +91,23 @@ export type PointerReading = {
  * instead of a mystery.
  */
 export const DELIBERATELY_ABSENT: Record<string, { readonly why: string }> = {
+  "falSignViewWire.test.ts": {
+    why:
+      "Deleted with `createFalSunburstViewEngine` (#1554, 2026-09-30, on his ruling 'DELETE'). " +
+      "It drove that FACTORY at the wire, so it was coverage of the thing removed rather than " +
+      "of anything that survives — the factory had been the Sign's view engine for two days " +
+      "(#1459) and path E took the delivered views back to Nano Banana Pro, leaving it wired " +
+      "to nothing but this suite. Both remaining mentions are in " +
+      "`signViewEngineChain.test.ts`, which is what the road is proved by now: one recording " +
+      "what its own docblock used to claim, one recording what the deletion would have cost. " +
+      "⚠ THE COST IS THE PART WORTH KEEPING: this suite held the tree's only mechanical arm " +
+      "that a Sunburst `image_size` is a multiple of 16, as the door requires — and it read " +
+      "`SIGNED_VIEW_SIZE` alone, while `OUTFIT_PLATE_SIZE`, the size a real Sign asks for " +
+      "every time, had none at all. That arm was carried across covering the LIVE constant " +
+      "first, and driven red by sabotage before it was believed. A deleted suite's arms are " +
+      "not all coverage of the deleted thing, and this is the check that found the one that " +
+      "was not.",
+  },
   "castingV2-segment-store-db.test.ts": {
     why:
       "Deleted with the segment store's database layer (#1160 slice 3, 2026-09-25, on his " +
