@@ -1,7 +1,7 @@
 {
-  "edition": 591,
-  "updatedAt": "2026-09-30T17:17:39.619Z",
-  "shift": "Foreman (night shift) — nothing you can see changed, and this one is about the automatic checks that decide whether a change is allowed to go live. About ninety of those checks work by reading our own code and asking a question of it — things like \"does any file still charge a customer without saying which tool it was for?\". Before reading, each one strips out the notes we write around the code, which is right: otherwise a note explaining a rule would set off the rule it explains. Eight of them stripped those notes the wrong way. They treated the two slashes in a web address as the start of a note, and threw away the rest of that line. So any line with a web address in it was cut short, and whatever came after it was simply invisible to the check — which passes, and nothing anywhere says otherwise. I measured it rather than assumed. Across the 1,947 code files, that way of reading makes 283 of them come up short and hides about 90,000 characters of real code. Three of the eight were blind right now rather than merely at risk — including the one that guards how we charge, which was reading 23 server files short. The proof: I hid a real charging decision behind a web address on one line. The old check said everything was fine. The fixed one caught it and named the file. All eight now read the careful way, and there is a new check that fails if anyone writes the broken kind again — with no list of exceptions, because a list of exceptions is how this grew back last time. I then broke that new check six ways on purpose and every one was caught by name, with the check passing before and after. One honest thing left, and it is the reason this took a while. The job said this was 26 copies of one mistake. Read at the code it is 97 files, and the 26 it named were the harmless ones. I wrote the real count down and left the rest as its own job, because 16 of those files read a different kind of code where the same fix would quietly break them.",
+  "edition": 592,
+  "updatedAt": "2026-09-30T18:40:42.000Z",
+  "shift": "Foreman (night shift) - yesterday you clicked Errors and Sentry showed you its \"nothing has ever arrived here\" welcome screen, over a server that had been saying it was reporting errors for three days. Tonight I sent a deliberate test error through the real path on production and our side says Sentry accepted it, with an id. What I could not do is confirm it from our side: the Sentry key we hold can only send, not read, so Sentry refused the read-back. I proved that is the key and not a mistake of ours by asking on both of Sentry's addresses and getting the same refusal on a question that needs no special permission at all. So there is one question for you on the desk and it is a single look at your own feed. Everything else tonight was finishing another seat's work: its tracker fix was sitting finished and unmerged, I read it line by line, merged it and watched production restart onto it. Two smaller honest notes: the fix that was meant to stop the test tool crashing as it exits did not stop it, and the part that prints its answer before it exits saved the reading anyway.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -405,7 +405,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-30T17:17:53.178Z",
+      "readAt": "2026-09-30T18:39:44.669Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -3592,6 +3592,28 @@
       "state": "done",
       "filedAt": "2026-09-30T04:49:50.000Z",
       "issueNumber": 1503
+    },
+    {
+      "id": "sentry-arrival-1542",
+      "title": "Is our test error in your Sentry feed? One look settles what you spotted yesterday",
+      "productImpact": "Yesterday you clicked Errors on the admin overview, landed on the right project, and Sentry showed you its welcome screen - the one it only shows while a project has never received anything at all. Meanwhile our server had been printing that it was reporting errors to Sentry at every restart for three days.\n\nTwo very different things could explain that, and nothing we had could tell them apart: either nothing has gone wrong in three days, which would be good news, or errors are being thrown away on the way and we would never know. Until that is settled, the error count on your own admin page cannot be trusted either way.\n\nSo tonight I sent one error on purpose, through exactly the path a real crash takes on production. Our side reports that Sentry accepted it and gave us an id for it. That is as far as we can get on our own: the Sentry key on the server is a sending key, so when we asked Sentry to confirm the error had landed, Sentry refused us.\n\nI checked that the refusal is really about the key and not a mistake in how we ask. I put the same question to both of Sentry's addresses, and also asked something that needs no special permission at all, and every one came back with the same refusal. So our end is right and the key simply cannot read.",
+      "workedExample": "The test error is tagged so you can find it. Search your Sentry feed for:\n\n    probe:4942f8b4\n\nor look for the error id c4d427384375477095eab4de12388d7d.\n\nIt was sent at about 4:35am your time, on the build that is running now.\n\nIf it is there: error reporting works, the three quiet days were genuinely quiet, and the welcome screen was just Sentry being slow to notice. Good news, and we can trust the count.\n\nIf it is not there: errors are being lost between us and Sentry, and that is a real fault to chase - it would mean every crash a customer has hit in three days went nowhere.",
+      "options": [
+        {
+          "key": "look",
+          "label": "Take one look at your Sentry feed and tell me if it is there",
+          "consequence": "Costs you a minute and answers the whole question. If it is missing I chase it as a fault."
+        },
+        {
+          "key": "reading-key",
+          "label": "Also give us a Sentry key that is allowed to read",
+          "consequence": "Then we check this ourselves from now on, and a silent tracker becomes an alarm instead of a question for you. Needs a new key from Sentry and one variable changed."
+        }
+      ],
+      "recommendation": "Take the look first - it is a minute and it settles it. The reading key is worth doing afterwards so you are never asked this again.",
+      "state": "waiting",
+      "filedAt": "2026-09-30T18:40:42.000Z",
+      "issueNumber": 1542
     }
   ],
   "eyeItems": [
@@ -9558,7 +9580,7 @@
     247
   ],
   "nextUp": {
-    "readAt": "2026-09-30T17:17:53.178Z",
+    "readAt": "2026-09-30T18:39:44.669Z",
     "items": [
       {
         "issueNumber": 1469,
