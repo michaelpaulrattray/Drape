@@ -2,6 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { withoutComments } from "../../../../server/testing/withoutComments";
+
 /**
  * Brief 05's rules, as assertions rather than as review memory
  * (`docs/specs/Casting-ui-ux-design/drape-redesign/05-staff-shell.md`).
@@ -37,31 +39,49 @@ const read = (relative: string) => fs.readFileSync(path.resolve(CLIENT_SRC, rela
 /**
  * Strip comments, so a docblock explaining a rule cannot trip the rule.
  *
- * ⚠ **THIS IS THE ONE FILE OF #1629's TWENTY-SIX THAT DOES NOT USE THE SHARED
- * `withoutComments`, AND THE REASON IS MEASURED RATHER THAN ASSUMED.** The swap
- * was made, all 26 suites were run before and after, and exactly one verdict
- * moved: *"the two retired titles are written nowhere in the client"* went RED
- * on THIS FILE's own docblock, where the arm below explains itself by quoting
- * the very title it forbids — which is prose, not a surface.
+ * ⚠ **THIS FILE WAS THE ONE OF #1629's TWENTY-SIX THAT COULD NOT USE THE SHARED
+ * READER, AND #1635 CLOSED THE REASON — so it joins them here.** The history is
+ * worth one paragraph because it is what the repair was measured against: the
+ * swap was made, all 26 suites ran before and after, and exactly one verdict
+ * moved — *"the two retired titles are written nowhere in the client"* went RED
+ * on THIS FILE's own docblock, where an arm below explains itself by quoting the
+ * very title it forbids.
  *
- * The cause is in the shared reader and not here: it is quote-aware and NOT
- * regex-literal-aware, and its quote branch runs BEFORE its comment branches.
- * The `<SurfaceBar … title=` matcher further down carries an ODD number of
- * backticks inside a regex literal, so from that line on the walk believes it is
- * inside a template literal and stops stripping comments for the rest of the
- * file. Driven with a negative control (same fixture, no regex literal → the
- * docblock IS stripped) and a positive one (with it → it is not).
+ * The cause was in the reader rather than here. It was quote-aware and not
+ * regex-literal-aware, and the `<SurfaceBar … title=` matcher further down
+ * carries an ODD number of backticks inside a regex literal — so from that line
+ * on the walk believed it was inside a template literal and stopped stripping
+ * comments for the rest of the file. `withoutComments` now reads regex literals
+ * and nested template substitutions, proven against the TypeScript parser over
+ * every tracked file on every run (`server/testing/withoutComments.test.ts`).
  *
- * ⚠ **THE POPULATION IS NOT NARROWED TO GET PAST IT.** The tempting repair is to
- * skip this file in the walk below, and that arm exists precisely because an
- * earlier sweep's population was too small to see a third hardcoded copy on a
- * live admin page. Lowering the floor to suit a reader is the wrong direction.
- *
- * The reader's blindness is filed as its own card with the tree-wide figure;
- * this line goes when that lands.
+ * ⚠ **THE POPULATION WAS NOT NARROWED TO GET PAST IT, and that is the part to
+ * keep.** The tempting repair was to skip this file in the walk below; that arm
+ * exists precisely because an earlier sweep's population was too small to see a
+ * third hardcoded copy on a live admin page. Lowering the floor to suit a
+ * reader is the wrong direction, and it stayed declined for the four days the
+ * reader was blind.
  */
-const code = (text: string) =>
-  text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const code = withoutComments;
+
+/**
+ * ⚠ **THE ONE SWEEP BELOW READS `.css` AS WELL AS `.tsx`, AND A JS READER IS
+ * THE WRONG ONE FOR CSS — #1636's rule, applied here rather than inherited.**
+ * `//` is not a comment in CSS: an unquoted `url(https://fonts.example/x.css)`
+ * would be truncated at the scheme, and a guard that reads less passes for the
+ * wrong reason. CSS has block comments and nothing else, so that is all that is
+ * stripped from it.
+ *
+ * Measured over the twelve client stylesheets the day this landed: the two
+ * readers return **identical** non-whitespace content, so this costs nothing
+ * today and closes the hole the first `url(…)` on a line would have opened.
+ * The previous reader was anchored to line starts and was accidentally safe
+ * here; the shared one is not, which is why the language is chosen explicitly.
+ */
+const cssBlockCommentsOnly = (text: string) => text.replace(/\/\*[\s\S]*?\*\//g, "");
+
+const readerFor = (fileName: string) =>
+  fileName.endsWith(".css") ? cssBlockCommentsOnly : code;
 
 const STAFF_BAR = read("features/staff/StaffBar.tsx");
 const STAFF_SURFACE = read("features/staff/StaffSurface.tsx");
@@ -503,8 +523,9 @@ describe("the staff bar's title is composed, never spelt", () => {
         else if (/\.(tsx?|css)$/.test(entry.name)) {
           const text = fs.readFileSync(full, "utf8");
           /* Comments are stripped: this very file names the literal on purpose,
-             and so does the component's docblock explaining the decision. */
-          if (code(text).includes(TITLE)) offenders.push(path.relative(CLIENT_SRC, full));
+             and so does the component's docblock explaining the decision.
+             ⚠ And the reader is chosen by LANGUAGE — see `readerFor`. */
+          if (readerFor(entry.name)(text).includes(TITLE)) offenders.push(path.relative(CLIENT_SRC, full));
         }
       }
     };
@@ -517,6 +538,18 @@ describe("the staff bar's title is composed, never spelt", () => {
     expect(code(`/* the title is ${TITLE} */`).includes(TITLE), "a comment naming it must not").toBe(
       false,
     );
+  });
+
+  it("positive control: a CSS line carrying a URL still reaches the sweep", () => {
+    /* ⚠ The arm that makes `readerFor` load-bearing rather than tidy. A JS
+       reader treats the `//` in a stylesheet's URL as a comment and loses the
+       rest of the line — including a spelt title after it. Both readings are
+       asserted, so the wrong one cannot be restored quietly. */
+    const stylesheet = `.a { background: url(https://cdn.example/x.png); content: "${TITLE}"; }`;
+    expect(readerFor("foundation.css")(stylesheet).includes(TITLE), "CSS must be read whole").toBe(true);
+    expect(code(stylesheet).includes(TITLE), "a JS reader is why the choice exists").toBe(false);
+    /* And CSS block comments ARE still stripped, or this file's own prose would trip it. */
+    expect(readerFor("foundation.css")(`/* ${TITLE} */`).includes(TITLE)).toBe(false);
   });
 
   /**
