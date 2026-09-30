@@ -92,7 +92,7 @@
     {
       "id": "domain:platform",
       "name": "platform",
-      "moduleCount": 18
+      "moduleCount": 19
     },
     {
       "id": "domain:profile",
@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 69
+      "moduleCount": 70
     },
     {
       "id": "domain:staff",
@@ -5173,6 +5173,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/monitoring/trackerVerdict.ts",
+      "path": "server/monitoring/trackerVerdict.ts",
+      "domain": "platform",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/providers/bannedEngines.ts",
       "path": "server/providers/bannedEngines.ts",
       "domain": "providers",
@@ -6225,6 +6231,12 @@
     {
       "id": "module:shared/spokenError.ts",
       "path": "shared/spokenError.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/vendorModelStatus.ts",
+      "path": "shared/vendorModelStatus.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -13994,6 +14006,10 @@
       "path": "server/timeoutFailureIdentity.test.ts"
     },
     {
+      "id": "test:server/trackerVerdict.test.ts",
+      "path": "server/trackerVerdict.test.ts"
+    },
+    {
       "id": "test:server/typecheckOnCommit.test.ts",
       "path": "server/typecheckOnCommit.test.ts"
     },
@@ -14008,6 +14024,10 @@
     {
       "id": "test:server/uptimeAnchor.test.ts",
       "path": "server/uptimeAnchor.test.ts"
+    },
+    {
+      "id": "test:server/vendorModelStatus.test.ts",
+      "path": "server/vendorModelStatus.test.ts"
     },
     {
       "id": "test:server/viewThumbnailWiring.test.ts",
