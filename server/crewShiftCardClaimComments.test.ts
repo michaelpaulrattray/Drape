@@ -27,8 +27,9 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 import {
   CARD_COMMENT_READ_TIMEOUT_MS,
   cardCommentListArgs,
@@ -39,6 +40,17 @@ import {
   type CardComment,
 } from "../scripts/lib/cardClaimComments.mts";
 import { CREW_CLAIM_LIVE_MS } from "../shared/crewCardBuildState";
+
+/*
+  ⚠ THIS SUITE IS IN #548's POPULATION, THROUGH THE MODULE IT DRIVES. Every arm
+  below is fixture-fed and spawns nothing today — but `readCardComments` reaches
+  `execFileSync` when no fixture is given, so the deriver counts this file the
+  moment it is tracked, and it is RIGHT to: the first arm that omits a fixture
+  path would spawn `gh` inside vitest's 5 s default and go red under load on
+  somebody's machine rather than in CI. Declared with the population, not after
+  it bites.
+*/
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 /** The moment the foreman's claim landed on #1554, as GitHub recorded it. */
 const FOREMAN_CLAIMED_AT = "2026-09-30T05:56:59Z";
