@@ -235,7 +235,7 @@ function BoardPageImpl() {
   const dismissOperationMutation = trpc.generation.dismissOperationResult.useMutation({
     onSuccess: (settled) => {
       setRelinkOperationId(null);
-      if (settled.dismissedNow) toast.success('Saved in Models');
+      if (settled.dismissedNow) toast.success('Saved in your Library');
       void utils.generation.activeOperations.invalidate();
     },
     onError: (error) => {
@@ -2243,7 +2243,7 @@ function BoardPageImpl() {
                 <p className="text-canvas-sm text-canvas-ink-faint">
                   {relinkOperationId
                     ? 'Select where to place it. Existing work will not be replaced.'
-                    : 'It is safe in Models because its original node changed.'}
+                    : 'It is safe in your Library because its original node changed.'}
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-2">

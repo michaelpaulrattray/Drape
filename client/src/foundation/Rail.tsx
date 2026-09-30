@@ -131,7 +131,7 @@ export const RAIL_DESTINATIONS: readonly Destination[] = [
   { id: "casting", label: "Casting", href: "/casting", glyph: P.avatar },
   { id: "cinema", label: "Cinema", glyph: P.cinema },
   { id: "assets", label: "Assets", glyph: P.asset },
-  { id: "library", label: "Library", href: "/app/models", glyph: P.library },
+  { id: "library", label: "Library", href: "/app/library", glyph: P.library },
 ];
 
 /**

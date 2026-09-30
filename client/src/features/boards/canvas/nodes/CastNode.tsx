@@ -681,7 +681,7 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
                           // unconditionally, never as identity rollback.
                           <div className="text-canvas-xs text-canvas-ink-soft">
                             {sheet.minted
-                              ? "Headshot out of sync — it never refreshes. Changing this identity forks a new model"
+                              ? "Headshot out of sync — it never refreshes. Changing this identity forks a new cast"
                               : "Headshot out of sync — it never refreshes. Edit it in the environment"}
                             {slot.version > 1 ? ", or reuse a version from the current look in its history" : ""}.
                           </div>

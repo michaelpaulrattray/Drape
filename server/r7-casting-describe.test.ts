@@ -80,7 +80,7 @@ describe("R7-3 Casting Act 1 — one obvious first action", () => {
     const gate = read("client/src/features/studio/hooks/useCastGate.ts");
     const takeover = read("client/src/features/studio/takeover/CastingTakeover.tsx");
 
-    expect(studio).toContain("onMinted: () => navigate('/app/models')");
+    expect(studio).toContain("onMinted: () => navigate('/app/library')");
     expect(takeover).toContain("onMinted: (modelId, characterName) =>");
     expect(gate).toContain("onMinted(currentModelId, characterName)");
   });

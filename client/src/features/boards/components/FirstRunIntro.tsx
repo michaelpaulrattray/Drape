@@ -50,7 +50,7 @@ export function FirstRunIntro({
         {/* The workflow composition — static art, not live nodes */}
         <div className="flex items-start gap-10">
           {/* 1 — a cast card */}
-          <GhostCard caption="Cast a model from a sentence" onClick={onDismiss}>
+          <GhostCard caption="Cast a person from a sentence" onClick={onDismiss}>
             <div className={`${ghostFrame} flex items-center justify-center`} style={{ width: 96, height: 128 }}>
               <User className="w-6 h-6 text-canvas-ink-faint opacity-50" strokeWidth={1.2} />
             </div>

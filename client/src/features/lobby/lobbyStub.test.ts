@@ -6,8 +6,16 @@
  * each of the three is what one arm below is for:
  *
  *  1. **The URLs must keep resolving.** A stubbed page is still a place; his
- *     rail keeps all eight destinations, so `/app/models` returning a 404 would
- *     be a broken rail rather than a stubbed page.
+ *     rail keeps all eight destinations, so the library URL returning a 404
+ *     would be a broken rail rather than a stubbed page.
+ *
+ *     ⚠ **The library's URL is `/app/library` since #1545, and `/app/models`
+ *     still answers as a REDIRECT** — his word, 2026-09-30. So this suite now
+ *     pins two different things about one door: `/app/library` routes to
+ *     `AppLobby`, and the old address forwards rather than 404ing. The set arm
+ *     below reads only `component={AppLobby}` routes, so the redirect is
+ *     deliberately NOT in `LOBBY_URLS` — it has its own arm in
+ *     `appRoutes.test.ts`, beside the other address the founder had move.
  *  2. **The stub must draw no controls.** His own standing rule is that a
  *     placeholder *names a place, never a capability* — a button that does
  *     nothing is the exact failure the rule exists to prevent, and it is the
@@ -32,8 +40,11 @@ const APP = "client/src/App.tsx";
 const LOBBY = "client/src/pages/AppLobby.tsx";
 const STUB = "client/src/features/lobby/LobbyStub.tsx";
 
-/** The five URLs `AppLobby` has always answered. All five stay. */
-const LOBBY_URLS = ["/app", "/app/boards", "/app/models", "/app/garments", "/app/looks"];
+/**
+ * The five URLs `AppLobby` answers. All five stay; the library's moved from
+ * `/app/models` to `/app/library` (#1545) and the old one redirects.
+ */
+const LOBBY_URLS = ["/app", "/app/boards", "/app/library", "/app/garments", "/app/looks"];
 
 describe("#302 — the lobby is stubbed, and stays a place", () => {
   it("routes all five lobby URLs to AppLobby, so a stubbed page is not a 404", () => {
