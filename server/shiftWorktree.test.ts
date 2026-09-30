@@ -43,6 +43,12 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   decideRemoval,
+  mergedPrArgs,
+  prHeadFetchArgs,
+  prReadFailed,
+  readMergedPullRequest,
+  readShippedCommits,
+  removalStateFromShipReading,
   junctionMustBeGone,
   looksCrlfSmudged,
   planFor,
@@ -60,6 +66,14 @@ const clean: RemovalState = {
   dirtyFiles: [],
   registered: true,
   junctionPresent: false,
+  /* Read, and nothing merged this branch (#1540). Explicit rather than omitted
+     because the field is REQUIRED: `null` and "nobody asked" are different facts
+     and an omitted field would silently pick one. Every arm below that is not
+     about the merge overrides it. */
+  mergedPullRequest: null,
+  /* No merged pull request was found, so there is nothing past one either
+     (#1540, at review). Required for the same reason as the field above. */
+  unshippedPastMerge: null,
 };
 
 describe("validateSlug — it ends in a recursive delete, so it is checked once here", () => {
@@ -137,6 +151,172 @@ describe("decideRemoval — refusing without becoming a rubber stamp", () => {
     const verdict = decideRemoval({ ...clean, registered: false }, false);
     expect(verdict.proceed).toBe(true);
     if (verdict.proceed) expect(verdict.warnings.join(" ")).toContain("not have this path registered");
+  });
+});
+
+/**
+ * ⚠ **THE GUARD HAD STOPPED BEING ABLE TO TELL ITS TWO CASES APART (#1540).**
+ *
+ * `delete_branch_on_merge` went on 2026-09-29 (#1434) and **a squash merge does
+ * not make the branch's commits ancestors of `main`** — so from that night every
+ * merged branch read as `N commits on this branch are on no remote`, the exact
+ * words of the refusal that exists to stop a shift's work vanishing. Measured on
+ * PR #1536 the same evening: merged as `ea6c407b`, remote ref deleted, helper
+ * refused, `--force` was correct, and it printed *"⚠ --force is destroying 2
+ * unpushed commit(s)"* over work that had already shipped.
+ *
+ * **The defect is not the refusal, it is that the message argues for the wrong
+ * act on the COMMON path** — and the two ways to be wrong after reading it are
+ * not symmetric: `--force` by reflex is right tonight and wrong on the branch the
+ * guard exists for, and believing it leaves the worktree, which is how this
+ * machine came to hold seventeen of them.
+ *
+ * So these arms pin the three answers apart. A merged pull request clears the
+ * refusal; no pull request keeps it, which is the case the card asked for by
+ * name; and a read nobody could take keeps it too, while SAYING it was not
+ * taken — never quietly asserting that nothing merged.
+ */
+describe("decideRemoval — a merged branch is not lost work (#1540)", () => {
+  /** What the helper saw on the night of PR #1536: two commits, no remote ref. */
+  const squashMerged: RemovalState = { ...clean, unpushedCommits: 2 };
+
+  it("⚠ a MERGED pull request clears the refusal — the measured PR #1536 case", () => {
+    const verdict = decideRemoval({ ...squashMerged, mergedPullRequest: 1536 }, false);
+    expect(verdict.proceed, "a branch that merged an hour ago is litter, not lost work").toBe(true);
+    if (verdict.proceed) {
+      /* ⚠ AND IT DOES NOT SAY "DESTROYING". The count is still said — a shift
+         asked to trust a tool about deleting things is owed the number it saw —
+         but a warning that cries wolf on the common path is how the real one
+         stops being read. */
+      const said = verdict.warnings.join(" ");
+      expect(said).toContain("PR #1536");
+      expect(said).toContain("2 commit(s)");
+      expect(said, "it must not claim to be destroying work that shipped").not.toContain("destroying");
+    }
+  });
+
+  it("⚠ NO merged pull request still REFUSES — this is the case worth refusing", () => {
+    /* The negative control the arm above is worthless without: if a merged PR
+       were not what cleared it, something else did. */
+    const verdict = decideRemoval({ ...squashMerged, mergedPullRequest: null }, false);
+    expect(verdict.proceed).toBe(false);
+    if (!verdict.proceed) {
+      expect(verdict.reason).toContain("2 commits");
+      expect(verdict.reason, "the shift is told WHICH question was asked")
+        .toContain("no merged pull request names this branch");
+      expect(verdict.reason).toContain("this directory is their only copy");
+      expect(verdict.overridable).toBe(true);
+    }
+  });
+
+  it("⚠ A READ NOBODY COULD TAKE REFUSES, AND SAYS IT WAS NOT TAKEN", () => {
+    /* The third answer, kept apart from the second on purpose: `null` says
+       *asked, and nothing merged this*; `unreadable` says *nobody asked*. An
+       absent `gh` must never be able to assert that a branch never merged. */
+    const verdict = decideRemoval(
+      { ...squashMerged, mergedPullRequest: { unreadable: "`gh pr list` exited -1: spawn gh ENOENT" } },
+      false,
+    );
+    expect(verdict.proceed).toBe(false);
+    if (!verdict.proceed) {
+      expect(verdict.reason).toContain("COULD NOT BE READ");
+      expect(verdict.reason).toContain("spawn gh ENOENT");
+      expect(verdict.reason, "an unread board is not a finding about the branch")
+        .toContain("the safe answer rather than a finding");
+      /* ⚠ AND IT MUST NOT CLAIM NOTHING MERGED — the sentence the `null` arm
+         above asserts is the one this arm forbids. */
+      expect(verdict.reason).not.toContain("no merged pull request names this branch");
+    }
+  });
+
+  it("--force still reaches it, and an UNREADABLE read does not soften the warning", () => {
+    const verdict = decideRemoval(
+      { ...squashMerged, mergedPullRequest: { unreadable: "offline" } },
+      true,
+    );
+    expect(verdict.proceed).toBe(true);
+    if (verdict.proceed) {
+      expect(verdict.warnings.join(" "), "with no proof it merged, --force is still destroying")
+        .toContain("destroying 2 unpushed commit(s)");
+    }
+  });
+
+  it("a merged pull request says so even under --force — the verb follows the FACT", () => {
+    const verdict = decideRemoval({ ...squashMerged, mergedPullRequest: 1536 }, true);
+    expect(verdict.proceed).toBe(true);
+    if (verdict.proceed) {
+      expect(verdict.warnings.join(" ")).toContain("PR #1536");
+      expect(verdict.warnings.join(" ")).not.toContain("destroying");
+    }
+  });
+
+  it("nothing unpushed proceeds silently whatever the pull request says", () => {
+    for (const merged of [null, 1536, { unreadable: "offline" } as const]) {
+      const verdict = decideRemoval({ ...clean, mergedPullRequest: merged }, false);
+      expect(verdict.proceed).toBe(true);
+      if (verdict.proceed) expect(verdict.warnings).toEqual([]);
+    }
+  });
+
+  it("the read-failure test has ONE owner, and it answers both ways", () => {
+    expect(prReadFailed({ unreadable: "x" })).toBe(true);
+    expect(prReadFailed(null)).toBe(false);
+    expect(prReadFailed(1536)).toBe(false);
+  });
+});
+
+/**
+ * THE READING ITSELF — over an injected runner, so both directions are drivable
+ * without a network (#1540).
+ */
+describe("readMergedPullRequest", () => {
+  it("⚠ THE CALL IS ASSERTED AT THE WIRE, and it asks for MERGED only", () => {
+    /* `--state all` would count a CLOSED-unmerged pull request over a deleted
+       branch as proof the work shipped, and that is the case still worth
+       refusing: rejected work with no remote ref is nowhere. */
+    expect(mergedPrArgs("team/refused-view-1492")).toEqual([
+      "pr", "list",
+      "--head", "team/refused-view-1492",
+      "--state", "merged",
+      "--limit", "5",
+      "--json", "number,mergedAt",
+    ]);
+  });
+
+  it("reads the number, and the NEWEST merge when a branch merged twice", () => {
+    const rows = JSON.stringify([
+      { number: 1200, mergedAt: "2026-09-01T00:00:00Z" },
+      { number: 1536, mergedAt: "2026-09-29T13:11:00Z" },
+    ]);
+    expect(readMergedPullRequest("team/x", () => ({ status: 0, out: rows, err: "" }))).toBe(1536);
+  });
+
+  it("an empty list is `null` — asked, and nothing merged this", () => {
+    expect(readMergedPullRequest("team/x", () => ({ status: 0, out: "[]", err: "" }))).toBeNull();
+  });
+
+  it("⚠ EVERY FAILURE IS `unreadable`, NEVER `null` — four roads, each named", () => {
+    /* The two are one character apart in a hurry and opposite in meaning. An
+       absent `gh` asserting "never merged" would make every removal read as the
+       dangerous case forever, which trains the exact habit this card is about. */
+    const roads: Array<[string, ReturnType<typeof readMergedPullRequest>]> = [
+      ["a non-zero exit", readMergedPullRequest("team/x", () => ({ status: 1, out: "", err: "gh: not logged in" }))],
+      ["a throw", readMergedPullRequest("team/x", () => { throw new Error("spawn gh ENOENT"); })],
+      ["not JSON", readMergedPullRequest("team/x", () => ({ status: 0, out: "gh: command not found", err: "" }))],
+      ["not a list", readMergedPullRequest("team/x", () => ({ status: 0, out: '{"number":1}', err: "" }))],
+    ];
+    for (const [road, answer] of roads) {
+      expect(prReadFailed(answer), `${road} must be unreadable, not null`).toBe(true);
+    }
+    /* Each says WHY, because a refusal quoting "unreadable" and nothing else
+       sends a shift looking in the wrong place. */
+    const exited = readMergedPullRequest("team/x", () => ({ status: 1, out: "", err: "gh: not logged in" }));
+    expect(prReadFailed(exited) && exited.unreadable).toContain("not logged in");
+  });
+
+  it("a row with no usable number is not a merge", () => {
+    const rows = JSON.stringify([{ number: 0, mergedAt: "2026-09-29T00:00:00Z" }, { mergedAt: "x" }]);
+    expect(readMergedPullRequest("team/x", () => ({ status: 0, out: rows, err: "" }))).toBeNull();
   });
 });
 
@@ -357,5 +537,176 @@ describe("the script's own text — the sequence a reader must be able to trust"
 
   it("refuses an unknown flag rather than ignoring it — a misspelt --dry-run on a remove deletes", () => {
     expect(source).toContain("unknown flag");
+  });
+});
+
+/**
+ * ⚠ **"A MERGED PULL REQUEST NAMES THIS BRANCH" IS NOT "THESE COMMITS SHIPPED"
+ * — the gap this card's own review found, and the one that would have made the
+ * fix WORSE than the defect** (#1540, relay verdict on PR #1549).
+ *
+ * The first shape cleared the refusal on the branch NAME. But a branch merges and
+ * the seat keeps working on the same branch for its next card — measured on this
+ * machine that night: `seat-1-20260930-013307` sat on
+ * `team/shared-bare-door-id-1506` with new work after PR #1514 merged. One commit
+ * later, `remove` would have printed *"1 commit(s) sit on no remote, and that is
+ * expected: PR #1514 merged this branch"* and **proceeded without `--force`**.
+ * That commit never shipped. The guard would have been bypassed on the very path
+ * it exists for, and with a friendlier sentence than the one it replaced.
+ *
+ * **What makes it answerable after the branch is gone:** GitHub keeps
+ * `refs/pull/<N>/head` past `delete_branch_on_merge`. So the commits shipped
+ * exactly when HEAD is an ANCESTOR of that ref — a fact about the commits rather
+ * than about the name.
+ *
+ * Every arm here injects both runners, so the whole road is driven with no
+ * network and no GitHub.
+ */
+describe("readShippedCommits — the commits, not the branch name (#1540)", () => {
+  /** A `gh` that reports one merged pull request. */
+  const ghSaysMerged = (pr: number) => () => ({
+    status: 0,
+    out: JSON.stringify([{ number: pr, mergedAt: "2026-09-30T01:14:00Z" }]),
+    err: "",
+  });
+
+  /**
+   * A git whose answers are keyed on the SUBCOMMAND, so an arm cannot pass by
+   * answering the wrong question — and an unexpected call is a loud throw rather
+   * than a quiet default, which is what stops a reader that stopped asking from
+   * reading as a reader that asked and was satisfied.
+   */
+  const gitAnswering = (answers: Record<string, { status: number; out?: string; err?: string }>) => {
+    const asked: string[][] = [];
+    const run = (args: string[]) => {
+      asked.push(args);
+      const answer = answers[args[0] ?? ""];
+      if (!answer) throw new Error(`the arm did not expect git ${args.join(" ")}`);
+      return { status: answer.status, out: answer.out ?? "", err: answer.err ?? "" };
+    };
+    return { run, asked };
+  };
+
+  it("⚠ THE FETCH IS ASSERTED AT THE WIRE, and it reaches the PULL REQUEST's ref", () => {
+    /* Working law 5: the contract is proven on the outgoing call. `refs/pull/N/head`
+       and not `refs/heads/team/…`, because the whole point is that the branch ref
+       is already deleted by the time anyone asks. */
+    expect(prHeadFetchArgs(1514)).toEqual(["fetch", "--no-tags", "origin", "refs/pull/1514/head"]);
+  });
+
+  it("HEAD EQUAL to the merged pull request's head SHIPPED — and it proceeds", () => {
+    const git = gitAnswering({ fetch: { status: 0 }, "merge-base": { status: 0 } });
+    const ship = readShippedCommits("team/x", ghSaysMerged(1514), git.run);
+    expect(ship).toEqual({ shippedBy: 1514 });
+
+    /* Driven through the REAL fold and the REAL verdict, not a copy of either. */
+    const verdict = decideRemoval({ ...clean, unpushedCommits: 1, ...removalStateFromShipReading(ship) }, false);
+    expect(verdict.proceed, "a fully merged branch is litter").toBe(true);
+    if (verdict.proceed) expect(verdict.warnings.join(" ")).not.toContain("destroying");
+  });
+
+  it("⚠ HEAD ONE COMMIT PAST IT REFUSES — the measured seat-1 case, and the whole point", () => {
+    const git = gitAnswering({
+      fetch: { status: 0 },
+      /* exit 1 is `merge-base --is-ancestor` ANSWERING no, not failing. */
+      "merge-base": { status: 1 },
+      log: { status: 0, out: "9f1c2d3 the commit that never shipped\n" },
+    });
+    const ship = readShippedCommits("team/shared-bare-door-id-1506", ghSaysMerged(1514), git.run);
+    expect(ship).toEqual({ pastMerge: { pr: 1514, commits: 1 } });
+
+    const verdict = decideRemoval({ ...clean, unpushedCommits: 1, ...removalStateFromShipReading(ship) }, false);
+    expect(verdict.proceed, "the one commit past the merge is in no pull request").toBe(false);
+    if (!verdict.proceed) {
+      /* It names the merge rather than hiding it — a shift told only "on no
+         remote" over a branch it merged reaches for --force, which is the habit
+         this card is about. */
+      expect(verdict.reason).toContain("PR #1514 merged this branch");
+      expect(verdict.reason).toContain("1 commit was made on it AFTER that merge");
+      expect(verdict.reason).toContain("this directory is their only copy");
+      /* ⚠ AND IT MUST NOT CARRY THE CLEARED SENTENCE. This is the assertion that
+         would have caught the reviewed shape: it said "that is expected". */
+      expect(verdict.reason).not.toContain("that is expected");
+    }
+  });
+
+  it("the plural reads as a plural, because the count is what a shift acts on", () => {
+    const git = gitAnswering({
+      fetch: { status: 0 },
+      "merge-base": { status: 1 },
+      log: { status: 0, out: "aaa one\nbbb two\nccc three\n" },
+    });
+    const ship = readShippedCommits("team/x", ghSaysMerged(1536), git.run);
+    expect(ship).toEqual({ pastMerge: { pr: 1536, commits: 3 } });
+    const verdict = decideRemoval({ ...clean, unpushedCommits: 3, ...removalStateFromShipReading(ship) }, false);
+    expect(verdict.proceed).toBe(false);
+    if (!verdict.proceed) expect(verdict.reason).toContain("3 commits were made on it AFTER that merge");
+  });
+
+  it("⚠ A FETCH THAT FAILS IS `unreadable` — the safe direction, never a merge", () => {
+    /* A deleted-and-never-recreated ref, an offline machine, a repository whose
+       remote is gone: none of them is evidence that the work shipped. */
+    const git = gitAnswering({ fetch: { status: 128, err: "fatal: couldn't find remote ref refs/pull/1514/head" } });
+    const ship = readShippedCommits("team/x", ghSaysMerged(1514), git.run);
+    expect("unreadable" in ship, "a failed fetch must never read as shipped").toBe(true);
+    if ("unreadable" in ship) expect(ship.unreadable).toContain("couldn't find remote ref");
+
+    const state = removalStateFromShipReading(ship);
+    expect(state.mergedPullRequest, "it keeps the PR number out of the verdict entirely")
+      .toEqual({ unreadable: expect.stringContaining("refs/pull/1514/head") });
+    const verdict = decideRemoval({ ...clean, unpushedCommits: 2, ...state }, false);
+    expect(verdict.proceed).toBe(false);
+    if (!verdict.proceed) expect(verdict.reason).toContain("COULD NOT BE READ");
+  });
+
+  it("⚠ A MERGE-BASE THAT ERRORS IS `unreadable` TOO — exit 1 is an answer, 128 is not", () => {
+    /* The trap named in the reader's own docblock, driven: treating "not 0" as
+       *no* turns a broken repository into a confident refusal, and treating
+       "not 1" as *yes* turns it into a confident PROCEED over the only copy of
+       somebody's work. */
+    const git = gitAnswering({
+      fetch: { status: 0 },
+      "merge-base": { status: 128, err: "fatal: Not a valid object name FETCH_HEAD" },
+    });
+    const ship = readShippedCommits("team/x", ghSaysMerged(1514), git.run);
+    expect("unreadable" in ship).toBe(true);
+    if ("unreadable" in ship) expect(ship.unreadable).toContain("Not a valid object name");
+  });
+
+  it("no merged pull request never reaches git at all — and still refuses", () => {
+    /* The read is ordered cheapest-first: with nothing merged there is no ref to
+       fetch, so the network call is not made. The throwing git proves it. */
+    const git = gitAnswering({});
+    const ship = readShippedCommits("team/x", () => ({ status: 0, out: "[]", err: "" }), git.run);
+    expect(ship).toEqual({ notMerged: true });
+    expect(git.asked, "nothing merged it, so there was nothing to compare against").toEqual([]);
+    const verdict = decideRemoval({ ...clean, unpushedCommits: 1, ...removalStateFromShipReading(ship) }, false);
+    expect(verdict.proceed).toBe(false);
+  });
+
+  it("an unreadable `gh` never reaches git either, and stays unreadable", () => {
+    const git = gitAnswering({});
+    const ship = readShippedCommits("team/x", () => { throw new Error("spawn gh ENOENT"); }, git.run);
+    expect("unreadable" in ship && ship.unreadable).toContain("spawn gh ENOENT");
+    expect(git.asked).toEqual([]);
+  });
+
+  it("⚠ THE FOLD IS FAIL-CLOSED, held over every reading there is", () => {
+    /* One owner, and the property that matters stated as a property rather than
+       as four separate hopes: ONLY `shippedBy` may produce a number, because a
+       number is the only thing that clears the refusal. */
+    const readings = [
+      { shippedBy: 1514 },
+      { notMerged: true as const },
+      { pastMerge: { pr: 1514, commits: 1 } },
+      { unreadable: "offline" },
+      null,
+    ];
+    for (const reading of readings) {
+      const state = removalStateFromShipReading(reading);
+      const clears = typeof state.mergedPullRequest === "number";
+      expect(clears, `only shippedBy may clear the refusal, not ${JSON.stringify(reading)}`)
+        .toBe(reading !== null && "shippedBy" in reading);
+    }
   });
 });

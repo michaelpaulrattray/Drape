@@ -20,10 +20,30 @@
  * That is the form a shift types by hand, which is why the junction comes out
  * first here and why its refusal is the only one `--force` cannot override.
  *
+ * ⚠ **AND `remove`'s UNPUSHED REFUSAL ASKS THE PULL REQUEST SINCE #1540.**
+ * `delete_branch_on_merge` went on 2026-09-29 (#1434) and a squash merge does not
+ * make a branch's commits ancestors of `main` — so **every merged branch began
+ * reading exactly like a branch whose work would be destroyed**, and the message
+ * argued for `--force` on the common path while the guard's real case hid in the
+ * noise. Ancestry cannot answer it; the pull request can, and it is the same
+ * reading `pr-merge-in-order` already makes. The read is taken ONLY when
+ * something is unpushed, so `remove` stays offline on the happy path, and a read
+ * that cannot be taken leaves the refusal standing and says so.
+ *
+ * ⚠ **AND IT ASKS ABOUT THE COMMITS, NOT ABOUT THE BRANCH NAME** — the gap found
+ * at this card's own review. *"A merged pull request names this branch"* is not
+ * *"these commits shipped"*: a seat keeps working on the same branch after its
+ * PR merges, and one commit later the friendly new message would have waved that
+ * commit through without `--force`. So the merged PR's recorded head is fetched
+ * (`refs/pull/<N>/head`, which GitHub keeps after the branch is deleted) and the
+ * removal proceeds only when HEAD is an ANCESTOR of it. HEAD past that head
+ * refuses and names how many commits came after the merge.
+ *
  * EXIT CODES:
  *     0  done (or, with --dry-run, would be done)
- *     1  refused on the TREE'S STATE — unpushed commits, uncommitted work, a
- *        dangerous slug, a branch that already exists. Nothing was changed.
+ *     1  refused on the TREE'S STATE — unpushed commits with no merged pull
+ *        request, uncommitted work, a dangerous slug, a branch that already
+ *        exists. Nothing was changed.
  *     2  refused on the CALL or failed mid-act — an unknown flag, a missing
  *        argument, a git command that failed, a directory something holds
  *        open. Nothing was changed EXCEPT where the message says otherwise.
@@ -42,8 +62,12 @@ import {
   junctionMustBeGone,
   looksCrlfSmudged,
   planFor,
+  prReadFailed,
+  readShippedCommits,
+  removalStateFromShipReading,
   validateSlug,
   type RemovalState,
+  type ShipReading,
 } from "./lib/shiftWorktree.mts";
 /* The one reading that authorises a recursive delete on this machine, shared
    with the rite's own teardown rather than re-declared here (#654, law 7). */
@@ -92,6 +116,25 @@ function run(file: string, args: string[], cwd = repoRoot): { status: number; ou
 
 function git(args: string[], cwd = repoRoot) {
   return run("git", args, cwd);
+}
+
+/**
+ * ⚠ **`run` EXITS WHEN A BINARY IS MISSING, AND THAT IS WRONG FOR THE ONE
+ * OPTIONAL READ THIS TOOL MAKES (#1540).**
+ *
+ * `run`'s `fail` on `result.error` is right for `git` and for `cmd`: this tool
+ * cannot do its job without them, so stopping is the honest answer. It is wrong
+ * for `gh`, whose answer merely makes a refusal message better — routed through
+ * `run`, a machine with no `gh` on PATH could not remove a worktree AT ALL, and
+ * the feature meant to stop the guard crying wolf would have taken the guard
+ * down with it. So this one returns a non-zero status instead, which
+ * `readMergedPullRequest` turns into `unreadable` and the verdict then treats as
+ * "nobody asked".
+ */
+function runOptional(file: string, args: string[]): { status: number; out: string; err: string } {
+  const result = spawnSync(file, args, { cwd: repoRoot, encoding: "utf8" });
+  if (result.error) return { status: -1, out: "", err: result.error.message };
+  return { status: result.status ?? 1, out: result.stdout ?? "", err: result.stderr ?? "" };
 }
 
 function say(action: string) {
@@ -275,11 +318,37 @@ if (registered) {
     .filter((l) => l.length > 0);
 }
 
+/**
+ * ⚠ ASKED ONLY WHEN IT COULD CHANGE THE ANSWER (#1540).
+ *
+ * `remove` has always worked offline and still does: with nothing unpushed there
+ * is no refusal to clear, so no network call is made and the happy path is
+ * exactly as fast and as offline as it was. The read happens on the one path
+ * where the ref graph cannot tell a merged branch from lost work — and when it
+ * cannot be taken, the refusal stands and SAYS it could not be taken, which is
+ * today's behaviour plus one honest sentence rather than a new dependency.
+ */
+const ship: ShipReading | null = unpushedCommits > 0
+  ? readShippedCommits(
+      plan.branch,
+      (args) => runOptional("gh", args),
+      /* Through `git`, in the WORKTREE, because HEAD is the branch tip and the
+         rest of this block already reads it there. `git` may `fail` on a missing
+         binary and that is right: this tool cannot work without git. A fetch
+         that merely FAILS (offline, no such ref) is a non-zero status and
+         becomes `unreadable`, which refuses. */
+      (args) => git(args, plan.path),
+    )
+  : null;
+
+/* The fold lives in the library, not here, so the arms drive the real mapping
+   rather than a copy — and so the fail-closed choice inside it has one owner. */
 const state: RemovalState = {
   unpushedCommits,
   dirtyFiles,
   registered,
   junctionPresent: stillOnDisk(plan.nodeModulesLink),
+  ...removalStateFromShipReading(ship),
 };
 
 console.log(`shift-worktree remove ${slug}`);
@@ -287,6 +356,20 @@ console.log(`  path       ${plan.path}`);
 console.log(`  branch     ${plan.branch}`);
 console.log(`  unpushed   ${state.unpushedCommits} commit(s)`);
 console.log(`  uncommitted ${state.dirtyFiles.length} file(s)`);
+/* ⚠ PRINTED ONLY WHEN IT WAS ASKED (#1540) — a `merged  —` line on every clean
+   removal would read as "checked, and it never merged", which is the confident
+   wrong sentence this card is about wearing different clothes. */
+if (state.unpushedCommits > 0) {
+  console.log(`  merged     ${
+    typeof state.mergedPullRequest === "number"
+      ? `yes, PR #${state.mergedPullRequest} — and its head contains HEAD, so those commits shipped`
+      : prReadFailed(state.mergedPullRequest)
+        ? `NOT READ (${state.mergedPullRequest.unreadable})`
+        : state.unshippedPastMerge !== null
+          ? `PR #${state.unshippedPastMerge.pr} merged this branch, but ${state.unshippedPastMerge.commits} commit(s) came AFTER it and did not ship`
+          : "no merged pull request names this branch"
+  }`);
+}
 console.log("");
 
 const verdict = decideRemoval(state, force);
