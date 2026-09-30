@@ -284,3 +284,99 @@ describe("what a tile offers, and what it costs", () => {
     expect(Object.keys(VIEW_RETRY_WORDS).sort()).toEqual(["refunded", "unchecked"]);
   });
 });
+
+/**
+ * ⚠ **THE SECOND ROAD TO A FREE TRY AGAIN — #1612 part 2, his ruling
+ * 2026-09-30.**
+ *
+ * A view whose FRAMING or WARDROBE the judge turned down is now delivered
+ * rather than refunded, so the customer is holding a picture they paid for that
+ * nothing can vouch for — which is the same fact D-246 already answers with a
+ * free retry, arrived at by a different road. These arms are here and not only
+ * beside the orchestrator because the PRICE is what the customer sees: the
+ * entrance authorizes with this same function, so a reading that drifted would
+ * drift at the till in the same direction and nothing would disagree with
+ * itself.
+ */
+describe("a delivered view the judge turned down on framing or wardrobe", () => {
+  /** Delivered, judged, and one axis did not hold (#1612 part 2). */
+  const deliveredUnchecked = (viewType: string, failing: "angle" | "wardrobe") =>
+    asset({
+      viewType: viewType as ModelAsset["viewType"],
+      provenance: {
+        provider: "fal",
+        engine: "fal-ai/nano-banana-pro",
+        conformanceMethod: "judge:openrouter:anthropic/claude-sonnet-5",
+        conformance: {
+          identity: { pass: true, verdict: "matches", note: "same person" },
+          angle: { pass: failing !== "angle", verdict: failing === "angle" ? "differs" : "matches", note: "" },
+          wardrobe: {
+            pass: failing !== "wardrobe",
+            verdict: failing === "wardrobe" ? "unsure" : "matches",
+            note: "",
+          },
+        },
+      },
+    });
+
+  it("was charged and kept, so asking again is FREE and says the same word", () => {
+    const slots = slotsOf([anchor(), deliveredUnchecked("closeUp", "angle")]);
+    const slot = slots.get("closeUp");
+    expect(slot?.state).toBe("ready");
+    expect(slot?.unjudged).toBe(true);
+    expect(slot?.retry).toEqual({ priceCredits: 0, reason: "unchecked" });
+    /* One word, and it is the word that already existed. A customer never meets
+       an axis name, a verdict word or a percentage — the whole surface of this
+       change is copy the product already shipped. */
+    expect(slot?.note).toBeNull();
+    expect(VIEW_RETRY_WORDS.unchecked).toBe("Unchecked");
+  });
+
+  it("reads the same whether the axis said differs or unsure", () => {
+    const slots = slotsOf([anchor(), deliveredUnchecked("closeUp", "wardrobe")]);
+    expect(slots.get("closeUp")?.retry).toEqual({ priceCredits: 0, reason: "unchecked" });
+  });
+
+  it("⚠ CONTROL — a view whose three axes all passed still offers nothing", () => {
+    const slots = slotsOf([
+      anchor(),
+      asset({
+        provenance: {
+          provider: "fal",
+          engine: "fal-ai/nano-banana-pro",
+          conformanceMethod: "judge:openrouter:anthropic/claude-sonnet-5",
+          conformance: {
+            identity: { pass: true, note: "" },
+            angle: { pass: true, note: "" },
+            wardrobe: { pass: true, note: "" },
+          },
+        },
+      }),
+    ]);
+    const slot = slots.get("frontFull");
+    expect(slot?.unjudged).toBeUndefined();
+    expect(slot?.retry).toBeUndefined();
+  });
+
+  /*
+    ⚠ **THE ARM THAT DECIDED HOW THE READING IS WRITTEN, AND IT IS A MONEY ARM.**
+
+    Read at production before a line was written: of 69 landed views, 46 carry a
+    full judged record, 3 carry `unavailable`, and **20 carry no `conformance`
+    key at all** — views that landed before the field existed. A reading that
+    treated an ABSENT record as "unchecked" would have handed every one of those
+    20 a free Try again tonight, retroactively, on a money surface, for a change
+    about something else entirely. So absence keeps today's answer, and this arm
+    is what holds it there.
+  */
+  it("⚠ a view that predates the conformance record is UNCHANGED — absence is not a failing axis", () => {
+    const slots = slotsOf([
+      anchor(),
+      asset({ provenance: { provider: "fal", engine: "fal-ai/nano-banana-pro" } }),
+    ]);
+    const slot = slots.get("frontFull");
+    expect(slot?.state).toBe("ready");
+    expect(slot?.unjudged).toBeUndefined();
+    expect(slot?.retry).toBeUndefined();
+  });
+});
