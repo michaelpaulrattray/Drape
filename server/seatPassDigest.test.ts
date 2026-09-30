@@ -31,8 +31,19 @@ const NOW = Date.parse("2026-09-26T12:00:00Z");
 function commentRow(card: number, body: string, at: string) {
   return { issue_url: `https://api.github.com/repos/michaelpaulrattray/Drape/issues/${card}`, body, created_at: at };
 }
-function boardOf(prs: readonly OpenPullRequest[], rows: readonly unknown[] = []) {
-  return buildBoard({ openPullRequests: prs, comments: factsFromRows(rows), nowMs: NOW });
+function boardOf(
+  prs: readonly OpenPullRequest[],
+  rows: readonly unknown[] = [],
+  notBuilt?: ReadonlySet<number>,
+) {
+  return buildBoard({
+    openPullRequests: prs,
+    comments: factsFromRows(rows),
+    /* Read and clean — explicit, because `buildBoard` REQUIRES it (#1337): an
+       omitted argument is how a caller silently loses an annotation. */
+    notBuilt: notBuilt ?? new Set<number>(),
+    nowMs: NOW,
+  });
 }
 
 const OPEN_PRS: readonly OpenPullRequest[] = [

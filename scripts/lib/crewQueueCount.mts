@@ -75,6 +75,7 @@ import { CREW_WORK_CATEGORIES } from "../../shared/crewWorkSwitches.js";
 import {
   buildBoard,
   readCardCommentsWith,
+  readNotBuiltCardsWith,
   readOpenPullRequestsWith,
   type CardBuildBoard,
 } from "./cardBuildState.mts";
@@ -726,11 +727,15 @@ function countPipelineGroups(gh: QueueGhReader, warn: (line: string) => void, qu
 function readBuildBoard(gh: QueueGhReader, warn: (line: string) => void): CardBuildBoard {
   const prs = readOpenPullRequestsWith((args) => gh(args, { maxBuffer: 32 * 1024 * 1024 }));
   const comments = readCardCommentsWith((args) => gh(args, { maxBuffer: 32 * 1024 * 1024 }));
+  const notBuilt = readNotBuiltCardsWith((args) => gh(args));
   const board = buildBoard({
     openPullRequests: prs === null ? { unreadable: "`gh pr list` could not be read" } : prs,
     comments: comments === null
       ? { unreadable: "`gh api .../issues/comments` could not be read" }
       : comments,
+    notBuilt: notBuilt === null
+      ? { unreadable: "`gh issue list --label not-built` could not be read" }
+      : notBuilt,
     nowMs: Date.now(),
   });
   if (board.partial) {

@@ -49,7 +49,12 @@ const render = (
   /* Same doctrine for the claims-and-refusals read (#1094 piece 2): an explicit
      empty list is "read, and nobody has claimed anything". */
   cardComments: Parameters<typeof renderBands>[0]["cardComments"] = [],
-) => renderBands({ ordered, urgent, now: NOW, openPullRequests, cardComments }).join("\n");
+  /* And for the refused-card read (#1337): an explicit empty set is "read,
+     and no card is refused". */
+  notBuiltCards: Parameters<typeof renderBands>[0]["notBuiltCards"] = new Set<number>(),
+) => renderBands({
+  ordered, urgent, now: NOW, openPullRequests, cardComments, notBuiltCards,
+}).join("\n");
 
 describe("the state the card was filed about: nothing urgent, work he ordered", () => {
   const ordered = [
@@ -175,6 +180,7 @@ describe("the fetch -> render seam, DRIVEN — where the interesting bug lives",
     readOpenQueue: () => readonly Row[],
     readOpenPullRequests: Parameters<typeof report>[0]["readOpenPullRequests"] = () => [],
     readCardComments: Parameters<typeof report>[0]["readCardComments"] = () => [],
+    readNotBuiltCards: Parameters<typeof report>[0]["readNotBuiltCards"] = () => new Set<number>(),
   ) {
     const out: string[] = [];
     const errs: string[] = [];
@@ -182,6 +188,7 @@ describe("the fetch -> render seam, DRIVEN — where the interesting bug lives",
       readOpenQueue,
       readOpenPullRequests,
       readCardComments,
+      readNotBuiltCards,
       now: NOW,
       log: (l) => out.push(l),
       error: (l) => errs.push(l),
@@ -341,6 +348,7 @@ describe("deriveBands - an empty band is cross-examined against the queue it was
       readOpenQueue: () => [],
       readOpenPullRequests: () => [],
       readCardComments: () => [],
+      readNotBuiltCards: () => new Set<number>(),
       now: NOW,
       log: (l) => out.push(l),
       error: (l) => errs.push(l),
@@ -473,6 +481,7 @@ describe("is somebody already building it (#1094) — this view offered a card a
       readOpenQueue: () => [his],
       readOpenPullRequests: () => { throw new Error("gh: command not found"); },
       readCardComments: () => [],
+      readNotBuiltCards: () => new Set<number>(),
       now: NOW,
       log: (l) => out.push(l),
       error: (l) => errs.push(l),
@@ -493,6 +502,7 @@ describe("is somebody already building it (#1094) — this view offered a card a
       readOpenQueue: () => [his],
       readOpenPullRequests: () => [pr()],
       readCardComments: () => [],
+      readNotBuiltCards: () => new Set<number>(),
       now: NOW,
       log: (l) => out.push(l),
       error: () => {},
@@ -555,6 +565,7 @@ describe("is somebody already building it (#1094) — this view offered a card a
         readOpenQueue: () => [his],
         readOpenPullRequests: () => [],
         readCardComments: () => { throw new Error("gh: command not found"); },
+        readNotBuiltCards: () => new Set<number>(),
         now: NOW,
         log: (l) => out.push(l),
         error: (l) => errs.push(l),
@@ -573,11 +584,54 @@ describe("is somebody already building it (#1094) — this view offered a card a
         readOpenQueue: () => [his],
         readOpenPullRequests: () => [],
         readCardComments: () => [{ kind: "claim", card: 1090, seat: "seat-desk-9", at }],
+        readNotBuiltCards: () => new Set<number>(),
         now: NOW,
         log: (l) => out.push(l),
         error: () => {},
       });
       expect(out.join("\n")).toContain("claimed by seat-desk-9");
+    });
+
+    /**
+     * ⚠ **THE REFUSED-CARD SEAM (#1337), DRIVEN IN BOTH DIRECTIONS.** The label
+     * is the half the comment read above cannot see past its own window, and it
+     * reaches the band view through its own injected reader — so the seam needs
+     * the same two arms the comment read has, or the wiring is untested.
+     */
+    it("a `not-built` card is ANNOTATED in the band and still counted as on offer", () => {
+      const out: string[] = [];
+      const code = report({
+        readOpenQueue: () => [his],
+        readOpenPullRequests: () => [],
+        readCardComments: () => [],
+        readNotBuiltCards: () => new Set([1090]),
+        now: NOW,
+        log: (l) => out.push(l),
+        error: () => {},
+      });
+      expect(code).toBe(0);
+      expect(out.join("\n")).toContain("not built — the reason is on the card");
+      /* His ruling was A: the refusal marks the row, it does not retire it. */
+      expect(out.join("\n")).toContain("#1090");
+    });
+
+    it("⚠ a refused-card read that THROWS becomes that line, never an exit code", () => {
+      const out: string[] = [];
+      const errs: string[] = [];
+      const code = report({
+        readOpenQueue: () => [his],
+        readOpenPullRequests: () => [],
+        readCardComments: () => [],
+        readNotBuiltCards: () => { throw new Error("gh: command not found"); },
+        now: NOW,
+        log: (l) => out.push(l),
+        error: (l) => errs.push(l),
+      });
+      expect(code).toBe(0);
+      expect(out.join("\n")).toContain("#1090");
+      expect(out.join("\n")).toContain("THE REFUSED CARDS COULD NOT BE READ");
+      expect(out.join("\n")).toContain("gh: command not found");
+      expect(errs.join("")).toBe("");
     });
   });
 });

@@ -70,10 +70,12 @@ import {
   factFromCommentRow,
 } from "../../server/crew/cardActivity.js";
 import {
+  CREW_NOT_BUILT_LABEL,
   buildStateHoldsOffOffer,
   crewCardBuildPhrase,
   crewCardBuildState,
   handVerdictForPullRequest,
+  notBuiltCards,
   type CrewBuildPullRequest,
   type CrewCardBuildState,
   type CrewCardCommentFact,
@@ -211,6 +213,103 @@ export function factsFromRows(rows: readonly unknown[]): CrewCardCommentFact[] {
 }
 
 /**
+ * THE REFUSED CARDS — the durable half of a refusal, which the comment read
+ * above can only see inside its window (#1337).
+ *
+ * ⚠ **IT IS A THIRD READ RATHER THAN A DERIVATION FROM ROWS THE CALLER HOLDS,
+ * AND THAT IS THE POINT.** Seven scripts consult this board and each holds a
+ * DIFFERENT slice of the queue — one reads his ordered band, one the switch
+ * categories, one a seat batch. A label derived from whatever rows a caller
+ * happens to have would answer *not refused* for every card outside that slice,
+ * which is the same silence the comment window already had, one layer along.
+ * One `gh` call answers for the whole repository. His page needs no equivalent:
+ * its search already carries every open card's labels, so it derives the set
+ * through `notBuiltCards` and spends nothing (`server/crew/liveDesk.ts`).
+ *
+ * ⚠ **A TRUNCATED READ IS UNREADABLE, NOT A SHORT LIST.** `gh issue list` caps
+ * at `--limit` and says nothing about having capped, so a full page is treated
+ * as a read that failed — the Atlas collectors' own rule (CLAUDE.md: a collector
+ * that can come up empty THROWS rather than returning a short list), applied to
+ * a collector that can come up SHORT.
+ */
+export const NOT_BUILT_LIST_LIMIT = 500;
+
+/** The call, as an array — so an arm asserts what is SENT (working law 5). */
+export function notBuiltArgs(): string[] {
+  return [
+    "issue", "list",
+    "--label", CREW_NOT_BUILT_LABEL,
+    "--state", "all",
+    "--limit", String(NOT_BUILT_LIST_LIMIT),
+    "--json", "number,labels",
+  ];
+}
+
+/**
+ * The refused cards through an injected `gh` — `null` when the answer could not
+ * be read, or was read but hit the limit.
+ */
+export function readNotBuiltCardsWith(gh: (args: string[]) => string): Set<number> | null {
+  try {
+    const rows = JSON.parse(gh(notBuiltArgs()));
+    if (!Array.isArray(rows)) return null;
+    if (rows.length >= NOT_BUILT_LIST_LIMIT) return null;
+    /* The LABELS are asked for and read, rather than trusting the filter: the
+       same `notBuiltCards` the Desk uses, so one spelling decides in both. */
+    return notBuiltCards(rows.map((row) => ({
+      number: (row as { number?: unknown }).number,
+      labels: labelNames(row as { labels?: unknown }),
+    })));
+  } catch {
+    return null;
+  }
+}
+
+/** The same read through `gh` directly, or from a fixture. */
+export function readNotBuiltCards(
+  fixturePath?: string | null,
+  cwd?: string | null,
+): Set<number> | null {
+  if (fixturePath) {
+    try {
+      const rows = JSON.parse(readFileSync(resolve(fixturePath), "utf8"));
+      if (!Array.isArray(rows)) return null;
+      return notBuiltCards(rows.map((row) => ({
+        number: (row as { number?: unknown }).number,
+        labels: labelNames(row as { labels?: unknown }),
+      })));
+    } catch {
+      return null;
+    }
+  }
+  return readNotBuiltCardsWith((args) => execFileSync("gh", args, {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+    timeout: CARD_COMMENT_READ_TIMEOUT_MS,
+    ...(cwd ? { cwd } : {}),
+  }));
+}
+
+/**
+ * The three answers kept apart for the label read too — `--no-network` is a read
+ * NOBODY TOOK, a `null` is a read that was taken and FAILED, and neither is a
+ * repository with no refusals in it.
+ */
+export function notBuiltVerdict(
+  cards: ReadonlySet<number> | null,
+  network: boolean,
+): ReadonlySet<number> | Unreadable {
+  if (!network) return { unreadable: "--no-network was passed; the refused cards were NOT read" };
+  if (cards === null) {
+    return {
+      unreadable: `\`gh issue list --label ${CREW_NOT_BUILT_LABEL}\` could not be read`
+        + " (absent, unauthenticated, offline, slow, or more rows than the limit)",
+    };
+  }
+  return cards;
+}
+
+/**
  * THE SAME MAPPING `openPullRequestsVerdict` MAKES, for the comment read — and
  * it lives here, beside the reader, for that function's own recorded reason: the
  * first shape of #1094 did this inline in a script and a sabotage collapsing a
@@ -270,13 +369,29 @@ export function buildBoard(input: {
   readonly openPullRequests: readonly OpenPullRequest[] | Unreadable;
   readonly comments: readonly CrewCardCommentFact[] | Unreadable;
   readonly nowMs: number;
+  /**
+   * The cards carrying `not-built` (#1337), through `notBuiltVerdict`.
+   *
+   * ⚠ **REQUIRED, AND DELIBERATELY NOT OPTIONAL.** Seven scripts build a board;
+   * an optional field is one a caller forgets and nothing ever says so — the
+   * silent-drift shape working law 4 is about, and the exact way four of the five
+   * queue readers came to disagree about this same English question before #1094.
+   * A caller with no answer says `{ unreadable: … }` out loud, which the renderer
+   * then prints.
+   */
+  readonly notBuilt: ReadonlySet<number> | Unreadable;
 }): CardBuildBoard {
   const { openPullRequests, comments, nowMs } = input;
   const unreadable: string[] = [];
   if (isUnreadable(openPullRequests)) unreadable.push(`the open pull requests: ${openPullRequests.unreadable}`);
   if (isUnreadable(comments)) unreadable.push(`the claims and refusals: ${comments.unreadable}`);
+  if (isUnreadable(input.notBuilt)) unreadable.push(`the refused cards: ${input.notBuilt.unreadable}`);
 
   const facts = isUnreadable(comments) ? [] : comments;
+  /* An unread label list annotates nothing, exactly as an unread comment list
+     does. A refusal never withheld work in the first place
+     (`buildStateHoldsOffOffer`), so this half can only ever cost a PHRASE. */
+  const notBuilt = isUnreadable(input.notBuilt) ? new Set<number>() : input.notBuilt;
   const pulls: CrewBuildPullRequest[] = isUnreadable(openPullRequests)
     ? []
     : openPullRequests.map((pr) => ({
@@ -303,7 +418,7 @@ export function buildBoard(input: {
   const stateFor = (card: number): CrewCardBuildState | null => {
     const held = cache.get(card);
     if (held !== undefined) return held;
-    const state = crewCardBuildState({ card, openPullRequests: pulls, facts, nowMs });
+    const state = crewCardBuildState({ card, openPullRequests: pulls, facts, nowMs, notBuilt });
     cache.set(card, state);
     return state;
   };
@@ -319,9 +434,13 @@ export function buildBoard(input: {
   };
 }
 
-/** `gh pr list --json labels` hands back `[{ name }]`; a fixture may hand strings. */
-function labelNames(pr: OpenPullRequest): string[] {
-  const raw: unknown = pr.labels;
+/**
+ * `gh pr list --json labels` hands back `[{ name }]`; a fixture may hand strings.
+ * Shared with the refused-card read, whose `gh issue list --json labels` rows
+ * carry exactly the same shape — one unwrapping, not two.
+ */
+function labelNames(row: { readonly labels?: unknown }): string[] {
+  const raw: unknown = row.labels;
   if (!Array.isArray(raw)) return [];
   return raw
     .map((entry) => (typeof entry === "string"
@@ -339,15 +458,35 @@ function labelNames(pr: OpenPullRequest): string[] {
  * of those blocks predate this card, both are pinned by arms, and both already
  * tell the three answers apart. This is the half that is new, and it fails in
  * the same direction — a card may look FREE while a shift is on it.
+ *
+ * ⚠ **THE REFUSAL LABEL IS A SECOND, SEPARATELY-FAILING READ AND IT IS SAID
+ * HERE RATHER THAN IN A SIBLING FUNCTION (#1337).** A sibling would have to be
+ * called at both sites too, and a second call somebody forgets at one of them is
+ * the drift this function exists to prevent. The two sentences say different
+ * things because the two failures cost different facts: an unread comment
+ * listing can hide a LIVE CLAIM, which is somebody's hands on the work now; an
+ * unread label list can only hide a REFUSAL, which never withheld the card
+ * anyway — so its line warns about wasted reading, not about a collision.
  */
 export function commentsUnreadableLines(
   comments: readonly CrewCardCommentFact[] | Unreadable,
   indent = "  ",
+  notBuilt: ReadonlySet<number> | Unreadable = new Set<number>(),
 ): string[] {
-  if (!isUnreadable(comments)) return [];
-  return [
-    `${indent}⚠ THE CLAIMS AND REFUSALS COULD NOT BE READ, so a card above may look FREE while a`,
-    `${indent}  shift is already on it — ${comments.unreadable}`,
-    `${indent}  Check the card's own comments for a \`CLAIMED —\` line before you cut a branch.`,
-  ];
+  const lines: string[] = [];
+  if (isUnreadable(comments)) {
+    lines.push(
+      `${indent}⚠ THE CLAIMS AND REFUSALS COULD NOT BE READ, so a card above may look FREE while a`,
+      `${indent}  shift is already on it — ${comments.unreadable}`,
+      `${indent}  Check the card's own comments for a \`CLAIMED —\` line before you cut a branch.`,
+    );
+  }
+  if (isUnreadable(notBuilt)) {
+    lines.push(
+      `${indent}⚠ THE REFUSED CARDS COULD NOT BE READ, so a card a shift already read and refused`,
+      `${indent}  may look untouched — ${notBuilt.unreadable}`,
+      `${indent}  Check the card for a \`${CREW_NOT_BUILT_LABEL}\` label before you cut a branch.`,
+    );
+  }
+  return lines;
 }

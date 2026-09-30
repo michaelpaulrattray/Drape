@@ -94,8 +94,19 @@ const NOW = Date.parse("2026-09-26T12:00:00Z");
  * that lives in `buildStateHoldsOffOffer`. So the arms feed real pull-request
  * rows and real comment facts through `buildBoard` and let it judge.
  */
-function boardOf(prs: readonly OpenPullRequest[] = [], rows: readonly unknown[] = []) {
-  return buildBoard({ openPullRequests: prs, comments: factsFromRows(rows), nowMs: NOW });
+function boardOf(
+  prs: readonly OpenPullRequest[] = [],
+  rows: readonly unknown[] = [],
+  notBuilt?: ReadonlySet<number>,
+) {
+  return buildBoard({
+    openPullRequests: prs,
+    comments: factsFromRows(rows),
+    /* Read and clean — explicit, because `buildBoard` REQUIRES it (#1337): an
+       omitted argument is how a caller silently loses an annotation. */
+    notBuilt: notBuilt ?? new Set<number>(),
+    nowMs: NOW,
+  });
 }
 
 const CLEAN_BOARD = boardOf();

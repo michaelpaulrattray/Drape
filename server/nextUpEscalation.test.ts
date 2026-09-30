@@ -426,12 +426,20 @@ describe("a card somebody is already building is not takeable (#1094)", () => {
    * this helper — *a `--queue` run cannot reach `gh` at all* — is driven directly
    * by the hostile-PATH arm at the end, with `gh` proven unreachable first.
    */
-  const board = (name: string, rows: { prs?: unknown[]; comments?: unknown[] } = {}): string[] => {
+  const board = (
+    name: string,
+    /* ⚠ THE THIRD HALF ARRIVED WITH #1337 AND JOINS THIS HELPER RATHER THAN
+       BEING PASSED AT A CALL SITE, for the reason in the docblock above: a half
+       an arm forgets is a half that goes to the network. */
+    rows: { prs?: unknown[]; comments?: unknown[]; notBuilt?: unknown[] } = {},
+  ): string[] => {
     const prPath = join(dir, `${name}-prs.json`);
     const commentPath = join(dir, `${name}-comments.json`);
+    const notBuiltPath = join(dir, `${name}-not-built.json`);
     writeFileSync(prPath, JSON.stringify(rows.prs ?? []), "utf8");
     writeFileSync(commentPath, JSON.stringify(rows.comments ?? []), "utf8");
-    return ["--open-prs", prPath, "--comments", commentPath];
+    writeFileSync(notBuiltPath, JSON.stringify(rows.notBuilt ?? []), "utf8");
+    return ["--open-prs", prPath, "--comments", commentPath, "--not-built", notBuiltPath];
   };
   /** A comment row exactly as `gh api repos/{owner}/{repo}/issues/comments` returns one. */
   const claim = (card: number, at: string, seat = "seat-desk-9") => ({

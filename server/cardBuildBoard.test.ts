@@ -7,13 +7,17 @@ import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 
 import {
   CARD_COMMENT_WINDOW_HOURS,
+  NOT_BUILT_LIST_LIMIT,
   buildBoard,
   cardCommentArgs,
   cardCommentsVerdict,
   commentsUnreadableLines,
   factsFromRows,
+  notBuiltArgs,
+  notBuiltVerdict,
   readCardComments,
   readCardCommentsWith,
+  readNotBuiltCardsWith,
   readOpenPullRequestsWith,
 } from "../scripts/lib/cardBuildState.mts";
 import { CARD_ACTIVITY_BOOT_HOURS, CARD_ACTIVITY_PAGE } from "./crew/cardActivity";
@@ -157,9 +161,11 @@ describe("the board itself", () => {
     isDraft: false,
   };
   const NOW = Date.parse("2026-09-26T03:00:00Z");
+  /** No card is refused — every arm that is not about #1337 says so explicitly. */
+  const NONE: ReadonlySet<number> = new Set<number>();
 
   it("answers the phrase, the state and the offer verdict from one reading", () => {
-    const board = buildBoard({ openPullRequests: [pr], comments: [], nowMs: NOW });
+    const board = buildBoard({ openPullRequests: [pr], comments: [], notBuilt: NONE, nowMs: NOW });
     expect(board.stateFor(1231)).toEqual({ kind: "pull-request", pullRequest: 1316, stage: "gate" });
     expect(board.phraseFor(1231)).toBe("being built — PR #1316");
     expect(board.holdsOffOffer(1231)).toBe(true);
@@ -173,6 +179,7 @@ describe("the board itself", () => {
     const board = buildBoard({
       openPullRequests: [{ ...pr, labels: [{ name: "needs-fable" }] }],
       comments: [],
+      notBuilt: NONE,
       nowMs: NOW,
     });
     expect(board.phraseFor(1231)).toBe("waiting on review — PR #1316");
@@ -182,6 +189,7 @@ describe("the board itself", () => {
     const board = buildBoard({
       openPullRequests: [{ ...pr, labels: [{ name: "needs-fable" }], updatedAt: "2026-09-26T02:30:00Z" }],
       comments: [{ kind: "verdict", card: 1316, at: "2026-09-26T02:30:00Z" }],
+      notBuilt: NONE,
       nowMs: NOW,
     });
     expect(board.phraseFor(1231)).toBe("passed and merging — PR #1316");
@@ -193,20 +201,23 @@ describe("the board itself", () => {
     const board = buildBoard({
       openPullRequests: { unreadable: "`gh pr list` could not be read" },
       comments: { unreadable: "`gh api` could not be read" },
+      notBuilt: { unreadable: "`gh issue list --label not-built` could not be read" },
       nowMs: NOW,
     });
     expect(board.holdsOffOffer(1231)).toBe(false);
     expect(board.phraseFor(1231)).toBeNull();
     expect(board.partial).toBe(true);
-    expect(board.unreadable).toHaveLength(2);
+    expect(board.unreadable).toHaveLength(3);
     expect(board.unreadable[0]).toContain("the open pull requests:");
     expect(board.unreadable[1]).toContain("the claims and refusals:");
+    expect(board.unreadable[2]).toContain("the refused cards:");
   });
 
   it("one half unreadable still answers from the other", () => {
     const board = buildBoard({
       openPullRequests: { unreadable: "offline" },
       comments: [{ kind: "claim", card: 1231, seat: "seat-x", at: "2026-09-26T02:30:00Z" }],
+      notBuilt: NONE,
       nowMs: NOW,
     });
     expect(board.phraseFor(1231)).toBe("claimed by seat-x, under an hour ago");
@@ -220,5 +231,103 @@ describe("the board itself", () => {
     expect(lines[0]).toBe("  ⚠ THE CLAIMS AND REFUSALS COULD NOT BE READ, so a card above may look FREE while a");
     expect(lines.join("\n")).toContain("offline");
     expect(commentsUnreadableLines({ unreadable: "offline" }, "")[0]).not.toMatch(/^ /);
+  });
+
+  /**
+   * THE REFUSAL LABEL, THROUGH THE BOARD (#1337).
+   *
+   * The judgement's own arms are in `server/crewCardBuildState.test.ts`; these
+   * are about the BOARD carrying the third read — the half that was made
+   * REQUIRED so no caller could forget it, and the half whose failure must cost
+   * a phrase and nothing else.
+   */
+  it("⚠ a card carrying `not-built` reads refused with NOTHING else on it", () => {
+    const board = buildBoard({
+      openPullRequests: [],
+      comments: [],
+      notBuilt: new Set([1217]),
+      nowMs: NOW,
+    });
+    expect(board.stateFor(1217)).toEqual({ kind: "refused", at: null });
+    expect(board.phraseFor(1217)).toBe("not built — the reason is on the card");
+    /* HIS RULING WAS A AND NOT B: the card is annotated and still offered. */
+    expect(board.holdsOffOffer(1217)).toBe(false);
+    expect(board.partial).toBe(false);
+    /* The control that matters: a neighbouring card is untouched by it. */
+    expect(board.phraseFor(1218)).toBeNull();
+  });
+
+  it("⚠ AN UNREADABLE LABEL LIST COSTS A PHRASE AND NEVER A CARD", () => {
+    const board = buildBoard({
+      openPullRequests: [],
+      comments: [],
+      notBuilt: { unreadable: "`gh issue list --label not-built` could not be read" },
+      nowMs: NOW,
+    });
+    expect(board.phraseFor(1217)).toBeNull();
+    expect(board.holdsOffOffer(1217)).toBe(false);
+    expect(board.partial).toBe(true);
+    expect(board.unreadable).toEqual([
+      "the refused cards: `gh issue list --label not-built` could not be read",
+    ]);
+  });
+
+  it("the refusal line is its own sentence, and names the label", () => {
+    expect(commentsUnreadableLines([], "  ", new Set<number>())).toEqual([]);
+    const lines = commentsUnreadableLines([], "", { unreadable: "offline" });
+    expect(lines[0])
+      .toBe("⚠ THE REFUSED CARDS COULD NOT BE READ, so a card a shift already read and refused");
+    expect(lines.join("\n")).toContain("`not-built` label");
+    /* Both halves failing prints both, from ONE call — which is why the second
+       is a parameter here rather than a sibling function somebody forgets. */
+    expect(commentsUnreadableLines({ unreadable: "a" }, "", { unreadable: "b" })).toHaveLength(6);
+  });
+
+  it("⚠ THE CALL IS ASSERTED AT THE WIRE, and it asks for the labels it reads", () => {
+    /* Working law 5: the contract is the outgoing argument list, never a constant
+       near it. `--json number,labels` matters — the read re-derives the set
+       through `notBuiltCards` rather than trusting the server-side filter. */
+    expect(notBuiltArgs()).toEqual([
+      "issue", "list",
+      "--label", "not-built",
+      "--state", "all",
+      "--limit", String(NOT_BUILT_LIST_LIMIT),
+      "--json", "number,labels",
+    ]);
+  });
+
+  it("⚠ A FULL PAGE IS A READ THAT FAILED, not a short list", () => {
+    const rows = Array.from({ length: NOT_BUILT_LIST_LIMIT }, (_unused, index) => ({
+      number: index + 1,
+      labels: [{ name: "not-built" }],
+    }));
+    expect(readNotBuiltCardsWith(() => JSON.stringify(rows))).toBeNull();
+    /* One row under the limit is a real answer — the positive control, without
+       which the arm above would pass against a reader that always answers null. */
+    expect(readNotBuiltCardsWith(() => JSON.stringify(rows.slice(0, NOT_BUILT_LIST_LIMIT - 1)))?.size)
+      .toBe(NOT_BUILT_LIST_LIMIT - 1);
+  });
+
+  it("the read answers null on what it cannot parse, and reads the label off the row", () => {
+    expect(readNotBuiltCardsWith(() => "not json")).toBeNull();
+    expect(readNotBuiltCardsWith(() => "{}")).toBeNull();
+    expect(readNotBuiltCardsWith(() => { throw new Error("gh is not on PATH"); })).toBeNull();
+    /* A row WITHOUT the label is not counted even though the filter asked for it,
+       and a card number of 0 is not a card. */
+    expect([...(readNotBuiltCardsWith(() => JSON.stringify([
+      { number: 1217, labels: [{ name: "not-built" }, { name: "seat:janitor" }] },
+      { number: 1218, labels: [{ name: "seat:janitor" }] },
+      { number: 0, labels: [{ name: "not-built" }] },
+    ])) ?? [])]).toEqual([1217]);
+  });
+
+  it("the three answers stay apart — skipped, failed, and nothing refused", () => {
+    expect(notBuiltVerdict(new Set<number>(), false)).toEqual({
+      unreadable: "--no-network was passed; the refused cards were NOT read",
+    });
+    const failed = notBuiltVerdict(null, true);
+    expect(failed).toHaveProperty("unreadable");
+    expect((failed as { unreadable: string }).unreadable).toContain("not-built");
+    expect(notBuiltVerdict(new Set<number>(), true)).toEqual(new Set());
   });
 });

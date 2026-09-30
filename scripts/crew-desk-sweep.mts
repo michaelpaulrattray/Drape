@@ -89,7 +89,7 @@ import {
   planDeskHoldLabels,
   planUnreadableHolds,
 } from "../shared/crewNextUpHold.js";
-import { buildBoard, readCardComments } from "./lib/cardBuildState.mts";
+import { buildBoard, readCardComments, readNotBuiltCards } from "./lib/cardBuildState.mts";
 import { type GhExec, makeGhTransport } from "./lib/ghQueueTransport.mts";
 import { readOpenPullRequests } from "./lib/cardClaimWarning.mts";
 import {
@@ -446,11 +446,15 @@ if (ordered === null) {
   */
   const prs = readOpenPullRequests();
   const comments = readCardComments();
+  const notBuilt = readNotBuiltCards();
   const board = buildBoard({
     openPullRequests: prs === null ? { unreadable: "`gh pr list` could not be read" } : prs,
     comments: comments === null
       ? { unreadable: "`gh api .../issues/comments` could not be read" }
       : comments,
+    notBuilt: notBuilt === null
+      ? { unreadable: "`gh issue list --label not-built` could not be read" }
+      : notBuilt,
     nowMs: Date.now(),
   });
   const onIt = items

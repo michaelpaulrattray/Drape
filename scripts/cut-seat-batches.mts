@@ -38,9 +38,10 @@
  *  - the open cards: one `gh issue list` (or `--cards <file>`);
  *  - **who is already building what: `buildBoard`** — `scripts/lib/cardBuildState.mts`,
  *    *"the ONE reader every queue reader consults"* (#1094 piece 2), which owns
- *    both halves of that read (`readOpenPullRequests` + `readCardComments`) and
- *    keeps *the board was not read* apart from *the board is clean*. This cut is
- *    the sixth reader to consult it and it adds no read of its own;
+ *    all three halves of that read (`readOpenPullRequests` + `readCardComments` +
+ *    `readNotBuiltCards`, the refusal label of #1337) and keeps *the board was
+ *    not read* apart from *the board is clean*. This cut is the sixth reader to
+ *    consult it and it adds no read of its own;
  *  - his switches: one query (or `--switches <file>`);
  *  - the Atlas: the file on disk. Never generated here.
  *
@@ -58,7 +59,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { readOpenPullRequests } from "./lib/cardClaimWarning.mts";
-import { buildBoard, readCardComments } from "./lib/cardBuildState.mts";
+import { buildBoard, readCardComments, readNotBuiltCards } from "./lib/cardBuildState.mts";
 import {
   jevSeatAsk,
   type JevSeatReading,
@@ -98,6 +99,7 @@ const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
     "switches",
     "shift-runs",
     "comments",
+    "not-built",
     "atlas",
   ],
   boolean: ["no-jev", "quiet"],
@@ -278,9 +280,13 @@ const nowMs = Date.now();
 */
 const prRows = readOpenPullRequests(ARGS.value("open-prs"));
 const commentFacts = readCardComments(ARGS.value("comments"), null, nowMs);
+const notBuiltRows = readNotBuiltCards(ARGS.value("not-built"));
 const board = buildBoard({
   openPullRequests: prRows ?? { unreadable: "`gh pr list` could not be read (absent, unauthenticated, offline or slow)" },
   comments: commentFacts ?? { unreadable: "the card comments could not be read, so a live claim cannot be ruled out" },
+  /* THE THIRD HALF (#1337) — the `not-built` label, which is a refusal's durable
+     home and the one the comment window above cannot see past. */
+  notBuilt: notBuiltRows ?? { unreadable: "the refused cards could not be read, so a refusal older than the comment window is invisible" },
   nowMs,
 });
 if (board.partial) {

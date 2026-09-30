@@ -53,6 +53,16 @@
  * this repository returns six cards, four of them false, because GitHub treats
  * `not` as a stopword and the query degenerates to the word *built*).
  *
+ * ⚠ **A REFUSAL HAS A SECOND HOME SINCE #1337, AND IT IS THE DURABLE ONE: THE
+ * `not-built` LABEL** (his word, 2026-09-29 — **A**). The paragraph above is
+ * still true of how a refusal is WRITTEN — a shift posts `NOT BUILT — …` with
+ * `file:line`, because the reason is prose and belongs in prose — but the comment
+ * is no longer the only thing a reader can find. **The comment is the argument;
+ * the label is the fact.** `CREW_NOT_BUILT_LABEL` below carries the reasoning
+ * and `crewCardBuildState` carries where it sits in the order. A claim still has
+ * only its comment, and that is correct: a claim is worthless after twelve hours,
+ * so it never needed a permanent home.
+ *
  * ⚠ **`RELEASED` IS NOT A REFUSAL, AND THE CARD THAT ORDERED THIS WORK SAID IT
  * WAS.** The re-scope's parenthesis reads *"a comment starting `Not built` /
  * `RELEASED`"*; the standing orders it descends from read *"A seat that
@@ -87,7 +97,63 @@ export type CrewCardBuildState =
     readonly stage: "gate" | "review" | "passed" | "draft";
   }
   | { readonly kind: "claimed"; readonly seat: string | null; readonly at: string }
-  | { readonly kind: "refused"; readonly at: string };
+  /**
+   * ⚠ **`at` IS NULLABLE BECAUSE A LABEL HAS NO TIMESTAMP ANY READER HERE CAN
+   * SEE (#1337).** GitHub's search API and `gh issue list` both hand back a
+   * card's labels and neither says when one was applied; the timeline call that
+   * would is one request per card. So a refusal read off the label answers
+   * `null` and a refusal read off a comment keeps its time. Nothing draws the
+   * time — `crewCardBuildPhrase` says *"the reason is on the card"* either way —
+   * and the ORDER the judgement applies is stated at `crewCardBuildState`
+   * rather than left to a date that does not exist.
+   */
+  | { readonly kind: "refused"; readonly at: string | null };
+
+/**
+ * THE LABEL A REFUSAL LIVES ON — his word, 2026-09-29 (Crew reply #237), on the
+ * question *"when a shift reads a card and decides it should not be built,
+ * should that card stay open with a mark on it, or close?"*, verbatim and
+ * entire: **A**.
+ *
+ * So a refused card STAYS OPEN, keeps its work label, and carries this one. It
+ * is the permanent, indexable home a refusal never had: before #1337 a refusal
+ * was a COMMENT, and the reader that finds it (`server/crew/cardActivity.ts`)
+ * pages a window — so **a refusal older than that window and never re-commented
+ * was invisible, and the card read as ordinary untouched work.** A label costs
+ * nothing to read and never ages out, which is the whole of the repair.
+ *
+ * ⚠ **APPLYING IT NEITHER CLOSES THE CARD NOR STRIPS ITS WORK LABEL.** That was
+ * option B, which he did not choose: a refusal is a shift's READING and readings
+ * are overturned here (two of #1337's own siblings were re-opened on his word).
+ * `buildStateHoldsOffOffer` therefore still returns `false` for a refusal — the
+ * card is ANNOTATED and still offered, exactly as it was when the refusal was a
+ * comment. What changed is only whether the annotation can be SEEN.
+ */
+export const CREW_NOT_BUILT_LABEL = "not-built";
+
+/** Does this card's label list carry the refusal mark? One spelling, one owner. */
+export function isNotBuiltLabelled(labels: readonly string[] | null | undefined): boolean {
+  return Array.isArray(labels) && labels.includes(CREW_NOT_BUILT_LABEL);
+}
+
+/**
+ * THE REFUSED CARDS IN A LIST OF ROWS — for the caller that already holds the
+ * labels (his page reads them off the same search that gives it the cards).
+ *
+ * Written to take the raw shape both `gh issue list --json number,labels` and
+ * the Desk's live reading carry, so no caller shapes it and two callers cannot
+ * shape it differently.
+ */
+export function notBuiltCards(
+  rows: readonly { readonly number?: unknown; readonly labels?: readonly string[] | null }[],
+): Set<number> {
+  const cards = new Set<number>();
+  for (const row of rows) {
+    if (!Number.isSafeInteger(row.number) || (row.number as number) <= 0) continue;
+    if (isNotBuiltLabelled(row.labels)) cards.add(row.number as number);
+  }
+  return cards;
+}
 
 /** One card's phrase, as it travels to his page. */
 export type CrewCardBuildView = {
@@ -276,14 +342,43 @@ export function handVerdictForPullRequest(input: {
  *
  * A claim older than `CREW_CLAIM_LIVE_MS` is not live and returns nothing —
  * the same twelve hours a seat applies before it takes a claimed card.
+ *
+ * # ⚠ WHERE THE `not-built` LABEL SITS IN THAT ORDER, AND WHY IT IS LAST (#1337)
+ *
+ * The label is TIMELESS — no reader here can date it (see `CREW_NOT_BUILT_LABEL`)
+ * — so it cannot take part in the newest-wins sort above, and smuggling it in as
+ * a dated fact would mean inventing a time and then ranking on the invention.
+ * Instead it is the answer the judgement falls back to when no comment of the
+ * card's own is currently saying something louder. Read in order:
+ *
+ *  1. an open pull request — the artifact that cannot be stale;
+ *  2. the newest comment fact, when it is a REFUSAL or a LIVE CLAIM. **A live
+ *     claim outranks the label deliberately**: the label says *a shift once
+ *     judged this not worth building*, and a claim says *somebody's hands are on
+ *     it right now*, which is the fact that stops a second seat rebuilding it;
+ *  3. the label;
+ *  4. nothing.
+ *
+ * So a RELEASE or a STALE claim falls through to the label rather than erasing
+ * it — and that is the whole point of a mark that does not age out. Before this
+ * card those two cases answered `null`, i.e. *ordinary untouched work*, over a
+ * card a shift had read and refused.
  */
 export function crewCardBuildState(input: {
   readonly card: number;
   readonly openPullRequests: readonly CrewBuildPullRequest[];
   readonly facts: readonly CrewCardCommentFact[];
   readonly nowMs: number;
+  /**
+   * The cards carrying `CREW_NOT_BUILT_LABEL`. ⚠ **ABSENT MEANS THE LABELS WERE
+   * NOT READ, NOT THAT NOTHING IS REFUSED** — a caller that cannot see them
+   * behaves exactly as every caller did before #1337, which is the direction
+   * this whole family fails in: a card may read as free, never as taken.
+   */
+  readonly notBuilt?: ReadonlySet<number>;
 }): CrewCardBuildState | null {
   const { card, openPullRequests, facts, nowMs } = input;
+  const labelled = input.notBuilt?.has(card) === true;
   const building = openPullRequests
     .filter((pr) => pullRequestBuildsCard(pr, card).length > 0)
     /* The lowest number, so a card with a replacement PR and its predecessor
@@ -301,12 +396,19 @@ export function crewCardBuildState(input: {
       fact.card === card && fact.kind !== "verdict")
     .sort((a, b) => b.at.localeCompare(a.at));
   const latest = mine[0];
-  if (latest === undefined) return null;
-  if (latest.kind === "release") return null;
-  if (latest.kind === "refusal") return { kind: "refused", at: latest.at };
-  const atMs = Date.parse(latest.at);
-  if (!Number.isFinite(atMs) || nowMs - atMs > CREW_CLAIM_LIVE_MS) return null;
-  return { kind: "claimed", seat: latest.seat, at: latest.at };
+  if (latest !== undefined) {
+    if (latest.kind === "refusal") return { kind: "refused", at: latest.at };
+    if (latest.kind === "claim") {
+      const atMs = Date.parse(latest.at);
+      if (Number.isFinite(atMs) && nowMs - atMs <= CREW_CLAIM_LIVE_MS) {
+        return { kind: "claimed", seat: latest.seat, at: latest.at };
+      }
+    }
+    /* A release, or a claim that has aged out — both fall through to the label,
+       per the order in the docblock. Neither erases a refusal nobody withdrew. */
+  }
+  if (labelled) return { kind: "refused", at: null };
+  return null;
 }
 
 /**
@@ -391,6 +493,8 @@ export function crewCardBuildViews(input: {
   readonly openPullRequests: readonly CrewBuildPullRequest[];
   readonly facts: readonly CrewCardCommentFact[];
   readonly nowMs: number;
+  /** Spread straight into the judgement — see `crewCardBuildState`. */
+  readonly notBuilt?: ReadonlySet<number>;
 }): CrewCardBuildView[] {
   const views: CrewCardBuildView[] = [];
   for (const card of input.cards) {

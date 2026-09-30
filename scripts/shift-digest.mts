@@ -31,7 +31,12 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { cardCommentsVerdict, readCardComments } from "./lib/cardBuildState.mts";
+import {
+  cardCommentsVerdict,
+  notBuiltVerdict,
+  readCardComments,
+  readNotBuiltCards,
+} from "./lib/cardBuildState.mts";
 import { openPullRequestsVerdict, readOpenPullRequests } from "./lib/cardClaimWarning.mts";
 import type { CrewCardCommentFact } from "../shared/crewCardBuildState.js";
 import { LAW_SURFACES } from "./lib/lawText.mts";
@@ -211,6 +216,14 @@ function cardComments(root: string, network: boolean): CrewCardCommentFact[] | U
   return cardCommentsVerdict(network ? readCardComments(null, root) : null, network);
 }
 
+/**
+ * THE REFUSED CARDS (#1337) — the half the comment read above cannot see past
+ * its own window, on the same doctrine and for the same recorded reason.
+ */
+function notBuiltCards(root: string, network: boolean): ReadonlySet<number> | Unreadable {
+  return notBuiltVerdict(network ? readNotBuiltCards(null, root) : null, network);
+}
+
 /* Named, because the truncation marker below compares against it: a read that
    comes back exactly at its limit may have lost rows, and dropping a closed
    card silently is how a "what changed" section stops being one. */
@@ -374,6 +387,7 @@ function main(argv: string[]): number {
     const queue = nextUp(root, options.network);
     const openPrs = openPullRequests(root, options.network);
     const comments = cardComments(root, options.network);
+    const refused = notBuiltCards(root, options.network);
     const closed = closedSince(root, sinceIso, options.network);
 
     digest = buildDigest({
@@ -385,6 +399,7 @@ function main(argv: string[]): number {
       nextUp: queue.rows,
       openPullRequests: openPrs,
       cardComments: comments,
+      notBuiltCards: refused,
       patrolClocks: patrolClocks(root),
       since,
       commits: commitsSince(root, sinceIso),

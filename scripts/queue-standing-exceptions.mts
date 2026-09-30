@@ -78,7 +78,12 @@
  */
 import { execFileSync } from "node:child_process";
 
-import { cardCommentsVerdict, readCardComments } from "./lib/cardBuildState.mts";
+import {
+  cardCommentsVerdict,
+  notBuiltVerdict,
+  readCardComments,
+  readNotBuiltCards,
+} from "./lib/cardBuildState.mts";
 import {
   openPullRequestsVerdict,
   readOpenPullRequests,
@@ -147,11 +152,24 @@ function readComments() {
   return cardCommentsVerdict(readCardComments(), true);
 }
 
+/**
+ * THE FOURTH IMPURE ACT (#1337): has somebody read one of these and REFUSED it?
+ *
+ * The refusal's durable home is the `not-built` label, and a label costs nothing
+ * to read and never ages out — which is the half `readComments` above cannot
+ * answer, because its listing pages a window. Judged by `notBuiltVerdict` for
+ * the same reason: a mapping inside a script is a mapping no suite can reach.
+ */
+function readNotBuilt() {
+  return notBuiltVerdict(readNotBuiltCards(), true);
+}
+
 process.exit(
   report({
     readOpenQueue,
     readOpenPullRequests: readPullRequests,
     readCardComments: readComments,
+    readNotBuiltCards: readNotBuilt,
     now: new Date(),
     log: (line) => console.log(line),
     error: (line) => console.error(line),

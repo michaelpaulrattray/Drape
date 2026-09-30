@@ -280,10 +280,14 @@ export function renderBands(input: {
   openPullRequests: readonly OpenPullRequest[] | Unreadable;
   /** The claims and refusals — REQUIRED for the same reason (#1094 piece 2). */
   cardComments: readonly CrewCardCommentFact[] | Unreadable;
+  /** The cards carrying `not-built` — REQUIRED for the same reason (#1337). */
+  notBuiltCards: ReadonlySet<number> | Unreadable;
 }): string[] {
-  const { ordered, urgent, now, openPullRequests: prs, cardComments } = input;
+  const { ordered, urgent, now, openPullRequests: prs, cardComments, notBuiltCards } = input;
   /* ONE board for both bands, the same judgement his page draws. */
-  const board = buildBoard({ openPullRequests: prs, comments: cardComments, nowMs: now.getTime() });
+  const board = buildBoard({
+    openPullRequests: prs, comments: cardComments, notBuilt: notBuiltCards, nowMs: now.getTime(),
+  });
   let claimedAny = false;
   let offered = 0;
   const out: string[] = [
@@ -349,7 +353,7 @@ export function renderBands(input: {
   } else {
     out.push(`✓ No open pull request names any card above (${prs.length} open PR(s) read).`);
   }
-  out.push(...commentsUnreadableLines(cardComments, ""));
+  out.push(...commentsUnreadableLines(cardComments, "", notBuiltCards));
 
   /* ⚠ THE COUNT A SHIFT ACTS ON IS HOW MANY IT CAN ACTUALLY TAKE (#1094 piece
      2). A header reading "6 ordered" over six rows of which five are being built
@@ -416,12 +420,19 @@ export function report(input: {
    * needs the ranking, and the line says the board is unread.
    */
   readCardComments: () => readonly CrewCardCommentFact[] | Unreadable;
+  /**
+   * THE REFUSED CARDS (#1337) — a parameter for the same reasons, and it must
+   * never refuse either: a refusal only ever annotates a row, so a read that
+   * failed costs a phrase and never the ranking.
+   */
+  readNotBuiltCards: () => ReadonlySet<number> | Unreadable;
   now: Date;
   log: (line: string) => void;
   error: (line: string) => void;
 }): number {
   const {
-    readOpenQueue, readOpenPullRequests: readPrs, readCardComments: readComments, now, log, error,
+    readOpenQueue, readOpenPullRequests: readPrs, readCardComments: readComments,
+    readNotBuiltCards: readNotBuilt, now, log, error,
   } = input;
   let ordered: readonly Row[];
   let urgent: readonly Row[];
@@ -478,6 +489,17 @@ export function report(input: {
     };
   }
 
-  for (const line of renderBands({ ordered, urgent, now, openPullRequests, cardComments })) log(line);
+  let notBuiltCards: ReadonlySet<number> | Unreadable;
+  try {
+    notBuiltCards = readNotBuilt();
+  } catch (failure) {
+    notBuiltCards = {
+      unreadable: `the refused-card read threw: ${String(failure instanceof Error ? failure.message : failure)}`,
+    };
+  }
+
+  for (const line of renderBands({ ordered, urgent, now, openPullRequests, cardComments, notBuiltCards })) {
+    log(line);
+  }
   return 0;
 }

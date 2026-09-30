@@ -162,7 +162,7 @@ import { resolve } from "node:path";
 
 import { heldStatesFromLabels } from "../shared/crewNextUpHold.js";
 
-import { buildBoard, readCardComments } from "./lib/cardBuildState.mts";
+import { buildBoard, readCardComments, readNotBuiltCards } from "./lib/cardBuildState.mts";
 import { readOpenPullRequests } from "./lib/cardClaimWarning.mts";
 import { type GhExec, makeGhTransport } from "./lib/ghQueueTransport.mts";
 import { OPEN_QUEUE_LIMIT } from "./lib/nextUpItems.mts";
@@ -171,7 +171,7 @@ import { deriveBands, type Row as BandRow } from "./lib/standingExceptions.mts";
 
 type Json = Record<string, any>;
 
-const KNOWN_FLAGS = new Set(["--state", "--queue", "--record", "--today", "--open-prs", "--comments"]);
+const KNOWN_FLAGS = new Set(["--state", "--queue", "--record", "--today", "--open-prs", "--comments", "--not-built"]);
 
 /**
  * The `gh --limit`, stated ONCE and reused as its own floor guard: a limit and
@@ -477,11 +477,11 @@ if (items.length === 0) none("neither band holds a card — nothing is ordered a
  * every queue reader consults (#1094 piece 2; the header's own section).
  *
  * ⚠ **FIXTURE MODE IS A DECLARATION ABOUT THE WORLD, NOT A SKIPPED READ.** With
- * `--queue` given, the board is whatever `--open-prs` and `--comments` say and
- * EMPTY when they are absent — i.e. an arm that does not mention the board is
- * declaring that nobody is building anything, which is what the queue-logic arms
- * mean. The live path (no `--queue`) always takes both real reads, and an
- * unreadable half there answers `NONE`.
+ * `--queue` given, the board is whatever `--open-prs`, `--comments` and
+ * `--not-built` say and EMPTY when they are absent — i.e. an arm that does not
+ * mention the board is declaring that nobody is building anything, which is what
+ * the queue-logic arms mean. The live path (no `--queue`) always takes all three
+ * real reads, and an unreadable one there answers `NONE`.
  *
  * A fixture path that cannot be read is UNREADABLE rather than empty, which is
  * what makes the `NONE` direction drivable without breaking `gh`.
@@ -495,7 +495,10 @@ if (items.length === 0) none("neither band holds a card — nothing is ordered a
  * about the gate. **Each half is now independent**: a half with a fixture reads
  * it, a half without one under `--queue` is EMPTY BY DECLARATION, and **a fixture
  * run cannot reach the network at all.** That is the property the suite's
- * hostile-PATH arm drives directly, with `gh` proven unreachable first.
+ * hostile-PATH arm drives directly, with `gh` proven unreachable first. ⚠ **The
+ * refused-card read of #1337 is a THIRD half and joined under the same rule** —
+ * it is `--not-built`, it is empty by declaration under `--queue`, and the
+ * suite's `board()` helper writes all three so no arm can leave one to `gh`.
  */
 const fixtureQueue = flags.has("--queue");
 const prRows = flags.has("--open-prs")
@@ -504,6 +507,12 @@ const prRows = flags.has("--open-prs")
 const commentRows = flags.has("--comments")
   ? readCardComments(flags.get("--comments")!)
   : (fixtureQueue ? [] : readCardComments(null));
+/* The third half obeys the same declaration rule as the other two (#1337): a
+   `--queue` run with no `--not-built` reads NO refused cards rather than going to
+   the network, which is what keeps the hostile-PATH arm's promise true. */
+const notBuiltRows = flags.has("--not-built")
+  ? readNotBuiltCards(flags.get("--not-built")!)
+  : (fixtureQueue ? new Set<number>() : readNotBuiltCards(null));
 const board = buildBoard({
   openPullRequests: prRows === null
     ? { unreadable: "`gh pr list` could not be read" }
@@ -511,6 +520,9 @@ const board = buildBoard({
   comments: commentRows === null
     ? { unreadable: "`gh api .../issues/comments` could not be read" }
     : commentRows,
+  notBuilt: notBuiltRows === null
+    ? { unreadable: `\`gh issue list --label not-built\` could not be read` }
+    : notBuiltRows,
   nowMs: Date.now(),
 });
 if (board.partial) {

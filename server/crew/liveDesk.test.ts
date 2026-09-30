@@ -398,6 +398,45 @@ describe("what is already happening to each card — his order 2026-09-26, \"so 
   });
 
   /**
+   * ⚠ **THE `not-built` LABEL RIDES THE QUEUE, SO IT SURVIVES WHAT THE COMMENT
+   * READ CANNOT (#1337).** The arm above is the measured floor this closes: with
+   * the listing unread the refusal on #1217 vanished and the card read as
+   * ordinary untouched work, while the pull-request phrases survived because
+   * they come off the search his page already makes. The label comes off that
+   * same search — so a refusal now costs no second call, no window and no page
+   * budget, which is the whole of why his answer was a label.
+   */
+  it("⚠ a refused card keeps its phrase when the comment listing was never read", () => {
+    const labelled = [
+      item({ number: 1217, labels: ["seat:janitor", "not-built"] }),
+      item({ number: 1258, labels: ["seat:retro"] }),
+    ];
+    const desk = deriveLiveDesk(
+      { ...reading(labelled), readAt: "2026-09-26T02:30:00Z" },
+      RUNGS,
+      { facts: [], why: "GitHub answered 403 (rate limited)" },
+    );
+    expect(desk.builds.items).toEqual([
+      { issueNumber: 1217, phrase: "not built — the reason is on the card" },
+    ]);
+    /* CONTROL — the neighbouring card was read and is quiet, so the row above is
+       the label rather than a reader that annotates everything. */
+    expect(desk.builds.items.map((row) => row.issueNumber)).not.toContain(1258);
+  });
+
+  it("⚠ AND IT IS STILL OFFERED — his ruling was A, so the switch count does NOT subtract it", () => {
+    const labelled = [item({ number: 1217, labels: ["seat:janitor", "not-built"] })];
+    const desk = deriveLiveDesk(
+      { ...reading(labelled), readAt: "2026-09-26T02:30:00Z" },
+      RUNGS,
+      { facts: [], why: null },
+    );
+    const housekeeping = desk.work.counts.find((row) => row.categoryKey === "housekeeping");
+    expect(housekeeping?.openCount, "a refusal annotates a card; it does not retire it").toBe(1);
+    expect(housekeeping?.excluded, "and nothing is subtracted for it").toEqual({});
+  });
+
+  /**
    * ⚠ **HIS DESK CORRECTION, 2026-09-26: A PULL REQUEST HE HAS ALREADY REVIEWED
    * READ AS *WAITING ON REVIEW*, beside one nobody had looked at.** The verdict is
    * a comment by his own account (`**Fable review — by hand`), which arrives in
