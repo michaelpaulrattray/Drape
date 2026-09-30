@@ -304,8 +304,8 @@ export function CastProfilePanel({
         <p className="text-center text-canvas-xs leading-relaxed text-canvas-ink-faint">
           Free exact copy. The new draft is independent; this Cast stays unchanged.
         </p>
-        <button type="button" onClick={() => navigate('/app/models')} className="w-full text-center text-canvas-sm font-medium text-canvas-ink-soft hover:text-canvas-ink">
-          Export from Model Library
+        <button type="button" onClick={() => navigate('/app/library')} className="w-full text-center text-canvas-sm font-medium text-canvas-ink-soft hover:text-canvas-ink">
+          Export from Library
         </button>
       </footer>
     </aside>

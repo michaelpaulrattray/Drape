@@ -15,7 +15,7 @@ import { User, StickyNote, type LucideIcon } from 'lucide-react';
 export type AddNodeAction = 'cast' | 'note';
 
 const MENU_ITEMS: Array<{ action: AddNodeAction; label: string; icon: LucideIcon }> = [
-  { action: 'cast', label: 'Cast model', icon: User },
+  { action: 'cast', label: 'Cast someone', icon: User },
   { action: 'note', label: 'Add note', icon: StickyNote },
 ];
 

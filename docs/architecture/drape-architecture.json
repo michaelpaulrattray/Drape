@@ -10480,6 +10480,10 @@
       "path": "client/src/features/billing/annualPath664-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/boards/castVocabulary.test.ts",
+      "path": "client/src/features/boards/castVocabulary.test.ts"
+    },
+    {
       "id": "test:client/src/features/casting/castingPrices.test.ts",
       "path": "client/src/features/casting/castingPrices.test.ts"
     },

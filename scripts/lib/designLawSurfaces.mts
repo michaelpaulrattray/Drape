@@ -120,13 +120,24 @@ export const SURFACES: SurfacePlan[] = [
       "write against the users table, which a read-only design drive does not do.",
   },
 
-  // Lobby. Five addresses, one component, one rail — and the surface the
-  // founder spends the most time in outside casting.
+  // Lobby. SIX addresses now — five pages behind one component and one rail,
+  // plus the library's old address, which forwards since #1545 — and the
+  // surface the founder spends the most time in outside casting.
   { path: "/app", label: "lobby", kind: "drive", url: () => "/app" },
   { path: "/app/boards", label: "lobby / boards", kind: "drive", url: () => "/app/boards" },
-  { path: "/app/models", label: "lobby / models", kind: "drive", url: () => "/app/models" },
+  { path: "/app/library", label: "lobby / library", kind: "drive", url: () => "/app/library" },
   { path: "/app/garments", label: "lobby / garments", kind: "drive", url: () => "/app/garments" },
   { path: "/app/looks", label: "lobby / looks", kind: "drive", url: () => "/app/looks" },
+  {
+    path: "/app/models",
+    label: "lobby / models (redirect)",
+    kind: "declared",
+    reason:
+      "the library's old address, kept answering after #1545 moved it to /app/library " +
+      "on the founder's word. A bare <Redirect> with no markup of its own — it renders " +
+      "/app/library, which is driven on its own row one line above. Driving both " +
+      "measures the same page twice, exactly as /admin and /admin/overview do below.",
+  },
 
   {
     path: "/app/board/:id",
