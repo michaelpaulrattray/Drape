@@ -24,6 +24,17 @@
  * Sentry org `klieg-labs` with the projects `klieg-server` (Node) and
  * `klieg-web` (Browser), and PostHog US Cloud project `593474`.
  *
+ * ⚠ **THE TWO SENTRY IDS NOW LIVE IN `shared/monitoringProjects.ts` AND ARE
+ * RE-EXPORTED HERE (#1420 part 1), WHICH KEEPS HIS ONE-EDIT PROMISE RATHER THAN
+ * WEAKENING IT.** A second reader arrived that cannot reach this module: the
+ * browser build uploads its source maps to that org and project, and the import
+ * line below reads `import.meta.env`, which does not exist in the node process
+ * that loads a vite config. The alternative was to spell `klieg-labs` a second
+ * time in `vite.config.ts` — a renamed project would then be two edits, one of
+ * which fails silently (maps land in a project nobody opens and every log line
+ * still says the upload worked). The declaration moved; this file's surface did
+ * not, which is why its own suite needed no change.
+ *
  * ⚠ **THE TWO SENTRY PROJECT SLUGS ARE RECORDED HERE AND ARE DELIBERATELY NOT
  * IN THE URL, WHICH IS A FACT ABOUT SENTRY RATHER THAN A CHOICE.** Its issue
  * stream filters by NUMERIC project id, not by slug, and this product holds no
@@ -50,14 +61,22 @@
  */
 import { clientSentryDsn } from "@/monitoring/errorReporter";
 
-/** Sentry's organisation slug — the one segment both projects sit under. */
-export const SENTRY_ORG = "klieg-labs";
-
 /**
- * The two projects that org holds, by slug. Recorded rather than used — see the
- * header's note on why Sentry's issue stream cannot filter on these.
+ * The org and its two projects. DECLARED in `shared/monitoringProjects.ts` so
+ * the build can read the same two strings this page renders — see the header.
+ * Re-exported rather than re-declared: this module has been the place to look
+ * since #1441 and a reader who comes here must still find them.
  */
-export const SENTRY_PROJECTS = ["klieg-server", "klieg-web"] as const;
+import { SENTRY_ORG, SENTRY_PROJECTS } from "@shared/monitoringProjects";
+
+/*
+  EXACTLY the two names this module already published, and no more. The shared
+  declaration also holds each project by name (the build needs to say which of
+  the two it uploads to); re-exporting those here would widen this module's
+  surface for no reader, which is the litter a later sweep has to work out the
+  purpose of.
+*/
+export { SENTRY_ORG, SENTRY_PROJECTS };
 
 /** PostHog's project id, on the US cloud. */
 export const POSTHOG_PROJECT_ID = "593474";

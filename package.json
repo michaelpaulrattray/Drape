@@ -80,6 +80,7 @@
   "devDependencies": {
     "@fontsource/archivo": "^5.3.0",
     "@fontsource/jetbrains-mono": "^5.3.0",
+    "@sentry/bundler-plugins": "11.0.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/express": "4.17.21",
     "@types/node": "^26.6.1",
