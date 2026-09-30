@@ -5,6 +5,7 @@ import path from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
 
+import { withoutComments } from "../scripts/lib/productionMention.mts";
 import { containedIn, trackedFiles } from "../scripts/lib/trackedFiles.mts";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 import { readListedSource } from "./testing/listedSource";
@@ -213,13 +214,21 @@ describe("the reader tells a contained file from a file that is merely on disk",
 /* ---- the family may not grow a second reader ------------------------------ */
 
 /**
- * The `git ls-files` CALL, matched on its shape and never on the words — which
- * this file, the reader's docblock and the sweep's all contain in prose.
- * `preflight.mts` learned the same lesson for the same reason; both spellings
- * this repository uses are covered, because the family holds one of each.
+ * The `git ls-files` CALL, matched on its ARGUMENTS and never on the words —
+ * which this file, the reader's docblock and the sweep's all contain in prose.
+ * `preflight.mts` learned the words half of that lesson for the same reason.
+ *
+ * ⚠ **AND NOT ON THE FUNCTION'S NAME EITHER, WHICH THE SABOTAGE RUN IS THE
+ * RECEIPT FOR.** The first shape of this was
+ * `exec(File)?Sync\(\s*"git"\s*,\s*\[\s*"ls-files"`, and the case that adds a
+ * second reader to the closure SURVIVED it: the fixture had written
+ * `import { execFileSync as rogue }`, so the call read `rogue("git",
+ * ["ls-files"…` and a name match could not see it. Matching the arguments is
+ * both alias-proof and a truer statement of the question — *does this module run
+ * `git ls-files`* — since `spawnSync` and `execFile` reach it too. Both spellings
+ * this repository uses are covered, because the tree holds one of each.
  */
-const LS_FILES_CALL =
-  /exec(?:File)?Sync\s*\(\s*"git"\s*,\s*\[\s*"ls-files"|exec(?:File|)Sync\s*\(\s*"git ls-files"/;
+const LS_FILES_CALL = /\(\s*"git"\s*,\s*\[\s*"ls-files"|\(\s*"git ls-files"/;
 
 /**
  * The modules the deletion door's verdict is computed by, DERIVED: the door, the
@@ -259,10 +268,18 @@ function readingListFamily(): Map<string, string> {
   return family;
 }
 
-/** Members of a family that ask git the population question themselves. */
+/**
+ * Members of a family that ask git the population question themselves.
+ *
+ * Comments are stripped with the house stripper — `withoutComments`, the one the
+ * family it is scanning already uses — rather than a second one written here
+ * (working law 4). Without it the argument shape above would indict a paragraph:
+ * `preflight.mts`'s docblock carries `execFileSync("git", ["ls-files"…` verbatim
+ * as prose, and a rule that reddens on an explanation reads as broken.
+ */
 function ownReaders(family: Map<string, string>): string[] {
   return [...family]
-    .filter(([, source]) => LS_FILES_CALL.test(source))
+    .filter(([, source]) => LS_FILES_CALL.test(withoutComments(source)))
     .map(([file]) => file)
     .sort();
 }
@@ -310,10 +327,30 @@ describe("one reader, several consumers — the family may not answer this twice
     ]);
     expect(ownReaders(withExecSync)).toEqual([shared, "scripts/lib/rogue.mts"].sort());
 
-    /* And it does not indict PROSE — this file, the reader and the sweep all
-       discuss `git ls-files` in comments, so a word match would indict three
-       innocent members and read as a broken rule. */
-    expect(ownReaders(new Map([["scripts/lib/prose.mts", "/* asks git ls-files */"]]))).toEqual([]);
+    /* An ALIASED import is caught too, and this is the case the sabotage run
+       found surviving a name-matched regex. */
+    const withAlias = new Map([
+      [shared, 'execFileSync("git", ["ls-files"], {});'],
+      [
+        "scripts/lib/rogue.mts",
+        'import { execFileSync as r } from "node:child_process";\nconst t = r("git", ["ls-files"], {});',
+      ],
+    ]);
+    expect(ownReaders(withAlias)).toEqual([shared, "scripts/lib/rogue.mts"].sort());
+
+    /*
+      And it does not indict PROSE. This file, the reader and the sweep all
+      discuss the call in comments — and `preflight.mts` carries the whole
+      argument shape verbatim in a docblock — so the fixtures here are the REAL
+      prose shapes rather than a softened paraphrase, which is what a control
+      over its own easy case would be.
+    */
+    const prose = new Map([
+      ["scripts/lib/a.mts", "/* asks git ls-files for the population */ export const a = 1;"],
+      ["scripts/lib/b.mts", '// the call is `execFileSync("git", ["ls-files"], …)`\nexport const b = 2;'],
+      ["scripts/lib/c.mts", '/* was `execSync("git ls-files", …)` before #1617 */ export const c = 3;'],
+    ]);
+    expect(ownReaders(prose), "a comment discussing the call was indicted").toEqual([]);
   });
 });
 
