@@ -1,9 +1,18 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { declKey, importersAt, readTree, type Tree } from "../scripts/lib/importerCountDiff.mts";
+import { containedIn } from "../scripts/lib/trackedFiles.mts";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+
+/* This suite joined #548's population the moment it started asking what the
+   repository contains (#1620): `containedIn` spawns `git ls-files`, and the
+   deriver follows transitive imports, so the enrolment is automatic and the
+   declaration is not. `pnpm preflight` named it before the first push, which is
+   the one thing that reading is for. */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 /**
  * THE DELETION DOOR'S SECOND READER — two readers, two resolvers (#274).
@@ -164,7 +173,15 @@ export function crossRead(tree: Tree, atlas: Atlas): CrossReading {
 
 describe("the deletion door's second reader", () => {
   const atlas = readAtlas();
-  const tree = readTree(REPO);
+  /*
+    ⚠ THE SAME POPULATION THE DOOR READS (#1620). This reader cross-checks the
+    importer credits against the COMMITTED Atlas (see this file's header), so a
+    credit from a file the repository does not contain can only ever land in
+    `unreachable` — a finding manufactured by the reader's own working tree. The
+    door itself now passes its `contains` predicate here too; a second reader
+    that inherits a wider population is not a second reader.
+  */
+  const tree = readTree(REPO, containedIn(REPO));
 
   /*
     CONTROLS FIRST (working law 2). Both run against fabricated inputs, because

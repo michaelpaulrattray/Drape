@@ -606,8 +606,15 @@ if (import.meta.main) {
     is `server`/`client`/`shared`/`drizzle` (`IMPORTER_ROOTS`) with `*.test.ts` excluded, and `scripts/` is
     deliberately outside it. A drive bench naming a symbol is not the request
     path, and that is the same call the differ makes.
+
+    ⚠ AND IT IS HANDED THE SAME `contains` THE `stale` ARM ABOVE USES (#1620).
+    Without it this half walked the DISK while that half asked the repository, so
+    one door answered its two questions from two populations: an untracked module
+    under `server/` counted as a production importer here and was `stale` there.
+    Reusing that predicate rather than building a second one costs no extra `git
+    ls-files` and is the same working-law-4 reading #1617 landed for the sweep.
   */
-  const tree = readTree(REPO);
+  const tree = readTree(REPO, contains);
   /*
     ⚠ AND IT ASKS ABOUT THE ROW'S OWN FILE (#274). `tree.decl.has(symbol)` was
     the visibility test, so a row naming the SECOND of two declarations that

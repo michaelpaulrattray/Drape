@@ -188,8 +188,70 @@ export const IMPORTER_ROOTS: readonly string[] = CONSUMER_ROOTS.filter((root) =>
  * Declarations are looked for under `REPORTED_ROOTS` (`server/` and `shared/`).
  * Importers are looked for under `IMPORTER_ROOTS` (those two, `client/` and
  * `drizzle/`), tests excluded.
+ *
+ * # `contains` — WHAT THE REPOSITORY HOLDS, AND WHY IT IS A PARAMETER (#1620)
+ *
+ * Without it this walks the DISK, so a file merely present under `server/`,
+ * `client/`, `shared/` or `drizzle/` counts as a production importer — and as a
+ * DECLARATION, which the card that found this did not name. Reproduced at this
+ * repository before a line of repair was written
+ * (`_1620-reproduce-disposable.mts`), one untracked file under `server/`:
+ *
+ *   | reading                          | clean | with one untracked file |
+ *   |----------------------------------|-------|-------------------------|
+ *   | importers of `ACTION_CATEGORIES` | 1     | **2**                   |
+ *   | `phantom1620Symbol` in `decls`   | false | **true**                |
+ *
+ * So `check-cleanup-dispositions`'s `rewired` arm — the door that licenses a
+ * deletion — reads *this symbol still has a production importer* from a file
+ * the gate does not have, and its `unreadable` arm can be answered about a
+ * declaration this repository does not contain. #1617 closed the same class for
+ * the sweep, its classifier and this same door's `stale` check; this is the
+ * sibling it filed rather than folded in.
+ *
+ * ⚠ **THE CARD'S OWN SHAPE SAID THE DIFFER COULD PASS NOTHING, AND THAT WAS
+ * WRONG AT THE RECORD.** Its argument was that the differ reads two trees, one a
+ * historical `git worktree` checkout where everything is tracked by
+ * construction. True of the OLD tree and false of the new one: the differ's
+ * usage is `<old-tree> <new-tree>`, the natural new tree is the tree you are
+ * standing in, and the one invocation written down in this repository is
+ * `diff-importer-count-across-time.mts C:/tmp/rite-window-1001 .`
+ * (`docs/specs/CLEANUP_MILESTONE_TRIAGE.md`). An untracked importer in the NEW
+ * tree makes a symbol that lost its last real consumer read as still wired —
+ * **the toward-SILENCE direction this reader's own docblocks say it must never
+ * fail in.** So every reading of a real repository passes `contains`, the differ
+ * included.
+ *
+ * ⚠ **AND THE COST THE CARD DECLINED TO PAY IS 2%.** Measured on this machine
+ * (`_1620-cost-disposable.mts`, medians of five and three): `git ls-files` **18
+ * ms**, of which **16 ms is the bare process spawn**, against **879 ms** for one
+ * `readTree`. `unwiring-timeline.mts` pays it once per boundary on top of a
+ * checkout and a full walk. That is the whole reason this is not scoped to the
+ * door alone.
+ *
+ * # Why it is OPTIONAL rather than always asked
+ *
+ * `trackedFiles` REFUSES on a root git cannot answer for — deliberately, so an
+ * unreadable tree can never read as an empty one. `server/unwiringDiffer.test.ts`
+ * drives this function **63 times against `mkdtempSync` trees that are not git
+ * repositories at all**, which is this module's stated design (*"the arms that
+ * CAN run cheaply should not need the ones that cannot"*). An always-on reader
+ * would either break all 63 or force a `git init` into the cheap suite.
+ *
+ * ⚠ **So the rule is "every real-repository reading passes it", and that is a
+ * claim about CALLERS — which is exactly what `walk`'s docblock above declined a
+ * carve-out over. It is therefore ENFORCED rather than written down**: the
+ * call-site arm in `server/trackedFilePopulation.test.ts` derives every
+ * `readTree(` call in the tree and reddens on any that passes one argument,
+ * with the manufactured-tree suite named and reasoned for in one list. A
+ * default of "ask git when the root looks like a repository" was considered and
+ * refused: it fails OPEN and silently on the one case that matters, a real
+ * repository whose git reading did not work.
  */
-export function readTree(rootArgument: string): Tree {
+export function readTree(
+  rootArgument: string,
+  contains?: (absolutePath: string) => boolean,
+): Tree {
   /*
     ⚠ THE ROOT IS RESOLVED, AND A RELATIVE ONE USED TO READ NOTHING AT ALL.
     `show` strips `root.length + 1` characters to make a path repo-relative,
@@ -209,7 +271,16 @@ export function readTree(rootArgument: string): Tree {
     from being.
   */
   const root = resolve(rootArgument);
-  const all = IMPORTER_ROOTS.flatMap((r) => walk(join(root, r)));
+  /*
+    THE GATE SITS ON THE WALK'S OWN OUTPUT, and that placement is the claim.
+    `all` is the only population in this function: `sources`, `decls`,
+    `declsAnywhere`, the re-export map, both importer passes and `files` are all
+    derived from it, so there is no per-list `.filter` for a later reader to
+    forget — the same structural argument `sweep-uncalled-exports-disposable.mts`
+    makes for gating inside its `walk` rather than at each list.
+  */
+  const walked = IMPORTER_ROOTS.flatMap((r) => walk(join(root, r)));
+  const all = contains === undefined ? walked : walked.filter((file) => contains(file));
   const show = (f: string) => f.slice(root.length + 1).split(SEP).join("/");
   const decls = new Map<string, string[]>();
   const declsAnywhere = new Map<string, string[]>();
