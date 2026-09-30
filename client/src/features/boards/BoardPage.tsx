@@ -79,7 +79,7 @@ export function BoardPage() {
 }
 
 function BoardPageImpl() {
-  const [, params] = useRoute('/app/board/:id');
+  const [, params] = useRoute('/app/canvas/:id');
   const [, navigate] = useLocation();
   const boardId = params?.id ? parseInt(params.id, 10) : NaN;
 

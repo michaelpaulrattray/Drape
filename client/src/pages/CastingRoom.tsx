@@ -121,7 +121,7 @@ function downloadPackage(frames: readonly ViewerFrame[], castId: string) {
 }
 
 export default function CastingRoom() {
-  const [, params] = useRoute("/casting/cast/:castId");
+  const [, params] = useRoute("/app/casting/cast/:castId");
   const [, navigate] = useLocation();
   const castId = params?.castId ?? "";
 
@@ -190,7 +190,7 @@ export default function CastingRoom() {
   );
 
   useEffect(() => {
-    if (config.data && config.data.enabled === false) navigate("/casting");
+    if (config.data && config.data.enabled === false) navigate("/app/casting");
   }, [config.data, navigate]);
 
   const data = cast.data;
@@ -376,7 +376,7 @@ export default function CastingRoom() {
     <AppChrome breadcrumb="Casting / Room" current="casting" width="working">
       <div className="dp-stack" style={{ gap: 22 }}>
         <div className="dp-row" style={{ justifyContent: "space-between" }}>
-          <Button variant="quiet" size="small" onClick={() => navigate("/casting")}>
+          <Button variant="quiet" size="small" onClick={() => navigate("/app/casting")}>
             <ArrowLeft size={12} strokeWidth={2} aria-hidden="true" />
             Casting
           </Button>
@@ -941,7 +941,7 @@ export default function CastingRoom() {
                           */
                           onClick={() => {
                             if (sibling.destination === "cast" && sibling.castId) {
-                              navigate(`/casting/cast/${sibling.castId}`);
+                              navigate(`/app/casting/cast/${sibling.castId}`);
                               return;
                             }
                             if (
@@ -949,7 +949,7 @@ export default function CastingRoom() {
                               && data.lineage.fromSessionPublicId
                             ) {
                               navigate(
-                                `/casting/s/${data.lineage.fromSessionPublicId}`
+                                `/app/casting/s/${data.lineage.fromSessionPublicId}`
                                 + `?focus=${sibling.candidateId}`,
                               );
                               return;
@@ -984,7 +984,7 @@ export default function CastingRoom() {
                     <Button
                       variant="quiet"
                       size="small"
-                      onClick={() => navigate(`/casting/s/${data.lineage.fromSessionPublicId}`)}
+                      onClick={() => navigate(`/app/casting/s/${data.lineage.fromSessionPublicId}`)}
                     >
                       Open the sheet {data.pronouns.subject} came from
                     </Button>
@@ -1025,7 +1025,7 @@ export default function CastingRoom() {
                 toast(`${data.name ?? "That cast"} was deleted.`);
                 // Her room is the page we are standing on, so leaving is part
                 // of the ceremony rather than something to do afterwards.
-                navigate("/casting");
+                navigate("/app/casting");
               } catch (error) {
                 toast(error instanceof Error
                   ? error.message

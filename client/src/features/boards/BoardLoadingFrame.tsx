@@ -6,7 +6,7 @@
  * It lives in its own file because it is rendered from TWO places and must be
  * the same frame in both (#1036). `BoardPage` renders it while the board and
  * its items load; `App.tsx` renders it as the Suspense fallback for the
- * `/app/board/:id` route while the board page's own chunk downloads, which is
+ * `/app/canvas/:id` route while the board page's own chunk downloads, which is
  * the one customer route that is lazy. A customer arriving on a slow
  * connection sees this frame from the first moment and the same frame until
  * the canvas appears — the chunk wait and the data wait are one loading state,

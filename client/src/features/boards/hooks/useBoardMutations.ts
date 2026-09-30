@@ -24,7 +24,7 @@ export function useBoardMutations() {
   const createBoardMutation = trpc.boards.create.useMutation({
     onSuccess: (board) => {
       invalidate();
-      navigate(`/app/board/${board.id}`);
+      navigate(`/app/canvas/${board.id}`);
     },
     onError: (err) => {
       logRawFailure('boards.create', err);
