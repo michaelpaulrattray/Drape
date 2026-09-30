@@ -948,6 +948,12 @@ const comment = (over: Partial<HandVerdictReading> = {}): HandVerdictReading => 
 
 describe("#1065 · a verdict is a comment by the founder's account, headed by the marker, on the current head", () => {
   it("the marker is the heading every hand verdict has carried", () => {
+    /* ⚠ These two accepting cases are the whole of what this suite says about
+       the BODY test. What a DECORATED marker does — a `##` heading above it, a
+       blockquote, a wrapped line — is `server/handVerdictReader.test.ts` (#1568),
+       and the answer there is *refused, deliberately*: this reader's false
+       negative holds a pull request, and its false positive merges an unreviewed
+       money/auth one. Read that header before loosening anything here. */
     expect(HAND_VERDICT_MARKER).toBe("**Fable review — by hand");
     expect(isHandVerdict(verdictBody)).toBe(true);
     expect(isHandVerdict("  \n**Fable review — by hand**")).toBe(true);

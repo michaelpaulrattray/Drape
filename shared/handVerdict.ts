@@ -24,7 +24,29 @@
 /** The prefix every hand verdict starts with. Posted by the relay, read here. */
 export const HAND_VERDICT_MARKER = "**Fable review — by hand";
 
-/** Does this body carry the marker, at the very start (after whitespace)? */
+/**
+ * Does this body carry the marker, at the very start (after whitespace)?
+ *
+ * ⚠ **THE ANCHOR IS DELIBERATE AND IT IS NOT THE DEFECT #1559 FIXED (#1568).**
+ * That card repaired two readers of a card body that ordinary markdown defeated,
+ * and its sweep found this one with the same shape. It was left alone because
+ * **the failure direction is the opposite one**: a released card misread costs a
+ * seat's time, while this reader decides whether a pull request has been
+ * reviewed. **A false negative holds a reviewed pull request. A false positive
+ * MERGES AN UNREVIEWED MONEY/AUTH ONE.** On a merge gate, refusing what it is
+ * not sure about is the correct direction.
+ *
+ * So a verdict written as `## Review of PR #1234` and then the marker is NOT a
+ * verdict here, on purpose. The repair for one is to repost the comment with the
+ * marker first — the standing orders fix that form, one writer, one shape — and
+ * never to loosen this line.
+ *
+ * ⚠ If it is ever widened anyway, two things travel with it: the population is
+ * `shared/crewMarkdownLead.ts`'s `blockOpeningLines` (which already refuses a
+ * wrapped paragraph's continuation line), and the AUTHOR GATE stays on both
+ * roads — `classifyComment` and `crewCardCommentFact`. Both conditions, and the
+ * refusals above, are driven in `server/handVerdictReader.test.ts`.
+ */
 export function isHandVerdict(body: string): boolean {
   return body.trimStart().startsWith(HAND_VERDICT_MARKER);
 }
