@@ -69,7 +69,7 @@ import {
   citedOpenCards,
   cutSeatBatches,
   ORDERED_BAND_LABEL,
-  focusRungOf,
+  focusRungFromLadder,
   orderedBandForSeats,
   readIndependence,
   seatPopulation,
@@ -99,6 +99,7 @@ const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
     "shift-runs",
     "comments",
     "atlas",
+    "briefing",
   ],
   boolean: ["no-jev", "quiet"],
 });
@@ -267,6 +268,44 @@ if (!Array.isArray(atlas.modules) || atlas.modules.length === 0) {
 }
 const areaIndex: SeatAreaIndex = buildAreaIndex(atlas.modules);
 
+/*
+  ── THE MILESTONE, FROM THE LADDER HE DECLARED (#1541) ───────────────────────
+
+  The rung marked `current` in `server/crew/crew-briefing.json` is the one
+  artifact that says which milestone is open. It is written only when a shift
+  records his word, it is schema-validated, and he sees it on his own page — so
+  it cannot advance itself the way *the lowest rung in his band* would. Both gates
+  below are handed THIS value; neither derives its own any more.
+
+  ⚠ **AN UNREADABLE BRIEFING DOES NOT REFUSE THE PASS, unlike the Atlas above,
+  and the difference is deliberate.** Without the Atlas no card has an area, so
+  nothing can be handed out at all and `refuse` is honest. Without the ladder the
+  area and independence machinery still works: the milestone reads `null`, every
+  rung card is held, and non-rung switch work is still offered — which is exactly
+  the behaviour of a pass with the focus cleared. Refusing here would turn a
+  missing file into zero seats when it should cost only the rung lane.
+
+  ⚠ **It is the WORKING TREE's briefing, not production's.** That is the right
+  one: the seats build in this tree, and a shift that records his word opening a
+  rung edits this file in the same commit that ships the edition. A production
+  read would also put a network call on the one path that must not fail open.
+*/
+const briefingPath = ARGS.value("briefing") ?? "server/crew/crew-briefing.json";
+let ladder: readonly { readonly key?: unknown; readonly state?: unknown }[] | null = null;
+let ladderNote = "";
+try {
+  const briefing = JSON.parse(readFileSync(resolve(briefingPath), "utf8")) as {
+    program?: { ladder?: readonly { readonly key?: unknown; readonly state?: unknown }[] };
+  };
+  ladder = briefing.program?.ladder ?? null;
+} catch (error) {
+  ladderNote = `the ladder at ${briefingPath} could not be read (${error instanceof Error ? error.message : String(error)}) — every rung card is held`;
+}
+const focusRung = focusRungFromLadder(ladder);
+if (focusRung === null && ladderNote === "") {
+  ladderNote = `${briefingPath} names no single rung as \`current\` — every rung card is held until it does`;
+}
+
 const cards = readOpenCards();
 const nowMs = Date.now();
 
@@ -364,20 +403,27 @@ const ordered = orderedBandForSeats({
   areaIndex,
   switches,
   independenceOf: (card) => resolvedIndependence.get(card.number) ?? { kind: "unclear", cites: [] },
+  focusRung,
 });
 
 const background = seatPopulation({
   cards: candidates.filter((card) => !card.labels.includes(ORDERED_LABEL)),
   /*
-    THE FOCUS CARD'S RUNG, so the background lane applies the same milestone
-    gate the ordered lane does (#1496).
+    THE MILESTONE, so the background lane applies the same gate the ordered lane
+    does (#1496) — and since #1541 it is literally the same VALUE, read once from
+    the ladder above rather than derived twice.
 
-    It reads `ordered.focus` — which is why the call above must stay ABOVE this
-    one. Nothing was reordered to make that true; it already was. When the
-    ordered band is empty or his master switch is off, `focus` is null and every
-    rung card stays held, which is the direction the milestone gate wants.
+    ⚠ **Until #1541 this read the top card's own rung, through the `focusRungOf`
+    helper, and that is the defect.** (Named without its parentheses on purpose:
+    the suite asserts that expression appears NOWHERE here, so that a later shift
+    cannot copy it back out of a comment.) The milestone was whatever rung label
+    sat on the top card of his
+    band, so an ordered card he filed about tooling erased it (`null`, nine rung
+    cards held) and an ordered card on a later rung replaced it (#509 at N6, every
+    N2 card held). It no longer depends on `ordered` at all, so the two calls have
+    no ordering requirement between them.
   */
-  focusRung: focusRungOf(ordered.focus),
+  focusRung,
   switches,
   board,
   areaIndex,
@@ -431,6 +477,19 @@ const out = {
   batchSize,
   seatCount: plan.seatCount,
   focusCard: ordered.focus === null ? null : { number: ordered.focus.number, title: ordered.focus.title, area: ordered.focus.area },
+  /*
+    THE MILESTONE, AND WHERE IT CAME FROM, ON THE RECORD (#1541).
+
+    The plan carried `focusCard` and no milestone, so a pass that held nine rung
+    cards recorded WHICH cards it held and nothing about the reading that held
+    them — the defect was found by inference from a title rather than read off
+    the plan. `focusRung: null` beside its own reason is the fact a later reader
+    needs, and `ladderNote` says which of the two nulls it is: an unreadable file,
+    or a ladder that names no current rung.
+  */
+  focusRung,
+  focusRungSource: briefingPath,
+  ladderNote: ladderNote === "" ? null : ladderNote,
   batches: plan.batches,
   skipped: [...background.skipped, ...ordered.held, ...plan.held, ...sittingOn],
   jev: {
@@ -460,10 +519,15 @@ if (!ARGS.flag("quiet")) {
     : jev === null
       ? " | jev not asked"
       : ` | jev ${readings.length} asks | $${jevSpend.toFixed(4)}`;
+  /* The milestone on the line the runner logs: a pass that holds every rung card
+     must say WHY where somebody will see it, not only in the plan JSON (#1541). */
+  const rungWord = focusRung === null
+    ? ` | no milestone — every rung card held${ladderNote === "" ? "" : ` (${ladderNote})`}`
+    : ` | milestone ${focusRung}`;
   console.log(
     plan.seatCount === 0
-      ? `SEATS 0 | nothing on offer${jevWord}`
-      : `SEATS ${plan.seatCount} | cards ${plan.cardCount} | areas ${areas || "none named"}${jevWord}`,
+      ? `SEATS 0 | nothing on offer${rungWord}${jevWord}`
+      : `SEATS ${plan.seatCount} | cards ${plan.cardCount} | areas ${areas || "none named"}${rungWord}${jevWord}`,
   );
 }
 

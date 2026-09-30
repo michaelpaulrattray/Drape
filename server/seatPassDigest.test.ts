@@ -57,6 +57,31 @@ const base = {
   jev: { asked: true, failure: null, readings: [], spendUsd: 0 },
 };
 
+describe("the milestone the cut applied is on the pass digest (#1541)", () => {
+  /*
+    ⚠ THREE STATES, THREE ARMS, and the third is the one worth having: `undefined`
+    is an older plan and must say NOTHING, while `null` is a cut that found no
+    milestone and must say so. Collapsing them with `??` would print a claim about
+    the cut over a plan that never recorded one.
+  */
+  it("names the rung when the ladder declared one", () => {
+    const out = renderPassDigest({ ...base, focusRung: "N2" });
+    expect(out).toContain("Milestone this pass: **N2**");
+  });
+
+  it("says plainly that NO milestone was named, and where it is read from", () => {
+    const out = renderPassDigest({ ...base, focusRung: null });
+    expect(out).toContain("No milestone was named");
+    expect(out, "a reader must be told which file to look at").toContain("server/crew/crew-briefing.json");
+  });
+
+  it("says NOTHING about a milestone for a plan written before the field existed", () => {
+    const out = renderPassDigest(base);
+    expect(out).not.toContain("Milestone this pass");
+    expect(out).not.toContain("No milestone was named");
+  });
+});
+
 describe("a card's outcome comes from the artifacts", () => {
   it("names the pull request that builds it", () => {
     expect(passCardOutcome(BOARD, 300)).toContain("PR #1350");

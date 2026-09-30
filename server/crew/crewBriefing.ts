@@ -61,7 +61,11 @@ import { z } from "zod";
 
 import { CREW_CARD_STATES, crewCardNeedsHim } from "../../shared/crewCardState.js";
 import { CREW_HELD_STATES, CREW_HOLD_REASON_MAX } from "../../shared/crewNextUpHold.js";
-import { CREW_LADDER_GROUP_KEYS, onePlaceViolations } from "../../shared/crewPipelineGroups.js";
+import {
+  CREW_LADDER_GROUP_KEYS,
+  LADDER_STATE_CURRENT,
+  onePlaceViolations,
+} from "../../shared/crewPipelineGroups.js";
 import { CREW_PIPELINE_STATUSES, crewPipelineRowIsDone } from "../../shared/crewPipelineStatus.js";
 import { CREW_PROBLEM_STATES, crewProblemIsOpen } from "../../shared/crewProblemState.js";
 
@@ -99,7 +103,11 @@ const milestoneSchema = z.object({
 const ladderRungSchema = z.object({
   key: z.string(),
   title: z.string(),
-  state: z.enum(["done", "current", "queued", "parked"]),
+  /* `current` comes from the shared constant rather than a fourth typing of the
+     word: the seat gate reads this state to decide which rung a background seat
+     may build (#1541), so the schema and the reader must not be able to disagree
+     about its spelling. */
+  state: z.enum(["done", LADDER_STATE_CURRENT, "queued", "parked"]),
 }).strict();
 
 /**
@@ -393,7 +401,21 @@ export const crewBriefingSchema = z.object({
     focus: focusSchema,
     milestone: milestoneSchema.nullable(),
     ladder: z.array(ladderRungSchema)
-      .refine(uniqueBy<z.infer<typeof ladderRungSchema>>("rung", (rung) => rung.key), uniqueMessage("ladder[].key")),
+      .refine(uniqueBy<z.infer<typeof ladderRungSchema>>("rung", (rung) => rung.key), uniqueMessage("ladder[].key"))
+      /*
+        ⚠ AT MOST ONE `current` RUNG (#1541, 2026-09-30).
+
+        Since this card the ladder's `current` is not only something he reads —
+        it is the artifact the seat gate derives the milestone from, so a second
+        one is an edition that cannot say which rung four autonomous seats may
+        build. ZERO is legitimate and deliberately allowed: THE MILESTONE GATE
+        clears the focus at every boundary, and `currentLadderRung` reads that as
+        `null`, which holds every rung card until his word opens the next one.
+      */
+      .refine(
+        (ladder) => ladder.filter((rung) => rung.state === LADDER_STATE_CURRENT).length <= 1,
+        "program.ladder may name at most one rung as `current` — the seat gate reads it as the milestone (#1541)",
+      ),
     /** The open cards waiting on the ladder, by rung where the record names one (#493). */
     ladderCards: ladderCardsSchema,
     /** At-a-glance state, capped so the strip stays a glance (#74). */

@@ -466,6 +466,12 @@ export function backgroundWorkSentence(group: CrewPipelineGroup): string | null 
 export const RUNG_LABEL_PREFIX = "rung:";
 
 /**
+ * The ladder state that means *this is the rung he has opened* — one spelling,
+ * shared by the briefing schema's enum, his page's banner and the seat gate.
+ */
+export const LADDER_STATE_CURRENT = "current";
+
+/**
  * The rung a card's labels place it on, or `null` for unplaced.
  *
  * Validated against the ladder's OWN keys (the deployed briefing's
@@ -487,6 +493,68 @@ export function rungFromLabels(
     if (named.has(key)) return key;
   }
   return null;
+}
+
+/**
+ * THE LADDER RUNG HE HAS OPENED — the milestone, read off the one artifact that
+ * declares it (#1541, 2026-09-30, founder-ordered and urgent).
+ *
+ * Returns the single rung whose `state` is `current`, or `null` when the ladder
+ * declares none, declares two, or could not be read at all.
+ *
+ * # ⚠ WHY THIS EXISTS, AND WHY IT IS NOT THE TOP OF HIS ORDERED BAND
+ *
+ * `focusRungOf` used to answer this from the `rung:` label on the TOP CARD of
+ * the founder-ordered band, on the reasoning that the top card IS the focus and
+ * its label is an artifact. Both halves of that are true and the conclusion does
+ * not follow: **the top of his band is whatever he most recently asked for, and
+ * that is frequently not milestone work at all.** Measured on two real passes of
+ * one night, both in the seat plans on disk:
+ *
+ *  - `seat-plan-20260930-100621.json` — the top card was **#1467** and then
+ *    **#1541**, both tooling cards carrying no rung, so the focus rung read
+ *    `null` and **nine** rung cards were held: *"on a rung, and nothing names
+ *    the current focus"*. #1496's two-seat throughput lasted one pass.
+ *  - `runner-pass-20260930-064523.md` — the top card was **#509, `rung:N6`**, so
+ *    every N2 card was held with a sentence that is FALSE: *"a later rung (N2)
+ *    than the focus (N6)"*. N2 is not later than N6. The whole real milestone
+ *    was held because a later-rung card sat on top for one evening.
+ *
+ * So the defect has two faces and neither is about a missing label: the top card
+ * is the wrong artifact. The ladder's `current` is the right one — it is written
+ * only when a shift records his word opening a rung, it is schema-validated, and
+ * **he sees it on his own page**, where `CrewProgramBanner` draws the `current`
+ * rung differently from every other. A declaration that is rendered to the
+ * person who makes it is the kind that gets corrected when it drifts.
+ *
+ * # IT CANNOT ADVANCE ITSELF, WHICH IS THE POINT
+ *
+ * The rejected alternative was *the lowest rung named anywhere in his ordered
+ * band*. It reads correctly today (N2, from #180) and ships a milestone-gate
+ * breach dated to the day N2's last ordered card closes: the lowest rung left in
+ * the band becomes N2c (#1469) and seats would begin N2c on their own. THE
+ * MILESTONE GATE says N2b and N2c open on his word after N2 closes and nothing
+ * else does. A rung only becomes `current` when a shift writes it down quoting
+ * him, so this reading waits for him by construction rather than by luck.
+ *
+ * # FAIL CLOSED, AND WHAT THAT COSTS
+ *
+ * `null` holds every rung card — unchanged, and the direction the milestone gate
+ * wants. Two `current` rungs is an incoherent ladder, not a choice between them,
+ * so it reads `null` as well; the briefing schema refuses that edition anyway,
+ * which makes this arm the belt to that braces.
+ *
+ * Pure and total, so both directions can be positively controlled (working law
+ * 2): a reader that cannot return `null` cannot be proven to fail closed.
+ */
+export function currentLadderRung(
+  ladder: readonly { readonly key?: unknown; readonly state?: unknown }[] | null | undefined,
+): string | null {
+  if (!Array.isArray(ladder)) return null;
+  const current = ladder.filter((rung) => rung?.state === LADDER_STATE_CURRENT);
+  if (current.length !== 1) return null;
+  const key = current[0]?.key;
+  return typeof key === "string" && key.length > 0 ? key : null;
 }
 
 /**
