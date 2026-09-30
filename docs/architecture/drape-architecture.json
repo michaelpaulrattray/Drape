@@ -10478,6 +10478,10 @@
       "path": "client/src/features/castingV2/briefEcho.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/candidateFailureWords.test.ts",
+      "path": "client/src/features/castingV2/candidateFailureWords.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/cardMenuAnatomy.test.ts",
       "path": "client/src/features/castingV2/cardMenuAnatomy.test.ts"
     },

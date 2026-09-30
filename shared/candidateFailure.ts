@@ -116,11 +116,28 @@ export function candidateFailureKind(failureClass: string | null | undefined): C
   }
 }
 
-/** The word on the chip, on the tile itself — short, like a status. */
+/**
+ * The word on the chip, on the tile itself — short, like a status.
+ *
+ * ⚠ **IN OUTCOME WORDS, NEVER IN THE MACHINERY'S (#1551, approved on the Notion
+ * desk 2026-09-30).** `content_filter` wore **Content filter** and `engine`
+ * wore **Engine error** from #122 until then — the pipeline's own vocabulary on
+ * the customer's path, which the disappearing-technology law's clause 6 names as
+ * the defect itself: *a term of art from the pipeline, a control mirroring an
+ * implementation.* "Content filter" is a component of ours; "Engine error" is
+ * the name of a thing they did not know they were using and cannot act on.
+ * **Blocked** and **Didn't finish** say what happened to their picture.
+ *
+ * This knowingly replaces the wording #122's own spec proposed, and keeps
+ * everything #122 and #553 actually asked for: the failure is shown, the refund
+ * is shown, the retry is offered. The KIND names below (`content_filter`,
+ * `engine`) are code and stay — they are read by `retryService.ts` and written
+ * from the row's class, and no customer sees them.
+ */
 export const CANDIDATE_FAILURE_CHIPS: Readonly<Record<CandidateFailureKind, string>> = {
-  content_filter: "Content filter",
+  content_filter: "Blocked",
   render_fault: "Not a portrait",
-  engine: "Engine error",
+  engine: "Didn't finish",
   unpaid: "Not charged",
   unknown: "Didn't arrive",
 };
@@ -130,11 +147,25 @@ export const CANDIDATE_FAILURE_CHIPS: Readonly<Record<CandidateFailureKind, stri
  * failed slice (`rollService.ts` refunds the slice at the moment it fails, and
  * the recovery sweep settles the rest); `unpaid` is the one kind that was
  * never charged, so it must not claim a refund it never made.
+ *
+ * ⚠ **THE SAME REWRITE AS THE CHIPS (#1551), AND ONE OF THESE WAS NOT ABOUT OUR
+ * MACHINERY AT ALL.** *"Refused by the engine's content filter"* and *"Engine
+ * error"* named our own parts; *"a contact sheet, not a portrait"* named a
+ * PHOTOGRAPHER'S term of art — a customer who has never worked a darkroom does
+ * not know what a contact sheet is, and telling them what came back is the
+ * sentence's whole job. *"several faces, not one"* is the same fact in words
+ * anybody has. The chip above it keeps **Not a portrait**, which is already
+ * plain (working law 8: the user's ontology governs).
+ *
+ * ⚠ Every line that claims a refund keeps the exact token `· refunded`:
+ * `CANDIDATE_FAILURE_REFUNDED` is a second statement of that fact and
+ * `refundedPill.test.ts` derives its expectation from THIS string, so a rewrite
+ * that lost the token would silently drop the REFUNDED pill off three tiles.
  */
 export const CANDIDATE_FAILURE_LINES: Readonly<Record<CandidateFailureKind, string>> = {
-  content_filter: "Refused by the engine's content filter · refunded",
-  render_fault: "Came back as a contact sheet, not a portrait · refunded",
-  engine: "Engine error · refunded",
+  content_filter: "Blocked by a safety check · refunded",
+  render_fault: "Came back as several faces, not one · refunded",
+  engine: "Didn't finish on our side · refunded",
   unpaid: "Didn't start · not charged",
   unknown: "Didn't arrive · refunded",
 };
