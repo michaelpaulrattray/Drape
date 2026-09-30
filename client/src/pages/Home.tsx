@@ -2,7 +2,20 @@
  * Home page — hero-only landing with fullscreen video background,
  * glassmorphism navbar, headline + waitlist CTA, and partner names.
  *
- * Layout matches celestial-horizon reference exactly.
+ * Layout matches celestial-horizon reference exactly — with ONE deliberate
+ * departure from it, so that "matches the reference exactly" is never read as
+ * an instruction to put it back: **the reference's fixed corner badge naming an
+ * engine is gone (#1560).** It sat at bottom-right on every scroll position and
+ * said *Powered by Gemini*, linking out to deepmind.google, and it arrived with
+ * the scaffold-era homepage redesign rather than by anyone's decision. The
+ * disappearing-technology law's one narrow prohibition names exactly it — *no
+ * engine name on a path someone must walk to reach their picture* — and by
+ * 2026-09-30 it had also stopped being true: a roll renders on GPT Image 2.5
+ * Sunburst and a signed view on Nano Banana Pro, both through fal, neither
+ * through Google AI Studio. The first picture anybody gets is not a Google
+ * model's.
+ *
+ * `client/src/features/home/landingEngineNames.test.ts` keeps it out.
  */
 import { useState } from "react";
 import { HomeNavbar } from "@/features/home/HomeNavbar";
@@ -48,28 +61,6 @@ export default function Home() {
           <HeroContent onPlayDemo={() => setDemoOpen(true)} />
           <PartnersBar />
         </div>
-      </div>
-
-      {/* ── Powered by Gemini badge ── */}
-      <div className="fixed bottom-6 right-6 z-50">
-        <a
-          href="https://deepmind.google/technologies/gemini/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 rounded-full px-4 py-2 text-xs font-geist font-medium text-white/90 hover:text-white transition-colors bg-black/40 backdrop-blur-md border border-white/10 shadow-lg"
-        >
-          <svg width="16" height="16" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M14 0C14 7.732 7.732 14 0 14C7.732 14 14 20.268 14 28C14 20.268 20.268 14 28 14C20.268 14 14 7.732 14 0Z" fill="url(#gemini-gradient)"/>
-            <defs>
-              <linearGradient id="gemini-gradient" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#4285F4"/>
-                <stop offset="0.5" stopColor="#9B72CB"/>
-                <stop offset="1" stopColor="#D96570"/>
-              </linearGradient>
-            </defs>
-          </svg>
-          Powered by Gemini
-        </a>
       </div>
 
       {/* ── Waitlist Modal (triggered by "Claim a Spot" CTA) ── */}
