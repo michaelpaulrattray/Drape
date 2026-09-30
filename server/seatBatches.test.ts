@@ -245,7 +245,7 @@ describe("what a background seat may take", () => {
     block below.
   */
   it("holds a rung card when nothing names the current focus", () => {
-    const { takeable, skipped } = population([card(12, ["bug", "rung:N2"])]);
+    const { takeable, skipped } = population([card(12, ["casting-upkeep", "rung:N2"])]);
     expect(takeable).toEqual([]);
     expect(skipped[0]!.why).toContain("nothing names the current focus");
   });
@@ -267,10 +267,20 @@ describe("what a background seat may take", () => {
     gate filters on `founder-ordered` before it looks at anything, so eleven of
     the thirteen cards #1496 listed never reach it. An arm that only drove the
     ordered lane would pass while the real population stayed shut.
+
+    ⚠ **EVERY ARM IN THIS BLOCK CARRIED `bug` UNTIL #1553 AND NOW CARRIES
+    `casting-upkeep`, WHICH IS NOT COSMETIC.** #1553 makes a rung label on a
+    `bug` or `small-fix` card a LOCATOR rather than a hold, so a `bug` carrier
+    would make all six of these arms green through the EXEMPTION while proving
+    nothing at all about the gate — the worst shape a guard can take. The
+    carrier is a real work label that is deliberately outside
+    `CREW_FIX_CATEGORY_KEYS`, so these arms still say what they were written to
+    say. The exemption has its own block below, with the mislabelling case
+    beside it.
   */
   it("TAKES a rung card that sits on the focus card's own rung — the throughput this card is for", () => {
     const { takeable, skipped } = population(
-      [card(12, ["bug", "rung:N2"])], ALL_ON, CLEAN_BOARD, "N2",
+      [card(12, ["casting-upkeep", "rung:N2"])], ALL_ON, CLEAN_BOARD, "N2",
     );
     expect(takeable.map((c) => c.number)).toEqual([12]);
     expect(skipped).toEqual([]);
@@ -278,7 +288,7 @@ describe("what a background seat may take", () => {
 
   it("HOLDS a card on a LATER rung while the focus is on N2 — the milestone gate", () => {
     const { takeable, skipped } = population(
-      [card(12, ["bug", "rung:N3"])], ALL_ON, CLEAN_BOARD, "N2",
+      [card(12, ["casting-upkeep", "rung:N3"])], ALL_ON, CLEAN_BOARD, "N2",
     );
     expect(takeable).toEqual([]);
     expect(skipped[0]!.why).toContain("milestone gate");
@@ -289,9 +299,9 @@ describe("what a background seat may take", () => {
   it("separates them in one reading: N2 offered, N2b and N3 held, focus on N2", () => {
     const { takeable, skipped } = population(
       [
-        card(12, ["bug", "rung:N2"]),
-        card(13, ["bug", "rung:N2b"]),
-        card(14, ["bug", "rung:N3"]),
+        card(12, ["casting-upkeep", "rung:N2"]),
+        card(13, ["casting-upkeep", "rung:N2b"]),
+        card(14, ["casting-upkeep", "rung:N3"]),
       ],
       ALL_ON, CLEAN_BOARD, "N2",
     );
@@ -304,17 +314,92 @@ describe("what a background seat may take", () => {
      ("they wont start n3 automatically though right"). */
   it("does not treat N2b as N2 — the comparison is the whole label, not a prefix", () => {
     const { takeable } = population(
-      [card(12, ["bug", "rung:N2b"])], ALL_ON, CLEAN_BOARD, "N2",
+      [card(12, ["casting-upkeep", "rung:N2b"])], ALL_ON, CLEAN_BOARD, "N2",
     );
     expect(takeable).toEqual([]);
   });
 
   it("holds a card carrying TWO rungs even when one of them is the focus rung", () => {
     const { takeable, skipped } = population(
-      [card(12, ["bug", "rung:N2", "rung:N3"])], ALL_ON, CLEAN_BOARD, "N2",
+      [card(12, ["casting-upkeep", "rung:N2", "rung:N3"])], ALL_ON, CLEAN_BOARD, "N2",
     );
     expect(takeable).toEqual([]);
     expect(skipped[0]!.why).toContain("milestone gate");
+  });
+
+  /*
+    ── A RUNG LABEL ON A FIX IS A LOCATOR, NOT A HOLD (#1553) ───────────────
+
+    Three fixes he had asked for sat unbuildable under the milestone gate in one
+    pass — a server claiming to report crashes that reported none, a live door
+    calling a dead model, a crash report nobody could read — because somebody
+    had helpfully written down whose territory each lived in.
+
+    ⚠ EVERY ARM HAS ITS OPPOSITE, as the block above does, and the opposite here
+    is the one that matters: a FEATURE card must not slip into a seat by wearing
+    a fix's label.
+  */
+  it("TAKES a bug on a rung that is NOT the focus — the class this card is for", () => {
+    const { takeable, skipped } = population(
+      [card(12, ["bug", "rung:N3"])], ALL_ON, CLEAN_BOARD, "N2",
+    );
+    expect(takeable.map((c) => c.number)).toEqual([12]);
+    expect(skipped).toEqual([]);
+  });
+
+  it("HOLDS a feature-shaped card on that same rung, in the same reading", () => {
+    /*
+      The card's own named opposite. `design-unbuilt` carries no work label, so
+      this is held BEFORE the rung gate is even asked — which is the honest
+      finding and is why the assertion reads the sentence rather than assuming
+      which gate stopped it. Either way the seat never sees it.
+    */
+    const { takeable, skipped } = population(
+      [card(13, ["design-unbuilt", "rung:N3"])], ALL_ON, CLEAN_BOARD, "N2",
+    );
+    expect(takeable).toEqual([]);
+    expect(skipped[0]!.why).toContain("no switch label");
+  });
+
+  it("separates a bug from a casting card on ONE later rung, in one reading", () => {
+    /*
+      Both in one population, so the arm proves the gate SEPARATES them rather
+      than that it happens to answer each alone — the same discipline the
+      milestone block above uses.
+    */
+    const { takeable, skipped } = population(
+      [card(12, ["bug", "rung:N3"]), card(13, ["casting-upkeep", "rung:N3"]), card(14, ["small-fix", "rung:N8"])],
+      ALL_ON, CLEAN_BOARD, "N2",
+    );
+    expect(takeable.map((c) => c.number).sort()).toEqual([12, 14]);
+    expect(skipped.map((c) => c.number)).toEqual([13]);
+    expect(skipped[0]!.why).toContain("milestone gate");
+  });
+
+  it("TAKES a fix on a rung when NOTHING names the focus — maintenance mode is the whole point", () => {
+    /*
+      ⚠ The arm that pins WHERE the exemption sits. Asked after the no-focus
+      branch instead of before it, a fix would still be frozen on exactly the
+      nights `PROGRAM.md`'s MAINTENANCE MODE says it must run — and every arm
+      above would still be green, because they all name a focus.
+    */
+    const { takeable, skipped } = population([card(12, ["bug", "rung:N6"]), card(13, ["small-fix", "rung:N8"])]);
+    expect(takeable.map((c) => c.number).sort()).toEqual([12, 13]);
+    expect(skipped).toEqual([]);
+  });
+
+  it("reads the card's ONE home category, so a bug filed under casting upkeep is still a bug", () => {
+    /*
+      His one-work-label rule makes this rare rather than impossible, and
+      `homeWorkCategoryFor`'s precedence already answers it: a bug is a bug
+      wherever else it lives. Pinned here because the alternative — asking
+      whether ANY label is a fix label — would let `design-unbuilt` + `bug`
+      through on the same reasoning, and the two shapes look identical.
+    */
+    const { takeable } = population(
+      [card(12, ["bug", "casting-upkeep", "rung:N3"])], ALL_ON, CLEAN_BOARD, "N2",
+    );
+    expect(takeable.map((c) => c.number)).toEqual([12]);
   });
 
   /* A card with no rung at all is untouched by any of this. */
@@ -1046,6 +1131,40 @@ describe("the milestone comes from the ladder he declared, not the top of his ba
       const result = band([rungless(1467), onRung(1539, "N2")], null);
       expect(result.offered).toEqual([]);
       expect(result.held.find((h) => h.number === 1539)!.why).toContain("nothing names the current focus");
+    });
+
+    /*
+      ── AND THE LOCATOR RULE REACHES THIS LANE TOO (#1553) ──────────────────
+
+      #1420 is the real shape: `founder-ordered` + `bug` + `rung:N6`, filed the
+      morning he added the Sentry token for it, held by the gate the same pass.
+      It is driven here as well as through `seatPopulation` for the reason
+      #1496's own body got wrong once — the two lanes are different code, and an
+      arm on one says nothing about the other.
+    */
+    const orderedFix = (n: number, rung: string, work = "bug", createdAt = UNDER) =>
+      card(n, ["founder-ordered", work, `rung:${rung}`], { body: "server/casting/queue.ts", createdAt });
+
+    it("offers HIS ordered bug on a rung that is not the milestone — #1420's own shape", () => {
+      const result = band([rungless(1467), orderedFix(1420, "N6")], "N2");
+      expect(result.offered.map((c) => c.number)).toEqual([1420]);
+      expect(result.held.map((h) => h.number)).not.toContain(1420);
+    });
+
+    it("and still holds his ordered card that is milestone work, in the same reading", () => {
+      /*
+        The opposite, in one population. #1469 carries no work label — the shape
+        almost every rung card in his band has — so the gate is untouched by the
+        exemption exactly where the milestone gate does its work.
+      */
+      const result = band([rungless(1467), orderedFix(1420, "N6"), onRung(1469, "N2c")], "N2");
+      expect(result.offered.map((c) => c.number)).toEqual([1420]);
+      expect(result.held.find((h) => h.number === 1469)!.why).toContain("the milestone is N2");
+    });
+
+    it("offers an ordered fix with NO milestone named at all — maintenance mode, on this lane too", () => {
+      const result = band([rungless(1467), orderedFix(1420, "N6")], null);
+      expect(result.offered.map((c) => c.number)).toEqual([1420]);
     });
   });
 });
