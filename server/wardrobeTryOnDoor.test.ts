@@ -139,6 +139,7 @@ function context(): TrpcContext {
     } as NonNullable<TrpcContext["user"]>,
     req: { protocol: "https", headers: {} } as TrpcContext["req"],
     res: { clearCookie: vi.fn() } as unknown as TrpcContext["res"],
+    correlationId: "door-test",
   };
 }
 
