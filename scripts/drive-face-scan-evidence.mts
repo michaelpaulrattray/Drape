@@ -168,7 +168,7 @@ async function shot(page: Page, selector: string, file: string): Promise<boolean
 }
 
 async function openPanel(page: Page): Promise<void> {
-  await page.goto(`${BASE}/casting/s/${SESSION}`, { waitUntil: "networkidle2", timeout: 180_000 });
+  await page.goto(`${BASE}/app/casting/s/${SESSION}`, { waitUntil: "networkidle2", timeout: 180_000 });
   await page.waitForSelector(`button[aria-label="View candidate ${TILE} larger"]`, { timeout: 180_000 });
   await page.click(`button[aria-label="View candidate ${TILE} larger"]`);
   await page.waitForSelector(".dpc-face", { timeout: 90_000 });

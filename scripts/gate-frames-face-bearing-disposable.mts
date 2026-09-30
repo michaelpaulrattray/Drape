@@ -141,7 +141,7 @@ async function saveFrame(name: string): Promise<void> {
   say(`   frame:   ${OUT}/${name}.png (${bytes.length} bytes)  <- ${from}`);
 }
 
-await page.goto(`${BASE}/casting/s/${SESSION}`, { waitUntil: "domcontentloaded" });
+await page.goto(`${BASE}/app/casting/s/${SESSION}`, { waitUntil: "domcontentloaded" });
 if (!(await page.waitForSelector('button[aria-label^="View candidate"]', { timeout: 120_000 }).catch(() => null))) {
   await finish(1, "STOPPED: no candidate tiles");
 }

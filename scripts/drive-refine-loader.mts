@@ -199,7 +199,7 @@ for (const theme of THEMES) {
       }
     });
 
-    await page.goto(`${BASE}/casting/s/${SESSION}`, { waitUntil: "networkidle2", timeout: 180_000 });
+    await page.goto(`${BASE}/app/casting/s/${SESSION}`, { waitUntil: "networkidle2", timeout: 180_000 });
     await page.waitForSelector(`button[aria-label="View candidate ${TILE} larger"]`, { timeout: 180_000 });
     /*
       CLICKED IN THE PAGE, NOT THROUGH THE DEVICE.

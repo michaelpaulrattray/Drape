@@ -112,7 +112,7 @@ const { browser, page } = await openDrivenPage({ base: BASE, token, width: 1440,
  */
 async function openTheBox(theme: "dark" | "light"): Promise<boolean> {
   await page.evaluateOnNewDocument(`(() => { try { window.localStorage.setItem("drape_theme", ${JSON.stringify(theme)}); } catch {} })()`);
-  await page.goto(`${BASE}/casting/s/${SESSION}`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${BASE}/app/casting/s/${SESSION}`, { waitUntil: "domcontentloaded" });
   /* Wait on the THING, never on the clock — the tiles arrive after a remote
      database round trip, and a fixed sleep reports a slow answer as no answer. */
   const tile = await page

@@ -92,7 +92,7 @@ const stop = async (why: string) => {
 const TILE = Number(process.env.CARRY_TILE ?? "0");
 
 async function openTheBox(): Promise<boolean> {
-  await page.goto(`${BASE}/casting/s/${SESSION}`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${BASE}/app/casting/s/${SESSION}`, { waitUntil: "domcontentloaded" });
   if (!(await page.waitForSelector('button[aria-label^="View candidate"]', { timeout: 120_000 })
     .catch(() => null))) return false;
   const opened = await page.evaluate((at: number) => {
