@@ -6,6 +6,7 @@ import {
   CANDIDATE_FAILURE_LINES,
   type CandidateFailureKind,
 } from "@shared/candidateFailure";
+import { ENGINE_AND_VENDOR_NAMES } from "@shared/engineVocabulary";
 
 /**
  * A FAILED TILE SAYS WHAT HAPPENED, NEVER WHAT DID IT (#1551, approved on the
@@ -62,13 +63,17 @@ const MACHINERY_WORDS: ReadonlyArray<{ readonly word: string; readonly why: stri
     the casting road actually runs today (`rollEngine.ts`, `signEngine.ts`,
     `falImages.ts`) plus the family it ran before, so the guard names the real
     population rather than a plausible one.
+
+    ⚠ **THEY ARE IMPORTED SINCE #1560, NOT LISTED HERE.** That card found the
+    same six words a second time — on the landing page's *Powered by Gemini*
+    badge — and a second guard keeping its own copy is the mirror working law 4
+    is about. The engine this product rolls on moved three times in September
+    2026 (#1340, #1459, #1278 path E); the list has to move once, not twice.
+    `shared/engineVocabulary.ts` holds them with the same `{ word, why }` shape,
+    and they stay LAST so the positive control's expected order below is the
+    order this reader still produces.
   */
-  { word: "nano banana", why: "an engine name on a path someone must walk" },
-  { word: "sunburst", why: "an engine name on a path someone must walk" },
-  { word: "gpt image", why: "an engine name on a path someone must walk" },
-  { word: "gemini", why: "an engine name on a path someone must walk" },
-  { word: "openrouter", why: "a vendor name on a path someone must walk" },
-  { word: "fal.ai", why: "a vendor name on a path someone must walk" },
+  ...ENGINE_AND_VENDOR_NAMES,
 ];
 
 /** The one reader, used by the arms AND by the positive control below. */

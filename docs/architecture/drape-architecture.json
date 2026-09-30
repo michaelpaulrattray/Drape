@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 71
+      "moduleCount": 72
     },
     {
       "id": "domain:staff",
@@ -6051,6 +6051,12 @@
     {
       "id": "module:shared/crewWorkSwitches.ts",
       "path": "shared/crewWorkSwitches.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/engineVocabulary.ts",
+      "path": "shared/engineVocabulary.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -13146,6 +13152,10 @@
     {
       "id": "test:server/klaviyo.test.ts",
       "path": "server/klaviyo.test.ts"
+    },
+    {
+      "id": "test:server/landingEngineNames.test.ts",
+      "path": "server/landingEngineNames.test.ts"
     },
     {
       "id": "test:server/lib/boardBackfill.test.ts",

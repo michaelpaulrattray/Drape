@@ -1515,3 +1515,9 @@
   verdict: KEEP
   why: "server/testing/ is test infrastructure by directory (the readListedSource precedent, 13a), so a production-importer reading of it is zero by construction and says nothing. It is the walk server/errorMessageInterpolation.test.ts derives its population from: every template literal in an error or log context across the tracked production source, refused when an interpolated EXPRESSION names a key on the scrub's own REFUSING_KEYS. It closes the remainder shared/errorEventScrub.ts states in its own docblock — the key scan refuses field NAMES and cannot read prose, so `throw new Error(`refused: ${brief}`)` travels. Deleting it returns that hole to being documented rather than guarded, and takes the walk's floor counts with it, which are what tell a clean tree from a reader that stopped parsing"
   argued: "#1406"
+
+- symbol: ENGINE_AND_VENDOR_NAMES
+  file: shared/engineVocabulary.ts
+  verdict: KEEP
+  why: "a guard's population, so a production-importer reading of it is zero by construction and says nothing (the server/testing/ precedent, 13a) — it is the vocabulary TWO guards on two different customer surfaces read, server/landingEngineNames.test.ts (the landing page, #1560) and client/src/features/castingV2/candidateFailureWords.test.ts (a failed tile's chip, #1551). It exists BECAUSE the second guard was about to keep a second copy of the same six words: the engine this product rolls on moved three times in September 2026 (#1340, #1459, #1278 path E), and a guard whose vocabulary was written against the previous engine reads green over the new one's name — working law 4, with the drift already measured on this exact list. Deleting it returns the words to one copy per guard, which is the mirror, and takes the derived arm with it that holds every fal model id the provider modules declare against the list"
+  argued: "#1560"
