@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 70
+      "moduleCount": 71
     },
     {
       "id": "domain:staff",
@@ -5973,6 +5973,12 @@
     {
       "id": "module:shared/crewCardState.ts",
       "path": "shared/crewCardState.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/crewMarkdownLead.ts",
+      "path": "shared/crewMarkdownLead.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -12804,6 +12810,10 @@
     {
       "id": "test:server/crewHeartbeat.test.ts",
       "path": "server/crewHeartbeat.test.ts"
+    },
+    {
+      "id": "test:server/crewMarkdownLead.test.ts",
+      "path": "server/crewMarkdownLead.test.ts"
     },
     {
       "id": "test:server/crewNamingWindow.test.ts",
@@ -33821,6 +33831,11 @@
     },
     {
       "from": "module:shared/crewCardBuildState.ts",
+      "to": "module:shared/crewMarkdownLead.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/crewCardBuildState.ts",
       "to": "module:shared/crewShiftState.ts",
       "kind": "imports"
     },
@@ -33832,6 +33847,11 @@
     {
       "from": "module:shared/crewCardResolution.ts",
       "to": "module:shared/crewCardState.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/crewNextUpHold.ts",
+      "to": "module:shared/crewMarkdownLead.ts",
       "kind": "imports"
     },
     {

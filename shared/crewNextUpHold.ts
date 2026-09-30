@@ -46,6 +46,7 @@
  * definition of "he is blocking this". It stays derived; putting it in a label
  * would let the queue claim he owes an answer he has already given.
  */
+import { decoratedLines } from "./crewMarkdownLead";
 
 /**
  * The label that puts a card in each held state.
@@ -181,9 +182,24 @@ export function heldStateFromLabels(labels: readonly string[]): CrewHeldState | 
  * a card mid-edit; taking the first keeps the answer stable while somebody is
  * typing, and taking "the last one" would let a quoted example at the bottom of
  * a card win over the filer's own line.
+ *
+ * ⚠ **AND IT COULD NOT SEE A MARKER INSIDE A BLOCKQUOTE UNTIL #1559.** It read
+ * `line.trim().startsWith(CREW_HOLD_MARKER)`, and #1414's line is
+ * `> **Waiting on:** YOU — your eye on two frames`: after `.trim()` that starts
+ * with `>`, not with `**`, so the marker was invisible and **the card was held
+ * on his eye with nothing on his desk asking for it.** That is the exact
+ * silence this module's own docblock is about — *a question he could not see is
+ * the silence direction, and it is the one this repository keeps paying for* —
+ * happening one function below the sentence.
+ *
+ * The decoration is stripped by `shared/crewMarkdownLead.ts`, the same reader
+ * `crewCardBuildState.ts` uses. ⚠ **It strips BLOCK decoration only and never
+ * inline emphasis, which this function depends on absolutely**: the marker it
+ * looks for literally begins with `**`, so a stripper that ate leading
+ * asterisks would make this line unfindable again by the other road.
  */
 export function holdReasonFromBody(body: string): string | null {
-  for (const line of body.split(/\r?\n/)) {
+  for (const line of decoratedLines(body)) {
     const trimmed = line.trim();
     if (!trimmed.startsWith(CREW_HOLD_MARKER)) continue;
     const reason = trimmed.slice(CREW_HOLD_MARKER.length).trim();
