@@ -15,6 +15,8 @@ import { describe, expect, it } from "vitest";
 import { CREW_CARD_STATES, crewCardNeedsHim } from "../../../../../../shared/crewCardState";
 import { CREW_HOLD_WORD } from "../../../../../../shared/crewNextUpHold";
 import {
+  cardIsClosed,
+  cardsNamedIn,
   stepsWithLiveState,
   eyeItemsFor,
   needsYouFor,
@@ -25,18 +27,132 @@ import {
   pipelineNotDone,
 } from "./crewTypes";
 
+/** A live view carrying only what `cardIsClosed` reads. */
+const liveWith = (desk: {
+  closedCards?: number[];
+  openCards?: number[];
+  highestCard?: number;
+  openComplete?: boolean;
+}) => ({
+  available: true as const,
+  stale: false as const,
+  why: null,
+  desk: {
+    closedCards: desk.closedCards ?? [],
+    openCards: desk.openCards ?? [],
+    highestCard: desk.highestCard ?? 0,
+    openComplete: desk.openComplete ?? true,
+  },
+}) as unknown as Parameters<typeof cardIsClosed>[0];
+
+const closedBy = (desk: Parameters<typeof liveWith>[0]) => cardIsClosed(liveWith(desk));
+
 
 describe("a milestone step that names a closed card reads as done (#1201)", () => {
+  const steps = [
+    { title: "The N1 deep review — asked for on #1121", state: "in-progress" as const },
+    { title: "THE SWITCH LIST IS ON YOUR DESK (#1132)", state: "waiting" as const },
+    { title: "Still open (#999)", state: "waiting" as const },
+    { title: "No card named", state: "blocked" as const },
+  ];
+
   it("overrides waiting and in-progress when the card is closed, and leaves the rest alone", () => {
-    const steps = [
-      { title: "The N1 deep review — asked for on #1121", state: "in-progress" as const },
-      { title: "THE SWITCH LIST IS ON YOUR DESK (#1132)", state: "waiting" as const },
-      { title: "Still open (#999)", state: "waiting" as const },
-      { title: "No card named", state: "blocked" as const },
+    const only = (...closed: number[]) =>
+      stepsWithLiveState(steps, (n) => closed.includes(n)).map((s) => s.state);
+    expect(only(1132)).toEqual(["in-progress", "done", "waiting", "blocked"]);
+    expect(only(1121, 1132)).toEqual(["done", "done", "waiting", "blocked"]);
+    expect(only()).toEqual(["in-progress", "waiting", "waiting", "blocked"]);
+  });
+
+  /*
+    #1586 — THE ARM THAT FAILS AGAINST THE SHIPPED READING. His words,
+    2026-09-30: *"why does it still say all these things are in progress? are
+    they?"*. The three cards below are CLOSED and none of them is in
+    `closedCards`, which is one page of a 48-hour search: #1408 closed four
+    days earlier, and #1278 and #1459 closed inside the window but were
+    crowded off a page of 100 by the 132 items that closed in it. Handed
+    `closedCards` alone — the shipped input — every one of these steps reads
+    "in progress"; read through the OPEN set's complement they read done.
+  */
+  it("a step whose card closed outside the recent window, or off its page, still reads done", () => {
+    const his = [
+      { title: "the dressed signed views (#1278)", state: "in-progress" as const },
+      { title: "the checker's bounded copy (#1408)", state: "in-progress" as const },
+      { title: "the outfit test (#1459)", state: "in-progress" as const },
     ];
-    expect(stepsWithLiveState(steps, [1132]).map((s) => s.state)).toEqual(["in-progress", "done", "waiting", "blocked"]);
-    expect(stepsWithLiveState(steps, [1121, 1132]).map((s) => s.state)).toEqual(["done", "done", "waiting", "blocked"]);
-    expect(stepsWithLiveState(steps, []).map((s) => s.state)).toEqual(["in-progress", "waiting", "waiting", "blocked"]);
+    /* Nothing recently-closed is known; 1594 is the only thing OPEN. */
+    const closed = closedBy({ closedCards: [], openCards: [1594], highestCard: 1594 });
+    expect(stepsWithLiveState(his, closed).map((s) => s.state)).toEqual(["done", "done", "done"]);
+  });
+
+  it("POSITIVE CONTROL: an OPEN card's step is left exactly as the crew wrote it", () => {
+    const open = [
+      { title: "N2c — Campaigns (#1469)", state: "waiting" as const },
+      { title: "the seat gate's rung read (#1541)", state: "in-progress" as const },
+    ];
+    const closed = closedBy({ openCards: [1469, 1541], highestCard: 1594 });
+    expect(stepsWithLiveState(open, closed).map((s) => s.state)).toEqual(["waiting", "in-progress"]);
+  });
+});
+
+describe("cardIsClosed — the one reading four surfaces ask (#1586)", () => {
+  it("a number at or below the highest seen and not open is CLOSED", () => {
+    const closed = closedBy({ openCards: [1469, 1594], highestCard: 1594 });
+    expect(closed(1278)).toBe(true);
+    expect(closed(1408)).toBe(true);
+    expect(closed(1469)).toBe(false);
+    expect(closed(1594)).toBe(false);
+  });
+
+  it("the recent window still answers on its own — it is a fact, not a fallback", () => {
+    const closed = closedBy({ closedCards: [1278], openCards: [], highestCard: 0 });
+    expect(closed(1278), "in the window, and above the bound").toBe(true);
+  });
+
+  /*
+    THE DIRECTION THIS FAILS IN, driven rather than asserted in prose. A card
+    above the bound, and every card when the open read truncated, is treated
+    as OPEN — his page saying *less done than it is*, which costs him a
+    question. The other direction would draw a milestone as finished when it
+    is not, which is what THE MILESTONE GATE exists to stop.
+  */
+  it("a number ABOVE the highest seen is not closed — a typo never reads as done", () => {
+    const closed = closedBy({ openCards: [1594], highestCard: 1594 });
+    expect(closed(9999)).toBe(false);
+  });
+
+  it("a TRUNCATED open read falls back to the window alone, never to the complement", () => {
+    const closed = closedBy({
+      closedCards: [1278], openCards: [1594], highestCard: 1594, openComplete: false,
+    });
+    expect(closed(1278), "the window still answers").toBe(true);
+    expect(closed(1408), "absent from a page that overflowed proves nothing").toBe(false);
+  });
+
+  it("an unavailable live view closes nothing at all", () => {
+    const closed = cardIsClosed({ available: false, why: "GitHub has not answered" } as unknown as Parameters<typeof cardIsClosed>[0]);
+    expect(closed(1278)).toBe(false);
+  });
+});
+
+describe("cardsNamedIn — one reader for the `#N` token", () => {
+  it("reads every card a sentence names, and nothing that only looks like one", () => {
+    expect(cardsNamedIn("closes #1278 and #0409 after #12")).toEqual([1278, 409, 12]);
+    expect(cardsNamedIn("no cards here"), "no tokens").toEqual([]);
+    /* The shipped token's own two edges, pinned rather than reinvented: what
+       PRECEDES a `#` must not be a letter or digit, and what FOLLOWS the
+       number may be anything but a digit. So `abc#99` is not a card and
+       `#1278a` is #1278 — moving either is a change to how every problem row
+       and milestone step is read, not a tidy-up. */
+    expect(cardsNamedIn("abc#99"), "a letter before the # is not a card").toEqual([]);
+    expect(cardsNamedIn("#1278a"), "a letter after the number still names it").toEqual([1278]);
+    expect(cardsNamedIn("#12345"), "a digit after the number is part of it").toEqual([12345]);
+    expect(cardsNamedIn("#0"), "zero is not a card").toEqual([]);
+  });
+
+  it("is re-entrant — a shared regex with lastIndex would drop the second call", () => {
+    expect(cardsNamedIn("#1278")).toEqual([1278]);
+    expect(cardsNamedIn("#1278")).toEqual([1278]);
   });
 });
 

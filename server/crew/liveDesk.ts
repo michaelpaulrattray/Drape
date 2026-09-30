@@ -137,8 +137,65 @@ export type LiveDesk = {
    * carry a state a shift wrote by hand; a card he answered and the relay
    * closed an hour ago would keep asking him until the next edition. The page
    * subtracts these before it draws what needs him (#1193).
+   *
+   * ⚠ **THIS IS A HISTORY FEED AND FOUR READERS WERE ASKING IT A STATE
+   * QUESTION — #1586, 2026-09-30, his own words: *"why does it still say all
+   * these things are in progress? are they?"*.** It is one page of a
+   * 48-hour search, and `stepsWithLiveState`, `needsYouFor`, `eyeItemsFor`
+   * and `problemsFor` each read it as *is this card closed* — every one of
+   * them saying so in its own docblock. Measured the morning he asked: his
+   * milestone drew **ten** steps as in progress and **all eleven cards they
+   * name were closed**; two had closed outside the 48 hours (#1408 on the
+   * 26th, #1443 on the 27th) and the other eight were inside it and dropped
+   * anyway, because **132 items closed in that window against a page of
+   * 100** and the page is sorted by `updated`, so a card closed yesterday
+   * and untouched since sorts below a hundred busier rows. The section whose
+   * job is to say when the milestone gate opens was reading *less done than
+   * it is*.
+   *
+   * **The repair is not a bigger window** — that makes the truncation worse,
+   * and the numbers above say a page can never bound this repository's
+   * closures. It is `openCards` + `openComplete` below: ask the question the
+   * readers are actually asking, of the set that can answer it. This field
+   * stays exactly as it was, because *what closed recently* is a real and
+   * different fact (it is what `finishedLadder` and *since you last looked*
+   * are built from) and `cardIsClosed` unions the two.
    */
   readonly closedCards: readonly number[];
+  /**
+   * EVERY open number the reading saw — issues AND pull requests, which share
+   * one number space on GitHub, so an open PR named in a step must not read as
+   * closed by being absent from the issues.
+   *
+   * With `openComplete` and `highestCard` this is what answers *is this card
+   * closed* (`cardIsClosed`): a number at or below the highest the reading saw
+   * is one GitHub has issued, and if it is not open then it is closed. That
+   * reading needs no extra request and no window at all — the complement of a
+   * set of 37 rather than a page of a list of 132.
+   */
+  readonly openCards: readonly number[];
+  /**
+   * The highest number the reading saw, across both searches — the bound on
+   * the complement above, and `0` for an empty reading.
+   *
+   * Without it a step naming a card that does not exist yet (a typo, or a
+   * number this repository has not issued) would read as closed, which is the
+   * one direction that matters: this page may say *less done than it is* and
+   * cost him a question, or *more done than it is* and cost him the milestone
+   * gate.
+   */
+  readonly highestCard: number;
+  /**
+   * True when the OPEN search was not truncated, so its absences are facts
+   * rather than a page boundary (`liveQueue`'s `truncated.open`).
+   *
+   * When it is false `cardIsClosed` falls back to `closedCards` alone — the
+   * behaviour of every day before #1586, which reads a closed card as still
+   * in progress rather than an open card as done. **A guess in the other
+   * direction would be the page telling him a milestone is finished when it
+   * is not**, and no repair to a stale sentence is worth that.
+   */
+  readonly openComplete: boolean;
   /**
    * Open cards still carrying the hold label — the ones genuinely waiting on
    * somebody. His question, 2026-09-25 (terminal), verbatim: *"do i need to
@@ -591,6 +648,14 @@ export function deriveLiveDesk(
       .filter((item) => item.kind === "issue" && item.status !== "open")
       .map((item) => item.number)
       .sort((a, b) => a - b),
+    /* Issues AND pull requests — one number space (see the field's docblock). */
+    openCards: reading.open
+      .filter((item) => item.status === "open")
+      .map((item) => item.number)
+      .sort((a, b) => a - b),
+    highestCard: [...reading.open, ...reading.recent]
+      .reduce((highest, item) => (item.number > highest ? item.number : highest), 0),
+    openComplete: !reading.truncated.open,
     finishedLadder: reading.recent
       .filter((item) => item.kind === "issue" && item.status !== "open" && item.closedAt !== null)
       .filter((item) => CREW_LADDER_GROUP_KEYS.includes(pipelineGroupFor(item.labels)))
@@ -604,7 +669,10 @@ export function deriveLiveDesk(
     counts: {
       openCards: openIssues(reading).length,
       openPullRequests: openPulls(reading).length,
-      truncated: reading.truncated,
+      /* The counts are a FLOOR if either search overflowed, so this stays the
+         combined reading — derived here rather than kept as a second field on
+         `LiveQueueReading` (working law 4). */
+      truncated: reading.truncated.open || reading.truncated.recent,
     },
   };
 }

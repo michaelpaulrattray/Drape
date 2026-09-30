@@ -182,7 +182,9 @@ describe("the cache", () => {
     clock = 29_999;
     const third = await reader.read();
     expect(calls.length, "two searches, once").toBe(2);
-    expect(first).toMatchObject({ available: true, stale: false, truncated: false });
+    expect(first).toMatchObject({
+      available: true, stale: false, truncated: { open: false, recent: false },
+    });
     if (!first.available) throw new Error("unreachable");
     expect(first.open.map((i) => i.number)).toEqual([1193]);
     expect(first.recent.map((i) => i.number)).toEqual([1185]);
@@ -211,7 +213,32 @@ describe("the cache", () => {
       jsonResponse(url.includes("state%3Aopen") ? { total_count: 250, items: [OPEN_ISSUE] } : recentAnswer));
     const reader = createLiveQueueReader({ fetch, now: () => 0 });
     const reading = await reader.read();
-    expect(reading).toMatchObject({ available: true, truncated: true });
+    expect(reading).toMatchObject({ available: true, truncated: { open: true, recent: false } });
+  });
+
+  /*
+    #1586: the two searches overflow on different schedules and only the OPEN
+    half can answer *is this card closed*. A single OR-ed boolean read `true`
+    on the morning he asked — because the CLOSED window held 132 items against
+    a page of 100 while the open read was complete at 37 — and that took the
+    answer away from the one reader that needed it. Both arms below fail
+    against the combined boolean: it cannot tell them apart.
+  */
+  it("names WHICH search overflowed — the closed window alone, with the open read complete", async () => {
+    const { fetch } = fakeFetch((url) =>
+      jsonResponse(url.includes("state%3Aopen")
+        ? { total_count: 1, items: [OPEN_ISSUE] }
+        : { total_count: 132, items: [CAPTURED_PR_1185] }));
+    const reader = createLiveQueueReader({ fetch, now: () => 0 });
+    const reading = await reader.read();
+    expect(reading).toMatchObject({ available: true, truncated: { open: false, recent: true } });
+  });
+
+  it("NEGATIVE CONTROL: neither overflowing says so on both halves", async () => {
+    const { fetch } = fakeFetch((url) => jsonResponse(byQuery(url)));
+    const reader = createLiveQueueReader({ fetch, now: () => 0 });
+    const reading = await reader.read();
+    expect(reading).toMatchObject({ truncated: { open: false, recent: false } });
   });
 });
 

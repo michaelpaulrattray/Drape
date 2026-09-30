@@ -48,7 +48,7 @@ vi.mock("../crew/liveQueue", () => ({
     available: true,
     stale: false,
     readAt: "2026-09-25T00:00:00Z",
-    truncated: false,
+    truncated: { open: false, recent: false },
     open: [{
       number: 1193, title: "Live Desk", kind: "issue", status: "open", draft: false,
       labels: ["founder-ordered", "urgent"], author: "michaelpaulrattray", assignees: [],

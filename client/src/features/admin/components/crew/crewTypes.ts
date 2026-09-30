@@ -78,26 +78,43 @@ export function milestoneProgress(
 /** The count line under the bar — zero-count groups are omitted so the
  *  sentence stays as short as the truth allows. */
 /**
+ * Every card (`#N`) a sentence names, in the order it names them. One reader
+ * for the three surfaces that ask it — a milestone step, a problem row, and
+ * the guard that holds them to one spelling — because the token was written
+ * out twice already and a third copy is the drift working law 4 names.
+ */
+export function cardsNamedIn(text: string): number[] {
+  const token = /(?:^|[^0-9A-Za-z])#0*([1-9][0-9]*)(?![0-9])/g;
+  const found: number[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = token.exec(text)) !== null) found.push(Number(match[1]));
+  return found;
+}
+
+/**
  * A step that names a card (`#N`) GitHub has since closed reads as DONE,
  * whatever the edition still says (#1201). The milestone list is the crew's
  * hand-written notes and it goes stale between editions — on the day he
  * asked, a step still read "waiting" for a sitting he had finished the
  * night before. A step naming no card keeps the state the crew wrote.
+ *
+ * ⚠ **IT TAKES A PREDICATE RATHER THAN A LIST OF CLOSURES — #1586.** It was
+ * handed `desk.closedCards`, which is one page of a 48-hour search, so a
+ * step naming a card closed before that window, or crowded off its page,
+ * read as in progress for ever. His words: *"why does it still say all these
+ * things are in progress? are they?"* — ten steps, eleven closed cards, none
+ * of them drawn as done. `cardIsClosed` is the reading; see its docblock and
+ * `LiveDesk.closedCards` for the measurement.
  */
 export function stepsWithLiveState<T extends { readonly title: string; readonly state: CrewMilestoneStep["state"] }>(
   steps: readonly T[],
-  closedCards: readonly number[],
+  isClosed: (issueNumber: number) => boolean,
 ): T[] {
-  const closed = new Set(closedCards);
-  const token = /(?:^|[^0-9A-Za-z])#0*([1-9][0-9]*)(?![0-9])/g;
   return steps.map((step) => {
     if (step.state === "done") return step;
-    let match: RegExpExecArray | null;
-    token.lastIndex = 0;
-    while ((match = token.exec(step.title)) !== null) {
-      if (closed.has(Number(match[1]))) return { ...step, state: "done" as const };
-    }
-    return step;
+    return cardsNamedIn(step.title).some(isClosed)
+      ? { ...step, state: "done" as const }
+      : step;
   });
 }
 
@@ -333,6 +350,42 @@ export function queueReadOf(live: CrewLiveView, snapshotReadAt: string): CrewQue
   return { kind: live.stale ? "stale" : "live", readAt: live.desk.readAt, why: live.why };
 }
 
+/**
+ * IS THIS CARD CLOSED — the one reading every surface that subtracts a closed
+ * card now asks (#1586): a milestone step, a needs-you card, an eye item, a
+ * problem row. All four used to read `desk.closedCards`, which answers a
+ * different question — *what closed in the last 48 hours*, one page of it —
+ * and all four said so in their own docblocks while believing the first.
+ *
+ * **The reading, in order:**
+ *  1. in `closedCards` → closed. The window is small but it is a fact, and it
+ *     is the only thing available when the open read is truncated.
+ *  2. `openComplete` and the number is at or below `highestCard` and NOT in
+ *     `openCards` → closed. A number this repository has issued is either open
+ *     or closed, and the open set is the complete one (37 items against a page
+ *     of 100 the day this landed; the closed window held 132).
+ *  3. otherwise → NOT closed, and the surface keeps whatever the crew wrote.
+ *
+ * ⚠ **STEP 3 IS THE DIRECTION THIS IS BUILT TO FAIL IN.** A card above
+ * `highestCard` (a typo, a number not yet issued) and every card at all when
+ * the open read truncated are treated as open. That is the behaviour of every
+ * day before this fix — his page saying *less done than it is*, which costs
+ * him a question. The other direction costs him the milestone gate: a
+ * milestone drawn as finished when it is not is the one thing THE MILESTONE
+ * GATE exists to stop, and no stale sentence is worth guessing at it.
+ */
+export function cardIsClosed(live: CrewLiveView): (issueNumber: number) => boolean {
+  if (!live.available) return () => false;
+  const { closedCards, openCards, highestCard, openComplete } = live.desk;
+  const closed = new Set(closedCards);
+  const open = new Set(openCards);
+  return (issueNumber: number) => {
+    if (closed.has(issueNumber)) return true;
+    if (!openComplete) return false;
+    return issueNumber <= highestCard && !open.has(issueNumber);
+  };
+}
+
 /** The ladder's cards — live when GitHub answers, the edition's list otherwise. */
 export function ladderCardsFor(live: CrewLiveView, briefing: CrewBriefingView): CrewLadderCardsSource {
   return live.available ? live.desk.ladderCards : briefing.program.ladderCards;
@@ -345,7 +398,7 @@ export function ladderCardsFor(live: CrewLiveView, briefing: CrewBriefingView): 
  */
 export function needsYouFor(live: CrewLiveView, cards: readonly CrewNeedsYouCard[]): CrewNeedsYouCard[] {
   if (!live.available) return [...cards];
-  const closed = new Set(live.desk.closedCards);
+  const closed = cardIsClosed(live);
   const held = new Set(live.desk.heldCards);
   /*
     ANSWERED IS NOT ONLY CLOSED — his question, 2026-09-25 (terminal),
@@ -357,7 +410,7 @@ export function needsYouFor(live: CrewLiveView, cards: readonly CrewNeedsYouCard
     kept — nothing live can vouch for it either way.
   */
   const kept = cards.filter((card) =>
-    card.issueNumber === null || (!closed.has(card.issueNumber) && held.has(card.issueNumber)));
+    card.issueNumber === null || (!closed(card.issueNumber) && held.has(card.issueNumber)));
   /*
     AND THE HALF NO EDITION HAS WRITTEN UP (#1467). Everything above SUBTRACTS:
     it can only ever make the section shorter than the file a shift last wrote,
@@ -437,8 +490,8 @@ function needsYouCardFromHold(item: CrewLiveDesk["waitingOnYou"][number]): CrewN
  */
 export function eyeItemsFor(live: CrewLiveView, items: readonly CrewEyeItem[]): CrewEyeItem[] {
   if (!live.available) return [...items];
-  const closed = new Set(live.desk.closedCards);
-  return items.filter((item) => item.issueNumber === null || !closed.has(item.issueNumber));
+  const closed = cardIsClosed(live);
+  return items.filter((item) => item.issueNumber === null || !closed(item.issueNumber));
 }
 
 /**
@@ -450,17 +503,10 @@ export function eyeItemsFor(live: CrewLiveView, items: readonly CrewEyeItem[]): 
  * resolved live, whatever the edition still says about it.
  */
 export function problemsFor(live: CrewLiveView, problems: readonly CrewProblem[]): CrewProblem[] {
-  const closed = new Set(live.available ? live.desk.closedCards : []);
-  const namesClosedCard = (text: string) => {
-    const token = /(?:^|[^0-9A-Za-z])#0*([1-9][0-9]*)(?![0-9])/g;
-    let match: RegExpExecArray | null;
-    while ((match = token.exec(text)) !== null) {
-      if (closed.has(Number(match[1]))) return true;
-    }
-    return false;
-  };
+  const closed = cardIsClosed(live);
   return problems.filter((problem) =>
-    problem.severity !== "info" && !namesClosedCard(`${problem.title} ${problem.detail}`));
+    problem.severity !== "info"
+    && !cardsNamedIn(`${problem.title} ${problem.detail}`).some(closed));
 }
 
 export function nextUpFor(live: CrewLiveView, briefing: CrewBriefingView): CrewNextUpSource {
