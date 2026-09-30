@@ -15,7 +15,7 @@
  * the refine road   waist-up, mid-torso up in a 2:3 portrait
  *                   (`cohortPhotorealHuman` FRAMING — and `castingFrame.ts`
  *                    leans on exactly this: one framing, one answer, no read)
- * a signed cast     closeUp      eyebrows-to-chin
+ * a signed cast     closeUp      eyebrows-to-the-bottom-of-the-face
  *                   frontClose / threeQuarter / sideClose   head-and-shoulders
  *                   frontFull / backFull / sideFull         head to feet
  * ```
@@ -129,22 +129,29 @@ const PRESENTS_IN: Record<AnchorFraming, readonly BodyAnchorRegion[]> = {
      the elbow; the hands are where this crop ends, which is the `nails` case the
      design note used as its control. */
   master: ["head", "neck", "torso", "arms", "wholeBody"],
-  /* "no tighter than eyebrows-to-chin, no looser than forehead-to-chin … a
-     margin of skin visible BELOW the chin". The neck is that margin at most, so
-     it reads as absent by the marginal rule. */
+  /* "no tighter than eyebrows-to-the-bottom-of-the-face, and no looser than
+     forehead-to-the-bottom-of-the-face … a margin of skin visible BELOW that
+     lower edge". The neck is that margin at most, so it reads as absent by the
+     marginal rule. (#1582 moved those landmarks off a human chin and onto the
+     face the reference shows; the crop they describe, and so the regions below,
+     are unchanged.) */
   closeUp: ["head", "wholeBody"],
   /* "a head-and-shoulders portrait … the whole hair silhouette inside the frame".
      The shoulder blades are in shot, so `torso` presents; the arms are the
      marginal call and go the safe way. */
   frontClose: ["head", "neck", "torso", "wholeBody"],
   /* "a head-and-shoulders portrait with the head turned toward the subject's
-     LEFT ... and BOTH eyes still visible". (#1414 restated this spec on its
-     landmarks rather than on a degree estimate; the framing it describes, and
-     so the regions below, are unchanged.) */
+     LEFT ... and every eye the reference shows still visible". (#1414 restated
+     this spec on its landmarks rather than on a degree estimate, and #1582 made
+     the landmark the reference's face rather than a human one; the framing it
+     describes, and so the regions below, are unchanged by both.) */
   threeQuarter: ["head", "neck", "torso", "wholeBody"],
   /* "a head-and-shoulders TRUE side profile ... exactly ONE eye is showing, and
      the far eye is hidden behind the nose and the brow". (#1414, as above: the
-     same photograph, asked about by its landmark instead of by its angle.) */
+     same photograph, asked about by its landmark instead of by its angle. #1582
+     left this one spec alone on a court's word — it is the only view whose test
+     is CONCEALMENT, and a reference-inventory clause made it refuse correct
+     profiles.) */
   sideClose: ["head", "neck", "torso", "wholeBody"],
   /* "the whole body from the top of the hair to the feet". */
   frontFull: [...BODY_ANCHOR_REGIONS],
