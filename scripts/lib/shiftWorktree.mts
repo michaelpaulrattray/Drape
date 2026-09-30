@@ -116,7 +116,17 @@ export function planFor(slug: string, repoRoot: string, parentDir: string): Work
  * gets `--force`d by habit, and then it is not a guard at all.
  */
 export type RemovalState = {
-  /** Commits on the branch that no remote has. Non-empty means real work would vanish. */
+  /**
+   * Commits on the branch that no remote has.
+   *
+   * ⚠ **THIS IS NOT THE SAME QUESTION AS *would real work vanish*, AND IT
+   * STOPPED BEING A USABLE PROXY FOR IT ON 2026-09-29 (#1540).** `delete_branch_on_merge`
+   * went on that night (#1434), and **a squash merge does not make the branch's
+   * commits ancestors of `main`** — so a branch that merged perfectly reads here
+   * exactly like a branch whose work would be destroyed. Read
+   * `mergedPullRequest` below with it; this field alone can no longer tell the
+   * guard's two cases apart.
+   */
   readonly unpushedCommits: number;
   /** Tracked files modified or staged, plus untracked non-ignored files. */
   readonly dirtyFiles: readonly string[];
@@ -124,17 +134,53 @@ export type RemovalState = {
   readonly registered: boolean;
   /** Whether the node_modules junction is still in place. */
   readonly junctionPresent: boolean;
+  /**
+   * DID THIS BRANCH ALREADY MERGE? — the fact `unpushedCommits` cannot see
+   * (#1540).
+   *
+   * Ancestry cannot answer it under squash merging, and the ref graph cannot
+   * answer it once the remote branch is deleted, so the PULL REQUEST is asked —
+   * the same reading `pr-merge-in-order` already makes. Three states, kept
+   * apart, because they want three different sentences:
+   *
+   *  - a NUMBER — a merged pull request names this branch, so the commits are
+   *    shipped and the worktree is litter. **Not unpushed work.**
+   *  - `null` — the read landed and there is no merged pull request. ⚠ **This is
+   *    the case worth refusing, and the card asked for it by name**: no pull
+   *    request and no remote ref means the only copy of those commits is the
+   *    directory about to be deleted.
+   *  - `{ unreadable }` — nobody could ask (no `gh`, offline, unauthenticated).
+   *    **It must read as `null` for the VERDICT and never as a merge**, and it
+   *    must say so out loud, which is why it is not folded into `null` here.
+   */
+  readonly mergedPullRequest: number | null | { readonly unreadable: string };
 };
+
+/** `true` when the merged-PR read did not land. One owner, two consumers. */
+export function prReadFailed(
+  state: RemovalState["mergedPullRequest"],
+): state is { readonly unreadable: string } {
+  return typeof state === "object" && state !== null && "unreadable" in state;
+}
 
 export type RemovalVerdict =
   | { readonly proceed: true; readonly warnings: readonly string[] }
   | { readonly proceed: false; readonly reason: string; readonly overridable: boolean };
 
 export function decideRemoval(state: RemovalState, force: boolean): RemovalVerdict {
-  if (state.unpushedCommits > 0 && !force) {
+  const merged = typeof state.mergedPullRequest === "number" ? state.mergedPullRequest : null;
+  if (state.unpushedCommits > 0 && merged === null && !force) {
+    /* ⚠ **AND THE REFUSAL NOW SAYS WHICH QUESTION IT ASKED**, because the whole
+       defect of #1540 was a message arguing for the wrong act on the common
+       path: a shift that reads "on no remote" over a branch that merged an hour
+       ago learns to reach for `--force` reflexively, and then the guard is not a
+       guard on the branch that genuinely never merged. */
+    const asked = prReadFailed(state.mergedPullRequest)
+      ? ` — and whether a merged pull request names this branch COULD NOT BE READ (${state.mergedPullRequest.unreadable}), so this refusal is the safe answer rather than a finding`
+      : " and no merged pull request names this branch, so this directory is their only copy";
     return {
       proceed: false,
-      reason: `${state.unpushedCommits} commit${state.unpushedCommits === 1 ? "" : "s"} on this branch are on no remote — push them, or pass --force to destroy them`,
+      reason: `${state.unpushedCommits} commit${state.unpushedCommits === 1 ? "" : "s"} on this branch are on no remote${asked} — push them, or pass --force to destroy them`,
       overridable: true,
     };
   }
@@ -148,7 +194,18 @@ export function decideRemoval(state: RemovalState, force: boolean): RemovalVerdi
     };
   }
   const warnings: string[] = [];
-  if (force && state.unpushedCommits > 0) {
+  /* ⚠ **A MERGED BRANCH'S COMMITS ARE NOT "DESTROYED" AND MUST NOT SAY THEY
+     ARE** (#1540). This warning fired over work that had already shipped —
+     *"⚠ --force is destroying 2 unpushed commit(s)"* on the night of PR #1536 —
+     and a warning that cries wolf on the common path is how the real one stops
+     being read. The count is still SAID, because a shift asked to trust a tool
+     about deleting things is owed the number it saw; what changes is the verb. */
+  if (merged !== null && state.unpushedCommits > 0) {
+    warnings.push(
+      `${state.unpushedCommits} commit(s) sit on no remote, and that is expected: PR #${merged} merged this`
+      + " branch (a squash merge does not make them ancestors of main, and the remote branch is deleted on merge)",
+    );
+  } else if (force && state.unpushedCommits > 0) {
     warnings.push(`--force is destroying ${state.unpushedCommits} unpushed commit(s)`);
   }
   if (force && state.dirtyFiles.length > 0) {
@@ -158,6 +215,63 @@ export function decideRemoval(state: RemovalState, force: boolean): RemovalVerdi
     warnings.push("git does not have this path registered as a worktree — removing the directory only");
   }
   return { proceed: true, warnings };
+}
+
+/**
+ * THE CALL THAT ASKS THE PULL REQUEST — as an array, so an arm asserts what is
+ * SENT rather than a constant near it (working law 5).
+ *
+ * `--state merged` and not `--state all`: a CLOSED-unmerged pull request over a
+ * deleted branch is work that was rejected and is now nowhere, which is exactly
+ * the case still worth refusing. Only a merge means the commits shipped.
+ */
+export function mergedPrArgs(branch: string): string[] {
+  return ["pr", "list", "--head", branch, "--state", "merged", "--limit", "5", "--json", "number,mergedAt"];
+}
+
+/**
+ * DID A MERGED PULL REQUEST NAME THIS BRANCH? — the reading, over an injected
+ * runner so both directions are drivable without a network (#1540).
+ *
+ * ⚠ **EVERY FAILURE IS `unreadable` AND NEVER `null`.** The two are one
+ * character apart in a hurry and opposite in meaning: `null` says *asked, and
+ * nobody merged this*, which is a fact that keeps a refusal honest; `unreadable`
+ * says *nobody asked*. Collapsing them would let an absent `gh` quietly assert
+ * that a branch never merged — and on a machine with no `gh` at all, every
+ * removal would then read as the dangerous case forever, which is how a guard
+ * trains the `--force` habit it exists to prevent.
+ *
+ * The newest merge wins when there are several (a branch reopened and merged
+ * twice): what the caller needs is *did this ship*, and the latest merge is the
+ * one that answers it.
+ */
+export function readMergedPullRequest(
+  branch: string,
+  gh: (args: string[]) => { status: number; out: string; err: string },
+): number | null | { readonly unreadable: string } {
+  let result: { status: number; out: string; err: string };
+  try {
+    result = gh(mergedPrArgs(branch));
+  } catch (failure) {
+    return { unreadable: `\`gh pr list\` could not run: ${failure instanceof Error ? failure.message : String(failure)}` };
+  }
+  if (result.status !== 0) {
+    const why = (result.err || result.out).trim().split(/\r?\n/)[0] ?? "no reason given";
+    return { unreadable: `\`gh pr list\` exited ${result.status}: ${why}` };
+  }
+  let rows: unknown;
+  try {
+    rows = JSON.parse(result.out);
+  } catch {
+    return { unreadable: "`gh pr list` did not answer with JSON" };
+  }
+  if (!Array.isArray(rows)) return { unreadable: "`gh pr list` did not answer with a list" };
+  const merged = rows
+    .map((row) => (row && typeof row === "object" ? row as { number?: unknown; mergedAt?: unknown } : null))
+    .filter((row): row is { number: number; mergedAt: string | null } =>
+      row !== null && Number.isSafeInteger(row.number) && (row.number as number) > 0)
+    .sort((a, b) => String(b.mergedAt ?? "").localeCompare(String(a.mergedAt ?? "")));
+  return merged[0]?.number ?? null;
 }
 
 /**
