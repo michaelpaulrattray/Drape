@@ -29,11 +29,22 @@
  *     OPEN card as something it builds on (`readIndependence`, which is
  *     mechanical first and asks Jev only where the mechanical reading is
  *     genuinely silent);
- *  2. its **area is known** — an unknown area cannot be proven to differ from
- *     anything, so the card stays with the focus lane rather than being placed
- *     on a hope;
- *  3. its **area differs from the focus card's and from every card already in
- *     the batch** — an ordered card is alone in its area inside its seat.
+ *  2. **the pair can be proven not to collide** — by AREA where the Atlas has
+ *     placed both cards, and ⚠ **since #1547, by the FILES both cards name where
+ *     it has placed either of them nowhere.** This condition read *"its area is
+ *     known"* until 2026-09-30, and an unknown area ended the enquiry: one
+ *     rungless tooling card on top of his band (`#1467`) therefore held every
+ *     candidate behind it and cut `seatCount 0` with four seats idle. The Atlas
+ *     is a PRODUCT map, so its silence is usually honest rather than missing —
+ *     it files all five `server/crew/` modules `unassigned` and maps no
+ *     `scripts/` module at all — which makes *"this card named no area"* a
+ *     weaker fact than it sounds and frequently false of a card that named
+ *     several paths. `pairDisjointOnPaths` is the second reader and it still
+ *     fails CLOSED on silence: a card naming no path at all is held exactly as
+ *     before, because the gate only converts *unknown* into *offered* where
+ *     there is something positive to read;
+ *  3. it is **alone in its area inside its seat** — an ordered card joins no
+ *     batch that already holds work in the same area.
  *
  * A card that cites another open card waits until that one closes. That is his
  * sentence, and it is the whole of the dependency rule: nothing here ranks,
@@ -334,6 +345,101 @@ export function resolveCardArea(card: SeatCandidateCard, index: SeatAreaIndex): 
     if (area !== null) return area;
   }
   return null;
+}
+
+/**
+ * THE DIRECTORIES A CARD'S NAMED PATHS LAND IN — its blast radius as the card
+ * itself states it, for the pairs the Atlas cannot place (#1547).
+ *
+ * ⚠ **A named FILE contributes its PARENT DIRECTORY, not the file.** Two cards
+ * naming two different files in one directory collide in practice — the second
+ * one's build reads the first one's neighbours — and this gate exists to prevent
+ * exactly that. Comparing bare filenames would call such a pair disjoint on a
+ * coincidence of spelling, which is the confident-wrong reading an area exists
+ * to prevent. A named DIRECTORY contributes itself.
+ *
+ * A last segment carrying a dot is read as a file. That is a heuristic on
+ * prose and it is deliberately the conservative direction: misreading a
+ * directory as a file widens the region to its parent, which holds MORE pairs
+ * rather than fewer.
+ */
+export function touchedRegions(body: string | null | undefined): string[] {
+  const regions = new Set<string>();
+  for (const path of pathsNamedIn(body)) {
+    const clean = path.replace(/\/+$/, "");
+    if (clean === "") continue;
+    const parts = clean.split("/");
+    const last = parts[parts.length - 1]!;
+    const region = last.includes(".") && parts.length > 1 ? parts.slice(0, -1).join("/") : clean;
+    if (region !== "") regions.add(region);
+  }
+  return [...regions].sort();
+}
+
+/** Two regions overlap when they are the same directory, or one contains the other. */
+function regionsOverlap(a: string, b: string): boolean {
+  return a === b || a.startsWith(`${b}/`) || b.startsWith(`${a}/`);
+}
+
+/** What `pairDisjointOnPaths` answers. */
+export interface PairPathVerdict {
+  /** `true` only when BOTH cards named files and no region of either touches the other's. */
+  readonly disjoint: boolean;
+  /** The sentence the digest prints when they are not provably disjoint. */
+  readonly why: string;
+}
+
+/**
+ * CAN THESE TWO CARDS BE PROVEN NOT TO COLLIDE, WHEN THE ATLAS CANNOT SAY? (#1547)
+ *
+ * The area rule answers by product domain and is the first reader; this is the
+ * second, and it is consulted **only where an area came back `null`**. Its
+ * question is the one the gate actually cares about — *do these two pieces of
+ * work touch the same place* — asked of the pair rather than of either card
+ * alone, which is #1547's own shape: *"two cards whose areas are both unknown
+ * may still be provably disjoint on their FILE SETS, which is what the collision
+ * actually is. The Atlas is not the only reader of a path."*
+ *
+ * ⚠ **IT FAILS CLOSED ON SILENCE, AND THAT IS THE WHOLE DIFFERENCE BETWEEN A
+ * PROOF AND A HOPE.** A card that names no path at all has said nothing about
+ * where it works, so it is HELD — exactly as an unknown area is held today. The
+ * gate only ever converts *"unknown, so held"* into *"offered"* when there is
+ * something positive to read.
+ *
+ * ⚠ **ITS STATED LIMIT: a card's named paths are not the complete set of files
+ * its build will touch.** So is an area's — an area is derived from the same
+ * named paths, one grain coarser — so this is not a new class of risk, it is the
+ * existing one read at finer grain, and it is why this never overrides a known
+ * area. The remedy for the residue is the claim rule, and the measured cost of a
+ * duplicate is one wasted seat (#1547).
+ */
+export function pairDisjointOnPaths(
+  focus: { readonly number: number; readonly body?: string | null },
+  candidate: { readonly body?: string | null },
+): PairPathVerdict {
+  const focusRegions = touchedRegions(focus.body);
+  const candidateRegions = touchedRegions(candidate.body);
+  if (focusRegions.length === 0) {
+    return {
+      disjoint: false,
+      why: `the focus card #${focus.number} names no area and no files, so nothing can be proven to sit clear of it — held`,
+    };
+  }
+  if (candidateRegions.length === 0) {
+    return {
+      disjoint: false,
+      why: "it names no area and no files, so it cannot be proven to sit clear of the focus card — held",
+    };
+  }
+  for (const mine of candidateRegions) {
+    for (const theirs of focusRegions) {
+      if (regionsOverlap(mine, theirs)) {
+        const shared = mine === theirs ? mine : `${mine} and ${theirs}`;
+        return { disjoint: false, why: `it shares ${shared} with the focus card #${focus.number} — held` };
+      }
+    }
+  }
+  return { disjoint: true, why: "" };
 }
 
 /** What `seatPopulation` answers. */
@@ -752,21 +858,36 @@ export function orderedBandForSeats(input: {
       continue;
     }
     const area = resolveCardArea(card, input.areaIndex);
-    if (area === null) {
-      note("no area named, so it cannot be proven to sit clear of the focus card — held");
-      continue;
-    }
-    if (focus.area === null) {
-      /* ⚠ The clause above argues exactly this and the first shape of this file
-         then let it through (review of 2026-09-26): an UNKNOWN area cannot be
-         proven to differ from anything, and that is as true of the focus card's
-         as of the candidate's. */
-      note(`the focus card #${focus.number} names no area, so nothing can be proven to sit clear of it — held`);
-      continue;
-    }
-    if (area === focus.area) {
-      note(`same area as the focus card (${area}) — held`);
-      continue;
+    if (area !== null && focus.area !== null) {
+      /* Both placed: the Atlas answers, exactly as it has since 2026-09-26. */
+      if (area === focus.area) {
+        note(`same area as the focus card (${area}) — held`);
+        continue;
+      }
+    } else {
+      /*
+        ⚠ ONE OF THE TWO AREAS IS UNKNOWN, SO THE PAIR IS JUDGED ON THE FILES
+        (#1547). This read `no area named … — held` and, for the focus card's
+        side, `the focus card #N names no area … — held`, and both sentences are
+        sound about what an area can prove. What was wrong is that they were the
+        LAST word: an unknown area ended the enquiry, so a single rungless
+        tooling card on top of his band held every ordered candidate behind it
+        and the seat lane cut `seatCount 0`. Measured the night this landed —
+        `#1467` on top, `#1545` behind it, four seats idle.
+
+        The Atlas is a PRODUCT map and its silence is often honest rather than
+        missing: it files all five `server/crew/` modules as `unassigned`, and it
+        maps no `scripts/`, `docs/`, `.github/` or `.githooks/` module at all,
+        while `pathsNamedIn` deliberately extracts paths under every one of
+        those roots. So *"this card named no area"* was frequently false of a
+        card that had named several paths — it was the Atlas that had no domain
+        for them, which is a different fact and a weaker one.
+      */
+      const proof = pairDisjointOnPaths(focus, card);
+      if (!proof.disjoint) {
+        note(proof.why);
+        continue;
+      }
     }
     offered.push({ ...card, area, annotation: input.board.phraseFor(card.number) });
   }
@@ -897,7 +1018,14 @@ export function cutSeatBatches(input: {
       held.push({
         number: card.number,
         title: card.title,
-        why: `every seat this pass already holds ${card.area} work — held for the next pass`,
+        /* ⚠ `card.area` IS REACHABLY NULL SINCE #1547 and this printed the word
+           `null` at him. An ordered card the Atlas cannot place now reaches here
+           on a file-set proof, and `placed.area === card.area` is true of two
+           unplaced cards, so the no-bucket exit is exactly where it lands. */
+        why:
+          card.area === null
+            ? "every seat this pass already holds a card whose area could not be placed — held for the next pass"
+            : `every seat this pass already holds ${card.area} work — held for the next pass`,
       });
       continue;
     }

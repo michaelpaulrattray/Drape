@@ -37,10 +37,12 @@ import {
   dependencyCitations,
   focusRungFromLadder,
   orderedBandForSeats,
+  pairDisjointOnPaths,
   pathsNamedIn,
   readIndependence,
   resolveCardArea,
   seatPopulation,
+  touchedRegions,
   type SeatAreaIndex,
   type SeatCandidateCard,
   type SeatTakeableCard,
@@ -182,6 +184,41 @@ describe("the area index is the Atlas's own boundary", () => {
   it("falls back to the label when the body names no file", () => {
     expect(resolveCardArea(card(2, ["casting-upkeep"]), INDEX)).toBe("casting");
     expect(resolveCardArea(card(3, ["bug"]), INDEX)).toBeNull();
+  });
+
+  /* ── THE SECOND READER, FOR THE PAIRS THE ATLAS CANNOT PLACE (#1547) ─────── */
+
+  it("reads a named FILE as its parent directory and a named DIRECTORY as itself", () => {
+    /* The whole point of the grain: two different files in one directory must
+       come back as ONE region, or the pair reads as disjoint on a coincidence of
+       spelling. */
+    expect(touchedRegions("Change scripts/crew-desk-sweep.mts and scripts/crew-shift-close.mts.")).toEqual(["scripts"]);
+    expect(touchedRegions("Rework client/src/features/wardrobe/ end to end.")).toEqual(["client/src/features/wardrobe"]);
+    expect(touchedRegions("See server/crew/crew-briefing.json.")).toEqual(["server/crew"]);
+    expect(touchedRegions("no paths here at all")).toEqual([]);
+    expect(touchedRegions(null)).toEqual([]);
+  });
+
+  it("calls two path sets disjoint only when neither contains the other", () => {
+    const at = (body: string) => ({ body });
+    expect(pairDisjointOnPaths({ number: 1, body: "server/crew/x.ts" }, at("client/src/pages/Y.tsx")).disjoint).toBe(true);
+    /* Same directory, different files. */
+    expect(pairDisjointOnPaths({ number: 1, body: "server/crew/x.ts" }, at("server/crew/y.ts")).disjoint).toBe(false);
+    /* Nested, so neither region is equal to the other. */
+    expect(pairDisjointOnPaths({ number: 1, body: "scripts/lib/" }, at("scripts/lib/seatBatches.mts")).disjoint).toBe(false);
+    /* Siblings under one root are NOT a collision — `server/` is the whole
+       backend and holding on it would hold everything. */
+    expect(pairDisjointOnPaths({ number: 1, body: "server/crew/x.ts" }, at("server/routes/y.ts")).disjoint).toBe(true);
+  });
+
+  it("⚠ FAILS CLOSED ON SILENCE — no path named is never a proof of anything", () => {
+    /* The direction that matters: the gate may only turn *unknown* into
+       *offered* where there is something positive to read. */
+    const quiet = pairDisjointOnPaths({ number: 1, body: "nothing at all" }, { body: "server/crew/x.ts" });
+    expect(quiet.disjoint).toBe(false);
+    expect(quiet.why).toContain("names no area and no files");
+    expect(pairDisjointOnPaths({ number: 1, body: "server/crew/x.ts" }, { body: "" }).disjoint).toBe(false);
+    expect(pairDisjointOnPaths({ number: 1, body: "" }, { body: "" }).disjoint).toBe(false);
   });
 });
 
@@ -551,25 +588,158 @@ describe("his ordered band, split between the lanes", () => {
     expect(result.held.find((h) => h.number === 101)!.why).toContain("same area");
   });
 
-  it("offers NOTHING when the FOCUS card's own area is unknown", () => {
-    /* The reviewer drove this: focus arealess, candidate casting, and it was
-       offered — while the file's own reason argued the other way. */
+  it("offers NOTHING when the FOCUS card names neither an area nor a file", () => {
+    /*
+      The reviewer drove this: focus arealess, candidate casting, and it was
+      offered — while the file's own reason argued the other way.
+
+      ⚠ **SINCE #1547 THE FOCUS CARD'S BODY IS WHAT MAKES THIS HOLD, NOT ONLY ITS
+      AREA.** *"Make the studio nicer."* names no path, so there is nothing
+      positive to read on either reader and the gate fails closed exactly as it
+      did. A focus card that DOES name files is the next arm but one, and it is
+      the case that used to be held here for the wrong reason.
+    */
     const result = band(
       [ordered(100, "Make the studio nicer."), ordered(101, "Change server/casting/queue.ts.")],
       () => ({ kind: "independent" }),
     );
     expect(result.focus!.area).toBeNull();
     expect(result.offered).toEqual([]);
-    expect(result.held.find((h) => h.number === 101)!.why).toContain("names no area");
+    expect(result.held.find((h) => h.number === 101)!.why).toContain("names no area and no files");
   });
 
-  it("never offers an ordered card whose area is unknown", () => {
+  it("never offers an ordered card that names neither an area nor a file", () => {
+    /* The candidate's side of the same fail-closed rule: the focus card here
+       names a real path, so the silence being punished is the candidate's. */
     const result = band(
       [ordered(100, "Change server/casting/queue.ts."), ordered(101, "Make it nicer.")],
       () => ({ kind: "independent" }),
     );
     expect(result.offered).toEqual([]);
-    expect(result.held.find((h) => h.number === 101)!.why).toContain("no area named");
+    expect(result.held.find((h) => h.number === 101)!.why).toContain("names no area and no files");
+  });
+
+  /*
+    ⚠ WHEN THE ATLAS CANNOT PLACE ONE OF THE PAIR, THE FILES ARE READ INSTEAD (#1547).
+
+    The gate's two `null`-area holds were sound about what an AREA can prove and
+    wrong to be the last word: one rungless tooling card on top of his band held
+    every candidate behind it and cut `seatCount 0` with four seats idle. These
+    arms fix the conversion in both directions — a proof offers, and silence
+    still holds.
+  */
+  describe("the pair is judged on its files where the Atlas places neither", () => {
+    it("OFFERS a candidate whose files are provably clear of an arealess focus card", () => {
+      /* Neither path is in `MODULES`, so both areas are null and only the files
+         can answer. `scripts/` and `docs/` are roots the Atlas maps NOTHING
+         under, which is the live shape of this defect. */
+      const result = band(
+        [ordered(100, "Rewrite scripts/crew-desk-sweep.mts."), ordered(101, "Rewrite docs/specs/DECISION_LOG.md.")],
+        () => ({ kind: "independent" }),
+      );
+      expect(result.focus!.area, "the focus card is genuinely unplaced").toBeNull();
+      expect(result.offered.map((c) => c.number)).toEqual([101]);
+      expect(result.offered[0]!.area, "and it is offered WITHOUT inventing an area for it").toBeNull();
+    });
+
+    it("HOLDS two arealess cards that share a directory, naming the directory", () => {
+      const result = band(
+        [ordered(100, "Rewrite scripts/crew-desk-sweep.mts."), ordered(101, "Also touch scripts/crew-shift-close.mts.")],
+        () => ({ kind: "independent" }),
+      );
+      expect(result.offered).toEqual([]);
+      expect(result.held.find((h) => h.number === 101)!.why).toContain("shares scripts");
+    });
+
+    it("HOLDS a candidate nested INSIDE the focus card's named directory", () => {
+      /* Neither region equals the other, and one contains the other — the case a
+         bare filename comparison would have called disjoint. */
+      const result = band(
+        [ordered(100, "Rework scripts/lib/ end to end."), ordered(101, "Change scripts/lib/seatBatches.mts.")],
+        () => ({ kind: "independent" }),
+      );
+      expect(result.offered).toEqual([]);
+      expect(result.held.find((h) => h.number === 101)!.why).toContain("shares");
+    });
+
+    it("OFFERS when only the FOCUS card is unplaced and the candidate has a real area", () => {
+      const result = band(
+        [ordered(100, "Rewrite scripts/crew-desk-sweep.mts."), ordered(101, "Change server/casting/queue.ts.")],
+        () => ({ kind: "independent" }),
+      );
+      expect(result.focus!.area).toBeNull();
+      expect(result.offered.map((c) => c.number)).toEqual([101]);
+      expect(result.offered[0]!.area, "the candidate keeps the area the Atlas gave it").toBe("casting");
+    });
+
+    it("⚠ A KNOWN AREA IS STILL THE FIRST READER — the file proof never overrides it", () => {
+      /*
+        THE REGRESSION THIS GUARDS, and the fixture is a real discriminator
+        rather than an illustration: the two cards are in the SAME area and their
+        FILES are disjoint, so the two readers disagree and only the ordering
+        decides. #101 takes its area from its `casting-upkeep` LABEL (its body
+        names a `scripts/` path the Atlas cannot place), so its region is
+        `scripts` against the focus card's `server/casting`.
+
+        Consult the files first and this pair is offered. An area is the coarser,
+        safer reading and must win wherever it exists — getting this backwards
+        would widen the gate everywhere, not only here.
+      */
+      const focusCard = { number: 100, title: "", labels: [], body: "Change server/casting/queue.ts." };
+      const candidate = { number: 101, title: "", labels: ["casting-upkeep"], body: "Change scripts/castingHelper.mts." };
+      expect(resolveCardArea(focusCard, INDEX)).toBe("casting");
+      expect(resolveCardArea(candidate, INDEX), "same area, by label").toBe("casting");
+      expect(pairDisjointOnPaths(focusCard, candidate).disjoint, "and their files ARE disjoint").toBe(true);
+
+      const result = band(
+        [ordered(100, "Change server/casting/queue.ts."), card(101, ["founder-ordered", "casting-upkeep"], { body: candidate.body })],
+        () => ({ kind: "independent" }),
+      );
+      expect(result.offered, "a placed pair is judged on its areas, never on its files").toEqual([]);
+      expect(result.held.find((h) => h.number === 101)!.why).toContain("same area");
+    });
+
+    it("tonight's exact shape, driven against the REAL Atlas — #1467 on top, #1545 behind it", () => {
+      /*
+        The card's own done-when. `#1467` names one path, `server/crew/crew-briefing.json`,
+        and `#1545` names `client/src/features/lobby/LibraryView.tsx` — their real
+        bodies' paths, read off the live cards on 2026-09-30.
+
+        ⚠ **THE PREMISE IS ASSERTED RATHER THAN ASSUMED**, so a change in the
+        Atlas reads as a change in the premise and not as this repair breaking:
+        `server/crew` has five modules and the Atlas files EVERY one of them
+        `unassigned`, which is why `#1467` is unplaced. It is not a `scripts/`
+        card — the cheaper *declare a crew-tooling area* repair #1547 floats
+        would not have reached tonight's case at all.
+      */
+      const realIndex = buildAreaIndex(
+        (JSON.parse(readFileSync("docs/architecture/drape-architecture.json", "utf8")) as {
+          modules?: readonly { path?: string | null; domain?: string | null }[];
+        }).modules ?? [],
+      );
+      expect(areaOfPath("server/crew/crew-briefing.json", realIndex), "the premise: the Atlas cannot place the crew desk").toBeNull();
+
+      const result = orderedBandForSeats({
+        cards: [
+          card(1467, ["founder-ordered", "seat:retro"], {
+            body: "The desk is hand-written into server/crew/crew-briefing.json.",
+            createdAt: "2026-09-29T00:00:00Z",
+          }),
+          card(1545, ["founder-ordered", "casting-upkeep"], {
+            body: "It reads /library — client/src/features/lobby/LibraryView.tsx.",
+            createdAt: "2026-09-30T00:00:00Z",
+          }),
+        ],
+        board: CLEAN_BOARD,
+        areaIndex: realIndex,
+        switches: ALL_ON,
+        independenceOf: () => ({ kind: "independent" }),
+        focusRung: "N2",
+      });
+      expect(result.focus!.number, "the rungless tooling card is still the focus shift's").toBe(1467);
+      expect(result.focus!.area).toBeNull();
+      expect(result.offered.map((c) => c.number), "and the seat lane is no longer empty behind it").toEqual([1545]);
+    });
   });
 
   /*
