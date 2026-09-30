@@ -498,7 +498,7 @@
           "server/castingV2/styleRefusal.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1196",
+          "server/castingV2/briefCompiler.ts:1205",
           "server/castingV2/briefRefusalCopy.ts:128"
         ]
       },
@@ -510,7 +510,7 @@
           "server/castingV2/creativeRegisterScope.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1199",
+          "server/castingV2/briefCompiler.ts:1208",
           "server/castingV2/briefRefusalCopy.ts:134"
         ]
       },
@@ -524,7 +524,7 @@
           "server/castingV2/styleRefusal.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1175",
+          "server/castingV2/briefCompiler.ts:1184",
           "server/castingV2/briefRefusalCopy.ts:140"
         ]
       },
@@ -536,7 +536,7 @@
           "server/castingV2/briefRefusalCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1084",
+          "server/castingV2/briefCompiler.ts:1093",
           "server/castingV2/briefRefusalCopy.ts:122"
         ]
       },
@@ -665,10 +665,10 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/castingIntent.ts:1391",
-          "server/castingV2/castingIntent.ts:1428",
-          "server/castingV2/castingIntent.ts:1433",
-          "server/castingV2/castingIntent.ts:1455",
+          "server/castingV2/castingIntent.ts:1425",
+          "server/castingV2/castingIntent.ts:1462",
+          "server/castingV2/castingIntent.ts:1467",
+          "server/castingV2/castingIntent.ts:1489",
           "server/castingV2/openLaneAccept.ts:245",
           "server/castingV2/openLaneKind.ts:162",
           "server/castingV2/openLaneKind.ts:220",

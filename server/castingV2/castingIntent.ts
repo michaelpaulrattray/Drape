@@ -412,6 +412,40 @@ export type CastingIntent = {
    * specific enough.
    */
   role: string | null;
+  /**
+   * THE CATEGORY ABOVE IS HER OWN SENTENCE, BORROWED — she never named one
+   * (#1129, his answer C of 2026-09-23).
+   *
+   * Two roads put a brief's own opening into {@link role}, and neither is the
+   * interpreter reading a category she wrote: {@link promoteStatedRole} does it
+   * when the brief asks for a kind of face and names no category, and
+   * `fallbackIntent` does it when the reader's reply could not be parsed at
+   * all. On both the value is *the first eighty characters of her brief*.
+   *
+   * The engine's readers are right to take it — a category is what gate B5's
+   * category-owns-physique rule and the styling resolution are asking about,
+   * and a borrowed one is the best answer available. **The SHEET is not**: it
+   * says *"Everyone on this sheet is cast as …"* at full ink, and on a borrowed
+   * role that sentence hands the customer her own words back as though the
+   * studio had read something in them. His ruling on the same shape one field
+   * over (#534, verbatim): *"I made the change, I don't need it repeated."*
+   *
+   * ⚠ **SO THIS IS PROVENANCE, NOT A SECOND VALUE, AND IT IS RECORDED AT THE
+   * SITE THAT BORROWS RATHER THAN RE-DERIVED AT THE SITE THAT READS.** The
+   * projection could in principle ask whether `role` looks like the brief's
+   * opening — and it would be a second implementation of a rule that already
+   * has one, which is the exact mistake `capAtWordBoundary`'s own docblock was
+   * written about (#1122: one cut at 80, a second at 60, the repair travelling
+   * to neither). A borrowed role is a FACT about how this intent was built, so
+   * the builder records it.
+   *
+   * Optional and only ever `true`, in the `...(carried ? { carried } : {})`
+   * shape the compiled brief already uses: absent is the ordinary case and
+   * means the category is hers. A row written before this field existed is
+   * absent too, and `readBriefFacts` says what it can and cannot tell about
+   * those.
+   */
+  roleFromBriefText?: true;
   /** Character-side detail only. Never the photograph, never the scene. */
   characterNotes: string | null;
   sex: Sex | null;
