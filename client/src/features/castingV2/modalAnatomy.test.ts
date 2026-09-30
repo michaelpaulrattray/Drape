@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
+import { withoutComments } from "../../../../server/testing/withoutComments";
 
 /**
  * The three casting dialogs, against their specs.
@@ -35,8 +36,7 @@ const readCss = async () =>
   history is written in the comment where it used to be declared. An arm reading
   the raw file cannot tell the two apart, so it reads the code without them.
 */
-const withoutProse = (source: string): string =>
-  source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+const withoutProse = (source: string): string => withoutComments(source);
 
 describe("sign and delete share one shell", () => {
   it("both render through it rather than rebuilding a scrim", async () => {
