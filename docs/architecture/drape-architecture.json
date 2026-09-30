@@ -22,7 +22,7 @@
     {
       "id": "domain:boards",
       "name": "boards",
-      "moduleCount": 50
+      "moduleCount": 51
     },
     {
       "id": "domain:casting",
@@ -831,6 +831,12 @@
     {
       "id": "module:client/src/features/boards/canvas/nodes/useSheetController.ts",
       "path": "client/src/features/boards/canvas/nodes/useSheetController.ts",
+      "domain": "boards",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/boards/canvas/placementAnnouncement.ts",
+      "path": "client/src/features/boards/canvas/placementAnnouncement.ts",
       "domain": "boards",
       "lifecycle": "active"
     },
@@ -10498,6 +10504,10 @@
       "path": "client/src/features/billing/annualPath664-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/boards/canvas/placementAnnouncement.test.ts",
+      "path": "client/src/features/boards/canvas/placementAnnouncement.test.ts"
+    },
+    {
       "id": "test:client/src/features/boards/castVocabulary.test.ts",
       "path": "client/src/features/boards/castVocabulary.test.ts"
     },
@@ -15991,6 +16001,11 @@
     {
       "from": "module:client/src/features/boards/canvas/SpawnMenu.tsx",
       "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/canvas/useCastActions.ts",
+      "to": "module:client/src/features/boards/canvas/placementAnnouncement.ts",
       "kind": "imports"
     },
     {
