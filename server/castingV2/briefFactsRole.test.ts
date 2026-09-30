@@ -120,13 +120,21 @@ describe("readBriefFacts surfaces the category", () => {
  * exactly the kind that gets written into a document and stays wrong.
  *
  * On a brief naming no category, `promoteStatedRole` installs the brief's own
- * opening as the role so the CASTING CATEGORY block has something to say — it
- * caps at a word boundary, because this bug was found and fixed there once. The
- * projection then re-cut the same string at 60 with a bare slice, and the sheet
- * said, at full ink, with no control to correct it:
+ * opening as the role so the engine's category readers have something to say —
+ * it caps at a word boundary, because this bug was found and fixed there once.
+ * The projection then re-cut the same string at 60 with a bare slice, and the
+ * sheet said, at full ink, with no control to correct it:
  *
  *     Everyone on this sheet is cast as a beauty campaign casting, luminous
  *     skin, wide-set eyes, cro
+ *
+ * ⚠ **AND THE PRODUCT QUESTION UNDER IT IS ANSWERED — #1129, his C of
+ * 2026-09-23: A BORROWED CATEGORY IS NOT SHOWN AT ALL.** So the two arms that
+ * pinned the CUT on his own brief now pin its ABSENCE, and the cut itself is
+ * pinned where it still happens — on a category the interpreter really read.
+ * Both halves are kept on purpose: #1122 was a real defect on a real brief, and
+ * a suite that forgot the cut would let the next long interpreted category
+ * arrive broken.
  */
 const FOUNDER_BRIEF =
   "a beauty campaign casting, luminous skin, wide-set eyes, cropped platinum hair, strong brows";
@@ -142,32 +150,108 @@ function lookIntent(): CastingIntent {
   } as unknown as CastingIntent;
 }
 
-describe("the role the sheet shows is never cut inside a word (#1122)", () => {
-  it("does not hand the founder his own sentence back broken", () => {
+describe("the sheet does not repeat her own sentence back as the category (#1129)", () => {
+  it("says nothing about a category on the founder's own brief", () => {
     const promoted = promoteStatedRole(lookIntent(), FOUNDER_BRIEF);
-    const shown = readBriefFacts({}, { intent: promoted }, FOUNDER_BRIEF).role;
+    /* THE POSITIVE CONTROL, and it is the whole point of driving the real
+       promotion: it DID borrow — so the null below is the projection's answer
+       and not an intent that never had a role. */
+    expect(promoted.role).toBe(
+      "a beauty campaign casting, luminous skin, wide-set eyes, cropped platinum hair,",
+    );
+    expect(promoted.roleFromBriefText).toBe(true);
 
-    expect(shown).not.toContain("cro");
-    expect(shown).toBe("a beauty campaign casting, luminous skin, wide-set eyes");
-    /* Every word shown is a whole word of his own sentence. */
-    expect(FOUNDER_BRIEF.startsWith(shown!)).toBe(true);
-    expect(FOUNDER_BRIEF[shown!.length]).toMatch(/[\s,]/);
+    expect(readBriefFacts({}, { intent: promoted }, FOUNDER_BRIEF).role).toBeNull();
   });
 
-  it("leaves no dangling separator for the echo's own full stop to land on", () => {
-    // The echo writes the role, then the rest of its sentence, then ".". A
-    // value ending in a comma renders "wide-set eyes,." on the sheet.
-    const promoted = promoteStatedRole(lookIntent(), FOUNDER_BRIEF);
-    expect(readBriefFacts({}, { intent: promoted }, FOUNDER_BRIEF).role).not.toMatch(/[,;:—-]$/);
+  it("still shows a category the interpreter read in her words", () => {
+    /*
+      THE NEGATIVE CONTROL, and the arm that decides whether this change is a
+      fix or a removal. A category she named is the single fact the sheet is
+      loudest about on purpose; only the BORROWED one goes.
+    */
+    const named = { ...lookIntent(), role: "an oncology nurse" } as CastingIntent;
+    expect(named.roleFromBriefText).toBeUndefined();
+    expect(readBriefFacts({}, { intent: named }, "an oncology nurse in her 50s").role).toBe(
+      "an oncology nurse",
+    );
+  });
+
+  it("still cuts a long interpreted category at a word boundary (#1122's own half)", () => {
+    /*
+      The cut did not leave with its most famous input. A model behind a seam
+      can miss the 12-word ask, and this is the belt to those braces — pinned on
+      a role that is HERS, which is the only kind that now reaches the sentence.
+    */
+    const long = {
+      ...lookIntent(),
+      role: "a retired heavyweight boxer turned neighbourhood barber with forearm scars",
+    } as CastingIntent;
+    const shown = readBriefFacts({}, { intent: long }, "").role!;
+
+    expect(shown.length).toBeLessThanOrEqual(60);
+    expect(long.role!.startsWith(shown)).toBe(true);
+    /* No half word, and no dangling separator for the echo's full stop. */
+    expect(long.role![shown.length]).toMatch(/\s/);
+    expect(shown).not.toMatch(/[,;:—-]$/);
+  });
+
+  it("says nothing about a category when the reader's reply could not be parsed", async () => {
+    /*
+      THE LAW-7 SIBLING, driven through the real compiler: `fallbackIntent`
+      borrows the brief's first eighty characters exactly as the promotion does
+      — with a bare slice, and the projection's own word-boundary cap was the
+      only thing standing between that and a half word on the sheet. One rule
+      covers both roads because both roads record the same fact.
+    */
+    const unparsable: TextEngine = {
+      id: "test:interpreter",
+      complete: async () => ({
+        text: "not json at all",
+        latencyMs: 1,
+        provenance: { provider: "openrouter" as const, model: "t", servedModel: "t" },
+      }),
+    };
+    const compiled = await castingBriefCompiler({
+      briefText: FOUNDER_BRIEF,
+      candidateCount: 8,
+      rollSeed: "fallback-role",
+      engine: unparsable,
+    });
+
+    /* The POSITIVE CONTROL that this is the fallback road at all. */
+    expect((compiled.compiledBrief as { interpreted?: boolean }).interpreted).toBe(false);
+    expect(readBriefFacts(compiled.lockContract, compiled.compiledBrief, FOUNDER_BRIEF).role)
+      .toBeNull();
+  });
+
+  it("drops a borrowed category on a row written before the field existed, on the fallback road", () => {
+    /*
+      ⚠ THE STATED LIMIT, pinned so it cannot quietly become a promise.
+
+      A live sheet compiled before `roleFromBriefText` shipped carries no such
+      field. The fallback road still has a fact on the row (`interpreted:
+      false`), so it is covered; the PROMOTION road has none, and that row keeps
+      its sentence until it expires. Closing that would mean re-deriving the
+      promotion's rule inside the projection — a second implementation of the
+      cap, which is what #1122 was — or back-filling a stored row to say
+      something it never said.
+    */
+    const legacyFallbackRow = { interpreted: false, intent: { role: FOUNDER_BRIEF.slice(0, 80) } };
+    expect(readBriefFacts({}, legacyFallbackRow, FOUNDER_BRIEF).role).toBeNull();
+
+    const legacyPromotedRow = { interpreted: true, intent: { role: FOUNDER_BRIEF.slice(0, 54) } };
+    expect(readBriefFacts({}, legacyPromotedRow, FOUNDER_BRIEF).role).not.toBeNull();
   });
 
   it("keeps a stated accessory whole, rather than dropping it for a half word", () => {
     /*
-      The sibling, and it is not typography: `tokensComeFromBrief` reads EVERY
-      token, so a cut landing inside a word leaves one the brief does not
+      #1122's sibling, and it is not typography: `tokensComeFromBrief` reads
+      EVERY token, so a cut landing inside a word leaves one the brief does not
       contain and the accessory is dropped from the sentence altogether —
       silently, and against the echo's own contract that a stated fact is never
-      dropped by any road.
+      dropped by any road. Untouched by #1129: a stated accessory is a fact she
+      named, not a category the studio borrowed.
     */
     const briefText = "she wears heavy tortoiseshell reading spectacles with thin gold temples";
     /* 40 lands inside "spectacles": the bare slice left "w", which is not a

@@ -284,6 +284,53 @@ const FACT_VOCABULARIES: Record<string, readonly string[]> = {
   look: LOOK_KEYS,
 };
 
+/**
+ * IS THE CATEGORY ON THIS ROW HER OWN SENTENCE, RATHER THAN A CATEGORY SHE
+ * NAMED? (#1129 — the decision half of #1122, his answer C of 2026-09-23.)
+ *
+ * When it is, the echo says nothing about a category. The sentence it would
+ * otherwise write is *"Everyone on this sheet is cast as a beauty campaign
+ * casting, luminous skin, wide-set eyes"* — the first eighty characters of the
+ * founder's own brief, at full ink, with his words still legible in the box
+ * directly below it. His ruling on the identical shape one field over (#534,
+ * verbatim): *"I made the change, I don't need it repeated."*
+ *
+ * **The thing that changes is the SENTENCE, not the roll.** `intent.role` is
+ * still borrowed and still read by the engine — gate B5's
+ * category-owns-physique rule and the styling resolution both ask "was a
+ * category named", and on a brief that asks for a kind of face the brief's own
+ * opening is the best answer there is. No picture moves. What stops is the
+ * studio quoting her at herself.
+ *
+ * # Two arms, and what each can see
+ *
+ * **`intent.roleFromBriefText`** — recorded by the two sites that borrow
+ * ({@link promoteStatedRole}, and `fallbackIntent` when the reader's reply
+ * could not be parsed). This is the arm that is *right*, because the fact is
+ * written where the borrowing happens: a projection that instead asked whether
+ * `role` looks like the brief's opening would be a second implementation of a
+ * rule that has one, which is precisely #1122 — one cap at 80, another at 60,
+ * the repair travelling to neither.
+ *
+ * ⚠ **`interpreted === false`** — the same question asked of a row written
+ * BEFORE that field existed, and it covers only the fallback road, because
+ * that road is the only one with a fact already on the row. A pre-existing row
+ * whose role was borrowed by the PROMOTION keeps its sentence until it expires
+ * (live sheets are kept thirty quiet days, #1464). That gap is stated rather
+ * than closed: closing it means re-deriving the promotion's own rule out here,
+ * which is the mistake this function exists not to make, and back-filling a
+ * stored row to say something it never said is the other one ({@link
+ * readCastStyle}: *the sheet says what the row says and never back-fills a
+ * fact*).
+ */
+function roleIsHerOwnSentence(compiledBrief: unknown): boolean {
+  if (!compiledBrief || typeof compiledBrief !== "object") return false;
+  const { intent, interpreted } = compiledBrief as { intent?: unknown; interpreted?: unknown };
+  if (interpreted === false) return true;
+  if (!intent || typeof intent !== "object") return false;
+  return (intent as { roleFromBriefText?: unknown }).roleFromBriefText === true;
+}
+
 export function readBriefFacts(
   lockContract: unknown,
   compiledBrief: unknown,
@@ -326,10 +373,20 @@ export function readBriefFacts(
     The promotion had already capped at a word boundary at 80; this second cut
     was written without it, which is a correction reaching a copy and not its
     source. Both now read one rule from `./capAtWordBoundary`.
+
+    ⚠ **AND THAT SPECIMEN NO LONGER REACHES THE SHEET AT ALL (#1129), WHICH IS
+    NOT A REASON TO DROP THE CAP.** #1122 fixed the CUT and asked the product
+    question underneath it; his answer was that a borrowed category is not
+    shown, so `roleIsHerOwnSentence` now nulls exactly the value that cut was
+    landing on. What still arrives here is a category the interpreter really
+    read in her words — capped at 12 words by the ask and at `ROLE_MAX` by
+    `cleanFreeText`, both of which a model behind a seam can miss, which is
+    what this belt is for. A cap removed because its most famous input stopped
+    arriving is a cap removed for every input that still does.
   */
   const rawRole = intent?.role;
   const role =
-    typeof rawRole === "string" && rawRole.trim().length > 0
+    typeof rawRole === "string" && rawRole.trim().length > 0 && !roleIsHerOwnSentence(compiledBrief)
       ? capForEcho(rawRole.replace(/\s+/g, " ").trim(), 60)
       : null;
 
