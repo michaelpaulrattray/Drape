@@ -1,7 +1,7 @@
 {
-  "edition": 586,
-  "updatedAt": "2026-09-30T09:55:00.000Z",
-  "shift": "Foreman (night shift) — the thing you asked for a few hours ago, where your reply on this page lands on its job card straight away so your other agents can read it, is finished and I checked it was really working rather than taking the last shift's word for it: your reply on Tuesday's card reached the card in 36 seconds, word for word, and the little job that carries it has run every minute since without a single miss. While checking, I found something that would have bitten you later. You told us to stop the black command window popping up on your screen every minute, and we did — but only on this machine. The written instructions for putting that job back still described the old way, and those instructions are the only copy that survives if this machine is ever rebuilt, so the popup would have come straight back. That is now fixed and there are two checks that go red if anyone writes it the old way again. The other job tonight was one of the crew's own tools that had started to get dangerous: since branches began being deleted automatically, it could not tell finished work from work that had never been saved, so it was about to wave through unsaved work. It now asks GitHub what actually shipped, and I proved it on a real case — it tidies up after finished work and refuses the moment there is even one unsaved change. Nothing here changes anything you see in the studio.",
+  "edition": 587,
+  "updatedAt": "2026-09-30T11:30:00.000Z",
+  "shift": "Foreman (night shift) — tonight was the first piece of the job you settled this morning, when you asked whether really strict checkers are unreliable. The answer turned out to be that the checker was not too strict, it was guessing: it is a model reading a paragraph, and on your own casts in one afternoon it threw away a picture of a three-eyed cast for not having two eyes, and waved through a close-up with the whole neck and shoulders in it that the same paragraph calls too loose. So the part of that paragraph that is really about where the edges of the picture fall — is the whole body in frame, is there room below the face — is now MEASURED instead of read, with the same tool the face panel already uses. Nothing you can see has changed yet: this is the instrument, and the change to what a picture costs and when one is thrown away comes next. The useful part is what the first real run found. The obvious rule was to ask the tool “are there shoulders in this picture”, and on your six close-ups it answered NO on the three that plainly have shoulders and YES on the two that do not — wrong five times out of five, and wrong in both directions. Had we trusted our own test suite it would have shipped, and it would have been exactly the problem you asked about, rebuilt. What it does now instead is measure how much picture sits below the face, which has no body part in it at all and works just as well on Kai and on Pika. Ten repeats of the same picture give the same answer ten times. There is one thing worth thirty seconds of your eye — the strip below shows where we drew the line. —— The board: 43 jobs open, 13 of them ones you ordered (ten of those are the pricing rung, which waits for N2 to finish), one being built tonight, and three that nobody has touched in a week. Nothing is waiting on you except the strip below, and that is a look rather than a decision.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -3591,6 +3591,21 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "framing-band-1612",
+      "title": "Where we draw the line between a close-up and a portrait — your six, in order",
+      "question": "WHAT YOU ARE LOOKING AT — six close-ups you already own, put in order of how much picture sits below the face. That number under each one is the whole measurement: 0.07 means barely any picture below the chin, 0.56 means over half a face's worth of neck and shoulders. The black line is where the studio now draws the boundary. Left of it we keep the picture and say nothing; right of it you get the picture anyway with a free Try again beside it.\n\nTHE ONE THING WORTH YOUR EYE is the pair either side of the line — Sifr at 0.20 and the second Sifr2 at 0.52. Everything further out is obvious in both directions: Jericho and Kai are plainly close-ups, and the two you reported yourself are plainly portraits. Those two are the ones a person could argue about, and the line sits in a wide empty gap between them rather than being squeezed against either.\n\nIf you would rather it sat tighter — so Sifr at 0.20 also got a free Try again — say so and it is one number. Nothing here throws a picture away: the strictest this can ever do is hand you the picture and offer another go.",
+      "state": "open",
+      "filedAt": "2026-09-30T11:20:00.000Z",
+      "issueNumber": 1612,
+      "frames": [
+        {
+          "key": "crew-eye/0d09231d-5fe4-41b0-b156-5251666d8064.jpg",
+          "arm": "your six, in order of room below",
+          "caption": "LEFT OF THE LINE, kept as they are: Jericho 0.07, Kai 0.18, Sifr 0.20. RIGHT OF THE LINE, kept and offered a free Try again: Sifr2 0.48 and 0.52, Pika 0.56. The two you reported are 0.48 and 0.56."
+        }
+      ]
+    },
     {
       "id": "retry-outfit-1474",
       "title": "Try again now keeps the outfit you already have — three tries each way, your Sifr",
