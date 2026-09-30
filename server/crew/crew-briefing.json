@@ -1,7 +1,7 @@
 {
-  "edition": 583,
-  "updatedAt": "2026-09-30T04:49:50.000Z",
-  "shift": "Foreman (night shift) — the studio used to add a written description behind the scenes when you asked for a hijab, a turban, a niqab, a chador or a kippah, because back in February those came back wrong: styled like a fashion scarf with hair showing at the front, which you spotted yourself. That description stopped being sent a few weeks ago when everyone moved onto the road that sends your own words straight to the engine. Nobody has been let down by it that we know of, but nothing was protecting it either. So rather than guess, I measured it: eighty pictures today, five garments, eight each with the description and eight without. Every single one came back right, both ways. The engine has got better since February and now gets all five right from your words alone. There is a picture on your desk with all of it laid out — today's version on the left, the version with the description on the right — and one question underneath it, which is whether to leave it as it is. My recommendation is yes, leave it, because adding the description back bought nothing I can see and makes every one of those prompts longer. Your eye is the real test though, so have a look before you answer. It cost about a dollar twenty of our own money and no credits of yours.",
+  "edition": 584,
+  "updatedAt": "2026-09-30T06:52:15.744Z",
+  "shift": "Foreman (night shift) — you left six answers overnight and this shift worked all of them together. The covering question is settled your way: your own words go to the engine on their own for a hijab, a turban, a niqab, a chador and a kippah, nothing was added back, and the only thing built from it is a safety net so that if anyone ever writes a 'no hats' rule into the studio's standard instructions, those garments cannot quietly start failing again. The picture gallery stays as it is, as you said. Virtual try-on is now switched off: where the Dress Model button was there is one line saying it is unavailable while we rebuild it and that your garments and looks are safe — it was calling a Google picture model that was shut down in June, and it would have taken your credits before finding that out. Nobody has used it in thirty days and only an admin could reach it, so nothing of yours was lost. And the spare picture engine nobody was using is deleted, with its measured prices kept where the engine that IS used records them. Two pull requests: one merged, one waiting on a look because it touches money.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -392,20 +392,8 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-30T04:50:29.682Z",
+      "readAt": "2026-09-30T06:52:42.111Z",
       "items": [
-        {
-          "issueNumber": 1129,
-          "title": "Should the sheet repeat your own sentence back as the casting category? — the decision half of #1122",
-          "kind": "rung",
-          "rung": "N2"
-        },
-        {
-          "issueNumber": 1503,
-          "title": "A stated covering no longer reaches the engine: D-124's repair went inert when the author road became every account's road",
-          "kind": "rung",
-          "rung": "N2"
-        },
         {
           "issueNumber": 1242,
           "title": "N2b — Personality and voice are born at Sign, as editable text: two drafted lines on the cast's page, badged Drafted for you, free to edit (founder-ordered 2026-09-25)",
@@ -473,6 +461,12 @@
           "rung": "N3"
         },
         {
+          "issueNumber": 1577,
+          "title": "N3 opening act: the REFINE-ROAD half of the ghost audit — enumerate every piece of old-lane machinery still running on the refine road (his timing, 2026-08-28)",
+          "kind": "rung",
+          "rung": "N3"
+        },
+        {
           "issueNumber": 18,
           "title": "Takes — founder-endorsed design direction, not yet a build order",
           "kind": "design-unbuilt",
@@ -536,7 +530,7 @@
         }
       ],
       "recommendation": "A. The thing that was actually going wrong — this page not telling you something was waiting — is fixed and live. What is left is a small step a shift takes only when it has pictures for you, and the tidier version buys that convenience by loosening what your page is allowed to fetch. Say the word and B gets built.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-30",
       "issueNumber": 1467
     },
@@ -3570,7 +3564,7 @@
         }
       ],
       "recommendation": "A — leave it as it is. The engine has moved on since February and now does this correctly from your own sentence. Adding the description back costs prompt space and bought nothing I could see in any of the eighty pictures. But this is a judgement about how the pictures look, so your eye beats my reading of them: look at the strip first.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-30T04:49:50.000Z",
       "issueNumber": 1503
     }
@@ -6597,7 +6591,7 @@
       "id": "covering-court-1503",
       "title": "Five garments, with and without the written description — is your eye happy with the left-hand side?",
       "question": "Each row is one garment. On the LEFT is what the studio sends today: your own words and nothing else about the garment. On the RIGHT is the same thing with the written description added back — the one we used to send after you found the problem in February.\n\nThe thing to look for is the one you named at the time: hair showing at the front, or a scarf that reads as styling rather than as the garment itself.\n\nMy reading is that both sides are right on all five, which would mean the description is no longer needed. But a machine reading a picture is only a reason to go and look, never the answer — so this is your call, and the question underneath it on this page waits on it.\n\nOn the hijab row, the dark patch at the crown on the left-hand pictures is an under-cap worn beneath the scarf, not loose hair. That is worth saying because at a glance it can read as the exact fault we were looking for.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-30T04:49:50.000Z",
       "issueNumber": 1503,
       "cardId": "stated-covering-1503",
@@ -6612,9 +6606,23 @@
   ],
   "pipeline": [
     {
+      "id": "wardrobe-tryon-off-1537",
+      "title": "Virtual try-on is switched off, and says so before you press (#1537)",
+      "status": "in-review",
+      "prNumber": 1581,
+      "note": "Open and held — it touches credits and something you can see, so it waits for a look at the frames."
+    },
+    {
+      "id": "sunburst-view-retire-1554",
+      "title": "The spare picture engine nobody used is deleted, its measured prices kept (#1554)",
+      "status": "merged",
+      "prNumber": 1576,
+      "note": "Merged 2026-09-30 (af88c4bd) after review; no behaviour change."
+    },
+    {
       "id": "library-address-1545",
       "title": "The library reads /library, and a person on it is a cast (#1545)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1564,
       "note": "Open and held for review — a customer-visible change, so it waits for a look at the frames."
     },
@@ -9444,42 +9452,30 @@
     237,
     238,
     239,
-    240
+    240,
+    241,
+    242,
+    243,
+    244,
+    245,
+    246
   ],
   "nextUp": {
-    "readAt": "2026-09-30T04:50:29.681Z",
+    "readAt": "2026-09-30T06:52:42.110Z",
     "items": [
-      {
-        "issueNumber": 180,
-        "title": "N2: THE GHOST AUDIT — enumerate every piece of old-lane machinery still running under the author road (categories, dice, archetypes, personas); the Follow ghost (#176) is specimen #1 (founder flag, 2026-08-27)",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "#535's generated chips for the LOOK half, and N3 opening for the refine half — not on him, and not on a shift."
-        }
-      },
-      {
-        "issueNumber": 1467,
-        "title": "The Desk's needs-you and for-your-eyes sections are hand-written into editions while everything else derives from GitHub — one source of truth for 'is this waiting on him'",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "YOU — one word: do you want the picture gallery to fill itself in, or leave it as it is?"
-        }
-      },
       {
         "issueNumber": 1469,
         "title": "N2c: Campaigns, the cast library's named collections (All · Unfiled · campaigns · +), Approach A, after N2b — his word 2026-09-29 (noun changed from shoots the same day)",
         "urgent": false
       },
       {
-        "issueNumber": 1539,
-        "title": "A Desk reply reaches its GitHub card the moment he sends it — his GitHub-reading agents see his word at once (his 'go with 1', 2026-09-30)",
+        "issueNumber": 1537,
+        "title": "The virtual try-on road calls a Gemini image model Google shut down on 2026-06-25 — a live door with a dead engine, unused for 30 days",
         "urgent": false
       },
       {
-        "issueNumber": 1545,
-        "title": "The library's address and title say /models — his word: it reads /library, and a person on that page is a cast, never a model",
+        "issueNumber": 1539,
+        "title": "A Desk reply reaches its GitHub card the moment he sends it — his GitHub-reading agents see his word at once (his 'go with 1', 2026-09-30)",
         "urgent": false
       }
     ]
