@@ -1,7 +1,7 @@
 {
-  "edition": 589,
-  "updatedAt": "2026-09-30T14:05:00.000Z",
-  "shift": "Foreman (night shift) — nothing you can see changed tonight, and the reason is worth one paragraph. The crew has a set of automatic checks that every change has to pass before it is allowed anywhere near the live app. One of those checks had a fault in it: it was reading the NOTES people write in the code — the plain English explaining why something is the way it is — as though those notes were instructions. So a change that was perfectly correct was refused, because somebody had written a sentence explaining an old problem and the check read the sentence instead of the code. It cost a working change most of last night and left it stuck. That is fixed: the check now reads the code and ignores the notes. I measured it against all 819 of our test files before and after to be sure nothing else moved, and it did not — the same seven files it watched before, it watches now. Then I tried to break it six different ways, and it caught five of the six on purpose and let the sixth through on purpose, which is how we know it is actually looking. The change that was stuck is unstuck. The worst thing about a fault like this is not the hour it costs: it is that the honest way out is to write an exception for yourself, and a list of exceptions that nobody believes is worse than no list. I also checked every other automatic check of the same family — forty of them — to see whether any had the same fault. None did. Four of them read notes on purpose, for good reasons I looked up one by one, and one of those four had already solved this exact problem privately, months ago, and nobody knew. I have written that down so the next person finds it.",
+  "edition": 590,
+  "updatedAt": "2026-09-30T15:54:58.000Z",
+  "shift": "Foreman (night shift) — nothing you can see changed, and this one is about how we decide it is safe to DELETE things. When the crew wants to remove a piece of code nobody uses any more, it asks one question first: does anything still use this? That question was being answered by looking at the files sitting on the machine — which includes the crew's own scratch files, hundreds of them, that are not part of the product at all. So a scratch file that happened to mention something could make it look used, and a dead piece of code would be kept for the wrong reason. Worse, the same reader is what tells us whether a safety control quietly stopped being used months ago — and there a scratch file makes a dead control look alive, which is the direction that hides a problem rather than inventing one. I proved it before fixing it: one scratch file under the server folder took a count from one to two, and invented a whole new name out of nothing. It now asks the project's own record of what it contains, at every one of the four places that reads a real repository — and because that is a rule about people remembering, I made a check that fails if anyone forgets, rather than writing the rule down and hoping. Then I broke it seven different ways on purpose and every one was caught by name. Nothing about this is visible in the app, and it costs two per cent more time to run. Two more useful things fell out: an older job that was reported as blocked turned out to be unblocked hours earlier, and the reason a different job about error reporting cannot be finished is now written down — both halves of it need something from you, so it stopped being guesswork. And I checked every other reader of the same family for the same fault: none has it.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -405,7 +405,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-30T13:58:22.970Z",
+      "readAt": "2026-09-30T15:53:27.288Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -9248,6 +9248,13 @@
       "status": "merged",
       "prNumber": 1624,
       "note": "Population 7 of 819 before and after; sabotage 6 cases; it unblocked PR #1619."
+    },
+    {
+      "id": "readtree-tracked-1620",
+      "title": "The reader that licenses a deletion asks the project, not the machine (#1620)",
+      "status": "merged",
+      "prNumber": 1630,
+      "note": "Reproduced 1 → 2 importers before the fix; four readings now ask git; sabotage 7 RED + 1 green control."
     }
   ],
   "problems": [
@@ -9261,9 +9268,9 @@
     {
       "id": "judge-angle-axis-unstable-1414",
       "severity": "warning",
-      "state": "open",
+      "state": "resolved",
       "title": "The checker disagrees with itself about whether a view is at the right angle (#1414)",
-      "detail": "Asked about the same view three times, with everything identical, the checker said the angle was wrong, then right, then wrong. Whether she is the same person and whether she is wearing the right clothes were steady both ways — it is the angle question alone. It matters because a view whose angle fails is taken away and refunded: on a coin-flip answer a correct side profile can be thrown out, and a wrong one kept. Found while proving tonight's change did not break the checker. Nothing is being changed on a hunch — the card starts by measuring how often it happens."
+      "detail": "RESOLVED — card #1414 is closed, read at GitHub this shift. The angle question it was about is the one your ruling on 30 September moved off a reading and onto a measurement (#1612), so it is not a standing fault any more.\n\nAsked about the same view three times, with everything identical, the checker said the angle was wrong, then right, then wrong. Whether she is the same person and whether she is wearing the right clothes were steady both ways — it is the angle question alone. It matters because a view whose angle fails is taken away and refunded: on a coin-flip answer a correct side profile can be thrown out, and a wrong one kept. Found while proving tonight's change did not break the checker. Nothing is being changed on a hunch — the card starts by measuring how often it happens."
     },
     {
       "id": "gh-graphql-burst-1399",
@@ -9289,9 +9296,9 @@
     {
       "id": "release-not-read-1559",
       "severity": "warning",
-      "state": "open",
+      "state": "resolved",
       "title": "A job stays marked \"someone is on it\" for twelve hours after the crew finishes with it (#1559)",
-      "detail": "When a crew member hands a job back, they write RELEASED on it. If they write that inside a longer note rather than as the first thing, nothing reads it — so the job keeps saying somebody is working on it for another twelve hours and every helper steps over it. It is happening right now to the ghost-audit job, which was handed back yesterday evening and has been skipped all night. This is the same family as the two throughput faults already fixed this week: nothing is broken loudly, work is just quietly subtracted from what the helpers may pick up."
+      "detail": "RESOLVED — card #1559 is closed, read at GitHub this shift. Worth one line because it bit tonight in the harmless direction: the job I took had been handed back hours earlier and still read as taken, so I checked the reason at the code before believing it, and it was genuinely free.\n\nWhen a crew member hands a job back, they write RELEASED on it. If they write that inside a longer note rather than as the first thing, nothing reads it — so the job keeps saying somebody is working on it for another twelve hours and every helper steps over it. It is happening right now to the ghost-audit job, which was handed back yesterday evening and has been skipped all night. This is the same family as the two throughput faults already fixed this week: nothing is broken loudly, work is just quietly subtracted from what the helpers may pick up."
     }
   ],
   "acknowledgedReplyIds": [
@@ -9544,7 +9551,7 @@
     247
   ],
   "nextUp": {
-    "readAt": "2026-09-30T13:58:22.970Z",
+    "readAt": "2026-09-30T15:53:27.288Z",
     "items": [
       {
         "issueNumber": 1469,
