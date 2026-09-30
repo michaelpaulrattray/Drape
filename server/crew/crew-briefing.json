@@ -1,7 +1,7 @@
 {
-  "edition": 588,
-  "updatedAt": "2026-09-30T13:05:00.000Z",
-  "shift": "Foreman (night shift) — tonight is the half of this morning's answer that changes what a picture costs you. Since the studio started signing casts it has thrown away eight of your pictures and refunded you for them. I read every one of those eight tonight, before writing a line of code: five were thrown away because the checker decided the clothes were wrong, three because it decided the framing was wrong, and NOT ONE because it decided the person was not the person you signed. That is the whole case. The one thing a checker on a signed cast exists to catch, it has never once caught — and the two things it does catch are the two it was demonstrably wrong about four separate times yesterday on your own casts. So from now on there is exactly one reason to take a picture away from you: it is not her. If the studio thinks the framing is loose, or the outfit is off, or it simply cannot tell, YOU GET THE PICTURE — you are charged for it, it is marked Unchecked the way it already is when nobody could look at it, and Try again beside it is free. If it thinks the face is someone else, that still refuses and still refunds, and being unsure about the face counts as refusing, because handing you a stranger under your own signed cast is the one thing that breaks the promise. All eight of those old refusals were replayed through the new rule and every one of them now hands you the picture. Nothing on screen changes and no new word appears — Unchecked and the free Try again are already there. The part I want on the record is that our own test suite could not see this change at all: 5,761 tests stayed green while I moved the rule, because every one of them happened to test the one axis I did not touch. So I broke it ten different ways on purpose to make sure the new tests actually notice, and all ten went red. It is written and waiting on a review before it goes live — it moves money, so it is not merged by a shift. One thing found on the way and written down rather than fixed tonight: our own gate could not tell that this change touches money at all — it decides whether you get a refund, and the check that spots money changes looks for a particular line of code rather than for a rule. It waved this through as an ordinary change. I labelled it by hand so nobody ships it without a proper read, and filed the gap (#1622); the same blind spot covers every part of the studio that refunds you. ⚠ The board: 45 jobs open, 13 of them ones you ordered (ten are the pricing rung, waiting for N2 to finish), one being built tonight, three nobody has touched in a week. The only thing waiting on you is still the strip below from last night, and it is a look rather than a decision.",
+  "edition": 589,
+  "updatedAt": "2026-09-30T14:05:00.000Z",
+  "shift": "Foreman (night shift) — nothing you can see changed tonight, and the reason is worth one paragraph. The crew has a set of automatic checks that every change has to pass before it is allowed anywhere near the live app. One of those checks had a fault in it: it was reading the NOTES people write in the code — the plain English explaining why something is the way it is — as though those notes were instructions. So a change that was perfectly correct was refused, because somebody had written a sentence explaining an old problem and the check read the sentence instead of the code. It cost a working change most of last night and left it stuck. That is fixed: the check now reads the code and ignores the notes. I measured it against all 819 of our test files before and after to be sure nothing else moved, and it did not — the same seven files it watched before, it watches now. Then I tried to break it six different ways, and it caught five of the six on purpose and let the sixth through on purpose, which is how we know it is actually looking. The change that was stuck is unstuck. The worst thing about a fault like this is not the hour it costs: it is that the honest way out is to write an exception for yourself, and a list of exceptions that nobody believes is worse than no list. I also checked every other automatic check of the same family — forty of them — to see whether any had the same fault. None did. Four of them read notes on purpose, for good reasons I looked up one by one, and one of those four had already solved this exact problem privately, months ago, and nobody knew. I have written that down so the next person finds it.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -405,7 +405,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-30T12:24:01.463Z",
+      "readAt": "2026-09-30T13:58:22.970Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -9241,6 +9241,13 @@
       "status": "in-review",
       "prNumber": 1621,
       "note": "Money surface: held for the relay, never merged by a shift."
+    },
+    {
+      "id": "guard-reads-code-1623",
+      "title": "The gate stops reading a comment as if it were code (#1623)",
+      "status": "merged",
+      "prNumber": 1624,
+      "note": "Population 7 of 819 before and after; sabotage 6 cases; it unblocked PR #1619."
     }
   ],
   "problems": [
@@ -9537,7 +9544,7 @@
     247
   ],
   "nextUp": {
-    "readAt": "2026-09-30T12:24:01.463Z",
+    "readAt": "2026-09-30T13:58:22.970Z",
     "items": [
       {
         "issueNumber": 1469,
