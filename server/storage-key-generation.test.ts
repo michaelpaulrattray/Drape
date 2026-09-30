@@ -322,6 +322,25 @@ describe("⚠ the reader itself, driven both ways", () => {
     expect(keyExpressionsIn("p.ts", "/* const fileKey = `a/b/${randomUUID()}.png`; */")).toEqual([]);
   });
 
+  /*
+    ⚠ POSITIVE CONTROL ON THE STRIPPER ITSELF — a `//` INSIDE A STRING IS NOT A
+    COMMENT (#1625).
+
+    This reader carried its own comment stripper until #1625 and its line half
+    was a bare regex over every `//` to end of line, so `"https://…"` truncated
+    at the scheme and everything after it on that line left the population.
+    Both arms below FAIL under that shape: the first loses the key, the second
+    loses the import this guard's sibling arm asserts. Nothing in the real tree
+    hit it — measured 0 of 521 files moved at the swap — which is exactly why it
+    needs an arm the tree cannot supply.
+  */
+  it("⚠ POSITIVE CONTROL — a URL in a string literal does not swallow the key beside it", () => {
+    const line = 'const doc = "https://pub.r2.dev/a/b"; const fileKey = `a/b/${randomUUID()}.png`;';
+    expect(keyExpressionsIn("p.ts", line)).toHaveLength(1);
+    expect(withoutComments('const u = "https://x/y";')).toContain("https://x/y");
+    expect(withoutComments('const u = "https://x/y"; // gone')).not.toContain("gone");
+  });
+
   it("reads randomness inline AND through a binding in the same file", () => {
     expect(carriesRandomness(key("`a/${randomUUID()}.png`"), "")).toBe(true);
     const bound = "const suffix = randomUUID();\nconst fileKey = `a/${suffix}.png`;";

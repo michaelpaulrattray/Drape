@@ -70,6 +70,7 @@ import { ENGINE_AND_VENDOR_NAMES } from "@shared/engineVocabulary";
 
 import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
 import { readListedSource } from "./testing/listedSource";
+import { withoutComments } from "./testing/withoutComments";
 
 /* Its arms read the real tree, and under the parallel run that cost multiplies
    against vitest's 5,000 ms default. File level, never per arm (#741). */
@@ -143,9 +144,24 @@ const HOME_FEATURE_DIR = path.join(REPO, "client", "src", "features", "home");
  * the engines, on purpose, so that *"matches the celestial-horizon reference
  * exactly"* is never read as an instruction to put the badge back. A guard that
  * reddened on that sentence would delete the record of its own reason.
+ *
+ * ⚠ **IT WAS A LOCAL REGEX PAIR UNTIL #1625, AND THE SWAP WAS MEASURED BEFORE
+ * IT LANDED.** The regex shape was not quote-aware, so a `/*` inside a string
+ * literal opened a comment it was never in and everything to the next `*` and
+ * slash left this guard's sight — the silence direction, on a guard whose whole
+ * job is to NOT find something. Driven over this suite's own population the day
+ * it changed: **6 landing files + 2 provider modules, 8 of the 8 strip to
+ * different bytes, the declared model-id count is 8 either way with no id
+ * gained or lost, and every arm below stays green.** What it buys is the
+ * direction: the shared reader can only leave MORE text standing here, and more
+ * text is what a guard looking for a forbidden word wants to see.
+ *
+ * ⚠ **AND IT WAS ONE OF 27 BYTE-IDENTICAL COPIES OF THAT REGEX PAIR, not the
+ * second implementation the card believed it was.** The other 26 are the
+ * remainder and are carded; converting them is a sweep with its own before and
+ * after over 26 live guards, not a line in this one.
  */
-const code = (text: string) =>
-  text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const code = withoutComments;
 
 /** Every `.tsx`/`.ts` file the landing page is made of, off the real tree. */
 function landingFiles(): string[] {

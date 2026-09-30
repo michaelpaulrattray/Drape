@@ -27,6 +27,8 @@ import { readFileSync } from "node:fs";
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 
+import { withoutComments } from "./lib/productionMention.mts";
+
 const MIN_CHARS = 30;
 const MIN_SPACES = 4;
 
@@ -49,55 +51,19 @@ function isSentence(raw: string): boolean {
   return true;
 }
 
-const QUOTES = new Set(['"', "'", "`"]);
-
 /**
- * The source with its comments removed and its line count preserved.
+ * The quotes a string literal opens with — used by the sentence reader below.
  *
- * This codebase quotes people inside docblocks — *"…it looks like nothing is
- * even happening"* — and a quotation mark in prose opens a literal that was
- * never a literal. Left in, the sweep reports a sentence DISCUSSED on both
- * sides as a sentence DECLARED on both sides, which is a different finding.
- * String literals are copied through rather than skipped, so a `//` inside a
- * URL cannot swallow the rest of its line.
+ * ⚠ **THIS FILE ALSO DECLARED ITS OWN `withoutComments` UNTIL #1625, AND IT WAS
+ * A BYTE-FOR-BYTE COPY** of the exported one: the same character walk, differing
+ * only in where this set was declared. Comments have to come off before the
+ * sweep reads, because this codebase quotes people inside docblocks — *"…it
+ * looks like nothing is even happening"* — and a quotation mark in prose opens
+ * a literal that was never a literal, which turns a sentence DISCUSSED on both
+ * sides into a sentence DECLARED on both sides. That is working law 4's shape
+ * with no argument on either side, so the reader is imported above now.
  */
-function withoutComments(source: string): string {
-  let out = "";
-  let index = 0;
-  while (index < source.length) {
-    const character = source[index];
-    if (QUOTES.has(character)) {
-      const quote = character;
-      out += character;
-      index += 1;
-      while (index < source.length) {
-        const current = source[index];
-        out += current;
-        index += 1;
-        if (current === "\\") { out += source[index] ?? ""; index += 1; continue; }
-        if (current === quote) break;
-        if (current === "\n" && quote !== "`") break;
-      }
-      continue;
-    }
-    if (character === "/" && source[index + 1] === "/") {
-      while (index < source.length && source[index] !== "\n") index += 1;
-      continue;
-    }
-    if (character === "/" && source[index + 1] === "*") {
-      index += 2;
-      while (index < source.length && !(source[index] === "*" && source[index + 1] === "/")) {
-        if (source[index] === "\n") out += "\n";
-        index += 1;
-      }
-      index += 2;
-      continue;
-    }
-    out += character;
-    index += 1;
-  }
-  return out;
-}
+const QUOTES = new Set(['"', "'", "`"]);
 
 /**
  * Every plain string literal in a source file, with the line it sits on.

@@ -34,6 +34,7 @@
 import { readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 
+import { withoutComments } from "../../server/testing/withoutComments";
 import { readIfPresent, statIfPresent } from "./listedEntry.mts";
 import { containedIn } from "./trackedFiles.mts";
 
@@ -76,47 +77,18 @@ export const CONSUMER_ROOTS = ["server", "client", "shared", "scripts", "drizzle
  *
  * String literals are copied through, so a `//` inside a URL cannot swallow the
  * rest of its line.
+ *
+ * ⚠ **THE BODY MOVED TO `server/testing/withoutComments.ts` (#1625) AND THIS IS
+ * A RE-EXPORT, NOT A SECOND SPELLING.** It was not the only exported one — the
+ * storage-key guard carried its own, whose line-comment half was a bare regex
+ * and therefore truncated a line at the `//` inside `"https://…"`. Both now
+ * resolve here. The body lives under `server/testing/` rather than in this file
+ * because this module imports `trackedFiles.mts`, which imports
+ * `node:child_process`, and a stripper that drags git into a security guard's
+ * module graph is a cost nobody asked for. Every existing import of
+ * `withoutComments` from this module keeps working.
  */
-export function withoutComments(source: string): string {
-  const quotes = new Set(['"', "'", "`"]);
-  const BACKSLASH = String.fromCharCode(92);
-  const NEWLINE = String.fromCharCode(10);
-  let out = "";
-  let index = 0;
-  while (index < source.length) {
-    const character = source[index]!;
-    if (quotes.has(character)) {
-      const quote = character;
-      out += character;
-      index += 1;
-      while (index < source.length) {
-        const current = source[index]!;
-        out += current;
-        index += 1;
-        if (current === BACKSLASH) { out += source[index] ?? ""; index += 1; continue; }
-        if (current === quote) break;
-        if (current === NEWLINE && quote !== "`") break;
-      }
-      continue;
-    }
-    if (character === "/" && source[index + 1] === "/") {
-      while (index < source.length && source[index] !== NEWLINE) index += 1;
-      continue;
-    }
-    if (character === "/" && source[index + 1] === "*") {
-      index += 2;
-      while (index < source.length && !(source[index] === "*" && source[index + 1] === "/")) {
-        if (source[index] === NEWLINE) out += NEWLINE;
-        index += 1;
-      }
-      index += 2;
-      continue;
-    }
-    out += character;
-    index += 1;
-  }
-  return out;
-}
+export { withoutComments };
 
 /**
  * The line with its string literals blanked.

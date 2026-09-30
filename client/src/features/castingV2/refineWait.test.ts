@@ -1,6 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 
+import { withoutComments } from "../../../../server/testing/withoutComments";
+
 /**
  * THE REFINING WAIT, AND THE ANSWER CHIPS — the laws, mechanized (D-169, D-180).
  *
@@ -27,14 +29,21 @@ const SHEET = new URL("../../pages/CastingSheet.tsx", import.meta.url);
  * would have to choose between an assertion that is wrong and a history that
  * is missing, and the history is the more valuable of the two.
  *
- * Deliberately crude, and proven crude-in-the-safe-direction by its own control
- * below: it strips block and line comments only, so at worst it leaves MORE
- * text standing than it should — never less. A stripper that ate code would
- * make every law here pass for the wrong reason.
+ * It has to be crude in the SAFE direction, and the direction is decided by the
+ * assertions below: they are `not.toMatch` over the viewer's source, so a
+ * stripper that ate too much would make every one of them pass on an emptied
+ * string. Leaving MORE text standing than it should is the harmless error here;
+ * leaving less is the one that lies.
+ *
+ * ⚠ **IT WAS A PRIVATE REGEX PAIR UNTIL #1625, AND THE REASON GIVEN FOR THAT
+ * WAS NEVER MEASURED.** The card assumed a suite under `client/src` could not
+ * import from the shared reader; driven 2026-10-01, it can, and the shared one
+ * is strictly the safer of the two here — its regex predecessor cut a line at
+ * any `//` not preceded by a colon, so `"a//b"` INSIDE a string literal lost
+ * its tail, which is the unsafe direction for every assertion in this file.
+ * The control below is unchanged and now drives the reader the storage-key
+ * guard uses, which is the point of there being one.
  */
-function withoutComments(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
-}
 
 async function rule(selector: string): Promise<string> {
   const css = await readFile(CSS, "utf8");

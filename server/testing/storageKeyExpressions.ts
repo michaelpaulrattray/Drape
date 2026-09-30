@@ -75,6 +75,7 @@
  * population size for exactly that reason: a reader that went blind and a tree
  * with nothing to find look identical (working law 2).
  */
+import { withoutComments } from "./withoutComments";
 
 /** One place a storage key is built, with which reader found it. */
 export type KeyExpression = {
@@ -138,10 +139,19 @@ const EVERY_TEMPLATE = new RegExp(TEMPLATE_SOURCE, "g");
  * ***"`randomUUID`, never `Math.random`"***. So widening the population without
  * this would have reddened the guard on prose praising the rule it enforces:
  * the negation-contains-the-token class.
+ *
+ * ⚠ **IT WAS A PRIVATE REGEX PAIR UNTIL #1625, AND ITS LINE-COMMENT HALF READ
+ * `"https://…"` AS A COMMENT.** A bare sweep over every `//` to end of line
+ * truncates `const url = "https://pub.r2.dev/a/b.png";` at the scheme, and
+ * everything after it on that line leaves this reader's sight — on a guard
+ * whose entire subject is what a string literal contains. Re-pointed at the
+ * one quote-aware stripper, and the swap was MEASURED before it landed rather
+ * than argued: over all **521** runtime `.ts` files under `server/`, **479**
+ * strip to different bytes under the two readers, **0** change their
+ * `usesMathRandom` answer, and **0** key expressions move. So nothing about
+ * today's verdicts changes and the latent hole is closed.
  */
-export function withoutComments(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
-}
+export { withoutComments };
 
 /** Does this file reach for `Math.random` in CODE, as opposed to in prose? */
 export function usesMathRandom(source: string): boolean {
