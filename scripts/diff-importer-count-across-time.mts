@@ -209,6 +209,7 @@
  */
 import { importerCount, readTree, unwiredBetween } from "./lib/importerCountDiff.mts";
 import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
+import { containedIn } from "./lib/trackedFiles.mts";
 
 /*
   TWO BARE WORDS AND ONE FLAG (#345). The trees are positional and the strict
@@ -230,8 +231,22 @@ if (!oldTree || !newTree) {
   process.exit(2);
 }
 
-const before = readTree(oldTree);
-const after = readTree(newTree);
+/*
+  ⚠ BOTH TREES ASK GIT WHAT THEY CONTAIN (#1620), AND THE NEW ONE IS THE REASON.
+
+  The old tree is a `git worktree` checkout, where everything is tracked by
+  construction and this costs 18 ms for nothing. The NEW tree is whatever
+  directory the operator is standing in — this file's own usage line says
+  `<new-tree>`, and the one invocation written down in this repository is
+  `diff-importer-count-across-time.mts C:/tmp/rite-window-1001 .`
+  (`docs/specs/CLEANUP_MILESTONE_TRIAGE.md`). An untracked file there that
+  imports a symbol makes that symbol read as STILL WIRED at the new tree, so a
+  control that genuinely lost its last consumer produces no finding at all.
+  That is bias (1) above — toward silence — arriving from the operator's own
+  working directory rather than from an unreachable call site.
+*/
+const before = readTree(oldTree, containedIn(oldTree));
+const after = readTree(newTree, containedIn(newTree));
 const findings = unwiredBetween(before, after);
 const selfConsulted = findings.filter((f) => f.kind === "self-consulted");
 const fullyDark = findings.filter((f) => f.kind === "fully-dark");

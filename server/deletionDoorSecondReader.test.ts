@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { declKey, importersAt, readTree, type Tree } from "../scripts/lib/importerCountDiff.mts";
+import { containedIn } from "../scripts/lib/trackedFiles.mts";
 
 /**
  * THE DELETION DOOR'S SECOND READER — two readers, two resolvers (#274).
@@ -164,7 +165,15 @@ export function crossRead(tree: Tree, atlas: Atlas): CrossReading {
 
 describe("the deletion door's second reader", () => {
   const atlas = readAtlas();
-  const tree = readTree(REPO);
+  /*
+    ⚠ THE SAME POPULATION THE DOOR READS (#1620). This reader cross-checks the
+    importer credits against the COMMITTED Atlas (see this file's header), so a
+    credit from a file the repository does not contain can only ever land in
+    `unreachable` — a finding manufactured by the reader's own working tree. The
+    door itself now passes its `contains` predicate here too; a second reader
+    that inherits a wider population is not a second reader.
+  */
+  const tree = readTree(REPO, containedIn(REPO));
 
   /*
     CONTROLS FIRST (working law 2). Both run against fabricated inputs, because

@@ -5,6 +5,7 @@ import path from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
 
+import { importersOfName, readTree } from "../scripts/lib/importerCountDiff.mts";
 import { withoutComments } from "../scripts/lib/productionMention.mts";
 import { containedIn, trackedFiles } from "../scripts/lib/trackedFiles.mts";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
@@ -383,5 +384,304 @@ describe("the consumers actually go through it", () => {
     expect(classifier, "the classifier is missing").not.toBeNull();
     expect(classifier!, "the classifier stopped excluding what the repository does not contain")
       .toMatch(/files\.filter\(\(file\)\s*=>\s*!contains\(file\)\)/);
+  });
+});
+
+/* ---- #1620: the importer reader reads the repository too --------------------- */
+
+/**
+ * THE UN-WIRING READER'S OWN POPULATION (#1620) — the sibling #1617's law-7
+ * sweep filed rather than folded in, because the repair there was not free.
+ *
+ * `readTree` in `scripts/lib/importerCountDiff.mts` walked the DISK, and three
+ * instruments read its answer to decide something the gate will re-take:
+ * `check-cleanup-dispositions`'s `rewired` and `unreadable` arms — the door that
+ * licenses a deletion — the un-wiring differ, and the timeline. Reproduced at
+ * this repository before the repair was written, one untracked file under
+ * `server/`:
+ *
+ *   | reading                          | clean | with one untracked file |
+ *   |----------------------------------|-------|-------------------------|
+ *   | importers of `ACTION_CATEGORIES` | 1     | **2**                   |
+ *   | `phantom1620Symbol` in `decls`   | false | **true**                |
+ *
+ * ⚠ **THE CARD SAID TWO CONSUMERS AND THERE ARE THREE** (#909's re-count):
+ * `scripts/unwiring-timeline.mts` reads the same function across the whole
+ * history. And its shape option said the differ could safely pass nothing,
+ * which is false at this repository's own record — the differ's new tree is the
+ * tree you are standing in (`… C:/tmp/rite-window-1001 .`,
+ * `docs/specs/CLEANUP_MILESTONE_TRIAGE.md`), so an untracked importer there
+ * makes a symbol that lost its last real consumer read as still wired. That is
+ * the toward-SILENCE direction, which is the one the differ's own docblock says
+ * it must never fail in. So every reading of a real repository passes the
+ * predicate, and the cost the card declined to pay was measured: `git ls-files`
+ * is **18 ms**, 2.0% of one `readTree`, 16 ms of it the bare process spawn.
+ */
+const READ_TREE_MODULE = "importerCountDiff.mts";
+
+/**
+ * Files that IMPORT `readTree` from that module, with the local name each gave
+ * it — derived from what the repository contains, so a new caller anywhere is in
+ * the population the day it is written.
+ *
+ * ⚠ Derived rather than listed for a reason with a specimen in this tree:
+ * `scripts/sweep-handwritten-vocabularies.mts` declares its OWN
+ * `function readTree(): Reading` and calls it with no arguments at all. A rule
+ * matching the bare word would indict it, and the sentence explaining why it was
+ * exempt would be the second list working law 4 is about.
+ */
+function readTreeCallers(): Map<string, string> {
+  const callers = new Map<string, string>();
+  for (const file of trackedFiles(repoRoot)) {
+    if (!/\.(ts|tsx|mts)$/.test(file)) continue;
+    const source = readListedSource(path.join(repoRoot, file));
+    /* A file the listing named can be gone by the time it is read — the rule
+       `readListedSource` owns. */
+    if (source === null) continue;
+    /* The specifier is a string literal, so it is read from the RAW source; the
+       CALLS below are read from the comment-stripped source. Same split, and for
+       the same reason, as `childProcessSuites.ts`'s `startsAProcess`. */
+    const imported = new RegExp(
+      String.raw`import\s*\{([^}]*)\}\s*from\s*["'][^"']*` + READ_TREE_MODULE + String.raw`["']`,
+    ).exec(source);
+    if (imported === null) continue;
+    const named = /(?:^|,)\s*readTree(?:\s+as\s+([A-Za-z_$][\w$]*))?\s*(?:,|$)/.exec(imported[1]!);
+    if (named === null) continue;
+    callers.set(file, named[1] ?? "readTree");
+  }
+  return callers;
+}
+
+/**
+ * How many TOP-LEVEL arguments the call starting at `name(` was given, for every
+ * such call in `source`. `-1` marks a call whose parentheses do not balance
+ * before the file ends, which is a read this cannot trust rather than a finding.
+ *
+ * Written out rather than regexed because the second argument is itself a call
+ * (`containedIn(oldTree)`), so a comma count has to know about nesting — and
+ * `codeOnly` is the wrong stripper here: it removes string CONTENTS, which turns
+ * `readTree(".")` into a call with no arguments at all.
+ */
+function argumentCounts(source: string, name: string): number[] {
+  const code = withoutComments(source);
+  const counts: number[] = [];
+  const BACKSLASH = String.fromCharCode(92);
+  const call = new RegExp(String.raw`(\w+\s+)?\b` + name + String.raw`\s*\(`, "g");
+  for (const match of code.matchAll(call)) {
+    /* The declaration is not a call. */
+    if ((match[1] ?? "").trim() === "function") continue;
+    let index = match.index + match[0].length - 1;
+    let depth = 0;
+    let quote: string | null = null;
+    /*
+      ⚠ SEGMENTS, NEVER A COMMA COUNT PLUS ONE. Both the differ and the timeline
+      are written multi-line with a TRAILING comma, and `commas + 1` read those
+      as THREE arguments — which is not a finding in either direction here, but a
+      counter that is wrong about the shape the tree actually holds is a counter
+      whose verdicts nobody can lean on. The first form of this arm failed on the
+      real spelling and said so.
+    */
+    const segments: string[] = [""];
+    for (; index < code.length; index++) {
+      const character = code[index]!;
+      const keep = () => { segments[segments.length - 1] += character; };
+      if (quote !== null) {
+        keep();
+        if (character === BACKSLASH) { segments[segments.length - 1] += code[index + 1] ?? ""; index += 1; continue; }
+        if (character === quote) quote = null;
+        continue;
+      }
+      if (character === `"` || character === `'` || character === "`") { quote = character; keep(); continue; }
+      if (character === "(" || character === "[" || character === "{") {
+        depth += 1;
+        if (depth > 1) keep();
+        continue;
+      }
+      if (character === ")" || character === "]" || character === "}") {
+        depth -= 1;
+        if (depth === 0) { counts.push(segments.filter((s) => s.trim().length > 0).length); break; }
+        keep();
+        continue;
+      }
+      if (character === "," && depth === 1) { segments.push(""); continue; }
+      keep();
+    }
+    if (depth !== 0) counts.push(-1);
+  }
+  return counts;
+}
+
+/**
+ * The files allowed to read a tree WITHOUT asking what it contains, each with
+ * the reason at its entry. All three are suites and none of them reads a real
+ * repository bare.
+ *
+ * ⚠ **THE THIRD ENTRY WAS FOUND BY THE ARM BELOW AND NOT BY THE CARD OR BY A
+ * GREP.** #1620 names two consumers; the derived population came back with
+ * SEVEN files, and `server/unwiringTimeline.test.ts` was in it — the same
+ * manufactured-tree class as the differ's suite, invisible to the hand grep that
+ * wrote the card because that reading was cut at thirty lines. It is the reason
+ * this population is derived rather than listed (#909).
+ *
+ * ⚠ A declared exemption is only worth its reason staying TRUE, so the arm below
+ * asserts each named file exists AND still makes a bare call — an entry that
+ * goes dead silently is the drift a list like this exists to avoid, and #1623
+ * was the cost of writing a sentence here that was not true of its file.
+ */
+const MANUFACTURED_TREES =
+  "manufactured `mkdtempSync` trees that are not git repositories at all. `trackedFiles` REFUSES "
+  + "there by design, and the reader's own header is explicit that the arms which CAN run cheaply "
+  + "must not need the ones that cannot.";
+const BARE_READING_DECLARED: Readonly<Record<string, string>> = {
+  "server/unwiringDiffer.test.ts": `63 readings of ${MANUFACTURED_TREES}`,
+  "server/unwiringTimeline.test.ts": `six readings of ${MANUFACTURED_TREES}`,
+  "server/trackedFilePopulation.test.ts":
+    "this file drives the bare form on purpose, as the BEFORE arm of the discriminator below: "
+    + "without it nothing proves the predicate is what excludes an untracked importer, and the "
+    + "filter could be a no-op with every arm still green.",
+};
+
+describe("the un-wiring reader asks what the repository contains (#1620)", () => {
+  it("derives a real caller population — a rule over an empty one is not a rule", () => {
+    const callers = readTreeCallers();
+    /* Named rather than counted: these are the three instruments whose verdicts
+       the gate re-takes, and the card named only the first two. */
+    expect([...callers.keys()]).toContain("scripts/check-cleanup-dispositions.mts");
+    expect([...callers.keys()]).toContain("scripts/diff-importer-count-across-time.mts");
+    expect([...callers.keys()]).toContain("scripts/unwiring-timeline.mts");
+    expect([...callers.keys()]).toContain("server/deletionDoorSecondReader.test.ts");
+    expect(
+      [...callers.keys()],
+      "the local `readTree` in sweep-handwritten-vocabularies.mts was collected — the population "
+        + "is importers of one module, not everything sharing a name",
+    ).not.toContain("scripts/sweep-handwritten-vocabularies.mts");
+  });
+
+  it("⚠ every reading of a real repository passes the predicate", () => {
+    const offenders: string[] = [];
+    for (const [file, local] of readTreeCallers()) {
+      if (file in BARE_READING_DECLARED) continue;
+      const source = readListedSource(path.join(repoRoot, file));
+      if (source === null) continue;
+      for (const count of argumentCounts(source, local)) {
+        if (count === 1) offenders.push(file);
+        expect(
+          count,
+          `${file}: a readTree call's parentheses do not balance — the read is not trustworthy`,
+        ).not.toBe(-1);
+      }
+    }
+    expect(
+      [...new Set(offenders)].sort(),
+      "a reading of a real repository walks the DISK. An untracked file under server/client/shared/"
+        + "drizzle then counts as a production importer AND as a declaration, so the deletion door "
+        + "licenses a removal the gate would refuse, and the differ reads a dead symbol as still "
+        + "wired. Pass `containedIn(root)` from scripts/lib/trackedFiles.mts (#1620).",
+    ).toEqual([]);
+  });
+
+  it("⚠ and it can SEE one — the detector is driven both ways", () => {
+    /*
+      The negative control, without which the arm above passes on any tree where
+      the scanner finds nothing at all: a drift in the call pattern reads exactly
+      like compliance. The fixtures are the real shapes this tree holds.
+    */
+    expect(argumentCounts("const t = readTree(REPO);", "readTree")).toEqual([1]);
+    expect(argumentCounts("const t = readTree(REPO, contains);", "readTree")).toEqual([2]);
+    /* The second argument is itself a call, so a naive comma count reads it as
+       one argument and the whole guard passes on the fixed tree. */
+    expect(argumentCounts("readTree(oldTree, containedIn(oldTree));", "readTree")).toEqual([2]);
+    /* Multi-line, which is how the differ and the timeline are written. */
+    expect(argumentCounts("readTree(\n  WORKTREE,\n  containedIn(WORKTREE),\n);", "readTree")).toEqual([2]);
+    /* A string argument survives — the reason `codeOnly` is not the stripper here. */
+    expect(argumentCounts('readTree(".");', "readTree")).toEqual([1]);
+    /* The declaration is not a call, and an aliased local name is followed. */
+    expect(
+      argumentCounts(
+        "export function readTree(root: string, contains?: Pred): Tree {\n  return x;\n}",
+        "readTree",
+      ),
+    ).toEqual([]);
+    expect(argumentCounts("const t = look(REPO);", "look")).toEqual([1]);
+    /* Prose is not a call: this suite, the reader and the differ all discuss it. */
+    expect(
+      argumentCounts("/* the bare `readTree(REPO)` form walked the disk */\nexport const a = 1;", "readTree"),
+      "a comment discussing the call was counted",
+    ).toEqual([]);
+  });
+
+  it("⚠ each declared exemption still exists and still makes a bare call", () => {
+    const callers = readTreeCallers();
+    for (const [file, reason] of Object.entries(BARE_READING_DECLARED)) {
+      const source = readListedSource(path.join(repoRoot, file));
+      expect(source, `${file} is declared as reading a tree bare and is not in the tree`).not.toBeNull();
+      expect(reason.length, `${file}'s exemption carries no reason`).toBeGreaterThan(40);
+      const local = callers.get(file);
+      expect(local, `${file} is declared here and no longer imports readTree at all`).toBeDefined();
+      expect(
+        argumentCounts(source!, local!),
+        `${file} no longer makes a bare readTree call — its exemption is dead and should be deleted `
+          + "rather than left standing as a sentence nobody re-reads",
+      ).toContain(1);
+    }
+  });
+
+  it("⚠ the predicate is what excludes an untracked importer — both directions, at a real repository", () => {
+    /*
+      A tracked and an untracked file are identical on disk, so only git can tell
+      them apart and only a real repository can drive this. The BEFORE arm (the
+      bare call) is why this file is a declared exemption above: without it the
+      filter could be a no-op and every other arm here would still be green.
+    */
+    const dir = scratchRepo();
+    try {
+      const server = path.join(dir, "server");
+      mkdirSync(server, { recursive: true });
+      writeFileSync(
+        path.join(server, "gate.ts"),
+        'export function isSensitive(a: string) {\n  return a === "x";\n}\n',
+        "utf8",
+      );
+      writeFileSync(
+        path.join(server, "routers.ts"),
+        'import { isSensitive } from "./gate";\nexport const route = (a: string) => isSensitive(a);\n',
+        "utf8",
+      );
+      git(dir, "add", "server/gate.ts", "server/routers.ts");
+      git(dir, "commit", "-q", "-m", "a tree with one real importer");
+
+      /* Neither of these is committed: one imports the symbol, one declares a
+         new export. Both are the shapes measured at this repository. */
+      writeFileSync(
+        path.join(server, "_scratch-disposable.ts"),
+        'import { isSensitive } from "./gate";\nexport const used = isSensitive("x");\n',
+        "utf8",
+      );
+      writeFileSync(path.join(server, "_phantom.ts"), "export const phantomSymbol = 1;\n", "utf8");
+
+      const disk = readTree(dir);
+      const repository = readTree(dir, containedIn(dir));
+
+      expect(
+        importersOfName(disk, "isSensitive").sort(),
+        "the BEFORE arm stopped reproducing #1620 — if the disk reading no longer counts an "
+          + "untracked importer, the arm below proves nothing about the predicate",
+      ).toEqual(["server/_scratch-disposable.ts", "server/routers.ts"]);
+      expect(disk.decls.has("phantomSymbol"), "the declaration half stopped reproducing").toBe(true);
+
+      expect(
+        importersOfName(repository, "isSensitive"),
+        "an untracked importer survived the predicate — this is #1620, and the deletion door "
+          + "reads it as a production consumer",
+      ).toEqual(["server/routers.ts"]);
+      expect(
+        repository.decls.has("phantomSymbol"),
+        "an untracked file's export is in `decls`, so the door can be answered about a "
+          + "declaration this repository does not contain",
+      ).toBe(false);
+      expect(repository.files, "the predicate dropped more than the two untracked files").toBe(disk.files - 2);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
