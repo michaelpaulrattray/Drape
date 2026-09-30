@@ -295,6 +295,24 @@ describe("what a background seat may take", () => {
     }
   });
 
+  it("⚠ #1548 — NEVER takes his research team's proposal, by name rather than by a missing category", () => {
+    /*
+      A `research` card carries no work label today (#1465 and #1535, measured),
+      so this lane already held it — for want of a category, which is an ACCIDENT
+      and not a rule. Add `bug` to one and `homeWorkCategoryFor` answers `bugs`:
+      the card enters a switch's offered population and a seat builds his research
+      team's proposal as tonight's work. The exclusion vocabulary's `research` row
+      is what holds it, and the skip sentence is that row's own word.
+    */
+    const { takeable, skipped } = population([card(15, ["research", "bug"])]);
+    expect(takeable).toEqual([]);
+    expect(skipped[0]!.why).toContain("research");
+    /* ⚠ POSITIVE CONTROL — the same card WITHOUT the label is taken, so the arm
+       measures the label and not a `seatPopulation` that has stopped offering
+       anything. */
+    expect(population([card(15, ["bug"])]).takeable.map((c) => c.number)).toEqual([15]);
+  });
+
   it("never takes a card whose band switch is off", () => {
     const { takeable, skipped } = population([card(14, ["casting-upkeep"])], { ...ALL_ON, castingUpkeep: false });
     expect(takeable).toEqual([]);
@@ -508,6 +526,46 @@ describe("his ordered band, split between the lanes", () => {
     expect(result.focus!.number).toBe(100);
     expect(result.offered.map((c) => c.number)).toEqual([101]);
     expect(result.held.some((h) => h.number === 100 && h.why.includes("top of NEXT UP"))).toBe(true);
+  });
+
+  it("⚠ #1548 — a research proposal is held in THIS lane too, and this is the lane that had no arm", () => {
+    /*
+      `seatPopulation` asks the exclusion vocabulary about every background card,
+      and `research` is its first row. This band does not: it filters on
+      `founder-ordered` and then asks only about parking, holds and the build
+      board — so a proposal carrying `research` + `founder-ordered` would have
+      been offered to a seat as tonight's work, and as the FOCUS card if it sorted
+      to the top.
+
+      It should never exist — the relay's scope note on #1548 says an approved
+      proposal is filed WITHOUT the label, as ordinary work opening *"Approved by
+      Michael on the Notion desk"* — which is exactly why the arm is here rather
+      than left to the rule. Two roads into a seat must give one answer about one
+      label, and the road with no such card today is the road nobody notices is
+      missing it.
+    */
+    const result = band(
+      [
+        ordered(100, "Change server/casting/queue.ts.", ["research"]),
+        ordered(101, "Change client/src/features/boards/Canvas.tsx."),
+      ],
+      () => ({ kind: "independent" }),
+    );
+    /* Not the focus, not offered, and the sentence names the Notion desk. */
+    expect(result.focus!.number).toBe(101);
+    expect(result.offered.map((c) => c.number)).toEqual([]);
+    expect(result.held.some((h) => h.number === 100 && h.why.includes("Notion desk"))).toBe(true);
+    /* ⚠ POSITIVE CONTROL — without the label card 100 IS the focus, so the arm
+       above measures the label rather than a band that has stopped offering. */
+    const control = band(
+      [
+        ordered(100, "Change server/casting/queue.ts."),
+        ordered(101, "Change client/src/features/boards/Canvas.tsx."),
+      ],
+      () => ({ kind: "independent" }),
+    );
+    expect(control.focus!.number).toBe(100);
+    expect(control.offered.map((c) => c.number)).toEqual([101]);
   });
 
   it("puts urgent first, so the focus card is the one his order names", () => {
