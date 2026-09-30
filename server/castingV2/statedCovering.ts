@@ -85,6 +85,17 @@ const COVERINGS: ReadonlyArray<{ words: readonly string[]; prose: string }> = [
 ];
 
 /**
+ * EVERY NOUN THIS MODULE KNOWS, flattened — the population of #1574's guard.
+ *
+ * Exported so that guard reads the garments off THIS list rather than carrying a
+ * second copy of them beside it, which is the drift working law 4 is about: a
+ * sixth covering added above joins the guard automatically, where a typed copy
+ * would have left it unprotected and nothing would have said so.
+ */
+export const STATED_COVERING_WORDS: readonly string[] =
+  COVERINGS.flatMap((covering) => covering.words);
+
+/**
  * Word-boundary matching against the user's OWN sentence.
  *
  * Whole words only, for the same reason the wardrobe detector uses them: a
