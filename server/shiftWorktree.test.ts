@@ -44,8 +44,11 @@ import { describe, expect, it, vi } from "vitest";
 import {
   decideRemoval,
   mergedPrArgs,
+  prHeadFetchArgs,
   prReadFailed,
   readMergedPullRequest,
+  readShippedCommits,
+  removalStateFromShipReading,
   junctionMustBeGone,
   looksCrlfSmudged,
   planFor,
@@ -68,6 +71,9 @@ const clean: RemovalState = {
      and an omitted field would silently pick one. Every arm below that is not
      about the merge overrides it. */
   mergedPullRequest: null,
+  /* No merged pull request was found, so there is nothing past one either
+     (#1540, at review). Required for the same reason as the field above. */
+  unshippedPastMerge: null,
 };
 
 describe("validateSlug — it ends in a recursive delete, so it is checked once here", () => {
@@ -531,5 +537,176 @@ describe("the script's own text — the sequence a reader must be able to trust"
 
   it("refuses an unknown flag rather than ignoring it — a misspelt --dry-run on a remove deletes", () => {
     expect(source).toContain("unknown flag");
+  });
+});
+
+/**
+ * ⚠ **"A MERGED PULL REQUEST NAMES THIS BRANCH" IS NOT "THESE COMMITS SHIPPED"
+ * — the gap this card's own review found, and the one that would have made the
+ * fix WORSE than the defect** (#1540, relay verdict on PR #1549).
+ *
+ * The first shape cleared the refusal on the branch NAME. But a branch merges and
+ * the seat keeps working on the same branch for its next card — measured on this
+ * machine that night: `seat-1-20260930-013307` sat on
+ * `team/shared-bare-door-id-1506` with new work after PR #1514 merged. One commit
+ * later, `remove` would have printed *"1 commit(s) sit on no remote, and that is
+ * expected: PR #1514 merged this branch"* and **proceeded without `--force`**.
+ * That commit never shipped. The guard would have been bypassed on the very path
+ * it exists for, and with a friendlier sentence than the one it replaced.
+ *
+ * **What makes it answerable after the branch is gone:** GitHub keeps
+ * `refs/pull/<N>/head` past `delete_branch_on_merge`. So the commits shipped
+ * exactly when HEAD is an ANCESTOR of that ref — a fact about the commits rather
+ * than about the name.
+ *
+ * Every arm here injects both runners, so the whole road is driven with no
+ * network and no GitHub.
+ */
+describe("readShippedCommits — the commits, not the branch name (#1540)", () => {
+  /** A `gh` that reports one merged pull request. */
+  const ghSaysMerged = (pr: number) => () => ({
+    status: 0,
+    out: JSON.stringify([{ number: pr, mergedAt: "2026-09-30T01:14:00Z" }]),
+    err: "",
+  });
+
+  /**
+   * A git whose answers are keyed on the SUBCOMMAND, so an arm cannot pass by
+   * answering the wrong question — and an unexpected call is a loud throw rather
+   * than a quiet default, which is what stops a reader that stopped asking from
+   * reading as a reader that asked and was satisfied.
+   */
+  const gitAnswering = (answers: Record<string, { status: number; out?: string; err?: string }>) => {
+    const asked: string[][] = [];
+    const run = (args: string[]) => {
+      asked.push(args);
+      const answer = answers[args[0] ?? ""];
+      if (!answer) throw new Error(`the arm did not expect git ${args.join(" ")}`);
+      return { status: answer.status, out: answer.out ?? "", err: answer.err ?? "" };
+    };
+    return { run, asked };
+  };
+
+  it("⚠ THE FETCH IS ASSERTED AT THE WIRE, and it reaches the PULL REQUEST's ref", () => {
+    /* Working law 5: the contract is proven on the outgoing call. `refs/pull/N/head`
+       and not `refs/heads/team/…`, because the whole point is that the branch ref
+       is already deleted by the time anyone asks. */
+    expect(prHeadFetchArgs(1514)).toEqual(["fetch", "--no-tags", "origin", "refs/pull/1514/head"]);
+  });
+
+  it("HEAD EQUAL to the merged pull request's head SHIPPED — and it proceeds", () => {
+    const git = gitAnswering({ fetch: { status: 0 }, "merge-base": { status: 0 } });
+    const ship = readShippedCommits("team/x", ghSaysMerged(1514), git.run);
+    expect(ship).toEqual({ shippedBy: 1514 });
+
+    /* Driven through the REAL fold and the REAL verdict, not a copy of either. */
+    const verdict = decideRemoval({ ...clean, unpushedCommits: 1, ...removalStateFromShipReading(ship) }, false);
+    expect(verdict.proceed, "a fully merged branch is litter").toBe(true);
+    if (verdict.proceed) expect(verdict.warnings.join(" ")).not.toContain("destroying");
+  });
+
+  it("⚠ HEAD ONE COMMIT PAST IT REFUSES — the measured seat-1 case, and the whole point", () => {
+    const git = gitAnswering({
+      fetch: { status: 0 },
+      /* exit 1 is `merge-base --is-ancestor` ANSWERING no, not failing. */
+      "merge-base": { status: 1 },
+      log: { status: 0, out: "9f1c2d3 the commit that never shipped\n" },
+    });
+    const ship = readShippedCommits("team/shared-bare-door-id-1506", ghSaysMerged(1514), git.run);
+    expect(ship).toEqual({ pastMerge: { pr: 1514, commits: 1 } });
+
+    const verdict = decideRemoval({ ...clean, unpushedCommits: 1, ...removalStateFromShipReading(ship) }, false);
+    expect(verdict.proceed, "the one commit past the merge is in no pull request").toBe(false);
+    if (!verdict.proceed) {
+      /* It names the merge rather than hiding it — a shift told only "on no
+         remote" over a branch it merged reaches for --force, which is the habit
+         this card is about. */
+      expect(verdict.reason).toContain("PR #1514 merged this branch");
+      expect(verdict.reason).toContain("1 commit was made on it AFTER that merge");
+      expect(verdict.reason).toContain("this directory is their only copy");
+      /* ⚠ AND IT MUST NOT CARRY THE CLEARED SENTENCE. This is the assertion that
+         would have caught the reviewed shape: it said "that is expected". */
+      expect(verdict.reason).not.toContain("that is expected");
+    }
+  });
+
+  it("the plural reads as a plural, because the count is what a shift acts on", () => {
+    const git = gitAnswering({
+      fetch: { status: 0 },
+      "merge-base": { status: 1 },
+      log: { status: 0, out: "aaa one\nbbb two\nccc three\n" },
+    });
+    const ship = readShippedCommits("team/x", ghSaysMerged(1536), git.run);
+    expect(ship).toEqual({ pastMerge: { pr: 1536, commits: 3 } });
+    const verdict = decideRemoval({ ...clean, unpushedCommits: 3, ...removalStateFromShipReading(ship) }, false);
+    expect(verdict.proceed).toBe(false);
+    if (!verdict.proceed) expect(verdict.reason).toContain("3 commits were made on it AFTER that merge");
+  });
+
+  it("⚠ A FETCH THAT FAILS IS `unreadable` — the safe direction, never a merge", () => {
+    /* A deleted-and-never-recreated ref, an offline machine, a repository whose
+       remote is gone: none of them is evidence that the work shipped. */
+    const git = gitAnswering({ fetch: { status: 128, err: "fatal: couldn't find remote ref refs/pull/1514/head" } });
+    const ship = readShippedCommits("team/x", ghSaysMerged(1514), git.run);
+    expect("unreadable" in ship, "a failed fetch must never read as shipped").toBe(true);
+    if ("unreadable" in ship) expect(ship.unreadable).toContain("couldn't find remote ref");
+
+    const state = removalStateFromShipReading(ship);
+    expect(state.mergedPullRequest, "it keeps the PR number out of the verdict entirely")
+      .toEqual({ unreadable: expect.stringContaining("refs/pull/1514/head") });
+    const verdict = decideRemoval({ ...clean, unpushedCommits: 2, ...state }, false);
+    expect(verdict.proceed).toBe(false);
+    if (!verdict.proceed) expect(verdict.reason).toContain("COULD NOT BE READ");
+  });
+
+  it("⚠ A MERGE-BASE THAT ERRORS IS `unreadable` TOO — exit 1 is an answer, 128 is not", () => {
+    /* The trap named in the reader's own docblock, driven: treating "not 0" as
+       *no* turns a broken repository into a confident refusal, and treating
+       "not 1" as *yes* turns it into a confident PROCEED over the only copy of
+       somebody's work. */
+    const git = gitAnswering({
+      fetch: { status: 0 },
+      "merge-base": { status: 128, err: "fatal: Not a valid object name FETCH_HEAD" },
+    });
+    const ship = readShippedCommits("team/x", ghSaysMerged(1514), git.run);
+    expect("unreadable" in ship).toBe(true);
+    if ("unreadable" in ship) expect(ship.unreadable).toContain("Not a valid object name");
+  });
+
+  it("no merged pull request never reaches git at all — and still refuses", () => {
+    /* The read is ordered cheapest-first: with nothing merged there is no ref to
+       fetch, so the network call is not made. The throwing git proves it. */
+    const git = gitAnswering({});
+    const ship = readShippedCommits("team/x", () => ({ status: 0, out: "[]", err: "" }), git.run);
+    expect(ship).toEqual({ notMerged: true });
+    expect(git.asked, "nothing merged it, so there was nothing to compare against").toEqual([]);
+    const verdict = decideRemoval({ ...clean, unpushedCommits: 1, ...removalStateFromShipReading(ship) }, false);
+    expect(verdict.proceed).toBe(false);
+  });
+
+  it("an unreadable `gh` never reaches git either, and stays unreadable", () => {
+    const git = gitAnswering({});
+    const ship = readShippedCommits("team/x", () => { throw new Error("spawn gh ENOENT"); }, git.run);
+    expect("unreadable" in ship && ship.unreadable).toContain("spawn gh ENOENT");
+    expect(git.asked).toEqual([]);
+  });
+
+  it("⚠ THE FOLD IS FAIL-CLOSED, held over every reading there is", () => {
+    /* One owner, and the property that matters stated as a property rather than
+       as four separate hopes: ONLY `shippedBy` may produce a number, because a
+       number is the only thing that clears the refusal. */
+    const readings = [
+      { shippedBy: 1514 },
+      { notMerged: true as const },
+      { pastMerge: { pr: 1514, commits: 1 } },
+      { unreadable: "offline" },
+      null,
+    ];
+    for (const reading of readings) {
+      const state = removalStateFromShipReading(reading);
+      const clears = typeof state.mergedPullRequest === "number";
+      expect(clears, `only shippedBy may clear the refusal, not ${JSON.stringify(reading)}`)
+        .toBe(reading !== null && "shippedBy" in reading);
+    }
   });
 });
