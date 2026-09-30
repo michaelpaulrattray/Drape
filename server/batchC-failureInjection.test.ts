@@ -1050,7 +1050,7 @@ describe("canvas creation boundaries", () => {
     tx.fillResult = "not_empty";
     const result = await executeRunGeneration({ userId: 1, itemId: 3, userPrompt: "sharp editorial Nordic face" });
     expect(result).toMatchObject({ success: true, placed: false });
-    expect(result.placementMessage).toContain("model library");
+    expect(result.placementMessage).toContain("your Library");
     expect(addCredits).not.toHaveBeenCalled();
     expect(tx.updates.some((values) => "imageUrl" in values)).toBe(false);
     expect(tx.inserts.some((values) => "version" in values && "itemId" in values)).toBe(false);
@@ -1075,7 +1075,7 @@ describe("canvas creation boundaries", () => {
       failures: [
         {
           index: 0,
-          message: expect.stringContaining("model library"),
+          message: expect.stringContaining("your Library"),
           refunded: 0,
         },
       ],

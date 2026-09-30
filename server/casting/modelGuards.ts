@@ -15,6 +15,6 @@ const log = createModuleLogger("casting/modelGuards");
 export function assertNotArchived(model: { id?: number; status: string } | null | undefined): void {
   if (model && model.status === "archived") {
     log.warn({ modelId: model.id }, "[modelGuards] refused — model is archived");
-    throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+    throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
   }
 }

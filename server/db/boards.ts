@@ -744,7 +744,7 @@ function referencedModelIds(data: Pick<InsertBoardItem, "sourceModelId" | "metad
   }
   const provenance = readCastProvenance(data.metadata);
   if (direct && provenance && direct !== provenance.modelId) {
-    throw new TRPCError({ code: "BAD_REQUEST", message: "Canvas Cast provenance disagrees with its model link" });
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Canvas Cast provenance disagrees with its cast link" });
   }
   return Array.from(new Set([direct, provenance?.modelId ?? null].filter((id): id is number => id !== null)));
 }
@@ -1011,7 +1011,7 @@ export async function fillEmptyCastNodeWithVersionIn(
       metadata: reconciliationUpdate.metadata !== undefined ? reconciliationUpdate.metadata : item.metadata,
     });
     if (reconciliationModelIds.some((modelId) => modelId !== input.modelId)) {
-      throw new TRPCError({ code: "BAD_REQUEST", message: "Canvas Cast landing changed its model identity" });
+      throw new TRPCError({ code: "BAD_REQUEST", message: "Canvas Cast landing changed its identity" });
     }
     const result = await tx
       .update(boardItems)
@@ -1036,7 +1036,7 @@ export async function fillEmptyCastNodeWithVersionIn(
     metadata: built.update.metadata !== undefined ? built.update.metadata : item.metadata,
   });
   if (builtModelIds.some((modelId) => modelId !== input.modelId)) {
-    throw new TRPCError({ code: "BAD_REQUEST", message: "Canvas Cast landing changed its model identity" });
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Canvas Cast landing changed its identity" });
   }
   const result = await tx
     .update(boardItems)

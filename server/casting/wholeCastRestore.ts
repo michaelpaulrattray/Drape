@@ -406,7 +406,7 @@ export function buildPublicCastStateHistory(
   const draft = isModelDraftStatus(rows.model.status);
   const minted = isModelMintedStatus(rows.model.status);
   if (!draft && !minted) {
-    throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+    throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
   }
   const seenStates = new Set<string>();
   const stateIdentities = [...rows.identities]
@@ -482,7 +482,7 @@ async function readRestoreHistoryRowsIn(
   const [model] = input.lock
     ? await modelQuery.for("update")
     : await modelQuery;
-  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
 
   const [
     identities,
@@ -575,12 +575,12 @@ export async function getOwnedCastStateHistory(input: {
         ))
         .limit(1);
       if (!model) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
       }
       const draft = isModelDraftStatus(model.status);
       const minted = isModelMintedStatus(model.status);
       if (!draft && !minted) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
       }
       return {
         enabled: false,

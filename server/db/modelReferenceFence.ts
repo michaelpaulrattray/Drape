@@ -28,6 +28,6 @@ export async function assertOwnedAvailableModelIn(
     .limit(1)
     .for("update");
   if (!model) {
-    throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+    throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
   }
 }

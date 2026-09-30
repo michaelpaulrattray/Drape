@@ -210,14 +210,14 @@ export const modelsRouter = router({
       }
       const model = await getModelById(input.modelId);
       if (!model) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
       }
       if (model.userId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       // Batch 0 (FR-4): archived reads as deleted everywhere
       if (model.status === "archived") {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
       }
       const assets = await getModelAssets(input.modelId);
       return projectModelForClient(model, assets);
@@ -238,7 +238,7 @@ export const modelsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const model = await getModelById(input.modelId);
       if (!model) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
       }
       if (model.userId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
@@ -246,13 +246,25 @@ export const modelsRouter = router({
       // FR-4: archived is deleted — no edits of any kind
       if (model.status === "archived") {
         log.warn({ modelId: input.modelId, userId: ctx.user.id }, "[models.update] refused — model is archived");
-        throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
       }
 
       const renamed = await updateModel(input.modelId, { name: input.name });
       if (!renamed.success) {
+        /*
+          ⚠ THE TWO SPELLINGS ON THESE FOUR LINES ARE DIFFERENT THINGS AND THE
+          MISMATCH IS DELIBERATE (#1565). The left-hand `"Model not found"` is
+          `updateModel`'s own return value (`server/db/models.ts:121`) — a wire
+          contract between two server modules, keyed on its spelling here and
+          pinned by two arms in the final-cast-deletion suite. The right-hand
+          sentence is what a CUSTOMER reads, through `readableFailure`, and it
+          is the one the cast-vocabulary sweep moved. Renaming the db's value to
+          match would silently break this comparison, and the symptom would be a
+          rename failure reported as "Failed to save the name" — which is the
+          spelling-not-meaning class this repository has paid for before.
+        */
         if (renamed.error === "Model not found") {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+          throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
         }
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to save the name" });
       }

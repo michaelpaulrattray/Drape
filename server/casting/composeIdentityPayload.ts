@@ -93,7 +93,7 @@ export function composeFromAssets(
   if (!headshot) {
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
-      message: "This model has no headshot — there is no identity to reference yet",
+      message: "This cast has no headshot — there is no identity to reference yet",
     });
   }
 

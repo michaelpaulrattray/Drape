@@ -201,7 +201,7 @@ async function lockModelIn(tx: TransactionHandle, input: { modelId: number; user
     ))
     .limit(1)
     .for("update");
-  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
   return model;
 }
 
@@ -559,7 +559,7 @@ export async function planFinalCastDeletion(input: {
         availableModelWhere(),
       ))
       .limit(1);
-    if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+    if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
 
     // Keep reads sequential on the one transaction connection. The preview
     // is small and this avoids relying on driver-specific query queuing.

@@ -11160,6 +11160,10 @@
       "path": "server/castModelModal.test.ts"
     },
     {
+      "id": "test:server/castRefusalVocabulary.test.ts",
+      "path": "server/castRefusalVocabulary.test.ts"
+    },
+    {
       "id": "test:server/casting/aiService.test.ts",
       "path": "server/casting/aiService.test.ts"
     },

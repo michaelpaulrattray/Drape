@@ -84,7 +84,7 @@ export const castingImagingRouter = router({
       // may deduct credits, reach Gemini, or create an asset.
       const model = await getModelById(input.modelId);
       if (!model) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
       }
       if (model.userId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
@@ -131,7 +131,7 @@ export const castingImagingRouter = router({
           });
         }
         lockedModel = await getModelById(input.modelId);
-        if (!lockedModel) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        if (!lockedModel) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
         if (lockedModel.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         assertNotArchived(lockedModel);
         if (lockedModel.status !== "draft") {
