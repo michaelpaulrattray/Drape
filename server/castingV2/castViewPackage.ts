@@ -33,6 +33,7 @@ import { CASTING_V2_SIGN_COSTS } from "../casting/castingCreditCosts";
 import { pronounsForSex, type CastPronouns } from "./castPronouns";
 import { PHOTOREAL_HUMAN_BLOCKS } from "./cohortPhotorealHuman";
 import { HOUSE_PHOTOGRAPH_PARAGRAPHS } from "./houseBlock";
+import type { ViewFramingBand } from "./viewFramingGeometry";
 
 /**
  * THE ONE RULE A VIEW HAS AND A ROLL CANNOT — kept as a VIEW-ONLY line when
@@ -645,6 +646,34 @@ type CastPackageView = {
   label: string;
   spec: CastPackageViewSpec;
   /**
+   * ⚠ **THE SAME FRAMING, STATED AS GEOMETRY — #1612 part 1, his ruling of
+   * 2026-09-30 (*"i agree with you"*).**
+   *
+   * `spec.framing` above is a sentence handed to a vision model, and a model
+   * reading a two-part prose rule answers whichever half is easiest: on one
+   * afternoon the same close-up spec refused a three-eyed cast for not having
+   * two eyes (#1582) and passed a frame with the whole neck and shoulders in it
+   * that the same sentence calls too loose (#1611). This is that band written as
+   * landmark predicates a segmenter can answer the same way every time.
+   *
+   * It sits HERE, beside the sentence it restates, because a view is one thing
+   * and everything about it belongs in one entry — the same reason `belowWaist`,
+   * `rotated` and `concealmentTest` are declared per view rather than derived
+   * from the angle's name.
+   *
+   * ⚠ **IT IS A SECOND STATEMENT OF ONE BAND UNTIL THE SLICE THAT WIRES IT, AND
+   * THAT IS DECLARED RATHER THAN QUIET.** Nothing reads this yet: the judge is
+   * still asked `spec.framing` in prose. The slice that hands the framing axis
+   * to the measurement DELETES that sentence from the judge's post, and one band
+   * is left. Until then the two can disagree, and `viewFramingBands.test.ts`
+   * holds each band against the sentence it restates by naming, for every rule,
+   * the clause it comes from.
+   *
+   * A view whose framing also asks something geometry does not answer here says
+   * so in `band.readerRemainder`, in its own words.
+   */
+  band: ViewFramingBand;
+  /**
    * The generation directive for this angle.
    *
    * Ported from the legacy per-angle framing craft (`geminiViews.ts`
@@ -767,6 +796,62 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
         + FACE_FROM_REFERENCE,
       wardrobe: CLOSE_UP_WARDROBE,
     },
+    /*
+      THE FOUNDER'S OWN BAND, AS GEOMETRY — and both of his bounds turn out to
+      be ONE quantity, which is what a band is.
+
+        too tight   his words: "the bottom edge of the frame cuts the mouth or
+                    the lower edge of the face, or that lower edge touches the
+                    bottom of the frame with no skin below it" — so there is
+                    SOME room below the face.
+        too loose   his words: "the neck and shoulders are in frame, or the
+                    whole head fits with clear space above the hair" — so there
+                    is not MUCH room below the face, and the subject is cut by
+                    the top.
+
+      *"the answer is the range between them"* is his sentence about the crop,
+      and the two rules on `face` are literally that range: more than a visible
+      margin of picture below the lower edge of the face, and at most a third of
+      a face-height of it.
+
+      ⚠ **THE TOO-LOOSE RULE WAS `absent shoulders` UNTIL IT WAS DRIVEN, AND THE
+      DRIVE IS THE MOST USEFUL THING ON THIS CARD.** It is the spec's own words,
+      it passed every unit arm, and on his six production close-ups
+      `region("shoulders")` answered NOTHING on the three frames that plainly
+      have shoulders and answered SHOULDERS on the two that have none — wrong on
+      five of five and wrong in both directions. See `FRAMING_LANDMARKS` in
+      `viewFramingGeometry.ts` for the table. Room below the face is the same
+      fact with no body part in it, and it is what separates his frames:
+
+          asset  a person reading it         room below the face
+          306    in band                     0.07
+          345    in band (tusks, a cowl)     0.18
+          314    neck and a collar           0.20
+          322    neck and both shoulders     0.48   <- #1611
+          326    neck and a shoulder strap   0.52
+          371    neck and both shoulders     0.56   <- #1611
+
+      0.3 sits in the middle of an empty band between 0.20 and 0.48 — a factor
+      of 2.4 with nothing in it — rather than being fitted to a boundary case.
+      ⚠ It is still a number chosen from six frames on one shift's reading, and
+      **his eye closes it** (law 9): 314 and 326 are the two it separates, and
+      they are the two a person could argue about.
+
+      The headroom test reads the whole silhouette rather than the hair: a
+      headwrap, a horn, a branch or a bald crown all decide "is there clear
+      space above this person" and only one of them is a hairline. Pika's
+      dreadlocks and Kai's cowl are both in the record.
+
+      Left and right are deliberately unconstrained — his ruling lets hair run
+      off both edges, and a rule he did not state is not added here.
+    */
+    band: {
+      rules: [
+        { must: "clearOf", landmark: "face", edge: "bottom" },
+        { must: "roomBelowAtMost", landmark: "face", inItsOwnHeights: 0.3 },
+        { must: "cutBy", landmark: "subject", edge: "top" },
+      ],
+    },
     directive:
       "BEAUTY CLOSE-UP OF THE FACE, STRAIGHT ON. The face fills the frame. Crop the TOP of "
       + "the frame across the forehead — anywhere between the eyebrows and the hairline — so "
@@ -806,6 +891,23 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
         + "visible, the whole hair silhouette inside the frame with headroom above it. "
         + FACE_FROM_REFERENCE,
       wardrobe: WARDROBE,
+    },
+    /*
+      *"the whole hair silhouette inside the frame with headroom above it"* is
+      the close-up's headroom test with its sign flipped, and it is read off the
+      same silhouette for the same reason.
+
+      *"every eye the reference shows visible"* is NOT here and must not be: it
+      is a count of a feature, which is the sentence #1582 was refused by, and a
+      count belongs with the reference's own face scan if it belongs anywhere.
+      It stays with the reader, named below.
+    */
+    band: {
+      rules: [{ must: "clearOf", landmark: "subject", edge: "top" }],
+      readerRemainder:
+        "whether every eye the reference shows is visible, and whether the subject is square "
+        + "to the camera — a feature count and an orientation, neither of which this file's "
+        + "landmarks can answer without the reference's own face scan.",
     },
     directive:
       "FRONT-FACING HEAD AND SHOULDERS PORTRAIT. Square to camera, head straight with no tilt, "
@@ -864,6 +966,32 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
         + FACE_FROM_REFERENCE,
       wardrobe: WARDROBE,
     },
+    /*
+      ⚠ **NO MEASURABLE RULE, AND THE REASON IS WORTH MORE THAN THE RULE WOULD
+      HAVE BEEN.** The obvious one to write here is the headroom its two
+      neighbours have — *"the entire hair silhouette stays inside the frame"* —
+      and that sentence is in this view's DIRECTIVE, not in its spec. The
+      directive is what the generator was asked for; the spec is the standard a
+      delivered picture is held to, and a measurement that quietly promoted a
+      generator instruction into a standard would be refusing pictures for a
+      rule nobody wrote down. The band restates the SPEC or it restates nothing.
+
+      What the spec does state is a TURN and an eye count, and both stay with
+      the reader below. The turn is geometry in principle — where the nose sits
+      against the face's own width answers *"which way is this head turned"*
+      without estimating a degree — but it needs a landmark model rather than a
+      silhouette, and #1414 is a warning about answering a direction question
+      cheaply.
+    */
+    band: {
+      rules: [],
+      readerRemainder:
+        "the whole of it: which way the head is turned, that it is neither square to the camera "
+        + "nor a full profile, and that every eye the reference shows is still visible. A "
+        + "direction needs a landmark read and an eye count needs the reference's own face scan "
+        + "(#1582); neither is a silhouette question. The mirror-image failure #1492 measured "
+        + "stays with the reader with them.",
+    },
     directive:
       "RIGHT-FACING THREE-QUARTER PORTRAIT. Head and shoulders only. The subject's nose points "
       + "diagonally toward the RIGHT EDGE OF THE OUTPUT FRAME at a 45-degree turn; the eyes this "
@@ -881,6 +1009,23 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
         "the whole body from the top of the hair to the feet, standing square to the camera, "
         + "arms relaxed at the sides, nothing cropped at the top or bottom of the frame",
       wardrobe: WARDROBE,
+    },
+    /*
+      *"nothing cropped at the top or bottom of the frame"* — the whole
+      silhouette clear of both ends, which is the plainest geometry in the table
+      and the one the reader was worst at: `backFull` is the most-refused view
+      on production, 3 of 13, and none of the four cards this measurement came
+      from had looked at it.
+
+      *"standing square to the camera, arms relaxed at the sides"* is a pose
+      rather than a crop; it stays with the reader, named below.
+    */
+    band: {
+      rules: [
+        { must: "clearOf", landmark: "subject", edge: "top" },
+        { must: "clearOf", landmark: "subject", edge: "bottom" },
+      ],
+      readerRemainder: "the pose — square to the camera, arms relaxed at the sides.",
     },
     directive:
       "FULL BODY FRONT VIEW. The subject stands square to camera, head to feet entirely inside the "
@@ -1013,6 +1158,27 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
         + "rather than reading as the edge of the face, that is a three-quarter turn and it FAILS.",
       wardrobe: WARDROBE,
     },
+    /*
+      ⚠ **THE ONE VIEW WITH NO MEASURABLE RULE AT ALL, and that is the honest
+      answer rather than a gap.** Every word of this spec is about CONCEALMENT —
+      one eye showing, the far eye hidden behind the nose and the brow — which is
+      a question about what is NOT in the picture, and a silhouette cannot answer
+      it. Its `concealmentTest` flag above already says why this view is unlike
+      its neighbours.
+
+      An empty rule list folds to `inBand`, which is correct: nothing was asked
+      here, so nothing here failed, and the remainder below is what a reader is
+      still answering. A band that invented a rule to avoid being empty would be
+      the tidy answer #1582's court already refused twice.
+    */
+    band: {
+      rules: [],
+      readerRemainder:
+        "the whole of it: a true side profile is judged by what is CONCEALED — one eye showing, "
+        + "the far eye hidden behind the nose and the brow — and concealment is not a silhouette "
+        + "question. A rule here would also have to be stated in the reference's own eye count "
+        + "(#1582), which lives with the face scan and not with these landmarks.",
+    },
     directive:
       "STRICT RIGHT-FACING SIDE PROFILE PORTRAIT. Head and shoulders only. The subject's nose points "
       + "toward the RIGHT EDGE OF THE OUTPUT FRAME; show one eye and a true 90-degree profile, never a "
@@ -1045,6 +1211,21 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
         + "the walk genuinely in motion rather than a standing pose",
       wardrobe: WARDROBE,
     },
+    /*
+      Retired from the profile and given its band anyway, on the same
+      sibling-consistency ground its `belowWaist` and `rotated` comments state:
+      a historical entry that behaves differently from its live siblings is the
+      trap the day somebody un-retires it. *"head to feet inside the frame"* is
+      the same two rules as the two full-lengths; the STRIDE is a pose and stays
+      with the reader.
+    */
+    band: {
+      rules: [
+        { must: "clearOf", landmark: "subject", edge: "top" },
+        { must: "clearOf", landmark: "subject", edge: "bottom" },
+      ],
+      readerRemainder: "that the walk is genuinely in motion rather than a standing pose.",
+    },
     directive:
       "STRICT RIGHT-FACING FULL BODY SIDE PROFILE, WALKING. The subject's nose and toes point toward "
       + "the RIGHT EDGE OF THE OUTPUT FRAME; the torso stays in true profile and the stride is mid-walk. "
@@ -1068,6 +1249,27 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
       framing:
         "the whole body seen from directly behind, head to feet inside the frame, face not visible",
       wardrobe: WARDROBE,
+    },
+    /*
+      *"head to feet inside the frame"*, measured — this is the most-refused
+      view on production (3 of 13, all time) and the plainest geometry in the
+      table.
+
+      *"face not visible"* is a concealment test like `sideClose`'s and is left
+      with the reader for the same reason. It is deliberately NOT written as
+      `{ must: "absent", landmark: "face" }`: a segmenter asked where a face is
+      on a picture of somebody's back is being asked the open question D-213 was
+      written about, and an empty answer from it would be indistinguishable from
+      a failed one.
+    */
+    band: {
+      rules: [
+        { must: "clearOf", landmark: "subject", edge: "top" },
+        { must: "clearOf", landmark: "subject", edge: "bottom" },
+      ],
+      readerRemainder:
+        "that the face is not visible — a concealment test, and one a segmenter asked "
+        + "\"where is the face\" on a picture of a back cannot answer honestly.",
     },
     directive:
       "FULL BODY FROM BEHIND, walking away from camera. Head to feet entirely inside the frame. "
