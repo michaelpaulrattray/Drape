@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 69
+      "moduleCount": 70
     },
     {
       "id": "domain:staff",
@@ -6225,6 +6225,12 @@
     {
       "id": "module:shared/spokenError.ts",
       "path": "shared/spokenError.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/vendorModelStatus.ts",
+      "path": "shared/vendorModelStatus.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -14008,6 +14014,10 @@
     {
       "id": "test:server/uptimeAnchor.test.ts",
       "path": "server/uptimeAnchor.test.ts"
+    },
+    {
+      "id": "test:server/vendorModelStatus.test.ts",
+      "path": "server/vendorModelStatus.test.ts"
     },
     {
       "id": "test:server/viewThumbnailWiring.test.ts",
