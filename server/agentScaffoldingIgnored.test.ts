@@ -1,13 +1,13 @@
-import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+import { runHook } from "./testing/hookDriver";
 
 /* This suite asks git itself two questions (`ls-files`, `check-ignore`), so it
    declares the shared floor rather than racing vitest's 5 s default under a
    parallel run — `server/testing/childProcessSuites.ts` derives its population
-   from calls like the ones below, so this file is in it. */
+   from the driver below, one hop, so this file is in it. */
 vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 /**
@@ -44,27 +44,28 @@ vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 const REPO_ROOT = join(__dirname, "..");
 const PROGRAM = ".agents/foreman/PROGRAM.md";
 
+/**
+ * ⚠ **THROUGH `runHook`, NOT A HAND-ROLLED `execFileSync` — AND THE GUARD THAT
+ * SAYS SO CAUGHT THIS FILE'S FIRST CUT** (`server/testing/hookDriver.test.ts`,
+ * on the full suite, exactly as it is built to). The first shape wrapped
+ * `execFileSync` in a `try` and mapped the throw to a status, which is the class
+ * that guard exists for: a catch cannot tell *git said "not ignored"* (exit 1, an
+ * ANSWER) from *git is not on this PATH* (no process at all), and it would have
+ * reported the second as the first. `runHook` keeps them apart at Node's own
+ * contract — a status is returned only when a process ran to completion, and
+ * anything else THROWS — so a machine without git reddens this suite instead of
+ * quietly telling it the scaffolding is safely ignored.
+ */
 function git(args: string[]): { status: number; stdout: string } {
-  try {
-    const stdout = execFileSync("git", args, {
-      cwd: REPO_ROOT,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"],
-      maxBuffer: 64 * 1024 * 1024,
-    });
-    return { status: 0, stdout };
-  } catch (failure) {
-    /* `check-ignore` exits 1 for "not ignored", which is an ANSWER and not an
-       error — so the exit code is data here, never a throw to swallow. */
-    const error = failure as { status?: number; stdout?: string };
-    return { status: typeof error.status === "number" ? error.status : -1, stdout: error.stdout ?? "" };
-  }
+  return runHook("git", args, { cwd: REPO_ROOT });
 }
 
 /** `true` when git would ignore this path — the fact, not the pattern. */
 function isIgnored(path: string): boolean {
+  /* Exit 1 is *not ignored*, which is an answer; anything past 1 is git failing
+     to understand the question and must never read as either verdict. */
   const { status } = git(["check-ignore", "-q", "--no-index", path]);
-  if (status !== 0 && status !== 1) throw new Error(`git check-ignore could not answer for ${path}`);
+  if (status !== 0 && status !== 1) throw new Error(`git check-ignore answered ${status} for ${path}`);
   return status === 0;
 }
 
