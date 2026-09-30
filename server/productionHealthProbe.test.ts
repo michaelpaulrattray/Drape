@@ -168,7 +168,7 @@ describe("the readings themselves", () => {
     expect(verdict.readings.map((entry) => entry.uptime)).toEqual([111.5, 222.5, 333.5]);
   });
 
-  it("keeps the four fields the receipt prints, off the body rather than invented", async () => {
+  it("keeps the fields the receipt prints, off the body rather than invented", async () => {
     const probe = scripted([healthy(), healthy(), healthy()]);
     const verdict = await probeProductionHealth(probe.io);
 
@@ -177,6 +177,56 @@ describe("the readings themselves", () => {
       db: 12,
       uptime: 42.5,
       timestamp: "2026-09-26T00:00:00.000Z",
+      /* This fixture's body carries no `build`, which is the shape every arm in
+         this file had before #1643 — so absent must stay absent here, and the
+         arms below drive the field itself. */
+      build: null,
+    });
+  });
+
+  /**
+   * ⚠ `build` WAS BEING DROPPED, AND IT IS THE ONE FIELD THAT SAYS WHICH BUILD
+   * ANSWERED (#1643). `server/health.ts` has returned it since the
+   * deploy-on-merge flip so that an old process cannot pass as a new one
+   * silently, and this reader kept four fields and threw it away.
+   */
+  describe("the deployed build, off the same reading (#1643)", () => {
+    const withBuild = (build: unknown): HealthAnswer => ({
+      kind: "answered",
+      status: 200,
+      ok: true,
+      body: {
+        status: "healthy",
+        uptime: 7,
+        timestamp: "2026-10-01T00:00:00.000Z",
+        checks: { database: { latencyMs: 9 } },
+        build,
+      },
+    });
+
+    it("keeps the sha the serving process reported", async () => {
+      const probe = scripted([withBuild("4942f8b465"), withBuild("4942f8b465"), withBuild("4942f8b465")]);
+      const verdict = await probeProductionHealth(probe.io);
+
+      expect(verdict.readings.map((entry) => entry.build)).toEqual(["4942f8b465", "4942f8b465", "4942f8b465"]);
+    });
+
+    it("⚠ reports a MISSING build as null, never as the string \"null\"", async () => {
+      /* `String(payload.build)` — the shape of the four fields beside it — turns
+         an absent field into four characters that read as a sha to everything
+         downstream, and the probe's marker would then carry it into the feed. */
+      for (const absent of [null, undefined, "", "   "]) {
+        const probe = scripted([withBuild(absent), withBuild(absent), withBuild(absent)]);
+        const verdict = await probeProductionHealth(probe.io);
+        expect(verdict.readings[0]!.build).toBeNull();
+      }
+    });
+
+    it("refuses a non-string build rather than coercing it", async () => {
+      const probe = scripted([withBuild(42), withBuild(42), withBuild(42)]);
+      const verdict = await probeProductionHealth(probe.io);
+
+      expect(verdict.readings[0]!.build).toBeNull();
     });
   });
 

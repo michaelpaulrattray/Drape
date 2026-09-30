@@ -58,6 +58,19 @@ export type HealthReading = {
   readonly db: number;
   readonly uptime: number;
   readonly timestamp: string;
+  /**
+   * `/api/health`'s own `build` — the commit the process now taking traffic was
+   * built from, or `null` when the payload did not carry one.
+   *
+   * ⚠ **IT WAS BEING THROWN AWAY, AND IT IS THE ONE FIELD THAT CAN SAY WHICH
+   * BUILD ANSWERED** (#1643). `server/health.ts` has returned it since the
+   * deploy-on-merge flip (#508) precisely so that an old process cannot pass as
+   * a new one silently, and this reader dropped it on the floor — so the rite,
+   * the one caller, could confirm 200s without ever holding the sha behind them.
+   * The tracker probe needs it to name the build it is probing; anything else
+   * wanting to compare *answered* against *pushed* now has it too.
+   */
+  readonly build: string | null;
 };
 
 /**
@@ -110,6 +123,10 @@ function readingOf(body: unknown): HealthReading {
     db: Number(payload.checks?.database?.latencyMs ?? NaN),
     uptime: Number(payload.uptime ?? NaN),
     timestamp: String(payload.timestamp ?? ""),
+    /* `String(payload.build)` would turn a missing field into the four
+       characters `null`, and a sha-shaped hole reads as a sha to everything
+       downstream. Absent stays absent. */
+    build: typeof payload.build === "string" && payload.build.trim() !== "" ? payload.build.trim() : null,
   };
 }
 

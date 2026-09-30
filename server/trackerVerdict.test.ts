@@ -219,6 +219,56 @@ describe("⚠ which build the probe probed, and how it knows (#1542)", () => {
     const build = readProbeBuild({}, () => undefined);
     expect(probeMarker(build.sha, "run-one")).toBe("probe:unknown:run-one");
   });
+
+  /**
+   * ⚠ THE THIRD ROAD (#1643) — the only one that can name the SERVING build from
+   * outside it. The deploy rite has just read `/api/health` three times, so it
+   * holds the sha of the process now taking traffic; neither road above can see
+   * production at all.
+   */
+  describe("the rite's road: /api/health's own build (#1643)", () => {
+    const SERVING = "4942f8b465f9067e8ef25f06a55bbd54cb0ed0f2";
+
+    it("takes the health sha when the caller hands one over", () => {
+      const build = readProbeBuild({}, () => HEAD, SERVING);
+      expect(build).toMatchObject({ sha: SERVING, source: "health" });
+      expect(build.note).toContain("/api/health");
+      expect(build.note).toContain("SERVING");
+    });
+
+    it("⚠ OUTRANKS both older roads, and does not ask git at all", () => {
+      /* A deployed container that is ALSO handed health's answer: the two agree on
+         a normal night, and when they do not, the one that read the running
+         process wins. `never` throwing is the assertion. */
+      const build = readProbeBuild({ RAILWAY_GIT_COMMIT_SHA: DEPLOYED }, never, SERVING);
+      expect(build.sha).toBe(SERVING);
+      expect(build.source).toBe("health");
+    });
+
+    it("⚠ SAYS the event was not emitted by that build, so the sha cannot be over-read", () => {
+      /* The probe's event is sent by the script's process on the service's DSN.
+         The sha names the PIPE under test, not the emitter, and a note that let
+         that be misread would invite exactly the confident-wrong reading the two
+         older notes exist to prevent. */
+      const build = readProbeBuild({}, () => HEAD, SERVING);
+      expect(build.note).toContain("sent by this process");
+      expect(build.note).toContain("not the emitter");
+    });
+
+    it("treats absent, empty and blank as NOT PASSED — falls back rather than reporting a hole", () => {
+      /* `/api/health` returns `build: null` when the service names no commit, and
+         the reader turns that into `null`, so `--health-build` is simply not
+         passed. Were a blank to win here, the marker would read `probe::nonce`. */
+      for (const nothing of [undefined, "", "   "]) {
+        expect(readProbeBuild({}, () => HEAD, nothing).source).toBe("checkout");
+      }
+      expect(readProbeBuild({}, () => undefined, "").source).toBe("unknown");
+    });
+
+    it("trims it, exactly as it trims the other two", () => {
+      expect(readProbeBuild({}, never, ` ${SERVING}\n`).sha).toBe(SERVING);
+    });
+  });
 });
 
 describe("the probe's event against the REAL scrub (#1542's own done-when)", () => {
