@@ -198,6 +198,13 @@ export function parseRules(files: readonly string[]): Rule[] {
   const rules: Rule[] = [];
   for (const file of files) {
     if (!file.endsWith(".css")) continue;
+    /* ⚠ CSS, SO IT KEEPS ITS OWN STRIPPER (#1636). The shared quote-aware reader
+       is a JS/TS reader: `//` is not a comment in CSS, so an unquoted
+       `url(https://fonts.example/x.css)` would be truncated at the scheme and the
+       rest of that declaration would leave this guard's sight. Block comments are
+       all CSS has, and all that is stripped. Measured over the twelve client
+       stylesheets: the two readers return identical non-whitespace content today,
+       so this is a rule about what may change rather than a live difference. */
     const css = fs.readFileSync(file, "utf8").replace(/\/\*[\s\S]*?\*\//g, " ");
     for (const match of css.matchAll(/([^{}@;]+)\{([^{}]*)\}/g)) {
       const selectorList = match[1].trim();

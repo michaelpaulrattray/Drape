@@ -48,6 +48,13 @@ import { describe, expect, it } from "vitest";
 
 const HERE = path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"));
 const read = (relative: string) => fs.readFileSync(path.join(HERE, relative), "utf8");
+/* ⚠ CSS, SO IT KEEPS ITS OWN STRIPPER (#1636). The shared quote-aware reader
+   is a JS/TS reader: `//` is not a comment in CSS, so an unquoted
+   `url(https://fonts.example/x.css)` would be truncated at the scheme and the
+   rest of that declaration would leave this guard's sight. Block comments are
+   all CSS has, and all that is stripped. Measured over the twelve client
+   stylesheets: the two readers return identical non-whitespace content today,
+   so this is a rule about what may change rather than a live difference. */
 const stripComments = (css: string) => css.replace(/\/\*[\s\S]*?\*\//g, "");
 
 const FOUNDATION = stripComments(read("foundation.css"));

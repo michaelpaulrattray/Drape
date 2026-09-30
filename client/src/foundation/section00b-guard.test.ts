@@ -2,6 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { withoutComments } from "../../../server/testing/withoutComments";
+
 import { showsMenuCount } from "./menuCount";
 
 /**
@@ -58,9 +60,24 @@ function block(css: string, selector: string): string {
   and line comments is what keeps a docblock that SAYS "fontWeight: 600 is gone"
   from failing the arm that checks 600 is gone — which it did, first run.
 */
-function code(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
-}
+/**
+ * Comments describe the rules; only the code has to obey them.
+ *
+ * ⚠ **THE SHARED READER, AND THE REASON THIS FILE MAY USE IT (#1636).** The
+ * private pair it replaces — a block regex and an anchored line regex — knows
+ * nothing about STRING LITERALS: a `/*` inside a quoted string opens a comment
+ * it never opened and everything to the next one is deleted from what this
+ * guard then reads. Measured across the tree, that shape read 52 of 1,948
+ * files short — 40,300 characters of real code unseen. **A guard that reads
+ * less passes for the wrong reason.**
+ *
+ * The swap is in scope here because **every input this reader is handed is
+ * JS/TS**, read at each call site rather than assumed. A stylesheet must NOT
+ * come through here: `//` is not a comment in CSS, so an unquoted
+ * `url(https://…)` would be truncated at the scheme — the same silence
+ * pointed the other way.
+ */
+const code = withoutComments;
 
 const WEIGHT_600 = /font-?[wW]eight:\s*600|font-weight:\s*600|font-semibold|font:\s*600\s/;
 

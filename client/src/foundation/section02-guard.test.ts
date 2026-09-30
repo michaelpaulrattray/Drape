@@ -2,6 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { withoutComments } from "../../../server/testing/withoutComments";
+
 import { RAIL_DESTINATIONS } from "./Rail";
 
 /**
@@ -63,10 +65,28 @@ const CHROME = read("components/AppChrome.tsx");
   and line comments is what keeps a docblock that QUOTES a violation from
   failing the arm that checks the violation is gone — which has happened in this
   family of guards before (00b, first run).
+
+  ⚠ THIS FILE IS A MIXED SITE AND THE READER IS CHOSEN BY LANGUAGE (#1636). Six
+  arms below hand `code` the CONTENTS OF `foundation.css`, and the rest hand it
+  `.tsx`. A JS reader is wrong for the first group: `//` is not a comment in
+  CSS, so an unquoted `url(https://…)` would be truncated at the scheme and the
+  rest of that declaration would leave the guard's sight. So `code` is the
+  shared quote-aware reader for TS — which closes the string-literal blindness
+  the private block regex had, measured at 52 of 1,948 files read short across
+  the tree — and `cssCode` strips only what CSS actually has, which is block
+  comments.
+
+  Both are asserted in a control below, so the wrong one cannot be restored
+  quietly: a swap that pointed all of this at one reader would have read the
+  stylesheet short with nothing going red.
 */
-function code(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
-}
+const code = withoutComments;
+
+/** A real newline, written this way so no escape appears inside a fixture. */
+const NL = String.fromCharCode(10);
+
+/** CSS has block comments and nothing else — see the note above. */
+const cssCode = (source: string) => source.replace(/\/\*[\s\S]*?\*\//g, "");
 
 describe("the search names a place and can never take a keystroke", () => {
   /**
@@ -512,7 +532,7 @@ describe("the member stack is the CURRENT prototype's, and its fill is his rulin
   const faceRule = /\.dp-memberstack__face\s*\{[^}]*\}/;
 
   it("the faces overlap by the current pack's -6px", () => {
-    const rule = code(FOUNDATION_CSS).match(faceRule)?.[0] ?? "";
+    const rule = cssCode(FOUNDATION_CSS).match(faceRule)?.[0] ?? "";
     expect(rule, "the matcher must find the rule at all").toMatch(/margin-right/);
     expect(rule).toMatch(/margin-right:\s*-6px/);
     expect(rule).not.toMatch(/margin-right:\s*-7px/);
@@ -520,7 +540,7 @@ describe("the member stack is the CURRENT prototype's, and its fill is his rulin
   });
 
   it("a face is flat; the gradient stays on the account avatar", () => {
-    const rule = code(FOUNDATION_CSS).match(faceRule)?.[0] ?? "";
+    const rule = cssCode(FOUNDATION_CSS).match(faceRule)?.[0] ?? "";
     expect(rule, "the matcher must find the rule at all").toMatch(/background/);
     expect(rule).not.toMatch(/linear-gradient/);
     expect(
@@ -531,7 +551,7 @@ describe("the member stack is the CURRENT prototype's, and its fill is his rulin
     /* The other half of his sentence: the avatar KEEPS it. An arm that only
        banned the gradient would pass just as well with it deleted everywhere,
        which is not what he ruled. */
-    const account = code(FOUNDATION_CSS).match(/\.dp-account\s*\{[^}]*\}/)?.[0] ?? "";
+    const account = cssCode(FOUNDATION_CSS).match(/\.dp-account\s*\{[^}]*\}/)?.[0] ?? "";
     expect(account, "the matcher must find .dp-account").toMatch(/border-radius/);
     expect(account).toMatch(/linear-gradient\(160deg/);
   });
@@ -548,7 +568,7 @@ describe("the member stack is the CURRENT prototype's, and its fill is his rulin
    * clothes.
    */
   it("the + hovers inside the door and nowhere else", () => {
-    const css = code(FOUNDATION_CSS);
+    const css = cssCode(FOUNDATION_CSS);
     /* No unscoped rule — the tripwire's original subject, still guarded. */
     expect(css).not.toMatch(/(?<!button\.dp-invite:hover )\.dp-memberstack__add:hover/);
     expect(css).toMatch(/button\.dp-invite:hover \.dp-memberstack__add/);
@@ -576,7 +596,7 @@ describe("the member stack is the CURRENT prototype's, and its fill is his rulin
    * style it.
    */
   it("the Invite block states its own font, because a button does not inherit one", () => {
-    const invite = code(FOUNDATION_CSS).match(/\.dp-invite \{[^}]*\}/)?.[0] ?? "";
+    const invite = cssCode(FOUNDATION_CSS).match(/\.dp-invite \{[^}]*\}/)?.[0] ?? "";
     expect(invite, "the matcher must find .dp-invite").toContain("display: flex");
     expect(invite).toMatch(/font-family: var\(--font-sans\)/);
     expect(invite, "weight too — a button does not inherit that either").toMatch(/font-weight: 400/);
@@ -615,7 +635,7 @@ describe("the member stack is the CURRENT prototype's, and its fill is his rulin
    and `token-guard.test.ts` rejects one in code, which it did on the first
    run of this file. */
 describe("the rail label is 9.5px wherever it is used", () => {
-  const CSS = code(FOUNDATION_CSS);
+  const CSS = cssCode(FOUNDATION_CSS);
 
   it("the class declares 9.5px itself rather than borrowing a parent's", () => {
     expect(CSS).toMatch(/^\.dp-rail__label\s*\{[^}]*9\.5px/m);
@@ -705,5 +725,42 @@ describe("the rail label is 9.5px wherever it is used", () => {
       /(^|[\s;{])font\s*:/.test(".dp-invite { font: 400 9.5px var(--font-sans); }"),
       "positive control — the shorthand carries a size and must fail too",
     ).toBe(true);
+  });
+});
+
+/* Card 1636. The number stays in this comment rather than the title below:
+   token-guard reads a code string and `#1636` is a valid four-digit hex, so a
+   card reference in a describe title reads as a hardcoded colour. Its own
+   refusal message says to move it here, and it caught this on the slice. */
+describe("the two readers, and which language each is for", () => {
+  /*
+    The control the header promises. A swap that pointed every call at one
+    reader would have read the stylesheet short with nothing going red, so both
+    readings are pinned here and the wrong one cannot be restored quietly.
+  */
+  it("the CSS reader keeps a URL; the JS reader is why the choice exists", () => {
+    const stylesheet = ".dp-a { background: url(https://cdn.example/x.png); color: red; }";
+    expect(cssCode(stylesheet), "CSS has no line comment — this must survive whole").toContain(
+      "color: red",
+    );
+    expect(code(stylesheet), "a JS reader eats from the scheme — the reason for cssCode").not.toContain(
+      "color: red",
+    );
+  });
+
+  it("the CSS reader still strips a block comment, and the JS reader still strips both", () => {
+    expect(cssCode("/* .dp-a { color: red } */ .dp-b { color: blue }")).not.toContain("red");
+    const withLineComment = ["const a = 1; // .dp-ghost", 'const b = "keep";'].join(NL);
+    expect(code(withLineComment)).not.toContain(".dp-ghost");
+    expect(code(withLineComment)).toContain("keep");
+  });
+
+  it("the JS reader is quote-aware, which the private regex it replaced was not", () => {
+    /* The string-literal blindness #1636 is about: a block-comment sequence
+       inside a quoted string opened a comment it never opened. */
+    const source = 'const doc = "see /* here */ for why"; const shape = { guarded: true };';
+    expect(code(source), "everything after a quoted sequence must still be read").toContain(
+      "guarded: true",
+    );
   });
 });
