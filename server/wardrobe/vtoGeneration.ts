@@ -25,6 +25,7 @@ import {
 } from "./utils";
 import { createModuleLogger } from "../logging/logger";
 import type { TattooMap } from "./tattooAnalysis";
+import { assertWardrobeTryOnOpen } from "./tryOnDoor";
 
 
 const log = createModuleLogger("wardrobe/vtoGeneration");
@@ -172,6 +173,14 @@ export interface VTOResult {
 export async function generateVirtualTryOn(
   params: VTOParams,
 ): Promise<VTOResult> {
+  /*
+    ⚠ **THE DOOR, AS A STRUCTURE RATHER THAN A LIST** (#1537, his word
+    *"SWITCH IT OFF"*, 2026-09-30). A try-on renders on `IMAGE_PRO`, shut down 2026-06-25.
+    The router refuses first, so a customer never pays for this; this throw is
+    what makes the refusal true of any FUTURE caller as well, which a gate that
+    lives only at today's entrance is not.
+  */
+  assertWardrobeTryOnOpen();
   return withImageQueue(async () => {
     const ai = getAiClient();
 
@@ -296,6 +305,14 @@ export interface IncrementalParams {
 export async function incrementalComposite(
   params: IncrementalParams,
 ): Promise<VTOResult> {
+  /*
+    ⚠ **THE DOOR, AS A STRUCTURE RATHER THAN A LIST** (#1537, his word
+    *"SWITCH IT OFF"*, 2026-09-30). An incremental composite renders on `IMAGE_PRO`, shut down 2026-06-25.
+    The router refuses first, so a customer never pays for this; this throw is
+    what makes the refusal true of any FUTURE caller as well, which a gate that
+    lives only at today's entrance is not.
+  */
+  assertWardrobeTryOnOpen();
   return withImageQueue(async () => {
     const ai = getAiClient();
 

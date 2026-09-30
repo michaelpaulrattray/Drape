@@ -36,6 +36,7 @@ import { captureSnapshotReadMode } from "../casting/snapshotReadScope";
 import { storagePut } from "../storage";
 import { detectGarmentsInImage } from "../wardrobe/garmentDetection";
 import { digitizeGarment } from "../wardrobe/garmentDigitization";
+import { assertWardrobeTryOnOpen } from "../wardrobe/tryOnDoor";
 import { analyzeGarmentMetadata } from "../wardrobe/garmentAnalysis";
 import { generateVirtualTryOn, incrementalComposite } from "../wardrobe/vtoGeneration";
 import { refineGarment } from "../wardrobe/garmentRefinement";
@@ -122,6 +123,11 @@ const garmentRouter = router({
   upload: protectedProcedure
     .input(wardrobeUploadInput)
     .mutation(async ({ ctx, input }) => {
+      /* THE DOOR (#1537, his word *"SWITCH IT OFF"*, 2026-09-30) — first
+         statement, so the refusal costs the customer nothing: no rate-limit
+         slot, no quota, no generation row, no credit hold. The pipeline
+         functions carry the same throw as the structural backstop. */
+      assertWardrobeTryOnOpen();
       throwIfRateLimited(ctx.user.id);
       await enforceDailyQuota(ctx.user.id);
 
@@ -261,6 +267,11 @@ const vtoRouter = router({
   generate: protectedProcedure
     .input(wardrobeVtoGenerateInput)
     .mutation(async ({ ctx, input }) => {
+      /* THE DOOR (#1537, his word *"SWITCH IT OFF"*, 2026-09-30) — first
+         statement, so the refusal costs the customer nothing: no rate-limit
+         slot, no quota, no generation row, no credit hold. The pipeline
+         functions carry the same throw as the structural backstop. */
+      assertWardrobeTryOnOpen();
       const readMode = captureSnapshotReadMode(ctx.user.id);
       throwIfRateLimited(ctx.user.id);
       await enforceDailyQuota(ctx.user.id);
@@ -351,6 +362,11 @@ const vtoRouter = router({
       sessionId: z.number().optional(),
     }).strict())
     .mutation(async ({ ctx, input }) => {
+      /* THE DOOR (#1537, his word *"SWITCH IT OFF"*, 2026-09-30) — first
+         statement, so the refusal costs the customer nothing: no rate-limit
+         slot, no quota, no generation row, no credit hold. The pipeline
+         functions carry the same throw as the structural backstop. */
+      assertWardrobeTryOnOpen();
       const readMode = captureSnapshotReadMode(ctx.user.id);
       throwIfRateLimited(ctx.user.id);
       await enforceDailyQuota(ctx.user.id);
@@ -436,6 +452,11 @@ const vtoRouter = router({
   refine: protectedProcedure
     .input(wardrobeRefineInput)
     .mutation(async ({ ctx, input }) => {
+      /* THE DOOR (#1537, his word *"SWITCH IT OFF"*, 2026-09-30) — first
+         statement, so the refusal costs the customer nothing: no rate-limit
+         slot, no quota, no generation row, no credit hold. The pipeline
+         functions carry the same throw as the structural backstop. */
+      assertWardrobeTryOnOpen();
       const readMode = captureSnapshotReadMode(ctx.user.id);
       throwIfRateLimited(ctx.user.id);
       await enforceDailyQuota(ctx.user.id);
@@ -605,6 +626,11 @@ const decomposeRouter = router({
   import: protectedProcedure
     .input(wardrobeImportInput)
     .mutation(async ({ ctx, input }) => {
+      /* THE DOOR (#1537, his word *"SWITCH IT OFF"*, 2026-09-30) — first
+         statement, so the refusal costs the customer nothing: no rate-limit
+         slot, no quota, no generation row, no credit hold. The pipeline
+         functions carry the same throw as the structural backstop. */
+      assertWardrobeTryOnOpen();
       throwIfRateLimited(ctx.user.id);
       await enforceDailyQuota(ctx.user.id);
 
@@ -753,6 +779,11 @@ const sessionRouter = router({
       outfitDescription: z.string().optional(),
     }).strict())
     .mutation(async ({ ctx, input }) => {
+      /* THE DOOR (#1537, his word *"SWITCH IT OFF"*, 2026-09-30) — first
+         statement, so the refusal costs the customer nothing: no rate-limit
+         slot, no quota, no generation row, no credit hold. The pipeline
+         functions carry the same throw as the structural backstop. */
+      assertWardrobeTryOnOpen();
       const readMode = captureSnapshotReadMode(ctx.user.id);
       const modelImageUrl = await resolveWardrobeSessionUseImage({
         userId: ctx.user.id,

@@ -33,6 +33,28 @@ vi.mock("../logging/logger", () => ({
   }),
 }));
 
+/*
+  ⚠ **THE TRY-ON DOOR IS HELD OPEN FOR THIS SUITE, ON PURPOSE** (#1537,
+  2026-09-30, his word *"SWITCH IT OFF"*).
+
+  `seedSession` now refuses before it does anything, because it asks a Gemini id
+  Google shut down on 2026-06-25. What this file tests is the road BELOW that
+  refusal — the session's memory, its expiry, its reuse — and that road is
+  CLOSED, not retired: his answer was neither of the card's two options, so it
+  returns on N8 either re-pointed or removed. Keeping these arms alive is what
+  makes the re-open a deletion of the door's calls rather than a repair of a
+  suite nobody ran for a milestone.
+
+  Mocked here rather than made configurable in the door: production must not
+  have a switch for this, and a test double is not a switch. The door's OWN
+  refusal is driven in `server/wardrobeTryOnDoor.test.ts`, including this
+  function by name, so nothing about this mock can hide a door that stopped
+  working.
+*/
+vi.mock("./tryOnDoor", () => ({
+  assertWardrobeTryOnOpen: () => {},
+}));
+
 import {
   seedSession,
   getSession,

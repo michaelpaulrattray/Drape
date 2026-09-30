@@ -14,6 +14,28 @@ vi.mock("./db", async (importOriginal) => {
   };
 });
 
+/*
+  ⚠ **THE TRY-ON DOOR IS HELD OPEN FOR THIS SUITE, ON PURPOSE** (#1537,
+  2026-09-30, his word *"SWITCH IT OFF"*).
+
+  Nine of these arms drive `wardrobe.vto.*` and `wardrobe.sessions.seedChat`,
+  which now refuse at the mouth because their road reaches a Gemini id Google
+  shut down on 2026-06-25. What they prove is the R7 IMAGE-AUTHORITY rule —
+  that a session's own image is what reaches paid work, and that a foreign or
+  missing session is refused **before** credits move. That rule is not what the
+  door closed, and it is exactly what has to still be true when the road
+  re-opens on N8.
+
+  So the door is mocked open here rather than the arms deleted. The door's own
+  refusal, including that it lands before the credit hold on these same
+  procedures, is driven in `server/wardrobeTryOnDoor.test.ts` — so this mock
+  cannot hide a door that stopped working, only a door that is working as
+  designed.
+*/
+vi.mock("./wardrobe/tryOnDoor", () => ({
+  assertWardrobeTryOnOpen: () => {},
+}));
+
 vi.mock("./casting/atomicCredits", () => ({
   withAtomicCredits: vi.fn(async (
     _input: unknown,
