@@ -50,8 +50,11 @@ const CLOSE_SPEC = {
 const START_SPEC = {
   /* `open-prs` feeds the #1083 claim warning a fixture instead of `gh` — the
      warning sits past a live database connection, so a fixture road is the only
-     way to look at its output by hand. */
-  value: ["shift", "seat", "kind", "card", "title", "intent", "note", "branch", "open-prs"],
+     way to look at its output by hand. `card-comments` is its #1580 sibling and
+     feeds the claim-comment refusal the same way, for the same reason. */
+  value: [
+    "shift", "seat", "kind", "card", "title", "intent", "note", "branch", "open-prs", "card-comments",
+  ],
   /* `same-card` overrides the #608 collision refusal — a shift that really is
      meant to share a card passes it, so a dead shift's stale row costs one
      word rather than a night. */
@@ -291,6 +294,14 @@ describe("and it still accepts the lines a shift actually types", () => {
   it("accepts the open-PR fixture path", () => {
     const args = parseStrictArgs(["--card", "#1079", "--open-prs", "C:/tmp/prs.json"], START_SPEC);
     expect(args.value("open-prs")).toBe("C:/tmp/prs.json");
+  });
+
+  /* #1580's sibling road: the claim-COMMENT refusal takes a fixture for the
+     same reason the open-PR warning does. A flag declared and never driven is
+     how `--card` came to be accepted on a heartbeat and silently dropped. */
+  it("accepts the card-comments fixture path", () => {
+    const args = parseStrictArgs(["--card", "#1554", "--card-comments", "C:/tmp/c.json"], START_SPEC);
+    expect(args.value("card-comments")).toBe("C:/tmp/c.json");
   });
 
   it("accepts no arguments at all", () => {
