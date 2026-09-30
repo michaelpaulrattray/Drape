@@ -186,7 +186,7 @@ export function probeMarker(sha: string | undefined, nonce: string): string {
 }
 
 /** Where a probe learned which build it is probing. */
-export type ProbeBuildSource = "deployment" | "checkout" | "unknown";
+export type ProbeBuildSource = "health" | "deployment" | "checkout" | "unknown";
 
 export interface ProbeBuild {
   /** The commit, or `undefined` when neither road could answer. */
@@ -218,6 +218,34 @@ export interface ProbeBuild {
  * repository keeps paying for, so the note says which one it is and the caller
  * cannot print the sha without it.
  *
+ * # ⚠ AND A THIRD ROAD, WHICH IS THE ONLY ONE THAT CAN NAME THE SERVING BUILD
+ * FROM OUTSIDE IT (#1643)
+ *
+ * When the deploy rite fires this probe it has just read `/api/health` three
+ * times, and that response carries `build` — the commit the process now taking
+ * traffic was built from. That is a strictly better answer than either road
+ * above for the question *"which build is this run about?"*, because neither
+ * road can see production at all: `RAILWAY_GIT_COMMIT_SHA` is absent under
+ * `railway run`, and the git HEAD is whatever tree the operator happens to be
+ * standing in.
+ *
+ * ⚠ **IT IS PASSED IN RATHER THAN READ HERE, AND THAT IS THE CONTROL RATHER
+ * THAN A CONVENIENCE.** Only the caller knows whether its run is ABOUT the
+ * deployment. A probe that fetched production's health itself would stamp
+ * production's sha onto a laptop run pointed at a localhost DSN — a confident
+ * attribution that is wrong in the one direction that matters, and worse than
+ * the `checkout` note it would replace. So the rite, which read the artifact
+ * and knows what it is probing, hands the sha over; every other road keeps
+ * saying `checkout` and is right to.
+ *
+ * ⚠ **WHAT THE SHA CLAIMS, EXACTLY.** The probe's event is sent by the process
+ * running the script, never by the deployed one, so `health` does not mean
+ * *"this build emitted the event"*. It means *"the DSN, scrub and transport
+ * this run exercised are the ones that build is configured with"* — the same
+ * service variables — which is the question a dead pipe is asked. Anything
+ * stronger needs an admin-only probe inside the server, which #1542 named and
+ * did not build.
+ *
  * `gitHead` is injected rather than called here: this module is imported by the
  * server and must never spawn a process, and a reader that shells out cannot be
  * driven over its own failure arm.
@@ -231,7 +259,25 @@ export function readProbeBuild(
      ambient types — which is the whole reason that second check exists. */
   env: { readonly RAILWAY_GIT_COMMIT_SHA?: string | undefined },
   gitHead: () => string | undefined,
+  /**
+   * `/api/health`'s own `build`, from a caller that read it this run. Absent on
+   * every road but the rite's — see the block above for why it is not fetched
+   * here.
+   */
+  healthBuild?: string | undefined,
 ): ProbeBuild {
+  const serving = healthBuild?.trim();
+  if (serving) {
+    return {
+      sha: serving,
+      source: "health",
+      note:
+        "/api/health's `build` — the commit production is SERVING, read by the caller this run. The event " +
+        "itself is sent by this process using that service's own DSN, so the sha names the pipe under test, " +
+        "not the emitter.",
+    };
+  }
+
   const deployed = env.RAILWAY_GIT_COMMIT_SHA?.trim();
   if (deployed) {
     return {

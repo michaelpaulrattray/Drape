@@ -48,6 +48,13 @@
  *
  *   npx tsx scripts/probe-error-tracker.mts                 # this process's env
  *   railway.cmd run --service Drape -- npx tsx scripts/probe-error-tracker.mts
+ *   … -- npx tsx scripts/probe-error-tracker.mts --health-build <sha>
+ *
+ * `--health-build` is `/api/health`'s own `build` field, and it is the deploy
+ * rite's road (#1643): the rite has just read it three times, so it can say
+ * which build production is SERVING, which neither the environment nor this
+ * checkout can. Passing anything else under that name is a lie the marker will
+ * carry into the feed — see `readProbeBuild`'s header.
  *
  * Exit 0 only on `arrived`. Any other verdict exits 2 — a finding, in the
  * gate-stall-check sense, so a rite step or `deploy-verify` can read it.
@@ -89,6 +96,18 @@ import {
   readTrackerProbe,
   type VendorLookup,
 } from "../server/monitoring/trackerVerdict";
+import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
+
+/*
+  THE WHOLE VOCABULARY, DECLARED ONCE. Until #1643 this script read no arguments
+  at all, so `--dry-run` — the safest-sounding word an operator can type at a
+  script that WRITES to a vendor — would have been ignored and the event sent
+  anyway. That is `strictArgs.mts`'s own founding incident, one script over.
+*/
+const args = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: ["health-build"],
+  boolean: [],
+});
 
 /**
  * How long to keep asking Sentry before calling an event absent.
@@ -201,7 +220,7 @@ const gitHead = (): string | undefined => {
 };
 
 const nonce = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-const build = readProbeBuild(process.env, gitHead);
+const build = readProbeBuild(process.env, gitHead, args.value("health-build") ?? undefined);
 const marker = probeMarker(build.sha, nonce);
 
 console.log("— error tracker probe (#1542) —");
