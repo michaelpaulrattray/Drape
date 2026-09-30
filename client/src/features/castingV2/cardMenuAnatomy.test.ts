@@ -1,5 +1,6 @@
 import { readdir, readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
+import { withoutComments } from "../../../../server/testing/withoutComments";
 
 /**
  * ONE overflow menu, one behaviour, everywhere.
@@ -150,7 +151,7 @@ describe("what the menu may offer", () => {
     const menu = await readFile(MENU, "utf8");
     // Comments stripped: the prose explaining this rule necessarily contains
     // the word it forbids.
-    const code = menu.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*/g, "");
+    const code = withoutComments(menu);
     expect(code).not.toContain("disabled");
 
     const lobby = await readFile(LOBBY, "utf8");

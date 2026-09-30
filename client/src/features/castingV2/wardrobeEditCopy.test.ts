@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
+import { withoutComments } from "../../../../server/testing/withoutComments";
 
 /**
  * THE ASK BOX SAYS ONE THING ABOUT CLOTHES AGAIN — and the cell that went was
@@ -46,7 +47,7 @@ const ROUTE = new URL("../../../../server/routes/castingV2.ts", import.meta.url)
 
 /** The prose carries both sentences by design; only the CODE is the subject. */
 function withoutProse(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+  return withoutComments(source);
 }
 
 describe("the ask box says what it can do, and it is one sentence", () => {

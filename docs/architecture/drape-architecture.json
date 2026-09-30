@@ -12798,6 +12798,10 @@
       "path": "server/closingKeyword.test.ts"
     },
     {
+      "id": "test:server/commentStripperShape.test.ts",
+      "path": "server/commentStripperShape.test.ts"
+    },
+    {
       "id": "test:server/commitMsgHook.test.ts",
       "path": "server/commitMsgHook.test.ts"
     },
