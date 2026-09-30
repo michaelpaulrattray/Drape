@@ -168,7 +168,7 @@ const page = await browser.newPage();
 await page.setCookie({ name: "app_session_id", value: token, domain: "localhost", path: "/" });
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
+await page.goto(`${BASE}/app/canvas/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
 await page.waitForSelector('button[aria-label="Select"]', { timeout: 90000 });
 await sleep(500);
 
@@ -179,7 +179,7 @@ await sleep(500);
 // the overlay.
 {
   await conn.execute(`UPDATE users SET canvasIntroSeen = 0 WHERE id = ?`, [userId]);
-  await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
+  await page.goto(`${BASE}/app/canvas/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
   await page.waitForSelector('button[aria-label="Select"]', { timeout: 90000 });
   await sleep(800);
   const introUp = await page.evaluate(() => ({
@@ -204,7 +204,7 @@ await sleep(500);
       flagSet = Boolean((rows as Array<{ s: number }>)[0]?.s);
     }
     check("FR3 dismissal persists on the profile (never returns)", flagSet);
-    await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
+    await page.goto(`${BASE}/app/canvas/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
     await page.waitForSelector('button[aria-label="Select"]', { timeout: 90000 });
     await sleep(800);
     const after = await page.evaluate(() => ({
@@ -600,7 +600,7 @@ const closeTakeoverCleanly = async () => {
     // Leg (ii) holds by construction: the mode flag and the session stores
     // reset together in the takeover cleanup (see CastingTakeover).
 
-    await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
+    await page.goto(`${BASE}/app/canvas/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
     await page.waitForSelector('button[aria-label="Select"]', { timeout: 90000 });
     await sleep(800);
   }
@@ -1172,7 +1172,7 @@ let seededItemId = 0;
   );
   seededItemId = (iRes as { insertId: number }).insertId;
   await conn.execute(`UPDATE boards SET viewportX = NULL, viewportY = NULL, viewportZoom = NULL WHERE id = ?`, [boardId]);
-  await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
+  await page.goto(`${BASE}/app/canvas/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
   await page.waitForSelector('button[aria-label="Select"]', { timeout: 90000 });
 
   const sheetNodeSel = `.react-flow__node[data-id="item-${seededItemId}"]`;
@@ -1557,7 +1557,7 @@ let seededItemId = 0;
 
     // The raw pin bypassed the client cache (packageState staleTime) — a
     // reload is the honest way to assert the UI reads the server truth
-    await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
+    await page.goto(`${BASE}/app/canvas/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
     await page.waitForSelector('button[aria-label="Select"]', { timeout: 90000 });
     await settleSheet();
     const tiles = await tileInfo();
@@ -1836,7 +1836,7 @@ let seededItemId = 0;
   // moveNodes error → refetch → the ghost vanishes mid-leg and the
   // before/after comparison lies (first Z run, item ghosted by X cleanup)
   await conn.execute(`UPDATE boards SET viewportX = NULL, viewportY = NULL, viewportZoom = NULL WHERE id = ?`, [boardId]);
-  await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
+  await page.goto(`${BASE}/app/canvas/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
   await page.waitForSelector('button[aria-label="Select"]', { timeout: 90000 });
   await sleep(1000);
   await page.keyboard.press("Escape");
@@ -2009,7 +2009,7 @@ let seededItemId = 0;
   check("SD1 draft fill lands with draft stamping", !!sdItem && sdItem.draft === true, JSON.stringify(sdItem));
 
   if (sdItem) {
-    await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
+    await page.goto(`${BASE}/app/canvas/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
     await page.waitForSelector('button[aria-label="Select"]', { timeout: 90000 });
     await sleep(1500);
     const sdNode = await page.evaluate((id: number) => {
@@ -2086,7 +2086,7 @@ let seededItemId = 0;
     // Center the viewport on the seeded node (flow x=2400 is off the right
     // edge otherwise — SD9's click needs it on-screen; SD8's DOM query didn't)
     await conn.execute(`UPDATE boards SET viewportX = -1600, viewportY = 280, viewportZoom = 100 WHERE id = ?`, [boardId]);
-    await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
+    await page.goto(`${BASE}/app/canvas/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
     await page.waitForSelector('button[aria-label="Select"]', { timeout: 90000 });
     // Poll for the mosaic — it paints once the packageState prefetch lands
     // (a remote-DB roundtrip; a fixed sleep raced it)
@@ -3015,7 +3015,7 @@ if (!paidEnabled("R")) {
     );
     const rItemId = (riRes as { insertId: number }).insertId;
     await conn.execute(`UPDATE boards SET viewportX = NULL, viewportY = NULL, viewportZoom = NULL WHERE id = ?`, [boardId]);
-    await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
+    await page.goto(`${BASE}/app/canvas/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
     await page.waitForSelector('button[aria-label="Select"]', { timeout: 90000 });
     await sleep(1500);
 
@@ -3080,7 +3080,7 @@ if (!paidEnabled("T")) {
 } else if (!seededItemId || !seededModelId) {
   console.log("SKIP  T — no seeded package this run");
 } else {
-  await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
+  await page.goto(`${BASE}/app/canvas/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
   await page.waitForSelector('button[aria-label="Select"]', { timeout: 90000 });
   await sleep(2000);
   const tSel = `.react-flow__node[data-id="item-${seededItemId}"]`;
@@ -3343,7 +3343,7 @@ if (process.env.RUN_GATE_FAIL === "1") {
   );
 
   const loadStartedAt = Date.now();
-  await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
+  await page.goto(`${BASE}/app/canvas/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
   await page.waitForFunction(
     () => document.querySelectorAll(".react-flow__node").length >= 36,
     { timeout: 30000, polling: 100 },

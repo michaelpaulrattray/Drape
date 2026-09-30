@@ -480,6 +480,15 @@ function fallbackIntent(briefText: string): CastingIntent {
   return {
     cohort: "photoreal_human",
     role: briefText.slice(0, FALLBACK_CARRIES_CHARS),
+    /*
+      THE SAME BORROWING AS `promoteStatedRole`, AND THE SAME CONSEQUENCE
+      (#1129, the law-7 sibling): the line above is her brief, not a category
+      she named, so the sheet must not say the studio cast eight people "as"
+      it. The engine keeps it — there is nothing better to give gate B5 on a
+      reply that could not be parsed — and `readBriefFacts` drops it from the
+      sentence she reads.
+    */
+    roleFromBriefText: true,
     characterNotes: null,
     sex: null,
     ageBand: null,

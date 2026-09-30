@@ -537,6 +537,94 @@ const CLOSE_UP_WARDROBE =
   + "a failure wherever it appears — and anything of that kind the reference DOES show is this "
   + "person's own and must be there.";
 
+/**
+ * ⚠ **THE FACE BEING JUDGED IS THE ONE IN THE REFERENCE, NOT A HUMAN ONE —
+ * #1582, and his own reaction is the reason it is a bug rather than a limit**
+ * (2026-09-30, verbatim): *"this is legacy!! why does this kind of stuff still
+ * exist we now all full creative casts"*.
+ *
+ * Four framing specs named human anatomy as the thing to look for — *"BOTH eyes
+ * still visible"*, *"exactly ONE eye is showing"*, *"a margin of skin visible
+ * BELOW the chin"* — and the judge is told an axis it is unsure about FAILS. So
+ * a cast that is not shaped like a person was refused for not having a face it
+ * was never meant to have. His own Jingu has **three eyes** and a bronze
+ * apparatus where a chin would be; her refusals said so in their own words
+ * (*"the third eye is barely visible"*, *"Crop is too tight, cutting off the
+ * chin and mouth apparatus at the bottom edge"*) and **each one cost her a view
+ * and a refund on a picture that may well have been right.**
+ *
+ * ⚠ **THE REPAIR IS NOT A WIDER LIST OF ANATOMIES, AND THAT DISTINCTION IS THE
+ * WHOLE OF IT.** His ruling of 2026-09-24 forbids exactly that: *"we really
+ * cannot be working from fixed lists in a fluid editing application it means no
+ * sense to be rigid like this."* Patching *"both eyes"* into *"every eye"* plus
+ * a clause per creature would be a taxonomy invented one cast at a time.
+ *
+ * **What the judge already holds is the one record that is not a list: the
+ * ANCHOR.** Every view is judged against IMAGE 1, the signed photograph, and
+ * `judgeSystemFor` already names it as such. So the landmarks stop naming
+ * anatomy and name *what the reference shows* instead — the same principle
+ * #1221 (*everything the reference shows on her is hers*), #1471 and this
+ * week's wardrobe work all run on. It is not a taxonomy; it is the judge being
+ * told to read the picture it was already given.
+ *
+ * ⚠ **AND IT DOES NOT WIDEN WHAT PASSES FOR A TWO-EYED CAST — that is the
+ * thing to check when editing these sentences, and #1414's own measurement is
+ * why.** *"exactly ONE eye is showing"* scored 0/10 non-matching where *"a full
+ * 90 degrees"* scored 7/10, so the eye landmark is the strongest reader this
+ * axis has ever had.
+ *
+ * ⚠ **WHICH IS WHY `sideClose` IS NOT IN THIS CLAUSE'S POPULATION, AND THAT WAS
+ * A COURT'S DECISION RATHER THAN A DESIGN CHOICE.** The first two shapes of this
+ * repair DID rewrite that sentence — conditioning the eye landmark on a face
+ * that has an eye on each side, which reads as obviously safe — and a before /
+ * after court on his own production frames said otherwise. Three arms, same six
+ * pairs, five identical reads each at `temperature: 0`, cast56's delivered side
+ * profile (asset 324):
+ *
+ *     sideClose spec                                 angle axis
+ *     #1414's wording, untouched                     0/5 non-matching
+ *     reference-relative + the inventory clause       5/5 non-matching
+ *     reference-relative + the clause reworded        3/5 non-matching
+ *
+ * The judge's own notes say why, verbatim: *"Both eyes are faintly visible with
+ * the far eye showing rather than fully hidden behind nose and brow."* **A
+ * sentence telling a reader to inventory the features the reference shows is
+ * poison on the one view whose test is that half of them must be HIDDEN.** So
+ * that spec's bytes do not move, its view declares `concealmentTest`, and the
+ * population below is derived from that.
+ *
+ * ⚠ **The honest remainder, named rather than implied**: `sideClose` therefore
+ * still asks for *exactly ONE eye*, which is a question a one-eyed or three-eyed
+ * being cannot always answer. It is on the card, with these numbers. What buys
+ * the deferral is that **it did not in fact refuse her** — Jingu's delivered side
+ * profile reads 0/5 non-matching on the angle axis under this spec, before and
+ * after — so the measured cost of leaving it is zero and the measured cost of
+ * touching it is three to five refusals out of five on a correct picture.
+ *
+ * ⚠ **The IDENTITY axis is deliberately untouched.** Its sentence in
+ * `judgeSystemFor` is already reference-relative by construction (*"anything of
+ * that kind visible in IMAGE 1 must be present in IMAGE 2"*, *"judge only where
+ * both frames reach"*), so it has no anatomy assumption to correct. This clause
+ * rides the FRAMING specs, which are the angle axis's alone.
+ *
+ * ⚠ **AND IT RIDES THE FOUR FACE SPECS ONLY, never the full-length three.**
+ * There the reference is a chest-up master that does not reach the feet, so
+ * *"a feature the reference does not show is never required"* would read as
+ * permission to crop the legs off — the exact opposite of what those specs are
+ * for. The full-length sweep's finding is recorded on the card instead of being
+ * answered by the wrong sentence.
+ *
+ * Exported for the same reason {@link VIEW_IDENTITY_SENTENCE} is: its guard
+ * asserts the bytes the specs actually carry rather than a retyped copy of them,
+ * and a second typed copy is the drift working law 4 is about.
+ */
+export const FACE_FROM_REFERENCE =
+  "Read from the reference photograph which features this person HAS at all, which may be more, "
+  + "fewer or differently placed than a human face's. A facial feature the reference does not "
+  + "show is never required here and is never a reason to fail. Which of the features they do "
+  + "have should be VISIBLE in this particular frame is decided by the framing described above "
+  + "and by nothing else — this sentence is about what they have, never about what must show.";
+
 export type CastPackageViewSpec = {
   /** What the customer is looking at. */
   framing: string;
@@ -590,6 +678,32 @@ type CastPackageView = {
    * a clause costs when it reaches a view whose test it does not fit.
    */
   rotated?: boolean;
+  /**
+   * ⚠ **IS THIS VIEW'S FRAMING TEST ABOUT WHAT MUST BE HIDDEN, rather than about
+   * what must be present — #1582, and the flag exists because a court refused to
+   * let the tidy answer ship.**
+   *
+   * `sideClose` is the one, and it is the reason {@link FACE_FROM_REFERENCE} does
+   * not reach every face spec. That clause tells the judge to read this person's
+   * features off the reference; on a view whose whole test is *the far side is
+   * hidden*, it primes a hunt for exactly the features that are supposed to be
+   * out of sight, and the judge then finds a faint far eye and refuses a correct
+   * profile. **Measured rather than reasoned** — three arms, same six pairs, five
+   * identical reads each at `temperature: 0`, on cast56's delivered side profile
+   * (asset 324, the frame #1414 celebrated):
+   *
+   *     sideClose spec                                 angle axis
+   *     #1414's wording, untouched                     0/5 non-matching
+   *     reference-relative + the inventory clause       5/5 non-matching
+   *     reference-relative + the clause reworded        3/5 non-matching
+   *
+   * Declared per view like its two neighbours above, so the exclusion is DERIVED
+   * from a stated property of the view rather than being this view's name written
+   * into a guard. Absent means no, which is the safe direction: a new view that
+   * forgets to declare it gets the clause and behaves like the three that are
+   * fine, instead of silently losing the protection Jingu is owed.
+   */
+  concealmentTest?: boolean;
 };
 
 const WARDROBE = CAST_PACKAGE_WARDROBE_SPEC;
@@ -605,21 +719,28 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
       tight bound   brow to chin
       loose bound   forehead to chin
 
-    — with the chin and both eyes present in every case, the crown free to crop,
-    and hair free to run off the sides.
+    — with the lower edge of the face and every eye present in every case, the
+    crown free to crop, and hair free to run off the sides.
+
+    ⚠ **THOSE TWO BOUNDS SAID "CHIN" AND THE THIRD CLAUSE SAID "BOTH EYES"
+    UNTIL #1582.** The founder's ruling is untouched — the band, the two bounds
+    and the two failure directions are exactly as he set them — and what moved
+    is only WHOSE face the landmarks belong to: the reference's, not a human
+    template's. See {@link FACE_FROM_REFERENCE}. A cast with a bronze jaw and
+    three eyes was refused for a chin and a second eye it does not have.
 
     Writing it as a band is what makes the conformance check real. A single
     ideal crop can only be judged by "how close is this", which a vision model
     answers with a shrug.
 
     So both bounds are stated as LANDMARK PREDICATES rather than as proportions.
-    A judge reliably answers "is the chin inside the frame" and "are the
-    shoulders in frame"; it answers "does the face fill 80% of the height"
-    badly. Too tight is therefore a CUT REQUIRED landmark — the margin of skin
-    below the chin is what a too-tight crop destroys first — and too loose is a
-    PRESENT FORBIDDEN one: shoulders, or headroom above the hair. Both are yes
-    or no by looking, which is also what makes §I's fail-closed default
-    ("unsure fails") work for us rather than against us.
+    A judge reliably answers "is the bottom of the face inside the frame" and
+    "are the shoulders in frame"; it answers "does the face fill 80% of the
+    height" badly. Too tight is therefore a CUT REQUIRED landmark — the margin
+    of skin below the face's lower edge is what a too-tight crop destroys first
+    — and too loose is a PRESENT FORBIDDEN one: shoulders, or headroom above
+    the hair. Both are yes or no by looking, which is also what makes §I's
+    fail-closed default ("unsure fails") work for us rather than against us.
 
     And the DIRECTIVE aims mid-band, not at an edge. v3's directive commanded
     "to just below the lower lip" — ship that beside this spec and every
@@ -632,25 +753,30 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
     label: "Close-up",
     spec: {
       framing:
-        "a tight, front-on crop of the face: no tighter than eyebrows-to-chin, and no looser "
-        + "than forehead-to-chin. The chin, the mouth and both eyes are entirely inside the "
-        + "frame, with a margin of skin visible BELOW the chin. "
-        + "TOO TIGHT, and it fails: the bottom edge cuts the chin or the mouth, or the chin "
-        + "touches the bottom edge with no skin below it. "
+        "a tight, front-on crop of the face: no tighter than eyebrows-to-the-bottom-of-the-face, "
+        + "and no looser than forehead-to-the-bottom-of-the-face. The mouth, every eye the "
+        + "reference shows, and the whole lower edge of the face as the reference shows it — a "
+        + "chin, or whatever this person has in its place — are entirely inside the frame, with "
+        + "a margin of skin visible BELOW that lower edge. "
+        + "TOO TIGHT, and it fails: the bottom edge of the frame cuts the mouth or the lower "
+        + "edge of the face, or that lower edge touches the bottom of the frame with no skin "
+        + "below it. "
         + "The top of the head may be cropped and hair may run off the left and right edges — "
         + "but TOO LOOSE, and it fails: the neck and shoulders are in frame, or the whole "
-        + "head fits with clear space above the hair. That is a portrait, not a close-up.",
+        + "head fits with clear space above the hair. That is a portrait, not a close-up. "
+        + FACE_FROM_REFERENCE,
       wardrobe: CLOSE_UP_WARDROBE,
     },
     directive:
       "BEAUTY CLOSE-UP OF THE FACE, STRAIGHT ON. The face fills the frame. Crop the TOP of "
       + "the frame across the forehead — anywhere between the eyebrows and the hairline — so "
       + "the crown of the head is cut off, and let the hair run off the left and right edges. "
-      + "The BOTTOM of the frame sits below the chin: the whole chin is visible. Both eyes "
-      + "look directly into the lens and are critically sharp. Skin texture, pores, vellus "
+      + "The BOTTOM of the frame sits below the lowest part of the face: the whole of it is "
+      + "visible. The eyes this person has look directly into the lens and are critically "
+      + "sharp. Skin texture, pores, vellus "
       + "hair, individual lashes and iris detail are all resolved. Do NOT crop at the mouth "
-      + "or cut the chin, and do NOT pull back far enough to show the whole head or the "
-      + "shoulders.",
+      + "or cut the bottom of the face, and do NOT pull back far enough to show the whole "
+      + "head or the shoulders.",
   },
   /*
     RETIRED FROM THE PROFILE, kept in the record (package v3.1) — and unlike the
@@ -676,14 +802,15 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
     label: "Portrait",
     spec: {
       framing:
-        "a head-and-shoulders portrait, square to the camera, both eyes visible, "
-        + "the whole hair silhouette inside the frame with headroom above it",
+        "a head-and-shoulders portrait, square to the camera, every eye the reference shows "
+        + "visible, the whole hair silhouette inside the frame with headroom above it. "
+        + FACE_FROM_REFERENCE,
       wardrobe: WARDROBE,
     },
     directive:
       "FRONT-FACING HEAD AND SHOULDERS PORTRAIT. Square to camera, head straight with no tilt, "
-      + "both eyes looking directly into the lens. The entire hair silhouette is inside the frame "
-      + "with clear headroom above it — nothing on the head is clipped.",
+      + "the eyes this person has looking directly into the lens. The entire hair silhouette is "
+      + "inside the frame with clear headroom above it — nothing on the head is clipped.",
   },
   /*
     ⚠ **THE SECOND INSTANCE OF #1414's CLASS, SWEPT RATHER THAN WAITED FOR
@@ -711,6 +838,13 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
     right answer to the right question. The mirror now has its own sentence
     instead of being derived from the parenthesis, so a refusal SAYS mirrored;
     that is the same verdict, spelled out.
+
+    ⚠ **AND #1582 CORRECTED WHOSE EYES THOSE ARE, THE SAME DAY.** This repair
+    said *"BOTH eyes still visible"* and *"a turn far enough to hide one eye"* —
+    a landmark rule, which was right, on a HUMAN landmark, which was not. The
+    turn is still judged by what is visible and never by a degree; what the
+    reader is now told to look for is the face the reference shows rather than a
+    two-eyed one. See {@link FACE_FROM_REFERENCE}.
   */
   threeQuarter: {
     angle: "threeQuarter",
@@ -718,19 +852,23 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
     spec: {
       framing:
         "a head-and-shoulders portrait with the head turned toward the subject's LEFT — their "
-        + "nose toward the RIGHT edge of the frame — and BOTH eyes still visible. "
+        + "nose toward the RIGHT edge of the frame — and every eye the reference shows still "
+        + "visible. "
         + "Judge the direction and what is visible rather than estimating the turn in degrees: "
         + "square to the camera, with the nose toward neither edge, FAILS; a turn far enough to "
-        + "hide one eye is a side profile and FAILS; and a head turned toward the subject's "
+        + "hide the far side of the face — on a face with an eye on each side, far enough to hide "
+        + "one eye — is a side profile and FAILS; and a head turned toward the subject's "
         + "RIGHT, nose toward the LEFT edge, is the mirror of what was asked and FAILS. "
         + "Anything between square and profile, turned the way asked, is the 45-degree "
-        + "three-quarter this specifies.",
+        + "three-quarter this specifies. "
+        + FACE_FROM_REFERENCE,
       wardrobe: WARDROBE,
     },
     directive:
       "RIGHT-FACING THREE-QUARTER PORTRAIT. Head and shoulders only. The subject's nose points "
-      + "diagonally toward the RIGHT EDGE OF THE OUTPUT FRAME at a 45-degree turn; both eyes remain "
-      + "visible. Never mirror the direction. The entire hair silhouette stays inside the frame.",
+      + "diagonally toward the RIGHT EDGE OF THE OUTPUT FRAME at a 45-degree turn; the eyes this "
+      + "person has remain visible. Never mirror the direction. The entire hair silhouette stays "
+      + "inside the frame.",
     /* A 45-degree turn already hides part of the far side and foreshortens the
        rest, which is enough for the confusion #1579 measured at ninety. */
     rotated: true,
@@ -826,10 +964,46 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
 
     The generator's `directive` below is deliberately unchanged. A GENERATOR can
     be aimed at a number; only a READER has to estimate one.
+
+    ⚠ **AND #1582 TRIED TO CORRECT THIS ONE FOR A THREE-EYED CAST, MEASURED IT,
+    AND PUT IT BACK. THIS SENTENCE IS THE ONE FACE SPEC #1582 DOES NOT TOUCH.**
+
+    Twice, in good faith, it was rewritten so the eye landmark was CONDITIONAL on
+    a face that has an eye on each side — *"only the near side of the face is
+    presented … on a face with an eye on each side, that means exactly ONE eye is
+    showing"* — which reads as obviously safe and is not. A before / after court
+    on real production frames, five identical reads per arm at `temperature: 0`,
+    on cast56's delivered side profile (asset 324, the frame the measurement above
+    celebrated):
+
+        this wording, untouched                        0/5 non-matching
+        conditioned + the reference-inventory clause   5/5 non-matching
+        conditioned + that clause reworded             3/5 non-matching
+
+    The judge's own words, verbatim: *"Both eyes are faintly visible with the far
+    eye showing rather than fully hidden behind nose and brow."* **Any sentence
+    that sets a reader inventorying the features the reference shows is poison
+    here, because this is the one view whose test is that half of them must be
+    HIDDEN.** The view declares `concealmentTest: true` so the clause's population
+    excludes it by a stated property rather than by name.
+
+    ⚠ **So the remainder is real and it is on the card**: this spec still asks a
+    one-eyed or three-eyed being for *exactly ONE eye*. What buys the deferral is
+    that it does not in fact refuse one — Jingu's delivered side profile reads
+    0/5 non-matching here in every arm — so leaving it costs nothing measured and
+    touching it costs a correct picture three times in five. The `directive` is
+    unchanged with it, for one reason and one only: generator and judge must not
+    be told two different profiles.
   */
   sideClose: {
     angle: "sideClose",
     label: VIEW_ANGLE_LABELS.sideClose,
+    /*
+      ⚠ **THE ONLY VIEW WHOSE FRAMING TEST IS CONCEALMENT — and #1582 learned
+      that the hard way, at the frames.** See {@link FACE_FROM_REFERENCE} and
+      the docblock above for the three-arm measurement.
+    */
+    concealmentTest: true,
     spec: {
       framing:
         "a head-and-shoulders TRUE side profile, not a three-quarter turn. "

@@ -120,7 +120,7 @@ try {
       uploadThroughput: (750 * 1024) / 8,
     });
   }
-  await page.goto(`${BASE}/casting/s/${session}`, { waitUntil: "networkidle2", timeout: 240_000 });
+  await page.goto(`${BASE}/app/casting/s/${session}`, { waitUntil: "networkidle2", timeout: 240_000 });
   await page.waitForSelector(`button[aria-label="View candidate ${tile} larger"]`, { timeout: 240_000 });
   await page.click(`button[aria-label="View candidate ${tile} larger"]`);
   await page.waitForSelector(".dpc-viewer__plate img", { timeout: 240_000 });

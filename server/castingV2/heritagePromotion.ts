@@ -127,7 +127,20 @@ export function promoteStatedRole(intent: CastingIntent, briefText: string): Cas
   const words = capAtWordBoundary(briefText.replace(/\s+/g, " ").trim(), 80);
   if (!words) return intent;
   if (namesUnknownProperNoun(scrubBrands(words) ?? "", { mode: "phrase" })) return intent;
-  return { ...intent, role: words };
+  /*
+    AND IT SAYS SO, BECAUSE THE SHEET MUST NOT REPEAT HER SENTENCE BACK (#1129).
+
+    The value is her brief's own opening, not a category she named, and the
+    engine's readers and the sheet want opposite things from that fact: gate
+    B5 and the styling resolution are asking "is there a category", where a
+    borrowed one is the best answer available; the echo is asking "what did the
+    studio read in her words", where handing back the words is no answer at
+    all. `roleFromBriefText` is the one field that can tell them apart, and it
+    is written here rather than inferred later — a reader that re-derived it
+    would be the second implementation of this cap, which is the defect #1122
+    was.
+  */
+  return { ...intent, role: words, roleFromBriefText: true };
 }
 
 /*

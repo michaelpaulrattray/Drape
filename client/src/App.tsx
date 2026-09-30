@@ -99,7 +99,7 @@ function BoardRoute() {
 
 
 /** Lobby views share one transition key so the rail doesn't remount between them. */
-const LOBBY_ROUTES = new Set(['/app', '/app/boards', '/app/library', '/app/garments', '/app/looks']);
+const LOBBY_ROUTES = new Set(['/app', '/app/canvas', '/app/library', '/app/garments', '/app/looks']);
 
 function Router() {
   const [location] = useLocation();
@@ -123,7 +123,7 @@ function Router() {
 
             {/* Lobby (rail + views) */}
             <Route path="/app" component={AppLobby} />
-            <Route path="/app/boards" component={AppLobby} />
+            <Route path="/app/canvas" component={AppLobby} />
             <Route path="/app/library" component={AppLobby} />
             <Route path="/app/garments" component={AppLobby} />
             <Route path="/app/looks" component={AppLobby} />
@@ -140,7 +140,20 @@ function Router() {
             </Route>
 
             {/* Board-based canvas */}
-            <Route path="/app/board/:id" component={BoardRoute} />
+            <Route path="/app/canvas/:id" component={BoardRoute} />
+            {/*
+              The canvas's old addresses, kept answering (#1583). Same rule as
+              the library's above and for the same reason: a rename is a MOVE.
+              The list page was `/app/boards`; a canvas itself was
+              `/app/board/:id`, and its forward carries the id through, so a
+              bookmarked canvas opens the canvas rather than the list.
+            */}
+            <Route path="/app/boards">
+              <Redirect to="/app/canvas" replace />
+            </Route>
+            <Route path="/app/board/:id">
+              {(params) => <Redirect to={`/app/canvas/${params.id}`} replace />}
+            </Route>
 
             {/* Classic Drape Studio (fallback) */}
             <Route path="/studio" component={DrapeStudio} />
@@ -157,7 +170,7 @@ function Router() {
               light/dark screenshot drive still compares one page that exercises
               every primitive, but that page is not in the customer's namespace.
             */}
-            <Route path="/casting" component={CastingV2} />
+            <Route path="/app/casting" component={CastingV2} />
             {/*
               Keyed by the session, so moving sheet-to-sheet REMOUNTS.
 
@@ -168,7 +181,7 @@ function Router() {
               key, those carry across too: you would open another sheet and find
               the previous sheet's typed brief sitting in the box.
             */}
-            <Route path="/casting/s/:sessionId">
+            <Route path="/app/casting/s/:sessionId">
               {(params) => <CastingSheet key={params.sessionId} />}
             </Route>
             {/*
@@ -177,8 +190,28 @@ function Router() {
               a route rather than a mode for the same reason the sheet is: a Cast
               is permanent, so the address should be too.
             */}
-            <Route path="/casting/cast/:castId">
+            <Route path="/app/casting/cast/:castId">
               {(params) => <CastingRoom key={params.castId} />}
+            </Route>
+            {/*
+              Casting's old addresses, kept answering (#1583). His word,
+              2026-09-30: *"yes i want that shape"* — the signed-in product is
+              one address family under `/app`, because the domain's root belongs
+              to the marketing site. Casting was the last top-level entrance.
+
+              All three forward, and the two parameterised ones carry their id
+              through: his own test casts, the crew's cards, every sent link and
+              every driver in `scripts/` point at the old addresses, and a rename
+              that drops them turns each of those into a 404.
+            */}
+            <Route path="/casting">
+              <Redirect to="/app/casting" replace />
+            </Route>
+            <Route path="/casting/s/:sessionId">
+              {(params) => <Redirect to={`/app/casting/s/${params.sessionId}`} replace />}
+            </Route>
+            <Route path="/casting/cast/:castId">
+              {(params) => <Redirect to={`/app/casting/cast/${params.castId}`} replace />}
             </Route>
 
             {/* Admin */}

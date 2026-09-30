@@ -1,7 +1,7 @@
 {
-  "edition": 584,
-  "updatedAt": "2026-09-30T06:52:15.744Z",
-  "shift": "Foreman (night shift) — you left six answers overnight and this shift worked all of them together. The covering question is settled your way: your own words go to the engine on their own for a hijab, a turban, a niqab, a chador and a kippah, nothing was added back, and the only thing built from it is a safety net so that if anyone ever writes a 'no hats' rule into the studio's standard instructions, those garments cannot quietly start failing again. The picture gallery stays as it is, as you said. Virtual try-on is now switched off: where the Dress Model button was there is one line saying it is unavailable while we rebuild it and that your garments and looks are safe — it was calling a Google picture model that was shut down in June, and it would have taken your credits before finding that out. Nobody has used it in thirty days and only an admin could reach it, so nothing of yours was lost. And the spare picture engine nobody was using is deleted, with its measured prices kept where the engine that IS used records them. Two pull requests: one merged, one waiting on a look because it touches money.",
+  "edition": 585,
+  "updatedAt": "2026-09-30T08:07:53.935Z",
+  "shift": "Foreman (night shift) — the product now has one address family, and your casting studio has moved into it. Until tonight the library and the canvas lived under /app while casting sat on its own at the top level; you said you wanted the one shape, so casting is now /app/casting, a sheet is /app/casting/s/…, a cast is /app/casting/cast/…, and the canvas is /app/canvas. Nothing you have saved breaks: every old address still answers and quietly forwards to the new one, carrying the sheet or the cast you asked for, so your own test casts, your bookmarks and every link the crew has ever sent you still land in the right place. I drove all five old addresses through a browser to prove it rather than assuming, and photographed all four screens in both light and dark before saying they were fine — the first set of photographs caught the pages still loading, which is exactly why they get looked at. One pull request, waiting on a look because it changes what you see.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -304,6 +304,10 @@
         {
           "title": "A quiet gap in the casting road turned out to be closed already, and measuring it was the only way to know (#1503). When you ask for a hijab or a turban, the studio used to add a written description of the garment on top of your words — your own February finding, where the scarf came back styled rather than worn. That stopped being sent when everyone moved onto the road that sends your words straight through. Rather than guess whether it still mattered, I rendered eighty pictures today across five garments, with the description and without. All five come back right either way, so the engine now does this from your sentence alone. The strip is on your desk and the question under it is whether to leave it that way.",
           "state": "in-progress"
+        },
+        {
+          "state": "in-progress",
+          "title": "Your product has one address family now, and casting has joined it (#1583) — your word, \"yes i want that shape\". The signed-in product lives under one /app roof because the front of the site belongs to your marketing pages. Casting was the last thing still sitting at the top level: it is /app/casting now, a sheet is /app/casting/s/…, a signed cast is /app/casting/cast/…, and the canvas list moved from /app/boards to /app/canvas with each canvas at /app/canvas/… . THE PART THAT MATTERS TO YOU IS THAT NOTHING BREAKS: all five old addresses still answer and forward, and the three that name a particular sheet or cast carry that name across, so an old link to one sheet opens that sheet and not the front page. I proved that by driving each old address through a real browser and reading where it ended up, because a page can look right while the old address is still in the bar, and no photograph can tell those apart. Waiting on a look before it goes live."
         }
       ]
     },
@@ -392,7 +396,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-30T06:52:42.111Z",
+      "readAt": "2026-09-30T08:08:25.886Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -1044,7 +1048,7 @@
         }
       ],
       "recommendation": "ANSWERED — your word: \"C — wait for #203\". It now waits on the wardrobe/basics retirement rather than on you. Slice 1 of that closed the entrance tonight; the read paths, which are what actually carry the borrowed line into the block, are slice 2. Nothing more is needed from you here.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-23T07:04:42.929Z",
       "issueNumber": 1129
     },
@@ -6608,7 +6612,7 @@
     {
       "id": "wardrobe-tryon-off-1537",
       "title": "Virtual try-on is switched off, and says so before you press (#1537)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1581,
       "note": "Open and held — it touches credits and something you can see, so it waits for a look at the frames."
     },
@@ -9166,6 +9170,13 @@
       "status": "merged",
       "prNumber": 1544,
       "note": "Merged 14d17810 — #1541 closed; held rung cards 10 → 4 on the real cut, 9 of 9 sabotage cases red, nothing spent."
+    },
+    {
+      "id": "one-address-family-1583",
+      "title": "One address family for the product — casting and the canvas move under /app, every old address forwards",
+      "status": "in-review",
+      "prNumber": 1588,
+      "note": "Held for the relay: customer-visible. 5 forwards driven, 8 frames both themes, preflight 8/8, full suite 900 files / 15054 passed."
     }
   ],
   "problems": [
@@ -9458,10 +9469,11 @@
     243,
     244,
     245,
-    246
+    246,
+    247
   ],
   "nextUp": {
-    "readAt": "2026-09-30T06:52:42.110Z",
+    "readAt": "2026-09-30T08:08:25.886Z",
     "items": [
       {
         "issueNumber": 1469,
@@ -9469,13 +9481,13 @@
         "urgent": false
       },
       {
-        "issueNumber": 1537,
-        "title": "The virtual try-on road calls a Gemini image model Google shut down on 2026-06-25 — a live door with a dead engine, unused for 30 days",
+        "issueNumber": 1539,
+        "title": "A Desk reply reaches its GitHub card the moment he sends it — his GitHub-reading agents see his word at once (his 'go with 1', 2026-09-30)",
         "urgent": false
       },
       {
-        "issueNumber": 1539,
-        "title": "A Desk reply reaches its GitHub card the moment he sends it — his GitHub-reading agents see his word at once (his 'go with 1', 2026-09-30)",
+        "issueNumber": 1583,
+        "title": "One address family for the product: /app/casting and /app/canvas beside /app/library, with the old addresses forwarding — his word 2026-09-30",
         "urgent": false
       }
     ]

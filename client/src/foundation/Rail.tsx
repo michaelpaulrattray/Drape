@@ -126,9 +126,9 @@ type Destination = {
 export const RAIL_DESTINATIONS: readonly Destination[] = [
   { id: "home", label: "Home", href: "/app", glyph: P.studio },
   { id: "create", label: "Create", glyph: P.image },
-  { id: "canvas", label: "Canvas", href: "/app/boards", glyph: P.thread },
+  { id: "canvas", label: "Canvas", href: "/app/canvas", glyph: P.thread },
   { id: "templates", label: "Templates", glyph: P.campaign },
-  { id: "casting", label: "Casting", href: "/casting", glyph: P.avatar },
+  { id: "casting", label: "Casting", href: "/app/casting", glyph: P.avatar },
   { id: "cinema", label: "Cinema", glyph: P.cinema },
   { id: "assets", label: "Assets", glyph: P.asset },
   { id: "library", label: "Library", href: "/app/library", glyph: P.library },

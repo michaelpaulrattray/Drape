@@ -93,7 +93,7 @@ export function RecentWorkSection({
           Recent
         </h2>
         <button
-          onClick={() => navigate('/app/boards')}
+          onClick={() => navigate('/app/canvas')}
           className="transition-colors duration-200 hover:text-[var(--ink)]"
           style={{ fontSize: 13, color: 'var(--metaStrong)' }}
         >

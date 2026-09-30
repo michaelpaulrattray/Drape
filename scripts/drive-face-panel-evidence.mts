@@ -442,7 +442,7 @@ async function waitForSettled(page: Page): Promise<number | null> {
 
 /** Open the sheet, open the viewer, wait for the panel to actually arrive. */
 async function openPanel(page: Page): Promise<number> {
-  await page.goto(`${BASE}/casting/s/${SESSION}`, { waitUntil: "networkidle2", timeout: 180_000 });
+  await page.goto(`${BASE}/app/casting/s/${SESSION}`, { waitUntil: "networkidle2", timeout: 180_000 });
   await page.waitForSelector(`button[aria-label="View candidate ${TILE} larger"]`, { timeout: 180_000 });
   await page.click(`button[aria-label="View candidate ${TILE} larger"]`);
   const started = Date.now();

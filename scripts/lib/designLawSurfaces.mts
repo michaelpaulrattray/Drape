@@ -120,11 +120,12 @@ export const SURFACES: SurfacePlan[] = [
       "write against the users table, which a read-only design drive does not do.",
   },
 
-  // Lobby. SIX addresses now — five pages behind one component and one rail,
-  // plus the library's old address, which forwards since #1545 — and the
-  // surface the founder spends the most time in outside casting.
+  // Lobby. SEVEN addresses now — five pages behind one component and one rail,
+  // plus TWO old addresses that forward: the library's since #1545 and the
+  // canvas list's since #1583 — and the surface the founder spends the most
+  // time in outside casting.
   { path: "/app", label: "lobby", kind: "drive", url: () => "/app" },
-  { path: "/app/boards", label: "lobby / boards", kind: "drive", url: () => "/app/boards" },
+  { path: "/app/canvas", label: "lobby / canvas", kind: "drive", url: () => "/app/canvas" },
   { path: "/app/library", label: "lobby / library", kind: "drive", url: () => "/app/library" },
   { path: "/app/garments", label: "lobby / garments", kind: "drive", url: () => "/app/garments" },
   { path: "/app/looks", label: "lobby / looks", kind: "drive", url: () => "/app/looks" },
@@ -140,21 +141,34 @@ export const SURFACES: SurfacePlan[] = [
   },
 
   {
-    path: "/app/board/:id",
+    path: "/app/boards",
+    label: "lobby / boards (forward)",
+    kind: "declared",
+    reason: "the address it moved from, kept answering after #1583 put the signed-in product under one /app family on the founder's word. A <Redirect> with no markup of its own — it renders the row above, which is driven there. Driving both measures one surface twice, exactly as /admin and /admin/overview do below.",
+  },
+
+  {
+    path: "/app/canvas/:id",
     label: "board canvas",
     kind: "drive",
     fixture: "board",
-    url: (f) => (f.board ? `/app/board/${f.board}` : null),
+    url: (f) => (f.board ? `/app/canvas/${f.board}` : null),
+  },
+  {
+    path: "/app/board/:id",
+    label: "board canvas (forward)",
+    kind: "declared",
+    reason: "the address it moved from, kept answering after #1583 put the signed-in product under one /app family on the founder's word. A <Redirect> with no markup of its own — it renders the row above, which is driven there. Driving both measures one surface twice, exactly as /admin and /admin/overview do below.",
   },
 
   { path: "/studio", label: "legacy studio", kind: "drive", url: () => "/studio" },
 
   // Casting. The three the drive already covered, plus what each must hold.
   {
-    path: "/casting",
+    path: "/app/casting",
     label: "casting tab",
     kind: "drive",
-    url: () => "/casting",
+    url: () => "/app/casting",
     waitFor: "Meet eight of them",
     /* The unsigned-sheets section lives here (`CastingV2.tsx:945`) and renders
        only for an account with open sessions — so the law waits for it here and
@@ -162,11 +176,11 @@ export const SURFACES: SurfacePlan[] = [
     mayHold: ["retentionCopy"],
   },
   {
-    path: "/casting/s/:sessionId",
+    path: "/app/casting/s/:sessionId",
     label: "casting sheet",
     kind: "drive",
     fixture: "session",
-    url: (f) => (f.session ? `/casting/s/${f.session}` : null),
+    url: (f) => (f.session ? `/app/casting/s/${f.session}` : null),
     /*
       `<Dock>` is rendered here (`CastingSheet.tsx:2785`) and on the gallery,
       and NOWHERE else — read at the code, not assumed. The casting TAB has no
@@ -191,11 +205,26 @@ export const SURFACES: SurfacePlan[] = [
     requires: ["dock", "briefEcho"],
   },
   {
-    path: "/casting/cast/:castId",
+    path: "/app/casting/cast/:castId",
     label: "casting room",
     kind: "drive",
     fixture: "cast",
-    url: (f) => (f.cast ? `/casting/cast/${f.cast}` : null),
+    url: (f) => (f.cast ? `/app/casting/cast/${f.cast}` : null),
+  },
+
+  // Casting's three old addresses, all forwarding since #1583.
+  { path: "/casting", label: "casting tab (forward)", kind: "declared", reason: "the address it moved from, kept answering after #1583 put the signed-in product under one /app family on the founder's word. A <Redirect> with no markup of its own — it renders the row above, which is driven there. Driving both measures one surface twice, exactly as /admin and /admin/overview do below." },
+  {
+    path: "/casting/s/:sessionId",
+    label: "casting sheet (forward)",
+    kind: "declared",
+    reason: "the address it moved from, kept answering after #1583 put the signed-in product under one /app family on the founder's word. A <Redirect> with no markup of its own — it renders the row above, which is driven there. Driving both measures one surface twice, exactly as /admin and /admin/overview do below.",
+  },
+  {
+    path: "/casting/cast/:castId",
+    label: "casting room (forward)",
+    kind: "declared",
+    reason: "the address it moved from, kept answering after #1583 put the signed-in product under one /app family on the founder's word. A <Redirect> with no markup of its own — it renders the row above, which is driven there. Driving both measures one surface twice, exactly as /admin and /admin/overview do below.",
   },
 
   // Staff

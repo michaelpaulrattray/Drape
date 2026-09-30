@@ -124,7 +124,7 @@ try {
   if (sheets.length > 0) {
     const { session, position } = sheets[0]!;
     const tile = String(position + 1).padStart(2, "0");
-    await page.goto(`${BASE}/casting/s/${session}`, { waitUntil: "networkidle2", timeout: 240_000 });
+    await page.goto(`${BASE}/app/casting/s/${session}`, { waitUntil: "networkidle2", timeout: 240_000 });
     await page.waitForSelector(`button[aria-label="View candidate ${tile} larger"]`, { timeout: 240_000 });
     report.sheetGrid = await page.evaluate(MEASURE);
     await page.click(`button[aria-label="View candidate ${tile} larger"]`);
@@ -133,7 +133,7 @@ try {
     report.sheetViewer = await page.evaluate(MEASURE);
   }
   if (rooms.length > 0) {
-    await page.goto(`${BASE}/casting/cast/${rooms[0]!.cast}`, { waitUntil: "networkidle2", timeout: 240_000 });
+    await page.goto(`${BASE}/app/casting/cast/${rooms[0]!.cast}`, { waitUntil: "networkidle2", timeout: 240_000 });
     await new Promise((r) => setTimeout(r, 3_000));
     report.room = await page.evaluate(MEASURE);
     /* And the room's own viewer, which is where a signed view is looked at. */

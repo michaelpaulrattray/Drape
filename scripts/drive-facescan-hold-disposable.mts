@@ -103,7 +103,7 @@ async function walk(hold: boolean): Promise<{
     if (readFaceScanAsk(request.url()).kind !== "none") urls.push(request.url());
   });
   try {
-    await page.goto(`${BASE}/casting/s/${SESSION}`, { waitUntil: "networkidle2", timeout: 180_000 });
+    await page.goto(`${BASE}/app/casting/s/${SESSION}`, { waitUntil: "networkidle2", timeout: 180_000 });
     await page.waitForSelector(`button[aria-label="View candidate ${TILE} larger"]`, { timeout: 180_000 });
     await page.click(`button[aria-label="View candidate ${TILE} larger"]`);
     await page.waitForSelector(".dpc-face", { timeout: 90_000 });
