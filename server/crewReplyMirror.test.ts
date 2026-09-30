@@ -18,7 +18,6 @@
  * what he wrote), and the wedge arm (a sweep that retried forever would
  * silence every reply behind one dead card).
  */
-import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -39,6 +38,7 @@ import {
   type SweepReply,
 } from "../scripts/lib/replyMirrorSweep.mts";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+import { runHook } from "./testing/hookDriver";
 
 /* One arm spawns the real CLI to drive its world gate, so this suite declares
    the child-process class timeout (#548). */
@@ -285,24 +285,23 @@ describe("the command's world gate", () => {
         delete env.PUBLIC_DATABASE_URL;
         env.DATABASE_URL = "mysql://u:p@127.0.0.1:52008/railway";
 
-        let stderr = "";
-        let exitCode = 0;
-        try {
-          execFileSync("npx", ["tsx", "scripts/crew-mirror-replies.mts", "--state", join(dir, "state.json")], {
-            encoding: "utf8", env, stdio: ["ignore", "pipe", "pipe"], shell: true,
-          });
-        } catch (cause) {
-          const failure = cause as { status?: number; stderr?: string };
-          exitCode = failure.status ?? -1;
-          stderr = failure.stderr ?? "";
-        }
+        /* Through `runHook`, not a bare `execFileSync` — its own guard walks
+           `server/` for suites that read a child's `.status` directly, and it
+           is right to: a non-start would otherwise read as a verdict. `shell`
+           is what Windows needs for `npx`, and that road's stated caveat is
+           satisfied here because the assertion below is an EXACT code. */
+        const run = runHook(
+          "npx",
+          ["tsx", "scripts/crew-mirror-replies.mts", "--state", join(dir, "state.json")],
+          { env, shell: true, timeout: 60_000 },
+        );
 
-        expect(exitCode).toBe(1);
-        expect(stderr).toContain("REFUSING to post from the dev world");
+        expect(run.status).toBe(1);
+        expect(run.stderr).toContain("REFUSING to post from the dev world");
         /* And it never reached the database: `openDatabase` writes `[db] …` to
            stderr on every connection it opens, so its absence is the proof
            that the gate sits in front of the connection rather than after it. */
-        expect(stderr).not.toContain("[db] ");
+        expect(run.stderr).not.toContain("[db] ");
       } finally {
         rmSync(dir, { recursive: true, force: true });
       }
