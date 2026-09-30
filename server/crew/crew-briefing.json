@@ -1,7 +1,7 @@
 {
-  "edition": 580,
-  "updatedAt": "2026-09-30T01:10:00.000Z",
-  "shift": "Foreman (night shift) — your crew was quietly throttling itself, and tonight it stopped. You told us on Monday to get more work moving at once, and we did: up to four helpers now run beside the main one each pass. It lasted a single pass. The rule that keeps them off next month's work was deciding which milestone is the current one by looking at whichever job sits at the top of your Next Up list — and last night the top job was a piece of our own tooling with no milestone attached, so the rule read 'no current milestone' and held back the whole N2 queue. Nine jobs frozen, four helpers idle, and nothing anywhere said why. It went wrong the other way too, earlier the same night: a job belonging to a much later milestone sat on top, and every N2 job was held with a reason that was simply untrue — it called N2 'later' than N6. Thirteen jobs, one wrong sentence. The fix is to stop guessing: the crew now reads the current milestone from the ladder on this very page, the one that says N2 is current — because that only ever changes when one of us writes down something you said. Measured on your real queue before and after: ten jobs held, then four, and all four of those four are genuinely on later rungs — N6, N8 and Campaigns — so nothing has jumped ahead of your word. We deliberately did NOT use the simpler fix the job description suggested, because it would have let the crew start Campaigns by itself the day the last N2 job closed. And the crew's own pass notes now say which milestone they were working to, which is the only reason any of this was found at all. One more thing worth a line: Campaigns now appears on the ladder below. It was missing — you named it last week and nobody wrote it in — and as of tonight that list is what the crew reads, so a missing rung is no longer just cosmetic. Nothing was spent.",
+  "edition": 581,
+  "updatedAt": "2026-09-30T02:35:00.000Z",
+  "shift": "Foreman (night shift) — when you reply on this page, your answer is now on its GitHub card within the minute. You asked why your Grok team could not see your replies straight away, and the answer was that they lived only in this page until one of the crew next picked them up and copied them across by hand. Last night that took twenty-five minutes, and it was luck: a shift happened to re-read you just before it finished. Had it finished twenty minutes earlier, four of your answers would have sat there all night and four cards would still have said they were waiting on you. It is mechanical now. You type here, as always — nothing about this page changes — and about a minute later the card carries exactly what you wrote, word for word, under your own name. Proven on your real words before it shipped: your \"A\" on the creature-retry card went across, then we deliberately wiped its memory of having done it and ran it again, and it noticed its own earlier comment and did not post a second copy. One thing we chose NOT to do, and you may want to overrule us: the instant version needs a GitHub password living on the same server that serves your customers, and you have twice said that kind of decision is yours rather than ours — so we took the road that needs no new password anywhere and costs a minute instead of a second. Say the word and it becomes instant. The crew still reads your replies and acts on them exactly as before; this only makes sure nobody has to wait to SEE them. Nothing was spent.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -292,6 +292,10 @@
         {
           "title": "Your crew had throttled itself back to one worker and we found out why (#1541). On Monday you asked for more jobs moving at once. The rule that stops helpers running ahead into next month's work was working out the current milestone from whichever job sits at the top of your Next Up list — so when that job was a piece of our own tooling with no milestone on it, the rule concluded there was no current milestone and froze all nine N2 jobs. It failed the opposite way earlier the same night as well, and printed a reason that was untrue: it called N2 'later' than N6. The crew now reads the current milestone off the ladder on this page — which only changes when one of us writes down something you said — so it cannot be moved by the order you happen to ask for things in. On your real queue: ten jobs held before, four after, and every one of the four is genuinely on a later rung. The simpler fix the job asked for was declined and the reason is on the card: it would have let the crew start Campaigns on its own the day the last N2 job closed.",
           "state": "done"
+        },
+        {
+          "title": "Your replies now reach their cards by themselves (#1539). You type on this page; about a minute later the card says it, in your words, under your name. Built the way that needs no new password on the customer-facing server — the instant version is still there for the asking.",
+          "state": "done"
         }
       ]
     },
@@ -380,7 +384,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-30T00:58:12.348Z",
+      "readAt": "2026-09-30T02:28:42.405Z",
       "items": [
         {
           "issueNumber": 1129,
@@ -6540,6 +6544,13 @@
   ],
   "pipeline": [
     {
+      "id": "reply-mirror-1539",
+      "title": "A Desk reply reaches its GitHub card within the minute (#1539)",
+      "status": "merged",
+      "prNumber": 1556,
+      "note": "Merged 2026-09-30 (8d8f864e) on the gate; the per-minute job is registered and was watched firing on its own."
+    },
+    {
       "id": "retry-outfit-1474",
       "title": "A Try again keeps the outfit she already has, instead of inventing a new one (#1474)",
       "status": "merged",
@@ -9109,6 +9120,13 @@
       "state": "resolved",
       "title": "The tidying job you gave us the go-ahead for has never actually run, and cannot (#1436)",
       "detail": "This is our own housekeeping, not the product — nothing a customer sees is affected.\n\nYou told us the crew could throw away its own expired backups itself rather than bringing you a list every time. That was built the same day. Tonight was the first time anybody tried it, and it refuses every time it is asked — so in the day since it landed it has never once run, and the record of what it deleted is still empty.\n\nWhy: before deleting anything it checks that the working folder is tidy, and it counts the crew's ~640 scratch files as untidiness. Those files are supposed to be there. So the check can never pass on this machine, which is the only machine the backups are on.\n\nIt is worth fixing properly rather than working around: the tidiness check protects nothing here — we read the code, and every decision the job makes comes from the project's saved history and from the backup files themselves, never from the working folder. What it is holding up is small (about 0.9 MB across five old backups), so there is no rush, but a safety check that can only ever say no is the kind a crew learns to route around."
+    },
+    {
+      "id": "release-not-read-1559",
+      "severity": "warning",
+      "state": "open",
+      "title": "A job stays marked \"someone is on it\" for twelve hours after the crew finishes with it (#1559)",
+      "detail": "When a crew member hands a job back, they write RELEASED on it. If they write that inside a longer note rather than as the first thing, nothing reads it — so the job keeps saying somebody is working on it for another twelve hours and every helper steps over it. It is happening right now to the ghost-audit job, which was handed back yesterday evening and has been skipped all night. This is the same family as the two throughput faults already fixed this week: nothing is broken loudly, work is just quietly subtracted from what the helpers may pick up."
     }
   ],
   "acknowledgedReplyIds": [
@@ -9354,7 +9372,7 @@
     240
   ],
   "nextUp": {
-    "readAt": "2026-09-30T00:58:12.348Z",
+    "readAt": "2026-09-30T02:28:42.404Z",
     "items": [
       {
         "issueNumber": 180,
