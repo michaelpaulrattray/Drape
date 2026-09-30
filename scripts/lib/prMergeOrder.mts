@@ -450,8 +450,68 @@ export function moneySymbolHits(patches: readonly FilePatch[], symbolPattern: st
     .map((f) => f.filename);
 }
 
-export function touchesReviewerWorkflow(files: readonly string[]): boolean {
-  return files.includes(REVIEWER_WORKFLOW_PATH);
+/**
+ * THE FILES THAT *ARE* THE REVIEW'S RULES — DERIVED FROM WHAT `review.yml`
+ * SOURCES, NEVER TYPED BESIDE IT (#1627).
+ *
+ * ⚠ **THE CONTROL'S OWN KILL SWITCH WAS OUTSIDE ITS OWN COVERAGE.** Both
+ * readings of *"this diff changes the rules of the review itself"* — triage's
+ * and this tool's — were an exact match on one filename, written when the rules
+ * lived in one file. #958 then carved `money-surfaces.sh` out of both workflows
+ * precisely so neither could keep its own copy, and #1328 carved out
+ * `customer-surfaces.sh` beside it. **Each extraction moved the bytes without
+ * moving the guard that watched them**, so a diff that narrowed — or emptied —
+ * the file deciding what counts as money was triaged as an ordinary diff and
+ * merged on the gate alone. Simulated at the bytes before the repair, with
+ * `CHANGED='.github/money-surfaces.sh'`: the rules check, `MONEY_PATHS`, the
+ * symbol reading (scoped `-- server shared`) and the customer surfaces were
+ * silent, each for its own reason, none of them an oversight in isolation.
+ *
+ * Zero instances is luck rather than design: the file has only ever been
+ * widened — #958 created it, #1359 added the priced modules, #1622 the refund
+ * decider — and #1622's own PR is caught ONLY because its test file happens to
+ * name `recordRefund`.
+ *
+ * **Derived, because a typed list is the second list working law 4 warns about.**
+ * The natural derivation is what the workflow SOURCES, and that is what this
+ * reads: a `. ./.github/…` line is the workflow reaching for a declaration it
+ * will act on, so that declaration is one of its rules by construction. A file
+ * that joins the review's rules tomorrow joins this set on the day it is
+ * sourced, with no edit here.
+ *
+ * ⚠ **IT REFUSES RATHER THAN RETURNING A SHORT LIST.** A workflow that sources
+ * nothing means the sourcing shape changed under this reader, and the reading
+ * that would follow — *"only `review.yml` is a rules file"* — is exactly the
+ * hole being closed, restored in silence.
+ */
+export function reviewRuleFiles(reviewWorkflowText: string): readonly string[] {
+  const sourced = [
+    ...reviewWorkflowText.matchAll(/^[ \t]*\.[ \t]+\.\/(\.github\/[A-Za-z0-9._/-]+)[ \t]*$/gm),
+  ].map((match) => match[1]!);
+  if (sourced.length === 0) {
+    throw new Error(
+      `${REVIEWER_WORKFLOW_PATH} sources no declaration under .github/, which cannot be true of a ` +
+        `triage that reads the money and customer-surface rules. The sourcing shape has changed ` +
+        `under this reader, and guessing would restore the #1627 hole — a diff editing the file ` +
+        `that decides what counts as money, triaged as an ordinary diff.`,
+    );
+  }
+  return [...new Set([REVIEWER_WORKFLOW_PATH, ...sourced])].sort();
+}
+
+/**
+ * Does this diff change the rules of the review itself?
+ *
+ * ⚠ **IT TOOK ONLY `files` UNTIL #1627 AND ASKED `files.includes(REVIEWER_WORKFLOW_PATH)`.**
+ * The second argument is required rather than defaulted on purpose: a default
+ * would let a caller that never read `review.yml` silently get the old,
+ * one-filename answer — which is the failure this parameter exists to remove.
+ */
+export function touchesReviewerRules(
+  files: readonly string[],
+  ruleFiles: readonly string[],
+): boolean {
+  return files.some((file) => ruleFiles.includes(file));
 }
 
 /**
@@ -552,6 +612,11 @@ export type MergeContext = {
   moneyPattern: string;
   /** From `extractMoneySymbols` — the rule's second half (#987). */
   moneySymbols: string;
+  /**
+   * From `reviewRuleFiles`, read off `review.yml` itself (#1627) — the files
+   * that ARE the review's rules, not just the workflow that runs it.
+   */
+  reviewRules: readonly string[];
 };
 
 /**
@@ -763,11 +828,16 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
     //    reviewer's own workflow with no verdict and no hand review, so the
     //    #566 split changes what is SAID here and deliberately not what is
     //    HELD: an absence is at least as bad as a decision, never less.
-    if (touchesReviewerWorkflow(pr.files) && !acknowledged) {
+    // ⚠ #1627 widened this from `review.yml` alone to every file the workflow
+    //    SOURCES. `money-surfaces.sh` is the declaration deciding what counts
+    //    as money, and a diff that edited only it reached this line as an
+    //    ordinary diff — the control's own kill switch, outside its coverage.
+    const rulesHit = pr.files.filter((file) => ctx.reviewRules.includes(file));
+    if (rulesHit.length > 0 && !acknowledged) {
       return {
         kind: "stop",
         reason:
-          `it touches ${REVIEWER_WORKFLOW_PATH} — the rules of the review itself — and no fresh ` +
+          `it touches ${rulesHit.join(", ")} — the rules of the review itself — and no fresh ` +
           "hand verdict exists. The relay reviews a change to its own rules at its next sitting " +
           `and posts the verdict; then re-run with --acknowledge ${pr.number}.`,
       };
