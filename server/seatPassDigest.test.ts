@@ -9,6 +9,8 @@
  */
 import { describe, expect, it, vi } from "vitest";
 
+import { readFileSync } from "node:fs";
+
 /* This suite imports `cardBuildState.mts`, which reaches `gh` through
    `execFileSync` — so it is in `childProcessTestTimeouts`' derived population
    and declares the class's timeout (#548). */
@@ -79,6 +81,31 @@ describe("the milestone the cut applied is on the pass digest (#1541)", () => {
     const out = renderPassDigest(base);
     expect(out).not.toContain("Milestone this pass");
     expect(out).not.toContain("No milestone was named");
+  });
+
+  it("⚠ AND THE CLI HANDS THE FIELD THROUGH UNCHANGED — the arm above cannot see the seam", () => {
+    /*
+      ⚠ THIS ARM EXISTS BECAUSE A SABOTAGE SURVIVED GREEN. Replacing the CLI's
+      `focusRung: plan.focusRung,` with `plan.focusRung ?? null` left all fifteen
+      arms above passing: every one of them drives `renderPassDigest` DIRECTLY, so
+      none of them can see what the caller puts in. The renderer's three states
+      were proven and the wiring to them was not — the same seam that let
+      `earlierAttempts` be composed for months and dropped by both db writers.
+
+      `??` here is not a style choice: it turns "this plan predates the field"
+      into "the cut found no milestone", which is a claim about the cut printed
+      over a plan that never recorded one.
+
+      **Its limit, stated rather than assumed**: this reads source, so it proves
+      the coalesce is absent, not that the value arriving is right. The arms above
+      prove the rendering; this proves it is reached honestly. Neither is the other.
+    */
+    const cli = readFileSync("scripts/seat-pass-digest.mts", "utf8");
+    expect(cli).toContain("focusRung: plan.focusRung,");
+    expect(
+      /focusRung:\s*plan\.focusRung\s*\?\?/.test(cli),
+      "an absent milestone must stay absent, never be coalesced to null",
+    ).toBe(false);
   });
 });
 
