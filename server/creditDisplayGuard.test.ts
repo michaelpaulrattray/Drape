@@ -40,9 +40,13 @@ import {
   creditSitesIn,
   creditDisplayPopulation,
 } from "./testing/creditDisplaySites";
-import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 
-vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
+/* This suite both SPAWNS git (rev-parse, and `git ls-files` inside the
+   deriver) and SWEEPS the source tree, so it is in the population of both
+   timeout guards. The child-process constant satisfies each of them — the
+   sweep guard accepts either — and is the one the spawning class asks for. */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const repoRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
   encoding: "utf8",
