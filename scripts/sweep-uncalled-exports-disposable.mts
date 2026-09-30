@@ -86,6 +86,7 @@ import {
   reachableModules,
   resolveSpecifier,
 } from "./lib/moduleResolution.mts";
+import { containedIn } from "./lib/trackedFiles.mts";
 
 const repoRoot = resolve(import.meta.dirname, "..");
 
@@ -119,6 +120,37 @@ const scanRoots = ["server", "shared"];
  */
 const consumerRoots = [...CONSUMER_ROOTS];
 
+/*
+  ⚠ THE POPULATION IS WHAT THIS REPOSITORY CONTAINS, NOT WHAT IS ON DISK (#1617).
+
+  This walk used to return the working tree, and `consumerRoots` includes
+  `scripts/` — where this repository's scratch lives, ~440 untracked disposables
+  in the founder's own tree. So a shift that wrote a disposable to drive its own
+  new code CREDITED that code with an importer, the symbol never reached the
+  reading list below, and `check-cleanup-dispositions --strict` — i.e. `pnpm
+  check`, i.e. `pnpm preflight` — went green on a symbol CI would call `unread`.
+  Measured on a clean worktree with one disposition row removed and nothing else
+  changed: 152 listed and REFUSED with no untracked file, 151 and OPEN with one.
+
+  It fails toward SUCCESS and it is self-concealing: the more carefully a shift
+  drives its new code, the more certainly it hides its own `unread`. And the
+  narrower reading was already inside this instrument — `buildClassifier` has
+  asked git since it was written — so the two halves of one sweep answered one
+  question two ways and the looser half decided the list. See
+  `lib/trackedFiles.mts`.
+
+  ⚠ THE GATE IS INSIDE THE WALK, NOT A `.filter` ON EACH LIST. Every file that
+  enters ANY population here enters through this one function, so a third
+  population cannot be added that quietly skips the rule — which is how the
+  consumer half came to disagree with the classifier in the first place. It
+  covers both roots on purpose: an untracked module under `server/` or `shared/`
+  moves the reading list the OTHER way (its exports get listed here and not on
+  CI, and a row written for one reads sound here and `stale` there).
+*/
+const contains = containedIn(repoRoot);
+/** Files on disk that the repository does not contain, counted so it can be said out loud. */
+let uncontained = 0;
+
 function walk(dir: string): string[] {
   const out: string[] = [];
   let entries: string[];
@@ -131,7 +163,10 @@ function walk(dir: string): string[] {
     if (entry === "node_modules" || entry === "dist" || entry.startsWith(".")) continue;
     const full = join(dir, entry);
     if (statSync(full).isDirectory()) out.push(...walk(full));
-    else if (/\.(ts|tsx|mts)$/.test(full)) out.push(full);
+    else if (/\.(ts|tsx|mts)$/.test(full)) {
+      if (contains(full)) out.push(full);
+      else uncontained += 1;
+    }
   }
   return out;
 }
@@ -548,6 +583,17 @@ if (
 console.log(`\nscanned   ${scanFiles.filter((f) => !isTestFile(f)).length} production files`
   + ` · ${declarations.length} named exports`);
 console.log(`consumers ${consumerFiles.length} files across ${consumerRoots.join(", ")}`);
+/*
+  SAID OUT LOUD RATHER THAN SILENTLY SKIPPED (#1617). `typecheck-scripts.mts`
+  prints the same sentence for the same reason: a check that quietly narrows its
+  own population is how a shift comes to believe a reading it did not get. This
+  is also the line that tells a shift WHY the disposable it just wrote is not
+  counted, which is the question the silent version left it to guess at.
+*/
+if (uncontained > 0) {
+  console.log(`          ${uncontained} walked path(s) are not in the repository and were not read`
+    + " — this reading is the one the gate takes");
+}
 
 console.log(`\nTEST-ONLY EXPORTS — imported, but by nothing except a test (${findings.length})`);
 for (const finding of findings.sort((a, b) => a.file.localeCompare(b.file))) {

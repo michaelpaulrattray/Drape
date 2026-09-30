@@ -31,10 +31,11 @@
  * namespace import reaches a whole module; the db barrel is trusted as a real
  * door), which is the safe direction for a triage whose next step is deletion.
  */
-import { execSync } from "node:child_process";
 import { readdirSync } from "node:fs";
-import { readIfPresent, statIfPresent } from "./listedEntry.mts";
 import { join, resolve } from "node:path";
+
+import { readIfPresent, statIfPresent } from "./listedEntry.mts";
+import { containedIn } from "./trackedFiles.mts";
 
 /**
  * WHERE PRODUCTION CODE THAT CONSUMES A SYMBOL MAY LIVE — one list, because it
@@ -211,14 +212,18 @@ export function buildClassifier(repoRoot: string): (symbol: string) => Mention {
     exist on one machine; one of the recon's twelve hand reads was exactly
     that, and the tracked script beside it in the same pile is a real caller.
     Only git can tell those apart, so git is asked.
+
+    ⚠ AND IT IS ASKED THROUGH `lib/trackedFiles.mts` NOW, NOT HERE (#1617).
+    This reading was correct and its CALLER was not: the sweep that asks this
+    classifier for the intersection walked the working tree for its own importer
+    population, so one instrument answered *"does this repository contain that
+    consumer"* two ways and the narrower answer never reached the reading list.
+    An untracked disposable therefore bought a green `pnpm check`. One reader,
+    several consumers — working law 4, pointed at a reading this module already
+    had right.
   */
-  const tracked = new Set(
-    execSync("git ls-files", { cwd: repoRoot, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 })
-      .split(/\r?\n/).map((line) => line.trim()).filter(Boolean),
-  );
-  const untracked = new Set(
-    files.filter((file) => !tracked.has(file.slice(repoRoot.length + 1).split("\\").join("/"))),
-  );
+  const contains = containedIn(repoRoot);
+  const untracked = new Set(files.filter((file) => !contains(file)));
 
   return function classify(symbol: string): Mention {
     const word = new RegExp(`(?<![\\w$])${escapeForRegExp(symbol)}(?![\\w$])`);

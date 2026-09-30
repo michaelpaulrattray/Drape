@@ -116,6 +116,7 @@ import { resolve } from "node:path";
 
 import { declKey, importersAt, readTree } from "./lib/importerCountDiff.mts";
 import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
+import { containedIn } from "./lib/trackedFiles.mts";
 
 const REPO = resolve(import.meta.dirname, "..");
 const TABLE = resolve(REPO, "docs/specs/cleanup-dispositions.yaml");
@@ -581,10 +582,18 @@ if (import.meta.main) {
     .filter((match): match is RegExpMatchArray => match !== null)
     .map((match) => ({ symbol: match[1]!, file: match[2]! }));
 
+  /*
+    ⚠ AND `stale` ASKS THE REPOSITORY, NOT THE DISK (#1617). `existsSync` alone
+    read a file this repository does not contain as a live declaration, so a row
+    naming an untracked module was sound here and STALE on CI — the mirror of the
+    sweep's own defect on the same card, one verdict over. Both ends of this door
+    now read the tree the gate reads; see `lib/trackedFiles.mts`.
+  */
+  const contains = containedIn(REPO);
   const sourceOf = new Map<string, string>();
   const declares = (file: string, symbol: string): boolean => {
     const path = resolve(REPO, file);
-    if (!existsSync(path)) return false;
+    if (!existsSync(path) || !contains(path)) return false;
     if (!sourceOf.has(file)) sourceOf.set(file, readFileSync(path, "utf8"));
     return new RegExp(`^export\\s+(?:async\\s+)?(?:function|const|class|type|interface)\\s+${symbol}(?![\\w$])`, "m")
       .test(sourceOf.get(file)!);
@@ -597,8 +606,15 @@ if (import.meta.main) {
     is `server`/`client`/`shared`/`drizzle` (`IMPORTER_ROOTS`) with `*.test.ts` excluded, and `scripts/` is
     deliberately outside it. A drive bench naming a symbol is not the request
     path, and that is the same call the differ makes.
+
+    ⚠ AND IT IS HANDED THE SAME `contains` THE `stale` ARM ABOVE USES (#1620).
+    Without it this half walked the DISK while that half asked the repository, so
+    one door answered its two questions from two populations: an untracked module
+    under `server/` counted as a production importer here and was `stale` there.
+    Reusing that predicate rather than building a second one costs no extra `git
+    ls-files` and is the same working-law-4 reading #1617 landed for the sweep.
   */
-  const tree = readTree(REPO);
+  const tree = readTree(REPO, contains);
   /*
     ⚠ AND IT ASKS ABOUT THE ROW'S OWN FILE (#274). `tree.decl.has(symbol)` was
     the visibility test, so a row naming the SECOND of two declarations that

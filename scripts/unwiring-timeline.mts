@@ -95,6 +95,7 @@ import {
   type TimelineRow,
 } from "./lib/importerCountDiff.mts";
 import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
+import { containedIn } from "./lib/trackedFiles.mts";
 
 /* ⚠ THREE BARE WORDS, DECLARED (#642) - read out of this file's own usage
    line below: `<worktree> [stride] [out.json]`. A FOURTH word, or any `--flag`,
@@ -139,7 +140,19 @@ const started = Date.now();
 for (let i = 0; i < boundaries.length; i++) {
   const sha = boundaries[i]!;
   git(["checkout", "--detach", "--force", sha], WORKTREE);
-  const tree = readTree(WORKTREE);
+  /*
+    ⚠ ASKED AFTER THE CHECKOUT, NEVER BEFORE IT (#1620). `git ls-files` reads the
+    INDEX, and the checkout above is what makes this worktree's index the
+    boundary's tree — so the predicate has to be built here, per boundary, and
+    not once outside the loop where it would describe whichever commit happened
+    to be checked out when the run started.
+
+    The detached worktree is clean, so this changes no verdict today; it is here
+    because "this caller's tree is always clean" is a claim about the CALLER, and
+    the one the module's own `walk` docblock declined a carve-out over. It costs
+    18 ms on a boundary that already spends a checkout plus a ~900 ms walk.
+  */
+  const tree = readTree(WORKTREE, containedIn(WORKTREE));
   observeTree(timeline, i, tree);
   shas.push(sha);
   dates.push(git(["show", "-s", "--format=%cI", sha]).trim());
