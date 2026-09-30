@@ -121,6 +121,48 @@ export function homeWorkCategoryFor(labels: readonly string[]): CrewWorkCategory
   return null;
 }
 
+/**
+ * THE TWO CATEGORIES WHOSE WORK IS A FIX TO LIVE BEHAVIOUR (#1553).
+ *
+ * `PROGRAM.md`'s MAINTENANCE MODE names exactly this work as what runs when
+ * there is no focus at all: *bugs filed by the gate, the patrols, in-app
+ * reports, or the founder*, and *improvements that stay INSIDE existing
+ * behaviour*. Nothing here decides anything on its own — it is read by the seat
+ * lane's rung gate, where a `rung:` label on one of these cards is a LOCATOR
+ * (whose territory the fix lives in) rather than a claim that the fix is
+ * milestone work.
+ *
+ * ⚠ **The keys are held to the category list by the compiler, not by care.**
+ * `satisfies readonly CrewWorkCategoryKey[]` means renaming or removing a
+ * category breaks the build here rather than quietly emptying this set — which
+ * is the drift `homeWorkCategoryFor` above exists to avoid, one list further on.
+ *
+ * ⚠ **`castingUpkeep` is deliberately NOT in it, and that is fail-closed rather
+ * than an oversight.** It is also inside-existing-behaviour work, so the
+ * argument for it is real; but the card that asked for this named `bug` and
+ * `small-fix` and no third thing, and a casting card wearing a rung label is
+ * the one shape where "this is the milestone's own work" is most often true.
+ * Widening it is a second decision with its own reading.
+ */
+export const CREW_FIX_CATEGORY_KEYS = [
+  "bugs",
+  "smallFixes",
+] as const satisfies readonly CrewWorkCategoryKey[];
+
+/**
+ * Is this card's work a fix to live behaviour?
+ *
+ * Asked of the card's ONE home category (his rule: one work label per card), so
+ * a card filed `bug` + `casting-upkeep` answers on `bug` — a bug is a bug
+ * wherever else it lives, which is `homeWorkCategoryFor`'s own precedence and
+ * not a second opinion about it. A card with no work label at all answers
+ * `false`: those are the pipeline groups' business.
+ */
+export function isFixWork(labels: readonly string[]): boolean {
+  const home = homeWorkCategoryFor(labels);
+  return home !== null && (CREW_FIX_CATEGORY_KEYS as readonly string[]).includes(home);
+}
+
 /** The master switch's key. Off here means nothing runs, whatever the rest say. */
 export const CREW_WORK_MASTER_KEY = "master";
 

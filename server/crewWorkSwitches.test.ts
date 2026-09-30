@@ -21,7 +21,9 @@ import {
   CREW_WORK_SWITCH_KEYS,
   anyBackgroundWorkAllowed,
   backgroundWorkAllowed,
+  CREW_FIX_CATEGORY_KEYS,
   homeWorkCategoryFor,
+  isFixWork,
 } from "../shared/crewWorkSwitches";
 
 /** Everything on — the positive control every negative arm is measured against. */
@@ -218,5 +220,71 @@ describe("a card is homed in exactly one category (his question, 2026-09-25)", (
   it("no work label homes the card nowhere — the pipeline groups' business, never a category's", () => {
     expect(homeWorkCategoryFor([])).toBeNull();
     expect(homeWorkCategoryFor(["rung:N3", "roadmap", "debt", "founder-ordered"])).toBeNull();
+  });
+});
+
+/* ── WHICH WORK IS A FIX TO LIVE BEHAVIOUR (#1553) ─────────────────────────── */
+
+describe("a fix to live behaviour is named, and the naming cannot drift from the categories", () => {
+  /*
+    The seat lane reads this to decide that a `rung:` label on a bug is a
+    LOCATOR rather than a hold — three of his own fixes sat unbuildable under the
+    milestone gate in one pass because it could not tell the two apart. The rule
+    it expresses is `PROGRAM.md`'s MAINTENANCE MODE: bugs and improvements inside
+    existing behaviour run when there is no focus at all.
+  */
+  it("every key it names is a real category, by the compiler and by this reading", () => {
+    /*
+      `satisfies readonly CrewWorkCategoryKey[]` already makes a renamed category
+      a build error. This is the second reader (working law 2): it resolves each
+      key against the LIST at runtime, so the set cannot name something the
+      declaration stopped having.
+    */
+    const keys = CREW_WORK_CATEGORIES.map((category) => category.key);
+    for (const key of CREW_FIX_CATEGORY_KEYS) {
+      expect(keys, `${key} is not a category`).toContain(key);
+    }
+    expect(CREW_FIX_CATEGORY_KEYS.length).toBeGreaterThan(0);
+  });
+
+  it("answers TRUE for exactly the fix categories and FALSE for every other one", () => {
+    /*
+      Derived over the whole category list rather than named twice, so a new
+      category arrives here answering `false` — the fail-closed direction — and a
+      category PROMOTED into the fix set has to be promoted in the declaration.
+    */
+    for (const category of CREW_WORK_CATEGORIES) {
+      const expected = (CREW_FIX_CATEGORY_KEYS as readonly string[]).includes(category.key);
+      expect(isFixWork([category.queueLabel]), `${category.queueLabel}`).toBe(expected);
+      /* A rung label beside it changes nothing — that is the whole point. */
+      expect(isFixWork(["rung:N8", category.queueLabel, "urgent"]), `${category.queueLabel} + rung`).toBe(expected);
+    }
+  });
+
+  it("CAN answer false — the controls that stop this reading from being vacuous", () => {
+    /*
+      An arm that only ever saw `true` would pass on a predicate that returned
+      `true` always. These are the shapes the seat lane must NOT let through: a
+      feature card, a patrol card, and a card with no work label at all.
+    */
+    expect(isFixWork([])).toBe(false);
+    expect(isFixWork(["rung:N3"])).toBe(false);
+    expect(isFixWork(["design-unbuilt", "rung:N3"])).toBe(false);
+    expect(isFixWork(["roadmap", "founder-ordered", "rung:N3"])).toBe(false);
+    expect(isFixWork(["casting-upkeep", "rung:N3"])).toBe(false);
+    expect(isFixWork(["seat:retro"])).toBe(false);
+  });
+
+  it("reads the card's ONE home, so a double-labelled bug is still a fix", () => {
+    /*
+      His one-work-label rule makes this rare, not impossible. Asking whether ANY
+      label is a fix label would be the tempting shape and is wrong for a reason
+      worth writing down: it would also answer true for `design-unbuilt` + `bug`,
+      which is the mislabelled feature card the seat lane must not take on this
+      road. The home is `homeWorkCategoryFor`'s precedence and not a second one.
+    */
+    expect(isFixWork(["casting-upkeep", "bug"])).toBe(true);
+    expect(isFixWork(["seat:retro", "small-fix"])).toBe(false);
+    expect(homeWorkCategoryFor(["seat:retro", "small-fix"])).toBe("process");
   });
 });

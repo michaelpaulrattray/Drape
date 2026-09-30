@@ -18,6 +18,8 @@ This document is shape (1) and nothing of shape (2). Shape (2) waits on
 
 ## What a customer sees
 
+⚠ **THE CHIP AND LINE WORDING IN THIS SECTION IS RETIRED — #1551, 2026-09-30, approved on the Notion desk.** Every failure chip was rewritten into outcome words under the disappearing-technology law's clause 6: **Engine error → Didn't finish** (*Didn't finish on our side · refunded*) and **Content filter → Blocked** (*Blocked by a safety check · refunded*). Read the copy at `shared/candidateFailure.ts`; the sentences below are this design as first built and their MECHANICS are unchanged — the kinds, the door, the price, the refund and the slot all still work exactly as described, because only the words moved.
+
 A tile that says **Engine error · refunded** (or **Didn't arrive · refunded**)
 gains one quiet button: **Retry · 20 credits**. Tapping it charges 20
 credits, the tile goes back to *casting*, and one render runs with the SAME

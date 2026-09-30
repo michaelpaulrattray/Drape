@@ -114,6 +114,17 @@ export const RITE_DISK_READS: ReadonlyArray<{ readonly path: string; readonly wh
     why: "imported by the briefing schema judging this push, at module load",
   },
   {
+    /* The EIGHTH, and the derived arm caught it the hour it arrived (#1559),
+       exactly as it caught the seventh: what counts as markdown decoration at
+       the head of a line is declared once and imported by BOTH card-body
+       readers, and one of them was already in the rite's graph — so a module
+       written to remove a duplication pulled a new file in one hop out.
+       Nothing about the rite changed; what changed is that this file is now
+       reached. */
+    path: "shared/crewMarkdownLead.ts",
+    why: "imported by the hold reader, which the briefing schema loads at module load",
+  },
+  {
     path: "shared/crewNextUpHold.ts",
     why: "imported by the briefing schema judging this push, at module load",
   },

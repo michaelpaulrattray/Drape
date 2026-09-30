@@ -42,6 +42,8 @@ objects, disclosed never silent) survives as the rewrite's RULES.
 
 ## 1. What the customer sees
 
+⚠ **THAT CHIP NOW READS "BLOCKED" AND ITS LINE READS *Blocked by a safety check · refunded* — #1551, 2026-09-30** (every failure chip rewritten into outcome words, disappearing-technology law clause 6). The kind is still `content_filter`, so nothing about which tiles this road would serve has moved.
+
 A tile that wears **CONTENT FILTER** (*Refused by the engine's content filter
 · refunded*) gains one quiet button beside the class: **Softer wording**.
 
