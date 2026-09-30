@@ -75,6 +75,7 @@
  * rather than on a shape imagined here.
  */
 import { cardNumberToken, type CardPullRequestWhere } from "./crewShiftState";
+import { blockOpeningLines } from "./crewMarkdownLead";
 import {
   handVerdictFreshness,
   isHandVerdict,
@@ -268,13 +269,34 @@ export type CrewCardCommentFact =
   | { readonly kind: "verdict"; readonly card: number; readonly at: string };
 
 /*
-  Anchored at the start of the body, through at most a little markdown
-  emphasis — a seat writes `CLAIMED — seat-desk-2, <time>` bare and the relay
-  sometimes bolds a heading. A mention of the word anywhere else in a
-  paragraph is NOT a claim: every one of this card's own five comments
-  discusses claiming at length and none of them is one.
+  Anchored at the start of a LINE, through at most a little markdown emphasis —
+  a seat writes `CLAIMED — seat-desk-2, <time>` bare and the relay sometimes
+  bolds it. A mention of the word mid-paragraph is NOT a claim: every one of
+  this card's own comments discusses claiming at length and none of them is one.
+
+  ⚠ **IT WAS ANCHORED AT THE START OF THE WHOLE BODY UNTIL #1559, AND THAT
+  FAILED TOWARD SILENCE.** None of these carried the `m` flag, so `^` meant the
+  first character of the comment — a release written on its own line under a
+  heading was invisible, and **#180 read as `claimed` for twelve hours after it
+  had been handed back**, with every seat pass stepping over it. The shift had
+  done exactly what the standing orders ask.
+
+  ⚠ **PER-LINE WAS MEASURED BEFORE IT WAS CHOSEN, because the two ways to be
+  wrong here are not symmetric**: a missed release idles a seat, a FALSE release
+  cancels a live claim and two seats build the same card. Driven over 84 real
+  comments on twelve cards that discuss claiming and releasing at length, the
+  per-line reading found **three releases the body anchor missed** (#180 twice,
+  #1492 once — a third instance the card that ordered this did not know about)
+  and **not one extra claim**. That is a floor and not a proof, which is why the
+  negative control stays: prose about releasing is still not a release.
+
+  The block decoration a line may wear — `>`, `#`, a bullet — is stripped once
+  by `shared/crewMarkdownLead.ts`, so this `LEAD` only has to allow the INLINE
+  emphasis it always allowed. It must not allow more: the hold marker in
+  `crewNextUpHold.ts` begins with `**` literally, and a shared stripper that ate
+  leading asterisks would turn that silence into a different one.
 */
-const LEAD = String.raw`^[\s>*_#⚠]*`;
+const LEAD = String.raw`^[\s*_⚠]*`;
 const DASH = String.raw`[—–-]`;
 const CLAIM_RE = new RegExp(`${LEAD}CLAIMED\\s*${DASH}\\s*([^,\\n*]*)`, "i");
 const RELEASE_RE = new RegExp(`${LEAD}RELEASED\\b`, "i");
@@ -298,10 +320,18 @@ export function crewCardCommentFact(comment: CrewCardComment): CrewCardCommentFa
     }
     return null;
   }
-  const refused = REFUSAL_RE.test(body);
-  if (refused) return { kind: "refusal", card, at: createdAt };
-  if (RELEASE_RE.test(body)) return { kind: "release", card, at: createdAt };
-  const claim = body.match(CLAIM_RE);
+  /* One pass over the body's BLOCK-OPENING lines, decoration stripped — the
+     single population all three matchers read, so none of them can quietly
+     disagree about what a line is. Precedence is unchanged: refusal, then
+     release, then claim.
+
+     ⚠ Block-opening rather than every line, and a negative control is why: a
+     hard-wrapped paragraph can put RELEASED at the start of its second line,
+     and a false release cancels a live claim. See `blockOpeningLines`. */
+  const lines = blockOpeningLines(body);
+  if (lines.some((line) => REFUSAL_RE.test(line))) return { kind: "refusal", card, at: createdAt };
+  if (lines.some((line) => RELEASE_RE.test(line))) return { kind: "release", card, at: createdAt };
+  const claim = lines.reduce<RegExpMatchArray | null>((found, line) => found ?? line.match(CLAIM_RE), null);
   if (claim) {
     const seat = (claim[1] ?? "").trim();
     return { kind: "claim", card, seat: seat === "" ? null : seat.slice(0, 60), at: createdAt };
