@@ -1028,7 +1028,7 @@ export function wardrobeSpecFor(
     `CLOSE_UP_WARDROBE`). Only the shared sentence has a described form.
   */
   if (base !== CAST_PACKAGE_WARDROBE_SPEC) return base;
-  if (wardrobeLine !== null) return castPackageWardrobeSpec(wardrobeLine, pronouns) + sideClauseFor(angle);
+  if (wardrobeLine !== null) return castPackageWardrobeSpec(wardrobeLine, pronouns) + sideClauseFor(angle, pronouns);
   /*
     #1278 part 1. The stored-line road is FIRST because a line is the stronger
     record when one exists — though none ever has: read at the rows 2026-09-26,
@@ -1038,7 +1038,7 @@ export function wardrobeSpecFor(
   return (description === null
     ? sharedWardrobeSpec(pronouns)
     : describedWardrobeSpec(pronouns, outfitReferenceOrdinal))
-    + sideClauseFor(angle);
+    + sideClauseFor(angle, pronouns);
 }
 
 /**
@@ -1066,6 +1066,12 @@ export function wardrobeSpecFor(
  * four separate five-read arms, with the judge saying *"The flowing dark
  * robe/kimono layer over the shoulder seen in the reference is missing."*
  *
+* ⚠ **AND IT COMPOSES WITH THE CAST'S OWN PRONOUNS, WHICH IS NOT A STYLE NOTE
+ * — the first draft of this clause hard-coded *"her"* and
+ * `viewOutfitAuthority.test.ts` caught it inside a minute** (#1480 finding A:
+ * *never calls a male cast 'her', on any angle, plate or no plate*). The guard
+ * was already there, watching the road this clause joined.
+ *
  * # Why the repair is a per-view clause and not an edit to the shared sentence
  *
  * The card's own reason for filing rather than fixing was that the obvious
@@ -1088,15 +1094,16 @@ export function wardrobeSpecFor(
  * well as of the reading — an asymmetric outfit SHOULD present its near side
  * here — so one copy serves both.
  */
-function sideClauseFor(angle: CastViewAngle): string {
+function sideClauseFor(angle: CastViewAngle, pronouns: CastPronouns): string {
   if (!VIEWS[angle].rotated) return "";
   return " This view turns the subject away from the reference's front-on framing, so the two "
-    + "photographs do not show the same sides of her body: a garment the reference shows on one "
-    + "side of her may be the far side here — hidden behind her, or foreshortened — and what is "
+    + `photographs do not show the same sides of ${pronouns.possessive} body: a garment the `
+    + `reference shows on one side of ${pronouns.object} may be the far side here — hidden behind `
+    + `${pronouns.object}, or foreshortened — and what is `
     + "nearest the camera here may be the side the reference showed least. Judge whether the SAME "
     + "outfit is present, never whether a garment falls on the same side of the frame. An outfit "
-    + "that is different on her two sides is not a wardrobe change: the turn has changed which of "
-    + "the two you can see.";
+    + `that is different on ${pronouns.possessive} two sides is not a wardrobe change: the turn has `
+    + "changed which of the two you can see.";
 }
 
 /**

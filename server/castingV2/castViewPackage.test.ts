@@ -27,6 +27,7 @@ import {
   castPackageView,
   composePackageViewPrompt,
   packageViewExpectation,
+  wardrobeSpecFor,
 } from "./castViewPackage";
 
 /**
@@ -1271,9 +1272,23 @@ describe("a rotated view knows the turn changed which side of her you see (#1579
     /* The three halves of the repair, each doing its own work: the two frames do
        not show the same sides; judge SAMENESS rather than which side of the
        frame; and the asymmetric outfit named as the case it is about. */
-    expect(profile).toContain("do not show the same sides of her body");
+    expect(profile).toContain("do not show the same sides of their body");
     expect(profile).toContain("never whether a garment falls on the same side of the frame");
     expect(profile).toContain("is not a wardrobe change");
+
+    /*
+      ⚠ **AND IT IS COMPOSED WITH THE CAST'S OWN PRONOUNS — the first draft of
+      this clause hard-coded *"her"* and `viewOutfitAuthority.test.ts` reddened
+      inside a minute** (#1480 finding A: *never calls a male cast 'her'*). Pinned
+      here as well as there, because the arm over there is about the whole prompt
+      and this one is about this clause: a reader looking at the sentence should
+      see its own arm, not have to find the general one.
+    */
+    const male = wardrobeSpecFor("sideClose", null, null, pronounsForSex("male"));
+    expect(male).toContain("do not show the same sides of his body");
+    expect(male).toContain("hidden behind him");
+    expect(male).not.toContain(" her ");
+    expect(male).not.toContain("her body");
   });
 
   it("⚠ licenses no outfit change — the contract it is appended to is untouched", () => {
