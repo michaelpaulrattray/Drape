@@ -116,6 +116,7 @@ import { resolve } from "node:path";
 
 import { declKey, importersAt, readTree } from "./lib/importerCountDiff.mts";
 import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
+import { containedIn } from "./lib/trackedFiles.mts";
 
 const REPO = resolve(import.meta.dirname, "..");
 const TABLE = resolve(REPO, "docs/specs/cleanup-dispositions.yaml");
@@ -581,10 +582,18 @@ if (import.meta.main) {
     .filter((match): match is RegExpMatchArray => match !== null)
     .map((match) => ({ symbol: match[1]!, file: match[2]! }));
 
+  /*
+    ⚠ AND `stale` ASKS THE REPOSITORY, NOT THE DISK (#1617). `existsSync` alone
+    read a file this repository does not contain as a live declaration, so a row
+    naming an untracked module was sound here and STALE on CI — the mirror of the
+    sweep's own defect on the same card, one verdict over. Both ends of this door
+    now read the tree the gate reads; see `lib/trackedFiles.mts`.
+  */
+  const contains = containedIn(REPO);
   const sourceOf = new Map<string, string>();
   const declares = (file: string, symbol: string): boolean => {
     const path = resolve(REPO, file);
-    if (!existsSync(path)) return false;
+    if (!existsSync(path) || !contains(path)) return false;
     if (!sourceOf.has(file)) sourceOf.set(file, readFileSync(path, "utf8"));
     return new RegExp(`^export\\s+(?:async\\s+)?(?:function|const|class|type|interface)\\s+${symbol}(?![\\w$])`, "m")
       .test(sourceOf.get(file)!);
