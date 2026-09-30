@@ -1,7 +1,7 @@
 {
-  "edition": 587,
-  "updatedAt": "2026-09-30T11:35:00.000Z",
-  "shift": "Foreman (night shift) — tonight was the first piece of the job you settled this morning, when you asked whether really strict checkers are unreliable. The answer turned out to be that the checker was not too strict, it was guessing: it is a model reading a paragraph, and on your own casts in one afternoon it threw away a picture of a three-eyed cast for not having two eyes, and waved through a close-up with the whole neck and shoulders in it that the same paragraph calls too loose. So the part of that paragraph that is really about where the edges of the picture fall — is the whole body in frame, is there room below the face — is now MEASURED instead of read, with the same tool the face panel already uses. Nothing you can see has changed yet: this is the instrument, and the change to what a picture costs and when one is thrown away comes next. The useful part is what the first real run found. The obvious rule was to ask the tool “are there shoulders in this picture”, and on your six close-ups it answered NO on the three that plainly have shoulders and YES on the two that do not — wrong five times out of five, and wrong in both directions. Had we trusted our own test suite it would have shipped, and it would have been exactly the problem you asked about, rebuilt. What it does now instead is measure how much picture sits below the face, which has no body part in it at all and works just as well on Kai and on Pika. Ten repeats of the same picture give the same answer ten times. There is one thing worth thirty seconds of your eye — the strip below shows where we drew the line. —— The board: 43 jobs open, 13 of them ones you ordered (ten of those are the pricing rung, which waits for N2 to finish), one being built tonight, and three that nobody has touched in a week. Nothing is waiting on you except the strip below, and that is a look rather than a decision.",
+  "edition": 588,
+  "updatedAt": "2026-09-30T13:05:00.000Z",
+  "shift": "Foreman (night shift) — tonight is the half of this morning's answer that changes what a picture costs you. Since the studio started signing casts it has thrown away eight of your pictures and refunded you for them. I read every one of those eight tonight, before writing a line of code: five were thrown away because the checker decided the clothes were wrong, three because it decided the framing was wrong, and NOT ONE because it decided the person was not the person you signed. That is the whole case. The one thing a checker on a signed cast exists to catch, it has never once caught — and the two things it does catch are the two it was demonstrably wrong about four separate times yesterday on your own casts. So from now on there is exactly one reason to take a picture away from you: it is not her. If the studio thinks the framing is loose, or the outfit is off, or it simply cannot tell, YOU GET THE PICTURE — you are charged for it, it is marked Unchecked the way it already is when nobody could look at it, and Try again beside it is free. If it thinks the face is someone else, that still refuses and still refunds, and being unsure about the face counts as refusing, because handing you a stranger under your own signed cast is the one thing that breaks the promise. All eight of those old refusals were replayed through the new rule and every one of them now hands you the picture. Nothing on screen changes and no new word appears — Unchecked and the free Try again are already there. The part I want on the record is that our own test suite could not see this change at all: 5,761 tests stayed green while I moved the rule, because every one of them happened to test the one axis I did not touch. So I broke it ten different ways on purpose to make sure the new tests actually notice, and all ten went red. It is written and waiting on a review before it goes live — it moves money, so it is not merged by a shift. One thing found on the way and written down rather than fixed tonight: our own gate could not tell that this change touches money at all — it decides whether you get a refund, and the check that spots money changes looks for a particular line of code rather than for a rule. It waved this through as an ordinary change. I labelled it by hand so nobody ships it without a proper read, and filed the gap (#1622); the same blind spot covers every part of the studio that refunds you. ⚠ The board: 45 jobs open, 13 of them ones you ordered (ten are the pricing rung, waiting for N2 to finish), one being built tonight, three nobody has touched in a week. The only thing waiting on you is still the strip below from last night, and it is a look rather than a decision.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -308,6 +308,10 @@
         {
           "state": "in-progress",
           "title": "Your product has one address family now, and casting has joined it (#1583) — your word, \"yes i want that shape\". The signed-in product lives under one /app roof because the front of the site belongs to your marketing pages. Casting was the last thing still sitting at the top level: it is /app/casting now, a sheet is /app/casting/s/…, a signed cast is /app/casting/cast/…, and the canvas list moved from /app/boards to /app/canvas with each canvas at /app/canvas/… . THE PART THAT MATTERS TO YOU IS THAT NOTHING BREAKS: all five old addresses still answer and forward, and the three that name a particular sheet or cast carry that name across, so an old link to one sheet opens that sheet and not the front page. I proved that by driving each old address through a real browser and reading where it ended up, because a page can look right while the old address is still in the bar, and no photograph can tell those apart. Waiting on a look before it goes live."
+        },
+        {
+          "title": "Only one thing can take a picture away from you now: it is not her (#1612, the second half of this morning's ruling). The checker looks at three things — is this the person you signed, is the framing what was asked for, are the clothes right — and until tonight any one of them could throw a picture away and refund you. I read every refusal this studio has ever made before touching it: eight, all time. Five on clothes, three on framing, NONE on the person. From now on framing and clothes never cost you a picture — you get it, marked Unchecked, with a free Try again — and only the face still refuses, including when the checker is unsure about the face. All eight old refusals were replayed and all eight now deliver. Nothing on your screen changes. ⚠ Two things worth knowing: a picture the checker frowns at is no longer re-drawn behind your back, because re-drawing means throwing away the picture you could have had — that choice is yours now, for free; and your 20 older views that predate the checker keep exactly the price they had, which I measured rather than assumed. Written, and waiting on a review before it goes live because it moves money.",
+          "state": "in-progress"
         }
       ]
     },
@@ -401,7 +405,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-30T11:30:42.491Z",
+      "readAt": "2026-09-30T12:24:01.463Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -9230,6 +9234,13 @@
       "status": "merged",
       "prNumber": 1549,
       "note": "Relay's repair pushed 95b61b31; driven live on merged PR #1590 both ways. Waiting on the relay's re-issued verdict."
+    },
+    {
+      "id": "unsure-delivers-1612",
+      "title": "Only identity takes a picture away — framing and wardrobe now deliver (#1612 part 2)",
+      "status": "in-review",
+      "prNumber": 1621,
+      "note": "Money surface: held for the relay, never merged by a shift."
     }
   ],
   "problems": [
@@ -9526,7 +9537,7 @@
     247
   ],
   "nextUp": {
-    "readAt": "2026-09-30T11:30:42.490Z",
+    "readAt": "2026-09-30T12:24:01.463Z",
     "items": [
       {
         "issueNumber": 1469,
