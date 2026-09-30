@@ -3,14 +3,19 @@ import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 import { containedIn, trackedFiles } from "../scripts/lib/trackedFiles.mts";
-import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 import { readListedSource } from "./testing/listedSource";
 import { withoutComments } from "./testing/withoutComments";
 
-/* This suite reads the whole tracked source tree off disk through
-   `readListedSource`, so it is in #741's source-sweep population and declares
-   its floor at file level. */
-vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
+/* Two derived populations claim this suite and it declares one floor for both.
+   It reads the whole tracked source tree off disk through `readListedSource`
+   (#741's source sweep), and `trackedFiles` asks git what the repository
+   contains — a real `ls-files` process — which puts it in #548's child-process
+   population too. `declaresTheFloor` accepts either constant and both are
+   30_000; the child-process one is named because that is the slower fact about
+   this suite. Preflight found the second population, not a reviewer: the first
+   draft declared the contended floor alone and went red on #548. */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 /**
  * A GUARD MAY NOT STRIP `//` TO END OF LINE (#1629).
