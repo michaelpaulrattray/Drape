@@ -1,7 +1,7 @@
 {
-  "edition": 581,
-  "updatedAt": "2026-09-30T02:35:00.000Z",
-  "shift": "Foreman (night shift) — when you reply on this page, your answer is now on its GitHub card within the minute. You asked why your Grok team could not see your replies straight away, and the answer was that they lived only in this page until one of the crew next picked them up and copied them across by hand. Last night that took twenty-five minutes, and it was luck: a shift happened to re-read you just before it finished. Had it finished twenty minutes earlier, four of your answers would have sat there all night and four cards would still have said they were waiting on you. It is mechanical now. You type here, as always — nothing about this page changes — and about a minute later the card carries exactly what you wrote, word for word, under your own name. Proven on your real words before it shipped: your \"A\" on the creature-retry card went across, then we deliberately wiped its memory of having done it and ran it again, and it noticed its own earlier comment and did not post a second copy. One thing we chose NOT to do, and you may want to overrule us: the instant version needs a GitHub password living on the same server that serves your customers, and you have twice said that kind of decision is yours rather than ours — so we took the road that needs no new password anywhere and costs a minute instead of a second. Say the word and it becomes instant. The crew still reads your replies and acts on them exactly as before; this only makes sure nobody has to wait to SEE them. Nothing was spent.",
+  "edition": 582,
+  "updatedAt": "2026-09-30T04:05:00.000Z",
+  "shift": "Foreman (night shift) — your library now reads Library, at an address that says library, and on the canvas a person is a cast rather than a model. You told your research team the page should read /library, not /models, and that is what it does: the old address still works, so nothing you have ever bookmarked or linked breaks — it just forwards. Two things are worth telling you because they changed the job. First, the page title you were told about was already right: the old library screen was switched off weeks ago while it waits to be redesigned, and the screen you actually see was already headed Library. We proved that by reading the file your browser downloads rather than the code, and not one of that old screen's twelve mentions of the word is in it. So the real work moved to your canvas, where the word WAS reaching you — sixteen places, including the picker that now says Your casts and searches casts, and two messages that used to send you to Models and now say your Library. Second, four of those sixteen were missed on the first pass and found by a new check we wrote for exactly this, which is the check earning its keep on its first day. Left alone on purpose: your plan screen's \"every model and every tool\", because there model means the engine, which is the one thing that word should mean. One question for you further down about the picture gallery on this page, and one new job filed: the studio's own error sentences still say model in fifty-one places, and you read those word for word. Nothing was spent.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -296,6 +296,10 @@
         {
           "title": "Your replies now reach their cards by themselves (#1539). You type on this page; about a minute later the card says it, in your words, under your name. Built the way that needs no new password on the customer-facing server — the instant version is still there for the asking.",
           "state": "done"
+        },
+        {
+          "state": "in-progress",
+          "title": "Your library says Library now, and its address does too (#1545) — your word to your research team, built and waiting on a review. The old address forwards, so nothing you have bookmarked or sent breaks. Sixteen places on your canvas stopped calling a person a model: the picker says Your casts, and the two messages that used to point you at Models now point at your Library. The screen you were told to rename was already named right — that old library page was switched off weeks ago pending its redesign, proven by reading the file your browser downloads, where not one of its twelve mentions appears. Left alone on purpose: your plan screen's \"every model and every tool\", where model means the engine. And filed for later (#1565): the studio's own error sentences still say model in fifty-one places, and you read those word for word."
         }
       ]
     },
@@ -510,6 +514,28 @@
     }
   },
   "needsYou": [
+    {
+      "id": "eye-gallery-1467",
+      "title": "The picture gallery on this page: should it fill itself in, or stay as it is?",
+      "productImpact": "When something needs your eyes — two pictures to compare, a sheet to judge — it reaches you on this page two ways: as a card saying it is waiting on you, and as pictures you can actually look at.\n\nThe card half now looks after itself. That was the point of the job and it is done and live: if something is waiting on you it appears here on its own, within a minute, and nobody has to remember to write it in. That includes things waiting on your eyes.\n\nThe pictures are the last piece, and they are still placed by hand — a shift uploads them and writes them in when it next updates this page.\n\nI am asking rather than just doing it because the list a shift writes is also the only thing that lets this page show those pictures at all. To make them appear by themselves, we would have to let a note written on a job decide which pictures your page may display. That is a change to what this page is allowed to fetch, and it did not seem like a decision a shift should make on its own.",
+      "workedExample": "Right now there is nothing waiting for your eyes. All 117 picture items on this page are finished, and that has been true every one of the three times somebody has looked at it — twice last night and again today.\n\nSo this is not a queue backing up. It is a small step a shift takes on the days it has pictures for you.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Leave it as it is",
+          "consequence": "Pictures keep being placed by hand on the days there are any. Nothing about \"this is waiting on you\" changes — that part already looks after itself. Nothing gets built."
+        },
+        {
+          "key": "B",
+          "label": "Make the pictures automatic too",
+          "consequence": "Saves a shift a small step on those days, and costs the loosening of what this page may fetch, described above."
+        }
+      ],
+      "recommendation": "A. The thing that was actually going wrong — this page not telling you something was waiting — is fixed and live. What is left is a small step a shift takes only when it has pictures for you, and the tidier version buys that convenience by loosening what your page is allowed to fetch. Say the word and B gets built.",
+      "state": "open",
+      "filedAt": "2026-09-30",
+      "issueNumber": 1467
+    },
     {
       "id": "sign-version-1478",
       "title": "You edited his nose, then signed, and got the original — one question",
@@ -6543,6 +6569,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "library-address-1545",
+      "title": "The library reads /library, and a person on it is a cast (#1545)",
+      "status": "in-review",
+      "prNumber": 1564,
+      "note": "Open and held for review — a customer-visible change, so it waits for a look at the frames."
+    },
     {
       "id": "reply-mirror-1539",
       "title": "A Desk reply reaches its GitHub card within the minute (#1539)",
