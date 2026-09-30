@@ -6,18 +6,29 @@
  *
  * UPGRADE WORKFLOW:
  *   1. Change the model ID in the relevant slot below
- *   2. Run `pnpm test` to verify nothing breaks
- *   3. Document the change in MODEL_CHANGELOG.md
+ *   2. Update its row in `shared/vendorModelStatus.ts` — the id's vendor status
+ *      with the date it was read. An id with no row there fails the gate.
+ *   3. Run `pnpm test` to verify nothing breaks
+ *   4. Document the change in MODEL_CHANGELOG.md
  *
  * See MODEL_CHANGELOG.md for decision framework and history.
+ *
+ * ⚠ **A SLOT HERE SAYS NOTHING ABOUT WHETHER THE VENDOR STILL SERVES THE ID.**
+ * Two of these ids were shut down for three months while this file carried them
+ * as ordinary constants and the changelog's Watch List called one "Active"
+ * (#1537). Vendor status — current / deprecated / shut down, each with the day
+ * it was read and where — lives in `shared/vendorModelStatus.ts`, and
+ * `server/vendorModelStatus.test.ts` refuses an id here that has no row there.
+ * Status is deliberately NOT restated in the comments below: a date in two
+ * places is a date that drifts (working law 4).
  */
 
 // ─── Semantic Model Slots ────────────────────────────────────────────
 
-/** Premium image generation — VTO, casting, refinement, views */
+/** Premium image generation — VTO, casting, refinement, views. ⚠ SHUT DOWN at the vendor; see `shared/vendorModelStatus.ts` (#1537). */
 export const IMAGE_PRO = "gemini-3-pro-image-preview" as const;
 
-/** Fast/cheap image generation — digitization, fallback chains */
+/** Fast/cheap image generation — digitization, fallback chains. ⚠ SHUT DOWN at the vendor; see `shared/vendorModelStatus.ts` (#1537). */
 export const IMAGE_FLASH = "gemini-3.1-flash-image-preview" as const;
 
 /** Premium text reasoning — detection, master prompt generation */
