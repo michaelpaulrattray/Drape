@@ -778,22 +778,29 @@ describe("the milestone comes from the ladder he declared, not the top of his ba
       expect(why, "it must not claim an ordering it never computed").not.toContain("later rung");
     });
 
-    it("⚠ AN UNKNOWN RUNG IS STILL A RUNG — `rung:N2c` is on a real card and N2c is NOT in the ladder", () => {
+    it("⚠ AN UNKNOWN RUNG IS STILL A RUNG — a rung the ladder does not list is HELD, never read as rungless", () => {
       /*
-        The trap for the next repair: `rungFromLabels` validates a rung against
-        the ladder's keys, and validating HERE would read #1469 as RUNGLESS and
-        hand it to a seat — the milestone gate failing open on the one rung he has
-        not opened. `rungsNamedBy` stays raw for exactly this reason.
+        THE TRAP FOR THE NEXT REPAIR. `rungFromLabels` — the reader his page and
+        the desk sweep use — validates a rung against the ladder's keys, and it is
+        right to: an unplaced card renders in the ladder's honest remainder. Doing
+        the same HERE would read that card as RUNGLESS and hand it to a seat,
+        which is the milestone gate failing open on a rung he has not opened.
+        `rungsNamedBy` stays raw for exactly this reason.
+
+        ⚠ **THE LIVE INSTANCE TODAY IS `rung:N2c` ON #1469 — N2c is not in the
+        ladder at all — AND THIS ARM DELIBERATELY DOES NOT USE IT.** An arm keyed
+        on N2c's absence would go red the day a shift transcribes his word into
+        the ladder line, which is ordinary edition work and is owed. `N99` is the
+        same never-a-rung value `crewBriefing.test.ts` uses for its own
+        not-in-the-ladder arm, so the premise below cannot rot.
       */
       const ladder = JSON.parse(readFileSync("server/crew/crew-briefing.json", "utf8")) as {
         program: { ladder: readonly { readonly key: string }[] };
       };
-      expect(
-        ladder.program.ladder.map((rung) => rung.key),
-        "if N2c is ever added to the ladder this arm's premise changes, not its verdict",
-      ).not.toContain("N2c");
-      const result = band([rungless(1541), onRung(1469, "N2c")], "N2");
-      expect(result.offered, "an unlisted rung must never be offered as rungless work").toEqual([]);
+      expect(ladder.program.ladder.map((rung) => rung.key)).not.toContain("N99");
+      const result = band([rungless(1541), onRung(9999, "N99")], "N2");
+      expect(result.offered, "a rung the ladder does not list must never be offered as rungless work").toEqual([]);
+      expect(result.held.find((h) => h.number === 9999)!.why).toContain("on rung N99");
     });
 
     it("no milestone holds every rung card, and leaves rungless work alone", () => {
