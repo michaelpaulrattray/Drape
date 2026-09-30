@@ -18,7 +18,7 @@
  * what he wrote), and the wedge arm (a sweep that retried forever would
  * silence every reply behind one dead card).
  */
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
@@ -308,4 +308,45 @@ describe("the command's world gate", () => {
     },
     CONTENDED_TEST_TIMEOUT_MS,
   );
+});
+
+describe("the schedule recipe, which is the only road back after a rebuild", () => {
+  /* ⚠ THIS IS A GUARD ON A DOCBLOCK, AND IT IS HERE BECAUSE THE DOCBLOCK IS
+     LOAD-BEARING RATHER THAN DECORATIVE. The launcher the live task runs lives
+     at `.agents/crew-reply-mirror-hidden.vbs`, and `.agents/` is gitignored
+     (`.gitignore:161`) — so after a machine rebuild the recipe in
+     `crew-mirror-replies.mts` is the ONLY surviving road back.
+
+     It was wrong for a day. His word, 2026-09-30: *"please make the mirror run
+     silently its really annoying having a cmd terminal popup on my screen every
+     minute"*. The live task was moved onto the hidden launcher by hand that
+     night; the written recipe was not, so the one road that survives a rebuild
+     still said `-Execute 'cmd.exe'` and would have re-created the popup he had
+     just asked to be rid of.
+
+     NO SUITE CAN READ A MACHINE-LOCAL SCHEDULED TASK, so what is held here is
+     the half that is in tracked bytes: what the recipe TELLS you to register.
+     Read it back at the task itself, which the docblock now says in as many
+     words. */
+  const source = readFileSync(join(process.cwd(), "scripts/crew-mirror-replies.mts"), "utf8");
+
+  it("registers the task against the hidden launcher, never cmd.exe as the action", () => {
+    expect(source).toContain("-Execute 'wscript.exe'");
+    /* ⚠ ANCHORED ON THE ACTION, and that is not fussiness: this file contains
+       `cmd.exe` twice legitimately — inside the launcher body below, and at
+       `process.env.COMSPEC ?? "cmd.exe"` in the code — so a bare
+       `not.toContain("cmd.exe")` would be red on a correct file and would have
+       been "fixed" by loosening it into something that proves nothing. What is
+       forbidden is cmd.exe as the TASK ACTION, because the action is what owns
+       the console window. */
+    expect(source).not.toMatch(/New-ScheduledTaskAction\s+-Execute\s+'cmd\.exe'/);
+  });
+
+  it("carries the launcher's own body, because a gitignored file is lost on rebuild", () => {
+    /* Window style 0 is the whole point of the launcher — the recipe is useless
+       if it names the file without saying what goes in it. */
+    expect(source).toContain('rc = sh.Run("cmd.exe /c cd /d');
+    expect(source).toMatch(/--quiet",\s*0,\s*True\)/);
+    expect(source).toContain("WScript.Quit rc");
+  });
 });
