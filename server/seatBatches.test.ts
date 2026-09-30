@@ -35,6 +35,7 @@ import {
   citedOpenCards,
   cutSeatBatches,
   dependencyCitations,
+  focusRungFromLadder,
   orderedBandForSeats,
   pathsNamedIn,
   readIndependence,
@@ -481,8 +482,17 @@ describe("the independence reading", () => {
 });
 
 describe("his ordered band, split between the lanes", () => {
-  const band = (cards: SeatCandidateCard[], independence: (c: SeatCandidateCard) => ReturnType<typeof readIndependence>) =>
-    orderedBandForSeats({ cards, board: CLEAN_BOARD, areaIndex: INDEX, switches: ALL_ON, independenceOf: independence });
+  /* `focusRung` defaults to `null` for `population`'s stated reason (#1496): with
+     no milestone every rung card is held, so an arm that happened to carry a
+     `rung:` label keeps the behaviour it was written against, and an arm about
+     the narrower rule names the milestone on purpose. Since #1541 it is an INPUT
+     rather than read off the band's own top card. */
+  const band = (
+    cards: SeatCandidateCard[],
+    independence: (c: SeatCandidateCard) => ReturnType<typeof readIndependence>,
+    focusRung: string | null = null,
+  ) =>
+    orderedBandForSeats({ cards, board: CLEAN_BOARD, areaIndex: INDEX, switches: ALL_ON, independenceOf: independence, focusRung });
 
   const ordered = (number: number, body: string, labels: string[] = []) =>
     card(number, ["founder-ordered", ...labels], { body });
@@ -579,13 +589,18 @@ describe("his ordered band, split between the lanes", () => {
     expect(result.held.find((h) => h.number === 101)!.why).toContain("milestone gate");
   });
 
-  it("OFFERS an ordered card sitting on the focus card's own rung", () => {
+  it("OFFERS an ordered card sitting on the MILESTONE's rung", () => {
+    /* ⚠ The milestone is named here since #1541. It used to be read off the top
+       card's own label, so this arm passed without ever saying which rung it
+       meant — and the same silence is what let a rungless top card hold the whole
+       backlog. The rung is now stated, which is the point. */
     const result = band(
       [
         ordered(100, "server/casting/queue.ts", ["rung:N2"]),
         ordered(101, "client/src/features/boards/Canvas.tsx", ["rung:N2"]),
       ],
       () => ({ kind: "independent" }),
+      "N2",
     );
     expect(result.offered.map((c) => c.number)).toEqual([101]);
   });
@@ -609,6 +624,7 @@ describe("his ordered band, split between the lanes", () => {
         areaIndex: INDEX,
         switches,
         independenceOf: () => ({ kind: "independent" }),
+        focusRung: "N2",
       });
       expect(result.focus, JSON.stringify(switches)).toBeNull();
       expect(result.offered, JSON.stringify(switches)).toEqual([]);
@@ -651,6 +667,161 @@ describe("his ordered band, split between the lanes", () => {
 
 /* ── THE FILE ITSELF ───────────────────────────────────────────────────────── */
 
+/* ── THE MILESTONE (#1541) ─────────────────────────────────────────────────── */
+
+describe("the milestone comes from the ladder he declared, not the top of his band", () => {
+  /*
+    ⚠ THE DEFECT THESE ARMS ARE ABOUT HAD TWO FACES AND BOTH ARE DRIVEN BELOW,
+    each from a real pass on disk rather than from an invented shape:
+
+     - `seat-plan-20260930-100621.json` — a RUNGLESS ordered card on top (#1467,
+       then #1541 itself) made the milestone read `null`, and NINE rung cards were
+       held. #1496's two-seat throughput lasted one pass.
+     - `runner-pass-20260930-064523.md` — #509 (`rung:N6`) on top made every N2
+       card read as *"a later rung (N2) than the focus (N6)"*. N2 is not later
+       than N6, and the whole real milestone was held for an evening.
+
+    Neither face is about a missing label. The top of his band is whatever he
+    asked for most recently; the ladder's `current` is what says which milestone
+    is open.
+  */
+
+  it("reads the rung marked `current`", () => {
+    expect(focusRungFromLadder([
+      { key: "N1", state: "done" },
+      { key: "N2", state: "current" },
+      { key: "N3", state: "queued" },
+    ])).toBe("N2");
+  });
+
+  it("⚠ FAILS CLOSED — and each `null` is its own arm, because one of them used to be the whole bug", () => {
+    /* No milestone declared: THE MILESTONE GATE clears the focus at every
+       boundary, so this is legitimate and must hold every rung card. */
+    expect(focusRungFromLadder([{ key: "N1", state: "done" }, { key: "N2", state: "queued" }])).toBeNull();
+    /* Two is an incoherent ladder, not a choice between them. The briefing schema
+       refuses that edition; this is the belt to that braces. */
+    expect(focusRungFromLadder([{ key: "N2", state: "current" }, { key: "N3", state: "current" }])).toBeNull();
+    /* An unreadable or absent ladder — the CLI's catch hands `null` through. */
+    expect(focusRungFromLadder(null)).toBeNull();
+    expect(focusRungFromLadder(undefined)).toBeNull();
+    expect(focusRungFromLadder([])).toBeNull();
+    /* A `current` entry with no usable key is not a milestone either. */
+    expect(focusRungFromLadder([{ state: "current" }])).toBeNull();
+    expect(focusRungFromLadder([{ key: "", state: "current" }])).toBeNull();
+    expect(focusRungFromLadder([{ key: 2, state: "current" }])).toBeNull();
+  });
+
+  it("THE REAL BRIEFING NAMES ONE CURRENT RUNG, and it is the milestone his page draws", () => {
+    /*
+      ⚠ THE POSITIVE CONTROL OVER THE ARTIFACT, not over a fixture. Every arm
+      above would stay green against a briefing that declared nothing, which is
+      the state this whole card is about — so one arm reads the file the CLI
+      reads. It also pins the schema's `at most one` refinement to something real.
+    */
+    const briefing = JSON.parse(readFileSync("server/crew/crew-briefing.json", "utf8")) as {
+      program: { ladder: readonly { readonly key: string; readonly state: string }[] };
+    };
+    const ladder = briefing.program.ladder;
+    expect(ladder.length, "the ladder must not be empty or the seat lane has no milestone").toBeGreaterThan(0);
+    expect(ladder.filter((rung) => rung.state === "current").length, "exactly one current rung").toBe(1);
+    expect(focusRungFromLadder(ladder)).toBe("N2");
+  });
+
+  describe("tonight's two measured shapes, driven through the ordered gate", () => {
+    const band = (cards: SeatCandidateCard[], focusRung: string | null) =>
+      orderedBandForSeats({
+        cards,
+        board: CLEAN_BOARD,
+        areaIndex: INDEX,
+        switches: ALL_ON,
+        independenceOf: () => ({ kind: "independent" }),
+        focusRung,
+      });
+    /*
+      #1467 and #1541 are `seat:retro` tooling cards carrying no rung — the exact
+      fixture the card asks for. #1539 is the N2 card that was held behind them.
+
+      Two things are explicit rather than inherited from `card()`, because both
+      decide what the arm measures: **`createdAt`**, since the band sorts oldest
+      first and the whole question is which card sits ON TOP; and **a body path
+      out of `MODULES`**, since the area gate holds any card whose area — or the
+      focus card's — cannot be resolved, which would make every arm below pass
+      for the wrong reason. The paths are the fixture's area vocabulary, not the
+      real cards' files.
+    */
+    const TOP = "2026-09-01T00:00:00Z";
+    const UNDER = "2026-09-02T00:00:00Z";
+    const rungless = (n: number, createdAt = TOP) =>
+      card(n, ["founder-ordered", "seat:retro"], { body: "client/src/features/boards/Canvas.tsx", createdAt });
+    const onRung = (n: number, rung: string, createdAt = UNDER, body = "server/casting/queue.ts") =>
+      card(n, ["founder-ordered", `rung:${rung}`], { body, createdAt });
+
+    it("⚠ A RUNGLESS CARD ON TOP NO LONGER ERASES THE MILESTONE — the card's own fixture", () => {
+      const result = band([rungless(1467), onRung(1539, "N2")], "N2");
+      expect(result.focus!.number, "the rungless card is still the focus shift's").toBe(1467);
+      expect(result.offered.map((c) => c.number), "and the N2 card reaches a seat").toEqual([1539]);
+    });
+
+    it("⚠ AND A LATER-RUNG CARD ON TOP DOES NOT REPLACE IT — #509 at N6, the second face", () => {
+      /* #509 gets the boards path so the AREA gate is not what decides this arm —
+         same area as the focus card is its own hold, and it would mask the rung
+         reading the arm is about. */
+      const result = band(
+        [onRung(509, "N6", TOP, "client/src/features/boards/Canvas.tsx"), onRung(1539, "N2", UNDER)],
+        "N2",
+      );
+      expect(result.focus!.number).toBe(509);
+      expect(result.offered.map((c) => c.number), "the N2 card is the milestone's, whatever sits on top").toEqual([1539]);
+      /* And #509 itself is held — it is on a rung that is not the milestone. */
+      expect(result.held.find((h) => h.number === 509)!.why).toContain("the top of NEXT UP");
+    });
+
+    it("holds a rung that is not the milestone, and SAYS SO WITHOUT CLAIMING AN ORDERING", () => {
+      /*
+        ⚠ THE OLD SENTENCE WAS MEASURED FALSE, not merely loose: it printed *"a
+        later rung (N2) than the focus (N6)"* on thirteen real cards. Nothing here
+        has ever compared two rungs, so it no longer says one is later.
+      */
+      const result = band([rungless(1541), onRung(1469, "N2c")], "N2");
+      const why = result.held.find((h) => h.number === 1469)!.why;
+      expect(why).toContain("on rung N2c");
+      expect(why).toContain("the milestone is N2");
+      expect(why, "it must not claim an ordering it never computed").not.toContain("later rung");
+    });
+
+    it("⚠ AN UNKNOWN RUNG IS STILL A RUNG — a rung the ladder does not list is HELD, never read as rungless", () => {
+      /*
+        THE TRAP FOR THE NEXT REPAIR. `rungFromLabels` — the reader his page and
+        the desk sweep use — validates a rung against the ladder's keys, and it is
+        right to: an unplaced card renders in the ladder's honest remainder. Doing
+        the same HERE would read that card as RUNGLESS and hand it to a seat,
+        which is the milestone gate failing open on a rung he has not opened.
+        `rungsNamedBy` stays raw for exactly this reason.
+
+        ⚠ **THE LIVE INSTANCE TODAY IS `rung:N2c` ON #1469 — N2c is not in the
+        ladder at all — AND THIS ARM DELIBERATELY DOES NOT USE IT.** An arm keyed
+        on N2c's absence would go red the day a shift transcribes his word into
+        the ladder line, which is ordinary edition work and is owed. `N99` is the
+        same never-a-rung value `crewBriefing.test.ts` uses for its own
+        not-in-the-ladder arm, so the premise below cannot rot.
+      */
+      const ladder = JSON.parse(readFileSync("server/crew/crew-briefing.json", "utf8")) as {
+        program: { ladder: readonly { readonly key: string }[] };
+      };
+      expect(ladder.program.ladder.map((rung) => rung.key)).not.toContain("N99");
+      const result = band([rungless(1541), onRung(9999, "N99")], "N2");
+      expect(result.offered, "a rung the ladder does not list must never be offered as rungless work").toEqual([]);
+      expect(result.held.find((h) => h.number === 9999)!.why).toContain("on rung N99");
+    });
+
+    it("no milestone holds every rung card, and leaves rungless work alone", () => {
+      const result = band([rungless(1467), onRung(1539, "N2")], null);
+      expect(result.offered).toEqual([]);
+      expect(result.held.find((h) => h.number === 1539)!.why).toContain("nothing names the current focus");
+    });
+  });
+});
+
 describe("the cut derives rather than mirrors", () => {
   const source = readFileSync("scripts/lib/seatBatches.mts", "utf8");
 
@@ -670,7 +841,11 @@ describe("the cut derives rather than mirrors", () => {
       ["the master switch", /input\.switches\[CREW_WORK_MASTER_KEY\]/],
       ["rungHoldFor, at BOTH gates", /rungHoldFor\(card\.labels, input\.focusRung\)/],
       ["rungHoldFor, at BOTH gates", /rungHoldFor\(card\.labels, focusRung\)/],
-      ["focusRungOf", /focusRungOf\(focus\)/],
+      /* ⚠ #1541: the ordered gate must READ the milestone it was handed, never
+         re-derive one from its own top card. `focusRungOf(focus)` was the
+         defect and its absence is now part of the contract (arm below). */
+      ["the handed-in milestone", /const focusRung = input\.focusRung;/],
+      ["currentLadderRung", /currentLadderRung\(ladder\)/],
     ];
     for (const [owner, call] of checks) {
       expect(call.test(source), `${owner} must be CALLED here, not merely imported`).toBe(true);
@@ -698,15 +873,61 @@ describe("the cut derives rather than mirrors", () => {
     right one. The pure arms above prove the rule; this proves the rule is
     reached. Neither is the other.
   */
-  it("THE CLI THREADS THE FOCUS RUNG INTO THE BACKGROUND GATE — a rule nothing calls is a rule that frees nothing", () => {
+  it("THE CLI THREADS THE MILESTONE INTO BOTH GATES — a rule nothing calls is a rule that frees nothing", () => {
     const cli = readFileSync("scripts/cut-seat-batches.mts", "utf8");
+    /*
+      ⚠ THIS ARM CHANGED WITH #1541 AND THE OLD VERSION WOULD NOW PASS ON THE BUG.
+      It asserted `focusRung: focusRungOf(ordered.focus)` — the defect itself — so
+      it pinned the wrong wiring in place. What it must hold is the shape, not the
+      old expression: the milestone is read ONCE from the ladder, and both gates
+      are handed that one value.
+    */
     expect(
-      /focusRung:\s*focusRungOf\(ordered\.focus\)/.test(cli),
-      "seatPopulation must be handed the focus card's rung, or the milestone gate holds every rung card and this card's throughput fix is inert",
+      /const focusRung = focusRungFromLadder\(ladder\);/.test(cli),
+      "the CLI must read the milestone from the ladder he declared, once",
     ).toBe(true);
-    /* And it must still be the ORDERED lane's focus that supplies it — the two
-       calls are order-dependent and the comment at the call site says so. */
-    expect(cli.indexOf("orderedBandForSeats({")).toBeLessThan(cli.indexOf("seatPopulation({"));
+    /* ⚠ ONCE. Two reads is two milestones waiting to disagree, which is the class
+       this card is an instance of. */
+    expect(cli.split("focusRungFromLadder(").length - 1, "read the ladder in exactly one place").toBe(1);
+    /* And the old reading must be GONE, not merely unused: an expression left
+       behind is what a later shift copies. */
+    expect(/focusRungOf\(/.test(cli), "focusRungOf is the defect and must not survive anywhere in the CLI").toBe(false);
+    /*
+      BOTH gates receive it. `orderedBandForSeats` used to derive its own from its
+      top card while `seatPopulation` was handed one — two gates, two milestones,
+      nothing holding them equal. Now each takes `focusRung,` as a shorthand
+      property, so they are the same binding by construction.
+    */
+    const ordered = cli.slice(cli.indexOf("orderedBandForSeats({"));
+    expect(/focusRung,/.test(ordered.slice(0, ordered.indexOf("});"))), "the ordered gate must be handed the milestone").toBe(true);
+    const background = cli.slice(cli.indexOf("seatPopulation({"));
+    expect(/focusRung,/.test(background.slice(0, background.indexOf("});"))), "the background gate must be handed the milestone").toBe(true);
+    /*
+      ⚠ AND THE ORDERING REQUIREMENT IS GONE, WHICH IS WORTH SAYING OUT LOUD.
+      The old arm asserted `orderedBandForSeats` was called before
+      `seatPopulation`, because the background gate read `ordered.focus`. It no
+      longer does, so that assertion would now pin an accident rather than a
+      contract — and a guard that pins an accident is the thing that stops the
+      next repair. It is deliberately not replaced.
+    */
+  });
+
+  it("the milestone reaches the PLAN and the runner's line, so a pass that holds every rung card says why", () => {
+    /*
+      #1541 was found by inferring a reading from a card title: the plan recorded
+      `focusCard` and which cards were held, and NOTHING about the milestone that
+      held them. Both of the reasons a pass holds everything — an unreadable
+      briefing, and a ladder naming no current rung — are now written down.
+    */
+    const cli = readFileSync("scripts/cut-seat-batches.mts", "utf8");
+    expect(cli).toContain("focusRungSource: briefingPath,");
+    expect(/ladderNote: ladderNote === "" \? null : ladderNote,/.test(cli)).toBe(true);
+    expect(/no milestone — every rung card held/.test(cli)).toBe(true);
+    /* The runner matches `^SEATS (\d+)` and nothing further, so the count stays
+       the first thing on the line (`.agents/` is gitignored — no suite can read
+       that regex, which is exactly why this is asserted here). */
+    expect(/`SEATS \$\{plan\.seatCount\} \| cards/.test(cli)).toBe(true);
+    expect(/`SEATS 0 \| nothing on offer\$\{rungWord\}/.test(cli)).toBe(true);
   });
 
   it("names no work label, hold label or domain of its own — IN EVERY FILE OF THE FEATURE", () => {

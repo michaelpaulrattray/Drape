@@ -45,6 +45,8 @@ type PlanFile = {
   readonly cutAt?: string;
   readonly seatCount?: number;
   readonly focusCard?: { readonly number: number; readonly title: string } | null;
+  /* The milestone the cut applied (#1541); absent on a plan written before it. */
+  readonly focusRung?: string | null;
   readonly batches?: readonly {
     readonly seat: number;
     readonly cards: readonly { readonly number: number; readonly title: string; readonly area: string | null }[];
@@ -130,6 +132,10 @@ const digest = renderPassDigest({
   finishedAt: new Date(nowMs).toISOString(),
   seatCount: plan.seatCount ?? (plan.batches ?? []).length,
   focusCard: plan.focusCard ?? null,
+  /* `??` would turn an absent field into `null`, which the renderer prints as
+     "no milestone was named" — a claim about the cut rather than about the plan.
+     An older plan says nothing, so pass `undefined` through unchanged. */
+  focusRung: plan.focusRung,
   handout,
   skipped: plan.skipped ?? [],
   board,

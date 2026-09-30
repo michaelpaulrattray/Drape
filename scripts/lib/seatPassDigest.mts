@@ -55,6 +55,18 @@ export interface PassDigestInput {
   readonly seatCount: number;
   /** The card the focus shift held this pass, so the two lanes are readable together. */
   readonly focusCard: { readonly number: number; readonly title: string } | null;
+  /**
+   * The milestone the cut applied, from the ladder rung he has declared, or
+   * `null` when it named none (#1541).
+   *
+   * ⚠ **THIS IS HERE BECAUSE #1541 WAS FOUND BY LUCK.** The pass digest is the
+   * artifact a shift actually opens, and the only reason the second face of that
+   * defect was visible at all is that some rung cards happened to be HELD, so
+   * their hold sentences named the rung. A pass that holds nothing named no
+   * milestone anywhere, so a cut running on the wrong one left no trace a reader
+   * could see. Optional, so an older plan on disk still renders.
+   */
+  readonly focusRung?: string | null;
   readonly handout: readonly PassCardHandout[];
   readonly skipped: readonly PassCardSkipped[];
   readonly board: SeatBuildBoard;
@@ -94,6 +106,16 @@ export function renderPassDigest(input: PassDigestInput): string {
       : `#${input.focusCard.number} — ${input.focusCard.title}.`
   }`);
   out.push("");
+  /* The milestone, once, in prose — NOT a second source for it. It is the plan's
+     own `focusRung`, and it is stated even when nothing was held, which is the
+     gap #1541 fell through. `undefined` is an older plan; say nothing rather
+     than guess. */
+  if (input.focusRung !== undefined) {
+    out.push(input.focusRung === null
+      ? "**No milestone was named**, so every card on a rung was held — the cut reads it from the `current` rung in `server/crew/crew-briefing.json` (#1541)."
+      : `Milestone this pass: **${input.focusRung}** — cards on any other rung were held (#1541).`);
+    out.push("");
+  }
 
   out.push("## One line per card handed out");
   out.push("");

@@ -77,9 +77,18 @@
  * reason has been discharged rather than overruled.** It read: deriving "which
  * rung is the focus" mechanically would mean parsing PROGRAM.md prose, which is
  * a report and not an artifact (law 1). That was correct about PROGRAM.md and
- * incomplete about the sources available: **the top of his ordered band IS the
- * focus card, and its rung is a LABEL on it.** A label is an artifact. So
- * `focusRungOf` reads the rung off that card and nothing here names a rung.
+ * incomplete about the sources available — but ⚠ **THE SOURCE IT THEN PICKED WAS
+ * THE WRONG ONE, AND #1541 IS THAT CORRECTION.** This paragraph read *"the top
+ * of his ordered band IS the focus card, and its rung is a LABEL on it"* until
+ * 2026-09-30. Both halves are true and the conclusion does not follow: the top
+ * of his band is whatever he asked for most recently, which is frequently not
+ * milestone work, and it broke in BOTH directions inside one night — a rungless
+ * tooling card on top read `null` and held nine rung cards, and #509 (`rung:N6`)
+ * on top held every N2 card with the false sentence *"a later rung (N2) than the
+ * focus (N6)"*. The milestone now comes from the artifact that DECLARES it,
+ * `currentLadderRung` over the briefing's `program.ladder` — see its docblock in
+ * `shared/crewPipelineGroups.ts` for both measurements and for why *the lowest
+ * rung in his band* was rejected. **Nothing in this file names a rung.**
  *
  * ⚠ **WHAT THE STRICT RULE COST, MEASURED, is why it moved** (his word, 2026-09-29:
  * *"file it urgently we need to increase through put"*): over six consecutive
@@ -118,7 +127,7 @@
  */
 import { CREW_HOLD_WORD, heldStateFromLabels } from "../../shared/crewNextUpHold.js";
 import { sortOrderedBand } from "../../shared/crewOrderedBand.js";
-import { RUNG_LABEL_PREFIX } from "../../shared/crewPipelineGroups.js";
+import { RUNG_LABEL_PREFIX, currentLadderRung } from "../../shared/crewPipelineGroups.js";
 import { exclusionFor, QUEUE_EXCLUSION_REASONS } from "../../shared/crewQueueExclusions.js";
 import {
   backgroundWorkAllowed,
@@ -346,23 +355,29 @@ function rungsNamedBy(labels: readonly string[]): string[] {
 }
 
 /**
- * The rung the CURRENT FOCUS sits on, read off the focus card's own labels.
+ * THE MILESTONE RUNG A SEAT MAY BUILD — read off the ladder he has declared,
+ * never off whichever card sits on top of his band (#1541, 2026-09-30).
  *
- * ⚠ **This is what discharges the objection that kept the old blanket rule in
- * place, and it is worth reading before touching it.** The header above argued
- * that "which rung is the focus" could not be answered mechanically, because
- * the only thing that said so was PROGRAM.md prose — a REPORT, not an artifact
- * (law 1). That objection was correct about PROGRAM.md and wrong about the
- * available sources: the top of his ordered band IS the focus card, its rung is
- * a GitHub LABEL on it, and a label is an artifact. So the rung is derived from
- * the card the focus lane is actually about (#180, `rung:N2` today) and never
- * from a hard-coded letter — move the focus and the seats follow it, with
- * nothing here edited.
+ * Give it the briefing's `program.ladder`; it hands back the rung marked
+ * `current`, or `null` when the ladder names none, names two, or is unreadable.
+ * `null` holds every rung card, which is THE MILESTONE GATE's own direction.
+ *
+ * ⚠ **THE ARGUMENT AND BOTH MEASUREMENTS LIVE ON `currentLadderRung`** in
+ * `shared/crewPipelineGroups.ts`, with the rejected alternative and the reason.
+ * This wrapper exists so the seat gate names one function whatever the ladder's
+ * shape becomes, and so the CLI's call site reads as the question it is asking.
+ *
+ * ⚠ **IT DELIBERATELY DOES NOT VALIDATE A CANDIDATE CARD'S RUNG AGAINST THE
+ * LADDER'S KEYS, and `rungHoldFor` must not start doing so.** `rung:N2c` is a
+ * real label on a real open card (#1469) and **N2c is not in the ladder at
+ * all** — so a reader that validated it would call that card RUNGLESS and hand
+ * it to a seat, which is the milestone gate failing open on the exact rung he
+ * has not opened yet. `rungsNamedBy` stays raw: an unknown rung is still a rung.
  */
-export function focusRungOf(card: { readonly labels: readonly string[] } | null): string | null {
-  if (card === null) return null;
-  const [rung] = rungsNamedBy(card.labels);
-  return rung ?? null;
+export function focusRungFromLadder(
+  ladder: readonly { readonly key?: unknown; readonly state?: unknown }[] | null | undefined,
+): string | null {
+  return currentLadderRung(ladder);
 }
 
 /**
@@ -412,7 +427,15 @@ export function rungHoldFor(
     return "on a rung, and nothing names the current focus — the milestone gate holds it";
   }
   if (rungs.every((rung) => rung === focusRung)) return null;
-  return `a later rung (${rungs.join(", ")}) than the focus (${focusRung}) — the milestone gate; opens on his word`;
+  /*
+    ⚠ IT SAYS *NOT THE RUNG HE HAS OPENED*, NEVER *LATER* — #1541, and the old
+    wording was measured false rather than merely loose. On the 20:45Z pass of
+    2026-09-29 it printed *"a later rung (N2) than the focus (N6)"* on thirteen
+    cards; N2 is not later than N6. Nothing here has ever compared two rungs, and
+    an earlier rung is held for the same reason a later one is — it is not the
+    milestone. So the sentence states the two facts it actually knows.
+  */
+  return `on rung ${rungs.join(", ")}, and the milestone is ${focusRung} — the milestone gate holds it; opens on his word`;
 }
 
 /**
@@ -623,6 +646,18 @@ export function orderedBandForSeats(input: {
   readonly areaIndex: SeatAreaIndex;
   readonly switches: CrewWorkSwitchState;
   readonly independenceOf: (card: SeatCandidateCard) => IndependenceReading;
+  /**
+   * The rung he has opened, from `focusRungFromLadder` — `null` holds every rung
+   * card.
+   *
+   * ⚠ **IT IS AN INPUT NOW AND WAS DERIVED FROM `focus` UNTIL #1541.** This
+   * function used to call `focusRungOf(focus)` on its own top card, so the
+   * milestone changed whenever he added an ordered card — measured twice in one
+   * night, both directions, both in `currentLadderRung`'s docblock. The two gates
+   * must also apply the SAME milestone: while each derived its own there was
+   * nothing to stop them diverging, and this one's source was the narrower.
+   */
+  readonly focusRung: string | null;
 }): OrderedBandForSeats {
   const held: SeatSkippedCard[] = [];
   const band = input.cards
@@ -695,9 +730,9 @@ export function orderedBandForSeats(input: {
     why: "the top of NEXT UP — the focus shift takes it, never a seat",
   });
 
-  /* The focus card's OWN rung, read off its labels — the artifact that makes
-     the narrower rule possible at all. See `focusRungOf`. */
-  const focusRung = focusRungOf(focus);
+  /* The milestone, handed in by the caller from the ladder he declared — NOT
+     read off `focus` above. See `focusRung` on the input type. */
+  const focusRung = input.focusRung;
 
   const offered: SeatTakeableCard[] = [];
   for (const card of rest) {

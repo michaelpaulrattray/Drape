@@ -633,6 +633,35 @@ describe("#493 — the briefing cannot list one card in two homes", () => {
     expect(() => crewBriefingSchema.parse(base)).toThrow(/program\.ladder\[\]\.key/);
   });
 
+  it("⚠ POSITIVE CONTROL — TWO `current` rungs are REFUSED (#1541)", () => {
+    /*
+      Since #1541 the ladder's `current` rung is not only something he reads: it
+      is the artifact `cut-seat-batches` derives the milestone from, so an edition
+      naming two cannot say which rung four autonomous seats may build.
+
+      ⚠ **ZERO is deliberately still allowed and the arm below proves it**, which
+      is the half worth keeping: THE MILESTONE GATE clears the focus at every
+      boundary, and `currentLadderRung` reads no-current as `null`, which holds
+      every rung card until his word opens the next one. A schema demanding
+      exactly one would refuse the edition that correctly says "between rungs".
+    */
+    const base = valid();
+    const current = base.program.ladder.filter((rung: { state: string }) => rung.state === "current");
+    expect(current.length, "the real briefing names exactly one — the negative control for this arm").toBe(1);
+    const second = base.program.ladder.find((rung: { state: string }) => rung.state !== "current");
+    expect(second, "the ladder needs a second rung for this arm to be able to fail").toBeDefined();
+    second!.state = "current";
+    expect(() => crewBriefingSchema.parse(base)).toThrow(/at most one rung as `current`/);
+  });
+
+  it("a ladder that names NO current rung parses — the milestone gate clears the focus (#1541)", () => {
+    const base = valid();
+    for (const rung of base.program.ladder as { state: string }[]) {
+      if (rung.state === "current") rung.state = "queued";
+    }
+    expect(() => crewBriefingSchema.parse(base)).not.toThrow();
+  });
+
   it("⚠ POSITIVE CONTROL — ladder cards with an EMPTY ladder are REFUSED (PR #497 finding 1)", () => {
     /* The page draws the ladder-cards UI inside the ladder block, so this
        shape would show the cards nowhere while the quiet line still counts
