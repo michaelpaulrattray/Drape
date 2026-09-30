@@ -146,11 +146,12 @@ const PRESENTS_IN: Record<AnchorFraming, readonly BodyAnchorRegion[]> = {
      the landmark the reference's face rather than a human one; the framing it
      describes, and so the regions below, are unchanged by both.) */
   threeQuarter: ["head", "neck", "torso", "wholeBody"],
-  /* "a head-and-shoulders TRUE side profile ... only the near side of the face is
-     presented to the camera ... on a face with an eye on each side, that means
-     exactly ONE eye is showing". (#1414 and #1582, as above: the same
-     photograph, asked about by its landmark instead of by its angle, and by the
-     reference's own features instead of a human template's.) */
+  /* "a head-and-shoulders TRUE side profile ... exactly ONE eye is showing, and
+     the far eye is hidden behind the nose and the brow". (#1414, as above: the
+     same photograph, asked about by its landmark instead of by its angle. #1582
+     left this one spec alone on a court's word — it is the only view whose test
+     is CONCEALMENT, and a reference-inventory clause made it refuse correct
+     profiles.) */
   sideClose: ["head", "neck", "torso", "wholeBody"],
   /* "the whole body from the top of the hair to the feet". */
   frontFull: [...BODY_ANCHOR_REGIONS],

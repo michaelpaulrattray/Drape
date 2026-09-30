@@ -176,14 +176,14 @@ describe("the canonical view package", () => {
     /*
       The landmark that IS the test: one eye, and the far one accounted for.
 
-      ⚠ **#1582 KEPT THESE THREE WORD FOR WORD AND CONDITIONED THEM, WHICH IS
-      WHY THEY ARE STILL ASSERTED HERE UNCHANGED.** The eye landmark is the
-      strongest reader this axis has ever had (0/10 non-matching against the
-      degree's 7/10, measured above), so a repair for a three-eyed cast that
-      deleted it would have traded one cast's refusal for everybody's coin flip.
-      It now reads *"on a face with an eye on each side, that means exactly ONE
-      eye is showing"*, and the general test — only the near side presented —
-      sits beside it for a face the clause cannot describe.
+      ⚠ **#1582 TRIED TO CONDITION THESE FOR A THREE-EYED CAST, COURTED IT, AND
+      LEFT THEM ALONE — so they are asserted here exactly as #1414 wrote them.**
+      Two shapes of that repair were measured worse on a correct picture (0/5
+      non-matching becoming 5/5 and then 3/5 on cast56's delivered side profile),
+      because any sentence that sets a reader inventorying the reference's
+      features is poison on the one view whose test is that half of them must be
+      HIDDEN. `sideClose` declares `concealmentTest` for it; the numbers are in
+      `castViewPackage.ts`.
     */
     expect(sideClose).toContain("ONE eye is showing");
     expect(sideClose).toContain("far eye is hidden");
@@ -255,12 +255,14 @@ describe("the canonical view package", () => {
    * Her refusals said it in their own words: *"the third eye is barely
    * visible"*, *"cutting off the chin and mouth apparatus at the bottom edge"*.
    *
-   * **The population is DERIVED from `belowWaist`, not listed here.** A face
-   * spec is one that does not reach below the waist, and that flag is declared
-   * per view in the table (deliberately, so a sixth view states its own answer).
-   * The count is asserted too: a new face view that forgets the clause joins
-   * this population automatically and reddens, and a mis-derivation that
-   * silently selected nothing cannot pass by selecting nothing.
+   * **The population is DERIVED from two flags the views declare, not listed
+   * here** — `belowWaist` (a face spec is one that does not reach below the
+   * waist) and `concealmentTest` (the one view whose test is what must be
+   * HIDDEN). Both are per-view declarations in the table, deliberately, so a
+   * sixth view states its own answer. The population is asserted by VALUE too: a
+   * new face view that forgets the clause joins it automatically and reddens, and
+   * a mis-derivation that silently selected nothing cannot pass by selecting
+   * nothing.
    *
    * ⚠ **AND THE FULL-LENGTH THREE ARE EXCLUDED ON PURPOSE, WHICH IS THE ONE
    * THING NOT TO "TIDY" HERE.** Their anchor is a chest-up master that does not
@@ -269,17 +271,31 @@ describe("the canonical view package", () => {
    * opposite of what those specs exist to catch. They name `hair`, `feet` and
    * `toes` as CROP landmarks and that remainder is recorded on the card, not
    * answered by borrowing this sentence.
+   *
+   * ⚠ **`sideClose` IS EXCLUDED BY A COURT, NOT BY TASTE, AND THE ARM BELOW
+   * PINS THAT ITS BYTES DID NOT MOVE.** Two shapes of this repair rewrote it and
+   * both were measured worse on a correct picture — 0/5 non-matching becoming 5/5
+   * and then 3/5 on cast56's delivered side profile, the frame #1414 celebrated.
+   * A clause telling a reader to inventory the reference's features is poison on
+   * the one view whose test is that half of them must be hidden. The numbers and
+   * the judge's own words are in `castViewPackage.ts`'s docblocks.
    */
   it("judges a face against the features the REFERENCE shows, never a human face's (#1582)", () => {
+    /* A face view: it does not reach below the waist. */
     const faceAngles = CAST_VIEW_ANGLES.filter(
       (angle) => castPackageView(angle).belowWaist !== true,
     );
-    /* The four the card names — closeUp, frontClose, threeQuarter, sideClose.
-       Asserted so that a derivation returning fewer (or nothing) is a red rather
-       than a vacuous pass. */
     expect(faceAngles).toEqual(["closeUp", "frontClose", "threeQuarter", "sideClose"]);
+    /* Of those, the ones whose framing test is PRESENCE rather than concealment —
+       the clause's real population, derived from the second flag. */
+    const presenceAngles = faceAngles.filter(
+      (angle) => castPackageView(angle).concealmentTest !== true,
+    );
+    /* Asserted by value so that a derivation returning fewer (or nothing) is a red
+       rather than a vacuous pass. */
+    expect(presenceAngles).toEqual(["closeUp", "frontClose", "threeQuarter"]);
 
-    for (const angle of faceAngles) {
+    for (const angle of presenceAngles) {
       const framing = castPackageView(angle).spec.framing;
       /* The clause itself, by its bytes rather than a retyped copy of it. */
       expect(
@@ -319,19 +335,24 @@ describe("the canonical view package", () => {
     }
 
     /*
-      ⚠ **THE POSITIVE CONTROL, AND IT IS THE HALF THAT MATTERS.** #1414 measured
-      *"exactly ONE eye is showing"* at 0/10 non-matching where *"a full 90
-      degrees"* scored 7/10, so the eye landmark is the strongest reader this axis
-      has. The repair KEEPS it, conditioned on a face that has an eye on each
-      side, rather than deleting it — a guard that only proved the absolutes gone
-      would pass just as happily on a spec that had thrown the reader away and
-      started refunding two-eyed casts instead.
+      ⚠ **THE POSITIVE CONTROL, AND IT IS THE HALF THAT MATTERS — the measured
+      reader is not traded away for the creature.** #1414 measured *"exactly ONE
+      eye is showing"* at 0/10 non-matching where *"a full 90 degrees"* scored
+      7/10, so that landmark is the strongest reader this axis has ever had, and
+      #1582's own court then proved that even a careful conditioning of it costs a
+      correct picture 3 to 5 refusals in 5. **So `sideClose`'s bytes are pinned
+      UNCHANGED, word for word as #1414 left them**, and a guard that only proved
+      the absolutes gone would have passed just as happily on the shape this court
+      rejected.
     */
     const sideClose = castPackageView("sideClose").spec.framing;
-    expect(sideClose).toContain("on a face with an eye on each side, that means exactly ONE eye is showing");
-    expect(sideClose).toContain("only the near side of the face is presented");
-    const threeQuarter = castPackageView("threeQuarter").spec.framing;
-    expect(threeQuarter).toContain("every eye the reference shows still visible");
+    expect(sideClose).toContain("exactly ONE eye is showing, and the far eye is hidden behind the nose and the brow");
+    expect(sideClose).toContain("If BOTH eyes are visible, or the far cheek is presented");
+    expect(sideClose).not.toContain(FACE_FROM_REFERENCE);
+    /* And the three that DID move carry their reference-relative landmark. */
+    expect(castPackageView("threeQuarter").spec.framing).toContain("every eye the reference shows still visible");
+    expect(castPackageView("frontClose").spec.framing).toContain("every eye the reference shows");
+    expect(castPackageView("closeUp").spec.framing).toContain("BELOW that lower edge");
 
     /*
       AND THE CLAUSE DOES NOT REACH THE FULL-LENGTH VIEWS — the exclusion above,

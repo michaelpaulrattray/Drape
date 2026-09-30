@@ -571,10 +571,35 @@ const CLOSE_UP_WARDROBE =
  * thing to check when editing these sentences, and #1414's own measurement is
  * why.** *"exactly ONE eye is showing"* scored 0/10 non-matching where *"a full
  * 90 degrees"* scored 7/10, so the eye landmark is the strongest reader this
- * axis has ever had and it is **kept verbatim**, conditioned on a face that has
- * an eye on each side rather than deleted. A two-eyed cast meets the same words
- * it met yesterday; a three-eyed one is no longer asked a question about itself
- * that has no answer.
+ * axis has ever had.
+ *
+ * ⚠ **WHICH IS WHY `sideClose` IS NOT IN THIS CLAUSE'S POPULATION, AND THAT WAS
+ * A COURT'S DECISION RATHER THAN A DESIGN CHOICE.** The first two shapes of this
+ * repair DID rewrite that sentence — conditioning the eye landmark on a face
+ * that has an eye on each side, which reads as obviously safe — and a before /
+ * after court on his own production frames said otherwise. Three arms, same six
+ * pairs, five identical reads each at `temperature: 0`, cast56's delivered side
+ * profile (asset 324):
+ *
+ *     sideClose spec                                 angle axis
+ *     #1414's wording, untouched                     0/5 non-matching
+ *     reference-relative + the inventory clause       5/5 non-matching
+ *     reference-relative + the clause reworded        3/5 non-matching
+ *
+ * The judge's own notes say why, verbatim: *"Both eyes are faintly visible with
+ * the far eye showing rather than fully hidden behind nose and brow."* **A
+ * sentence telling a reader to inventory the features the reference shows is
+ * poison on the one view whose test is that half of them must be HIDDEN.** So
+ * that spec's bytes do not move, its view declares `concealmentTest`, and the
+ * population below is derived from that.
+ *
+ * ⚠ **The honest remainder, named rather than implied**: `sideClose` therefore
+ * still asks for *exactly ONE eye*, which is a question a one-eyed or three-eyed
+ * being cannot always answer. It is on the card, with these numbers. What buys
+ * the deferral is that **it did not in fact refuse her** — Jingu's delivered side
+ * profile reads 0/5 non-matching on the angle axis under this spec, before and
+ * after — so the measured cost of leaving it is zero and the measured cost of
+ * touching it is three to five refusals out of five on a correct picture.
  *
  * ⚠ **The IDENTITY axis is deliberately untouched.** Its sentence in
  * `judgeSystemFor` is already reference-relative by construction (*"anything of
@@ -594,11 +619,11 @@ const CLOSE_UP_WARDROBE =
  * and a second typed copy is the drift working law 4 is about.
  */
 export const FACE_FROM_REFERENCE =
-  "Read this person's face from the reference photograph before judging any of that: the "
-  + "features to look for are the ones the reference shows this person to have, which may be "
-  + "more, fewer or differently placed than a human face's. A facial feature the reference does "
-  + "not show is never required here and is never a reason to fail; every facial feature the "
-  + "reference DOES show counts as one of this person's own.";
+  "Read from the reference photograph which features this person HAS at all, which may be more, "
+  + "fewer or differently placed than a human face's. A facial feature the reference does not "
+  + "show is never required here and is never a reason to fail. Which of the features they do "
+  + "have should be VISIBLE in this particular frame is decided by the framing described above "
+  + "and by nothing else — this sentence is about what they have, never about what must show.";
 
 export type CastPackageViewSpec = {
   /** What the customer is looking at. */
@@ -640,6 +665,32 @@ type CastPackageView = {
    * it does not contain.
    */
   belowWaist?: boolean;
+  /**
+   * ⚠ **IS THIS VIEW'S FRAMING TEST ABOUT WHAT MUST BE HIDDEN, rather than about
+   * what must be present — #1582, and the flag exists because a court refused to
+   * let the tidy answer ship.**
+   *
+   * `sideClose` is the one, and it is the reason {@link FACE_FROM_REFERENCE} does
+   * not reach every face spec. That clause tells the judge to read this person's
+   * features off the reference; on a view whose whole test is *the far side is
+   * hidden*, it primes a hunt for exactly the features that are supposed to be
+   * out of sight, and the judge then finds a faint far eye and refuses a correct
+   * profile. **Measured rather than reasoned** — three arms, same six pairs, five
+   * identical reads each at `temperature: 0`, on cast56's delivered side profile
+   * (asset 324, the frame #1414 celebrated):
+   *
+   *     sideClose spec                                 angle axis
+   *     #1414's wording, untouched                     0/5 non-matching
+   *     reference-relative + the inventory clause       5/5 non-matching
+   *     reference-relative + the clause reworded        3/5 non-matching
+   *
+   * Declared per view like its two neighbours above, so the exclusion is DERIVED
+   * from a stated property of the view rather than being this view's name written
+   * into a guard. Absent means no, which is the safe direction: a new view that
+   * forgets to declare it gets the clause and behaves like the three that are
+   * fine, instead of silently losing the protection Jingu is owed.
+   */
+  concealmentTest?: boolean;
 };
 
 const WARDROBE = CAST_PACKAGE_WARDROBE_SPEC;
@@ -898,40 +949,58 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
     The generator's `directive` below is deliberately unchanged. A GENERATOR can
     be aimed at a number; only a READER has to estimate one.
 
-    ⚠ **#1582 THEN CORRECTED THE LANDMARK'S OWNER, AND THIS ONE IS THE MOST
-    CAREFULLY HANDLED OF THE FOUR** — because *"exactly ONE eye is showing"* is
-    the strongest reader this axis has ever had (0/10 non-matching against the
-    degree's 7/10, measured above) and a repair that deleted it would trade a
-    creature's refusal for everybody's coin flip. **So it is kept word for word
-    and made CONDITIONAL on a face that has an eye on each side**, with the
-    general test — only the near side of the face presented — stated beside it.
-    A two-eyed cast reads the same sentence it read before; a three-eyed one is
-    no longer asked to have exactly two. See {@link FACE_FROM_REFERENCE}.
+    ⚠ **AND #1582 TRIED TO CORRECT THIS ONE FOR A THREE-EYED CAST, MEASURED IT,
+    AND PUT IT BACK. THIS SENTENCE IS THE ONE FACE SPEC #1582 DOES NOT TOUCH.**
 
-    And the `directive` DID move for #1582, for a reason that does not touch the
-    paragraph above: *"show one eye"* is not an estimate, it is an instruction
-    about an anatomy the subject may not have.
+    Twice, in good faith, it was rewritten so the eye landmark was CONDITIONAL on
+    a face that has an eye on each side — *"only the near side of the face is
+    presented … on a face with an eye on each side, that means exactly ONE eye is
+    showing"* — which reads as obviously safe and is not. A before / after court
+    on real production frames, five identical reads per arm at `temperature: 0`,
+    on cast56's delivered side profile (asset 324, the frame the measurement above
+    celebrated):
+
+        this wording, untouched                        0/5 non-matching
+        conditioned + the reference-inventory clause   5/5 non-matching
+        conditioned + that clause reworded             3/5 non-matching
+
+    The judge's own words, verbatim: *"Both eyes are faintly visible with the far
+    eye showing rather than fully hidden behind nose and brow."* **Any sentence
+    that sets a reader inventorying the features the reference shows is poison
+    here, because this is the one view whose test is that half of them must be
+    HIDDEN.** The view declares `concealmentTest: true` so the clause's population
+    excludes it by a stated property rather than by name.
+
+    ⚠ **So the remainder is real and it is on the card**: this spec still asks a
+    one-eyed or three-eyed being for *exactly ONE eye*. What buys the deferral is
+    that it does not in fact refuse one — Jingu's delivered side profile reads
+    0/5 non-matching here in every arm — so leaving it costs nothing measured and
+    touching it costs a correct picture three times in five. The `directive` is
+    unchanged with it, for one reason and one only: generator and judge must not
+    be told two different profiles.
   */
   sideClose: {
     angle: "sideClose",
     label: VIEW_ANGLE_LABELS.sideClose,
+    /*
+      ⚠ **THE ONLY VIEW WHOSE FRAMING TEST IS CONCEALMENT — and #1582 learned
+      that the hard way, at the frames.** See {@link FACE_FROM_REFERENCE} and
+      the docblock above for the three-arm measurement.
+    */
+    concealmentTest: true,
     spec: {
       framing:
         "a head-and-shoulders TRUE side profile, not a three-quarter turn. "
-        + "Judge this by WHAT IS VISIBLE rather than by estimating the turn in degrees: only the "
-        + "near side of the face is presented to the camera, and the features on its far side are "
-        + "hidden behind it — on a face with an eye on each side, that means exactly "
+        + "Judge this by WHAT IS VISIBLE rather than by estimating the turn in degrees: exactly "
         + "ONE eye is showing, and the far eye is hidden behind the nose and the brow. "
-        + "If the far side of the face is presented to the camera as a cheek rather than reading "
-        + "as the edge of the face — on such a face, if BOTH eyes are visible — that is a "
-        + "three-quarter turn and it FAILS. "
-        + FACE_FROM_REFERENCE,
+        + "If BOTH eyes are visible, or the far cheek is presented to the camera as a cheek "
+        + "rather than reading as the edge of the face, that is a three-quarter turn and it FAILS.",
       wardrobe: WARDROBE,
     },
     directive:
       "STRICT RIGHT-FACING SIDE PROFILE PORTRAIT. Head and shoulders only. The subject's nose points "
-      + "toward the RIGHT EDGE OF THE OUTPUT FRAME; present only the near side of the face in a true "
-      + "90-degree profile, never a three-quarter view.",
+      + "toward the RIGHT EDGE OF THE OUTPUT FRAME; show one eye and a true 90-degree profile, never a "
+      + "three-quarter view.",
   },
   /*
     RETIRED FROM THE PROFILE, kept in the record (package v2).
