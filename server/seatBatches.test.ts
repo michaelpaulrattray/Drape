@@ -1037,7 +1037,13 @@ describe("the milestone comes from the ladder he declared, not the top of his ba
     const ladder = briefing.program.ladder;
     expect(ladder.length, "the ladder must not be empty or the seat lane has no milestone").toBeGreaterThan(0);
     expect(ladder.filter((rung) => rung.state === "current").length, "exactly one current rung").toBe(1);
-    expect(focusRungFromLadder(ladder)).toBe("N2");
+    /* ⚠ THIS PIN MOVES ONLY ON HIS WORD, and the rite refuses an edition that
+       flips the ladder without it — which is the guard doing its job. N2 → P1
+       on 2026-10-01: *"after n2 is wrapped up start the pricing/money work then
+       proceed onto n2b and n2c"* (terminal), after his Desk word *"close"* on
+       #1218, the last N2 card. The next flip is P1 → N2b, on P1's completion
+       card and his word. */
+    expect(focusRungFromLadder(ladder)).toBe("P1");
   });
 
   describe("tonight's two measured shapes, driven through the ordered gate", () => {
