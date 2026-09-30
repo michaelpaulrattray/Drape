@@ -1,5 +1,5 @@
 /**
- * THE ONE COMMENT STRIPPER, AND THE REASON IT IS QUOTE-AWARE (#1625).
+ * THE ONE SOURCE WALK, AND ITS TWO CONTRACTS (#1625, #1635, #1638).
  *
  * A guard that reads source to decide whether a diff merges has to be able to
  * tell what the file SAYS from what it DISCUSSES — this repository writes its
@@ -82,6 +82,48 @@
  * **So the parser's exactness is bought and kept — as the control, on every run
  * — rather than traded away.** Where they ever disagree, the parser is right:
  * that is how the template-substitution hole above was found.
+ *
+ * ## TWO CONTRACTS, ONE WALK — and the second one arrived four minutes later
+ * (#1638)
+ *
+ * `withoutComments` keeps a literal and drops the comments around it.
+ * **`codeOnly` drops the literal's CONTENTS too**, so that a call-shaped string
+ * — `expect(runner).toContain("spawnSync('taskkill…")` — is not read as a call.
+ * That second contract is the whole reason it exists, and it is not traded for
+ * anything here.
+ *
+ * ⚠ **IT USED TO BE A SECOND WALK, IN `childProcessSuites.ts`, AND IT CARRIED
+ * EXACTLY THE BLINDNESS #1635 CLOSED IN THIS ONE.** #1635's own PR declined to
+ * swap it on the correct ground that it is a different contract rather than a
+ * duplicate — and a different contract is not a different WALK. Measured
+ * through the shipped function the day #1638 was built: **8 of the 1,968
+ * tracked files left it inside a literal at end of file**, dropping between
+ * 5,398 and 18,420 non-whitespace characters each, and three tree-walking
+ * derivers read every one of those files as empty:
+ *
+ * ```
+ * server/selfInvocationCheck.test.ts                 18,420
+ * shared/crewNextUpHold.ts                           16,794
+ * server/castingV2/openLanePinning.test.ts           14,890
+ * server/casting/evidence/evidenceComposerSchema.ts  14,651
+ * server/claudeMdFlagEnumeration.test.ts             13,842
+ * server/crewShiftArguments.test.ts                  12,312
+ * client/src/foundation/iconbutton-guard.test.ts      7,733
+ * server/castingV2/inkCutRouteCoupling.test.ts        5,398
+ * ```
+ *
+ * ⚠ **AND THAT READING IS A FLOOR, NOT A CENSUS — it cannot see the one
+ * instance the tree already DECLARED.** `server/deployTriggerClaims.test.ts`
+ * swallowed eleven lines and then a later backtick re-closed the literal, so
+ * the walk was not inside one at EOF and the probe above was blind to it. A
+ * BOUNDED swallow is invisible to that signal; the per-file comparison against
+ * the previous walk is what measures those, and it is in the suite.
+ *
+ * **So the two contracts are one walk with one parameter, and the parser
+ * control below proves BOTH of them over every tracked file on every run.**
+ * The alternative on the table was a second regex-literal reader — the hard
+ * half of this file, copied — which is working law 4 with the ink still wet on
+ * the commit that removed the last copy.
  */
 
 /**
@@ -104,15 +146,89 @@ const REGEX_MAY_FOLLOW_WORD = new Set([
  */
 type Frame = { kind: "code"; braces: number } | { kind: "template" };
 
+/** An identifier character, and whitespace — declared once for the token reader. */
+const WORD_CHARACTER = /[A-Za-z0-9_$]/;
+const WHITESPACE = /\s/;
+/** Punctuation that can END a value, so that a `/` after it divides. */
+const VALUE_CLOSER = /^[)\]}'"/]$/;
+
+/**
+ * What the walk does with a literal it has just bounded.
+ *
+ *  - `keep` — copy it through verbatim, delimiters included. This is
+ *    `withoutComments`: a guard asking what a file SAYS usually needs the
+ *    strings, because half of what this repository asserts about itself is a
+ *    string it expects to find.
+ *  - `drop` — emit only its NEWLINES, so the line numbers a later reader
+ *    reports still mean something. This is `codeOnly`: a guard asking what a
+ *    file DOES must not read a quoted call as a call.
+ *
+ * The `${…}` of a template is punctuation of the surrounding EXPRESSION rather
+ * than literal text, so it is emitted under both policies and its contents are
+ * walked as code. Keeping the braces under `drop` is deliberate: without them
+ * `` `${a}${b}` `` would collapse to `ab`, and two halves of a name glued
+ * together is a false member.
+ */
+type LiteralPolicy = "keep" | "drop";
+
+/**
+ * COMMENTS GONE, LITERALS KEPT. 56 consumers, several of them security guards
+ * and one of them a money guard (`creditToolKind.test.ts`).
+ */
 export function withoutComments(source: string): string {
+  return walk(source, "keep");
+}
+
+/**
+ * COMMENTS GONE AND LITERAL CONTENTS GONE WITH THEM — the population reader's
+ * contract (#548, #741), moved here from `childProcessSuites.ts` by #1638 so
+ * that the regex-literal reading below is not written twice.
+ *
+ * ⚠ **THE ONE PLACE THIS GOES TOO FAR IS LOAD-BEARING AND ITS CALLERS KNOW:**
+ * an import specifier is always a string literal, so it is gone from this
+ * output. Both derivers read the specifier from the RAW source and the CALL
+ * from this one, which is why neither a comment naming a module nor an import
+ * with no call reads as a member.
+ */
+export function codeOnly(source: string): string {
+  return walk(source, "drop");
+}
+
+function walk(source: string, literals: LiteralPolicy): string {
   const BACKSLASH = String.fromCharCode(92);
   const NEWLINE = String.fromCharCode(10);
   const BACKTICK = String.fromCharCode(96);
+  /* Literal text under the policy. A dropped span keeps its newlines and
+     nothing else, which is the same promise a block comment already made — so a
+     reader that reports a line number still reports the right one. Written with
+     the declared NEWLINE rather than an escape sequence, in this file's own
+     style: its whole subject is what an escape does to a naive reader. */
+  const literal = (text: string) =>
+    literals === "keep" ? text : NEWLINE.repeat(text.split(NEWLINE).length - 1);
   let out = "";
   let index = 0;
-  /** The last non-whitespace character, and the word it ends, for regex-vs-division. */
-  let previousCharacter = "";
-  let previousWord = "";
+  /**
+   * The last two significant TOKENS — a word or number, or one punctuation
+   * character. Regex-vs-division turns on the pair rather than on single
+   * characters, and `regexLiteralMayStart` says which two need the second.
+   * Comments update neither: a `/` after a docblock divides or does not on the
+   * strength of the code before the docblock, which is the whole point.
+   */
+  let previousToken = "";
+  let tokenBeforeThat = "";
+  const remember = (token: string) => {
+    tokenBeforeThat = previousToken;
+    previousToken = token;
+  };
+  /* One source character, with identifier characters building up a word. */
+  const rememberCharacter = (character: string) => {
+    if (WHITESPACE.test(character)) return;
+    if (WORD_CHARACTER.test(character) && WORD_CHARACTER.test(previousToken.slice(0, 1))) {
+      previousToken += character;
+      return;
+    }
+    remember(character);
+  };
   const stack: Frame[] = [{ kind: "code", braces: 0 }];
 
   while (index < source.length) {
@@ -121,50 +237,51 @@ export function withoutComments(source: string): string {
 
     if (frame.kind === "template") {
       if (character === BACKSLASH) {
-        out += character + (source[index + 1] ?? "");
+        out += literal(character + (source[index + 1] ?? ""));
         index += 2;
         continue;
       }
       if (character === BACKTICK) {
-        out += character;
+        out += literal(character);
         index += 1;
         stack.pop();
-        previousCharacter = BACKTICK;
-        previousWord = "";
+        remember(BACKTICK);
         continue;
       }
       if (character === "$" && source[index + 1] === "{") {
+        /* Punctuation of the expression, not literal text — emitted either way. */
         out += "${";
         index += 2;
         stack.push({ kind: "code", braces: 0 });
-        previousCharacter = "{";
-        previousWord = "";
+        remember("{");
         continue;
       }
-      out += character;
+      out += literal(character);
       index += 1;
       continue;
     }
 
     if (character === '"' || character === "'") {
       const quote = character;
-      out += character;
+      out += literal(character);
       index += 1;
       while (index < source.length) {
         const current = source[index]!;
-        out += current;
+        out += literal(current);
         index += 1;
-        if (current === BACKSLASH) { out += source[index] ?? ""; index += 1; continue; }
+        if (current === BACKSLASH) { out += literal(source[index] ?? ""); index += 1; continue; }
         if (current === quote) break;
+        /* ⚠ AN UNESCAPED NEWLINE ENDS A QUOTED LITERAL, FULL STOP — JavaScript's
+           own rule rather than a heuristic, and it is what bounds a misread `/`
+           to one line. It is emitted under both policies for that reason. */
         if (current === NEWLINE) break;
       }
-      previousCharacter = quote;
-      previousWord = "";
+      remember(quote);
       continue;
     }
 
     if (character === BACKTICK) {
-      out += character;
+      out += literal(character);
       index += 1;
       stack.push({ kind: "template" });
       continue;
@@ -185,13 +302,17 @@ export function withoutComments(source: string): string {
       continue;
     }
 
-    if (character === "/" && regexLiteralMayStart(previousCharacter, previousWord)) {
+    if (character === "/" && regexLiteralMayStart(previousToken, tokenBeforeThat)) {
       const end = regexLiteralEnd(source, index);
       if (end !== null) {
-        out += source.slice(index, end);
+        /* ⚠ A REGEX LITERAL IS DROPPED UNDER `drop`, AND THE REASON IS NOT
+           caution: `/spawnSync\(/` is a pattern a file MATCHES ON, never a call
+           it makes, so keeping it would manufacture a member. A real call
+           cannot sit inside one — that is what makes this the exact reading
+           rather than the safe one. */
+        out += literal(source.slice(index, end));
         index = end;
-        previousCharacter = "/";
-        previousWord = "";
+        remember("/");
         continue;
       }
     }
@@ -204,8 +325,7 @@ export function withoutComments(source: string): string {
         out += character;
         index += 1;
         stack.pop();
-        previousCharacter = "}";
-        previousWord = "";
+        remember("}");
         continue;
       }
       if (frame.braces > 0) frame.braces -= 1;
@@ -213,26 +333,82 @@ export function withoutComments(source: string): string {
 
     out += character;
     index += 1;
-    if (!/\s/.test(character)) {
-      previousCharacter = character;
-      previousWord = /[A-Za-z0-9_$]/.test(character) ? previousWord + character : "";
-    }
+    rememberCharacter(character);
   }
   return out;
 }
 
 /**
- * Whether a `/` here can open a regex literal. Telling `a / b` from `/ab/`
- * needs the preceding token, and `)`, `]` and `}` are genuinely ambiguous
- * (`(a + b) / 2` divides; `if (x) /re/.test(s)` does not) — both are read as
- * DIVISION, which is the reading that cannot over-consume.
+ * Whether a token can END A VALUE — which is the question regex-vs-division
+ * actually turns on. `a / b` divides because `a` is a value; `return /a/` does
+ * not because `return` is not.
+ *
+ * A word ends a value unless it is one of the operators spelt as a word. `)`,
+ * `]` and `}` are genuinely ambiguous — `(a + b) / 2` divides while
+ * `if (x) /re/.test(s)` does not — and all three are read as ENDING a value,
+ * which is the reading that cannot over-consume. `!` deliberately does NOT end
+ * one, so `!!/re/.test(s)` still reads as a regex.
  */
-function regexLiteralMayStart(previousCharacter: string, previousWord: string): boolean {
-  if (previousCharacter === "") return true;
-  if (previousWord !== "") return REGEX_MAY_FOLLOW_WORD.has(previousWord);
-  if (previousCharacter === String.fromCharCode(96)) return false;
-  if (/[A-Za-z0-9_$)\]}'"]/.test(previousCharacter)) return false;
-  return true;
+function endsAValue(token: string): boolean {
+  if (token === "") return false;
+  if (WORD_CHARACTER.test(token.slice(0, 1))) return !REGEX_MAY_FOLLOW_WORD.has(token);
+  /* A closing regex slash ends a value too, and the walk remembers one. */
+  return VALUE_CLOSER.test(token) || token === String.fromCharCode(96);
+}
+
+/**
+ * Whether a `/` here can open a regex literal, given the previous significant
+ * token and the one before it.
+ *
+ * ⚠ **TWO TOKENS NEED THE ONE BEFORE THEM, AND BOTH WERE MISREADING LIVE CODE
+ * UNTIL #1638 — invisibly, because a wrong regex read costs `withoutComments`
+ * nothing (it keeps the span either way) and costs `codeOnly` the span.** Found
+ * by pointing the parser control at the second contract, and corrected for BOTH
+ * readers, because a misread is a misread:
+ *
+ *  - **`!`** is a non-null assertion as often as it is a negation.
+ *    `expect(stencil.width! / stencil.height!)` divides, and a one-character
+ *    reading swallowed `` / stencil.height!).toBeCloseTo(entry.box.width / ``
+ *    as a regex — 46 characters of `faceScanService.test.ts` gone. But
+ *    `!/x/.test(s)` is the house style for a negated pattern and appears dozens
+ *    of times, **and `return !/x/` is a THIRD shape the character reading got
+ *    wrong in the other direction** — three files read LONG on the first
+ *    attempt, this one among them. What settles all three is whether the token
+ *    before the `!` ends a value: after `x`, `f()` or `a[0]` it is an
+ *    assertion and the `/` divides; after `return`, `(` or `&&` it is a
+ *    negation and a regex may follow.
+ *  - **`>`** closes a JSX tag as well as an arrow, and **`<`** opens the
+ *    closing one. `=>` is this tree's commonest regex predecessor, so `>` must
+ *    stay — but `<a></a><b></b>` handed the walk a `/` that scanned on to the
+ *    NEXT tag's slash and swallowed the text between them. Both halves of
+ *    `</` are answered: only `=>` may be followed by a regex, and a `/`
+ *    straight after a `<` is a closing tag.
+ *
+ * ⚠ **WHAT IS LEFT IS JSX TEXT, AND A CHARACTER WALK CANNOT HAVE IT** — the
+ * limit is DECLARED rather than discovered, with the figure beside it.
+ * `<p>doesn` + an apostrophe + `t exist.</p>` is TEXT to the parser and a
+ * string literal to any walk, so under `drop` the rest of the element goes.
+ *
+ * **Measured 2026-10-01, and the class is fully accounted for rather than
+ * sampled:** the walk agrees with the parser on **all 1,712 tracked `.ts`
+ * files** and on **242 of the 257 `.tsx`**. The 15 that differ are **exactly
+ * the 15 `.tsx` files holding a quote inside a `JsxText` node** — counted by
+ * asking the parser for those nodes, so the remainder is a census and not a
+ * floor. It costs `codeOnly`'s three derivers nothing TODAY, because there are
+ * **zero `.test.tsx` files in the tree**; the suite reddens the day one enters
+ * either population rather than leaving that to be noticed. `withoutComments`
+ * is unaffected either way — it keeps the span, which is why this was
+ * invisible until the second contract asked.
+ */
+function regexLiteralMayStart(previousToken: string, tokenBeforeThat: string): boolean {
+  if (previousToken === "!") return !endsAValue(tokenBeforeThat);
+  if (previousToken === ">") return tokenBeforeThat === "=";
+  /* `</div>`. A `/` straight after a `<` is a closing tag in every real
+     program — comparing a value against a RegExp object is not a thing anyone
+     writes — and without this the `/` scanned on to the NEXT tag's slash and
+     swallowed the text between them. */
+  if (previousToken === "<") return false;
+  return !endsAValue(previousToken);
 }
 
 /**

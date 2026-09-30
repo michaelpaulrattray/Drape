@@ -55,27 +55,27 @@ describe("suites that sweep the source tree declare the class's timeout (#741)",
     ).toEqual([]);
   });
 
-  it("the population is a FLOOR, and the one file it cannot see is declared anyway", () => {
+  it("the file it could NOT see is in the population now (#1638)", () => {
     /*
-      ⚠ THE LIMIT, PINNED SO IT CANNOT BECOME A SURPRISE. A grep for the reader
-      returns fifteen tracked test files; this deriver returns fourteen. The
-      missing one is `deployTriggerClaims.test.ts`, which imports the reader
-      plainly and calls it — and is lost because it carries a REGEX LITERAL
-      CONTAINING A BACKTICK, which flips `codeOnly` into template mode, and a
-      template is not ended by a newline. Eleven lines vanish, the call with
-      them. The cause is documented in `childProcessSuites`, whose own header
-      records this remainder as having no live instance — true of ITS question,
-      not of this one.
+      ✅ THE ARM THIS REPLACES ASKED FOR ITS OWN DELETION BY NAME, and it is
+      quoted rather than paraphrased: *"If somebody teaches the stripper about
+      regex literals, the first half flips and this arm says so, which is the
+      moment to delete it."* It asserted that `deployTriggerClaims.test.ts` was
+      OUT of the derived population — lost because it carries a REGEX LITERAL
+      CONTAINING A BACKTICK, which flipped the stripper into template mode, and
+      a template is not ended by a newline, so eleven lines vanished with the
+      call in them.
 
-      The arm asserts the consequence rather than the mechanism: the file is
-      OUT of the derived population and IS declared regardless. If somebody
-      teaches the stripper about regex literals, the first half flips and this
-      arm says so, which is the moment to delete it.
+      #1638 taught the stripper. So the assertion is INVERTED rather than
+      dropped: the file must be IN, and it must still declare the floor. A
+      guard may not go on asserting a defect that has been fixed — and
+      deleting it outright would leave the tree with no arm at all on the one
+      file whose reading this whole limit was measured at.
     */
-    expect(population.map((row) => row.file)).not.toContain("server/deployTriggerClaims.test.ts");
+    expect(population.map((row) => row.file)).toContain("server/deployTriggerClaims.test.ts");
     expect(
       declaresTheFloor(readFileSync(join(ROOT, "server/deployTriggerClaims.test.ts"), "utf8")),
-      "a suite the deriver cannot see must still carry the floor on measurement",
+      "the file the reader could not see must still carry the floor",
     ).toBe(true);
   });
 
