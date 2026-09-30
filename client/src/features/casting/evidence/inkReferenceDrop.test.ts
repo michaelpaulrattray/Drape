@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 
 import { INK_REFERENCE_DROP_WORD } from "./InkAddPanel";
+import { withoutComments } from "../../../../../server/testing/withoutComments";
 
 /**
  * CARD 1118 — the ink panel's *attach a reference picture* button took a
@@ -30,7 +31,7 @@ const HOOK = new URL("../../../foundation/useFileDropTarget.ts", import.meta.url
 
 /** The prose says what the code must do; only the CODE is the subject. */
 function withoutProse(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+  return withoutComments(source);
 }
 
 describe("the ink panel's reference button answers the hand holding a picture", () => {

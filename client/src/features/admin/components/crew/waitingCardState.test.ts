@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 
 import { CREW_CARD_STATES, crewCardNeedsHim } from "../../../../../../shared/crewCardState";
 import { nextUpRows } from "./crewTypes";
+import { withoutComments } from "../../../../../../server/testing/withoutComments";
 
 const base = (rel: string) => basename(rel);
 
@@ -183,7 +184,7 @@ describe("the waiting state", () => {
         /* CODE ONLY — a docblock may quote the retired literal, and several
            deliberately do to explain what changed. Comments are stripped first
            so quoting the defect is never mistaken for committing it. */
-        const code = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+        const code = withoutComments(src);
         for (const m of code.matchAll(/(\w+)\.state\s*[!=]==\s*"open"/g)) {
           /* `problem.state` is a different field with three states of its own
              and no notion of him — it is not this question. */

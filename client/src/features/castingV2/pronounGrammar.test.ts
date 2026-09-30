@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
+import { withoutComments } from "../../../../server/testing/withoutComments";
 
 /**
  * The product refers to a Cast the way her own record does.
@@ -29,9 +30,7 @@ const SURFACES = [
  * deletes rather than obeys.
  */
 function rendered(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/\/\/[^\n]*/g, "");
+  return withoutComments(source);
 }
 
 const GENDERED = /\b(she|her|hers|his|him)\b/i;

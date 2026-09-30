@@ -7,6 +7,7 @@ import { afterAll, describe, expect, it, vi } from "vitest";
 import { runHook, runHookAsync, runWithLimit } from "./testing/hookDriver";
 import { readListedSource } from "./testing/listedSource";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+import { withoutComments } from "./testing/withoutComments";
 
 vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
@@ -201,7 +202,7 @@ function modulesDeclaringTheCheck(): string[] {
 }
 
 function offencesIn(rel: string, source: string): string[] {
-  const code = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+  const code = withoutComments(source);
   const offences: string[] = [];
   if (/process\.argv\[1\]/.test(code)) offences.push(`${rel}: reads process.argv[1]`);
   if (/\bconst invokedDirectly\b/.test(code) && !/const invokedDirectly = import\.meta\.main;/.test(code)) {

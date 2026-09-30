@@ -18,6 +18,7 @@
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { withoutComments } from "./testing/withoutComments";
 
 const CREDITS = "server/db/credits.ts";
 
@@ -107,7 +108,7 @@ describe("toolKind: null is an ENUMERATED decision, not a default (#401)", () =>
   }
 
   function stripComments(source: string): string {
-    return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+    return withoutComments(source);
   }
 
   it("exactly THREE production files pass toolKind: null — the revoke and the plan-change unwind (settle + fallback) (#401, #664, #711)", async () => {
