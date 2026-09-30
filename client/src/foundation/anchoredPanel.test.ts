@@ -3,6 +3,8 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { withoutComments } from "../../../server/testing/withoutComments";
+
 /**
  * #304 — THE POPOVER COLLAPSE, as arms rather than as a promise.
  *
@@ -58,10 +60,24 @@ function sourcesUnder(relative: string): string[] {
   return found.sort();
 }
 
-/** Source with block and line comments removed — a guard must not read prose. */
-function code(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
-}
+/**
+ * Source with block and line comments removed — a guard must not read prose.
+ *
+ * ⚠ **THE SHARED READER, AND THE REASON THIS FILE MAY USE IT (#1636).** The
+ * private pair it replaces — a block regex and an anchored line regex — knows
+ * nothing about STRING LITERALS: a `/*` inside a quoted string opens a comment
+ * it never opened and everything to the next one is deleted from what this
+ * guard then reads. Measured across the tree, that shape read 52 of 1,948
+ * files short — 40,300 characters of real code unseen. **A guard that reads
+ * less passes for the wrong reason.**
+ *
+ * The swap is in scope here because **every input this reader is handed is
+ * JS/TS**, read at each call site rather than assumed. A stylesheet must NOT
+ * come through here: `//` is not a comment in CSS, so an unquoted
+ * `url(https://…)` would be truncated at the scheme — the same silence
+ * pointed the other way.
+ */
+const code = withoutComments;
 
 const OWNER = "foundation/useAnchoredPanel.ts";
 const CARD_MENU = "foundation/CardMenu.tsx";
@@ -302,6 +318,13 @@ describe("a panel row wears the quieter focus mark, not the accent ring", () => 
   ];
 
   /** Comments are stripped: a guard must never read the prose describing the bug. */
+  /* ⚠ CSS, SO IT KEEPS ITS OWN STRIPPER (#1636). The shared quote-aware reader
+     is a JS/TS reader: `//` is not a comment in CSS, so an unquoted
+     `url(https://fonts.example/x.css)` would be truncated at the scheme and the
+     rest of that declaration would leave this guard's sight. Block comments are
+     all CSS has, and all that is stripped. Measured over the twelve client
+     stylesheets: the two readers return identical non-whitespace content today,
+     so this is a rule about what may change rather than a live difference. */
   const css = (relative: string) => read(relative).replace(/\/\*[\s\S]*?\*\//g, "");
 
   const ruleBody = (text: string, selector: string): string => {

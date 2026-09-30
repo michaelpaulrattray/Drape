@@ -2,6 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { withoutComments } from "../../../server/testing/withoutComments";
+
 import { severityLook } from "./severity";
 
 /**
@@ -203,9 +205,21 @@ describe("one state, one signal — his three corrections", () => {
   );
   const PRIMITIVES = fs.readFileSync(path.resolve(__dirname, "primitives.tsx"), "utf8");
 
-  /** Comments quote the rule; matching on them would pass on the promise. */
-  const code = (s: string) =>
-    s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\{\/\*[\s\S]*?\*\/\}/g, "");
+  /**
+   * Comments quote the rule; matching on them would pass on the promise.
+   *
+   * ⚠ **THE ORDER OF THESE TWO IS LOAD-BEARING (#1636).** The JSX comment
+   * expression goes first, because it is the whole `{…}` that must leave — a
+   * string-aware reader would take the block comment alone and leave a bare
+   * `{}` behind, which is not what these index-slicing arms were written
+   * against. Then the
+   * shared reader, which is quote-aware: the private block regex it replaces
+   * knew nothing about string literals, so a `/*` inside a quoted string opened
+   * a comment it never opened and deleted everything to the next one. Both
+   * inputs here are `.tsx`, read at the call sites, so a JS reader is the right
+   * one — a stylesheet must never come through here.
+   */
+  const code = (s: string) => withoutComments(s.replace(/\{\/\*[\s\S]*?\*\/\}/g, ""));
 
   it("§04's media example wears two signals, not four", () => {
     const specimen = code(SPECIMEN);
