@@ -2262,7 +2262,7 @@ function BoardPageImpl() {
                     disabled={dismissOperationMutation.isPending}
                     className="text-canvas-sm font-medium text-canvas-ink-faint transition-colors hover:text-canvas-ink disabled:opacity-50"
                   >
-                    Keep in Models
+                    Keep in your Library
                   </button>
                 )}
                 <button

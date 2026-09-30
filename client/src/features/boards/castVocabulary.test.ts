@@ -32,18 +32,27 @@
  *
  * The class arm reads the four shapes that are unambiguously user-visible
  * without anyone having to judge — `placeholder=`, `aria-label=`, `caption=`,
- * `title=` and a menu record's `label:`. **It does not read JSX text or
- * template strings**, because telling `type: 'model'` (a code value, which
- * stays) from a sentence a customer reads is exactly the judgement a guard
- * cannot make, and an exception list for it would be working law 4's mirror.
- * The swept sentences are therefore pinned individually below. A NEW sentence
- * using the word in JSX text would pass this suite; that is the honest gap and
- * the reason it is written down rather than implied.
+ * `title=` and a menu record's `label:` — **plus JSX TEXT**, the words between
+ * an opening and closing tag, which are as unambiguously customer-visible as
+ * an attribute is.
+ *
+ * ⚠ **The JSX-text arm exists because the first shape of this suite did NOT
+ * have it, and a live instance walked straight through the hole the same
+ * hour**: `FirstRunIntro.tsx` said *"Cast your first model"* on its button as
+ * TEXT, not as the `caption=` attribute three lines above it that the sweep had
+ * already fixed. Preflight found it, not this guard. So the gap is closed
+ * rather than declared.
+ *
+ * **What it still does not read is a TEMPLATE STRING or a bare string constant**,
+ * because telling `type: 'model'` (a code value, which stays) from a sentence a
+ * customer reads is the judgement a guard cannot make, and an exception list for
+ * it would be working law 4's mirror. The swept sentences are pinned
+ * individually below; that remainder is a FLOOR and not coverage.
  *
  * Source-read rather than rendered, like `lobbyStub.test.ts` beside it:
  * `pnpm test` runs in a node environment with no DOM.
  */
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -98,17 +107,24 @@ describe("#1545 — the class: no user-visible label on the canvas says \"model\
   const VISIBLE_VALUE =
     /(?:placeholder|aria-label|caption|title)="([^"]*)"|label:\s*'([^']*)'/g;
 
-  const FILES: readonly string[] = [
-    PICKER, NODE_INFO, ITEM_NODE, CAST_NODE, ADD_MENU, INTRO, BOARD_PAGE,
-    `${BOARDS}/BoardHeader.tsx`,
-    `${BOARDS}/canvas/CanvasImageViewer.tsx`,
-    `${BOARDS}/canvas/ForkRecastPopover.tsx`,
-    `${BOARDS}/components/CanvasChatToggle.tsx`,
-    `${BOARDS}/components/CanvasZoomControls.tsx`,
-    `${BOARDS}/components/NodeContextMenu.tsx`,
-    `${BOARDS}/nodes/FrameNode.tsx`,
-    `${BOARDS}/nodes/NoteNode.tsx`,
-  ];
+  /*
+    ⚠ **DERIVED FROM THE DIRECTORY, NEVER LISTED** (working law 4). The first
+    shape of this suite carried the fifteen filenames by hand, and a hand list is
+    the one thing this guard must not have: a NEW canvas component saying "model"
+    would have been invisible to it, which is the failure mode of a guard rather
+    than a gap in one. Every `.tsx` under `features/boards` is customer-facing —
+    it is the customer's canvas — so the whole tree is the population and a file
+    cannot be added without joining it.
+  */
+  const FILES: readonly string[] = (function walk(dir: string): string[] {
+    return readdirSync(resolve(process.cwd(), dir), { withFileTypes: true }).flatMap((entry) =>
+      entry.isDirectory()
+        ? walk(`${dir}/${entry.name}`)
+        : entry.name.endsWith(".tsx")
+          ? [`${dir}/${entry.name}`]
+          : [],
+    );
+  })(BOARDS);
 
   const found = FILES.flatMap((file) =>
     [...source(file).matchAll(VISIBLE_VALUE)]
@@ -117,9 +133,12 @@ describe("#1545 — the class: no user-visible label on the canvas says \"model\
   );
 
   it("has a population to read — a guard over nothing passes for the wrong reason", () => {
-    /* The floor is the count measured the day this landed (40). A refactor may
-       move labels about; it may not empty this suite silently. */
-    expect(found.length).toBeGreaterThanOrEqual(30);
+    /* Measured the day this landed: 39 labels across 39 files. The floor sits
+       just under it, not far under: a floor of 30 against a real 39 would let a
+       quarter of the population vanish silently, which is the same defect as no
+       floor at all wearing a number. A refactor may move labels about; it may
+       not empty this suite. */
+    expect(found.length).toBeGreaterThanOrEqual(35);
   });
 
   it("and none of those labels calls a person a model", () => {
@@ -127,6 +146,44 @@ describe("#1545 — the class: no user-visible label on the canvas says \"model\
     expect(
       offenders.map((row) => `${row.file}: "${row.value}"`),
       "a user-visible label on the canvas must say cast, never model (#1545)",
+    ).toEqual([]);
+  });
+
+  /*
+    JSX TEXT — the words between an opening and a closing tag. Braces are
+    excluded by the character class, so `{title}` and every interpolation is
+    out; a value is kept only if it holds a letter, which drops punctuation and
+    whitespace nodes.
+  */
+  const JSX_TEXT = />([^<>{}]*?)</gs;
+
+  /*
+    ⚠ A TYPESCRIPT GENERIC CLOSES WITH `>` AND THE NEXT ONE OPENS WITH `<`, so
+    `useState<Foo>(null); // a comment … useRef<` matches the reader above as
+    though it were a text node. Two such artifacts were in the first reading.
+    Prose in a button does not carry a statement terminator, an assignment or a
+    line comment, so those three are what separates text from code here — and
+    the population floor below is what stops this filter from quietly emptying
+    the arm instead of narrowing it.
+  */
+  const CODE_MARKERS = /[;=]|\/\//;
+
+  const prose = FILES.flatMap((file) =>
+    [...source(file).matchAll(JSX_TEXT)]
+      .map((m) => ({ file, value: (m[1] ?? "").trim() }))
+      .filter((row) => /[A-Za-z]/.test(row.value) && !CODE_MARKERS.test(row.value)),
+  );
+
+  it("has JSX text to read — the same floor, for the same reason", () => {
+    /* Measured the day this landed: 63 text nodes. */
+    expect(prose.length).toBeGreaterThanOrEqual(55);
+  });
+
+  it("and none of that text calls a person a model", () => {
+    const offenders = prose.filter((row) => /\bmodels?\b/i.test(row.value));
+    expect(
+      offenders.map((row) => `${row.file}: "${row.value}"`),
+      "JSX text on the canvas must say cast, never model (#1545) — this arm is here because FirstRunIntro slipped through without it",
     ).toEqual([]);
   });
 });

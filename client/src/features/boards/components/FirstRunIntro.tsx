@@ -95,7 +95,7 @@ export function FirstRunIntro({
             className="px-4 py-2 rounded-canvas-pill text-canvas-md font-medium bg-canvas-ink hover:opacity-90 transition-opacity"
             style={{ color: 'var(--color-canvas-surface)' }}
           >
-            Cast your first model
+            Cast someone
           </button>
           <button
             type="button"

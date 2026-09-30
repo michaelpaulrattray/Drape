@@ -105,7 +105,7 @@ export function CanvasChatToggle() {
               className="text-center"
               style={{ fontSize: 12, color: '#a1a19a', lineHeight: 1.5, maxWidth: 220 }}
             >
-              Ask the assistant to cast models, style outfits, arrange your board, or answer creative questions.
+              Ask the assistant to cast people, style outfits, arrange your board, or answer creative questions.
             </p>
           </div>
 

@@ -231,7 +231,7 @@ export async function executeRefreshSlots(input: {
         message:
           modelStatus === "draft"
             ? "The headshot anchors every view. Edit it in the environment — she stays a draft, and the other views will flag for a refresh."
-            : "The headshot is this identity — changing it forks a new model.",
+            : "The headshot is this identity — changing it forks a new cast.",
       });
     }
     if (refusal === "pinned") {

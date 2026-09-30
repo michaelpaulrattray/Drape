@@ -773,7 +773,7 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
                 }
                 className="px-3 py-1.5 rounded-canvas-pill text-canvas-xs font-medium bg-canvas-ink text-canvas-surface hover:opacity-90 transition-opacity"
               >
-                Choose or cast a model
+                Choose or cast someone
               </button>
             </div>
           )}
