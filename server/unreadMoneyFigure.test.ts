@@ -327,4 +327,42 @@ describe("a charge nobody has read yet is not a charge of zero (#1725)", () => {
       + " charge the surface does not have. #1725.",
     ).toContain("quoteReady && dueToday !== null");
   });
+
+  /**
+   * ⚠ **BOTH BRANCHES OF THE TERNARY, AND THE SECOND ONE WAS A MEASURED HOLE IN
+   * THIS VERY SUITE.**
+   *
+   * `dueToday` has two branches and only the subscriber's is written with `??`.
+   * The checkout branch ends `: null` — a bare ternary fallback, which the
+   * `MONEY_DEFAULTED_TO_ZERO` regex cannot see because there is no `??` or `||`
+   * in front of the zero. **Driven after #1725 merged**: flipping that one
+   * token back to `: 0` restored the full defect — a customer with no plan
+   * catalogue reads `$0.00 due today` under a pressable `Add credits · $0.00`,
+   * because `dueToday` is then `0` rather than `null` and `quoteReady` opens —
+   * **and all five arms stayed green.**
+   *
+   * The review had read that limit as covered by the two assertions above. It
+   * is not: neither of them moves when only this branch flips. So the shape of
+   * the whole declaration is held here, which is the one reading that does.
+   *
+   * It is deliberately a FILE-SPECIFIC arm rather than a widened regex. "A
+   * money-named identifier whose ternary fallback is zero" is not a shape a
+   * line-wise walk can judge — the branches sit on different lines, and a
+   * regex loose enough to catch it would redden on every `: 0` in the tree.
+   * The ban stays the idiom; this holds the one surface it was written for.
+   */
+  it("the Add credits figure keeps BOTH of its branches unknown-until-read", () => {
+    const source = readListedSource(
+      path.join(CLIENT_SRC, "features", "billing", "AddCreditsModal.tsx"),
+    );
+    expect(
+      withoutComments(source ?? ""),
+      "`dueToday` no longer holds `null` on both branches. The checkout branch's fallback is"
+      + " a bare ternary `: 0`, which the idiom ban cannot see — and a zero there is the same"
+      + " $0.00 the subscriber branch was fixed for, under a button that looks pressable."
+      + " #1725.",
+    ).toMatch(
+      /const dueToday: number \| null = hasSubscription\s*\?\s*\(preview\?\.immediateCharge \?\? null\)\s*:\s*selected[\s\S]{0,160}?:\s*null;/,
+    );
+  });
 });
