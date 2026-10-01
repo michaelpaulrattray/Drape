@@ -1,0 +1,58 @@
+-- HOW MUCH OF A BALANCE THE CUSTOMER PAID FOR — one additive column (#1604,
+-- P1-5 under the pricing rung #1598).
+--
+-- ============================================================================
+-- WHAT A CUSTOMER WOULD LOSE WITHOUT IT
+-- ============================================================================
+--
+-- `refreshMonthlyCredits` (server/db/billing.ts) SETS the balance at every
+-- renewal: `balance = grant + floor(rolloverPercent × balance)`. On Starter
+-- that percentage is 50 and on Pro it is 75, so a customer holding 25,000
+-- credits they BOUGHT would keep 12,500 of them through one renewal and 6,250
+-- through the next. The plan's rollover percentage is a rule about the plan's
+-- own monthly allowance; applying it to credits somebody paid cash for takes
+-- money back off them.
+--
+-- Nobody has lost anything yet, and that is luck rather than design: the
+-- one-time top-up product was removed in February (`41a765ea`), so no road
+-- into `addTopupCredits` exists today and every live row holds 0 purchased
+-- credits. #1606 (P1-7) sells top-ups again, and the card's own order is that
+-- this ships FIRST.
+--
+-- ============================================================================
+-- WHY A COLUMN, AND WHY ONE RATHER THAN PHASE 2's BUCKETS
+-- ============================================================================
+--
+-- The full answer is lots: every grant its own row, each with its own expiry,
+-- spent in a stated order. That is the pricing page's Phase 2 and it is a
+-- schema of its own. The minimum that makes the renewal honest is ONE number
+-- — how much of the single balance is purchased — and that is this column.
+--
+-- It is an UPPER BOUND, not a fact, and the arithmetic is exact anyway because
+-- of the rule the product chooses here: **purchased credits are the LAST to
+-- go.** Plan allowance spends first. So the purchased credits REMAINING are
+-- `min(purchasedBalance, balance)` — a spend drops the balance and the lesser
+-- of the two is the answer, with no write on the spend path at all. That
+-- matters: the deduct is the hottest statement in the product and this change
+-- does not touch it.
+--
+-- ============================================================================
+-- NOT NULL DEFAULT 0 — AND WHAT THAT MEANS FOR THE ROWS THAT EXIST
+-- ============================================================================
+--
+-- MySQL backfills every existing row with 0 as part of this statement, which
+-- is the truthful value for all of them: no account has ever bought credits
+-- through a top-up. So there is no window in which the new code reads a row
+-- whose column is absent or NULL — and `migration-before-code` is satisfied
+-- the other way too, because the deploy rite applies this BEFORE the new code
+-- takes traffic (#322, #508) and `ALTER TABLE … ADD COLUMN` is one of the three
+-- shapes `scripts/lib/ceremonyAutoApply.mts` positively recognises, so no
+-- ceremony reaches the founder.
+--
+-- The one INSERT into this table (`initializeUserCredits`, server/db/credits.ts)
+-- names the column explicitly beside the counters it sits with, so a new
+-- account's row states its 0 rather than inheriting it.
+--
+-- PURELY ADDITIVE. One column. No row is rewritten, no index moves, no
+-- existing column changes.
+ALTER TABLE `points` ADD COLUMN `purchasedBalance` int NOT NULL DEFAULT 0;

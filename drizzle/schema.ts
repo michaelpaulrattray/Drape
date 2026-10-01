@@ -145,6 +145,25 @@ export const credits = mysqlTable("points", {
   // Track credits purchased vs earned for analytics
   creditsPurchased: int("creditsPurchased").default(0).notNull(),
   creditsUsed: int("creditsUsed").default(0).notNull(),
+  // ⚠ HOW MUCH OF `balance` THE CUSTOMER PAID FOR, AND IT IS AN UPPER BOUND
+  // RATHER THAN A FACT (#1604). `creditsPurchased` directly above is the
+  // LIFETIME total, for the admin panel's analytics; it only ever rises and
+  // says nothing about what is left. This one is what the renewal must not
+  // eat: a top-up's credits are the customer's money, and the monthly refresh
+  // SETS the balance from the plan's rollover percentage.
+  //
+  // The invariant, and the reason nothing has to be written on the spend path:
+  // purchased credits are the LAST to go. So the purchased credits REMAINING
+  // are `min(purchasedBalance, balance)` — spending drops the balance, and the
+  // lesser of the two is the answer, exactly. `purchasedCreditsRemaining()`
+  // (server/db/credits.ts) is the only reader, and nothing reads this column
+  // raw. A deduct therefore touches it never.
+  //
+  // It is clamped to the live balance by every `addCredits` write, which is
+  // what stops a later non-purchase grant resurrecting a purchased amount the
+  // customer has already spent, and it is re-stated by the renewal inside the
+  // same compare-and-set that writes the new balance.
+  purchasedBalance: int("purchasedBalance").default(0).notNull(),
   // Rollover tracking
   rolloverCredits: int("rolloverCredits").default(0).notNull(),
   lastRefreshAt: timestamp("lastRefreshAt"),

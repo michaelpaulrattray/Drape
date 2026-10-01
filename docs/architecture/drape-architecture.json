@@ -13442,6 +13442,14 @@
       "path": "server/publicInputStrictness.test.ts"
     },
     {
+      "id": "test:server/purchasedCreditsGrantWire.test.ts",
+      "path": "server/purchasedCreditsGrantWire.test.ts"
+    },
+    {
+      "id": "test:server/purchasedCreditsRenewal.test.ts",
+      "path": "server/purchasedCreditsRenewal.test.ts"
+    },
+    {
       "id": "test:server/pushPathsToMain.test.ts",
       "path": "server/pushPathsToMain.test.ts"
     },
