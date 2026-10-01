@@ -13412,6 +13412,10 @@
       "path": "server/lobby.test.ts"
     },
     {
+      "id": "test:server/loginRefusalNotes.test.ts",
+      "path": "server/loginRefusalNotes.test.ts"
+    },
+    {
       "id": "test:server/managerFactSheet.test.ts",
       "path": "server/managerFactSheet.test.ts"
     },
