@@ -1,12 +1,18 @@
 import { readdirSync, statSync } from "node:fs";
 import path from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { ERROR_MESSAGES } from "../client/src/pages/Login";
 import { FREE_GRANT_REFUSAL_ERROR_CODE } from "../shared/freeGrantRefusal";
+import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
 import { readListedSource } from "./testing/listedSource";
 import { withoutComments } from "./testing/withoutComments";
+
+/* It sweeps the route tree off the real disk, and under the parallel run that
+   cost multiplies against vitest's 5,000 ms default. File level, never per arm:
+   a number typed onto one `it(…)` is not inherited by its neighbour (#741). */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 /**
  * ⚠ **EVERY REFUSAL THAT SENDS SOMEBODY BACK TO THE SIGN-IN PAGE HAS A DECIDED
