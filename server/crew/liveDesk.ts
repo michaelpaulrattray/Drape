@@ -25,6 +25,7 @@ import {
   buildStateHoldsOffOffer,
   crewCardBuildState,
   crewCardBuildViews,
+  handFindingNoteForPullRequest,
   handVerdictForPullRequest,
   notBuiltCards,
   type CrewBuildPullRequest,
@@ -680,6 +681,16 @@ function liveBuildBoard(
        the measurement are in `shared/handVerdict.ts`. With no comment read this
        is `none` and the phrase is exactly the one it was before. */
     handVerdict: handVerdictForPullRequest({
+      pullRequest: item.number,
+      updatedAt: item.updatedAt,
+      facts,
+    }),
+    /* ⚠ THE RELAY'S OWN WORDS FOR A HOLD (#1705). His board had one hold state
+       for two different things — "a repair is owed" and "sound, held for merge
+       order" — and it drew both as the first. It answers `null` for every pull
+       request that is not held, and for a header that says nothing beyond
+       "held", in which case the row reads exactly as it did before. */
+    handFindingNote: handFindingNoteForPullRequest({
       pullRequest: item.number,
       updatedAt: item.updatedAt,
       facts,

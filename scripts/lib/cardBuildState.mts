@@ -74,6 +74,7 @@ import {
   buildStateHoldsOffOffer,
   crewCardBuildPhrase,
   crewCardBuildState,
+  handFindingNoteForPullRequest,
   handVerdictForPullRequest,
   notBuiltCards,
   type CrewBuildPullRequest,
@@ -408,6 +409,14 @@ export function buildBoard(input: {
          same owner — a shift and the founder must not read different words about
          one pull request, which is the whole of this card. */
       handVerdict: handVerdictForPullRequest({
+        pullRequest: typeof pr.number === "number" ? pr.number : 0,
+        updatedAt: pr.updatedAt ?? null,
+        facts,
+      }),
+      /* The same words his page draws (#1705) — a shift and the founder must not
+         read different things about one pull request, which is this reader's
+         whole reason for sharing the one above. */
+      handFindingNote: handFindingNoteForPullRequest({
         pullRequest: typeof pr.number === "number" ? pr.number : 0,
         updatedAt: pr.updatedAt ?? null,
         facts,

@@ -34,11 +34,18 @@ import { describe, expect, it } from "vitest";
 
 import {
   HAND_FINDING_MARKER,
+  HAND_FINDING_NOTE_MAX,
   HAND_VERDICT_MARKER,
+  handFindingNote,
   isHandFinding,
   isHandVerdict,
 } from "../shared/handVerdict";
-import { crewCardBuildPhrase, crewCardCommentFact, handVerdictForPullRequest } from "../shared/crewCardBuildState";
+import {
+  crewCardBuildPhrase,
+  crewCardCommentFact,
+  handFindingNoteForPullRequest,
+  handVerdictForPullRequest,
+} from "../shared/crewCardBuildState";
 import { classifyComment, reviewPresence, tallyRounds } from "../scripts/lib/reviewRounds.mts";
 
 /**
@@ -187,14 +194,22 @@ describe("what the board says about it", () => {
     ownerLogin: "michaelpaulrattray",
   });
 
-  it("reads a finding comment as a finding fact", () => {
-    expect(fact(PR_1649_FINDING, "2026-09-30T23:46:16Z"))
-      .toEqual({ kind: "finding", card: 1649, at: "2026-09-30T23:46:16Z" });
+  it("reads a finding comment as a finding fact, carrying what the relay said", () => {
+    /* ⚠ The `note` is new with #1705 and it is why this arm's shape moved: the
+       board had ONE hold state for two different things, so it now carries the
+       relay's own header words rather than asserting a repair it cannot know
+       about. #1649's header did name a real defect, and the note is it. */
+    expect(fact(PR_1649_FINDING, "2026-09-30T23:46:16Z")).toEqual({
+      kind: "finding",
+      card: 1649,
+      at: "2026-09-30T23:46:16Z",
+      note: "held; the census misses the tile face",
+    });
     expect(fact(PR_1649_VERDICT, "2026-10-01T06:24:47Z"))
       .toEqual({ kind: "verdict", card: 1649, at: "2026-10-01T06:24:47Z" });
   });
 
-  it("⚠ the phrase that was wrong for six hours — it now names the work owed", () => {
+  it("⚠ the phrase that was wrong for six hours — it now says what the relay said", () => {
     /* The board's bound is the pull request's own clock (it cannot afford a
        commit read per PR — `shared/handVerdict.ts` carries the measurement), so
        a finding stands while nothing has happened since. */
@@ -204,10 +219,36 @@ describe("what the board says about it", () => {
       facts: [fact(PR_1649_FINDING, "2026-09-30T23:46:16Z")!],
     });
     expect(freshness).toBe("finding");
+    /* ⚠ THIS STRING CHANGED WITH #1705 AND THE CHANGE IS THE POINT. It used to
+       read *"held on the relay's finding — repair owed"* for every hold, which
+       was right about #1649 and wrong about #1682 and #1704. A shift reading
+       this row now learns WHICH defect without opening the pull request. */
     expect(crewCardBuildPhrase(
-      { kind: "pull-request", pullRequest: 1649, stage: "finding" },
+      {
+        kind: "pull-request",
+        pullRequest: 1649,
+        stage: "finding",
+        findingNote: handFindingNoteForPullRequest({
+          pullRequest: 1649,
+          updatedAt: "2026-09-30T23:46:16Z",
+          facts: [fact(PR_1649_FINDING, "2026-09-30T23:46:16Z")!],
+        }),
+      },
       Date.parse("2026-10-01T06:00:00Z"),
-    )).toBe("held on the relay's finding — repair owed — PR #1649");
+    )).toBe("held; the census misses the tile face — PR #1649");
+  });
+
+  it("falls back to the old sentence when the relay said nothing beyond \"held\"", () => {
+    /* ⚠ THE DIRECTION THAT MATTERS. A relay who wrote only `HELD` has NOT said
+       that nothing is owed, so inferring a reassurance would be this row lying
+       the other way — worse than the defect #1705 fixes, because a shift would
+       skip a pull request that needs work. */
+    const bare = "**Relay finding — HELD** (head `abc1234`)";
+    expect(fact(bare, "2026-10-01T10:00:00Z")).toMatchObject({ kind: "finding", note: null });
+    expect(crewCardBuildPhrase(
+      { kind: "pull-request", pullRequest: 1700, stage: "finding", findingNote: null },
+      Date.parse("2026-10-01T11:00:00Z"),
+    )).toBe("held on the relay's finding — repair owed — PR #1700");
   });
 
   it("a repair pushed after the finding lifts the hold and asks for a look", () => {
@@ -243,5 +284,164 @@ describe("what the board says about it", () => {
         fact(PR_1649_FINDING, "2026-10-01T07:00:00Z")!,
       ],
     })).toBe("finding");
+  });
+});
+
+/**
+ * ⚠ THE TWO HOLDS THAT ARE NOT DEFECTS — #1705, and both are REAL comments the
+ * relay posted on the P1 release pull requests, copied in verbatim.
+ *
+ * The board had ONE hold state. Both of these are correct holds with nothing
+ * wrong with the diff, and both rendered as *"repair owed"*:
+ *
+ *   #1682  "HELD for merge order, not a defect"   — "nothing in this diff needs to change"
+ *   #1704  "HELD for the release PR, nothing to repair"
+ *
+ * It cost two shifts a night each: three pull requests read to find the one that
+ * needed nothing. And it is the SILENT direction — a shift that believed the row
+ * goes looking for a defect that does not exist.
+ *
+ * ⚠ **THE RELAY HAD NO OTHER HEADER AVAILABLE, which is why this is not "word it
+ * differently".** `**Fable review — by hand` is a PASS and would have let
+ * `pr-merge-in-order` merge the pull request — exactly what a merge-order hold
+ * exists to prevent. So the finding header was the only thing that would hold
+ * it, and using it was right.
+ *
+ * ⚠ **AND THE FREQUENCY IS THE ARGUMENT.** #1698 establishes that money surfaces
+ * ship as batched releases here, so a merge-order hold is the NORMAL state of
+ * every pull request in one — not a once-a-release curiosity.
+ */
+describe("a hold that is not a defect — #1705", () => {
+  const fact = (body: string, at: string) => crewCardCommentFact({
+    card: 1682,
+    body,
+    createdAt: at,
+    authorLogin: "michaelpaulrattray",
+    ownerLogin: "michaelpaulrattray",
+  });
+
+  /** PR #1682's real header, 2026-10-01. */
+  const MERGE_ORDER_HOLD = [
+    "**Relay finding — HELD for merge order, not a defect** (head `93ac631d`)",
+    "",
+    "The slice is sound. The verdict is posted the moment #1601's PR is merged;",
+    "**nothing in this diff needs to change**.",
+  ].join("\n");
+
+  /** PR #1704's real header, three hours later, on a different pull request. */
+  const RELEASE_HOLD = [
+    "**Relay finding — HELD for the release PR, nothing to repair** (head `a519fc4b`)",
+    "",
+    "Nothing to repair. Two notes for #1602, **not holds**.",
+  ].join("\n");
+
+  it("quotes the relay's own words instead of asserting a repair", () => {
+    expect(handFindingNote(MERGE_ORDER_HOLD)).toBe("held for merge order, not a defect");
+    expect(handFindingNote(RELEASE_HOLD)).toBe("held for the release PR, nothing to repair");
+  });
+
+  it("⚠ the board row a shift would have read on PR #1682, before and after", () => {
+    const note = handFindingNoteForPullRequest({
+      pullRequest: 1682,
+      updatedAt: "2026-10-01T13:00:00Z",
+      facts: [fact(MERGE_ORDER_HOLD, "2026-10-01T13:00:00Z")!],
+    });
+    expect(crewCardBuildPhrase(
+      { kind: "pull-request", pullRequest: 1682, stage: "finding", findingNote: note },
+      Date.parse("2026-10-01T14:00:00Z"),
+    )).toBe("held for merge order, not a defect — PR #1682");
+  });
+
+  it("the same for PR #1704 — the second instance, three hours later", () => {
+    expect(crewCardBuildPhrase(
+      {
+        kind: "pull-request",
+        pullRequest: 1704,
+        stage: "finding",
+        findingNote: handFindingNote(RELEASE_HOLD),
+      },
+      Date.parse("2026-10-01T17:00:00Z"),
+    )).toBe("held for the release PR, nothing to repair — PR #1704");
+  });
+
+  it("⚠ the comment already on the record reads correctly WITHOUT being re-headed", () => {
+    /*
+      The card's own done-when, and it is the reason this was taken over a new
+      `**Relay hold` header: a third shape would need the relay to change what it
+      writes AND would leave every comment already posted reading as a repair.
+      Nothing here asks anybody to edit a comment that is already right.
+    */
+    expect(isHandFinding(MERGE_ORDER_HOLD)).toBe(true);
+    expect(isHandVerdict(MERGE_ORDER_HOLD)).toBe(false);
+    expect(fact(MERGE_ORDER_HOLD, "2026-10-01T13:00:00Z")).toMatchObject({
+      kind: "finding",
+      note: "held for merge order, not a defect",
+    });
+  });
+
+  it("⚠ NOTHING ABOUT THE MERGE MOVES — a hold with nothing to repair still holds", () => {
+    /*
+      The card is explicit that this changes only what his page SAYS. A row that
+      reads "nothing to repair" must not become a row that merges: the relay held
+      it for ORDERING, and merging it early is the exact thing being prevented.
+    */
+    expect(handVerdictForPullRequest({
+      pullRequest: 1682,
+      updatedAt: "2026-10-01T13:00:00Z",
+      facts: [fact(MERGE_ORDER_HOLD, "2026-10-01T13:00:00Z")!],
+    })).toBe("finding");
+    /* And the merge tool's own reading, which is the one that can let a pull
+       request through: a finding is not a pass however reassuring its words. */
+    expect(classifyComment(
+      { id: 9, authorLogin: PR.ownerLogin, createdAt: "2026-10-01T13:00:00Z", body: MERGE_ORDER_HOLD },
+      PR.ownerLogin,
+    )).not.toBe("verdict");
+  });
+
+  it("a header the relay wrote without the word held still reads as a hold", () => {
+    /* `held — …` is prefixed rather than assumed, so a row never loses the one
+       word that says somebody must wait. */
+    const terse = "**Relay finding — the schema arm reads its own fix as coverage** (head `0d1f2a3`)";
+    expect(handFindingNote(terse)).toBe("the schema arm reads its own fix as coverage");
+    expect(crewCardBuildPhrase(
+      { kind: "pull-request", pullRequest: 1711, stage: "finding", findingNote: handFindingNote(terse) },
+      Date.parse("2026-10-01T18:00:00Z"),
+    )).toBe("held — the schema arm reads its own fix as coverage — PR #1711");
+  });
+
+  it("a header longer than a row cuts, rather than wrapping his page three times", () => {
+    const long = `**Relay finding — HELD ${"and here is a very long explanation ".repeat(4)}**`;
+    const note = handFindingNote(long)!;
+    expect(note.length).toBeLessThanOrEqual(HAND_FINDING_NOTE_MAX);
+    expect(note.endsWith("…")).toBe(true);
+    /* The two real headers are far inside the bound, so neither is ever cut. */
+    expect(handFindingNote(MERGE_ORDER_HOLD)!.endsWith("…")).toBe(false);
+    expect(handFindingNote(RELEASE_HOLD)!.endsWith("…")).toBe(false);
+  });
+
+  it("⚠ a VERDICT carries no note at all — a pass must not quote a hold", () => {
+    expect(handFindingNote(PR_1649_VERDICT)).toBeNull();
+    expect(handFindingNoteForPullRequest({
+      pullRequest: 1649,
+      updatedAt: "2026-10-01T06:24:47Z",
+      facts: [crewCardCommentFact({
+        card: 1649,
+        body: PR_1649_VERDICT,
+        createdAt: "2026-10-01T06:24:47Z",
+        authorLogin: "michaelpaulrattray",
+        ownerLogin: "michaelpaulrattray",
+      })!],
+    })).toBeNull();
+  });
+
+  it("⚠ a STALE finding carries no note either — the repair was already pushed", () => {
+    /* The row has gone back to waiting on review, and a reassurance left over
+       from a superseded hold sitting under it would be the drift this whole
+       approach exists to avoid. */
+    expect(handFindingNoteForPullRequest({
+      pullRequest: 1682,
+      updatedAt: "2026-10-01T15:00:00Z",
+      facts: [fact(MERGE_ORDER_HOLD, "2026-10-01T13:00:00Z")!],
+    })).toBeNull();
   });
 });
