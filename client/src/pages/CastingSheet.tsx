@@ -1031,10 +1031,37 @@ export default function CastingSheet() {
     than one account-level number in every case, and the one case it does not
     cover is on his desk.
   */
+  /*
+    ⚠ NOT `roll.isPending`, AND THE FRAME IS WHAT SETTLED IT. A tRPC query with
+    `enabled: false` reports `isPending` FOREVER, and this one is disabled until
+    a roll is identified — so keying on it hid the cost line on a sheet that had
+    no roll yet, where the price is perfectly knowable: Roll again from the
+    brief box casts a fresh ROLL. These three facts are the honest condition —
+    a roll IS identified, it has not arrived, and it has not failed.
+  */
+  const rollKindUnknown = Boolean(shownRollId) && roll.data === undefined && !roll.isError;
   const price =
-    (standingFollowId !== null
-      ? config.data?.followPriceCredits
-      : config.data?.rollPriceCredits) ?? 0;
+    rollKindUnknown
+      /*
+        ⚠ **NOTHING WHILE IT CANNOT YET KNOW WHICH PRICE IT IS QUOTING — seen
+        at the frame, which is the only place it could be seen.** The cost line
+        draws only when `price` is truthy, so a zero here means the line waits.
+        Until the roll query first resolves, `standingFollowId` is null — so a
+        FOLLOW sheet drew `~ 240 credits` for a few hundred milliseconds and
+        then flipped to 320. One account-level number could never do that, and
+        a price that changes under the cursor is worse than a price that
+        arrives a moment late: D-15 is about no surprise spend.
+
+        A roll that FAILED to load leaves `data` undefined forever while Roll
+        again stays on screen, and hiding the price there would leave a paid
+        button unpriced — the thing D-15 was written about. So a sheet whose
+        roll never arrives is quoted the Roll price, which is what it was
+        quoted before this change and what Roll again will charge.
+      */
+      ? 0
+      : (standingFollowId !== null
+        ? config.data?.followPriceCredits
+        : config.data?.rollPriceCredits) ?? 0;
   const signPrice = config.data?.signPriceCredits ?? 0;
   const refinePrice = config.data?.refinePriceCredits ?? 0;
   /*
