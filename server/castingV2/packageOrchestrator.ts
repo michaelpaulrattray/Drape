@@ -92,7 +92,7 @@
  *    across a Sign rather than fifteen with backoff, to reach an answer the
  *    first one gave in full. ⚠ **It is a WAIT change and not a money change:**
  *    a slice that never landed refunds either way, which is why #1212 could
- *    file it but not take it, and the arm below asserts the 450 alongside the
+ *    file it but not take it, and the arm below asserts the 8,500 alongside the
  *    call count.
  * 3. **A lost commit deletes its object.** If the fence refuses — the sweep got
  *    here first — nothing will ever reference those bytes, and the cleanup

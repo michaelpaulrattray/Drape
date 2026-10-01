@@ -9923,7 +9923,7 @@
       "name": "CASTING_V2_COSTS.followCandidate",
       "constant": "CASTING_V2_COSTS",
       "member": "followCandidate",
-      "credits": 20,
+      "credits": 200,
       "file": "server/casting/castingCreditCosts.ts"
     },
     {
@@ -9931,7 +9931,7 @@
       "name": "CASTING_V2_COSTS.rollCandidate",
       "constant": "CASTING_V2_COSTS",
       "member": "rollCandidate",
-      "credits": 20,
+      "credits": 150,
       "file": "server/casting/castingCreditCosts.ts"
     },
     {
@@ -9943,25 +9943,25 @@
       "file": "server/casting/castingCreditCosts.ts"
     },
     {
-      "id": "cost:server/casting/castingCreditCosts.ts:CASTING_V2_REFINE_PRICE_CREDITS",
-      "name": "CASTING_V2_REFINE_PRICE_CREDITS",
-      "constant": "CASTING_V2_REFINE_PRICE_CREDITS",
-      "credits": 25,
+      "id": "cost:server/casting/castingCreditCosts.ts:CASTING_V2_FOLLOW_PRICE_CREDITS",
+      "name": "CASTING_V2_FOLLOW_PRICE_CREDITS",
+      "constant": "CASTING_V2_FOLLOW_PRICE_CREDITS",
+      "credits": 1600,
+      "derivedFrom": "CASTING_V2_COSTS.followCandidate * CASTING_V2_COSTS.rollCandidateCount",
       "file": "server/casting/castingCreditCosts.ts"
     },
     {
-      "id": "cost:server/casting/castingCreditCosts.ts:CASTING_V2_RETRY_PRICE_CREDITS",
-      "name": "CASTING_V2_RETRY_PRICE_CREDITS",
-      "constant": "CASTING_V2_RETRY_PRICE_CREDITS",
-      "credits": 20,
-      "derivedFrom": "CASTING_V2_COSTS.rollCandidate",
+      "id": "cost:server/casting/castingCreditCosts.ts:CASTING_V2_REFINE_PRICE_CREDITS",
+      "name": "CASTING_V2_REFINE_PRICE_CREDITS",
+      "constant": "CASTING_V2_REFINE_PRICE_CREDITS",
+      "credits": 1750,
       "file": "server/casting/castingCreditCosts.ts"
     },
     {
       "id": "cost:server/casting/castingCreditCosts.ts:CASTING_V2_ROLL_PRICE_CREDITS",
       "name": "CASTING_V2_ROLL_PRICE_CREDITS",
       "constant": "CASTING_V2_ROLL_PRICE_CREDITS",
-      "credits": 160,
+      "credits": 1200,
       "derivedFrom": "CASTING_V2_COSTS.rollCandidate * CASTING_V2_COSTS.rollCandidateCount",
       "file": "server/casting/castingCreditCosts.ts"
     },
@@ -9970,7 +9970,7 @@
       "name": "CASTING_V2_SIGN_COSTS.promotion",
       "constant": "CASTING_V2_SIGN_COSTS",
       "member": "promotion",
-      "credits": 200,
+      "credits": 3500,
       "file": "server/casting/castingCreditCosts.ts"
     },
     {
@@ -9978,7 +9978,14 @@
       "name": "CASTING_V2_SIGN_COSTS.view",
       "constant": "CASTING_V2_SIGN_COSTS",
       "member": "view",
-      "credits": 50,
+      "credits": 1000,
+      "file": "server/casting/castingCreditCosts.ts"
+    },
+    {
+      "id": "cost:server/casting/castingCreditCosts.ts:CASTING_V2_VIEW_RETRY_PRICE_CREDITS",
+      "name": "CASTING_V2_VIEW_RETRY_PRICE_CREDITS",
+      "constant": "CASTING_V2_VIEW_RETRY_PRICE_CREDITS",
+      "credits": 1850,
       "file": "server/casting/castingCreditCosts.ts"
     },
     {
@@ -10055,7 +10062,7 @@
       "id": "cost:server/castingV2/castViewPackage.ts:CAST_PACKAGE_VIEW_PRICE",
       "name": "CAST_PACKAGE_VIEW_PRICE",
       "constant": "CAST_PACKAGE_VIEW_PRICE",
-      "credits": 50,
+      "credits": 1000,
       "derivedFrom": "CASTING_V2_SIGN_COSTS.view",
       "file": "server/castingV2/castViewPackage.ts"
     },
@@ -10063,7 +10070,7 @@
       "id": "cost:server/castingV2/castViewPackage.ts:CASTING_V2_SIGN_PRICE_CREDITS",
       "name": "CASTING_V2_SIGN_PRICE_CREDITS",
       "constant": "CASTING_V2_SIGN_PRICE_CREDITS",
-      "credits": 450,
+      "credits": 8500,
       "derivedFrom": "CASTING_V2_SIGN_COSTS.promotion + CAST_PACKAGE_VIEW_PRICE * CAST_PACKAGE_VIEWS.length",
       "file": "server/castingV2/castViewPackage.ts"
     },
@@ -10071,7 +10078,7 @@
       "id": "cost:server/castingV2/castViewPackage.ts:CASTING_V2_SIGN_PROMOTION_PRICE",
       "name": "CASTING_V2_SIGN_PROMOTION_PRICE",
       "constant": "CASTING_V2_SIGN_PROMOTION_PRICE",
-      "credits": 200,
+      "credits": 3500,
       "derivedFrom": "CASTING_V2_SIGN_COSTS.promotion",
       "file": "server/castingV2/castViewPackage.ts"
     },
@@ -12879,6 +12886,10 @@
     {
       "id": "test:server/creditDisplayGuard.test.ts",
       "path": "server/creditDisplayGuard.test.ts"
+    },
+    {
+      "id": "test:server/creditPriceScale.test.ts",
+      "path": "server/creditPriceScale.test.ts"
     },
     {
       "id": "test:server/creditRefreshRace.test.ts",
@@ -24530,6 +24541,11 @@
     },
     {
       "from": "module:server/castingV2/castProjection.ts",
+      "to": "module:server/casting/castingCreditCosts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castProjection.ts",
       "to": "module:server/castingV2/castPronouns.ts",
       "kind": "imports"
     },
@@ -28836,6 +28852,11 @@
     {
       "from": "module:server/castingV2/viewRetryService.ts",
       "to": "module:server/casting/atomicCredits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryService.ts",
+      "to": "module:server/casting/castingCreditCosts.ts",
       "kind": "imports"
     },
     {

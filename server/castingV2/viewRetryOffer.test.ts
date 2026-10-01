@@ -6,6 +6,7 @@ import {
   castSlotRetryOffer,
   projectSignedCast,
 } from "./castProjection";
+import { CASTING_V2_VIEW_RETRY_PRICE_CREDITS } from "../casting/castingCreditCosts";
 import { CAST_PACKAGE_VIEW_PRICE } from "./castViewPackage";
 
 /*
@@ -138,13 +139,25 @@ function slotsOf(
 }
 
 describe("what a tile offers, and what it costs", () => {
-  it("a view that failed was refunded, so asking again is a PAID view", () => {
+  it("a view that failed was refunded, so asking again is a PAID ask at the Try again price", () => {
+    /*
+      ⚠ **IT WAS THE VIEW'S PRICE UNTIL 2026-10-01 AND THIS ARM COULD NOT TELL
+      WHICH CONSTANT THE CODE READ.** Both callers passed
+      `CAST_PACKAGE_VIEW_PRICE` into `castSlotRetryOffer`, so an arm asserting
+      the view price proved only that the offer carried SOME number. A paid Try
+      again is its own price under his approved pricing (#1601 item 1) — 1,850
+      against a view's 1,000 — so the two are asserted apart and the arm names
+      which one belongs on a tile.
+    */
     const slots = slotsOf([anchor(), asset(), failed("backFull")]);
     expect(slots.get("backFull")?.state).toBe("failed-refunded");
     expect(slots.get("backFull")?.retry).toEqual({
-      priceCredits: CAST_PACKAGE_VIEW_PRICE,
+      priceCredits: CASTING_V2_VIEW_RETRY_PRICE_CREDITS,
       reason: "refunded",
     });
+    /* The control that the arm above is about the Try again price and not
+       about a view's: a code path still reading the view price fails here. */
+    expect(CASTING_V2_VIEW_RETRY_PRICE_CREDITS).not.toBe(CAST_PACKAGE_VIEW_PRICE);
   });
 
   it("a view nobody checked was charged and kept, so asking again is FREE — and it says why", () => {
@@ -179,9 +192,14 @@ describe("what a tile offers, and what it costs", () => {
     );
     const slot = slots.get("frontClose");
     expect(slot?.standIn).toBe(true);
+    /* What went BACK is the view's slice — that is what was charged for it. */
     expect(slot?.refundedCredits).toBe(CAST_PACKAGE_VIEW_PRICE);
+    /* What asking again COSTS is the Try again price, which is a different
+       number since #1601 item 1. The two sit side by side here on purpose:
+       this slot is the one place a refund and a re-purchase are both visible,
+       and conflating them is exactly the mistake the old arm could not see. */
     expect(slot?.retry).toEqual({
-      priceCredits: CAST_PACKAGE_VIEW_PRICE,
+      priceCredits: CASTING_V2_VIEW_RETRY_PRICE_CREDITS,
       reason: "refunded",
     });
     /*
@@ -223,7 +241,14 @@ describe("what a tile offers, and what it costs", () => {
   });
 
   it("the rule is a pure reading of the slot, and it refuses every other state", () => {
-    const price = CAST_PACKAGE_VIEW_PRICE;
+    /*
+      An INJECTED price, and a number that is neither of the product's two
+      (a view's 1,000, a Try again's 1,850), so this arm is about the states
+      and cannot accidentally pass because a caller happened to pass the same
+      constant the function reached for. The function takes no constant of its
+      own — both its callers hand it one.
+    */
+    const price = 777;
     expect(castSlotRetryOffer(
       { state: "building", refundedCredits: null },
       price,

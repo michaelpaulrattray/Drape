@@ -135,7 +135,10 @@ export function referenceRuleFor(
  * retires and the **three-quarter returns**: 45° was the one genuinely missing
  * viewpoint, and it is the one downstream generation asks for most.
  *
- * **The price does not move**: still five generated views, 200 + 5 × 50.
+ * **The price does not move**: still five generated views, and the total is
+ * still the list's own length priced — 3,500 + 5 × 1,000 since #1601 item 1
+ * (2026-10-01), 200 + 5 × 50 before it. v3.1 swapped a view; it never
+ * touched the arithmetic.
  *
  * **Historical record, as ever.** A Cast keeps the package it bought. "Package
  * Three" keeps her Portrait forever; every Cast renders its own slots from its
@@ -167,7 +170,9 @@ export const CAST_PACKAGE_VIEW_PRICE = CASTING_V2_SIGN_COSTS.view;
 export const CASTING_V2_SIGN_PROMOTION_PRICE = CASTING_V2_SIGN_COSTS.promotion;
 
 /**
- * 200 + 5 × 50 = 450 credits (§H.10, amended by the package-v2 ruling).
+ * 3,500 + 5 × 1,000 = 8,500 credits (§H.10, amended by the package-v2 ruling;
+ * the figures set to the adopted scale by #1601 item 1 on 2026-10-01, where
+ * they read 200 + 5 × 50 = 450).
  *
  * Derived from the view list's own length, so a profile that promises five
  * views cannot quote a price for six. The client is served this number; it

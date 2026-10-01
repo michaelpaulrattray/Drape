@@ -110,8 +110,14 @@ export function CandidateTile({
    */
   paidBusy?: boolean;
   /**
-   * The roll price. No longer printed on this button — the dock states it once,
-   * persistently, for rolls and follows together (founder ruling, 2026-08-02).
+   * The roll price. No longer printed on this button — the dock states it
+   * once, persistently (founder ruling, 2026-08-02).
+   *
+   * ⚠ **THAT RULING FOLDED ROLLS AND FOLLOWS INTO ONE LINE, AND THE PREMISE
+   * DIED ON 2026-10-01**: a Roll is 240 display and a Follow 320 (#1601 item
+   * 1), so one line cannot state both. The dock now names the price of the
+   * button the DOCK fires, and where a tile's Follow price goes is a question
+   * on his desk (#1699) — not a thing to answer here by printing it again.
    *
    * D-15's intent is no surprise spend, and it was written after Follow reading
    * as free cost the founder 640 credits. Its literal implementation had become
@@ -143,7 +149,19 @@ export function CandidateTile({
    * tile, never on a cancelled roll's tile.
    */
   onRetry?: () => void;
-  /** The retry price, server-derived (`castingV2.config`) — printed on the button, D-15. */
+  /**
+   * The retry price — printed on the button, D-15.
+   *
+   * ⚠ **IT IS THIS ROLL'S OWN SLICE AS OF 2026-10-01 (#1601 item 1), NOT AN
+   * ACCOUNT-LEVEL QUOTE.** It used to be `castingV2.config.retryPriceCredits`,
+   * one number for every tile in the product, and that field is gone: a follow
+   * sheet's slice is 200 where a roll sheet's is 150, and the server has
+   * charged the tile's own recorded `pointsCost` since item 2 — so the single
+   * quote would have been wrong on screen for every follow sheet while the
+   * charge beneath it was right. The sheet derives it from the roll row's own
+   * total and its candidate count. Still server truth, still on the paid
+   * affordance before it fires; just the ROW's truth.
+   */
   retryPriceCredits?: number;
   /**
    * THIS TILE'S RETRY HAS BEEN CLICKED AND HAS NOT COME BACK (#551).

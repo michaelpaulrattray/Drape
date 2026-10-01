@@ -1011,21 +1011,96 @@ export default function CastingSheet() {
   const standingFollowId =
     !viewingHistory && !followDismissed ? (roll.data?.lineage.fromCandidateId ?? null) : null;
 
-  const price = config.data?.rollPriceCredits ?? 0;
+  /*
+    THE DOCK'S PRICE IS THE PRICE OF THE BUTTON THE DOCK FIRES (#1601 item 1,
+    2026-10-01).
+
+    It was `rollPriceCredits` alone, which was honest while a Roll and a Follow
+    were both 8 x 20 = 160 — his 2026-08-02 ruling folded the two into one line
+    precisely because there was one number. A Roll is 240 display and a Follow
+    320 from the price table on, so the line names whichever one Roll again
+    will actually charge: a sheet standing in a follow family rolls a follow,
+    and that is already server truth (`lineage.fromCandidateId`, read into
+    `standingFollowId` directly above).
+
+    ⚠ **WHAT IS STILL NOT ANSWERED, AND IT IS A QUESTION FOR HIM RATHER THAN A
+    GAP SOMEBODY FORGOT: #1699.** On a sheet that is NOT following, a tile's
+    Follow charges the follow price while this line quotes the roll's, and
+    cost is metadata rather than button text (D-109) — so where Follow's price
+    goes is his call and not a shift's. This is strictly closer to the truth
+    than one account-level number in every case, and the one case it does not
+    cover is on his desk.
+  */
+  /*
+    ⚠ NOT `roll.isPending`, AND THE FRAME IS WHAT SETTLED IT. A tRPC query with
+    `enabled: false` reports `isPending` FOREVER, and this one is disabled until
+    a roll is identified — so keying on it hid the cost line on a sheet that had
+    no roll yet, where the price is perfectly knowable: Roll again from the
+    brief box casts a fresh ROLL. These three facts are the honest condition —
+    a roll IS identified, it has not arrived, and it has not failed.
+  */
+  const rollKindUnknown = Boolean(shownRollId) && roll.data === undefined && !roll.isError;
+  const price =
+    rollKindUnknown
+      /*
+        ⚠ **NOTHING WHILE IT CANNOT YET KNOW WHICH PRICE IT IS QUOTING — seen
+        at the frame, which is the only place it could be seen.** The cost line
+        draws only when `price` is truthy, so a zero here means the line waits.
+        Until the roll query first resolves, `standingFollowId` is null — so a
+        FOLLOW sheet drew `~ 240 credits` for a few hundred milliseconds and
+        then flipped to 320. One account-level number could never do that, and
+        a price that changes under the cursor is worse than a price that
+        arrives a moment late: D-15 is about no surprise spend.
+
+        A roll that FAILED to load leaves `data` undefined forever while Roll
+        again stays on screen, and hiding the price there would leave a paid
+        button unpriced — the thing D-15 was written about. So a sheet whose
+        roll never arrives is quoted the Roll price, which is what it was
+        quoted before this change and what Roll again will charge.
+      */
+      ? 0
+      : (standingFollowId !== null
+        ? config.data?.followPriceCredits
+        : config.data?.rollPriceCredits) ?? 0;
   const signPrice = config.data?.signPriceCredits ?? 0;
   const refinePrice = config.data?.refinePriceCredits ?? 0;
+  /*
+    ONE CANDIDATE'S SHARE OF THIS ROLL'S OWN PRICE — read twice below, written
+    once (working law 4).
+
+    Derived rather than sent because the per-slice cost is internal, and it is
+    the ROW's figure rather than the account's: a follow sheet's row carries
+    1,600 and a roll sheet's 1,200, so this follows a follow without anybody
+    asking what kind of sheet it is. The cancel line states a total the server
+    has already refunded; the retry label states what the server is about to
+    charge, which is that same row's `pointsCost` (#1601 item 2).
+  */
+  const rollCounts = roll.data?.counts;
+  const sliceCredits =
+    rollCounts && rollCounts.total > 0
+      ? Math.round((roll.data?.priceCredits ?? 0) / rollCounts.total)
+      : 0;
   /*
     Server-owned, like every gate on this page: the button is drawn only where
     `castingV2.retry` would admit the tap — the account inside the flag AND the
     sheet finished (a slice on a roll still casting is the roll road's to
     settle; a cancelled roll's tiles are cancelled, not failed).
   */
-  const retryPrice = config.data?.retryPriceCredits;
   const retryOffered =
     (config.data?.retryEnabled ?? false)
     && roll.data !== undefined
     && TERMINAL_ROLL_STATUSES.has(roll.data.status)
     && roll.data.status !== "cancelled";
+  /*
+    ⚠ **`config.retryPriceCredits` IS GONE (#1601 item 1) — the tile's retry
+    costs what that tile cost.** One account-level quote was true of every tile
+    while the two slices agreed; from the price table on, a follow sheet's tile
+    is 200 and a roll sheet's 150, and the server has charged the tile's own
+    recorded `pointsCost` since item 2. `undefined` on a sheet whose counts
+    have not arrived, which is the label's own designed fallback: the button
+    reads "Retry" rather than "Retry - 0 credits".
+  */
+  const retryPrice = sliceCredits > 0 ? sliceCredits : undefined;
 
   /*
     ⚠ **THE SHEET NO LONGER ASKS WHICH PATH THIS ROLL WAS CAST ON** (#203
@@ -2301,19 +2376,13 @@ export default function CastingSheet() {
     expiryNotice,
   });
 
-  const counts = roll.data?.counts;
   const cancelLine = cancelStory({
     cancelled: rollWasCancelled || cancelRequested,
-    refunded: counts ? Math.max(0, counts.total - counts.ready - counts.casting) : 0,
-    finishing: counts?.casting ?? 0,
-    total: counts?.total ?? 0,
-    /*
-      One candidate's share of the roll price. Derived rather than sent because
-      the per-slice cost is internal — and it is only ever used to STATE a
-      total the server already refunded, never to decide one.
-    */
-    sliceCredits:
-      counts && counts.total > 0 ? Math.round((roll.data?.priceCredits ?? 0) / counts.total) : 0,
+    refunded: rollCounts ? Math.max(0, rollCounts.total - rollCounts.ready - rollCounts.casting) : 0,
+    finishing: rollCounts?.casting ?? 0,
+    total: rollCounts?.total ?? 0,
+    /* Written once, above, beside the retry label that reads the same figure. */
+    sliceCredits,
     // Unknown after a hard reload; see the field's own note.
     refundRecorded: cancelRefundRecorded ?? true,
   });

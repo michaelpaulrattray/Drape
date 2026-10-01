@@ -124,7 +124,26 @@ import {
   castViewRetrySubjectHash,
   hashGenerationOperationClaim,
 } from "../casting/operationContract";
+import { CASTING_V2_VIEW_RETRY_PRICE_CREDITS } from "../casting/castingCreditCosts";
 import { CAST_PACKAGE_VIEW_PRICE } from "./castViewPackage";
+
+/**
+ * TWO PRICES SINCE 2026-10-01, AND THIS SUITE READ ONE CONSTANT FOR BOTH.
+ *
+ * ⚠ **#1601 item 1 made the paid Try again its own price (1,850 ledger / 370
+ * display) where it had been a view's (1,000 / 200).** Every arm below that
+ * said `CAST_PACKAGE_VIEW_PRICE` was saying one of two different things, and
+ * while the numbers agreed nothing could tell them apart:
+ *
+ *   • what went BACK for the original view — the view's own slice, which is
+ *     what was charged for it. Still `CAST_PACKAGE_VIEW_PRICE`.
+ *   • what asking AGAIN costs — the Try again price, which is what this
+ *     service charges, refunds and writes onto the new row.
+ *
+ * The slot fixtures keep the first; every assertion about this operation's own
+ * money takes the second.
+ */
+const TRY_AGAIN_PRICE = CASTING_V2_VIEW_RETRY_PRICE_CREDITS;
 import { castPronouns } from "./castPronouns";
 import { outfitReferenceClause } from "./outfitPlate";
 import {
@@ -172,7 +191,7 @@ function slot(overrides: Partial<CastSlotProjection> = {}): CastSlotProjection {
       a fixture that is a shape the projection can never produce teaches the
       reader something false about the service under it.
     */
-    retry: { priceCredits: CAST_PACKAGE_VIEW_PRICE, reason: "refunded" },
+    retry: { priceCredits: TRY_AGAIN_PRICE, reason: "refunded" },
     ...overrides,
   } as CastSlotProjection;
 }
@@ -331,10 +350,10 @@ describe("try again on one view — what moves, and in what order", () => {
     expect(enginePrompts[0]).not.toMatch(/^DESCRIPTION: /m);
   });
 
-  it("a REFUNDED view costs 50, lands, and keeps the charge", async () => {
+  it("a REFUNDED view costs the Try again price, lands, and keeps the charge", async () => {
     const result = await retryCastView(dependencies([slot()]), input);
     expect(result.outcome).toBe("ready");
-    expect(result.chargedCredits).toBe(CAST_PACKAGE_VIEW_PRICE);
+    expect(result.chargedCredits).toBe(TRY_AGAIN_PRICE);
     expect(result.refundedCredits).toBe(0);
     expect(deducts).toHaveLength(1);
     expect(refunds).toHaveLength(0);
@@ -342,14 +361,14 @@ describe("try again on one view — what moves, and in what order", () => {
     expect(journal).toEqual(["claim", "running", "deduct", "render", "commit"]);
     /* The sweep's fork variable, written with the picture in one statement. */
     expect(committed[0]?.provenance.retryOperationId).toBe(OPERATION_ID);
-    expect(committed[0]?.pointsCost).toBe(CAST_PACKAGE_VIEW_PRICE);
+    expect(committed[0]?.pointsCost).toBe(TRY_AGAIN_PRICE);
   });
 
-  it("a REFUNDED view that fails again gives the 50 back under THIS operation", async () => {
+  it("a REFUNDED view that fails again gives the Try again price back under THIS operation", async () => {
     engineAnswers = ["throw"];
     const result = await retryCastView(dependencies([slot()]), input);
     expect(result.outcome).toBe("failed");
-    expect(result.refundedCredits).toBe(CAST_PACKAGE_VIEW_PRICE);
+    expect(result.refundedCredits).toBe(TRY_AGAIN_PRICE);
     expect(result.refundRecorded).toBe(true);
     expect(refunds).toHaveLength(1);
     /*
@@ -418,7 +437,7 @@ describe("try again on one view — what moves, and in what order", () => {
 
   it("the server re-reads the offer and never trusts the button", async () => {
     /*
-      The client sent a retry for a view whose tile said 50 a minute ago. The
+      The client sent a retry for a view whose tile carried a price a minute ago. The
       slot has since been filled — by a sweep, by another tab — so the answer
       is a free refusal rather than a second picture nobody asked for.
     */
@@ -458,7 +477,7 @@ describe("try again on one view — what moves, and in what order", () => {
     const result = await retryCastView(dependencies([slot()]), input);
     expect(result.refundRecorded).toBe(false);
     expect(result.refundedCredits).toBe(0);
-    expect(result.chargedCredits).toBe(CAST_PACKAGE_VIEW_PRICE);
+    expect(result.chargedCredits).toBe(TRY_AGAIN_PRICE);
   });
 
   it("an anchor that has gone away is a free refusal, not a charged render", async () => {
@@ -528,7 +547,7 @@ describe("try again on one view — what moves, and in what order", () => {
    *
    * Press Try again, leave the room, come back, press it again. Until #1235 the
    * tile offered the button because the slot knew nothing about the operation:
-   * `castSlotRetryOffer` re-read `failed-refunded`, still offered 50, and
+   * `castSlotRetryOffer` re-read `failed-refunded`, still offered a paid ask, and
    * `beginDirectOperation` keyed on the NEW request id — so nothing refused it.
    * Two renders, two charges, one slot, and the loser's picture orphaned.
    *
@@ -568,7 +587,7 @@ describe("try again on one view — what moves, and in what order", () => {
 
     expect(result.outcome).toBe("ready");
     expect(deducts).toEqual([
-      { amount: CAST_PACKAGE_VIEW_PRICE, reference: `op:${OPERATION_ID}:charge` },
+      { amount: TRY_AGAIN_PRICE, reference: `op:${OPERATION_ID}:charge` },
     ]);
   });
 
@@ -726,7 +745,7 @@ describe("deliveredOutfitKeysFrom — which key belongs to which angle (#1474)",
     resolution: "2K",
     storageUrl: "https://cdn.example/view.png",
     storageKey: "key",
-    pointsCost: 50,
+    pointsCost: CAST_PACKAGE_VIEW_PRICE,
     pinned: false,
     status: null,
     provenance: {},
@@ -764,7 +783,7 @@ describe("deliveredOutfitKeysFrom — which key belongs to which angle (#1474)",
         viewType: "frontFull",
         storageUrl: "",
         storageKey: "a-key-on-a-confession",
-        status: { state: "failed", reason: "didn't arrive", refunded: 50 },
+        status: { state: "failed", reason: "didn't arrive", refunded: CAST_PACKAGE_VIEW_PRICE },
       }),
     ])).toEqual({});
   });
@@ -994,7 +1013,7 @@ describe("only identity takes a retried picture away", () => {
     const refunded = slot({
       state: "failed-refunded",
       refundedCredits: CAST_PACKAGE_VIEW_PRICE,
-      retry: { priceCredits: CAST_PACKAGE_VIEW_PRICE, reason: "refunded" },
+      retry: { priceCredits: TRY_AGAIN_PRICE, reason: "refunded" },
     });
     const result = await retryCastView(
       dependencies([refunded], { judge: rejectingJudge({ angle: false }) }),
@@ -1002,7 +1021,7 @@ describe("only identity takes a retried picture away", () => {
     );
 
     expect(result.outcome).toBe("ready");
-    expect(result.chargedCredits).toBe(CAST_PACKAGE_VIEW_PRICE);
+    expect(result.chargedCredits).toBe(TRY_AGAIN_PRICE);
     expect(result.refundedCredits).toBe(0);
     expect(refunds).toHaveLength(0);
     expect(committed).toHaveLength(1);
@@ -1012,7 +1031,7 @@ describe("only identity takes a retried picture away", () => {
     const refunded = slot({
       state: "failed-refunded",
       refundedCredits: CAST_PACKAGE_VIEW_PRICE,
-      retry: { priceCredits: CAST_PACKAGE_VIEW_PRICE, reason: "refunded" },
+      retry: { priceCredits: TRY_AGAIN_PRICE, reason: "refunded" },
     });
     const result = await retryCastView(
       dependencies([refunded], { judge: rejectingJudge({ identity: false }) }),
@@ -1020,7 +1039,7 @@ describe("only identity takes a retried picture away", () => {
     );
 
     expect(result.outcome).toBe("failed");
-    expect(result.refundedCredits).toBe(CAST_PACKAGE_VIEW_PRICE);
+    expect(result.refundedCredits).toBe(TRY_AGAIN_PRICE);
     expect(refunds).toHaveLength(1);
     /* No new failure marker — the confession already on the slot is still true. */
     expect(committed).toHaveLength(0);
@@ -1083,7 +1102,7 @@ describe("the settled line, one per Try again (#1608)", () => {
     slot({
       state: "failed-refunded",
       refundedCredits: CAST_PACKAGE_VIEW_PRICE,
-      retry: { priceCredits: CAST_PACKAGE_VIEW_PRICE, reason: "refunded" },
+      retry: { priceCredits: TRY_AGAIN_PRICE, reason: "refunded" },
     });
 
   it("a ONE-render settle says so, with the money that actually moved", async () => {
@@ -1095,7 +1114,7 @@ describe("the settled line, one per Try again (#1608)", () => {
     expect(lines[0]).toMatchObject({
       outcome: "ready",
       paid: true,
-      chargedCredits: CAST_PACKAGE_VIEW_PRICE,
+      chargedCredits: TRY_AGAIN_PRICE,
       refundedCredits: 0,
       refundRecorded: true,
       attempts: 1,
@@ -1188,7 +1207,9 @@ describe("the settled line, one per Try again (#1608)", () => {
     expect(lines[0].judged).toBeNull();
     expect(lines[0]).toMatchObject({
       outcome: "failed",
-      refundedCredits: CAST_PACKAGE_VIEW_PRICE,
+      /* What THIS operation gave back, which is what it charged — the Try again
+         price, not the view's slice the original Sign refunded. */
+      refundedCredits: TRY_AGAIN_PRICE,
       doubleRendered: true,
     });
   });

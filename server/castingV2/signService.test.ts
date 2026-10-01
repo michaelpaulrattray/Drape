@@ -309,7 +309,20 @@ vi.mock("../storage", () => ({
 }));
 
 const { signCandidate } = await import("./signService");
-const { CASTING_V2_SIGN_PRICE_CREDITS } = await import("./castViewPackage");
+const { CASTING_V2_SIGN_PRICE_CREDITS, CAST_PACKAGE_VIEW_PRICE } = await import("./castViewPackage");
+/**
+ * ⚠ **EVERY MONEY ARM BELOW PINNED `450` UNTIL 2026-10-01 AND ALL OF THEM WENT
+ * RED ON TWO CONSTANT EDITS** (#1601 item 1: a Sign is 3,500 + 5 x 1,000 =
+ * 8,500 ledger / 1,700 display). A suite that writes a price as a literal is a
+ * second copy of that price — working law 4 — and these arms are about
+ * CONSERVATION, which is true at any price. So they read the product's own
+ * numbers, and a Sign repriced again moves nothing here.
+ *
+ * The `450`s and `50`s left in this file are PROSE, narrating what a decision
+ * cost on the day it was made; rewriting those would falsify a record.
+ */
+const SIGN_PRICE = CASTING_V2_SIGN_PRICE_CREDITS;
+const VIEW_PRICE = CAST_PACKAGE_VIEW_PRICE;
 const { basicsWardrobeLine } = await import("./wardrobeLine");
 
 /** A package that behaves however the case needs it to. */
@@ -439,10 +452,10 @@ describe("Sign's money", () => {
 
     expect(result.chargedCredits).toBe(CASTING_V2_SIGN_PRICE_CREDITS);
     expect(ledger.charges).toHaveLength(1);
-    expect(ledger.charges[0].amount).toBe(450);
+    expect(ledger.charges[0].amount).toBe(SIGN_PRICE);
     expect(ledger.refunds).toHaveLength(0);
     expect(casts).toHaveLength(1);
-    expect(receipts.at(-1)).toMatchObject({ kind: "success", chargedCredits: 450, refundedCredits: 0 });
+    expect(receipts.at(-1)).toMatchObject({ kind: "success", chargedCredits: SIGN_PRICE, refundedCredits: 0 });
   });
 
   it("refuses for free when the balance is short — no claim spent, no candidate spent", async () => {
@@ -468,9 +481,9 @@ describe("Sign's money", () => {
       signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input),
     ).rejects.toThrow();
 
-    expect(ledger.charges[0].amount).toBe(450);
+    expect(ledger.charges[0].amount).toBe(SIGN_PRICE);
     expect(ledger.refunds).toHaveLength(1);
-    expect(ledger.refunds[0].amount).toBe(450);
+    expect(ledger.refunds[0].amount).toBe(SIGN_PRICE);
     // The candidate is untouched: it can be signed again.
     expect(candidateRow.status).toBe("ready");
     expect(candidateRow.signedCastId).toBeNull();
@@ -500,7 +513,7 @@ describe("Sign's money", () => {
     await expect(
       signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input),
     ).rejects.toThrow(/support will restore the balance/);
-    expect(receipts.at(-1)).toMatchObject({ chargedCredits: 450, refundedCredits: 0 });
+    expect(receipts.at(-1)).toMatchObject({ chargedCredits: SIGN_PRICE, refundedCredits: 0 });
   });
 });
 
@@ -526,7 +539,7 @@ describe("a refund write that throws is settled by the Sign's own adjudicator (#
     copyThrows = true;
     const { recordRefund } = await import("../casting/atomicCredits");
     vi.mocked(recordRefund).mockRejectedValueOnce(torn);
-    adjudicator.verdict = async () => ({ type: "paid_failure", chargedCredits: 450, refundedCredits: 450 });
+    adjudicator.verdict = async () => ({ type: "paid_failure", chargedCredits: SIGN_PRICE, refundedCredits: SIGN_PRICE });
 
     await expect(
       signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input),
@@ -538,9 +551,9 @@ describe("a refund write that throws is settled by the Sign's own adjudicator (#
       expect.objectContaining({
         id: OPERATION_ID,
         status: "running",
-        chargedCredits: 450,
+        chargedCredits: SIGN_PRICE,
         refundedCredits: 0,
-        plannedCredits: 450,
+        plannedCredits: SIGN_PRICE,
       }),
     ]);
     // It sealed the receipt itself: no second seal, no lease left to the sweep.
@@ -574,7 +587,7 @@ describe("a refund write that throws is settled by the Sign's own adjudicator (#
     const { recordRefund } = await import("../casting/atomicCredits");
     vi.mocked(recordRefund).mockRejectedValueOnce(torn);
     adjudicator.verdict = async () => ({
-      type: "recovery_required", reason: "the full Sign refund did not record", chargedCredits: 450, refundedCredits: 0,
+      type: "recovery_required", reason: "the full Sign refund did not record", chargedCredits: SIGN_PRICE, refundedCredits: 0,
     });
 
     await expect(
@@ -625,11 +638,11 @@ describe("the double Sign", () => {
     expect(ledger.charges).toHaveLength(2);
     // And exactly one full refund exists: the loser's.
     expect(ledger.refunds).toHaveLength(1);
-    expect(ledger.refunds[0].amount).toBe(450);
+    expect(ledger.refunds[0].amount).toBe(SIGN_PRICE);
     // Conservation: the money kept equals one Sign.
     const charged = ledger.charges.reduce((sum, entry) => sum + entry.amount, 0);
     const refunded = ledger.refunds.reduce((sum, entry) => sum + entry.amount, 0);
-    expect(charged - refunded).toBe(450);
+    expect(charged - refunded).toBe(SIGN_PRICE);
   });
 
   it("refuses a candidate that was signed by an earlier ceremony", async () => {
@@ -655,10 +668,10 @@ describe("the package's money, after the boundary", () => {
 
     // 450 charged, 2 × 50 back. The promotion is never refunded once the CAS is
     // set — the customer has the locked face it bought.
-    expect(ledger.charges[0].amount).toBe(450);
+    expect(ledger.charges[0].amount).toBe(SIGN_PRICE);
     expect(receipts.at(-1)).toMatchObject({
       kind: "success",
-      chargedCredits: 450,
+      chargedCredits: SIGN_PRICE,
       refundedCredits: 100,
       terminalStatus: "partial",
     });
@@ -669,14 +682,14 @@ describe("the package's money, after the boundary", () => {
     await signCandidate(
       {
         schedulePackage: awaitPackage,
-        buildPackage: packageReturning({ committed: 0, failed: 5, refundedCredits: 250 }),
+        buildPackage: packageReturning({ committed: 0, failed: 5, refundedCredits: 5 * VIEW_PRICE }),
       },
       input,
     );
 
     expect(receipts.at(-1)).toMatchObject({
-      chargedCredits: 450,
-      refundedCredits: 250,
+      chargedCredits: SIGN_PRICE,
+      refundedCredits: 5 * VIEW_PRICE,
       terminalStatus: "partial",
     });
     // 200 kept — the promotion, which is exactly what was delivered.
@@ -1151,7 +1164,7 @@ describe("a signed Cast records its terminal event (#1429)", () => {
     expect(terminalEvents[0]).toEqual({
       userId: 1,
       operationId: OPERATION_ID,
-      chargedCredits: 450,
+      chargedCredits: SIGN_PRICE,
       refundedCredits: 0,
       terminalStatus: "succeeded",
     });
@@ -1176,7 +1189,7 @@ describe("a signed Cast records its terminal event (#1429)", () => {
     expect(terminalEvents).toEqual([{
       userId: 1,
       operationId: OPERATION_ID,
-      chargedCredits: 450,
+      chargedCredits: SIGN_PRICE,
       refundedCredits: 100,
       terminalStatus: "partial",
     }]);

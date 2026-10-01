@@ -23,7 +23,7 @@ vi.hoisted(() => {
 import { departureFloorFor } from "./bornWornDetector";
 import { COVERAGE_BANDS } from "./maskGeometry";
 import { slotDefinition } from "./referenceSlotCatalogue";
-import { whichSideReask } from "./refineReask";
+import { sameAgainReask, whichSideReask } from "./refineReask";
 import { refusalOf } from "./refusalTag";
 import type { RefineDelta } from "./refineDelta";
 import type { StoredInkDesign } from "../db/castingV2InkDesigns";
@@ -35,8 +35,27 @@ import { wardrobePieces } from "./wardrobeCards";
 import type { TextEngine } from "../providers/types";
 import { interpretRefinement } from "./refineInterpreter";
 
+import { CASTING_V2_REFINE_PRICE_CREDITS } from "../casting/castingCreditCosts";
 import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
 import { withoutComments } from "../testing/withoutComments";
+
+
+/**
+ * WHAT A REFINE COSTS, read from the product rather than pinned as a literal.
+ *
+ * ⚠ **EVERY MONEY ARM IN THIS FILE SAID `25` UNTIL 2026-10-01 AND ALL 23 OF
+ * THEM WENT RED ON ONE CONSTANT EDIT** (#1601 item 1: a Refine is 1,750 ledger
+ * / 350 display). A suite that pins a price as a literal is a second copy of
+ * that price — working law 4 — and the cost of the copy is paid by whoever
+ * moves the number. These arms are about CONSERVATION (charged equals refunded,
+ * a free outcome charges nothing), which is true at any price, so they read the
+ * price.
+ *
+ * The `25`s left in this file are all PROSE in docblocks, narrating real
+ * incidents at the price of the day, and they stay: rewriting them would
+ * falsify the record rather than update it.
+ */
+const REFINE_PRICE = CASTING_V2_REFINE_PRICE_CREDITS;
 
 /* Its arms do real work in process — a tree sweep, a sheet compile, a sharp
    encode — and under the parallel run that cost multiplies by fifteen or twenty
@@ -2408,7 +2427,7 @@ describe("the render is checked against the record before it is delivered", () =
     */
     await refineCandidate({ ...greenEyes, verifier: verifierSaying(false, false, false, false) }, input);
     expect(journal.filter((entry) => entry === "generate")).toHaveLength(2);
-    expect(ledger.charges.at(-1)?.amount).toBe(25);
+    expect(ledger.charges.at(-1)?.amount).toBe(REFINE_PRICE);
     expect(ledger.refunds, "the reader's opinion of a healthy frame moves no money").toHaveLength(0);
   });
 
@@ -2562,7 +2581,7 @@ describe("the render is checked against the record before it is delivered", () =
       { ...earrings, verifier: verifierSaying(false, false, false, false) },
       { ...input, instruction: "dangly cross earrings" },
     );
-    expect(ledger.charges.at(-1)?.amount).toBe(25);
+    expect(ledger.charges.at(-1)?.amount).toBe(REFINE_PRICE);
     expect(ledger.refunds).toHaveLength(0);
     const landed = JSON.stringify(landedVariant ?? {});
     expect(landed, "an accessory is not a shade — the check binds").toContain('"binding":true');
@@ -2718,7 +2737,7 @@ describe("the render is checked against the record before it is delivered", () =
       (fable-721). A bare site and a worn one still read differently; only the
       consequence moved.
     */
-    expect(ledger.charges.at(-1)?.amount).toBe(25);
+    expect(ledger.charges.at(-1)?.amount).toBe(REFINE_PRICE);
     expect(ledger.refunds).toHaveLength(0);
     const bare = JSON.stringify(landedVariant ?? {});
     expect(bare, "the site the reader found bare is on the row").toContain('"absent":true');
@@ -2760,7 +2779,7 @@ describe("the render is checked against the record before it is delivered", () =
          restatement, so they are a carried fact rather than this ask. */
       { ...input, instruction: "dangly cross earrings" },
     );
-    expect(ledger.charges.at(-1)?.amount).toBe(25);
+    expect(ledger.charges.at(-1)?.amount).toBe(REFINE_PRICE);
     expect(ledger.refunds).toHaveLength(0);
     /* Recorded, never lost: the honesty column still shows the glasses gone. */
     expect(JSON.stringify(landedVariant ?? {})).toContain("something else is at that place");
@@ -2781,7 +2800,7 @@ describe("the render is checked against the record before it is delivered", () =
       { ...shade, verifier: verifierSaying(false, false, false, false) },
       { ...input, instruction: "seafoam green eyes" },
     );
-    expect(ledger.charges.at(-1)?.amount).toBe(25);
+    expect(ledger.charges.at(-1)?.amount).toBe(REFINE_PRICE);
     expect(ledger.refunds).toHaveLength(0);
   });
 
@@ -3579,7 +3598,7 @@ describe("the order, and the money", () => {
       "land", "seal:success",
     ]);
     expect(ledger.charges).toEqual([
-      { amount: 25, reference: "op:11111111-1111-4111-8111-111111111111:charge" },
+      { amount: REFINE_PRICE, reference: "op:11111111-1111-4111-8111-111111111111:charge" },
     ]);
     expect(ledger.refunds).toHaveLength(0);
   });
@@ -3597,7 +3616,7 @@ describe("the order, and the money", () => {
     engineThrows = new Error("the provider fell over");
     await expect(refineCandidate(greenEyes, input)).rejects.toThrow();
     expect(ledger.refunds).toEqual([
-      { amount: 25, description: "Refine refunded — the generation failed" },
+      { amount: REFINE_PRICE, description: "Refine refunded — the generation failed" },
     ]);
     expect(ledger.charges.at(-1)?.amount).toBe(ledger.refunds.at(-1)?.amount);
   });
@@ -3611,7 +3630,7 @@ describe("the order, and the money", () => {
     renderFault = true;
     await expect(refineCandidate(greenEyes, input)).rejects.toThrow();
     expect(ledger.refunds).toEqual([
-      { amount: 25, description: "Refine refunded — the image came back damaged" },
+      { amount: REFINE_PRICE, description: "Refine refunded — the image came back damaged" },
     ]);
   });
 
@@ -4622,7 +4641,20 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
 
     await refineCandidate({ ...repainting, ...deps } as never, {
       ...input,
-      instruction: "Yes — a fresh take · 25 credits",
+      /*
+        ⚠ **COMPOSED BY THE PRODUCT, NOT TYPED HERE.** This string was
+        `"Yes — a fresh take · 25 credits"` until 2026-10-01 and it is the one
+        the CUSTOMER taps: the service recognises a confirmed fresh take by
+        matching its own re-ask option, so a price change rewrote the sentence
+        and this arm failed on a number rather than on a behaviour. Reading the
+        label out of `sameAgainReask` means the arm is about the recognition,
+        which is what it was always testing.
+      */
+      instruction: sameAgainReask({
+        asked: "icy blue eyes",
+        priceCredits: REFINE_PRICE,
+        pronouns: HER_PRONOUNS,
+      }).options[0].label,
       answering: "icy blue eyes",
     });
 
@@ -7123,7 +7155,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     */
     expect(ledger.refunds).toEqual([
       {
-        amount: 25,
+        amount: REFINE_PRICE,
         description: "Refine refunded — we cannot yet place what this asked for, so nothing was rendered",
       },
     ]);
@@ -7784,7 +7816,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     await refineCandidate(removing(true), { ...input, instruction: "remove her glasses" });
 
     expect(ledger.refunds, "no refund on a reading of a healthy frame").toHaveLength(0);
-    expect(ledger.charges.at(-1)?.amount).toBe(25);
+    expect(ledger.charges.at(-1)?.amount).toBe(REFINE_PRICE);
     expect(retired, "and the library is not told the glasses are gone").toEqual([]);
     /* And it DOES land now — she has the picture she paid for. */
     expect(journal).toContain("land");
@@ -8233,7 +8265,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       { ...input, instruction: "wear her hair down" },
     );
 
-    expect(ledger.charges.at(-1)?.amount).toBe(25);
+    expect(ledger.charges.at(-1)?.amount).toBe(REFINE_PRICE);
     expect(ledger.refunds, "the innocent ask paid for what it got").toHaveLength(0);
   });
 
@@ -8266,7 +8298,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       reader's opinion of a healthy frame no longer takes her money back. Both
       arms charge 25; only this one records a bound failure.
     */
-    expect(ledger.charges.at(-1)?.amount).toBe(25);
+    expect(ledger.charges.at(-1)?.amount).toBe(REFINE_PRICE);
     expect(ledger.refunds).toHaveLength(0);
     const landed = JSON.stringify(landedVariant ?? {});
     expect(landed).toContain('"binding":true');
@@ -8390,7 +8422,7 @@ describe("a compensating write that throws is settled by the road's own adjudica
     engineThrows = new Error("the provider fell over");
     const { recordRefund } = await import("../casting/atomicCredits");
     vi.mocked(recordRefund).mockRejectedValueOnce(torn);
-    adjudicator.verdict = async () => ({ type: "paid_failure", chargedCredits: 25, refundedCredits: 25 });
+    adjudicator.verdict = async () => ({ type: "paid_failure", chargedCredits: REFINE_PRICE, refundedCredits: REFINE_PRICE });
 
     await expect(refineCandidate(greenEyes, input)).rejects.toThrow(/That one didn't make it\. Your credits are back\./);
 
@@ -8399,7 +8431,7 @@ describe("a compensating write that throws is settled by the road's own adjudica
       expect.objectContaining({
         id: "11111111-1111-4111-8111-111111111111",
         status: "running",
-        chargedCredits: 25,
+        chargedCredits: REFINE_PRICE,
         refundedCredits: 0,
       }),
     ]);
@@ -8415,7 +8447,7 @@ describe("a compensating write that throws is settled by the road's own adjudica
     engineThrows = new Error("the provider fell over");
     const { failVariant } = await import("../db/castingV2Variants");
     vi.mocked(failVariant).mockRejectedValueOnce(torn);
-    adjudicator.verdict = async () => ({ type: "paid_failure", chargedCredits: 25, refundedCredits: 25 });
+    adjudicator.verdict = async () => ({ type: "paid_failure", chargedCredits: REFINE_PRICE, refundedCredits: REFINE_PRICE });
 
     await expect(refineCandidate(greenEyes, input)).rejects.toThrow(/Your credits are back/);
 
@@ -8444,7 +8476,7 @@ describe("a compensating write that throws is settled by the road's own adjudica
     const { recordRefund } = await import("../casting/atomicCredits");
     vi.mocked(recordRefund).mockRejectedValueOnce(torn);
     adjudicator.verdict = async () => ({
-      type: "recovery_required", reason: "the refund did not record", chargedCredits: 25, refundedCredits: 0,
+      type: "recovery_required", reason: "the refund did not record", chargedCredits: REFINE_PRICE, refundedCredits: 0,
     });
 
     await expect(refineCandidate(greenEyes, input)).rejects.toThrow(/needs support review\. Operation 11111111/);
@@ -8575,7 +8607,7 @@ describe("the landing cannot half-commit, and the receipt cannot lie", () => {
 
     await expect(refineCandidate(greenEyes, input)).rejects.toThrow();
     expect(ledger.refunds).toEqual([
-      { amount: 25, description: "Refine refunded — the generation failed" },
+      { amount: REFINE_PRICE, description: "Refine refunded — the generation failed" },
     ]);
     expect(ledger.charges.at(-1)?.amount).toBe(ledger.refunds.at(-1)?.amount);
   });
@@ -8641,7 +8673,7 @@ describe("the prompt is composed from the persisted row", () => {
     await expect(refineCandidate(greenEyes, input)).rejects.toThrow();
     /* And the whole charge came back, because a refusal past the deduct is
        still a failure the user must not pay for. */
-    expect(ledger.refunds.at(-1)?.amount).toBe(25);
+    expect(ledger.refunds.at(-1)?.amount).toBe(REFINE_PRICE);
   });
 });
 
@@ -8962,7 +8994,7 @@ describe("removal is typed, and most of it is free", () => {
       .toEqual({ statedAccessories: ["glasses"] });
     expect(call.instructions)
       .toEqual(["a smokey eye", "small gold hoops", "remove her glasses"]);
-    expect(ledger.charges[0]?.amount, "a render is a render").toBe(25);
+    expect(ledger.charges[0]?.amount, "a render is a render").toBe(REFINE_PRICE);
   });
 
   /*
@@ -9216,7 +9248,7 @@ describe("removal is typed, and most of it is free", () => {
     /* Both the smokey eye and the hoops? No — only makeup matches, so the
        remaining chain is the hoops alone, which is not an existing variant. */
     expect(result.kind).toBe("rendered");
-    expect(ledger.charges[0]?.amount).toBe(25);
+    expect(ledger.charges[0]?.amount).toBe(REFINE_PRICE);
   });
 
   /*
@@ -9249,7 +9281,7 @@ describe("removal is typed, and most of it is free", () => {
     /* What they TYPED is kept apart from the recipe, or the in-flight chip
        would name the last surviving sentence instead (D-161). */
     expect(call.requestText).toBe("get rid of the smokey eye");
-    expect(ledger.charges[0]?.amount).toBe(25);
+    expect(ledger.charges[0]?.amount).toBe(REFINE_PRICE);
   });
 
   /*
