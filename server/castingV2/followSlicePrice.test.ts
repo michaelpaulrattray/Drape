@@ -8,6 +8,7 @@ import {
   castingSliceCredits,
 } from "../casting/castingCreditCosts";
 import { createRollWithCandidates } from "../db/castingV2";
+import { codeOnly } from "../testing/withoutComments";
 
 /**
  * WHICH SLICE A SHEET IS PRICED IN — #1601 item 2.
@@ -168,6 +169,38 @@ describe("the row writer writes the slice it is handed and refuses one it cannot
       await expect(create(value)).rejects.toThrow(/slicePriceCredits must be a positive integer/);
     });
   }
+
+  it("⚠ does not DECLARE a price of its own — only the candidate count", () => {
+    /*
+      THIS ARM EXISTS BECAUSE SABOTAGE FOUND A HOLE AND THE HOLE IS A REAL ONE.
+
+      Put `pointsCost: CASTING_V2_COSTS.rollCandidate` back in the row writer
+      and nothing in the always-run suites notices: the roll service's suite
+      MOCKS `createRollWithCandidates`, so it cannot see what gets written, and
+      the arm that reads the real rows lives in
+      `castingV2-roll-domain-db.test.ts`, which skips without a disposable
+      database. The one site whose value IS the refund authority would have had
+      no always-run cover at all.
+
+      So this is a statement about the declaration, which is what actually
+      changed: this layer is handed a parent linkage and no price, and must
+      therefore never choose one. `rollCandidateCount` is a shape, not a price,
+      and stays — the arm names it rather than banning the whole symbol.
+    */
+    /*
+      Read through `codeOnly`, the house reader — comments gone and string
+      literal contents gone with them (#548, #741, #1638). The first draft of
+      this arm matched on the raw source and went red on the DOCBLOCK two
+      files over, which explains what the old behaviour was and names the
+      member while doing it. A guard that reads its own explanation is #1636's
+      class exactly, and it is the reason that helper exists.
+    */
+    const source = codeOnly(readFileSync(join(repoRoot, "server/db/castingV2.ts"), "utf8"));
+    const priceReads = [...source.matchAll(/CASTING_V2_COSTS\.(\w+)/g)]
+      .map((match) => match[1])
+      .filter((member) => member !== "rollCandidateCount");
+    expect(priceReads, "the db layer is reading a PRICE again — the caller owns that choice").toEqual([]);
+  });
 
   it("⚠ refuses it BEFORE the transaction, so eight rows are never half-written", async () => {
     /* The refusal is the cheap half; the ordering is the half that matters. A
