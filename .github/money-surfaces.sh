@@ -197,7 +197,7 @@
 # positive and negative controls green — which is what the decision needs, and
 # the delta is zero on both windows either way. Defining that population once,
 # in code, so the next widening can compare, is its own card.
-MONEY_PATHS='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/db/(billing|credits|admin|accountDeletion)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^server/casting/atomicCredits\.ts$|^server/casting/(castingCreditCosts|packagePricing)\.ts$|^server/casting/evidence/evidenceCandidateContract\.ts$|^server/wardrobe/creditCosts\.ts$|^server/castingV2/(castViewPackage|packageOrchestrator)\.ts$|^client/src/features/casting/(constants|castingPrices)\.ts$|^shared/const\.ts$|^drizzle/'
+MONEY_PATHS='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/db/(billing|credits|admin|accountDeletion)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^server/casting/atomicCredits\.ts$|^server/casting/(castingCreditCosts|packagePricing)\.ts$|^server/casting/evidence/evidenceCandidateContract\.ts$|^server/wardrobe/creditCosts\.ts$|^server/castingV2/(castViewPackage|packageOrchestrator)\.ts$|^client/src/features/casting/(constants|castingPrices)\.ts$|^shared/(const|creditDisplay)\.ts$|^drizzle/'
 
 # ── 2 · SYMBOLS — where money is DECIDED ────────────────────────────────────
 #
