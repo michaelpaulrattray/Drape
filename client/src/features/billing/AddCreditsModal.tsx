@@ -139,13 +139,30 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
   const delta = selected ? selected.credits - currentCredits : 0;
 
   const fullYear = selected ? selected.price * 12 : 0;
-  const dueToday = hasSubscription
-    ? (preview?.immediateCharge ?? 0)
+  /*
+    ⚠ **A CHARGE NOBODY HAS READ YET IS NOT A CHARGE OF ZERO — #1725, and it is
+    #1703 one noun over.** `preview?.immediateCharge ?? 0` printed a 30px
+    tabular **"$0.00 due today"** for the beat the quote was in flight, and the
+    figure that replaced it was **$852.33** — measured on the dev subscriber
+    fixture, both themes, before this line changed. #1703 fixed the same idiom
+    on `balance` the day before and its guard is scoped to that noun, so it
+    could not see a charge.
+
+    `null` is the house answer for not-known-yet and the figure draws an em dash
+    (`BoardHeader`, `UserCard`, `StudioSlimHeader`). **Both branches take it, not
+    only the subscriber's**: a customer with no subscription reads `selected`
+    out of `plans`, so before that query answers `selected` is `null` and the
+    old `: 0` printed the same confident zero on the checkout road — the same
+    defect, one branch over, and it would have survived a fix aimed only at the
+    line the card named.
+  */
+  const dueToday: number | null = hasSubscription
+    ? (preview?.immediateCharge ?? null)
     : selected
       ? annual
         ? annualPrice(selected.price)
         : selected.price
-      : 0;
+      : null;
 
   const checkout = trpc.billing.createSubscriptionCheckout.useMutation({
     onSuccess: (data) => {
@@ -187,8 +204,17 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
     this gate a click that beat the preview fired the real mutation under a
     button reading `Add credits · $0.00` — a purchase confirmed against a
     figure nobody had.
+
+    ⚠ **AND `dueToday !== null` IS THE SAME SENTENCE SAID ONCE RATHER THAN
+    TWICE (#1725).** The gate below asked whether the PREVIEW had answered; the
+    button then printed `dueToday`, which is a different question on the
+    checkout road — `!hasSubscription` made this `true` immediately, so a
+    customer whose plan catalogue had not arrived read `Add credits · $0.00` on
+    an enabled-looking button. Deriving the gate from the figure it guards is
+    working law 4: one source, and the button cannot state a price the figure
+    does not have.
   */
-  const quoteReady = !hasSubscription || (!!preview && !previewFailed);
+  const quoteReady = dueToday !== null && (!hasSubscription || (!!preview && !previewFailed));
 
   const submit = () => {
     if (!selected || !quoteReady) return;
@@ -276,7 +302,14 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
             {annual && !hasSubscription && fullYear > 0 ? (
               <span className="dp-topup__struck">{formatDollars(fullYear)}</span>
             ) : null}
-            <span className="dp-topup__due">{formatDollars(dueToday)}</span>
+            {/*
+              ⚠ **AN EM DASH, NOT `$0.00` — #1725.** The figure keeps its own
+              slot and its own type size, so nothing below it moves when the
+              real charge lands; what it declines to do is name a price it has
+              not been told. `due today` stays beside it on purpose — the row
+              still says WHAT the number will be, which is the honest half.
+            */}
+            <span className="dp-topup__due">{dueToday !== null ? formatDollars(dueToday) : "—"}</span>
             <span className="dp-topup__duenote">due today</span>
           </div>
 
@@ -414,9 +447,15 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
           onClick={submit}
           disabled={!selected || working || !quoteReady}
         >
+          {/*
+            `dueToday !== null` is true wherever `quoteReady` is — the gate is
+            derived from it above — and it is written out because that is how
+            the compiler narrows `number | null`. The alternative is a `?? 0`
+            inside the label, which is the defect this card closed.
+          */}
           {working
             ? "Working…"
-            : quoteReady
+            : quoteReady && dueToday !== null
               ? `Add credits · ${formatDollars(dueToday)}`
               : "Checking the charge…"}
         </Button>
