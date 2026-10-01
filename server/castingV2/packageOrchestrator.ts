@@ -489,7 +489,7 @@ export async function buildCastPackage(
         `castingOutfitPlateEngine()` THROWS on a missing `FAL_KEY` — the door's
         own refusal, and the right one — and built eagerly here that throw is
         SYNCHRONOUS inside `buildCastPackage`, before a single view has been
-        dispatched. Five audit rows would already exist, 450 credits would
+        dispatched. Five audit rows would already exist, 8,500 credits would
         already be taken, and nothing would have refused or refunded any of it.
         Wrapped, the same throw lands in the catch below and the Sign renders
         master-only, which is what a missing plate is supposed to cost.

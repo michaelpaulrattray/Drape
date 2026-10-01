@@ -36,8 +36,16 @@ import { censusOfAttempt } from "./callCensus";
    the charge onto the tile's own row. It is NOT left behind as an unused
    import: this repository spent six months describing a control as dead on the
    strength of one (`isSensitiveAction`), and the rule it paid for — an import
-   is not a call site — cuts both ways. The constant still exists and is still
-   read, by `castingV2.config`, as the account-level quote. */
+   is not a call site — cuts both ways.
+
+   ⚠ This paragraph ended *"The constant still exists and is still read, by
+   `castingV2.config`, as the account-level quote"* until 2026-10-02, and that
+   was false the day it was written: item 1 of the same card DELETED the
+   constant, and `castingCreditCosts.ts:176` says so in capitals. Read at the
+   tree — `grep -rn CASTING_V2_RETRY_PRICE_CREDITS` returns four hits and all
+   four are comments about its absence. The account-level quote is gone with it;
+   the tile carries its own price now. (#1702's guard cannot see this shape: it
+   reads FIGURES, and this line's defect is a claim about a SYMBOL.) */
 import {
   beginDirectOperation,
   completeDirectOperationFailure,
