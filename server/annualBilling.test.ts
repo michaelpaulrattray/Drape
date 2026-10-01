@@ -21,6 +21,7 @@ import {
   stripeIntervalOf,
   choiceOfStripeInterval,
 } from "../shared/annualBilling";
+import { PLAN_TIERS } from "../drizzle/schema";
 
 const REPO = process.cwd();
 const read = (...parts: string[]) => readFileSync(join(REPO, ...parts), "utf8");
@@ -29,9 +30,92 @@ const code = (source: string) =>
   source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^[ \t]*\/\/.*$/gm, "");
 
 describe("the arithmetic itself", () => {
-  it("a year is 12 months at the rate, rounded once", () => {
-    expect(annualPriceInCents(15_900)).toBe(Math.round(15_900 * 12 * ANNUAL_RATE));
+  it("a year is 12 months at the rate, rounded to a whole dollar", () => {
+    /*
+      ⚠ **THIS ARM USED TO RESTATE THE IMPLEMENTATION** — `toBe(Math.round(15_900
+      * 12 * ANNUAL_RATE))` — so it could only ever go red if the function
+      stopped computing what the line beside it computed. That is not a test of
+      the price; it is a copy of the formula, and it was green on every one of
+      the four rungs where our number and Stripe's disagreed.
+    */
+    expect(annualPriceInCents(15_900)).toBe(158_400);
     expect(annualPriceInCents(15_900)).toBeLessThan(15_900 * 12);
+    /* Every yearly figure is whole dollars — no price in this product has cents. */
+    expect(annualPriceInCents(15_900) % 100).toBe(0);
+  });
+
+  it("⚠ EVERY YEARLY PRICE IS THE ONE STRIPE CHARGES — #1605 bullet 2", () => {
+    /*
+      THE CARD'S SENTENCE, DRIVEN: *"today `shared/annualBilling.ts` rounds to
+      the cent — Pro $677.28 — while Stripe's yearly price is a whole $677."*
+
+      ⚠ **THE EXPECTATIONS ARE STRIPE'S OWN `unit_amount`s, READ OFF THE
+      ACCOUNT**, not this formula applied a second time. Read 2026-10-01 in
+      test mode from the `klieg_<plan>_yearly_v2` lookup keys — the same
+      objects #1605 bullet 1 will resolve checkout against — so this arm is
+      what stops our arithmetic and Stripe's catalogue drifting apart again.
+      Deriving them here would make the suite agree with itself and prove
+      nothing, which is exactly how the cent rounding survived.
+
+      ⚠ **THE MONTHLY SIDE IS READ FROM `PLAN_TIERS`, NEVER TYPED.** A price
+      edit must redden this arm rather than slide past it: if a monthly price
+      moves, the Stripe object has to move with it, and that is the finding.
+    */
+    const STRIPE_YEARLY_UNIT_AMOUNTS: Record<string, number> = {
+      Starter: 26_900,
+      Pro: 67_700,
+      Studio: 158_400,
+      Business: 836_600,
+      Scale: 4_780_800,
+      Enterprise: 14_940_000,
+      Ultimate: 47_808_000,
+    };
+
+    const paid = Object.values(PLAN_TIERS).filter((tier) => tier.price > 0);
+    expect(paid.length, "no paid rungs found — the reader is broken").toBe(7);
+
+    const unpriced = paid.filter((tier) => STRIPE_YEARLY_UNIT_AMOUNTS[tier.name] === undefined);
+    expect(
+      unpriced.map((tier) => tier.name),
+      "a paid rung has no yearly price recorded from Stripe — read the account before shipping it",
+    ).toEqual([]);
+
+    for (const tier of paid) {
+      expect(
+        annualPriceInCents(tier.price),
+        `${tier.name}'s yearly price is not the amount Stripe would charge`,
+      ).toBe(STRIPE_YEARLY_UNIT_AMOUNTS[tier.name]);
+    }
+  });
+
+  it("⚠ AND THE CENT ROUNDING IS KEPT AS THE NEGATIVE CONTROL — it fails on four rungs", () => {
+    /*
+      Working law 2: the arm above is green, and that is worth nothing until
+      the same comparison is shown to go RED on the arithmetic this change
+      replaced. So the superseded rounding is applied here and its disagreement
+      with Stripe is named rung by rung — which is also the measurement that
+      justified the change, kept where it cannot rot into prose.
+    */
+    const centRounded = (monthlyInCents: number) => Math.round(monthlyInCents * 12 * ANNUAL_RATE);
+    const STRIPE_YEARLY_UNIT_AMOUNTS: Record<string, number> = {
+      Starter: 26_900,
+      Pro: 67_700,
+      Studio: 158_400,
+      Business: 836_600,
+      Scale: 4_780_800,
+      Enterprise: 14_940_000,
+      Ultimate: 47_808_000,
+    };
+
+    const disagreed = Object.values(PLAN_TIERS)
+      .filter((tier) => tier.price > 0)
+      .filter((tier) => centRounded(tier.price) !== STRIPE_YEARLY_UNIT_AMOUNTS[tier.name])
+      .map((tier) => tier.name);
+
+    expect(
+      disagreed,
+      "the superseded cent rounding no longer disagrees with Stripe where it was measured to",
+    ).toEqual(["Starter", "Pro", "Studio", "Business"]);
   });
 
   it("the badge derives from the rate — two months free at 0.83", () => {
