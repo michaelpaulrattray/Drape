@@ -40,6 +40,15 @@
  * The textual guard covers what a type cannot see — scale arithmetic written
  * out by hand, and the sites not yet routed.
  *
+ * # One function here returns LEDGER, not display
+ *
+ * `wholeDisplayLedger` runs the conversion backwards: it answers "what is the
+ * nearest ledger amount a grant may be so that no credit in it is invisible on
+ * screen". It lives here rather than beside the grant maths because the scale is
+ * the thing it needs, and `LEDGER_PER_DISPLAY_CREDIT` is not exported to be
+ * multiplied elsewhere. Its own docblock carries the rounding argument and the
+ * one case that must never be passed to it.
+ *
  * # What does NOT come through here
  *
  * Admin and moderator surfaces stay in **ledger units, labelled "units"**. They
@@ -139,6 +148,65 @@ export function displaySpent(spentLedger: number, remainingLedger: number): Disp
     finiteLedger(spentLedger, "displaySpent") + finiteLedger(remainingLedger, "displaySpent"),
   );
   return (total - displayBalance(remainingLedger)) as DisplayCredits;
+}
+
+/**
+ * A ledger amount a GRANT or a DEDUCTION may safely be: truncated toward zero
+ * to a whole number of display credits (#1604 slice 2, P1-5 done-when 2).
+ *
+ * # Why a grant has to be quantised at all
+ *
+ * Everything above converts a stored number into a shown one. This converts in
+ * the other direction, and it is the only function here that returns LEDGER.
+ * The reason it exists is that `displayBalance` rounds DOWN: a rollover of
+ * 7,333 ledger reads 1,466, and `1,466 × 5` is 7,330 — so three ledger credits
+ * sit on the balance that the customer can never be shown and will never
+ * knowingly spend. They are not stolen and they are not a rounding error in the
+ * usual sense; they are permanently invisible, which is worse, because no screen
+ * can ever be made to add up while they are there.
+ *
+ * Granting 7,330 instead costs the customer three ledger credits — six tenths of
+ * one display credit — and buys exactness: every grant this function produces
+ * satisfies `wholeDisplayLedger(x) / 5 === displayBalance(x)`, so the ledger and
+ * the screen agree by construction rather than by luck.
+ *
+ * # Toward zero, not down, and the sign is the whole reason
+ *
+ * `calculateCreditAdjustment` returns a SIGNED number: positive when an upgrade
+ * grants credits, negative when a downgrade takes them back. Truncating toward
+ * zero is conservative in BOTH directions — a grant is never more than can be
+ * shown, and a deduction is never more than the mirror grant would have been.
+ * `Math.floor` would be wrong on the negative half: it rounds −3,666.5 to
+ * −3,667, making the deduction BIGGER than the upgrade that earned it, which is
+ * one half of the credit-minting loop the #664 review closed. That function
+ * already truncates toward zero for exactly this reason; this preserves the
+ * property rather than replacing it.
+ *
+ * # What must NOT be passed through here
+ *
+ * ⚠ **A balance being CARRIED, never.** On an early renewal
+ * `webhooks.ts` passes `(balance) => balance` so the whole balance survives in
+ * full (#664 review finding 1). Quantising that would take up to four ledger
+ * credits off a customer for no reason at all — it is not a grant being
+ * computed, it is money they already hold. This is why the quantiser sits in the
+ * three functions that COMPUTE a grant or a deduction and not at
+ * `refreshMonthlyCredits`'s chokepoint, which would have caught the carry too.
+ *
+ * # What this does not yet make exact
+ *
+ * A renewal writes `monthlyCredits + rollover + purchased`. This makes the
+ * rollover a whole number of display credits; the other two are other cards'
+ * (`PLAN_TIERS` is #1602's, top-up grants are #1606's). Every
+ * `PLAN_TIERS.monthlyCredits` value happens to be a multiple of 5 today —
+ * measured, not assumed — so the rollover and proration shares are the only
+ * sources of a fractional display credit on that sum right now. A balance is
+ * therefore not guaranteed exact by this function alone, and nothing here
+ * claims it is.
+ */
+export function wholeDisplayLedger(ledger: number): number {
+  const magnitude =
+    displayBalance(Math.abs(finiteLedger(ledger, "wholeDisplayLedger"))) * LEDGER_PER_DISPLAY_CREDIT;
+  return ledger < 0 ? -magnitude : magnitude;
 }
 
 /**

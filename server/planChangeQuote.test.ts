@@ -20,6 +20,7 @@ import {
 import { SUBSCRIPTION_PRODUCTS } from "./stripe/stripeProducts";
 import { annualPriceInCents } from "../shared/annualBilling";
 import { PLAN_TIERS } from "../drizzle/schema";
+import { LEDGER_PER_DISPLAY_CREDIT, wholeDisplayLedger } from "../shared/creditDisplay";
 
 const DAY = 24 * 60 * 60;
 const T0 = 1_760_000_000;
@@ -79,9 +80,13 @@ describe("same-interval changes", () => {
     /* The credit top-up covers every month left of the YEAR — ×12, not the
        one month the old arithmetic would have granted. */
     const delta = PLAN_TIERS.pro.monthlyCredits - PLAN_TIERS.starter.monthlyCredits;
+    /* Quantised to a whole displayed credit since #1604 slice 2 — the bare
+       floor came to 1,089,041, which is not one. The multiple-of-5 assertion
+       below is the PROPERTY; this line is only the share it is taken from. */
     expect(q.creditAdjustment).toBe(
-      Math.floor(delta * 12 * (q.daysRemaining / q.totalDays)),
+      wholeDisplayLedger(Math.floor(delta * 12 * (q.daysRemaining / q.totalDays))),
     );
+    expect(q.creditAdjustment % LEDGER_PER_DISPLAY_CREDIT).toBe(0);
     expect(q.creditAdjustment).toBe(
       calculateCreditAdjustment("starter", "pro", q.daysRemaining, q.totalDays, 12),
     );
@@ -109,9 +114,12 @@ describe("interval switches", () => {
     expect(q.creditAdjustment).toBe(0);
     /* And the OLD period's unconsumed grant goes back — the same fraction of
        the same period Stripe credits back in money (#664 review finding 1). */
+    /* Already a whole displayed credit on these numbers; wrapped so it cannot
+       quietly stop being one if a grant or a fraction changes (#1604 slice 2). */
     expect(q.creditUnwind).toBe(
-      Math.floor(PLAN_TIERS.starter.monthlyCredits * (15 / 30)),
+      wholeDisplayLedger(Math.floor(PLAN_TIERS.starter.monthlyCredits * (15 / 30))),
     );
+    expect(q.creditUnwind % LEDGER_PER_DISPLAY_CREDIT).toBe(0);
   });
 
   it("annual → monthly mid-year nets NEGATIVE — nothing due today, the remainder becomes credit", () => {
@@ -123,9 +131,13 @@ describe("interval switches", () => {
     expect(q.creditBalance).toBe(-q.proratedAmount);
     expect(q.creditAdjustment).toBe(0);
     /* Leaving a year mid-way unwinds the unconsumed share of the YEAR's grant. */
+    /* 653,424 by the bare floor; 653,420 quantised (#1604 slice 2). */
     expect(q.creditUnwind).toBe(
-      Math.floor(PLAN_TIERS.starter.monthlyCredits * 12 * (q.daysRemaining / q.totalDays)),
+      wholeDisplayLedger(
+        Math.floor(PLAN_TIERS.starter.monthlyCredits * 12 * (q.daysRemaining / q.totalDays)),
+      ),
     );
+    expect(q.creditUnwind % LEDGER_PER_DISPLAY_CREDIT).toBe(0);
   });
 
   it("the customer's OWN tier can switch cycles — same plan, different interval is a real change", () => {

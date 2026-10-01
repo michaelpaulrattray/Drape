@@ -177,6 +177,31 @@ describe("the renewal", () => {
     expect(result.newBalance).toBe(75_000 + 35_000);
   });
 
+  it("⚠ THE CARRIED BALANCE IS NOT QUANTISED — #1604 slice 2's exclusion, driven", async () => {
+    /*
+      Slice 2 rounds every rollover and proration share DOWN to a multiple of 5
+      so no granted credit is invisible on screen. This row is the case that
+      must NOT be rounded: on an interval switch `webhooks.ts` passes
+      `(balance) => balance`, and the balance is money the customer already
+      holds, not a share being computed for them.
+
+      34,999 is deliberately not a multiple of 5. Quantising the carry — which
+      is exactly what moving the quantiser to `refreshMonthlyCredits`'s
+      chokepoint would do, and it is the tempting simplification — would hand
+      back 34,995 and take four credits off a paying customer for nothing.
+
+      So this arm reddens if a later change "tidies" the three call sites into
+      one. That is its whole job.
+    */
+    rows.push({ balance: 34_999, purchasedBalance: 0 });
+    updateAnswers = [1];
+
+    const result = await refreshMonthlyCredits(7, 75_000, identity, "stripe-invoice:in_p15_4b");
+
+    expect(result.newBalance).toBe(75_000 + 34_999);
+    expect(updateSets[0].rolloverCredits).toBe(34_999);
+  });
+
   it("⚠ A ROW WITH NO PURCHASED CREDITS IS UNTOUCHED — every live account today", async () => {
     /*
       The top-up product was removed in February and no road into

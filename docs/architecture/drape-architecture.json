@@ -33700,6 +33700,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/stripe/stripeService.ts",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/stripe/webhooks.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
