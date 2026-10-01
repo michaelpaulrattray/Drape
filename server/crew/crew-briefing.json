@@ -1,7 +1,7 @@
 {
-  "edition": 605,
-  "updatedAt": "2026-10-01T18:15:00.000Z",
-  "shift": "Night shift, 03:40: the new credit scale went live on production at 03:34 your time, and the four pieces that were waiting together all shipped as one. A Roll now reads 240 credits, a Sign 1,700, and a new account starts with 2,700. Then two things, both of them about money being right rather than new. First, the claim that justified you replacing the plan ladder was never actually tested - the code carried it as a note, and a note cannot fail. It is tested now: the old proposal's figures are run through the real check and it proves they broke the value promise at Studio, Scale and Enterprise, exactly where the note said. Second, and this one I went and looked up rather than took on trust: I read your Stripe account and found the yearly prices there are whole dollars, while the app was working them out to the cent. Four of the seven plans disagreed - the app said Pro costs $677.28 a year and Stripe will charge $677.00. Nothing is wrong on your screen today, because today the app tells Stripe what to charge. But the next card moves that the other way round, and the day it does, a customer would read one number and be charged another. So the app now rounds to whole dollars like Stripe does, and all seven agree. The only thing that changes on screen is one line: Starter's annual value figure goes from 625 credits per dollar to 624. No price a customer reads moves at all. The same look turned up something for the top-up card: the three top-up prices it asks for do not exist in Stripe under those names. Three others do, at exactly the right dollars - $12, $24 and $60 - but labelled a tenth of the credits. Either Stripe's labels or the card's pack sizes are wrong, and that is your call or your finance guy's, so it is written on the card rather than guessed at. Both of tonight's changes are money, so both are waiting for your relay to read them. Nothing needs a reply from you tonight.",
+  "edition": 606,
+  "updatedAt": "2026-10-01T20:20:00.000Z",
+  "shift": "Night shift, 05:30: the last piece of the Stripe checkout card is built and live. Until tonight, when somebody subscribed or changed plan, Drape worked out the price itself and told Stripe what to charge. From now it asks Stripe for the price you set up, by name, and charges that. Nothing anybody pays changed by a cent — I checked all fourteen of your plan prices in Stripe before I started, and every one of them already matched what the app works out, which is what last night's whole-dollar fix did. What it buys you is that your Stripe account is now the one place a price lives, instead of a second copy of it. If a price in Stripe ever stops matching what the page says, the purchase stops and tells us which one — rather than quietly charging a number nobody saw. If a price is missing, the same thing: it stops, nothing is charged, and the person gets a plain sentence saying so and that it is on us. I wrote that sentence myself, because the one it would otherwise have used said “check your plan before trying again”, and nothing has been touched when this happens, so that would have sent somebody looking for a change that never happened. One thing is now waiting on you, and it is on your list below: the three credit top-up packs in Stripe charge the right money but are named with a tenth of the credits. I went and read your Stripe account again to be sure, and scanned every top-up price rather than only the ones the plan named — there are three, and those are them. Last, the one honest gap: everything I read was your test account. Whether the live one has the same fourteen prices is yours or the relay's to check, it is written on the go-live card with the list, and it matters more today than it did yesterday — because from tonight a missing live price means nobody can subscribe until it is added. Nobody is on a paid plan right now, so there is time to do it calmly. — and you answered that one while I was still writing this: RELABEL. It is recorded on the card and added to the go-live list, with the three names and amounts written out, to be done for your test and live accounts in the same sitting so they cannot drift apart. Nothing is waiting on you tonight.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -3360,6 +3360,28 @@
       "state": "done",
       "filedAt": "2026-09-30T18:40:42.000Z",
       "issueNumber": 1542
+    },
+    {
+      "id": "topup-pack-labels-1606",
+      "issueNumber": 1606,
+      "state": "answered",
+      "filedAt": "2026-10-01T20:20:00.000Z",
+      "title": "Your three credit top-up packs — answered: RELABEL",
+      "productImpact": "YOUR ANSWER, 2026-10-01 20:14, verbatim and entire: “RELABEL”.\n\nSo the three top-up prices in Stripe get names that say what the buyer actually receives — 5,000, 10,000 and 25,000 credits — at the same $12, $24 and $60. No price moves and no customer sees any of it; what changes is that your own books will say what was sold.\n\nWe are about to build the credit top-up packs — the thing somebody on a plan buys when they run low.\n\nThe three prices already sitting in your Stripe account charge exactly what you approved: $12, $24 and $60. But each one is NAMED with a credit number that is a tenth of what the buyer is meant to get. The $12 one is called “500 credits” when the pack is 5,000.\n\nNobody would be charged a wrong amount either way, and no customer ever sees these names. They are the labels on our own shelf — the words that show up in Stripe when your finance guy, or whoever handles a refund months later, asks what somebody bought.",
+      "workedExample": "Someone pays $12 and 5,000 credits land in their account, which is right. Then in March they dispute the charge. Whoever opens Stripe to check reads “500 credits, $12” and has to work out whether the customer was short-changed. They were not — but the record says they might have been.\n\nThe arithmetic is also why I think the names are the mistake rather than the pack sizes: at 500 credits for $12 a top-up would be twelve times worse value than the Starter plan sitting next to it, which is not a thing anybody would buy. At 5,000 it is slightly worse than the plan, which is exactly how a top-up is meant to sit.",
+      "options": [
+        {
+          "key": "relabel",
+          "label": "Rename them — same three prices, same three dollar amounts, names that say 5,000 / 10,000 / 25,000",
+          "consequence": "A small, safe job in your Stripe account that changes no price and nothing a customer sees. Afterwards our books say what people actually received. It fits inside the go-live list you already have, so it costs no extra step."
+        },
+        {
+          "key": "sell-as-labelled",
+          "label": "Leave them — we build against the three that exist and ignore the names",
+          "consequence": "Saves the job, breaks nothing, and the money is identical. From then on Stripe's own record of a $12 purchase says 500 credits when the buyer got 5,000, and that is the record somebody reads during a refund."
+        }
+      ],
+      "recommendation": "Answered: RELABEL. The renaming is one job in Stripe, done for your test and live accounts in the same sitting so the two cannot drift apart; it is written on the go-live card with the exact amounts. Nothing is waiting on you here any more."
     }
   ],
   "eyeItems": [
@@ -9138,16 +9160,23 @@
     {
       "id": "ladder-negcontrol-1602",
       "title": "The reason you replaced the plan ladder is now tested, not just written down (#1602)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1708,
-      "note": "Money surface: held for your relay's hand verdict."
+      "note": "Merged as PR #1708; live on production."
     },
     {
       "id": "annual-whole-dollars-1605",
       "title": "A year costs whole dollars, which is what Stripe already charges (#1605)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1710,
-      "note": "Money surface: held for your relay's hand verdict."
+      "note": "Merged as PR #1710; live on production."
+    },
+    {
+      "id": "lookup-key-checkout-1605",
+      "title": "Checkout and plan change charge the price in your Stripe account, found by name",
+      "status": "merged",
+      "prNumber": 1720,
+      "note": "Merged 06aa189c; live on production, uptime 12.9 s. Bullet 1 of #1605 — the card's last."
     }
   ],
   "problems": [
@@ -9471,7 +9500,8 @@
     253,
     254,
     255,
-    256
+    256,
+    257
   ],
   "nextUp": {
     "readAt": "2026-10-01T06:11:20.588Z",
