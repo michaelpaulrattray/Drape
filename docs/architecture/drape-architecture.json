@@ -9943,14 +9943,6 @@
       "file": "server/casting/castingCreditCosts.ts"
     },
     {
-      "id": "cost:server/casting/castingCreditCosts.ts:CASTING_V2_FOLLOW_PRICE_CREDITS",
-      "name": "CASTING_V2_FOLLOW_PRICE_CREDITS",
-      "constant": "CASTING_V2_FOLLOW_PRICE_CREDITS",
-      "credits": 160,
-      "derivedFrom": "CASTING_V2_COSTS.followCandidate * CASTING_V2_COSTS.rollCandidateCount",
-      "file": "server/casting/castingCreditCosts.ts"
-    },
-    {
       "id": "cost:server/casting/castingCreditCosts.ts:CASTING_V2_REFINE_PRICE_CREDITS",
       "name": "CASTING_V2_REFINE_PRICE_CREDITS",
       "constant": "CASTING_V2_REFINE_PRICE_CREDITS",

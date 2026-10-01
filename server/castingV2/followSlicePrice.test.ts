@@ -3,7 +3,6 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   CASTING_V2_COSTS,
-  CASTING_V2_FOLLOW_PRICE_CREDITS,
   CASTING_V2_RETRY_PRICE_CREDITS,
   CASTING_V2_ROLL_PRICE_CREDITS,
   castingSliceCredits,
@@ -111,11 +110,27 @@ describe("the two slices are two prices, not one price read twice", () => {
     expect(declaration![1].trim()).toMatch(/^\d+$/);
   });
 
-  it("derives each roll price from its own slice and the shared candidate count", () => {
+  it("derives the quoted roll price from its own slice and the candidate count", () => {
     expect(CASTING_V2_ROLL_PRICE_CREDITS)
       .toBe(CASTING_V2_COSTS.rollCandidate * CASTING_V2_COSTS.rollCandidateCount);
-    expect(CASTING_V2_FOLLOW_PRICE_CREDITS)
-      .toBe(CASTING_V2_COSTS.followCandidate * CASTING_V2_COSTS.rollCandidateCount);
+  });
+
+  it("declares NO follow total, because nothing quotes one yet", async () => {
+    /*
+      The matching `CASTING_V2_FOLLOW_PRICE_CREDITS` was written and removed
+      inside this slice: `CASTING_V2_ROLL_PRICE_CREDITS` exists because
+      `castingV2.config` quotes it to the client, and a follow total has no
+      quoter until the dock's single price line is split (item 1, with #1600's
+      display helper). An exported price with no production reader is the shape
+      invariant 7 is about, and `check-cleanup-dispositions` caught it as
+      `unread` on this branch's first preflight.
+
+      This arm is here so the constant cannot come back WITHOUT its reader: a
+      module export is cheap to add and the next person's instinct will be
+      symmetry. Add it in the commit that quotes it, and delete this arm then.
+    */
+    const costs = await import("../casting/castingCreditCosts") as Record<string, unknown>;
+    expect("CASTING_V2_FOLLOW_PRICE_CREDITS" in costs).toBe(false);
   });
 });
 
@@ -216,6 +231,9 @@ describe("⚠ THE TRIPWIRE — two account-level quotes stop being truthful the 
        slice every sheet and every tile carries. */
     expect(CASTING_V2_RETRY_PRICE_CREDITS).toBe(CASTING_V2_COSTS.rollCandidate);
     expect(CASTING_V2_RETRY_PRICE_CREDITS).toBe(CASTING_V2_COSTS.followCandidate);
-    expect(CASTING_V2_ROLL_PRICE_CREDITS).toBe(CASTING_V2_FOLLOW_PRICE_CREDITS);
+    /* The dock's quote is the roll total, and it is only true of a follow sheet
+       while the slice it is built from is the follow's slice too. */
+    expect(CASTING_V2_ROLL_PRICE_CREDITS)
+      .toBe(CASTING_V2_COSTS.followCandidate * CASTING_V2_COSTS.rollCandidateCount);
   });
 });

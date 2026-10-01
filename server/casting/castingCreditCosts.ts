@@ -53,9 +53,26 @@ export const CASTING_V2_COSTS = {
 export const CASTING_V2_ROLL_PRICE_CREDITS =
   CASTING_V2_COSTS.rollCandidate * CASTING_V2_COSTS.rollCandidateCount;
 
-/** The same sheet, cast from an attached face. 8 × 20 = 160 credits today. */
-export const CASTING_V2_FOLLOW_PRICE_CREDITS =
-  CASTING_V2_COSTS.followCandidate * CASTING_V2_COSTS.rollCandidateCount;
+/*
+  ⚠ THERE IS DELIBERATELY NO `CASTING_V2_FOLLOW_PRICE_CREDITS`, and it was
+  written and then removed inside #1601 item 2 rather than left to be noticed.
+
+  The symmetry with `CASTING_V2_ROLL_PRICE_CREDITS` above is tempting and it is
+  the wrong instinct: that constant exists because something QUOTES it —
+  `castingV2.config` hands it to the client for the sheet dock's price line. A
+  follow total has no quoter yet, because the dock states ONE price for rolls
+  and follows together (his ruling, 2026-08-02) and splitting that line is item
+  1's work with #1600's display helper, not this slice's.
+
+  So a `FOLLOW_PRICE` here would have been an exported price with no production
+  reader — the shape this repository has been bitten by often enough to have a
+  law about it (invariant 7: a control that is not invoked does not exist), and
+  `check-cleanup-dispositions` flagged it as `unread` on the first preflight.
+  The alternative was to invent a reader to justify the constant, which is the
+  coupling this slice exists to defer. The slice price is what the money path
+  needs, `castingSliceCredits` returns it, and the service multiplies by the
+  count it already holds.
+*/
 
 /**
  * WHICH SLICE A ROLL IS PRICED IN — the ONE place the choice is made (#1601
