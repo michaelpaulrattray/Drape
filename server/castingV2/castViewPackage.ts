@@ -873,21 +873,45 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
         { must: "cutBy", landmark: "subject", edge: "top" },
       ],
       /*
-        ⚠ **THE TWO CLAUSES OF HIS OWN SPEC THAT NO RULE ABOVE RESTATES, and
-        this is the view the types called FULLY MEASURED** (#1612, the hand-over,
-        2026-10-01). It has no `readerRemainder`, which read as *nothing is left
-        over* — and what was actually true is *the rules left nothing over*, which
-        is a different sentence about a smaller thing.
+        ⚠ **THE TWO CLAUSES OF HIS OWN SPEC THAT NO RULE ABOVE RESTATES — DECLARED
+        AS DEBT BY #1675 AND DISCHARGED HERE AS A READER'S QUESTION (#1612, the
+        hand-over's debt, 2026-10-01).** This is the view the types called FULLY
+        MEASURED: it carried no `readerRemainder`, which read as *nothing is left
+        over*, where what was true is *the rules left nothing over* — a different
+        sentence about a smaller thing.
 
-        Neither is a crop, which is why a silhouette cannot reach them: one is an
-        ORIENTATION and one is a feature PRESENCE test. The second is also a
-        COUNT, so #1582 governs it — it belongs with the reference's own face scan
-        if it belongs anywhere, and {@link FACE_FROM_REFERENCE} is the sentence
-        that keeps it from refusing a cast with three eyes or none. Delete the
-        prose question here while these two stand and both tests are gone with
-        no line of code saying so.
+        Neither clause is a crop, which is why a silhouette cannot reach either:
+        one is an ORIENTATION and one is a feature PRESENCE test. Discharged by
+        road 2 of the three {@link ViewFramingBand.unrestated} names — they are a
+        reader's question forever rather than a rule nobody has written yet — and
+        the reason is different for each, which is why both are quoted rather than
+        summarised:
+
+          *"front-on crop of the face"* is a direction the face is turned. Every
+          landmark in this vocabulary is a silhouette or a region, and a
+          three-quarter crop produces exactly the same `face` mask in exactly the
+          same place as a front-on one. Measuring it would need the reference's
+          own face scan, not a box.
+
+          *"The mouth, every eye the reference shows"* is a COUNT, so #1582
+          governs it: a count refuses a being that does not have the feature, and
+          that is the specimen this whole card was filed about.
+          {@link FACE_FROM_REFERENCE} is the sentence that keeps the reader's
+          version of it reference-relative, and a count belongs with the
+          reference's own face scan if it belongs anywhere.
+
+        ⚠ **SO THE HAND-OVER ON THIS VIEW IS NOT A DELETION OF THE PROSE QUESTION
+        — IT IS A NARROWING OF IT.** The judge keeps the two halves named above
+        and stops being asked the three the rules now answer. A hand-over written
+        as *delete `spec.framing` from the post* would take both of these with it.
       */
-      unrestated: ["front-on crop of the face", "The mouth, every eye the reference shows"],
+      readerRemainder:
+        "whether this is a \"front-on crop of the face\" rather than a turned one — an "
+        + "orientation, and one no silhouette can answer because a three-quarter crop puts "
+        + "the same face in the same place — and whether \"The mouth, every eye the "
+        + "reference shows\" are inside the frame, which is a feature COUNT and belongs with "
+        + "the reference's own face scan (#1582: a count refuses a being that does not have "
+        + "the feature).",
     },
     directive:
       "BEAUTY CLOSE-UP OF THE FACE, STRAIGHT ON. The face fills the frame. Crop the TOP of "
@@ -946,20 +970,40 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
         + "to the camera — a feature count and an orientation, neither of which this file's "
         + "landmarks can answer without the reference's own face scan.",
       /*
-        ⚠ **THE DISTANCE — and it is the sharpest of the five, because the rule
-        above and the remainder beside it between them say nothing about HOW MUCH
-        OF HER IS IN THE PICTURE.** `clearOf subject top` is satisfied by a
-        full-length body with room over its hair, so a whole-body frame delivered
-        into the Portrait slot measures in band. Today the reader catches that
-        correctly; hand the axis over with this unpaid and nothing does.
+        ⚠ **THE DISTANCE — the sharpest of #1675's five and now THE ONLY ONE LEFT,
+        because the rule above and the remainder beside it between them say
+        nothing about HOW MUCH OF HER IS IN THE PICTURE.** `clearOf subject top` is
+        satisfied by a full-length body with room over its hair, so a whole-body
+        frame delivered into the Portrait slot measures in band. Today the reader
+        catches that correctly; hand the axis over with this unpaid and nothing
+        does.
 
-        It is geometry and it is payable: `roomBelowAtMost` on the face is the
-        close-up's own too-loose bound, and a head-and-shoulders band is the same
-        quantity with a wider bound. It is NOT written here on one shift's
-        reading — a bound is a number his eye closes (law 9 — 0.3 took six of his
-        frames and a Desk reply), and inventing a second one in the commit that
-        hands the axis over is how a band comes to refuse pictures nobody
-        measured.
+        **It is the only one of the five that road 2 would be a LIE about.** The
+        other four were an orientation, a stride, a concealment and a feature
+        count — things no box can answer, so declaring them a reader's question
+        forever is the truth. This one is a box: it is geometry, it is payable,
+        and `roomBelowAtMost` on the face is the shape — the close-up's own
+        too-loose bound with a wider number. Writing it into the remainder would
+        be filing a measurable test as unmeasurable to clear a list.
+
+        What it waits for is the NUMBER, and that is law 9 rather than effort:
+        0.3 took six of his frames and a Desk reply (*"this looks good"*, #248).
+        A second bound invented in the commit that hands the axis over is how a
+        band comes to refuse pictures nobody measured. The court it needs is the
+        delivered `frontClose` frames on production through the real segmenter,
+        the bound chosen in an empty band between the two populations, and his eye
+        on the two frames either side of it.
+
+        ⚠ **AND IT IS NOT CEREMONIAL DEBT ON A DEAD ENTRY — MEASURED 2026-10-01,
+        BECAUSE THE TEMPTING READING IS THAT IT IS.** This angle is not in
+        `CAST_PACKAGE_VIEWS`, so no new Sign renders it, and the obvious
+        conclusion is that no judge ever reads this spec and the debt costs
+        nothing. It is false: `castProjection` builds a historical Cast's slots
+        from the promise it BOUGHT (see the anchor comment at the top of that
+        read), every era that bought a `frontClose` has one, and
+        `castSlotRetryOffer` offers a Try again on it — which reaches
+        `viewRetryService`, `castPackageView(angle)` and this sentence. A customer
+        can still have this view judged today.
       */
       unrestated: ["a head-and-shoulders portrait"],
     },
@@ -1278,17 +1322,27 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
         { must: "clearOf", landmark: "subject", edge: "top" },
         { must: "clearOf", landmark: "subject", edge: "bottom" },
       ],
-      readerRemainder: "that the walk is genuinely in motion rather than a standing pose.",
       /*
-        ⚠ The SIDE. Two `clearOf subject` rules hold a body inside the frame and
-        say nothing about which way it faces, and the remainder above names only
-        the stride — so a front-on full-length walk measures in band here.
+        ⚠ The SIDE — declared as debt by #1675 and discharged here as a reader's
+        question (#1612, the hand-over's debt, 2026-10-01). Two `clearOf subject`
+        rules hold a body inside the frame and say nothing about which way it
+        faces, and the remainder below named only the stride — so a front-on
+        full-length walk measured in band here.
+
+        Road 2 of the three, for the same reason the stride beside it already
+        takes it: no landmark in this vocabulary distinguishes a body in profile
+        from a body square to camera. Both halves of this view's framing that
+        geometry cannot reach now sit in one sentence.
+
         Retired from the profile (this angle is not in `CAST_PACKAGE_VIEWS`), so
-        it is debt on a historical entry rather than on a view a Sign buys; it is
-        declared on the same sibling-consistency ground every other field on this
-        entry is.
+        no new Sign renders it — but a Try again on a historical Cast that BOUGHT
+        one reaches the judge through `castProjection`'s promise road, so the
+        remainder is live rather than ceremonial.
       */
-      unrestated: ["seen from the side"],
+      readerRemainder:
+        "that the walk is genuinely in motion rather than a standing pose, and that the body "
+        + "is \"seen from the side\" rather than square to camera — a stride and an "
+        + "orientation, neither of which two `clearOf subject` rules can tell apart.",
     },
     directive:
       "STRICT RIGHT-FACING FULL BODY SIDE PROFILE, WALKING. The subject's nose and toes point toward "
@@ -1331,19 +1385,23 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
         { must: "clearOf", landmark: "subject", edge: "top" },
         { must: "clearOf", landmark: "subject", edge: "bottom" },
       ],
+      /*
+        ⚠ THE DIRECTION — declared as debt by #1675 and discharged here as a
+        reader's question (#1612, the hand-over's debt, 2026-10-01), on the
+        most-refused view on production (3 of 13, all time).
+
+        *"face not visible"* was already the remainder and it is NOT this clause:
+        a cast photographed from the side with her face turned away shows no face
+        and is not seen from behind. So the two are kept as two. The two
+        `clearOf subject` rules cannot tell a back from a front, and no landmark in
+        this vocabulary can — road 2, for the same reason the concealment test
+        beside it takes it.
+      */
       readerRemainder:
         "that the face is not visible — a concealment test, and one a segmenter asked "
-        + "\"where is the face\" on a picture of a back cannot answer honestly.",
-      /*
-        ⚠ THE DIRECTION, and on the most-refused view on production (3 of 13,
-        all time). *"face not visible"* is the remainder above and it is NOT this
-        clause: a cast photographed from the side with her face turned away shows
-        no face and is not seen from behind. The two `clearOf subject` rules
-        cannot tell a back from a front, and no landmark in this vocabulary can —
-        which is why it reads as a reader's question rather than a rule, and why
-        it is debt rather than a missing line.
-      */
-      unrestated: ["seen from directly behind"],
+        + "\"where is the face\" on a picture of a back cannot answer honestly; and that the "
+        + "body is \"seen from directly behind\" rather than turned away at some other angle, "
+        + "which is a direction and not a crop.",
     },
     directive:
       "FULL BODY FROM BEHIND, walking away from camera. Head to feet entirely inside the frame. "

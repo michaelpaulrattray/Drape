@@ -209,35 +209,40 @@ describe("the two views that measure nothing say so, and why", () => {
  * *this clause is accounted for by nothing*, and a reworded spec makes the claim
  * red rather than stale.
  */
-describe("the hand-over's debt: clauses the measurement does not yet restate", () => {
-  /**
-   * ⚠ **THE DEBT AS A LIST OF CLAUSES, NOT AS A COUNT — and the first shape of
-   * this arm WAS a count, which could not fail in the one direction that
-   * matters.**
-   *
-   * A ceiling of five is satisfied by four, so emptying a band's `unrestated`
-   * without restating the clause anywhere would have passed — which is precisely
-   * the act this block exists to make impossible, since it is how the hand-over
-   * deletes a stated framing test with nothing saying so. Named clauses can be
-   * followed: each one below is either still owed, or **accounted for by
-   * something the code states**.
-   *
-   * Read at the four live specs on 2026-10-01, when the hand-over was picked up.
-   */
-  const OWED_AT_THE_HAND_OVER: ReadonlyArray<{ angle: CastViewAngle; clause: string }> = [
-    /* An orientation and a feature-presence test, on the one view whose band
-       carried no remainder and therefore read as fully measured. */
-    { angle: "closeUp", clause: "front-on crop of the face" },
-    { angle: "closeUp", clause: "The mouth, every eye the reference shows" },
-    /* HOW MUCH OF HER IS IN THE PICTURE — the sharpest of the five: a full-length
-       body with headroom satisfies this band's only rule. */
-    { angle: "frontClose", clause: "a head-and-shoulders portrait" },
-    /* Which way the body faces. Both are retired-or-live directions that two
-       `clearOf subject` rules cannot tell apart. */
-    { angle: "sideFull", clause: "seen from the side" },
-    { angle: "backFull", clause: "seen from directly behind" },
-  ];
+/**
+ * ⚠ **THE DEBT AS A LIST OF CLAUSES, NOT AS A COUNT — and the first shape of
+ * this arm WAS a count, which could not fail in the one direction that
+ * matters.**
+ *
+ * A ceiling of five is satisfied by four, so emptying a band's `unrestated`
+ * without restating the clause anywhere would have passed — which is precisely
+ * the act this block exists to make impossible, since it is how the hand-over
+ * deletes a stated framing test with nothing saying so. Named clauses can be
+ * followed: each one below is either still owed, or **accounted for by
+ * something the code states**.
+ *
+ * Read at the four live specs on 2026-10-01, when the hand-over was picked up.
+ *
+ * ⚠ **IT IS AT MODULE SCOPE BECAUSE IT IS THE RECORD, AND TWO BLOCKS NOW READ
+ * IT** — the outstanding half below and road 2's ledger at the foot of the file.
+ * A second copy beside the second reader is the mirror working law 4 is about,
+ * on the one list whose whole job is to be the single account of what was owed.
+ */
+const OWED_AT_THE_HAND_OVER: ReadonlyArray<{ angle: CastViewAngle; clause: string }> = [
+  /* An orientation and a feature-presence test, on the one view whose band
+     carried no remainder and therefore read as fully measured. */
+  { angle: "closeUp", clause: "front-on crop of the face" },
+  { angle: "closeUp", clause: "The mouth, every eye the reference shows" },
+  /* HOW MUCH OF HER IS IN THE PICTURE — the sharpest of the five: a full-length
+     body with headroom satisfies this band's only rule. */
+  { angle: "frontClose", clause: "a head-and-shoulders portrait" },
+  /* Which way the body faces. Both are retired-or-live directions that two
+     `clearOf subject` rules cannot tell apart. */
+  { angle: "sideFull", clause: "seen from the side" },
+  { angle: "backFull", clause: "seen from directly behind" },
+];
 
+describe("the hand-over's debt: clauses the measurement does not yet restate", () => {
   /**
    * THE THREE HONEST WAYS A DEBT IS DISCHARGED, read off the code rather than
    * trusted — the same three the band type names.
@@ -326,11 +331,154 @@ describe("the hand-over's debt: clauses the measurement does not yet restate", (
    * geometry, and that claim is a scope change somebody states on a card. What is
    * deliberately NOT pinned is that `closeUp` owes — that is the list above and it
    * is meant to reach zero; an arm asserting it would redden on the fix.
+   *
+   * ⚠ **AND IT WENT TO ZERO, WHICH THIS ARM ITSELF DID NOT SURVIVE — the
+   * expectation read `["closeUp"]` and the fix for the defect above is precisely
+   * to give `closeUp` a remainder.** The docblock one paragraph up warns against
+   * writing an arm that reddens on the fix and then this arm did it, one field
+   * over: it pinned the SYMPTOM's population rather than the claim. The claim is
+   * what is kept — a band declaring no remainder asserts its spec is entirely
+   * geometry — and with the list empty it is now stated the only way that cannot
+   * rot: **no band makes that claim at all**, so the next one to make it is a
+   * visible scope change rather than a number nudged from one to two.
    */
-  it("exactly one band declares no reader remainder, and it is not thereby complete", () => {
+  it("no band claims its spec is entirely geometry", () => {
     const noRemainder = CAST_VIEW_ANGLES.filter(
       (angle) => castPackageView(angle).band.readerRemainder === undefined,
     );
-    expect([...noRemainder].sort()).toEqual(["closeUp"]);
+    expect(
+      [...noRemainder].sort(),
+      "a band with no reader remainder asserts that every clause of its own framing spec is"
+      + " answered by its rules. That is a scope change stated on a card, not a default —"
+      + " `closeUp` made it silently and owed two clauses (#1612, the hand-over's debt).",
+    ).toEqual([]);
+  });
+});
+
+/**
+ * ⚠ **ROAD 2's LEDGER — the discharges, held in both directions, which is the
+ * guard road 2 never had (#1612, the hand-over's debt, 2026-10-01).**
+ *
+ * `CLAUSE_FOR` at the top of this file is road 1's citation map and it is held
+ * both ways: every rule names a clause, and every named clause keeps its rule.
+ * **Road 2 — a clause declared to be a reader's question forever — had no map at
+ * all**, so a debt could be discharged by typing a sentence that does not
+ * actually name the clause, or by naming a clause the spec no longer states. That
+ * is the same one-way blindness `unrestated` was invented to close, one road over.
+ *
+ * Four of #1675's five clauses are discharged this way, and each is here with the
+ * two readings that make the discharge real: the remainder NAMES it, and the spec
+ * still ASKS it. A clause that stops being either is a red beside the band.
+ *
+ * ⚠ **Scope, stated rather than left to be inferred: this ledger is the discharges
+ * of clauses that were on `OWED_AT_THE_HAND_OVER`, not an index of everything
+ * every remainder mentions.** The five pre-existing remainders are prose written
+ * before any of this existed; holding their every phrase to a verbatim spec
+ * substring would mean rewording live judge-facing scope lines to suit a guard,
+ * which is the tail wagging the dog. What this ledger guarantees is the thing the
+ * hand-over turns on: **no clause left the debt list by a sentence that does not
+ * name it.**
+ */
+describe("the hand-over's debt: the clauses discharged into a reader's remainder", () => {
+  const DISCHARGED_INTO_REMAINDER: ReadonlyArray<{ angle: CastViewAngle; clause: string }> = [
+    /* An orientation and a feature COUNT, on the view that carried no remainder
+       at all. #1582 governs the count: a count refuses a being that does not have
+       the feature, which is the specimen this card was filed about. */
+    { angle: "closeUp", clause: "front-on crop of the face" },
+    { angle: "closeUp", clause: "The mouth, every eye the reference shows" },
+    /* Which way the body faces, on the two full-lengths that owed it. Two
+       `clearOf subject` rules hold a body inside a frame and cannot tell a
+       profile, a back and a front apart. */
+    { angle: "sideFull", clause: "seen from the side" },
+    { angle: "backFull", clause: "seen from directly behind" },
+  ];
+
+  for (const { angle, clause } of DISCHARGED_INTO_REMAINDER) {
+    it(`${angle}: "${clause}" is named by the remainder that claims it`, () => {
+      expect(
+        castPackageView(angle).band.readerRemainder ?? "",
+        `${angle} discharged "${clause}" into its reader remainder and the remainder does not`
+        + ` say it. A discharge that does not name its clause is the clause going silent.`,
+      ).toContain(clause);
+    });
+
+    it(`${angle}: "${clause}" is still something its own spec asks`, () => {
+      expect(
+        castPackageView(angle).spec.framing,
+        `${angle}'s remainder claims "${clause}" and its spec no longer asks it — the`
+        + ` discharge is stale, not paid: re-read the band beside the sentence.`,
+      ).toContain(clause);
+    });
+
+    it(`${angle}: "${clause}" is not also claimed by a rule`, () => {
+      expect(
+        Object.values(CLAUSE_FOR[angle]),
+        `${angle} left "${clause}" to the reader AND cites a rule for it — a clause is`
+        + ` measured or it is read, never both, or the hand-over deletes a test twice over.`,
+      ).not.toContain(clause);
+    });
+  }
+
+  /**
+   * THE TWO LISTS ARE ONE FACT, and this is the arm that keeps them so: every
+   * clause the record says was owed is now either discharged above or still owed
+   * on its band. A discharge with no debt behind it means the record is wrong
+   * somewhere, and so does a debt that is neither paid nor outstanding.
+   */
+  it("every clause that was owed is either discharged or still outstanding", () => {
+    const discharged = new Set(
+      DISCHARGED_INTO_REMAINDER.map(({ angle, clause }) => `${angle} :: ${clause}`),
+    );
+    for (const { angle, clause } of OWED_AT_THE_HAND_OVER) {
+      const outstanding = (castPackageView(angle).band.unrestated ?? []).includes(clause);
+      expect(
+        outstanding || discharged.has(`${angle} :: ${clause}`),
+        `${angle} owed "${clause}" and it is now neither on its band nor in the ledger above.`
+        + ` A clause cannot leave the record by disappearing from it.`,
+      ).toBe(true);
+    }
+  });
+
+  it("a discharge is only recorded for a clause that was actually owed", () => {
+    const owed = new Set(OWED_AT_THE_HAND_OVER.map(({ angle, clause }) => `${angle} :: ${clause}`));
+    for (const { angle, clause } of DISCHARGED_INTO_REMAINDER) {
+      expect(
+        owed,
+        `${angle} records a discharge of "${clause}" that was never on the debt list`,
+      ).toContain(`${angle} :: ${clause}`);
+    }
+  });
+
+  /**
+   * ⚠ **WHICH VIEWS CAN STILL HAVE THEIR FRAMING AXIS HANDED OVER, AS ONE
+   * READABLE FACT — and it is pinned because that is the question the next slice
+   * opens with.**
+   *
+   * The hand-over is paid off per view: deleting a view's prose framing question
+   * while it owes a clause deletes a stated test. After this slice exactly one
+   * view still owes, and it is `frontClose` — the one debt of the five that is
+   * real GEOMETRY and therefore the one road 2 would be a lie about. What it
+   * waits for is a measured bound and his eye on it (law 9), not a sentence.
+   *
+   * ⚠ **It is NOT ceremonial debt on a retired entry, which is the reading that
+   * would make it safe to ignore.** `frontClose` is absent from
+   * `CAST_PACKAGE_VIEWS`, so no new Sign renders it — but `castProjection` builds
+   * a historical Cast's slots from the package she BOUGHT, and `castSlotRetryOffer`
+   * offers a Try again on one, which reaches `viewRetryService` and this spec. A
+   * customer can still have a `frontClose` judged today.
+   *
+   * Pinned rather than derived-and-shrugged-at, on the same ground as the two
+   * unmeasured views above: paying this debt should force somebody to come here
+   * and say so, and a SECOND view arriving in this list is a finding.
+   */
+  it("exactly one view still owes, and the hand-over is paid off per view", () => {
+    const owing = CAST_VIEW_ANGLES.filter(
+      (angle) => (castPackageView(angle).band.unrestated ?? []).length > 0,
+    );
+    expect(
+      [...owing].sort(),
+      "the views whose prose framing question cannot be deleted yet. `frontClose` owes a"
+      + " measured bound for \"a head-and-shoulders portrait\"; everything else is paid.",
+    ).toEqual(["frontClose"]);
   });
 });
