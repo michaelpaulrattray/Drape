@@ -60,7 +60,7 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import { PLAN_TIERS } from "../drizzle/schema";
+import { FREE_SIGNUP_GRANT_CREDITS, PLAN_TIERS } from "../drizzle/schema";
 import { LEDGER_PER_DISPLAY_CREDIT } from "../shared/creditDisplay";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -240,18 +240,22 @@ describe("the two populations the Atlas price list cannot see", () => {
     /*
       ⚠ **READ AT THE SOURCE, AND THE LIMIT IS STATED RATHER THAN HIDDEN.**
       `INITIAL_CREDITS` is a module-private `const` in `server/db/credits.ts`,
-      so there is nothing to import and nothing in the Atlas to read. The regex
-      is anchored to the declaration and the arm fails if it matches NOTHING, so
-      a rename is a red rather than a silent pass — which is the only way a
-      source read is admissible for a money fact.
-      #1602 slice 1 (PR #1682) moves this grant to one place; when it lands,
-      this arm reads whatever that place declares or reddens asking why.
+      so there is nothing to import from THAT module. #1602 slice 1 (PR #1682)
+      moved the grant to ONE place — `FREE_SIGNUP_GRANT_CREDITS` in
+      `drizzle/schema.ts` — and `credits.ts` now declares
+      `const INITIAL_CREDITS = FREE_SIGNUP_GRANT_CREDITS;`. This arm therefore
+      asserts two things: that the declaration still reads the one place (a
+      second literal creeping back in is the law-4 drift this arm exists to
+      catch, and a rename is a red rather than a silent pass), and that the one
+      place divides by 5. Re-pinned on `release/p1-scale` (2026-10-02), where the
+      two branches met; the earlier regex matched a literal that no longer exists.
     */
     const source = readFileSync(path.join(repoRoot, "server/db/credits.ts"), "utf8");
-    const declaration = /^const INITIAL_CREDITS = (\d+);/m.exec(source);
-    expect(declaration, "`INITIAL_CREDITS` is no longer declared this way in server/db/credits.ts")
+    const declaration = /^const INITIAL_CREDITS = FREE_SIGNUP_GRANT_CREDITS;/m.exec(source);
+    expect(declaration, "`INITIAL_CREDITS` in server/db/credits.ts no longer reads FREE_SIGNUP_GRANT_CREDITS — a second copy of the free grant, or a rename")
       .not.toBeNull();
-    expect(displaysExactly(Number(declaration![1]))).toBe(true);
+    expect(displaysExactly(FREE_SIGNUP_GRANT_CREDITS)).toBe(true);
+    expect(FREE_SIGNUP_GRANT_CREDITS).toBe(13_500);
   });
 
   it("⚠ names the top-up prices as ABSENT, so the commit that adds them enrols them here", () => {
