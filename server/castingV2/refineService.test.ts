@@ -36,6 +36,7 @@ import type { TextEngine } from "../providers/types";
 import { interpretRefinement } from "./refineInterpreter";
 
 import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
+import { withoutComments } from "../testing/withoutComments";
 
 /* Its arms do real work in process — a tree sweep, a sheet compile, a sharp
    encode — and under the parallel run that cost multiplies by fifteen or twenty
@@ -4191,7 +4192,33 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
         every in-flight bundle's edit on the master.
       */
       const routes = await readFile(new URL("../routes/castingV2.ts", import.meta.url), "utf8");
-      const code = routes.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+      /* Through the one shared walk (#1636). The private pair this read carried
+         was blind to string literals on its block half, which for a source read
+         keyed on `toContain` is the silence direction: a quoted comment opener
+         anywhere above the router's `onVersion` line would have deleted the
+         line being asserted and left the `not.toContain` arm green for the
+         wrong reason. It hides nothing in this one file today. */
+      /* Named, so that the control below goes THROUGH this reading rather than
+         past it: a control calling the shared walk directly would stay green if
+         this one line were reverted to a private stripper. */
+      const withoutProse = (source: string) => withoutComments(source);
+      const code = withoutProse(routes);
+      /* CONTROL on the reader itself, in the arm that depends on it: the third
+         assertion below is a `not.toContain`, and an absence over text the
+         reader never showed it passes. Both directions are driven — the shared
+         walk keeps a quoted comment-opener's line, the predecessor pair deletes
+         it. */
+      const hidden = [
+        `const note = 'a /` + `* inside a string';`,
+        `onVersion: input.onVersion ?? null,`,
+        `/` + `* an ordinary comment, whose closer the old pair scanned to *` + `/`,
+      ].join("\n");
+      expect(withoutProse(hidden)).toContain("onVersion: input.onVersion ??");
+      expect(
+        hidden.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, ""),
+        "the pair this read carried deletes the line, which is why it went",
+      ).not.toContain("onVersion: input.onVersion ??");
+
       expect(code).toContain("onVersion: publicId.nullable().optional(),");
       expect(code).toContain("onVersion: input.onVersion,");
       expect(code).not.toContain("onVersion: input.onVersion ??");

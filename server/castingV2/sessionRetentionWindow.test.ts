@@ -8,6 +8,8 @@ import {
   CASTING_SESSION_IDLE_PHRASE,
 } from "@shared/castingRetention";
 
+import { withoutComments } from "../testing/withoutComments";
+
 /**
  * HOW LONG A SHEET IS KEPT — his number, and the places that state it.
  *
@@ -33,19 +35,29 @@ const DAY = 24 * 60 * 60 * 1000;
 const read = (path: string) => readFile(new URL(path, import.meta.url), "utf8");
 
 /**
- * Source with its prose removed.
+ * Source with its prose removed, through the one shared walk (#1636).
  *
  * The number is allowed to appear in a COMMENT — the design law's own docblock
  * quotes the `/7 quiet days/i` it used to carry, which is the record of why it
  * stopped carrying it. What must never come back is the number in a string, a
- * regex or an attribute. Block comments and `*`/`//` lines go; nothing else.
+ * regex or an attribute, and `withoutComments` keeps all three while dropping
+ * every comment.
+ *
+ * ⚠ **The private reader this file carried was blind to string literals, and it
+ * was blind on one of its own six inputs**: measured at #1636,
+ * `scripts/lib/designLawControls.mts` read **184 non-whitespace characters
+ * SHORT** — a quoted comment-opener swallowing real code. For a suite whose
+ * arms are `not.toMatch(/\d+ quiet days/)`, unseen text is an arm that passes
+ * because it was shown nothing, which is the one failure mode an absence
+ * assertion has.
+ *
+ * Its line half was also looser than a comment reader in one direction and
+ * tighter in another: it dropped any line BEGINNING `*` or `//` — so a
+ * docblock's continuation lines went even outside a block comment — and kept a
+ * TRAILING `// …` after code. The shared walk drops exactly the comments.
  */
 function withoutProse(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .split("\n")
-    .filter((line) => !/^\s*(\*|\/\/)/.test(line))
-    .join("\n");
+  return withoutComments(source);
 }
 
 describe("the window is thirty idle days", () => {
@@ -130,5 +142,58 @@ describe("everything that states the window reads the one declaration", () => {
     const copy = await read("../../client/src/features/castingV2/retentionCopy.ts");
     expect(copy).toContain('from "@shared/castingRetention"');
     expect(withoutProse(copy)).not.toMatch(/\d+ quiet days/);
+  });
+});
+
+/**
+ * ⚠ **THE READER'S OWN CONTROLS, AND THEY ARE HERE BECAUSE THIS SUITE WAS
+ * INSENSITIVE TO ITS OWN READER (#1636's `server/castingV2/` slice).**
+ *
+ * All three source arms above are `not.toMatch(…)`, and an absence assertion
+ * over NOTHING passes. Driven rather than reasoned: with the shared reader
+ * stubbed to return an empty string, **five of the slice's six suites reddened
+ * and this one stayed GREEN on all seven arms**. That is the same shape slice 5
+ * found in `server/crewMarkdownLead.test.ts`, one suite along.
+ *
+ * Both arms below fail under that stub, and the second one fails under the
+ * PREDECESSOR reader this file carried — so neither the reader going blind nor
+ * the string-blind pair coming back can happen quietly.
+ */
+describe("the reader this suite's absence arms depend on", () => {
+  it("CONTROL: the strip leaves the declaration it is asked about", async () => {
+    for (const relative of [
+      "../../client/src/pages/CastingV2.tsx",
+      "../../scripts/lib/designLaws.mts",
+      "../../scripts/lib/designLawControls.mts",
+      "../../client/src/features/castingV2/retentionCopy.ts",
+    ]) {
+      const stripped = withoutProse(await read(relative));
+      expect(stripped.length, `${relative} read as nothing`).toBeGreaterThan(200);
+      expect(stripped, `${relative} lost the declaration`).toContain("CASTING_SESSION_IDLE_PHRASE");
+    }
+  });
+
+  it("CONTROL: a re-typed window inside a STRING is still found", () => {
+    // The swap's whole purpose, as a fixture rather than as a claim. A quoted
+    // comment-opener is not a comment opener; the predecessor pair read it as
+    // one and deleted everything down to the next real closer, taking the
+    // re-typed number with it and leaving the arms above green.
+    const fixture = [
+      'const opener = "a /' + '* inside a string literal";',
+      'const copy = "kept for 7 quiet days";',
+      '/' + '* an ordinary comment, whose closer the pair above scans to *' + '/',
+    ].join("\n");
+
+    expect(withoutProse(fixture)).toMatch(/\d+ quiet days/);
+
+    const predecessor = fixture
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .split("\n")
+      .filter((line) => !/^\s*(\*|\/\/)/.test(line))
+      .join("\n");
+    expect(
+      predecessor,
+      "the pair this file carried is blind to exactly this, which is why it went",
+    ).not.toMatch(/\d+ quiet days/);
   });
 });

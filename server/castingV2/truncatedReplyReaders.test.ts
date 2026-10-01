@@ -40,6 +40,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { readListedSource } from "../testing/listedSource";
 import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
+import { withoutComments } from "../testing/withoutComments";
 
 import { describeWithTeeth } from "./faceDescribe";
 import { readHairColourFromReference } from "./hairColourFromReference";
@@ -210,15 +211,30 @@ describe("a reader cut off at the token ceiling says so, and files nothing", () 
  */
 const CASTING_DIR = path.join(import.meta.dirname, ".");
 
-/** Source with block and line comments removed, so a MENTION cannot read as a READ. */
-function codeOnly(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, " ")
-    .replace(/(^|[^:])\/\/[^\n]*/g, "$1 ");
+/**
+ * Source with block and line comments removed, so a MENTION cannot read as a
+ * READ — through the one shared walk (#1636).
+ *
+ * ⚠ **IT IS `withoutComments` AND IT MUST NOT BE THE SHARED `codeOnly`, WHICH
+ * IS WHY THIS FUNCTION WAS RENAMED.** It carried that name while keeping string
+ * literals, and the shared export of the same name DROPS a literal's contents
+ * (#1638) — so a reader reaching for the familiar name would have broken the
+ * `refineInterpreter.ts` arm below, which asserts `/"truncated"/` and
+ * `trace.last === "truncated"` are *present*. Two contracts, one walk, and the
+ * local name now says which one this suite needs.
+ *
+ * The private pair this file carried was blind to string literals on its block
+ * half; measured on this suite's own 187 inputs (#1636) it hid nothing today, so
+ * the swap buys zero characters and is hygiene — the string-blind shape leaves
+ * the population and the reason lives here. Its line half already handled the
+ * URL case, which is why the figure is zero rather than why the shape is fine.
+ */
+function withoutProse(source: string): string {
+  return withoutComments(source);
 }
 
 function readsTruncatedInCode(source: string): boolean {
-  return /\.truncated\b/.test(codeOnly(source));
+  return /\.truncated\b/.test(withoutProse(source));
 }
 
 /**
@@ -306,7 +322,7 @@ describe("every casting reader that asks a model reads the truncation signal", (
     */
     const row = callers.find((candidate) => candidate.entry === "refineInterpreter.ts");
     expect(row, "refineInterpreter.ts is no longer a .complete caller").toBeDefined();
-    const code = codeOnly(row!.source);
+    const code = withoutProse(row!.source);
     expect(readsTruncatedInCode(row!.source), "it stopped reading truncated").toBe(true);
     expect(code, "`truncated` is no longer a ReadFailure state").toMatch(/"truncated"/);
     expect(
@@ -362,5 +378,29 @@ describe("every casting reader that asks a model reads the truncation signal", (
       "if (reply.truncated) return null;",
     ].join("\n");
     expect(readsTruncatedInCode(source)).toBe(true);
+  });
+
+  it("NEGATIVE CONTROL: a QUOTED comment-opener does not make it eat the code after it", () => {
+    /* #1636's sibling of the arm above, pointed at the BLOCK half rather than
+       the line half. The URL case was already handled by the private pair this
+       file carried; a comment-opening pair inside a quoted string was not, and
+       it opened a comment that was never opened — so everything down to the
+       next real closer, read as a comment, left the classifier's sight. A
+       caller would then read as compliant for having been shown nothing, which
+       is the direction #1272's own miscount went. */
+    const source = [
+      `const note = 'a /` + `* inside a string';`,
+      "if (reply.truncated) return null;",
+      `/` + `* an ordinary comment, whose closer the old pair scanned to *` + `/`,
+    ].join("\n");
+    expect(readsTruncatedInCode(source)).toBe(true);
+
+    const predecessor = source
+      .replace(/\/\*[\s\S]*?\*\//g, " ")
+      .replace(/(^|[^:])\/\/[^\n]*/g, "$1 ");
+    expect(
+      /\.truncated\b/.test(predecessor),
+      "the pair this file carried deletes the read, which is why it went",
+    ).toBe(false);
   });
 });

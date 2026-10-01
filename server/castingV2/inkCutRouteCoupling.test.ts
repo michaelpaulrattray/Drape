@@ -35,8 +35,17 @@ vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 import { castingInkDesigns } from "../../drizzle/schema";
 import { INK_CUT_ROUTES, isInkCutRoute } from "../../shared/inkCutRoute";
 import { readListedSource } from "../testing/listedSource";
+import { withoutComments } from "../testing/withoutComments";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+
+/**
+ * The one reading this file does, named so that its own control goes through
+ * it rather than past it (#1636): a control calling the shared walk directly
+ * would stay green if this line were reverted to a private stripper, which is
+ * the revert it exists to refuse.
+ */
+const withoutProse = (source: string): string => withoutComments(source);
 const read = (file: string) => readFileSync(path.join(repoRoot, file), "utf8");
 
 /**
@@ -59,23 +68,31 @@ function designWriterSources(): Array<{ file: string; source: string }> {
          on whoever is looking. `null` means it went; skip it. */
       const source = readListedSource(path.join(repoRoot, dir, name));
       if (source === null) continue;
-      out.push({ file: `${dir}/${name}`, source: code(source) });
+      out.push({ file: `${dir}/${name}`, source: withoutProse(source) });
     }
   }
   return out;
 }
 
-/**
- * The source with its PROSE removed — block comments and line comments both.
+/*
+ * THE SOURCE WITH ITS PROSE REMOVED — and it goes through the one shared walk
+ * (`server/testing/withoutComments.ts`, #1636).
  *
- * Without this the reading below indicts `inkDesignForAsk.ts`, whose only
- * `cutRoute: null` is inside a paragraph EXPLAINING that null is a recorded fact
- * rather than an unset one. A guard that cannot tell a sentence about the code
- * from the code is the shape this repository has paid for repeatedly, and it
- * fails toward accusing the most carefully documented file in the family.
+ * Without the strip at all, the reading below indicts `inkDesignForAsk.ts`,
+ * whose only `cutRoute: null` is inside a paragraph EXPLAINING that null is a
+ * recorded fact rather than an unset one. A guard that cannot tell a sentence
+ * about the code from the code is the shape this repository has paid for
+ * repeatedly, and it fails toward accusing the most carefully documented file
+ * in the family.
+ *
+ * The private stripper this file carried handled the URL case on its LINE half
+ * — `(^|[^:])//` keeps a scheme's slashes — and was still blind to strings on
+ * its BLOCK half: a `/*` inside a quoted string opened a comment it never
+ * opened and everything to the next closer left the guard's sight. Measured on
+ * this suite's own 250 inputs it hid NOTHING today, so the swap buys zero
+ * characters here and is hygiene: the string-blind shape leaves the population
+ * and the reason lives at the declaration, which is what stops it coming back.
  */
-const code = (source: string): string =>
-  source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
 
 describe("the cut disposition's vocabulary", () => {
   it("is the two members the cutter can decide, and no third", () => {
@@ -155,6 +172,35 @@ describe("the cut disposition's vocabulary", () => {
       expect(source, `${file} calls the recorder without taking cutRoute from the cut`)
         .toMatch(/cutRoute:\s*[^,\n]*\bcut[.?]/);
     }
+  });
+
+  it("CONTROL: a writer hidden behind a QUOTED comment-opener is still found", () => {
+    /* #1636. Both readings above run on stripped source, and the first of them
+       raises "nothing calls recordInkDesign" — a finding — when it sees
+       nothing. A reader that deletes the call is therefore indistinguishable
+       from a column with no writer, which is the loud direction here rather
+       than the silent one, and the value arm below it is the quiet one.
+
+       The private pair this file carried handled the URL case on its line half
+       and was still blind to strings on its block half, so a quoted
+       comment-opener above the call deleted the call. It hides nothing in
+       today's 250 inputs; this arm is what keeps that true. */
+    const hidden = [
+      `const note = 'a /` + `* inside a string';`,
+      `await recordInkDesign({ cutRoute: cut.route });`,
+      `/` + `* an ordinary comment, whose closer the old pair scanned to *` + `/`,
+    ].join("\n");
+
+    expect(withoutProse(hidden)).toMatch(/\brecordInkDesign\b/);
+    expect(withoutProse(hidden)).toMatch(/cutRoute:\s*[^,\n]*\bcut[.?]/);
+
+    const predecessor = hidden
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/(^|[^:])\/\/.*$/gm, "$1");
+    expect(
+      predecessor,
+      "the pair this file carried deletes the call, which is why it went",
+    ).not.toMatch(/\brecordInkDesign\b/);
   });
 
   it("has a migration and a ceremony naming the same column", () => {

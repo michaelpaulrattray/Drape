@@ -46,15 +46,19 @@ import { describe, expect, it, vi } from "vitest";
 
 import { readListedSource } from "../testing/listedSource";
 import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
+import { withoutComments } from "../testing/withoutComments";
 
 vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 const CLIENT_SRC = path.join(process.cwd(), "client", "src");
 
-/** Prose quotes the retired field by name on purpose — strip it before asking. */
-function code(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
-}
+/**
+ * The one reading this file does, named so that its own control goes through it
+ * rather than past it (#1636): a control calling the shared walk directly would
+ * stay green if this line were reverted to a private stripper, which is the
+ * revert it exists to refuse.
+ */
+const withoutProse = (source: string): string => withoutComments(source);
 
 type Source = { relative: string; code: string };
 
@@ -65,6 +69,15 @@ type Source = { relative: string; code: string };
  * `readListedSource` because this working tree is shared: a listed entry can be
  * gone before it is classified or opened, and skipping it is the correct answer
  * rather than a tolerated failure (`server/testing/listedSource.ts`).
+ *
+ * Prose quotes the retired field by name on purpose — `withoutComments` strips
+ * it before the arms ask. Measured on this walk's own 531 inputs (#1636): the
+ * private stripper this file carried read **18 of them SHORT, 3,778
+ * non-whitespace characters of real code unseen**, led by
+ * `foundation/rawErrorToast.test.ts` (1,119) and `foundation/icons-guard.test.ts`
+ * (1,009) — a `/*` inside a quoted string opening a comment it never opened. A
+ * guard that reads less passes for the wrong reason, and this one's whole job is
+ * an ABSENCE assertion, where reading less is exactly how it goes green wrongly.
  */
 function clientSources(): Source[] {
   const found: Source[] = [];
@@ -80,7 +93,10 @@ function clientSources(): Source[] {
       if (!/\.tsx?$/.test(entry)) continue;
       const source = readListedSource(full);
       if (source === null) continue;
-      found.push({ relative: path.relative(CLIENT_SRC, full).replace(/\\/g, "/"), code: code(source) });
+      found.push({
+        relative: path.relative(CLIENT_SRC, full).replace(/\\/g, "/"),
+        code: withoutProse(source),
+      });
     }
   };
   walk(CLIENT_SRC);
@@ -141,5 +157,31 @@ describe("the account-level author-road flag has left the client", () => {
     expect(notice, "the notice still keys its stated-outfit rung on the row").toContain(
       "authorRoad: boolean",
     );
+  });
+
+  it("CONTROL: a read hidden behind a QUOTED comment-opener is still seen", () => {
+    /* #1636. The absence arm above is the only thing standing between this
+       deploy and the retired house-road controls being drawn again, and an
+       absence assertion over text the reader never showed it passes. The
+       private stripper this file carried was blind to string literals, and it
+       was blind HERE: measured on this walk's own 531 inputs it read 18 of
+       them short — 3,778 non-whitespace characters of real code unseen. So a
+       component carrying a quoted comment-opener above its read of the field
+       would have gone unseen, on the arm whose whole value is seeing it. */
+    const hidden = [
+      `const note = 'a /` + `* inside a string';`,
+      `if (config.authorRoadEnabled) drawTheRetiredControls();`,
+      `/` + `* an ordinary comment, whose closer the old pair scanned to *` + `/`,
+    ].join("\n");
+
+    expect(withoutProse(hidden)).toContain("authorRoadEnabled");
+
+    const predecessor = hidden
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/^\s*\/\/.*$/gm, "");
+    expect(
+      predecessor,
+      "the pair this file carried deletes the read, which is why it went",
+    ).not.toContain("authorRoadEnabled");
   });
 });
