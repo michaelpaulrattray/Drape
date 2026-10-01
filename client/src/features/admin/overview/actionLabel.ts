@@ -37,6 +37,11 @@ const NAMED: Record<string, string> = {
   "abuse.credits_exploit_attempt": "Credit exploit attempt",
   "abuse.billing_anomaly": "Billing anomaly",
   "abuse.global_attack_detected": "Global attack detected",
+  /* #1603 — the two quiet signup caps. Named rather than left to the fallback
+     below, which would render these as "Abuse · free grant capped": readable,
+     but it reads as a system noun where every neighbour reads as an event. */
+  "abuse.free_grant_capped": "Free signup capped",
+  "abuse.free_scan_capped": "Free face scans capped",
   "security.emergency_action": "Emergency action",
   "billing.stripe_refund_issued": "Refund issued",
   "billing.stripe_refund_failed": "Refund failed",

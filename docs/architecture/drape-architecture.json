@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 187
+      "moduleCount": 188
     },
     {
       "id": "domain:castingV2",
@@ -47,7 +47,7 @@
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 64
+      "moduleCount": 65
     },
     {
       "id": "domain:evidence",
@@ -112,7 +112,7 @@
     {
       "id": "domain:security",
       "name": "security",
-      "moduleCount": 11
+      "moduleCount": 13
     },
     {
       "id": "domain:settings",
@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 76
+      "moduleCount": 77
     },
     {
       "id": "domain:staff",
@@ -3787,6 +3787,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/faceScanDailyCap.ts",
+      "path": "server/castingV2/faceScanDailyCap.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/faceScanService.ts",
       "path": "server/castingV2/faceScanService.ts",
       "domain": "casting-v2",
@@ -5047,6 +5053,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/db/quietLimits.ts",
+      "path": "server/db/quietLimits.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/db/referrals.ts",
       "path": "server/db/referrals.ts",
       "domain": "data",
@@ -5605,8 +5617,20 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/security/deviceKey.ts",
+      "path": "server/security/deviceKey.ts",
+      "domain": "security",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/security/disposableEmails.ts",
       "path": "server/security/disposableEmails.ts",
+      "domain": "security",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/security/freeGrantLimit.ts",
+      "path": "server/security/freeGrantLimit.ts",
       "domain": "security",
       "lifecycle": "active"
     },
@@ -6147,6 +6171,12 @@
     {
       "id": "module:shared/exportViews.ts",
       "path": "shared/exportViews.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/freeGrantRefusal.ts",
+      "path": "shared/freeGrantRefusal.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -13240,6 +13270,10 @@
       "path": "server/freeGrantOneTime.test.ts"
     },
     {
+      "id": "test:server/freeSignupQuietLimits.test.ts",
+      "path": "server/freeSignupQuietLimits.test.ts"
+    },
+    {
       "id": "test:server/freeTextWhitespace.test.ts",
       "path": "server/freeTextWhitespace.test.ts"
     },
@@ -13554,6 +13588,10 @@
     {
       "id": "test:server/pushPathsToMain.test.ts",
       "path": "server/pushPathsToMain.test.ts"
+    },
+    {
+      "id": "test:server/queryStringReads.test.ts",
+      "path": "server/queryStringReads.test.ts"
     },
     {
       "id": "test:server/queueOrdinalDiscipline.test.ts",
@@ -20855,6 +20893,11 @@
     },
     {
       "from": "module:client/src/pages/Login.tsx",
+      "to": "module:shared/freeGrantRefusal.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/Login.tsx",
       "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
@@ -25081,6 +25124,31 @@
     {
       "from": "module:server/castingV2/faceScan.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScanDailyCap.ts",
+      "to": "module:server/_core/env.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScanDailyCap.ts",
+      "to": "module:server/auditLog.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScanDailyCap.ts",
+      "to": "module:server/db/quietLimits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScanDailyCap.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScanDailyCap.ts",
+      "to": "module:shared/auditActions.ts",
       "kind": "imports"
     },
     {
@@ -30739,6 +30807,21 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/db/quietLimits.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/quietLimits.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/quietLimits.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/db/referrals.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -32135,6 +32218,11 @@
     },
     {
       "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/faceScanDailyCap.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/faceScanService.ts",
       "kind": "imports"
     },
@@ -32541,6 +32629,11 @@
     {
       "from": "module:server/routes/emailAuth.ts",
       "to": "module:server/security/disposableEmails.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/emailAuth.ts",
+      "to": "module:server/security/freeGrantLimit.ts",
       "kind": "imports"
     },
     {
@@ -33260,6 +33353,11 @@
     },
     {
       "from": "module:server/routes/googleAuth.ts",
+      "to": "module:server/security/freeGrantLimit.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/googleAuth.ts",
       "to": "module:server/security/rateLimit.ts",
       "kind": "imports"
     },
@@ -33901,6 +33999,46 @@
     {
       "from": "module:server/security/deleteUserData.ts",
       "to": "module:server/stripe/stripeService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/security/deviceKey.ts",
+      "to": "module:server/_core/cookies.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/security/freeGrantLimit.ts",
+      "to": "module:server/_core/env.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/security/freeGrantLimit.ts",
+      "to": "module:server/auditLog.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/security/freeGrantLimit.ts",
+      "to": "module:server/db/quietLimits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/security/freeGrantLimit.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/security/freeGrantLimit.ts",
+      "to": "module:server/security/deviceKey.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/security/freeGrantLimit.ts",
+      "to": "module:shared/auditActions.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/security/freeGrantLimit.ts",
+      "to": "module:shared/freeGrantRefusal.ts",
       "kind": "imports"
     },
     {

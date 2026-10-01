@@ -1,14 +1,37 @@
 import { Button as DSButton } from "@/components/design-system";
 import { ArrowRight, AlertCircle, Clock, ShieldOff, MailX, Check, Loader2, KeyRound, LogIn, Eye, EyeOff, Mail } from "lucide-react";
-import { useLocation, Link } from "wouter";
+import { useSearch, Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ASSETS_BASE_URL } from "@shared/const";
 import { ACCESS_CODE_MAX_LENGTH } from "@shared/inputLimits";
+import { FREE_GRANT_REFUSAL_ERROR_CODE, FREE_GRANT_REFUSAL_SENTENCE } from "@shared/freeGrantRefusal";
 
 // ─── Error configurations ──────────────────────────────────────────────────
 const ERROR_MESSAGES = {
+  /*
+    A FREE SIGNUP THE QUIET CAP REFUSED (#1603, P1-4). The Google callback is a
+    redirect with no body, so this is the only place that road's customer reads
+    anything — the email road answers the same sentence as JSON.
+
+    ⚠ BOTH THE KEY AND THE SENTENCE ARE THE SHARED CONSTANTS, never typed here.
+    A key typed by hand that does not match the redirect renders NO banner at all,
+    which is a refused customer shown a blank login page; a sentence typed by hand
+    is a second copy of a promise (working law 4).
+
+    Amber rather than red, and the icon is the one the other "you may already have
+    an account" case uses: nobody reaching this has done anything wrong, and the
+    first thing most of them should do is sign in.
+  */
+  [FREE_GRANT_REFUSAL_ERROR_CODE]: {
+    icon: KeyRound,
+    title: "We couldn't start a new account",
+    message: FREE_GRANT_REFUSAL_SENTENCE,
+    iconColor: "text-amber-500",
+    bgColor: "bg-amber-50",
+    borderColor: "border-amber-200",
+  },
   suspended: {
     icon: ShieldOff,
     title: "Account Suspended",
@@ -525,9 +548,23 @@ function markHasAccount() {
 
 // ─── Main component ────────────────────────────────────────────────────────
 export default function Login() {
-  const [location] = useLocation();
+  /*
+    ⚠ `useSearch()`, NOT `useLocation().split("?")` — AND THE OLD READ MEANT THIS
+    WHOLE BANNER HAD NEVER RENDERED FOR ANY ERROR, EVER (#1709).
 
-  const searchParams = new URLSearchParams(location.split("?")[1] || "");
+    wouter 3's `useLocation` returns the PATHNAME only; the query string is
+    `useSearch`'s job (`CastingSheet.tsx:137` already reads it that way). So
+    `location.split("?")[1]` was always `undefined`, `errorType` was always null,
+    and every entry in `ERROR_MESSAGES` above was unreachable code — a customer
+    redirected here as `?error=suspended`, `?error=not_approved`,
+    `?error=invalid_code` or `?error=no_code` saw a plain sign-in page with no
+    explanation at all. Driven in the running app before and after.
+
+    Found while driving #1603, whose own Google-road refusal redirects here and
+    would have been just as silent. Its twin in `VerifyEmail.tsx` is fixed in the
+    same commit (working law 7 — fix the class, not the instance).
+  */
+  const searchParams = new URLSearchParams(useSearch());
   const errorType = searchParams.get("error");
   const lockMinutes = searchParams.get("minutes");
   const isSuspended = errorType === "suspended";

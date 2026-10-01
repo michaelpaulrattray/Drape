@@ -123,10 +123,32 @@ vi.mock("../security/rateLimit", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../security/rateLimit")>()),
   checkRateLimit: vi.fn(() => ({ allowed: true, remaining: 19, resetIn: 0 })),
 }));
+/*
+  THE FREE GRANT'S QUIET CAP IS REAL HERE; ONLY ITS STORAGE IS STAGED (#1603).
+
+  ⚠ Six of this file's NEW-USER arms went red the moment the cap landed, and
+  that is the honest signal rather than a nuisance: `mayGrantFreeCredits` FAILS
+  CLOSED when it cannot count (invariant 7), so the new-account branch correctly
+  started redirecting. Mocking `../security/freeGrantLimit` would have turned all
+  six green again and silently taken the new gate out of the only suite that
+  drives this callback as a browser.
+
+  So the real policy runs — the real comparison, the real device cookie, the real
+  redirect code — with the count staged at zero, and those six arms are now also
+  a positive control that an honest Google signup passes it.
+*/
+vi.mock("../db/quietLimits", () => ({
+  countFreeGrantClaims: vi.fn(),
+  recordFreeGrantClaim: vi.fn(),
+  countFaceScanAgainstDay: vi.fn(),
+}));
 
 import { COOKIE_NAME, SESSION_MAX_AGE_MS } from "@shared/const";
 
-import { ENV } from "../_core/env";
+import { ENV, NUMERIC_ENV_VARS } from "../_core/env";
+import { countFreeGrantClaims, recordFreeGrantClaim } from "../db/quietLimits";
+import { FREE_GRANT_REFUSAL_ERROR_CODE } from "@shared/freeGrantRefusal";
+import { DEVICE_COOKIE_NAME } from "../security/deviceKey";
 import * as db from "../db";
 import { AUDIT_ACTIONS, logAuditEvent } from "../auditLog";
 import { redeemInviteCode } from "../db/inviteCodes";
@@ -285,6 +307,9 @@ beforeEach(() => {
   vi.mocked(validateInviteCode).mockResolvedValue({ valid: true });
   vi.mocked(redeemInviteCode).mockResolvedValue({ success: true });
   vi.mocked(sdk.createSessionToken).mockResolvedValue("session-token-stand-in");
+  /* The quiet cap's storage, staged clean; the cap itself is the real one. */
+  vi.mocked(countFreeGrantClaims).mockResolvedValue({ device: 0, network: 0 });
+  vi.mocked(recordFreeGrantClaim).mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -705,6 +730,37 @@ describe("GET /api/auth/google/callback — RETURNING user: the gates in front o
     vi.mocked(getUserByEmail).mockResolvedValue(anAccount() as never);
   });
 
+  /*
+    ⚠ THE HONEST-USER ARM, AND IT IS THE MOST IMPORTANT ONE #1603 ADDED HERE.
+
+    A returning customer already HAS her account and her credits. The free-grant
+    cap must never touch this branch — if it did, the second person in a household
+    or anybody in an office that had already used its allowance would be locked out
+    of an account she owns, by a control whose whole stated purpose is that honest
+    users never notice it.
+
+    It holds by construction rather than by a condition: the gate is inside the
+    `else` that creates a new account, and the grant itself only fires when
+    `upsertUser` finds no credits row (`db/users.ts`). This arm is what makes that
+    construction a FACT rather than a reading of the source — the count is staged
+    far past both caps and she signs in anyway.
+  */
+  it("lets a returning customer in even when the free-grant caps are exhausted", async () => {
+    vi.mocked(countFreeGrantClaims).mockResolvedValue({
+      device: NUMERIC_ENV_VARS.FREE_GRANT_MAX_PER_DEVICE * 10,
+      network: NUMERIC_ENV_VARS.FREE_GRANT_MAX_PER_NETWORK * 10,
+    });
+
+    const response = await callback("code=auth-code");
+
+    expect(response.location).toBe("/app");
+    expect(sessionCookie(response)).toBeDefined();
+    /* And the cap was never even consulted on this road — her sign-in does not
+       depend on a counting query succeeding. */
+    expect(countFreeGrantClaims).not.toHaveBeenCalled();
+    expect(recordFreeGrantClaim).not.toHaveBeenCalled();
+  });
+
   it("refuses a SUSPENDED account, audits it as suspended, and mints nothing", async () => {
     vi.mocked(db.isAccountLocked).mockResolvedValue({
       locked: true, lockedUntil: null, reason: "Suspended by an admin",
@@ -835,6 +891,44 @@ describe("GET /api/auth/google/callback — RETURNING user: the gates in front o
 */
 
 describe("GET /api/auth/google/callback — NEW user: approval holds by construction", () => {
+  /*
+    ───────────────────────────────────────────────────────────────────────
+    THE FREE GRANT'S QUIET CAP ON THIS ROAD (#1603, P1-4), driven as a browser.
+
+    This is the second of the product's two new-account roads, and the cap had to
+    land on both: the Google callback creates the row with the same `upsertUser`
+    call, so the grant fires inside it exactly as it does on the email road.
+
+    ⚠ A refusal REDIRECTS rather than answering a body, because there is nothing
+    here to read one — and the code it redirects with is the shared constant, so
+    it cannot drift from the key the login page's error map is built on. A code
+    with no entry there renders a blank page to a refused customer.
+    ───────────────────────────────────────────────────────────────────────
+  */
+  it("refuses a capped NEW signup, and creates no account", async () => {
+    vi.mocked(countFreeGrantClaims).mockResolvedValue({
+      device: 0,
+      network: NUMERIC_ENV_VARS.FREE_GRANT_MAX_PER_NETWORK,
+    });
+
+    const response = await callback("code=auth-code", { betaCode: "BETA123" });
+
+    expect(response.location).toBe(`/login?error=${FREE_GRANT_REFUSAL_ERROR_CODE}`);
+    /* `upsertUser` is the call that creates the row and grants inside it. */
+    expect(db.upsertUser).not.toHaveBeenCalled();
+    expect(redeemInviteCode).not.toHaveBeenCalled();
+    expect(sessionCookie(response)).toBeUndefined();
+  });
+
+  it("sets the device cookie and records the claim on a signup it allows", async () => {
+    const response = await callback("code=auth-code", { betaCode: "BETA123" });
+
+    expect(response.cookies.some((cookie) => cookie.startsWith(`${DEVICE_COOKIE_NAME}=`))).toBe(true);
+    expect(recordFreeGrantClaim).toHaveBeenCalledWith(
+      expect.objectContaining({ ipAddress: expect.any(String) }),
+    );
+  });
+
   it("refuses to create an account with no beta code", async () => {
     const response = await callback("code=auth-code");
 

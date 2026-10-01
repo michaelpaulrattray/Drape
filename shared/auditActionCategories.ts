@@ -149,6 +149,20 @@ export const ACTION_CATEGORIES: Record<AuditCategory, AuditAction[]> = {
       dropped by the Abuse filter exactly as described.
     */
     AUDIT_ACTIONS.ABUSE_CREDENTIAL_STUFFING,
+    /*
+      THE TWO QUIET SIGNUP CAPS (#1603, P1-4) — bucketed in the commit that
+      created them, which is the whole of the lesson two comments up rather
+      than a courtesy. A free signup now hands out real credits with no card
+      and no phone behind it, so these two rows are the only place a staff
+      member can ever see the farming they refuse.
+
+      Both are `warning` severity at the writer, not `critical`: a single
+      refusal is far more likely to be an office network than an attack, and
+      the thing worth looking at is a RUN of them. The overview's abuse feed
+      filters on this same list.
+    */
+    AUDIT_ACTIONS.ABUSE_FREE_GRANT_CAPPED,
+    AUDIT_ACTIONS.ABUSE_FREE_SCAN_CAPPED,
   ],
 };
 

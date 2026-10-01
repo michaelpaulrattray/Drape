@@ -1492,6 +1492,109 @@ export type BlockedIp = typeof blockedIps.$inferSelect;
 export type InsertBlockedIp = typeof blockedIps.$inferInsert;
 
 /**
+ * THE FREE GRANT'S OWN RECORD — one row per free signup grant actually made
+ * (#1603, P1-4 under the pricing rung #1598).
+ *
+ * The product hands a new account 13,500 credits (`FREE_SIGNUP_GRANT_CREDITS`)
+ * on a verified email or a Google sign-in, with **no card and no phone** — his
+ * ruling, and the whole point of the card. That makes the grant the one thing
+ * in the product worth farming, and the only thing standing in the way is a
+ * cap over a window.
+ *
+ * ⚠ **WHY THIS IS A TABLE AND NOT `server/security/rateLimit.ts`.** That
+ * limiter is a `Map` in the process, swept hourly, and this program **deploys
+ * on every merge to `main`** — several times a night (`CLAUDE.md`, "Deploying
+ * while a paid roll is in flight"). A seven-day window held in memory is a
+ * seven-day window in name and a forty-minute one in fact. The site-wide login
+ * alarm already carries that compromise with its limit stated out loud
+ * (*"the counter is in memory and resets on every deploy, so it catches a
+ * fast, loud attack and would miss a slow, patient one"*) — which is honest
+ * there, where the window is minutes, and would be a hole here.
+ *
+ * ⚠ **AND WHY IT IS NOT DERIVED FROM `audit_logs`, which working law 4 would
+ * otherwise ask for.** Two reasons, both read rather than assumed: the audit
+ * row for a signup carries `ipAddress` but has **no device key** at all, so
+ * half the question cannot be asked of it; and `audit_logs` is a staff
+ * reporting surface with its own retention future, so a control reading it
+ * would be a control whose population somebody else owns. My own note on this
+ * class: law 4 has a precondition — deriving from a set that answers a
+ * DIFFERENT question is a silent behaviour change.
+ *
+ * **One row is written only when a grant is MADE**, never on a refusal (the
+ * refusal writes an audit row instead), so the count this table answers is
+ * "how many free accounts did this device/network actually get", which is the
+ * question the cap is about.
+ */
+export const freeGrantClaims = mysqlTable("free_grant_claims", {
+  id: int("id").autoincrement().primaryKey(),
+  /**
+   * The device this grant was handed to, as `server/security/deviceKey.ts`
+   * computes it: `cookie:<uuid>` when the browser carried our first-party
+   * cookie, `derived:<hash>` when it did not. The prefix is kept IN the value
+   * so a staff member reading a row can tell a browser that identified itself
+   * from one that was inferred — two very different confidences wearing one
+   * column would be unreadable.
+   */
+  deviceKey: varchar("deviceKey", { length: 64 }).notNull(),
+  /** IPv4 or IPv6, from Express's trusted-proxy `req.ip` and never a header. */
+  ipAddress: varchar("ipAddress", { length: 45 }).notNull(),
+  /** The account that received it. Not a foreign key, for the same reason the
+   *  audit log is not: a deleted account must not take the record with it. */
+  userId: int("userId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ([
+  /* Both reads are "this key, inside the window", so the window column is the
+     second half of each index rather than an index of its own. */
+  index("idx_free_grant_claim_device").on(table.deviceKey, table.createdAt),
+  index("idx_free_grant_claim_ip").on(table.ipAddress, table.createdAt),
+]));
+
+export type FreeGrantClaim = typeof freeGrantClaims.$inferSelect;
+export type InsertFreeGrantClaim = typeof freeGrantClaims.$inferInsert;
+
+/**
+ * HOW MANY FACE SCANS AN ACCOUNT HAS BOUGHT TODAY (#1603, P1-4).
+ *
+ * A face scan is **house money and the customer is never charged for it** —
+ * `castingV2.faceScan`'s own docblock says so: *"Nothing is charged to the
+ * user — a scan is house money on a read they never asked to pay for."* One
+ * scan is fourteen segmenter calls at fal. So a free account with no card
+ * behind it can spend our money by opening faces, and this is the cap on that.
+ *
+ * **One row per account per UTC day, counted up.** A row per scan would have
+ * been the obvious shape and was declined: it grows without bound, nothing
+ * prunes it, and the question asked of it ("how many today") is a COUNT over a
+ * range where this is a primary-key lookup.
+ *
+ * ⚠ **NOT DERIVED FROM `casting_face_scans`.** That table is the KEPT reading
+ * and it answers a different question twice over: it is gated by
+ * `CASTING_SCAN_TABLE_SCOPE`, so a scan outside that scope writes nothing at
+ * all, and it is purged — a cap that forgets when a purge runs is not a cap.
+ *
+ * The counter is incremented BEFORE the decision, so an attempt made past the
+ * cap counts too and the day stays shut. That is deliberate and it is the safe
+ * direction; an honest account never comes near the number.
+ */
+export const faceScanDailyUsage = mysqlTable("face_scan_daily_usage", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  /** The UTC day as `YYYY-MM-DD`. A string rather than a date so the day
+   *  boundary is the one the server computed and cannot be re-interpreted by a
+   *  session time zone on the way back out. */
+  day: varchar("day", { length: 10 }).notNull(),
+  scans: int("scans").notNull().default(0),
+}, (table) => ([
+  /* The uniqueness is the concurrency control: the increment is a single
+     INSERT … ON DUPLICATE KEY UPDATE, so two scans landing together cannot
+     lose one another's count (invariant 1's shape — the check lives in the
+     statement that writes). */
+  uniqueIndex("uq_face_scan_day").on(table.userId, table.day),
+]));
+
+export type FaceScanDailyUsage = typeof faceScanDailyUsage.$inferSelect;
+export type InsertFaceScanDailyUsage = typeof faceScanDailyUsage.$inferInsert;
+
+/**
  * RETIRED (#800, 2026-09-11) — single-use tokens for the Slack emergency
  * buttons, which are deleted. Nothing reads or writes this table any more
  * and production holds zero rows (measured 2026-09-11); the declaration
