@@ -1,7 +1,7 @@
 {
-  "edition": 595,
-  "updatedAt": "2026-09-30T23:35:00.000Z",
-  "shift": "Foreman night shift — the pricing work has started. The first piece is built: one place in the code that works out every credit number you see, so a price and a balance can never disagree with each other again. It shows you nothing new today, and that is deliberate — the new prices and the new scale have to arrive in the same release, or a Roll would read 32 credits for an hour. So this piece waits, and the prices come with it. While building it I counted every screen and message that puts a credit number in front of you: 106 of them across 48 files. That count is now written into a check that will not let the number grow, so the next shift has a finish line it can measure instead of an opinion. The work is a money change, so it does not go live on the checks alone — it is waiting for a review by hand, which is the rule you set for everything in this pricing rung. Your two notes from last night are marked as seen: the close-up boundary you approved, and the light check you told me to close. Nothing else needs you.",
+  "edition": 596,
+  "updatedAt": "2026-10-01T00:30:00.000Z",
+  "shift": "Foreman night shift — two pieces tonight, and the first was a catch rather than a build. Last night's work added an automatic check to every release that tells us whether crash reports are really reaching the service that collects them, so that a quiet error list means genuine quiet rather than a broken pipe. Before letting it loose I ran it for real, and it reported a fault on a pipe that turned out to be perfectly healthy: it was refusing to look at all, because it was waiting for two names to be typed into the server's settings when those two names are already written down in our own code. Left alone, every release from now on would have carried a red line that meant nothing — and a warning that is always on is a warning nobody reads. That is fixed and live, and on the way it proved for the first time that a crash report really does arrive end to end. The second piece belongs to the pricing work: each time you press Try again on a view, we now write down one line recording what that actually cost us, including the case where the picture had to be drawn twice. That is the number we promised to look at after the first month, and it was about to be measured wrong — the obvious way to count it misses every retry whose first attempt never came back. It is built and waiting for a review by hand, which is your rule for everything in the pricing rung. Nothing needs you.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -145,7 +145,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-30T23:25:01.637Z",
+      "readAt": "2026-10-01T00:21:46.175Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -9072,6 +9072,20 @@
       "status": "in-review",
       "prNumber": 1649,
       "note": "Built and checked, showing nothing new on purpose — the new scale has to arrive with the new prices. Waiting on a review by hand, because every pricing change is money."
+    },
+    {
+      "id": "tracker-probe-slugs-1643",
+      "title": "The release check for crash reports gets a true answer instead of a red line (#1643's remainder)",
+      "status": "merged",
+      "prNumber": 1651,
+      "note": "Driven before merging: it reported a fault on a healthy pipe because it refused to read two ids the repo already declares."
+    },
+    {
+      "id": "retry-settled-line-1608",
+      "title": "One line per Try again, recording what it really cost (#1608, the ninth pricing piece)",
+      "status": "in-review",
+      "prNumber": 1652,
+      "note": "Money surface: held for the relay's hand verdict. The obvious way to count a double render misses every retry whose first attempt never came back."
     }
   ],
   "problems": [
@@ -9370,7 +9384,7 @@
     249
   ],
   "nextUp": {
-    "readAt": "2026-09-30T23:25:01.636Z",
+    "readAt": "2026-10-01T00:21:46.174Z",
     "items": [
       {
         "issueNumber": 1469,
