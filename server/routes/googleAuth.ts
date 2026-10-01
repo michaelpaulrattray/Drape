@@ -11,10 +11,13 @@
  * 4. Server exchanges code for tokens, verifies ID token, creates/links user
  * 5. Sets session cookie and redirects to /app or /login?error=...
  */
+import { createHash, timingSafeEqual } from "node:crypto";
+
 import { Router, type Request, type Response } from "express";
 import { OAuth2Client } from "google-auth-library";
 import { v4 as uuidv4 } from "uuid";
 import { SignJWT, jwtVerify } from "jose";
+import { parse as parseCookieHeader } from "cookie";
 import { COOKIE_NAME, SESSION_MAX_AGE_MS } from "@shared/const";
 import { getSessionCookieOptions } from "../_core/cookies";
 import { sdk } from "../_core/sdk";
@@ -29,6 +32,80 @@ import { getUserByEmail } from "../db/users";
 
 const STATE_SECRET = ENV.cookieSecret; // Reuse JWT secret for state signing
 const STATE_MAX_AGE_MS = 10 * 60 * 1000; // 10 minutes
+
+/**
+ * ⚠ **THE STATE NONCE IS BOUND TO THE BROWSER THAT STARTED THE FLOW (#1681) —
+ * WITHOUT THIS THE SIGNATURE PROVES NOTHING THE ATTACK CARES ABOUT.**
+ *
+ * The `state` token is signed, and it was checked. But the nonce inside it was
+ * compared to **nothing the browser holds**, so a token minted in one browser
+ * was accepted in another — and that is the whole of login-CSRF by LINK:
+ *
+ *   1. the attacker starts a Google sign-in on our site and stops at the
+ *      callback, keeping its `code` and its `state`;
+ *   2. they send the victim that callback URL;
+ *   3. the victim's browser follows it — a **top-level GET**, so #1659's
+ *      cross-site guard correctly does not judge it, and a GET cannot be
+ *      refused on `Origin` without breaking the legitimate round-trip from
+ *      accounts.google.com;
+ *   4. the signature verifies, because the attacker minted it with our key via
+ *      our own entry route;
+ *   5. we sign the victim into the ATTACKER's account. Everything she does
+ *      next — uploads, casts, card details typed into their billing — lands in
+ *      an account they control.
+ *
+ * The repair is the standard one and it is the only thing that works on a GET:
+ * **the start of the flow puts a secret in the browser, and the callback
+ * refuses unless the state's nonce matches it.** The attacker can mint a state
+ * all day; they cannot make the victim's browser hold its fingerprint, because
+ * only a `Set-Cookie` from this origin can do that.
+ *
+ * Four decisions, each with its reason, because each one is load-bearing:
+ *
+ *  - **A FINGERPRINT, NOT THE NONCE.** The cookie carries `sha256(nonce)`, so
+ *    the cookie alone is not a state's preimage. It costs nothing and it means
+ *    a leaked jar is not a mintable flow.
+ *  - **`SameSite=Lax`, NOT `Strict`.** The callback is a cross-site top-level
+ *    navigation from Google. `Strict` would withhold the cookie on exactly the
+ *    request that needs it and **break every Google sign-in** — the failure
+ *    would look like this gate working. `Lax` sends it on a top-level GET and
+ *    withholds it on cross-site POSTs and subresources, which is the whole
+ *    point (#1653's own reasoning, one route along).
+ *  - **`HttpOnly`, and the path is `/api/auth/google`.** No script needs it and
+ *    nothing outside this flow should ever be sent it. The path prefix covers
+ *    `/api/auth/google/callback` by the cookie spec's own segment matching.
+ *  - **`timingSafeEqual`.** The comparison is a secret against a secret.
+ *
+ * ⚠ **TWO COSTS, STATED RATHER THAN DISCOVERED.** A customer MID-FLOW when this
+ * deploys has a state and no cookie, so her callback is refused once and she
+ * signs in on the retry — a ten-minute window, and the page already answers an
+ * unmapped code with *"Authentication Error … Please try again."* And two
+ * sign-in flows started in one browser leave only the second's cookie, so the
+ * first tab's callback is refused. Both are the standard shape of this
+ * mitigation; neither loses anything but a retry.
+ */
+const STATE_COOKIE_NAME = "g_oauth_state";
+const STATE_COOKIE_PATH = "/api/auth/google";
+
+const nonceFingerprint = (nonce: string): string =>
+  createHash("sha256").update(nonce, "utf8").digest("hex");
+
+/**
+ * Did the flow this `state` belongs to START in the browser that is presenting
+ * it? Fails CLOSED on every absence — no cookie, an empty one, a nonce that is
+ * not a string — because this is a gate in front of two session mints and
+ * invariant 7's rule is that a control refuses when its input is missing.
+ */
+function startedInThisBrowser(req: Request, nonce: unknown): boolean {
+  if (typeof nonce !== "string" || nonce.length === 0) return false;
+  const held = parseCookieHeader(req.headers.cookie ?? "")[STATE_COOKIE_NAME];
+  if (typeof held !== "string" || held.length === 0) return false;
+  const expected = Buffer.from(nonceFingerprint(nonce), "utf8");
+  const presented = Buffer.from(held, "utf8");
+  /* `timingSafeEqual` throws on a length mismatch, so the length is compared
+     first — and a wrong length is already a wrong answer. */
+  return expected.length === presented.length && timingSafeEqual(expected, presented);
+}
 
 export const googleAuthRouter = Router();
 
@@ -78,6 +155,16 @@ googleAuthRouter.get("/google", async (req: Request, res: Response) => {
     .setExpirationTime("10m")
     .sign(secretKey);
 
+  /* THE OTHER HALF OF THE STATE (#1681). The signature says this token is ours;
+     this cookie says the browser presenting it is the one we minted it for.
+     Written BEFORE the redirect, so the browser has it when Google sends it
+     back. See `startedInThisBrowser` above for why Lax and why a fingerprint. */
+  res.cookie(STATE_COOKIE_NAME, nonceFingerprint(statePayload.nonce), {
+    ...getSessionCookieOptions(req),
+    path: STATE_COOKIE_PATH,
+    maxAge: STATE_MAX_AGE_MS,
+  });
+
   const client = getGoogleClient(req);
   const origin = `${req.protocol}://${req.get("host")}`;
   console.log(`[GoogleAuth] Origin detected: ${origin}`);
@@ -125,6 +212,27 @@ googleAuthRouter.get("/google/callback", async (req: Request, res: Response) => 
     res.redirect("/login?error=invalid_state");
     return;
   }
+
+  /*
+    ⚠ AND THE SIGNATURE IS ONLY HALF THE GATE (#1681) — the nonce must match the
+    one THIS browser was given when the flow started. It is checked HERE, before
+    the code is exchanged, so a crafted callback never reaches Google and never
+    reaches either session mint. Invariant 9: the gate moves INSIDE the two
+    existing issuance sites rather than adding a sixth.
+
+    It answers with the same `invalid_state` as a bad signature, deliberately:
+    the customer's answer is the same ("try again"), and nothing is written —
+    no audit row and no `Set-Cookie`, which is what the arms assert. The state
+    cookie is NOT cleared on this road: clearing it would be a Set-Cookie a
+    crafted request could use to drop a real pending flow of hers.
+  */
+  if (!startedInThisBrowser(req, statePayload.nonce)) {
+    res.redirect("/login?error=invalid_state");
+    return;
+  }
+  /* Matched, so it is spent — one state, one callback. Cleared before anything
+     else can fail, so a thrown token exchange cannot leave it replayable. */
+  res.clearCookie(STATE_COOKIE_NAME, { ...getSessionCookieOptions(req), path: STATE_COOKIE_PATH });
 
   try {
     const client = getGoogleClient(req);
