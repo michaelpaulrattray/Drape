@@ -268,7 +268,126 @@
 # CONTROL rather than a price, which is #1622's and #1627's family and not this
 # card's, so it gets its own card with its own before/after rather than a quiet
 # widening here.
-MONEY_PATHS='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/db/(billing|credits|admin|accountDeletion)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^server/casting/atomicCredits\.ts$|^server/casting/(castingCreditCosts|packagePricing)\.ts$|^server/casting/evidence/evidenceCandidateContract\.ts$|^server/wardrobe/creditCosts\.ts$|^server/castingV2/(castViewPackage|packageOrchestrator)\.ts$|^client/src/features/casting/(constants|castingPrices)\.ts$|^shared/(const|creditDisplay|annualBilling)\.ts$|^drizzle/'
+#
+# ⚠ AND WHERE A STAFF MONEY ACTION IS *AUTHORISED* WAS MISSING FROM BOTH HALVES
+# UNTIL 2026-10-02 (#1719) — the card the paragraph above filed. It is the sixth
+# position in the sentence: after where money is DECIDED, where it is SET, where
+# a refund is DECIDED BY A BRANCH, where a balance is WRITTEN DIRECTLY, and where
+# a year's price is SET.
+#
+# An admin can hand a customer credits or refund them, and that request must be
+# APPROVED before the credits move. #1662 added the module that WRITES
+# (`server/db/admin.ts`, `adjustUserCredits`). The road that authorises that
+# write — the route, the two gates it asks, the dispatch map that decides the
+# approval executes at all, and the mapping that decides what the executor is
+# handed — was in nobody's population.
+#
+# THE SIX, each with the defect a diff to it could ship unread:
+#
+#   shared/changeRequestApproval.ts          `CHANGE_REQUEST_APPROVAL_REQUIREMENTS`
+#     makes `CREDIT_AMOUNT` the requirement for `add_credits` and
+#     `refund_credits` (:76, :77). Remove either line and a staff member may
+#     approve a credit grant or a refund with NO AMOUNT recorded on the request.
+#   server/routes/admin/changeRequests.ts    the route that authorises: it asks
+#     both blockers (:133, :155) before the compare-and-swap, and runs the
+#     executor in the same mutation.
+#   server/lib/adminActions/approvalStateBlocker.ts  the SECOND gate, #991 —
+#     `add_credits: [HAS_BALANCE]`, `refund_credits: [HAS_BALANCE]` (:102, :103).
+#   server/lib/adminActions/approvalExecution.ts  decides what the executor is
+#     HANDED: `if (request.creditAmount) params.creditAmount = …` (:26). A
+#     fallback added there grants an amount nobody requested.
+#   server/lib/adminActions/changeRequestActions.ts  decides whether the credit
+#     primitive is CALLED AT ALL on the staff road — `cr_addCredits` /
+#     `cr_refundCredits` (:111, :160) and the `adjustUserCredits` deduction
+#     (:313). This is `packageOrchestrator.ts`'s entry above, one road over: the
+#     symbol half fires on a diff that adds or removes a line naming `addCredits`
+#     and is blind to a change in the branch ABOVE it, which is #1622's class.
+#   shared/changeRequestLabels.ts            `CHANGE_REQUEST_ACTION_BY_TYPE`
+#     (:82) is THE dispatch map and also the definition of "sensitive" — read at
+#     `changeRequests.ts:85` and `:229`. Drop `add_credits` from it and approving
+#     records a review and executes nothing; re-point it and a grant runs the
+#     refund executor. ⚠ THE COST IS STATED: this file also carries the panel's
+#     display LABELS, so a copy edit in it will now be labelled money. That is
+#     accepted rather than unnoticed — the dispatch map is the sharper risk and
+#     the file is the ONE declaration of it.
+#
+# ROAD: never covered. `git log -S "changeRequestApproval" -- .github/` and
+# `git log -S "adminActions" -- .github/` both return nothing on any branch, at
+# any time.
+#
+# ⚠ THE LAW-7 SWEEP, AND THE READER THAT PRODUCED ITS POPULATION IS NAMED,
+# because a hand grep for "approval" is not the measurement. The class is *a
+# module that authorises a staff money action, or decides what it moves, outside
+# the list*. TWO readers were run, in this order:
+#
+#   1. the WIDE one, hand-read — every non-test module under `server/` and
+#      `shared/` NAMING a money-moving change-request type (`add_credits`,
+#      `refund_credits`, `stripe_refund`). It returned TWELVE, which is why it is
+#      not shipped as a derived population: six of the twelve are audit-action
+#      NAMES, event-catalogue prose and a read query, and a guard built on it
+#      would be noise a shift learns to ignore (#958's rejected-at-17-of-60
+#      judgement in a different costume).
+#   2. the NARROW one, which IS shipped as the derived drift guard in
+#      `server/moneySurfaceClassifier.test.ts` — a module declaring a map KEYED
+#      BY one of those types (`/^\s*(add_credits|refund_credits|stripe_refund)\s*:/`
+#      over comment-stripped source), i.e. a DECISION TABLE rather than a
+#      mention. It returns FOUR across all three roots, and three of the four are
+#      on the list above.
+#
+# SIX THINGS THE WIDE READER RETURNED THAT ARE DELIBERATELY NOT ADDED, each read
+# at its declaration so the exclusion is a decision on the record:
+#
+#   server/routes/moderator.ts  the CREATION road, not the authorisation road. A
+#     moderator RAISES a request (and `:311` already refuses one with no amount);
+#     the admin's approval is what authorises. Adding it would put the whole
+#     moderator surface — the product's second-busiest router, 14 commits — on
+#     this list for a refusal that moves no money by itself.
+#   client/src/features/admin/ChangeRequestConstants.tsx  the NARROW reader's one
+#     measured false positive, and it is the negative control of the derived guard
+#     below: it keys by type to choose an ICON, a COLOUR and the modal's copy, and
+#     it DERIVES `SENSITIVE_TYPES` from the shared map rather than declaring one
+#     (working law 4, already closed by #800). It authorises nothing.
+#   server/stripe/webhooks.ts  already covered by `^server/stripe/`.
+#   server/db/adminOverviewQueries.ts  reads audit rows for the alerts feed.
+#   shared/auditActions.ts, shared/auditActionCategories.ts  audit action NAMES.
+#   shared/productEventCatalogue.ts  a comment naming the two refund roads.
+#
+# MEASURED BEFORE AND AFTER, the standard #958, #1359, #1622, #1662 and #1711 all
+# met, on the TWO windows #1662 established — and with the reader VERIFIED IN
+# BOTH DIRECTIONS first (law 2): run with the pre-#1711 bytes of this file it
+# reports 7 of the 20 newest PRs labelled and PR #1710 absent, which is #1711's
+# own recorded finding; run with HEAD's it reports 8, and the one that moved is
+# exactly `#1710 path: shared/annualBilling.ts`.
+#
+#     60 newest PRs merged to main (#1724…#1599), before   21 of 60
+#                                                  after   21 of 60
+#     200 newest (#1724…#1326),                    before  46 of 200
+#                                                  after   47 of 200
+#
+# ⚠ THE 60-PR WINDOW MOVES NOTHING, SO #958's AND #1622's REJECTED-AT-17-OF-60
+# JUDGEMENT IS UNTOUCHED. The 200-PR window gains EXACTLY ONE PR, and it is the
+# argument for the whole entry rather than a cost: **PR #1388, "fix(admin): the
+# two staff money inputs are closed (#1360)"**, which closed `.strict()` on the
+# admin change-request and user inputs and **merged carrying no labels at all**.
+# A PR whose own title says *staff money inputs* was not read as money.
+#
+# ⚠ AND THE FIVE MODULES BEYOND THE CARD'S TWO COST NOTHING ON EITHER WINDOW —
+# measured, not assumed: the four options (the card's two; + the two gates and
+# the dispatch map; + the executors; + the whole `server/lib/adminActions/`
+# directory and `moderator.ts`) all land on 21 of 60 and 47 of 200. The directory
+# form is still declined on this file's own rule — NAMED FILES, NEVER DIRECTORIES
+# — and `moderator.ts` on the reason above, not on its price.
+#
+# ⚠ ONE HONEST LIMIT, THE SAME ONE #1662 RECORDED AND IT IS NOW TWICE PAID.
+# #1662's own figures could not be reproduced here either: its window is
+# #1657…#1516 and the same query at the same ceiling returns #1657…#1530, so its
+# 9-of-60 and this reading's 11-of-60 at that ceiling are NOT the same
+# population. The numbers above are a before/after on ONE stated population with
+# the reader's own positive and negative controls green, which is what the
+# decision needs — they are not a trend, and must not be read as one. Defining
+# that population once in code is still its own card (#1662's recommendation,
+# unbuilt).
+MONEY_PATHS='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/routes/admin/changeRequests\.ts$|^server/db/(billing|credits|admin|accountDeletion)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^server/lib/adminActions/(approvalExecution|approvalStateBlocker|changeRequestActions)\.ts$|^server/casting/atomicCredits\.ts$|^server/casting/(castingCreditCosts|packagePricing)\.ts$|^server/casting/evidence/evidenceCandidateContract\.ts$|^server/wardrobe/creditCosts\.ts$|^server/castingV2/(castViewPackage|packageOrchestrator)\.ts$|^client/src/features/casting/(constants|castingPrices)\.ts$|^shared/(const|creditDisplay|annualBilling|changeRequestApproval|changeRequestLabels)\.ts$|^drizzle/'
 
 # ── 2 · SYMBOLS — where money is DECIDED ────────────────────────────────────
 #
