@@ -1,9 +1,19 @@
-import fs from "node:fs";
 import path from "node:path";
 import { TRPCError } from "@trpc/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { judgeRequestOrigin } from "./security/crossSiteGuard";
+import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
+import { readListedSource } from "./testing/listedSource";
+import { withoutComments } from "./testing/withoutComments";
+
+/* Reading source off the real tree inside vitest's 5s default goes red under
+   load on somebody's machine rather than in CI (#741), so the class's timeout
+   is declared at file level. This suite joined that population the moment it
+   swapped a hand-rolled comment regex for `readListedSource` — which is the
+   whole shape of "a fix can move a suite into another guard": the first fix was
+   right and it needed this line to be finished. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 import { appRouter } from "./routers";
 import { COOKIE_NAME } from "../shared/const";
 import type { TrpcContext } from "./_core/context";
@@ -309,6 +319,29 @@ describe("a forged cross-site mutation, through the real appRouter (#1653)", () 
     expect(code).not.toBe("FORBIDDEN");
   });
 
+  it("does NOT refuse a caller with no HTTP request at all — the ceremony road", async () => {
+    /* ⚠ THE ARM FOR THE DEFECT `pnpm preflight` CAUGHT IN THIS CHANGE. The
+       first draft read `ctx.req.headers` outright, and every suite and ceremony
+       that builds a context by hand — `createCaller` with no `req`, which
+       `scripts/ceremony-r7-founder-evidence.mts` does twice — got a TypeError
+       out of a security control. Four directories of mutation suites went red.
+       A caller that is not an HTTP request has no browser and so no cookie to
+       borrow, which is the same ground on which a headerless request is
+       allowed. */
+    const ctx = {
+      user: aCustomer(),
+      /* `{ headers: {}, socket: {} }` is the shape most fixtures in this tree
+         actually use (`server/changeRequests.test.ts` and twenty others), so
+         the arm is written against the real population rather than an invented
+         one. `auth.logout` reads `req.protocol` itself, which is undefined
+         here and fine — only a missing `req` crashed it. */
+      req: { headers: {}, socket: {} } as unknown as TrpcContext["req"],
+      res: { clearCookie: () => {} } as unknown as TrpcContext["res"],
+      correlationId: "no-request-fixture",
+    } as unknown as TrpcContext;
+    await expect(appRouter.createCaller(ctx).auth.logout()).resolves.toEqual({ success: true });
+  });
+
   it("does NOT refuse a cross-site QUERY — the stated non-scope", async () => {
     /* CORS already stops an attacker reading a response, so a forged read
        changes nothing and leaks nothing. Refusing queries would be a behaviour
@@ -344,8 +377,15 @@ describe("a forged cross-site mutation, through the real appRouter (#1653)", () 
 /* ─── the composition, which is what makes the refusal structural ─── */
 
 describe("every procedure in the product is built on the guarded base", () => {
-  const trpcSource = fs.readFileSync(path.join(__dirname, "_core", "trpc.ts"), "utf8");
-  const cookieSource = fs.readFileSync(path.join(__dirname, "_core", "cookies.ts"), "utf8");
+  /* `readListedSource` and `withoutComments` are the house readers, used rather
+     than a regex of this suite's own: #1629 measured eight hand-rolled
+     line-comment strippers reading 283 files SHORT, because a bare `//`
+     truncates at the scheme inside a URL string, and
+     `server/commentStripperShape.test.ts` reddens on a new one. It caught this
+     suite's first draft, which is the guard working exactly as intended. */
+  const read = (...parts: string[]) => readListedSource(path.join(__dirname, ...parts)) ?? "";
+  const trpcSource = read("_core", "trpc.ts");
+  const cookieSource = read("_core", "cookies.ts");
 
   it("spells `t.procedure` exactly once — the one guarded base", () => {
     /* ⚠ THIS IS THE ARM THAT STOPS THE QUIET REGRESSION. A sixth builder
@@ -354,9 +394,7 @@ describe("every procedure in the product is built on the guarded base", () => {
        would work, every other suite would stay green, and the hole would be
        back. Comments naming the symbol are stripped so the docblock that
        explains this rule cannot satisfy it. */
-    const code = trpcSource
-      .replace(/\/\*[\s\S]*?\*\//g, "")
-      .replace(/\/\/[^\n]*/g, "");
+    const code = withoutComments(trpcSource);
     const uses = [...code.matchAll(/\bt\.procedure\b/g)];
     expect(uses).toHaveLength(1);
     expect(code).toMatch(/const baseProcedure = t\.procedure\.use\(refuseCrossSiteMutation\)/);
@@ -377,7 +415,7 @@ describe("every procedure in the product is built on the guarded base", () => {
   it("the session cookie never says `none` again", () => {
     // #1653's primary repair, pinned at the source as well as on the wire (the
     // wire arms are in `routes/googleAuth.test.ts` and `auth.logout.test.ts`).
-    const code = cookieSource.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+    const code = withoutComments(cookieSource);
     expect(code).toMatch(/sameSite:\s*"lax"/);
     expect(code).not.toMatch(/"none"/);
   });

@@ -183,7 +183,12 @@ function callerFor(overrides: Record<string, unknown> = {}) {
   };
   const caller = referralRouter.createCaller({
     user,
-    req: { ip: CALLER_IP, headers: { origin: ORIGIN } },
+    /* `host` is DERIVED from `ORIGIN` rather than spelled beside it, and it was
+       added by #1653: a real browser request carrying an `Origin` always
+       carries the `Host` it was addressed to, and the cross-site refusal
+       compares the two. Until this line the fixture sent an Origin and no Host
+       — a shape no browser produces — and the guard correctly refused it. */
+    req: { ip: CALLER_IP, headers: { origin: ORIGIN, host: new URL(ORIGIN).host } },
   } as never);
   return { user, caller };
 }

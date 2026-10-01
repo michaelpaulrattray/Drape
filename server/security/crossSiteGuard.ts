@@ -29,12 +29,14 @@
  * # THE TWO SIGNALS, AND NEITHER IS CONFIGURED
  *
  * ⚠ **AN ALLOWLIST BUILT FROM `PRODUCTION_APP_ORIGIN` WOULD HAVE REFUSED EVERY
- * REAL MUTATION IN PRODUCTION, AND THAT IS NOT HYPOTHETICAL.** That constant is
- * `https://klieglabs.com`; the service customers actually reach is
- * `https://drape-production-0232.up.railway.app` — CLAUDE.md's deploy section
- * says `klieglabs.com` answers nothing today and reads as an outage that does
- * not exist. A typed allowlist here would have been a self-inflicted outage on
- * every mutation in the product. So neither signal is typed and neither needs a
+ * REAL MUTATION IN PRODUCTION, AND THAT IS NOT HYPOTHETICAL.** That constant
+ * names the marketing domain (read it at `server/_core/appOrigin.ts`, which is
+ * the only file allowed to spell it — `server/productionBaseUrl.test.ts` holds
+ * it to one on the founder's order); the service customers actually reach is
+ * the Railway host, and CLAUDE.md's deploy section records that the marketing
+ * domain answers nothing today and reads as an outage that does not exist. A
+ * typed allowlist here would have been a self-inflicted outage on every
+ * mutation in the product. So neither signal is typed and neither needs a
  * variable:
  *
  *  1. **`Sec-Fetch-Site`** — set by the browser, on the forbidden-header list so
