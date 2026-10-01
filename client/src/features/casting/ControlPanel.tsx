@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { displayPrice, formatCredits } from "@shared/creditDisplay";
 import { ethnicityLegacyString } from "@shared/castingOptions";
 import { ArrowLeft, Loader2, Palette, Dumbbell, ScanFace, Droplets, Scissors, Sparkles, Dices, Lock, Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -710,7 +711,7 @@ export function ControlPanel({
                     // Cost visible on the armed button (D-15/D-41): the
                     // confirm-glance before the second keystroke
                     <span className="text-canvas-sm font-medium ml-0.5 opacity-60">
-                      · ~{castingImageCost} credits
+                      · ~{formatCredits(displayPrice(castingImageCost))} credits
                     </span>
                   )}
                 </>

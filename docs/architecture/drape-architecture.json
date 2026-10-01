@@ -12877,6 +12877,10 @@
       "path": "server/creditDisplay.test.ts"
     },
     {
+      "id": "test:server/creditDisplayFloor.test.ts",
+      "path": "server/creditDisplayFloor.test.ts"
+    },
+    {
       "id": "test:server/creditDisplayGuard.test.ts",
       "path": "server/creditDisplayGuard.test.ts"
     },
@@ -14645,6 +14649,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/components/UserCard.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/contexts/ThemeContext.tsx",
       "to": "module:client/src/foundation/theme.ts",
       "kind": "imports"
@@ -15545,6 +15554,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/billing/AddCreditsModal.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/billing/ChangePlanModal.tsx",
       "to": "module:client/src/features/billing/useCycleSpend.ts",
       "kind": "imports"
@@ -15585,6 +15599,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/billing/ChangePlanModal.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/billing/index.ts",
       "to": "module:client/src/features/billing/AddCreditsModal.tsx",
       "kind": "imports"
@@ -15597,6 +15616,11 @@
     {
       "from": "module:client/src/features/billing/index.ts",
       "to": "module:client/src/features/billing/LowBalanceWarning.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/LowBalanceWarning.tsx",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -15652,6 +15676,11 @@
     {
       "from": "module:client/src/features/boards/BoardHeader.tsx",
       "to": "module:client/src/features/profile/ProfileVisual.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/BoardHeader.tsx",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -15825,6 +15854,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/boards/canvas/BulkRefreshDialog.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/boards/canvas/CanvasImageViewer.tsx",
       "to": "module:client/src/features/boards/canvas/imageActions.ts",
       "kind": "imports"
@@ -15897,6 +15931,11 @@
     {
       "from": "module:client/src/features/boards/canvas/CharacterSheetImageArea.tsx",
       "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/canvas/CostLabel.tsx",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -16225,6 +16264,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/boards/canvas/VariationsPopover.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/boards/components/NodeContextMenu.tsx",
       "to": "module:client/src/features/boards/canvas/imageActions.ts",
       "kind": "imports"
@@ -16327,6 +16371,11 @@
     {
       "from": "module:client/src/features/casting/components/CastProfilePanel.tsx",
       "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/components/CastProfilePanel.tsx",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -16436,6 +16485,11 @@
     },
     {
       "from": "module:client/src/features/casting/components/ImageViewer/RefinePanel.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/components/ImageViewer/RefinePanel.tsx",
       "to": "module:shared/inkInstructionRoute.ts",
       "kind": "imports"
     },
@@ -16491,6 +16545,11 @@
     },
     {
       "from": "module:client/src/features/casting/components/ImageViewer/ViewTabs.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/components/ImageViewer/ViewTabs.tsx",
       "to": "module:shared/refundCopy.ts",
       "kind": "imports"
     },
@@ -16537,6 +16596,11 @@
     {
       "from": "module:client/src/features/casting/components/PackageHealthDialog.tsx",
       "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/components/PackageHealthDialog.tsx",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -16720,6 +16784,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/casting/ControlPanel.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/casting/creationPayload.ts",
       "to": "module:client/src/features/casting/constants.ts",
       "kind": "imports"
@@ -16752,6 +16821,11 @@
     {
       "from": "module:client/src/features/casting/evidence/InkAddPanel.tsx",
       "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/evidence/InkAddPanel.tsx",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -16907,6 +16981,11 @@
     {
       "from": "module:client/src/features/casting/hooks/useCastingGeneration.ts",
       "to": "module:shared/clientRequestId.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/hooks/useCastingGeneration.ts",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -17135,6 +17214,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/cancelNotice.ts",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/castSettingsCopy.ts",
       "to": "module:shared/castStyles.ts",
       "kind": "imports"
@@ -17172,6 +17256,11 @@
     {
       "from": "module:client/src/features/castingV2/components/CandidateTile.tsx",
       "to": "module:shared/candidateFailure.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/CandidateTile.tsx",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -17351,6 +17440,11 @@
     },
     {
       "from": "module:client/src/features/castingV2/components/RefinePanel.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/RefinePanel.tsx",
       "to": "module:shared/inkProvenance.ts",
       "kind": "imports"
     },
@@ -17377,6 +17471,11 @@
     {
       "from": "module:client/src/features/castingV2/components/SignConfirm.tsx",
       "to": "module:client/src/foundation/CastingModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/SignConfirm.tsx",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -18196,6 +18295,11 @@
     },
     {
       "from": "module:client/src/features/referral/RedeemCodeModal.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/referral/RedeemCodeModal.tsx",
       "to": "module:shared/referralCodeFormat.ts",
       "kind": "imports"
     },
@@ -18260,6 +18364,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/settings/planMath.ts",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/settings/ReferralBlock.tsx",
       "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
@@ -18272,6 +18381,11 @@
     {
       "from": "module:client/src/features/settings/ReferralBlock.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/ReferralBlock.tsx",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -18302,6 +18416,11 @@
     {
       "from": "module:client/src/features/settings/sections/BillingSection.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/BillingSection.tsx",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -18415,6 +18534,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/settings/sections/UsageSection.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/settings/SettingsModal.tsx",
       "to": "module:client/src/features/settings/sections/BillingSection.tsx",
       "kind": "imports"
@@ -18452,6 +18576,11 @@
     {
       "from": "module:client/src/features/settings/SettingsModal.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/usageWindow.ts",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -18740,6 +18869,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/studio/components/CastModelModal.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/studio/components/ImageActionBar.tsx",
       "to": "module:client/src/lib/triggerDownload.ts",
       "kind": "imports"
@@ -18777,6 +18911,11 @@
     {
       "from": "module:client/src/features/studio/components/StudioSlimHeader.tsx",
       "to": "module:client/src/features/profile/ProfileVisual.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/studio/components/StudioSlimHeader.tsx",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -19200,8 +19339,18 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/studio/takeover/CastingTakeover.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/studio/takeover/IdentityChangeDialog.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/studio/takeover/IdentityChangeDialog.tsx",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -19657,6 +19806,11 @@
     {
       "from": "module:client/src/foundation/primitives.tsx",
       "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/primitives.tsx",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -20196,6 +20350,11 @@
     },
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingRoom.tsx",
       "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
@@ -20412,6 +20571,11 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:shared/clientRequestId.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {

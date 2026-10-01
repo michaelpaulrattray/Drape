@@ -11,6 +11,7 @@
  * plan filters them — pin law, not UI courtesy).
  */
 import { CostLabel } from "./CostLabel";
+import { displayPrice, formatCredits } from "@shared/creditDisplay";
 import type { CanonicalViewAngle } from "@shared/boardTypes";
 
 export interface BulkRefreshSlotRow {
@@ -55,7 +56,7 @@ export function BulkRefreshDialog({
           {/* Popover/dialog footers carry the total as the primary metric (DS §5.15) */}
           {totalCost !== null ? (
             <span className="text-canvas-lg font-medium text-canvas-ink">
-              ~{totalCost.toLocaleString()} credits
+              ~{formatCredits(displayPrice(totalCost))} credits
             </span>
           ) : (
             <span />

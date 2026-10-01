@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { displayPrice, formatCredits } from "@shared/creditDisplay";
 import { ChevronDown, Loader2, X } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
@@ -252,14 +253,14 @@ export function CastingDetailsDialog() {
                         {busy
                           ? (evidenceAware ? 'Updating…' : 'Refreshing…')
                           : requiresProjection
-                            ? `Preview · ${(plan?.cost ?? 0).toLocaleString()} credits`
+                            ? `Preview · ${formatCredits(displayPrice(plan?.cost ?? 0))} credits`
                             : `${slot.failed
                             ? (evidenceAware ? 'Try again' : 'Retry')
                             : evidenceStatus === 'missing'
                               ? 'Add'
                               : evidenceAware
                                 ? 'Update'
-                                : 'Refresh'} · ${(plan?.cost ?? 0).toLocaleString()} credits`}
+                                : 'Refresh'} · ${formatCredits(displayPrice(plan?.cost ?? 0))} credits`}
                       </button>
                     ) : null}
                     {canOpenVersions && (
@@ -292,8 +293,8 @@ export function CastingDetailsDialog() {
               ? 'View status unavailable'
               : actionable.length > 0
               ? evidenceAware
-                ? `${actionable.length} suggested update${actionable.length === 1 ? '' : 's'} · ${actionableCost.toLocaleString()} credits`
-                : `${actionable.length} view${actionable.length === 1 ? '' : 's'} · ${actionableCost.toLocaleString()} credits`
+                ? `${actionable.length} suggested update${actionable.length === 1 ? '' : 's'} · ${formatCredits(displayPrice(actionableCost))} credits`
+                : `${actionable.length} view${actionable.length === 1 ? '' : 's'} · ${formatCredits(displayPrice(actionableCost))} credits`
               : unavailableCoverageCount > 0
                 ? `${unavailableCoverageCount} tattoo coverage view${unavailableCoverageCount === 1 ? '' : 's'} unavailable`
               : issueCount > 0
@@ -313,7 +314,7 @@ export function CastingDetailsDialog() {
                 },
               ) && (
               <button type="button" onClick={() => refreshAngles(actionable.map((slot) => slot.angle))} disabled={refreshPending} className="px-4 py-2 rounded-canvas-md bg-canvas-ink text-canvas-md font-medium disabled:opacity-40" style={{ color: 'var(--color-canvas-surface)' }}>
-                {evidenceAware ? 'Update coverage' : 'Refresh all'} · {actionableCost.toLocaleString()} credits
+                {evidenceAware ? 'Update coverage' : 'Refresh all'} · {formatCredits(displayPrice(actionableCost))} credits
               </button>
             )}
           </div>

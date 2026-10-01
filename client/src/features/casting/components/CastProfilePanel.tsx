@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { displayPrice, formatCredits } from "@shared/creditDisplay";
 import { Check, Copy, ExternalLink, LockKeyhole, Pencil, X } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { toast } from 'sonner';
@@ -289,7 +290,7 @@ export function CastProfilePanel({
       <footer className="flex-shrink-0 border-t-hairline border-canvas-border p-4 space-y-2.5">
         {missingCount > 0 && onCompleteCard && (
           <button type="button" onClick={onCompleteCard} className="w-full rounded-canvas-md border-hairline border-canvas-border-strong px-3 py-2.5 text-canvas-md font-medium text-canvas-ink hover:bg-canvas-surface-inset">
-            Complete card{completeCardCost !== null ? ` · ${completeCardCost.toLocaleString()} credits` : ''}
+            Complete card{completeCardCost !== null ? ` · ${formatCredits(displayPrice(completeCardCost))} credits` : ''}
           </button>
         )}
         {onFork ? (

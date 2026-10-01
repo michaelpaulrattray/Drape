@@ -17,6 +17,7 @@ import { BriefEcho } from "@/features/castingV2/components/BriefEcho";
 import { BriefField } from "@/features/castingV2/components/BriefField";
 import { trpc } from "@/lib/trpc";
 import { createClientRequestId } from "@shared/clientRequestId";
+import { displayBalance, displayPrice, formatCredits } from "@shared/creditDisplay";
 import "@/features/castingV2/castingV2.css";
 import { CandidateTile, UndoDiscard } from "@/features/castingV2/components/CandidateTile";
 import {
@@ -3125,8 +3126,8 @@ export default function CastingSheet() {
                   then differs is worse than one that never claimed to be. It
                   qualifies the COST only — the balance beside it is exact.
                 */}
-                <span className="dpc-modal__tilde">~</span> {price} credits
-                {typeof balance === "number" ? ` · ${balance.toLocaleString()} left` : ""}
+                <span className="dpc-modal__tilde">~</span> {formatCredits(displayPrice(price))} credits
+                {typeof balance === "number" ? ` · ${formatCredits(displayBalance(balance))} left` : ""}
               </span>
             ) : null}
             {/*

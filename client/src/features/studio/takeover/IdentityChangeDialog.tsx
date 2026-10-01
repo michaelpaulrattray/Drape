@@ -14,6 +14,7 @@
  *    physical identity change — the copy never claims otherwise.
  */
 import { useEffect } from "react";
+import { displayPrice, formatCredits } from "@shared/creditDisplay";
 import { trpc } from "@/lib/trpc";
 
 export function IdentityChangeDialog({
@@ -112,7 +113,7 @@ export function IdentityChangeDialog({
             {pending ? "Copying…" : "Fork to edit"}
             {!pending && cost !== null && (
               <span className="opacity-70 font-normal whitespace-nowrap">
-                {cost === 0 ? "Free" : `~${cost.toLocaleString()} credits`}
+                {cost === 0 ? "Free" : `~${formatCredits(displayPrice(cost))} credits`}
               </span>
             )}
           </button>

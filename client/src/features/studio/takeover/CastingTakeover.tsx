@@ -18,6 +18,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { displayBalance, formatCredits } from '@shared/creditDisplay';
 import { trpc } from '@/lib/trpc';
 import { showLowBalanceToast, LOW_BALANCE_THRESHOLD } from '@/features/billing/LowBalanceWarning';
 import { AddCreditsModal } from '@/features/billing/AddCreditsModal';
@@ -568,7 +569,7 @@ export function CastingTakeover({
                 className="px-2 py-1 rounded-canvas-sm transition-colors text-canvas-md text-canvas-ink-soft hover:bg-canvas-surface-inset"
                 style={{ fontVariantNumeric: 'tabular-nums' }}
               >
-                {creditsData.balance.toLocaleString()} credits
+                {formatCredits(displayBalance(creditsData.balance))} credits
               </button>
               <span aria-hidden className="w-px h-4 mr-1 bg-canvas-border" />
             </>

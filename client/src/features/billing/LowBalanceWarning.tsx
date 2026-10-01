@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import { displayBalance, formatCredits } from "@shared/creditDisplay";
 
 // Warning threshold - show warning when balance drops below this
 export const LOW_BALANCE_THRESHOLD = 2500; // ~7 generations remaining
@@ -30,7 +31,7 @@ export function showLowBalanceToast(balance: number, onTopUp: () => void) {
     {
       description: isCritical
         ? "Top up now to continue generating"
-        : `Only ${balance} credits remaining`,
+        : `Only ${formatCredits(displayBalance(balance))} credits remaining`,
       duration: isCritical ? 10000 : 5000,
       action: {
         label: "Top Up",

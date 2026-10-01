@@ -182,7 +182,19 @@ export type CreditDisplayReading = {
   sites: CreditSite[];
   /** Files read. A floor: zero means the walk found nothing to read. */
   files: number;
-  /** `toLocaleString` calls seen anywhere in the population. The rule-1 floor. */
+  /**
+   * The shapes rule 1 is about: a `toLocaleString` call OR a display-helper
+   * call, anywhere in the population. The rule-1 floor.
+   *
+   * ⚠ **IT COUNTS BOTH BECAUSE ROUTING REMOVES THE FIRST ONE.** This was
+   * `toLocaleString` alone with a floor of 80, and #1600's first routing slice
+   * took it to 44 by doing exactly what the card asks — every site routed turns
+   * a `.toLocaleString()` into a `formatCredits(…)`. A floor that falls as the
+   * work succeeds has to be either lowered every slice, which makes it no floor
+   * at all, or counted over the shapes that do not move. Each routing edit
+   * trades one of these for the other, so the SUM cannot fall; a parser that
+   * gave up still reports zero, which is the only thing this number is for.
+   */
   formatCalls: number;
   /** Templates and JSX texts seen. The rule-2 floor. */
   interpolations: number;
@@ -255,6 +267,26 @@ export type CreditDisplayReading = {
  * control rather than this sentence: with the rows gone, a re-composed
  * description is a site OUTSIDE the census and `creditDisplayGuard.test.ts`
  * refuses it.
+ *
+ * ✅ **AND IT HAS NOW SHRUNK BY ROUTING: 108 → 42 (#1600 slice 2).** Every
+ * customer-visible credit number under `client/src/` goes through the helper.
+ * What is left is 37 occurrences on the server, 2 in `shared/refundCopy.ts`,
+ * and **FIVE CLIENT ROWS THAT ARE NOT WORK** — the first rows this list has
+ * ever held that are not "still to route". They are named here rather than
+ * left to be rediscovered later as a shrink that stalled:
+ *
+ * | row | why it stays |
+ * |---|---|
+ * | `formatCreditsPerDollar(…)` ×3 — `AddCreditsModal` twice, `ChangePlanModal` once | the conversion is INSIDE that function, so the rate a customer reads is already on their scale. The rules read a NAME and cannot see through a function boundary, which is a limit this file's header states. |
+ * | `framesFor(plan.credits, costPerFrame).toLocaleString()` | a count of FRAMES, not of credits — credits divided by a cost, so already scale-free. Dividing it would make a correct number wrong. Rule 1 indicts it only because `credits` appears in the expression. |
+ * | `Math.round(perDollar).toLocaleString("en-US")` | a RATE. Through `displayBalance` it would be divided by five twice. |
+ *
+ * ⚠ **So the client half of this census has a FLOOR OF FIVE, and a later slice
+ * that drives it to zero has done something wrong rather than something
+ * thorough.** The honest repair for all five is a rule that follows a value
+ * through a function call, which is a different instrument from the one this
+ * file is — it is not pretended here, and it is not filed as debt against the
+ * routing, because routing is not what would fix it.
  */
 export const UNROUTED: readonly {
   file: string;
@@ -263,60 +295,11 @@ export const UNROUTED: readonly {
   /** How many times this exact shape appears in this file. */
   count: number;
 }[] = [
-  { file: "client/src/components/UserCard.tsx", rule: "formatted", expression: "creditsBalance.toLocaleString()", count: 1 },
-  { file: "client/src/features/billing/AddCreditsModal.tsx", rule: "formatted", expression: "(status?.balance ?? 0).toLocaleString()", count: 1 },
-  { file: "client/src/features/billing/AddCreditsModal.tsx", rule: "beside-the-word", expression: "formatCreditsPerDollar(priceAMonth(selected.price, annual), selected.credits)", count: 1 },
   { file: "client/src/features/billing/AddCreditsModal.tsx", rule: "beside-the-word", expression: "currentPrice > 0 ? `, up from ${formatCreditsPerDollar(priceAMonth(currentPrice, annual), currentCredits)}` : null", count: 1 },
-  { file: "client/src/features/billing/AddCreditsModal.tsx", rule: "formatted", expression: "(option.credits - currentCredits).toLocaleString()", count: 1 },
+  { file: "client/src/features/billing/AddCreditsModal.tsx", rule: "beside-the-word", expression: "formatCreditsPerDollar(priceAMonth(selected.price, annual), selected.credits)", count: 1 },
   { file: "client/src/features/billing/ChangePlanModal.tsx", rule: "beside-the-word", expression: "formatCreditsPerDollar(priceOf(plan), plan.credits)", count: 1 },
-  { file: "client/src/features/billing/ChangePlanModal.tsx", rule: "formatted", expression: "plan.credits.toLocaleString()", count: 2 },
   { file: "client/src/features/billing/ChangePlanModal.tsx", rule: "formatted", expression: "framesFor(plan.credits, costPerFrame).toLocaleString()", count: 1 },
-  { file: "client/src/features/billing/ChangePlanModal.tsx", rule: "formatted", expression: "quote.creditAdjustment.toLocaleString()", count: 1 },
-  { file: "client/src/features/billing/LowBalanceWarning.tsx", rule: "beside-the-word", expression: "balance", count: 1 },
-  { file: "client/src/features/boards/BoardHeader.tsx", rule: "formatted", expression: "creditsBalance.toLocaleString()", count: 1 },
-  { file: "client/src/features/boards/canvas/BulkRefreshDialog.tsx", rule: "formatted", expression: "totalCost.toLocaleString()", count: 1 },
-  { file: "client/src/features/boards/canvas/CostLabel.tsx", rule: "formatted", expression: "credits.toLocaleString()", count: 1 },
-  { file: "client/src/features/boards/canvas/VariationsPopover.tsx", rule: "formatted", expression: "plan.estimatedCreditCost.toLocaleString()", count: 1 },
-  { file: "client/src/features/casting/components/CastProfilePanel.tsx", rule: "formatted", expression: "completeCardCost.toLocaleString()", count: 1 },
-  { file: "client/src/features/casting/components/ImageViewer/RefinePanel.tsx", rule: "beside-the-word", expression: "iterationCost", count: 2 },
-  { file: "client/src/features/casting/components/ImageViewer/ViewTabs.tsx", rule: "formatted", expression: "refreshCost.toLocaleString()", count: 3 },
-  { file: "client/src/features/casting/components/ImageViewer/ViewTabs.tsx", rule: "formatted", expression: "cost.toLocaleString()", count: 4 },
-  { file: "client/src/features/casting/components/ImageViewer/ViewTabs.tsx", rule: "formatted", expression: "actionableCost.toLocaleString()", count: 3 },
-  { file: "client/src/features/casting/components/PackageHealthDialog.tsx", rule: "formatted", expression: "(plan?.cost ?? 0).toLocaleString()", count: 2 },
-  { file: "client/src/features/casting/components/PackageHealthDialog.tsx", rule: "formatted", expression: "actionableCost.toLocaleString()", count: 3 },
-  { file: "client/src/features/casting/ControlPanel.tsx", rule: "beside-the-word", expression: "castingImageCost", count: 1 },
-  { file: "client/src/features/casting/evidence/InkAddPanel.tsx", rule: "beside-the-word", expression: "priceCredits", count: 1 },
-  { file: "client/src/features/casting/hooks/useCastingGeneration.ts", rule: "beside-the-word", expression: "totalCost", count: 1 },
-  { file: "client/src/features/castingV2/cancelNotice.ts", rule: "beside-the-word", expression: "outcome.refundedCredits", count: 2 },
-  { file: "client/src/features/castingV2/components/CandidateTile.tsx", rule: "beside-the-word", expression: "retryPriceCredits", count: 1 },
-  { file: "client/src/features/castingV2/components/RefinePanel.tsx", rule: "beside-the-word", expression: "priceCredits", count: 1 },
-  { file: "client/src/features/castingV2/components/SignConfirm.tsx", rule: "beside-the-word", expression: "priceCredits", count: 1 },
-  { file: "client/src/features/referral/RedeemCodeModal.tsx", rule: "beside-the-word", expression: "data.rewardCredits", count: 1 },
-  { file: "client/src/features/settings/ReferralBlock.tsx", rule: "formatted", expression: "(entry.creditsAwarded ?? 0).toLocaleString()", count: 1 },
-  { file: "client/src/features/settings/sections/BillingSection.tsx", rule: "formatted", expression: "allowance.toLocaleString()", count: 1 },
-  { file: "client/src/features/settings/sections/BillingSection.tsx", rule: "formatted", expression: "balance.toLocaleString()", count: 1 },
-  { file: "client/src/features/settings/usageWindow.ts", rule: "formatted", expression: "allowance.toLocaleString()", count: 1 },
-  { file: "client/src/features/settings/usageWindow.ts", rule: "formatted", expression: "balance.toLocaleString()", count: 1 },
-  { file: "client/src/features/studio/components/CastModelModal.tsx", rule: "formatted", expression: "plan.cost.toLocaleString()", count: 1 },
-  { file: "client/src/features/studio/components/StudioSlimHeader.tsx", rule: "formatted", expression: "creditsBalance.toLocaleString()", count: 2 },
-  { file: "client/src/features/studio/takeover/CastingTakeover.tsx", rule: "formatted", expression: "creditsData.balance.toLocaleString()", count: 1 },
-  { file: "client/src/features/studio/takeover/IdentityChangeDialog.tsx", rule: "formatted", expression: "cost.toLocaleString()", count: 1 },
-  { file: "client/src/foundation/primitives.tsx", rule: "formatted", expression: "balance.toLocaleString()", count: 1 },
-  { file: "client/src/pages/CastingRoom.tsx", rule: "beside-the-word", expression: "result.refundedCredits", count: 1 },
-  { file: "client/src/pages/CastingSheet.tsx", rule: "beside-the-word", expression: "price", count: 1 },
-  { file: "client/src/pages/CastingSheet.tsx", rule: "beside-the-word", expression: "typeof balance === \"number\" ? ` · ${balance.toLocaleString()} left` : \"\"", count: 1 },
-  { file: "client/src/pages/CastingSheet.tsx", rule: "formatted", expression: "balance.toLocaleString()", count: 1 },
-  { file: "client/src/features/billing/AddCreditsModal.tsx", rule: "formatted", expression: "(cycle.spent + cycle.remaining).toLocaleString()", count: 1 },
-  { file: "client/src/features/billing/AddCreditsModal.tsx", rule: "formatted", expression: "cycle.spent.toLocaleString()", count: 1 },
-  { file: "client/src/features/billing/AddCreditsModal.tsx", rule: "beside-the-word", expression: "delta.toLocaleString()", count: 2 },
-  { file: "client/src/features/billing/ChangePlanModal.tsx", rule: "formatted", expression: "(cycle.spent + cycle.remaining).toLocaleString()", count: 2 },
-  { file: "client/src/features/billing/ChangePlanModal.tsx", rule: "formatted", expression: "cycle.spent.toLocaleString()", count: 2 },
   { file: "client/src/features/settings/planMath.ts", rule: "named-on-the-way-out", expression: "Math.round(perDollar).toLocaleString(\"en-US\")", count: 1 },
-  { file: "client/src/features/settings/ReferralBlock.tsx", rule: "beside-the-word", expression: "cap.toLocaleString()", count: 1 },
-  { file: "client/src/features/settings/ReferralBlock.tsx", rule: "beside-the-word", expression: "earned.toLocaleString()", count: 1 },
-  { file: "client/src/features/settings/ReferralBlock.tsx", rule: "beside-the-word", expression: "reward.toLocaleString()", count: 1 },
-  { file: "client/src/features/settings/sections/UsageSection.tsx", rule: "formatted", expression: "Math.round(spend.spent / Math.max(1, spend.days)).toLocaleString()", count: 1 },
-  { file: "client/src/features/settings/sections/UsageSection.tsx", rule: "formatted", expression: "spend.spent.toLocaleString()", count: 1 },
   { file: "server/casting/evidence/evidencePackageExecution.ts", rule: "beside-the-word", expression: "authority.plan.totalCost", count: 1 },
   { file: "server/casting/mintPackage.ts", rule: "beside-the-word", expression: "totalCost", count: 1 },
   { file: "server/casting/refreshSlots.ts", rule: "beside-the-word", expression: "totalCost", count: 1 },
@@ -329,21 +312,21 @@ export const UNROUTED: readonly {
   { file: "server/castingV2/rollService.ts", rule: "beside-the-word", expression: "refundedCredits", count: 1 },
   { file: "server/castingV2/signService.ts", rule: "beside-the-word", expression: "price", count: 1 },
   { file: "server/castingV2/viewRetryService.ts", rule: "beside-the-word", expression: "price", count: 1 },
+  { file: "server/db/billing.ts", rule: "beside-the-word", expression: "creditAmount", count: 1 },
   { file: "server/db/billing.ts", rule: "beside-the-word", expression: "monthlyCredits", count: 1 },
   { file: "server/db/billing.ts", rule: "beside-the-word", expression: "rolloverCredits", count: 1 },
-  { file: "server/db/billing.ts", rule: "beside-the-word", expression: "creditAmount", count: 1 },
-  { file: "server/lib/adminActions/changeRequestActions.ts", rule: "beside-the-word", expression: "refundResult.refundId", count: 2 },
   { file: "server/lib/adminActions/changeRequestActions.ts", rule: "beside-the-word", expression: "(refundAmountCents / 100).toFixed(2)", count: 2 },
-  { file: "server/lib/adminActions/changeRequestActions.ts", rule: "beside-the-word", expression: "refundType", count: 2 },
   { file: "server/lib/adminActions/changeRequestActions.ts", rule: "beside-the-word", expression: "creditsToDeduct", count: 2 },
+  { file: "server/lib/adminActions/changeRequestActions.ts", rule: "beside-the-word", expression: "refundResult.refundId", count: 2 },
+  { file: "server/lib/adminActions/changeRequestActions.ts", rule: "beside-the-word", expression: "refundType", count: 2 },
   { file: "server/lib/boardOps.ts", rule: "beside-the-word", expression: "cost", count: 2 },
   { file: "server/lib/boardOps.ts", rule: "beside-the-word", expression: "totalCost", count: 1 },
   { file: "server/routes/billing.ts", rule: "beside-the-word", expression: "creditAdjustment", count: 2 },
   { file: "server/routes/generation/castingImaging.ts", rule: "beside-the-word", expression: "CREDIT_COSTS.castingImage", count: 1 },
-  { file: "server/stripe/webhooks.ts", rule: "beside-the-word", expression: "grantCredits", count: 1 },
-  { file: "server/stripe/webhooks.ts", rule: "beside-the-word", expression: "creditsToRestore", count: 2 },
   { file: "server/stripe/webhooks.ts", rule: "beside-the-word", expression: "creditsRestored", count: 1 },
+  { file: "server/stripe/webhooks.ts", rule: "beside-the-word", expression: "creditsToRestore", count: 2 },
   { file: "server/stripe/webhooks.ts", rule: "beside-the-word", expression: "currentBalance", count: 1 },
+  { file: "server/stripe/webhooks.ts", rule: "beside-the-word", expression: "grantCredits", count: 1 },
   { file: "shared/refundCopy.ts", rule: "beside-the-word", expression: "f.refunded", count: 1 },
   { file: "shared/refundCopy.ts", rule: "beside-the-word", expression: "f.refundReference", count: 1 },
 ];
@@ -431,6 +414,62 @@ function insideDisplayHelper(node: ts.Node): boolean {
     }
   }
   return false;
+}
+
+/** Is this node itself a call to one of the display helpers? */
+function isDisplayHelperCall(node: ts.Node): boolean {
+  return (
+    ts.isCallExpression(node) &&
+    ts.isIdentifier(node.expression) &&
+    (DISPLAY_HELPERS as readonly string[]).includes(node.expression.text)
+  );
+}
+
+/** Is this node a `x.toLocaleString()` call? */
+function isLocaleFormat(node: ts.Node): boolean {
+  return (
+    ts.isCallExpression(node) &&
+    ts.isPropertyAccessExpression(node.expression) &&
+    node.expression.name.text === "toLocaleString"
+  );
+}
+
+/**
+ * Does this expression do ALL of its person-readable formatting through the
+ * helper?
+ *
+ * ⚠ **`insideDisplayHelper` ALONE INDICTED CORRECTLY ROUTED CODE, AND THE WAY
+ * IT DID SO IS WORTH MORE THAN THE FIX.** It walks UP, so a helper call nested
+ * inside a larger expression is invisible to it — and rule 2 limb A then fires
+ * on the enclosing expression because `namesIn` finds a credit-ish name in it.
+ * **The name it finds is `formatCredits` itself**: `/credit/i` matches the
+ * helper, so routing a site *supplied the very name that re-indicted it*. Three
+ * real sites hit this on #1600's first routing slice — a cap clause in
+ * `ReferralBlock`, the sheet dock's "left" tail, and a per-day rate — each of
+ * them correct code the guard called unrouted. This file's own docblock says it
+ * twice: *a guard that indicts the correct code is worse than no guard*.
+ *
+ * The test is deliberately narrow rather than "contains a helper somewhere":
+ * the expression must contain at least one helper call AND no `toLocaleString`
+ * outside one. So a conditional whose branches route is routed, while
+ * `` `${cost.toLocaleString()} of ${formatCredits(total)}` `` — half routed,
+ * which is the shape that actually ships a mixed scale — is still indicted.
+ * `creditDisplayGuard.test.ts` drives both directions.
+ */
+function routedThroughHelper(node: ts.Node): boolean {
+  let helpers = 0;
+  let bareFormats = 0;
+  const visit = (current: ts.Node): void => {
+    if (isDisplayHelperCall(current)) {
+      helpers += 1;
+      /* Inside a helper nothing can be bare — stop descending. */
+      return;
+    }
+    if (isLocaleFormat(current)) bareFormats += 1;
+    ts.forEachChild(current, visit);
+  };
+  visit(node);
+  return helpers > 0 && bareFormats === 0;
 }
 
 /** Every identifier and property name an expression mentions. */
@@ -653,6 +692,7 @@ export function creditSitesIn(file: string, source: string): CreditSite[] {
       if (
         interpolated &&
         !insideDisplayHelper(node) &&
+        !routedThroughHelper(node) &&
         !insideALogCall(node) &&
         !cannotBeAnAmount(node)
       ) {
@@ -783,6 +823,7 @@ function countFloors(file: string, source: string): { formatCalls: number; inter
     ) {
       formatCalls += 1;
     }
+    if (isDisplayHelperCall(node)) formatCalls += 1;
     if (ts.isTemplateExpression(node) || ts.isJsxExpression(node)) interpolations += 1;
     ts.forEachChild(node, visit);
   };

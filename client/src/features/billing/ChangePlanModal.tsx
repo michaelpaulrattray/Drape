@@ -80,6 +80,7 @@
  *    again, which is what item 6 was trying to buy.
  */
 import { useEffect, useMemo, useState } from "react";
+import { displayBalance, displaySpent, formatCredits } from "@shared/creditDisplay";
 import { Check, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -416,7 +417,7 @@ export function ChangePlanModal({
                 At this rate you run out on {formatShortDate(burn.emptyOn)}.
               </p>
               <p className="dp-plan__reasonbody">
-                {cycle.spent.toLocaleString()} of {(cycle.spent + cycle.remaining).toLocaleString()}{" "}
+                {formatCredits(displaySpent(cycle.spent, cycle.remaining))} of {formatCredits(displayBalance(cycle.spent + cycle.remaining))}{" "}
                 spent with {cycle.daysLeft} {cycle.daysLeft === 1 ? "day" : "days"} still to go
                 {burn.dryDays > 0
                   ? `, which leaves you ${burn.dryDays} ${burn.dryDays === 1 ? "day" : "days"} short of ${formatShortDate(cycle.renewsAt)}`
@@ -438,7 +439,7 @@ export function ChangePlanModal({
               */}
               <span className="dp-set__minilabel">THIS BILLING PERIOD</span>
               <p className="dp-plan__credits">
-                {cycle.spent.toLocaleString()} / {(cycle.spent + cycle.remaining).toLocaleString()}
+                {formatCredits(displaySpent(cycle.spent, cycle.remaining))} / {formatCredits(displayBalance(cycle.spent + cycle.remaining))}
               </p>
             </div>
           </div>
@@ -629,7 +630,7 @@ export function ChangePlanModal({
                   */}
                   <span className="dp-plan__block">
                     <span className="dp-plan__credits">
-                      {plan.credits.toLocaleString()}{" "}
+                      {formatCredits(displayBalance(plan.credits))}{" "}
                       <span className="dp-plan__creditsunit">A MONTH</span>
                     </span>
                     {frames > 0 ? (
@@ -852,7 +853,7 @@ function CompareGrid({
       {
         label: "Credits a month",
         mono: true,
-        read: (plan) => plan.credits.toLocaleString(),
+        read: (plan) => formatCredits(displayBalance(plan.credits)),
       },
       {
         label: "What that makes",
@@ -1027,7 +1028,7 @@ function describeChange(
       `About ${formatDollars(quote.immediateCharge)} is due today — the difference for the ` +
       `${quote.daysRemaining} ${quote.daysRemaining === 1 ? "day" : "days"} left in this cycle.` +
       (quote.creditAdjustment > 0
-        ? ` ${quote.creditAdjustment.toLocaleString()} credits land on your balance the moment it goes through.`
+        ? ` ${formatCredits(displayBalance(quote.creditAdjustment))} credits land on your balance the moment it goes through.`
         : "")
     );
   }

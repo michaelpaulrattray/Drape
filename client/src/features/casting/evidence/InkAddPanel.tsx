@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { displayPrice, formatCredits } from "@shared/creditDisplay";
 import { ImagePlus, Loader2, RotateCcw, X } from "lucide-react";
 import type { useInkAddWorkflow } from "./useInkAddWorkflow";
 import { inkCandidateIsExpired } from "./inkAddUxPolicy";
@@ -68,7 +69,7 @@ export function InkAddComposer({
   const priceCredits =
     workflow.activeSubject?.priceCredits ?? workflow.capability?.priceCredits;
   const priceLabel = priceCredits
-    ? `${priceCredits} credits`
+    ? `${formatCredits(displayPrice(priceCredits))} credits`
     : "Loading quote…";
   const canGenerate = Boolean(active && !active.candidateId);
 

@@ -1,4 +1,5 @@
 import { RefObject, useRef, useState, useEffect } from 'react';
+import { displayPrice, formatCredits } from "@shared/creditDisplay";
 import { Sparkles, SendHorizontal } from 'lucide-react';
 import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
 import { looksLikeTattooInstruction } from '@shared/inkInstructionRoute';
@@ -47,8 +48,8 @@ export function refineActionState(input: string, isGenerating: boolean, iteratio
     canSubmit,
     ariaLabel: isGenerating
       ? 'Applying refinement'
-      : `Apply refinement for ${iterationCost} credits`,
-    label: isGenerating ? 'Applying…' : `Apply · ${iterationCost} credits`,
+      : `Apply refinement for ${formatCredits(displayPrice(iterationCost))} credits`,
+    label: isGenerating ? 'Applying…' : `Apply · ${formatCredits(displayPrice(iterationCost))} credits`,
   };
 }
 
