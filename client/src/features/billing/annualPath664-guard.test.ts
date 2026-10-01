@@ -100,7 +100,22 @@ describe("AddCreditsModal", () => {
   });
 
   it("⚠ a subscriber's button is inert until its quote exists (finding 4) — no charge under a $0.00 label", () => {
-    expect(source).toContain("const quoteReady = !hasSubscription || (!!preview && !previewFailed);");
+    /*
+      ⚠ **#1725 STRENGTHENED THIS GATE, AND THE ASSERTION READ THE WHOLE LINE
+      VERBATIM — so a change that made the button strictly HARDER to press
+      reddened it.** The string moved; the subject did not. Deleting the arm
+      would have been lowering the floor to fit the move, so it is pointed at
+      the two conditions instead, each named for the card it belongs to.
+
+      #664's half is the preview condition. #1725's is `dueToday !== null`, and
+      it belongs in this arm rather than beside it: this arm's own title is *no
+      charge under a $0.00 label*, and before #1725 `!hasSubscription` made
+      `quoteReady` true immediately — so a customer whose plan catalogue had not
+      arrived read `Add credits · $0.00` on a button that looked pressable,
+      which is the very thing finding 4 was written to stop, one branch over.
+    */
+    expect(source).toContain("(!hasSubscription || (!!preview && !previewFailed))");
+    expect(source).toContain("const quoteReady = dueToday !== null &&");
     expect(source).toMatch(/disabled=\{!selected \|\| working \|\| !quoteReady\}/);
     expect(source).toMatch(/if \(!selected \|\| !quoteReady\) return;/);
   });
