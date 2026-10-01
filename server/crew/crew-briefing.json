@@ -1,7 +1,7 @@
 {
-  "edition": 596,
-  "updatedAt": "2026-10-01T00:30:00.000Z",
-  "shift": "Foreman night shift — two pieces tonight, and the first was a catch rather than a build. Last night's work added an automatic check to every release that tells us whether crash reports are really reaching the service that collects them, so that a quiet error list means genuine quiet rather than a broken pipe. Before letting it loose I ran it for real, and it reported a fault on a pipe that turned out to be perfectly healthy: it was refusing to look at all, because it was waiting for two names to be typed into the server's settings when those two names are already written down in our own code. Left alone, every release from now on would have carried a red line that meant nothing — and a warning that is always on is a warning nobody reads. That is fixed and live, and on the way it proved for the first time that a crash report really does arrive end to end. The second piece belongs to the pricing work: each time you press Try again on a view, we now write down one line recording what that actually cost us, including the case where the picture had to be drawn twice. That is the number we promised to look at after the first month, and it was about to be measured wrong — the obvious way to count it misses every retry whose first attempt never came back. It is built and waiting for a review by hand, which is your rule for everything in the pricing rung. Nothing needs you.",
+  "edition": 597,
+  "updatedAt": "2026-10-01T01:57:17.810Z",
+  "shift": "Foreman night shift — two pieces of the pricing and money work, and the second one started as a small tidy-up and turned into something you would have wanted to know about. The first is the renewal fix: today, when a month rolls over, we work out your new balance from scratch — your plan allowance plus a share of what you had left. That share is a rule about your plan, and we were applying it to everything in your account. So once top-up packs go on sale, somebody who bought 25,000 credits and kept them would have handed half of them back at the next renewal, and half of what was left the month after. Their money, taken by a rule that was never about it. Nothing has been lost, only because top-ups cannot be bought yet — which is exactly why this had to ship before they can be. Credits you have paid for are now kept whole and are the last thing spent, and I proved it on real rows end to end. The second piece: the old studio page has been yours alone for a month, but its back door was not. Any signed-in account could still ask it to make a picture, be charged, and have that picture drawn by a Google engine that was switched off in June. Three of those four doors are now admin-only. The fourth is the one worth your attention and I have deliberately left it alone: the canvas reaches it, so closing it would take a working button away from customers, and that is your call rather than mine. It is written up plainly on its card with my recommendation. Both pieces touch money, so both are waiting for a review by hand, which is your rule for the pricing rung. Nothing needs you tonight.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -30,7 +30,7 @@
           "title": "Free signup with no card and no phone: the grant lands on a verified email or Google sign-in, guarded by quiet limits (#1603)"
         },
         {
-          "state": "waiting",
+          "state": "in-progress",
           "title": "The renewal fix: a monthly refresh never overwrites credits you bought (#1604)"
         },
         {
@@ -145,7 +145,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-01T00:21:46.175Z",
+      "readAt": "2026-10-01T01:56:45.495Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -271,6 +271,12 @@
           "issueNumber": 1592,
           "title": "Three of the canvas's five cast-status cards can never appear — drawn in full, written by nothing",
           "kind": "roadmap",
+          "rung": null
+        },
+        {
+          "issueNumber": 1655,
+          "title": "Stripe SDK 20 → 22: upgrade AFTER pricing phase 1, never during it (his word 2026-10-01, on Squall's audit)",
+          "kind": "parked",
           "rung": null
         }
       ]
@@ -6428,6 +6434,20 @@
   ],
   "pipeline": [
     {
+      "id": "renewal-keeps-purchased-1604",
+      "title": "A renewal never takes back credits you bought (#1604)",
+      "status": "in-review",
+      "prNumber": 1660,
+      "note": "Open and held — it touches money, so it waits for a review by hand."
+    },
+    {
+      "id": "legacy-paid-seal-1654",
+      "title": "The old studio can no longer be asked to spend your credits by anyone but you (#1654)",
+      "status": "in-review",
+      "prNumber": 1664,
+      "note": "Open and held — three of four doors closed; the fourth is a question on the card."
+    },
+    {
       "id": "framing-band-1612",
       "title": "The framing check measures where the edges of a picture fall instead of guessing (#1612 part 1)",
       "status": "merged",
@@ -9384,8 +9404,13 @@
     249
   ],
   "nextUp": {
-    "readAt": "2026-10-01T00:21:46.174Z",
+    "readAt": "2026-10-01T01:56:45.495Z",
     "items": [
+      {
+        "issueNumber": 1658,
+        "title": "A manager seat (Opus) reads every open card and PR before the cut and writes the fact sheet the cutter uses — dependencies, areas, collisions, readiness — so dispatch stops guessing from phrases and filenames (his word: \"we cant keep guessing things\")",
+        "urgent": true
+      },
       {
         "issueNumber": 1469,
         "title": "N2c: Campaigns, the cast library's named collections (All · Unfiled · campaigns · +), Approach A, after N2b — his word 2026-09-29 (noun changed from shoots the same day)",
@@ -9463,6 +9488,11 @@
       {
         "issueNumber": 1647,
         "title": "A bug jumps the queue only when a customer can hit it — a tooling, test or gate bug waits behind the focus like everything else (his 'i like your idea', 2026-10-01)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1654,
+        "title": "The old studio's paid procedures become admin-only now: any account can still call generation.castingImage and spend credits on a model Google shut down in June (his word 2026-10-01: seal them)",
         "urgent": false
       }
     ]
