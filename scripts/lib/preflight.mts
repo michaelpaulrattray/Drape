@@ -336,6 +336,11 @@ export const ALWAYS_RUN_SUITES: ReadonlyArray<{ readonly file: string; readonly 
     reason:
       "derives its population (every template literal in an error or log context across the tracked production source) from `git ls-files` via `errorMessageLeaks()`; a `new Error(`… ${brief}`)` added under ANY tree is its subject and it names no path literal. ⚠ THE FOURTH, and the derived arm in `server/preflight.test.ts` is what found it — the set's own docblock says a fourth cannot be added without joining, and this is that case arriving (#1406, #1037).",
   },
+  {
+    file: "server/creditDisplayGuard.test.ts",
+    reason:
+      "derives its population (every tracked client, server and shared source file that could put a number in front of a customer) from `git ls-files` via `creditDisplayPopulation()`; a credit number rendered under ANY tree is its subject and it names no path literal. ⚠ THE FIFTH, and the derived arm found it the same way it found the third and the fourth — the guard was written, `server/preflight.test.ts` reddened naming it, and the set gained a member nobody had to remember (#1600, #1037).",
+  },
 ];
 
 /** A helper module that enumerates the suite population, and the exported functions that do it. */

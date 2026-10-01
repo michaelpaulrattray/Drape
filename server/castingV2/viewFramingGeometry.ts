@@ -64,6 +64,17 @@
  *    so in its own `readerRemainder`. A remainder that is written down is a
  *    scope line; one that is not is a silence, and this file would rather be
  *    short than quiet.
+ *  - ⚠ **AND IT DOES NOT COVER EVERY CLAUSE OF THE VIEWS IT DOES COVER —
+ *    measured 2026-10-01, when the hand-over was picked up.** Four views state a
+ *    framing clause that neither a rule nor a remainder accounts for, and the
+ *    worst of them is `closeUp`, the ONE view this file's own types called fully
+ *    measured. Each is declared on its band as {@link ViewFramingBand.unrestated}
+ *    and held there; the hand-over is paid off per view, and a view whose debt is
+ *    not empty cannot hand its framing axis over without deleting a stated test.
+ *    **The reason it went unseen is worth more than the list**: the guard pairing
+ *    bands with sentences holds every RULE to citing a clause and every CITED
+ *    clause to keeping its rule, and neither direction can see a clause no rule
+ *    ever cited.
  */
 import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
@@ -158,13 +169,65 @@ export type ViewFramingBand = {
   /**
    * WHAT THIS VIEW'S FRAMING ALSO ASKS THAT GEOMETRY DOES NOT ANSWER HERE.
    *
-   * Present on the two views whose test is a head's TURN or a profile's
-   * CONCEALMENT. It is prose because it is a scope line rather than a rule: it
-   * names the half of this view's framing that a reader still answers, so that
-   * half is a stated remainder and not an accident. A view with no remainder
-   * key is fully measured.
+   * Present on the views whose test is a head's TURN, a profile's CONCEALMENT,
+   * a POSE or a feature COUNT. It is prose because it is a scope line rather
+   * than a rule: it names the half of this view's framing that a reader still
+   * answers, so that half is a stated remainder and not an accident.
+   *
+   * ⚠ **IT IS THE REMAINDER OF WHAT THE RULES ATTEMPTED, NOT THE COMPLEMENT
+   * OF THE SPEC — and this sentence used to say the opposite.** It read *"a view
+   * with no remainder key is fully measured"*, and on the day the hand-over was
+   * picked up that was measured FALSE of the one view it describes: `closeUp`
+   * has no remainder and its spec states an ORIENTATION (*"front-on"*) and a
+   * feature PRESENCE test (*"The mouth, every eye the reference shows … are
+   * entirely inside the frame"*) that no rule here restates. A view with no
+   * remainder is a view whose rules left nothing over; whether its SPEC is
+   * fully accounted for is {@link ViewFramingBand.unrestated}'s question, and
+   * it is a different one.
    */
   readonly readerRemainder?: string;
+  /**
+   * ⚠ **THE CLAUSES OF THIS VIEW'S OWN `spec.framing` THAT NEITHER A RULE NOR
+   * {@link ViewFramingBand.readerRemainder} ACCOUNTS FOR — the hand-over's debt,
+   * declared per view because that is the unit it is paid off in.**
+   *
+   * # Why it exists, and it is a finding rather than a design
+   *
+   * The hand-over slice of #1612 deletes the prose framing question from the
+   * judge's post and leaves the measurement as the framing axis's whole answer.
+   * That is only safe where the band plus the remainder say everything the spec
+   * says — and `viewFramingBands.test.ts` could not see the difference: it holds
+   * every RULE to citing a clause, and every CITED clause to still having its
+   * rule, and **neither direction can see a clause of the spec that no rule ever
+   * cited.** A guard that can only fail one way is this repository's own
+   * favourite defect class, and it was holding a money-path hand-over shut
+   * without anybody being able to say so.
+   *
+   * So the gap is written down where the band is, at the only resolution that
+   * matters: the clause, verbatim, in the view's own words. `viewFramingBands`
+   * holds each entry to still being a substring of the live spec, so a reworded
+   * spec cannot leave a stale debt behind, and holds the total to only ever
+   * SHRINKING.
+   *
+   * # What paying it off means, and it is not writing a rule
+   *
+   * A debt is discharged one of three ways, and all three are honest:
+   *
+   *  1. a new RULE restates the clause as geometry (and cites it);
+   *  2. the clause moves into `readerRemainder`, i.e. it is declared to be a
+   *     reader's question forever — which is the right answer for a feature
+   *     COUNT, because #1582 is what happens when a count is asked of a being
+   *     that does not have the feature, and a count belongs with the
+   *     reference's own face scan;
+   *  3. the clause is deleted from the spec, which is a change to the standard a
+   *     delivered picture is held to and therefore his.
+   *
+   * ⚠ **WHAT IT MUST NEVER BE IS SILENCE.** An empty list on a view whose spec
+   * still states something unmeasured is the hand-over deleting a stated framing
+   * test with no line of code saying so — on a surface where the consequence is
+   * a picture marked checked that nobody checked.
+   */
+  readonly unrestated?: readonly string[];
 };
 
 /**
