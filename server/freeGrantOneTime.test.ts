@@ -43,6 +43,14 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { join } from "node:path";
 import type Stripe from "stripe";
 
+import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
+
+/* Two arms below read `server/db/credits.ts` off the real tree, which puts this
+   suite in #741's derived population: green alone, red under load on somebody
+   else's machine. Declared at file level because that is where the guard reads
+   it, and the whole file is cheap either way. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
+
 import { readListedSource } from "./testing/listedSource";
 
 vi.mock("./db/connection", () => ({
