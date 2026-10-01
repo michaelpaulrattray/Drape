@@ -13221,6 +13221,10 @@
       "path": "server/founderActivity.test.ts"
     },
     {
+      "id": "test:server/freeGrantOneTime.test.ts",
+      "path": "server/freeGrantOneTime.test.ts"
+    },
+    {
       "id": "test:server/freeTextWhitespace.test.ts",
       "path": "server/freeTextWhitespace.test.ts"
     },

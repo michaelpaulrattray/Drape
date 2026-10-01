@@ -86,6 +86,44 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
 /**
+ * THE FREE SIGNUP GRANT — ONE NUMBER, ONE TIME, ONE PLACE (#1602, P1-3).
+ *
+ * A new account is granted this once, at signup, and never again. It is **not**
+ * a monthly allowance: the free rung has no Stripe subscription, so no invoice
+ * ever arrives, so `refreshMonthlyCredits` is never reached for it. That is not
+ * a promise — `server/freeGrantOneTime.test.ts` drives the only road into the
+ * refresh and proves the free rung cannot take it, with a positive control.
+ *
+ * ⚠ **THREE PLACES USED TO HOLD 5,000 AND THEY WERE THREE COPIES** (working
+ * law 4): `PLAN_TIERS.free.monthlyCredits`, `INITIAL_CREDITS` in
+ * `server/db/credits.ts`, and the `points.balance` column default. All three
+ * read this constant now, so the grant cannot be half-changed.
+ *
+ * ⚠ **THE COLUMN DEFAULT IS THE ONE THAT CANNOT BE MOVED BY A MIGRATION FILE,
+ * AND #1602's BODY SAID IT COULD.** The card read *"the `points.balance` schema
+ * default (a migration; additive, so it applies itself in the rite)"*. It is
+ * neither additive nor self-applying, measured at the code:
+ *
+ *   - `scripts/lib/ceremonyAutoApply.mts:208-216` — every clause of an `ALTER
+ *     TABLE` must begin `ADD`; a `MODIFY` or `ALTER COLUMN … SET DEFAULT`
+ *     clause is classified **destructive** by name, so it never runs unattended.
+ *   - `scripts/lib/ceremonyAutoApply.mts:289-294` — worse, the plan is driven
+ *     by **missing objects** (`MissingObjects` is tables, columns and indexes
+ *     and nothing else, `:108-112`). A default on a column that already exists
+ *     names no missing object, so the statement is never *wanted*: it would be
+ *     neither applied nor refused. A numbered migration carrying it would sit
+ *     in the tree forever, reading as shipped, having never run.
+ *
+ * So the DDL goes where the rest of this card's hand work already goes — the
+ * go-live ceremony `scripts/raise-free-grant-1602.mts`, named on #1609 (P1-10)
+ * beside the existing-account raise. Until that ceremony runs, the stored
+ * default stays 5,000 and **nothing can read it**: the sole INSERT into this
+ * table (`initializeUserCredits`) names `balance` explicitly, which
+ * `server/freeGrantOneTime.test.ts` also pins.
+ */
+export const FREE_SIGNUP_GRANT_CREDITS = 13500;
+
+/**
  * Plan tier configuration with credit allocations
  */
 // Pricing: 50x display multiplier applied. Volume discounts at higher tiers.
@@ -99,8 +137,37 @@ export type InsertUser = typeof users.$inferInsert;
 // order. `ultimate` is a real, hand-sold product but is NOT offered: it never
 // appears in `billing.getPlans` and the checkout enums refuse it — the door is
 // an email line under the ladder (HIDDEN_PLAN_TIERS, stripeProducts.ts).
+//
+// ⚠ THE SEVEN PAID GRANTS ARE HELD ON HIS WORD AND ARE NOT THE PROPOSAL'S
+// NUMBERS YET — #1602 (P1-3), measured 2026-10-01 rather than assumed.
+//
+// The approved pricing proposal (rev 21.6) lowers Pro and up — pro 190,000,
+// studio 440,000, business 2,350,000, scale 13,350,000, enterprise 41,500,000,
+// ultimate 133,500,000 — and leaves every monthly price exactly where it is.
+// Applied to these prices, credits per dollar then FALLS at three rungs:
+//
+//   Starter  $27      75,000  2777.78 cr/$
+//   Pro      $68     190,000  2794.12 cr/$   rises
+//   Studio   $159    440,000  2767.30 cr/$   ⚠ falls below Pro
+//   Business $840  2,350,000  2797.62 cr/$   rises
+//   Scale    $4,800 13,350,000 2781.25 cr/$  ⚠ falls below Business
+//   Enterprise $15,000 41,500,000 2766.67 cr/$ ⚠ falls below Scale
+//   Ultimate $48,000 133,500,000 2781.25 cr/$ rises
+//
+// Today's ladder rises at all seven. `client/src/features/settings/card390-guard.test.ts`
+// pins the climb against THIS table, and it carries his own bar verbatim:
+// *"keep the monotonic check: the figure must improve at every rung. If the
+// real ladder breaks that, the ladder is the bug."* Nothing in the proposal
+// mentions the climb, so he approved the grants without that fact in front of
+// him — and which of the two gives way is a pricing decision, his alone.
+// Weakening the guard to admit the numbers is the one repair that is forbidden.
+//
+// So the free grant below moved and these seven did not. The question is on his
+// Desk; #1602 stays open until he answers it.
 export const PLAN_TIERS = {
-  free: { name: 'Free', monthlyCredits: 5000, price: 0, rolloverPercent: 0 },
+  // `monthlyCredits` is a ONE-TIME signup grant on this rung and nothing else
+  // reads it as monthly — see FREE_SIGNUP_GRANT_CREDITS above.
+  free: { name: 'Free', monthlyCredits: FREE_SIGNUP_GRANT_CREDITS, price: 0, rolloverPercent: 0 },
   starter: { name: 'Starter', monthlyCredits: 75000, price: 2700, rolloverPercent: 50 },              // $27/mo  — $0.00036/cr
   pro: { name: 'Pro', monthlyCredits: 200000, price: 6800, rolloverPercent: 75 },                     // $68/mo  — $0.00034/cr
   studio: { name: 'Studio', monthlyCredits: 500000, price: 15900, rolloverPercent: 100 },              // $159/mo — $0.000318/cr
@@ -119,7 +186,14 @@ export type PlanTier = keyof typeof PLAN_TIERS;
 export const credits = mysqlTable("points", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull().unique(),
-  balance: int("balance").notNull().default(5000),
+  // ⚠ UNREADABLE BY CONSTRUCTION, AND THE STORED DEFAULT IS STILL 5,000 UNTIL
+  // THE GO-LIVE CEREMONY RUNS (#1602). Drizzle does not apply `.default()`
+  // client-side for MySQL — it omits the column and lets the stored default
+  // answer — so this declaration is the repo's INTENT and the database's own
+  // DEFAULT is the fact. The two are reconciled by `scripts/raise-free-grant-1602.mts`,
+  // not by a migration file, for the reason set out on FREE_SIGNUP_GRANT_CREDITS.
+  // Nothing reads either value: the sole INSERT names `balance` explicitly.
+  balance: int("balance").notNull().default(FREE_SIGNUP_GRANT_CREDITS),
   // The DB column still accepts the four folded rung values (#391): narrowing
   // a MySQL enum is a DESTRUCTIVE migration, which is the founder's ceremony
   // alone, and zero rows have ever held one (read at production the day of the

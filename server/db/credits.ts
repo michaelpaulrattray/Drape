@@ -10,6 +10,7 @@ import { eq, and, desc, sql } from "drizzle-orm";
 import {
   credits,
   creditTransactions,
+  FREE_SIGNUP_GRANT_CREDITS,
   InsertCredits,
   InsertCreditTransaction,
   // Legacy aliases
@@ -22,7 +23,16 @@ import { getDb, withTransaction, type DbInstance } from "./connection";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("db/credits");
 
-const INITIAL_CREDITS = 5000; // Free tier starting credits (50x display multiplier)
+/**
+ * The free signup grant, DERIVED and never restated (#1602, working law 4).
+ *
+ * This was its own literal `5000` beside `PLAN_TIERS.free.monthlyCredits`'s
+ * `5000` and the `points.balance` column default's `5000` — three copies of
+ * one product promise, each of which could have been changed alone. The name
+ * stays because this module's two call sites read well with it; the number is
+ * the schema's.
+ */
+const INITIAL_CREDITS = FREE_SIGNUP_GRANT_CREDITS;
 const CREDIT_REFERENCE_MAX_LENGTH = 64;
 
 /** Preserve readable references that fit varchar(64); hash longer child ids. */
