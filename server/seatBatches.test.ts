@@ -1535,6 +1535,162 @@ describe("the manager answers the soft readings and every wall still wins", () =
     expect(stopped.skipped[0]!.why).toContain("the manager's reading of this pass");
   });
 
+  /* ── #1687: THE TOP PICK ASKS THE MANAGER TOO ───────────────────────────── */
+
+  it("⚠ the FOCUS skips a card the manager says nobody can start, and names the next one", () => {
+    /*
+      THE CARD'S HEADLINE DEFECT, with the real shape: #1598 is the rung's
+      PARENT RECORD — oldest in his band, every wall the code can see passes it,
+      and the manager's row says `ready: "no"` because its body is a price list
+      with no file and no done-when a seat could drive. It was named `focus` on
+      all four real manager passes of 2026-10-01.
+    */
+    const cards = [
+      ordered(100, "The approved price list. Parent record for the rung."),
+      ordered(101, "Change server/casting/queue.ts."),
+    ];
+    const facts = factsOf(
+      sheetRow(100, { ready: "no", why: "it is the rung's parent record, not build work" }),
+      sheetRow(101, { area: "casting" }),
+    );
+
+    const band = bandWith(cards, facts, "P1");
+
+    expect(band.focus?.number, "the next startable ordered card, not the parent record").toBe(101);
+    expect(band.held.some((h) => h.number === 100 && h.why.includes("the rung's parent record"))).toBe(true);
+    expect(band.held.some((h) => h.number === 100 && h.why.includes("the manager's reading of this pass"))).toBe(true);
+    /* It was skipped, not offered: an unready card is no more a seat's than a
+       focus shift's, and this is the arm that stops the repair freeing it. */
+    expect(band.offered.map((c) => c.number)).toEqual([]);
+    /* And the card it skipped to is held as the FOCUS's own card, not offered. */
+    expect(band.held.some((h) => h.number === 101 && h.why.includes("the top of NEXT UP"))).toBe(true);
+  });
+
+  it("⚠ NEGATIVE CONTROL — with no sheet row for the top card, the pick is unchanged", () => {
+    /* The direction that matters: a manager that said nothing about #100 must
+       leave the band exactly as it was before #1687. */
+    const cards = [
+      ordered(100, "The approved price list. Parent record for the rung."),
+      ordered(101, "Change server/casting/queue.ts."),
+    ];
+    const silent = bandWith(cards, factsOf(sheetRow(101, { area: "casting" })), "P1");
+    expect(silent.focus?.number).toBe(100);
+
+    /* And with no sheet at all. */
+    expect(bandWith(cards, undefined, "P1").focus?.number).toBe(100);
+
+    /* `ready: "yes"` is not a hold either — the positive control for the column
+       rather than for its absence. */
+    const yes = bandWith(
+      cards,
+      factsOf(sheetRow(100, { ready: "yes" }), sheetRow(101, { area: "casting" })),
+      "P1",
+    );
+    expect(yes.focus?.number).toBe(100);
+  });
+
+  it("skips FORWARD over two unready cards in a row, rather than holding the band", () => {
+    /* 18 of the 46 rows on the sheet that found this carried `ready: "no"`, so
+       two in a row is an ordinary state and `if` would have been the bug. */
+    const cards = [
+      ordered(100, "A parent record."),
+      ordered(101, "A roadmap pointer."),
+      ordered(102, "Change server/casting/queue.ts."),
+    ];
+    const band = bandWith(
+      cards,
+      factsOf(
+        sheetRow(100, { ready: "no", why: "it is the rung's parent record" }),
+        sheetRow(101, { ready: "no", why: "his word on it is 'no build now'" }),
+        sheetRow(102, { area: "casting" }),
+      ),
+      "P1",
+    );
+    expect(band.focus?.number).toBe(102);
+    expect(band.held.some((h) => h.number === 100 && h.why.includes("parent record"))).toBe(true);
+    expect(band.held.some((h) => h.number === 101 && h.why.includes("no build now"))).toBe(true);
+  });
+
+  it("returns focus: null when the manager says nobody can start ANY ordered card", () => {
+    /* The fail-closed end of the same road: holding the whole band is a state
+       the callers already carry (the CLI writes a plan with no seats), and it is
+       better than naming a card nobody can start. */
+    const cards = [ordered(100, "A parent record."), ordered(101, "A roadmap pointer.")];
+    const band = bandWith(
+      cards,
+      factsOf(
+        sheetRow(100, { ready: "no", why: "it is the rung's parent record" }),
+        sheetRow(101, { ready: "no", why: "his word on it is 'no build now'" }),
+      ),
+      "P1",
+    );
+    expect(band.focus).toBeNull();
+    expect(band.offered).toEqual([]);
+    expect(band.held.map((h) => h.number).sort()).toEqual([100, 101]);
+  });
+
+  it("⚠ the placement control — a card BELOW the focus still prints its DEPENDENCY sentence", () => {
+    /*
+      #1656's placement rule, and the reason this limb sits after the loop rather
+      than inside it. `rest` asks `independenceOf` before readiness, so a card
+      that is BOTH dependent and unready prints the dependency sentence — and
+      five rows on tonight's sheet are both, two of them (#1607, #1609) in his
+      ordered band. Inside the loop, all five would have changed sentence.
+    */
+    const cards = [
+      ordered(100, "Change server/casting/queue.ts."),
+      ordered(101, "This builds on #100.\n\nChange client/src/features/boards/Canvas.tsx."),
+    ];
+    const band = bandWith(
+      cards,
+      factsOf(
+        sheetRow(100, { area: "casting" }),
+        sheetRow(101, { area: "boards", dependsOn: [100], ready: "no", why: "it waits on his ruling about the noun" }),
+      ),
+      "P1",
+    );
+    expect(band.focus?.number).toBe(100);
+    const why = band.held.find((h) => h.number === 101)!.why;
+    expect(why, "the dependency reading, which is asked first in the rest loop").toContain("builds on #100");
+    expect(why).not.toContain("the manager's reading of this pass");
+  });
+
+  it("⚠ one reader, one sentence — the hold reads identically in all three lanes", () => {
+    /*
+      `managerReadinessHold` has three call sites now, and the sentence is what
+      his page shows. Two spellings of one hold would read to him as two facts,
+      which is why the helper returns the sentence rather than a boolean.
+    */
+    const why = "it waits on his answer about the retry price";
+    const row = sheetRow(200, { ready: "no", why });
+
+    const background = seatPopulation({
+      cards: [card(200, ["bug"], { body: "Change server/casting/queue.ts." })],
+      switches: ALL_ON,
+      board: CLEAN_BOARD,
+      areaIndex: INDEX,
+      focusRung: null,
+      facts: factsOf(row),
+    });
+
+    const asFocus = bandWith(
+      [ordered(200, "Change server/casting/queue.ts.")],
+      factsOf(row),
+      "P1",
+    );
+
+    const belowFocus = bandWith(
+      [ordered(100, "Change server/casting/queue.ts."), ordered(200, "Change client/src/features/boards/Canvas.tsx.")],
+      factsOf(sheetRow(100, { area: "casting" }), { ...row, area: "boards" }),
+      "P1",
+    );
+
+    const sentence = `${why} (the manager's reading of this pass)`;
+    expect(background.skipped.find((s) => s.number === 200)!.why).toBe(sentence);
+    expect(asFocus.held.find((h) => h.number === 200)!.why).toBe(sentence);
+    expect(belowFocus.held.find((h) => h.number === 200)!.why).toBe(sentence);
+  });
+
   it("holds an ORDERED card the manager says nobody can start, after the rung wall", () => {
     /* The ordered lane has its own copy of the readiness hold, and it had no arm
        until the sabotage pass went looking for one (working law 2 pointed at the
