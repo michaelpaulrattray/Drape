@@ -9,7 +9,21 @@ import { ACCESS_CODE_MAX_LENGTH } from "@shared/inputLimits";
 import { FREE_GRANT_REFUSAL_ERROR_CODE, FREE_GRANT_REFUSAL_SENTENCE } from "@shared/freeGrantRefusal";
 
 // ─── Error configurations ──────────────────────────────────────────────────
-const ERROR_MESSAGES = {
+/**
+ * ⚠ **EXPORTED SO A GUARD CAN READ THE KEYS RATHER THAN PARSE THEM — #1709.**
+ *
+ * `server/loginRefusalNotes.test.ts` holds every `?error=` code the server can
+ * redirect here with against this map, and it reads the KEYS by importing this
+ * object. That is deliberate and it is the fidelity law applied to a guard: one
+ * key here is a COMPUTED one (`[FREE_GRANT_REFUSAL_ERROR_CODE]`), and a reader
+ * that regexed this file for `^  \w+:` would report `signup_unavailable` as
+ * having no note while the running page renders it perfectly — measured, by
+ * driving the page, after exactly that grep said otherwise.
+ *
+ * Nothing else imports it, and nothing should: the banner below is its only
+ * consumer. The export exists to make the map legible to a checker.
+ */
+export const ERROR_MESSAGES = {
   /*
     A FREE SIGNUP THE QUIET CAP REFUSED (#1603, P1-4). The Google callback is a
     redirect with no body, so this is the only place that road's customer reads
