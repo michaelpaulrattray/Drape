@@ -14,6 +14,7 @@ import {
   monthsBought,
   type BillingIntervalChoice,
 } from "@shared/annualBilling";
+import { wholeDisplayLedger } from "@shared/creditDisplay";
 import { environmentMetadata } from "./environmentTag";
 import { subscriptionPeriodSec } from "./subscriptionPeriods";
 import { PLAN_TIERS, PlanTier } from "../../drizzle/schema";
@@ -312,7 +313,10 @@ export function calculateRolloverCredits(
 ): number {
   const tierConfig = PLAN_TIERS[planTier];
   const rolloverPercent = tierConfig.rolloverPercent;
-  return Math.floor(unusedCredits * (rolloverPercent / 100));
+  // A whole number of DISPLAY credits (#1604 done-when 2): a percentage of an
+  // arbitrary balance is almost never a multiple of the display scale, and the
+  // remainder would be ledger the customer holds and can never be shown.
+  return wholeDisplayLedger(Math.floor(unusedCredits * (rolloverPercent / 100)));
 }
 
 /**
@@ -498,12 +502,17 @@ export function quotePlanChange(
 
   // The switch unwind mirrors Stripe's own money credit: the same fraction
   // (daysRemaining / totalDays) of the same period's grant.
+  // A whole number of DISPLAY credits, like the two shares above (#1604
+  // done-when 2) — this is a prorated credit DEDUCTION and the same argument
+  // applies to it.
   const creditUnwind =
     kind === "interval-switch"
-      ? Math.floor(
-          PLAN_TIERS[state.currentPlan as PlanTier].monthlyCredits *
-            cycleMonths *
-            (daysRemaining / totalDays),
+      ? wholeDisplayLedger(
+          Math.floor(
+            PLAN_TIERS[state.currentPlan as PlanTier].monthlyCredits *
+              cycleMonths *
+              (daysRemaining / totalDays),
+          ),
         )
       : 0;
 
@@ -783,12 +792,16 @@ export function calculateCreditAdjustment(
   const deltaForCycle = (newCredits - currentCredits) * monthsInCycle;
   const fraction = daysRemaining / totalDays;
 
+  // Both arms land on a whole number of DISPLAY credits (#1604 done-when 2).
+  // `wholeDisplayLedger` truncates toward zero, which is the direction each arm
+  // already wanted: a grant never more than can be shown, a deduction never
+  // more than the mirror grant.
   if (deltaForCycle >= 0) {
-    return Math.floor(deltaForCycle * fraction);
+    return wholeDisplayLedger(Math.floor(deltaForCycle * fraction));
   }
   // Downgrade: the same share, the other way. Truncate toward zero so the
   // deduction never exceeds the mirror of what an upgrade would have granted.
-  return -Math.floor(-deltaForCycle * fraction);
+  return wholeDisplayLedger(-Math.floor(-deltaForCycle * fraction));
 }
 
 

@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 74
+      "moduleCount": 75
     },
     {
       "id": "domain:staff",
@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 49
+      "moduleCount": 50
     },
     {
       "id": "domain:wardrobe",
@@ -5695,6 +5695,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/testing/creditDisplaySites.ts",
+      "path": "server/testing/creditDisplaySites.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/testing/errorMessageInterpolations.ts",
       "path": "server/testing/errorMessageInterpolations.ts",
       "domain": "unassigned",
@@ -5979,6 +5985,12 @@
     {
       "id": "module:shared/const.ts",
       "path": "shared/const.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/creditDisplay.ts",
+      "path": "shared/creditDisplay.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -10108,6 +10120,13 @@
       "member": "vtoIncremental",
       "credits": 300,
       "file": "server/wardrobe/creditCosts.ts"
+    },
+    {
+      "id": "cost:shared/creditDisplay.ts:LEDGER_PER_DISPLAY_CREDIT",
+      "name": "LEDGER_PER_DISPLAY_CREDIT",
+      "constant": "LEDGER_PER_DISPLAY_CREDIT",
+      "credits": 5,
+      "file": "shared/creditDisplay.ts"
     }
   ],
   "vocabulary": [
@@ -12822,6 +12841,14 @@
     {
       "id": "test:server/court.test.ts",
       "path": "server/court.test.ts"
+    },
+    {
+      "id": "test:server/creditDisplay.test.ts",
+      "path": "server/creditDisplay.test.ts"
+    },
+    {
+      "id": "test:server/creditDisplayGuard.test.ts",
+      "path": "server/creditDisplayGuard.test.ts"
     },
     {
       "id": "test:server/creditRefreshRace.test.ts",
@@ -33683,6 +33710,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/stripe/stripeService.ts",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/stripe/webhooks.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -33760,6 +33792,11 @@
     {
       "from": "module:server/testing/childProcessSuites.ts",
       "to": "module:server/testing/withoutComments.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/testing/creditDisplaySites.ts",
+      "to": "module:server/testing/listedSource.ts",
       "kind": "imports"
     },
     {
