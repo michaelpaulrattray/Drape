@@ -704,3 +704,181 @@ export function rootsToKill(
   if (wrong.length > 0) return { kind: "refused", reason: wrong.join("\n") };
   return { kind: "kill", rootPids: [...new Set(pids)] };
 }
+
+/**
+ * ⚠ THE TABLE ARRIVES AS TEXT, AND THE TEXT WAS BEING CORRUPTED IN TRANSPORT
+ * (#1671) — THE CHARACTER THE CARD COULD NOT PIN IS `→`.
+ *
+ * `dev-servers.mts` read the process table by shelling out to PowerShell and
+ * `JSON.parse`ing the result, and it died at random on
+ *
+ *     SyntaxError: Bad control character in string literal in JSON at position 197266
+ *
+ * which took down the one tool a shift's close leans on. #1669 was filed off a
+ * hand read taken while it was down, and reported ONE orphaned dev server where
+ * the tool, once it ran, reported THREE.
+ *
+ * # The mechanism, driven rather than reasoned about
+ *
+ * It is NOT a control character in a command line, which is what the card
+ * proposed stripping. Measured at a PS 5.1 child: `ConvertTo-Json` escapes all
+ * 32 control characters correctly, every one of them, so the text it produces is
+ * always valid JSON. **The control byte is created AFTER serialisation, by the
+ * stdout encoder.**
+ *
+ * A `powershell.exe` spawned by Node has no console, so its
+ * `[Console]::OutputEncoding` is the OEM codepage — **`IBM437`** on this
+ * machine, read out of the child itself rather than assumed. And cp437 spends
+ * bytes `0x00`–`0x1F` on GRAPHIC characters, so encoding TO it folds those
+ * glyphs back onto raw control bytes. Enumerated from the child: **65
+ * characters map to a byte under `0x20`, and 34 of them are ordinary printable
+ * glyphs** — U+2192 to `0x1A`, U+2190 to `0x1B`, U+2191 to `0x18`, U+2193 to
+ * `0x19`, U+2194 to `0x1D`, U+2022 to `0x07`, U+00B6 to `0x14`, U+00A7 to
+ * `0x15`, U+203C to `0x13`, U+25B2 to `0x1E`. Node then decodes `0x1A` as
+ * U+001A, inside a string literal, and the parse refuses.
+ *
+ * ⚠ **So the trigger is any process anywhere on the machine whose command line
+ * holds one of those 34 glyphs** — the relay's own multi-line `gh pr comment`
+ * bodies, and a shift's own `bash -c` heredoc, which is what it was reproduced
+ * on. That is the whole of its transience: the tool works again the moment that
+ * process exits, so it reads as a fluke rather than a defect.
+ *
+ * ⚠ **And it is why the card's three controls were all negative.** A raw
+ * newline is escaped by `ConvertTo-Json` before the encoder ever sees it, and an
+ * em dash and a middle dot have no cp437 mapping at all, so they become `?` and
+ * parse fine. ONLY the 34 glyphs in cp437's control block do this, and the
+ * right arrow is the one the relay writes most.
+ *
+ * # What is done about it, in two places
+ *
+ * `PROCESS_TABLE_QUERY` sets the child's output encoding to UTF-8 (no BOM), so
+ * the transport stops lying — which also closes a silent second defect nobody
+ * had noticed: every non-ASCII character in every command line was being
+ * mangled, and `launchDirectoryOf` reads a PATH out of those lines.
+ *
+ * `processRowsFromJson` is the belt, and it lives here rather than in the script
+ * so that it can be driven: a parse that fails on a control character is
+ * RETRIED with the control characters inside string literals escaped, which
+ * recovers every row rather than dropping one. It reports that it repaired,
+ * because a repair means the encoding above did not take and other characters
+ * in the same document may be corrupted in ways no retry can see — a hole in the
+ * reader, to be said out loud like the two the listing already names (#783).
+ */
+export const PROCESS_TABLE_QUERY =
+  /* ⚠ The assignment is the fix; do not drop it when editing the projection.
+     `server/devServerTrees.test.ts` asserts it ON THIS STRING — invariant 5, a
+     contract about what gets sent is proven on the outgoing request. */
+  "[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); "
+  + "Get-CimInstance Win32_Process "
+  + "| Select-Object ProcessId,ParentProcessId,Name,CreationDate,CommandLine | ConvertTo-Json -Depth 3";
+
+export type ProcessTableRead =
+  | {
+    readonly kind: "read";
+    readonly rows: readonly ProcessRow[];
+    /** The document held raw control characters and was repaired to be read. */
+    readonly repaired: boolean;
+  }
+  | { readonly kind: "refused"; readonly reason: string };
+
+/**
+ * Escape the control characters that sit INSIDE a JSON string literal.
+ *
+ * ⚠ Only inside one: a control character BETWEEN tokens is legal whitespace,
+ * and PowerShell's pretty-printed output is full of it. Tracking the string
+ * state is what tells those apart, and nothing cp437 can produce derails that
+ * tracking — U+0022 and U+005C are the only characters it maps to `0x22` and
+ * `0x5C`, so a quote or a backslash in the text was a quote or a backslash in
+ * the table.
+ */
+export function escapeControlCharactersInJsonStrings(raw: string): string {
+  let out = "";
+  let inString = false;
+  let afterBackslash = false;
+  for (const ch of raw) {
+    if (afterBackslash) {
+      out += ch;
+      afterBackslash = false;
+      continue;
+    }
+    if (inString && ch === "\\") {
+      out += ch;
+      afterBackslash = true;
+      continue;
+    }
+    if (ch === "\"") {
+      inString = !inString;
+      out += ch;
+      continue;
+    }
+    const code = ch.codePointAt(0)!;
+    if (inString && code < 0x20) {
+      out += `\\u${code.toString(16).padStart(4, "0")}`;
+      continue;
+    }
+    out += ch;
+  }
+  return out;
+}
+
+/**
+ * The text PowerShell printed, as rows this module can reason about.
+ *
+ * ⚠ **Not `-Filter "Name='node.exe'"`, and that is the #658 fix.** `pnpm dev`
+ * starts its watcher through a `cmd.exe`, so a node-only table loses the link
+ * between the two halves of one server and reports each as a tree of its own.
+ * The ancestry walk needs the shells, so the filter comes off; a row whose
+ * command line is unreadable (another user's, a system process) still carries
+ * its pid and parent, which is all the walk asks of it.
+ *
+ * ⚠ **A document it cannot read is REFUSED, never returned short.** A table
+ * missing rows is the #783 failure exactly — the ancestry walk hops through
+ * shells, so one absent row promotes an inner watcher to a root of its own, or
+ * loses a tree altogether, and *"no dev server is running on this machine"* is
+ * the sentence four consecutive shifts read over a live server.
+ */
+export function processRowsFromJson(raw: string): ProcessTableRead {
+  const text = raw.trim();
+  if (text === "") return { kind: "read", rows: [], repaired: false };
+
+  let parsed: unknown;
+  let repaired = false;
+  try {
+    parsed = JSON.parse(text);
+  } catch (first) {
+    try {
+      parsed = JSON.parse(escapeControlCharactersInJsonStrings(text));
+      repaired = true;
+    } catch {
+      /* The FIRST error, not the second: the retry's message is about text this
+         module rewrote, which is not the text PowerShell sent. */
+      return {
+        kind: "refused",
+        reason: `the process table PowerShell printed is not readable JSON: ${String(first)}`
+          + "\n  escaping the control characters inside its string literals did not help either,"
+          + "\n  so this is not #1671's cp437 transport defect and the document itself is wrong.",
+      };
+    }
+  }
+
+  const rows = Array.isArray(parsed) ? parsed : [parsed];
+  return {
+    kind: "read",
+    repaired,
+    rows: rows.map((row: Record<string, unknown>) => ({
+      pid: Number(row.ProcessId),
+      parentPid: Number(row.ParentProcessId),
+      name: typeof row.Name === "string" ? row.Name : "",
+      /* PowerShell's JSON renders a CIM date as `/Date(1787…)/`; anything else
+         is passed to Date as written rather than guessed at. */
+      startedAt: new Date(
+        typeof row.CreationDate === "string" && /\/Date\((\d+)/.test(row.CreationDate)
+          ? Number(/\/Date\((\d+)/.exec(row.CreationDate)![1])
+          : String(row.CreationDate),
+      ),
+      /* Empty, never the string "null": a process whose command line this
+         account cannot read is a hop in the walk, not a candidate watcher. */
+      commandLine: typeof row.CommandLine === "string" ? row.CommandLine : "",
+    })),
+  };
+}

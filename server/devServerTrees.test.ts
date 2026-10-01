@@ -30,9 +30,12 @@ import {
   listenersOutsideEveryTree,
   normaliseTreePath,
   portsOfTree,
+  processRowsFromJson,
   rootsStartedAfter,
   pidsNamed,
   rootsToKill,
+  escapeControlCharactersInJsonStrings,
+  PROCESS_TABLE_QUERY,
   type ProcessRow,
 } from "../scripts/lib/devServerTrees.mts";
 
@@ -1067,5 +1070,179 @@ describe("⚠ a `.pnpm` path is the junction target, not a launch directory (#14
     const url = 'node.exe --import file:///C:/Users/Admin/Drape/node_modules/tsx/dist/loader.mjs server/_core/index.ts';
     expect(launchDirectoryOf(url)).toBe("C:/Users/Admin/Drape");
     expect(launchDirectoryOf(url)).not.toContain("e:///");
+  });
+});
+
+/**
+ * ⚠ THE TABLE ARRIVES AS TEXT, AND cp437 TURNED `→` INTO A RAW CONTROL BYTE
+ * (#1671).
+ *
+ * The card that filed this could not pin the character and said so. It is
+ * pinned now, and it is not what the card proposed stripping: `ConvertTo-Json`
+ * escapes all 32 control characters correctly, so the JSON PowerShell builds is
+ * always valid. A `powershell.exe` spawned by Node has no console, so its
+ * `[Console]::OutputEncoding` is **`IBM437`** — and cp437 spends bytes
+ * `0x00`–`0x1F` on graphic characters, so ENCODING to it folds 34 ordinary
+ * glyphs back onto raw control bytes. U+2192 becomes `0x1A`; Node decodes that
+ * as U+001A inside a string literal; the parse refuses.
+ *
+ * Driven on this machine before the fix, with one arrow-bearing process alive:
+ * `SyntaxError: Bad control character in string literal in JSON at position
+ * 144925` — out of `processTable`, the same stack the card reports.
+ *
+ * ⚠ **The fixtures below hold a REAL U+001A, written as `\u001a` in a template
+ * literal so the bytes are genuinely there.** Nothing here spawns PowerShell or
+ * needs Windows: the card asked for an arm *"provable without reproducing the
+ * Windows condition"*, and the corruption is a known byte substitution, so the
+ * synthetic document is the real one.
+ */
+describe("⚠ a process table corrupted in transport is read, not died on (#1671)", () => {
+  /** What cp437 does to `"tsx watch → server"`: the arrow becomes U+001A. */
+  const CORRUPTED = `[
+    {
+        "ProcessId":  4242,
+        "ParentProcessId":  1000,
+        "Name":  "node.exe",
+        "CreationDate":  "\\/Date(1787000000000)\\/",
+        "CommandLine":  "bash.exe -c \\"gh pr comment --body 'a \u001a b'\\""
+    },
+    {
+        "ProcessId":  14660,
+        "ParentProcessId":  1492,
+        "Name":  "node.exe",
+        "CreationDate":  "\\/Date(1787000001000)\\/",
+        "CommandLine":  "node \\"C:\\\\Users\\\\Admin\\\\Drape\\\\node_modules\\\\tsx\\\\dist\\\\cli.mjs\\" \\"watch\\" \\"server/_core/index.ts\\""
+    }
+]`;
+
+  it("is the document the OLD reader died on — the negative control for every arm below", () => {
+    /* If this ever stops throwing, the fixture has lost its control character
+       and every arm under it is passing for the wrong reason. */
+    expect(() => JSON.parse(CORRUPTED)).toThrow(/control character/i);
+  });
+
+  it("recovers EVERY row rather than dropping the unreadable one", () => {
+    const read = processRowsFromJson(CORRUPTED);
+    expect(read.kind).toBe("read");
+    if (read.kind !== "read") return;
+    /* ⚠ Two, not one. A table missing rows is the #783 failure: the ancestry
+       walk hops through shells, so a dropped row loses a tree or promotes an
+       inner watcher to a root of its own. */
+    expect(read.rows.map((row) => row.pid)).toEqual([4242, 14660]);
+    expect(read.repaired).toBe(true);
+  });
+
+  it("keeps the corrupted command line's own bytes instead of guessing at them", () => {
+    const read = processRowsFromJson(CORRUPTED);
+    if (read.kind !== "read") throw new Error("expected a read");
+    /* The control character is ESCAPED, so the value round-trips unchanged.
+       Substituting a space here would be a reader editing its own evidence. */
+    expect(read.rows[0]!.commandLine).toContain("\u001a");
+  });
+
+  it("still builds the tree the recovered rows describe", () => {
+    const read = processRowsFromJson(CORRUPTED);
+    if (read.kind !== "read") throw new Error("expected a read");
+    /* ⚠ The arm that makes the repair worth having: a recovered table is one
+       the rest of this module can still reason about, not merely one that
+       parsed. The watcher is row two; the corrupted row is a bystander. */
+    const trees = devServerTrees(read.rows);
+    expect(trees.map((tree) => tree.rootPid)).toEqual([14660]);
+    expect(trees[0]!.watched).toBe(true);
+  });
+
+  it("does not call a clean document repaired", () => {
+    const clean = JSON.stringify([
+      { ProcessId: 7, ParentProcessId: 1, Name: "node.exe", CreationDate: "/Date(1787000000000)/", CommandLine: "x" },
+    ]);
+    const read = processRowsFromJson(clean);
+    expect(read.kind).toBe("read");
+    if (read.kind !== "read") return;
+    /* The flag drives an exit code and a warning in the listing, so a false
+       positive teaches an operator to ignore both. */
+    expect(read.repaired).toBe(false);
+    expect(read.rows).toHaveLength(1);
+  });
+
+  it("REFUSES a document that is wrong for any other reason, naming the first error", () => {
+    const read = processRowsFromJson("{ \"ProcessId\": ");
+    expect(read.kind).toBe("refused");
+    if (read.kind !== "refused") return;
+    /* ⚠ Refused, never a short table: see the arm above. And the message is the
+       FIRST parse's, because the retry's complaint is about text this module
+       rewrote rather than text PowerShell sent. */
+    expect(read.reason).toMatch(/not readable JSON/);
+    expect(read.reason).toMatch(/not #1671's cp437 transport defect/);
+  });
+
+  it("reads PowerShell's own shapes: one bare object, and no output at all", () => {
+    const single = processRowsFromJson(
+      JSON.stringify({ ProcessId: 9, ParentProcessId: 1, Name: "node.exe", CreationDate: "/Date(1787000000000)/", CommandLine: "y" }),
+    );
+    expect(single.kind === "read" && single.rows).toHaveLength(1);
+    /* `ConvertTo-Json` unwraps a one-row table into an object, which is why
+       `Array.isArray` is asked before mapping. */
+    const empty = processRowsFromJson("   \r\n  ");
+    expect(empty.kind === "read" && empty.rows).toEqual([]);
+    expect(empty.kind === "read" && empty.repaired).toBe(false);
+  });
+});
+
+describe("⚠ the escaper is surgical, because whitespace between tokens is legal (#1671)", () => {
+  it("leaves the newlines and tabs PowerShell pretty-prints BETWEEN tokens alone", () => {
+    const pretty = "[\r\n\t{\r\n\t\t\"a\":  1\r\n\t}\r\n]";
+    /* A blanket escape of every control character would corrupt the document
+       it was trying to rescue — the structure is made of them. */
+    expect(escapeControlCharactersInJsonStrings(pretty)).toBe(pretty);
+  });
+
+  it("escapes a control character inside a string and nothing else", () => {
+    expect(escapeControlCharactersInJsonStrings("{\"k\":\"a\u001ab\"}")).toBe("{\"k\":\"a\\u001ab\"}");
+    expect(escapeControlCharactersInJsonStrings("{\"k\":\"a\u0007b\"}")).toBe("{\"k\":\"a\\u0007b\"}");
+  });
+
+  it("is not derailed by an escaped quote or a trailing backslash inside a string", () => {
+    /* A Windows command line ends in `\` more often than anywhere else, and a
+       reader that mistook `\\"` for the end of a string would escape the whole
+       rest of the document. Both shapes, with a control char after them. */
+    const escapedQuote = "{\"k\":\"he said \\\" then \u001a\"}";
+    expect(JSON.parse(escapeControlCharactersInJsonStrings(escapedQuote)).k).toBe("he said \" then \u001a");
+    const trailingBackslash = "{\"k\":\"C:\\\\dir\\\\\",\"j\":\"\u001a\"}";
+    expect(JSON.parse(escapeControlCharactersInJsonStrings(trailingBackslash)).j).toBe("\u001a");
+  });
+
+  it("leaves a document holding no control character byte-identical", () => {
+    const clean = "{\"k\":\"plain\",\"n\":12}";
+    expect(escapeControlCharactersInJsonStrings(clean)).toBe(clean);
+  });
+});
+
+describe("⚠ the query that keeps the parse alive, asserted at the wire (#1671)", () => {
+  it("forces the child's output encoding to UTF-8 before it prints anything", () => {
+    /* ⚠ Invariant 5: the contract is proven on the outgoing command, not on a
+       constant near it. Dropping this assignment is the regression, and it
+       presents as a transient crash in whichever shift is unlucky. */
+    expect(PROCESS_TABLE_QUERY).toContain("[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false);");
+    expect(PROCESS_TABLE_QUERY.indexOf("OutputEncoding"))
+      .toBeLessThan(PROCESS_TABLE_QUERY.indexOf("ConvertTo-Json"));
+  });
+
+  it("still reads the WHOLE table and still projects the five fields the walk needs", () => {
+    /* `-Filter "Name='node.exe'"` is the #658 defect: the ancestry walk needs
+       the `cmd.exe` hops, so the filter must stay off. */
+    expect(PROCESS_TABLE_QUERY).toContain("Get-CimInstance Win32_Process");
+    expect(PROCESS_TABLE_QUERY).not.toContain("-Filter");
+    for (const field of ["ProcessId", "ParentProcessId", "Name", "CreationDate", "CommandLine"]) {
+      expect(PROCESS_TABLE_QUERY).toContain(field);
+    }
+  });
+
+  it("asks for no control-character stripping, because that was the wrong fix", () => {
+    /* ⚠ #1671's card proposed `-replace '[\x00-\x1F]',' '` on the command line.
+       It cannot work — the byte does not exist until the ENCODER runs, after
+       `ConvertTo-Json` — and it would also throw away a genuine control
+       character the table really held. Pinned so it is not re-added. */
+    expect(PROCESS_TABLE_QUERY).not.toMatch(/x00/);
+    expect(PROCESS_TABLE_QUERY).not.toMatch(/-replace/);
   });
 });
