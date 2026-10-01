@@ -1,7 +1,7 @@
 {
-  "edition": 606,
-  "updatedAt": "2026-10-01T20:20:00.000Z",
-  "shift": "Night shift, 05:30: the last piece of the Stripe checkout card is built and live. Until tonight, when somebody subscribed or changed plan, Drape worked out the price itself and told Stripe what to charge. From now it asks Stripe for the price you set up, by name, and charges that. Nothing anybody pays changed by a cent — I checked all fourteen of your plan prices in Stripe before I started, and every one of them already matched what the app works out, which is what last night's whole-dollar fix did. What it buys you is that your Stripe account is now the one place a price lives, instead of a second copy of it. If a price in Stripe ever stops matching what the page says, the purchase stops and tells us which one — rather than quietly charging a number nobody saw. If a price is missing, the same thing: it stops, nothing is charged, and the person gets a plain sentence saying so and that it is on us. I wrote that sentence myself, because the one it would otherwise have used said “check your plan before trying again”, and nothing has been touched when this happens, so that would have sent somebody looking for a change that never happened. One thing is now waiting on you, and it is on your list below: the three credit top-up packs in Stripe charge the right money but are named with a tenth of the credits. I went and read your Stripe account again to be sure, and scanned every top-up price rather than only the ones the plan named — there are three, and those are them. Last, the one honest gap: everything I read was your test account. Whether the live one has the same fourteen prices is yours or the relay's to check, it is written on the go-live card with the list, and it matters more today than it did yesterday — because from tonight a missing live price means nobody can subscribe until it is added. Nobody is on a paid plan right now, so there is time to do it calmly. — and you answered that one while I was still writing this: RELABEL. It is recorded on the card and added to the go-live list, with the three names and amounts written out, to be done for your test and live accounts in the same sitting so they cannot drift apart. Nothing is waiting on you tonight.",
+  "edition": 607,
+  "updatedAt": "2026-10-01T21:55:00.000Z",
+  "shift": "Night shift, 07:14: Add credits was telling people a price that was not the price. Open it on a subscription and for the first moment the big figure read $0.00 due today — I drove it on a real test account in both themes, and the number that replaced it a beat later was $852.33. Nobody was ever charged the wrong amount; the charge was always the real one. What was wrong is that we stated a price before we had been told it, and zero is the most misleading thing we could have said. It now shows a dash in the same spot until the real figure arrives, so nothing on the screen jumps when it lands. While driving it I found the same fault one step over, which the card had not spotted: if you are not on a plan yet, the button itself read Add credits · $0.00 and looked ready to press before the prices had even loaded. That is fixed in the same change, and the button now refuses to name a price it has not been given. Then I checked everywhere else in the app for the same habit and found four more — two of them on buttons you press to spend credits, the Sign and Refine prices on a casting sheet and the Refresh buttons in the versions dialog, which all read 0 credits for a moment — plus your own plan price in settings, which reads as costing nothing for that same beat. Those are written up as their own card with the exact places, and each one is now listed inside the test that guards this, so repairing one and forgetting to tidy up fails loudly rather than quietly. Nothing here is waiting on you: the change touches money, so it waits for the relay to read it before it goes live.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -9177,6 +9177,13 @@
       "status": "merged",
       "prNumber": 1720,
       "note": "Merged 06aa189c; live on production, uptime 12.9 s. Bullet 1 of #1605 — the card's last."
+    },
+    {
+      "id": "duetoday-held-1725",
+      "title": "Add credits no longer says $0.00 for a charge it has not been told (#1725)",
+      "status": "in-review",
+      "prNumber": 1729,
+      "note": "Held for the relay — money surface and customer-visible. Frames both themes on the PR."
     }
   ],
   "problems": [
@@ -9239,9 +9246,16 @@
     {
       "id": "addcredits-zero-balance-1703",
       "severity": "warning",
-      "state": "open",
+      "state": "resolved",
       "title": "Add credits says you have 0 credits for the first second, when you have 3,688 (#1703)",
       "detail": "Open Add credits and the line under the heading reads “0 credits on the balance today.” — while the chip at the top of the same screen says 3,688 credits. About a second later the sentence is replaced by the real one and the zero is gone.\n\nIt happens because the screen prints a zero while it is still waiting for the answer, instead of waiting or showing nothing. Measured on a real account in both themes: the zero is there at 0.7 seconds and gone by 5 seconds.\n\nWorth your eye only because of where it is — the one screen whose whole job is to talk about your balance, telling a paying customer it is empty. It is NOT caused by the pricing work and it does not hold the release: the same line has behaved this way for as long as the screen has existed, and the pricing change only routed it through the new display rule. Filed as #1703 with the cause named."
+    },
+    {
+      "id": "zero-price-siblings-1727",
+      "severity": "warning",
+      "state": "open",
+      "title": "Four more places show a price of zero before the price is known — two on buttons you press to spend credits (#1727)",
+      "detail": "Found by sweeping for the same fault I fixed on Add credits tonight, so these are measured rather than guessed.\n\nOn a casting sheet, the Sign button and the Refine button each say what they will cost. For the first moment, before the sheet's settings answer, both read 0 credits. In the versions dialog the Refresh all and Preview buttons do the same thing. And in settings, your own plan price reads as costing nothing for that same beat.\n\nNobody is charged the wrong amount — the real figure lands a moment later and the charge is always the real one. What is wrong is the same thing as tonight's fix: we state a price before we have been told it, and zero is the worst possible guess.\n\nIt is one card, #1727, because it is one habit. Each place is already written into the test that guards tonight's fix, so none of them can be quietly forgotten."
     }
   ],
   "acknowledgedReplyIds": [
