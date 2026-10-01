@@ -1,7 +1,7 @@
 {
-  "edition": 603,
-  "updatedAt": "2026-10-01T15:05:00.000Z",
-  "shift": "Night shift, 00:29: both halves of the price work that were waiting on a review are answered, so the release is one job away. The price table had a note left in the code still saying a Sign costs 450 credits — there turned out to be eight of those across four files, including the note sitting on the price itself, so anyone looking up what a Sign costs was told the old number. All eight are corrected, the checks are green, and the wider habit is written down as its own job (#1702): 69 notes across the code name a price that has since changed, and most of them are correct history rather than mistakes, so a machine check is the answer rather than 69 hand edits. For the display work I took twelve pictures across both the light and dark themes — your billing panel, usage, Add credits, Change plan, the account menu and the casting sheet. They all read one scale: 3,688 credits beside a 40,000-a-month allowance, 9% left, and the plan ladder giving more credits per dollar at every step up. One thing in last night's review I read the other way, and said so with measurements rather than an opinion: it called one dark-theme picture a light one, and the actual pixels in that file are dark, including the part being tested — I re-took it anyway so there is nothing left to argue about. The pictures also found one real fault: open Add credits and for about a second it tells you that you have 0 credits when you have 3,688. That is filed (#1703), it is not caused by the pricing work, and it is not holding anything up.",
+  "edition": 604,
+  "updatedAt": "2026-10-01T16:40:00.000Z",
+  "shift": "Night shift, 01:58: the last piece of the new pricing is built, so all four parts of it are now finished and waiting together. This was the plan amounts — the credits each paid plan gives you every month. Slice one stopped and asked you a question rather than building it, because the figures in the approved proposal would have made three plans worse value per dollar than the plan below them, and you replaced the ladder instead of the check. That ladder is now in the code: Starter 14,000 a month, Pro 36,000, Studio 86,000, Business 470,000, Scale 2,750,000, Enterprise 8,700,000 and the hidden top rung 28,000,000, with Starter cut on your word that no paying customer is on a plan yet. No price moved. Every rung now buys more credits per dollar than the one beneath it, on monthly billing and on yearly — and rather than claim that, I broke the check on purpose twice to be certain it was really watching these numbers: moving one plan a single credit off the display scale trips one alarm and leaves the value check green, and moving a plan below the one under it trips three alarms across two files and leaves the first one green. One of those three is the yearly check, so the promise is proved on annual billing too instead of being argued. Eleven test files that read the plan table are green, 250 tests, and the full pre-flight run is green at 7,693. Two wrong numbers turned up in passing, both of them a figure written in a note beside the table instead of read from it — one said the display multiplier was fifty when it is five, which would have had anyone trusting it working out every credit figure on that screen ten times too small, and one was a spending figure typed into a test that the new Business amount no longer covers, so the app gave the right answer and the test failed on the stale number. Both fixed. What is still yours on this: the existing free accounts need raising to 2,700 and the live Stripe figures need checking against the table, both on the go-live list. Nothing needs a reply from you tonight.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -22,7 +22,7 @@
           "title": "The price table: Roll 240 · Follow 320 · Sign 1,700 · Refine 350 · Try again 350, in one place, with one free retry per unchecked view (#1601)"
         },
         {
-          "state": "waiting",
+          "state": "in-progress",
           "title": "Plan grants and the free grant: the new monthly amounts, 2,700 credits once for free, and every existing free account raised to it (#1602)"
         },
         {
@@ -9113,6 +9113,27 @@
       "note": "Money surface: held for your relay's hand verdict, and it merges as part of the one pricing release rather than on its own.",
       "status": "in-review",
       "prNumber": 1700
+    },
+    {
+      "id": "credit-display-client-1600",
+      "title": "Every credit number you see goes through the one display helper (#1600, the first pricing card)",
+      "status": "in-review",
+      "prNumber": 1697,
+      "note": "Money surface: held for your relay’s hand verdict, and it merges as part of the one pricing release rather than on its own."
+    },
+    {
+      "id": "free-grant-1602-slice1",
+      "title": "A new account gets 2,700 credits once, from one place in the code (#1602, slice one)",
+      "status": "in-review",
+      "prNumber": 1682,
+      "note": "Sound on review and held only so it cannot ship before the new prices — on today’s prices that grant would buy 84 Rolls instead of 4."
+    },
+    {
+      "id": "plan-ladder-1602-slice2",
+      "title": "The seven paid plans take your adopted ladder, every rung better value than the one below (#1602, slice two)",
+      "status": "in-review",
+      "prNumber": 1704,
+      "note": "Money surface: held for your relay’s hand verdict. The last of the four parts of the pricing release; no price moved and nothing a customer sees changes until all four land together."
     }
   ],
   "problems": [
