@@ -30,9 +30,11 @@ import {
   listenersOutsideEveryTree,
   normaliseTreePath,
   portsOfTree,
+  processRowsFromJson,
   rootsStartedAfter,
   pidsNamed,
   rootsToKill,
+  PROCESS_TABLE_QUERY,
   type ProcessRow,
 } from "./lib/devServerTrees.mts";
 import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
@@ -47,37 +49,26 @@ function powershell(command: string): string {
 /**
  * EVERY process on the machine, as rows this module can reason about.
  *
- * ⚠ **Not `-Filter "Name='node.exe'"`, and that is the #658 fix.** `pnpm dev`
- * starts its watcher through a `cmd.exe`, so a node-only table loses the link
- * between the two halves of one server and reports each as a tree of its own.
- * The ancestry walk needs the shells, so the filter comes off; a row whose
- * command line is unreadable (another user's, a system process) still carries
- * its pid and parent, which is all the walk asks of it.
+ * ⚠ **The query and the reading of it both live in the lib now (#1671)** — the
+ * query so that the UTF-8 assignment which keeps this parse alive is asserted
+ * at the wire, and the reading so that it can be driven over synthetic output
+ * without needing a Windows machine to produce the condition. Read that
+ * module's header for what `→` in anybody's command line used to do to this
+ * script.
+ *
+ * ⚠ **A refusal exits rather than returning a short table.** The ancestry walk
+ * hops through shells, so a missing row loses a tree or invents one, and this
+ * script's whole job is to not be wrong about what is running (#783).
  */
+let TRANSPORT_REPAIRED = false;
 function processTable(): ProcessRow[] {
-  const raw = powershell(
-    "Get-CimInstance Win32_Process "
-    + "| Select-Object ProcessId,ParentProcessId,Name,CreationDate,CommandLine | ConvertTo-Json -Depth 3",
-  ).trim();
-  if (!raw) return [];
-  const parsed = JSON.parse(raw);
-  const rows = Array.isArray(parsed) ? parsed : [parsed];
-  return rows
-    .map((row: Record<string, unknown>) => ({
-      pid: Number(row.ProcessId),
-      parentPid: Number(row.ParentProcessId),
-      name: typeof row.Name === "string" ? row.Name : "",
-      /* PowerShell's JSON renders a CIM date as `/Date(1787…)/`; anything else
-         is passed to Date as written rather than guessed at. */
-      startedAt: new Date(
-        typeof row.CreationDate === "string" && /\/Date\((\d+)/.test(row.CreationDate)
-          ? Number(/\/Date\((\d+)/.exec(row.CreationDate)![1])
-          : String(row.CreationDate),
-      ),
-      /* Empty, never the string "null": a process whose command line this
-         account cannot read is a hop in the walk, not a candidate watcher. */
-      commandLine: typeof row.CommandLine === "string" ? row.CommandLine : "",
-    }));
+  const read = processRowsFromJson(powershell(PROCESS_TABLE_QUERY));
+  if (read.kind === "refused") {
+    console.error(`\nREFUSING:\n${read.reason}`);
+    process.exit(1);
+  }
+  if (read.repaired) TRANSPORT_REPAIRED = true;
+  return [...read.rows];
 }
 
 /** Which port a pid is listening on, when it is listening on one. */
@@ -272,14 +263,42 @@ const sayWorktreesUnread = () => {
   console.log("  having lost its worktree. That limb is OFF for this run, not answered in the negative.");
 };
 
+/**
+ * ⚠ SAY WHEN THE TABLE HAD TO BE REPAIRED TO BE READ AT ALL (#1671).
+ *
+ * The repair recovers every row, so the listing above is complete — but it only
+ * fires when a raw control byte reached the text, which means the UTF-8
+ * assignment in `PROCESS_TABLE_QUERY` did not take. In that run every OTHER
+ * non-ASCII character in every command line is mangled too, silently, and
+ * `launchDirectoryOf` reads a PATH out of those lines: a tree could read as
+ * `unknown` and so never ABANDONED. Same asymmetry as the two limbs above.
+ */
+const sayTransportRepaired = () => {
+  if (!TRANSPORT_REPAIRED) return;
+  console.log("\n⚠ the process table arrived with raw control characters in it and was REPAIRED to be read.");
+  console.log("  Every row above is here, but the encoding fix did not hold, so other characters in these");
+  console.log("  command lines may be mangled — a launch directory read off one is not to be trusted today.");
+};
+
+/**
+ * Every road out says all three things and then carries the worst of them in
+ * its exit code, so a caller that only reads codes still learns the answer was
+ * incomplete. ⚠ It RETURNS the code rather than exiting: `scriptExitDiscipline`
+ * wants a literal `process.exit(` as this file's last top-level statement.
+ */
+const codeFor = (found: ReturnType<typeof listenersOutsideEveryTree>) => {
+  sayUnplaced(found);
+  sayWorktreesUnread();
+  sayTransportRepaired();
+  return found.length === 0 && !TRANSPORT_REPAIRED ? 0 : 2;
+};
+
 if (trees.length === 0) {
   const found = listenersOutsideEveryTree(trees, ports);
   console.log(found.length === 0
     ? "no dev server is running on this machine."
     : "this reader sees no dev server tree on this machine — and that is contradicted below.");
-  sayUnplaced(found);
-  sayWorktreesUnread();
-  process.exit(found.length === 0 ? 0 : 2);
+  process.exit(codeFor(found));
 }
 
 console.log(`${trees.length} dev server tree(s), oldest first:`);
@@ -293,9 +312,7 @@ const since = ARGS.value("since");
 const kill = ARGS.value("kill");
 if (since === null && kill === null) {
   const found = listenersOutsideEveryTree(trees, ports);
-  sayUnplaced(found);
-  sayWorktreesUnread();
-  process.exit(found.length === 0 ? 0 : 2);
+  process.exit(codeFor(found));
 }
 
 let targets: number[];
@@ -310,9 +327,7 @@ if (since !== null) {
        reach it here too — "nothing to kill" is the same reassuring sentence in
        different words. */
     const found = listenersOutsideEveryTree(trees, ports);
-    sayUnplaced(found);
-    sayWorktreesUnread();
-    process.exit(found.length === 0 ? 0 : 2);
+    process.exit(codeFor(found));
   }
   targets = mine.map((tree) => tree.rootPid);
 } else {
@@ -358,6 +373,4 @@ const portsNow = portsByPid();
 console.log(`\n${left.length} dev server tree(s) left:`);
 for (const tree of left) console.log(describe(tree, portsNow));
 const stillListening = listenersOutsideEveryTree(left, portsNow);
-sayUnplaced(stillListening);
-sayWorktreesUnread();
-process.exit(stillListening.length === 0 ? 0 : 2);
+process.exit(codeFor(stillListening));
