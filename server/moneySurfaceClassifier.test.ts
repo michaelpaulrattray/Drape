@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
 import { readListedSource } from "./testing/listedSource";
-import { codeOnly } from "./testing/withoutComments";
+import { codeOnly, withoutComments } from "./testing/withoutComments";
 
 /* This suite reads every module the Atlas lists (the direct-balance guard at the
    foot of the file), so it carries the class floor rather than the 5 s default. */
@@ -874,5 +874,307 @@ describe("the direct-balance reading — a module that writes the ledger itself 
         + "MONEY_PATHS by name — or, if it genuinely moves no customer money, say so here with the "
         + "reason and re-measure the 60-PR rate before widening in bulk.",
     ).toEqual([]);
+  });
+});
+
+/**
+ * THE SIXTH POSITION IN THE SENTENCE — where a staff money action is
+ * AUTHORISED (#1719).
+ *
+ * #1662 added the module that WRITES a customer's balance on a staff decision
+ * (`server/db/admin.ts`, `adjustUserCredits`). The road that AUTHORISES that
+ * write was in nobody's population: the route, the two gates it asks before the
+ * compare-and-swap, the dispatch map that decides the approval executes at all,
+ * and the mapping that decides what the executor is handed.
+ *
+ * `money-surfaces.sh` carries the whole measurement, the two readers the law-7
+ * sweep used, and the six exclusions by name with their reasons.
+ */
+describe("the authorisation reading — where a staff money action is APPROVED (#1719)", () => {
+  it.each([
+    ["shared/changeRequestApproval.ts", "declares CREDIT_AMOUNT as the approval requirement"],
+    ["server/routes/admin/changeRequests.ts", "the route that authorises, and asks both gates"],
+    ["server/lib/adminActions/approvalStateBlocker.ts", "the second gate — HAS_BALANCE (#991)"],
+    ["server/lib/adminActions/approvalExecution.ts", "decides what the executor is handed"],
+    ["server/lib/adminActions/changeRequestActions.ts", "decides whether the primitive is called"],
+    ["shared/changeRequestLabels.ts", "the dispatch map, and the definition of sensitive"],
+  ])("%s is a money diff (%s)", (file) => {
+    expect(pathRe.test(file)).toBe(true);
+  });
+
+  /**
+   * THE POSITIVE CONTROL, and it is the card's own: a diff that removes
+   * `CREDIT_AMOUNT` from `add_credits` lets a staff member approve a credit
+   * grant with NO AMOUNT recorded on the request. The lines are real, copied
+   * from `shared/changeRequestApproval.ts`.
+   *
+   * ⚠ THE SYMBOL HALF IS ASSERTED FALSE BESIDE IT — the shape every entry in
+   * this file since the price reading has used, and the only shape that proves
+   * the new entry is doing the work rather than riding an older reading.
+   */
+  it("a diff that drops the amount requirement is a money diff, and the symbol half is blind to it", () => {
+    const diffLines = [
+      "-  add_credits: [CREDIT_AMOUNT],",
+      "-  refund_credits: [CREDIT_AMOUNT],",
+      "+  add_credits: [],",
+      "+  refund_credits: [],",
+    ];
+    expect(pathRe.test("shared/changeRequestApproval.ts")).toBe(true);
+    expect(
+      diffLines.some((line) => symbolRe.test(line)),
+      "dropping the approval requirement names no credit primitive — if this ever "
+        + "becomes true the arm has stopped proving what it claims",
+    ).toBe(false);
+  });
+
+  /**
+   * AND THE DISPATCH MAP, where the symbol half's coverage turned out to be an
+   * ACCIDENT OF SPELLING — measured here rather than assumed, because the first
+   * version of this arm claimed blindness and went red.
+   *
+   * `CHANGE_REQUEST_ACTION_BY_TYPE` routes `add_credits` to `"cr_addCredits"`,
+   * and that string CONTAINS `addCredits`, so `git diff -G` fires on a diff that
+   * DELETES the row. It does not fire on:
+   *
+   *  - **re-pointing that same row** (`"cr_addCredits"` → `"cr_refundCredits"`),
+   *    which is the worse of the two defects: a staff grant runs the refund
+   *    executor instead, and the panel's warning still reads correctly.
+   *  - **anything at all on the `refund_credits` row**, whose action name
+   *    contains none of the five symbols.
+   *
+   * So the file's own warning — the symbol reading matches a SUBSTRING, PR
+   * #924's hit being the fixture string `cr_addCredits` — is what was covering
+   * this road, for one of its two rows, by luck. Rename the executor action to
+   * `cr_grantCredits` and that coverage disappears with nothing going red. The
+   * path entry is what makes it deliberate.
+   */
+  it("the symbol half covers the dispatch map's add row by SUBSTRING LUCK, and nothing else on it", () => {
+    expect(pathRe.test("shared/changeRequestLabels.ts")).toBe(true);
+    /* The accident, asserted so that losing it is visible rather than silent. */
+    expect(
+      symbolRe.test('-  add_credits: "cr_addCredits",'),
+      "the executor action no longer contains a credit primitive as a substring — the "
+        + "symbol half has stopped covering even this row, and the path entry is now the "
+        + "only reading. Correct, but re-read this arm's reasoning.",
+    ).toBe(true);
+    /* And the three shapes it cannot see, which is what the path entry is for. */
+    for (const line of [
+      '+  add_credits: "cr_refundCredits",',
+      '-  refund_credits: "cr_refundCredits",',
+      '+  refund_credits: "cr_stripeRefund",',
+    ]) {
+      expect(symbolRe.test(line), `the symbol half unexpectedly sees: ${line}`).toBe(false);
+    }
+  });
+
+  /**
+   * THE OTHER FOUR MODULES' OWN POSITIVE CONTROLS, in one arm: the real decision
+   * lines, none of which names a credit primitive. The path entries are the only
+   * reading that sees any of them.
+   */
+  it("the gates and the params mapping are money diffs the symbol half cannot see", () => {
+    for (const [file, line] of [
+      ["server/lib/adminActions/approvalStateBlocker.ts", "-  add_credits: [HAS_BALANCE],"],
+      [
+        "server/lib/adminActions/approvalExecution.ts",
+        "-  if (request.creditAmount) params.creditAmount = request.creditAmount;",
+      ],
+      ["server/routes/admin/changeRequests.ts", "-        const blocker = changeRequestApprovalBlocker(request);"],
+    ] as const) {
+      expect(pathRe.test(file)).toBe(true);
+      expect(symbolRe.test(line), `the symbol half unexpectedly sees: ${line}`).toBe(false);
+    }
+  });
+
+  /**
+   * THE NEGATIVE CONTROLS, and they are the MEASURED candidates rather than
+   * invented ones: every one of these was returned by the law-7 sweep's wide
+   * reader and deliberately not added, with its reason in `money-surfaces.sh`.
+   * An arm over a plausible-sounding file nobody measured proves nothing.
+   */
+  it.each([
+    /* The CREATION road, not the authorisation road — and the whole moderator
+       surface would come with it. */
+    "server/routes/moderator.ts",
+    /* Keys by type to choose an icon, a colour and the modal's copy, and DERIVES
+       SENSITIVE_TYPES from the shared map. Authorises nothing. */
+    "client/src/features/admin/ChangeRequestConstants.tsx",
+    /* Reads audit rows for the alerts feed. */
+    "server/db/adminOverviewQueries.ts",
+    /* Audit action NAMES. */
+    "shared/auditActions.ts",
+    "shared/auditActionCategories.ts",
+    /* A comment naming the two refund roads. */
+    "shared/productEventCatalogue.ts",
+    /* The barrel the route imports the dispatch map THROUGH — it re-exports and
+       decides nothing, and NAMED FILES NEVER DIRECTORIES is this file's rule. */
+    "server/lib/adminActions/index.ts",
+  ])("still leaves %s alone", (file) => {
+    expect(pathRe.test(file)).toBe(false);
+  });
+
+  /**
+   * ⚠ THE ENTRIES STILL NAME THE AUTHORITIES — the #1711 arm's shape, pointed at
+   * six modules instead of one. A path list is the second list working law 4
+   * warns about, so each entry is held to the declaration that earned it: an
+   * entry whose subject MOVED is an entry guarding nothing, and it would pass a
+   * `pathRe.test()` arm forever.
+   */
+  it("each module it names still carries the decision it was added for", () => {
+    const approval = codeOnly(read("shared/changeRequestApproval.ts"));
+    expect(approval, "changeRequestApproval.ts no longer declares the requirements map")
+      .toMatch(/export const CHANGE_REQUEST_APPROVAL_REQUIREMENTS/);
+    expect(approval, "add_credits no longer requires an amount — re-read this entry")
+      .toMatch(/add_credits:\s*\[CREDIT_AMOUNT\]/);
+    expect(approval, "refund_credits no longer requires an amount — re-read this entry")
+      .toMatch(/refund_credits:\s*\[CREDIT_AMOUNT\]/);
+
+    /* ⚠ `withoutComments`, NOT `codeOnly`, and the difference is load-bearing:
+       `codeOnly` drops a literal's CONTENTS by design, so the map reads
+       `add_credits: ,` through it and an assertion about the action NAME can
+       only fail. Measured — this arm went red on exactly that before it was
+       re-pointed. Comments are stripped by both, which is all this needs. */
+    const labels = withoutComments(read("shared/changeRequestLabels.ts"));
+    expect(labels, "changeRequestLabels.ts no longer declares the dispatch map")
+      .toMatch(/export const CHANGE_REQUEST_ACTION_BY_TYPE/);
+    expect(labels, "the dispatch map no longer routes add_credits")
+      .toMatch(/add_credits:\s*"cr_addCredits"/);
+
+    const state = codeOnly(read("server/lib/adminActions/approvalStateBlocker.ts"));
+    expect(state, "approvalStateBlocker.ts no longer gates the two credit types")
+      .toMatch(/add_credits:\s*\[HAS_BALANCE\]/);
+
+    const route = codeOnly(read("server/routes/admin/changeRequests.ts"));
+    expect(route, "the route no longer asks the approval blocker — this entry has moved")
+      .toMatch(/changeRequestApprovalBlocker\(request\)/);
+    expect(route, "the route no longer dispatches through CHANGE_REQUEST_ACTION_BY_TYPE")
+      .toMatch(/CHANGE_REQUEST_ACTION_BY_TYPE/);
+
+    const params = codeOnly(read("server/lib/adminActions/approvalExecution.ts"));
+    expect(params, "approvalExecution.ts no longer decides the amount the executor is handed")
+      .toMatch(/params\.creditAmount\s*=\s*request\.creditAmount/);
+
+    /* `withoutComments` again, and for the same reason as the dispatch map: the
+       executor is selected by a STRING case label, which `codeOnly` empties. */
+    const executors = withoutComments(read("server/lib/adminActions/changeRequestActions.ts"));
+    expect(executors, "the staff credit executors have moved out of changeRequestActions.ts")
+      .toMatch(/case "cr_addCredits"/);
+    expect(executors, "the refund executor has moved out of changeRequestActions.ts")
+      .toMatch(/case "cr_refundCredits"/);
+  });
+
+  /*
+    ⚠ THE DRIFT GUARD, DERIVED — the fourth of its kind in this file, after the
+    price modules, the refund adjudicators and the direct writers.
+
+    THE READER IS THE NARROW ONE OF THE SWEEP'S TWO, and `money-surfaces.sh`
+    records why the wide one is not shipped: naming a money-moving
+    change-request type returns TWELVE modules, half of them audit-action names
+    and catalogue prose, and a guard built on that is noise a shift learns to
+    ignore. This reads for a map KEYED BY one of those types — a DECISION TABLE
+    rather than a mention — and returns FOUR across all three roots.
+
+    ⚠ THE POPULATION IS THE ATLAS'S, CLIENT INCLUDED, and the client half is the
+    half that matters: the one module the reader returns that is NOT on the list
+    is a client file, and a server-only population would hide its own false
+    positive — which is the thing that tells you the reader is reading.
+
+    ⚠ COMMENTS ARE STRIPPED. No production module carries the key shape inside a
+    comment today, so unlike #1662's docblock specimen this cannot be driven on a
+    tree file; the arm below drives the predicate over a CONSTRUCTED source
+    instead and says so, rather than claiming a measured control it does not have.
+  */
+  const TYPE_KEYED_DECISION = /^[ \t]*(?:add_credits|refund_credits|stripe_refund)[ \t]*:/m;
+
+  /**
+   * The one module the reader returns that is deliberately off the list, with
+   * the reason that will be read when this arm next fails. An exclusion map
+   * rather than a lowered floor: a new entry here is a decision somebody wrote
+   * down, and `money-surfaces.sh` carries the same reason at length.
+   */
+  const NOT_AUTHORISATION: Readonly<Record<string, string>> = {
+    "client/src/features/admin/ChangeRequestConstants.tsx":
+      "keys by type for an icon, a colour and the modal's copy; derives SENSITIVE_TYPES "
+      + "from the shared map rather than declaring one. It authorises nothing.",
+  };
+
+  function typeKeyedDeciders(): string[] {
+    const found: string[] = [];
+    for (const module of atlasModulesUnder(/^(server|shared|client\/src)\//)) {
+      /* A listed path can be gone from a shared working tree between the Atlas
+         being written and this read; a vanished file is skipped, never empty. */
+      const source = readListedSource(path.join(repoRoot, module));
+      if (source === null) continue;
+      if (TYPE_KEYED_DECISION.test(codeOnly(source))) found.push(module);
+    }
+    return found.sort();
+  }
+
+  it("the reader finds the decision tables everybody already agrees about", () => {
+    const found = typeKeyedDeciders();
+    expect(found).toContain("shared/changeRequestApproval.ts");
+    expect(found).toContain("shared/changeRequestLabels.ts");
+    expect(found).toContain("server/lib/adminActions/approvalStateBlocker.ts");
+  });
+
+  it("the reader does not count a module that merely NAMES a type", () => {
+    /* `shared/auditActions.ts` declares `STRIPE_REFUND_ISSUED:
+       "billing.stripe_refund_issued"` — the type name is in both the key and the
+       value as a SUBSTRING, and neither is a key equal to the type. This is the
+       measured specimen that a looser reader would have counted. */
+    const source = readListedSource(path.join(repoRoot, "shared/auditActions.ts"));
+    if (source === null) throw new Error("shared/auditActions.ts is gone — re-aim this control");
+    expect(
+      /stripe_refund/.test(source),
+      "shared/auditActions.ts no longer mentions stripe_refund — this control proves nothing now",
+    ).toBe(true);
+    expect(TYPE_KEYED_DECISION.test(codeOnly(source))).toBe(false);
+    expect(typeKeyedDeciders()).not.toContain("shared/auditActions.ts");
+  });
+
+  it("the reader strips comments, driven on a constructed source", () => {
+    /* ⚠ NOT a docblock: a ` * ` continuation line can never match this reader,
+       which anchors on whitespace alone — the first version of this arm used one
+       and went red for that reason. A commented-out BLOCK is the shape that
+       genuinely would match raw, and is what a reader without stripping counts. */
+    const commentedOut = [
+      "/*",
+      "  The map used to read:",
+      "  add_credits: [CREDIT_AMOUNT],",
+      "*/",
+      "export const NOTHING = 1;",
+    ].join("\n");
+    expect(
+      TYPE_KEYED_DECISION.test(commentedOut),
+      "the raw text must match, or this arm is not testing the stripping",
+    ).toBe(true);
+    expect(TYPE_KEYED_DECISION.test(codeOnly(commentedOut))).toBe(false);
+  });
+
+  it("every module that decides on a money change-request type is read as money", () => {
+    const missing = typeKeyedDeciders()
+      .filter((module) => !pathRe.test(module))
+      .filter((module) => !(module in NOT_AUTHORISATION));
+    expect(
+      missing,
+      "these modules declare a decision table keyed by add_credits / refund_credits / "
+        + `stripe_refund, and a diff touching only them is not read as money: ${missing.join(", ")}. `
+        + "Add each to MONEY_PATHS by name — or, if it decides nothing about whether the money "
+        + "action is authorised or what it moves, add it to NOT_AUTHORISATION above with the "
+        + "reason, and put the same reason in money-surfaces.sh.",
+    ).toEqual([]);
+  });
+
+  it("each stated exclusion is real, still keyed by a type, and genuinely off the list", () => {
+    for (const [module, reason] of Object.entries(NOT_AUTHORISATION)) {
+      expect(reason.length, `${module}'s exclusion carries no reason`).toBeGreaterThan(40);
+      const source = readListedSource(path.join(repoRoot, module));
+      expect(source, `${module} is excluded but is not in the tree — drop the entry`).not.toBeNull();
+      expect(
+        TYPE_KEYED_DECISION.test(codeOnly(source ?? "")),
+        `${module} no longer keys by a change-request type, so excluding it guards nothing`,
+      ).toBe(true);
+      expect(pathRe.test(module), `${module} is both excluded and on the list`).toBe(false);
+    }
   });
 });
