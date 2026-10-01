@@ -13229,6 +13229,10 @@
       "path": "server/ghQueueTransport.test.ts"
     },
     {
+      "id": "test:server/handFindingReader.test.ts",
+      "path": "server/handFindingReader.test.ts"
+    },
+    {
       "id": "test:server/handVerdictReader.test.ts",
       "path": "server/handVerdictReader.test.ts"
     },

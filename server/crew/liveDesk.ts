@@ -122,7 +122,7 @@ export type LiveTestDrive = {
   readonly url: string;
 };
 
-export type LivePullRequestState = "draft" | "held" | "passed" | "gate";
+export type LivePullRequestState = "draft" | "held" | "finding" | "passed" | "gate";
 
 export type LivePullRequest = {
   readonly number: number;
@@ -582,6 +582,11 @@ export function livePullRequestState(
   handVerdict: HandVerdictFreshness = "none",
 ): LivePullRequestState {
   if (item.draft) return "draft";
+  /* ⚠ **A FINDING FIRST (#1673).** The relay read this one and something is
+     wrong; it is the only state on this row that names work somebody owes. It
+     outranks the verdict clause because `handVerdictForPullRequest` has already
+     resolved which hand comment is newer. */
+  if (handVerdict === "finding") return "finding";
   if (handVerdict === "fresh") return "passed";
   if (item.labels.some((label) => HELD_PR_LABELS.includes(label))) return "held";
   return "gate";

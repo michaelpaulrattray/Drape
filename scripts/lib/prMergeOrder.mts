@@ -787,6 +787,25 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
   //    first-round state, not a tail case, and reading it as "no verdict" is
   //    how this tool would have merged past a review by default (#558 review,
   //    finding 1).
+  //    4a-bis. A FINDING IS NOT A VERDICT, AND NO ACKNOWLEDGEMENT ANSWERS ONE
+  //    (#1673). The relay posts two kinds of hand comment — *I read this and it
+  //    is fine*, and *I read this and here is what is wrong*. Until 2026-10-01
+  //    this tool had a word for only the first, so PR #1649's
+  //    `**Fable review — by hand, FINDING … held` read as a PASS and this tool
+  //    would have merged on it. It is placed ABOVE the verdict clause because a
+  //    finding that came after a verdict is the relay changing its mind, and
+  //    `reviewPresence` has already resolved which of the two is newer.
+  if (pr.review === "finding") {
+    return {
+      kind: "stop",
+      reason:
+        "the relay's newest hand comment on this head is a FINDING, not a verdict — it was read " +
+        "and something is wrong. A repair is owed: push the fix, then ask for the verdict. " +
+        "`--acknowledge` does NOT answer a finding (it means \"I read the verdict's findings\", " +
+        "and there is no verdict here). A finding holds an ORDINARY pull request too, whatever " +
+        "triage said about whether this diff earned a look.",
+    };
+  }
   if (pr.review === "verdict") {
     if (pr.acknowledgedAtVerdictCount === null) {
       return {

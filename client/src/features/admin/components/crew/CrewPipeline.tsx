@@ -31,6 +31,11 @@ const STATUS_LABEL: Record<string, string> = {
 const PR_STATE_LABEL: Record<CrewLivePullRequest["state"], string> = {
   draft: "Still being written",
   held: "Waiting for review",
+  /* ⚠ #1673: read, and something is WRONG. It wears the same ink as
+     *Waiting for review* because both are rows that want a person — and it says
+     which person's turn it is, which is the part that was missing for six hours
+     on 2026-10-01 while this row said *Reviewed — merging*. */
+  finding: "Needs a repair",
   /* His desk correction, 2026-09-26: a pull request the relay has already read
      was drawn as *Waiting for review* beside one nobody had looked at. */
   passed: "Reviewed — merging",
@@ -56,7 +61,10 @@ function SnapshotRow({ item }: { item: CrewPipelineItem }) {
 function LiveRow({ pr, now }: { pr: CrewLivePullRequest; now: number }) {
   return (
     <li className="dp-crew__row" data-testid={`crew-pr-${pr.number}`}>
-      <span className={cn("dp-crew__status", pr.state === "held" && "dp-crew__status--wants")}>
+      <span className={cn(
+        "dp-crew__status",
+        (pr.state === "held" || pr.state === "finding") && "dp-crew__status--wants",
+      )}>
         {PR_STATE_LABEL[pr.state]}
       </span>
       <span className="dp-crew__rowmain">
