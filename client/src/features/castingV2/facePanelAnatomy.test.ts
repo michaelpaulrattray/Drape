@@ -288,7 +288,8 @@ describe("the box on the picture is the ask box, at the feature", () => {
       new URL("./components/RefinePanel.tsx", import.meta.url),
       "utf8",
     );
-    expect(refine).toContain("{priceCredits} credits each");
+    /* Routed through the display helper (#1600). */
+    expect(refine).toContain("{formatCredits(displayPrice(priceCredits))} credits each");
   });
 
   it("draws no ring inside the field — the container carries focus", async () => {

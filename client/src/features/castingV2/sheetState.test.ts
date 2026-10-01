@@ -154,7 +154,10 @@ describe("what a cancel says", () => {
       refundRecorded: true,
       stillFinishing: 3,
     });
-    expect(notice).toContain("240 credits back");
+    /* 240 ledger reads 48 (#1600 — a customer sees the ledger at a fifth). The
+       expectation is written as a literal rather than computed from the helper,
+       so a change to the conversion reddens this arm instead of moving with it. */
+    expect(notice).toContain("48 credits back");
     expect(notice).toContain("3 still finishing");
   });
 
@@ -217,8 +220,11 @@ describe("the cancel arc is a state, not an event", () => {
   });
 
   it("finishes on the recorded total, in the one place the money lives", () => {
-    expect(arc(8, 0)).toContain("160 credits back");
-    expect(arc(6, 0)).toContain("120 credits back");
+    /* 160 and 120 ledger read 32 and 24 (#1600). Eight slices at 20 ledger is
+       the roll today; the sentence states what the customer's balance will
+       show, and the two literals are what go red if the conversion moves. */
+    expect(arc(8, 0)).toContain("32 credits back");
+    expect(arc(6, 0)).toContain("24 credits back");
   });
 
   it("NEVER MOVES BACKWARDS across the whole arc", () => {
@@ -271,12 +277,14 @@ describe("the cancel arc is a state, not an event", () => {
       });
 
     // Eight dispatched, none delivered, all expired after the cancel.
-    expect(fromCounts(8, 0, 0)).toContain("160 credits back");
+    /* 160 ledger reads 32 (#1600). */
+    expect(fromCounts(8, 0, 0)).toContain("32 credits back");
     expect(fromCounts(8, 0, 0)).not.toContain("nothing to refund");
     // Mid-arc, five still landing.
     expect(fromCounts(8, 0, 5)).toBe("Cancelled — 3 of 8 refunded · 5 finishing");
     // Two genuinely delivered before the cancel: those are not refunded.
-    expect(fromCounts(8, 2, 0)).toContain("120 credits back");
+    /* Six refundable slices at 20 ledger is 120, which reads 24 (#1600). */
+    expect(fromCounts(8, 2, 0)).toContain("24 credits back");
   });
 
   it("survives a reload with no stored sentence, because it derives", () => {
