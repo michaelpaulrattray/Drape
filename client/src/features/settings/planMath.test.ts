@@ -178,9 +178,22 @@ describe("the four constants and what is derived from them", () => {
 
   it("the annual badge is the arithmetic, not a typed number", () => {
     expect(monthsFree()).toBe(2);
-    /* 12 months at 0.83 = 9.96 months paid; the badge and the price agree. */
-    expect(annualPrice(15_900)).toBe(Math.round(15_900 * 12 * 0.83));
+    /*
+      12 months at 0.83 = 9.96 months paid; the badge and the price agree.
+
+      ⚠ **THE PRICE LINE USED TO READ `Math.round(15_900 * 12 * 0.83)`, WHICH IS
+      THE FUNCTION'S OWN BODY TYPED OUT A SECOND TIME** — and with the rate
+      typed again rather than imported, so it mirrored two things at once. It
+      could only fail if the function stopped matching the line beside it, and
+      it was green on all four rungs where our yearly price disagreed with the
+      one Stripe charges (#1605 bullet 2). The expectation is now Studio's real
+      `klieg_studio_yearly_v2` `unit_amount`; the whole ladder is driven on the
+      server side, in `server/annualBilling.test.ts`.
+    */
+    expect(annualPrice(15_900)).toBe(158_400);
     expect(annualPrice(15_900)).toBeLessThan(15_900 * 12);
+    /* Whole dollars — no price this product shows carries cents. */
+    expect(annualPrice(15_900) % 100).toBe(0);
   });
 });
 
