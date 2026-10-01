@@ -1,7 +1,7 @@
 {
-  "edition": 607,
-  "updatedAt": "2026-10-01T21:55:00.000Z",
-  "shift": "Night shift, 07:14: Add credits was telling people a price that was not the price. Open it on a subscription and for the first moment the big figure read $0.00 due today — I drove it on a real test account in both themes, and the number that replaced it a beat later was $852.33. Nobody was ever charged the wrong amount; the charge was always the real one. What was wrong is that we stated a price before we had been told it, and zero is the most misleading thing we could have said. It now shows a dash in the same spot until the real figure arrives, so nothing on the screen jumps when it lands. While driving it I found the same fault one step over, which the card had not spotted: if you are not on a plan yet, the button itself read Add credits · $0.00 and looked ready to press before the prices had even loaded. That is fixed in the same change, and the button now refuses to name a price it has not been given. Then I checked everywhere else in the app for the same habit and found four more — two of them on buttons you press to spend credits, the Sign and Refine prices on a casting sheet and the Refresh buttons in the versions dialog, which all read 0 credits for a moment — plus your own plan price in settings, which reads as costing nothing for that same beat. Those are written up as their own card with the exact places, and each one is now listed inside the test that guards this, so repairing one and forgetting to tidy up fails loudly rather than quietly. Nothing here is waiting on you: the change touches money, so it waits for the relay to read it before it goes live.",
+  "edition": 608,
+  "updatedAt": "2026-10-01T22:15:00.000Z",
+  "shift": "Night shift, 07:14: Add credits was telling people a price that was not the price, and it is fixed and live. Open it on a subscription and for the first moment the big figure read $0.00 due today — I drove it on a real test account in both themes, and the number that replaced it a beat later was $852.33. Nobody was ever charged the wrong amount; the charge was always the real one. What was wrong is that we stated a price before we had been told it, and zero is the most misleading thing we could have said. It now shows a dash in the same spot until the real figure arrives, so nothing on the screen jumps when it lands. While driving it I found the same fault one step over, which the card had not spotted: if you are not on a plan yet, the button itself read Add credits · $0.00 and looked ready to press before the prices had even loaded. That went in the same change, and the button now refuses to name a price it has not been given. The relay read it, passed it and it is on production. Then I did one more thing that is worth telling you about, because it is the part that nearly got away: the review had noted one corner my new test could not see and judged it harmless, so I went and tried it instead of taking the word for it — and it was not harmless. Undoing one word of the fix brought the whole fault back while every test still passed. That hole is closed too, in a second small change, also live. Then I checked everywhere else in the app for the same habit and found four more — two of them on buttons you press to spend credits, the Sign and Refine prices on a casting sheet and the Refresh buttons in the versions dialog, which all read 0 credits for a moment — plus your own plan price in settings, which reads as costing nothing for that same beat. Those are written up as their own card with the exact places, and each one is listed inside the test that guards this, so repairing one and forgetting to tidy up fails loudly rather than quietly. Nothing here is waiting on you.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -9181,9 +9181,16 @@
     {
       "id": "duetoday-held-1725",
       "title": "Add credits no longer says $0.00 for a charge it has not been told (#1725)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1729,
-      "note": "Held for the relay — money surface and customer-visible. Frames both themes on the PR."
+      "note": "Merged 8cfbe4dd on the relay's PASS; live on production."
+    },
+    {
+      "id": "ternary-branch-1725",
+      "title": "The same guard now holds both halves of the figure, not just the one it could see (#1725)",
+      "status": "merged",
+      "prNumber": 1732,
+      "note": "Merged 70ce8434. Closed the corner the review had judged harmless; it was not."
     }
   ],
   "problems": [
