@@ -35,6 +35,7 @@ import {
 import { generateFullBody, generateRemainingViews } from "./aiService";
 import { recordRefund } from "./atomicCredits";
 import { PublicError, publicErrorMessage } from "../lib/publicError";
+import { displayPrice, formatCredits } from "../../shared/creditDisplay";
 import type { SingleViewAngle } from "./geminiViews";
 import { assertNotArchived } from "./modelGuards";
 import { buildIdentityAnchor } from "./geminiClient";
@@ -645,7 +646,7 @@ export async function executeMintPackage(input: MintPackageInput) {
       { toolKind: "image" }, // the charge pays for generating the missing view images
     );
     if (!deduct.success) {
-      throw new TRPCError({ code: "BAD_REQUEST", message: deduct.error || `Insufficient credits. Need ${totalCost} credits.` });
+      throw new TRPCError({ code: "BAD_REQUEST", message: deduct.error || `Insufficient credits. Need ${formatCredits(displayPrice(totalCost))} credits.` });
     }
     input.onCharged?.(totalCost);
   }

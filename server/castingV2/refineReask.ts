@@ -46,6 +46,7 @@ import {
   type InkPlacement,
 } from "../../shared/inkPlacementVocabulary";
 import { INK_SIDES, type InkSide } from "../../shared/inkReleasedPlacements";
+import { displayPrice, formatCredits } from "../../shared/creditDisplay";
 import { inkAddressPhrase } from "./inkDesignForAsk";
 import { pictureHalfPhrase } from "./sidePhrasing";
 import { facetsOfSlot } from "./referenceSlotCatalogue";
@@ -1384,9 +1385,9 @@ export function sameAgainReask(input: {
       that makes a careful product look careless.
     */
     question: `You already asked for this — "${input.asked}". Want a fresh take of it? `
-      + `The picture you are looking at is replaced · ${input.priceCredits} credits.`,
+      + `The picture you are looking at is replaced · ${formatCredits(displayPrice(input.priceCredits))} credits.`,
     options: [
-      { label: `Yes — a fresh take · ${input.priceCredits} credits`, resolves: input.asked },
+      { label: `Yes — a fresh take · ${formatCredits(displayPrice(input.priceCredits))} credits`, resolves: input.asked },
       { label: "No, leave it", resolves: leaveAsTheyAre(input.pronouns) },
     ],
     /* The version's own words, so answering lands on this question however the

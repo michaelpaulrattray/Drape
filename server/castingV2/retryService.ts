@@ -76,6 +76,7 @@ import { REFUSAL_FAILURE_CLASS, captureRollWords } from "./refusalLoopCapture";
 import { storageReadBytes } from "../storage";
 import { createModuleLogger } from "../logging/logger";
 import { candidateFailureKind, isRetryableFailure } from "../../shared/candidateFailure";
+import { displayPrice, displayRefund, formatCredits } from "../../shared/creditDisplay";
 import type { StatedInk } from "./castingIntent";
 import type { CreativeEngine } from "../providers/types";
 
@@ -381,7 +382,7 @@ export async function retryCandidate(
       operationId,
       error: new TRPCError({
         code: "BAD_REQUEST",
-        message: charge.error || `Not enough credits. Retrying a tile costs ${price} credits.`,
+        message: charge.error || `Not enough credits. Retrying a tile costs ${formatCredits(displayPrice(price))} credits.`,
       }),
       chargedCredits: 0,
       refundedCredits: 0,
@@ -529,7 +530,7 @@ export async function retryCandidate(
   }
   const refundSentence = refundUnrecorded
     ? `The refund could not be recorded — quote operation ${operationId} and support will restore the balance.`
-    : `${refunded} credits were refunded.`;
+    : `${formatCredits(displayRefund(refunded))} credits were refunded.`;
   log.warn(
     { operationId, candidate: candidate.publicId, failureClass: settlement.failureClass ?? "unknown", refunded },
     "[retryService] the retried tile failed again — refunded under the retry's own reference",

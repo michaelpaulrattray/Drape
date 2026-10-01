@@ -43,6 +43,7 @@ import { TRPCError } from "@trpc/server";
 
 import type { ModelAsset } from "../../drizzle/schema";
 import type { CastViewAngle } from "../../shared/boardTypes";
+import { displayPrice, formatCredits } from "../../shared/creditDisplay";
 import { recordRefund } from "../casting/atomicCredits";
 import {
   beginDirectOperation,
@@ -576,7 +577,7 @@ export async function retryCastView(
         operationId,
         error: new TRPCError({
           code: "BAD_REQUEST",
-          message: charge.error || `Not enough credits. Asking for this view again costs ${price} credits.`,
+          message: charge.error || `Not enough credits. Asking for this view again costs ${formatCredits(displayPrice(price))} credits.`,
         }),
         chargedCredits: 0,
         refundedCredits: 0,

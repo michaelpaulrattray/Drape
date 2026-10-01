@@ -26,6 +26,7 @@ import {
   applyPlanChangeSettlement,
 } from "../stripe/planChangeSettlement";
 import { stripeIntervalOf } from "@shared/annualBilling";
+import { displayBalance, formatCredits } from "@shared/creditDisplay";
 import {
   SUBSCRIPTION_PRODUCTS,
   SubscriptionPlan,
@@ -799,8 +800,8 @@ export const billingRouter = router({
             : `You are on ${planName}, billed monthly — the new billing month starts today, and unused time from your year comes off future bills automatically.`
           : quote.isUpgrade
             ? creditSettlement === "pending"
-              ? `Upgraded to ${planName}! Your ${creditAdjustment} bonus credits land as soon as the payment settles.`
-              : `Upgraded to ${planName}! ${creditAdjustment} bonus credits added.`
+              ? `Upgraded to ${planName}! Your ${formatCredits(displayBalance(creditAdjustment))} bonus credits land as soon as the payment settles.`
+              : `Upgraded to ${planName}! ${formatCredits(displayBalance(creditAdjustment))} bonus credits added.`
             : `Downgraded to ${planName}. Unused time on the old price comes back as billing credit, and its unused credits go with it.`;
 
       return {
