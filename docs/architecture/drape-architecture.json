@@ -14324,6 +14324,10 @@
       "path": "server/typecheckOnCommit.test.ts"
     },
     {
+      "id": "test:server/unreadMoneyFigure.test.ts",
+      "path": "server/unreadMoneyFigure.test.ts"
+    },
+    {
       "id": "test:server/unwiringDiffer.test.ts",
       "path": "server/unwiringDiffer.test.ts"
     },
