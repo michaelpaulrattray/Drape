@@ -125,10 +125,15 @@ export function ownPlanFacts(tier: string): {
  * rows are gone — so the same string returning is a site outside the list.
  * `server/stripe/checkoutProductText.test.ts` holds the wire itself.
  *
- * Once checkout resolves prices by `lookup_key` (this card's other three
- * bullets, gated on Stripe objects that #1609 reserves for his hand), Stripe's
- * own product carries the identity line and the DISPLAY credits, and no
- * product text is composed in this repository at all.
+ * ✅ **AND THAT LAST STEP HAPPENED — 2026-10-02, bullet 1.** This paragraph
+ * read *"ONCE checkout resolves prices by `lookup_key` … no product text is
+ * composed in this repository at all"*, as a thing still owed. Checkout now
+ * sends a price id resolved from the key and **no `product_data` at all**, so
+ * the composed NAME this slice left behind is gone too and Stripe's own
+ * product carries the identity line. `name` survives in this table because
+ * the plan cards, the change-plan modal and the audit rows read it; nothing
+ * sends it to Stripe. `checkoutProductText.test.ts` asserts the absence at the
+ * wire rather than leaving it to this sentence.
  */
 export const SUBSCRIPTION_PRODUCTS: Record<string, {
   name: string;

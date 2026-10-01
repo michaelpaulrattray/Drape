@@ -15,6 +15,7 @@ import {
   type BillingIntervalChoice,
 } from "@shared/annualBilling";
 import { wholeDisplayLedger } from "@shared/creditDisplay";
+import { resolvePriceId, StripePriceUnavailableError } from "./stripePriceCatalogue";
 import { environmentMetadata } from "./environmentTag";
 import { subscriptionPeriodSec } from "./subscriptionPeriods";
 import { PLAN_TIERS, PlanTier } from "../../drizzle/schema";
@@ -72,42 +73,35 @@ export async function createSubscriptionCheckoutSession(
   userId: number,
   interval: "monthly" | "annual" = "monthly"
 ): Promise<string> {
-  const product = SUBSCRIPTION_PRODUCTS[plan];
-  
-  // The annual arithmetic lives in shared/annualBilling.ts (#664): this
-  // builder used to carry its own `* 12 * 0.83` inline while the client
-  // declared ANNUAL_RATE separately — working law 4's mirror, on the number
-  // that charges the card.
-  const isAnnual = interval === "annual";
-  const unitAmount = periodPriceInCents(product.priceInCents, interval);
-  const billingInterval = stripeIntervalOf(interval);
-  const planName = isAnnual 
-    ? `${product.name} (Annual)` 
-    : product.name;
-  
+  // ⚠ THE PRICE IS STRIPE'S OBJECT, NOT A NUMBER COMPOSED HERE (#1605
+  // bullet 1). This builder used to send an inline `price_data` carrying a
+  // `unit_amount` computed from `PLAN_TIERS` and a `product_data.name`
+  // composed in this process — so the charge was whatever this tree worked
+  // out, and Stripe's own catalogue was a parallel copy of the prices rather
+  // than the thing being charged (working law 4, on the number that moves
+  // money). It now resolves the price by its lookup key and sends the id.
+  //
+  // Three things follow and each was a deliberate decision, not a side
+  // effect of the edit:
+  //   · NO `product_data` AT ALL. Stripe's own product carries the name and
+  //     the identity line, which is what bullet 3 left owed when it deleted
+  //     the composed description: `stripeProducts.ts`'s docblock says *"no
+  //     product text is composed in this repository at all"* once this road
+  //     exists, and now none is.
+  //   · NO AMOUNT ON THE WIRE. `periodPriceInCents` still decides what the
+  //     PAGE says; `resolvePriceId` refuses when Stripe's amount is not that
+  //     number, so the two cannot drift apart silently.
+  //   · A MISSING KEY REFUSES HERE, not at boot — the card allows either and
+  //     a boot refusal crash-loops the service. The error names the key.
+  const priceId = await resolvePriceId(stripe, plan, interval);
+
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
     mode: "subscription",
     payment_method_types: ["card"],
     line_items: [
       {
-        price_data: {
-          currency: "usd",
-          // ⚠ NAME ONLY — no `description` (#1605). The description this used
-          // to send was `"200,000 credits/month with 75% rollover"`, a LEDGER
-          // amount printed on Stripe's checkout page while every screen the
-          // customer owns moves to the display scale (P1-1). It is deleted at
-          // its source rather than rescaled here; `stripeProducts.ts`'s
-          // docblock carries the argument, and `checkoutProductText.test.ts`
-          // asserts this object at the wire.
-          product_data: {
-            name: planName,
-          },
-          unit_amount: unitAmount,
-          recurring: {
-            interval: billingInterval,
-          },
-        },
+        price: priceId,
         quantity: 1,
       },
     ],
@@ -578,26 +572,25 @@ export async function updateSubscriptionPlan(
       }
     }
 
-    const newProduct = SUBSCRIPTION_PRODUCTS[newPlan];
-
-    // Create a new price for the plan AT THE INTERVAL BEING BOUGHT — the old
-    // mint was unconditionally monthly, which is the sibling defect above.
-    const price = await stripe.prices.create({
-      currency: "usd",
-      unit_amount: periodPriceInCents(newProduct.priceInCents, targetInterval),
-      recurring: {
-        interval: stripeIntervalOf(targetInterval),
-      },
-      product_data: {
-        name: targetInterval === "annual" ? `${newProduct.name} (Annual)` : newProduct.name,
-      },
-    });
+    // ⚠ AN EXISTING PRICE, NOT A FRESHLY MINTED ONE (#1605 bullet 1). This
+    // path called `stripe.prices.create` on every plan change, so each change
+    // left a new ad-hoc Price and its own anonymous Product behind in the
+    // catalogue — and the amount charged was this tree's arithmetic rather
+    // than the catalogue's figure. Both halves are closed by resolving the
+    // same lookup key checkout resolves.
+    //
+    // ⚠ The interval is still the one BEING BOUGHT and that is the sibling
+    // defect this site has already been bitten by once (#664: the old mint was
+    // unconditionally monthly). `resolvePriceId` now refuses a key whose price
+    // does not recur at the asked-for interval, so the same mistake cannot be
+    // made silently a second time — it would name the key and stop.
+    const priceId = await resolvePriceId(stripe, newPlan, targetInterval);
 
     const updated = await stripe.subscriptions.update(subscriptionId, {
       items: [
         {
           id: itemId,
-          price: price.id,
+          price: priceId,
         },
       ],
       proration_behavior: "always_invoice",
@@ -637,6 +630,23 @@ export async function updateSubscriptionPlan(
     );
     return { success: true, invoicedAmount, invoiceId, invoiceStatus };
   } catch (error) {
+    /* ⚠ A PRICE THE CATALOGUE CANNOT SUPPLY IS RETHROWN, NOT FOLDED INTO
+       `{ success: false }` — and the reason is which sentence the customer
+       ends up reading.
+
+       Every other failure here is a Stripe call that was ATTEMPTED, so
+       `success: false` is the honest shape and the route turns it into an
+       unmarked `INTERNAL_SERVER_ERROR`, which the client answers with its own
+       "we lost contact while changing your plan" line. For this one nothing
+       was attempted at all: `resolvePriceId` runs before the single
+       `subscriptions.update`, so a refusal here means the subscription was
+       never touched. Telling somebody to go and check a plan that certainly
+       did not change is the defect `shared/spokenError` was written about, so
+       the route catches this type by name and speaks for it.
+
+       The instance travels intact, key and all, because the route logs
+       `.lookupKey`. */
+    if (error instanceof StripePriceUnavailableError) throw error;
     log.error({ err: error }, `[Stripe] Failed to update subscription ${subscriptionId}:`);
     return {
       success: false,

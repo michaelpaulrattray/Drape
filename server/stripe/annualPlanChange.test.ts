@@ -3,17 +3,37 @@
  * gets sent are proven on the OUTGOING REQUEST, not on a constant near it.
  *
  * The Stripe SDK is doubled at the module boundary, and every arm asserts the
- * parameters `updateSubscriptionPlan` actually passed: the minted price's
- * amount and recurring interval, `always_invoice`, and the metadata parity
- * with checkout. The monthly arm is the annual arm's negative control — the
- * same call shape with the other interval, so a hardcoded "year" cannot pass
- * both.
+ * parameters `updateSubscriptionPlan` actually passed: the price on the item,
+ * `always_invoice`, and the metadata parity with checkout. The monthly arm is
+ * the annual arm's negative control — the same call shape with the other
+ * interval, so a hardcoded "year" cannot pass both.
+ *
+ * ⚠ **WHAT THE ARMS READ CHANGED ON 2026-10-02, AND THE CONTRACT IS NOW THE
+ * OPPOSITE OF WHAT IT WAS (#1605 bullet 1).** This path used to MINT a price
+ * on every plan change (`stripe.prices.create`), so the arms read the minted
+ * price's `unit_amount` and its composed name — asserting that this repository
+ * computed the right figure. The price is now an object in Stripe's catalogue
+ * found by its lookup key, so the arms assert that **nothing is minted at all**
+ * and that the item carries the resolved existing id.
+ *
+ * The amount has not stopped mattering; it moved. `resolvePriceId` refuses a
+ * key whose `unit_amount` is not the figure this product's screens show, and
+ * `stripePriceCatalogue.test.ts` drives that refusal directly — so the arm
+ * that used to live here as `expect(priceArgs.unit_amount).toBe(…)` is a
+ * refusal inside the resolver, where a wrong amount stops the change instead
+ * of being charged.
+ *
+ * ⚠ **`pricesCreate` is still doubled, and it is an ASSERTION now rather than
+ * a fixture.** A later edit reaching for `prices.create` again — the obvious
+ * repair if a key is ever missing, and the exact *"silent fallback to inline
+ * pricing"* the card forbids — reddens three arms by name.
  */
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
-const { pricesCreate, subscriptionsUpdate, subscriptionsRetrieve, invoicesRetrieve } =
+const { pricesCreate, pricesList, subscriptionsUpdate, subscriptionsRetrieve, invoicesRetrieve } =
   vi.hoisted(() => ({
     pricesCreate: vi.fn(),
+    pricesList: vi.fn(),
     subscriptionsUpdate: vi.fn(),
     subscriptionsRetrieve: vi.fn(),
     invoicesRetrieve: vi.fn(),
@@ -21,7 +41,7 @@ const { pricesCreate, subscriptionsUpdate, subscriptionsRetrieve, invoicesRetrie
 
 vi.mock("stripe", () => ({
   default: class StripeDouble {
-    prices = { create: pricesCreate };
+    prices = { create: pricesCreate, list: pricesList };
     subscriptions = { retrieve: subscriptionsRetrieve, update: subscriptionsUpdate };
     invoices = { retrieve: invoicesRetrieve };
     customers = { retrieve: vi.fn(), create: vi.fn() };
@@ -37,29 +57,44 @@ import {
   readSubscriptionBillingState,
 } from "./stripeService";
 import { SUBSCRIPTION_PRODUCTS } from "./stripeProducts";
-import { annualPriceInCents } from "@shared/annualBilling";
+import { priceLookupKey, StripePriceUnavailableError } from "./stripePriceCatalogue";
+import { periodPriceInCents } from "@shared/annualBilling";
+
+/** The catalogue's answer for a plan at an interval, as Stripe returns it. */
+function catalogueHolds(plan: string, interval: "monthly" | "annual") {
+  pricesList.mockResolvedValue({
+    data: [
+      {
+        id: `price_catalogue_${interval}`,
+        lookup_key: priceLookupKey(plan, interval),
+        unit_amount: periodPriceInCents(SUBSCRIPTION_PRODUCTS[plan].priceInCents, interval),
+        recurring: { interval: interval === "annual" ? "year" : "month" },
+      },
+    ],
+  });
+}
 
 beforeEach(() => {
   pricesCreate.mockReset().mockResolvedValue({ id: "price_minted" });
+  pricesList.mockReset();
+  catalogueHolds("pro", "annual");
   subscriptionsUpdate.mockReset().mockResolvedValue({ latest_invoice: "in_change" });
   subscriptionsRetrieve.mockReset();
   invoicesRetrieve.mockReset().mockResolvedValue({ amount_due: 123_45 });
 });
 
 describe("updateSubscriptionPlan — the outgoing request", () => {
-  it("the ANNUAL leg mints a yearly price at the shared arithmetic's amount", async () => {
+  it("the ANNUAL leg sends the catalogue's yearly price and mints nothing", async () => {
     const result = await updateSubscriptionPlan("sub_1", "pro", 7, "annual", "si_1");
     expect(result.success).toBe(true);
 
-    expect(pricesCreate).toHaveBeenCalledTimes(1);
-    const priceArgs = pricesCreate.mock.calls[0][0];
-    expect(priceArgs.unit_amount).toBe(annualPriceInCents(SUBSCRIPTION_PRODUCTS.pro.priceInCents));
-    expect(priceArgs.recurring).toEqual({ interval: "year" });
-    expect(priceArgs.product_data.name).toBe(`${SUBSCRIPTION_PRODUCTS.pro.name} (Annual)`);
+    /* The whole point of bullet 1: no price is created for this change. */
+    expect(pricesCreate).not.toHaveBeenCalled();
+    expect(pricesList.mock.calls[0][0].lookup_keys).toEqual(["klieg_pro_yearly_v2"]);
 
     const [subId, updateArgs] = subscriptionsUpdate.mock.calls[0];
     expect(subId).toBe("sub_1");
-    expect(updateArgs.items).toEqual([{ id: "si_1", price: "price_minted" }]);
+    expect(updateArgs.items).toEqual([{ id: "si_1", price: "price_catalogue_annual" }]);
     expect(updateArgs.proration_behavior).toBe("always_invoice");
     expect(updateArgs.metadata.plan).toBe("pro");
     expect(updateArgs.metadata.interval).toBe("annual");
@@ -69,13 +104,42 @@ describe("updateSubscriptionPlan — the outgoing request", () => {
     expect(subscriptionsRetrieve).not.toHaveBeenCalled();
   });
 
-  it("the MONTHLY leg is the negative control — month interval, month amount, no suffix", async () => {
+  it("the MONTHLY leg is the negative control — the other key, the other price", async () => {
+    catalogueHolds("pro", "monthly");
     await updateSubscriptionPlan("sub_1", "pro", 7, "monthly", "si_1");
-    const priceArgs = pricesCreate.mock.calls[0][0];
-    expect(priceArgs.unit_amount).toBe(SUBSCRIPTION_PRODUCTS.pro.priceInCents);
-    expect(priceArgs.recurring).toEqual({ interval: "month" });
-    expect(priceArgs.product_data.name).toBe(SUBSCRIPTION_PRODUCTS.pro.name);
+    expect(pricesCreate).not.toHaveBeenCalled();
+    expect(pricesList.mock.calls[0][0].lookup_keys).toEqual(["klieg_pro_monthly_v2"]);
+    expect(subscriptionsUpdate.mock.calls[0][1].items).toEqual([
+      { id: "si_1", price: "price_catalogue_monthly" },
+    ]);
     expect(subscriptionsUpdate.mock.calls[0][1].metadata.interval).toBe("monthly");
+  });
+
+  it("a missing key refuses: the subscription is never touched and no price is minted", async () => {
+    /* The card's rule at this path - never a silent fallback to inline
+       pricing. `prices.create` is the fallback that would exist if anybody
+       added one, so its silence is an assertion. And this is the ONE failure
+       this function throws rather than reporting, because nothing was
+       attempted; the route turns it into the authored sentence. */
+    pricesList.mockResolvedValue({ data: [] });
+    const refusal = await updateSubscriptionPlan("sub_1", "pro", 7, "annual", "si_1").then(
+      (r) => ({ returnedInsteadOfThrowing: r }) as unknown,
+      (e: unknown) => e,
+    );
+    expect(refusal).toBeInstanceOf(StripePriceUnavailableError);
+    expect((refusal as StripePriceUnavailableError).lookupKey).toBe("klieg_pro_yearly_v2");
+    expect(subscriptionsUpdate).not.toHaveBeenCalled();
+    expect(pricesCreate).not.toHaveBeenCalled();
+  });
+
+  it("an ordinary Stripe failure still REPORTS rather than throwing", async () => {
+    /* Without this, "the price refusal throws" would be indistinguishable from
+       "this function throws on everything", and the route's `success: false`
+       road would be dead code nobody noticed. */
+    subscriptionsUpdate.mockRejectedValueOnce(new Error("card_declined"));
+    const result = await updateSubscriptionPlan("sub_1", "pro", 7, "annual", "si_1");
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("card_declined");
   });
 
   it("reads what Stripe actually invoiced off the change invoice", async () => {

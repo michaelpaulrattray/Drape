@@ -51,14 +51,22 @@ export type StripeBillingInterval = "month" | "year";
  *   Enterprise 1,500,000      14,940,000      14,940,000      14,940,000
  *   Ultimate   4,800,000      47,808,000      47,808,000      47,808,000
  *
- * ⚠ **AND THE REASON THE DISAGREEMENT WAS INVISIBLE IS THE REASON IT MATTERS
- * NOW.** Checkout builds an inline `price_data` from this function, so today
- * the page and the charge are the same number and nothing on screen
- * contradicts anything. #1605 bullet 1 moves checkout onto the lookup keys —
- * at which point the charge becomes Stripe's and the page stays ours, and a
- * customer reads `$677.28` above a `$677.00` charge. **Fixing the rounding
- * FIRST is what makes that move cost nothing**, which is why bullet 2 ships
- * ahead of bullet 1 rather than beside it.
+ * ⚠ **AND THE REASON THE DISAGREEMENT WAS INVISIBLE IS THE REASON IT MATTERED.**
+ * Checkout built an inline `price_data` from this function, so the page and
+ * the charge were the same number and nothing on screen contradicted anything.
+ * **#1605 bullet 1 landed on 2026-10-02 and checkout now sends a price id
+ * resolved from the lookup key** — the charge is Stripe's object and the page
+ * is still this function, so had the cent rounding still been here a customer
+ * would read `$677.28` above a `$677.00` charge. **Fixing the rounding FIRST
+ * is what made that move cost nothing**, which is why bullet 2 shipped ahead
+ * of bullet 1 rather than beside it.
+ *
+ * ⚠ **SO THIS FUNCTION AND STRIPE'S CATALOGUE ARE NOW HELD EQUAL BY A
+ * REFUSAL, NOT BY A HABIT.** `resolvePriceId` compares its answer against
+ * `periodPriceInCents` and refuses the checkout when they disagree, naming the
+ * key — so an edit to `ANNUAL_RATE`, to the rounding below, or to a price in
+ * the Stripe dashboard alone stops the purchase rather than charging a figure
+ * no screen in this product has shown.
  *
  * It is also the product's own rule for a price, already written down one
  * module away: `formatWholeDollars` exists because *"the card price, where the

@@ -38,9 +38,50 @@ import { appBaseUrl, PRODUCTION_APP_HOSTNAME } from "../_core/appOrigin";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { z } from "zod";
 import { planAllowanceRemaining } from "../db/credits";
+import {
+  StripePriceUnavailableError,
+  PRICE_UNAVAILABLE_SENTENCE,
+} from "../stripe/stripePriceCatalogue";
+import { spokenError } from "../_core/spokenError";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("routes/billing");
 import { TRPCError } from "@trpc/server";
+
+/**
+ * THE CUSTOMER'S SENTENCE FOR A PRICE THE CATALOGUE CANNOT SUPPLY (#1605
+ * bullet 1) — one translator, both money paths.
+ *
+ * `resolvePriceId` refuses with the lookup key in the message, which is what a
+ * person repairing it needs and is exactly what a customer must not be handed.
+ * This is the boundary where those two readers part: the key is LOGGED with the
+ * account and the plan beside it, and an authored sentence goes to the screen.
+ *
+ * ⚠ **Marked spoken on purpose.** An unmarked `INTERNAL_SERVER_ERROR` is
+ * answered by the client's own fallback (`client/src/lib/failureSentence.ts` —
+ * `INTERNAL_SERVER_ERROR` is not on its `OURS` list), and on the plan-change
+ * modal that fallback is *"We lost contact while changing your plan. Check your
+ * plan before trying again."* Nothing is attempted when this fires, so that
+ * sentence would send somebody to check a plan that never moved.
+ *
+ * Any other error is returned unchanged, so this cannot quietly become the
+ * answer to a failure it was not written for.
+ */
+function billingRefusalFor(
+  error: unknown,
+  where: string,
+  meta: Record<string, unknown>,
+): unknown {
+  if (!(error instanceof StripePriceUnavailableError)) return error;
+  log.error(
+    { ...meta, lookupKey: error.lookupKey, err: error },
+    `[Billing] ${where} refused: Stripe's catalogue could not supply the price. Nothing was charged.`,
+  );
+  return spokenError({
+    code: "INTERNAL_SERVER_ERROR",
+    message: PRICE_UNAVAILABLE_SENTENCE,
+    cause: error,
+  });
+}
 
 export const billingRouter = router({
   // Get available pricing plans.
@@ -194,7 +235,13 @@ export const billingRouter = router({
         `${baseUrl}/app?billing=canceled`,
         ctx.user.id,
         input.interval
-      );
+      ).catch((error: unknown) => {
+        throw billingRefusalFor(error, "checkout", {
+          userId: ctx.user.id,
+          plan: input.plan,
+          interval: input.interval,
+        });
+      });
 
       // Audit log: subscription checkout initiated
       await logAuditEvent({
@@ -497,7 +544,16 @@ export const billingRouter = router({
         ctx.user.id,
         quote.targetInterval,
         billingState.subscriptionItemId,
-      );
+      ).catch((error: unknown) => {
+        /* The ONLY throw this function has: a price the catalogue cannot
+           supply, rethrown there rather than folded into `success: false`
+           because nothing was attempted. Its own docblock carries why. */
+        throw billingRefusalFor(error, "plan change", {
+          userId: ctx.user.id,
+          plan: input.newPlan,
+          interval: quote.targetInterval,
+        });
+      });
 
       if (!result.success) {
         throw new TRPCError({

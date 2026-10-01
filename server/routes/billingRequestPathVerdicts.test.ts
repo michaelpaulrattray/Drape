@@ -70,6 +70,11 @@ import {
   updateSubscriptionPlan,
 } from "../stripe/stripeService";
 import { logAuditEvent } from "../auditLog";
+import {
+  PRICE_UNAVAILABLE_SENTENCE,
+  StripePriceUnavailableError,
+} from "../stripe/stripePriceCatalogue";
+import { SpokenError } from "../_core/spokenError";
 
 const USER = { id: 42, approved: true, suspendedAt: null, lockedUntil: null };
 const caller = () => billingRouter.createCaller({ user: USER, req: { headers: {} } } as never);
@@ -221,5 +226,101 @@ describe("#796 site 2 — changePlan's local record after Stripe has accepted th
 
     expect(out.success).toBe(true);
     expect(auditMetadata().localRecord).toBe("written");
+  });
+});
+
+/**
+ * #1605 BULLET 1 — WHAT THE CUSTOMER READS WHEN THE CATALOGUE CANNOT PRICE
+ * THEIR PLAN, which is the half of the refusal no wire arm can see.
+ *
+ * `resolvePriceId` refuses with the lookup key in its message, on purpose: the
+ * repair is one read in Stripe and the person doing it needs the key. The
+ * disappearing-technology law governs the other reader — *no engine name on a
+ * path someone must walk*, and *a refusal says what was refused and what to
+ * do* — so these arms assert the sentence that reaches the screen and the
+ * absence of the key from it.
+ *
+ * Driven through the real router, with the refusal injected at the service
+ * boundary exactly as `resolvePriceId` raises it.
+ */
+describe("#1605 bullet 1 — a price the catalogue cannot supply, as the customer hears it", () => {
+  const refusal = () =>
+    new StripePriceUnavailableError(
+      "klieg_pro_yearly_v2",
+      "names no active price in Stripe's catalogue",
+    );
+
+  beforeEach(() => {
+    vi.mocked(getSubscriptionByUserId).mockResolvedValue({
+      stripeCustomerId: "cus_known",
+      stripeSubscriptionId: "sub_1",
+      planTier: "starter",
+    } as Awaited<ReturnType<typeof getSubscriptionByUserId>>);
+    vi.mocked(getOrCreateStripeCustomer).mockResolvedValue("cus_known");
+  });
+
+  it("CHECKOUT answers the authored sentence, and the key is nowhere in it", async () => {
+    vi.mocked(createSubscriptionCheckoutSession).mockRejectedValue(refusal());
+
+    const error = await caller()
+      .createSubscriptionCheckout({ plan: "pro", interval: "annual" })
+      .then(() => null, (e: unknown) => e);
+
+    expect(error).toBeInstanceOf(SpokenError);
+    expect((error as SpokenError).message).toBe(PRICE_UNAVAILABLE_SENTENCE);
+    /* The whole point. A lookup key, a price id or the word Stripe on the
+       screen is this law failing, however accurate it is. */
+    expect((error as SpokenError).message).not.toContain("klieg");
+    expect((error as SpokenError).message).not.toMatch(/stripe|lookup|price_/i);
+    /* And the sentence says the two things somebody actually needs. */
+    expect((error as SpokenError).message).toMatch(/nothing was charged/i);
+  });
+
+  it("PLAN CHANGE answers the same sentence rather than the client's lost-contact line", async () => {
+    /* The reason this arm exists: `updateSubscriptionPlan` reports every other
+       failure as `{ success: false }`, which the route turns into an UNMARKED
+       error — and the modal answers an unmarked one with *"We lost contact
+       while changing your plan. Check your plan before trying again."* Nothing
+       is attempted when this fires, so that sentence would send somebody to
+       check a plan that never moved. */
+    vi.mocked(readSubscriptionBillingState).mockResolvedValue({
+      currentPlan: "starter",
+      subscriptionItemId: "si_1",
+    } as Awaited<ReturnType<typeof readSubscriptionBillingState>>);
+    vi.mocked(quotePlanChange).mockReturnValue({
+      kind: "same-interval",
+      currentPlan: "starter",
+      currentInterval: "monthly",
+      targetInterval: "monthly",
+      creditAdjustment: 0,
+      creditUnwind: 0,
+      isUpgrade: true,
+      proratedAmount: 0,
+    } as ReturnType<typeof quotePlanChange>);
+    vi.mocked(updateSubscriptionPlan).mockRejectedValue(refusal());
+
+    const error = await caller()
+      .changePlan({ newPlan: "pro" })
+      .then(() => null, (e: unknown) => e);
+
+    expect(error).toBeInstanceOf(SpokenError);
+    expect((error as SpokenError).message).toBe(PRICE_UNAVAILABLE_SENTENCE);
+    expect((error as SpokenError).message).not.toContain("klieg");
+    /* Nothing was written locally either — the refusal is ahead of the row. */
+    expect(updateUserSubscription).not.toHaveBeenCalled();
+  });
+
+  it("the negative control: any OTHER failure is NOT given this sentence", async () => {
+    /* Without this, the translator could be rewriting every billing failure
+       into one reassuring line — including a genuine Stripe decline, where
+       "nothing was charged" may be false. */
+    vi.mocked(createSubscriptionCheckoutSession).mockRejectedValue(new Error("card_declined"));
+
+    const error = await caller()
+      .createSubscriptionCheckout({ plan: "pro", interval: "annual" })
+      .then(() => null, (e: unknown) => e);
+
+    expect(error).not.toBeInstanceOf(SpokenError);
+    expect((error as Error).message).toBe("card_declined");
   });
 });
