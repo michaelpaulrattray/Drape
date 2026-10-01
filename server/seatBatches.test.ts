@@ -1082,17 +1082,47 @@ describe("the milestone comes from the ladder he declared, not the top of his ba
     });
 
     it("⚠ AND A LATER-RUNG CARD ON TOP DOES NOT REPLACE IT — #509 at N6, the second face", () => {
-      /* #509 gets the boards path so the AREA gate is not what decides this arm —
-         same area as the focus card is its own hold, and it would mask the rung
-         reading the arm is about. */
+      /*
+        #509 gets the boards path so the AREA gate is not what decides this arm —
+        same area as the focus card is its own hold, and it would mask the rung
+        reading the arm is about.
+
+        ⚠ **THIS ARM CHANGED WITH #1656, AND ITS #1541 SUBJECT IS INTACT.** It
+        asserted `focus === 509` — the later-rung card ON TOP was the focus —
+        because that was the behaviour at the time; the rung hold ran only over
+        the cards BELOW the top pick. That assertion was incidental to what the
+        arm is FOR, which is that the milestone stays N2 whatever sits on top of
+        his band, and it is now the defect #1656 names: the focus shift cannot
+        start a card THE MILESTONE GATE holds, so naming it the focus measured
+        every area hold against a card nobody was building.
+
+        **A third card keeps the #1541 demonstration from weakening into
+        nothing.** With two cards the N2 one simply becomes the focus and
+        `offered` is empty, which would prove the milestone reading only by
+        absence. With two N2 cards in different areas, one is the focus and the
+        other still reaches a seat — so the sentence this arm has always been
+        about ("an N2 card is the milestone's, whatever sits on top") is still
+        read off `offered`, and #509's own hold now NAMES the milestone as N2,
+        which is a more direct reading of #1541 than the old one was.
+      */
+      const LOWER = "2026-09-03T00:00:00Z";
       const result = band(
-        [onRung(509, "N6", TOP, "client/src/features/boards/Canvas.tsx"), onRung(1539, "N2", UNDER)],
+        [
+          onRung(509, "N6", TOP, "client/src/features/boards/Canvas.tsx"),
+          onRung(1539, "N2", UNDER),
+          onRung(1540, "N2", LOWER, "server/routes/billing.ts"),
+        ],
         "N2",
       );
-      expect(result.focus!.number).toBe(509);
-      expect(result.offered.map((c) => c.number), "the N2 card is the milestone's, whatever sits on top").toEqual([1539]);
-      /* And #509 itself is held — it is on a rung that is not the milestone. */
-      expect(result.held.find((h) => h.number === 509)!.why).toContain("the top of NEXT UP");
+      /* #1656: the focus is the top card the shift could actually START. */
+      expect(result.focus!.number, "the N6 card on top is not startable under the N2 milestone").toBe(1539);
+      expect(result.offered.map((c) => c.number), "the N2 card is the milestone's, whatever sits on top").toEqual([1540]);
+      /* And #509 is held — on a rung that is not the milestone, and the sentence
+         says which milestone held it, which is #1541's whole reading. */
+      const why = result.held.find((h) => h.number === 509)!.why;
+      expect(why).toContain("on rung N6");
+      expect(why).toContain("the milestone is N2");
+      expect(why, "it is held by the gate, not protected as the focus shift's card").not.toContain("the top of NEXT UP");
     });
 
     it("holds a rung that is not the milestone, and SAYS SO WITHOUT CLAIMING AN ORDERING", () => {
@@ -1171,6 +1201,105 @@ describe("the milestone comes from the ladder he declared, not the top of his ba
     it("offers an ordered fix with NO milestone named at all — maintenance mode, on this lane too", () => {
       const result = band([rungless(1467), orderedFix(1420, "N6")], null);
       expect(result.offered.map((c) => c.number)).toEqual([1420]);
+    });
+
+    /*
+      ── THE FOCUS PICK IS THE MILESTONE'S TOO (#1656) ────────────────────────
+
+      The live shape, read at the plans on disk rather than invented:
+      `focusCard` was **#1469 (`rung:N2c`)** in every pass from
+      `seat-plan-20260930-155058.json` to `seat-plan-20261001-104410.json` —
+      seventeen of them — while `focusRung` read N2 and then P1, and the focus
+      shift was building #1600 and #1608 the whole time. #1469 is the oldest
+      card in his band and the band sorts oldest last among equals, so it won
+      the top pick on a sort that knows nothing about rungs.
+
+      ⚠ **EVERY ARM HERE HAS ITS CONTROL BESIDE IT**, because the two ways to
+      get this wrong are a focus pick that still names an unstartable card
+      (invisible — the plan simply keeps lying) and a focus pick that has
+      stopped naming anything (visible, and it would shut the ordered lane).
+    */
+    it("⚠ #1656 — the focus is the top card the shift could START, not the top of his band", () => {
+      const result = band(
+        [onRung(1469, "N2c", TOP, "client/src/features/boards/Canvas.tsx"), onRung(1600, "P1", UNDER)],
+        "P1",
+      );
+      expect(result.focus!.number, "the P1 card is the one the focus shift is on").toBe(1600);
+      const why = result.held.find((h) => h.number === 1469)!.why;
+      expect(why).toContain("on rung N2c");
+      expect(why).toContain("the milestone is P1");
+      expect(why, "it is held by the milestone gate, not reserved for the focus shift").not.toContain("the top of NEXT UP");
+      /* And the real focus card is reserved for the focus shift in the ordinary
+         way — the lane still has a focus, which is the half a careless fix
+         loses. */
+      expect(result.held.find((h) => h.number === 1600)!.why).toContain("the top of NEXT UP");
+      expect(result.offered.map((c) => c.number)).toEqual([]);
+    });
+
+    it("⚠ POSITIVE CONTROL — strip the rung label and #1469's position wins again", () => {
+      /*
+        Without this the arm above would pass against a band that had simply
+        stopped offering its top card, or against a sort that had changed. The
+        ONLY difference here is the `rung:N2c` label.
+      */
+      const result = band(
+        [rungless(1469, TOP), onRung(1600, "P1", UNDER)],
+        "P1",
+      );
+      expect(result.focus!.number, "the oldest card still takes the top pick when nothing holds it").toBe(1469);
+      expect(result.offered.map((c) => c.number), "and the P1 card reaches a seat").toEqual([1600]);
+    });
+
+    it("⚠ NEGATIVE CONTROL — with NO milestone the fail-closed direction is unchanged: nothing reaches a seat", () => {
+      /*
+        The direction that matters in maintenance mode is that a rung card never
+        reaches a seat, and it does not: the whole band is held, `focus` is null
+        and `offered` is empty. What #1656 changes here is only that the lane no
+        longer NAMES an unstartable card as the focus — with no milestone
+        declared, THE MILESTONE GATE holds every rung card, so there is no card
+        on this band a shift could start and `null` is the honest answer.
+
+        ⚠ `focus: null` is a state the callers already carry: the CLI writes
+        `focusCard: null` for it (`cut-seat-batches.mts`) and the digest prints
+        its own sentence for it (`seatPassDigest.mts`), so this is not a new
+        shape reaching a reader that cannot take it.
+      */
+      const result = band(
+        [onRung(1469, "N2c", TOP, "client/src/features/boards/Canvas.tsx"), onRung(1600, "P1", UNDER)],
+        null,
+      );
+      expect(result.focus, "no card on this band is startable with no milestone named").toBeNull();
+      expect(result.offered, "and the seat lane stays shut — the fail-closed direction").toEqual([]);
+      for (const number of [1469, 1600]) {
+        expect(result.held.find((h) => h.number === number)!.why).toContain("nothing names the current focus");
+      }
+    });
+
+    it("⚠ #1656 — the build board still outranks the rung here, so no card BELOW the top changed its sentence", () => {
+      /*
+        The rung limb was added as the LAST check in the takeable loop on
+        purpose. A card below the top pick used to meet research → parked →
+        held → board in that loop and the rung in the loop after it, so putting
+        the rung limb last reproduces the order exactly and nothing a seat reads
+        moves. This pins that decision: a card that is BOTH rung-held and
+        already being built still reads as being built, which is the more
+        actionable of the two sentences.
+      */
+      const result = orderedBandForSeats({
+        cards: [
+          rungless(1467, TOP),
+          card(1469, ["founder-ordered", "rung:N2c"], { body: "server/casting/queue.ts", createdAt: UNDER }),
+        ],
+        board: boardOf([{ number: 900, title: "something (#1469)" }]),
+        areaIndex: INDEX,
+        switches: ALL_ON,
+        independenceOf: () => ({ kind: "independent" }),
+        focusRung: "P1",
+      });
+      expect(result.focus!.number).toBe(1467);
+      const why = result.held.find((h) => h.number === 1469)!.why;
+      expect(why, "the board's sentence, not the rung's").toContain("PR #900");
+      expect(why).not.toContain("the milestone is");
     });
   });
 });
