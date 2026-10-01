@@ -56,6 +56,29 @@ vi.mock("./emailVerification", () => ({
   sendVerificationEmail: vi.fn().mockResolvedValue({ success: true }),
 }));
 vi.mock("../security/loginAttackAlert", () => ({ noteFailedLogin: vi.fn() }));
+/*
+  THE FREE GRANT'S QUIET CAP IS NOT MOCKED — ITS STORAGE IS (#1603).
+
+  ⚠ And that distinction is why twelve arms in this file went red when the cap
+  landed rather than quietly staying green. `mayGrantFreeCredits` FAILS CLOSED
+  when it cannot count (invariant 7: a control refuses when a dependency is
+  missing), this file mocks `getDb` to answer nothing, and so every register arm
+  correctly started getting a 429.
+
+  The lazy repair was `vi.mock("../security/freeGrantLimit")`, which would have
+  made every arm below green and silently removed the new gate from the only
+  suite that drives this route over HTTP. Instead the real policy runs — the real
+  comparison, the real device cookie, the real sentence — against a count staged
+  at zero. So the twelve arms are now also a POSITIVE CONTROL on the cap: an
+  honest first signup passes it, which is the half of #1603 that matters most.
+
+  The refusal half is driven in `server/freeSignupQuietLimits.test.ts`.
+*/
+vi.mock("../db/quietLimits", () => ({
+  countFreeGrantClaims: vi.fn().mockResolvedValue({ device: 0, network: 0 }),
+  recordFreeGrantClaim: vi.fn().mockResolvedValue(undefined),
+  countFaceScanAgainstDay: vi.fn(),
+}));
 vi.mock("../_core/sdk", () => ({
   sdk: { createSessionToken: vi.fn().mockResolvedValue("session-token-stand-in") },
 }));
@@ -91,6 +114,10 @@ import {
   sendVerificationEmail,
   storeVerificationToken,
 } from "./emailVerification";
+import { countFreeGrantClaims, recordFreeGrantClaim } from "../db/quietLimits";
+import { FREE_GRANT_REFUSAL_SENTENCE } from "@shared/freeGrantRefusal";
+import { DEVICE_COOKIE_NAME } from "../security/deviceKey";
+import { NUMERIC_ENV_VARS } from "../_core/env";
 import { emailAuthRouter } from "./emailAuth";
 
 
@@ -462,6 +489,10 @@ beforeEach(() => {
   vi.mocked(storeVerificationToken).mockResolvedValue(undefined as never);
   vi.mocked(sendVerificationEmail).mockResolvedValue({ success: true } as never);
   vi.mocked(sdk.createSessionToken).mockResolvedValue("session-token-stand-in");
+  /* The quiet cap's storage, staged clean — the cap itself is the real one
+     (see its mock at the top of this file). */
+  vi.mocked(countFreeGrantClaims).mockResolvedValue({ device: 0, network: 0 });
+  vi.mocked(recordFreeGrantClaim).mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -469,6 +500,74 @@ afterEach(() => {
 });
 
 describe("POST /api/auth/register — the doors, in the order the handler asks them", () => {
+  /*
+    ───────────────────────────────────────────────────────────────────────
+    THE FREE GRANT'S QUIET CAP, DRIVEN AT THE WIRE (#1603, P1-4).
+
+    ⚠ THESE TWO ARMS EXIST BECAUSE A SABOTAGE PROVED EVERY OTHER ARM INERT
+    ABOUT THEM. With the cap's count staged clean, DELETING
+    `mayGrantFreeCredits` from the register handler left 83 arms across two
+    suites GREEN — the policy suite drives the module directly, and every arm
+    here only ever asked for an allowed signup. So nothing proved the gate was
+    on the request path at all, which is invariant 7 exactly: *a control that is
+    not invoked does not exist.*
+
+    What makes these two different is that the count is staged OVER the cap, so
+    they can only pass if a real HTTP POST actually met the gate.
+    ───────────────────────────────────────────────────────────────────────
+  */
+  it("refuses a capped signup with the plain sentence, and creates NO account", async () => {
+    vi.mocked(countFreeGrantClaims).mockResolvedValue({
+      device: NUMERIC_ENV_VARS.FREE_GRANT_MAX_PER_DEVICE,
+      network: 0,
+    });
+
+    const response = await post("/api/auth/register", REGISTRATION);
+
+    expect(response.status).toBe(429);
+    /* The shared constant, so this cannot pass against a sentence that has
+       drifted from the one the login page renders for the Google road. */
+    expect(response.json.error).toBe(FREE_GRANT_REFUSAL_SENTENCE);
+    /*
+      THE HALF THAT MATTERS MOST. `upsertUser` is the call that creates the row
+      AND grants the credits inside it, so this is the assertion that a refusal
+      leaves nothing half-made: no account, no redeemed code, no granted
+      balance, no session.
+    */
+    expect(db.upsertUser).not.toHaveBeenCalled();
+    expect(redeemInviteCode).not.toHaveBeenCalled();
+    expect(sessionCookie(response)).toBeUndefined();
+    expect(auditRows()[0]).toMatchObject({ action: AUDIT_ACTIONS.ABUSE_FREE_GRANT_CAPPED });
+  });
+
+  it("refuses AFTER the access code is checked, so a refusal leaks nothing about the code", async () => {
+    /* A browser must not be able to learn a code is good by watching which
+       refusal it gets back. The invalid-code arm below returns 400; this one
+       returns 429 only once the code has already been accepted. */
+    vi.mocked(validateInviteCode).mockResolvedValue({ valid: false, error: "Invalid access code" });
+    vi.mocked(countFreeGrantClaims).mockResolvedValue({
+      device: NUMERIC_ENV_VARS.FREE_GRANT_MAX_PER_DEVICE,
+      network: 0,
+    });
+
+    const response = await post("/api/auth/register", REGISTRATION);
+
+    expect(response.status).toBe(400);
+    expect(countFreeGrantClaims).not.toHaveBeenCalled();
+  });
+
+  it("sets the device cookie on a real response, and records the claim once an account exists", async () => {
+    const response = await post("/api/auth/register", REGISTRATION);
+
+    expect(response.status).toBe(201);
+    /* The cookie has to reach an actual browser for the device half of the cap
+       to mean anything on the second attempt. */
+    expect(response.cookies.some((cookie) => cookie.startsWith(`${DEVICE_COOKIE_NAME}=`))).toBe(true);
+    expect(recordFreeGrantClaim).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: NEW_USER.id, ipAddress: expect.any(String) }),
+    );
+  });
+
   it("refuses a rate-limited caller with 429, before it reads the body at all", async () => {
     vi.mocked(checkRateLimit).mockReturnValue({ allowed: false, remaining: 0, resetIn: 60_000 });
 

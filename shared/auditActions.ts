@@ -90,6 +90,17 @@ export const AUDIT_ACTIONS = {
   ABUSE_PATTERN_BILLING: "abuse.billing_anomaly",
   ABUSE_CREDENTIAL_STUFFING: "abuse.credential_stuffing",
   ABUSE_GLOBAL_ATTACK: "abuse.global_attack_detected",
+  /*
+    THE TWO QUIET SIGNUP LIMITS (#1603, P1-4). A free account is handed real
+    credits on an email or a Google sign-in with no card and no phone, so the
+    only thing standing between that and bulk farming is these two caps. Each
+    writes one row when it refuses, and `shared/auditActionCategories.ts` puts
+    both in the `abuse` bucket IN THIS SAME COMMIT — the alarm above records
+    what happens otherwise: the wire exists, the row exists, and the panel's
+    own filter drops it.
+  */
+  ABUSE_FREE_GRANT_CAPPED: "abuse.free_grant_capped",
+  ABUSE_FREE_SCAN_CAPPED: "abuse.free_scan_capped",
   
   // IP blocking events
   IP_BLOCKED: "admin.ip_blocked",

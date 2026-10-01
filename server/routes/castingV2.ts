@@ -83,6 +83,7 @@ import {
   scannedFace,
   scannedFaceIfReady,
 } from "../castingV2/faceScanService";
+import { mayBuyFaceScan } from "../castingV2/faceScanDailyCap";
 import { pronounsForSex } from "../castingV2/castPronouns";
 import { sheetGoneSentence, sheetIsGone } from "../castingV2/sheetGone";
 import { currentValueOfFacet } from "../castingV2/refineDelta";
@@ -2274,7 +2275,26 @@ export const castingV2Router = router({
 
       let scan: PanelScan | null = null;
       let done = true;
-      if (imageKey !== null) {
+      /*
+        THE DAILY CAP ON SCANS AN ACCOUNT MAY BUY (#1603, P1-4).
+
+        A scan is house money — this procedure's own docblock says so four
+        paragraphs up — and from P1-4 a free account arrives with no card and no
+        phone behind it, so this read is the one place it can spend ours without
+        spending any of its own credits.
+
+        ⚠ A CAPPED SCAN TAKES THE EXACT ROAD A FAILED SCAN TAKES: `imageKey` is
+        left unused, `scan` stays null and `done` stays true, so the customer gets
+        today's panel with nothing charged and no error — which is this
+        procedure's own stated posture ("A FAILED SCAN IS TODAY'S PANEL, not an
+        error"). The reasoning for refusing the SCAN rather than the REQUEST, and
+        the honest cost of saying nothing, are both written out in
+        `castingV2/faceScanDailyCap.ts`.
+
+        It is asked AFTER `imageKey` is resolved so that a face with no picture to
+        read — which buys no scan at all — does not spend a count.
+      */
+      if (imageKey !== null && await mayBuyFaceScan(ctx.user.id)) {
         const key = {
           userId: ctx.user.id,
           candidateId: face.candidateId,

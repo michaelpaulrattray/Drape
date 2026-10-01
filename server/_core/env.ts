@@ -177,6 +177,27 @@ export const NUMERIC_ENV_VARS = {
   GEMINI_MAX_QUEUE_DEPTH: 50,
   ROLL_IMAGE_MAX_QUEUE_DEPTH: 64,
   SIGN_VIEW_MAX_QUEUE_DEPTH: 24,
+  /*
+    THE FOUR QUIET SIGNUP CAPS (#1603, P1-4). They are here rather than read at
+    their own modules for exactly the reason this table exists: each one is a
+    number a careless blank variable would turn into `NaN`, and a `NaN` cap on
+    a signup path fails in the WORST direction — `claims < NaN` is false, so
+    every comparison reads as "under the cap" and the control silently admits
+    everybody. The four fal allowances are excluded from this table because
+    `Number("")` is 0 there and a zero allowance is what their own check
+    refuses; here a zero cap would refuse every signup, so neither raw reading
+    is safe and `envInt` owns all four.
+
+    The defaults are set to be invisible to an honest customer and are stated
+    on #1603: a household or a small office shares one network and may
+    legitimately produce several accounts, so the NETWORK cap is much looser
+    than the DEVICE one, and the window is a week rather than a day so that
+    farming cannot simply be spread out over a weekend.
+  */
+  FREE_GRANT_MAX_PER_DEVICE: 3,
+  FREE_GRANT_MAX_PER_NETWORK: 10,
+  FREE_GRANT_WINDOW_HOURS: 168,
+  FREE_SCAN_DAILY_CAP: 40,
 } as const;
 
 export type NumericEnvVar = keyof typeof NUMERIC_ENV_VARS;

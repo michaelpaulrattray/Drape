@@ -27,6 +27,7 @@ import { generateVerificationToken, sendVerificationEmail, storeVerificationToke
 import { loginSchema, registerSchema } from "./emailAuthInput";
 import { noteFailedLogin } from "../security/loginAttackAlert";
 import { refuseCrossSiteAuthRequest } from "../security/crossSiteExpressGuard";
+import { mayGrantFreeCredits, noteFreeGrantMade } from "../security/freeGrantLimit";
 
 const BCRYPT_ROUNDS = 12;
 
@@ -123,6 +124,29 @@ emailAuthRouter.post("/register", async (req: Request, res: Response) => {
       return;
     }
 
+    /*
+      THE FREE GRANT'S QUIET CAP (#1603, P1-4) — the LAST gate before an account
+      exists, and that position is the whole of it.
+
+      It sits here rather than at the top of the handler for two reasons, both
+      about what a refusal leaves behind. After the beta code is validated, so a
+      browser cannot learn whether a code is good by watching which refusal it
+      gets. And before `upsertUser`, which is the call that creates the row AND
+      grants the credits (`db/users.ts` → `ensurePointsInitialized` →
+      `initializeUserCredits`) — so a refused signup leaves no half-made account,
+      no redeemed code and no granted credits.
+
+      ⚠ It is deliberately NOT the IP rate limiter above it. That one paces
+      ATTEMPTS over fifteen minutes in process memory; this counts GRANTS MADE
+      over a week in the database, because this program replaces its process on
+      every merge to `main` (`server/security/freeGrantLimit.ts`).
+    */
+    const grant = await mayGrantFreeCredits(req, res, clientIp);
+    if (!grant.allowed) {
+      res.status(429).json({ error: grant.sentence });
+      return;
+    }
+
     // Hash password
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
@@ -146,6 +170,19 @@ emailAuthRouter.post("/register", async (req: Request, res: Response) => {
       res.status(500).json({ error: "Failed to create account" });
       return;
     }
+
+    /*
+      THE GRANT IS MADE — `upsertUser` created the row and
+      `initializeUserCredits` granted the credits inside it, so the claim is
+      recorded now, against the device the decision above was made for (#1603).
+
+      It is recorded here rather than after the beta code is redeemed because the
+      CREDITS are already granted at this line: a redeem that fails returns a 400
+      and leaves an unapproved account that has nonetheless been given its free
+      balance, so the claim must count whatever happens next. Recording it later
+      would make a failed redeem a free retry of the cap.
+    */
+    await noteFreeGrantMade(grant, newUser.id);
 
     // Redeem the beta code
     const redeemResult = await redeemInviteCode(newUser.id, betaCode);

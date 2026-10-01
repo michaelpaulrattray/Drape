@@ -5,14 +5,21 @@
  * inbox and provides a resend button (rate-limited to 3/hour).
  */
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "wouter";
+import { Link, useSearch } from "wouter";
 import { Mail, RefreshCw, CheckCircle2, AlertCircle, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { ASSETS_BASE_URL } from "@shared/const";
 
 export default function VerifyEmail() {
-  const [location] = useLocation();
-  const searchParams = new URLSearchParams(location.split("?")[1] || "");
+  /*
+    ⚠ `useSearch()` — the same defect as `Login.tsx`'s and the other half of its
+    class (#1709). wouter 3's `useLocation` carries no query string, so
+    `emailParam` was always "" — and `handleResend` returns early on `!email`,
+    which means THE RESEND BUTTON DID NOTHING for anybody arriving here the way
+    register sends them (`/verify-email?email=…`). Somebody who did not get the
+    first mail had no road at all.
+  */
+  const searchParams = new URLSearchParams(useSearch());
   const emailParam = searchParams.get("email") || "";
 
   const [email, setEmail] = useState(emailParam);

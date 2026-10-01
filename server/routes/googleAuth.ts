@@ -29,6 +29,11 @@ import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { checkRateLimit, getClientIp } from "../security/rateLimit";
 import { isDisposableEmail } from "../security/disposableEmails";
 import { getUserByEmail } from "../db/users";
+import {
+  FREE_GRANT_REFUSAL_ERROR_CODE,
+  mayGrantFreeCredits,
+  noteFreeGrantMade,
+} from "../security/freeGrantLimit";
 
 const STATE_SECRET = ENV.cookieSecret; // Reuse JWT secret for state signing
 const STATE_MAX_AGE_MS = 10 * 60 * 1000; // 10 minutes
@@ -367,6 +372,28 @@ googleAuthRouter.get("/google/callback", async (req: Request, res: Response) => 
         return;
       }
 
+      /*
+        THE FREE GRANT'S QUIET CAP (#1603, P1-4) — after the beta code is
+        validated and before the account exists, which is the same position the
+        email register path uses and for the same reasons (argued there).
+
+        ⚠ THIS BRANCH IS THE *NEW USER* HALF AND ONLY THE NEW USER HALF. The
+        returning-user branch above also calls `upsertUser`, and it must NOT be
+        gated: that account already has its credits, so a cap applied there would
+        refuse a customer her own account on a shared network. The grant fires
+        inside `upsertUser` only when the account has no credits row
+        (`db/users.ts`), which is exactly this branch.
+
+        A refusal redirects rather than answering JSON, because this is an OAuth
+        callback the browser was sent to — there is nothing here to read a body.
+        The sentence lives on the login page under this code.
+      */
+      const grant = await mayGrantFreeCredits(req, res, clientIp);
+      if (!grant.allowed) {
+        res.redirect(`/login?error=${FREE_GRANT_REFUSAL_ERROR_CODE}`);
+        return;
+      }
+
       // Create user
       const openId = `google_${googleId}`;
       await db.upsertUser({
@@ -384,6 +411,12 @@ googleAuthRouter.get("/google/callback", async (req: Request, res: Response) => 
         res.redirect("/login?error=create_failed");
         return;
       }
+
+      /* The row exists and `initializeUserCredits` granted inside it, so the
+         claim is recorded now — before the redeem, for the reason the email path
+         states: the credits are already granted at this line, so a failed redeem
+         must not be a free retry of the cap (#1603). */
+      await noteFreeGrantMade(grant, newUser.id);
 
       // Redeem beta code
       const redeemResult = await redeemInviteCode(newUser.id, statePayload.betaCode);
