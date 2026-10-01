@@ -197,7 +197,78 @@
 # positive and negative controls green — which is what the decision needs, and
 # the delta is zero on both windows either way. Defining that population once,
 # in code, so the next widening can compare, is its own card.
-MONEY_PATHS='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/db/(billing|credits|admin|accountDeletion)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^server/casting/atomicCredits\.ts$|^server/casting/(castingCreditCosts|packagePricing)\.ts$|^server/casting/evidence/evidenceCandidateContract\.ts$|^server/wardrobe/creditCosts\.ts$|^server/castingV2/(castViewPackage|packageOrchestrator)\.ts$|^client/src/features/casting/(constants|castingPrices)\.ts$|^shared/(const|creditDisplay)\.ts$|^drizzle/'
+#
+# ⚠ AND WHERE A YEAR'S PRICE IS *SET* WAS MISSING FROM BOTH HALVES UNTIL
+# 2026-10-02 (#1711). It is the fifth position in the sentence above, and it is
+# the PRICE half of #1359 one unit of currency over: that repair added where
+# CREDITS are priced and never asked where CASH is.
+#
+# `shared/annualBilling.ts` is the one declaration of `ANNUAL_RATE` and of
+# `annualPriceInCents` — what a customer pays for a YEAR, for every plan. Both
+# sides import it and neither declares its own, which its own docblock requires
+# (*"two copies of the number that decides what a year costs is working law 4's
+# exact shape"*). So moving that one number reprices every annual subscription
+# in the product, and `grep -E "$MONEY_SYMBOLS"` matches NOTHING in such a diff,
+# because changing a price touches no credit primitive.
+#
+# FOUND BY DRIVING IT, not by reading: PR #1710 changed this module and nothing
+# else, the gate applied no `founder-review` and triage applied no `needs-fable`,
+# and the shift had to put the hold on by hand. Its two nearest siblings — the
+# display scale and the casting price table — were both already covered.
+#
+# ROAD: never covered. `git log -S "annualBilling" -- .github/` returns nothing
+# on any branch, at any time. Like the price modules and `admin.ts` above it had
+# never bitten because every earlier diff touching it rode in on a covered
+# neighbour; #1710 is the first that did not.
+#
+# ⚠ THE LAW-7 SWEEP, AND THE READER THAT PRODUCED IT IS NAMED BECAUSE A HAND
+# GREP FOR "price" IS NOT THE MEASUREMENT. The class is *a module that sets what
+# a customer is charged, outside the list*, and the credit half already has a
+# DERIVED guard (the Atlas price collector, below). The cash half cannot have
+# the same one — the Atlas's collector reads CREDIT numbers and a rate of `0.83`
+# is not one. So a name-shaped reader was written and run over `server/`,
+# `shared/`, `client/src/` and `drizzle/`: every non-test module declaring a
+# `const` whose NAME carries RATE / CENTS / PRICE / AMOUNT / DOLLAR / USD / FEE.
+#
+#     modules it returned                                     25
+#     of those, declaring cash a customer is billed on          1   annualBilling.ts
+#     already covered                                           3
+#     rate LIMITS, not billing rates                           11
+#
+# ⚠ ELEVEN OF TWENTY-FIVE ARE RATE LIMITS, WHICH IS WHY THAT READER IS NOT
+# SHIPPED AS A SECOND DERIVED POPULATION. In this tree `RATE` is overwhelmingly
+# a rate-limit word (`IMAGE_PROXY_RATE_LIMIT`, `INVITE_RATE`, `BUG_RATE_LIMIT`,
+# `ALARM_FAILURE_RATE`, `SUCCESS_RATE_THRESHOLD`…), so its output has to be read
+# by hand and a guard built on it would be noise a shift learns to ignore —
+# #958's own rejected-at-17-of-60 judgement, in a different costume. It is
+# recorded here as the sweep's reader so the next shift can re-run it rather than
+# re-invent it, and `server/moneySurfaceClassifier.test.ts` carries the NAMED arm
+# for this file instead.
+#
+# THREE THINGS IT RETURNED THAT ARE DELIBERATELY NOT ADDED, each read at its
+# declaration so the exclusion is a decision on the record:
+#
+#   server/providers/{falImages,falQueue,openrouterImages}.ts  the measured
+#     `*_USD_PER_IMAGE` constants are HOUSE cost — what a render costs US. No
+#     customer is billed them, and CLAUDE.md's spend threshold governs them.
+#   client/src/pages/CastingV2.tsx  `ROLL_PRICE_FALLBACK = 0` is a safe ABSENCE,
+#     not a price: zero cannot misquote upward, and that file's own comment
+#     argues a hand-written fallback should not be a number at all.
+#   client/src/features/settings/planMath.ts  DERIVES from this module and is
+#     already held to importing rather than re-declaring (`annualBilling.test.ts`
+#     — it carried its own `ANNUAL_RATE` once, which is why that guard exists).
+#     Covering the authority covers it; adding the deriver would be the
+#     17-of-60 widening again.
+#
+# ⚠ ONE FINDING OF AN ADJACENT CLASS IS FILED RATHER THAN FOLDED IN, with its
+# reading: `shared/changeRequestApproval.ts` and `server/routes/admin/changeRequests.ts`
+# are both off this list, and between them they decide whether a staff
+# `add_credits` / `refund_credits` request may be APPROVED at all — the route
+# that authorises the write #1662 added `server/db/admin.ts` for. That is a money
+# CONTROL rather than a price, which is #1622's and #1627's family and not this
+# card's, so it gets its own card with its own before/after rather than a quiet
+# widening here.
+MONEY_PATHS='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/db/(billing|credits|admin|accountDeletion)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^server/casting/atomicCredits\.ts$|^server/casting/(castingCreditCosts|packagePricing)\.ts$|^server/casting/evidence/evidenceCandidateContract\.ts$|^server/wardrobe/creditCosts\.ts$|^server/castingV2/(castViewPackage|packageOrchestrator)\.ts$|^client/src/features/casting/(constants|castingPrices)\.ts$|^shared/(const|creditDisplay|annualBilling)\.ts$|^drizzle/'
 
 # ── 2 · SYMBOLS — where money is DECIDED ────────────────────────────────────
 #
