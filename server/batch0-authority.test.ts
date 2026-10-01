@@ -168,7 +168,17 @@ const appRouter = {
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
-function authCtx(userId = 1): TrpcContext {
+/*
+  ⚠ THE ROLE IS A PARAMETER SINCE #1654, AND IT STILL DEFAULTS TO "user".
+  Three of this file's subjects — `generation.castingImage`,
+  `generation.iterate` and `generation.mintPackage` — became
+  `adminProcedure` when the legacy lane's paid procedures were sealed, so
+  their arms need a caller the gate admits. Every OTHER arm in this file is
+  about a procedure a customer still reaches, and the default is what keeps
+  them honest: raising it globally would have made 142 arms stop testing the
+  account they are written about.
+*/
+function authCtx(userId = 1, role: "user" | "admin" = "user"): TrpcContext {
   const user: AuthenticatedUser = {
     id: userId,
     openId: `test-user-${userId}`,
@@ -176,7 +186,7 @@ function authCtx(userId = 1): TrpcContext {
     name: `Test User ${userId}`,
     loginMethod: "manus",
     approved: true,
-    role: "user",
+    role,
     createdAt: new Date(),
     updatedAt: new Date(),
     lastSignedIn: new Date(),
@@ -301,7 +311,7 @@ describe("generation.castingImage authorization order (review fix 1)", () => {
       result: { assetId: 99 },
     });
 
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(caller.generation.castingImage({ modelId: 7 })).resolves.toMatchObject({
       success: true,
       assetId: 99,
@@ -323,7 +333,7 @@ describe("generation.castingImage authorization order (review fix 1)", () => {
 
   it("archived model: NOT_FOUND, no deduction, no asset", async () => {
     vi.mocked(getModelById).mockResolvedValue(model({ status: "archived" }) as never);
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(caller.generation.castingImage({ modelId: 7 })).rejects.toMatchObject({ code: "NOT_FOUND" });
     expect(deductCredits).not.toHaveBeenCalled();
     expect(createModelAsset).not.toHaveBeenCalled();
@@ -333,7 +343,7 @@ describe("generation.castingImage authorization order (review fix 1)", () => {
     vi.mocked(getModelById).mockResolvedValue(
       model({ status: "active", agencyId: "MOD-26-ABCDEF" }) as never,
     );
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(caller.generation.castingImage({ modelId: 7 })).rejects.toMatchObject({
       code: "PRECONDITION_FAILED",
     });
@@ -344,7 +354,7 @@ describe("generation.castingImage authorization order (review fix 1)", () => {
 
   it("legacy locked model is treated as minted (refused, no money)", async () => {
     vi.mocked(getModelById).mockResolvedValue(model({ status: "locked" }) as never);
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(caller.generation.castingImage({ modelId: 7 })).rejects.toMatchObject({
       code: "PRECONDITION_FAILED",
     });
@@ -356,7 +366,7 @@ describe("R7 direct Casting receipt replay", () => {
   it("replays mint and refresh results without a second deduction or mint transition", async () => {
     vi.mocked(getModelById).mockResolvedValue(model() as never);
     vi.mocked(getModelAssets).mockResolvedValue(ALL_SIX as never);
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
 
     vi.mocked(beginDirectOperation).mockResolvedValueOnce({
       type: "replay",
@@ -453,7 +463,7 @@ describe("archived exclusion (FR-4 / E8)", () => {
 
   it("generation.iterate refuses an archived model", async () => {
     vi.mocked(getModelById).mockResolvedValue(model({ status: "archived" }) as never);
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(
       caller.generation.iterate({ modelId: 7, feedback: "brighten the lighting", assetId: 1 }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
@@ -802,7 +812,7 @@ describe("generation.reconcile — DISABLED (Batch C, R7 ratified: keep off; M4)
 describe("masked-edit closure (Batch 0.1 / E10)", () => {
   it("iterate refuses any request carrying maskBase64 after ownership and receipt claim, before money", async () => {
     vi.mocked(getModelById).mockResolvedValue(model() as never);
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(
       caller.generation.iterate({
         modelId: 7,

@@ -7841,7 +7841,7 @@
       "namespace": "generation",
       "name": "castingImage",
       "type": "mutation",
-      "auth": "protected",
+      "auth": "admin",
       "input": "strict",
       "rateLimited": true,
       "file": "server/routes/generation/castingImaging.ts"
@@ -7951,7 +7951,7 @@
       "namespace": "generation",
       "name": "iterate",
       "type": "mutation",
-      "auth": "protected",
+      "auth": "admin",
       "input": "strict",
       "rateLimited": true,
       "file": "server/routes/generation/castingRefinement.ts"
@@ -7971,7 +7971,7 @@
       "namespace": "generation",
       "name": "mintPackage",
       "type": "mutation",
-      "auth": "protected",
+      "auth": "admin",
       "input": "open",
       "rateLimited": true,
       "file": "server/routes/generation/castingExport.ts"
@@ -13224,6 +13224,10 @@
     {
       "id": "test:server/landingEngineNames.test.ts",
       "path": "server/landingEngineNames.test.ts"
+    },
+    {
+      "id": "test:server/legacySpendSeal.test.ts",
+      "path": "server/legacySpendSeal.test.ts"
     },
     {
       "id": "test:server/lib/boardBackfill.test.ts",
