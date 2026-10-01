@@ -196,6 +196,51 @@ async function aState(
   return token.sign(options.secret ?? stateKey());
 }
 
+/**
+ * A FLOW THAT REALLY STARTED IN THIS BROWSER (#1681).
+ *
+ * The state nonce is now bound to a cookie the ENTRY route sets, so a hand-made
+ * state is a FORGED callback — which is exactly what `aState` above is kept for,
+ * and what the attack arm uses. Everything that must get PAST the gate goes
+ * through here instead: it drives the real `/api/auth/google`, reads the state
+ * out of the argument the route handed Google's own client, and carries back the
+ * cookie the route set in that same answer.
+ *
+ * ⚠ **NOTHING HERE RE-IMPLEMENTS THE BINDING** (working law 4). The cookie's
+ * name, its value and its attributes are all the route's own; this helper never
+ * hashes anything, which is why it cannot pass by agreeing with a mistake. It
+ * finds the cookie by construction rather than by name: `/api/auth/google` sets
+ * exactly ONE cookie and it is not the session, and the arm below pins that.
+ */
+async function aStartedFlow(betaCode = ""): Promise<{ state: string; cookie: string }> {
+  const query = betaCode === "" ? "" : `?betaCode=${encodeURIComponent(betaCode)}`;
+  const started = await get(`/api/auth/google${query}`);
+  const state = (google.generateAuthUrl.mock.calls.at(-1)?.[0] as { state?: string } | undefined)?.state;
+  const jar = started.cookies.filter((cookie) => !cookie.startsWith(`${COOKIE_NAME}=`));
+  if (!state || jar.length !== 1) {
+    throw new Error(
+      `the entry route did not start one flow (state=${String(state)}, cookies=${jar.length}) — `
+      + "the harness is broken, not the product",
+    );
+  }
+  return { state, cookie: jar[0]!.split(";")[0]! };
+}
+
+/**
+ * The callback as a BROWSER reaches it: the state the route itself minted and
+ * the cookie it set alongside it, in one call so an arm reads as one act.
+ */
+async function callback(
+  query: string,
+  options: { betaCode?: string; headers?: Record<string, string> } = {},
+): Promise<DrivenResponse> {
+  const flow = await aStartedFlow(options.betaCode ?? "");
+  return get(`/api/auth/google/callback?${query}&state=${flow.state}`, {
+    cookie: flow.cookie,
+    ...(options.headers ?? {}),
+  });
+}
+
 const GOOGLE_SUB = "1234567890";
 
 /** What Google says about the person, once the ID token is verified. */
@@ -409,6 +454,159 @@ describe("GET /api/auth/google/callback — the state token is a CSRF gate, not 
 });
 
 /*
+  ─────────────────────────────────────────────────────────────────────────
+  THE STATE IS BOUND TO A BROWSER, NOT JUST SIGNED (#1681)
+  ─────────────────────────────────────────────────────────────────────────
+
+  Every arm above proves the state is OURS. None of them proved it was THIS
+  BROWSER's, and that is the whole of login-CSRF by link: the attacker starts a
+  sign-in here, keeps the callback URL, and sends it to the victim. The
+  signature verifies — they minted it with our key through our own entry route —
+  and before this the victim was signed into THEIR account.
+
+  ⚠ IT IS A TOP-LEVEL GET, SO NOTHING ELSE IN THE TREE CAN SEE IT. #1659's
+  cross-site guard judges state-changing methods and correctly lets a GET
+  through, and a GET cannot be refused on `Origin` without breaking the real
+  round-trip from accounts.google.com. The cookie is the only thing an attacker
+  cannot put in the victim's browser.
+
+  The first arm IS the attack, driven end to end over real HTTP.
+*/
+
+describe("GET /api/auth/google/callback — the state nonce is bound to the browser (#1681)", () => {
+  it("⚠ THE ATTACK: a real, valid state from ANOTHER browser is refused, and nothing happens", async () => {
+    /* The attacker's own flow, started here — so the token is genuinely ours,
+       genuinely signed, genuinely unexpired, and carries a real nonce. What the
+       victim's browser does not have is the cookie that flow put in the
+       ATTACKER's jar. */
+    const attackersFlow = await aStartedFlow();
+    vi.clearAllMocks();
+    google.getToken.mockResolvedValue({ tokens: { id_token: "google-id-token-stand-in" } });
+
+    const response = await get(
+      `/api/auth/google/callback?code=attackers-auth-code&state=${attackersFlow.state}`,
+    );
+
+    expect(response.location).toBe("/login?error=invalid_state");
+    /* Refused BEFORE Google is spoken to — a crafted link costs nothing. */
+    expect(google.getToken).not.toHaveBeenCalled();
+    expect(google.verifyIdToken).not.toHaveBeenCalled();
+    /* And nothing was written: no session, no audit row, no Set-Cookie at all.
+       The last one is deliberate — clearing the state cookie here would let a
+       crafted request drop a real pending flow of hers. */
+    expect(sdk.createSessionToken).not.toHaveBeenCalled();
+    expect(auditRows()).toHaveLength(0);
+    expect(response.cookies).toEqual([]);
+  });
+
+  it("⚠ and ANOTHER flow's cookie does not help — the nonce has to be that flow's", async () => {
+    /* The sharper form: the attacker gets the victim to hold a state cookie by
+       sending her through the entry route first. It is still the wrong nonce. */
+    const first = await aStartedFlow();
+    const second = await aStartedFlow();
+    expect(first.state).not.toBe(second.state);
+    expect(first.cookie).not.toBe(second.cookie);
+
+    const response = await get(
+      `/api/auth/google/callback?code=auth-code&state=${first.state}`,
+      { cookie: second.cookie },
+    );
+
+    expect(response.location).toBe("/login?error=invalid_state");
+    expect(google.getToken).not.toHaveBeenCalled();
+  });
+
+  it("NEGATIVE CONTROL: the real round-trip still signs a person in", async () => {
+    /*
+      Without this the arms above pass by refusing EVERYTHING, which is the
+      failure mode of a fail-closed gate and the one that would take Google
+      sign-in off the product entirely. Start → cookie → callback with the
+      matching nonce, over real HTTP against the real router.
+    */
+    vi.mocked(getUserByEmail).mockResolvedValue(anAccount() as never);
+
+    const flow = await aStartedFlow();
+    const response = await get(
+      `/api/auth/google/callback?code=auth-code&state=${flow.state}`,
+      { cookie: flow.cookie },
+    );
+
+    expect(response.location).toBe("/app");
+    expect(sdk.createSessionToken).toHaveBeenCalledWith("google_existing", expect.anything());
+    expect(sessionCookie(response)).toBeDefined();
+  });
+
+  it("the entry route sets ONE cookie, and it is the binding — not the session", async () => {
+    const started = await get("/api/auth/google");
+
+    expect(started.cookies).toHaveLength(1);
+    expect(sessionCookie(started), "the entry route must never mint a session").toBeUndefined();
+
+    const binding = started.cookies[0]!;
+    expect(binding, "no script needs it").toContain("HttpOnly");
+    /*
+      ⚠ `Lax` AND NOT `Strict`, AND THIS ARM IS THE REASON IT STAYS THAT WAY.
+      The callback is a cross-site top-level navigation from Google. `Strict`
+      withholds the cookie on exactly that request, so it would break every
+      Google sign-in — and the breakage would look like this gate working.
+    */
+    expect(binding).toContain("SameSite=Lax");
+    expect(binding).not.toContain("SameSite=Strict");
+    expect(binding).not.toContain("SameSite=None");
+    /* Scoped to this flow's own path, and the prefix covers the callback. */
+    expect(binding).toContain("Path=/api/auth/google");
+    /* Ten minutes, the same window the state token itself carries. */
+    expect(binding).toMatch(/Max-Age=600\b/);
+    /* Plain HTTP here, so not Secure — the same rule the session cookie
+       follows, and the reason a dev login works at all. */
+    expect(binding).not.toContain("Secure");
+  });
+
+  it("is Secure behind an HTTPS proxy, like the session cookie", async () => {
+    const started = await get("/api/auth/google", { "x-forwarded-proto": "https" });
+
+    expect(started.cookies[0]).toContain("Secure");
+    expect(started.cookies[0]).toContain("SameSite=Lax");
+  });
+
+  it("carries a FINGERPRINT of the nonce, never the nonce itself", async () => {
+    /*
+      The cookie is not a state's preimage, so a leaked jar is not a mintable
+      flow. Derived from the state the route minted rather than from a hash this
+      file computes — it reads the nonce out of the token and asserts the cookie
+      is NOT it, and is a 64-character hex digest.
+    */
+    const flow = await aStartedFlow();
+    const nonce = JSON.parse(
+      Buffer.from(flow.state.split(".")[1]!, "base64url").toString("utf8"),
+    ).nonce as string;
+    const value = flow.cookie.split("=")[1]!;
+
+    expect(nonce.length).toBeGreaterThan(0);
+    expect(value).not.toBe(nonce);
+    expect(value).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("spends the cookie on a matched callback — one state, one callback", async () => {
+    vi.mocked(getUserByEmail).mockResolvedValue(anAccount() as never);
+    const flow = await aStartedFlow();
+    const bindingName = flow.cookie.split("=")[0]!;
+
+    const response = await get(
+      `/api/auth/google/callback?code=auth-code&state=${flow.state}`,
+      { cookie: flow.cookie },
+    );
+
+    const cleared = response.cookies.find((cookie) => cookie.startsWith(`${bindingName}=`));
+    expect(cleared, "the binding cookie is not cleared after it is used").toBeDefined();
+    /* Express clears by expiring it in the past; either spelling counts. */
+    expect(cleared).toMatch(/Expires=Thu, 01 Jan 1970|Max-Age=0/);
+    expect(cleared, "cleared on the path it was set on, or the browser keeps it")
+      .toContain("Path=/api/auth/google");
+  });
+});
+
+/*
   ─── GET /api/auth/google/callback — what Google answered ───
 */
 
@@ -416,7 +614,7 @@ describe("GET /api/auth/google/callback — the answers from Google the route re
   it("refuses a token exchange that came back without an ID token", async () => {
     google.getToken.mockResolvedValue({ tokens: { access_token: "no-id-token-here" } });
 
-    const response = await get(`/api/auth/google/callback?code=auth-code&state=${await aState()}`);
+    const response = await callback("code=auth-code");
 
     expect(response.location).toBe("/login?error=no_id_token");
     expect(google.verifyIdToken).not.toHaveBeenCalled();
@@ -424,7 +622,7 @@ describe("GET /api/auth/google/callback — the answers from Google the route re
   });
 
   it("verifies the ID token against THIS product's client id as the audience", async () => {
-    await get(`/api/auth/google/callback?code=auth-code&state=${await aState()}`);
+    await callback("code=auth-code");
 
     expect(google.verifyIdToken).toHaveBeenCalledTimes(1);
     const [options] = google.verifyIdToken.mock.calls[0] as [Record<string, unknown>];
@@ -435,7 +633,7 @@ describe("GET /api/auth/google/callback — the answers from Google the route re
   it("refuses a verified token carrying no email", async () => {
     google.verifyIdToken.mockResolvedValue({ getPayload: () => aGooglePayload({ email: undefined }) });
 
-    const response = await get(`/api/auth/google/callback?code=auth-code&state=${await aState()}`);
+    const response = await callback("code=auth-code");
 
     expect(response.location).toBe("/login?error=invalid_token");
     expect(getUserByEmail).not.toHaveBeenCalled();
@@ -444,7 +642,7 @@ describe("GET /api/auth/google/callback — the answers from Google the route re
   it("refuses a verified token with no payload at all", async () => {
     google.verifyIdToken.mockResolvedValue({ getPayload: () => undefined });
 
-    const response = await get(`/api/auth/google/callback?code=auth-code&state=${await aState()}`);
+    const response = await callback("code=auth-code");
 
     expect(response.location).toBe("/login?error=invalid_token");
   });
@@ -458,7 +656,7 @@ describe("GET /api/auth/google/callback — the answers from Google the route re
       getPayload: () => aGooglePayload({ email: "throwaway@guerrillamail.com" }),
     });
 
-    const response = await get(`/api/auth/google/callback?code=auth-code&state=${await aState()}`);
+    const response = await callback("code=auth-code");
 
     expect(response.location).toBe("/login?error=disposable_email");
     expect(getUserByEmail).not.toHaveBeenCalled();
@@ -477,7 +675,7 @@ describe("GET /api/auth/google/callback — the answers from Google the route re
   it("lets an ordinary Google address past the disposable check", async () => {
     vi.mocked(getUserByEmail).mockResolvedValue(anAccount() as never);
 
-    const response = await get(`/api/auth/google/callback?code=auth-code&state=${await aState()}`);
+    const response = await callback("code=auth-code");
 
     expect(response.location).toBe("/app");
   });
@@ -485,7 +683,7 @@ describe("GET /api/auth/google/callback — the answers from Google the route re
   it("turns a thrown token exchange into google_error and an audited failure, never a stack trace", async () => {
     google.getToken.mockRejectedValue(new Error("invalid_grant"));
 
-    const response = await get(`/api/auth/google/callback?code=auth-code&state=${await aState()}`);
+    const response = await callback("code=auth-code");
 
     expect(response.location).toBe("/login?error=google_error");
     expect(sessionCookie(response)).toBeUndefined();
@@ -512,7 +710,7 @@ describe("GET /api/auth/google/callback — RETURNING user: the gates in front o
       locked: true, lockedUntil: null, reason: "Suspended by an admin",
     } as never);
 
-    const response = await get(`/api/auth/google/callback?code=auth-code&state=${await aState()}`);
+    const response = await callback("code=auth-code");
 
     expect(response.location).toBe("/login?error=suspended");
     expect(sessionCookie(response)).toBeUndefined();
@@ -531,7 +729,7 @@ describe("GET /api/auth/google/callback — RETURNING user: the gates in front o
       locked: true, lockedUntil: new Date(Date.now() + 900_000), reason: "Too many failed attempts",
     } as never);
 
-    const response = await get(`/api/auth/google/callback?code=auth-code&state=${await aState()}`);
+    const response = await callback("code=auth-code");
 
     expect(response.location).toBe("/login?error=locked");
     expect(sessionCookie(response)).toBeUndefined();
@@ -541,7 +739,7 @@ describe("GET /api/auth/google/callback — RETURNING user: the gates in front o
   it("refuses an UNAPPROVED account that brought no beta code, and mints nothing", async () => {
     vi.mocked(getUserByEmail).mockResolvedValue(anAccount({ approved: false }) as never);
 
-    const response = await get(`/api/auth/google/callback?code=auth-code&state=${await aState("")}`);
+    const response = await callback("code=auth-code");
 
     expect(response.location).toBe("/login?error=not_approved");
     expect(sessionCookie(response)).toBeUndefined();
@@ -553,7 +751,7 @@ describe("GET /api/auth/google/callback — RETURNING user: the gates in front o
     vi.mocked(getUserByEmail).mockResolvedValue(anAccount({ approved: false }) as never);
     vi.mocked(validateInviteCode).mockResolvedValue({ valid: false, reason: "Already used" });
 
-    const response = await get(`/api/auth/google/callback?code=auth-code&state=${await aState("BETA123")}`);
+    const response = await callback("code=auth-code", { betaCode: "BETA123" });
 
     expect(response.location).toBe("/login?error=not_approved");
     expect(redeemInviteCode).not.toHaveBeenCalled();
@@ -563,7 +761,7 @@ describe("GET /api/auth/google/callback — RETURNING user: the gates in front o
   it("REDEEMS a valid beta code on the spot for an unapproved account, then signs them in", async () => {
     vi.mocked(getUserByEmail).mockResolvedValue(anAccount({ approved: false }) as never);
 
-    const response = await get(`/api/auth/google/callback?code=auth-code&state=${await aState("BETA123")}`);
+    const response = await callback("code=auth-code", { betaCode: "BETA123" });
 
     expect(redeemInviteCode).toHaveBeenCalledWith(7, "BETA123");
     expect(response.location).toBe("/app");
@@ -575,7 +773,7 @@ describe("GET /api/auth/google/callback — RETURNING user: the gates in front o
       anAccount({ approved: false, role: "admin" }) as never,
     );
 
-    const response = await get(`/api/auth/google/callback?code=auth-code&state=${await aState("")}`);
+    const response = await callback("code=auth-code");
 
     expect(response.location).toBe("/app");
     expect(sessionCookie(response)).toBeDefined();
@@ -583,7 +781,7 @@ describe("GET /api/auth/google/callback — RETURNING user: the gates in front o
   });
 
   it("MINTS the session for an approved returning account, on their own openId", async () => {
-    const response = await get(`/api/auth/google/callback?code=auth-code&state=${await aState()}`);
+    const response = await callback("code=auth-code");
 
     expect(response.location).toBe("/app");
     expect(sdk.createSessionToken).toHaveBeenCalledTimes(1);
@@ -597,7 +795,7 @@ describe("GET /api/auth/google/callback — RETURNING user: the gates in front o
   });
 
   it("clears the failed-login count on a successful sign-in, and audits the success", async () => {
-    await get(`/api/auth/google/callback?code=auth-code&state=${await aState()}`);
+    await callback("code=auth-code");
 
     expect(db.resetFailedLogins).toHaveBeenCalledWith("google_existing");
     expect(auditRows()).toHaveLength(1);
@@ -616,7 +814,7 @@ describe("GET /api/auth/google/callback — RETURNING user: the gates in front o
        flipping this would lock them out of the door they came in by. */
     vi.mocked(getUserByEmail).mockResolvedValue(anAccount({ authProvider: "email" }) as never);
 
-    await get(`/api/auth/google/callback?code=auth-code&state=${await aState()}`);
+    await callback("code=auth-code");
 
     const [written] = vi.mocked(db.upsertUser).mock.calls[0] as [Record<string, unknown>];
     expect(written).not.toHaveProperty("authProvider");
@@ -624,7 +822,7 @@ describe("GET /api/auth/google/callback — RETURNING user: the gates in front o
   });
 
   it("marks a google-provider account as google and stamps the sign-in time", async () => {
-    await get(`/api/auth/google/callback?code=auth-code&state=${await aState()}`);
+    await callback("code=auth-code");
 
     const [written] = vi.mocked(db.upsertUser).mock.calls[0] as [Record<string, unknown>];
     expect(written.authProvider).toBe("google");
@@ -638,7 +836,7 @@ describe("GET /api/auth/google/callback — RETURNING user: the gates in front o
 
 describe("GET /api/auth/google/callback — NEW user: approval holds by construction", () => {
   it("refuses to create an account with no beta code", async () => {
-    const response = await get(`/api/auth/google/callback?code=auth-code&state=${await aState("")}`);
+    const response = await callback("code=auth-code");
 
     expect(response.location).toBe("/login?error=no_code");
     expect(db.upsertUser).not.toHaveBeenCalled();
@@ -648,7 +846,7 @@ describe("GET /api/auth/google/callback — NEW user: approval holds by construc
   it("refuses to create an account on a beta code the checker rejects", async () => {
     vi.mocked(validateInviteCode).mockResolvedValue({ valid: false, reason: "Expired" });
 
-    const response = await get(`/api/auth/google/callback?code=auth-code&state=${await aState("BETA123")}`);
+    const response = await callback("code=auth-code", { betaCode: "BETA123" });
 
     expect(response.location).toBe("/login?error=invalid_code");
     expect(db.upsertUser).not.toHaveBeenCalled();
@@ -665,13 +863,13 @@ describe("GET /api/auth/google/callback — NEW user: approval holds by construc
       order.push("upsert");
     }) as never);
 
-    await get(`/api/auth/google/callback?code=auth-code&state=${await aState("BETA123")}`);
+    await callback("code=auth-code", { betaCode: "BETA123" });
 
     expect(order).toEqual(["validate", "upsert"]);
   });
 
   it("creates the account under google_<sub> and mints the session on that same openId", async () => {
-    const response = await get(`/api/auth/google/callback?code=auth-code&state=${await aState("BETA123")}`);
+    const response = await callback("code=auth-code", { betaCode: "BETA123" });
 
     const [written] = vi.mocked(db.upsertUser).mock.calls[0] as [Record<string, unknown>];
     expect(written.openId).toBe(`google_${GOOGLE_SUB}`);
@@ -689,7 +887,7 @@ describe("GET /api/auth/google/callback — NEW user: approval holds by construc
   it("stops with create_failed when the account it just wrote cannot be read back", async () => {
     vi.mocked(db.getUserByOpenId).mockResolvedValue(undefined as never);
 
-    const response = await get(`/api/auth/google/callback?code=auth-code&state=${await aState("BETA123")}`);
+    const response = await callback("code=auth-code", { betaCode: "BETA123" });
 
     expect(response.location).toBe("/login?error=create_failed");
     expect(redeemInviteCode).not.toHaveBeenCalled();
@@ -699,7 +897,7 @@ describe("GET /api/auth/google/callback — NEW user: approval holds by construc
   it("REDEEMS the code before the mint, and refuses the session when the redeem fails", async () => {
     vi.mocked(redeemInviteCode).mockResolvedValue({ success: false, error: "Already redeemed" });
 
-    const response = await get(`/api/auth/google/callback?code=auth-code&state=${await aState("BETA123")}`);
+    const response = await callback("code=auth-code", { betaCode: "BETA123" });
 
     expect(response.location).toBe("/login?error=code_redeem_failed");
     expect(sdk.createSessionToken).not.toHaveBeenCalled();
@@ -707,7 +905,7 @@ describe("GET /api/auth/google/callback — NEW user: approval holds by construc
   });
 
   it("audits the new account with the code upper-cased and newAccount set", async () => {
-    await get(`/api/auth/google/callback?code=auth-code&state=${await aState("beta123")}`);
+    await callback("code=auth-code", { betaCode: "beta123" });
 
     expect(auditRows()).toHaveLength(1);
     expect(auditRows()[0]).toMatchObject({
@@ -731,7 +929,7 @@ describe("GET /api/auth/google/callback — the cookie the mint sets", () => {
     /* CLAUDE.md's standing gotcha: `sameSite: "none"` without `Secure` is
        dropped by the browser, so a dev login silently never signs in. */
     const cookie = sessionCookie(
-      await get(`/api/auth/google/callback?code=auth-code&state=${await aState()}`),
+      await callback("code=auth-code"),
     );
 
     expect(cookie).toContain("SameSite=Lax");
@@ -754,9 +952,7 @@ describe("GET /api/auth/google/callback — the cookie the mint sets", () => {
    */
   it("is Secure and SameSite=Lax behind an HTTPS proxy — never None (#1653)", async () => {
     const cookie = sessionCookie(
-      await get(`/api/auth/google/callback?code=auth-code&state=${await aState()}`, {
-        "x-forwarded-proto": "https",
-      }),
+      await callback("code=auth-code", { headers: { "x-forwarded-proto": "https" } }),
     );
 
     expect(cookie).toContain("SameSite=Lax");
@@ -785,7 +981,7 @@ describe("Google OAuth — profile media boundary", () => {
     /* The guard above is a read of the source; this is the same claim made by
        a request. Google's payload in these arms really does carry a
        `picture` — the fixture supplies one precisely so this can fail. */
-    await get(`/api/auth/google/callback?code=auth-code&state=${await aState("BETA123")}`);
+    await callback("code=auth-code", { betaCode: "BETA123" });
     const [asNew] = vi.mocked(db.upsertUser).mock.calls[0] as [Record<string, unknown>];
     expect(asNew.avatarUrl).toBeNull();
 
@@ -793,7 +989,7 @@ describe("Google OAuth — profile media boundary", () => {
     vi.mocked(getUserByEmail).mockResolvedValue(anAccount({ avatarUrl: null }) as never);
     vi.mocked(db.isAccountLocked).mockResolvedValue({ locked: false } as never);
     vi.mocked(sdk.createSessionToken).mockResolvedValue("session-token-stand-in");
-    await get(`/api/auth/google/callback?code=auth-code&state=${await aState()}`);
+    await callback("code=auth-code");
     const [asReturning] = vi.mocked(db.upsertUser).mock.calls[0] as [Record<string, unknown>];
     expect(asReturning.avatarUrl).toBeNull();
   });

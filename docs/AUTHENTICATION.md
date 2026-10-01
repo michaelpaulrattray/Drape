@@ -158,6 +158,43 @@ Purpose column claims. It is `lax` on every road now, and
 row as describing the product from that date, not before it: the repository's
 own security audit had carried the same finding as **M1** since 2026-07-25.
 
+### The Google sign-in state cookie (#1681)
+
+`/api/auth/google` sets a **second, short-lived cookie** beside the redirect,
+and `/api/auth/google/callback` refuses unless the `state` token's nonce matches
+it. It is not a session and it never becomes one.
+
+| Setting | Value | Purpose |
+|---------|-------|---------|
+| name | `g_oauth_state` | the browser's half of the OAuth `state` |
+| value | `sha256(nonce)` | a fingerprint, so the cookie is not a mintable state |
+| `httpOnly` | `true` | no script needs it |
+| `sameSite` | `lax` | **not `strict`** — see below |
+| `secure` | follows the scheme | the same rule the session cookie uses |
+| `path` | `/api/auth/google` | sent on this flow only; the prefix covers the callback |
+| `maxAge` | 10 minutes | the same window the state token carries |
+
+⚠ **Why it exists.** The `state` token was signed and verified, and the nonce
+inside it was compared to **nothing the browser held** — so a token minted in
+one browser was accepted in another. That is login-CSRF by LINK: an attacker
+starts a sign-in here, sends the victim the callback URL, and the victim is
+signed into the attacker's account. The callback is a **top-level GET**, so
+#1659's cross-site guard correctly does not judge it and an `Origin` check would
+break the legitimate round-trip from accounts.google.com. A cookie is the only
+thing an attacker cannot put in the victim's browser.
+
+⚠ **`lax` and not `strict` is load-bearing.** The callback is a cross-site
+top-level navigation from Google; `strict` would withhold the cookie on exactly
+that request and break every Google sign-in — and the breakage would look like
+the gate working. `routes/googleAuth.test.ts` pins it, with the real round-trip
+beside it as the control that the gate does not simply refuse everything.
+
+**Two costs, stated rather than discovered.** A customer mid-flow when this
+deploys has a state and no cookie, so her callback is refused once and she signs
+in on the retry (a ten-minute window). Two sign-in flows started in one browser
+leave only the second's cookie, so the first tab's callback is refused. Both are
+the standard shape of this mitigation.
+
 ### Logout Implementation
 
 The logout endpoint clears the session cookie:
