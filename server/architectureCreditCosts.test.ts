@@ -11,8 +11,9 @@
  *
  *   absent   `CASTING_V2_REFINE_PRICE_CREDITS` (25 then, 1,750 since #1601) — a top-level const rather
  *            than an object property, and the most-charged operation there is
- *   absent   `CASTING_V2_ROLL_PRICE_CREDITS` (160) and
- *            `CASTING_V2_SIGN_PRICE_CREDITS` (450) — the two most-quoted numbers
+ *   absent   `CASTING_V2_ROLL_PRICE_CREDITS` (160 then, 1,200 since #1601) and
+ *            `CASTING_V2_SIGN_PRICE_CREDITS` (450 then, 8,500 since #1601) — the two
+ *            most-quoted numbers
  *            in the whole Casting V2 program, because both are ARITHMETIC
  *   absent   all eight wardrobe prices and `INK_ADD_PRICE_CREDITS`, because the
  *            collector only ever opened one file
