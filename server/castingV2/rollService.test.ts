@@ -298,6 +298,7 @@ const {
 const { recordRefund } = await import("../casting/atomicCredits");
 const { ROLL_UNSEEN_REFUND_DESCRIPTION } = await import("./sliceRefundLedger");
 const { ProviderError } = await import("../providers/types");
+const { CASTING_V2_COSTS, castingSliceCredits } = await import("../casting/castingCreditCosts");
 
 /** The roll's charge row, as `deductCredits` writes it under the pinned reference. */
 function chargeRow() {
@@ -1642,6 +1643,92 @@ describe("no roll is born on a path", () => {
         expect(calls[calls.length - 1][0].inheritWardrobe).toBe(false);
       });
     });
+  });
+});
+
+/**
+ * THE SLICE REACHES EVERY MONEY SITE AS ONE NUMBER — #1601 item 2.
+ *
+ * The price used to be derived three times from `CASTING_V2_COSTS.rollCandidate`
+ * — here, and twice inside the database layer, which is handed a parent linkage
+ * rather than a price and so could only INFER whether it was writing a follow.
+ * `createRoll` now picks it once, from `anchored`, and hands it on.
+ *
+ * ⚠ **These arms are about the WIRING, not about the numbers, and they say so
+ * because the numbers cannot tell them apart.** A Follow slice and a Roll slice
+ * are both 20 today, so no arm in this file can distinguish "read the right
+ * one" from "read either one". The arm that CAN is in `followSlicePrice.test.ts`
+ * (the selector, driven with 150 and 200) and in `retryService.test.ts` (a tile
+ * seeded at 200 while the constant is 20). What is proven here is the thing
+ * those two cannot see: that one number reaches the row writer, the operation's
+ * `plannedCredits` and the deduct, and that it is the number the selector
+ * returns for this roll's own shape.
+ *
+ * The ORDERING — picked before the claim — is not observed at runtime: the
+ * derivation lexically precedes `begin`, which `pnpm check` enforces because
+ * every reader of `price` sits after it, and the free-refusal arms above prove
+ * a follow whose photograph will not load never reaches a price at all.
+ */
+describe("the slice a roll is priced in", () => {
+  const castingDbHere = () => import("../db/castingV2");
+
+  async function moneySites(extra: Record<string, unknown> = {}) {
+    const castingDb = await castingDbHere();
+    (castingDb.createRollWithCandidates as any).mockClear();
+    seedCandidates();
+    const dependencies = baseDependencies() as {
+      deduct: ReturnType<typeof vi.fn>;
+      markRunning: ReturnType<typeof vi.fn>;
+    };
+    await createRoll(dependencies as never, { ...INPUT, ...extra } as never);
+    const inserts = (castingDb.createRollWithCandidates as any).mock.calls;
+    expect(inserts.length, "nothing reached the insert").toBeGreaterThan(0);
+    return {
+      slicePassedToTheRowWriter: inserts[inserts.length - 1][0].slicePriceCredits,
+      plannedCredits: dependencies.markRunning.mock.calls[0][0].plannedCredits,
+      deducted: dependencies.deduct.mock.calls[0][1],
+    };
+  }
+
+  it("hands the row writer the slice the selector returns for an unanchored sheet", async () => {
+    const sites = await moneySites();
+    expect(sites.slicePassedToTheRowWriter).toBe(castingSliceCredits({ anchored: false }));
+  });
+
+  it("hands the row writer the FOLLOW slice when a face was attached", async () => {
+    const sites = await moneySites({ followCandidatePublicId: "66666666-6666-4666-8666-666666666666" });
+    expect(sites.slicePassedToTheRowWriter).toBe(castingSliceCredits({ anchored: true }));
+  });
+
+  for (const [label, extra] of [
+    ["a plain roll", {}],
+    ["a follow", { followCandidatePublicId: "66666666-6666-4666-8666-666666666666" }],
+  ] as const) {
+    it(`charges ${label} exactly the slice it wrote, times the candidate count`, async () => {
+      /*
+        THE CONSERVATION THAT USED TO BE A COINCIDENCE. Three sites each read
+        the same constant, so they agreed by arithmetic rather than by
+        construction; a change to one of them could not be caught by anything.
+        Now there is one number and this is the arm that says so — the eight
+        rows' refund authority, the operation's planned spend and the ledger
+        deduct are all the same slice.
+      */
+      const sites = await moneySites(extra);
+      const expected = sites.slicePassedToTheRowWriter * CASTING_V2_COSTS.rollCandidateCount;
+      expect(sites.deducted).toBe(expected);
+      expect(sites.plannedCredits).toBe(expected);
+    });
+  }
+
+  it("never hands the row writer a slice it would refuse", async () => {
+    /* The db layer rejects a non-positive slice before it writes a row
+       (`followSlicePrice.test.ts` drives that refusal). This is the other half:
+       the service cannot be the caller that trips it. */
+    for (const extra of [{}, { followCandidatePublicId: "66666666-6666-4666-8666-666666666666" }]) {
+      const sites = await moneySites(extra);
+      expect(Number.isSafeInteger(sites.slicePassedToTheRowWriter)).toBe(true);
+      expect(sites.slicePassedToTheRowWriter).toBeGreaterThan(0);
+    }
   });
 });
 

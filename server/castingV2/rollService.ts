@@ -49,7 +49,7 @@ import { mintBornInkRows } from "./bornInkMint";
 import { refusal } from "./refusalTag";
 import type { StatedInk } from "./castingIntent";
 
-import { CASTING_V2_COSTS } from "../casting/castingCreditCosts";
+import { CASTING_V2_COSTS, castingSliceCredits } from "../casting/castingCreditCosts";
 import { censusOfAttempt, censusSoFar } from "./callCensus";
 import { recordRefund, refundTruth } from "../casting/atomicCredits";
 import {
@@ -352,7 +352,17 @@ export async function createRoll(
   const compile = dependencies.compileBrief ?? castingBriefCompiler;
   const admit = dependencies.admit ?? admitRoll;
   const candidateCount = CASTING_V2_COSTS.rollCandidateCount;
-  const price = CASTING_V2_COSTS.rollCandidate * candidateCount;
+  /*
+    ⚠ THE PRICE IS NOT DERIVED HERE ANY MORE (#1601 item 2). It used to be the
+    first statement of this function — `rollCandidate * candidateCount` — which
+    is 250 lines before `anchored` exists, so a FOLLOW was priced as a ROLL by
+    construction. Harmless while the two slices are both 20 and a real
+    mis-charge the moment they are 150 and 200, so it moved while it could still
+    be proven to change nobody's bill. It is derived at `anchored` below, which
+    is still before the claim, before `markRunning` and before the deduct —
+    every reader of `price` sits after that point and `pnpm check` is what says
+    so rather than this comment.
+  */
 
   await assertNotFrozen(input.userId);
 
@@ -603,6 +613,20 @@ export async function createRoll(
     control's leftovers are logged rather than silently woven in.
   */
   const anchored = anchorImage !== null;
+  /*
+    THE PRICE, PICKED WHERE THE PRODUCT FINALLY KNOWS WHAT IT IS SELLING
+    (#1601 item 2). One decision, taken once, from the one fact that decides it;
+    everything downstream — the roll row, the eight candidate rows, the
+    `plannedCredits`, the deduct and the refusal sentence — is handed this
+    number rather than re-deriving it from a constant it cannot qualify.
+
+    It is still BEFORE the claim (`begin`), which is the card's own requirement:
+    nothing is claimed, nothing is written and nothing is charged until after
+    this line, so a follow whose photograph would not load has already refused
+    for free above and never reaches a price at all.
+  */
+  const slicePriceCredits = castingSliceCredits({ anchored });
+  const price = slicePriceCredits * candidateCount;
   if (anchored && ((input.unlock?.length ?? 0) > 0 || Object.keys(input.overrides ?? {}).length > 0)) {
     log.info(
       { unlock: input.unlock ?? [], overrides: Object.keys(input.overrides ?? {}) },
@@ -835,6 +859,15 @@ export async function createRoll(
       sessionPublicId: input.sessionPublicId,
       operationId: gate.operationId,
       briefText: input.briefText,
+      /*
+        THE SLICE, CARRIED RATHER THAN RE-DECIDED (#1601 item 2). The database
+        layer used to write both `priceCredits` and every candidate's
+        `pointsCost` from `CASTING_V2_COSTS.rollCandidate` directly — a price
+        chosen in a function that is handed a parent linkage and could only
+        INFER whether this was a follow. It writes what it is given now, and
+        this is the same number the deduct below charges.
+      */
+      slicePriceCredits,
       /*
         The variance plan rides with the compiled brief as the evidence for
         how varied the sheet could be. The sheet's expression-only confession
