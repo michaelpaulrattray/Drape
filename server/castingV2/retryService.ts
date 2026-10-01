@@ -32,7 +32,12 @@
 import { TRPCError } from "@trpc/server";
 import { CANDIDATE_RENDER } from "./briefCompiler";
 import { censusOfAttempt } from "./callCensus";
-import { CASTING_V2_RETRY_PRICE_CREDITS } from "../casting/castingCreditCosts";
+/* `CASTING_V2_RETRY_PRICE_CREDITS` was imported here until #1601 item 2 moved
+   the charge onto the tile's own row. It is NOT left behind as an unused
+   import: this repository spent six months describing a control as dead on the
+   strength of one (`isSensitiveAction`), and the rule it paid for — an import
+   is not a call site — cuts both ways. The constant still exists and is still
+   read, by `castingV2.config`, as the account-level quote. */
 import {
   beginDirectOperation,
   completeDirectOperationFailure,
@@ -198,7 +203,6 @@ export async function retryCandidate(
     throw new TRPCError({ code: "NOT_FOUND", message: RETRY_NOT_AVAILABLE_MESSAGE });
   }
 
-  const price = CASTING_V2_RETRY_PRICE_CREDITS;
   await assertNotFrozen(input.userId);
 
   /* ---- admission: every refusal here is free and before the claim ---- */
@@ -238,6 +242,44 @@ export async function retryCandidate(
       message: "That tile has no recorded prompt to retry with.",
     });
   }
+
+  /*
+    WHAT THIS TILE COSTS IS WHAT THIS TILE COST (#1601 item 2, his rule: *"a
+    single-candidate retry charges and refunds its own row's `pointsCost`"*).
+
+    ⚠ It was `CASTING_V2_RETRY_PRICE_CREDITS`, read at the TOP of this function
+    — before the row was even fetched — from a constant that is the ROLL slice.
+    Identical today (measured on production 2026-10-01: 483 live candidate rows,
+    every one at 20) and wrong the moment a Follow's slice is 200: the retry
+    would charge the Roll's 150 and then write 150 onto the tile's row through
+    `resetCandidateForRetry`, making the mis-charge its own refund authority.
+    The ledger would then reconcile exactly, against the wrong number, forever.
+
+    The row was already in hand for the ownership check — the only thing wrong
+    was the order. It is read LAST in admission so that every refusal above
+    keeps its own sentence and its own precedence.
+  */
+  if (!Number.isSafeInteger(candidate.pointsCost) || candidate.pointsCost <= 0) {
+    /*
+      FAIL CLOSED ON A RECORDED PRICE A CHARGE CANNOT BE BUILT FROM. No writer
+      in the tree can produce one — `createRollWithCandidates` now refuses a
+      non-positive slice and `resetCandidateForRetry` writes what it is given —
+      and production holds none. But `castingCandidates.pointsCost` is
+      `.default(0).notNull()`, so a future writer that simply OMITS it lands a
+      zero, and a zero here would buy a free render rather than refusing. The
+      arm driving this branch is its positive control: it cannot fire today, so
+      nothing but a test can prove it is wired (invariant 7).
+    */
+    log.warn(
+      { candidate: candidate.publicId, pointsCost: candidate.pointsCost },
+      "[retryService] a failed tile carries no usable recorded price — refusing free before the claim",
+    );
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "That tile can't be retried just now. Nothing was charged — roll the sheet again to cast it.",
+    });
+  }
+  const price = candidate.pointsCost;
 
   /*
     AN ANCHORED TILE RETRIES WITH ITS PHOTOGRAPH (#177 Row A) — fetched here,

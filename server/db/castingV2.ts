@@ -324,6 +324,24 @@ export type CreateRollInput = {
   /** Default true. False writes `path`/`wardrobeLine` as given on a follow too. */
   inheritWardrobe?: boolean;
   candidates: readonly CandidateSeed[];
+  /**
+   * WHAT ONE CANDIDATE ON THIS ROLL COSTS, decided by the caller (#1601 item 2).
+   *
+   * ⚠ **REQUIRED, and deliberately not defaulted.** This function used to write
+   * both `priceCredits` and every candidate's `pointsCost` from
+   * `CASTING_V2_COSTS.rollCandidate` itself — but it is handed a
+   * `parentCandidatePublicId`, not a price, so it could only ever INFER whether
+   * the roll it is writing is a follow. A default here would quietly restore
+   * exactly that: the one caller that forgot to pass a slice would write a
+   * Follow's eight rows at the Roll price, and because `pointsCost` is the
+   * refund authority (`dispatchCandidate` refunds what the row says) the
+   * mis-price would reconcile against itself and look correct forever.
+   *
+   * The service picks it once, from `anchored`, through
+   * `castingSliceCredits()`; this layer writes what it is given and refuses a
+   * value a charge cannot be built from.
+   */
+  slicePriceCredits: number;
   now?: Date;
 };
 
@@ -353,6 +371,14 @@ export async function createRollWithCandidates(input: CreateRollInput): Promise<
     throw new TypeError(
       `A roll is exactly ${CASTING_V2_COSTS.rollCandidateCount} candidates`,
     );
+  }
+  /* The slice is the refund authority for eight rows, so a value a refund
+     cannot be built from is refused before any of them is written — not
+     silently coerced, and not defaulted (see `slicePriceCredits` above). The
+     column itself is `.default(0).notNull()`, which is precisely why a zero
+     must not be allowed to arrive by omission. */
+  if (!Number.isSafeInteger(input.slicePriceCredits) || input.slicePriceCredits <= 0) {
+    throw new TypeError("slicePriceCredits must be a positive integer");
   }
   const now = input.now ?? new Date();
   const rollPublicId = randomUUID();
@@ -465,7 +491,7 @@ export async function createRollWithCandidates(input: CreateRollInput): Promise<
       path: parentCandidateId === null || input.inheritWardrobe === false ? input.path ?? null : inheritedPath,
       wardrobeLine: parentCandidateId === null || input.inheritWardrobe === false ? input.wardrobeLine ?? null : inheritedWardrobeLine,
       status: "pending",
-      priceCredits: CASTING_V2_COSTS.rollCandidate * input.candidates.length,
+      priceCredits: input.slicePriceCredits * input.candidates.length,
       operationId: input.operationId,
       createdAt: now,
     });
@@ -486,8 +512,10 @@ export async function createRollWithCandidates(input: CreateRollInput): Promise<
         position: candidate.position,
         status: "queued" as const,
         // The refundable unit is persisted per row, so refund authority reads
-        // what was charged instead of dividing a total (§H.3).
-        pointsCost: CASTING_V2_COSTS.rollCandidate,
+        // what was charged instead of dividing a total (§H.3). The slice comes
+        // from the caller, which is the only layer that knows whether this
+        // sheet was cast from an attached face (#1601 item 2).
+        pointsCost: input.slicePriceCredits,
         internalPrompt: candidate.internalPrompt ?? null,
         createdAt: now,
       })),
