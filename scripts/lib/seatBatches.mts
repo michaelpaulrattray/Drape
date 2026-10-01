@@ -255,6 +255,18 @@ export interface SeatTakeableCard extends SeatCandidateCard {
 export interface SeatManagerFacts {
   /** The sheet's row for this card, or `undefined` when it has none. */
   readonly rowFor: (card: number) => ManagerCardRow | undefined;
+  /**
+   * Is this number one of the OPEN PULL REQUESTS the manager was shown?
+   *
+   * `collidesWith` may name a card or a pull request — the brief asks for both,
+   * and the sheet's `prNumbers` is the allowlist that makes the two tellable
+   * apart. The two mean different things, which is the content of the relay's
+   * finding on PR #1668: a CARD entry is a pair reading (may these two go to two
+   * seats at once), a PULL-REQUEST entry is a statement about one card (a branch
+   * is editing its files right now), and reading the second as the first made a
+   * correct row mean *no collision*.
+   */
+  readonly isOpenPullRequest: (candidate: number) => boolean;
 }
 
 /**
@@ -539,6 +551,51 @@ export function pairDisjointOnPaths(
 }
 
 /**
+ * IS A BRANCH ALREADY EDITING THIS CARD'S FILES? (#1658, the relay's finding on
+ * PR #1668.)
+ *
+ * Returns the hold sentence, or `null` when nothing in the sheet says so. It is
+ * the SECOND half of `collidesWith` and it is a per-card reading rather than a
+ * pair one: *"a pull request is open on the files this card would touch"* is true
+ * or false of the card alone, and whichever other card a seat is given beside it
+ * does not change the answer.
+ *
+ * ⚠ **THE DEFECT THIS CLOSES, because it is the instructive kind.** The brief
+ * asks for *"which open cards or pull requests would it touch at the same time"*,
+ * hands the manager each pull request's changed files, and its own worked example
+ * names a PR. The only consumer was `managerPairVerdict`, which compares CARD
+ * numbers — and a PR number can never equal a card number, so a row that did
+ * exactly what it was asked read as `disjoint: true`. Worse than silence: the
+ * manager's verdict REPLACES `pairDisjointOnPaths` where both rows exist, so that
+ * row FREED a card the file-set proof would have held. **The brief's own example
+ * was the failing input**, and no arm used a PR number, so nothing could see it.
+ *
+ * ⚠ **IT HOLDS ON ANY OPEN PULL REQUEST IT NAMES, AND DOES NOT RESOLVE THE PR TO
+ * A CARD — a deliberate departure from the relay's suggested mechanism, with the
+ * same guarantee.** Resolving PR → card (which the build board can do) would only
+ * matter if the answer differed by which card the branch builds, and it does not:
+ * a branch editing this card's files is a collision whoever owns it. Holding
+ * outright is stricter, needs no second reader, and is the direction that costs a
+ * pass rather than a conflicting branch.
+ *
+ * ⚠ **AND THE CUTTER DOES NOT RE-JUDGE WHICH FILES A PULL REQUEST TOUCHES.** The
+ * manager was given every open PR's changed-file list and is asked to name only
+ * the ones that actually meet; an empty `collidesWith` is its positive statement
+ * that none does. So the negative control for this hold is a row that names no
+ * pull request, not a pull request this function decided was unrelated.
+ */
+export function managerPullRequestHold(
+  row: ManagerCardRow | undefined,
+  facts: SeatManagerFacts | undefined,
+): string | null {
+  if (row === undefined || facts === undefined) return null;
+  const branches = row.collidesWith.filter((entry) => facts.isOpenPullRequest(entry));
+  if (branches.length === 0) return null;
+  const named = branches.map((n) => `#${n}`).join(", ");
+  return `the manager reads PR ${named} as editing the same files — held until it merges (${row.reason})`;
+}
+
+/**
  * DOES THE MANAGER SAY THESE TWO PIECES OF WORK TOUCH THE SAME PLACE? (#1658)
  *
  * The collision reader for the ordered band, consulted ONLY where the sheet has
@@ -573,6 +630,10 @@ export function managerPairVerdict(
   const focusRow = facts?.rowFor(focus.number);
   const candidateRow = facts?.rowFor(candidate.number);
   if (focusRow === undefined || candidateRow === undefined) return null;
+  /* CARD entries only, by construction: the two numbers compared here are card
+     numbers, so a pull-request entry simply never matches. That is correct now
+     rather than silently permissive, because `managerPullRequestHold` above has
+     already held the candidate before this function is reached. */
   const collides =
     candidateRow.collidesWith.includes(focus.number) || focusRow.collidesWith.includes(candidate.number);
   if (!collides) return { disjoint: true, why: "" };
@@ -750,10 +811,16 @@ export function seatPopulation(input: {
    * sentence. `dependsOn` is NOT read here, because this lane has never had an
    * independence gate — a background card's dependency reaches the manager's
    * answer through `ready` instead, which is the column that exists for exactly
-   * that. `collidesWith` is not read here either: this lane's collisions are
-   * governed by the area grouping in `cutSeatBatches`, where a batch may hold
-   * several areas, so two colliding cards inside ONE seat are harmless and only
-   * a SPLIT across two seats would cost anything.
+   * that.
+   *
+   * ⚠ **`collidesWith` IS HALF-READ HERE, AND THIS CLAUSE SAID *"not read"* UNTIL
+   * THE RELAY'S FINDING ON PR #1668.** Its **pull-request** half IS read, through
+   * `managerPullRequestHold`: a branch editing this card's files is as costly to a
+   * background seat as to an ordered one, and that reading is about the card
+   * alone. Its **card** half is still withheld, on the original reason — this
+   * lane's collisions are governed by the area grouping in `cutSeatBatches`, where
+   * a batch may hold several areas, so two colliding cards inside ONE seat are
+   * harmless and only a SPLIT across two seats would cost anything.
    */
   readonly facts?: SeatManagerFacts;
 }): SeatPopulation {
@@ -800,6 +867,15 @@ export function seatPopulation(input: {
     const row = input.facts?.rowFor(card.number);
     if (row !== undefined && row.ready === "no") {
       note(`${row.why} (the manager's reading of this pass)`);
+      continue;
+    }
+    /* A branch already editing this card's files holds it in THIS lane too — the
+       relay's finding on PR #1668. The docblock on `facts` below carries the
+       correction: `collidesWith`'s pull-request half does reach the background
+       lane, and only its card half is withheld from it. */
+    const branchHold = managerPullRequestHold(row, input.facts);
+    if (branchHold !== null) {
+      note(branchHold);
       continue;
     }
     const placed = areaWithSource(card, input.areaIndex, input.facts);
@@ -1009,8 +1085,9 @@ export function orderedBandForSeats(input: {
    * The manager's fact sheet for this pass, when there is a usable one (#1658).
    *
    * Three of its columns reach this lane: `area` (where the Atlas knows the
-   * name), `collidesWith` (through `managerPairVerdict`, in place of the area
-   * equality and the file-set proof), and `ready: "no"` as an added hold.
+   * name), `collidesWith` (its pull-request half through
+   * `managerPullRequestHold`, its card half through `managerPairVerdict` in place
+   * of the area equality and the file-set proof), and `ready: "no"` as a hold.
    * `dependsOn` reaches it through the CALLER instead — `independenceOf` is
    * already a caller-supplied reading, so the CLI builds it from the sheet and
    * this function needs no second road to the same answer (working law 4).
@@ -1139,6 +1216,14 @@ export function orderedBandForSeats(input: {
     const managerRow = input.facts?.rowFor(card.number);
     if (managerRow !== undefined && managerRow.ready === "no") {
       note(`${managerRow.why} (the manager's reading of this pass)`);
+      continue;
+    }
+    /* A branch already editing this card's files, before the pair question: that
+       reading is about the card alone and does not depend on the focus card
+       (the relay's finding on PR #1668). */
+    const branchHold = managerPullRequestHold(managerRow, input.facts);
+    if (branchHold !== null) {
+      note(branchHold);
       continue;
     }
     const placed = areaWithSource(card, input.areaIndex, input.facts);

@@ -75,6 +75,7 @@ function sheetText(over: Record<string, unknown> = {}, rows = [row(1604), row(16
       pass: "20261001-022100",
       readAt: FRESH,
       snapshotCards: rows.length,
+      prNumbers: [],
       model: "claude-opus-5",
       nowMs: NOW,
     }),
@@ -154,7 +155,7 @@ describe("the envelope road, where the cost figure lives", () => {
     const verdict = parseManagerRows({ rows: [row(1604)] }, [1604]);
     if (verdict.kind !== "rows") throw new Error("fixture");
     const stamped = stampSheet({
-      rows: verdict.rows, pass: "p", readAt: FRESH, snapshotCards: 1,
+      rows: verdict.rows, pass: "p", readAt: FRESH, snapshotCards: 1, prNumbers: [],
       model: "claude-opus-5", costUsd: 0.42, nowMs: NOW,
     });
     expect(stamped.costUsd).toBe(0.42);
@@ -235,6 +236,71 @@ describe("what the validator refuses, and what it accepts", () => {
     expect(notArray.kind).toBe("refused");
   });
 
+  describe("the two lists the manager was shown are the only numbers it may name", () => {
+    /*
+      ⚠ THE RELAY'S FINDING ON PR #1668. `collidesWith` accepted any positive
+      integer, `managerPairVerdict` could only compare CARD numbers, and the brief
+      asked for pull-request numbers — so a row that did exactly what it was asked
+      read as *no collision*, and FREED a card the file-set proof would have held.
+      The repair is that the manager's own inputs are the allowlist.
+    */
+    it("accepts a pull-request number in `collidesWith`", () => {
+      const verdict = parseManagerRows({ rows: [row(1604, { collidesWith: [1660] })] }, [1604], [1660]);
+      expect(verdict.kind).toBe("rows");
+      if (verdict.kind !== "rows") return;
+      expect(verdict.rows[0]!.collidesWith).toEqual([1660]);
+    });
+
+    it("accepts a card number in `collidesWith`", () => {
+      expect(parseManagerRows({ rows: [row(1604, { collidesWith: [1606] }), row(1606)] }, [1604, 1606], []).kind).toBe("rows");
+    });
+
+    it("⚠ REFUSES a number that is in neither list — a hallucination costs the sheet", () => {
+      const verdict = parseManagerRows({ rows: [row(1604, { collidesWith: [424242] })] }, [1604], [1660]);
+      expect(verdict.kind).toBe("refused");
+      if (verdict.kind !== "refused") return;
+      expect(verdict.state).toBe("unparseable");
+      expect(verdict.why).toContain("#424242");
+      expect(verdict.why).toContain("open card or an open pull request");
+    });
+
+    it("⚠ REFUSES a pull-request number in `dependsOn` — that is the columns confused", () => {
+      const verdict = parseManagerRows({ rows: [row(1604, { dependsOn: [1660] })] }, [1604], [1660]);
+      expect(verdict.kind).toBe("refused");
+      if (verdict.kind !== "refused") return;
+      expect(verdict.why).toContain("an open card the manager was shown");
+    });
+
+    it("refuses a dependency on a card that was not in the queue it was given", () => {
+      expect(parseManagerRows({ rows: [row(1604, { dependsOn: [9999] })] }, [1604], []).kind).toBe("refused");
+    });
+
+    it("carries the allowlist onto the sheet and re-checks against it at read time", () => {
+      const verdict = parseManagerRows({ rows: [row(1604, { collidesWith: [1660] })] }, [1604], [1660]);
+      if (verdict.kind !== "rows") throw new Error("fixture");
+      const stamped = stampSheet({
+        rows: verdict.rows, pass: "p", readAt: FRESH, snapshotCards: 1,
+        prNumbers: [1660], model: "m", nowMs: NOW,
+      });
+      expect(stamped.prNumbers).toEqual([1660]);
+      const read = readManagerSheet({ raw: JSON.stringify(stamped), pass: "p", nowMs: NOW });
+      expect(read.kind).toBe("usable");
+      if (read.kind !== "usable") return;
+      expect(read.sheet.prNumbers).toEqual([1660]);
+
+      /* ⚠ AND THE SAME SHEET WITH THE ALLOWLIST REMOVED IS UNPARSEABLE, NOT
+         EMPTY. Defaulting it to `[]` would refuse a row that was correct when it
+         was written, for a reason nobody could diagnose. */
+      const stripped = { ...stamped } as Record<string, unknown>;
+      delete stripped.prNumbers;
+      const blind = readManagerSheet({ raw: JSON.stringify(stripped), pass: "p", nowMs: NOW });
+      expect(blind.kind).toBe("unusable");
+      if (blind.kind !== "unusable") return;
+      expect(blind.state).toBe("unparseable");
+      expect(blind.why).toContain("which pull requests the manager was shown");
+    });
+  });
+
   it("treats an absent dependency or collision list as empty, never as a failure", () => {
     const sparse = { card: 1604, ready: "yes", reason: "nothing names it.", area: null };
     const verdict = parseManagerRows({ rows: [sparse] }, [1604]);
@@ -246,10 +312,18 @@ describe("what the validator refuses, and what it accepts", () => {
   });
 
   it("de-duplicates and sorts a card list rather than trusting the order it was given", () => {
-    const verdict = parseManagerRows({ rows: [row(1604, { dependsOn: [1606, 1601, 1606] })] }, [1604]);
+    /* Driven on `collidesWith` with a pull-request allowlist, so the row count
+       still matches the queue it was given — a snapshot widened to hold the cited
+       numbers would make the sheet PARTIAL and the arm would fail for that
+       instead, which is what the first shape of it did. */
+    const verdict = parseManagerRows(
+      { rows: [row(1604, { collidesWith: [1606, 1601, 1606] })] },
+      [1604],
+      [1601, 1606],
+    );
     expect(verdict.kind).toBe("rows");
     if (verdict.kind !== "rows") return;
-    expect(verdict.rows[0]!.dependsOn).toEqual([1601, 1606]);
+    expect(verdict.rows[0]!.collidesWith).toEqual([1601, 1606]);
   });
 
   it("refuses output that is not an object with rows", () => {
@@ -323,7 +397,7 @@ describe("the read-time verdict, and all four unusable states", () => {
 
   it("calls an empty sheet PARTIAL rather than clean", () => {
     const verdict = readManagerSheet({
-      raw: JSON.stringify({ pass: "p", readAt: FRESH, snapshotCards: 0, model: "m", rows: [] }),
+      raw: JSON.stringify({ pass: "p", readAt: FRESH, snapshotCards: 0, prNumbers: [], model: "m", rows: [] }),
       pass: "p",
       nowMs: NOW,
     });
@@ -354,6 +428,7 @@ describe("the read-time verdict, and all four unusable states", () => {
       pass: "p",
       readAt: FRESH,
       snapshotCards: 1,
+      prNumbers: [],
       model: "m",
       rows: [row(1604, { ready: "no", why: "" })],
     });
@@ -407,6 +482,26 @@ describe("the manager's brief cannot drift from the validator", () => {
     expect(rows.length).toBeGreaterThan(0);
     const verdict = parseManagerRows(example, rows.map((r) => r.card as number));
     expect(verdict.kind === "rows" ? "rows" : verdict.why).toBe("rows");
+  });
+
+  it("⚠ states the two-list rule and what each kind of number MEANS", () => {
+    /*
+      The relay's finding on PR #1668: the brief asked for pull-request numbers in
+      `collidesWith` and the only consumer compared card numbers, so a correct row
+      read as *no collision*. The brief is the contract the manager is prompted
+      with, so these three sentences are part of the repair and not commentary on
+      it — a brief that loses them puts the defect back with the reader intact.
+    */
+    /* Matched on the UNWRAPPED text: the brief is hard-wrapped prose, so a phrase
+       long enough to be worth asserting is a phrase long enough to carry a
+       newline. Collapsing whitespace first makes the arm about the sentence
+       rather than about the column it happens to wrap at. */
+    const flat = BRIEF.replace(/\s+/g, " ");
+    expect(flat).toContain("Every number you put here must come from one of the two files you were given");
+    expect(flat).toContain("a number in neither refuses the whole sheet");
+    expect(flat).toContain("**a CARD number** says");
+    expect(flat).toContain("**a PULL-REQUEST number** says");
+    expect(flat).toContain("`dependsOn` is **card numbers only**");
   });
 
   it("names the three rules a breach of which costs the pass its sheet", () => {

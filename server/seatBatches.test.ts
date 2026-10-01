@@ -38,6 +38,7 @@ import {
   focusRungFromLadder,
   managerIndependence,
   managerPairVerdict,
+  managerPullRequestHold,
   orderedBandForSeats,
   pairDisjointOnPaths,
   pathsNamedIn,
@@ -1195,9 +1196,30 @@ describe("the manager answers the soft readings and every wall still wins", () =
     ...over,
   });
 
-  const factsOf = (...rows: ManagerCardRow[]): SeatManagerFacts => {
+  /**
+   * A sheet with NO open pull requests behind it — the ordinary case, and the one
+   * every arm written before the relay's finding on PR #1668 was about.
+   */
+  const factsOf = (...rows: ManagerCardRow[]): SeatManagerFacts => factsWithPrs([], ...rows);
+
+  /**
+   * ⚠ THE SHEET'S `prNumbers`, WHICH IS WHAT TELLS A PAIR READING FROM A HOLD.
+   *
+   * `collidesWith` may name an open card or an open pull request, and the two mean
+   * different things: a CARD says *these two cannot go to two seats at once*, a
+   * PULL REQUEST says *a branch is editing this card's files right now*. Before
+   * this list existed the only consumer compared card numbers — so a row that
+   * correctly named the in-flight branch read as `disjoint: true` and FREED a card
+   * the file-set proof would have held. No arm used a PR number, which is why
+   * nothing could see it.
+   */
+  const factsWithPrs = (prs: number[], ...rows: ManagerCardRow[]): SeatManagerFacts => {
     const byCard = new Map(rows.map((row) => [row.card, row] as const));
-    return { rowFor: (card: number) => byCard.get(card) };
+    const prSet = new Set(prs);
+    return {
+      rowFor: (card: number) => byCard.get(card),
+      isOpenPullRequest: (candidate: number) => prSet.has(candidate),
+    };
   };
 
   const ordered = (number: number, body: string, labels: string[] = []) =>
@@ -1439,6 +1461,76 @@ describe("the manager answers the soft readings and every wall still wins", () =
     expect(managerPairVerdict({ number: 100 }, { number: 101 }, undefined)).toBeNull();
   });
 
+  describe("a pull request in `collidesWith` HOLDS the card — the relay's finding on PR #1668", () => {
+    /*
+      THE DEFECT, and it is the instructive kind: the brief asks for *"which open
+      cards or pull requests would it touch"*, hands the manager each PR's changed
+      files, and its own worked example named a PR — while the only consumer
+      compared CARD numbers. A PR number can never equal a card number, so a row
+      that did exactly what it was asked read as NO COLLISION. Worse than silence:
+      the manager's verdict REPLACES `pairDisjointOnPaths` where both rows exist, so
+      that row FREED a card the file-set proof would have held.
+    */
+    it("holds an ordered card whose row names an open pull request", () => {
+      const cards = [
+        ordered(100, "Change server/casting/queue.ts."),
+        ordered(101, "Change client/src/features/boards/Canvas.tsx."),
+      ];
+      const held = orderedBandForSeats({
+        cards,
+        board: CLEAN_BOARD,
+        areaIndex: INDEX,
+        switches: ALL_ON,
+        independenceOf: independenceWith(undefined, [100, 101]),
+        focusRung: "P1",
+        facts: factsWithPrs([1660], sheetRow(100), sheetRow(101, { area: "boards", collidesWith: [1660] })),
+      });
+      expect(held.offered).toEqual([]);
+      expect(held.held.some((h) => h.number === 101 && h.why.includes("PR #1660") && h.why.includes("until it merges"))).toBe(true);
+    });
+
+    it("holds a BACKGROUND card the same way — a branch costs a seat in either lane", () => {
+      const stopped = seatPopulation({
+        cards: [card(200, ["bug"], { body: "Change server/routes/billing.ts." })],
+        switches: ALL_ON,
+        board: CLEAN_BOARD,
+        areaIndex: INDEX,
+        focusRung: null,
+        facts: factsWithPrs([1660], sheetRow(200, { area: "billing", collidesWith: [1660] })),
+      });
+      expect(stopped.takeable).toEqual([]);
+      expect(stopped.skipped[0]!.why).toContain("PR #1660");
+    });
+
+    it("⚠ THE NEGATIVE CONTROL: a row that names NO pull request is offered", () => {
+      /*
+        The honest control for this hold. The cutter does NOT re-judge which files a
+        pull request touches — the manager was given every PR's changed-file list
+        and is asked to name only the ones that meet — so *unrelated* is expressed
+        as an EMPTY `collidesWith`, not as a PR number this function second-guesses.
+      */
+      const open = seatPopulation({
+        cards: [card(200, ["bug"], { body: "Change server/routes/billing.ts." })],
+        switches: ALL_ON,
+        board: CLEAN_BOARD,
+        areaIndex: INDEX,
+        focusRung: null,
+        facts: factsWithPrs([1660], sheetRow(200, { area: "billing", collidesWith: [] })),
+      });
+      expect(open.takeable.map((c) => c.number)).toEqual([200]);
+    });
+
+    it("a CARD number in `collidesWith` is still the PAIR reading, not a hold", () => {
+      /* The two halves must not collapse into each other: 101 naming 100 is a
+         statement about the pair, and with the focus elsewhere it is no hold. */
+      expect(managerPullRequestHold(sheetRow(101, { collidesWith: [100] }), factsWithPrs([1660]))).toBeNull();
+      expect(managerPullRequestHold(sheetRow(101, { collidesWith: [1660] }), factsWithPrs([1660]))).not.toBeNull();
+      /* And with no sheet at all there is nothing to hold on. */
+      expect(managerPullRequestHold(undefined, factsWithPrs([1660]))).toBeNull();
+      expect(managerPullRequestHold(sheetRow(101, { collidesWith: [1660] }), undefined)).toBeNull();
+    });
+  });
+
   it("⚠ NO USABLE SHEET REPRODUCES TODAY'S READING EXACTLY, in both gates", () => {
     /*
       The card's §5. `scripts/lib/managerFactSheet.mts` turns every missing,
@@ -1504,6 +1596,10 @@ describe("the manager answers the soft readings and every wall still wins", () =
     const cli = readFileSync("scripts/cut-seat-batches.mts", "utf8");
     expect(cli).toContain("readManagerSheet(");
     expect(cli).toContain("managerIndependence(");
+    /* The pull-request allowlist must come off the SHEET, not from a fresh read:
+       the manager's rows are judged against the population it was shown. */
+    expect(cli).toContain("verdict.sheet.prNumbers");
+    expect(cli).toContain("isOpenPullRequest:");
     /* Both gates, not one: #1496's own body named only the ordered gate and
        eleven of the thirteen cards it listed reach the lane through the other. */
     expect(cli.match(/facts: managerFacts/g)?.length ?? 0).toBe(2);

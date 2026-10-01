@@ -90,8 +90,8 @@ no product domain, and saying `null` honestly is better than forcing a fit. Judg
 by where the WORK happens, not by what the card quotes: a card naming four
 casting files and one billing line is casting work.
 
-**3 · `collidesWith` — which open cards or pull requests would it touch at the
-same time?**
+**3 · `collidesWith` — which open cards or open pull requests would it touch at
+the same time?**
 
 A collision is two pieces of work editing the same files in the same hours. You
 have each open pull request's changed-file list, so this is partly mechanical:
@@ -100,9 +100,29 @@ already editing it. Two cards collide when their work would meet in the same
 file, or in the same small directory where one build would read the other's
 half-finished neighbours.
 
-Be specific rather than cautious: *everything collides with everything* holds the
-whole queue and is no more useful than the phrase reader was. An empty list means
-*nothing open touches its files*, and that is usually the truth.
+**Every number you put here must come from one of the two files you were given**
+— a card number from the queue, or a pull-request number from the pull-request
+list. Those two lists are the only numbers that exist for this purpose, and **a
+number in neither refuses the whole sheet**: in a repository, issues and pull
+requests share one number space, so an invented number cannot be told from a
+real one and the safe answer is to throw the sheet away.
+
+**The two kinds mean different things, and that is why you are asked for both:**
+
+- **a CARD number** says *these two pieces of work cannot go to two seats at the
+  same time*;
+- **a PULL-REQUEST number** says *a branch is editing this card's files right
+  now*, and it holds the card until that branch merges.
+
+Nothing downstream re-checks which files a pull request touches — you have the
+lists and you are the one judging it — so name only the pull requests that
+genuinely meet. Be specific rather than cautious: *everything collides with
+everything* holds the whole queue and is no more useful than the phrase reader
+was. An empty list means *nothing open touches its files*, and that is usually
+the truth.
+
+`dependsOn` is **card numbers only**. If a card is waiting for a pull request to
+merge rather than for another card's work, say so in `ready: "no"` and `why`.
 
 **4 · `ready` — could a seat start it right now?**
 
@@ -140,15 +160,31 @@ fence, no closing remark. Exactly this shape:
       "card": 1604,
       "dependsOn": [],
       "area": "billing",
-      "collidesWith": [1649],
+      "collidesWith": [1606],
       "ready": "yes",
       "why": "",
       "batchHint": "sits with #1606, which cannot be sold until this lands",
-      "reason": "Its body names server/db/billing.ts and points at PR #1649, which is editing the same file."
+      "reason": "Its body names server/db/billing.ts, the same file #1606 rewrites, and it cites no card as a prerequisite."
+    },
+    {
+      "card": 1606,
+      "dependsOn": [1604],
+      "area": "billing",
+      "collidesWith": [1604],
+      "ready": "no",
+      "why": "it cannot sell a top-up until the renewal fix in #1604 has landed",
+      "batchHint": null,
+      "reason": "Its done-when says the renewal fix lands first, and both rewrite server/db/billing.ts."
     }
   ]
 }
 ```
+
+Both numbers in that example are CARDS, because the example's queue held both. A
+pull-request entry looks exactly the same and is read differently: if PR #1660 in
+`{{PRS_FILE}}` were editing `server/db/billing.ts`, #1604's row would read
+`"collidesWith": [1606, 1660]` and the cut would hold #1604 until that branch
+merges.
 
 Rules the validator enforces, so a breach costs the pass its sheet:
 
@@ -158,6 +194,9 @@ Rules the validator enforces, so a breach costs the pass its sheet:
   reasons shorter — never drop a row.
 - `card` is a number; `dependsOn` and `collidesWith` are arrays of numbers
   (`[]` when empty, never `null`);
+- **`dependsOn` holds only card numbers from `{{QUEUE_FILE}}`, and `collidesWith`
+  only card numbers from it or pull-request numbers from `{{PRS_FILE}}`.** Any
+  other number refuses the whole sheet;
 - `area` is one of the names above or `null`;
 - `ready` is the string `"yes"` or `"no"`; a `"no"` has a non-empty `why`;
 - `reason` is non-empty on **every** row;

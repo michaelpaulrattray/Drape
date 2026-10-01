@@ -117,6 +117,19 @@ export interface ManagerFactSheet {
   readonly writtenAt: string;
   /** How many open cards the snapshot held — the denominator of `partial`. */
   readonly snapshotCards: number;
+  /**
+   * THE OPEN PULL REQUESTS THE MANAGER WAS SHOWN, and it is on the document for
+   * two reasons rather than one.
+   *
+   * It is the **allowlist** `collidesWith` is validated against — at write time
+   * and again at read time, where the snapshot lists are long gone — and it is the
+   * **discriminator** the cut needs: an entry that is a pull request means *a
+   * branch is editing this card's files right now*, which is a hold on the card,
+   * while an entry that is a card is the pair reading. Without this field a later
+   * reader could not tell the two apart, and that ambiguity is exactly what the
+   * relay's finding on PR #1668 was about.
+   */
+  readonly prNumbers: readonly number[];
   /** The model that produced the rows, for the record. */
   readonly model: string;
   /**
@@ -247,14 +260,44 @@ export function unwrapManagerPayload(text: string): ManagerPayload | null {
   return { payload: JSON.parse(inner) as unknown, costUsd };
 }
 
-/** Every entry that is a card number, de-duplicated and sorted, or the complaint. */
-function cardList(value: unknown, what: string): readonly number[] | string {
+/**
+ * EVERY ENTRY THAT IS A NUMBER THE MANAGER WAS ACTUALLY SHOWN, or the complaint.
+ *
+ * ⚠ **`allowed` IS THE MANAGER'S OWN INPUTS, AND THAT IS THE WHOLE CONTROL.**
+ * This function accepted any positive integer until the relay's finding on PR
+ * #1668, and the measured consequence is the sharpest kind: **the brief's own
+ * worked example was the failing input.** §3 asks for *"which open cards or pull
+ * requests would it touch"* and shows `"collidesWith": [1649]` — a PULL REQUEST
+ * number — while `managerPairVerdict` could only ever compare CARD numbers. A PR
+ * number can never equal a card number, so a row that correctly named the
+ * in-flight pull request editing the same file read as **no collision**, and
+ * because the manager's verdict REPLACES `pairDisjointOnPaths` where both rows
+ * exist, that row FREED a card the path rule would have held. A reader whose
+ * unknown value means *clear* is worse than no reader.
+ *
+ * So membership is checked against the two files the manager was given, and a
+ * number in neither refuses the whole sheet. A hallucinated number now costs the
+ * pass its sheet rather than passing as a clearance.
+ *
+ * ⚠ **Issue and pull-request numbers share ONE space in a GitHub repository**, so
+ * an entry is unambiguously one or the other and `collidesWith` can carry both
+ * without a tag.
+ */
+function numberList(
+  value: unknown,
+  what: string,
+  allowed: ReadonlySet<number>,
+  allowedWord: string,
+): readonly number[] | string {
   if (value === undefined || value === null) return [];
   if (!Array.isArray(value)) return `${what} is not an array`;
   const seen = new Set<number>();
   for (const entry of value) {
     if (typeof entry !== "number" || !Number.isSafeInteger(entry) || entry <= 0) {
-      return `${what} holds ${JSON.stringify(entry)}, which is not a card number`;
+      return `${what} holds ${JSON.stringify(entry)}, which is not a number`;
+    }
+    if (!allowed.has(entry)) {
+      return `${what} names #${entry}, which is not ${allowedWord} the manager was shown`;
     }
     seen.add(entry);
   }
@@ -288,7 +331,16 @@ export type ManagerRowsVerdict =
  *  - the snapshot is covered — fewer rows than cards is `partial`, which is the
  *    shape a truncated or turn-limited session produces.
  */
-export function parseManagerRows(payload: unknown, snapshot: readonly number[]): ManagerRowsVerdict {
+export function parseManagerRows(
+  payload: unknown,
+  snapshot: readonly number[],
+  /**
+   * The open pull requests the manager was shown. `collidesWith` may name one;
+   * `dependsOn` may not — a dependency is a card, and a PR number there means the
+   * two columns were confused, which is a reason to refuse rather than to guess.
+   */
+  openPullRequests: readonly number[] = [],
+): ManagerRowsVerdict {
   const refuse = (state: ManagerSheetUnusable, why: string): ManagerRowsVerdict => ({ kind: "refused", state, why });
   if (payload === null || typeof payload !== "object" || Array.isArray(payload)) {
     return refuse("unparseable", "the manager's output is not a JSON object");
@@ -297,6 +349,8 @@ export function parseManagerRows(payload: unknown, snapshot: readonly number[]):
   if (!Array.isArray(rawRows)) return refuse("unparseable", "the manager's output has no `rows` array");
 
   const expected = new Set(snapshot);
+  const prs = new Set(openPullRequests);
+  const collidable = new Set([...expected, ...prs]);
   const rows: ManagerCardRow[] = [];
   const seen = new Set<number>();
 
@@ -317,9 +371,14 @@ export function parseManagerRows(payload: unknown, snapshot: readonly number[]):
     }
     seen.add(cardNumber);
 
-    const dependsOn = cardList(row.dependsOn, `#${cardNumber}'s \`dependsOn\``);
+    const dependsOn = numberList(row.dependsOn, `#${cardNumber}'s \`dependsOn\``, expected, "an open card");
     if (typeof dependsOn === "string") return refuse("unparseable", dependsOn);
-    const collidesWith = cardList(row.collidesWith, `#${cardNumber}'s \`collidesWith\``);
+    const collidesWith = numberList(
+      row.collidesWith,
+      `#${cardNumber}'s \`collidesWith\``,
+      collidable,
+      "an open card or an open pull request",
+    );
     if (typeof collidesWith === "string") return refuse("unparseable", collidesWith);
 
     const area = row.area;
@@ -372,6 +431,7 @@ export function stampSheet(input: {
   readonly pass: string;
   readonly readAt: string;
   readonly snapshotCards: number;
+  readonly prNumbers: readonly number[];
   readonly model: string;
   readonly costUsd?: number | null;
   readonly nowMs: number;
@@ -381,6 +441,7 @@ export function stampSheet(input: {
     readAt: input.readAt,
     writtenAt: new Date(input.nowMs).toISOString(),
     snapshotCards: input.snapshotCards,
+    prNumbers: [...input.prNumbers].sort((a, b) => a - b),
     model: input.model,
     costUsd: input.costUsd ?? null,
     rows: input.rows,
@@ -456,15 +517,31 @@ export function readManagerSheet(input: {
   if (typeof declared !== "number" || !Number.isSafeInteger(declared) || declared < 0) {
     return { kind: "unusable", state: "unparseable", why: "the fact sheet does not say how many cards the manager was given" };
   }
-  /* The rows are re-validated against THEMSELVES here: the snapshot list is long
-     gone by read time, so the population check is `declared` below rather than a
-     membership test. Shape, duplicates and the two reason rules still apply. */
+  /*
+    THE PULL-REQUEST ALLOWLIST, off the document, because the snapshot files are
+    long gone by read time. ⚠ **An absent list is `unparseable`, never an empty
+    one.** Defaulting it to `[]` would make every `collidesWith` entry naming a
+    pull request unknown — and `numberList` would then refuse the sheet for a row
+    that was correct when it was written, which is a refusal nobody could
+    diagnose. A sheet written before this field existed cannot be read, and that
+    is the honest answer rather than a guess at what it meant.
+  */
+  if (!Array.isArray(doc.prNumbers)) {
+    return { kind: "unusable", state: "unparseable", why: "the fact sheet does not record which pull requests the manager was shown" };
+  }
+  const prNumbers = doc.prNumbers.filter(
+    (n): n is number => typeof n === "number" && Number.isSafeInteger(n) && n > 0,
+  );
+  /* The card rows are re-validated against THEMSELVES: the queue snapshot is gone,
+     so the population check is `declared` below rather than a membership test.
+     Shape, duplicates, the two reason rules and the collidesWith allowlist all
+     still apply. */
   const selfSnapshot = Array.isArray(doc.rows)
     ? doc.rows
       .map((row) => (row !== null && typeof row === "object" ? (row as { card?: unknown }).card : undefined))
       .filter((card): card is number => typeof card === "number" && Number.isSafeInteger(card) && card > 0)
     : [];
-  const verdict = parseManagerRows({ rows: doc.rows }, selfSnapshot);
+  const verdict = parseManagerRows({ rows: doc.rows }, selfSnapshot, prNumbers);
   if (verdict.kind === "refused") return { kind: "unusable", state: verdict.state, why: verdict.why };
   if (verdict.rows.length === 0) {
     return { kind: "unusable", state: "partial", why: "the fact sheet holds no rows, so the manager read nothing this pass" };
@@ -483,6 +560,7 @@ export function readManagerSheet(input: {
       readAt,
       writtenAt: typeof doc.writtenAt === "string" ? doc.writtenAt : readAt,
       snapshotCards: declared,
+      prNumbers,
       model: typeof doc.model === "string" ? doc.model : "unrecorded",
       costUsd: typeof doc.costUsd === "number" && Number.isFinite(doc.costUsd) ? doc.costUsd : null,
       rows: verdict.rows,

@@ -5,6 +5,7 @@
  *     npx tsx scripts/manager-fact-sheet.mts \
  *       --from-log .agents/shift-logs/manager-20261001-122100.log \
  *       --queue   .agents/shift-logs/manager-queue-20261001-122100.json \
+ *       --prs     .agents/shift-logs/manager-prs-20261001-122100.json \
  *       --pass    20261001-122100 \
  *       --read-at 2026-10-01T02:21:00.000Z \
  *       --out     .agents/shift-logs/manager-20261001-122100.json
@@ -53,7 +54,7 @@ import {
 import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
 const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
-  value: ["from-log", "queue", "pass", "read-at", "out", "model"],
+  value: ["from-log", "queue", "prs", "pass", "read-at", "out", "model"],
   boolean: [],
 });
 
@@ -116,6 +117,29 @@ try {
 if (snapshot.length === 0) refuse(`the queue snapshot at ${queuePath} names no cards`, outPath);
 
 /*
+  THE PULL-REQUEST ALLOWLIST, from the file the MANAGER was shown (the relay's
+  finding on PR #1668). `collidesWith` may name an open card or an open pull
+  request, and until this was passed through, any positive integer was accepted —
+  so a row that correctly named the branch editing the same file read as *no
+  collision* downstream. The list is stamped onto the sheet because the cut needs
+  it to tell a pair reading from a hold, and the read-time validator needs it as
+  the allowlist once these files are gone.
+*/
+const prsPath = ARGS.value("prs");
+let prNumbers: number[] = [];
+if (prsPath !== null) {
+  try {
+    const rows = JSON.parse(readFileSync(resolve(prsPath), "utf8")) as unknown;
+    if (!Array.isArray(rows)) refuse(`the pull-request snapshot at ${prsPath} is not an array`, outPath);
+    prNumbers = (rows as QueueRow[])
+      .map((row) => row?.number)
+      .filter((n): n is number => typeof n === "number" && Number.isSafeInteger(n) && n > 0);
+  } catch (error) {
+    refuse(`the pull-request snapshot could not be read (${error instanceof Error ? error.message : String(error)})`, outPath);
+  }
+}
+
+/*
   THE ROWS AND THE COST, from either road the runner may have captured — the
   plain final message, or the `--output-format json` envelope that carries
   `total_cost_usd`. `unwrapManagerPayload` owns the discrimination; see its
@@ -131,7 +155,7 @@ if (unwrapped === null || unwrapped.payload === null) {
   refuse("the manager's log holds no balanced JSON object — it answered in prose", outPath);
 }
 
-const verdict = parseManagerRows(unwrapped.payload, snapshot);
+const verdict = parseManagerRows(unwrapped.payload, snapshot, prNumbers);
 if (verdict.kind === "refused") refuse(`${verdict.state}: ${verdict.why}`, outPath);
 
 const sheet = stampSheet({
@@ -139,6 +163,7 @@ const sheet = stampSheet({
   pass,
   readAt,
   snapshotCards: snapshot.length,
+  prNumbers,
   model,
   costUsd: unwrapped.costUsd,
   nowMs: Date.now(),

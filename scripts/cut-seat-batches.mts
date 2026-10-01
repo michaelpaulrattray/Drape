@@ -394,7 +394,16 @@ if (factsPath !== null) {
     const verdict = readManagerSheet({ raw, pass: passStamp.trim(), nowMs });
     if (verdict.kind === "usable") {
       managerRows = managerRowsByCard(verdict.sheet);
-      managerFacts = { rowFor: (card: number) => managerRows.get(card) };
+      /* The pull-request allowlist comes off the SHEET, not from a fresh `gh pr
+         list`: it is the set the manager was shown, and re-reading it here would
+         judge its rows against a population it never saw (the relay's finding on
+         PR #1668 — a `collidesWith` entry is a card or a pull request, and which
+         one it is decides whether the row is a pair reading or a hold). */
+      const prAllowlist = new Set(verdict.sheet.prNumbers);
+      managerFacts = {
+        rowFor: (card: number) => managerRows.get(card),
+        isOpenPullRequest: (candidate: number) => prAllowlist.has(candidate),
+      };
       managerState = "usable";
       managerSheetReadAt = verdict.sheet.readAt;
       managerModel = verdict.sheet.model;
