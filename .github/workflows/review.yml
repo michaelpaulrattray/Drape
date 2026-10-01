@@ -46,7 +46,12 @@
 # docs/REVIEWER_CHARTER.md; money/auth diffs read CLAUDE.md in full, #161).
 # The relay — Fable, in the founder's terminal — reviews it at its next
 # sitting and posts the verdict as a PR comment headed
-# `**Fable review — by hand`. That comment IS the verdict:
+# `**Fable review — by hand`. That comment IS the verdict, and its
+# opposite is a FINDING headed `**Relay finding — HELD` (#1673) — read by the same
+# tool, refusing the merge rather than permitting it, and never wearing the
+# verdict marker. The reader still honours the old spelling (the verdict marker
+# with HELD or FINDING in the same header line) so a comment already on the
+# record cannot flip its meaning:
 # `scripts/pr-merge-in-order.mts` reads it off the PR (by the founder's
 # account, on the current head — a later push makes it stale), holds a
 # money/auth PR until it exists, and merges an ordinary PR on the gate alone
@@ -275,5 +280,5 @@ jobs:
           BODY="$MARKER"
           BODY="$BODY"$'\n'"**A review is owed on this PR** — $WHY."
           BODY="$BODY"$'\n\n'"The reviewer is the relay (Fable, in the founder's terminal), at its next sitting. $READING"
-          BODY="$BODY"$'\n\n'"The verdict arrives as a comment headed \`**Fable review — by hand\` and \`pr-merge-in-order\` reads it off this PR — by the founder's account, on the current head; a later push makes it stale. It reviews, in priority order: correctness bugs (concrete inputs that produce wrong output, a crash, or lost money); enforcement-invariant violations (CLAUDE.md); flag discipline (new reachable behaviour landing dark); controls a deletion or refactor could orphan — name what was bolted to the deleted path; and tests (a fix without its failing reproduction, a class fix without its sweep). A pass says what was checked; it does not invent findings."
+          BODY="$BODY"$'\n\n'"The verdict arrives as a comment headed \`**Fable review — by hand\` and \`pr-merge-in-order\` reads it off this PR — by the founder's account, on the current head; a later push makes it stale. **If the review does NOT pass, head the comment \`**Relay finding — HELD\` instead and never use the verdict marker (#1673): a finding refuses the merge, holds an ordinary PR too, and no \`--acknowledge\` answers it — the repair is pushed, then the verdict is asked for.** It reviews, in priority order: correctness bugs (concrete inputs that produce wrong output, a crash, or lost money); enforcement-invariant violations (CLAUDE.md); flag discipline (new reachable behaviour landing dark); controls a deletion or refactor could orphan — name what was bolted to the deleted path; and tests (a fix without its failing reproduction, a class fix without its sweep). A pass says what was checked; it does not invent findings."
           gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body "$BODY"

@@ -510,6 +510,34 @@ describe("decideMergeAction — the branch order is the contract", () => {
     expect(a.kind === "stop" && a.reason).toMatch(/--acknowledge 551/);
   });
 
+  /*
+    ⚠ A FINDING IS NOT A VERDICT, AND NO `--acknowledge` ANSWERS ONE (#1673).
+
+    PR #1649's hand comment was headed `**Fable review — by hand, FINDING … held`
+    and classified as a fresh verdict, so this tool would have merged on it — and
+    the board printed *passed and merging* over the held pull request for six
+    hours. `server/handFindingReader.test.ts` drives the reader itself; these two
+    arms pin what the DECISION does with the answer.
+  */
+  it("⚠ REFUSES a pull request whose newest hand comment is a FINDING", () => {
+    const a = decideMergeAction(pr({ review: "finding" }), ctx);
+    expect(a.kind).toBe("stop");
+    expect(a.kind === "stop" && a.reason).toMatch(/FINDING, not a verdict/);
+    expect(a.kind === "stop" && a.reason).toMatch(/repair is owed/);
+  });
+
+  it("⚠ and an acknowledgement does NOT buy past it — on an ordinary diff either", () => {
+    /* The second half is the one worth pinning: an ordinary pull request merges
+       on the gate alone, so a reader that let `reviewOwed: false` through would
+       merge a held one. */
+    const acknowledged = decideMergeAction(
+      pr({ review: "finding", verdictCount: 1, acknowledgedAtVerdictCount: 1 }),
+      ctx,
+    );
+    expect(acknowledged.kind).toBe("stop");
+    expect(acknowledged.kind === "stop" && acknowledged.reason).toMatch(/FINDING, not a verdict/);
+  });
+
   it("merges once the verdict is acknowledged", () => {
     expect(decideMergeAction(pr({ review: "verdict", verdictCount: 1, acknowledgedAtVerdictCount: 1 }), ctx)).toEqual({
       kind: "merge",

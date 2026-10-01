@@ -78,6 +78,7 @@ import { cardNumberToken, type CardPullRequestWhere } from "./crewShiftState";
 import { blockOpeningLines } from "./crewMarkdownLead";
 import {
   handVerdictFreshness,
+  isHandFinding,
   isHandVerdict,
   type HandVerdictFreshness,
 } from "./handVerdict";
@@ -95,7 +96,7 @@ export type CrewCardBuildState =
      * `passed` — the verdict is on the current head and it is queued to merge;
      * `draft` — not finished.
      */
-    readonly stage: "gate" | "review" | "passed" | "draft";
+    readonly stage: "gate" | "review" | "passed" | "finding" | "draft";
   }
   | { readonly kind: "claimed"; readonly seat: string | null; readonly at: string }
   /**
@@ -228,8 +229,12 @@ export function pullRequestBuildsCard(
  * reviewed pull request read as still waiting. A STALE verdict is not a verdict
  * for this purpose — the head moved under it — so it falls through to the label.
  */
-function prStage(pr: CrewBuildPullRequest): "gate" | "review" | "passed" | "draft" {
+function prStage(pr: CrewBuildPullRequest): "gate" | "review" | "passed" | "finding" | "draft" {
   if (pr.draft === true) return "draft";
+  /* ⚠ **A FINDING OUTRANKS EVERYTHING BELOW IT (#1673).** It is the one state
+     on this row that means somebody must go and do something, and for six hours
+     on 2026-10-01 it was drawn as *passed and merging*. */
+  if (pr.handVerdict === "finding") return "finding";
   if (pr.handVerdict === "fresh") return "passed";
   if ((pr.labels ?? []).some((label) => CREW_REVIEW_PR_LABELS.includes(label))) return "review";
   return "gate";
@@ -266,7 +271,13 @@ export type CrewCardCommentFact =
   | { readonly kind: "claim"; readonly card: number; readonly seat: string | null; readonly at: string }
   | { readonly kind: "release"; readonly card: number; readonly at: string }
   | { readonly kind: "refusal"; readonly card: number; readonly at: string }
-  | { readonly kind: "verdict"; readonly card: number; readonly at: string };
+  | { readonly kind: "verdict"; readonly card: number; readonly at: string }
+  /**
+   * ⚠ **THE RELAY READ IT AND SOMETHING IS WRONG (#1673)** — like `verdict`,
+   * this names a PULL REQUEST rather than a card, and `crewCardBuildState`
+   * ignores it for the same reason.
+   */
+  | { readonly kind: "finding"; readonly card: number; readonly at: string };
 
 /*
   Anchored at the start of a LINE, through at most a little markdown emphasis —
@@ -312,11 +323,15 @@ export function crewCardCommentFact(comment: CrewCardComment): CrewCardCommentFa
      `classifyComment` applies: a comment by any other account is not a verdict
      whatever it says. A caller that cannot supply the two logins reports no
      verdict at all rather than believing a body. */
-  if (isHandVerdict(body)) {
+  /* ⚠ THE FINDING IS ASKED FIRST (#1673). `isHandVerdict` already refuses a
+     finding wearing the verdict's marker, so the order cannot change the
+     answer — it is here so that a reader of this function sees the two kinds
+     side by side rather than discovering the second inside a predicate. */
+  if (isHandFinding(body) || isHandVerdict(body)) {
     const author = comment.authorLogin;
     const owner = comment.ownerLogin;
     if (typeof author === "string" && typeof owner === "string" && owner !== "" && author === owner) {
-      return { kind: "verdict", card, at: createdAt };
+      return { kind: isHandFinding(body) ? "finding" : "verdict", card, at: createdAt };
     }
     return null;
   }
@@ -353,10 +368,21 @@ export function handVerdictForPullRequest(input: {
   readonly updatedAt: string | null | undefined;
   readonly facts: readonly CrewCardCommentFact[];
 }): HandVerdictFreshness {
+  /* ⚠ **THE NEWEST HAND COMMENT OF EITHER KIND, NOT THE NEWEST VERDICT
+     (#1673).** Filtering to verdicts alone is what let PR #1649's finding be
+     invisible here: a later finding would have been stepped over and an earlier
+     verdict would still have read *passed and merging*. The merge tool's
+     `reviewPresence` resolves the same order against the head commit; this one
+     resolves it against the pull request's own clock, for the reason
+     `handVerdictFreshness` states. */
   const newest = input.facts
-    .filter((fact) => fact.kind === "verdict" && fact.card === input.pullRequest)
+    .filter((fact) => (fact.kind === "verdict" || fact.kind === "finding") && fact.card === input.pullRequest)
     .sort((a, b) => b.at.localeCompare(a.at))[0];
-  return handVerdictFreshness({ verdictAt: newest?.at ?? null, activityAt: input.updatedAt });
+  const freshness = handVerdictFreshness({ verdictAt: newest?.at ?? null, activityAt: input.updatedAt });
+  /* A STALE finding is the repair already pushed — it holds nothing, and the row
+     goes back to waiting on review, which is what `stale` already means here. */
+  if (newest?.kind === "finding" && freshness === "fresh") return "finding";
+  return freshness;
 }
 
 /**
@@ -501,6 +527,12 @@ export function crewCardBuildPhrase(state: CrewCardBuildState, nowMs: number): s
            pull request last, so eight rows read down the page as one thing. */
         case "passed":
           return `passed and merging — PR #${state.pullRequest}`;
+        /* ⚠ The one phrase on this list that names WORK OWED rather than a
+           state to wait out, and #1673 is why it exists: the board said *passed
+           and merging* over a held pull request from 23:46Z to 05:48Z while
+           every P1 card behind it waited. */
+        case "finding":
+          return `held on the relay's finding — repair owed — PR #${state.pullRequest}`;
         case "review":
           return `waiting on review — PR #${state.pullRequest}`;
         case "gate":
