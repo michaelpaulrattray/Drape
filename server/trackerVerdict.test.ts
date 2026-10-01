@@ -24,6 +24,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  PROBE_ERROR_CONTEXT,
   probeErrorMessage,
   probeMarker,
   readProbeBuild,
@@ -280,7 +281,10 @@ describe("the probe's event against the REAL scrub (#1542's own done-when)", () 
   const probeEvent = (message: string) => ({
     event_id: "abc123def456",
     message,
-    tags: { kind: "probe", route: "scripts/probe-error-tracker.mts", world: "railway:production" },
+    /* The probe's OWN two strings, imported rather than spelled — see
+       `PROBE_ERROR_CONTEXT`'s header. `world` is the tracker's, not the
+       probe's, and is spelled here on purpose. */
+    tags: { ...PROBE_ERROR_CONTEXT, world: "railway:production" },
     exception: {
       values: [{ type: "Error", value: message, stacktrace: { frames: [{ filename: "scripts/probe-error-tracker.mts" }] } }],
     },
@@ -301,6 +305,66 @@ describe("the probe's event against the REAL scrub (#1542's own done-when)", () 
     };
     const verdict = scrubErrorEvent(withRecipe, IMAGE_ORIGIN);
     expect(verdict.verdict).toBe("refuse");
+  });
+
+  /**
+   * ⚠ THE MARK HIS FEED FILTERS ON, PINNED — AND THE TWO ARMS ABOVE CANNOT SEE IT
+   * (#1650, 2026-10-01).
+   *
+   * #1650 was filed saying *"nothing marks them as probes, so the Errors feed
+   * and any count that reads it show them as real events"*, and asked for a
+   * second `probe` tag. **Read at Sentry's own API rather than at the card** —
+   * `GET /api/0/projects/klieg-labs/klieg-server/events/`, through the service's
+   * `SENTRY_AUTH_TOKEN` — all four probe events of 2026-09-30/10-01 carry
+   * `kind=probe` and `route=scripts/probe-error-tracker.mts`, while the two real
+   * `announcements.getActive` crashes beside them carry `kind=trpc`. So
+   * `!kind:probe` already filters them, and an eighth key on
+   * `ALLOWED_TAG_KEYS` carrying what the seventh carries is the parallel list
+   * working law 4 is about. The second tag is declined on the card.
+   *
+   * **What was genuinely missing is this arm.** The two above assert only that
+   * the event is NOT REFUSED; neither reads the projected output, so
+   * `scrubErrorEvent` is proven to pass the probe and never proven to pass its
+   * MARK. Drop `"kind"` from `ALLOWED_TAG_KEYS` — a seven-entry security
+   * allowlist that has been edited before — and both stay green while the
+   * projection silently drops the tag, his saved filter stops matching, and the
+   * ~35 probe events a day come back into the feed with nothing anywhere
+   * failing. A signal bought and unread, one line from the signal this product
+   * already paid for (#1542, and the DT law's clause 4).
+   */
+  it("the projection KEEPS the probe's mark — the tag his feed filters on", () => {
+    const verdict = scrubErrorEvent(probeEvent(probeErrorMessage(probeMarker("abcdef1", "n"))), IMAGE_ORIGIN);
+    if (verdict.verdict !== "send") throw new Error(`the probe's own event was refused: ${verdict.key}`);
+    expect(verdict.event.tags?.kind).toBe("probe");
+    expect(verdict.event.tags?.route).toBe("scripts/probe-error-tracker.mts");
+  });
+
+  it("and a tag key the allowlist does not name is DROPPED (so the arm above is not blind)", () => {
+    // The negative control for the arm above: without it, `tags.kind` surviving
+    // could mean the projection copies every tag it is handed, in which case the
+    // arm proves nothing about the allowlist at all.
+    const withStranger = { ...probeEvent("anything"), tags: { ...probeEvent("x").tags, nonsense: "travelled" } };
+    const verdict = scrubErrorEvent(withStranger, IMAGE_ORIGIN);
+    if (verdict.verdict !== "send") throw new Error("the control event was refused");
+    expect(verdict.event.tags?.kind).toBe("probe");
+    expect(verdict.event.tags).not.toHaveProperty("nonsense");
+  });
+
+  it("a REAL crash's mark travels too, and it is never `probe` (#1650's own clause)", () => {
+    // "real crashes never carry it" is a claim about the other side of the
+    // filter, and it is the half that decides whether `!kind:probe` hides a
+    // customer's crash. The tags are the ones Sentry actually holds on the two
+    // `announcements.getActive` events read on 2026-10-01.
+    const crash = {
+      event_id: "2ee63f40dfd643ca80818b50a883a60b",
+      message: "Failed query",
+      tags: { kind: "trpc", route: "announcements.getActive", trpcType: "query", world: "railway:production" },
+      exception: { values: [{ type: "Error", value: "Failed query" }] },
+    };
+    const verdict = scrubErrorEvent(crash, IMAGE_ORIGIN);
+    if (verdict.verdict !== "send") throw new Error("a real crash's event was refused");
+    expect(verdict.event.tags?.kind).toBe("trpc");
+    expect(verdict.event.tags?.kind).not.toBe("probe");
   });
 });
 
