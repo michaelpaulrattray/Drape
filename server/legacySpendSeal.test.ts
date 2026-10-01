@@ -27,7 +27,18 @@
  * is exactly the observable that says the middleware let it through. An arm that
  * only proved refusal would also pass if the procedure were broken for everyone.
  */
+import { readdirSync, statSync } from "node:fs";
+import { join, resolve } from "node:path";
+
 import { describe, expect, it, vi, beforeEach } from "vitest";
+
+import { readListedSource } from "./testing/listedSource";
+import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
+
+/* The last block walks `server/` for test sources — #741's derived population.
+   Declared once per FILE, never on an arm, so the arm written beside it
+   tomorrow inherits it. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 /* `vi.hoisted` because `vi.mock`'s factory is hoisted above every `const`. */
 const { deductCredits, withAtomicCredits, getModelById } = vi.hoisted(() => ({
@@ -173,5 +184,108 @@ describe("what is deliberately NOT sealed", () => {
       castingExportRouter.createCaller(ctxFor("user")).mintPackagePlan({ modelId: 1 } as never),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
     expect(deductCredits).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * ⚠ THE FALSE-PASS CLASS THIS SEAL CREATES, AND IT BIT FOUR TIMES WHILE THE
+ * SEAL WAS BEING WRITTEN.
+ *
+ * An arm that drives one of the three with an ordinary caller and asserts
+ * FORBIDDEN now gets FORBIDDEN **from the gate**. Two real examples, both found
+ * only because a wider sweep was run: the foreign-owner arms in
+ * `server/batch0-authority.test.ts` and `server/casting/typedIterationDoors.test.ts`
+ * assert the OWNERSHIP refusal (`model.userId !== ctx.user.id`), and they went
+ * on passing while testing nothing at all. An admin whose id is not the owner's
+ * still meets that refusal, which is why those arms now call as admins.
+ *
+ * ⚠ IT IS A FLOOR AND NOT COVERAGE, AND THE DOCBLOCK SAYS SO RATHER THAN THE
+ * REPORT. It matches this repository's house idiom — an `authCtx(…)` helper
+ * inside the `it`-block — because there is no DECLARATION of a test's role to
+ * read; a context built any other way is invisible to it. What it would have
+ * caught is all four of the misses above, which is the whole of its claim.
+ */
+const ROOT = resolve(import.meta.dirname, "..");
+const SEALED_CALLS = [".castingImage(", ".iterate(", ".mintPackage("];
+
+function armsDrivingASealedProcedureWithAnOrdinaryCaller(): string[] {
+  const found: string[] = [];
+  const walk = (dir: string): void => {
+    for (const entry of readdirSync(dir)) {
+      const full = join(dir, entry);
+      /* A listed entry can be gone before it is classified (#223), and this
+         tree carries hundreds of untracked disposables that come and go. */
+      const stats = statSync(full, { throwIfNoEntry: false });
+      if (!stats) continue;
+      if (stats.isDirectory()) {
+        walk(full);
+        continue;
+      }
+      if (!full.endsWith(".test.ts")) continue;
+      /* ⚠ This file is EXCLUDED, and it is the file that declares the rule.
+         It necessarily contains every literal the reader matches — in the
+         docblock, in `SEALED_CALLS`, and in the positive control's fixture —
+         and the naive arm-slicing below swept that module-level code into the
+         nearest `it(` block, flagging two of its own arms on the first run.
+         Nothing is lost: the four procedures this file is about are DRIVEN
+         above rather than read as text. */
+      if (full.endsWith("legacySpendSeal.test.ts")) continue;
+      const source = readListedSource(full);
+      if (source === null) continue;
+      if (!source.includes("authCtx(")) continue;
+
+      const lines = source.split("\n");
+      const opensAnArm = (line: string) =>
+        line.trim().startsWith("it(") || line.trim().startsWith("it.each(");
+      for (let i = 0; i < lines.length; i += 1) {
+        if (!opensAnArm(lines[i])) continue;
+        let j = i + 1;
+        while (j < lines.length && !opensAnArm(lines[j])) j += 1;
+        const body = lines.slice(i, j);
+        const text = body.join("\n");
+        if (!SEALED_CALLS.some((call) => text.includes(call))) continue;
+        const callers = body.filter((line) => line.includes("authCtx("));
+        if (callers.length === 0) continue;
+        if (callers.every((line) => line.includes('"admin"'))) continue;
+        const rel = full.split("\\").join("/").slice(ROOT.split("\\").join("/").length + 1);
+        found.push(`${rel}:${i + 1} — ${lines[i].trim().slice(0, 90)}`);
+      }
+    }
+  };
+  walk(resolve(ROOT, "server"));
+  return found.sort();
+}
+
+describe("no arm drives a sealed procedure as an ordinary account by accident", () => {
+  it("⚠ the tree holds none — a FLOOR, read at the test sources", () => {
+    expect(armsDrivingASealedProcedureWithAnOrdinaryCaller()).toEqual([]);
+  });
+
+  it("⚠ POSITIVE CONTROL — the reader finds the shape when it is there", () => {
+    /*
+      A guard whose only arm is "the tree is clean" is a guard that cannot be
+      shown to work (law 2). This drives the matcher's own rule over a fixture
+      of the exact shape it exists to catch, and over the corrected shape
+      beside it.
+    */
+    const offending = [
+      '  it("foreign owner: FORBIDDEN, nothing charged", async () => {',
+      "    const caller = appRouter.createCaller(authCtx(1));",
+      "    await expect(caller.generation.iterate({ modelId: 7 })).rejects.toMatchObject({ code: \"FORBIDDEN\" });",
+      "  });",
+    ].join("\n");
+    const corrected = offending.replace("authCtx(1)", 'authCtx(1, "admin")');
+
+    const matches = (source: string) => {
+      const lines = source.split("\n");
+      const body = lines.slice(0);
+      const text = body.join("\n");
+      const drivesSealed = SEALED_CALLS.some((call) => text.includes(call));
+      const callers = body.filter((line) => line.includes("authCtx("));
+      return drivesSealed && callers.length > 0 && !callers.every((line) => line.includes('"admin"'));
+    };
+
+    expect(matches(offending)).toBe(true);
+    expect(matches(corrected)).toBe(false);
   });
 });

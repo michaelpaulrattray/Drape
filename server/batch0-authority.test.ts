@@ -324,7 +324,7 @@ describe("generation.castingImage authorization order (review fix 1)", () => {
 
   it("foreign model: FORBIDDEN, no deduction, no Gemini call, no asset", async () => {
     vi.mocked(getModelById).mockResolvedValue(model({ userId: 2 }) as never);
-    const caller = appRouter.createCaller(authCtx(1));
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(caller.generation.castingImage({ modelId: 7 })).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect(deductCredits).not.toHaveBeenCalled();
     expect(generateCastingImage).not.toHaveBeenCalled();
