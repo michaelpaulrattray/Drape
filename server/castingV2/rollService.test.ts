@@ -66,7 +66,7 @@ vi.mock("../db/castingV2", async (importOriginal) => ({
     dbCalls.createRoll(input);
     return {
       session: { id: 10 },
-      roll: { id: 100, publicId: "roll-public", sessionId: 10, operationId: OPERATION_ID, priceCredits: 160 },
+      roll: { id: 100, publicId: "roll-public", sessionId: 10, operationId: OPERATION_ID, priceCredits: ROLL_PRICE },
       candidates: rows.candidates,
     };
   }),
@@ -88,7 +88,7 @@ vi.mock("../db/castingV2", async (importOriginal) => ({
   getRollByOperation: vi.fn(async () => ({
     id: 100,
     publicId: "roll-public",
-    priceCredits: 160,
+    priceCredits: ROLL_PRICE,
     operationId: OPERATION_ID,
   })),
   /* A follow's parent. Only the pick arms roll a follow, and all they need is
@@ -298,11 +298,25 @@ const {
 const { recordRefund } = await import("../casting/atomicCredits");
 const { ROLL_UNSEEN_REFUND_DESCRIPTION } = await import("./sliceRefundLedger");
 const { ProviderError } = await import("../providers/types");
-const { CASTING_V2_COSTS, castingSliceCredits } = await import("../casting/castingCreditCosts");
+const { CASTING_V2_COSTS, CASTING_V2_ROLL_PRICE_CREDITS, castingSliceCredits } = await import("../casting/castingCreditCosts");
+
+/**
+ * A SHEET'S MONEY, READ FROM THE PRODUCT — #1601 item 1, 2026-10-01.
+ *
+ * ⚠ **`160` AND `20` WERE LITERALS THROUGHOUT THIS SUITE AND EVERY MONEY ARM
+ * WENT RED ON ONE CONSTANT EDIT** (a Roll slice is 150 now, so a sheet is
+ * 1,200). The arms are about CONSERVATION and per-slice settlement — eight
+ * independently refundable units, each refunded under its own reference, money
+ * never paid twice — and all of that is true at any price. So they read the
+ * price, which also means they keep working when a Follow's slice (200) is the
+ * one under test.
+ */
+const SLICE = CASTING_V2_COSTS.rollCandidate;
+const ROLL_PRICE = CASTING_V2_ROLL_PRICE_CREDITS;
 
 /** The roll's charge row, as `deductCredits` writes it under the pinned reference. */
 function chargeRow() {
-  return { userId: 7, referenceId: `op:${OPERATION_ID}:charge`, type: "generation", amount: -160 };
+  return { userId: 7, referenceId: `op:${OPERATION_ID}:charge`, type: "generation", amount: -ROLL_PRICE };
 }
 
 function seedCandidates(count = 8) {
@@ -310,7 +324,7 @@ function seedCandidates(count = 8) {
     id: index + 1,
     publicId: `cand-${index + 1}`,
     position: index,
-    pointsCost: 20,
+    pointsCost: SLICE,
     status: "queued",
   }));
 }
@@ -842,7 +856,7 @@ describe("settlement per slice", () => {
     await createRoll(baseDependencies(), INPUT);
     expect(refunds).toHaveLength(0);
     expect(receipts.success).toHaveBeenCalledWith(
-      expect.objectContaining({ chargedCredits: 160, refundedCredits: 0, terminalStatus: "succeeded" }),
+      expect.objectContaining({ chargedCredits: ROLL_PRICE, refundedCredits: 0, terminalStatus: "succeeded" }),
     );
   });
 
@@ -878,23 +892,23 @@ describe("settlement per slice", () => {
   it("refunds exactly the slices that failed, and records a partial", async () => {
     await createRoll(baseDependencies((position) => position < 2), INPUT);
 
-    expect(refunds.map((refund) => refund.amount)).toEqual([20, 20]);
+    expect(refunds.map((refund) => refund.amount)).toEqual([SLICE, SLICE]);
     const total = refunds.reduce((sum, refund) => sum + refund.amount, 0);
-    expect(total).toBe(40);
-    expect(total).toBeLessThan(160);
+    expect(total).toBe(2 * SLICE);
+    expect(total).toBeLessThan(ROLL_PRICE);
     expect(receipts.success).toHaveBeenCalledWith(
-      expect.objectContaining({ chargedCredits: 160, refundedCredits: 40, terminalStatus: "partial" }),
+      expect.objectContaining({ chargedCredits: ROLL_PRICE, refundedCredits: 2 * SLICE, terminalStatus: "partial" }),
     );
   });
 
   it("refunds the whole sheet and fails when nothing arrives", async () => {
     await expect(createRoll(baseDependencies(() => true), INPUT)).rejects.toBeTruthy();
     const total = refunds.reduce((sum, refund) => sum + refund.amount, 0);
-    expect(total).toBe(160);
+    expect(total).toBe(ROLL_PRICE);
     // Conservation's outer bound: never more than was charged.
-    expect(total).toBeLessThanOrEqual(160);
+    expect(total).toBeLessThanOrEqual(ROLL_PRICE);
     expect(receipts.failure).toHaveBeenCalledWith(
-      expect.objectContaining({ chargedCredits: 160, refundedCredits: 160 }),
+      expect.objectContaining({ chargedCredits: ROLL_PRICE, refundedCredits: ROLL_PRICE }),
     );
   });
 
@@ -941,7 +955,7 @@ describe("cancel", () => {
     const result = await cancelRoll({ userId: 7, rollPublicId: "roll-public" });
 
     expect(result.cancelled).toBe(4);
-    expect(result.refundedCredits).toBe(80);
+    expect(result.refundedCredits).toBe(4 * SLICE);
     // Delivered work is never refunded (§H.6), and a candidate can only be won
     // by cancel or by dispatch — never both.
     expect(refunds).toHaveLength(4);
@@ -985,7 +999,7 @@ describe("cancel", () => {
 
   it("refunds a candidate that lands unseen after the cancel", async () => {
     rows.candidates = [
-      { id: 1, publicId: "cand-1", position: 0, pointsCost: 20, status: "queued", cancelledMidFlight: true },
+      { id: 1, publicId: "cand-1", position: 0, pointsCost: SLICE, status: "queued", cancelledMidFlight: true },
     ];
     // The whole sheet here is one cancelled-mid-flight candidate, so the
     // create call ends in a refusal — and its wording must blame the cancel,
@@ -999,12 +1013,12 @@ describe("cancel", () => {
     // everything you haven't seen" is the promise this test holds up.
     expect(rows.candidates[0].status).toBe("expired");
     expect(refunds).toHaveLength(1);
-    expect(refunds[0].amount).toBe(20);
+    expect(refunds[0].amount).toBe(SLICE);
   });
 
   it("refunds the unseen landing under its own reference, not the failure one", async () => {
     rows.candidates = [
-      { id: 1, publicId: "cand-1", position: 0, pointsCost: 20, status: "queued", cancelledMidFlight: true },
+      { id: 1, publicId: "cand-1", position: 0, pointsCost: SLICE, status: "queued", cancelledMidFlight: true },
     ];
     await expect(createRoll(baseDependencies(), INPUT)).rejects.toThrow();
 
@@ -1018,7 +1032,7 @@ describe("cancel", () => {
 
   it("writes the unseen refund in the sentence recovery pays it with (#994)", async () => {
     rows.candidates = [
-      { id: 1, publicId: "cand-1", position: 0, pointsCost: 20, status: "queued", cancelledMidFlight: true },
+      { id: 1, publicId: "cand-1", position: 0, pointsCost: SLICE, status: "queued", cancelledMidFlight: true },
     ];
     await expect(createRoll(baseDependencies(), INPUT)).rejects.toThrow();
 
@@ -1043,10 +1057,10 @@ describe("cancel", () => {
       operationId: OPERATION_ID,
       candidates: rows.candidates,
     });
-    // The row is priced at 20. The ledger says nothing came back, so neither
+    // The row is priced at one slice. The ledger says nothing came back, so neither
     // does the receipt.
     expect(receipts.success).toHaveBeenCalledWith(
-      expect.objectContaining({ chargedCredits: 160, refundedCredits: 0, terminalStatus: "partial" }),
+      expect.objectContaining({ chargedCredits: ROLL_PRICE, refundedCredits: 0, terminalStatus: "partial" }),
     );
   });
 
@@ -1066,10 +1080,10 @@ describe("cancel", () => {
     rows.candidates.forEach((candidate) => {
       candidate.status = "cancelled";
     });
-    vi.mocked(settleCancelledSlices).mockResolvedValueOnce({ refundedCredits: 160, unrecorded: 0 });
+    vi.mocked(settleCancelledSlices).mockResolvedValueOnce({ refundedCredits: ROLL_PRICE, unrecorded: 0 });
 
     await expect(createRoll(baseDependencies(), INPUT)).rejects.toMatchObject({
-      message: "That roll was cancelled. 160 credits were refunded.",
+      message: `That roll was cancelled. ${ROLL_PRICE} credits were refunded.`,
     });
   });
 
@@ -1158,7 +1172,7 @@ describe("a cancel that lands before the roll is charged (#995)", () => {
     const dependencies = { ...(baseDependencies() as object), deduct: deductAfterCancel(landed, true) } as never;
 
     await expect(createRoll(dependencies, INPUT)).rejects.toMatchObject({
-      message: "That roll was cancelled. 160 credits were refunded.",
+      message: `That roll was cancelled. ${ROLL_PRICE} credits were refunded.`,
     });
 
     // The press worked: every tile stopped, and the cancel claimed no money.
@@ -1168,7 +1182,7 @@ describe("a cancel that lands before the roll is charged (#995)", () => {
     expect(ledger[0]).toMatchObject({ referenceId: `op:${OPERATION_ID}:charge`, type: "generation" });
     const refundRows = ledger.slice(1);
     expect(refundRows).toHaveLength(8);
-    expect(refundRows.every((row) => row.type === "refund" && row.amount === 20)).toBe(true);
+    expect(refundRows.every((row) => row.type === "refund" && row.amount === SLICE)).toBe(true);
     // Once each, under the cancel's own reference and in the cancel's words.
     const { refundReferenceFor } = await vi.importActual<typeof import("../casting/atomicCredits")>("../casting/atomicCredits");
     const { ROLL_CANCEL_REFUND_DESCRIPTION } = await import("./sliceRefundLedger");
@@ -1176,7 +1190,7 @@ describe("a cancel that lands before the roll is charged (#995)", () => {
       new Set(rows.candidates.map((candidate) => refundReferenceFor(cancelRefundReference(candidate.publicId as string)))),
     );
     expect(refundRows.every((row) => row.description === ROLL_CANCEL_REFUND_DESCRIPTION)).toBe(true);
-    expect(receipts.failure).toHaveBeenCalledWith(expect.objectContaining({ chargedCredits: 160, refundedCredits: 160 }));
+    expect(receipts.failure).toHaveBeenCalledWith(expect.objectContaining({ chargedCredits: ROLL_PRICE, refundedCredits: ROLL_PRICE }));
   });
 
   it("THE DEFECT, BY THE FAILED DEDUCT: a roll that is never charged leaves no refund on the ledger", async () => {
@@ -1199,7 +1213,7 @@ describe("a cancel that lands before the roll is charged (#995)", () => {
 
     const result = await cancelRoll({ userId: 7, rollPublicId: "roll-public" });
 
-    expect(result).toMatchObject({ cancelled: 5, refundedCredits: 100, refundUnrecorded: false });
+    expect(result).toMatchObject({ cancelled: 5, refundedCredits: 5 * SLICE, refundUnrecorded: false });
     expect(ledger.filter((row) => row.type === "refund")).toHaveLength(5);
     expect(ledger.indexOf(ledger.find((row) => row.type === "generation")!)).toBe(0);
   });
@@ -1284,7 +1298,7 @@ describe("the render-fault detector, enforcing", () => {
 
     // Eight slices out, eight slices back, under the derived references.
     expect(refunds).toHaveLength(8);
-    expect(refunds.reduce((total, refund) => total + refund.amount, 0)).toBe(160);
+    expect(refunds.reduce((total, refund) => total + refund.amount, 0)).toBe(ROLL_PRICE);
     // Sorted: candidates dispatch concurrently, so refunds land in completion
     // order. What matters is the SET — every slice, exactly once.
     expect(refunds.map((refund) => refund.reference).sort()).toEqual(
@@ -2001,7 +2015,7 @@ describe("a slice whose dispatch WRITE throws — the live-process collision (#8
     two `queued`, forty minutes and counting. Every arm here drives THAT write
     throwing and proves the loop no longer outlives its own failure.
   */
-  const PARTIAL = { type: "partial", ready: 7, refunded: 1, chargedCredits: 160, refundedCredits: 20 } as const;
+  const PARTIAL = { type: "partial", ready: 7, refunded: 1, chargedCredits: ROLL_PRICE, refundedCredits: SLICE } as const;
 
   it("hands the roll to the sweep's own adjudicator, in-process, AFTER every sibling has finished", async () => {
     dispatchWriteThrowsFor.add(3);
@@ -2014,7 +2028,7 @@ describe("a slice whose dispatch WRITE throws — the live-process collision (#8
       id: OPERATION_ID,
       userId: INPUT.userId,
       status: "running",
-      chargedCredits: 160,
+      chargedCredits: ROLL_PRICE,
       refundedCredits: 0,
     });
     /* `allSettled`, not `all`: the seven that could land DID land, and all of
@@ -2028,8 +2042,8 @@ describe("a slice whose dispatch WRITE throws — the live-process collision (#8
     expect(result).toEqual({
       rollId: 100,
       rollPublicId: "roll-public",
-      chargedCredits: 160,
-      refundedCredits: 20,
+      chargedCredits: ROLL_PRICE,
+      refundedCredits: SLICE,
       ready: 7,
       failed: 1,
     });
@@ -2038,7 +2052,7 @@ describe("a slice whose dispatch WRITE throws — the live-process collision (#8
   it("throws the sentence the receipt was sealed with when nothing arrived", async () => {
     dispatchWriteThrowsFor.add(1);
     adjudicator.recover.mockResolvedValueOnce({
-      type: "paid_failure", refunded: 8, chargedCredits: 160, refundedCredits: 160,
+      type: "paid_failure", refunded: 8, chargedCredits: ROLL_PRICE, refundedCredits: ROLL_PRICE,
     });
 
     await expect(createRoll(baseDependencies(() => true), INPUT)).rejects.toMatchObject({
@@ -2051,7 +2065,7 @@ describe("a slice whose dispatch WRITE throws — the live-process collision (#8
   it("parks a dead-end verdict for support exactly as the sweep does — same words, heartbeat stopped by the park", async () => {
     dispatchWriteThrowsFor.add(5);
     adjudicator.recover.mockResolvedValueOnce({
-      type: "recovery_required", reason: "duplicate charge rows for one operation", chargedCredits: 160, refundedCredits: 40,
+      type: "recovery_required", reason: "duplicate charge rows for one operation", chargedCredits: ROLL_PRICE, refundedCredits: 2 * SLICE,
     });
 
     await expect(createRoll(baseDependencies(), INPUT)).rejects.toMatchObject({
@@ -2062,8 +2076,8 @@ describe("a slice whose dispatch WRITE throws — the live-process collision (#8
       userId: INPUT.userId,
       operationId: OPERATION_ID,
       publicMessage: ROLL_RECOVERY_SENTENCE.supportReview(OPERATION_ID),
-      chargedCredits: 160,
-      refundedCredits: 40,
+      chargedCredits: ROLL_PRICE,
+      refundedCredits: 2 * SLICE,
     });
     expect(adjudicator.handoff).not.toHaveBeenCalled();
   });
@@ -2104,7 +2118,7 @@ describe("a slice whose dispatch WRITE throws — the live-process collision (#8
     expect(adjudicator.recover).not.toHaveBeenCalled();
     expect(adjudicator.handoff).not.toHaveBeenCalled();
     expect(receipts.success).toHaveBeenCalledWith(
-      expect.objectContaining({ chargedCredits: 160, refundedCredits: 20, terminalStatus: "partial" }),
+      expect.objectContaining({ chargedCredits: ROLL_PRICE, refundedCredits: SLICE, terminalStatus: "partial" }),
     );
   });
 });

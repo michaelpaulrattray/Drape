@@ -112,6 +112,15 @@ describe("R7-7E1 evidence-aware package foundation contract", () => {
       // Sign (M7) reads the same declaration-only prices: the package module
       // derives the Sign total from its own view list, and the service quotes
       // it. Two more readers of a price, no new dependency on anything.
+      // ⚠ TWO MORE READERS ARRIVED ON 2026-10-01 (#1601 item 1), and this
+      // inventory is what surfaced them — which is the job it was written for.
+      // The paid Try again stopped being a view's price and became its own, so
+      // the room's projection and the entrance that spends the money both read
+      // `CASTING_V2_VIEW_RETRY_PRICE_CREDITS` instead of passing
+      // `CAST_PACKAGE_VIEW_PRICE` into `castSlotRetryOffer`. Still a
+      // declaration-only read: neither import adds a dependency to the price
+      // module, which is the purity this suite is actually about.
+      "castingV2/castProjection.ts",
       "castingV2/castViewPackage.ts",
       // Refine (M8) quotes its one-unit price the same way. The adjudicator is
       // deliberately NOT here: it reads the charge back off the ledger rather
@@ -131,6 +140,7 @@ describe("R7-7E1 evidence-aware package foundation contract", () => {
       // The Sign adjudicator reads the promotion price to cross-check the
       // promised package against what was actually charged (package v2).
       "castingV2/signRecovery.ts",
+      "castingV2/viewRetryService.ts",
       // signService.ts LEFT this list with #108 slice 2b: its only import of
       // castingCreditCosts fed a re-export (`CASTING_V2_SIGN_COSTS`) nothing
       // read through it; the sign price it charges comes via castViewPackage.
