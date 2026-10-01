@@ -211,21 +211,46 @@ describe("card 387 item 2 — the law-7 sweep: no cycle claimed where none runs"
     );
   });
 
+  /**
+   * ⚠ **THESE TWO ARMS READ A NAMED GATE NOW, AND THE GATE GAINED A CONDITION
+   * RATHER THAN LOSING ONE — #1703, 2026-10-01.**
+   *
+   * They matched the literal `renews && allowance > 0` inline at each site. That
+   * is exactly the right thing to pin and exactly the wrong way to pin it: the
+   * #1703 repair added a THIRD condition to both sites — the balance must be
+   * known, not merely defaulted to 0 — and two guards whose text no longer
+   * matched went red for a change that made both claims strictly harder to print.
+   *
+   * So the gate is a named constant and these arms hold its DEFINITION in one
+   * place and its USE at each site. Both facts stay checkable, the new condition
+   * is held too, and a future site that re-inlines a weaker gate reddens — which
+   * the old shape could not have told from a correct inline one.
+   */
+  it("the quotable gate names all three conditions a balance claim needs", () => {
+    expect(
+      billing(),
+      "the gate behind every allowance claim lost a condition — it must require a renewing"
+      + " period, an allowance to measure against, AND a balance that has actually been read",
+    ).toMatch(/const quotable = balance !== null && renews && allowance > 0;/);
+  });
+
   it("the percentage-of-allowance sentence is gated the same way", () => {
     expect(
       billing(),
       "the allowance percentage can print again without a renewing period — this is the 491% line",
-    ).toMatch(/renews && allowance > 0[\s\S]{0,120}allowance left/);
+    ).toMatch(/\{quotable[\s\S]{0,120}allowance left/);
   });
 
   it("the bar is not drawn without a denominator", () => {
     /*
       An empty track under a real balance reads as nothing left, which is the
       opposite of true — so where there is no allowance to measure against,
-      there is no bar.
+      there is no bar. ⚠ And without a BALANCE there is no numerator either
+      (#1703): a track drawn off an unread figure makes the same claim the
+      figure does, which is why the gate is shared rather than restated.
     */
     expect(billing(), "a ratio bar came back without a renewing allowance behind it").toMatch(
-      /renews && allowance > 0 \? <Bar/,
+      /\{quotable \? <Bar/,
     );
   });
 

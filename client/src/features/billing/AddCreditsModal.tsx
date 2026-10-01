@@ -233,10 +233,27 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
               : ""}
             .
           </p>
-        ) : (
+        ) : status ? (
           <p className="dp-topup__reason">
-            {formatCredits(displayBalance(status?.balance ?? 0))} credits on the balance today.
+            {formatCredits(displayBalance(status.balance))} credits on the balance today.
           </p>
+        ) : (
+          /*
+            ⚠ **NOT KNOWN YET IS NOT ZERO — #1703, and this is the surface it
+            was measured on.** `status?.balance ?? 0` told a customer holding
+            3,688 credits that they had **"0 credits on the balance today."** for
+            about a second, under the one heading whose entire job is to talk
+            about their balance — while the header chip above it read 3,688.
+
+            A sentence cannot be em-dashed the way a figure can (`BoardHeader`,
+            `UsageSection`, the two chips in this PR), so the honest shape here
+            is to say NOTHING until the server has answered. It is one render
+            beat, the modal's title and price already stand without it, and the
+            sentence that replaces it a beat later is the real one. The
+            alternative — a skeleton — would reserve space for a claim we do not
+            have yet, which is the same confidence in a thinner coat.
+          */
+          null
         )}
 
         <div className="dp-topup__adjust">

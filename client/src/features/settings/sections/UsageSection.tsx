@@ -90,7 +90,7 @@ export function UsageSection({
   balance,
 }: {
   allowance: number;
-  balance: number;
+  balance: number | null;
 }) {
   /*
     ⚠ THE WINDOW AND ITS SUM ARE THE SERVER'S, AND ITS LABEL IS DERIVED FROM

@@ -87,7 +87,7 @@ import { isStaffRole } from '@/features/staff/staffRole';
 
 interface UserCardProps {
   userName: string;
-  creditsBalance: number;
+  creditsBalance: number | null;
   role?: string | null;
   /*
     #416 — ⚠ BOTH OF THESE DESCRIBED THE RETIRED `01-staff-shell.md` PROPOSAL
@@ -149,7 +149,14 @@ export function UserCard({
       <div className="dp-menu__identity">
         <span className="dp-menu__name">{userName}</span>
         <span className="dp-menu__meta">
-          <span className="dp-menu__balance">{formatCredits(displayBalance(creditsBalance))}</span>
+          {/* ⚠ NOT KNOWN YET IS NOT ZERO (#1703). `creditsData?.balance ?? 0`
+              upstream printed a confident **0 credits** in the account menu for
+              the beat before the balance query answered. An em dash is the house
+              answer for a figure not read yet — `BoardHeader` has drawn it that
+              way all along, and this menu is the surface it sits beside. */}
+          <span className="dp-menu__balance">
+            {creditsBalance !== null ? formatCredits(displayBalance(creditsBalance)) : "—"}
+          </span>
           <span>credits · {WORKSPACE_ROLE_LABEL}</span>
         </span>
       </div>

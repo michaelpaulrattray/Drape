@@ -50,7 +50,7 @@ export function BillingSection({
   planName: string;
   planPriceInCents: number;
   allowance: number;
-  balance: number;
+  balance: number | null;
   renewsAt: Date | null;
   onChangePlan: () => void;
   onAddCredits: () => void;
@@ -90,7 +90,21 @@ export function BillingSection({
     rather than invent one. Nothing is dropped on a paying account.
   */
   const renews = renewsAt !== null;
-  const remainingShare = renews && allowance > 0 ? balance / allowance : 0;
+  /*
+    ⚠ **AND A BALANCE NOBODY HAS READ YET IS NOT A BALANCE OF ZERO — #1703,
+    2026-10-01.** `status?.balance ?? 0` upstream meant this pane printed a
+    confident **0** in CREDITS REMAINING for the beat before `billing.getStatus`
+    answered, under a label whose whole job is to state what a customer has. The
+    bar's own comment one screen down already had the argument — *"an empty
+    track under a real balance reads as nothing left, which is the opposite of
+    true"* — and it is the same sentence about the number above it.
+
+    So `null` travels the whole way here and every claim that quotes it stands
+    down together: the figure, the track and the percentage. An em dash is the
+    house answer for a figure not yet known (`BoardHeader`, `UsageSection`).
+  */
+  const remainingShare = balance !== null && renews && allowance > 0 ? balance / allowance : 0;
+  const quotable = balance !== null && renews && allowance > 0;
   const invoices = invoicesData?.invoices ?? [];
 
   return (
@@ -118,13 +132,17 @@ export function BillingSection({
       <div className="dp-set__cards" style={{ marginTop: "var(--s-7)" }}>
         <div className="dp-set__minicard">
           <span className="dp-set__minilabel">CREDITS REMAINING</span>
-          <span className="dp-set__mininum">{formatCredits(displayBalance(balance))}</span>
+          <span className="dp-set__mininum">
+            {balance !== null ? formatCredits(displayBalance(balance)) : "—"}
+          </span>
           {/* A bar needs a denominator. Without a renewing allowance there is
               none, and an empty track under a real balance reads as nothing
-              left — which is the opposite of true. */}
-          {renews && allowance > 0 ? <Bar ratio={remainingShare} token="--ink" /> : null}
+              left — which is the opposite of true. ⚠ And without a BALANCE it
+              has no numerator either (#1703): a track drawn off an unread
+              figure makes the same claim the figure does. */}
+          {quotable ? <Bar ratio={remainingShare} token="--ink" /> : null}
           <span className="dp-set__note">
-            {renews && allowance > 0
+            {quotable
               ? `${Math.round(remainingShare * 100)}% of this month's allowance left · `
               : ""}
             {/*

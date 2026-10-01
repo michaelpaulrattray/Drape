@@ -56,10 +56,20 @@ export type SpendBasis = "period" | "rolling30";
  *
  * So there is no default: the window is named only once the server has said
  * which one it summed, and until then the heading is the bare noun.
+ *
+ * ⚠ **AND THE SAME RULE NOW BINDS THE FIGURE, WHICH IT DID NOT — #1703, 2026-10-01.**
+ * The guard above is about the basis, and the basis comes from
+ * `usage.getCycleSpend`; `balance` comes from `billing.getStatus`, which is a
+ * DIFFERENT query. So the free branch below could be reached with a known window
+ * and an unknown balance, and it printed *"0 credits left"* — real window words
+ * attached to a figure nobody had read, which is this docblock's own warning
+ * with the two halves swapped. **Guarding the words and not the number they
+ * quote is half a guard**, and a `null` balance now gets no note at all on the
+ * same ground a `null` basis gets no window.
  */
 export function spendWindowCopy(
   basis: SpendBasis | null,
-  balance: number,
+  balance: number | null,
   allowance: number,
 ): { heading: string; over: string | null; note?: string } {
   if (basis === null) {
@@ -82,6 +92,13 @@ export function spendWindowCopy(
   return {
     heading: "Usage in the last 30 days",
     over: "the last 30 days",
-    note: `${formatCredits(displayBalance(balance))} credits left`,
+    /* ⚠ NOT KNOWN YET IS NOT ZERO (#1703). A pool that does not refill is
+       described by the pool itself, so this note is the one true figure beside
+       the free window — and a figure nobody has read yet is not that figure. No
+       note is the honest answer for the beat before `getStatus` lands; the
+       heading and the window words above are already true without it. */
+    note: balance === null
+      ? undefined
+      : `${formatCredits(displayBalance(balance))} credits left`,
   };
 }

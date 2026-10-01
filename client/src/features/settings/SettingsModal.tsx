@@ -91,7 +91,7 @@ export function SettingsModal({
   planName: string;
   planPriceInCents: number;
   allowance: number;
-  balance: number;
+  balance: number | null;
   renewsAt: Date | null;
 }) {
   const pane = useMemo(() => {

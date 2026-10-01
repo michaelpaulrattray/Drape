@@ -234,7 +234,7 @@ export function AppChrome({
               menu: (
                 <UserCard
                   userName={user.name ?? "Account"}
-                  creditsBalance={creditsData?.balance ?? 0}
+                  creditsBalance={creditsData?.balance ?? null}
                   role={user.role}
                   adminCount={adminCount}
                   moderationCount={moderationCount}
