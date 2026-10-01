@@ -29,6 +29,26 @@ vi.hoisted(() => {
 const OPERATION_ID = "44444444-4444-4444-8444-444444444444";
 
 /** The frozen-account read, which every paid entrance makes first. */
+/*
+  THE SETTLED LINE'S SINK (#1608).
+
+  `vi.hoisted` rather than a bare `const`: `vi.mock` is lifted above this file's
+  static imports, and the module under test is imported statically at the bottom
+  of the import block — so a plain const declared here would still be in its
+  temporal dead zone when the factory first runs.
+
+  Only `info` is captured and every arm filters on the message, because this mock
+  replaces `createModuleLogger` for EVERY module the suite pulls in — the
+  orchestrator's own per-attempt lines come through the same sink and would
+  otherwise be counted as settles.
+*/
+const { loggedInfo } = vi.hoisted(() => ({ loggedInfo: [] as unknown[][] }));
+vi.mock("../logging/logger", () => {
+  const sink = (...args: unknown[]) => { loggedInfo.push(args); };
+  const shape = { info: sink, warn: () => {}, error: () => {}, debug: () => {} };
+  return { logger: shape, createModuleLogger: () => shape };
+});
+
 vi.mock("../db/connection", () => ({
   getDb: async () => ({
     select: () => ({
@@ -259,6 +279,7 @@ beforeEach(() => {
   refundRecords = true;
   engineAnswers = ["ok"];
   engineCalls = 0;
+  loggedInfo.length = 0;
   deliveredOutfitKeys = {};
   outfitReads.length = 0;
   receipts.success.mockClear();
@@ -1030,5 +1051,171 @@ describe("only identity takes a retried picture away", () => {
     expect(refunds).toHaveLength(0);
     expect(deducts).toHaveLength(0);
     expect(committed).toHaveLength(1);
+  });
+});
+
+/**
+ * ⚠ THE SETTLED LINE — ONE PER TRY AGAIN, AT THE SETTLE POINT (#1608).
+ *
+ * Cid reads the double-render rate after month one against Squall's 30–60%
+ * estimate, so `attempts` is the load-bearing field and these arms exist to stop
+ * it being quietly wrong.
+ *
+ * ⚠ **THE ARM THAT MATTERS MOST IS THE ARRIVAL-FAILURE ONE**, and it is the
+ * reason `renderViewAttempts` returns a tally at all. A verdict is pushed only
+ * once a picture has come back AND the judge has answered, so a first render that
+ * never arrived contributes nothing to `verdicts` — a Try again that rendered
+ * TWICE would have reported `attempts: 1` had this line read `verdicts.length`,
+ * understating the very rate it exists to measure by exactly the arrival
+ * failures. That arm fails against `verdicts.length` and passes against the
+ * tally, which is the only way to tell the two readings apart.
+ *
+ * Nothing here asserts a price, a refund or a prompt: those are the arms above,
+ * unchanged, and #1608 is monitoring only.
+ */
+describe("the settled line, one per Try again (#1608)", () => {
+  const settled = () =>
+    loggedInfo
+      .filter((args) => args[1] === "[viewRetryService] retry settled")
+      .map((args) => args[0] as Record<string, unknown>);
+
+  const paidSlot = () =>
+    slot({
+      state: "failed-refunded",
+      refundedCredits: CAST_PACKAGE_VIEW_PRICE,
+      retry: { priceCredits: CAST_PACKAGE_VIEW_PRICE, reason: "refunded" },
+    });
+
+  it("a ONE-render settle says so, with the money that actually moved", async () => {
+    const result = await retryCastView(dependencies([paidSlot()]), input);
+
+    expect(result.outcome).toBe("ready");
+    const lines = settled();
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatchObject({
+      outcome: "ready",
+      paid: true,
+      chargedCredits: CAST_PACKAGE_VIEW_PRICE,
+      refundedCredits: 0,
+      refundRecorded: true,
+      attempts: 1,
+      arrivalFailures: 0,
+      judgedAttempts: 1,
+      doubleRendered: false,
+      judged: true,
+    });
+  });
+
+  /*
+    ⚠ THE READING THAT SEPARATES THE TALLY FROM `verdicts.length`. The first
+    render throws and never produces a picture, so the judge is never asked about
+    it and `verdicts` holds ONE entry — while two renders were paid for in house
+    time. `attempts: 2` is the honest answer and `doubleRendered` must be true.
+  */
+  it("⚠ counts a render that never ARRIVED — the half verdicts.length cannot see", async () => {
+    engineAnswers = ["throw", "ok"];
+    const result = await retryCastView(dependencies([paidSlot()]), input);
+
+    expect(result.outcome).toBe("ready");
+    const lines = settled();
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatchObject({
+      outcome: "ready",
+      attempts: 2,
+      arrivalFailures: 1,
+      judgedAttempts: 1,
+      doubleRendered: true,
+    });
+  });
+
+  /* A TWO-render settle on the judged road: the first draw is turned down on
+     identity — the one axis that still takes a picture away (#1612) — and the
+     second lands. Both attempts reached the judge, so here `verdicts.length`
+     would have agreed; that is exactly why the arm above is the control. */
+  it("a TWO-render settle on the judged road reports both attempts", async () => {
+    let call = 0;
+    const judge = (() => async () => {
+      call += 1;
+      const pass = call > 1;
+      return {
+        pass,
+        method: "judge:test",
+        axes: {
+          identity: { pass, note: "" },
+          angle: { pass: true, note: "" },
+          wardrobe: { pass: true, note: "" },
+        },
+      };
+    }) as never;
+
+    const result = await retryCastView(dependencies([paidSlot()], { judge }), input);
+
+    expect(result.outcome).toBe("ready");
+    expect(settled()[0]).toMatchObject({
+      outcome: "ready",
+      attempts: 2,
+      arrivalFailures: 0,
+      judgedAttempts: 2,
+      doubleRendered: true,
+      judged: true,
+    });
+  });
+
+  it("a FREE try again is marked unpaid, so the rate never mixes the two populations", async () => {
+    const free = slot({
+      state: "ready",
+      url: "https://cdn.example/view.png",
+      unjudged: true,
+      note: null,
+      refundedCredits: null,
+      retry: { priceCredits: 0, reason: "unchecked" },
+    });
+    const result = await retryCastView(dependencies([free]), input);
+
+    expect(result.outcome).toBe("ready");
+    expect(settled()[0]).toMatchObject({ paid: false, chargedCredits: 0, attempts: 1 });
+  });
+
+  it("a view that never arrived settles with judged null — not false", async () => {
+    engineAnswers = ["throw", "throw", "throw"];
+    const result = await retryCastView(dependencies([paidSlot()]), input);
+
+    expect(result.outcome).toBe("failed");
+    const lines = settled();
+    expect(lines).toHaveLength(1);
+    /* `null` and `false` are two different facts: nothing was delivered, versus
+       a delivered picture nobody looked at. */
+    expect(lines[0].judged).toBeNull();
+    expect(lines[0]).toMatchObject({
+      outcome: "failed",
+      refundedCredits: CAST_PACKAGE_VIEW_PRICE,
+      doubleRendered: true,
+    });
+  });
+
+  it("⚠ ONE line per settle, never one per attempt", async () => {
+    engineAnswers = ["throw", "ok"];
+    await retryCastView(dependencies([paidSlot()]), input);
+
+    expect(settled()).toHaveLength(1);
+  });
+
+  /*
+    The free refusals settle no money and run no render, so they emit no settled
+    line — a row for them would put denominator entries into the rate that never
+    rendered anything.
+  */
+  it("a free refusal before the claim writes no settled line at all", async () => {
+    /* The refusal THROWS rather than returning a result — read at the code after
+       the first draft of this arm assumed otherwise. What is being asserted is
+       the same fact either way: a road that settles no money and renders nothing
+       contributes no row, because a denominator entry that never rendered would
+       drag the double-render rate toward zero. */
+    await expect(
+      retryCastView(dependencies([slot({ state: "ready", url: "https://x/y.png" })]), input),
+    ).rejects.toThrow(TRPCError);
+
+    expect(settled()).toHaveLength(0);
+    expect(deducts).toHaveLength(0);
   });
 });
