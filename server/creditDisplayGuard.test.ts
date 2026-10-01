@@ -57,8 +57,21 @@ const repoRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
  * 106 real occurrences. `UNROUTED` may fall to zero and may never rise — a
  * routing PR decrements or deletes rows, and a NEW unrouted site is a defect
  * rather than a row to add.
+ *
+ * ⚠ **IT ROSE TO 108 ON 2026-10-01 AND THAT IS THE ONLY RISE IT MAY EVER HAVE.**
+ * The reason is a HOLE IN THE READER, not a new site in the product: rule 1's
+ * vocabulary was `[a-z]cost$`, which needs a letter before "cost", so the bare
+ * four-letter `cost` never matched it. `ViewTabs.tsx`'s GhostSlot and FailedSlot
+ * face labels — `` `${action} · ${cost.toLocaleString()}` ``, the number a
+ * customer reads ON the tile — said no "credit" beside them either, so neither
+ * rule reached them and the census could not hold them. A routing slice would
+ * have routed the hover title on the same component and left the face on the
+ * ledger scale. Widening the rule found exactly those two and nothing else
+ * (derived over the guard's own population), so the budget rises by two while
+ * the shape count stays at 79. **Nothing was routed by this change** — the
+ * shrink that measures the work starts from 108.
  */
-const OCCURRENCES_AT_LANDING = 106;
+const OCCURRENCES_AT_LANDING = 108;
 
 const censusedOccurrences = UNROUTED.reduce((total, row) => total + row.count, 0);
 
@@ -110,6 +123,40 @@ describe("the positive controls — each rule reddens, and says where", () => {
     expect(sites[0]?.line).toBe(2);
   });
 
+  it("⚠ THE RELAY'S ARM — a bare `cost` handed to toLocaleString with NO word beside it reddens", () => {
+    /* The hole that shipped on PR #1649 and was found from outside, reproduced
+       at the real shape: `ViewTabs.tsx`'s GhostSlot/FailedSlot face label. Rule
+       2 cannot see it (no "credit" in the surrounding text) and rule 1 could
+       not see it either, because the vocabulary was `[a-z]cost$` and this name
+       is the bare four-letter `cost`. It is the number a customer READS on the
+       tile, while the hover title two lines up WAS censused — so a routing
+       slice would have shown 240 in the tooltip and 1,200 on the face.
+
+       This arm fails on the rule as it stood: revert `cost$` to `[a-z]cost$`
+       and it reports zero sites. */
+    const sites = creditSitesIn(
+      "client/src/features/casting/components/Fixture.tsx",
+      [
+        "export const F = ({ action, cost }: { action: string; cost?: number }) => (",
+        "  <span>{cost === undefined ? action : `${action} · ${cost.toLocaleString()}`}</span>",
+        ");",
+        "",
+      ].join("\n"),
+    );
+    expect(sites).toHaveLength(1);
+    expect(sites[0]?.rule).toBe("formatted");
+    expect(sites[0]?.line).toBe(2);
+    expect(sites[0]?.expression).toBe("cost.toLocaleString()");
+  });
+
+  it("catches a bare `cost` on the plainest shape too, so the arm above is not passing on its template", () => {
+    const sites = creditSitesIn(
+      "client/src/features/billing/Fixture.tsx",
+      "export const F = ({ cost }: { cost: number }) => <span>{cost.toLocaleString()}</span>;\n",
+    );
+    expect(sites.map((site) => site.rule)).toEqual(["formatted"]);
+  });
+
   it("catches the same shape in a server sentence, not only in JSX", () => {
     const sites = creditSitesIn(
       "server/lib/fixture.ts",
@@ -158,6 +205,21 @@ describe("the precision arms — correct code must not be refused", () => {
     const sites = creditSitesIn(
       "client/src/features/billing/Fixture.tsx",
       "export const F = () => <span>{plan.price.toLocaleString()}</span>;\n",
+    );
+    expect(sites).toEqual([]);
+  });
+
+  it("⚠ passes a BARE `price`, which is the live boundary now that a bare `cost` is admitted", () => {
+    /* `plan.price` above is the compound shape; this is the bare identifier,
+       and it is the one the widening could plausibly have swept in. It stays
+       out because `PLAN_TIERS.price` is cents, and it costs nothing to keep
+       out: derived over this guard's own population at the repair, of every
+       `toLocaleString` receiver mentioning cost or price, ZERO mention a bare
+       `price`. If that ever stops being true the answer is to read the sites,
+       not to widen the rule. */
+    const sites = creditSitesIn(
+      "client/src/features/billing/Fixture.tsx",
+      "export const F = ({ price }: { price: number }) => <span>{price.toLocaleString()}</span>;\n",
     );
     expect(sites).toEqual([]);
   });

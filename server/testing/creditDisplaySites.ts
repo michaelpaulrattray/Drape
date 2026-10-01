@@ -107,11 +107,33 @@ export const DISPLAY_HELPERS = [
 /**
  * Names that mean credits with no other evidence needed (rule 1).
  *
- * ⚠ `price` and a bare `cost` are deliberately ABSENT. `PLAN_TIERS.price` is
- * cents; indicting it would make this guard refuse correct code, which is the
- * failure mode that gets a guard deleted rather than fixed.
+ * ⚠ `price` is deliberately ABSENT. `PLAN_TIERS.price` is cents; indicting it
+ * would make this guard refuse correct code, which is the failure mode that
+ * gets a guard deleted rather than fixed.
+ *
+ * ⚠ **A BARE `cost` WAS ABSENT TOO UNTIL 2026-10-01, AND THAT HOLE SHIPPED THE
+ * EXACT DEFECT THIS GUARD EXISTS TO CATCH** — found on PR #1649 by the founder's
+ * engineering agent, verified here. The pattern was `[a-z]cost$`, which needs a
+ * letter before "cost", so every compound name (`totalCost`, `actionableCost`)
+ * matched and the four-letter `cost` did not. `ViewTabs.tsx` has four
+ * `cost.toLocaleString()` sites: the two that say "credits" beside them were
+ * caught by rule 2, and **the two GhostSlot/FailedSlot FACE LABELS — the number
+ * a customer actually reads on the tile — were caught by neither rule and were
+ * therefore absent from the census.** A routing slice working that census would
+ * have routed the hover tooltip and left the face on the ledger scale: a Roll
+ * tile reading 240 in its title and 1,200 on its face, silently, with the guard
+ * clean either side.
+ *
+ * `cost` is admitted on rule 1's own stated ground rather than as an exception:
+ * rule 1 fires ONLY on a `toLocaleString` receiver, and `toLocaleString` is the
+ * corroboration — the product's idiom for *make this number readable by a
+ * person*. `price` stays out because its cents arm is real and because a bare
+ * `price.toLocaleString()` appears **nowhere** in customer code (derived at the
+ * repair, over the guard's own population: of every `toLocaleString` receiver
+ * mentioning cost or price, zero mention a bare `price`), so admitting `cost`
+ * costs no false refusal.
  */
-const STRICT_CREDIT_NAME = /credit|balance|pointscost|allowance|[a-z]cost$/i;
+const STRICT_CREDIT_NAME = /credit|balance|pointscost|allowance|cost$/i;
 
 /** Names that mean credits when the word "credit" is right beside them (rule 2). */
 const LOOSE_CREDIT_NAME = /credit|balance|pointscost|allowance|cost|price|spent|remaining|refund|grant/i;
@@ -151,6 +173,20 @@ export type CreditDisplayReading = {
  * was the first shape and was wrong: every routing PR moves the lines below it
  * and the allowlist would then excuse the wrong sites while reporting a clean
  * shrink. The expression text is what identifies a site across an edit.
+ *
+ * ⚠ **IT ROSE ONCE, ON 2026-10-01, AND THIS IS THE RECORD OF WHY** — the only
+ * rise it may ever have. Rule 1 could not see a bare `cost` (the constant above
+ * carries the measurement), so two customer-read face labels in `ViewTabs.tsx`
+ * were in no rule's reach and therefore in no row here. Widening the rule
+ * re-measured the list rather than adding to it: **79 shapes either side**,
+ * occurrences **106 → 108** (the two labels), and **four rows moved from
+ * `beside-the-word` to `formatted`** — `ViewTabs` `cost.toLocaleString()`
+ * (2 → 4, now covering all four of its sites), `PackageHealthDialog`
+ * `(plan?.cost ?? 0)`, `CastModelModal` `plan.cost` and `IdentityChangeDialog`
+ * `cost`, each of which rule 1 now catches on the name where rule 2 had been
+ * catching it on the neighbouring word. No site was routed and no site was
+ * excused: the same code is described by a stronger rule. **A later rise is a
+ * defect, not a row.**
  */
 export const UNROUTED: readonly {
   file: string;
@@ -176,9 +212,9 @@ export const UNROUTED: readonly {
   { file: "client/src/features/casting/components/CastProfilePanel.tsx", rule: "formatted", expression: "completeCardCost.toLocaleString()", count: 1 },
   { file: "client/src/features/casting/components/ImageViewer/RefinePanel.tsx", rule: "beside-the-word", expression: "iterationCost", count: 2 },
   { file: "client/src/features/casting/components/ImageViewer/ViewTabs.tsx", rule: "formatted", expression: "refreshCost.toLocaleString()", count: 3 },
-  { file: "client/src/features/casting/components/ImageViewer/ViewTabs.tsx", rule: "beside-the-word", expression: "cost.toLocaleString()", count: 2 },
+  { file: "client/src/features/casting/components/ImageViewer/ViewTabs.tsx", rule: "formatted", expression: "cost.toLocaleString()", count: 4 },
   { file: "client/src/features/casting/components/ImageViewer/ViewTabs.tsx", rule: "formatted", expression: "actionableCost.toLocaleString()", count: 3 },
-  { file: "client/src/features/casting/components/PackageHealthDialog.tsx", rule: "beside-the-word", expression: "(plan?.cost ?? 0).toLocaleString()", count: 2 },
+  { file: "client/src/features/casting/components/PackageHealthDialog.tsx", rule: "formatted", expression: "(plan?.cost ?? 0).toLocaleString()", count: 2 },
   { file: "client/src/features/casting/components/PackageHealthDialog.tsx", rule: "formatted", expression: "actionableCost.toLocaleString()", count: 3 },
   { file: "client/src/features/casting/ControlPanel.tsx", rule: "beside-the-word", expression: "castingImageCost", count: 1 },
   { file: "client/src/features/casting/evidence/InkAddPanel.tsx", rule: "beside-the-word", expression: "priceCredits", count: 1 },
@@ -193,10 +229,10 @@ export const UNROUTED: readonly {
   { file: "client/src/features/settings/sections/BillingSection.tsx", rule: "formatted", expression: "balance.toLocaleString()", count: 1 },
   { file: "client/src/features/settings/usageWindow.ts", rule: "formatted", expression: "allowance.toLocaleString()", count: 1 },
   { file: "client/src/features/settings/usageWindow.ts", rule: "formatted", expression: "balance.toLocaleString()", count: 1 },
-  { file: "client/src/features/studio/components/CastModelModal.tsx", rule: "beside-the-word", expression: "plan.cost.toLocaleString()", count: 1 },
+  { file: "client/src/features/studio/components/CastModelModal.tsx", rule: "formatted", expression: "plan.cost.toLocaleString()", count: 1 },
   { file: "client/src/features/studio/components/StudioSlimHeader.tsx", rule: "formatted", expression: "creditsBalance.toLocaleString()", count: 2 },
   { file: "client/src/features/studio/takeover/CastingTakeover.tsx", rule: "formatted", expression: "creditsData.balance.toLocaleString()", count: 1 },
-  { file: "client/src/features/studio/takeover/IdentityChangeDialog.tsx", rule: "beside-the-word", expression: "cost.toLocaleString()", count: 1 },
+  { file: "client/src/features/studio/takeover/IdentityChangeDialog.tsx", rule: "formatted", expression: "cost.toLocaleString()", count: 1 },
   { file: "client/src/foundation/primitives.tsx", rule: "formatted", expression: "balance.toLocaleString()", count: 1 },
   { file: "client/src/pages/CastingRoom.tsx", rule: "beside-the-word", expression: "result.refundedCredits", count: 1 },
   { file: "client/src/pages/CastingSheet.tsx", rule: "beside-the-word", expression: "price", count: 1 },
