@@ -13242,6 +13242,10 @@
       "path": "server/facePanelSubject.test.ts"
     },
     {
+      "id": "test:server/faceScanCapDriven.test.ts",
+      "path": "server/faceScanCapDriven.test.ts"
+    },
+    {
       "id": "test:server/faceScanWire.test.ts",
       "path": "server/faceScanWire.test.ts"
     },
