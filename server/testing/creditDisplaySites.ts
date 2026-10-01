@@ -124,6 +124,32 @@ export const DISPLAY_HELPERS = [
  * tile reading 240 in its title and 1,200 on its face, silently, with the guard
  * clean either side.
  *
+ * ⚠ **AND `spent$` JOINED IT ON 2026-10-01 (#1676) — ONE WORD, ARGUED AND
+ * MEASURED, NEXT TO THREE STRUCTURAL CHANGES.** Seven of that card's fourteen
+ * sites are the same quantity under the same two names: `cycle.spent` and
+ * `(cycle.spent + cycle.remaining)`, in `AddCreditsModal`, `ChangePlanModal`
+ * twice, and `UsageSection`'s per-day rate. **No window widening reaches them**,
+ * because the word is genuinely not in the sentence: one says
+ * *"{spent} of {total} spent with 4 days left in this cycle"* and another is
+ * `<p className="dp-plan__credits">{spent} / {total}</p>`, where the word is in
+ * a CLASS NAME — and letting a stylesheet decide what a guard indicts is a
+ * worse rule than the hole.
+ *
+ * The argument is the product's own: **`displaySpent` is one of the five
+ * `DISPLAY_HELPERS`.** A helper exists for converting a spent figure, so the
+ * product has already declared that a spent figure is a ledger quantity. That
+ * is the same kind of ground `cost` stands on, and it is not available to
+ * `price` — whose cents arm is real (`PLAN_TIERS.price`).
+ *
+ * **Measured before it was chosen, over the guard's own population**: every
+ * `toLocaleString` receiver on a customer surface mentioning a name ending in
+ * `spent` or `remaining` is **eight sites, and all eight are credits** (the
+ * seven above plus `UsageSection:121`, which rule 4 had just caught and which
+ * rule 1 now catches on the stronger signal). `remaining$` is deliberately NOT
+ * added: every site that mentions it also mentions `spent`, so it would be a
+ * word carried for no measured site — which is the practice this card exists
+ * to challenge. No cents-denominated `spent` exists anywhere in the tree.
+ *
  * `cost` is admitted on rule 1's own stated ground rather than as an exception:
  * rule 1 fires ONLY on a `toLocaleString` receiver, and `toLocaleString` is the
  * corroboration — the product's idiom for *make this number readable by a
@@ -133,7 +159,7 @@ export const DISPLAY_HELPERS = [
  * mentioning cost or price, zero mention a bare `price`), so admitting `cost`
  * costs no false refusal.
  */
-const STRICT_CREDIT_NAME = /credit|balance|pointscost|allowance|cost$/i;
+const STRICT_CREDIT_NAME = /credit|balance|pointscost|allowance|cost$|spent$/i;
 
 /** Names that mean credits when the word "credit" is right beside them (rule 2). */
 const LOOSE_CREDIT_NAME = /credit|balance|pointscost|allowance|cost|price|spent|remaining|refund|grant/i;
@@ -147,7 +173,7 @@ export type CreditSite = {
   /** 1-indexed, so it is clickable. */
   line: number;
   /** Which rule caught it. */
-  rule: "formatted" | "beside-the-word" | "scale-arithmetic";
+  rule: "formatted" | "beside-the-word" | "named-on-the-way-out" | "scale-arithmetic";
   /** The offending expression's own source text, trimmed. */
   expression: string;
 };
@@ -174,8 +200,12 @@ export type CreditDisplayReading = {
  * and the allowlist would then excuse the wrong sites while reporting a clean
  * shrink. The expression text is what identifies a site across an edit.
  *
- * ⚠ **IT ROSE ONCE, ON 2026-10-01, AND THIS IS THE RECORD OF WHY** — the only
- * rise it may ever have. Rule 1 could not see a bare `cost` (the constant above
+ * ⚠ **IT HAS RISEN TWICE, BOTH ON 2026-10-01, AND BOTH BECAUSE THE READER COULD
+ * NOT SEE A SITE THE PRODUCT ALREADY HAD.** Neither rise is a new place a
+ * customer reads a ledger number; each is a place that was always there and
+ * was invisible. **A rise for any other reason is a defect, not a row.**
+ *
+ * **THE FIRST (#1649's sweep), 106 → 108.** Rule 1 could not see a bare `cost` (the constant above
  * carries the measurement), so two customer-read face labels in `ViewTabs.tsx`
  * were in no rule's reach and therefore in no row here. Widening the rule
  * re-measured the list rather than adding to it: **79 shapes either side**,
@@ -185,8 +215,27 @@ export type CreditDisplayReading = {
  * `(plan?.cost ?? 0)`, `CastModelModal` `plan.cost` and `IdentityChangeDialog`
  * `cost`, each of which rule 1 now catches on the name where rule 2 had been
  * catching it on the neighbouring word. No site was routed and no site was
- * excused: the same code is described by a stronger rule. **A later rise is a
- * defect, not a row.**
+ * excused: the same code is described by a stronger rule.
+ *
+ * **THE SECOND (#1676), 108 → 122, and it is the FIRST ONE'S CLASS rather than
+ * its sibling.** That repair added a word to a list; this card asked whether
+ * the list was the mistake, and measured that it was: **fourteen credit numbers
+ * a customer reads were in no rule's reach**, called `delta`, `reward`,
+ * `earned`, `cap`, `spent` and `perDollar` — and *"${delta} credits a month"*,
+ * which says the word out loud, was invisible because `delta` was in no
+ * vocabulary. **A credit number can be called anything.** So three of the four
+ * causes are closed structurally and only one by a word:
+ *
+ * | the repair | what it reaches |
+ * |---|---|
+ * | rule 2 limb B — a formatted number inside a SENTENCE that says credits, no name required | `delta` ×2, `reward`, `earned` |
+ * | `sentenceAround` follows nested templates to the outermost one | `cap` |
+ * | rule 4 — the name the value is GIVEN (a `const`, or the function it is returned from) | `perDollar` in `formatCreditsPerDollar` |
+ * | `spent$` in rule 1's vocabulary, argued from `displaySpent` and measured at 8 sites, all credits | the seven `cycle.spent` / `spend.spent` sites |
+ *
+ * **No existing row moved and no site was routed**, which was checked rather
+ * than hoped: the sites outside the census before this change were 0, and after
+ * it exactly these 14. The shrink that measures P1's work now starts from 122.
  */
 export const UNROUTED: readonly {
   file: string;
@@ -238,6 +287,17 @@ export const UNROUTED: readonly {
   { file: "client/src/pages/CastingSheet.tsx", rule: "beside-the-word", expression: "price", count: 1 },
   { file: "client/src/pages/CastingSheet.tsx", rule: "beside-the-word", expression: "typeof balance === \"number\" ? ` · ${balance.toLocaleString()} left` : \"\"", count: 1 },
   { file: "client/src/pages/CastingSheet.tsx", rule: "formatted", expression: "balance.toLocaleString()", count: 1 },
+  { file: "client/src/features/billing/AddCreditsModal.tsx", rule: "formatted", expression: "(cycle.spent + cycle.remaining).toLocaleString()", count: 1 },
+  { file: "client/src/features/billing/AddCreditsModal.tsx", rule: "formatted", expression: "cycle.spent.toLocaleString()", count: 1 },
+  { file: "client/src/features/billing/AddCreditsModal.tsx", rule: "beside-the-word", expression: "delta.toLocaleString()", count: 2 },
+  { file: "client/src/features/billing/ChangePlanModal.tsx", rule: "formatted", expression: "(cycle.spent + cycle.remaining).toLocaleString()", count: 2 },
+  { file: "client/src/features/billing/ChangePlanModal.tsx", rule: "formatted", expression: "cycle.spent.toLocaleString()", count: 2 },
+  { file: "client/src/features/settings/planMath.ts", rule: "named-on-the-way-out", expression: "Math.round(perDollar).toLocaleString(\"en-US\")", count: 1 },
+  { file: "client/src/features/settings/ReferralBlock.tsx", rule: "beside-the-word", expression: "cap.toLocaleString()", count: 1 },
+  { file: "client/src/features/settings/ReferralBlock.tsx", rule: "beside-the-word", expression: "earned.toLocaleString()", count: 1 },
+  { file: "client/src/features/settings/ReferralBlock.tsx", rule: "beside-the-word", expression: "reward.toLocaleString()", count: 1 },
+  { file: "client/src/features/settings/sections/UsageSection.tsx", rule: "formatted", expression: "Math.round(spend.spent / Math.max(1, spend.days)).toLocaleString()", count: 1 },
+  { file: "client/src/features/settings/sections/UsageSection.tsx", rule: "formatted", expression: "spend.spent.toLocaleString()", count: 1 },
   { file: "server/casting/evidence/evidencePackageExecution.ts", rule: "beside-the-word", expression: "authority.plan.totalCost", count: 1 },
   { file: "server/casting/mintPackage.ts", rule: "beside-the-word", expression: "totalCost", count: 1 },
   { file: "server/casting/refreshSlots.ts", rule: "beside-the-word", expression: "totalCost", count: 1 },
@@ -402,6 +462,96 @@ function surroundingText(node: ts.Node, sourceFile: ts.SourceFile): string {
   return "";
 }
 
+/**
+ * THE SENTENCE THIS NUMBER IS IN — rule 2's second limb (#1676).
+ *
+ * ⚠ **IT IS TEMPLATE LITERALS ONLY, AND THAT NARROWNESS IS THE WHOLE CONTROL.**
+ * The obvious widening — read every literal under the enclosing JSX element —
+ * was built, driven, and thrown away: with the name check also dropped it
+ * indicted `working`, `onClose`, `option.id` and an inline arrow function in
+ * `AddCreditsModal.tsx` alone, because the element they sit in says "credits"
+ * somewhere. **A guard that indicts a callback is worse than the hole it
+ * closes.** A template literal is different in kind: it is a SENTENCE, written
+ * as one thing, and every expression spliced into it is a value that sentence
+ * is about.
+ *
+ * It follows nested templates up to the OUTERMOST one in the same sentence and
+ * stops at a JSX boundary, because an author splitting a sentence across a
+ * nested ternary has not written two sentences. That is the whole of
+ * `ReferralBlock.tsx:88`: `cap` lives in `` ` — up to ${cap} in total` ``,
+ * spliced into *"They get ${reward} credits on their first signed cast, and so
+ * do you${…}."* — one sentence a customer reads, two templates the old reader
+ * read separately.
+ */
+function sentenceAround(node: ts.Node): string {
+  let outermost: ts.TemplateExpression | null = null;
+  for (let cursor: ts.Node | undefined = node.parent; cursor; cursor = cursor.parent) {
+    /* A JSX boundary ends the sentence: markup is not prose. */
+    if (ts.isJsxElement(cursor) || ts.isJsxExpression(cursor) || ts.isJsxFragment(cursor)) break;
+    if (ts.isTemplateExpression(cursor)) outermost = cursor;
+  }
+  if (outermost === null) return "";
+  const parts: string[] = [];
+  const collect = (current: ts.Node): void => {
+    if (ts.isTemplateHead(current) || ts.isTemplateMiddle(current) || ts.isTemplateTail(current)) {
+      parts.push(current.text);
+    } else if (ts.isNoSubstitutionTemplateLiteral(current)) {
+      parts.push(current.text);
+    }
+    ts.forEachChild(current, collect);
+  };
+  collect(outermost);
+  return parts.join(" ");
+}
+
+/**
+ * THE NAME THIS VALUE IS GIVEN ON ITS WAY OUT — rule 4 (#1676).
+ *
+ * ⚠ **TWO SITES WERE IN NO RULE'S REACH BECAUSE NOTHING ABOUT THE EXPRESSION
+ * SAYS CREDITS AND EVERYTHING ABOUT ITS DESTINATION DOES.**
+ * `UsageSection.tsx:121` is `const creditsUsed = spend.spent.toLocaleString()`,
+ * drawn under the label *Credits used*; `planMath.ts:369` is the `return` of
+ * `formatCreditsPerDollar`. Neither is interpolated beside a word, so rule 2
+ * cannot see it, and neither receiver is credit-named, so rule 1 cannot either.
+ *
+ * ⚠ **IT STOPS AT THE FIRST BINDING AND AT ANY JSX, AND BOTH LIMITS WERE
+ * MEASURED RATHER THAN REASONED.** The first shape walked every ancestor and
+ * reached the enclosing FUNCTION DECLARATION — which in a file called
+ * `AddCreditsModal.tsx` is a function named `AddCreditsModal`, so it indicted
+ * `framesNext` and `framesNow`, two FRAME COUNTS the card names among the
+ * sites that must stay excluded. A component's name is not a name given to one
+ * value inside it; a `const` is.
+ */
+function namedOnTheWayOut(node: ts.Node): boolean {
+  for (let cursor: ts.Node | undefined = node.parent; cursor; cursor = cursor.parent) {
+    /* Rendered inside markup: whatever the component is called, it did not
+       name THIS number. */
+    if (ts.isJsxElement(cursor) || ts.isJsxExpression(cursor) || ts.isJsxFragment(cursor)) return false;
+    if (ts.isVariableDeclaration(cursor)) {
+      return ts.isIdentifier(cursor.name) && STRICT_CREDIT_NAME.test(cursor.name.text);
+    }
+    if (ts.isPropertyAssignment(cursor)) {
+      return ts.isIdentifier(cursor.name) && STRICT_CREDIT_NAME.test(cursor.name.text);
+    }
+    if (ts.isReturnStatement(cursor)) {
+      /* The function this is the answer of — a declaration, or an arrow or
+         function expression wearing the name of the const it is assigned to. */
+      for (let fn: ts.Node | undefined = cursor.parent; fn; fn = fn.parent) {
+        if (ts.isFunctionDeclaration(fn) || ts.isMethodDeclaration(fn)) {
+          return fn.name !== undefined && ts.isIdentifier(fn.name) && STRICT_CREDIT_NAME.test(fn.name.text);
+        }
+        if (ts.isArrowFunction(fn) || ts.isFunctionExpression(fn)) {
+          const named = fn.parent;
+          return named !== undefined && ts.isVariableDeclaration(named) && ts.isIdentifier(named.name)
+            && STRICT_CREDIT_NAME.test(named.name.text);
+        }
+      }
+      return false;
+    }
+  }
+  return false;
+}
+
 export function creditSitesIn(file: string, source: string): CreditSite[] {
   type Located = CreditSite & { at: number };
   const sourceFile = ts.createSourceFile(
@@ -461,6 +611,29 @@ export function creditSitesIn(file: string, source: string): CreditSite[] {
         }
       }
 
+      /* Rule 4 — NAMED ON THE WAY OUT (#1676). It sits under rule 1's
+         `toLocaleString` roof because the corroboration is rule 1's: the
+         product is making this number readable by a person, and the name it
+         gave the result says what kind of number it is. Only fires where rule
+         1 did not, so one site is never two rows. */
+      if (
+        ts.isCallExpression(node) &&
+        ts.isPropertyAccessExpression(node.expression) &&
+        node.expression.name.text === "toLocaleString" &&
+        !namesIn(node.expression.expression).some((name) => STRICT_CREDIT_NAME.test(name)) &&
+        !insideDisplayHelper(node) &&
+        !insideALogCall(node) &&
+        namedOnTheWayOut(node)
+      ) {
+        sites.push({
+          file,
+          line: lineOf(sourceFile, node),
+          rule: "named-on-the-way-out",
+          expression: textOf(node, sourceFile),
+          at: node.getStart(sourceFile),
+        });
+      }
+
       /* Rule 2 — a credit number interpolated beside the word "credit". */
       const interpolated =
         (node.parent && ts.isTemplateSpan(node.parent) && node.parent.expression === node) ||
@@ -472,9 +645,48 @@ export function creditSitesIn(file: string, source: string): CreditSite[] {
         !cannotBeAnAmount(node)
       ) {
         const around = surroundingText(node, sourceFile);
+        /*
+          ⚠ **TWO LIMBS, AND THE SECOND IS #1676's REPAIR.**
+
+          The first is unchanged: the word somewhere in the surrounding text,
+          AND a name from the loose vocabulary. Every census row this guard
+          already holds was measured under it, so it stays exactly as it was.
+
+          The second drops the NAME and narrows the TEXT instead, which is this
+          rule's own stated ground used where it is actually true: *"the word
+          itself is the corroboration"*. A template literal is a SENTENCE; a
+          number spliced into a sentence that says "credits" is a credit number
+          **whatever it is called**, and five of them were called `delta`,
+          `reward`, `earned` and `cap` — words no vocabulary was ever going to
+          hold, which is the card's whole point. **A fixed list of names cannot
+          enumerate what a value may be called**, so this limb has no list.
+
+          ⚠ What it does NOT do is drop the name check against the WIDE window.
+          That was built and driven first: it indicted `working`, `onClose`,
+          `option.id` and an inline arrow function in one file, because the JSX
+          element they sit in mentions credits somewhere. A guard that indicts a
+          callback gets deleted rather than fixed.
+        */
+        /* ⚠ **LIMB B REQUIRES `toLocaleString` ON THE VALUE ITSELF, AND THE
+           MEASUREMENT THAT PUT IT THERE IS THE HARSHEST ONE IN THIS FILE.**
+           Without it — a credit sentence alone — the reader indicted **74
+           sites**, among them `refreshVerb`, `label`, `action`, `planName`,
+           `userId`, `invoiceId`, `status`, `failureReason` and
+           `currency.toUpperCase()`: every string, id and verb spliced into a
+           sentence that happens to mention credits. **A sentence says
+           "credits"; it does not say which of its holes is the number.**
+           `toLocaleString` does, and it is the same corroboration rule 1 stands
+           on — the product's own idiom for *make this number readable by a
+           person*. With it, the reader indicts the four it was built for and
+           nothing else. */
+        const formattedHere =
+          ts.isCallExpression(node) &&
+          ts.isPropertyAccessExpression(node.expression) &&
+          node.expression.name.text === "toLocaleString";
+        const inACreditSentence = formattedHere && /credit/i.test(sentenceAround(node));
         if (
-          /credit/i.test(around) &&
-          namesIn(node).some((name) => LOOSE_CREDIT_NAME.test(name))
+          inACreditSentence ||
+          (/credit/i.test(around) && namesIn(node).some((name) => LOOSE_CREDIT_NAME.test(name)))
         ) {
           sites.push({
             file,
@@ -506,7 +718,8 @@ export function creditSitesIn(file: string, source: string): CreditSite[] {
   const order: Record<CreditSite["rule"], number> = {
     formatted: 0,
     "beside-the-word": 1,
-    "scale-arithmetic": 2,
+    "named-on-the-way-out": 2,
+    "scale-arithmetic": 3,
   };
   const best = new Map<string, Located>();
   for (const site of sites) {
