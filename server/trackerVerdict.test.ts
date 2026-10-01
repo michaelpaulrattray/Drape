@@ -27,10 +27,12 @@ import {
   probeErrorMessage,
   probeMarker,
   readProbeBuild,
+  readProbeSlugs,
   readTrackerProbe,
   type TrackerProbeFacts,
 } from "./monitoring/trackerVerdict";
 import { scrubErrorEvent } from "../shared/errorEventScrub";
+import { SENTRY_ORG, SENTRY_SERVER_PROJECT } from "../shared/monitoringProjects";
 
 /** A healthy, arrived run — every arm below is this with one fact changed. */
 const arrived: TrackerProbeFacts = {
@@ -299,5 +301,113 @@ describe("the probe's event against the REAL scrub (#1542's own done-when)", () 
     };
     const verdict = scrubErrorEvent(withRecipe, IMAGE_ORIGIN);
     expect(verdict.verdict).toBe("refuse");
+  });
+});
+
+/**
+ * ⚠ WHICH ORG AND PROJECT THE READ-BACK ASKS ABOUT (#1643's remainder, 2026-10-01).
+ *
+ * The defect these arms exist for was found by DRIVING the rite's own invocation
+ * rather than by reading: the probe declined the read-back because
+ * `SENTRY_ORG`/`SENTRY_PROJECT` are not set on the service, returned
+ * `accepted-unverified` / `EXIT 2` over a pipe that then proved `arrived` the
+ * moment the two declared slugs were supplied — and under #1643 that exit is a
+ * `problems` entry, so it would have cost every future deploy its
+ * `RITE EXIT STATUS: OK`.
+ *
+ * ⚠ **THE EXPECTATIONS ARE DERIVED FROM THE DECLARATION, NEVER SPELLED AGAIN
+ * HERE.** A test that hardcodes `"klieg-labs"` is the second copy the whole
+ * one-edit promise exists to prevent (working law 4) — it would pass while a
+ * renamed project silently pointed the probe at nothing. The one literal arm
+ * asserts only that the declaration is non-empty and slug-shaped, which is the
+ * fact a derived comparison cannot notice going wrong.
+ */
+describe("the probe's org and project (#1643 remainder)", () => {
+  it("falls back to the ids this repository declares when the environment says nothing", () => {
+    const slugs = readProbeSlugs({});
+
+    expect(slugs.org).toBe(SENTRY_ORG);
+    expect(slugs.project).toBe(SENTRY_SERVER_PROJECT);
+    expect(slugs.orgSource).toBe("declared");
+    expect(slugs.projectSource).toBe("declared");
+    expect(slugs.note).toContain("shared/monitoringProjects.ts");
+  });
+
+  it("is the SERVER project, not the browser one — the probe reports through the node SDK", () => {
+    expect(readProbeSlugs({}).project).toBe(SENTRY_SERVER_PROJECT);
+  });
+
+  it("lets the environment override both, so a probe can be pointed elsewhere without a deploy", () => {
+    const slugs = readProbeSlugs({ SENTRY_ORG: "other-org", SENTRY_PROJECT: "other-project" });
+
+    expect(slugs.org).toBe("other-org");
+    expect(slugs.project).toBe("other-project");
+    expect(slugs.orgSource).toBe("environment");
+    expect(slugs.projectSource).toBe("environment");
+    expect(slugs.note).toContain("overriding the declared ids");
+  });
+
+  /*
+    ⚠ THE ARM THIS FUNCTION WAS WRITTEN AROUND. A Railway variable that exists
+    with an empty value arrives as `""`, which `??` passes straight through — the
+    URL becomes `…/projects//events/…`, Sentry answers 404 for ninety seconds and
+    the probe reports `lost-in-transit` on a healthy pipe. That is the expensive
+    verdict to get wrong, because it sends the next reader to audit a DSN that is
+    fine. Replace `||` with `??` in `readProbeSlugs` and these two go red.
+  */
+  it("treats a BLANK variable as absent rather than as an override", () => {
+    const slugs = readProbeSlugs({ SENTRY_ORG: "", SENTRY_PROJECT: "" });
+
+    expect(slugs.org).toBe(SENTRY_ORG);
+    expect(slugs.project).toBe(SENTRY_SERVER_PROJECT);
+    expect(slugs.orgSource).toBe("declared");
+  });
+
+  it("treats a whitespace-only variable as absent too", () => {
+    const slugs = readProbeSlugs({ SENTRY_ORG: "   ", SENTRY_PROJECT: "	" });
+
+    expect(slugs.org).toBe(SENTRY_ORG);
+    expect(slugs.project).toBe(SENTRY_SERVER_PROJECT);
+  });
+
+  it("trims a real override rather than carrying the operator's spaces into the URL", () => {
+    expect(readProbeSlugs({ SENTRY_ORG: "  spaced-org  " }).org).toBe("spaced-org");
+  });
+
+  it("says which side came from where when only one is overridden", () => {
+    const slugs = readProbeSlugs({ SENTRY_PROJECT: "klieg-web" });
+
+    expect(slugs.org).toBe(SENTRY_ORG);
+    expect(slugs.orgSource).toBe("declared");
+    expect(slugs.project).toBe("klieg-web");
+    expect(slugs.projectSource).toBe("environment");
+    expect(slugs.note).toContain("org from the declaration");
+    expect(slugs.note).toContain("project from the environment");
+  });
+
+  /*
+    The positive control on the declaration itself. Every arm above compares the
+    resolver against the constants, so all of them would still pass if both
+    constants were emptied — and the probe would then build a URL with two empty
+    segments. This is the one thing that cannot be derived.
+  */
+  it("⚠ positive control — the declared ids are real slugs, which no derived arm above can notice", () => {
+    for (const slug of [SENTRY_ORG, SENTRY_SERVER_PROJECT]) {
+      expect(slug).toMatch(/^[a-z0-9][a-z0-9-]*$/);
+      expect(slug.length).toBeGreaterThan(2);
+    }
+  });
+
+  /*
+    ⚠ AND THE READ-BACK IS NEVER REPORTED AS DONE WITHOUT THE TOKEN. The slugs
+    having a default must not leak into the credential: the probe's refusal half
+    is what makes it an instrument, and a resolver that answered for the token too
+    would have turned `not-checked` into a silent green.
+  */
+  it("resolves ids only — it says nothing about the credential", () => {
+    const slugs = readProbeSlugs({});
+
+    expect(Object.keys(slugs).sort()).toEqual(["note", "org", "orgSource", "project", "projectSource"]);
+    expect(JSON.stringify(slugs)).not.toContain("TOKEN");
   });
 });
