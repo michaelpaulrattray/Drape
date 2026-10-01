@@ -59,11 +59,14 @@
  *    them would break the product: a *Sign in with Google* link clicked from
  *    anywhere is a top-level navigation the browser reports as `cross-site`, and
  *    that is a customer arriving, not an attack.
- *  - **`/api/auth/resend-verification`** (`emailVerification.ts`) is a POST and
- *    is **not covered — a declared remainder rather than an oversight.** It mints
- *    no session, so it is not login-CSRF; a cross-site POST to it triggers a
- *    rate-limited email to an address the sender already had. That is a different
- *    finding and belongs on its own card, not folded in here.
+ *  - **`/api/auth/resend-verification`** (`emailVerification.ts`) IS covered —
+ *    this guard is mounted on `emailVerificationRouter` ahead of its declarations,
+ *    exactly as on the email-auth pair — even though it mints no session and so
+ *    is not login-CSRF: a cross-site POST to it would trigger a rate-limited email
+ *    to an address the sender already had, and refusing that costs nothing. (This
+ *    bullet said *not covered — a declared remainder* until the relay's review of
+ *    PR #1677 read it against the mount; the mount was right and the prose was
+ *    not.) The verify-email GET link is never judged.
  *  - **No CSRF token, no double-submit cookie, no session-fixation rotation.**
  *    The card says so in as many words: those are a design decision, and this is
  *    the check `docs/specs/SECURITY_AUDIT_2026-07-25.md`'s M1 asked for in July.
