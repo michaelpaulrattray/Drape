@@ -107,6 +107,7 @@ import { billingRouter } from "../routes/billing";
 import { handleStripeWebhook } from "./webhooks";
 import { settlementLedgerRef } from "./planChangeSettlement";
 import { PLAN_TIERS } from "../../drizzle/schema";
+import { wholeDisplayLedger } from "@shared/creditDisplay";
 import { deploymentTag } from "../_core/env";
 
 const USER = { id: 7, approved: true, suspendedAt: null, lockedUntil: null };
@@ -133,14 +134,19 @@ function armStripeSubscription() {
 }
 
 /** What the real quote computes for starter → pro over the same 20/30 days —
- *  re-derived here from the same constants so the assertion is exact. */
+ *  re-derived here from the same constants so the assertion is exact.
+ *
+ *  ⚠ Both are quantised to a whole DISPLAYED credit since #1604 slice 2: the
+ *  bare floor gave 83,333 for the upgrade share, which is 16,666.6 displayed
+ *  credits, so a third of a credit would have sat on the balance unshowable.
+ *  83,330 is exactly 16,666. */
 const daysRemaining = Math.min(30, Math.max(0, Math.ceil((NOW_SEC + 20 * DAY - NOW_SEC) / DAY)));
-const UPGRADE_CREDITS = Math.floor(
+const UPGRADE_CREDITS = wholeDisplayLedger(Math.floor(
   (PLAN_TIERS.pro.monthlyCredits - PLAN_TIERS.starter.monthlyCredits) * (daysRemaining / 30),
-);
-const UNWIND_CREDITS = Math.floor(
+));
+const UNWIND_CREDITS = wholeDisplayLedger(Math.floor(
   PLAN_TIERS.starter.monthlyCredits * (daysRemaining / 30),
-);
+));
 
 beforeEach(() => {
   vi.clearAllMocks();
