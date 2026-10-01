@@ -562,6 +562,41 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       "the same for sign views, read by assertNumericEnv() at boot. Unset on the "
       + "service (read 2026-09-26) — the declared default of 24",
   },
+  /*
+    THE FOUR QUIET SIGNUP CAPS (#1603, P1-4). All four are new with that card, so
+    none of them has ever been set on the service and the position below is the
+    state at birth rather than a reading of a variable somebody chose. Each is
+    read by `assertNumericEnv()` at boot, so a blank one is a boot refusal naming
+    the variable instead of a control that silently admits everybody.
+  */
+  FREE_GRANT_MAX_PER_DEVICE: {
+    position: UNSET,
+    why:
+      "how many free accounts one browser may be handed inside the window, read by "
+      + "assertNumericEnv() at boot. Never set on the service — the declared default "
+      + "of 3, chosen loose because a shared machine is an ordinary thing",
+  },
+  FREE_GRANT_MAX_PER_NETWORK: {
+    position: UNSET,
+    why:
+      "the same for one network address, read by assertNumericEnv() at boot. Never "
+      + "set on the service — the declared default of 10, deliberately far looser "
+      + "than the device cap because a household or an office is ONE address",
+  },
+  FREE_GRANT_WINDOW_HOURS: {
+    position: UNSET,
+    why:
+      "how far back both free-grant caps count, read by assertNumericEnv() at boot. "
+      + "Never set on the service — the declared default of 168, a week rather than "
+      + "a day so farming cannot be spread thinly over a weekend",
+  },
+  FREE_SCAN_DAILY_CAP: {
+    position: UNSET,
+    why:
+      "how many face scans one account may buy in a UTC day, read by "
+      + "assertNumericEnv() at boot. A scan is house money and the customer is never "
+      + "charged for it. Never set on the service — the declared default of 40",
+  },
   ROLL_IMAGE_CONCURRENCY: {
     position: UNSET,
     why:
