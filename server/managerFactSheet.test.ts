@@ -585,7 +585,9 @@ describe("the brief composer puts this pass's facts into the brief", () => {
       expect(run.stdout).toContain("BRIEF 2 cards");
       const prompt = readFileSync(p.out, "utf8");
       expect(prompt).not.toMatch(/\{\{[A-Z_]+\}\}/);
-      expect(prompt).toContain(p.queue);
+      /* The READABLE copy, never the runner's one-line snapshot — the manager's
+         only reading tool cannot paginate that one (the arm below drives it). */
+      expect(prompt).toContain(p.queue.replace(/\.json$/, ".readable.json"));
       expect(prompt).toContain("20261001-022100");
       expect(prompt).toContain("exactly `2` rows");
       /* ⚠ THE VOCABULARY IS THE CUTTER'S OWN: real Atlas domains, and never the
@@ -596,6 +598,138 @@ describe("the brief composer puts this pass's facts into the brief", () => {
       expect(prompt).not.toContain("unassigned");
       /* The header is about the brief and must not reach the manager. */
       expect(prompt).not.toContain("THIS FILE IS THE BRIEF ITSELF");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  /*
+    ⚠ THE ARM FOR THE DEFECT THAT COST THE FIRST ARMED PASS ITS SHEET.
+
+    `gh --json` prints compact JSON — ONE line. The manager holds `Read`, `Grep`
+    and `Glob`, and `Read` cannot paginate a one-line file: on pass
+    `20261001-141427` it returned the first 21,249 of 171,326 characters, which
+    held 5 of that pass's 54 card numbers, and `offset: 2` was refused as past
+    the end of the file. The brief asked for 54 rows from a file the session
+    could see 5 cards of.
+
+    So the arm is about LINES, not about bytes or prettiness: the file the brief
+    hands the manager must have one JSON value per line, which is the only thing
+    that makes `offset`/`limit` work. It drives the real script, reads the real
+    output, and asserts the raw snapshot is left alone — the sheet writer takes
+    its allowlists from that one.
+  */
+  it("hands the manager pretty-printed snapshots it can page, and leaves the raw ones alone", () => {
+    const p = setUp();
+    try {
+      /* A body long enough that a compact snapshot would be one unreadable line,
+         and long enough to prove a long line survives a paged read. */
+      const longBody = `Parent: #1598.\n\n${"detail ".repeat(400)}`;
+      writeFileSync(
+        p.queue,
+        JSON.stringify([
+          { number: 1604, title: "a", body: longBody, labels: [], createdAt: "2026-09-30T00:00:00Z" },
+          { number: 1606, title: "b", body: longBody, labels: [], createdAt: "2026-09-30T00:00:00Z" },
+        ]),
+        "utf8",
+      );
+      const rawQueueBefore = readFileSync(p.queue, "utf8");
+      const rawPrsBefore = readFileSync(p.prs, "utf8");
+      expect(rawQueueBefore.split("\n")).toHaveLength(1);
+
+      const run = runScript("scripts/manager-brief.mts", [
+        "--queue", p.queue, "--prs", p.prs, "--pass", "20261001-022100",
+        "--read-at", "2026-10-01T02:21:00.000Z", "--out", p.out,
+      ]);
+      expect(run.status, run.stderr).toBe(0);
+
+      const readableQueue = p.queue.replace(/\.json$/, ".readable.json");
+      const readablePrs = p.prs.replace(/\.json$/, ".readable.json");
+      expect(existsSync(readableQueue)).toBe(true);
+      expect(existsSync(readablePrs)).toBe(true);
+
+      /* THE WHOLE POINT: many lines, not one. */
+      const queueLines = readFileSync(readableQueue, "utf8").split("\n").length - 1;
+      expect(queueLines).toBeGreaterThan(10);
+      /* `\n` only — a CRLF copy would make the brief's line count disagree with
+         the bytes a later reading quotes. */
+      expect(readFileSync(readableQueue, "utf8")).not.toContain("\r");
+      /* And it is the SAME data, not a summary of it. */
+      expect(JSON.parse(readFileSync(readableQueue, "utf8"))).toEqual(JSON.parse(rawQueueBefore));
+      expect(JSON.parse(readFileSync(readablePrs, "utf8"))).toEqual(JSON.parse(rawPrsBefore));
+
+      /* The brief points at the readable copies and never at the raw ones. */
+      const prompt = readFileSync(p.out, "utf8");
+      expect(prompt).toContain(readableQueue);
+      expect(prompt).toContain(readablePrs);
+      /* `<dir>\queue.json` is not a substring of `<dir>\queue.readable.json`, so
+         this is a real exclusion rather than a tautology — the check that the
+         placeholder was not left pointing at the one-line file. */
+      expect(prompt).not.toContain(p.queue);
+      /* The line counts reach the manager, so it knows to page rather than
+         discovering it by running out. */
+      expect(prompt).toContain(`${queueLines} lines`);
+      expect(run.stdout).toContain(`queue ${queueLines} lines`);
+
+      /* The raw snapshots are untouched: `manager-fact-sheet.mts` reads its card
+         and pull-request allowlists from them. */
+      expect(readFileSync(p.queue, "utf8")).toBe(rawQueueBefore);
+      expect(readFileSync(p.prs, "utf8")).toBe(rawPrsBefore);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  /*
+    THE NEGATIVE CONTROL FOR THE ARM ABOVE (working law 2). A refusal must leave
+    NOTHING behind — not the prompt, and not a readable copy written before the
+    refusal was reached. Without this, a run that refused halfway would plant
+    files at paths the next reader would treat as this pass's.
+  */
+  it("a refusal leaves neither a prompt nor a readable copy behind", () => {
+    const p = setUp();
+    try {
+      const leaky = join(dir, "leaky.md");
+      writeFileSync(leaky, "# header\n\n---\n\nRead {{QUEUE_FILE}} and also {{NOPE}}.\n", "utf8");
+      const run = runScript("scripts/manager-brief.mts", [
+        "--queue", p.queue, "--prs", p.prs, "--pass", "x",
+        "--read-at", "2026-10-01T02:21:00.000Z", "--out", p.out, "--brief", leaky,
+      ]);
+      expect(run.status).toBe(1);
+      expect(existsSync(p.out)).toBe(false);
+      expect(existsSync(p.queue.replace(/\.json$/, ".readable.json"))).toBe(false);
+      expect(existsSync(p.prs.replace(/\.json$/, ".readable.json"))).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  /*
+    AND A PULL-REQUEST SNAPSHOT THIS CANNOT PARSE REFUSES THE BRIEF. It was
+    `existsSync` alone before the snapshots were re-written here. Refusing is the
+    safe direction: no brief, no manager, and the pass cuts as it did before
+    #1658 — nothing can be made worse by it.
+  */
+  it("refuses a pull-request snapshot that is not a readable array", () => {
+    const p = setUp();
+    try {
+      writeFileSync(p.prs, "not json at all", "utf8");
+      const broken = runScript("scripts/manager-brief.mts", [
+        "--queue", p.queue, "--prs", p.prs, "--pass", "x",
+        "--read-at", "2026-10-01T02:21:00.000Z", "--out", p.out,
+      ]);
+      expect(broken.status).toBe(1);
+      expect(broken.stdout).toContain("BRIEF none");
+      expect(broken.stdout).toContain("pull-request snapshot");
+      expect(existsSync(p.out)).toBe(false);
+
+      writeFileSync(p.prs, JSON.stringify({ number: 1 }), "utf8");
+      const notArray = runScript("scripts/manager-brief.mts", [
+        "--queue", p.queue, "--prs", p.prs, "--pass", "x",
+        "--read-at", "2026-10-01T02:21:00.000Z", "--out", p.out,
+      ]);
+      expect(notArray.status).toBe(1);
+      expect(notArray.stdout).toContain("is not an array");
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
