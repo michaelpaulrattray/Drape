@@ -122,7 +122,7 @@ vi.mock("./castingV2/faceScanService", async () => {
 });
 
 /** The audit writer: a refused scan writes a row, and nothing here needs a database. */
-const logAuditEvent = vi.fn(async () => undefined);
+const logAuditEvent = vi.fn(async (..._args: unknown[]) => undefined);
 vi.mock("./auditLog", async () => {
   const real = await vi.importActual<typeof import("./auditLog")>("./auditLog");
   return { ...real, logAuditEvent: (...args: unknown[]) => logAuditEvent(...args) };
