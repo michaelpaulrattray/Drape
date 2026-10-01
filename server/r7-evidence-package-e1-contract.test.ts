@@ -118,8 +118,15 @@ describe("R7-7E1 evidence-aware package foundation contract", () => {
       // than re-deriving it from today's price, so a price change can never
       // retroactively alter what an old operation is owed.
       "castingV2/refineService.ts",
-      // The retry (#122 shape 1) quotes one slice's price, derived from the roll's slice constant.
-      "castingV2/retryService.ts",
+      // retryService.ts LEFT this list with #1601 item 2, and for the same
+      // reason signService.ts did below: its only import of
+      // castingCreditCosts was the retry price, and a retry is now charged
+      // from the TILE'S OWN ROW (`candidate.pointsCost`) rather than from the
+      // roll's slice constant — so a Follow tile cannot be charged a Roll's
+      // price and then have that price written back as its refund authority.
+      // It reads no price module at all now. `CASTING_V2_RETRY_PRICE_CREDITS`
+      // still exists and is still read, by routes/castingV2.ts below, as the
+      // account-level quote the client draws on the button.
       "castingV2/rollService.ts",
       // The Sign adjudicator reads the promotion price to cross-check the
       // promised package against what was actually charged (package v2).
