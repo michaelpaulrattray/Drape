@@ -320,6 +320,30 @@ export function probeErrorMessage(marker: string): string {
   return `Klieg tracker probe — deliberate test exception, not a customer error (${marker})`;
 }
 
+/**
+ * THE PROBE'S MARK — the context it hands `captureServerError`, in ONE place for
+ * the same reason the message above is (#1650, 2026-10-01).
+ *
+ * `kind` reaches Sentry as a tag (`captureServerError` sets it on the scope,
+ * `shared/errorEventScrub.ts`'s `ALLOWED_TAG_KEYS` lets it travel), and it is
+ * what takes ~35 events a day out of his Errors feed: `!kind:probe`. Read at
+ * Sentry's own API on 2026-10-01 rather than assumed — every probe event of the
+ * preceding day carries `kind=probe` and `route=scripts/probe-error-tracker.mts`,
+ * the real `announcements.getActive` crashes beside them carry `kind=trpc`.
+ *
+ * ⚠ **IT IS DECLARED HERE RATHER THAN SPELLED AT THE CALL SITE BECAUSE THE
+ * SUITE CANNOT RUN THE SCRIPT.** `scripts/probe-error-tracker.mts` needs a
+ * Sentry account, so the arms in `server/trackerVerdict.test.ts` drive the
+ * scrub over a FIXTURE of the probe's event — and a fixture that spells these
+ * two strings itself is a second copy of them, green forever while the script
+ * renames its own tag to something his filter does not match (working law 4,
+ * and this function's own docblock one paragraph up). Both sides import this.
+ */
+export const PROBE_ERROR_CONTEXT = {
+  kind: "probe",
+  route: "scripts/probe-error-tracker.mts",
+} as const;
+
 /** Which declaration a slug came from, for the receipt. */
 export type ProbeSlugSource = "declared" | "environment";
 

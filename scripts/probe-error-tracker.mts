@@ -110,6 +110,7 @@ import {
   initErrorTracker,
 } from "../server/monitoring/errorTracker";
 import {
+  PROBE_ERROR_CONTEXT,
   probeErrorMessage,
   probeMarker,
   readProbeBuild,
@@ -249,10 +250,19 @@ const before = errorTrackerStatus();
 
 /* The real crash path, with the real options and the real scrub. `kind: "probe"`
    rides as a tag so the event is filterable in the feed as well as findable by
-   its marker. */
+   its marker.
+
+   ⚠ THAT IS READ AT SENTRY'S OWN API RATHER THAN BELIEVED FROM HERE (#1650,
+   2026-10-01). `GET /api/0/projects/klieg-labs/klieg-server/events/` returns
+   `kind=probe · route=scripts/probe-error-tracker.mts` on every probe event,
+   beside `kind=trpc` on the real crashes of the same day — so `!kind:probe` is
+   the whole filter, and #1650's request for a SECOND `probe` tag was declined
+   as the eighth entry on a seven-key allowlist carrying what the seventh
+   already carries (working law 4). The tag's survival through the projection is
+   pinned in `server/trackerVerdict.test.ts`; without that arm, dropping `kind`
+   from `ALLOWED_TAG_KEYS` would stop his filter matching with nothing red. */
 const eventId = await captureServerError(new Error(probeErrorMessage(marker)), {
-  kind: "probe",
-  route: "scripts/probe-error-tracker.mts",
+  ...PROBE_ERROR_CONTEXT,
 });
 
 await flushErrorTracker(10_000);
