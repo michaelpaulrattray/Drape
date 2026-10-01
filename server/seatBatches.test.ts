@@ -36,6 +36,8 @@ import {
   cutSeatBatches,
   dependencyCitations,
   focusRungFromLadder,
+  managerIndependence,
+  managerPairVerdict,
   orderedBandForSeats,
   pairDisjointOnPaths,
   pathsNamedIn,
@@ -45,8 +47,10 @@ import {
   touchedRegions,
   type SeatAreaIndex,
   type SeatCandidateCard,
+  type SeatManagerFacts,
   type SeatTakeableCard,
 } from "../scripts/lib/seatBatches.mts";
+import type { ManagerCardRow } from "../scripts/lib/managerFactSheet.mts";
 import { buildBoard, factsFromRows } from "../scripts/lib/cardBuildState.mts";
 import type { OpenPullRequest } from "../scripts/lib/cardClaimWarning.mts";
 
@@ -1175,6 +1179,337 @@ describe("the milestone comes from the ladder he declared, not the top of his ba
   });
 });
 
+/* ── THE MANAGER'S FACT SHEET, AND THE WALLS IT CANNOT MOVE (#1658) ────────── */
+
+describe("the manager answers the soft readings and every wall still wins", () => {
+  /** A sheet row, with the shape `scripts/lib/managerFactSheet.mts` validates. */
+  const sheetRow = (card: number, over: Partial<ManagerCardRow> = {}): ManagerCardRow => ({
+    card,
+    dependsOn: [],
+    area: null,
+    collidesWith: [],
+    ready: "yes",
+    why: "",
+    batchHint: null,
+    reason: `read at the card: #${card} names its own files and cites nothing as a prerequisite.`,
+    ...over,
+  });
+
+  const factsOf = (...rows: ManagerCardRow[]): SeatManagerFacts => {
+    const byCard = new Map(rows.map((row) => [row.card, row] as const));
+    return { rowFor: (card: number) => byCard.get(card) };
+  };
+
+  const ordered = (number: number, body: string, labels: string[] = []) =>
+    card(number, ["founder-ordered", ...labels], { body });
+
+  /**
+   * THE COMPOSITION THE CLI PERFORMS, written once here: the manager's reading
+   * where it has a row, today's mechanical reading otherwise. The text arm at the
+   * foot of this block holds `cut-seat-batches.mts` to calling the same function.
+   */
+  const independenceWith = (facts: SeatManagerFacts | undefined, openCards: readonly number[]) =>
+    (subject: SeatCandidateCard) =>
+      managerIndependence(facts?.rowFor(subject.number), openCards, subject.number)
+        ?? readIndependence({ card: subject.number, body: subject.body, openCards });
+
+  const bandWith = (
+    cards: SeatCandidateCard[],
+    facts: SeatManagerFacts | undefined,
+    focusRung: string | null = null,
+    switches = ALL_ON,
+  ) =>
+    orderedBandForSeats({
+      cards,
+      board: CLEAN_BOARD,
+      areaIndex: INDEX,
+      switches,
+      independenceOf: independenceWith(facts, cards.map((c) => c.number)),
+      focusRung,
+      facts,
+    });
+
+  it("⚠ frees a card whose body opens \"Parent: #N\" — the measured defect", () => {
+    /*
+      THE CARD'S OWN HEADLINE MEASUREMENT. All seven open pricing cards open with
+      *"Parent: #1598."* and were held every pass on *"cites #1598 and nothing says
+      whether it builds on them"* — a bare citation no human reads as a dependency.
+      `Parent:` is not in `DEPENDENCY_PHRASES` and cannot be added to it without
+      making every precedent a dependency, which is why a reader was needed rather
+      than a longer list.
+    */
+    const cards = [
+      ordered(100, "Change server/casting/queue.ts."),
+      ordered(101, "Parent: #100.\n\nChange client/src/features/boards/Canvas.tsx."),
+    ];
+
+    /* TODAY, with no sheet: held, and the sentence is the one the card quotes. */
+    const before = bandWith(cards, undefined);
+    expect(before.offered.map((c) => c.number)).toEqual([]);
+    expect(before.held.some((h) => h.number === 101 && h.why.includes("nothing says whether it builds on them"))).toBe(true);
+
+    /* WITH the sheet: the manager's empty `dependsOn` is a positive statement. */
+    const after = bandWith(cards, factsOf(sheetRow(100), sheetRow(101)));
+    expect(after.offered.map((c) => c.number)).toEqual([101]);
+    expect(after.offered[0]!.managerReason).toContain("cites nothing as a prerequisite");
+  });
+
+  it("⚠ marks a dependency the phrase reader misses, and the card is then held", () => {
+    /* The other direction, and the one that makes this a reader rather than a
+       rubber stamp: a body naming no `#N` at all reads as independent today. */
+    const cards = [
+      ordered(100, "Change server/casting/queue.ts."),
+      ordered(101, "Rework the same tile store, after the queue change lands. client/src/features/boards/Canvas.tsx."),
+    ];
+    const before = bandWith(cards, undefined);
+    expect(before.offered.map((c) => c.number)).toEqual([101]);
+
+    const after = bandWith(cards, factsOf(sheetRow(100), sheetRow(101, { dependsOn: [100] })));
+    expect(after.offered.map((c) => c.number)).toEqual([]);
+    expect(after.held.some((h) => h.number === 101 && h.why.includes("builds on #100"))).toBe(true);
+  });
+
+  it("discharges a dependency on a card that is no longer open", () => {
+    /* A manager reading a body written weeks ago names cards that have merged.
+       Honouring one would hold a card forever on finished work. */
+    expect(managerIndependence(sheetRow(101, { dependsOn: [999] }), [100, 101], 101)).toEqual({ kind: "independent" });
+    expect(managerIndependence(sheetRow(101, { dependsOn: [100, 999] }), [100, 101], 101)).toEqual({ kind: "dependent", on: [100] });
+    /* And a row that does not exist leaves the caller's reading alone. */
+    expect(managerIndependence(undefined, [100], 100)).toBeNull();
+  });
+
+  it("⚠ THE RUNG WALL WINS over a sheet that says the card is ready", () => {
+    const cards = [
+      ordered(100, "Change server/casting/queue.ts."),
+      ordered(101, "Change client/src/features/boards/Canvas.tsx.", ["rung:N3"]),
+    ];
+    const facts = factsOf(sheetRow(100), sheetRow(101, { area: "boards", ready: "yes" }));
+    const held = bandWith(cards, facts, "P1");
+    expect(held.offered.map((c) => c.number)).toEqual([]);
+    expect(held.held.some((h) => h.number === 101 && h.why.includes("the milestone is P1"))).toBe(true);
+    /* ⚠ POSITIVE CONTROL — on the OPEN rung the same sheet offers it, so the arm
+       above measures the wall rather than a band that stopped offering. */
+    const open = bandWith(
+      [ordered(100, "Change server/casting/queue.ts."), ordered(101, "Change client/src/features/boards/Canvas.tsx.", ["rung:P1"])],
+      facts,
+      "P1",
+    );
+    expect(open.offered.map((c) => c.number)).toEqual([101]);
+  });
+
+  it("⚠ HIS MASTER SWITCH WINS over a perfect sheet, in both lanes", () => {
+    const off = { ...ALL_ON, master: false };
+    const cards = [ordered(100, "Change server/casting/queue.ts."), ordered(101, "Change client/src/features/boards/Canvas.tsx.")];
+    const facts = factsOf(sheetRow(100, { area: "casting" }), sheetRow(101, { area: "boards" }));
+    const band = bandWith(cards, facts, "P1", off);
+    expect(band.focus).toBeNull();
+    expect(band.offered).toEqual([]);
+    expect(band.held.every((h) => h.why.includes("switch is off"))).toBe(true);
+
+    /* The background lane's own switch, with the same sheet in hand. */
+    const bugsOff = seatPopulation({
+      cards: [card(200, ["bug"], { body: "Change server/casting/queue.ts." })],
+      switches: { ...ALL_ON, bugs: false },
+      board: CLEAN_BOARD,
+      areaIndex: INDEX,
+      focusRung: "P1",
+      facts: factsOf(sheetRow(200, { area: "casting", ready: "yes" })),
+    });
+    expect(bugsOff.takeable).toEqual([]);
+    expect(bugsOff.skipped[0]!.why).toContain("switch is off");
+  });
+
+  it("⚠ MAX_SEATS WINS however many cards the sheet frees", () => {
+    const cards = [
+      ordered(100, "Change docs/one.md."),
+      ordered(101, "Change docs/two.md."),
+      ordered(102, "Change docs/three.md."),
+      ordered(103, "Change docs/four.md."),
+      ordered(104, "Change docs/five.md."),
+    ];
+    const facts = factsOf(
+      sheetRow(100, { area: "casting" }),
+      sheetRow(101, { area: "boards" }),
+      sheetRow(102, { area: "billing" }),
+      sheetRow(103, { area: "wardrobe" }),
+      sheetRow(104, { area: "castingV2" }),
+    );
+    const band = bandWith(cards, facts, "P1");
+    /* Every card but the focus is freed by the sheet — the precondition of the
+       arm, asserted so a cap passing for lack of candidates cannot pass here. */
+    expect(band.offered.map((c) => c.number)).toEqual([101, 102, 103, 104]);
+    const plan = cutSeatBatches({ cards: [], ordered: band.offered, maxSeats: 2, batchSize: 1 });
+    expect(plan.seatCount).toBe(2);
+    expect(plan.batches.every((batch) => batch.cards.length > 0)).toBe(true);
+  });
+
+  it("takes the manager's area where the Atlas knows the name, and discards one it does not", () => {
+    const subject = card(200, ["bug"], { body: "Change server/casting/queue.ts and server/casting/aiService.ts." });
+    const taken = seatPopulation({
+      cards: [subject],
+      switches: ALL_ON,
+      board: CLEAN_BOARD,
+      areaIndex: INDEX,
+      focusRung: null,
+      facts: factsOf(sheetRow(200, { area: "billing" })),
+    });
+    expect(taken.takeable[0]!.area).toBe("billing");
+    expect(taken.takeable[0]!.areaFrom).toBe("manager");
+
+    /* ⚠ A WALL: a name the Atlas does not carry is not vocabulary. It is
+       DISCARDED rather than refused, so the Atlas reading still answers. */
+    const invented = seatPopulation({
+      cards: [subject],
+      switches: ALL_ON,
+      board: CLEAN_BOARD,
+      areaIndex: INDEX,
+      focusRung: null,
+      facts: factsOf(sheetRow(200, { area: "pricing" })),
+    });
+    expect(invented.takeable[0]!.area).toBe("casting");
+    expect(invented.takeable[0]!.areaFrom).toBe("atlas");
+  });
+
+  it("holds a card the manager says nobody can start, in its own words, after the walls", () => {
+    const stopped = seatPopulation({
+      cards: [card(200, ["bug"], { body: "Change server/casting/queue.ts." })],
+      switches: ALL_ON,
+      board: CLEAN_BOARD,
+      areaIndex: INDEX,
+      focusRung: null,
+      facts: factsOf(sheetRow(200, { ready: "no", why: "it waits on his answer about the retry price" })),
+    });
+    expect(stopped.takeable).toEqual([]);
+    expect(stopped.skipped[0]!.why).toContain("waits on his answer about the retry price");
+    expect(stopped.skipped[0]!.why).toContain("the manager's reading of this pass");
+  });
+
+  it("holds an ORDERED card the manager says nobody can start, after the rung wall", () => {
+    /* The ordered lane has its own copy of the readiness hold, and it had no arm
+       until the sabotage pass went looking for one (working law 2 pointed at the
+       arms rather than at the code). */
+    const cards = [
+      ordered(100, "Change server/casting/queue.ts."),
+      ordered(101, "Change client/src/features/boards/Canvas.tsx."),
+    ];
+    const held = bandWith(
+      cards,
+      factsOf(sheetRow(100), sheetRow(101, { area: "boards", ready: "no", why: "it waits on his ruling about the noun" })),
+      "P1",
+    );
+    expect(held.offered).toEqual([]);
+    expect(held.held.some((h) => h.number === 101 && h.why.includes("waits on his ruling about the noun"))).toBe(true);
+    /* ⚠ POSITIVE CONTROL — ready, and the same pass offers it. */
+    const ready = bandWith(cards, factsOf(sheetRow(100), sheetRow(101, { area: "boards" })), "P1");
+    expect(ready.offered.map((c) => c.number)).toEqual([101]);
+  });
+
+  it("reads the collision question off the sheet, symmetrically, in place of the area rule", () => {
+    const cards = [
+      ordered(100, "Change server/casting/queue.ts."),
+      ordered(101, "Change server/casting/aiService.ts."),
+    ];
+    /* Today: same area, so held. */
+    expect(bandWith(cards, undefined).held.some((h) => h.number === 101 && h.why.includes("same area"))).toBe(true);
+
+    /* The manager says they do not meet: offered despite one area. */
+    const clear = bandWith(cards, factsOf(sheetRow(100, { area: "casting" }), sheetRow(101, { area: "casting" })));
+    expect(clear.offered.map((c) => c.number)).toEqual([101]);
+
+    /* The manager says they meet: held, with its reason quoted. */
+    const meets = bandWith(
+      cards,
+      factsOf(sheetRow(100, { area: "casting" }), sheetRow(101, { area: "casting", collidesWith: [100] })),
+    );
+    expect(meets.offered).toEqual([]);
+    expect(meets.held.some((h) => h.number === 101 && h.why.includes("touching the focus card #100's files"))).toBe(true);
+
+    /* ⚠ SYMMETRIC: only the FOCUS row names the other, and it still holds. Two
+       rows can disagree, and the safe reading of a disagreement is the one that
+       holds a card back. */
+    const onlyFocusSaysSo = bandWith(
+      cards,
+      factsOf(sheetRow(100, { area: "casting", collidesWith: [101] }), sheetRow(101, { area: "casting" })),
+    );
+    expect(onlyFocusSaysSo.offered).toEqual([]);
+
+    /* And the verdict is `null` — fall through to today's readers — the moment
+       either card is missing from the sheet. */
+    expect(managerPairVerdict({ number: 100 }, { number: 101 }, factsOf(sheetRow(100)))).toBeNull();
+    expect(managerPairVerdict({ number: 100 }, { number: 101 }, undefined)).toBeNull();
+  });
+
+  it("⚠ NO USABLE SHEET REPRODUCES TODAY'S READING EXACTLY, in both gates", () => {
+    /*
+      The card's §5. `scripts/lib/managerFactSheet.mts` turns every missing,
+      unparseable, stale or partial sheet into `undefined` — those four states have
+      their own arms in `server/managerFactSheet.test.ts` — so what has to be true
+      HERE is that `undefined` changes nothing at all.
+
+      ⚠ **AND THIS ARM IS A STRUCTURAL CHECK, NOT THE MEASUREMENT — said plainly
+      because the sabotage pass tried and could not break it.** `facts?.rowFor` is
+      the same code path for an absent key and an `undefined` one, so no edit to
+      this library makes these two calls disagree; what the arm really pins is that
+      a later shift has not given the key a DEFAULT, which is the one way they
+      could part. **The measurement is the drive**
+      (`.agents/foreman/drive-runner-manager-1658.ps1`): on one fake queue a pass
+      with a usable sheet hands out 3 cards and a pass whose sheet is absent,
+      partial, off-queue or unreadable hands out 2 — the same 2, four times.
+    */
+    const cards = [
+      ordered(100, "Change server/casting/queue.ts."),
+      ordered(101, "Parent: #100.\n\nChange client/src/features/boards/Canvas.tsx."),
+      card(200, ["bug"], { body: "Change server/routes/billing.ts." }),
+      card(201, ["small-fix"], { body: "Change server/wardrobe/vto.ts." }),
+    ];
+    const numbers = cards.map((c) => c.number);
+    const withoutKey = orderedBandForSeats({
+      cards,
+      board: CLEAN_BOARD,
+      areaIndex: INDEX,
+      switches: ALL_ON,
+      independenceOf: independenceWith(undefined, numbers),
+      focusRung: "P1",
+    });
+    const withUndefined = bandWith(cards, undefined, "P1");
+    expect(withUndefined).toEqual(withoutKey);
+
+    const popWithoutKey = seatPopulation({ cards, switches: ALL_ON, board: CLEAN_BOARD, areaIndex: INDEX, focusRung: "P1" });
+    const popWithUndefined = seatPopulation({
+      cards,
+      switches: ALL_ON,
+      board: CLEAN_BOARD,
+      areaIndex: INDEX,
+      focusRung: "P1",
+      facts: undefined,
+    });
+    expect(popWithUndefined).toEqual(popWithoutKey);
+
+    /* And the same fixtures through the real cut, both ways. */
+    const planA = cutSeatBatches({ cards: popWithoutKey.takeable, ordered: withoutKey.offered, maxSeats: 4, batchSize: 5 });
+    const planB = cutSeatBatches({ cards: popWithUndefined.takeable, ordered: withUndefined.offered, maxSeats: 4, batchSize: 5 });
+    expect(planB).toEqual(planA);
+  });
+
+  it("the CLI is wired to these functions — the floor under the arms above", () => {
+    /*
+      ⚠ A FLOOR, AND IT SAYS SO. Every arm in this block drives the LIBRARY; the
+      composition that reaches a pass lives in `scripts/cut-seat-batches.mts`, and
+      the review of 2026-09-26 found exactly that gap on this feature once already
+      (an arm that reads one file of a feature is an arm about that file). The
+      end-to-end proof is `.agents/foreman/drive-runner-manager-1658.ps1`, which
+      runs the real cut against a real sheet; this is the cheap check that the
+      wiring has not simply been deleted.
+    */
+    const cli = readFileSync("scripts/cut-seat-batches.mts", "utf8");
+    expect(cli).toContain("readManagerSheet(");
+    expect(cli).toContain("managerIndependence(");
+    /* Both gates, not one: #1496's own body named only the ordered gate and
+       eleven of the thirteen cards it listed reach the lane through the other. */
+    expect(cli.match(/facts: managerFacts/g)?.length ?? 0).toBe(2);
+  });
+});
+
 describe("the cut derives rather than mirrors", () => {
   const source = readFileSync("scripts/lib/seatBatches.mts", "utf8");
 
@@ -1296,6 +1631,10 @@ describe("the cut derives rather than mirrors", () => {
       "scripts/lib/seatPassDigest.mts",
       "scripts/seat-pass-digest.mts",
       "scripts/lib/jevSeatBatching.mts",
+      /* #1658's two files join the population rather than sitting beside it: a
+         feature's newest module is exactly the one a hand-named list loses. */
+      "scripts/lib/managerFactSheet.mts",
+      "scripts/manager-fact-sheet.mts",
     ];
     const literals = ['"bug"', '"small-fix"', '"casting-upkeep"', '"founder-ordered"', '"blocked"', '"awaiting-fable"', '"parked"', '"casting"', '"boards"'];
     for (const file of files) {

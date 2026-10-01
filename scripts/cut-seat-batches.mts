@@ -53,6 +53,33 @@
  * is a wasted seat and a conflicting branch. So this cut prints the board's
  * `unreadable` reasons and refuses: SEATS 0, the focus shift alone, which is
  * exactly today's behaviour.
+ *
+ * # ⚠ AND SINCE #1658 A MANAGER MAY HAVE ANSWERED THE SOFT READINGS FIRST
+ *
+ *     --facts .agents/shift-logs/manager-<stamp>.json --pass <stamp>
+ *
+ * Founder-ordered 2026-10-01: *"you code it into the crew so an opus manager runs
+ * and checks them all before the cut is made"* — *"we cant keep guessing
+ * things."* `--facts` is the sheet an Opus manager session produced before this
+ * cut ran, and `--pass` is the stamp it must belong to. Where it has a row for a
+ * card, `area` replaces `resolveCardArea`, `collidesWith` replaces the area
+ * equality and the file-set proof, `dependsOn` replaces `readIndependence`, and
+ * `ready: "no"` adds a hold.
+ *
+ * ⚠ **`--facts` IS THE ONE INPUT HERE THAT NEVER REFUSES THE PASS.** Missing,
+ * unparseable, stale or partial, the sheet is dropped, the reason is printed on
+ * the verdict line and recorded in the plan's `manager` block, and the cut runs
+ * exactly as it did before this card. That asymmetry against the Atlas above is
+ * deliberate and it is stated at the read: the Atlas is load-bearing (no Atlas,
+ * no areas at all), while the sheet improves readings that already work, so
+ * losing it must cost the pass only the improvement.
+ *
+ * ⚠ **JEV IS STILL ASKED, AS A CONTROL, AND THE MANAGER STILL WINS.** The card's
+ * §3 keeps Jev's dependency reading for one week logged beside the manager's, and
+ * his decision to retire or keep it rests on the measured disagreement rate — so
+ * the ask happens BEFORE the overlay, independently, and both answers go into the
+ * plan's `managerVsJev`. A control computed after seeing the answer it checks is
+ * not a control.
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -60,6 +87,11 @@ import { resolve } from "node:path";
 
 import { readOpenPullRequests } from "./lib/cardClaimWarning.mts";
 import { buildBoard, readCardComments, readNotBuiltCards } from "./lib/cardBuildState.mts";
+import {
+  managerRowsByCard,
+  readManagerSheet,
+  type ManagerCardRow,
+} from "./lib/managerFactSheet.mts";
 import {
   jevSeatAsk,
   type JevSeatReading,
@@ -71,12 +103,14 @@ import {
   cutSeatBatches,
   ORDERED_BAND_LABEL,
   focusRungFromLadder,
+  managerIndependence,
   orderedBandForSeats,
   readIndependence,
   seatPopulation,
   type IndependenceReading,
   type SeatAreaIndex,
   type SeatCandidateCard,
+  type SeatManagerFacts,
   type SeatSkippedCard,
   type SeatTakeableCard,
 } from "./lib/seatBatches.mts";
@@ -102,6 +136,9 @@ const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
     "not-built",
     "atlas",
     "briefing",
+    /* #1658 — the manager's fact sheet, and the pass it must belong to. */
+    "facts",
+    "pass",
   ],
   boolean: ["no-jev", "quiet"],
 });
@@ -312,6 +349,64 @@ const cards = readOpenCards();
 const nowMs = Date.now();
 
 /*
+  ── THE MANAGER'S FACT SHEET (#1658, founder-ordered 2026-10-01) ──────────────
+
+  An Opus manager session reads every open card and pull request before this cut
+  runs and leaves a sheet; `scripts/lib/managerFactSheet.mts` owns its shape, its
+  validation and the four states that make it unusable. Where it has a row for a
+  card, its readings replace the prose guessing below: `area` replaces
+  `resolveCardArea`, `collidesWith` replaces the area equality and the file-set
+  proof, `dependsOn` replaces `readIndependence`, and `ready: "no"` adds a hold.
+
+  ⚠ **FAILS TOWARD TODAY, AND THAT IS A SINGLE EXPRESSION RATHER THAN A HABIT.**
+  Missing, unparseable, stale or partial — every one yields `managerFacts =
+  undefined`, and every function in the library behaves as it did before this
+  card. The REASON is recorded in the plan and on the stdout line, because *the
+  manager did not run* and *the manager answered half the queue* are different
+  facts about a pass and the first week of this feature is judged on them.
+
+  ⚠ **AND IT IS DELIBERATELY NOT A `refuse`.** The Atlas refuses the pass because
+  without it nothing has an area at all; the sheet is an improvement on readings
+  that already work, so losing it must cost the pass only the improvement.
+*/
+const factsPath = ARGS.value("facts");
+const passStamp = ARGS.value("pass");
+let managerFacts: SeatManagerFacts | undefined;
+let managerRows: ReadonlyMap<number, ManagerCardRow> = new Map();
+let managerNote: string | null = null;
+let managerState = "not asked";
+let managerSheetReadAt: string | null = null;
+let managerModel: string | null = null;
+let managerCostUsd: number | null = null;
+if (factsPath !== null) {
+  if (passStamp === null || passStamp.trim() === "") {
+    /* The pass stamp is what makes `stale` detectable, so a sheet offered
+       without one is not usable even if the file is perfect. */
+    managerState = "stale";
+    managerNote = "--facts was given without --pass, so the sheet cannot be proven to belong to this pass";
+  } else {
+    let raw: string | null = null;
+    try {
+      raw = readFileSync(resolve(factsPath), "utf8");
+    } catch {
+      raw = null;
+    }
+    const verdict = readManagerSheet({ raw, pass: passStamp.trim(), nowMs });
+    if (verdict.kind === "usable") {
+      managerRows = managerRowsByCard(verdict.sheet);
+      managerFacts = { rowFor: (card: number) => managerRows.get(card) };
+      managerState = "usable";
+      managerSheetReadAt = verdict.sheet.readAt;
+      managerModel = verdict.sheet.model;
+      managerCostUsd = verdict.sheet.costUsd;
+    } else {
+      managerState = verdict.state;
+      managerNote = verdict.why;
+    }
+  }
+}
+
+/*
   THE BOARD, read ONCE per pass through the owner of that read. Both halves are
   asked for explicitly so an unreadable one can be NAMED: `buildBoard` keeps
   "clean" and "not read" apart, and this caller is the one that must refuse on
@@ -403,6 +498,59 @@ if (jev !== null) {
   }
 }
 
+/*
+  ── THE MANAGER'S DEPENDENCY READING WINS, AND JEV STAYS AS THE CONTROL ───────
+  (#1658 §3: *"Jev's reading is kept for one week as a CONTROL, logged beside the
+  manager's answer in the plan, then retired or kept on the measured disagreement
+  rate."*)
+
+  The overlay is LAST on purpose: Jev is still asked exactly as it was, so its
+  answer is produced independently rather than conditioned on the manager's, and
+  the comparison in the plan is between two readings of the same question. A
+  control computed after seeing the answer it is checking is not a control.
+
+  ⚠ **A `dependsOn` naming a card that is not open is DISCHARGED, not honoured.**
+  `readIndependence` has always counted open cards only — a closed dependency is a
+  dependency met — and a manager reading a body written weeks ago will name cards
+  that have since merged. Honouring one would hold a card forever on work that is
+  already done, which is the exact failure this card exists to end.
+*/
+type ManagerVsJevRow = {
+  readonly card: number;
+  readonly manager: string;
+  readonly mechanical: string;
+  readonly jev: string | null;
+  readonly agreed: boolean;
+};
+const managerVsJev: ManagerVsJevRow[] = [];
+const readingWord = (reading: IndependenceReading | undefined): string =>
+  reading === undefined ? "none" : reading.kind === "dependent" ? `dependent on ${reading.on.join(", ")}` : reading.kind;
+
+for (const card of candidates) {
+  const managerReading = managerIndependence(managerRows.get(card.number), openCardNumbers, card.number);
+  if (managerReading === null) continue;
+  const before = resolvedIndependence.get(card.number);
+  resolvedIndependence.set(card.number, managerReading);
+  /* Logged for the ordered band only: that is the only lane Jev was ever asked
+     about, so it is the only lane where a disagreement rate means anything. */
+  if (card.labels.includes(ORDERED_LABEL)) {
+    /* `jev.readings` is read here rather than through the `readings` const
+       below, which is declared after the cut: a control must be read where it
+       was produced, and hoisting the const up would put a `jev` field in the
+       plan's shape before the cut that fills it. */
+    const jevWord = jev === null
+      ? null
+      : (jev.readings.find((reading) => reading.card === card.number && reading.question === "dependency")?.answer ?? null);
+    managerVsJev.push({
+      card: card.number,
+      manager: readingWord(managerReading),
+      mechanical: readingWord(mechanical.get(card.number)),
+      jev: jevWord,
+      agreed: readingWord(managerReading) === readingWord(before),
+    });
+  }
+}
+
 const ordered = orderedBandForSeats({
   cards: candidates,
   board,
@@ -410,6 +558,7 @@ const ordered = orderedBandForSeats({
   switches,
   independenceOf: (card) => resolvedIndependence.get(card.number) ?? { kind: "unclear", cites: [] },
   focusRung,
+  facts: managerFacts,
 });
 
 const background = seatPopulation({
@@ -433,6 +582,7 @@ const background = seatPopulation({
   switches,
   board,
   areaIndex,
+  facts: managerFacts,
 });
 
 let takeable = [...background.takeable];
@@ -445,6 +595,19 @@ if (jev !== null) {
   const filled: SeatTakeableCard[] = [];
   for (const card of takeable) {
     if (card.area !== null) {
+      filled.push(card);
+      continue;
+    }
+    /*
+      ⚠ AND THE MANAGER'S `null` IS AN ANSWER, NOT SILENCE (#1658). Where the
+      sheet has a row for this card, its area has already replaced
+      `resolveCardArea`; asking Jev after it would be a second reader answering
+      the same question with the later one winning, which is the drift this card
+      removed from the dependency question. Most tooling, script and crew-page
+      work genuinely belongs to no product domain, and `null` is the honest
+      answer the brief asks for.
+    */
+    if (managerRows.has(card.number)) {
       filled.push(card);
       continue;
     }
@@ -482,7 +645,16 @@ const out = {
   maxSeats,
   batchSize,
   seatCount: plan.seatCount,
-  focusCard: ordered.focus === null ? null : { number: ordered.focus.number, title: ordered.focus.title, area: ordered.focus.area },
+  focusCard: ordered.focus === null
+    ? null
+    : {
+      number: ordered.focus.number,
+      title: ordered.focus.title,
+      area: ordered.focus.area,
+      /* Which reader placed it, and the manager's checkable sentence (#1658). */
+      areaFrom: ordered.focus.areaFrom ?? "atlas",
+      managerReason: ordered.focus.managerReason ?? null,
+    },
   /*
     THE MILESTONE, AND WHERE IT CAME FROM, ON THE RECORD (#1541).
 
@@ -496,6 +668,33 @@ const out = {
   focusRung,
   focusRungSource: briefingPath,
   ladderNote: ladderNote === "" ? null : ladderNote,
+  /*
+    THE HAND-OVER, ON THE RECORD (#1658 §6).
+
+    `state` is one of `not asked`, `usable`, `missing`, `unparseable`, `stale`,
+    `partial`, and `note` carries the sentence for every state but the first two.
+    `managerVsJev` is the control the card asks for: the manager's reading beside
+    the mechanical one and Jev's, per ordered card, for one week — his decision on
+    retiring or keeping Jev here rests on that measured disagreement rate, so it
+    is written per pass rather than summarised.
+
+    ⚠ The per-card hand-over is on the CARDS, not here: `areaFrom` and
+    `managerReason` travel on every offered card and on `focusCard`, because one
+    pass can legitimately carry both readings — a card filed after the manager's
+    snapshot falls back — and a header figure could not say which.
+  */
+  manager: {
+    state: managerState,
+    note: managerNote,
+    sheet: factsPath,
+    pass: passStamp,
+    readAt: managerSheetReadAt,
+    model: managerModel,
+    /* The manager's own figure, so the pass's recorded spend carries it (#1658). */
+    costUsd: managerCostUsd,
+    rows: managerRows.size,
+    managerVsJev,
+  },
   batches: plan.batches,
   skipped: [...background.skipped, ...ordered.held, ...plan.held, ...sittingOn],
   jev: {
@@ -530,10 +729,18 @@ if (!ARGS.flag("quiet")) {
   const rungWord = focusRung === null
     ? ` | no milestone — every rung card held${ladderNote === "" ? "" : ` (${ladderNote})`}`
     : ` | milestone ${focusRung}`;
+  /* WHICH READER DECIDED THIS PASS, on the line the runner logs (#1658). A pass
+     that lost its sheet must say so where somebody will see it, not only in the
+     plan JSON — the same argument the milestone word above was added under. */
+  const managerWord = managerState === "not asked"
+    ? ""
+    : managerState === "usable"
+      ? ` | manager ${managerRows.size} rows`
+      : ` | manager ${managerState}${managerNote === null ? "" : ` (${managerNote.slice(0, 90)})`} — read as before`;
   console.log(
     plan.seatCount === 0
-      ? `SEATS 0 | nothing on offer${rungWord}${jevWord}`
-      : `SEATS ${plan.seatCount} | cards ${plan.cardCount} | areas ${areas || "none named"}${rungWord}${jevWord}`,
+      ? `SEATS 0 | nothing on offer${rungWord}${managerWord}${jevWord}`
+      : `SEATS ${plan.seatCount} | cards ${plan.cardCount} | areas ${areas || "none named"}${rungWord}${managerWord}${jevWord}`,
   );
 }
 

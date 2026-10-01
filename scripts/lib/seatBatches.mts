@@ -131,12 +131,35 @@
  * rather than trimmed: `batchSize` decides HOW MANY SEATS a pass launches, not
  * how many cards a seat may hold.
  *
+ * # ⚠ AND SINCE #1658 A MANAGER MAY ANSWER THREE OF THOSE READINGS INSTEAD
+ *
+ * His word, 2026-10-01 (terminal): *"you code it into the crew so an opus
+ * manager runs and checks them all before the cut is made"* — *"we cant keep
+ * guessing things."* An Opus session reads every open card and pull request
+ * before the cut and writes a fact sheet
+ * (`scripts/lib/managerFactSheet.mts`); where it has a row for a card, its
+ * `area` replaces `resolveCardArea`, its `collidesWith` replaces the area
+ * equality and `pairDisjointOnPaths`, its `ready: "no"` adds a hold, and its
+ * `dependsOn` replaces `readIndependence` **at the caller**, because
+ * `independenceOf` was already a caller-supplied reading.
+ *
+ * ⚠ **WHAT DID NOT MOVE IS EVERY WALL.** `homeWorkCategoryFor`,
+ * `backgroundWorkAllowed`, `exclusionFor`, `rungHoldFor`, `heldStateFromLabels`,
+ * the research and parked holds, the build board, the master switch, and
+ * `maxSeats`/`batchSize` in `cutSeatBatches` are all asked BEFORE the sheet is
+ * consulted and none of them can be overruled by it. A sheet row that
+ * contradicts a wall loses, and the sentence that reaches his page is the
+ * wall's. **With no usable sheet every function here behaves exactly as it did
+ * before #1658** — which is that card's §5, and the reason none of this can
+ * cost a pass anything.
+ *
  * Every function here is pure over facts a caller has already read, so
  * `server/seatBatches.test.ts` drives them on fixtures rather than on a shape
  * imagined here. `scripts/cut-seat-batches.mts` is the one caller that reads
  * the world.
  */
 import { CREW_HOLD_WORD, heldStateFromLabels } from "../../shared/crewNextUpHold.js";
+import type { ManagerCardRow } from "./managerFactSheet.mts";
 import { sortOrderedBand } from "../../shared/crewOrderedBand.js";
 import { RUNG_LABEL_PREFIX, currentLadderRung } from "../../shared/crewPipelineGroups.js";
 import { exclusionFor, QUEUE_EXCLUSION_REASONS, RESEARCH_LABEL } from "../../shared/crewQueueExclusions.js";
@@ -190,6 +213,78 @@ export interface SeatTakeableCard extends SeatCandidateCard {
    * seat reads it before it starts.
    */
   readonly annotation?: string | null;
+  /**
+   * WHICH READER ANSWERED `area` (#1658). `manager` when the manager's fact
+   * sheet named a domain the Atlas knows, `atlas` when `resolveCardArea` read
+   * it off the card's own paths and labels.
+   *
+   * ⚠ **It is on the card rather than only in the plan's header because a sheet
+   * covers the cards it was GIVEN, so one pass can legitimately carry both
+   * readings** — a card filed after the manager's snapshot falls back. Without
+   * this field a later reader cannot tell which of the two decided a placement,
+   * which is the question the first week of this feature exists to answer.
+   */
+  readonly areaFrom?: "manager" | "atlas";
+  /**
+   * The manager's one checkable sentence about this card, when it had a row.
+   * The card's §6: the plan records the hand-over, so an offered card cites the
+   * reason a human can take to the card itself.
+   */
+  readonly managerReason?: string | null;
+}
+
+/**
+ * THE MANAGER'S READINGS, AS THIS CUT IS ALLOWED TO USE THEM (#1658).
+ *
+ * `scripts/lib/managerFactSheet.mts` owns the shape, the validation and the four
+ * unusable states; by the time a sheet reaches here it has been accepted, so this
+ * interface is only *which card does the sheet speak about*. A pass with no
+ * usable sheet passes `undefined` and every function below behaves exactly as it
+ * did before this existed — which is the card's §5 made structural rather than
+ * remembered.
+ *
+ * ⚠ **IT IS A LOOKUP, NEVER A DECISION.** Everything the manager says is a SOFT
+ * reading: an area, a dependency, a collision, a readiness. The walls stay in
+ * code and are asked FIRST in both gates below — `backgroundWorkAllowed`,
+ * `exclusionFor`, `rungHoldFor`, `heldStateFromLabels`, the research and parked
+ * holds, the build board, and `maxSeats`/`batchSize` in `cutSeatBatches`. A sheet
+ * row that contradicts a wall loses to the wall, and the hold sentence that
+ * reaches his page is the wall's, not the manager's. His own division, verbatim:
+ * *"the manager decides the soft readings; the code enforces the laws."*
+ */
+export interface SeatManagerFacts {
+  /** The sheet's row for this card, or `undefined` when it has none. */
+  readonly rowFor: (card: number) => ManagerCardRow | undefined;
+}
+
+/**
+ * THE AREA THE MANAGER NAMED, IF THE ATLAS KNOWS IT.
+ *
+ * ⚠ **A WALL, and the one that was easiest to leave out.** The manager is asked
+ * for an area *"in the Atlas's vocabulary"*; a name the Atlas does not carry is
+ * not a vocabulary word, and accepting one would invent a domain that exists
+ * nowhere else — so two cards could be filed under a spelling only the manager
+ * uses and read as different areas for the rest of the pass. An unknown name is
+ * DISCARDED rather than refused, because the Atlas reading below is a perfectly
+ * good answer and losing a sheet over one typo would cost the pass everything.
+ */
+function managerArea(row: ManagerCardRow | undefined, index: SeatAreaIndex): string | null {
+  if (row === undefined || row.area === null) return null;
+  return index.domains.includes(row.area) ? row.area : null;
+}
+
+/** The area, and which reader produced it — the manager first where it spoke. */
+function areaWithSource(
+  card: SeatCandidateCard,
+  index: SeatAreaIndex,
+  facts: SeatManagerFacts | undefined,
+): { readonly area: string | null; readonly areaFrom: "manager" | "atlas"; readonly managerReason: string | null } {
+  const row = facts?.rowFor(card.number);
+  const fromManager = managerArea(row, index);
+  if (fromManager !== null) {
+    return { area: fromManager, areaFrom: "manager", managerReason: row?.reason ?? null };
+  }
+  return { area: resolveCardArea(card, index), areaFrom: "atlas", managerReason: row?.reason ?? null };
 }
 
 /**
@@ -443,6 +538,50 @@ export function pairDisjointOnPaths(
   return { disjoint: true, why: "" };
 }
 
+/**
+ * DOES THE MANAGER SAY THESE TWO PIECES OF WORK TOUCH THE SAME PLACE? (#1658)
+ *
+ * The collision reader for the ordered band, consulted ONLY where the sheet has
+ * a row for BOTH cards — otherwise the area reading and `pairDisjointOnPaths`
+ * answer exactly as they have since #1547. It replaces them rather than joining
+ * them, which is the card's §3: *"the manager's `dependsOn`/`area`/`collidesWith`
+ * replace `readIndependence`, `resolveCardArea` and Jev's dependency question
+ * wherever a row exists."*
+ *
+ * ⚠ **IT IS READ SYMMETRICALLY, ON PURPOSE.** The manager is asked, per card,
+ * which other cards it would touch; two rows can therefore disagree, and the
+ * answer taken is *collides* if EITHER names the other. A collision is a fact
+ * about a pair, so the safe reading of a disagreement is the one that holds a
+ * card back — the measured cost of a held card is a wasted pass, and of a
+ * collision a conflicting branch and a wasted seat.
+ *
+ * ⚠ **AND THIS IS WHY IT MAY FREE A CARD THE AREA RULE WOULD HOLD.** That is
+ * the whole purpose: `resolveCardArea` reads *whichever paths a body happens to
+ * name*, and a card quoting one billing line while working in casting has been
+ * held on it. The residue — work that touches a file no card named — is the SAME
+ * residue the area rule already carries one grain coarser (`pairDisjointOnPaths`
+ * states it), and the remedy is unchanged: the claim rule, the shift row's own
+ * refusal, and one wasted seat as the worst case.
+ *
+ * Returns `null` when the sheet cannot answer, so the caller falls through.
+ */
+export function managerPairVerdict(
+  focus: { readonly number: number },
+  candidate: { readonly number: number },
+  facts: SeatManagerFacts | undefined,
+): PairPathVerdict | null {
+  const focusRow = facts?.rowFor(focus.number);
+  const candidateRow = facts?.rowFor(candidate.number);
+  if (focusRow === undefined || candidateRow === undefined) return null;
+  const collides =
+    candidateRow.collidesWith.includes(focus.number) || focusRow.collidesWith.includes(candidate.number);
+  if (!collides) return { disjoint: true, why: "" };
+  return {
+    disjoint: false,
+    why: `the manager reads it as touching the focus card #${focus.number}'s files — held (${candidateRow.reason})`,
+  };
+}
+
 /** What `seatPopulation` answers. */
 export interface SeatPopulation {
   readonly takeable: readonly SeatTakeableCard[];
@@ -602,6 +741,21 @@ export function seatPopulation(input: {
   readonly switches: CrewWorkSwitchState;
   readonly board: SeatBuildBoard;
   readonly areaIndex: SeatAreaIndex;
+  /**
+   * The manager's fact sheet for this pass, when there is a usable one (#1658).
+   *
+   * ⚠ **TWO OF ITS FOUR COLUMNS REACH THIS LANE, AND THE OTHER TWO DO NOT —
+   * stated rather than left to be discovered.** `area` is taken where the Atlas
+   * knows the name, and `ready: "no"` holds the card with the manager's own
+   * sentence. `dependsOn` is NOT read here, because this lane has never had an
+   * independence gate — a background card's dependency reaches the manager's
+   * answer through `ready` instead, which is the column that exists for exactly
+   * that. `collidesWith` is not read here either: this lane's collisions are
+   * governed by the area grouping in `cutSeatBatches`, where a batch may hold
+   * several areas, so two colliding cards inside ONE seat are harmless and only
+   * a SPLIT across two seats would cost anything.
+   */
+  readonly facts?: SeatManagerFacts;
 }): SeatPopulation {
   const takeable: SeatTakeableCard[] = [];
   const skipped: SeatSkippedCard[] = [];
@@ -634,9 +788,26 @@ export function seatPopulation(input: {
       note(input.board.phraseFor(card.number) ?? "somebody is already on it");
       continue;
     }
+    /*
+      ⚠ THE MANAGER'S READINESS IS ASKED LAST, AFTER EVERY WALL ABOVE (#1658).
+      Its position is the whole of its safety: a sheet saying `ready: "yes"` about
+      a card the switch table, the exclusion vocabulary, the rung gate or the
+      build board holds never reaches this line, so the hold his page shows is
+      always the wall's own sentence. What the manager may add is a hold the code
+      could not see — a card waiting on a person, a pull request or a ruling —
+      and that direction costs a seat rather than producing one.
+    */
+    const row = input.facts?.rowFor(card.number);
+    if (row !== undefined && row.ready === "no") {
+      note(`${row.why} (the manager's reading of this pass)`);
+      continue;
+    }
+    const placed = areaWithSource(card, input.areaIndex, input.facts);
     takeable.push({
       ...card,
-      area: resolveCardArea(card, input.areaIndex),
+      area: placed.area,
+      areaFrom: placed.areaFrom,
+      managerReason: placed.managerReason,
       annotation: input.board.phraseFor(card.number),
     });
   }
@@ -731,6 +902,42 @@ export type IndependenceReading =
   | { readonly kind: "independent" }
   | { readonly kind: "unclear"; readonly cites: readonly number[] };
 
+/**
+ * THE MANAGER'S DEPENDENCY READING, IN THE SAME VOCABULARY (#1658).
+ *
+ * `null` when the sheet has no row for this card, so the caller keeps whatever
+ * `readIndependence` and Jev gave it. Otherwise the row decides, and there is no
+ * third answer: `dependsOn` is a list, and a list the manager left empty is a
+ * POSITIVE statement of independence — which is the whole reason a model was
+ * asked. `unclear` cannot come out of here, and that is the point: *"cites #1598
+ * and nothing says whether it builds on them"* held all seven pricing cards every
+ * pass for days.
+ *
+ * ⚠ **A `dependsOn` NAMING A CARD THAT IS NOT OPEN IS DISCHARGED, NOT HONOURED.**
+ * `readIndependence` has only ever counted open cards — a closed dependency is a
+ * dependency met — and a manager reading a body written weeks ago will name cards
+ * that have since merged. Honouring one would hold a card forever on finished
+ * work, which is the failure this card exists to end rather than to re-create one
+ * reader along.
+ *
+ * ⚠ **It lives HERE rather than in the CLI because it is a judgement about a
+ * reading, not a read of the world.** The first shape of this had it inline in
+ * `cut-seat-batches.mts`, where `server/seatBatches.test.ts` cannot reach it — and
+ * the two arms the card asks for by name (a sheet that frees a *"Parent: #N"*
+ * card, a sheet that marks a dependency the phrase reader misses) are arms about
+ * exactly this function.
+ */
+export function managerIndependence(
+  row: ManagerCardRow | undefined,
+  openCards: readonly number[],
+  self: number,
+): IndependenceReading | null {
+  if (row === undefined) return null;
+  const open = new Set(openCards);
+  const on = row.dependsOn.filter((cited) => cited !== self && open.has(cited));
+  return on.length > 0 ? { kind: "dependent", on } : { kind: "independent" };
+}
+
 export function readIndependence(input: {
   readonly card: number;
   readonly body?: string | null;
@@ -798,6 +1005,17 @@ export function orderedBandForSeats(input: {
    * nothing to stop them diverging, and this one's source was the narrower.
    */
   readonly focusRung: string | null;
+  /**
+   * The manager's fact sheet for this pass, when there is a usable one (#1658).
+   *
+   * Three of its columns reach this lane: `area` (where the Atlas knows the
+   * name), `collidesWith` (through `managerPairVerdict`, in place of the area
+   * equality and the file-set proof), and `ready: "no"` as an added hold.
+   * `dependsOn` reaches it through the CALLER instead — `independenceOf` is
+   * already a caller-supplied reading, so the CLI builds it from the sheet and
+   * this function needs no second road to the same answer (working law 4).
+   */
+  readonly facts?: SeatManagerFacts;
 }): OrderedBandForSeats {
   const held: SeatSkippedCard[] = [];
   const band = input.cards
@@ -879,9 +1097,12 @@ export function orderedBandForSeats(input: {
   const [top, ...rest] = takeable;
   if (top === undefined) return { focus: null, offered: [], held };
 
+  const topPlaced = areaWithSource(top, input.areaIndex, input.facts);
   const focus: SeatTakeableCard = {
     ...top,
-    area: resolveCardArea(top, input.areaIndex),
+    area: topPlaced.area,
+    areaFrom: topPlaced.areaFrom,
+    managerReason: topPlaced.managerReason,
     annotation: input.board.phraseFor(top.number),
   };
   held.push({
@@ -911,7 +1132,38 @@ export function orderedBandForSeats(input: {
       note(`cites ${independence.cites.map((n) => `#${n}`).join(", ")} and nothing says whether it builds on them — held`);
       continue;
     }
-    const area = resolveCardArea(card, input.areaIndex);
+    /* The manager's readiness, after the rung wall and the dependency reading
+       and before any collision question: a card it says nobody can start is held
+       with its own sentence, which is the direction that costs a seat rather
+       than producing one (#1658). */
+    const managerRow = input.facts?.rowFor(card.number);
+    if (managerRow !== undefined && managerRow.ready === "no") {
+      note(`${managerRow.why} (the manager's reading of this pass)`);
+      continue;
+    }
+    const placed = areaWithSource(card, input.areaIndex, input.facts);
+    const area = placed.area;
+    /*
+      THE COLLISION QUESTION — the manager where it can answer for BOTH cards,
+      and today's two readers otherwise (#1658). Asked before the area/path
+      branch rather than inside it, because the manager's answer is about the
+      pair and does not care whether either area is known.
+    */
+    const managerPair = managerPairVerdict(focus, card, input.facts);
+    if (managerPair !== null) {
+      if (!managerPair.disjoint) {
+        note(managerPair.why);
+        continue;
+      }
+      offered.push({
+        ...card,
+        area,
+        areaFrom: placed.areaFrom,
+        managerReason: placed.managerReason,
+        annotation: input.board.phraseFor(card.number),
+      });
+      continue;
+    }
     if (area !== null && focus.area !== null) {
       /* Both placed: the Atlas answers, exactly as it has since 2026-09-26. */
       if (area === focus.area) {
@@ -943,7 +1195,13 @@ export function orderedBandForSeats(input: {
         continue;
       }
     }
-    offered.push({ ...card, area, annotation: input.board.phraseFor(card.number) });
+    offered.push({
+      ...card,
+      area,
+      areaFrom: placed.areaFrom,
+      managerReason: placed.managerReason,
+      annotation: input.board.phraseFor(card.number),
+    });
   }
 
   return { focus, offered, held };

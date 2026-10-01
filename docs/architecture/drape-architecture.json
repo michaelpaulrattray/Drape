@@ -13246,6 +13246,10 @@
       "path": "server/lobby.test.ts"
     },
     {
+      "id": "test:server/managerFactSheet.test.ts",
+      "path": "server/managerFactSheet.test.ts"
+    },
+    {
       "id": "test:server/memoryIndexAudit.test.ts",
       "path": "server/memoryIndexAudit.test.ts"
     },
