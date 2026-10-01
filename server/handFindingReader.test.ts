@@ -391,11 +391,16 @@ describe("a hold that is not a defect — #1705", () => {
       facts: [fact(MERGE_ORDER_HOLD, "2026-10-01T13:00:00Z")!],
     })).toBe("finding");
     /* And the merge tool's own reading, which is the one that can let a pull
-       request through: a finding is not a pass however reassuring its words. */
+       request through: a finding is not a pass however reassuring its words.
+
+       ⚠ Asserted EXACTLY rather than as `not.toBe("verdict")`. That looser form
+       passes just as happily on `not-a-verdict`, which is what a date or a login
+       this fixture got wrong would produce — the arm would then be green while
+       proving nothing about the words at all. */
     expect(classifyComment(
       { id: 9, authorLogin: PR.ownerLogin, createdAt: "2026-10-01T13:00:00Z", body: MERGE_ORDER_HOLD },
-      PR.ownerLogin,
-    )).not.toBe("verdict");
+      PR,
+    )).toBe("finding");
   });
 
   it("a header the relay wrote without the word held still reads as a hold", () => {
