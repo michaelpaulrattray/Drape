@@ -1,7 +1,7 @@
 {
-  "edition": 608,
-  "updatedAt": "2026-10-01T22:15:00.000Z",
-  "shift": "Night shift, 07:14: Add credits was telling people a price that was not the price, and it is fixed and live. Open it on a subscription and for the first moment the big figure read $0.00 due today — I drove it on a real test account in both themes, and the number that replaced it a beat later was $852.33. Nobody was ever charged the wrong amount; the charge was always the real one. What was wrong is that we stated a price before we had been told it, and zero is the most misleading thing we could have said. It now shows a dash in the same spot until the real figure arrives, so nothing on the screen jumps when it lands. While driving it I found the same fault one step over, which the card had not spotted: if you are not on a plan yet, the button itself read Add credits · $0.00 and looked ready to press before the prices had even loaded. That went in the same change, and the button now refuses to name a price it has not been given. The relay read it, passed it and it is on production. Then I did one more thing that is worth telling you about, because it is the part that nearly got away: the review had noted one corner my new test could not see and judged it harmless, so I went and tried it instead of taking the word for it — and it was not harmless. Undoing one word of the fix brought the whole fault back while every test still passed. That hole is closed too, in a second small change, also live. Then I checked everywhere else in the app for the same habit and found four more — two of them on buttons you press to spend credits, the Sign and Refine prices on a casting sheet and the Refresh buttons in the versions dialog, which all read 0 credits for a moment — plus your own plan price in settings, which reads as costing nothing for that same beat. Those are written up as their own card with the exact places, and each one is listed inside the test that guards this, so repairing one and forgetting to tidy up fails loudly rather than quietly. Nothing here is waiting on you.",
+  "edition": 609,
+  "updatedAt": "2026-10-02T00:05:00.000Z",
+  "shift": "Night shift, 10:05: every out-of-credits message in the app has been telling people a number five times too big since the new prices went live yesterday evening, and it is fixed and waiting on review. A Roll costs 240 credits — that is what the sheet says, what the button says and what we charge. But if you ran out, the message that came back said “A roll costs 1200 credits”, because the server was still quoting the internal number we keep behind the scenes. Same on Sign (8500 instead of 1,700), on Refine, on a paid Try again, on anything you generate on the canvas, and on refunds — a cancelled roll said 1200 credits came back when it was 240. Twelve refusal messages, four refund messages, the “you already asked for this” question in refine and the message after an upgrade now all say the number you see everywhere else. Three of them were hiding in the one piece of code every charge in the app passes through, and none of our checks could see them, because the number there is simply called “amount” rather than anything to do with credits — so the checker learned that word, and I measured everything else it catches before keeping it, which turned up two dollar figures it had to be taught to leave alone. The list of places still to fix is now empty: nineteen entries remain and every one carries a written reason why it is right as it is, so “this job is finished” is something a test can check instead of a sentence somebody wrote. One of those reasons is a decision worth telling you about: the line stored against each transaction in the books still uses the internal numbers, because the only place anyone reads those lines today is the moderator's credit history, where the internal number is the correct one — changing it would put two different scales on that one screen. That is filed as its own card for the day a customer can read their own history. It touches money, so it is held for a review by hand rather than merged by me. Nothing here is waiting on you.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -9191,6 +9191,13 @@
       "status": "merged",
       "prNumber": 1732,
       "note": "Merged 70ce8434. Closed the corner the review had judged harmless; it was not."
+    },
+    {
+      "id": "server-credit-messages-1600",
+      "title": "Out-of-credits and refund messages say the number you see everywhere else (#1600)",
+      "status": "in-review",
+      "prNumber": 1738,
+      "note": "Open and held — it touches money, so it waits for a review by hand."
     }
   ],
   "problems": [
@@ -9263,6 +9270,13 @@
       "state": "open",
       "title": "Four more places show a price of zero before the price is known — two on buttons you press to spend credits (#1727)",
       "detail": "Found by sweeping for the same fault I fixed on Add credits tonight, so these are measured rather than guessed.\n\nOn a casting sheet, the Sign button and the Refine button each say what they will cost. For the first moment, before the sheet's settings answer, both read 0 credits. In the versions dialog the Refresh all and Preview buttons do the same thing. And in settings, your own plan price reads as costing nothing for that same beat.\n\nNobody is charged the wrong amount — the real figure lands a moment later and the charge is always the real one. What is wrong is the same thing as tonight's fix: we state a price before we have been told it, and zero is the worst possible guess.\n\nIt is one card, #1727, because it is one habit. Each place is already written into the test that guards tonight's fix, so none of them can be quietly forgotten."
+    },
+    {
+      "id": "server-messages-ledger-scale-1600",
+      "severity": "warning",
+      "state": "open",
+      "title": "Running out of credits gets you a number five times too big — live on production right now (#1600)",
+      "detail": "Measured at the code, not guessed. The new prices went live at 17:34 yesterday and the screens all moved with them, but the messages the server sends did not.\n\nSo today, if you try to roll a sheet without enough credits, the message reads “Not enough credits. A roll costs 1200 credits” — next to a balance and a button that both say 240. Signing says 8500 instead of 1,700. A cancelled roll says 1200 credits came back when 240 did. The same on the canvas, on Refine and on a paid Try again.\n\nNobody is charged or refunded the wrong amount; the money is right. What is wrong is every sentence about it.\n\nThe fix is written, tested and on pull request #1738. It touches money, so it is held for a review by hand rather than merged by the shift that wrote it. This row goes when that merges."
     }
   ],
   "acknowledgedReplyIds": [
