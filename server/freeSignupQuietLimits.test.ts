@@ -463,6 +463,22 @@ describe("the face-scan cap is on the request path — a FLOOR, read at the sour
     catch a resolver that kept the call and ignored its answer, and it is called
     a floor here for that reason (the standing orders' rule: say floor unless a
     grep, a guard or a derived list is quoted — this quotes a guard).
+
+    ✅ **THE DRIVER NOW EXISTS AND THAT NAMED HOLE IS CLOSED — `server/faceScanCapDriven.test.ts`
+    (#1714, 2026-10-02).** It drives the real `faceScan` resolver through the
+    real `mayBuyFaceScan`, faking only `countFaceScanAgainstDay` — the last hop
+    before SQL — and asserts that past the cap `scannedFace` is never called
+    while the panel still answers `done: true`.
+
+    ⚠ **THESE TWO ARMS STAY, AND THE REASON IS MEASURED RATHER THAN SENTIMENTAL.**
+    Sabotaged on 2026-10-02 with the resolver rewritten to
+    `((await mayBuyFaceScan(ctx.user.id)), true)` — the gate called, its answer
+    discarded — **this suite passed 28 of 28 and the driver reddened three arms.**
+    So the driver is what proves the ANSWER is honoured. These arms prove two
+    things it cannot: that the gate is in the SOURCE at all (the driver's mocks
+    could drift into proving a fake), and that the FAST panel does not ask it,
+    which has no driver and no spend to observe. Neither suite subsumes the
+    other; a floor beside a driver is not redundancy.
   */
   const resolverBody = (): string => {
     const source = readListedSource(join(REPO_ROOT, "server", "routes", "castingV2.ts"));
