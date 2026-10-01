@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { displayPrice, formatCredits } from "@shared/creditDisplay";
 import { ArrowRight } from "lucide-react";
 
 import { CastingModal } from "@/foundation/CastingModal";
@@ -138,7 +139,7 @@ export function SignConfirm({
             never claimed to be.
           */}
           <span className="dpc-modal__cost">
-            <span className="dpc-modal__tilde">~</span> {priceCredits} credits
+            <span className="dpc-modal__tilde">~</span> {formatCredits(displayPrice(priceCredits))} credits
           </span>
 
           <div className="dpc-modal__actions">

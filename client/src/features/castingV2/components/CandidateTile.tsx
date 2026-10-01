@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { displayPrice, formatCredits } from "@shared/creditDisplay";
 import { Check, RotateCcw, X } from "lucide-react";
 
 import { Button, Icon, P, Skeleton } from "@/foundation";
@@ -349,7 +350,7 @@ export function CandidateTile({
             style={{ alignSelf: "flex-start" }}
           >
             <RotateCcw size={12} aria-hidden="true" />
-            {retryPriceCredits !== undefined ? `Retry · ${retryPriceCredits} credits` : "Retry"}
+            {retryPriceCredits !== undefined ? `Retry · ${formatCredits(displayPrice(retryPriceCredits))} credits` : "Retry"}
           </Button>
         ) : null}
       </div>

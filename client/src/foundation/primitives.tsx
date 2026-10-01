@@ -9,6 +9,8 @@ import type {
   ReactNode,
 } from "react";
 
+import { displayBalance, formatCredits } from "@shared/creditDisplay";
+
 import { cn } from "@/lib/utils";
 /* The house glyph set. `icons.tsx` imports nothing, so this is a leaf edge and
    not a cycle. Chevrons stay Lucide by that file's own rule — they are
@@ -411,7 +413,7 @@ export function CreditsChip({
   label?: string;
 }) {
   if (balance === undefined) return null;
-  const content = `${balance.toLocaleString()} ${label}`;
+  const content = `${formatCredits(displayBalance(balance))} ${label}`;
   return onClick ? (
     <button type="button" className="dp-credits" onClick={onClick} title="Billing">
       {content}

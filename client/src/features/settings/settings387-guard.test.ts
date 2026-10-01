@@ -92,15 +92,21 @@ describe("card 387 item 2 — the window follows the account", () => {
       pool.
     */
     const w = spendWindowCopy("rolling30", 24_535, 5_000);
-    expect(w.note).toBe("24,535 credits left");
+    /* 24,535 ledger reads 4,907 (#1600 — a fifth, rounded DOWN so the figure is
+       never above what can be spent). The substance of the arm is unchanged:
+       the only true figure beside a pool that does not refill is the pool. */
+    expect(w.note).toBe("4,907 credits left");
     expect(w.note, "the allowance that never renews is being claimed again").not.toContain("5,000");
+    /* And not the displayed allowance either, which is what 5,000 became. */
+    expect(w.note, "the allowance that never renews is being claimed again").not.toContain("1,000");
     expect(w.note).not.toMatch(/month/i);
   });
 
   it("a billing period keeps its period and its allowance — both true there", () => {
     const w = spendWindowCopy("period", 12_000, 75_000);
     expect(w.heading).toBe("Usage this billing period");
-    expect(w.note).toBe("of 75,000 this billing period");
+    /* 75,000 ledger reads 15,000 (#1600). */
+    expect(w.note).toBe("of 15,000 this billing period");
     /* ⚠ TWO PHRASINGS, ONE WINDOW. A group heading and a note under a rate need
        different English (*"averaged over in the last 30 days"* is what one
        string for both produces), and a surface writing its own second one is
@@ -196,8 +202,12 @@ describe("card 387 item 2 — the law-7 sweep: no cycle claimed where none runs"
     code(readFileSync(join(HERE, "sections", "BillingSection.tsx"), "utf8"));
 
   it("the plan card claims `credits/mo` only where a month actually renews", () => {
+    /* The allowance now goes through the display helper (#1600); the GATE this
+       arm is about — `renews && allowance > 0` — is what it reads, and that has
+       not moved. The figure inside the claim is deliberately still matched, so
+       a claim rebuilt from a raw ledger number would not satisfy it. */
     expect(billing(), "the /mo allowance is claimed without a renewal again").toMatch(
-      /renews && allowance > 0 \? `\$\{allowance\.toLocaleString\(\)\} credits\/mo`/,
+      /renews && allowance > 0 \? `\$\{formatCredits\(displayBalance\(allowance\)\)\} credits\/mo`/,
     );
   });
 

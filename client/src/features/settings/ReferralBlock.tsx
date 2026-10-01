@@ -20,6 +20,7 @@
  *   lives in the promise rather than as a denominator.
  */
 import { useState } from "react";
+import { displayBalance, formatCredits } from "@shared/creditDisplay";
 import { toast } from "sonner";
 
 import { trpc } from "@/lib/trpc";
@@ -84,8 +85,8 @@ export function ReferralBlock() {
         <p className="dp-set__grouphead">Refer a friend</p>
         <p className="dp-set__note">
           {reward > 0
-            ? `They get ${reward.toLocaleString()} credits on their first signed cast, and so do you${
-                cap > 0 ? ` — up to ${cap.toLocaleString()} in total` : ""
+            ? `They get ${formatCredits(displayBalance(reward))} credits on their first signed cast, and so do you${
+                cap > 0 ? ` — up to ${formatCredits(displayBalance(cap))} in total` : ""
               }.`
             : "Invite someone to the studio."}
         </p>
@@ -131,7 +132,7 @@ export function ReferralBlock() {
           <span className="dp-set__note">
             {joined > 0 ? `${joined} ${joined === 1 ? "friend" : "friends"} joined` : null}
             {joined > 0 && earned > 0 ? " · " : null}
-            {earned > 0 ? `${earned.toLocaleString()} credits earned so far` : null}
+            {earned > 0 ? `${formatCredits(displayBalance(earned))} credits earned so far` : null}
           </span>
         ) : null}
         <span className="dp-set__spacer" />
@@ -178,7 +179,7 @@ export function ReferralBlock() {
                 <span>{entry.status}</span>
                 <span className="dp-set__spacer" />
                 <span className="dp-set__value">
-                  {(entry.creditsAwarded ?? 0).toLocaleString()}
+                  {formatCredits(displayBalance(entry.creditsAwarded ?? 0))}
                 </span>
               </div>
             ))

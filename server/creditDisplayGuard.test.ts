@@ -97,8 +97,17 @@ const repoRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
  * `stripeProducts.ts` rows went by DELETION — the composed Stripe product
  * text — which is why this shrink precedes the new price table rather than
  * riding with it.
+ *
+ * ✅ **108 → 42 (#1600 slice 2, the client routing) — the first shrink by
+ * ROUTING rather than by deletion.** 66 occurrences across 31 files under
+ * `client/src/` now go through the helper. ⚠ **The remaining 42 do NOT all
+ * represent work**: five of them are client rows that must never be routed —
+ * the three `formatCreditsPerDollar` call sites whose conversion happens inside
+ * that function, a FRAME count, and a RATE — each argued in
+ * `creditDisplaySites.ts`'s own header. So this ratchet bottoms out above zero,
+ * and a later slice reporting 0 has broken something rather than finished it.
  */
-const OCCURRENCES_CEILING = 108;
+const OCCURRENCES_CEILING = 42;
 
 const censusedOccurrences = UNROUTED.reduce((total, row) => total + row.count, 0);
 
@@ -222,6 +231,169 @@ describe("the positive controls — each rule reddens, and says where", () => {
       const source = `export const F = () => <span>{${helper}(creditsBalance)} credits</span>;\n`;
       expect(creditSitesIn("client/src/features/billing/Fixture.tsx", source)).toEqual([]);
     }
+  });
+});
+
+describe("#1600 slice 2 — a helper NESTED in the indicted expression is routed", () => {
+  /*
+    ⚠ THE DEFECT THESE ARMS WERE WRITTEN FOR, AND IT INDICTED CORRECT CODE.
+
+    `insideDisplayHelper` walks UP from the indicted node, so a helper call
+    nested inside a larger expression was invisible to it — and rule 2 limb A
+    then fired on the enclosing expression, because `namesIn` found a
+    credit-ish name inside it. **The name it found was `formatCredits`
+    itself**: `/credit/i` matches the helper, so routing a site supplied the
+    very name that re-indicted it. Three real sites hit this on the client
+    routing slice — a cap clause in `ReferralBlock`, the sheet dock's "left"
+    tail, and the usage per-day rate.
+
+    The pair that matters is the last two: routed-inside-a-conditional must
+    PASS, and half-routed must still REDDEN. A fix that only widened would have
+    excused the one shape that actually ships a mixed scale.
+  */
+  it("passes a conditional whose branch routes through the helper", () => {
+    const sites = creditSitesIn(
+      "client/src/features/settings/Fixture.tsx",
+      [
+        "export const F = ({ cap }: { cap: number }) => (",
+        "  <p>They get credits{cap > 0 ? ` — up to ${formatCredits(displayBalance(cap))} in total` : \"\"}.</p>",
+        ");",
+        "",
+      ].join("\n"),
+    );
+    expect(sites).toEqual([]);
+  });
+
+  it("passes a routed value wrapped in arithmetic, where the helper is not the outer call", () => {
+    const sites = creditSitesIn(
+      "client/src/features/settings/Fixture.tsx",
+      [
+        "export const F = ({ spent, days }: { spent: number; days: number }) => (",
+        "  <p>{formatCredits(displayBalance(Math.round(spent / days)))} credits a day</p>",
+        ");",
+        "",
+      ].join("\n"),
+    );
+    expect(sites).toEqual([]);
+  });
+
+  it("⚠ STILL REDDENS on a HALF-routed expression — the shape that ships a mixed scale", () => {
+    /*
+      ⚠ THE BARE HALF HERE IS DELIBERATELY *NOT* A `toLocaleString` CALL, AND
+      THAT IS THE WHOLE POINT OF THE ARM.
+
+      The first version of it used `` `${spent.toLocaleString()} of …` `` — and
+      **rule 1 catches that on its own**, so the arm passed no matter what
+      `routedThroughHelper` did. Both sabotage cases written for it SURVIVED.
+      A raw `${cost}` spliced into a credit sentence is reachable by rule 2 and
+      by nothing else, so this arm can only be satisfied by the behaviour it is
+      about.
+
+      Drive it by counting only `toLocaleString` as bare — the function's first
+      cut — and this goes green while a ledger number sits in a sentence next
+      to a converted one.
+    */
+    const sites = creditSitesIn(
+      "client/src/features/billing/Fixture.tsx",
+      [
+        "export const F = ({ cost, total, show }: { cost: number; total: number; show: boolean }) => (",
+        "  <p>Need {show ? `${cost} and ${formatCredits(displayBalance(total))}` : \"\"} credits</p>",
+        ");",
+        "",
+      ].join("\n"),
+    );
+    expect(sites.length).toBeGreaterThan(0);
+    expect(sites.some((site) => site.expression.includes("cost"))).toBe(true);
+  });
+
+  it("⚠ and reddens when the bare half IS formatted, caught by rule 1 as well", () => {
+    /* Kept beside the arm above rather than instead of it: this shape is real
+       and must redden, but it proves rule 1 rather than this function. Saying
+       which is which is the difference between two arms and one. */
+    const sites = creditSitesIn(
+      "client/src/features/billing/Fixture.tsx",
+      [
+        "export const F = ({ spent, total }: { spent: number; total: number }) => (",
+        "  <p>{`${spent.toLocaleString()} of ${formatCredits(displayBalance(total))} credits`}</p>",
+        ");",
+        "",
+      ].join("\n"),
+    );
+    expect(sites.some((site) => site.expression.includes("spent.toLocaleString()"))).toBe(true);
+  });
+
+  it("⚠ STILL REDDENS on an expression that mentions a helper without calling one", () => {
+    /* `formatCredits` as a bare reference — passed as a callback, say — is not
+       a conversion. Counting a mention rather than a call is the cheap version
+       of this fix and it would excuse every site that merely imported the
+       helper. No `toLocaleString` in the fixture on purpose: with one, the
+       expression is bare for a second reason and the arm stops isolating this. */
+    const sites = creditSitesIn(
+      "client/src/features/billing/Fixture.tsx",
+      [
+        "export const F = ({ balance, show }: { balance: number; show: boolean }) => (",
+        "  <p>Need {show ? render(balance, formatCredits) : null} credits</p>",
+        ");",
+        "",
+      ].join("\n"),
+    );
+    expect(sites.length).toBeGreaterThan(0);
+  });
+});
+
+describe("#1600 slice 2 — `CR` is the product's own word for credits", () => {
+  /*
+    ⚠ FOUND BY LOOKING AT THE RUNNING APP, WHICH IS THE ONLY THING THAT COULD
+    HAVE FOUND IT. The casting entrance's receipt line is `` {price} CR `` —
+    the price of the button beside it. Rule 1 cannot reach it, because `price`
+    is deliberately out of the strict vocabulary (`PLAN_TIERS.price` is cents),
+    and rule 2's text test was `/credit/i` while the word on screen is two
+    letters. So the routing slice rendered a balance of 3,688 beside a roll
+    price of 160 — two scales on one screen — with every instrument green.
+  */
+  it("catches a credit price labelled CR", () => {
+    const sites = creditSitesIn(
+      "client/src/pages/Fixture.tsx",
+      [
+        "export const F = ({ price }: { price: number }) => (",
+        "  <span><span>~</span>{price} CR</span>",
+        ");",
+        "",
+      ].join("\n"),
+    );
+    expect(sites.map((site) => site.rule)).toEqual(["beside-the-word"]);
+  });
+
+  it("passes the same line once it is routed", () => {
+    const sites = creditSitesIn(
+      "client/src/pages/Fixture.tsx",
+      [
+        "export const F = ({ price }: { price: number }) => (",
+        "  <span><span>~</span>{formatCredits(displayPrice(price))} CR</span>",
+        ");",
+        "",
+      ].join("\n"),
+    );
+    expect(sites).toEqual([]);
+  });
+
+  it("⚠ does NOT fire on `CREDITS PER $1`, where CR is the start of a longer word", () => {
+    /* The word boundary is what keeps the widening narrow, and this is the
+       neighbouring line it could plausibly have swept in. It is already routed
+       by the rate's own helper, so an indictment here would be a false refusal
+       on correct code. */
+    expect(/\bCR\b/.test("CREDITS PER $1")).toBe(false);
+  });
+
+  it("⚠ is case-SENSITIVE, so ordinary prose containing `cr` is not a credit sentence", () => {
+    /* A case-insensitive `\bcr\b` was the obvious form and it would start
+       reading any two-letter token in a sentence as this product's currency. */
+    expect(/\bCR\b/.test("the cr of it")).toBe(false);
+    const sites = creditSitesIn(
+      "client/src/pages/Fixture.tsx",
+      ["export const F = ({ price }: { price: number }) => <span>{price} cr</span>;", ""].join("\n"),
+    );
+    expect(sites).toEqual([]);
   });
 });
 

@@ -327,8 +327,13 @@ describe("card 385 — the window and the sum, which both surfaces now share", (
       .toContain("if (!spend) return null;");
 
     const pane = code(read(join(HERE, "sections", "UsageSection.tsx")));
+    /* The spent figure now goes through the display helper (#1600). What this
+       arm is about is the `: "—"` on the other side of the ternary — a reading
+       the pane does not have must not render as a confident zero — and that is
+       unchanged. The whole expression is still matched rather than just the
+       dash, so a pane that renders `0` for an absent reading fails here. */
     expect(pane, "the pane prints a zero for a figure it does not have again").toContain(
-      'spend ? spend.spent.toLocaleString() : "—"',
+      'spend ? formatCredits(displayBalance(spend.spent)) : "—"',
     );
   });
 

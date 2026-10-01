@@ -32,6 +32,7 @@
  * implies the 24th.
  */
 import { useMemo, useState } from "react";
+import { displayBalance, displaySpent, formatCredits } from "@shared/creditDisplay";
 import { Check, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 
@@ -224,7 +225,7 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
         {/* §7.1 — the reason, from the same four constants as §6a. */}
         {cycle && burn?.emptyOn ? (
           <p className="dp-topup__reason">
-            {cycle.spent.toLocaleString()} of {(cycle.spent + cycle.remaining).toLocaleString()}{" "}
+            {formatCredits(displaySpent(cycle.spent, cycle.remaining))} of {formatCredits(displayBalance(cycle.spent + cycle.remaining))}{" "}
             spent with {cycle.daysLeft} {cycle.daysLeft === 1 ? "day" : "days"} left in this cycle
             — at this rate the balance runs out on {formatShortDate(burn.emptyOn)}
             {burn.dryDays > 0
@@ -234,7 +235,7 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
           </p>
         ) : (
           <p className="dp-topup__reason">
-            {(status?.balance ?? 0).toLocaleString()} credits on the balance today.
+            {formatCredits(displayBalance(status?.balance ?? 0))} credits on the balance today.
           </p>
         )}
 
@@ -319,7 +320,7 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
               aria-expanded={open}
               onClick={() => setOpen((isOpen) => !isOpen)}
             >
-              {selected ? `+ ${delta.toLocaleString()} credits a month` : "No higher plan"}
+              {selected ? `+ ${formatCredits(displayBalance(delta))} credits a month` : "No higher plan"}
               <ChevronDown size={14} strokeWidth={1.8} />
             </button>
             {open ? (
@@ -336,7 +337,7 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
                       setOpen(false);
                     }}
                   >
-                    + {(option.credits - currentCredits).toLocaleString()} credits a month
+                    + {formatCredits(displayBalance(option.credits - currentCredits))} credits a month
                     <span className="dp-topup__optionprice">
                       {formatDollars(annual ? annualPrice(option.price) : option.price)}
                       {annual ? " / yr" : " / mo"}
@@ -353,7 +354,7 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
           <span className="dp-topup__bullet">
             <Check size={12} strokeWidth={1.8} />
             {delta > 0
-              ? `${delta.toLocaleString()} credits land on your balance the moment this goes through — nothing to wait for.`
+              ? `${formatCredits(displayBalance(delta))} credits land on your balance the moment this goes through — nothing to wait for.`
               : "Your balance updates the moment this goes through."}
           </span>
           {costPerFrame > 0 && selected ? (

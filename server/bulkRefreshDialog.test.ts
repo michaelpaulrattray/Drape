@@ -40,6 +40,11 @@ describe("BulkRefreshDialog — loading state never lies about the count", () =>
     const html = render(rows, 600);
     expect(html).toContain("Side profile");
     expect(html).toContain("Three-quarter");
-    expect(html).toContain("600");
+    /* 600 ledger reads 120 (#1600 — a customer sees the ledger at a fifth,
+       and a PRICE rounds up so it is never quoted below what is charged). This
+       is a rendered arm, so it is end-to-end proof of the routing rather than a
+       restated literal: the two 300-credit rows draw "~60 credits" each. */
+    expect(html).toContain("120");
+    expect(html).toContain("~60 credits");
   });
 });

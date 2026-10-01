@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { displayBalance, formatCredits } from "@shared/creditDisplay";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +20,7 @@ export function RedeemCodeModal({ open, onClose }: RedeemCodeModalProps) {
   const redeemMutation = trpc.referral.redeem.useMutation({
     onSuccess: (data) => {
       toast.success(
-        `Code redeemed! You'll receive ${data.rewardCredits} credits after your first generation.`
+        `Code redeemed! You'll receive ${formatCredits(displayBalance(data.rewardCredits))} credits after your first generation.`
       );
       utils.referral.getStats.invalidate();
       setCode("");
