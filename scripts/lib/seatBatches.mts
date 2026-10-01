@@ -84,6 +84,15 @@
  * was *never a card on a rung at all*, and `rungHoldFor` below is now the
  * narrower one the instruction actually asked for.
  *
+ * ⚠ **AND IT GOVERNS THE FOCUS PICK AS WELL AS THE SEAT LANE — #1656, which is
+ * the third correction to this one limb and the first about WHERE it is
+ * asked rather than what it says.** `orderedBandForSeats` applied it only to
+ * the cards BELOW its top pick, so the `focus` it named — the card the whole
+ * area rule measures every other candidate against — could be a card THE
+ * MILESTONE GATE holds. Seventeen consecutive passes named `#1469` (`rung:N2c`)
+ * the focus while the shift was building P1. It is asked once now, before the
+ * top pick, for every card in the band.
+ *
  * **The stricter version was not laziness — it had a stated reason, and the
  * reason has been discharged rather than overruled.** It read: deriving "which
  * rung is the focus" mechanically would mean parsing PROGRAM.md prose, which is
@@ -1042,7 +1051,14 @@ const ORDERED_LABEL = ORDERED_BAND_LABEL;
 
 /** What `orderedBandForSeats` answers. */
 export interface OrderedBandForSeats {
-  /** The top takeable card of NEXT UP — the focus shift's, never a seat's. */
+  /**
+   * The top takeable card of NEXT UP — the focus shift's, never a seat's.
+   *
+   * ⚠ **TAKEABLE INCLUDES THE MILESTONE GATE SINCE #1656.** It is the top card
+   * the focus shift could actually START, not the top card of his band: a rung
+   * the milestone has not opened is held here exactly as it is for a seat, so
+   * `null` means every ordered card is held rather than that his band is empty.
+   */
   readonly focus: SeatTakeableCard | null;
   /** The ordered cards a seat MAY hold, subject to the area rule at placement. */
   readonly offered: readonly SeatTakeableCard[];
@@ -1128,6 +1144,10 @@ export function orderedBandForSeats(input: {
     };
   }
 
+  /* The milestone, handed in by the caller from the ladder he declared — NOT
+     read off the band's own top card. See `focusRung` on the input type. */
+  const focusRung = input.focusRung;
+
   /* Takeable first, in his order, so "the top card" means the top card a shift
      could actually start — the focus lane's own rule. */
   const takeable: SeatCandidateCard[] = [];
@@ -1168,6 +1188,46 @@ export function orderedBandForSeats(input: {
       note(input.board.phraseFor(card.number) ?? "somebody is already on it");
       continue;
     }
+    /*
+      ⚠ **THE MILESTONE GATE DECIDES THE TOP PICK TOO — #1656, AND IT IS THE
+      LAST LIMB ON PURPOSE.** This check ran only over `rest` until now, so the
+      comment above this loop ("the top card a shift could actually start") was
+      true of every hold but the one that holds the most cards in his band. The
+      band sorts by `order:<n>`, then urgent, then oldest, and nothing in that
+      sort knows about a rung — so the oldest ordered card became the `focus`
+      whether or not THE MILESTONE GATE let anybody start it.
+
+      Measured in every seat plan from `seat-plan-20260930-155058.json` to
+      `seat-plan-20261001-104410.json` — seventeen passes — `focusCard` read
+      **#1469 (`rung:N2c`)** while `focusRung` read N2 and then P1. The focus
+      shift was on #1600 and #1608 the whole time. Two costs, and the second is
+      the one that could have bitten: every area hold was computed against
+      #1469's files rather than the real focus card's, so the area rule was
+      measuring a collision nobody could have; and the card the focus shift was
+      ACTUALLY editing had no area protection at all, which is the collision
+      that rule exists to prevent.
+
+      ⚠ **IT SITS AFTER THE BOARD CHECK SO THAT NOTHING IN `rest` MOVES.** The
+      order a `rest` card met these holds was research → parked → held → board
+      (this loop), then rung (the loop below); putting the rung limb last here
+      reproduces that sequence exactly, so no card changes the sentence the
+      digest prints for it. The ONLY behaviour this adds is to the top pick,
+      which is the whole of the card.
+
+      ⚠ **AND IT APPLIES WHEN `focusRung` IS `null` AS WELL, WHICH IS THE SAME
+      DIRECTION AND NOT AN EXTENSION OF IT.** With no milestone named,
+      `rungHoldFor` holds every rung card — so a rung card on top is one no
+      shift could start THEN either, and naming it the focus is the same defect
+      wearing maintenance mode. The fail-closed property that matters is
+      untouched: a rung card still never reaches `offered`, and where holding
+      the whole band leaves no takeable card at all the function returns
+      `focus: null` with nothing offered, which is what it has always done.
+    */
+    const rungHold = rungHoldFor(card.labels, focusRung);
+    if (rungHold !== null) {
+      note(rungHold);
+      continue;
+    }
     takeable.push(card);
   }
 
@@ -1188,18 +1248,16 @@ export function orderedBandForSeats(input: {
     why: "the top of NEXT UP — the focus shift takes it, never a seat",
   });
 
-  /* The milestone, handed in by the caller from the ladder he declared — NOT
-     read off `focus` above. See `focusRung` on the input type. */
-  const focusRung = input.focusRung;
-
   const offered: SeatTakeableCard[] = [];
   for (const card of rest) {
     const note = (why: string) => held.push({ number: card.number, title: card.title, why });
-    const rungHold = rungHoldFor(card.labels, focusRung);
-    if (rungHold !== null) {
-      note(rungHold);
-      continue;
-    }
+    /* ⚠ NO RUNG CHECK HERE, AND ITS ABSENCE IS THE CONTRACT RATHER THAN A
+       DELETION (#1656). `rest` is what survived the loop above, which now
+       applies `rungHoldFor` to every card in the band — so a second call here
+       could only ever answer the same question twice, and the moment it is two
+       calls it is two readings waiting to disagree (working law 4, the class
+       #1541 was an instance of). The rung hold is asked ONCE, before the top
+       pick, for every card. */
     const independence = input.independenceOf(card);
     if (independence.kind === "dependent") {
       note(`builds on ${independence.on.map((n) => `#${n}`).join(", ")} — it waits until that closes`);
