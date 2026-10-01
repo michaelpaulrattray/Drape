@@ -53,14 +53,14 @@ vi.mock("../crew/liveQueue", () => ({
       number: 1193, title: "Live Desk", kind: "issue", status: "open", draft: false,
       labels: ["founder-ordered", "urgent"], author: "michaelpaulrattray", assignees: [],
       createdAt: "2026-09-25T00:00:00Z", updatedAt: "2026-09-25T00:00:00Z", closedAt: null, mergedAt: null,
-      holdReason: null, url: "https://github.com/michaelpaulrattray/Drape/issues/1193",
+      holdReason: null, testDrive: [], url: "https://github.com/michaelpaulrattray/Drape/issues/1193",
     }],
     recent: [{
       number: 1185, title: "slice 3 (#1160)", kind: "pr", status: "merged", draft: false,
       labels: ["needs-fable"], author: "michaelpaulrattray", assignees: [],
       createdAt: "2026-09-24T19:42:18Z", updatedAt: "2026-09-24T23:34:59Z",
       closedAt: "2026-09-24T23:34:59Z", mergedAt: "2026-09-24T23:34:59Z",
-      holdReason: null, url: "https://github.com/michaelpaulrattray/Drape/pull/1185",
+      holdReason: null, testDrive: [], url: "https://github.com/michaelpaulrattray/Drape/pull/1185",
     }],
   })),
 }));

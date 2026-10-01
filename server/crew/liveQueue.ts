@@ -26,7 +26,10 @@
  * `available: false` — the same discipline `crewShiftRuns.ts` keeps for an
  * absent table. It never sends a body to the page: the only thing read from
  * one is the `**Waiting on:**` line (`holdReasonFromBody`), and that sentence
- * is what travels.
+ * is what travels. ⚠ **AND SINCE #1646 A SECOND SENTENCE DOES — the steps of a
+ * `## Your test drive` section**, which is a completion card's whole purpose and
+ * was readable only on GitHub until then. Both are EXTRACTS: the body itself
+ * still never reaches the page.
  *
  * ⚠ THE SEARCH RESPONSE IS A FLOOR WHEN `total_count` EXCEEDS THE PAGE. The
  * reader takes one page of 100 and says so past it rather than paging — 48
@@ -46,6 +49,7 @@
  * overflowed. See `liveDesk`'s `openComplete` for what now depends on it.
  */
 import { holdReasonFromBody } from "../../shared/crewNextUpHold";
+import { testDriveFromBody, type CrewTestDriveStep } from "../../shared/crewTestDrive";
 
 export const LIVE_QUEUE_REPO = "michaelpaulrattray/Drape";
 const LIVE_QUEUE_TTL_MS = 30_000;
@@ -69,6 +73,19 @@ export type LiveQueueItem = {
   readonly mergedAt: string | null;
   /** The card's own `**Waiting on:**` line, or null — the one thing read from a body. */
   readonly holdReason: string | null;
+  /**
+   * THE CARD'S OWN TEST DRIVE, extracted here and empty on almost everything
+   * (#1646). A milestone completion card declares its drive in a
+   * `## Your test drive` section; `testDriveFromBody` turns it into steps he
+   * can answer and nothing else travels.
+   *
+   * ⚠ **THE STEPS, NEVER THE BODY — the header's promise, kept.** #1644's body
+   * is 4.4 KB and the drive is seven sentences; shipping bodies to the page so
+   * it could parse them itself is #1137's own lesson one feature over (351 KB
+   * of a 1.0 MB payload, re-read every 60 seconds). The parse happens on the
+   * one reading the server already holds, exactly where `holdReason` is read.
+   */
+  readonly testDrive: readonly CrewTestDriveStep[];
   /**
    * A PULL REQUEST's body, and `null` on everything else (#1094).
    *
@@ -160,6 +177,7 @@ export function liveQueueItemFromSearch(raw: unknown): LiveQueueItem | null {
     closedAt: isoOrNull(item.closed_at),
     mergedAt,
     holdReason: typeof item.body === "string" ? holdReasonFromBody(item.body) : null,
+    testDrive: typeof item.body === "string" ? testDriveFromBody(item.body) : [],
     body: pull !== null && typeof item.body === "string" ? item.body : null,
     url: String(item.html_url ?? ""),
   };

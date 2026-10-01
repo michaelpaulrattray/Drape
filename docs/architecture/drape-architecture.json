@@ -7,7 +7,7 @@
     {
       "id": "domain:admin",
       "name": "admin",
-      "moduleCount": 61
+      "moduleCount": 62
     },
     {
       "id": "domain:api",
@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 75
+      "moduleCount": 76
     },
     {
       "id": "domain:staff",
@@ -477,6 +477,12 @@
     {
       "id": "module:client/src/features/admin/components/crew/CrewSkeleton.tsx",
       "path": "client/src/features/admin/components/crew/CrewSkeleton.tsx",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/admin/components/crew/CrewTestDrive.tsx",
+      "path": "client/src/features/admin/components/crew/CrewTestDrive.tsx",
       "domain": "admin",
       "lifecycle": "active"
     },
@@ -6093,6 +6099,12 @@
     {
       "id": "module:shared/crewShiftState.ts",
       "path": "shared/crewShiftState.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/crewTestDrive.ts",
+      "path": "shared/crewTestDrive.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -13009,6 +13021,10 @@
       "path": "server/crewShiftWriterBoundary.test.ts"
     },
     {
+      "id": "test:server/crewTestDrive.test.ts",
+      "path": "server/crewTestDrive.test.ts"
+    },
+    {
       "id": "test:server/crewWorkSwitches.test.ts",
       "path": "server/crewWorkSwitches.test.ts"
     },
@@ -15112,6 +15128,26 @@
     {
       "from": "module:client/src/features/admin/components/crew/CrewSkeleton.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewTestDrive.tsx",
+      "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewTestDrive.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewTestDrive.tsx",
+      "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewTestDrive.tsx",
+      "to": "module:shared/crewTestDrive.ts",
       "kind": "imports"
     },
     {
@@ -19891,6 +19927,11 @@
     },
     {
       "from": "module:client/src/pages/AdminCrew.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewTestDrive.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminCrew.tsx",
       "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
       "kind": "imports"
     },
@@ -19927,6 +19968,11 @@
     {
       "from": "module:client/src/pages/AdminCrew.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminCrew.tsx",
+      "to": "module:shared/crewTestDrive.ts",
       "kind": "imports"
     },
     {
@@ -28981,6 +29027,11 @@
     },
     {
       "from": "module:server/crew/liveDesk.ts",
+      "to": "module:shared/crewTestDrive.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveDesk.ts",
       "to": "module:shared/crewWorkSwitches.ts",
       "kind": "imports"
     },
@@ -28992,6 +29043,11 @@
     {
       "from": "module:server/crew/liveQueue.ts",
       "to": "module:shared/crewNextUpHold.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveQueue.ts",
+      "to": "module:shared/crewTestDrive.ts",
       "kind": "imports"
     },
     {
@@ -34172,6 +34228,11 @@
     {
       "from": "module:shared/crewReplyAcknowledgement.ts",
       "to": "module:shared/crewCardResolution.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/crewTestDrive.ts",
+      "to": "module:shared/crewMarkdownLead.ts",
       "kind": "imports"
     },
     {

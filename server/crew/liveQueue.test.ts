@@ -100,6 +100,9 @@ describe("the mapping, on a captured search item", () => {
       closedAt: "2026-09-24T23:34:59Z",
       mergedAt: "2026-09-24T23:34:59Z",
       holdReason: null,
+      /* #1646 — a PR declares no test drive, and the extractor reading its real
+         body here is the arm that proves an ordinary body produces none. */
+      testDrive: [],
       /* #1094 — a PULL REQUEST's body is kept, because the read that answers
          *which card is this building* is the brief's own `card #N` sentence and
          two of the eleven open PRs measured that day named their card nowhere
@@ -109,6 +112,35 @@ describe("the mapping, on a captured search item", () => {
       body: CAPTURED_PR_1185.body,
       url: "https://github.com/michaelpaulrattray/Drape/pull/1185",
     });
+  });
+
+  it("reads a completion card's test drive and STILL drops the body (#1646)", () => {
+    /* The field this feature added is an EXTRACT, exactly like `holdReason`:
+       the steps travel and the 4.4 KB body does not. #1137's lesson one feature
+       over was 351 KB of a 1.0 MB payload, re-read every 60 seconds. */
+    const completion = {
+      ...OPEN_ISSUE,
+      number: 1644,
+      body: "## What N2 was for\n\nProse about the rung.\n\n"
+        + "## Your test drive (each one is a minute or two)\n\n"
+        + "1. **Sign a creature** and check the close-up arrives (#1582, #1612).\n"
+        + "2. **Press Try again** on an unchecked view (#1347).\n\n"
+        + "## Carried forward, not lost\n\n- #1612 remainder: the hand-over.\n",
+    };
+    const item = liveQueueItemFromSearch(completion)!;
+    expect(item.testDrive).toEqual([
+      { n: 1, text: "Sign a creature and check the close-up arrives.", proves: [1582, 1612] },
+      { n: 2, text: "Press Try again on an unchecked view.", proves: [1347] },
+    ]);
+    /* The body is still absent, and the carried-forward line with it. */
+    expect(item.body).toBeNull();
+    expect(JSON.stringify(item)).not.toContain("Carried forward");
+    expect(JSON.stringify(item)).not.toContain("What N2 was for");
+  });
+
+  it("CONTROL — an ordinary card and a pull request declare no drive", () => {
+    expect(liveQueueItemFromSearch(OPEN_ISSUE)!.testDrive).toEqual([]);
+    expect(liveQueueItemFromSearch(CAPTURED_PR_1185)!.testDrive).toEqual([]);
   });
 
   it("a card's body is still dropped — only a PULL REQUEST keeps one (#1094)", () => {
