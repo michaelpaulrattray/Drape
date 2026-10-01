@@ -236,6 +236,25 @@ export type CreditDisplayReading = {
  * **No existing row moved and no site was routed**, which was checked rather
  * than hoped: the sites outside the census before this change were 0, and after
  * it exactly these 14. The shrink that measures P1's work now starts from 122.
+ *
+ * ✅ **AND IT HAS NOW SHRUNK FOR THE FIRST TIME — 122 → 108 (#1605), BY
+ * DELETION RATHER THAN ROUTING, which is why it could happen before the new
+ * price table lands.** The seven `server/stripe/stripeProducts.ts` rows were
+ * `PLAN_TIERS.<rung>.monthlyCredits.toLocaleString()` twice per rung — a
+ * composed `description` ("200,000 credits/month with 75% rollover") sent to
+ * Stripe as `product_data.description` on the checkout session, and a matching
+ * first `features` bullet. **Both are gone at the source**, so there is nothing
+ * left to rescale: a number that is not composed cannot be composed at the
+ * wrong scale. The customer's plan line is `planBlurbs.ts` and the credits
+ * figure under it renders from `credits`, which a later routing slice takes
+ * through the helper.
+ *
+ * ⚠ **A ROW DELETED BECAUSE ITS SITE WAS DELETED IS THE ONLY CLEAN SHRINK
+ * THERE IS; A ROW DELETED BECAUSE ITS SITE MOVED IS THE ROT THE STALE ARM
+ * EXISTS FOR.** These seven are the first kind, and the proof is the negative
+ * control rather than this sentence: with the rows gone, a re-composed
+ * description is a site OUTSIDE the census and `creditDisplayGuard.test.ts`
+ * refuses it.
  */
 export const UNROUTED: readonly {
   file: string;
@@ -321,13 +340,6 @@ export const UNROUTED: readonly {
   { file: "server/lib/boardOps.ts", rule: "beside-the-word", expression: "totalCost", count: 1 },
   { file: "server/routes/billing.ts", rule: "beside-the-word", expression: "creditAdjustment", count: 2 },
   { file: "server/routes/generation/castingImaging.ts", rule: "beside-the-word", expression: "CREDIT_COSTS.castingImage", count: 1 },
-  { file: "server/stripe/stripeProducts.ts", rule: "formatted", expression: "PLAN_TIERS.starter.monthlyCredits.toLocaleString()", count: 2 },
-  { file: "server/stripe/stripeProducts.ts", rule: "formatted", expression: "PLAN_TIERS.pro.monthlyCredits.toLocaleString()", count: 2 },
-  { file: "server/stripe/stripeProducts.ts", rule: "formatted", expression: "PLAN_TIERS.studio.monthlyCredits.toLocaleString()", count: 2 },
-  { file: "server/stripe/stripeProducts.ts", rule: "formatted", expression: "PLAN_TIERS.business.monthlyCredits.toLocaleString()", count: 2 },
-  { file: "server/stripe/stripeProducts.ts", rule: "formatted", expression: "PLAN_TIERS.scale.monthlyCredits.toLocaleString()", count: 2 },
-  { file: "server/stripe/stripeProducts.ts", rule: "formatted", expression: "PLAN_TIERS.enterprise.monthlyCredits.toLocaleString()", count: 2 },
-  { file: "server/stripe/stripeProducts.ts", rule: "formatted", expression: "PLAN_TIERS.ultimate.monthlyCredits.toLocaleString()", count: 2 },
   { file: "server/stripe/webhooks.ts", rule: "beside-the-word", expression: "grantCredits", count: 1 },
   { file: "server/stripe/webhooks.ts", rule: "beside-the-word", expression: "creditsToRestore", count: 2 },
   { file: "server/stripe/webhooks.ts", rule: "beside-the-word", expression: "creditsRestored", count: 1 },

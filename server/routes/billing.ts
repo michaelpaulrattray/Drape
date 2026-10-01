@@ -57,7 +57,12 @@ export const billingRouter = router({
         return {
           id: key as SubscriptionPlan,
           name: plan.name,
-          description: plan.description,
+          // `description` left this projection with #1605: it was a composed
+          // ledger figure ("200,000 credits/month with …") that no client ever
+          // rendered — `planBlurbs.ts` is the customer-facing line, and the
+          // credits figure comes from `credits` below through P1-1's display
+          // helper. A field nobody reads is a second copy of a number, which
+          // is working law 4 on a money surface.
           priceInCents: plan.priceInCents,
           credits: plan.credits,
           features: plan.features,

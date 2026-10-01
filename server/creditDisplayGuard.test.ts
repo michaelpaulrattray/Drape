@@ -87,8 +87,18 @@ const repoRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
  * (derived over the guard's own population), so the budget rises by two while
  * the shape count stays at 79. **Nothing was routed by this change** — the
  * shrink that measures the work starts from 108.
+ *
+ * ✅ **AND IT HAS SHRUNK FOR THE FIRST TIME — 122 → 108 (#1605) — SO THE
+ * CONSTANT IS A RATCHET AND IS LOWERED BY EACH SLICE THAT LANDS.** It was
+ * named `OCCURRENCES_AT_LANDING` and compared with `<=`, which made it a
+ * ceiling that never came down: once a slice had routed or deleted sites, the
+ * budget still permitted every one of them to come back. A ratchet nobody
+ * lowers measures the work once and then stops measuring it. The seven
+ * `stripeProducts.ts` rows went by DELETION — the composed Stripe product
+ * text — which is why this shrink precedes the new price table rather than
+ * riding with it.
  */
-const OCCURRENCES_AT_LANDING = 122;
+const OCCURRENCES_CEILING = 108;
 
 const censusedOccurrences = UNROUTED.reduce((total, row) => total + row.count, 0);
 
@@ -502,7 +512,15 @@ describe("#1676 — the positive control for each newly-caught shape", () => {
 
 describe("the census is held to its contract", () => {
   it("only shrinks — in occurrences, which is the thing that measures the work", () => {
-    expect(censusedOccurrences).toBeLessThanOrEqual(OCCURRENCES_AT_LANDING);
+    expect(censusedOccurrences).toBeLessThanOrEqual(OCCURRENCES_CEILING);
+  });
+
+  /* The ratchet's other half, and without it the ceiling is decoration: a
+     slice that lands work and leaves the number above it has bought the
+     product nothing the next slice can measure from. Equality is the only
+     honest state at rest — the census IS the budget. */
+  it("⚠ keeps the ceiling AT the census, so a landed slice cannot leave slack behind", () => {
+    expect(censusedOccurrences).toBe(OCCURRENCES_CEILING);
   });
 
   it("holds no duplicate key, and every count is a positive integer", () => {

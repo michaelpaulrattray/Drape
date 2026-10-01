@@ -14121,6 +14121,10 @@
       "path": "server/stripe/annualPlanChange.test.ts"
     },
     {
+      "id": "test:server/stripe/checkoutProductText.test.ts",
+      "path": "server/stripe/checkoutProductText.test.ts"
+    },
+    {
       "id": "test:server/stripe/environmentTag.test.ts",
       "path": "server/stripe/environmentTag.test.ts"
     },

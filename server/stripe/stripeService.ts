@@ -93,9 +93,15 @@ export async function createSubscriptionCheckoutSession(
       {
         price_data: {
           currency: "usd",
+          // ⚠ NAME ONLY — no `description` (#1605). The description this used
+          // to send was `"200,000 credits/month with 75% rollover"`, a LEDGER
+          // amount printed on Stripe's checkout page while every screen the
+          // customer owns moves to the display scale (P1-1). It is deleted at
+          // its source rather than rescaled here; `stripeProducts.ts`'s
+          // docblock carries the argument, and `checkoutProductText.test.ts`
+          // asserts this object at the wire.
           product_data: {
             name: planName,
-            description: product.description,
           },
           unit_amount: unitAmount,
           recurring: {
