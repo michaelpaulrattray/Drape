@@ -347,7 +347,7 @@ export default function DrapeStudio() {
           title={activeTool === 'wardrobe' ? 'Wardrobe' : activeTool === 'casting' ? 'Casting' : 'Studio'}
           user={user}
           profileImage={profileImage}
-          creditsBalance={creditsData?.balance || 0}
+          creditsBalance={creditsData?.balance ?? null}
           onOpenTopup={() => setIsTopupOpen(true)}
           onOpenSettings={() => account.openSettings('profile')}
           onOpenBilling={() => account.openSettings('billing')}

@@ -157,7 +157,7 @@ export function AccountSurfaces({
           planName={planName}
           planPriceInCents={planPriceInCents}
           allowance={allowance}
-          balance={status?.balance ?? 0}
+          balance={status?.balance ?? null}
           renewsAt={renewsAt}
         />
       ) : null}
