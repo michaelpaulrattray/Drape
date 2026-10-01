@@ -54,6 +54,10 @@ const RENDERED_BY: Record<string, { className: string; accessor: string }> = {
   "problems[].detail": { className: "dp-crew__body", accessor: "problem.detail" },
   "eyeItems[].question": { className: "dp-crew__body", accessor: "item.question" },
   "pipeline[].note": { className: "dp-crew__rowwhy", accessor: "item.note" },
+  /* #1679 — the edition's shift note, in the stamp. The ONLY mapped field
+     rendered by the PAGE rather than by a crew component, which is why the
+     population below had to widen before this line could be written. */
+  shift: { className: "dp-crew__stampnote", accessor: "stateQuery.data.briefing.shift" },
 };
 
 /** Every string field in the briefing whose value carries a newline. */
@@ -76,10 +80,55 @@ function ruleBody(css: string, className: string): string | null {
 
 const css = fs.readFileSync(CSS, "utf8");
 const briefing = JSON.parse(fs.readFileSync(BRIEFING, "utf8")) as unknown;
-const sources = fs
-  .readdirSync(HERE)
-  .filter((file) => file.endsWith(".tsx"))
-  .map((file) => fs.readFileSync(path.resolve(HERE, file), "utf8").replace(/\s+/g, " "));
+const CLIENT_SRC = path.resolve(HERE, "..", "..", "..", "..");
+
+/**
+ * ⚠ **EVERY `.tsx` THAT RENDERS THE BRIEFING, NOT EVERY `.tsx` IN THIS
+ * DIRECTORY — widened by #1679, and the narrowness was load-bearing.**
+ *
+ * The markup check below could only ever see this folder. `shift` is rendered
+ * by `client/src/pages/AdminCrew.tsx`, one directory up, so **no mapping for it
+ * could be written that this suite was able to verify** — and an unverifiable
+ * mapping is the one thing a guard built on `RENDERED_BY` must not accept.
+ * That is why the field sat unmapped while shifts wrote prose into it, and why
+ * edition 599's five-paragraph note turned **main** red here with the first PR
+ * to merge main forward failing its gate for a reason that was not its diff.
+ *
+ * The population is DERIVED from two facts rather than listed: the components
+ * live in this folder, and anything else that renders the briefing has to name
+ * it. Measured at the tree this landed on — 19 files here, and 3 more outside
+ * it (`pages/AdminCrew.tsx`, `features/admin/overview/NeedsHuman.tsx`,
+ * `features/staff/StaffSurface.tsx`). A renderer that moves out of this folder
+ * stays in scope; one that is added anywhere under `client/src` joins by
+ * construction.
+ */
+function renderingSources(): { relative: string; collapsed: string }[] {
+  const out: { relative: string; collapsed: string }[] = [];
+  const seen = new Set<string>();
+  const take = (absolute: string) => {
+    const relative = path.relative(CLIENT_SRC, absolute).split(path.sep).join("/");
+    if (seen.has(relative)) return;
+    seen.add(relative);
+    out.push({ relative, collapsed: fs.readFileSync(absolute, "utf8").replace(/\s+/g, " ") });
+  };
+  for (const file of fs.readdirSync(HERE)) {
+    if (file.endsWith(".tsx")) take(path.resolve(HERE, file));
+  }
+  const walk = (dir: string): void => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.resolve(dir, entry.name);
+      if (entry.isDirectory()) { walk(full); continue; }
+      if (!entry.name.endsWith(".tsx")) continue;
+      if (!fs.readFileSync(full, "utf8").includes("briefing")) continue;
+      take(full);
+    }
+  };
+  walk(CLIENT_SRC);
+  return out;
+}
+
+const rendering = renderingSources();
+const sources = rendering.map((source) => source.collapsed);
 
 // The card number lives in the docblock above and not in this title: the
 // foundation's token guard reads `#1135` as a hex literal, and it strips
@@ -91,6 +140,24 @@ describe("crew: prose a shift writes for him renders as prose", () => {
     // The floor: at edition 491 there were six such fields across 225 strings.
     // A reader that suddenly finds none has broken, not been fixed.
     expect(carrying.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it("reads every file that RENDERS the briefing, including the page — the floor", () => {
+    // The card number lives in the docblock on `renderingSources` and not in
+    // this title, for the reason the file header already gives: the
+    // foundation's token guard reads a four-digit card number as a hex
+    // literal, and it strips comments but not strings.
+    // ⚠ The arm that would have made #1679 impossible. The markup check below
+    // only ever read this folder, so `shift` — rendered one directory up in
+    // `pages/AdminCrew.tsx` — could not be mapped in a way this suite could
+    // verify, and it therefore went unmapped while shifts wrote prose into it.
+    // A narrowing of the walk reddens here rather than quietly shrinking what
+    // the mapping arms can see.
+    const named = rendering.map((source) => source.relative);
+    expect(named.length, "the walk must find the crew's components").toBeGreaterThan(18);
+    expect(named, "the page that renders the edition stamp").toContain("pages/AdminCrew.tsx");
+    expect(named).toContain("features/admin/components/crew/CrewNeedsYou.tsx");
+    expect(named).toContain("features/admin/components/crew/CrewPipeline.tsx");
   });
 
   it("every field he reads paragraphs in is mapped to the class that renders it", () => {

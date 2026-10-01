@@ -475,12 +475,39 @@ describe("card 415 §3 — Crew states its freshness exactly once, and still nam
       the next shift to edit the guard, which is how a ruling quietly dies.
       What #415 protects here is that the SHIFT NAME survived, so that is
       what is asserted.
-    */
-    expect(crew).toMatch(/written[^<]*by\{"\s"\}\s*\n?\s*\{stateQuery\.data\.briefing\.shift\}/);
 
-    /* NEGATIVE CONTROL — dropping the shift entirely must still redden, or
-       the loosening above has bought the arm's own silence. */
-    const withoutAuthor = 'Briefing edition {stateQuery.data.briefing.edition}';
+      ⚠ **AND IT HAPPENED A SECOND TIME, EXACTLY AS THAT PARAGRAPH PREDICTED
+      (#1679) — read this before loosening it a third time.** The regex still
+      required `{…shift}` to follow `by{" "}` with only whitespace between, so
+      it forbade WRAPPING the field in an element at all. #1679 had to wrap it:
+      an edition written in paragraphs was collapsing to one run-on line and
+      had turned `main` red on `crewBodyWhitespace.test.ts`, and the repair is
+      a span carrying `white-space: pre-line`. **The words "written … by" are
+      untouched — they are the ruling and they are still there verbatim; what
+      moved is only that the field now sits inside a span.** A guard that
+      cannot tell "the author was deleted" from "the author was given a class"
+      is asserting the markup rather than the ruling.
+
+      So the subject is now stated once and directly: THE STAMP ELEMENT RENDERS
+      THE SHIFT FIELD, and the words leading to it are still there. Both halves
+      have their own negative control below, because the loosening is only
+      honest if dropping the author still reddens.
+    */
+    /* Scoped to the stamp ELEMENT for the same reason the arm above is: the
+       field could legitimately appear elsewhere on this page one day, and an
+       assertion over the whole file would read that as compliance. */
+    const stampElement = crew.match(/<p className="[^"]*dp-crew__stamp"[^]*?<\/p>/)?.[0] ?? "";
+    expect(stampElement, "the stamp element itself must be findable").toContain("crew-edition-stamp");
+    expect(stampElement, "the stamp no longer names who wrote the edition")
+      .toMatch(/\{stateQuery\.data\.briefing\.shift\}/);
+    /* The ruling's own words, still in the sentence that introduces the author. */
+    expect(stampElement, 'the stamp stopped saying "written … by"').toMatch(/written[^<]*by\{"\s"\}/);
+
+    /* NEGATIVE CONTROLS — both halves must be able to fail, or the loosening
+       above has bought the arm's own silence. */
+    const withoutAuthor = '<p className="dp-crew__stamp" data-testid="crew-edition-stamp">'
+      + 'Briefing edition {stateQuery.data.briefing.edition}</p>';
+    expect(/\{stateQuery\.data\.briefing\.shift\}/.test(withoutAuthor)).toBe(false);
     expect(/written[^<]*by\{"\s"\}/.test(withoutAuthor)).toBe(false);
   });
 

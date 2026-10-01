@@ -130,7 +130,7 @@ import {
 import { runScriptGuardsOnCommit } from "./lib/scriptGuards.mts";
 import { runTypecheckOnCommit } from "./lib/typecheckOnCommit.mts";
 import { BRIEFING_PATH, generatedFilesFrom, judgeQuietEdition, QUIET_REFUSAL, type QuietVerdict } from "./lib/quietEdition.mts";
-import { judgeBriefingConformance } from "./lib/briefingConformance.mts";
+import { briefingReadingSuites, judgeBriefingConformance } from "./lib/briefingConformance.mts";
 import { eyeFrameKeysOf, judgeEyeFramePresence } from "./lib/eyeFramePresence.mts";
 import { probeProductionHealth } from "./lib/productionHealthProbe.mts";
 import { probeInvocation, readProbeStep } from "./lib/trackerProbeStep.mts";
@@ -793,6 +793,66 @@ function productionUrl(): string | undefined {
     die(`the briefing does not parse against server/crew/crewBriefing.ts — the push does not fire; his page would fall to the degraded state (#169).\n    ${conformance.why}\n  repair: fix ${BRIEFING_PATH} against the schema, commit, re-run`);
   }
   say(`  briefing parse: ${conformance.ok ? `ok — ${conformance.why}` : `WOULD REFUSE (dry run) — ${conformance.why}`}`);
+}
+
+/*
+  AND THE CLIENT SUITES THAT JUDGE THE EDITION RUN ON IT (#1679).
+
+  #169's shape, a second time, and the first one's own words predicted it: *the
+  parse arm exists but runs only in `pnpm test` and the PR gate, and editions go
+  straight to main through the rite, never through a PR.* That was said about
+  the SCHEMA. It is just as true of every other guard that reads the briefing.
+
+  Edition 599 wrote the `shift` field as five paragraphs. It PARSED — the judge
+  above said yes and the push fired — and it reddened
+  `crewBodyWhitespace.test.ts`, which holds that a briefing field carrying a
+  blank line is rendered by a class that keeps one. **`main` was red at 06:15Z
+  and the first PR to merge main forward, #1678, failed its gate for a reason
+  that had nothing to do with its diff.** An edition cannot be allowed to do
+  that, and the rite is the only place on this road that can stop it.
+
+  The population is DERIVED at the commit, never named: a CLIENT suite that
+  reads `crew-briefing.json` is judging the edition by definition, so a third
+  one joins by construction (two today). The server-side readers stay out —
+  their schema half is the judge above and the rest run under `pnpm check` and
+  the PR gate.
+
+  ⚠ **AN EMPTY POPULATION REFUSES.** A derivation that silently selects nothing
+  is a step that checks nothing while printing `ok`, which is the exact shape
+  invariant 7 exists about — and this one is a `git grep` over a glob, so it
+  fails to empty rather than loudly. It runs on `--dry` too, for the same reason
+  `pnpm check` does: a dry run that skips a refusal answers a different
+  question. It reuses the script guards' runner, so a worktree that could not be
+  made clears the commit and names the machine exactly as #967 ruled.
+*/
+{
+  const root = path.resolve(import.meta.dirname, "..");
+  const suites = briefingReadingSuites(root, sha);
+  if (suites.length === 0 && !DRY) {
+    die("no client suite reading the briefing could be found at "
+      + `${shortSha} — the rite is blind to what an edition does to his page, so the push does not fire.\n`
+      + "    This derivation has always returned at least `crewBodyWhitespace.test.ts` and `crewTypes.test.ts`.\n"
+      + "  repair: if a suite was renamed or moved out of `client/src`, point `briefingReadingSuites`"
+      + " (scripts/lib/briefingConformance.mts) at where it went — never delete the step to get past it.");
+  }
+  const verdict = suites.length === 0
+    ? { ok: true, suites, printed: "", couldNotRun: undefined }
+    : runScriptGuardsOnCommit(root, sha, { suites });
+  if (verdict.couldNotRun !== undefined) {
+    die(`the briefing's client suites could not be RUN on ${shortSha} — the rite is blind, so the push does not fire.\n`
+      + verdict.couldNotRun.split("\n").map((line) => `    ${line}`).join("\n")
+      + "\n  NOTHING IN THE COMMIT IS IMPLICATED: no suite was ever handed a tree."
+      + "\n  repair: re-run the rite unchanged. A refusal that repeats on the same commit is a real fault in the machine.");
+  }
+  if (!verdict.ok) {
+    die(`a client suite that judges the briefing is RED on ${shortSha} — the push does not fire, because this edition would redden \`main\` for every PR behind it (#1679).\n`
+      + verdict.printed.split("\n").map((line) => `    ${line}`).join("\n")
+      + "\n  repair: this is almost always the EDITION rather than the code — a field written in"
+      + "\n  paragraphs that nothing maps to a class keeping a newline. Either map it in"
+      + "\n  `crewBodyWhitespace.test.ts` (and give that class `white-space: pre-line`), or write the"
+      + "\n  field as a single paragraph. Then commit and re-run.");
+  }
+  say(`  briefing client suites: ${suites.length === 0 ? "none found (dry run)" : `ok (${suites.length} on ${shortSha})`}`);
 }
 
 /*

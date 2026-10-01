@@ -1329,6 +1329,47 @@
   color: var(--faint);
 }
 
+/*
+  The shift's own note (#1679). It keeps its blank lines; the stamp around it
+  must not, because the stamp's other halves are a sentence assembled in JSX and
+  `pre-line` there would be declaring something about text that has no newlines
+  in it.
+
+  ⚠ `display: block` rather than `inline-block`, and that was DRIVEN rather than
+  chosen. The first shape was `inline-block`, and at 1440×1100 it put the whole
+  note on the stamp sentence's own line: the trailing "· GitHub read …" clause
+  jumped up beside the note's FIRST paragraph and the rest fell away beneath it.
+  Measured there before it was believed — plain `inline` was 98px against
+  `inline-block`'s 112px, so the display value is load-bearing either way and
+  neither inline value is right. A block takes its own lines and the sentence
+  above stays a sentence.
+
+  The measure keeps a long note inside the page's column instead of running to
+  the viewport edge — a 2,906-character edition (600) is the real case, not a
+  hypothetical.
+
+  ⚠ **A ONE-PARAGRAPH NOTE MOVES TOO, AND THAT IS NOT #1135's NEGATIVE CONTROL
+  — it is a deliberate change and is stated rather than implied.** Measured on
+  the real edition 601 (390 characters, no newline) at 1440×1100: the stamp goes
+  **64px → 112px**, because the note leaves the middle of the sentence and
+  takes its own lines at the page measure. #1135 could say "a single-paragraph
+  card does not move" because it only added a `white-space` declaration; this
+  also moves an element, and claiming otherwise would be a claim the frames
+  disagree with.
+
+  The words "written … by" that introduce it are untouched — that is #415, a
+  founder ruling, and `counts415-guard.test.ts` holds it. What that guard had to
+  give up is the ADJACENCY: it required the field to follow `by{" "}` with only
+  whitespace between, which forbade wrapping it in anything at all. Its own
+  docblock had already recorded that lesson once.
+*/
+.dp-crew__stampnote {
+  display: block;
+  max-width: 72ch;
+  margin: var(--s-2) auto 0;
+  white-space: pre-line;
+}
+
 /* ------------------------------------------------------- the viewer (§6) */
 
 /*
