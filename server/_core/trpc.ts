@@ -7,6 +7,7 @@ import { validateAdminAccess, logUnauthorizedAdminAccess } from "../security/adm
 import { APP_UPDATE_REQUIRED_MESSAGE } from "@shared/clientRequestId";
 import { withSpokenFlag } from "./spokenError";
 import { invalidInputMessage } from "./invalidInputMessage";
+import { judgeRequestOrigin } from "../security/crossSiteGuard";
 
 export function appUpdateRequiredMessage(cause: unknown): string | null {
   if (!(cause instanceof ZodError)) return null;
@@ -53,7 +54,72 @@ const t = initTRPC.context<TrpcContext>().create({
 });
 
 export const router = t.router;
-export const publicProcedure = t.procedure;
+
+/**
+ * REFUSE A STATE-CHANGING CALL THAT CAME FROM ANOTHER SITE — #1653.
+ *
+ * `server/security/crossSiteGuard.ts` carries the whole reading: what the attack
+ * is, why it exists beside the `SameSite=lax` cookie fix rather than instead of
+ * it, why neither signal is configured, and why a query is not judged.
+ *
+ * ⚠ **IT SITS AHEAD OF `requireUser`, WHICH IS THE ORDER THIS WANTS.** A forged
+ * request is refused before the product does any work on its behalf — before a
+ * session is trusted, before a row is read, before a Stripe call. A cross-site
+ * mutation with no cookie therefore answers `FORBIDDEN` rather than
+ * `UNAUTHORIZED`, which is the truer answer: the problem is not who is asking.
+ */
+const refuseCrossSiteMutation = t.middleware(async opts => {
+  if (opts.type !== "mutation") return opts.next();
+
+  /*
+    ⚠ A CONTEXT WITH NO `req` IS A CALLER THAT IS NOT AN HTTP REQUEST, AND IT
+    IS ALLOWED ON PURPOSE — not by a `?.` somebody added to stop a crash.
+
+    `ctx.req` is non-optional in `TrpcContext`'s type and always present on the
+    express adapter's road, so the only way here is `appRouter.createCaller`
+    with a hand-built context: a ceremony script
+    (`scripts/ceremony-r7-founder-evidence.mts`) or a suite. Neither has a
+    browser, so neither has somebody else's cookie to borrow, which is the same
+    reason `judgeRequestOrigin` allows a request carrying no headers at all.
+
+    The first draft of this middleware read `opts.ctx.req.headers` outright and
+    `pnpm preflight` went red across four directories of mutation suites —
+    worth recording, because the tempting read of that red is "the fixtures are
+    wrong". They are not: a context without a request is a legitimate shape
+    this product ships, and a control that throws a TypeError on it is a
+    control that decides nothing.
+  */
+  const headers = opts.ctx.req?.headers;
+  if (headers === undefined) return opts.next();
+
+  const verdict = judgeRequestOrigin(headers);
+  if (verdict.allowed) return opts.next();
+
+  throw new TRPCError({
+    code: "FORBIDDEN",
+    /* A refusal says what was refused and what to do — the DT law's wording
+       clause. No engine, no header name, no pipeline term: the customer-facing
+       half is one sentence about where the request came from. The REASON goes
+       to the log through `onError`, never onto her screen. */
+    message: "This request did not come from Klieg, so it was not carried out. Open Klieg in your own tab and try again there.",
+    cause: new Error(`cross-site mutation refused: ${verdict.reason}`),
+  });
+});
+
+/**
+ * THE BASE EVERY PROCEDURE IN THE PRODUCT IS BUILT ON.
+ *
+ * ⚠ **`t.procedure` IS SPELLED EXACTLY ONCE IN THIS FILE, HERE, AND
+ * `server/crossSiteMutationGuard.test.ts` HOLDS IT TO ONE.** The five exported
+ * bases below are the only roads to a procedure in this tree, so deriving all
+ * five from this one is what makes #1653's refusal structural rather than
+ * remembered — a sixth base reaching past it for `t.procedure` would be a
+ * namespace of unguarded mutations that nothing else could see, which is
+ * invariant 7 in the shape this repository keeps paying for.
+ */
+const baseProcedure = t.procedure.use(refuseCrossSiteMutation);
+
+export const publicProcedure = baseProcedure;
 
 /**
  * Requires an authenticated user and checks suspension/lockout.
@@ -127,7 +193,7 @@ const requireApproved = t.middleware(async opts => {
   return next({ ctx: { ...ctx, user: ctx.user } });
 });
 
-export const protectedProcedure = t.procedure.use(requireUser).use(requireApproved);
+export const protectedProcedure = baseProcedure.use(requireUser).use(requireApproved);
 
 /**
  * Signed in, not yet approved.
@@ -138,7 +204,7 @@ export const protectedProcedure = t.procedure.use(requireUser).use(requireApprov
  * the same spirit as adding a public endpoint — it widens what an unapproved
  * account can reach, and `server/approvalGate.test.ts` pins the list.
  */
-export const onboardingProcedure = t.procedure.use(requireUser);
+export const onboardingProcedure = baseProcedure.use(requireUser);
 
 /**
  * Admin procedure with enhanced security:
@@ -147,7 +213,7 @@ export const onboardingProcedure = t.procedure.use(requireUser);
  * 3. Logs unauthorized access attempts
  * 4. Checks for suspension
  */
-export const adminProcedure = t.procedure.use(
+export const adminProcedure = baseProcedure.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
 
@@ -202,7 +268,7 @@ export const adminProcedure = t.procedure.use(
  * Moderators have read-only access to audit logs, user activity, and can escalate to admins.
  * Admins automatically pass this check as well.
  */
-export const moderatorProcedure = t.procedure.use(
+export const moderatorProcedure = baseProcedure.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
 

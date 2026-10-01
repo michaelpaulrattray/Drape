@@ -738,14 +738,29 @@ describe("GET /api/auth/google/callback — the cookie the mint sets", () => {
     expect(cookie).not.toContain("Secure");
   });
 
-  it("is Secure and SameSite=None behind an HTTPS proxy", async () => {
+  /**
+   * ⚠ THIS ARM SAID `SameSite=None` UNTIL 2026-10-01 AND THAT WAS THE DEFECT,
+   * PINNED (#1653, the founder's engineering agent's monthly audit).
+   *
+   * `None` tells the browser to attach the session cookie to requests made BY
+   * OTHER SITES, so any page a signed-in customer visited could POST
+   * `billing.cancelSubscription` in her name — all three no-input mutations are
+   * CORS *simple* requests, so there was no preflight to fail. Nothing in the
+   * tree ever needed `None`: this very callback is a **top-level GET**, which
+   * `Lax` allows, and it is the road the clause claiming otherwise was about.
+   *
+   * It is the arm for the production road specifically — the localhost arm
+   * above was already `Lax` and could never have caught this.
+   */
+  it("is Secure and SameSite=Lax behind an HTTPS proxy — never None (#1653)", async () => {
     const cookie = sessionCookie(
       await get(`/api/auth/google/callback?code=auth-code&state=${await aState()}`, {
         "x-forwarded-proto": "https",
       }),
     );
 
-    expect(cookie).toContain("SameSite=None");
+    expect(cookie).toContain("SameSite=Lax");
+    expect(cookie).not.toContain("SameSite=None");
     expect(cookie).toContain("Secure");
   });
 });

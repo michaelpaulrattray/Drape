@@ -112,7 +112,7 @@
     {
       "id": "domain:security",
       "name": "security",
-      "moduleCount": 9
+      "moduleCount": 10
     },
     {
       "id": "domain:settings",
@@ -5577,6 +5577,12 @@
     {
       "id": "module:server/security/correlationId.ts",
       "path": "server/security/correlationId.ts",
+      "domain": "security",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/security/crossSiteGuard.ts",
+      "path": "server/security/crossSiteGuard.ts",
       "domain": "security",
       "lifecycle": "active"
     },
@@ -12972,6 +12978,10 @@
     {
       "id": "test:server/crewWorkSwitches.test.ts",
       "path": "server/crewWorkSwitches.test.ts"
+    },
+    {
+      "id": "test:server/crossSiteMutationGuard.test.ts",
+      "path": "server/crossSiteMutationGuard.test.ts"
     },
     {
       "id": "test:server/cycleSpend-db.test.ts",
@@ -20947,6 +20957,11 @@
     {
       "from": "module:server/_core/trpc.ts",
       "to": "module:server/security/adminSecurity.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/trpc.ts",
+      "to": "module:server/security/crossSiteGuard.ts",
       "kind": "imports"
     },
     {

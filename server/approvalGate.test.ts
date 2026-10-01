@@ -127,14 +127,25 @@ describe("approval gate — composition is what it claims", () => {
   const accessSource = fs.readFileSync(path.join(serverRoot, "routes", "access.ts"), "utf8");
   const authSource = fs.readFileSync(path.join(serverRoot, "routes", "auth.ts"), "utf8");
 
+  /*
+    ⚠ BOTH REGEXES BELOW SAID `t.procedure` UNTIL 2026-10-01 AND #1653 MOVED
+    THE BASE, WHICH IS WHY THEY ARE WRITTEN AGAINST `baseProcedure` NOW.
+
+    `baseProcedure` is `t.procedure` plus the cross-site refusal, and the five
+    exported builders all derive from it so that refusal cannot be skipped by a
+    new namespace. What these two arms are about has not changed at all: WHICH
+    of the two approval middlewares each builder carries. The base they are
+    built on is a separate claim, pinned in
+    `server/crossSiteMutationGuard.test.ts` beside the control it protects.
+  */
   it("puts the approval check on protectedProcedure", () => {
     expect(trpcSource).toMatch(
-      /export const protectedProcedure = t\.procedure\.use\(requireUser\)\.use\(requireApproved\)/,
+      /export const protectedProcedure = baseProcedure\.use\(requireUser\)\.use\(requireApproved\)/,
     );
   });
 
   it("keeps onboardingProcedure free of the approval check", () => {
-    expect(trpcSource).toMatch(/export const onboardingProcedure = t\.procedure\.use\(requireUser\)/);
+    expect(trpcSource).toMatch(/export const onboardingProcedure = baseProcedure\.use\(requireUser\)/);
   });
 
   it("exempts exactly redeem and status — the enumerated list", () => {
