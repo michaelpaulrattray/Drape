@@ -77,6 +77,7 @@
 import { cardNumberToken, type CardPullRequestWhere } from "./crewShiftState";
 import { blockOpeningLines } from "./crewMarkdownLead";
 import {
+  handFindingNote,
   handVerdictFreshness,
   isHandFinding,
   isHandVerdict,
@@ -97,6 +98,8 @@ export type CrewCardBuildState =
      * `draft` — not finished.
      */
     readonly stage: "gate" | "review" | "passed" | "finding" | "draft";
+    /** Only ever set on `finding`; the relay's own words for the hold (#1705). */
+    readonly findingNote?: string | null;
   }
   | { readonly kind: "claimed"; readonly seat: string | null; readonly at: string }
   /**
@@ -188,6 +191,20 @@ export interface CrewBuildPullRequest {
    * field cannot invent a pass.
    */
   readonly handVerdict?: HandVerdictFreshness;
+  /**
+   * WHAT THE RELAY SAID, when `handVerdict` is `finding` (#1705).
+   *
+   * ⚠ **DATA HERE, NOT A READING — the same shape as `handVerdict` above and for
+   * the same reason**: the words live in a COMMENT, so it is the caller holding
+   * the comment listing that establishes them, through
+   * `handFindingNoteForPullRequest`.
+   *
+   * Absent or `null` means the relay's header said nothing beyond "held", and
+   * the row reads exactly as it did before this field existed. **A missing field
+   * cannot invent a reassurance** — which is the direction that matters here:
+   * the failure to avoid is a board that says nothing is owed when something is.
+   */
+  readonly handFindingNote?: string | null;
 }
 
 /** A PR carrying either waits for the relay's hand verdict before it can merge. */
@@ -277,7 +294,18 @@ export type CrewCardCommentFact =
    * this names a PULL REQUEST rather than a card, and `crewCardBuildState`
    * ignores it for the same reason.
    */
-  | { readonly kind: "finding"; readonly card: number; readonly at: string };
+  | {
+    readonly kind: "finding";
+    readonly card: number;
+    readonly at: string;
+    /**
+     * What the relay SAID, out of the finding's own header line, or `null` when
+     * the header says nothing beyond "held" (#1705). `shared/handVerdict.ts`
+     * owns the extraction and argues why the repair is to QUOTE rather than to
+     * invent a third header shape.
+     */
+    readonly note: string | null;
+  };
 
 /*
   Anchored at the start of a LINE, through at most a little markdown emphasis —
@@ -331,7 +359,9 @@ export function crewCardCommentFact(comment: CrewCardComment): CrewCardCommentFa
     const author = comment.authorLogin;
     const owner = comment.ownerLogin;
     if (typeof author === "string" && typeof owner === "string" && owner !== "" && author === owner) {
-      return { kind: isHandFinding(body) ? "finding" : "verdict", card, at: createdAt };
+      return isHandFinding(body)
+        ? { kind: "finding", card, at: createdAt, note: handFindingNote(body) }
+        : { kind: "verdict", card, at: createdAt };
     }
     return null;
   }
@@ -383,6 +413,29 @@ export function handVerdictForPullRequest(input: {
      goes back to waiting on review, which is what `stale` already means here. */
   if (newest?.kind === "finding" && freshness === "fresh") return "finding";
   return freshness;
+}
+
+/**
+ * WHAT THE RELAY SAID ON A HELD PULL REQUEST — or `null` when it said nothing
+ * beyond "held", and `null` whenever the pull request is not held at all (#1705).
+ *
+ * ⚠ **IT DERIVES FROM `handVerdictForPullRequest` RATHER THAN RE-RESOLVING THE
+ * NEWEST COMMENT.** Two readers answering "which hand comment counts" is working
+ * law 4's exact shape, and the two would be free to disagree about a pull request
+ * with a verdict and a finding on it — the board would then quote a reassurance
+ * off a comment the stage reader had already stepped over. Asking the stage first
+ * makes that impossible by construction.
+ */
+export function handFindingNoteForPullRequest(input: {
+  readonly pullRequest: number;
+  readonly updatedAt: string | null | undefined;
+  readonly facts: readonly CrewCardCommentFact[];
+}): string | null {
+  if (handVerdictForPullRequest(input) !== "finding") return null;
+  const newest = input.facts
+    .filter((fact) => (fact.kind === "verdict" || fact.kind === "finding") && fact.card === input.pullRequest)
+    .sort((a, b) => b.at.localeCompare(a.at))[0];
+  return newest?.kind === "finding" ? newest.note : null;
 }
 
 /**
@@ -442,7 +495,13 @@ export function crewCardBuildState(input: {
     .sort((a, b) => a.number - b.number);
   const pr = building[0];
   if (pr !== undefined) {
-    return { kind: "pull-request", pullRequest: pr.number, stage: prStage(pr) };
+    const stage = prStage(pr);
+    /* The note rides ONLY on the stage it belongs to. Carrying it on every row
+       would let a reassurance written on an older finding survive a repair and
+       sit under a `passed` row (#1705). */
+    return stage === "finding"
+      ? { kind: "pull-request", pullRequest: pr.number, stage, findingNote: pr.handFindingNote ?? null }
+      : { kind: "pull-request", pullRequest: pr.number, stage };
   }
   const mine = facts
     /* ⚠ A `verdict` NAMES A PULL REQUEST, NOT A CARD, so it is filtered out
@@ -531,8 +590,37 @@ export function crewCardBuildPhrase(state: CrewCardBuildState, nowMs: number): s
            state to wait out, and #1673 is why it exists: the board said *passed
            and merging* over a held pull request from 23:46Z to 05:48Z while
            every P1 card behind it waited. */
-        case "finding":
-          return `held on the relay's finding — repair owed — PR #${state.pullRequest}`;
+        /*
+          ⚠ **TWO SENTENCES, AND WHICH ONE IS DRAWN IS THE RELAY'S CHOICE RATHER
+          THAN THIS FUNCTION'S (#1705).**
+
+          There is one hold state and it means two different things. The relay
+          needed to hold PR #1682 for MERGE ORDER with nothing wrong with it, and
+          the only header that holds a pull request is the finding's — so it
+          wrote `HELD for merge order, not a defect` and his board answered
+          *"repair owed"*. Two shifts each read three pull requests to find the
+          one that needed nothing, and the cost is the SILENT direction: a shift
+          believing the row goes looking for a defect that does not exist.
+
+          So when the relay's header says more than "held", the board says what
+          the relay said. **Nothing here can drift from the comment, because it
+          IS the comment** — which is why this was taken over a third header
+          shape for three readers to agree about (#1673 is what that costs).
+
+          With nothing beyond the bare hold word, the old sentence stands: a
+          relay who wrote only `HELD` has NOT said that nothing is owed, and
+          inferring it would be this row lying in the other direction.
+        */
+        case "finding": {
+          const note = state.findingNote ?? null;
+          if (note === null) {
+            return `held on the relay's finding — repair owed — PR #${state.pullRequest}`;
+          }
+          /* The relay's own wording usually opens with "held …", and a second
+             "held" in front of it would read as a stutter. */
+          const said = /^held\b/i.test(note) ? note : `held — ${note}`;
+          return `${said} — PR #${state.pullRequest}`;
+        }
         case "review":
           return `waiting on review — PR #${state.pullRequest}`;
         case "gate":

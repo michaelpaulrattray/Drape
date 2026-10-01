@@ -62,6 +62,85 @@ export const HAND_FINDING_MARKER = "**Relay finding";
  */
 const FINDING_WORDS: readonly string[] = ["HELD", "FINDING"];
 
+/**
+ * HOW MUCH OF A FINDING'S HEADER THE BOARD MAY QUOTE (#1705).
+ *
+ * A board row is one line among eight that read down his page as one thing, so
+ * it cannot carry a sentence of any length. 72 is the measured fit: the two real
+ * headers this card was filed about are 33 and 38 characters of reason, so
+ * neither is ever cut, and a relay who writes a paragraph into a header gets an
+ * ellipsis rather than a row that wraps three times.
+ *
+ * It is deliberately far below `CREW_HOLD_REASON_MAX` (160), which governs a
+ * card's own `**Waiting on:**` line — a question he must be able to ACT on, not
+ * a row he reads in passing.
+ */
+export const HAND_FINDING_NOTE_MAX = 72;
+
+/**
+ * WHAT THE RELAY ACTUALLY SAID, out of a finding's header line — or `null` when
+ * the header says nothing beyond "held" (#1705).
+ *
+ * # The defect this exists to end
+ *
+ * There is one hold state and it means two different things. On PR #1682 the
+ * relay wrote `**Relay finding — HELD for merge order, not a defect**` and on
+ * PR #1704 `**Relay finding — HELD for the release PR, nothing to repair**` —
+ * both correct, both using the only header that WOULD hold a pull request
+ * (`**Fable review — by hand` is a pass and would have let the merge tool
+ * through). His board rendered both as *"repair owed"*, and two shifts each read
+ * three pull requests to find the one that needed nothing.
+ *
+ * ⚠ **THE REPAIR IS TO QUOTE, NOT TO CLASSIFY.** The other road was a third
+ * header meaning *sound, do not merge yet*, and it was declined: #1673 exists
+ * because two readers disagreeing about ONE header already cost six hours, and a
+ * third shape is a third thing for three readers to agree about. The relay's own
+ * words already say *"not a defect"* and *"nothing to repair"* — what was
+ * missing is a board that passes them on. **Nothing shown here can drift from
+ * what was written, because it IS what was written.**
+ *
+ * # What it returns
+ *
+ * The header's reason, markdown and `(head …)` removed, with a leading `HELD`
+ * kept (it reads as the start of a sentence) and a leading `FINDING` dropped (it
+ * adds nothing a row does not already say). A header carrying only the bare hold
+ * word answers `null`, and the board keeps the sentence it has always drawn —
+ * which is the right answer, because a relay who wrote only `HELD` has not said
+ * that nothing is owed.
+ */
+export function handFindingNote(body: string): string | null {
+  if (!isHandFinding(body)) return null;
+
+  /* Emphasis first, because both markers carry `**` and everything below
+     compares against plain text. */
+  let text = headerLine(body).replace(/[*_`]/g, "").trim();
+
+  for (const marker of [HAND_FINDING_MARKER, HAND_VERDICT_MARKER]) {
+    const plain = marker.replace(/[*_`]/g, "");
+    if (text.toUpperCase().startsWith(plain.toUpperCase())) {
+      text = text.slice(plain.length);
+      break;
+    }
+  }
+
+  /* The head sha is a fact the row already implies and nobody reads here. */
+  text = text.replace(/\(\s*head[^)]*\)/gi, " ");
+  /* Leading punctuation left behind by the marker and the sha clause. */
+  text = text.replace(/^[\s,;:—–-]+/, "");
+  /* `FINDING` alone says only what the row says; `HELD` opens a sentence. */
+  text = text.replace(/^FINDING\b[\s,;:—–-]*/i, "");
+  text = text.replace(/\s+/g, " ").replace(/[\s,;:—–-]+$/, "").trim();
+
+  if (text === "") return null;
+  /* The bare hold word is not a reason — the relay said nothing beyond "held". */
+  if (/^HELD$/i.test(text)) return null;
+
+  const lowered = /^HELD\b/.test(text) ? `held${text.slice(4)}` : text;
+  return lowered.length <= HAND_FINDING_NOTE_MAX
+    ? lowered
+    : `${lowered.slice(0, HAND_FINDING_NOTE_MAX - 1).trimEnd()}…`;
+}
+
 /** The first non-empty line of a comment — what both readers below anchor on. */
 function headerLine(body: string): string {
   for (const line of body.split(/\r?\n/)) {
