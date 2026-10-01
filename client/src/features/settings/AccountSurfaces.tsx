@@ -138,7 +138,20 @@ export function AccountSurfaces({
   const tier = plans?.tiers?.[planId as keyof NonNullable<typeof plans>["tiers"]];
   const planName = status?.planName ?? tier?.name ?? "Free";
   const allowance = status?.planMonthlyCredits ?? tier?.monthlyCredits ?? 0;
-  const planPriceInCents = status?.planPriceInCents ?? tier?.price ?? 0;
+  /*
+    ⚠ **`null` UNTIL `getStatus` ANSWERS — #1727, and this one is certain
+    rather than racy.** The query is gated on a surface being OPEN (the block
+    above), so the modal mounts and paints with `status` undefined every single
+    time. Under `?? 0` a Pro subscriber's own plan card read **"No charge"** for
+    that beat and then became "$24.00/mo" — a confident claim that the thing
+    they pay for is free.
+
+    The catalogue fallback stays for the mid-deploy case #391 describes; what
+    changed is only its floor. `balance` on the line below took the same repair
+    in #1703, and `allowance` above is a credit-grant noun whose zero is read
+    by `allowance > 0` and therefore quotes nothing — carded, not swept here.
+  */
+  const planPriceInCents = status?.planPriceInCents ?? tier?.price ?? null;
   const renewsAt = status?.currentPeriodEnd ? new Date(status.currentPeriodEnd) : null;
 
   return (
