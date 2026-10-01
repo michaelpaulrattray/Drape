@@ -31601,6 +31601,11 @@
     },
     {
       "from": "module:server/routes/billing.ts",
+      "to": "module:server/db/credits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/billing.ts",
       "to": "module:server/db/index.ts",
       "kind": "imports"
     },
@@ -33642,6 +33647,11 @@
     {
       "from": "module:server/stripe/environmentTag.ts",
       "to": "module:server/_core/env.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/planChangeSettlement.ts",
+      "to": "module:server/db/credits.ts",
       "kind": "imports"
     },
     {
