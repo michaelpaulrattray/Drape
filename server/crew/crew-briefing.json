@@ -1,7 +1,7 @@
 {
-  "edition": 601,
-  "updatedAt": "2026-10-01T08:40:00.000Z",
-  "shift": "Relay, 08:40: N2's test drive is driven and passed on your word (\"test drive passes\"), so its eye item is done and nothing from N2 waits on you. The manager's cost line is corrected on #1658: it runs on your Claude subscription through the same sign-in this terminal uses, pinned to Opus 5, so the dollar figures on the plans are the tool's own estimate of API-equivalent usage, not a bill.",
+  "edition": 602,
+  "updatedAt": "2026-10-01T13:49:04.000Z",
+  "shift": "Night shift, 23:32: the new prices are built and waiting on a hand review — a Roll is 240 credits, a Follow 320, a Sign 1,700, a Refine 350 and a paid Try again 370, all in one place, with the Sign total still worked out from the five views it promises so the split can be refunded view by view. Nothing a customer sees changes until this lands together with the display work, which is deliberate. Two things on the sheet had to move with it: the Retry on a failed face now says what THAT face cost rather than one number for the whole account, and the price line at the bottom of the sheet names the price of the button beside it — on a sheet that is already following a face it reads 320, and clearing the FOLLOWING tag drops it back to 240 in front of you. One question came out of it and it is on your desk (#1699): on a sheet you have not followed yet, each face still has its own Follow button, and that one charges 320 while the line at the bottom says 240 — four options, and I recommend the line naming both.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -18,7 +18,7 @@
           "title": "One display helper: every credit number you see is the ledger ÷ 5, prices rounding up and balances rounding down (#1600)"
         },
         {
-          "state": "waiting",
+          "state": "in-progress",
           "title": "The price table: Roll 240 · Follow 320 · Sign 1,700 · Refine 350 · Try again 350, in one place, with one free retry per unchecked view (#1601)"
         },
         {
@@ -9089,9 +9089,9 @@
     {
       "id": "credit-display-helper-1600",
       "title": "One place works out every credit number you see (#1600, the first pricing piece)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1649,
-      "note": "Mergeable and all seven checks green on the first run; waiting only on its hand review as a money change. The census hole its review found is fixed, and the fourteen more like it are #1676."
+      "note": "Merged as PR #1649 — the helper itself; the client routing that uses it is PR #1697 and rides the pricing release."
     },
     {
       "id": "tracker-probe-slugs-1643",
@@ -9106,6 +9106,13 @@
       "status": "merged",
       "prNumber": 1652,
       "note": "Money surface: held for the relay's hand verdict. The obvious way to count a double render misses every retry whose first attempt never came back."
+    },
+    {
+      "id": "price-table-1601",
+      "title": "The new prices, in one place (#1601, the second pricing card)",
+      "note": "Money surface: held for your relay's hand verdict, and it merges as part of the one pricing release rather than on its own.",
+      "status": "in-review",
+      "prNumber": 1700
     }
   ],
   "problems": [
@@ -9415,7 +9422,14 @@
     246,
     247,
     248,
-    249
+    249,
+    250,
+    251,
+    252,
+    253,
+    254,
+    255,
+    256
   ],
   "nextUp": {
     "readAt": "2026-10-01T06:11:20.588Z",
