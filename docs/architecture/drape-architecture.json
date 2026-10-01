@@ -20669,6 +20669,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/pages/DrapeStudio.tsx",
       "to": "module:client/src/_core/hooks/useAuth.ts",
       "kind": "imports"

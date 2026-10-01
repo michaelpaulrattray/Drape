@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type DragEvent as ReactDragEvent } from "r
 import { useLocation } from "wouter";
 import { useHistoryState } from "wouter/use-browser-location";
 import { ArrowRight, Plus, Search } from "lucide-react";
+import { displayPrice, formatCredits } from "@shared/creditDisplay";
 import { toast } from "sonner";
 
 import {
@@ -900,7 +901,7 @@ export default function CastingV2() {
                       same one.
                     */}
                     <span className="dpc-modal__tilde">~</span>
-                    {price} CR
+                    {formatCredits(displayPrice(price))} CR
                   </>
                 ) : null}
               </span>

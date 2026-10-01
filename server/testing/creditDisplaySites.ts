@@ -167,6 +167,30 @@ const LOOSE_CREDIT_NAME = /credit|balance|pointscost|allowance|cost|price|spent|
 /** The scale multipliers a hand-written conversion would use. */
 const SCALE_LITERALS = new Set([5, 50]);
 
+/**
+ * Does this text say "credits" in any spelling the product actually uses?
+ *
+ * ⚠ **`CR` IS THE PRODUCT'S OWN ABBREVIATION AND THE RULE COULD NOT SEE IT —
+ * FOUND BY LOOKING AT THE RUNNING APP, NOT BY READING (#1600 slice 2).** The
+ * casting entrance's receipt line is `` {price} CR ``, and it is the price of
+ * the button beside it. Rule 1 cannot reach it (`price` is deliberately out of
+ * the strict vocabulary, because `PLAN_TIERS.price` is cents) and rule 2 could
+ * not either, because its text test was `/credit/i` and the word on screen is
+ * two letters. **So the client routing slice rendered a balance of 3,688 next
+ * to a roll price of 160 — two scales on one screen, which is the single state
+ * P1-1's done-when 4 forbids — and every instrument was green.** Law 6 is the
+ * only thing that was ever going to find it.
+ *
+ * `\bCR\b` is case-SENSITIVE on purpose and anchored on word boundaries.
+ * Measured over the guard's own population before it was chosen: it reaches
+ * **exactly one site**, the one above. It does NOT match inside `CREDITS PER
+ * $1` (the `\b` fails against the following `E`), and a case-insensitive form
+ * would have started matching ordinary prose containing "cr".
+ */
+function saysCredits(text: string): boolean {
+  return /credit/i.test(text) || /\bCR\b/.test(text);
+}
+
 export type CreditSite = {
   /** Repo-relative, forward-slashed. */
   file: string;
@@ -763,10 +787,10 @@ export function creditSitesIn(file: string, source: string): CreditSite[] {
           ts.isCallExpression(node) &&
           ts.isPropertyAccessExpression(node.expression) &&
           node.expression.name.text === "toLocaleString";
-        const inACreditSentence = formattedHere && /credit/i.test(sentenceAround(node));
+        const inACreditSentence = formattedHere && saysCredits(sentenceAround(node));
         if (
           inACreditSentence ||
-          (/credit/i.test(around) && namesIn(node).some((name) => LOOSE_CREDIT_NAME.test(name)))
+          (saysCredits(around) && namesIn(node).some((name) => LOOSE_CREDIT_NAME.test(name)))
         ) {
           sites.push({
             file,

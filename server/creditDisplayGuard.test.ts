@@ -341,6 +341,62 @@ describe("#1600 slice 2 — a helper NESTED in the indicted expression is routed
   });
 });
 
+describe("#1600 slice 2 — `CR` is the product's own word for credits", () => {
+  /*
+    ⚠ FOUND BY LOOKING AT THE RUNNING APP, WHICH IS THE ONLY THING THAT COULD
+    HAVE FOUND IT. The casting entrance's receipt line is `` {price} CR `` —
+    the price of the button beside it. Rule 1 cannot reach it, because `price`
+    is deliberately out of the strict vocabulary (`PLAN_TIERS.price` is cents),
+    and rule 2's text test was `/credit/i` while the word on screen is two
+    letters. So the routing slice rendered a balance of 3,688 beside a roll
+    price of 160 — two scales on one screen — with every instrument green.
+  */
+  it("catches a credit price labelled CR", () => {
+    const sites = creditSitesIn(
+      "client/src/pages/Fixture.tsx",
+      [
+        "export const F = ({ price }: { price: number }) => (",
+        "  <span><span>~</span>{price} CR</span>",
+        ");",
+        "",
+      ].join("\n"),
+    );
+    expect(sites.map((site) => site.rule)).toEqual(["beside-the-word"]);
+  });
+
+  it("passes the same line once it is routed", () => {
+    const sites = creditSitesIn(
+      "client/src/pages/Fixture.tsx",
+      [
+        "export const F = ({ price }: { price: number }) => (",
+        "  <span><span>~</span>{formatCredits(displayPrice(price))} CR</span>",
+        ");",
+        "",
+      ].join("\n"),
+    );
+    expect(sites).toEqual([]);
+  });
+
+  it("⚠ does NOT fire on `CREDITS PER $1`, where CR is the start of a longer word", () => {
+    /* The word boundary is what keeps the widening narrow, and this is the
+       neighbouring line it could plausibly have swept in. It is already routed
+       by the rate's own helper, so an indictment here would be a false refusal
+       on correct code. */
+    expect(/\bCR\b/.test("CREDITS PER $1")).toBe(false);
+  });
+
+  it("⚠ is case-SENSITIVE, so ordinary prose containing `cr` is not a credit sentence", () => {
+    /* A case-insensitive `\bcr\b` was the obvious form and it would start
+       reading any two-letter token in a sentence as this product's currency. */
+    expect(/\bCR\b/.test("the cr of it")).toBe(false);
+    const sites = creditSitesIn(
+      "client/src/pages/Fixture.tsx",
+      ["export const F = ({ price }: { price: number }) => <span>{price} cr</span>;", ""].join("\n"),
+    );
+    expect(sites).toEqual([]);
+  });
+});
+
 describe("the precision arms — correct code must not be refused", () => {
   it("passes a plan price, which is CENTS and not credits", () => {
     /* `PLAN_TIERS.starter.price` is 2700 — twenty-seven dollars. Indicting it
