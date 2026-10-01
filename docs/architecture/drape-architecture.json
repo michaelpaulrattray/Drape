@@ -13292,6 +13292,10 @@
       "path": "server/founderActivity.test.ts"
     },
     {
+      "id": "test:server/freeGrantClaimRetry.test.ts",
+      "path": "server/freeGrantClaimRetry.test.ts"
+    },
+    {
       "id": "test:server/freeGrantOneTime.test.ts",
       "path": "server/freeGrantOneTime.test.ts"
     },
