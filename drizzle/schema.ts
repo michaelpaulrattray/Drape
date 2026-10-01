@@ -126,7 +126,14 @@ export const FREE_SIGNUP_GRANT_CREDITS = 13500;
 /**
  * Plan tier configuration with credit allocations
  */
-// Pricing: 50x display multiplier applied. Volume discounts at higher tiers.
+// Volume discounts at higher tiers. ⚠ THIS LINE READ *"50x display multiplier
+// applied"* UNTIL #1602 AND NAMED THE ONE NUMBER `shared/creditDisplay.ts`
+// EXISTS TO REFUSE: the scale is `LEDGER_PER_DISPLAY_CREDIT = 5`, and that
+// docblock names *"a `* 50` left over from the legacy multiplier"* as the
+// drift `server/creditDisplayGuard.test.ts` rejects. The guard reads code and
+// not prose, so the forbidden figure survived in a comment one line above the
+// table it described. A reader who trusted it would compute every display
+// figure on this page ten times too small.
 //
 // The ladder folded from twelve rungs to these eight on the founder's ruling
 // (#391, approved 2026-09-05: "go with your reccomendation" on the card's
@@ -138,43 +145,76 @@ export const FREE_SIGNUP_GRANT_CREDITS = 13500;
 // appears in `billing.getPlans` and the checkout enums refuse it — the door is
 // an email line under the ladder (HIDDEN_PLAN_TIERS, stripeProducts.ts).
 //
-// ⚠ THE SEVEN PAID GRANTS ARE HELD ON HIS WORD AND ARE NOT THE PROPOSAL'S
-// NUMBERS YET — #1602 (P1-3), measured 2026-10-01 rather than assumed.
+// ⚠ THE SEVEN PAID GRANTS BELOW ARE HIS ADOPTED VOLUME-DISCOUNT LADDER —
+// #1602 (P1-3), his word 2026-10-01 (terminal), and they ANSWER the hold this
+// block used to carry.
 //
-// The approved pricing proposal (rev 21.6) lowers Pro and up — pro 190,000,
-// studio 440,000, business 2,350,000, scale 13,350,000, enterprise 41,500,000,
-// ultimate 133,500,000 — and leaves every monthly price exactly where it is.
-// Applied to these prices, credits per dollar then FALLS at three rungs:
+// Slice 1 moved the free grant and left these seven alone, because the
+// approved proposal (rev 21.6) lowered Pro and up while leaving every monthly
+// price where it was, and at those prices credits per dollar FELL at three
+// rungs — Studio below Pro, Scale below Business, Enterprise below Scale. That
+// breaks his own bar, quoted in `card390-guard.test.ts`: *"keep the monotonic
+// check: the figure must improve at every rung. If the real ladder breaks
+// that, the ladder is the bug."* So the ladder was put to him as the bug, not
+// the guard, and he replaced it. ⚠ Weakening that guard to admit a ladder is
+// still the one repair that is forbidden.
 //
-//   Starter  $27      75,000  2777.78 cr/$
-//   Pro      $68     190,000  2794.12 cr/$   rises
-//   Studio   $159    440,000  2767.30 cr/$   ⚠ falls below Pro
-//   Business $840  2,350,000  2797.62 cr/$   rises
-//   Scale    $4,800 13,350,000 2781.25 cr/$  ⚠ falls below Business
-//   Enterprise $15,000 41,500,000 2766.67 cr/$ ⚠ falls below Scale
-//   Ultimate $48,000 133,500,000 2781.25 cr/$ rises
+// His finance guy's note, handed over by him verbatim: *"adjust: volume-
+// discount ladder (Cid checked: every rung strictly better per $, no losing
+// case, yearly beats monthly at +15%, top-ups stay worse value). Prices
+// unchanged … Ledger = display x 5. Compare exact credits per $ in the check,
+// not rounded."* Then his own rounding, verbatim: *"adjust the ladder credit
+// numbers to be round on these plans : Business: 470,000 Scale: 2,750,000
+// Enterprise: 8,700,000 Ultimate (hidden): 28,000,000"*.
 //
-// Today's ladder rises at all seven. `client/src/features/settings/card390-guard.test.ts`
-// pins the climb against THIS table, and it carries his own bar verbatim:
-// *"keep the monotonic check: the figure must improve at every rung. If the
-// real ladder breaks that, the ladder is the bug."* Nothing in the proposal
-// mentions the climb, so he approved the grants without that fact in front of
-// him — and which of the two gives way is a pricing decision, his alone.
-// Weakening the guard to admit the numbers is the one repair that is forbidden.
+// Every price is UNCHANGED. What moved is the grant on all seven rungs:
 //
-// So the free grant below moved and these seven did not. The question is on his
-// Desk; #1602 stays open until he answers it.
+//   plan         price      ledger       display    cr/$ (ledger, exact)
+//   Starter      $27            70,000     14,000   2592.592593
+//   Pro          $68           180,000     36,000   2647.058824
+//   Studio       $159          430,000     86,000   2704.402516
+//   Business     $840        2,350,000    470,000   2797.619048
+//   Scale        $4,800     13,750,000  2,750,000   2864.583333
+//   Enterprise   $15,000    43,500,000  8,700,000   2900.000000
+//   Ultimate     $48,000   140,000,000 28,000,000   2916.666667
+//
+// Strictly increasing at every rung, and every ledger figure a whole multiple
+// of 5 so no granted credit is invisible on the customer's scale. ⚠ The
+// comparison the guard makes is on the LEDGER column and it is EXACT —
+// `creditsPerDollar` does no rounding, which is what his note asks for;
+// `formatCreditsPerDollar` rounds, but only for the screen, and #1600 moved it
+// onto the display scale. Dividing both sides by 5 moves no inequality, so the
+// two scales cannot disagree about the climb.
+//
+// ⚠ STARTER WENT DOWN TOO — 75,000 → 70,000 ledger (15,000 → 14,000 display).
+// This supersedes the proposal's "starter unchanged", on his word, verbatim:
+// *"no paying customersd are on a plan so im not worried about starter."*
+// Existing Starter subscribers get the new figure at their next renewal like
+// every other rung.
+//
+// ⚠ PRO AND UP ALL FALL from today's amounts, so #1609 (P1-10) counts live
+// subscribers on those plans before go-live. Read at production 2026-10-01:
+// four accounts, none on a paid plan.
+//
+// Yearly needs no rule of its own: a year is billed at 9.96 months
+// (`ANNUAL_RATE` 0.83, applied to every rung alike), so yearly is better value
+// by construction and the climb survives the interval unchanged.
+//
+// ⚠ AND THE ONE THING THIS TABLE CANNOT SAY: Stripe carries these figures too
+// (*"my finance guy updated stripe to reflect this also just an FYI"*). The
+// app computes every credit number itself — his 2026-09-30 ruling — so Stripe
+// is the REFERENCE #1609 reconciles against, never a source this table reads.
 export const PLAN_TIERS = {
   // `monthlyCredits` is a ONE-TIME signup grant on this rung and nothing else
   // reads it as monthly — see FREE_SIGNUP_GRANT_CREDITS above.
   free: { name: 'Free', monthlyCredits: FREE_SIGNUP_GRANT_CREDITS, price: 0, rolloverPercent: 0 },
-  starter: { name: 'Starter', monthlyCredits: 75000, price: 2700, rolloverPercent: 50 },              // $27/mo  — $0.00036/cr
-  pro: { name: 'Pro', monthlyCredits: 200000, price: 6800, rolloverPercent: 75 },                     // $68/mo  — $0.00034/cr
-  studio: { name: 'Studio', monthlyCredits: 500000, price: 15900, rolloverPercent: 100 },              // $159/mo — $0.000318/cr
-  business: { name: 'Business', monthlyCredits: 3000000, price: 84000, rolloverPercent: 100 },         // $840/mo — $0.00028/cr
-  scale: { name: 'Scale', monthlyCredits: 20000000, price: 480000, rolloverPercent: 100 },             // $4,800/mo — $0.00024/cr
-  enterprise: { name: 'Enterprise', monthlyCredits: 75000000, price: 1500000, rolloverPercent: 100 },  // $15,000/mo — $0.0002/cr
-  ultimate: { name: 'Ultimate', monthlyCredits: 300000000, price: 4800000, rolloverPercent: 100 },     // $48,000/mo — $0.00016/cr — HIDDEN, arranged by email
+  starter: { name: 'Starter', monthlyCredits: 70000, price: 2700, rolloverPercent: 50 },               // $27/mo     — 14,000 display — 2592.59 cr/$
+  pro: { name: 'Pro', monthlyCredits: 180000, price: 6800, rolloverPercent: 75 },                      // $68/mo     — 36,000 display — 2647.06 cr/$
+  studio: { name: 'Studio', monthlyCredits: 430000, price: 15900, rolloverPercent: 100 },              // $159/mo    — 86,000 display — 2704.40 cr/$
+  business: { name: 'Business', monthlyCredits: 2350000, price: 84000, rolloverPercent: 100 },          // $840/mo    — 470,000 display — 2797.62 cr/$
+  scale: { name: 'Scale', monthlyCredits: 13750000, price: 480000, rolloverPercent: 100 },              // $4,800/mo  — 2,750,000 display — 2864.58 cr/$
+  enterprise: { name: 'Enterprise', monthlyCredits: 43500000, price: 1500000, rolloverPercent: 100 },   // $15,000/mo — 8,700,000 display — 2900.00 cr/$
+  ultimate: { name: 'Ultimate', monthlyCredits: 140000000, price: 4800000, rolloverPercent: 100 },      // $48,000/mo — 28,000,000 display — 2916.67 cr/$ — HIDDEN, arranged by email
 } as const;
 
 export type PlanTier = keyof typeof PLAN_TIERS;

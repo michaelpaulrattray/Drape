@@ -252,8 +252,32 @@ describe("the ladder, against the product's real price table", () => {
     /* Just over it: the next rung that actually covers it. */
     const fit = recommendPlan(LADDER, "studio", covers + 1);
     expect(fit?.id).toBe("business");
-    /* Far over it: it skips past the rungs that do not cover the projection. */
-    expect(recommendPlan(LADDER, "starter", 2_500_000)?.id).toBe("business");
+    /*
+      Far over it: it skips past the rungs that do not cover the projection.
+
+      ⚠ THIS PROJECTION WAS THE LITERAL `2_500_000` UNTIL #1602 AND IT WAS THE
+      ONE THING IN THIS FILE THE LADDER COULD BREAK. Everything else here reads
+      `PLAN_TIERS` directly, so his adopted ladder moved through it untouched;
+      a hard-coded spend cannot. Business fell 3,000,000 → 2,350,000 ledger, so
+      the old number stopped being covered by the rung the arm named and the
+      answer became `scale` — a correct recommendation failing a stale fixture.
+
+      Derived instead, from the rung BELOW the expected answer, so the arm
+      states its property rather than a number: a spend one credit past Studio
+      cannot be met by Pro or Studio and must land on Business.
+    */
+    const studioCovers = LADDER[studio].credits;
+    const pastStudio = studioCovers + 1;
+    expect(recommendPlan(LADDER, "starter", pastStudio)?.id).toBe("business");
+    /* And the skip is asserted, not inferred from the name: both intervening
+       rungs genuinely fail to cover it, which is what makes the answer a skip
+       rather than simply the next rung up. */
+    for (const skipped of ["pro", "studio"] as const) {
+      expect(
+        LADDER.find((plan) => plan.id === skipped)!.credits,
+        `${skipped} now covers the projection, so this arm no longer tests a skip`,
+      ).toBeLessThan(pastStudio);
+    }
     /* Beyond the top rung: the top rung is still the best answer we have —
        and since #391 that top is Enterprise; what sits above it is asked for
        by email, never recommended by a card. */
@@ -280,7 +304,14 @@ describe("the ladder, against the product's real price table", () => {
   });
 
   it("the compare window is five wide and always holds both the plan and the offer", () => {
-    const recommended = recommendPlan(LADDER, "starter", 2_500_000);
+    /* Derived for the same reason as the arm above (#1602): this one only
+       asserts the window's SHAPE, so the stale literal passed either way —
+       which is exactly why it would have been left behind. */
+    const recommended = recommendPlan(
+      LADDER,
+      "starter",
+      LADDER.find((plan) => plan.id === "studio")!.credits + 1,
+    );
     const window = compareWindow(LADDER, "starter", recommended);
     expect(window).toHaveLength(COMPARE_COLUMNS);
     expect(window.map((plan) => plan.id)).toContain("starter");
