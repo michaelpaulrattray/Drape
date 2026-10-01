@@ -81,7 +81,7 @@ import {
 } from "./db/quietLimits";
 import { NUMERIC_ENV_VARS } from "./_core/env";
 import { mayGrantFreeCredits, noteFreeGrantMade } from "./security/freeGrantLimit";
-import { DEVICE_COOKIE_NAME, identifyDevice, __test } from "./security/deviceKey";
+import { DEVICE_COOKIE_NAME, identifyDevice } from "./security/deviceKey";
 import { mayBuyFaceScan, utcDayOf } from "./castingV2/faceScanDailyCap";
 import { readListedSource } from "./testing/listedSource";
 
@@ -281,28 +281,42 @@ describe("the device key — what it can tell apart, and what it cannot", () => 
     expect(identity.fromCookie).toBe(false);
   });
 
+  /*
+    ⚠ THESE THREE DRIVE `identifyDevice`, NOT THE PRIVATE HELPER BEHIND IT.
+
+    The first draft exported a `__test` handle onto `derivedKey` and
+    `readDeviceCookie`, and `check-cleanup-dispositions` refused it — correctly:
+    a module's export surface is a product fact, and widening it so a suite can
+    reach inside is the shape that sweep exists to catch. Driving the real
+    entrance is also the better test, because what matters is the key a SIGNUP
+    is counted against, not the hash of a string.
+  */
+  const keyFor = (ipAddress: string, userAgent: string | null): string => {
+    const { req, res } = fakeExchange(userAgent === null ? {} : { userAgent });
+    return identifyDevice(req, res, ipAddress).deviceKey;
+  };
+
   it("keeps the two confidences apart — a cookie key can never collide with a derived one", () => {
-    const derived = __test.derivedKey("203.0.113.7", "Mozilla/5.0");
+    const derived = keyFor("203.0.113.7", "Mozilla/5.0");
     expect(derived.startsWith("derived:")).toBe(true);
     expect(derived.startsWith("cookie:")).toBe(false);
     /* Both fit the column (`varchar(64)`), prefix included. */
     expect(derived.length).toBeLessThanOrEqual(64);
-    expect(`cookie:4f1c2e3a-5b6d-4e7f-8a9b-0c1d2e3f4a5b`.length).toBeLessThanOrEqual(64);
+    expect("cookie:4f1c2e3a-5b6d-4e7f-8a9b-0c1d2e3f4a5b".length).toBeLessThanOrEqual(64);
   });
 
   it("the derived key is stable for one browser on one network, and moves with either", () => {
-    const base = __test.derivedKey("203.0.113.7", "Mozilla/5.0 (Macintosh)");
-    expect(__test.derivedKey("203.0.113.7", "Mozilla/5.0 (Macintosh)")).toBe(base);
+    const base = keyFor("203.0.113.7", "Mozilla/5.0 (Macintosh)");
+    expect(keyFor("203.0.113.7", "Mozilla/5.0 (Macintosh)")).toBe(base);
     /* The two things it cannot see through, asserted rather than only described:
        a network hop and a different browser each read as a new device. This is
        the stated limit of the derived half, not a defect. */
-    expect(__test.derivedKey("198.51.100.4", "Mozilla/5.0 (Macintosh)")).not.toBe(base);
-    expect(__test.derivedKey("203.0.113.7", "Mozilla/5.0 (Windows NT 10.0)")).not.toBe(base);
+    expect(keyFor("198.51.100.4", "Mozilla/5.0 (Macintosh)")).not.toBe(base);
+    expect(keyFor("203.0.113.7", "Mozilla/5.0 (Windows NT 10.0)")).not.toBe(base);
   });
 
   it("gives a caller with no user-agent its own bucket rather than folding it in", () => {
-    const none = __test.derivedKey("203.0.113.7", null);
-    expect(none).not.toBe(__test.derivedKey("203.0.113.7", "Mozilla/5.0"));
+    expect(keyFor("203.0.113.7", null)).not.toBe(keyFor("203.0.113.7", "Mozilla/5.0"));
   });
 });
 

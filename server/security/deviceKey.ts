@@ -164,6 +164,3 @@ export function identifyDevice(
     fromCookie: false,
   };
 }
-
-/** Exported for the suite: the derived half, with no request and no response. */
-export const __test = { derivedKey, readDeviceCookie };
