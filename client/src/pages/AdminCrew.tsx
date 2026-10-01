@@ -131,6 +131,8 @@ import { CrewProgramBanner } from "@/features/admin/components/crew/CrewProgramB
 import { staffDateTime } from "@/foundation/staffDate";
 import { CrewHappeningNow } from "@/features/admin/components/crew/CrewHappeningNow";
 import { CrewNav } from "@/features/admin/components/crew/CrewNav";
+import { CrewTestDrive } from "@/features/admin/components/crew/CrewTestDrive";
+import { testDriveOpenSteps } from "../../../shared/crewTestDrive";
 import { landedSince } from "@/features/admin/components/crew/CrewSinceYouLooked";
 import { useCrewState } from "@/features/admin/components/crew/useCrewState";
 
@@ -389,6 +391,12 @@ export default function AdminCrew() {
           const eyeItems = eyeItemsFor(live, data.briefing.eyeItems);
           const eyes = eyeItems.length;
           const landed = live.available ? landedSince(live.desk.recent, lastSeenAt) : 0;
+          /* A milestone's drive, off the completion card itself (#1646). Empty
+             when GitHub has not answered — there is no edition fallback for it
+             on purpose: the steps live on the card and nowhere else, so an
+             invented copy is the one thing this must not have. */
+          const testDrives = live.available ? live.desk.testDrives : [];
+          const openSteps = testDriveOpenSteps(testDrives, data.replies);
           const inFlight = live.available ? live.desk.pullRequests.length : 0;
           return (
           <>
@@ -406,6 +414,9 @@ export default function AdminCrew() {
                 { id: "crew-section-program", label: "Program" },
                 { id: "crew-section-needs-you", label: "Needs you", count: needsYou.length + eyes },
                 { id: "crew-section-happening", label: "Happening now", count: inFlight },
+                ...(testDrives.length > 0
+                  ? [{ id: "crew-section-drive", label: "Test drive", count: openSteps }]
+                  : []),
                 { id: "crew-section-since", label: "Since you looked", count: landed, fresh: true },
                 { id: "crew-section-next-up", label: "Next up", count: nextUp.items.length },
                 { id: "crew-section-background", label: "Background work" },
@@ -443,7 +454,17 @@ export default function AdminCrew() {
               sending={replyMutation.isPending}
               onSend={send}
             />
-            {/* WHAT IS HAPPENING, ON ONE CARD (#1201): the live shift strip,
+            {/* WHAT HE CAN GO AND DRIVE (#1646) — below the two sections that
+                want his word, because a drive is not a hold and must never
+                outrank one, and above the running work, because it is his. */}
+            <div id="crew-section-drive" />
+            <CrewTestDrive
+              drives={testDrives}
+              replies={data.replies}
+              sending={replyMutation.isPending}
+              onSend={send}
+            />
+                        {/* WHAT IS HAPPENING, ON ONE CARD (#1201): the live shift strip,
                 every open PR, then the ordered band — the three blocks his
                 word put together. `now` is one ticker for all of them, so
                 "started 14 min ago" and "touched 2 min ago" cannot disagree

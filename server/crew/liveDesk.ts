@@ -41,6 +41,7 @@ import {
   type CrewHeldState,
 } from "../../shared/crewNextUpHold";
 import { rankFromLabels, sortOrderedBand } from "../../shared/crewOrderedBand";
+import type { CrewTestDriveStep } from "../../shared/crewTestDrive";
 import { CREW_PIPELINE_GROUPS } from "../../shared/crewPipelineGroups";
 import { exclusionFor, type CrewQueueExclusions } from "../../shared/crewQueueExclusions";
 import { QUEUE_POSSIBLY_DONE_CAP } from "../../shared/crewQueuePossiblyDone";
@@ -88,6 +89,37 @@ export type LiveWaitingOnYou = {
   readonly filedAt: string;
   readonly url: string;
   readonly urgent: boolean;
+};
+
+/**
+ * A MILESTONE'S TEST DRIVE, as his page draws it (#1646).
+ *
+ * His word, 2026-10-01, on N2's completion card: *"i mean this could be a card
+ * on my desk if it tell me exactly what to drive and test but it didnt??"* —
+ * the drive was in #1644's BODY, and a body is the one thing his Desk has never
+ * rendered. The steps come off the card itself every tick
+ * (`LiveQueueItem.testDrive`), so an edit to the card is live on his page and
+ * there is no copy to rot (working law 4).
+ */
+export type LiveTestDrive = {
+  readonly issueNumber: number;
+  readonly title: string;
+  /** The rung the card's label names — the heading says "Test drive · N2". */
+  readonly rung: string | null;
+  readonly steps: readonly CrewTestDriveStep[];
+  /**
+   * ⚠ **A CLOSED COMPLETION CARD'S DRIVE STILL DRAWS, AND THE PAGE SAYS SO.**
+   * The queue's closed search reaches back `RECENT_WINDOW_HOURS` (48), so a
+   * drive on a closed card leaves his page two days later. That is correct when
+   * the drive is OVER and wrong while it is not — which is why his own rule of
+   * 2026-09-26 settles it rather than this field: *"yes it shouldnt close if its
+   * waiting on my eye and my verdict"*. A completion card whose drive he has not
+   * finished is waiting on his hands, so it stays OPEN, and an open card is read
+   * from the open search for ever. The flag exists so the section can say *this
+   * card is closed* instead of quietly disappearing.
+   */
+  readonly cardClosed: boolean;
+  readonly url: string;
 };
 
 export type LivePullRequestState = "draft" | "held" | "passed" | "gate";
@@ -216,6 +248,11 @@ export type LiveDesk = {
    * read rather than a label, and for the one thing it cannot see.
    */
   readonly waitingOnYou: readonly LiveWaitingOnYou[];
+  /**
+   * Every card in this reading that declares a test drive (#1646) — in practice
+   * the milestone completion cards, newest first.
+   */
+  readonly testDrives: readonly LiveTestDrive[];
   /**
    * Ladder cards CLOSED inside the window, with the rung their label named —
    * so a rung can say "2 finished" beside "5 waiting" and show them struck
@@ -491,6 +528,48 @@ export function liveWaitingOnYou(reading: LiveQueueReading): LiveWaitingOnYou[] 
 }
 
 /**
+ * THE TEST DRIVES IN THIS READING (#1646) — open cards first, then the ones
+ * closed inside the window, newest card first within each.
+ *
+ * ⚠ **IT ASKS THE CARD, NOT A LABEL AND NOT THE EDITION.** A drive is declared
+ * by writing a `## Your test drive` section, which is what every completion card
+ * already does; demanding a `completion-card` label as well would mean the one
+ * card this feature was built for (#1644, which carries `founder-review` and
+ * `rung:N2`) rendered nothing, and the next shift would have had to remember a
+ * label for a section it had already written. **The card body is the whole
+ * contract**, which is the card's own clause and working law 4.
+ *
+ * ⚠ **AND IT READS THE CLOSED WINDOW AS WELL AS THE OPEN SET, ON PURPOSE.**
+ * #1644 closed at 2026-09-30T22:16Z — before this was built — so an open-only
+ * reader would have shipped a feature that drew nothing on the day it landed
+ * and could not be looked at (working law 6). What a closed card costs is
+ * stated on `LiveTestDrive.cardClosed` rather than hidden here.
+ */
+export function liveTestDrives(reading: LiveQueueReading, rungKeys: readonly string[]): LiveTestDrive[] {
+  const rows: LiveTestDrive[] = [];
+  for (const item of [...reading.open, ...reading.recent]) {
+    if (item.kind !== "issue") continue;
+    if (item.testDrive.length === 0) continue;
+    /* The two searches can both hold one card for a tick around a close, and a
+       drive drawn twice would give him two sets of buttons for one step. */
+    if (rows.some((row) => row.issueNumber === item.number)) continue;
+    rows.push({
+      issueNumber: item.number,
+      title: item.title,
+      rung: rungFromLabels(item.labels, rungKeys),
+      steps: item.testDrive,
+      cardClosed: item.status !== "open",
+      url: item.url,
+    });
+  }
+  return rows.sort((a, b) => {
+    /* An open drive is a thing to do; a closed one is a record. */
+    if (a.cardClosed !== b.cardClosed) return a.cardClosed ? 1 : -1;
+    return b.issueNumber - a.issueNumber;
+  });
+}
+
+/**
  * ⚠ **A FRESH VERDICT OUTRANKS THE HELD LABEL — his desk correction of
  * 2026-09-26.** *Waiting for review* and *reviewed, now merging* are the two
  * states he actually acts differently on, and In flight drew them with one word
@@ -644,6 +723,7 @@ export function deriveLiveDesk(
       .map((item) => item.number)
       .sort((a, b) => a - b),
     waitingOnYou: liveWaitingOnYou(reading),
+    testDrives: liveTestDrives(reading, rungKeys),
     closedCards: reading.recent
       .filter((item) => item.kind === "issue" && item.status !== "open")
       .map((item) => item.number)

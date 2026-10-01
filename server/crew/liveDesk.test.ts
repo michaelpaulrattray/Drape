@@ -21,6 +21,7 @@ import {
   livePullRequestState,
   livePullRequests,
   liveRecent,
+  liveTestDrives,
   liveWaitingOnYou,
 } from "./liveDesk";
 import type { LiveQueueItem, LiveQueueReading } from "./liveQueue";
@@ -39,6 +40,9 @@ function item(overrides: Partial<LiveQueueItem> & { number: number }): LiveQueue
     closedAt: null,
     mergedAt: null,
     holdReason: null,
+    /* #1646 — the drive a card declares, empty on everything but a completion
+       card. The arms that exercise it pass their own steps. */
+    testDrive: [],
     /* #1094 — a pull request keeps its body server-side; a card never does. */
     body: null,
     url: `https://github.com/x/y/issues/${overrides.number}`,
@@ -695,5 +699,87 @@ describe("what is waiting on him, read off the cards themselves", () => {
        page subtracts an edition card with it, and these two answer different
        questions about the same three cards. */
     expect(desk.heldCards).toEqual([129, 1434, 1492]);
+  });
+});
+
+/*
+  THE TEST DRIVE A COMPLETION CARD DECLARES (#1646).
+
+  ⚠ THE ARM THAT MATTERS MOST HERE IS THE CLOSED ONE. #1644 closed at
+  2026-09-30T22:16Z, the day before this was built, so an open-only reader would
+  have shipped a feature that drew nothing on his page and could not be looked
+  at at all (working law 6). The queue's two searches are both read, and the
+  second arm proves a card held by BOTH for a tick around its close is drawn
+  once rather than giving him two sets of buttons for one step.
+*/
+describe("the test drives in a reading", () => {
+  const STEPS = [
+    { n: 1, text: "Sign a creature and check the close-up arrives.", proves: [1582, 1612] },
+    { n: 2, text: "Press Try again on an unchecked view.", proves: [1347] },
+  ];
+
+  it("draws a drive off the card that declares one, with its rung", () => {
+    const drives = liveTestDrives(
+      reading([item({ number: 1644, labels: ["rung:N2", "founder-review"], testDrive: STEPS })]),
+      RUNGS,
+    );
+    expect(drives).toEqual([{
+      issueNumber: 1644,
+      title: "Card 1644",
+      rung: "N2",
+      steps: STEPS,
+      cardClosed: false,
+      url: "https://github.com/x/y/issues/1644",
+    }]);
+  });
+
+  it("draws a CLOSED completion card's drive, and says it is closed", () => {
+    const drives = liveTestDrives(
+      reading([], [item({ number: 1644, status: "closed", labels: ["rung:N2"], testDrive: STEPS })]),
+      RUNGS,
+    );
+    expect(drives.map((drive) => [drive.issueNumber, drive.cardClosed])).toEqual([[1644, true]]);
+  });
+
+  it("draws a card held by BOTH searches once — never two sets of buttons for one step", () => {
+    const row = item({ number: 1644, labels: ["rung:N2"], testDrive: STEPS });
+    const drives = liveTestDrives(reading([row], [{ ...row, status: "closed" }]), RUNGS);
+    expect(drives.length).toBe(1);
+    expect(drives[0].cardClosed).toBe(false);
+  });
+
+  it("puts an OPEN drive above a closed one — a thing to do before a record", () => {
+    const drives = liveTestDrives(
+      reading(
+        [item({ number: 1200, labels: ["rung:N1"], testDrive: STEPS })],
+        [item({ number: 1644, status: "closed", labels: ["rung:N2"], testDrive: STEPS })],
+      ),
+      RUNGS,
+    );
+    expect(drives.map((drive) => drive.issueNumber)).toEqual([1200, 1644]);
+  });
+
+  it("CONTROL — no label is needed, and a PR is never a drive", () => {
+    /* A drive is declared by writing the section, which is what every
+       completion card already does. Demanding a `completion-card` label as well
+       would have rendered nothing for #1644 and quietly moved the contract off
+       the card body (working law 4). */
+    const unlabelled = liveTestDrives(reading([item({ number: 9, testDrive: STEPS })]), RUNGS);
+    expect(unlabelled.map((drive) => [drive.issueNumber, drive.rung])).toEqual([[9, null]]);
+
+    const pr = liveTestDrives(reading([item({ number: 10, kind: "pr", testDrive: STEPS })]), RUNGS);
+    expect(pr).toEqual([]);
+  });
+
+  it("CONTROL — an ordinary card declares nothing and the section is empty", () => {
+    expect(liveTestDrives(reading([item({ number: 1, labels: ["bug"] })]), RUNGS)).toEqual([]);
+  });
+
+  it("rides the whole desk", () => {
+    const desk = deriveLiveDesk(
+      reading([item({ number: 1644, labels: ["rung:N2"], testDrive: STEPS })]),
+      RUNGS,
+    );
+    expect(desk.testDrives.map((drive) => drive.issueNumber)).toEqual([1644]);
   });
 });

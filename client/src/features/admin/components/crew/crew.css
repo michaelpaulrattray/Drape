@@ -1614,3 +1614,51 @@
 [id^="crew-section-"] {
   scroll-margin-top: 48px;
 }
+
+/* ------------------------------------------- the test drive (#1646) */
+/*
+  A list of things for his HANDS, which is the only section on this page that
+  is not a question or a record. The grammar follows the needs-you card's — one
+  card per milestone, a ruled row per step — because the eye is already trained
+  on it; what is new is that each row ends in two words rather than a sentence.
+
+  ⚠ **THE NUMBER IS DRAWN, AND IT IS THE ONE PIECE OF CHROME WORTH THE INK.**
+  He is holding a phone in one hand and driving the app with the other; "step
+  four" is how he keeps his place when he looks back up. It is a list counter,
+  not an id, so it comes from the ordered list rather than from a field.
+*/
+.dp-crew__drive {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--s-6);
+  counter-reset: dp-drive;
+}
+
+.dp-crew__drivestep {
+  position: relative;
+  counter-increment: dp-drive;
+  padding: var(--s-5) 0 var(--s-5) var(--s-7);
+  border-top: 1px solid var(--rule);
+}
+
+.dp-crew__drivestep::before {
+  content: counter(dp-drive);
+  position: absolute;
+  top: var(--s-5);
+  left: 0;
+  font: 400 11px/1.6 var(--font-mono);
+  color: var(--faint);
+}
+
+.dp-crew__drivearms {
+  display: flex;
+  gap: var(--s-3);
+  margin-top: var(--s-3);
+}
+
+.dp-crew__drivenote {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  margin-top: var(--s-4);
+}
