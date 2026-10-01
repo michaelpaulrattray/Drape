@@ -92,10 +92,46 @@ export function ownPlanFacts(tier: string): {
   };
 }
 
-// Subscription Plans — generated from PLAN_TIERS
+/**
+ * The paid rungs as a product record — name, price, allowance, interval, and
+ * the non-numeric feature lines.
+ *
+ * ⚠ **NO CREDIT NUMBER IS COMPOSED INTO TEXT HERE, AND THAT IS THE POINT
+ * (#1605, P1-6).** Until this commit each entry carried a `description`
+ * — `` `${PLAN_TIERS.pro.monthlyCredits.toLocaleString()} credits/month with
+ * ${…}% rollover` `` — and a matching first `features` bullet, which were
+ * **14 of the 122 occurrences** in `server/testing/creditDisplaySites.ts`'s
+ * census: a LEDGER amount written into product text a customer reads.
+ *
+ * `description`'s one live reader sent it to Stripe as
+ * `product_data.description` on the checkout session, so "200,000
+ * credits/month" was printed on the checkout page at a scale the customer's
+ * own screens are about to stop using (P1-1: display = ledger ÷ 5). The other
+ * roads out of here never rendered it: it crossed the public `getPlans` wire
+ * with no client reader, and `features` had no reader at all.
+ *
+ * **They are DELETED rather than rescaled**, which is why this slice is
+ * coupled to neither the new price table nor Stripe's own price objects: a
+ * number that is not composed cannot be composed at the wrong scale. The
+ * customer-facing plan line is `client/src/features/settings/planBlurbs.ts`
+ * (his own copy, one table, one file) and the credits figure under it is
+ * rendered from `credits` by the client — through P1-1's display helper as
+ * each surface is routed. **Two copies of one number is working law 4, and
+ * this was the copy nobody read.**
+ *
+ * ⚠ **A RE-ADDED ONE REDDENS, and not by a rule written for this file**:
+ * `server/creditDisplayGuard.test.ts`'s negative control refuses any credit
+ * number reaching a customer that is not in the census, and this file's census
+ * rows are gone — so the same string returning is a site outside the list.
+ * `server/stripe/checkoutProductText.test.ts` holds the wire itself.
+ *
+ * Once checkout resolves prices by `lookup_key` (this card's other three
+ * bullets, gated on Stripe objects that #1609 reserves for his hand), Stripe's
+ * own product carries the identity line and the DISPLAY credits, and no
+ * product text is composed in this repository at all.
+ */
 export const SUBSCRIPTION_PRODUCTS: Record<string, {
   name: string;
-  description: string;
   priceInCents: number;
   credits: number;
   interval: "month";
@@ -103,12 +139,10 @@ export const SUBSCRIPTION_PRODUCTS: Record<string, {
 }> = {
   starter: {
     name: PLAN_TIERS.starter.name,
-    description: `${PLAN_TIERS.starter.monthlyCredits.toLocaleString()} credits/month with ${PLAN_TIERS.starter.rolloverPercent}% rollover`,
     priceInCents: PLAN_TIERS.starter.price,
     credits: PLAN_TIERS.starter.monthlyCredits,
     interval: "month",
     features: [
-      `${PLAN_TIERS.starter.monthlyCredits.toLocaleString()} credits per month`,
       `${PLAN_TIERS.starter.rolloverPercent}% unused credit rollover`,
       "All generation features",
       "Standard support",
@@ -116,12 +150,10 @@ export const SUBSCRIPTION_PRODUCTS: Record<string, {
   },
   pro: {
     name: PLAN_TIERS.pro.name,
-    description: `${PLAN_TIERS.pro.monthlyCredits.toLocaleString()} credits/month with ${PLAN_TIERS.pro.rolloverPercent}% rollover`,
     priceInCents: PLAN_TIERS.pro.price,
     credits: PLAN_TIERS.pro.monthlyCredits,
     interval: "month",
     features: [
-      `${PLAN_TIERS.pro.monthlyCredits.toLocaleString()} credits per month`,
       `${PLAN_TIERS.pro.rolloverPercent}% unused credit rollover`,
       "All generation features",
       "Priority support",
@@ -130,12 +162,10 @@ export const SUBSCRIPTION_PRODUCTS: Record<string, {
   },
   studio: {
     name: PLAN_TIERS.studio.name,
-    description: `${PLAN_TIERS.studio.monthlyCredits.toLocaleString()} credits/month with full rollover`,
     priceInCents: PLAN_TIERS.studio.price,
     credits: PLAN_TIERS.studio.monthlyCredits,
     interval: "month",
     features: [
-      `${PLAN_TIERS.studio.monthlyCredits.toLocaleString()} credits per month`,
       "100% unused credit rollover",
       "All generation features",
       "Priority support",
@@ -144,12 +174,10 @@ export const SUBSCRIPTION_PRODUCTS: Record<string, {
   },
   business: {
     name: PLAN_TIERS.business.name,
-    description: `${PLAN_TIERS.business.monthlyCredits.toLocaleString()} credits/month with full rollover`,
     priceInCents: PLAN_TIERS.business.price,
     credits: PLAN_TIERS.business.monthlyCredits,
     interval: "month",
     features: [
-      `${PLAN_TIERS.business.monthlyCredits.toLocaleString()} credits per month`,
       "100% unused credit rollover",
       "All generation features",
       "Priority support",
@@ -158,12 +186,10 @@ export const SUBSCRIPTION_PRODUCTS: Record<string, {
   },
   scale: {
     name: PLAN_TIERS.scale.name,
-    description: `${PLAN_TIERS.scale.monthlyCredits.toLocaleString()} credits/month with full rollover`,
     priceInCents: PLAN_TIERS.scale.price,
     credits: PLAN_TIERS.scale.monthlyCredits,
     interval: "month",
     features: [
-      `${PLAN_TIERS.scale.monthlyCredits.toLocaleString()} credits per month`,
       "100% unused credit rollover",
       "All generation features",
       "Priority support",
@@ -173,12 +199,10 @@ export const SUBSCRIPTION_PRODUCTS: Record<string, {
   },
   enterprise: {
     name: PLAN_TIERS.enterprise.name,
-    description: `${PLAN_TIERS.enterprise.monthlyCredits.toLocaleString()} credits/month with full rollover`,
     priceInCents: PLAN_TIERS.enterprise.price,
     credits: PLAN_TIERS.enterprise.monthlyCredits,
     interval: "month",
     features: [
-      `${PLAN_TIERS.enterprise.monthlyCredits.toLocaleString()} credits per month`,
       "100% unused credit rollover",
       "All generation features",
       "Priority support",
@@ -193,12 +217,10 @@ export const SUBSCRIPTION_PRODUCTS: Record<string, {
   // this entry (and its price) stays off the public wire.
   ultimate: {
     name: PLAN_TIERS.ultimate.name,
-    description: `${PLAN_TIERS.ultimate.monthlyCredits.toLocaleString()} credits/month with full rollover`,
     priceInCents: PLAN_TIERS.ultimate.price,
     credits: PLAN_TIERS.ultimate.monthlyCredits,
     interval: "month",
     features: [
-      `${PLAN_TIERS.ultimate.monthlyCredits.toLocaleString()} credits per month`,
       "100% unused credit rollover",
       "All generation features",
       "Priority support",
