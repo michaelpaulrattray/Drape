@@ -1653,7 +1653,50 @@
 .dp-crew__drivearms {
   display: flex;
   gap: var(--s-3);
-  margin-top: var(--s-3);
+  margin-top: var(--s-4);
+}
+
+/*
+  ⚠ **NOT `.dp-crew__tap`, AND THE RENDER IS WHY (law 6).** The first shape
+  reused the card-title tap — 10px, `--faint`, no border — and at 1440×1100 the
+  two words under each step read as a caption rather than as the thing he is
+  meant to press. That class is right for *not relevant* on a title he is
+  scanning past; these are the ONLY action in the section.
+
+  So they take the chip's grammar instead — a pill at the page's own quiet
+  weight — with the one thing a chip does not have: a hover and a pressed
+  state. Pressed is the `chip--good` treatment (`--ink` on both border and
+  text), so the answer he gave is legible at a glance without a colour the
+  monochrome palette does not own.
+*/
+.dp-crew__driveanswer {
+  flex: none;
+  padding: 2px var(--s-3);
+  border: 1px solid var(--borderSoft);
+  border-radius: var(--r-pill);
+  background: transparent;
+  font: 400 11px var(--font-sans);
+  color: var(--metaStrong);
+  cursor: pointer;
+  transition:
+    color var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease);
+}
+
+.dp-crew__driveanswer:hover:not(:disabled),
+.dp-crew__driveanswer:focus-visible {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
+.dp-crew__driveanswer--chosen {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.dp-crew__driveanswer:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .dp-crew__drivenote {

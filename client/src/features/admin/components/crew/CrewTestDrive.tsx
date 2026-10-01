@@ -194,7 +194,7 @@ function DriveStep({
             newest reply per step for exactly this). */}
         <button
           type="button"
-          className={cn("dp-crew__tap", answered?.verdict === "matched" && "dp-crew__tap--marked")}
+          className={cn("dp-crew__driveanswer", answered?.verdict === "matched" && "dp-crew__driveanswer--chosen")}
           disabled={sending}
           onClick={() => void answer("matched", null)}
         >
@@ -202,7 +202,7 @@ function DriveStep({
         </button>
         <button
           type="button"
-          className={cn("dp-crew__tap", answered?.verdict === "did-not-match" && "dp-crew__tap--marked")}
+          className={cn("dp-crew__driveanswer", answered?.verdict === "did-not-match" && "dp-crew__driveanswer--chosen")}
           disabled={sending}
           onClick={() => setNoting(true)}
         >
@@ -236,7 +236,7 @@ function DriveStep({
           <div className="dp-crew__drivearms">
             <button
               type="button"
-              className="dp-crew__tap dp-crew__tap--marked"
+              className="dp-crew__driveanswer dp-crew__driveanswer--chosen"
               disabled={sending}
               onClick={() => void answer("did-not-match", note.trim() === "" ? null : note.trim())}
             >
@@ -244,7 +244,7 @@ function DriveStep({
             </button>
             <button
               type="button"
-              className="dp-crew__tap"
+              className="dp-crew__driveanswer"
               disabled={sending}
               onClick={() => { setNoting(false); setNote(""); }}
             >
