@@ -669,6 +669,22 @@ type CastPackageView = {
    * holds each band against the sentence it restates by naming, for every rule,
    * the clause it comes from.
    *
+   * ⚠ **AND THAT SLICE IS NOT A WIRING — MEASURED 2026-10-01, WHEN IT WAS PICKED
+   * UP, AND THE PARAGRAPH ABOVE IS WHY IT LOOKED LIKE ONE.** *"Deletes that
+   * sentence and one band is left"* is only true where the band says everything
+   * the sentence says, and on four views it does not: `closeUp` owes an
+   * ORIENTATION and a feature-PRESENCE test, `frontClose` owes how much of her is
+   * in the picture, `sideFull` and `backFull` each owe which way the body faces.
+   * **Five clauses, and `closeUp` is the one view whose band carries no
+   * `readerRemainder` and therefore read as fully measured.** Each is declared on
+   * its own band as `unrestated` and held there; the hand-over is paid off per
+   * view, and deleting the prose question on a view that still owes one deletes a
+   * stated framing test with no line of code saying so.
+   *
+   * It went unseen because the guard above pairs RULES with clauses in both
+   * directions and **neither direction can see a clause no rule ever cited** —
+   * the one-way blindness this repository keeps paying for.
+   *
    * A view whose framing also asks something geometry does not answer here says
    * so in `band.readerRemainder`, in its own words.
    */
@@ -851,6 +867,22 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
         { must: "roomBelowAtMost", landmark: "face", inItsOwnHeights: 0.3 },
         { must: "cutBy", landmark: "subject", edge: "top" },
       ],
+      /*
+        ⚠ **THE TWO CLAUSES OF HIS OWN SPEC THAT NO RULE ABOVE RESTATES, and
+        this is the view the types called FULLY MEASURED** (#1612, the hand-over,
+        2026-10-01). It has no `readerRemainder`, which read as *nothing is left
+        over* — and what was actually true is *the rules left nothing over*, which
+        is a different sentence about a smaller thing.
+
+        Neither is a crop, which is why a silhouette cannot reach them: one is an
+        ORIENTATION and one is a feature PRESENCE test. The second is also a
+        COUNT, so #1582 governs it — it belongs with the reference's own face scan
+        if it belongs anywhere, and {@link FACE_FROM_REFERENCE} is the sentence
+        that keeps it from refusing a cast with three eyes or none. Delete the
+        prose question here while these two stand and both tests are gone with
+        no line of code saying so.
+      */
+      unrestated: ["front-on crop of the face", "The mouth, every eye the reference shows"],
     },
     directive:
       "BEAUTY CLOSE-UP OF THE FACE, STRAIGHT ON. The face fills the frame. Crop the TOP of "
@@ -908,6 +940,23 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
         "whether every eye the reference shows is visible, and whether the subject is square "
         + "to the camera — a feature count and an orientation, neither of which this file's "
         + "landmarks can answer without the reference's own face scan.",
+      /*
+        ⚠ **THE DISTANCE — and it is the sharpest of the five, because the rule
+        above and the remainder beside it between them say nothing about HOW MUCH
+        OF HER IS IN THE PICTURE.** `clearOf subject top` is satisfied by a
+        full-length body with room over its hair, so a whole-body frame delivered
+        into the Portrait slot measures in band. Today the reader catches that
+        correctly; hand the axis over with this unpaid and nothing does.
+
+        It is geometry and it is payable: `roomBelowAtMost` on the face is the
+        close-up's own too-loose bound, and a head-and-shoulders band is the same
+        quantity with a wider bound. It is NOT written here on one shift's
+        reading — a bound is a number his eye closes (law 9 — 0.3 took six of his
+        frames and a Desk reply), and inventing a second one in the commit that
+        hands the axis over is how a band comes to refuse pictures nobody
+        measured.
+      */
+      unrestated: ["a head-and-shoulders portrait"],
     },
     directive:
       "FRONT-FACING HEAD AND SHOULDERS PORTRAIT. Square to camera, head straight with no tilt, "
@@ -1225,6 +1274,16 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
         { must: "clearOf", landmark: "subject", edge: "bottom" },
       ],
       readerRemainder: "that the walk is genuinely in motion rather than a standing pose.",
+      /*
+        ⚠ The SIDE. Two `clearOf subject` rules hold a body inside the frame and
+        say nothing about which way it faces, and the remainder above names only
+        the stride — so a front-on full-length walk measures in band here.
+        Retired from the profile (this angle is not in `CAST_PACKAGE_VIEWS`), so
+        it is debt on a historical entry rather than on a view a Sign buys; it is
+        declared on the same sibling-consistency ground every other field on this
+        entry is.
+      */
+      unrestated: ["seen from the side"],
     },
     directive:
       "STRICT RIGHT-FACING FULL BODY SIDE PROFILE, WALKING. The subject's nose and toes point toward "
@@ -1270,6 +1329,16 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
       readerRemainder:
         "that the face is not visible — a concealment test, and one a segmenter asked "
         + "\"where is the face\" on a picture of a back cannot answer honestly.",
+      /*
+        ⚠ THE DIRECTION, and on the most-refused view on production (3 of 13,
+        all time). *"face not visible"* is the remainder above and it is NOT this
+        clause: a cast photographed from the side with her face turned away shows
+        no face and is not seen from behind. The two `clearOf subject` rules
+        cannot tell a back from a front, and no landmark in this vocabulary can —
+        which is why it reads as a reader's question rather than a rule, and why
+        it is debt rather than a missing line.
+      */
+      unrestated: ["seen from directly behind"],
     },
     directive:
       "FULL BODY FROM BEHIND, walking away from camera. Head to feet entirely inside the frame. "
