@@ -1,7 +1,7 @@
 {
-  "edition": 604,
-  "updatedAt": "2026-10-01T16:40:00.000Z",
-  "shift": "Night shift, 01:58: the last piece of the new pricing is built, so all four parts of it are now finished and waiting together. This was the plan amounts — the credits each paid plan gives you every month. Slice one stopped and asked you a question rather than building it, because the figures in the approved proposal would have made three plans worse value per dollar than the plan below them, and you replaced the ladder instead of the check. That ladder is now in the code: Starter 14,000 a month, Pro 36,000, Studio 86,000, Business 470,000, Scale 2,750,000, Enterprise 8,700,000 and the hidden top rung 28,000,000, with Starter cut on your word that no paying customer is on a plan yet. No price moved. Every rung now buys more credits per dollar than the one beneath it, on monthly billing and on yearly — and rather than claim that, I broke the check on purpose twice to be certain it was really watching these numbers: moving one plan a single credit off the display scale trips one alarm and leaves the value check green, and moving a plan below the one under it trips three alarms across two files and leaves the first one green. One of those three is the yearly check, so the promise is proved on annual billing too instead of being argued. Eleven test files that read the plan table are green, 250 tests, and the full pre-flight run is green at 7,693. Two wrong numbers turned up in passing, both of them a figure written in a note beside the table instead of read from it — one said the display multiplier was fifty when it is five, which would have had anyone trusting it working out every credit figure on that screen ten times too small, and one was a spending figure typed into a test that the new Business amount no longer covers, so the app gave the right answer and the test failed on the stale number. Both fixed. What is still yours on this: the existing free accounts need raising to 2,700 and the live Stripe figures need checking against the table, both on the go-live list. Nothing needs a reply from you tonight.",
+  "edition": 605,
+  "updatedAt": "2026-10-01T18:15:00.000Z",
+  "shift": "Night shift, 03:40: the new credit scale went live on production at 03:34 your time, and the four pieces that were waiting together all shipped as one. A Roll now reads 240 credits, a Sign 1,700, and a new account starts with 2,700. Then two things, both of them about money being right rather than new. First, the claim that justified you replacing the plan ladder was never actually tested - the code carried it as a note, and a note cannot fail. It is tested now: the old proposal's figures are run through the real check and it proves they broke the value promise at Studio, Scale and Enterprise, exactly where the note said. Second, and this one I went and looked up rather than took on trust: I read your Stripe account and found the yearly prices there are whole dollars, while the app was working them out to the cent. Four of the seven plans disagreed - the app said Pro costs $677.28 a year and Stripe will charge $677.00. Nothing is wrong on your screen today, because today the app tells Stripe what to charge. But the next card moves that the other way round, and the day it does, a customer would read one number and be charged another. So the app now rounds to whole dollars like Stripe does, and all seven agree. The only thing that changes on screen is one line: Starter's annual value figure goes from 625 credits per dollar to 624. No price a customer reads moves at all. The same look turned up something for the top-up card: the three top-up prices it asks for do not exist in Stripe under those names. Three others do, at exactly the right dollars - $12, $24 and $60 - but labelled a tenth of the credits. Either Stripe's labels or the card's pack sizes are wrong, and that is your call or your finance guy's, so it is written on the card rather than guessed at. Both of tonight's changes are money, so both are waiting for your relay to read them. Nothing needs a reply from you tonight.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -14,7 +14,7 @@
       "title": "P1 — pricing, phase 1: the approved prices and plans, shown at the new scale, with the free plan and the renewal fix",
       "steps": [
         {
-          "state": "in-progress",
+          "state": "done",
           "title": "One display helper: every credit number you see is the ledger ÷ 5, prices rounding up and balances rounding down (#1600)"
         },
         {
@@ -26,15 +26,15 @@
           "title": "Plan grants and the free grant: the new monthly amounts, 2,700 credits once for free, and every existing free account raised to it (#1602)"
         },
         {
-          "state": "waiting",
+          "state": "in-progress",
           "title": "Free signup with no card and no phone: the grant lands on a verified email or Google sign-in, guarded by quiet limits (#1603)"
         },
         {
-          "state": "in-progress",
+          "state": "done",
           "title": "The renewal fix: a monthly refresh never overwrites credits you bought (#1604)"
         },
         {
-          "state": "waiting",
+          "state": "in-progress",
           "title": "Checkout on Stripe's own prices: the yearly price you see is the one you are charged (#1605)"
         },
         {
@@ -46,7 +46,7 @@
           "title": "Plan cards in Rinoa's four lines, with Yuna's final pass (#1607)"
         },
         {
-          "state": "waiting",
+          "state": "done",
           "title": "The retry-settled log line, monitoring only (#1608)"
         },
         {
@@ -9110,30 +9110,44 @@
     {
       "id": "price-table-1601",
       "title": "The new prices, in one place (#1601, the second pricing card)",
-      "note": "Money surface: held for your relay's hand verdict, and it merges as part of the one pricing release rather than on its own.",
-      "status": "in-review",
-      "prNumber": 1700
+      "note": "The new prices shipped inside the one pricing release (PR #1706) and are live on production.",
+      "status": "merged",
+      "prNumber": 1706
     },
     {
       "id": "credit-display-client-1600",
       "title": "Every credit number you see goes through the one display helper (#1600, the first pricing card)",
-      "status": "in-review",
-      "prNumber": 1697,
-      "note": "Money surface: held for your relay’s hand verdict, and it merges as part of the one pricing release rather than on its own."
+      "status": "merged",
+      "prNumber": 1706,
+      "note": "The display helper shipped inside the one pricing release (PR #1706) and is live on production."
     },
     {
       "id": "free-grant-1602-slice1",
       "title": "A new account gets 2,700 credits once, from one place in the code (#1602, slice one)",
-      "status": "in-review",
-      "prNumber": 1682,
-      "note": "Sound on review and held only so it cannot ship before the new prices — on today’s prices that grant would buy 84 Rolls instead of 4."
+      "status": "merged",
+      "prNumber": 1706,
+      "note": "The free grant shipped inside the one pricing release (PR #1706) and is live on production."
     },
     {
       "id": "plan-ladder-1602-slice2",
       "title": "The seven paid plans take your adopted ladder, every rung better value than the one below (#1602, slice two)",
+      "status": "merged",
+      "prNumber": 1706,
+      "note": "The plan ladder shipped inside the one pricing release (PR #1706) and is live on production."
+    },
+    {
+      "id": "ladder-negcontrol-1602",
+      "title": "The reason you replaced the plan ladder is now tested, not just written down (#1602)",
       "status": "in-review",
-      "prNumber": 1704,
-      "note": "Money surface: held for your relay’s hand verdict. The last of the four parts of the pricing release; no price moved and nothing a customer sees changes until all four land together."
+      "prNumber": 1708,
+      "note": "Money surface: held for your relay's hand verdict."
+    },
+    {
+      "id": "annual-whole-dollars-1605",
+      "title": "A year costs whole dollars, which is what Stripe already charges (#1605)",
+      "status": "in-review",
+      "prNumber": 1710,
+      "note": "Money surface: held for your relay's hand verdict."
     }
   ],
   "problems": [
