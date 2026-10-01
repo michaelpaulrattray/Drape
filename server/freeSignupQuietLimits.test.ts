@@ -56,6 +56,14 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Request, Response } from "express";
 
+import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
+
+/* The face-scan floor arms at the foot of this file read the casting router off
+   the real tree, which puts this suite in #741's derived population: green alone,
+   red under load on somebody else's machine. Declared at file level because that
+   is where the guard reads it, and the rest of the file is cheap either way. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
+
 /* The storage is the far end, never the subject. */
 vi.mock("./db/quietLimits", () => ({
   countFreeGrantClaims: vi.fn(),

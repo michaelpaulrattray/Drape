@@ -39,9 +39,15 @@
 import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
 import { readListedSource } from "./testing/listedSource";
+
+/* This suite walks `client/src` off the real tree, which puts it in #741's
+   derived population: green alone, red under load on somebody else's machine.
+   Declared at file level because that is where the guard reads it. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 const CLIENT_SRC = join(__dirname, "..", "client", "src");
 
