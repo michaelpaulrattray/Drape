@@ -33,7 +33,7 @@ import {
   type TrackerProbeFacts,
 } from "./monitoring/trackerVerdict";
 import { scrubErrorEvent } from "../shared/errorEventScrub";
-import { SENTRY_ORG, SENTRY_SERVER_PROJECT } from "../shared/monitoringProjects";
+import { SENTRY_ISSUE_SEARCH, SENTRY_ORG, SENTRY_SERVER_PROJECT } from "../shared/monitoringProjects";
 
 /** A healthy, arrived run — every arm below is this with one fact changed. */
 const arrived: TrackerProbeFacts = {
@@ -327,7 +327,8 @@ describe("the probe's event against the REAL scrub (#1542's own done-when)", () 
    * `scrubErrorEvent` is proven to pass the probe and never proven to pass its
    * MARK. Drop `"kind"` from `ALLOWED_TAG_KEYS` — a seven-entry security
    * allowlist that has been edited before — and both stay green while the
-   * projection silently drops the tag, his saved filter stops matching, and the
+   * projection silently drops the tag, **the search his admin *Errors* link
+   * carries stops matching** (`SENTRY_ISSUE_SEARCH`, wired #1650), and the
    * ~35 probe events a day come back into the feed with nothing anywhere
    * failing. A signal bought and unread, one line from the signal this product
    * already paid for (#1542, and the DT law's clause 4).
@@ -365,6 +366,36 @@ describe("the probe's event against the REAL scrub (#1542's own done-when)", () 
     if (verdict.verdict !== "send") throw new Error("a real crash's event was refused");
     expect(verdict.event.tags?.kind).toBe("trpc");
     expect(verdict.event.tags?.kind).not.toBe("probe");
+  });
+
+  /**
+   * ⚠ THE WRITER AND THE READER AGREE — THE ARM THE OTHER FOUR CANNOT BE
+   * (#1650, 2026-10-01).
+   *
+   * Every arm above drives the probe's mark through the scrub. None of them
+   * can see the OTHER end of the filter: the search his admin *Errors* link
+   * hands Sentry (`SENTRY_ISSUE_SEARCH`, built in
+   * `client/src/features/admin/overview/dashboards.ts`). A client suite cannot
+   * prove the agreement either — it would be comparing the shared declaration
+   * to itself.
+   *
+   * So this reads the pair out of `PROBE_ERROR_CONTEXT` as the SCRIPT sends it
+   * and asks whether the search negates that pair. Re-spelling the mark here
+   * — undoing the derivation, which is the single cheapest way for these two
+   * to drift — reddens exactly this arm and nothing else.
+   */
+  it("the search his Errors link sends negates the mark the probe actually writes", () => {
+    const written = Object.entries(PROBE_ERROR_CONTEXT).filter(([key]) => key !== "route");
+    expect(written).toHaveLength(1);
+    const [key, value] = written[0]!;
+    expect(SENTRY_ISSUE_SEARCH).toContain(`!${key}:${value}`);
+  });
+
+  it("and that search leaves a REAL crash's mark alone (the positive control)", () => {
+    // Without this, the arm above would pass just as happily on a search that
+    // excluded everything — `!kind:probe !kind:trpc` negates the probe too.
+    expect(SENTRY_ISSUE_SEARCH).not.toContain("!kind:trpc");
+    expect(SENTRY_ISSUE_SEARCH).not.toContain("!kind:unhandled");
   });
 });
 

@@ -20,6 +20,8 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { SENTRY_ISSUE_SEARCH, SENTRY_PROBE_TAG } from "@shared/monitoringProjects";
+
 import {
   POSTHOG_APP_HOST,
   POSTHOG_PROJECT_ID,
@@ -160,9 +162,54 @@ describe("the ids are declared once, and the URLs are built from them", () => {
   it("names both Sentry projects, which the org's stream covers in one page", () => {
     /* They are recorded and not in the URL — Sentry's issue stream filters by
        numeric project id, not by slug, and the only numeric id this product
-       holds is inside the DSN, which is a secret. The org's unfiltered stream
-       is both at once, which is the one click he asked for. */
+       holds is inside the DSN, which is a secret. The org's stream is both
+       projects at once, which is the one click he asked for. ⚠ The sentence
+       here said *"unfiltered"* until #1650 put a search on it; the PATH is
+       what carries both projects, and the search below touches only which
+       issues that path shows. */
     expect([...SENTRY_PROJECTS]).toEqual(["klieg-server", "klieg-web"]);
-    expect(SENTRY_ISSUES_URL).toBe("https://klieg-labs.sentry.io/issues/");
+    expect(new URL(SENTRY_ISSUES_URL).origin + new URL(SENTRY_ISSUES_URL).pathname).toBe(
+      "https://klieg-labs.sentry.io/issues/",
+    );
+  });
+
+  /**
+   * ⚠ THE DEPLOY PROBE IS OUT OF HIS WAY BEFORE HE ARRIVES (#1650) — AND THIS
+   * IS ASSERTED ON THE HREF RATHER THAN ON THE CONSTANT BESIDE IT.
+   *
+   * The probe fires on every deploy (#1648) and its events are indistinguish-
+   * able from crashes in the stream unless something asks. Measured at Sentry
+   * on 2026-10-01 through the service's own token: the probe was **9 of the 13
+   * unresolved events** in `klieg-server` and one of the two issues; `is:
+   * unresolved !kind:probe` returned the real `announcements.getActive` crash
+   * alone. The tag had existed since #1562 and **no reader used it** — which is
+   * invariant 7's shape pointed at a signal rather than at a control.
+   *
+   * The arm parses the URL, because the defect it exists to catch is a query
+   * that is built but never reaches the wire (invariant 5).
+   */
+  /* The card number stays in the comment, never in the title: `HEX_LITERAL`
+     reads `#1650` in a string as a four-digit colour, and this suite's own
+     issue-number arm says so and calls the exemption the fix nobody makes. */
+  it("⚠ its Errors link asks Sentry to leave the deploy probe out", () => {
+    const search = new URL(SENTRY_ISSUES_URL).searchParams.get("query");
+    expect(search).toBe(SENTRY_ISSUE_SEARCH);
+    /* The negation, spelled from the tag the PROBE writes rather than from the
+       search it is built into — so renaming the mark in one place reddens. */
+    expect(search).toContain(`!${SENTRY_PROBE_TAG.key}:${SENTRY_PROBE_TAG.value}`);
+  });
+
+  it("and it keeps the default search it REPLACES, so resolved issues stay gone", () => {
+    /* `?query=` overrides Sentry's own default rather than adding to it, so
+       dropping `is:unresolved` would quietly hand him every issue anybody had
+       already closed — a louder feed than the one this card set out to quieten. */
+    expect(new URL(SENTRY_ISSUES_URL).searchParams.get("query")).toContain("is:unresolved");
+  });
+
+  it("and the href is encoded, which a raw search string is not", () => {
+    /* `is:unresolved !kind:probe` holds a space; an href carrying a literal one
+       is the shape that works in a test and breaks in a browser. */
+    expect(SENTRY_ISSUES_URL).not.toMatch(/ /);
+    expect(SENTRY_ISSUES_URL).toContain("?query=");
   });
 });

@@ -67,7 +67,7 @@ import { clientSentryDsn } from "@/monitoring/errorReporter";
  * Re-exported rather than re-declared: this module has been the place to look
  * since #1441 and a reader who comes here must still find them.
  */
-import { SENTRY_ORG, SENTRY_PROJECTS } from "@shared/monitoringProjects";
+import { SENTRY_ISSUE_SEARCH, SENTRY_ORG, SENTRY_PROJECTS } from "@shared/monitoringProjects";
 
 /*
   EXACTLY the two names this module already published, and no more. The shared
@@ -90,8 +90,19 @@ export const POSTHOG_APP_HOST = "https://us.posthog.com";
  * The org-level issue view rather than a project one, so the server's crashes
  * and the browser's arrive on the same page — which is what "one click to the
  * real dashboard" has to mean when the product reports from two places.
+ *
+ * ⚠ **AND IT ARRIVES WITH THE DEPLOY PROBE ALREADY OUT OF THE WAY (#1650).**
+ * The probe fires on every deploy and lands in this same stream; measured at
+ * Sentry on 2026-10-01, it was 9 of the 13 unresolved events here and one of
+ * the two issues. The tag that tells it apart has existed since #1562 and
+ * **nothing had ever used it** — the card asked for a saved filter and the
+ * link was the thing that could carry one. `SENTRY_ISSUE_SEARCH` is the
+ * search, declared beside the tag it is built from so the two cannot drift;
+ * its header carries the reading that proved it works and why `is:unresolved`
+ * rides along. Making him type `!kind:probe` to see his own errors is the
+ * machinery showing through.
  */
-export const SENTRY_ISSUES_URL = `https://${SENTRY_ORG}.sentry.io/issues/`;
+export const SENTRY_ISSUES_URL = `https://${SENTRY_ORG}.sentry.io/issues/?query=${encodeURIComponent(SENTRY_ISSUE_SEARCH)}`;
 
 /** What people actually did. */
 export const POSTHOG_PROJECT_URL = `${POSTHOG_APP_HOST}/project/${POSTHOG_PROJECT_ID}`;
