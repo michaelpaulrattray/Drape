@@ -175,9 +175,12 @@ import { exclusionFor, QUEUE_EXCLUSION_REASONS, RESEARCH_LABEL } from "../../sha
 import {
   backgroundWorkAllowed,
   CREW_WORK_CATEGORIES,
+  CREW_TOOLING_LABEL,
   CREW_WORK_MASTER_KEY,
+  fixJumpsTheQueue,
   homeWorkCategoryFor,
   isFixWork,
+  isToolingWork,
   type CrewWorkSwitchState,
 } from "../../shared/crewWorkSwitches.js";
 
@@ -292,6 +295,27 @@ export interface SeatManagerFacts {
 function managerArea(row: ManagerCardRow | undefined, index: SeatAreaIndex): string | null {
   if (row === undefined || row.area === null) return null;
   return index.domains.includes(row.area) ? row.area : null;
+}
+
+/**
+ * THE MANAGER'S READINESS, READ ONCE FOR EVERY LANE THAT ASKS IT (#1687).
+ *
+ * `ready: "no"` is the column the manager uses for a hold the code cannot see —
+ * a card waiting on a person, a ruling, a pull request, or one that is a record
+ * rather than work. Three places ask it now: the background population, the
+ * ordered band's TOP PICK, and the ordered cards below that pick. Until this
+ * function the question was written out at two of them and ABSENT from the
+ * third, which is #1687 — and the two copies that did exist were a mirror
+ * waiting to drift on the sentence they print (working law 4).
+ *
+ * It returns the SENTENCE rather than a boolean, because the sentence is the
+ * thing that must be identical wherever the hold fires: his page shows one
+ * card's hold in one place, and a reader who saw two spellings of the same
+ * hold would reasonably believe they were two different facts.
+ */
+function managerReadinessHold(row: ManagerCardRow | undefined): string | null {
+  if (row === undefined || row.ready !== "no") return null;
+  return `${row.why} (the manager's reading of this pass)`;
 }
 
 /** The area, and which reader produced it — the manager first where it spoke. */
@@ -462,6 +486,60 @@ export function resolveCardArea(card: SeatCandidateCard, index: SeatAreaIndex): 
     if (area !== null) return area;
   }
   return null;
+}
+
+/**
+ * THE TOOLING PATHS — the card's own stated set (#1647), in one place because
+ * the report below and its arms must not each carry a copy of it.
+ */
+function isToolingPath(path: string): boolean {
+  return /(^|\/)[^/]*\.test\.[A-Za-z0-9]+$/.test(path)
+    || path.startsWith("scripts/")
+    || path.startsWith("server/testing/")
+    || path.startsWith(".github/")
+    || path.startsWith(".githooks/")
+    || path.startsWith("docs/");
+}
+
+/**
+ * ⚠ A REPORT, NEVER A GATE — does this card LOOK like tooling while carrying no
+ * `tooling` label? (#1647.)
+ *
+ * Returns the sentence to print, or `null` when there is nothing to say.
+ *
+ * # Why it reports and does not decide
+ *
+ * The gate is the label, and `CREW_TOOLING_LABEL`'s docblock carries the
+ * measurement that settled it: the card's *"derived reading of the paths the
+ * card body names"* disagrees with the card's own positive control on **5 of
+ * 10**, always toward offering, because a tooling card names product paths as
+ * the files its instrument READS rather than as files it changes.
+ *
+ * # What this reader is, and its measured accuracy both ways
+ *
+ * It asks whether a MAJORITY of the paths the body names are tooling paths —
+ * deliberately a weaker question than the gate's — and it was measured on the
+ * same eleven cards: **6 of the 7 tooling cards flagged** (#1636 missed, 6 of
+ * its 14 paths being tooling is not a majority) and **0 of the 3 real customer
+ * bugs flagged**, each of which names a single product file. So it is a FLOOR
+ * for finding a missing label, and it is stated as one: a quiet pass does not
+ * mean every label is right.
+ *
+ * ⚠ **It is deliberately useless as a gate and that is the point.** A genuine
+ * customer bug whose body quotes a dozen test files would be a majority tooling
+ * and would be WRONGLY HELD — the one direction this rule must never fail in.
+ * As a line of text it costs nothing when it is wrong.
+ */
+export function toolingPathReading(card: SeatCandidateCard): string | null {
+  if (isToolingWork(card.labels)) return null;
+  if (!isFixWork(card.labels)) return null;
+  const paths = pathsNamedIn(card.body);
+  if (paths.length === 0) return null;
+  const tooling = paths.filter(isToolingPath);
+  if (tooling.length * 2 <= paths.length) return null;
+  return `#${card.number} is offered as a customer-hittable fix, but ${tooling.length} of the `
+    + `${paths.length} path(s) it names are tooling — if that is what it is, label it `
+    + `\`${CREW_TOOLING_LABEL}\` and it waits behind the focus`;
 }
 
 /**
@@ -764,6 +842,24 @@ export function focusRungFromLadder(
  * whatsoever. What guards a feature card MISLABELLED `bug` is not this gate: it
  * is the Retro's double-label reading and his own one-work-label-per-card rule,
  * which is where a wrong label is a wrong label rather than a hole here.
+ *
+ * # ⚠ AND THE EXEMPTION IS NARROWED TO TWO CASES SINCE #1647
+ *
+ * `isFixWork` alone exempted a `bug`/`small-fix` card about the crew's OWN
+ * machinery, which is not what #1553 was about. It is `fixJumpsTheQueue` now —
+ * a customer can hit it, or the road is down — and the whole argument for the
+ * narrowing, including why it is a label rather than a reading of the card's
+ * paths, is on `CREW_TOOLING_LABEL` in `shared/crewWorkSwitches.ts`.
+ *
+ * ⚠ **THE NARROWING CHANGES NOTHING FOR THE SEVEN CARDS #1647 WAS FILED ABOUT,
+ * AND THE CARD'S OWN DIAGNOSIS NAMED THIS FUNCTION — read at their labels,
+ * NONE of the seven carries a rung label at all**, so `rungsNamedBy` returns
+ * empty and this function has always returned on its first line without ever
+ * consulting `isFixWork`. **They reached the lane through `seatPopulation`,
+ * which had no expression of the focus-before-switches ranking whatsoever**, and
+ * that is where the new hold lives. The narrowing here is still right and still
+ * needed — it is what stops a rung-labelled tooling fix using #1553's
+ * exemption — but it is not the gate that let that night happen.
  */
 export function rungHoldFor(
   labels: readonly string[],
@@ -771,7 +867,7 @@ export function rungHoldFor(
 ): string | null {
   const rungs = rungsNamedBy(labels);
   if (rungs.length === 0) return null;
-  if (isFixWork(labels)) return null;
+  if (fixJumpsTheQueue(labels)) return null;
   if (focusRung === null) {
     return "on a rung, and nothing names the current focus — the milestone gate holds it";
   }
@@ -832,6 +928,27 @@ export function seatPopulation(input: {
    * harmless and only a SPLIT across two seats would cost anything.
    */
   readonly facts?: SeatManagerFacts;
+  /**
+   * How many cards the ORDERED lane can actually start this pass (#1647).
+   *
+   * The 2026-09-25 ranking is *"a shift takes a focus card first, and takes a
+   * switch card only when no focus card can be started"* — so a tooling fix
+   * waits behind the focus only while the focus has something to work on. With
+   * every ordered card blocked on his word, which is the state the night this
+   * was written, holding tooling as well would leave the seats idle, and
+   * *waiting is never idle* is a founder law of its own.
+   *
+   * ⚠ **IT DOES NOT RE-COUPLE THE TWO LANES THAT #1541 DECOUPLED.** What that
+   * card separated is where `focusRung` comes FROM — the ladder, never the top
+   * ordered card. This is a count the caller already has in hand before it calls
+   * here, it changes no other gate, and the two calls still need no ordering
+   * between them beyond the one the caller already has.
+   *
+   * ⚠ **ABSENT, NOTHING IS HELD FOR IT** — the card's own direction is to fail
+   * toward offering a real bug, and a reading nobody supplied must not be the
+   * thing that empties the lane.
+   */
+  readonly orderedLaneOffers?: number;
 }): SeatPopulation {
   const takeable: SeatTakeableCard[] = [];
   const skipped: SeatSkippedCard[] = [];
@@ -860,6 +977,38 @@ export function seatPopulation(input: {
       note(rungHold);
       continue;
     }
+    /*
+      ⚠ A TOOLING FIX WAITS BEHIND THE FOCUS — #1647, his *"i like your idea"*.
+
+      THIS IS THE GATE THE SEVEN CARDS OF 2026-09-30 WALKED THROUGH, and #1647's
+      own diagnosis named `rungHoldFor` instead. Read at their labels, none of
+      #1620/#1623/#1625/#1629/#1635/#1636/#1638 carries a rung label, so that
+      function returned on its first line every time. **This lane had no
+      expression of the focus-before-switches ranking at all**: any background
+      card whose switch was on was takeable, and `bug` is a switch that is on.
+
+      The hold is this narrow, and every clause earns its place:
+
+        · it is a FIX — a feature-shaped card never reached here anyway;
+        · it does NOT jump the queue — not customer-hittable, not blocking the
+          line (`fixJumpsTheQueue`, whose two exemptions are his);
+        · a milestone is NAMED — under MAINTENANCE MODE there is nothing to wait
+          behind, and his law says this work is exactly what runs then;
+        · and the ordered lane has something it can actually START — otherwise
+          the seats sit idle, which is a different founder law being broken.
+    */
+    if (
+      isFixWork(card.labels)
+      && !fixJumpsTheQueue(card.labels)
+      && input.focusRung !== null
+      && (input.orderedLaneOffers ?? 0) > 0
+    ) {
+      note(
+        `a tooling bug — waits behind the focus like a switch card `
+        + `(milestone ${input.focusRung}, ${input.orderedLaneOffers} ordered card(s) startable)`,
+      );
+      continue;
+    }
     if (input.board.holdsOffOffer(card.number)) {
       note(input.board.phraseFor(card.number) ?? "somebody is already on it");
       continue;
@@ -874,8 +1023,9 @@ export function seatPopulation(input: {
       and that direction costs a seat rather than producing one.
     */
     const row = input.facts?.rowFor(card.number);
-    if (row !== undefined && row.ready === "no") {
-      note(`${row.why} (the manager's reading of this pass)`);
+    const readiness = managerReadinessHold(row);
+    if (readiness !== null) {
+      note(readiness);
       continue;
     }
     /* A branch already editing this card's files holds it in THIS lane too — the
@@ -1054,10 +1204,12 @@ export interface OrderedBandForSeats {
   /**
    * The top takeable card of NEXT UP — the focus shift's, never a seat's.
    *
-   * ⚠ **TAKEABLE INCLUDES THE MILESTONE GATE SINCE #1656.** It is the top card
-   * the focus shift could actually START, not the top card of his band: a rung
-   * the milestone has not opened is held here exactly as it is for a seat, so
-   * `null` means every ordered card is held rather than that his band is empty.
+   * ⚠ **TAKEABLE INCLUDES THE MILESTONE GATE SINCE #1656, AND THE MANAGER'S
+   * `ready` COLUMN SINCE #1687.** It is the top card the focus shift could
+   * actually START, not the top card of his band: a rung the milestone has not
+   * opened, and a card the manager's sheet says nobody can start, are both held
+   * here exactly as they are for a seat — so `null` means every ordered card is
+   * held rather than that his band is empty.
    */
   readonly focus: SeatTakeableCard | null;
   /** The ordered cards a seat MAY hold, subject to the area rule at placement. */
@@ -1231,7 +1383,60 @@ export function orderedBandForSeats(input: {
     takeable.push(card);
   }
 
-  const [top, ...rest] = takeable;
+  /*
+    ⚠ **THE TOP PICK SKIPS A CARD THE MANAGER SAYS NOBODY CAN START — #1687,
+    AND IT IS THE #1656 SHAPE ONE LIMB FURTHER ALONG.** The loop above applies
+    every wall the code can see, including the milestone gate since #1656. It
+    cannot apply the manager's `ready` column, because that column is a reading
+    of the card's own body and the loop above is about labels and the board — so
+    the ordered band's top card was chosen without ever asking the one reader
+    whose whole job is answering *can anybody start this*.
+
+    **Measured at the artifacts rather than argued**: `focusCard` read **#1598**
+    on ALL FOUR real manager passes of 2026-10-01 (`seat-plan-20261001-153056`,
+    `-163752`, `-181633`, `-194943`) while that card's own sheet row said
+    `ready: "no"` — *"it is the rung's parent record, not build work"* — which
+    was CORRECT. The card filing this read two passes; there were four, and the
+    fourth is the pass that launched the seat which fixed it.
+
+    The cost is #1656's exactly: the plan's `focusCard` names a card nobody can
+    start, every area hold is computed against the wrong card's files, and the
+    card the focus shift is really editing has no area protection at all.
+
+    ⚠ **IT SKIPS FORWARD RATHER THAN HOLDING THE BAND.** `ready: "no"` is a
+    statement about one card, not about his order, so the answer is the NEXT
+    startable ordered card — and `while` rather than `if` because two unready
+    cards in a row is an ordinary state (18 of the 46 rows on tonight's sheet
+    carry it). Where every takeable card is unready the function returns
+    `focus: null` with nothing offered, which is what it has always done when
+    the band holds nothing startable.
+
+    ⚠ **AND IT SITS HERE, AFTER THE LOOP, RATHER THAN AS THE LOOP'S LAST LIMB —
+    WHICH IS WHERE THE CARD ASKED FOR IT, AND THE CARD'S OWN REASON IS WHY NOT.**
+    Its stated placement rule is *"so no card below the top changes its printed
+    sentence"* (#1656's rule). Inside the loop that is not achieved: `rest`
+    asks `independenceOf` BEFORE readiness, so a card that is both dependent and
+    unready would stop printing its dependency sentence and start printing the
+    manager's. **That is not hypothetical — on tonight's sheet five rows are
+    both, and two of them (#1607, #1609) are in his ordered band.** Placed here,
+    only cards AT OR ABOVE the chosen focus can change sentence, which is
+    precisely the population this card is about, and the `rest` loop's own
+    readiness hold still fires for everything below it. One reader
+    (`managerReadinessHold`), two positions, one sentence.
+  */
+  let focusIndex = 0;
+  while (focusIndex < takeable.length) {
+    const candidate = takeable[focusIndex]!;
+    const readiness = managerReadinessHold(input.facts?.rowFor(candidate.number));
+    if (readiness === null) break;
+    held.push({ number: candidate.number, title: candidate.title, why: readiness });
+    focusIndex += 1;
+  }
+
+  const top = takeable[focusIndex];
+  /* Everything below the chosen focus — never the unready cards above it, which
+     are held and must not be offered to a seat either. */
+  const rest = takeable.slice(focusIndex + 1);
   if (top === undefined) return { focus: null, offered: [], held };
 
   const topPlaced = areaWithSource(top, input.areaIndex, input.facts);
@@ -1272,8 +1477,9 @@ export function orderedBandForSeats(input: {
        with its own sentence, which is the direction that costs a seat rather
        than producing one (#1658). */
     const managerRow = input.facts?.rowFor(card.number);
-    if (managerRow !== undefined && managerRow.ready === "no") {
-      note(`${managerRow.why} (the manager's reading of this pass)`);
+    const readiness = managerReadinessHold(managerRow);
+    if (readiness !== null) {
+      note(readiness);
       continue;
     }
     /* A branch already editing this card's files, before the pair question: that

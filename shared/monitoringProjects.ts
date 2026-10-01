@@ -47,3 +47,52 @@ export const SENTRY_BROWSER_PROJECT = "klieg-web";
  * again beside them.
  */
 export const SENTRY_PROJECTS = [SENTRY_SERVER_PROJECT, SENTRY_BROWSER_PROJECT] as const;
+
+/**
+ * ⚠ THE MARK EVERY DEPLOY-RITE PROBE EVENT CARRIES — AND THE REASON IT IS HERE
+ * RATHER THAN BESIDE THE PROBE (#1650, 2026-10-01).
+ *
+ * The probe fires on every deploy (#1648) and its events are real Sentry
+ * events: nine of the thirteen unresolved events in the server project on the
+ * day this was written were probes. Two halves of the tree have to agree on
+ * one string for that to be survivable — the WRITER
+ * (`scripts/probe-error-tracker.mts`, through `PROBE_ERROR_CONTEXT` in
+ * `server/monitoring/trackerVerdict.ts`) and the READER, which is the *Errors*
+ * link his admin overview hands him (`client/src/features/admin/overview/
+ * dashboards.ts`). **The client cannot import from `server/`**, so without a
+ * shared declaration the link would spell the tag a second time — green
+ * forever while the probe renames its own mark and his feed quietly fills up
+ * again. That is working law 4, and it is the same argument that put the org
+ * and project ids in this module.
+ *
+ * ⚠ **IT IS A TAG AND NOT A KEY, AND NOTHING HERE FETCHES.** The value travels
+ * only because `kind` is on `ALLOWED_TAG_KEYS`
+ * (`shared/errorEventScrub.ts`); `server/trackerVerdict.test.ts` reddens if it
+ * leaves. The header's *"no reader that FETCHES"* rule is untouched — the one
+ * consumer below composes a URL.
+ */
+export const SENTRY_PROBE_TAG = { key: "kind", value: "probe" } as const;
+
+/**
+ * WHAT HIS *ERRORS* LINK ASKS FOR, SO HE NEVER TYPES A QUERY.
+ *
+ * ⚠ **DRIVEN AT SENTRY'S OWN BOOKS BEFORE IT WAS BELIEVED** (#1650,
+ * 2026-10-01, `GET /api/0/organizations/klieg-labs/issues/` through the
+ * service's `SENTRY_AUTH_TOKEN`, read-only): `is:unresolved` returned **two**
+ * issues — the probe at 9 events and the real `announcements.getActive` crash
+ * at 4 — `kind:probe` returned the probe alone, and this search returned the
+ * real crash alone. So the exclusion is Sentry's own behaviour measured, not a
+ * syntax assumed from documentation.
+ *
+ * ⚠ **`is:unresolved` IS CARRIED DELIBERATELY RATHER THAN DROPPED.** Supplying
+ * `?query=` REPLACES Sentry's default search, so a bare `!kind:probe` would
+ * also hand him every issue somebody had already resolved. The link's own
+ * header calls it *"everything that broke"*, and a resolved issue did not
+ * break today.
+ *
+ * #1650's done-when named *"a saved Sentry filter … excludes probe"*, and this
+ * is the cheapest road to it: the link already decides which view he lands on,
+ * so nothing has to be saved anywhere and nothing about what Sentry STORES
+ * changes. He can still clear the box and see the probes.
+ */
+export const SENTRY_ISSUE_SEARCH = `is:unresolved !${SENTRY_PROBE_TAG.key}:${SENTRY_PROBE_TAG.value}`;

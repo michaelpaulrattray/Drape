@@ -58,7 +58,24 @@ const repoRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
  * routing PR decrements or deletes rows, and a NEW unrouted site is a defect
  * rather than a row to add.
  *
- * ⚠ **IT ROSE TO 108 ON 2026-10-01 AND THAT IS THE ONLY RISE IT MAY EVER HAVE.**
+ * ⚠ **IT ROSE TWICE ON 2026-10-01 — 106 → 108 → 122 — AND BOTH TIMES BECAUSE THE
+ * READER COULD NOT SEE A SITE THE PRODUCT ALREADY HAD.** Neither rise is a new
+ * place a customer reads a ledger number.
+ *
+ * **THE SECOND (#1676) IS THE FIRST ONE'S CLASS.** The first added a word to
+ * rule 1's vocabulary; this card asked whether the vocabulary was the mistake,
+ * and the measurement said it was: **fourteen credit numbers a customer reads
+ * were in no rule's reach**, called `delta`, `reward`, `earned`, `cap`, `spent`
+ * and `perDollar` — including *"${delta} credits a month"*, which says the word
+ * out loud. Three structural repairs and ONE argued word close all fourteen,
+ * and the eleven `toLocaleString` calls that are correctly NOT credits (three
+ * frame counts, four dates, two dollar figures, two character counts) are
+ * still correctly not indicted — which is the arm that matters, because a
+ * widening that indicts a date is worse than the hole.
+ * `server/testing/creditDisplaySites.ts` carries the table. **Nothing was
+ * routed; the shrink that measures the work starts from 122.**
+ *
+ * ⚠ **THE FIRST ROSE TO 108 AND SAID IT WAS THE ONLY RISE IT MAY EVER HAVE.**
  * The reason is a HOLE IN THE READER, not a new site in the product: rule 1's
  * vocabulary was `[a-z]cost$`, which needs a letter before "cost", so the bare
  * four-letter `cost` never matched it. `ViewTabs.tsx`'s GhostSlot and FailedSlot
@@ -70,8 +87,18 @@ const repoRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
  * (derived over the guard's own population), so the budget rises by two while
  * the shape count stays at 79. **Nothing was routed by this change** — the
  * shrink that measures the work starts from 108.
+ *
+ * ✅ **AND IT HAS SHRUNK FOR THE FIRST TIME — 122 → 108 (#1605) — SO THE
+ * CONSTANT IS A RATCHET AND IS LOWERED BY EACH SLICE THAT LANDS.** It was
+ * named `OCCURRENCES_AT_LANDING` and compared with `<=`, which made it a
+ * ceiling that never came down: once a slice had routed or deleted sites, the
+ * budget still permitted every one of them to come back. A ratchet nobody
+ * lowers measures the work once and then stops measuring it. The seven
+ * `stripeProducts.ts` rows went by DELETION — the composed Stripe product
+ * text — which is why this shrink precedes the new price table rather than
+ * riding with it.
  */
-const OCCURRENCES_AT_LANDING = 108;
+const OCCURRENCES_CEILING = 108;
 
 const censusedOccurrences = UNROUTED.reduce((total, row) => total + row.count, 0);
 
@@ -270,9 +297,230 @@ describe("the precision arms — correct code must not be refused", () => {
   });
 });
 
+/*
+  #1676 — THE PRECISION ARMS COME FIRST, AND THE CARD ASKED FOR THEM FIRST.
+
+  Its own words: *"a widening that indicts a date or a dollar figure is worse
+  than the hole, and those 11 are the ready-made negative controls."* These are
+  those eleven as fixtures: every `toLocaleString` call on a customer surface
+  the reader must still NOT indict. They are kept as source rather than as a
+  count, so a later widening that catches one fails here BY NAME instead of
+  quietly moving a number.
+
+  ⚠ THE SECOND BLOCK IS THE ONE THAT MATTERS MOST. The first shape of this
+  repair dropped rule 2's name check against the WIDE window, and the real tree
+  answered with **74 indicted sites** — `refreshVerb`, `label`, `action`,
+  `planName`, `userId`, `invoiceId`, `status`, `failureReason`,
+  `currency.toUpperCase()`: every string spliced into a sentence that happens to
+  mention credits. The rule that replaced it is one clause away from that one,
+  so each of those shapes is an arm.
+*/
+describe("#1676 — the eleven that are NOT credit numbers stay uncaught", () => {
+  const passes = (file: string, source: string) =>
+    expect(creditSitesIn(file, source).filter((site) => site.rule !== "scale-arithmetic")).toEqual([]);
+
+  it("a FRAME COUNT in a sentence that also says credits", () => {
+    /* AddCreditsModal:362-363 and ChangePlanModal:637 — and the enclosing modal
+       is CALLED AddCreditsModal, which is what defeated the first shape of
+       rule 4. */
+    passes(
+      "client/src/features/billing/AddCreditsModal.tsx",
+      [
+        "export function AddCreditsModal({ framesNext, framesNow }: { framesNext: number; framesNow: number }) {",
+        "  return (",
+        "    <p>Add more credits. That is about {framesNext.toLocaleString()} casting frames a month,",
+        "    up from about {framesNow.toLocaleString()}.</p>",
+        "  );",
+        "}",
+      ].join("\n"),
+    );
+  });
+
+  it("a DOLLAR figure formatted from cents", () => {
+    passes(
+      "client/src/features/settings/planMath.ts",
+      [
+        "export function formatDollars(cents: number): string {",
+        "  return `$${(cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;",
+        "}",
+        "export function formatWholeDollars(cents: number): string {",
+        "  return `$${Math.round(cents / 100).toLocaleString('en-US')}`;",
+        "}",
+      ].join("\n"),
+    );
+  });
+
+  it("a DATE", () => {
+    passes(
+      "client/src/foundation/staffDate.ts",
+      [
+        "export function staffFullDateTime(date: Date | string): string {",
+        "  return new Date(date).toLocaleString(STAFF_LOCALE, { year: 'numeric', month: 'short' });",
+        "}",
+      ].join("\n"),
+    );
+    passes(
+      "client/src/features/boards/components/VersionHistoryModal.tsx",
+      [
+        "export function when(date: string): string {",
+        "  const d = new Date(date);",
+        "  return d.toLocaleString(undefined, { month: 'short', day: 'numeric' });",
+        "}",
+      ].join("\n"),
+    );
+  });
+
+  it("a CHARACTER COUNT in a refusal sentence", () => {
+    passes(
+      "server/_core/invalidInputMessage.ts",
+      [
+        "export function tooBig(issue: { maximum: number }): string {",
+        "  return `Please keep it to ${issue.maximum.toLocaleString('en-GB')} characters.`;",
+        "}",
+      ].join("\n"),
+    );
+  });
+});
+
+describe("#1676 — ⚠ the 74 the first shape indicted, kept as arms", () => {
+  const passes = (file: string, source: string) =>
+    expect(creditSitesIn(file, source).filter((site) => site.rule !== "scale-arithmetic")).toEqual([]);
+
+  it("a VERB, a LABEL and an ACTION spliced into a credit sentence", () => {
+    /* Rule 2 limb B needs the value to be formatted as a NUMBER: a sentence
+       says "credits", it does not say which of its holes is the number. */
+    passes(
+      "client/src/features/casting/components/ImageViewer/ViewTabs.tsx",
+      [
+        "export const t = (refreshVerb: string, label: string, action: string, n: number) =>",
+        "  `${refreshVerb} ${label} · ${action} for ${n} credits`;",
+      ].join("\n"),
+    );
+  });
+
+  it("a plan name, a user id and a failure reason in a credit sentence", () => {
+    passes(
+      "server/stripe/webhooks.ts",
+      [
+        "export const m = (planName: string, userId: string, failureReason: string, currency: string) =>",
+        "  `${planName} for ${userId}: no credits restored — ${failureReason} (${currency.toUpperCase()})`;",
+      ].join("\n"),
+    );
+  });
+
+  it("a COUNT of things that are not credits, in a credit sentence", () => {
+    passes(
+      "client/src/features/casting/components/PackageHealthDialog.tsx",
+      ["export const m = (actionable: readonly string[]) => `${actionable.length} to redo for credits`;"].join("\n"),
+    );
+  });
+
+  it("⚠ a component called AddCreditsModal does not name every number inside it", () => {
+    /* Rule 4's own boundary, and the measurement that put it there: walking
+       every ancestor reached the FUNCTION DECLARATION, whose name says credits
+       in this file, and indicted two frame counts. */
+    passes(
+      "client/src/features/billing/AddCreditsModal.tsx",
+      [
+        "export function AddCreditsModal({ frames }: { frames: number }) {",
+        "  return <p>{frames.toLocaleString()} frames</p>;",
+        "}",
+      ].join("\n"),
+    );
+  });
+});
+
+describe("#1676 — the positive control for each newly-caught shape", () => {
+  const caught = (file: string, source: string) =>
+    creditSitesIn(file, source).filter((site) => site.rule !== "scale-arithmetic");
+
+  it("LIMB B — a formatted number in a sentence that says credits, whatever it is named", () => {
+    /* `delta`, `reward`, `earned`: three names no vocabulary held, each in a
+       sentence that says the word out loud. */
+    const sites = caught(
+      "client/src/features/billing/Fixture.tsx",
+      ["export const a = (delta: number) => `+ ${delta.toLocaleString()} credits a month`;"].join("\n"),
+    );
+    expect(sites.map((site) => [site.rule, site.expression]))
+      .toEqual([["beside-the-word", "delta.toLocaleString()"]]);
+  });
+
+  it("LIMB B — the sentence is the OUTERMOST template, so a nested one is not a second sentence", () => {
+    /* `ReferralBlock.tsx:88`: `cap` lives in an inner template whose own words
+       say nothing about credits, spliced into one that does. */
+    const sites = caught(
+      "client/src/features/settings/Fixture.tsx",
+      [
+        "export const a = (reward: number, cap: number) =>",
+        "  `They get ${reward.toLocaleString()} credits${cap > 0 ? ` — up to ${cap.toLocaleString()} in total` : ''}.`;",
+      ].join("\n"),
+    );
+    expect(sites.map((site) => site.expression).sort())
+      .toEqual(["cap.toLocaleString()", "reward.toLocaleString()"]);
+  });
+
+  it("RULE 4 — the name the value is GIVEN, when nothing about the value says it", () => {
+    const byFunction = caught(
+      "client/src/features/settings/planMath.ts",
+      [
+        "export function formatCreditsPerDollar(perDollar: number): string {",
+        "  return Math.round(perDollar).toLocaleString('en-US');",
+        "}",
+      ].join("\n"),
+    );
+    expect(byFunction.map((site) => site.rule)).toEqual(["named-on-the-way-out"]);
+
+    /* The `const` limb. `spend.spent` now also trips rule 1's `spent$`, which is
+       the stronger signal and wins the tie — so this arm proves the const limb
+       on a receiver rule 1 cannot see. */
+    const byConst = caught(
+      "client/src/features/settings/Fixture.tsx",
+      [
+        "export const f = (usage: { used: number }) => {",
+        "  const creditsUsed = usage.used.toLocaleString();",
+        "  return creditsUsed;",
+        "};",
+      ].join("\n"),
+    );
+    expect(byConst.map((site) => site.rule)).toEqual(["named-on-the-way-out"]);
+  });
+
+  it("RULE 1 — `spent$`, the one word added, where the sentence says nothing", () => {
+    /* `AddCreditsModal:227` — "{spent} of {total} spent with 4 days left in this
+       cycle". No window widening reaches it; the name does. */
+    const sites = caught(
+      "client/src/features/billing/Fixture.tsx",
+      [
+        "export const a = (cycle: { spent: number; remaining: number }) => (",
+        "  <p>{cycle.spent.toLocaleString()} of {(cycle.spent + cycle.remaining).toLocaleString()} spent this cycle</p>",
+        ");",
+      ].join("\n"),
+    );
+    expect(sites.map((site) => site.rule)).toEqual(["formatted", "formatted"]);
+  });
+
+  it("⚠ CONTROL — `remaining` alone is NOT in the vocabulary, and that is on purpose", () => {
+    /* Every real site mentioning it also mentions `spent`, so carrying the word
+       would be carrying it for no measured site — the practice this card is
+       about, one word smaller. */
+    expect(caught(
+      "client/src/features/billing/Fixture.tsx",
+      ["export const a = (cycle: { remaining: number }) => <p>{cycle.remaining.toLocaleString()} left</p>;"].join("\n"),
+    )).toEqual([]);
+  });
+});
+
 describe("the census is held to its contract", () => {
   it("only shrinks — in occurrences, which is the thing that measures the work", () => {
-    expect(censusedOccurrences).toBeLessThanOrEqual(OCCURRENCES_AT_LANDING);
+    expect(censusedOccurrences).toBeLessThanOrEqual(OCCURRENCES_CEILING);
+  });
+
+  /* The ratchet's other half, and without it the ceiling is decoration: a
+     slice that lands work and leaves the number above it has bought the
+     product nothing the next slice can measure from. Equality is the only
+     honest state at rest — the census IS the budget. */
+  it("⚠ keeps the ceiling AT the census, so a landed slice cannot leave slack behind", () => {
+    expect(censusedOccurrences).toBe(OCCURRENCES_CEILING);
   });
 
   it("holds no duplicate key, and every count is a positive integer", () => {

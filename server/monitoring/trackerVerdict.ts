@@ -35,7 +35,7 @@
  * `server/trackerVerdict.test.ts`.
  */
 
-import { SENTRY_ORG, SENTRY_SERVER_PROJECT } from "../../shared/monitoringProjects";
+import { SENTRY_ORG, SENTRY_PROBE_TAG, SENTRY_SERVER_PROJECT } from "../../shared/monitoringProjects";
 
 /** What a vendor read-back was able to say about a specific event id. */
 export type VendorLookup =
@@ -340,7 +340,10 @@ export function probeErrorMessage(marker: string): string {
  * and this function's own docblock one paragraph up). Both sides import this.
  */
 export const PROBE_ERROR_CONTEXT = {
-  kind: "probe",
+  /* DERIVED, not spelled (#1650): his admin *Errors* link filters on this exact
+     pair and cannot reach this module, so the one declaration both halves read
+     is `SENTRY_PROBE_TAG` in `shared/monitoringProjects.ts`. */
+  [SENTRY_PROBE_TAG.key]: SENTRY_PROBE_TAG.value,
   route: "scripts/probe-error-tracker.mts",
 } as const;
 

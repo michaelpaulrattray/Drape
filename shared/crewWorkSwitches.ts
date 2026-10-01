@@ -163,6 +163,103 @@ export function isFixWork(labels: readonly string[]): boolean {
   return home !== null && (CREW_FIX_CATEGORY_KEYS as readonly string[]).includes(home);
 }
 
+/**
+ * THE LABEL THAT SAYS A FIX IS THE CREW'S OWN MACHINERY, NOT THE PRODUCT
+ * (#1647, his *"i like your idea"*, 2026-10-01).
+ *
+ * Seven cards filed `bug` or `small-fix` ran all night — #1620 → #1623 → #1625
+ * → #1629 → #1635 → #1636 → #1638 — about comment strippers, the child-process
+ * guard and the gate's own rules. Real defects, every one found while fixing the
+ * one before, and **not one of them a thing a customer can hit.** Meanwhile N2
+ * waited on him. His question, verbatim: *"i feel like the crew must have been
+ * working background cards while n2 was stuck?"*
+ *
+ * # ⚠ WHY A LABEL AND NOT THE PATHS THE CARD'S BODY NAMES
+ *
+ * The card asked for *"a `tooling` label OR a derived reading of the paths the
+ * card body names, whichever the seat cut already does for areas — state which,
+ * and why."* The derived reading was MEASURED against the card's own positive
+ * control, using the seat cut's own `pathsNamedIn`, and **it disagrees on 5 of
+ * the 10 cards — every one of them in the direction of OFFERING**, which is the
+ * hole this closes:
+ *
+ * | card | the rule says | the card says | the product path it named |
+ * |---|---|---|---|
+ * | #1625 | offered | held | `client/src` |
+ * | #1629 | offered | held | `client/src` |
+ * | #1635 | offered | held | `client/src/features/boards/BoardPage.tsx`, `shared/pictureFormats.ts` |
+ * | #1636 | offered | held | `shared/crewNextUpHold.ts` + 7 more |
+ * | #1638 | offered | held | `server/casting/evidence/evidenceComposerSchema.ts` |
+ *
+ * **The reason is structural and no regex fixes it: a tooling card names product
+ * paths as the files its INSTRUMENT READS, not as files it changes.** #1635
+ * names `BoardPage.tsx` because that is a file whose comments the stripper
+ * mis-reads. A card's prose cannot distinguish its SUBJECT from its SPECIMENS.
+ *
+ * So the gate reads this label — a deliberate act, like `founder-ordered` — and
+ * the path reading survives only as a REPORT (`toolingPathReading` in
+ * `scripts/lib/seatBatches.mts`), which never holds a card.
+ *
+ * ⚠ **ABSENT, IT MEANS PRODUCT, and that is the card's own instruction** —
+ * *"A card naming no path is product (fail toward offering a real bug)."* An
+ * unlabelled tooling card costs the focus one card; an unlabelled customer bug
+ * held by a guess costs a customer.
+ */
+export const CREW_TOOLING_LABEL = "tooling";
+
+/** Is this card's subject the crew's own machinery rather than the product? */
+export function isToolingWork(labels: readonly string[]): boolean {
+  return labels.includes(CREW_TOOLING_LABEL);
+}
+
+/**
+ * THE SECOND EXEMPTION — THE ROAD IS DOWN (#1647, his question on #1645,
+ * 2026-10-01, verbatim: *"if somthing like this appeared under the new bugs rule
+ * because its not customer facing wouldnt the crew be stuck until it was
+ * fixed?"*).
+ *
+ * Yes it would, so a tooling fix still jumps the queue when nothing can merge,
+ * deploy or build, or the crew's own machinery is down: the gate, the merge
+ * tool, the deploy rite, a required check, the Foreman, the seat gate, the Desk.
+ * **An outage of the road is not refinement of it.**
+ *
+ * ⚠ **IT IS A LABEL BECAUSE IT IS A STATE, NOT A PROPERTY OF THE CARD'S TEXT,
+ * and #1645 beside #1620 is the proof.** Both are about `.github/`; one was a
+ * required check answering nothing and one was a stripper reading a comment
+ * wrong. No reading of either card's prose or paths tells them apart — the
+ * difference is whether the line is moving right now, which only a person
+ * looking knows. So it is applied deliberately, the way `founder-ordered` is,
+ * and its absence means the ordinary rule.
+ */
+export const CREW_BLOCKS_LINE_LABEL = "blocks-the-line";
+
+/** Is the crew's own road DOWN because of this card — not merely improvable? */
+export function blocksTheLine(labels: readonly string[]): boolean {
+  return labels.includes(CREW_BLOCKS_LINE_LABEL);
+}
+
+/**
+ * MAY THIS FIX JUMP THE FOCUS? — the whole of #1647's rule, in one predicate so
+ * both gates ask one question rather than two that can drift (working law 4).
+ *
+ * A `bug` or `small-fix` card jumps the milestone and the focus when EITHER
+ * holds, and nothing else does:
+ *
+ *  1. **a customer can hit it** — it is not tooling; or
+ *  2. **it blocks the line** — the road is down.
+ *
+ * Everything else labelled `bug`/`small-fix` is tooling REFINEMENT: still work,
+ * still real, and it waits behind the focus like a switch card.
+ *
+ * ⚠ **A card with no work label at all answers `false` here and that is not a
+ * hold** — `isFixWork` is what the callers ask first, and a feature-shaped card
+ * was never exempt in the first place.
+ */
+export function fixJumpsTheQueue(labels: readonly string[]): boolean {
+  if (!isFixWork(labels)) return false;
+  return blocksTheLine(labels) || !isToolingWork(labels);
+}
+
 /** The master switch's key. Off here means nothing runs, whatever the rest say. */
 export const CREW_WORK_MASTER_KEY = "master";
 

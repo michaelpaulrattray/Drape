@@ -448,6 +448,114 @@ describe("the sequence", () => {
   });
 });
 
+/**
+ * ⚠ A TILE'S RETRY COSTS WHAT THAT TILE COST — #1601 item 2, third clause.
+ *
+ * The arms above assert the charge against `CASTING_V2_RETRY_PRICE_CREDITS`,
+ * and they pass whether the service reads the CONSTANT or the ROW, because the
+ * seeded row holds 20 and so does the constant. That ambiguity is the whole
+ * defect: the price used to be read at the top of `retryCandidate`, before the
+ * row was even fetched, from a constant that is the ROLL slice.
+ *
+ * It mattered for nothing while one slice price existed. On the commit that
+ * makes a Follow 200 and a Roll 150 (item 1), the old code charges a Follow
+ * tile 150 **and then writes 150 onto that tile's row** through
+ * `resetCandidateForRetry` — so the mis-charge becomes its own refund
+ * authority and every reconciliation agrees with the wrong number.
+ *
+ * These arms are the ones that cannot be satisfied by the old code: the row is
+ * seeded at **200** while the constant is still 20, so each of them names which
+ * of the two the service actually read.
+ */
+describe("the retry is priced from the tile's own row, not from the roll-slice constant", () => {
+  /** A tile that cost more than the account-level quote — item 1's Follow. */
+  const FOLLOW_SLICE = 200;
+
+  it("charges the row's recorded price, not the constant", async () => {
+    seed({ pointsCost: FOLLOW_SLICE });
+    const deps = dependencies();
+    await retryCandidate(deps, INPUT);
+    const deduct = (deps as { deduct: ReturnType<typeof vi.fn> }).deduct;
+
+    expect(deduct).toHaveBeenCalledTimes(1);
+    expect(deduct.mock.calls[0][1]).toBe(FOLLOW_SLICE);
+    /* The arm's own negative control: if this were still reading the constant
+       the amount would be 20, and 20 is a value this expectation forbids. */
+    expect(deduct.mock.calls[0][1]).not.toBe(CASTING_V2_RETRY_PRICE_CREDITS);
+  });
+
+  it("writes the SAME number back as the refund authority, so charge and refund cannot disagree", async () => {
+    seed({ pointsCost: FOLLOW_SLICE });
+    await retryCandidate(dependencies(), INPUT);
+    expect(dbCalls.reset).toHaveBeenCalledWith(5, FOLLOW_SLICE);
+  });
+
+  it("refunds exactly what it charged when the engine fails again", async () => {
+    seed({ pointsCost: FOLLOW_SLICE });
+    await expect(retryCandidate(dependencies("fails"), INPUT)).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: `That tile didn't arrive again. ${FOLLOW_SLICE} credits were refunded.`,
+    });
+    expect(refunds).toEqual([{
+      amount: FOLLOW_SLICE,
+      reference: candidateChargeReference(RETRY_OPERATION_ID, "cand-5"),
+    }]);
+    expect(receipts.failure).toHaveBeenCalledWith(expect.objectContaining({
+      chargedCredits: FOLLOW_SLICE,
+      refundedCredits: FOLLOW_SLICE,
+    }));
+  });
+
+  it("leaves a cheaper tile cheaper — the two directions are read, not assumed", async () => {
+    seed({ pointsCost: 150 });
+    const deps = dependencies();
+    await retryCandidate(deps, INPUT);
+    expect((deps as { deduct: ReturnType<typeof vi.fn> }).deduct.mock.calls[0][1]).toBe(150);
+  });
+
+  /*
+    THE POSITIVE CONTROL FOR A BRANCH THAT CANNOT FIRE TODAY.
+
+    `castingCandidates.pointsCost` is `.default(0).notNull()`, so a future
+    writer that simply omits it lands a zero — and a zero recorded price, read
+    as a charge, buys a free render. No writer in the tree produces one
+    (`createRollWithCandidates` refuses a non-positive slice and
+    `resetCandidateForRetry` writes what it is given) and production held none
+    when this was built: 483 live candidate rows, every one at 20, zero NULL and
+    zero at or below nothing. So nothing but these arms can show the refusal is
+    wired at all (invariant 7: a control that is not invoked does not exist).
+  */
+  for (const [label, recorded] of [["zero", 0], ["negative", -20]] as const) {
+    it(`refuses a tile whose recorded price is ${label} — free, and before the claim`, async () => {
+      seed({ pointsCost: recorded });
+      await expect(retryCandidate(dependencies(), INPUT)).rejects.toMatchObject({
+        code: "PRECONDITION_FAILED",
+        message: "That tile can't be retried just now. Nothing was charged — roll the sheet again to cast it.",
+      });
+      /* Free AND before the claim: no operation was begun, no money moved, no
+         row was touched. A refusal that had already claimed would leave an
+         operation to reconcile. */
+      expect(journal).not.toContain("claim");
+      expect(journal).not.toContain("charge");
+      expect(journal).not.toContain("reset");
+      expect(refunds).toEqual([]);
+      expect(dbCalls.reset).not.toHaveBeenCalled();
+    });
+  }
+
+  it("keeps the more specific refusals ahead of it — a tile that is already casting says so", async () => {
+    /* The price check is read LAST in admission on purpose. A zero-priced tile
+       that is also `queued` must still get the sentence about its STATE, or the
+       ordering of two refusals has silently changed the thing a customer is
+       told. */
+    seed({ pointsCost: 0, status: "queued" });
+    await expect(retryCandidate(dependencies(), INPUT)).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: "That tile is already casting.",
+    });
+  });
+});
+
 describe("when the engine fails again", () => {
   it("refunds the one slice under the RETRY's reference — never the roll's — and leaves the roll's status alone", async () => {
     await expect(retryCandidate(dependencies("fails"), INPUT)).rejects.toMatchObject({

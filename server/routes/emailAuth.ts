@@ -26,6 +26,7 @@ import { eq } from "drizzle-orm";
 import { generateVerificationToken, sendVerificationEmail, storeVerificationToken } from "./emailVerification";
 import { loginSchema, registerSchema } from "./emailAuthInput";
 import { noteFailedLogin } from "../security/loginAttackAlert";
+import { refuseCrossSiteAuthRequest } from "../security/crossSiteExpressGuard";
 
 const BCRYPT_ROUNDS = 12;
 
@@ -34,6 +35,35 @@ const BCRYPT_ROUNDS = 12;
 
 
 export const emailAuthRouter = Router();
+
+/**
+ * ⚠ **NO STATE-CHANGING REQUEST TO THIS ROUTER MAY COME FROM ANOTHER SITE —
+ * #1659, the half #1653 could not close.**
+ *
+ * Without it a page on another site POSTs a form here carrying the ATTACKER's
+ * email and password, this router signs that account in, and the customer's
+ * browser stores a session cookie for it — she keeps using Klieg and everything
+ * she makes lands in his account. `SameSite` cannot help: it governs when a
+ * cookie is SENT, never whether a `Set-Cookie` coming back from a cross-site
+ * request is STORED. And the tRPC guard cannot reach here — these are plain
+ * Express routes, not procedures.
+ *
+ * **It is mounted on the ROUTER, above every declaration, for two reasons that
+ * are both the control rather than tidiness:**
+ *
+ *  1. **Order.** It refuses before the password is checked, before the rate
+ *     limiter, before an audit row, and above all before either of this file's
+ *     two session mints — which are two of invariant 9's five.
+ *  2. **Coverage by construction.** A check remembered per handler is a check
+ *     the next handler forgets (invariant 7). A POST added to this router
+ *     tomorrow is covered without anybody remembering.
+ *
+ * `GET` and `HEAD` pass untouched, which is why the other three mint sites are
+ * out of this card's population — they are GET, so a form cannot carry them.
+ * `crossSiteExpressGuard.ts` carries the full reading and its declared
+ * remainder.
+ */
+emailAuthRouter.use(refuseCrossSiteAuthRequest);
 
 /**
  * POST /api/auth/register

@@ -1,7 +1,7 @@
 {
-  "edition": 600,
-  "updatedAt": "2026-10-01T07:22:00.000Z",
-  "shift": "Foreman night shift — the pricing work is moving again. The thing that was stuck last night is unstuck, and it turned out to be stuck for a different reason than we thought. The first pricing piece is the one that works out every credit number you see. It was waiting on two things. The first was a clash: another branch had changed the same files, so the two had to be brought back together by hand. The second is the one nobody had noticed — the review it had already been given was not an approval at all. It was a list of problems, and nobody had fixed them. Our own machinery had been reading it as a pass for six hours and telling this page the work was about to merge, which is why last night's shift left it alone. That misreading is now its own job to fix. The problem the review found is worth you knowing, because it is exactly the kind of mistake that would have reached you with no warning. On a casting tile there is a small label showing what an action costs. The same number appears twice: once in the little box that pops up when you hover, and once on the face of the tile itself. Our checklist of places that need converting to the new prices had the hover box on it and had missed the face. So the tile would have shown you 240 when you hovered and 1,200 on the tile, at the same moment, and nothing we had would have complained. That is fixed, and I proved the fix works by deliberately breaking it four different ways and checking something went red each time. Then I went looking for the same mistake elsewhere, rather than assuming it was the only one — and it was not. There are fourteen more credit numbers in the app that our checklist cannot see, and three of them are in sentences that say the word 'credits' out loud: the referral line that promises someone credits for their first signed cast, and two lines in the add-credits and change-plan windows. They are missed because the check works from a fixed list of names, and a number can be called anything — these are called things like 'delta', 'reward' and 'earned'. Those two windows are exactly what three of the remaining pricing jobs work on, so this matters now rather than later. I have written it up as its own job rather than quietly widening this one, because you asked that the pricing work stay inside its ten cards. The work is finished, all its checks passed first time, and it is waiting on the hand review it needs as a money change. I have not merged it — that is not a shift's to do. Nothing needs you tonight. Relay, 07:15: this note reached your page as one paragraph because edition 599's five paragraphs tripped a guard nobody had mapped the field for — main was red on it for an hour and the first pricing PR to merge main forward (#1678) failed its gate on it, not on its own change. Fixed on the record here; the durable fix (let a shift write paragraphs and have your page keep them) is card #1679.",
+  "edition": 603,
+  "updatedAt": "2026-10-01T15:05:00.000Z",
+  "shift": "Night shift, 00:29: both halves of the price work that were waiting on a review are answered, so the release is one job away. The price table had a note left in the code still saying a Sign costs 450 credits — there turned out to be eight of those across four files, including the note sitting on the price itself, so anyone looking up what a Sign costs was told the old number. All eight are corrected, the checks are green, and the wider habit is written down as its own job (#1702): 69 notes across the code name a price that has since changed, and most of them are correct history rather than mistakes, so a machine check is the answer rather than 69 hand edits. For the display work I took twelve pictures across both the light and dark themes — your billing panel, usage, Add credits, Change plan, the account menu and the casting sheet. They all read one scale: 3,688 credits beside a 40,000-a-month allowance, 9% left, and the plan ladder giving more credits per dollar at every step up. One thing in last night's review I read the other way, and said so with measurements rather than an opinion: it called one dark-theme picture a light one, and the actual pixels in that file are dark, including the part being tested — I re-took it anyway so there is nothing left to argue about. The pictures also found one real fault: open Add credits and for about a second it tells you that you have 0 credits when you have 3,688. That is filed (#1703), it is not caused by the pricing work, and it is not holding anything up.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -18,7 +18,7 @@
           "title": "One display helper: every credit number you see is the ledger ÷ 5, prices rounding up and balances rounding down (#1600)"
         },
         {
-          "state": "waiting",
+          "state": "in-progress",
           "title": "The price table: Roll 240 · Follow 320 · Sign 1,700 · Refine 350 · Try again 350, in one place, with one free retry per unchecked view (#1601)"
         },
         {
@@ -3366,8 +3366,8 @@
     {
       "id": "n2-test-drive-1644",
       "title": "Your N2 test drive — seven things to try, none of them waiting on you",
-      "question": "YOUR N2 TEST DRIVE — seven things to try, in your own time. N2 is closed already; nothing waits on this. Each step says what to do, what you should see, and which card it proves. If a step does not match, reply here with its number and what you saw, and it becomes a bug.\n\n1. SIGN A CAST THAT IS NOT SHAPED LIKE A PERSON — Jingu, or roll a new creature and sign it. You should get all five views, including the close-up and the three-quarter that used to be refused for not having two eyes (#1582, #1612).\n\n2. SIGN A CAST WITH AN ASYMMETRIC OUTFIT — one bare shoulder, one draped sleeve. The side profile should arrive instead of being refunded at random (#1579).\n\n3. ON A SIGNED CAST, LOOK UNDER A VIEW'S NAME. A view that could not be checked shows one muted line, Unchecked · Try again, and pressing it costs nothing; a refunded view shows Refunded · Try again with its price before you press (#1220, #1347).\n\n4. OPEN AN OLD LINK — type /casting, or /app/boards, or an old /casting/cast/… link you have saved. Each should land on the new /app address with nothing broken (#1583, #1545).\n\n5. SIGN A CAST WHOSE BRIEF NAMES A DRESS OR A ROBE. The two full-length views should wear what the brief describes, not a plain modest version of it (#1278).\n\n6. REPLY ON ANY DESK CARD. Within about a minute the card on GitHub should carry your words under your name (#1539).\n\n7. CLICK ERRORS ON THE ADMIN OVERVIEW. Sentry should show real events for the project, not its welcome screen — the pipe is proven live end to end (#1542).\n\nThe two pictures are where steps 1–5 start: the casting tab, and a signed cast's room.",
-      "state": "open",
+      "question": "YOUR N2 TEST DRIVE — seven things to try, in your own time. N2 is closed already; nothing waits on this. Each step says what to do, what you should see, and which card it proves. If a step does not match, reply here with its number and what you saw, and it becomes a bug.\n\n1. SIGN A CAST THAT IS NOT SHAPED LIKE A PERSON — Jingu, or roll a new creature and sign it. You should get all five views, including the close-up and the three-quarter that used to be refused for not having two eyes (#1582, #1612).\n\n2. SIGN A CAST WITH AN ASYMMETRIC OUTFIT — one bare shoulder, one draped sleeve. The side profile should arrive instead of being refunded at random (#1579).\n\n3. ON A SIGNED CAST, LOOK UNDER A VIEW'S NAME. A view that could not be checked shows one muted line, Unchecked · Try again, and pressing it costs nothing; a refunded view shows Refunded · Try again with its price before you press (#1220, #1347).\n\n4. OPEN AN OLD LINK — type /casting, or /app/boards, or an old /casting/cast/… link you have saved. Each should land on the new /app address with nothing broken (#1583, #1545).\n\n5. SIGN A CAST WHOSE BRIEF NAMES A DRESS OR A ROBE. The two full-length views should wear what the brief describes, not a plain modest version of it (#1278).\n\n6. REPLY ON ANY DESK CARD. Within about a minute the card on GitHub should carry your words under your name (#1539).\n\n7. CLICK ERRORS ON THE ADMIN OVERVIEW. Sentry should show real events for the project, not its welcome screen — the pipe is proven live end to end (#1542).\n\nThe two pictures are where steps 1–5 start: the casting tab, and a signed cast's room. — His word, 2026-10-01: \"test drive passes.\"",
+      "state": "done",
       "filedAt": "2026-10-01T00:20:00.000Z",
       "issueNumber": 1644,
       "frames": [
@@ -9089,9 +9089,9 @@
     {
       "id": "credit-display-helper-1600",
       "title": "One place works out every credit number you see (#1600, the first pricing piece)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1649,
-      "note": "Mergeable and all seven checks green on the first run; waiting only on its hand review as a money change. The census hole its review found is fixed, and the fourteen more like it are #1676."
+      "note": "Merged as PR #1649 — the helper itself; the client routing that uses it is PR #1697 and rides the pricing release."
     },
     {
       "id": "tracker-probe-slugs-1643",
@@ -9106,6 +9106,13 @@
       "status": "merged",
       "prNumber": 1652,
       "note": "Money surface: held for the relay's hand verdict. The obvious way to count a double render misses every retry whose first attempt never came back."
+    },
+    {
+      "id": "price-table-1601",
+      "title": "The new prices, in one place (#1601, the second pricing card)",
+      "note": "Money surface: held for your relay's hand verdict, and it merges as part of the one pricing release rather than on its own.",
+      "status": "in-review",
+      "prNumber": 1700
     }
   ],
   "problems": [
@@ -9164,6 +9171,13 @@
       "state": "resolved",
       "title": "A job stays marked \"someone is on it\" for twelve hours after the crew finishes with it (#1559)",
       "detail": "RESOLVED — card #1559 is closed, read at GitHub this shift. Worth one line because it bit tonight in the harmless direction: the job I took had been handed back hours earlier and still read as taken, so I checked the reason at the code before believing it, and it was genuinely free.\n\nWhen a crew member hands a job back, they write RELEASED on it. If they write that inside a longer note rather than as the first thing, nothing reads it — so the job keeps saying somebody is working on it for another twelve hours and every helper steps over it. It is happening right now to the ghost-audit job, which was handed back yesterday evening and has been skipped all night. This is the same family as the two throughput faults already fixed this week: nothing is broken loudly, work is just quietly subtracted from what the helpers may pick up."
+    },
+    {
+      "id": "addcredits-zero-balance-1703",
+      "severity": "warning",
+      "state": "open",
+      "title": "Add credits says you have 0 credits for the first second, when you have 3,688 (#1703)",
+      "detail": "Open Add credits and the line under the heading reads “0 credits on the balance today.” — while the chip at the top of the same screen says 3,688 credits. About a second later the sentence is replaced by the real one and the zero is gone.\n\nIt happens because the screen prints a zero while it is still waiting for the answer, instead of waiting or showing nothing. Measured on a real account in both themes: the zero is there at 0.7 seconds and gone by 5 seconds.\n\nWorth your eye only because of where it is — the one screen whose whole job is to talk about your balance, telling a paying customer it is empty. It is NOT caused by the pricing work and it does not hold the release: the same line has behaved this way for as long as the screen has existed, and the pricing change only routed it through the new display rule. Filed as #1703 with the cause named."
     }
   ],
   "acknowledgedReplyIds": [
@@ -9415,7 +9429,14 @@
     246,
     247,
     248,
-    249
+    249,
+    250,
+    251,
+    252,
+    253,
+    254,
+    255,
+    256
   ],
   "nextUp": {
     "readAt": "2026-10-01T06:11:20.588Z",

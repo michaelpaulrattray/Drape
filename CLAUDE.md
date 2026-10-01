@@ -377,7 +377,21 @@ work is either one of its shifts or must behave like one. The binding pieces:
   merge of 2026-09-22 took — and `scripts/pr-merge-in-order.mts` reads it off
   the PR (`scripts/lib/reviewRounds.mts`): a later push makes it stale, a
   shift's or a bot's comment is never a verdict, and `--acknowledge` still
-  means "I read the findings". **Money/auth PRs and changes to `review.yml`
+  means "I read the findings". ⚠ **AND THE RELAY'S OTHER HAND COMMENT IS A
+  FINDING, WHICH IS THE OPPOSITE OF A PASS — #1673, 2026-10-01.** A verdict is
+  headed `**Fable review — by hand** (head …)`; **a finding is headed
+  `**Relay finding — HELD** (head …)` and never carries the verdict marker**.
+  The reader honours both that spelling and the old one — the verdict marker
+  with `HELD` or `FINDING` in the same header line — so a comment already on the
+  record cannot flip its meaning; the words are read in the HEADER LINE and
+  nowhere else, because a real verdict's BODY discusses its findings at length
+  and a looser reader would hold every merge. **A fresh finding refuses the
+  merge, holds an ORDINARY PR too, and no `--acknowledge` answers it**: the
+  repair is owed, and the board says `held on the relay's finding — repair
+  owed`. It was measured, not supposed: PR #1649's finding wore the verdict's
+  marker, classified as a PASS, and the board printed *"passed and merging —
+  PR #1649"* from 23:46Z to 05:48Z while the PR sat held and then DIRTY — every
+  P1 card behind it waiting on a card the record called done. **Money/auth PRs and changes to `review.yml`
   are HELD until the relay's verdict exists; an ordinary PR merges on the gate
   alone**, which is his 2026-09-15 outage override made permanent. **A shift
   never posts a hand verdict** — the tool cannot tell a shift from the relay

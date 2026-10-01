@@ -4,6 +4,7 @@ import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 import { readListedSource } from "../testing/listedSource";
+import { withoutComments } from "../testing/withoutComments";
 
 import sharp from "sharp";
 
@@ -43,11 +44,29 @@ vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 const ROOT = path.resolve(__dirname, "..", "..");
 
-/** Prose removed: a comment naming the red it replaced is not a breach of the
- *  rule, and `v#163` in a sentence is a version, not a colour. */
-const withoutProse = (source: string): string => source
-  .replace(/\/\*[\s\S]*?\*\//g, " ")
-  .replace(/^\s*\/\/.*$/gm, " ");
+/**
+ * Prose removed: a comment naming the red it replaced is not a breach of the
+ * rule, and `v#163` in a sentence is a version, not a colour.
+ *
+ * ⚠ **IT IS THE SHARED WALK SINCE #1636, AND THIS SUITE IS WHERE THE SWAP PAID
+ * MOST.** The private stripper it carried was blind to string literals on its
+ * block half, and it was not latent: measured on this walk's own 582 inputs,
+ * **24 of them read SHORT — 7,739 non-whitespace characters of real code the
+ * guard could not see**, led by `scripts/drive-face-panel-evidence.mts` (1,085),
+ * `scripts/triage-declared-intent-disposable.mts` (1,045) and
+ * `scripts/measure-dpr-sharpness-disposable.mts` (956). A `/*` inside a quoted
+ * string opened a comment that was never opened, and everything to the next
+ * closer — often many lines — left this guard's sight. **For a guard whose
+ * verdict is "no non-grey colour is drawn here", reading less IS passing**, and
+ * five of the six breaches #257 found were in exactly this population of
+ * untracked shift instruments.
+ *
+ * Its line half was also ANCHORED to line starts, so a trailing `// …` after
+ * code read as code. The shared walk reads both, and preserves a block
+ * comment's newlines rather than collapsing it to one space, so the line
+ * numbers the arms report still mean something.
+ */
+const withoutProse = (source: string): string => withoutComments(source);
 
 const isGreyHex = (hex: string): boolean => {
   const body = hex.slice(1);
@@ -270,6 +289,33 @@ describe("on-image geometry is monochrome, everywhere (founder ruling, fable-230
     expect(nonGreyColoursIn(`/* it drew #ff2d55 before the ruling */`)).toEqual([]);
     expect(nonGreyColoursIn(`const s = 'stroke="#ffffff"';`)).toEqual([]);
     expect(nonGreyColoursIn(`colour = [158, 158, 158];`)).toEqual([]);
+  });
+
+  it("CAN FAIL on a red hidden behind a QUOTED comment-opener — the reader's own control", () => {
+    /* #1636. This suite's private stripper was blind to string literals: a
+       comment-opening pair inside a quoted string opened a comment that was
+       never opened, and everything down to the next real closer left the
+       guard's sight. Measured on this walk's own 582 inputs it hid 7,739
+       non-whitespace characters across 24 files — so this is the live property
+       the swap bought, driven, rather than a sentence about it.
+
+       The arm fails in BOTH directions that matter: it reddens if the shared
+       reader goes blind, and it reddens if the predecessor pair comes back. */
+    const hidden = [
+      `const note = 'a /` + `* inside a string';`,
+      `const outline = 'rect stroke="#ff2d55"';`,
+      `/` + `* an ordinary comment, whose closer the old pair scanned to *` + `/`,
+    ].join("\n");
+
+    expect(nonGreyColoursIn(hidden)).toEqual(['stroke="#ff2d55"']);
+
+    const predecessor = hidden
+      .replace(/\/\*[\s\S]*?\*\//g, " ")
+      .replace(/^\s*\/\/.*$/gm, " ");
+    expect(
+      predecessor,
+      "the pair this file carried deletes the line the red is on, which is why it went",
+    ).not.toContain("#ff2d55");
   });
 });
 

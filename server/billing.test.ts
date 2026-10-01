@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { PLAN_TIERS, PlanTier } from "../drizzle/schema";
 import { SUBSCRIPTION_PRODUCTS } from "./stripe/stripeProducts";
 import { calculateRolloverCredits, getMonthlyCredits, mapStripeStatus, mapPlanToTier } from "./stripe/stripeService";
+import { LEDGER_PER_DISPLAY_CREDIT } from "../shared/creditDisplay";
 
 describe("Billing - Plan Tiers Configuration", () => {
   // The seven survivors' prices and credits are HIS numbers, pinned exactly
@@ -110,9 +111,28 @@ describe("Billing - Rollover Calculation", () => {
     expect(rollover).toBe(100);
   });
 
-  it("should floor rollover credits to whole numbers", () => {
-    const rollover = calculateRolloverCredits(33, "starter"); // 33 * 0.5 = 16.5
-    expect(rollover).toBe(16);
+  it("should floor rollover credits to a whole number of DISPLAYED credits", () => {
+    /* ⚠ This arm read `toBe(16)` until #1604 slice 2, and the number moved on
+       purpose. 33 * 0.5 = 16.5 floors to 16, but 16 ledger credits are 3.2
+       displayed credits — so a customer carrying 16 would be SHOWN 3 and the
+       odd one could never be spent knowingly. The rollover is quantised to 15,
+       which is exactly 3 displayed credits. */
+    const rollover = calculateRolloverCredits(33, "starter"); // 33 * 0.5 = 16.5 -> 16 -> 15
+    expect(rollover).toBe(15);
+    expect(rollover % LEDGER_PER_DISPLAY_CREDIT).toBe(0);
+  });
+
+  it("every rollover percentage the product declares lands on a whole displayed credit", () => {
+    /* Derived over the real tiers and a range of balances rather than three
+       examples, because the defect is arithmetic and shows up at odd numbers. */
+    const leaky: string[] = [];
+    for (const tier of Object.keys(PLAN_TIERS) as PlanTier[]) {
+      for (let unused = 0; unused <= 1_000; unused++) {
+        const rollover = calculateRolloverCredits(unused, tier);
+        if (rollover % LEDGER_PER_DISPLAY_CREDIT !== 0) leaky.push(`${tier}:${unused}=${rollover}`);
+      }
+    }
+    expect(leaky).toEqual([]);
   });
 
   it("should handle zero unused credits", () => {
@@ -237,8 +257,12 @@ describe("Billing - Credit Adjustment for Plan Changes", () => {
   it("should calculate minimal credits for upgrade near end of period", () => {
     // Starter to Pro, 1 day remaining of 30
     // Additional credits: 125,000
-    // Prorated: 125,000 * (1/30) = 4,166
-    expect(calculateCreditAdjustment("starter", "pro", 1, 30)).toBe(4166);
+    // Prorated: 125,000 * (1/30) = 4,166.67 -> 4,166
+    /* ⚠ 4,166 until #1604 slice 2. It is not a whole number of displayed
+       credits, so the grant is quantised to 4,165 — the customer is granted one
+       ledger credit less and every credit they are granted can be shown. */
+    expect(calculateCreditAdjustment("starter", "pro", 1, 30)).toBe(4165);
+    expect(calculateCreditAdjustment("starter", "pro", 1, 30) % LEDGER_PER_DISPLAY_CREDIT).toBe(0);
   });
 
   it("should handle upgrade from free tier", () => {

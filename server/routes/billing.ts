@@ -37,6 +37,7 @@ import {
 import { appBaseUrl, PRODUCTION_APP_HOSTNAME } from "../_core/appOrigin";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { z } from "zod";
+import { planAllowanceRemaining } from "../db/credits";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("routes/billing");
 import { TRPCError } from "@trpc/server";
@@ -56,7 +57,12 @@ export const billingRouter = router({
         return {
           id: key as SubscriptionPlan,
           name: plan.name,
-          description: plan.description,
+          // `description` left this projection with #1605: it was a composed
+          // ledger figure ("200,000 credits/month with …") that no client ever
+          // rendered — `planBlurbs.ts` is the customer-facing line, and the
+          // credits figure comes from `credits` below through P1-1's display
+          // helper. A field nobody reads is a second copy of a number, which
+          // is working law 4 on a money surface.
           priceInCents: plan.priceInCents,
           credits: plan.credits,
           features: plan.features,
@@ -517,9 +523,30 @@ export const billingRouter = router({
       // by the time we look, so the happy path applies in this same breath.
       // The record-then-recheck order and the shared ledger key are the race
       // analysis — see stripe/planChangeSettlement.ts. Deductions still floor
-      // at the live balance, read at APPLICATION time: spent credits are
-      // spent, and the #664 "deliberately coarse mirror" ruling (the floor is
-      // the total balance; no per-source lots) carries over unchanged.
+      // at APPLICATION time: spent credits are spent.
+      //
+      // ⚠ BUT THEY FLOOR AT THE PLAN'S PART, NOT AT THE TOTAL BALANCE — #1661,
+      // and this REVERSES the sentence that stood here (#1604's law-7 sweep).
+      // It read: *the #664 "deliberately coarse mirror" ruling (the floor is
+      // the total balance; no per-source lots) carries over unchanged.*
+      //
+      // #664's ruling was CORRECT when it was made and is not being
+      // overturned: it was coarse because there was nothing to be fine about.
+      // There were no per-source lots, and no purchased credits either — the
+      // one-time top-up product had been removed in February (41a765ea) and
+      // nothing could reach `addTopupCredits`. **#1604 creates the thing that
+      // ruling says does not exist**, and a floor at the total balance would
+      // then settle a dispute about the customer's PLAN ALLOWANCE out of
+      // credits she BOUGHT.
+      //
+      // Worked: 25,000 bought, 2,000 of the allowance left, a downgrade whose
+      // mirror is 8,000. The old floor deducts min(8,000, 27,000) = 8,000 and
+      // 6,000 of that is her money. The plan's part gives min(8,000, 2,000) =
+      // 2,000 — spent allowance is still spent, out of the right pocket.
+      //
+      // Still coarse in the way #664 meant: ONE number, no lots, no reconciling
+      // a pending grant against a later deduction. What changed is which pocket
+      // the one number describes.
       const currentPlan = billingState.currentPlan;
       const creditAdjustment = quote.creditAdjustment;
       const creditsToReturn =
@@ -564,7 +591,15 @@ export const billingRouter = router({
             }
           } else {
             const liveCredits = await getUserCredits(ctx.user.id);
-            const returnable = Math.min(settlementCredits, Math.max(0, liveCredits?.balance ?? 0));
+            /* THE PLAN'S PART, read off the SAME row the balance comes from —
+               #1661. Two reads would be two different moments on a money path,
+               and `planAllowanceRemaining` already has the balance in hand. A
+               null row answers 0, which is the direction that cannot claw back
+               credits whose provenance could not be read. */
+            const returnable = Math.min(
+              settlementCredits,
+              liveCredits ? planAllowanceRemaining(liveCredits) : 0,
+            );
             if (returnable > 0) {
               const unwindResult = await deductCredits(
                 ctx.user.id,

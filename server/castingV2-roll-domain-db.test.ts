@@ -14,6 +14,7 @@
 import { randomUUID } from "node:crypto";
 import mysql, { type Connection, type ResultSetHeader, type RowDataPacket } from "mysql2/promise";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { CASTING_V2_COSTS } from "./casting/castingCreditCosts";
 
 /*
   The disposable database is a hosted one reached over a public proxy, so every
@@ -43,6 +44,17 @@ describeWithDatabase("Casting V2 roll domain (disposable DB)", () => {
     return db.createCastingSession({ userId });
   }
 
+  /** How many rolls a session holds, read through its public id. */
+  async function rollCountFor(sessionPublicId: string) {
+    const [counted] = await connection.query<RowDataPacket[]>(
+      `SELECT COUNT(*) AS n FROM casting_rolls r
+         JOIN casting_sessions s ON s.id = r.sessionId
+        WHERE s.publicId = ?`,
+      [sessionPublicId],
+    );
+    return Number(counted[0].n);
+  }
+
   async function newRoll(userId: number, sessionPublicId: string, overrides: Record<string, unknown> = {}) {
     return db.createRollWithCandidates({
       userId,
@@ -50,6 +62,10 @@ describeWithDatabase("Casting V2 roll domain (disposable DB)", () => {
       operationId: randomUUID(),
       briefText: "a wiry cyclist in her 20s",
       candidates: seed(),
+      /* The slice the caller is now required to pass (#1601 item 2). Defaulted
+         to the ROLL slice here so every pre-existing arm keeps the exact
+         numbers it was written against; the arms that care pass their own. */
+      slicePriceCredits: CASTING_V2_COSTS.rollCandidate,
       ...overrides,
     } as never);
   }
@@ -117,6 +133,68 @@ describeWithDatabase("Casting V2 roll domain (disposable DB)", () => {
       expect(candidates.every((row) => row.status === "queued")).toBe(true);
       // The refundable unit, persisted per row rather than divided later.
       expect(candidates.every((row) => row.pointsCost === 20)).toBe(true);
+    });
+
+    it("writes the slice its CALLER chose onto all nine rows, not a constant of its own (#1601 item 2)", async () => {
+      /*
+        ⚠ THE ONLY FULLY NON-VACUOUS READING OF THIS CHANGE, and it is here
+        because it needs real rows.
+
+        This function used to write `priceCredits` and every candidate's
+        `pointsCost` from `CASTING_V2_COSTS.rollCandidate` itself — while being
+        handed a parent linkage and no price, so it could only ever INFER
+        whether the roll it was writing was a follow. Both slices are 20 today,
+        so no arm using the product's own numbers can tell the old code from the
+        new. **200 can.** If this layer ever goes back to declaring a price, the
+        rows come out at 20 and both expectations below fail by name.
+
+        `pointsCost` is the refund authority — `dispatchCandidate` refunds what
+        the row says — so a slice written here wrong is a refund wrong forever,
+        reconciling against itself.
+      */
+      const FOLLOW_SLICE = 200;
+      const session = await newSession(owner);
+      const { roll } = await newRoll(owner, session.publicId, { slicePriceCredits: FOLLOW_SLICE });
+
+      const [candidates] = await connection.query<RowDataPacket[]>(
+        "SELECT pointsCost FROM casting_candidates WHERE rollId = ?",
+        [roll.id],
+      );
+      expect(candidates).toHaveLength(8);
+      expect(candidates.every((row) => row.pointsCost === FOLLOW_SLICE)).toBe(true);
+
+      const [rolls] = await connection.query<RowDataPacket[]>(
+        "SELECT priceCredits FROM casting_rolls WHERE id = ?",
+        [roll.id],
+      );
+      /* The roll row's total is the slice times the eight rows it wrote, so the
+         total and the slices can never tell different stories. */
+      expect(rolls[0].priceCredits).toBe(FOLLOW_SLICE * 8);
+    });
+
+    it("refuses a slice a refund could not be built from, before it writes any row", async () => {
+      /*
+        The column is `.default(0).notNull()`, so a caller that omits the slice
+        would otherwise land eight rows at zero — eight unrefundable slices,
+        and a free roll. Driven here as well as in `followSlicePrice.test.ts`
+        because this is the arm that also proves NOTHING was written.
+      */
+      const session = await newSession(owner);
+
+      /* A POSITIVE CONTROL FIRST, on this very session: the arm below asserts
+         an absence, and an absence is worth nothing until the same reading has
+         been shown to find something. */
+      await newRoll(owner, session.publicId);
+      const rollsAfterAGoodOne = await rollCountFor(session.publicId);
+      expect(rollsAfterAGoodOne).toBe(1);
+
+      await expect(newRoll(owner, session.publicId, { slicePriceCredits: 0 }))
+        .rejects.toThrow(/slicePriceCredits must be a positive integer/);
+
+      /* Still one. The refused call wrote no roll and therefore no candidates
+         — the check sits before `withTransaction`, so there is not even a
+         rolled-back row to argue about. */
+      expect(await rollCountFor(session.publicId)).toBe(1);
     });
   });
 

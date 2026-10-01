@@ -266,13 +266,54 @@ between them named three:
 | **destructive** | — | **`profile.removeAvatar`** — it deletes her picture |
 | **other** | `auth.logout` | `generation.clearSession`, `profile.markCanvasIntroSeen` |
 
-**Still owed, and filed rather than folded in:** the second half of the fix
-below — an `Origin` check on the plain Express auth routes. `SameSite` governs
-when a cookie is *sent*, never whether a `Set-Cookie` is *stored*, so
-**login-CSRF survives this change**: a cross-site form POST to
-`/api/auth/login` still signs a victim into an attacker's account. It is **#1659**,
-on its own money/auth review, because a mistake in a login route locks every
-customer out of the product.
+✅ **AND THE SECOND HALF IS CLOSED TOO — 2026-10-01 (#1659).** ~~Still owed, and
+filed rather than folded in: an `Origin` check on the plain Express auth
+routes.~~ `SameSite` governs when a cookie is *sent*, never whether a
+`Set-Cookie` is *stored*, so login-CSRF survived #1653: a cross-site form POST to
+`/api/auth/login` signed a victim into an attacker's account, and the tRPC guard
+could not see it because the sign-in routes are plain Express rather than
+procedures. **What shipped**: `judgeRequestOrigin` — the same pure judge, not a
+second one — mounted as Express middleware on `emailAuthRouter` and
+`emailVerificationRouter` (`server/security/crossSiteExpressGuard.ts`), refusing
+a state-changing cross-site request with a real 403 **before the password is
+checked and before any session is minted**, and letting every `GET` through so
+the three GET-only mint sites and the Google entry link are untouched. Driven
+over real HTTP in `server/routes/authCrossSiteGuard.test.ts`, with the positive
+controls that a same-origin form POST, a headerless caller and a proxied request
+all still sign in. **The fix below is therefore fully discharged; what is NOT in
+it, by the card's own words, is a CSRF token, a double-submit cookie and
+session-fixation rotation** — those are a design decision rather than the check
+this entry asked for in July.
+
+✅ **AND A THIRD HALF NOBODY HAD NAMED IS CLOSED — 2026-10-01 (#1681), found by
+the relay REVIEWING the #1659 fix.** The paragraph above ends *"letting every
+`GET` through so the three GET-only mint sites and the Google entry link are
+untouched"*, which is correct and was the right call — and it leaves a hole that
+is not the guard's to close. **Google's callback is a top-level GET, and its
+`state` nonce was signed but bound to nothing the browser held**, so a token
+minted in the attacker's browser was accepted in the victim's: the attacker
+starts a sign-in here, stops at the callback, sends the victim that URL, and the
+victim is signed into the attacker's account — every upload, cast and card
+detail after that landing in an account they control. **`SameSite` cannot help
+(a top-level GET is exactly what `Lax` sends), and an `Origin` check cannot
+either (it would break the real round-trip from accounts.google.com).**
+
+**What shipped**: `/api/auth/google` sets a ten-minute `HttpOnly`,
+`SameSite=Lax` cookie carrying `sha256(nonce)` on the path `/api/auth/google`,
+and the callback refuses with `invalid_state` unless the state's nonce matches
+it — **before the code is exchanged and before either session mint**, so
+invariant 9's count stays five sites in three modules. The refusal writes
+nothing: no audit row and no `Set-Cookie`, because clearing the cookie there
+would let a crafted request drop a real pending flow of hers. Driven over real
+HTTP in `server/routes/googleAuth.test.ts`, where the attack is the arm (a real
+valid state from another browser) and the real round-trip is the control beside
+it. ⚠ **`Lax` and not `Strict` is the load-bearing choice** — `Strict` withholds
+the cookie on exactly the request that needs it, so it would break every Google
+sign-in while looking like the gate working.
+
+**So the pattern across all three halves is one finding, found three times from
+three places:** #1653 at the cookie, #1659 at the Express POST routes, #1681 at
+the one road that is a GET. Each was invisible to the fix before it.
 
 **The original entry, kept verbatim as the record:**
 

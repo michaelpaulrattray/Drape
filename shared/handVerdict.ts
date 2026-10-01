@@ -25,6 +25,71 @@
 export const HAND_VERDICT_MARKER = "**Fable review — by hand";
 
 /**
+ * ⚠ **THE RELAY'S OTHER HAND COMMENT: A FINDING, WHICH IS NOT A PASS (#1673).**
+ *
+ * Measured on PR #1649, 2026-10-01. The relay posted
+ * `**Fable review — by hand, FINDING (head …) — held; …` — the marker, and then
+ * the word that says the opposite of a pass. `isHandVerdict` read the prefix
+ * and stopped, so **the comment classified as a fresh verdict**: the build board
+ * printed *"passed and merging — PR #1649"* on every pass from 23:46Z to 05:48Z
+ * while the pull request sat held, unrepaired and then DIRTY, and every P1 card
+ * that builds on #1600 waited behind a card the record called done. Six hours.
+ *
+ * **The convention from today, and the reader honours BOTH spellings so an old
+ * comment cannot flip its meaning under a later rule:**
+ *
+ * - a VERDICT is headed `**Fable review — by hand** (head …)`;
+ * - a FINDING is headed `**Relay finding — HELD** (head …)` and never carries
+ *   the verdict marker.
+ *
+ * The second half of the reader — a verdict-marked comment whose header line
+ * also says HELD or FINDING — exists for the comments already on the record,
+ * which were written before the convention and must keep reading as what they
+ * are. #1649's own has since been re-headed by hand; the one that caused this is
+ * the shape, not the instance.
+ */
+export const HAND_FINDING_MARKER = "**Relay finding";
+
+/**
+ * Words that, in a hand comment's HEADER LINE, mean a repair is owed.
+ *
+ * ⚠ **THE HEADER LINE AND NOWHERE ELSE, AND THAT IS THE WHOLE CONTROL.** A
+ * genuine verdict's BODY discusses its findings at length — that is what a
+ * verdict is for, and `--acknowledge` exists because its findings must be read.
+ * A reader scanning the whole comment for the word *finding* would classify
+ * every real verdict as a hold and nothing would ever merge, which is the
+ * failure this clause is most likely to be rewritten into.
+ */
+const FINDING_WORDS: readonly string[] = ["HELD", "FINDING"];
+
+/** The first non-empty line of a comment — what both readers below anchor on. */
+function headerLine(body: string): string {
+  for (const line of body.split(/\r?\n/)) {
+    if (line.trim() !== "") return line;
+  }
+  return "";
+}
+
+/**
+ * Is this hand comment a FINDING — a held review with a repair owed (#1673)?
+ *
+ * ⚠ **IT IS ASKED BEFORE `isHandVerdict` EVERYWHERE, AND `isHandVerdict` NOW
+ * REFUSES ITS OWN MARKER WHEN THIS IS TRUE.** The two must be mutually
+ * exclusive at the declaration rather than at each call site: three readers ask
+ * this question (the merge tool, his Desk, the queue readers) and a caller that
+ * forgot the order would merge on a hold. Working law 4 pointed at a pair of
+ * predicates instead of a list.
+ */
+export function isHandFinding(body: string): boolean {
+  const head = headerLine(body);
+  const trimmed = head.trimStart();
+  if (trimmed.startsWith(HAND_FINDING_MARKER)) return true;
+  if (!trimmed.startsWith(HAND_VERDICT_MARKER)) return false;
+  const upper = head.toUpperCase();
+  return FINDING_WORDS.some((word) => upper.includes(word));
+}
+
+/**
  * Does this body carry the marker, at the very start (after whitespace)?
  *
  * ⚠ **THE ANCHOR IS DELIBERATE AND IT IS NOT THE DEFECT #1559 FIXED (#1568).**
@@ -48,11 +113,28 @@ export const HAND_VERDICT_MARKER = "**Fable review — by hand";
  * refusals above, are driven in `server/handVerdictReader.test.ts`.
  */
 export function isHandVerdict(body: string): boolean {
-  return body.trimStart().startsWith(HAND_VERDICT_MARKER);
+  if (!body.trimStart().startsWith(HAND_VERDICT_MARKER)) return false;
+  /* ⚠ **A FINDING IS NOT A VERDICT, EVEN WEARING THE VERDICT'S MARKER (#1673).**
+     This is the line PR #1649 needed: the header carried the marker and then the
+     word `FINDING`, and six hours of the board said *passed and merging* over a
+     held pull request. The exclusion lives HERE rather than at each of the three
+     call sites, so a reader that has never heard of findings cannot answer yes
+     to one. */
+  return !isHandFinding(body);
 }
 
-/** What a caller was able to establish about a pull request's verdict. */
-export type HandVerdictFreshness = "fresh" | "stale" | "none";
+/**
+ * What a caller was able to establish about a pull request's review.
+ *
+ * ⚠ **`finding` IS THE FOURTH (#1673): the relay looked and something is
+ * WRONG.** It is a distinct answer from `none` (nobody looked) and from `stale`
+ * (somebody looked at a different diff), and the board phrase differs on all
+ * three. A `stale` FINDING is reported as `stale`, not as `finding`, and that
+ * is not a shortcut: the pull request's clock moving past a finding is the
+ * repair being pushed, which is exactly when the hold should lift and the row
+ * should go back to waiting on review.
+ */
+export type HandVerdictFreshness = "fresh" | "finding" | "stale" | "none";
 
 /**
  * A verdict and the pull request's own clock, stamped in the same second, is

@@ -30,6 +30,7 @@ import {
   displayRefund,
   displaySpent,
   formatCredits,
+  wholeDisplayLedger,
 } from "../shared/creditDisplay";
 
 /** A reproducible generator — a seeded LCG, so a red is re-runnable. */
@@ -228,6 +229,80 @@ describe("a number that cannot be shown is refused rather than rendered", () => 
 
   it("says what it got, so the upstream defect is findable", () => {
     expect(() => displayPrice(Number.NaN)).toThrow(/NaN/);
+  });
+});
+
+describe("wholeDisplayLedger — a grant with no invisible credit in it (#1604 slice 2)", () => {
+  it("leaves nothing a customer cannot be shown: the quantised amount divides exactly", () => {
+    const leaky = exhaustive().filter(
+      (ledger) => wholeDisplayLedger(ledger) % LEDGER_PER_DISPLAY_CREDIT !== 0,
+    );
+    expect(leaky).toEqual([]);
+  });
+
+  it("holds over 20,000 sampled values up to the largest grant the product declares", () => {
+    const leaky = randomLedgers(0x5eed_4).filter(
+      (ledger) => wholeDisplayLedger(ledger) % LEDGER_PER_DISPLAY_CREDIT !== 0,
+    );
+    expect(leaky).toEqual([]);
+  });
+
+  it("⚠ AGREES WITH THE SCREEN — the quantised grant shows exactly what displayBalance would say", () => {
+    /* The whole point. If these two ever disagree, a balance built from this
+       grant cannot be made to add up on any screen. */
+    const disagreeing = exhaustive().filter(
+      (ledger) => wholeDisplayLedger(ledger) / LEDGER_PER_DISPLAY_CREDIT !== displayBalance(ledger),
+    );
+    expect(disagreeing).toEqual([]);
+  });
+
+  it("never hands out MORE than was computed — a grant only ever rounds down", () => {
+    const generous = exhaustive().filter((ledger) => wholeDisplayLedger(ledger) > ledger);
+    expect(generous).toEqual([]);
+  });
+
+  it("never takes MORE than was computed — a deduction only ever shrinks", () => {
+    /* The negative half, which is where Math.floor would have been wrong: the
+       magnitude must not grow, or a downgrade deducts more than the upgrade
+       that earned it granted (#664's credit-minting loop, the other way). */
+    const harsher = exhaustive().filter((ledger) => Math.abs(wholeDisplayLedger(-ledger)) > ledger);
+    expect(harsher).toEqual([]);
+  });
+
+  it("truncates toward zero, which is NOT what Math.floor does on the negative half", () => {
+    /* A real divergence, named with numbers so the choice is legible: the
+       arm below is the one that fails if someone "simplifies" this to a floor. */
+    expect(wholeDisplayLedger(-3_666)).toBe(-3_665);
+    expect(Math.floor(-3_666 / LEDGER_PER_DISPLAY_CREDIT) * LEDGER_PER_DISPLAY_CREDIT).toBe(-3_670);
+    expect(wholeDisplayLedger(-3_666)).toBeGreaterThan(
+      Math.floor(-3_666 / LEDGER_PER_DISPLAY_CREDIT) * LEDGER_PER_DISPLAY_CREDIT,
+    );
+  });
+
+  it("is symmetric about zero, so an upgrade and its mirror downgrade settle equally", () => {
+    const asymmetric = exhaustive().filter(
+      (ledger) => wholeDisplayLedger(-ledger) !== -wholeDisplayLedger(ledger),
+    );
+    expect(asymmetric).toEqual([]);
+  });
+
+  it("leaves an amount that is already whole exactly alone", () => {
+    for (const whole of [0, 5, 100, 1_200, 8_500, 75_000, 300_000_000]) {
+      expect(wholeDisplayLedger(whole)).toBe(whole);
+    }
+  });
+
+  it("is a real boundary and not a vacuous one — the arms above reach values it actually moves", () => {
+    /* A quantiser that never changed anything would pass every arm above. */
+    const moved = exhaustive().filter((ledger) => wholeDisplayLedger(ledger) !== ledger);
+    expect(moved.length).toBeGreaterThan(EXHAUSTIVE_TO / 2);
+    expect(wholeDisplayLedger(7_333)).toBe(7_330);
+  });
+
+  it("refuses a number that cannot be quantised, naming itself", () => {
+    for (const bad of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+      expect(() => wholeDisplayLedger(bad)).toThrow(/wholeDisplayLedger/);
+    }
   });
 });
 

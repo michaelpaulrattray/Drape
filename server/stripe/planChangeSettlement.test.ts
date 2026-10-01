@@ -107,6 +107,7 @@ import { billingRouter } from "../routes/billing";
 import { handleStripeWebhook } from "./webhooks";
 import { settlementLedgerRef } from "./planChangeSettlement";
 import { PLAN_TIERS } from "../../drizzle/schema";
+import { wholeDisplayLedger } from "@shared/creditDisplay";
 import { deploymentTag } from "../_core/env";
 
 const USER = { id: 7, approved: true, suspendedAt: null, lockedUntil: null };
@@ -133,14 +134,19 @@ function armStripeSubscription() {
 }
 
 /** What the real quote computes for starter → pro over the same 20/30 days —
- *  re-derived here from the same constants so the assertion is exact. */
+ *  re-derived here from the same constants so the assertion is exact.
+ *
+ *  ⚠ Both are quantised to a whole DISPLAYED credit since #1604 slice 2: the
+ *  bare floor gave 83,333 for the upgrade share, which is 16,666.6 displayed
+ *  credits, so a third of a credit would have sat on the balance unshowable.
+ *  83,330 is exactly 16,666. */
 const daysRemaining = Math.min(30, Math.max(0, Math.ceil((NOW_SEC + 20 * DAY - NOW_SEC) / DAY)));
-const UPGRADE_CREDITS = Math.floor(
+const UPGRADE_CREDITS = wholeDisplayLedger(Math.floor(
   (PLAN_TIERS.pro.monthlyCredits - PLAN_TIERS.starter.monthlyCredits) * (daysRemaining / 30),
-);
-const UNWIND_CREDITS = Math.floor(
+));
+const UNWIND_CREDITS = wholeDisplayLedger(Math.floor(
   PLAN_TIERS.starter.monthlyCredits * (daysRemaining / 30),
-);
+));
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -298,6 +304,86 @@ describe("changePlan — the grant hangs on the invoice, not on the Stripe updat
     expect(db.recordPlanChangeSettlement).not.toHaveBeenCalled();
     expect(db.addCredits).toHaveBeenCalledTimes(1);
     expect(result.creditSettlement).toBe("applied");
+  });
+
+  /**
+   * ⚠ **THE SECOND SITE OF #1661, AND IT IS THE ONE THAT HAD NO ARM AT ALL.**
+   *
+   * The card names two places that floor a clawback, and this is the legacy
+   * immediate road — reached only when the Stripe update produces no invoice,
+   * which `always_invoice` should make unreachable. Its own comment says it is
+   * *"loud, never silent"* rather than removed, so it is live code on a money
+   * path and it floored at the TOTAL balance exactly as the webhook road did.
+   *
+   * It is driven as a DOWNGRADE, because the arm above is an upgrade and an
+   * upgrade never reaches the unwind branch at all.
+   */
+  it("the legacy immediate unwind floors at the PLAN'S part too — both sites, one rule", async () => {
+    db.getSubscriptionByUserId.mockResolvedValue({
+      stripeSubscriptionId: "sub_1",
+      stripeCustomerId: "cus_1",
+      planTier: "pro",
+    });
+    subscriptionsRetrieve.mockResolvedValue({
+      metadata: { plan: "pro" },
+      items: {
+        data: [
+          {
+            id: "si_1",
+            price: { recurring: { interval: "month" } },
+            current_period_start: NOW_SEC - 10 * DAY,
+            current_period_end: NOW_SEC + 20 * DAY,
+          },
+        ],
+      },
+    });
+    subscriptionsUpdate.mockResolvedValue({ latest_invoice: null });
+    /* 25,000 bought with 2,000 of the allowance left — the card's own number.
+       Whatever this downgrade's mirror works out to, it may not reach past
+       2,000, because everything above that is the customer's money. */
+    db.getUserCredits.mockResolvedValue({ balance: 27_000, purchasedBalance: 25_000 });
+
+    const result = await caller().changePlan({ newPlan: "starter" });
+
+    expect(result.creditSettlement).toBe("applied");
+    expect(db.deductCredits).toHaveBeenCalledTimes(1);
+    expect(db.deductCredits.mock.calls[0][1]).toBe(2000);
+  });
+
+  it("and deducts the full mirror on that road when nothing was bought", async () => {
+    /* The positive control for the site above: a floor stuck at the plan's part
+       of a purchased-only balance would be 0 here and would silently stop every
+       legitimate downgrade unwind on this road. */
+    db.getSubscriptionByUserId.mockResolvedValue({
+      stripeSubscriptionId: "sub_1",
+      stripeCustomerId: "cus_1",
+      planTier: "pro",
+    });
+    subscriptionsRetrieve.mockResolvedValue({
+      metadata: { plan: "pro" },
+      items: {
+        data: [
+          {
+            id: "si_1",
+            price: { recurring: { interval: "month" } },
+            current_period_start: NOW_SEC - 10 * DAY,
+            current_period_end: NOW_SEC + 20 * DAY,
+          },
+        ],
+      },
+    });
+    subscriptionsUpdate.mockResolvedValue({ latest_invoice: null });
+    db.getUserCredits.mockResolvedValue({ balance: 100_000, purchasedBalance: 0 });
+
+    await caller().changePlan({ newPlan: "starter" });
+
+    expect(db.deductCredits).toHaveBeenCalledTimes(1);
+    /* ⚠ Asserted as STRICTLY MORE THAN the 2,000 the arm above deducted, rather
+       than as a number re-derived from PLAN_TIERS here. That comparison is the
+       only thing that proves the floor above actually BOUND something: if this
+       road's mirror happened to be 2,000 or less, the arm above would be green
+       with no floor applied at all. */
+    expect(db.deductCredits.mock.calls[0][1]).toBeGreaterThan(2000);
   });
 });
 
@@ -465,6 +551,114 @@ describe("the webhook settles what changePlan recorded", () => {
     });
 
     expect(db.deductCredits.mock.calls[0][1]).toBe(400);
+  });
+
+  /**
+   * ⚠ **AND IT FLOORS AT THE PLAN'S PART, NEVER AT THE TOTAL — #1661, the
+   * #1604 sibling, and it REVERSES a recorded review decision.**
+   *
+   * A downgrade claws back the unconsumed share of the allowance the customer is
+   * handing back, because Stripe returns that share's money in the same act. The
+   * floor used to be the TOTAL balance on #664's *"deliberately coarse mirror"*
+   * ruling — which was correct when it was made, because there were no
+   * per-source lots and no purchased credits either: the one-time top-up had
+   * been removed in February. **#1604 creates the thing that ruling says does
+   * not exist**, and from then a plan dispute could be settled out of credits
+   * the customer BOUGHT.
+   *
+   * `planAllowanceRemaining` is deliberately NOT mocked here — it comes from
+   * `../db/credits`, not the `../db` double — so these arms drive the product's
+   * real arithmetic rather than a stand-in that agrees with them.
+   */
+  it("floors the unwind at the PLAN'S part — never at credits the customer bought", async () => {
+    db.getPlanChangeSettlementByInvoice.mockResolvedValue({
+      ...grantRow,
+      direction: "unwind" as const,
+      credits: 8000,
+    });
+    /* The card's own worked number: 25,000 bought, 2,000 of the allowance left.
+       The old floor deducted min(8,000, 27,000) = 8,000, and 6,000 of that was
+       her money. */
+    db.getUserCredits.mockResolvedValue({ balance: 27_000, purchasedBalance: 25_000 });
+
+    await deliverEvent("invoice.payment_succeeded", {
+      id: "in_change",
+      customer: "cus_1",
+      subscription: "sub_1",
+      billing_reason: "subscription_update",
+      lines: { data: [] },
+    });
+
+    expect(db.deductCredits).toHaveBeenCalledTimes(1);
+    expect(db.deductCredits.mock.calls[0][1]).toBe(2000);
+  });
+
+  it("moves NOTHING when every credit left was bought, and resolves rather than retrying", async () => {
+    db.getPlanChangeSettlementByInvoice.mockResolvedValue({
+      ...grantRow,
+      direction: "unwind" as const,
+      credits: 8000,
+    });
+    /* The allowance is entirely spent; the balance is purchased credits only. */
+    db.getUserCredits.mockResolvedValue({ balance: 25_000, purchasedBalance: 25_000 });
+
+    const result = await deliverEvent("invoice.payment_succeeded", {
+      id: "in_change",
+      customer: "cus_1",
+      subscription: "sub_1",
+      billing_reason: "subscription_update",
+      lines: { data: [] },
+    });
+
+    expect(result.success).toBe(true);
+    expect(db.deductCredits).not.toHaveBeenCalled();
+    /* The row must still resolve, or it reads as queued work for ever — the
+       zero-returnable branch's own stated reason. */
+    expect(db.resolvePlanChangeSettlement).toHaveBeenCalledWith("in_change", "applied");
+  });
+
+  it("deducts the whole mirror when nothing was bought — the common case does not move", async () => {
+    /* The positive control. A floor that always answered 0 would satisfy both
+       arms above and stop every legitimate unwind in the product. */
+    db.getPlanChangeSettlementByInvoice.mockResolvedValue({
+      ...grantRow,
+      direction: "unwind" as const,
+      credits: 3000,
+    });
+    db.getUserCredits.mockResolvedValue({ balance: 27_000, purchasedBalance: 0 });
+
+    await deliverEvent("invoice.payment_succeeded", {
+      id: "in_change",
+      customer: "cus_1",
+      subscription: "sub_1",
+      billing_reason: "subscription_update",
+      lines: { data: [] },
+    });
+
+    expect(db.deductCredits.mock.calls[0][1]).toBe(3000);
+  });
+
+  it("treats a row it cannot read as nothing to claw back, never as everything", async () => {
+    db.getPlanChangeSettlementByInvoice.mockResolvedValue({
+      ...grantRow,
+      direction: "unwind" as const,
+      credits: 8000,
+    });
+    /* No credits row at all. The old code read `liveCredits?.balance ?? 0`; the
+       new one answers 0 the same way, and the direction matters on a money path:
+       a provenance we could not read must never license a clawback. */
+    db.getUserCredits.mockResolvedValue(null);
+
+    const result = await deliverEvent("invoice.payment_succeeded", {
+      id: "in_change",
+      customer: "cus_1",
+      subscription: "sub_1",
+      billing_reason: "subscription_update",
+      lines: { data: [] },
+    });
+
+    expect(result.success).toBe(true);
+    expect(db.deductCredits).not.toHaveBeenCalled();
   });
 
   it("a FINAL payment failure VOIDS the pending move — the declined card's credits never arrive", async () => {

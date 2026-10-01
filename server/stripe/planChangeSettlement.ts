@@ -32,7 +32,8 @@
  * STATED LIMITS (the #664 "coarse mirror" precedent, extended):
  * - A second plan change made while a prior change's invoice is still unpaid
  *   nets coarsely — each row mirrors its own invoice, the unwind floors at
- *   the live balance, and the customer is never taken below zero; but no
+ *   the plan's part of the live balance (#1661; it floored at the TOTAL until
+ *   2026-10-01), and the customer is never taken below zero; but no
  *   lot-tracking reconciles a pending grant against a later deduction.
  *   Stripe's own money side is equally coarse there (the earlier invoice
  *   stays due), and the final-failure endgame dissolves the chain.
@@ -55,6 +56,7 @@ import {
   resolvePlanChangeSettlement,
   type RecordPlanChangeSettlementInput,
 } from "../db";
+import { planAllowanceRemaining } from "../db/credits";
 import { createModuleLogger } from "../logging/logger";
 
 const log = createModuleLogger("stripe/planChangeSettlement");
@@ -123,11 +125,30 @@ export async function applyPlanChangeSettlement(
       : { outcome: "applied", creditsMoved: row.credits };
   }
 
-  // Unwind: deduct, floored at the balance read now.
+  // Unwind: deduct, floored at THE PLAN'S PART of the balance read now.
+  //
+  // ⚠ IT FLOORED AT THE TOTAL BALANCE UNTIL #1661 (2026-10-01), AND THAT
+  // REVERSES A RECORDED REVIEW DECISION rather than transcribing one. The
+  // docblock's stated limits cited #664's "deliberately coarse mirror" ruling —
+  // the floor is the total balance, no per-source lots — and that ruling was
+  // CORRECT when it was made: it was coarse because there was nothing to be
+  // fine about. There were no per-source lots and no purchased credits either,
+  // the one-time top-up having been removed in February (41a765ea). **#1604
+  // creates the thing the ruling says does not exist.**
+  //
+  // A downgrade claws back the unconsumed share of the allowance the customer
+  // is handing back, because Stripe returns that share's money in the same act.
+  // Flooring at the TOTAL lets that settlement reach credits she BOUGHT:
+  // 25,000 bought + 2,000 allowance left + an 8,000 mirror used to deduct
+  // 8,000, of which 6,000 was her money. It is 2,000 now.
+  //
+  // Unreachable until #1606 sells top-ups again, which is why this is a fix
+  // ahead of a feature rather than a repair after an incident — #1606 names it
+  // as its blocker. Still coarse in #664's sense: one number, no lots.
   //
   // ⚠ A KNOWN-BENIGN FATAL CAN FIRE HERE (PR #755 review, finding 2): both
   // appliers can pass the pending check concurrently, each computes its own
-  // floor from the LIVE balance, and the loser — reading the balance AFTER
+  // floor from the LIVE row, and the loser — reading the row AFTER
   // the winner's deduct — can hit the unique ledger ref with a DIFFERENT
   // amount, which credits.ts classifies as a CRITICAL reference collision
   // at log.fatal. For THIS reference family (`plan-change-settle:`) on the
@@ -139,11 +160,15 @@ export async function applyPlanChangeSettlement(
   // this — its amount is fixed by the row, so a replay always
   // semantics-matches.
   const liveCredits = await getUserCredits(row.userId);
-  const returnable = Math.min(row.credits, Math.max(0, liveCredits?.balance ?? 0));
+  /* The plan's part, off the SAME row as the balance: one read, one moment. A
+     null row answers 0 — the only direction that cannot claw back credits whose
+     provenance could not be read. */
+  const returnable = Math.min(row.credits, liveCredits ? planAllowanceRemaining(liveCredits) : 0);
   if (returnable <= 0) {
-    // Nothing left to return — the allowance was spent. That is the floor
-    // rule working, not a failure; the row resolves so it stops reading as
-    // queued work.
+    // Nothing left to return — the allowance was spent, or every credit left
+    // on the balance is one the customer BOUGHT (#1661). Either way that is the
+    // floor rule working, not a failure; the row resolves so it stops reading
+    // as queued work.
     await resolvePlanChangeSettlement(stripeInvoiceId, "applied");
     return { outcome: "applied", creditsMoved: 0 };
   }

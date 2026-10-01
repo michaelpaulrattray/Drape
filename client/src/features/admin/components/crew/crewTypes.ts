@@ -309,6 +309,12 @@ export type CrewLiveView = CrewState["live"];
 export type CrewLiveDesk = Extract<CrewLiveView, { available: true }>["desk"];
 export type CrewLivePullRequest = CrewLiveDesk["pullRequests"][number];
 export type CrewLiveRecentRow = CrewLiveDesk["recent"][number];
+/**
+ * One milestone's test drive, read off its completion card (#1646). Inferred
+ * from the router like every other live view, so the server's extractor is the
+ * only declaration of the shape.
+ */
+export type CrewLiveTestDrive = CrewLiveDesk["testDrives"][number];
 
 /** NEXT UP's input — the shape the live desk and the edition both produce. */
 export type CrewNextUpSource = {

@@ -93,7 +93,31 @@ export function parseCastDeletionAuditArgs(argv: string[]): CastDeletionAuditArg
 const READ_ONLY_START = /^(SELECT|SHOW|DESCRIBE|EXPLAIN|WITH|START\s+TRANSACTION\s+READ\s+ONLY|ROLLBACK)\b/i;
 const MUTATING_SQL = /\b(INSERT|UPDATE|DELETE|REPLACE|TRUNCATE|ALTER|DROP|CREATE|GRANT|REVOKE|CALL|LOAD)\b/i;
 
-/** A runtime tripwire around every statement issued by the audit script. */
+/**
+ * A runtime tripwire around every statement issued by the audit script.
+ *
+ * ⚠ **ITS STRIPPER KEEPS ITS OWN REGEX PAIR AND DOES NOT GO THROUGH
+ * `server/testing/withoutComments.ts` — the measured reason, #1636.** The input
+ * here is **SQL**, not JavaScript, and the two differ in both directions:
+ *
+ *  - SQL's line comment is `--`, which the shared walk does not know, so a
+ *    `DROP` hidden behind `-- ` would be read as code and refused. That is the
+ *    SAFE direction for a tripwire that fails closed, but it is luck rather
+ *    than design.
+ *  - SQL has **no `//` comment at all**, and the shared walk strips one. A
+ *    statement carrying a literal `//` — a URL inside a quoted value, which
+ *    this audit's own `currentPublicUrl` is — would have the rest of its line
+ *    deleted, and this function would then judge a statement nobody sent.
+ *    **That is the unsafe direction: it decides whether a production read is
+ *    allowed to run.**
+ *
+ * SQL's own string literals are single-quoted and `/*` inside one is not a
+ * comment, so the block half carries the same blindness the JS sites did. It is
+ * **named rather than fixed here**: a quote-aware SQL reader is a different
+ * reader, this function is a fail-closed tripwire that only ever over-refuses
+ * on a misread, and the two live readers that call it both pass statements this
+ * file composes itself. A swap is the change that would introduce a defect.
+ */
 export function assertReadOnlyAuditSql(statement: string): void {
   const normalized = statement.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/--[^\n]*/g, " ").trim();
   if (!READ_ONLY_START.test(normalized) || MUTATING_SQL.test(normalized)) {
