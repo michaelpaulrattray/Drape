@@ -152,6 +152,80 @@ describe("card 390 item 4 — the unit price is inverted, and it still argues fo
     expect(ascends, "the monotonic check passed a ladder that argues against itself").toBe(false);
   });
 
+  it("⚠ AND THE LADDER THAT WAS REPLACED IS DRIVEN, NOT INFERRED — it falls at studio, scale and enterprise", () => {
+    /*
+      THE NEGATIVE CONTROL THE SCHEMA'S OWN COMMENT HAS BEEN ASSERTING IN PROSE.
+
+      `drizzle/schema.ts` says, above `PLAN_TIERS`, that the approved proposal
+      (rev 21.6) *"lowered Pro and up while leaving every monthly price where it
+      was, and at those prices credits per dollar FELL at three rungs — Studio
+      below Pro, Scale below Business, Enterprise below Scale"*. That sentence
+      is the whole reason the founder was handed the LADDER as the bug rather
+      than the guard, and it is why his volume-discount ladder exists at all.
+
+      ⚠ **IT WAS INFERRED, AND THE PR #1704 REVIEW SAID SO** — *"no arm pins the
+      OLD proposal's figures as a negative control … inferred, one arm would
+      drive it"*. Law 7b: never guess, test or confirm. A comment cannot fail a
+      test, so the one claim that justifies replacing a ladder was carried by
+      the kind of sentence this repository has already been bitten by.
+
+      ⚠ **THE PRICES COME OFF THE REAL TABLE AND ARE NOT TYPED HERE.** The
+      proposal moved GRANTS only; reading its prices from a fixture would prove
+      something about a ladder nobody ever proposed. So the comparison is the
+      shipped prices against the superseded grants, which is the ladder that was
+      actually on the table when he ruled.
+
+      ⚠ **AND THE READER GETS A POSITIVE CONTROL IN THE SAME ARM** (working law
+      2): the identical `fellAt` reader is run over the SHIPPED table and must
+      come back empty. Without it, a reader that reports every rung as falling —
+      or one that cannot see a fall at all — would pass this arm by accident.
+    */
+    /** The superseded proposal's ledger grants, by rung name (#1602's body). */
+    const PROPOSED_LEDGER_GRANTS: Record<string, number> = {
+      Starter: 75_000,
+      Pro: 190_000,
+      Studio: 440_000,
+      Business: 2_350_000,
+      Scale: 13_350_000,
+      Enterprise: 41_500_000,
+      Ultimate: 133_500_000,
+    };
+
+    /** Every rung where the figure does not IMPROVE on the rung below it. */
+    const fellAt = (ladder: { name: string; price: number; monthlyCredits: number }[]) =>
+      ladder
+        .filter(
+          (tier, index) =>
+            index > 0 &&
+            creditsPerDollar(tier.price, tier.monthlyCredits) <=
+              creditsPerDollar(ladder[index - 1].price, ladder[index - 1].monthlyCredits),
+        )
+        .map((tier) => tier.name);
+
+    /* A rung renamed or added must redden here rather than read as `undefined`. */
+    const missing = PAID.filter((tier) => PROPOSED_LEDGER_GRANTS[tier.name] === undefined);
+    expect(
+      missing.map((tier) => tier.name),
+      "a paid rung has no figure in the superseded proposal — this arm no longer covers the table",
+    ).toEqual([]);
+
+    const proposed = PAID.map((tier) => ({
+      name: tier.name,
+      price: tier.price,
+      monthlyCredits: PROPOSED_LEDGER_GRANTS[tier.name],
+    }));
+
+    expect(
+      fellAt(proposed),
+      "the superseded proposal's ladder no longer falls where the schema's comment says it does",
+    ).toEqual(["Studio", "Scale", "Enterprise"]);
+
+    expect(
+      fellAt([...PAID]),
+      "the same reader reports a fall on the SHIPPED ladder — the finding above is the reader, not the proposal",
+    ).toEqual([]);
+  });
+
   it("⚠ EVERY PRINTED FIGURE SEPARATES ITS RUNG — the whole reason for inverting", () => {
     /*
       Item 4: *"`0.036¢ a credit` is not a value argument. At sub-penny
