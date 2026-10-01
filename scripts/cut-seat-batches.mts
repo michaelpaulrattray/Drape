@@ -107,6 +107,7 @@ import {
   orderedBandForSeats,
   readIndependence,
   seatPopulation,
+  toolingPathReading,
   type IndependenceReading,
   type SeatAreaIndex,
   type SeatCandidateCard,
@@ -646,6 +647,14 @@ const background = seatPopulation({
   board,
   areaIndex,
   facts: managerFacts,
+  /*
+    HOW MANY ORDERED CARDS A SEAT COULD ACTUALLY START THIS PASS (#1647) — what
+    decides whether a tooling fix waits behind the focus or is the best thing
+    left to do. `ordered` is computed above and this reads its answer; it feeds
+    no other gate, and with every ordered card blocked the tooling hold lifts
+    rather than leaving the seats idle.
+  */
+  orderedLaneOffers: ordered.offered.length,
 });
 
 let takeable = [...background.takeable];
@@ -769,6 +778,18 @@ const out = {
   },
   batches: plan.batches,
   skipped: [...background.skipped, ...ordered.held, ...plan.held, ...sittingOn],
+  /*
+    ⚠ A REPORT, NOT A HOLD (#1647). Every takeable fix whose own body names
+    mostly tooling paths while carrying no `tooling` label — the candidates for
+    a label somebody forgot. It holds nothing and it never can: the measurement
+    on `toolingPathReading` shows the path reading is wrong on 5 of 10 as a
+    gate, and this direction (a line of text) costs nothing when it is wrong.
+    Written where the relay and the Retro will see it rather than left as an
+    unwired helper, which is invariant 7.
+  */
+  toolingUnlabelled: takeable
+    .map((card) => toolingPathReading(card))
+    .filter((line): line is string => line !== null),
   jev: {
     asked: jev !== null,
     readings,
@@ -821,6 +842,10 @@ if (!ARGS.flag("quiet")) {
       ? `SEATS 0 | nothing on offer${rungWord}${managerWord}${jevWord}`
       : `SEATS ${plan.seatCount} | cards ${plan.cardCount} | areas ${areas || "none named"}${rungWord}${managerWord}${jevWord}`,
   );
+  /* ⚠ The missing-label candidates, on the line the runner logs rather than only
+     in the plan JSON — the same argument the milestone and manager words above
+     were added under (#1541, #1658). It holds nothing. */
+  for (const line of out.toolingUnlabelled) console.log(`TOOLING? ${line}`);
 }
 
 /*

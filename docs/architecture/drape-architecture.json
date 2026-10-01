@@ -7,7 +7,7 @@
     {
       "id": "domain:admin",
       "name": "admin",
-      "moduleCount": 61
+      "moduleCount": 62
     },
     {
       "id": "domain:api",
@@ -112,7 +112,7 @@
     {
       "id": "domain:security",
       "name": "security",
-      "moduleCount": 10
+      "moduleCount": 11
     },
     {
       "id": "domain:settings",
@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 75
+      "moduleCount": 76
     },
     {
       "id": "domain:staff",
@@ -477,6 +477,12 @@
     {
       "id": "module:client/src/features/admin/components/crew/CrewSkeleton.tsx",
       "path": "client/src/features/admin/components/crew/CrewSkeleton.tsx",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/admin/components/crew/CrewTestDrive.tsx",
+      "path": "client/src/features/admin/components/crew/CrewTestDrive.tsx",
       "domain": "admin",
       "lifecycle": "active"
     },
@@ -5581,6 +5587,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/security/crossSiteExpressGuard.ts",
+      "path": "server/security/crossSiteExpressGuard.ts",
+      "domain": "security",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/security/crossSiteGuard.ts",
       "path": "server/security/crossSiteGuard.ts",
       "domain": "security",
@@ -6087,6 +6099,12 @@
     {
       "id": "module:shared/crewShiftState.ts",
       "path": "shared/crewShiftState.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/crewTestDrive.ts",
+      "path": "shared/crewTestDrive.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -13003,6 +13021,10 @@
       "path": "server/crewShiftWriterBoundary.test.ts"
     },
     {
+      "id": "test:server/crewTestDrive.test.ts",
+      "path": "server/crewTestDrive.test.ts"
+    },
+    {
       "id": "test:server/crewWorkSwitches.test.ts",
       "path": "server/crewWorkSwitches.test.ts"
     },
@@ -13875,6 +13897,10 @@
       "path": "server/roleManagement.test.ts"
     },
     {
+      "id": "test:server/routes/authCrossSiteGuard.test.ts",
+      "path": "server/routes/authCrossSiteGuard.test.ts"
+    },
+    {
       "id": "test:server/routes/billingRequestPathVerdicts.test.ts",
       "path": "server/routes/billingRequestPathVerdicts.test.ts"
     },
@@ -14161,6 +14187,10 @@
     {
       "id": "test:server/timeoutFailureIdentity.test.ts",
       "path": "server/timeoutFailureIdentity.test.ts"
+    },
+    {
+      "id": "test:server/toolingBugWaits.test.ts",
+      "path": "server/toolingBugWaits.test.ts"
     },
     {
       "id": "test:server/trackedFilePopulation.test.ts",
@@ -15106,6 +15136,26 @@
     {
       "from": "module:client/src/features/admin/components/crew/CrewSkeleton.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewTestDrive.tsx",
+      "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewTestDrive.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewTestDrive.tsx",
+      "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewTestDrive.tsx",
+      "to": "module:shared/crewTestDrive.ts",
       "kind": "imports"
     },
     {
@@ -19885,6 +19935,11 @@
     },
     {
       "from": "module:client/src/pages/AdminCrew.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewTestDrive.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminCrew.tsx",
       "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
       "kind": "imports"
     },
@@ -19921,6 +19976,11 @@
     {
       "from": "module:client/src/pages/AdminCrew.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminCrew.tsx",
+      "to": "module:shared/crewTestDrive.ts",
       "kind": "imports"
     },
     {
@@ -28975,6 +29035,11 @@
     },
     {
       "from": "module:server/crew/liveDesk.ts",
+      "to": "module:shared/crewTestDrive.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveDesk.ts",
       "to": "module:shared/crewWorkSwitches.ts",
       "kind": "imports"
     },
@@ -28986,6 +29051,11 @@
     {
       "from": "module:server/crew/liveQueue.ts",
       "to": "module:shared/crewNextUpHold.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveQueue.ts",
+      "to": "module:shared/crewTestDrive.ts",
       "kind": "imports"
     },
     {
@@ -31605,6 +31675,11 @@
     },
     {
       "from": "module:server/routes/billing.ts",
+      "to": "module:server/db/credits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/billing.ts",
       "to": "module:server/db/index.ts",
       "kind": "imports"
     },
@@ -32255,6 +32330,11 @@
     },
     {
       "from": "module:server/routes/emailAuth.ts",
+      "to": "module:server/security/crossSiteExpressGuard.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/emailAuth.ts",
       "to": "module:server/security/disposableEmails.ts",
       "kind": "imports"
     },
@@ -32306,6 +32386,11 @@
     {
       "from": "module:server/routes/emailVerification.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/emailVerification.ts",
+      "to": "module:server/security/crossSiteExpressGuard.ts",
       "kind": "imports"
     },
     {
@@ -33574,6 +33659,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/security/crossSiteExpressGuard.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/security/crossSiteExpressGuard.ts",
+      "to": "module:server/security/crossSiteGuard.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/security/deleteUserData.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -33646,6 +33741,11 @@
     {
       "from": "module:server/stripe/environmentTag.ts",
       "to": "module:server/_core/env.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/planChangeSettlement.ts",
+      "to": "module:server/db/credits.ts",
       "kind": "imports"
     },
     {
@@ -34136,6 +34236,11 @@
     {
       "from": "module:shared/crewReplyAcknowledgement.ts",
       "to": "module:shared/crewCardResolution.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/crewTestDrive.ts",
+      "to": "module:shared/crewMarkdownLead.ts",
       "kind": "imports"
     },
     {

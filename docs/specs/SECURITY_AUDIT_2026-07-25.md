@@ -266,13 +266,24 @@ between them named three:
 | **destructive** | — | **`profile.removeAvatar`** — it deletes her picture |
 | **other** | `auth.logout` | `generation.clearSession`, `profile.markCanvasIntroSeen` |
 
-**Still owed, and filed rather than folded in:** the second half of the fix
-below — an `Origin` check on the plain Express auth routes. `SameSite` governs
-when a cookie is *sent*, never whether a `Set-Cookie` is *stored*, so
-**login-CSRF survives this change**: a cross-site form POST to
-`/api/auth/login` still signs a victim into an attacker's account. It is **#1659**,
-on its own money/auth review, because a mistake in a login route locks every
-customer out of the product.
+✅ **AND THE SECOND HALF IS CLOSED TOO — 2026-10-01 (#1659).** ~~Still owed, and
+filed rather than folded in: an `Origin` check on the plain Express auth
+routes.~~ `SameSite` governs when a cookie is *sent*, never whether a
+`Set-Cookie` is *stored*, so login-CSRF survived #1653: a cross-site form POST to
+`/api/auth/login` signed a victim into an attacker's account, and the tRPC guard
+could not see it because the sign-in routes are plain Express rather than
+procedures. **What shipped**: `judgeRequestOrigin` — the same pure judge, not a
+second one — mounted as Express middleware on `emailAuthRouter` and
+`emailVerificationRouter` (`server/security/crossSiteExpressGuard.ts`), refusing
+a state-changing cross-site request with a real 403 **before the password is
+checked and before any session is minted**, and letting every `GET` through so
+the three GET-only mint sites and the Google entry link are untouched. Driven
+over real HTTP in `server/routes/authCrossSiteGuard.test.ts`, with the positive
+controls that a same-origin form POST, a headerless caller and a proxied request
+all still sign in. **The fix below is therefore fully discharged; what is NOT in
+it, by the card's own words, is a CSRF token, a double-submit cookie and
+session-fixation rotation** — those are a design decision rather than the check
+this entry asked for in July.
 
 **The original entry, kept verbatim as the record:**
 
