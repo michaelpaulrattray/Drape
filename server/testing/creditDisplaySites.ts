@@ -450,26 +450,54 @@ function isLocaleFormat(node: ts.Node): boolean {
  * twice: *a guard that indicts the correct code is worse than no guard*.
  *
  * The test is deliberately narrow rather than "contains a helper somewhere":
- * the expression must contain at least one helper call AND no `toLocaleString`
- * outside one. So a conditional whose branches route is routed, while
+ * the expression must contain at least one helper call AND no credit number
+ * RENDERED outside one. So a conditional whose branches route is routed, while
  * `` `${cost.toLocaleString()} of ${formatCredits(total)}` `` — half routed,
  * which is the shape that actually ships a mixed scale — is still indicted.
- * `creditDisplayGuard.test.ts` drives both directions.
+ *
+ * ⚠ **"RENDERED" MEANS INTERPOLATED OR FORMATTED, AND THE FIRST CUT COUNTED
+ * ONLY `toLocaleString` — WHICH LEFT A HOLE THE SABOTAGE FOUND.** With that
+ * test, `` `${cost} and ${formatCredits(other)} credits` `` was EXCUSED: a raw
+ * ledger number spliced bare into a sentence beside a routed one, which is the
+ * mixed scale this whole guard is about. Two sabotage cases on the first cut
+ * both SURVIVED, and the reason is worth more than the fix — the arms written
+ * for them used `` `${spent.toLocaleString()} …` ``, which **rule 1 catches on
+ * its own**, so they passed whatever this function did. An arm that another
+ * rule satisfies is not a control on this one.
+ *
+ * A credit name in a CONDITION is deliberately not counted: `typeof balance
+ * === "number" ? …` tests a value, it does not show it, and counting it would
+ * re-indict the sheet dock this function exists to stop re-indicting.
  */
 function routedThroughHelper(node: ts.Node): boolean {
   let helpers = 0;
-  let bareFormats = 0;
+  let bare = 0;
   const visit = (current: ts.Node): void => {
     if (isDisplayHelperCall(current)) {
       helpers += 1;
       /* Inside a helper nothing can be bare — stop descending. */
       return;
     }
-    if (isLocaleFormat(current)) bareFormats += 1;
+    if (isLocaleFormat(current)) {
+      bare += 1;
+      return;
+    }
+    const rendered =
+      current.parent !== undefined &&
+      ((ts.isTemplateSpan(current.parent) && current.parent.expression === current) ||
+        (ts.isJsxExpression(current.parent) && current.parent.expression === current));
+    if (
+      rendered &&
+      (ts.isIdentifier(current) || ts.isPropertyAccessExpression(current)) &&
+      namesIn(current).some((name) => LOOSE_CREDIT_NAME.test(name))
+    ) {
+      bare += 1;
+      return;
+    }
     ts.forEachChild(current, visit);
   };
   visit(node);
-  return helpers > 0 && bareFormats === 0;
+  return helpers > 0 && bare === 0;
 }
 
 /** Every identifier and property name an expression mentions. */

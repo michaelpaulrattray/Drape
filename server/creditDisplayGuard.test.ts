@@ -278,11 +278,38 @@ describe("#1600 slice 2 — a helper NESTED in the indicted expression is routed
   });
 
   it("⚠ STILL REDDENS on a HALF-routed expression — the shape that ships a mixed scale", () => {
-    /* This is the arm that keeps the widening honest. One hole routed and one
-       left bare inside the same sentence is the worst available outcome — two
-       scales in one line — and it must not be excused by the helper call
-       sitting next to it. Drive it by deleting the `bareFormats === 0` clause
-       of `routedThroughHelper`: this arm goes green and the guard is useless. */
+    /*
+      ⚠ THE BARE HALF HERE IS DELIBERATELY *NOT* A `toLocaleString` CALL, AND
+      THAT IS THE WHOLE POINT OF THE ARM.
+
+      The first version of it used `` `${spent.toLocaleString()} of …` `` — and
+      **rule 1 catches that on its own**, so the arm passed no matter what
+      `routedThroughHelper` did. Both sabotage cases written for it SURVIVED.
+      A raw `${cost}` spliced into a credit sentence is reachable by rule 2 and
+      by nothing else, so this arm can only be satisfied by the behaviour it is
+      about.
+
+      Drive it by counting only `toLocaleString` as bare — the function's first
+      cut — and this goes green while a ledger number sits in a sentence next
+      to a converted one.
+    */
+    const sites = creditSitesIn(
+      "client/src/features/billing/Fixture.tsx",
+      [
+        "export const F = ({ cost, total, show }: { cost: number; total: number; show: boolean }) => (",
+        "  <p>Need {show ? `${cost} and ${formatCredits(displayBalance(total))}` : \"\"} credits</p>",
+        ");",
+        "",
+      ].join("\n"),
+    );
+    expect(sites.length).toBeGreaterThan(0);
+    expect(sites.some((site) => site.expression.includes("cost"))).toBe(true);
+  });
+
+  it("⚠ and reddens when the bare half IS formatted, caught by rule 1 as well", () => {
+    /* Kept beside the arm above rather than instead of it: this shape is real
+       and must redden, but it proves rule 1 rather than this function. Saying
+       which is which is the difference between two arms and one. */
     const sites = creditSitesIn(
       "client/src/features/billing/Fixture.tsx",
       [
@@ -292,19 +319,20 @@ describe("#1600 slice 2 — a helper NESTED in the indicted expression is routed
         "",
       ].join("\n"),
     );
-    expect(sites.length).toBeGreaterThan(0);
     expect(sites.some((site) => site.expression.includes("spent.toLocaleString()"))).toBe(true);
   });
 
   it("⚠ STILL REDDENS on an expression that mentions a helper without calling one", () => {
     /* `formatCredits` as a bare reference — passed as a callback, say — is not
        a conversion. Counting a mention rather than a call is the cheap version
-       of this fix and it would excuse every site that imported the helper. */
+       of this fix and it would excuse every site that merely imported the
+       helper. No `toLocaleString` in the fixture on purpose: with one, the
+       expression is bare for a second reason and the arm stops isolating this. */
     const sites = creditSitesIn(
       "client/src/features/billing/Fixture.tsx",
       [
-        "export const F = ({ balance }: { balance: number }) => (",
-        "  <p>{render(balance.toLocaleString(), formatCredits)} credits</p>",
+        "export const F = ({ balance, show }: { balance: number; show: boolean }) => (",
+        "  <p>Need {show ? render(balance, formatCredits) : null} credits</p>",
         ");",
         "",
       ].join("\n"),
