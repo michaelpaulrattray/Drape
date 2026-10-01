@@ -78,6 +78,39 @@ describe("the ask box says what it can do, and it is one sentence", () => {
     expect(element).not.toContain("&&");
   });
 
+  /*
+    ⚠ **THE ARM ABOVE MET ITS FIRST FALSE POSITIVE IN #1727, AND THIS IS THE
+    OTHER HALF OF THE ANSWER.**
+
+    The price is now `null` until the sheet's settings answer, so its clause has
+    to be able to stand down — and written inline that is a `?` inside the
+    element, which the arm above bans. The ban is RIGHT about its subject (the
+    retired garment cell was a ternary over this exact sentence) and blunt about
+    this one, so the component computes the suffix above the JSX and
+    interpolates a plain value. The capability sentence is a literal with no
+    branch over it, exactly as before.
+
+    **That road is only safe while the suffix can say nothing but the price**,
+    which is what this arm holds. Without it, "compute it above" is a way to
+    move any sentence out of the arm's sight — the shape of the sabotage the
+    arm above was widened to catch, one indirection further out.
+  */
+  it("the clause interpolated into that sentence can only ever be the price", async () => {
+    const panel = withoutProse(await readFile(PANEL, "utf8"));
+    const start = panel.indexOf("const refinePriceClause");
+    expect(start, "the price clause is no longer derived under that name — re-read this arm"
+      + " before renaming it, because it is the only thing keeping the element's own ban"
+      + " from being walked around. Card 1727.").toBeGreaterThan(-1);
+    const decl = panel.slice(start, panel.indexOf(";", panel.indexOf("credits each", start)));
+    expect(decl, "the price clause no longer turns on the price alone. Card 1727.")
+      .toContain("priceCredits === null");
+    for (const banned of ["wardrobe", "Edits", "path", "enabled", "Enabled"]) {
+      expect(decl, `the price clause now reads \`${banned}\` — it has stopped being about`
+        + " the price, and the sentence it joins is a capability claim. Card 203 slice 2"
+        + " step c, card 1727.").not.toContain(banned);
+    }
+  });
+
   it("never claims it can reach her clothes", async () => {
     const panel = withoutProse(await readFile(PANEL, "utf8"));
     expect(panel).not.toContain("including what they");

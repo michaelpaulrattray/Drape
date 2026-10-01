@@ -65,7 +65,15 @@ export function SignConfirm({
    * would be a new defect.
    */
   signsVersion: SignVersion | null;
-  priceCredits: number;
+  /**
+   * ⚠ **`null` MEANS THE PRICE HAS NOT BEEN READ, AND IT IS NOT THE SAME FACT
+   * AS A PRICE OF ZERO — #1727.** The sheet's settings query races the roll
+   * query on mount and can fail outright, so this arrives unread; under
+   * `?? 0` the modal stated **`~ 0 credits`** over a button that spends 8,500.
+   * The slot below draws an em dash instead, for the same reason the version
+   * line above says nothing rather than guessing.
+   */
+  priceCredits: number | null;
   busy: boolean;
   onConfirm: (name: string) => void;
   onCancel: () => void;
@@ -137,9 +145,26 @@ export function SignConfirm({
             Approximate, and the tilde stays: generation cost varies, and a
             number presented as exact that then differs is worse than one that
             never claimed to be.
+
+            ⚠ **AND THE WHOLE CLAIM STANDS DOWN WHEN THE PRICE IS UNREAD
+            (#1727) — the SLOT stays, the sentence goes.** The tilde and the
+            word `credits` are both part of the claim, so an unread price keeps
+            none of them: a hedge in front of nothing is still a sentence about
+            a price. What it must not do is disappear, because
+            `.dpc-modal__cost + .dpc-modal__actions` zeroes the actions' own
+            top margin — omitting the element would walk the buttons up the
+            card and then back down when the figure landed, which is the
+            layout shift the em-dash convention exists to avoid.
           */}
           <span className="dpc-modal__cost">
-            <span className="dpc-modal__tilde">~</span> {formatCredits(displayPrice(priceCredits))} credits
+            {priceCredits === null ? (
+              "—"
+            ) : (
+              <>
+                <span className="dpc-modal__tilde">~</span>{" "}
+                {formatCredits(displayPrice(priceCredits))} credits
+              </>
+            )}
           </span>
 
           <div className="dpc-modal__actions">

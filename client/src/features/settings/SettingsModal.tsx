@@ -89,7 +89,8 @@ export function SettingsModal({
   avatarUrl: string | null;
   onAvatarChange: (url: string) => void;
   planName: string;
-  planPriceInCents: number;
+  /** `null` = not read yet, which is a different fact from free (#1727). */
+  planPriceInCents: number | null;
   allowance: number;
   balance: number | null;
   renewsAt: Date | null;
