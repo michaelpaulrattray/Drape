@@ -102,6 +102,28 @@ function shellVar(name: string): string {
   return value;
 }
 
+/**
+ * The Atlas's own module list, filtered to a root — a derived population rather
+ * than a walk of this suite's own invention, so a module cannot be invisible to
+ * one guard here and visible to another (#1711).
+ *
+ * It REFUSES rather than returning a short list: a collector that can come up
+ * empty reports a complete answer either way, and every absence arm in this file
+ * would pass on silence.
+ */
+function atlasModulesUnder(root: RegExp): string[] {
+  const atlas = JSON.parse(read("docs/architecture/drape-architecture.json")) as {
+    modules?: { path?: string }[];
+  };
+  const modules = (atlas.modules ?? [])
+    .map((module) => module.path ?? "")
+    .filter((p) => root.test(p) && !/\.test\.tsx?$/.test(p));
+  if (modules.length === 0) {
+    throw new Error(`the Atlas lists no module under ${root} — reader broken`);
+  }
+  return modules.sort();
+}
+
 const PATTERNS = shellVar("MONEY_PATHS");
 const SYMBOLS = shellVar("MONEY_SYMBOLS");
 const pathRe = new RegExp(PATTERNS);
@@ -398,6 +420,116 @@ describe("the price reading — where money is SET (#1359)", () => {
       expect(() => read(module), `${module} no longer exists, so drop its exclusion`).not.toThrow();
       expect(pathRe.test(module), `${module} is now on MONEY_PATHS, so drop its exclusion`).toBe(false);
     }
+  });
+});
+
+/**
+ * THE CASH-PRICE READING — WHERE A YEAR'S PRICE IS SET (#1711).
+ *
+ * ⚠ **THE PRICE HALF OF #1359, ONE UNIT OF CURRENCY OVER.** That repair asked
+ * where CREDITS are priced and never asked where CASH is, so
+ * `shared/annualBilling.ts` — the one declaration of `ANNUAL_RATE` and of what a
+ * year costs for every plan — was on neither half. Both sides import it and its
+ * own docblock forbids a second copy, so moving `0.83` to `0.93` reprices every
+ * annual subscription in the product, in a one-line diff that no reading sees.
+ *
+ * **Found by driving it**: PR #1710 touched this module and nothing else, and
+ * the gate applied no `founder-review` and triage no `needs-fable`.
+ *
+ * ⚠ **AND THE DERIVED GUARD ABOVE CANNOT BE REUSED FOR IT, WHICH IS WHY THIS
+ * SECTION IS NAMED ARMS RATHER THAN A SECOND POPULATION.** The Atlas's price
+ * collector emits CREDIT numbers, and a rate of `0.83` is not one. A name-shaped
+ * reader for cash was written and run (recorded in `money-surfaces.sh`): 25
+ * modules, of which **eleven are rate LIMITS** — in this tree `RATE` is
+ * overwhelmingly a rate-limit word — so a guard built on it is #958's rejected
+ * 17-of-60 noise in a different costume. Its output was read by hand instead,
+ * and the two arms below are what it bought.
+ */
+describe("the cash-price reading — where a year's price is SET (#1711)", () => {
+  it("labels the module that decides what a year costs", () => {
+    expect(pathRe.test("shared/annualBilling.ts")).toBe(true);
+  });
+
+  /**
+   * THE POSITIVE CONTROL, with the symbol half asserted FALSE beside it — the
+   * shape the price section above established, and the only shape that proves
+   * the new entry is doing the work rather than riding an older reading.
+   */
+  it("a diff that moves only the annual rate is a money diff, and the symbol half is blind to it", () => {
+    const diffLines = [
+      "-export const ANNUAL_RATE = 0.83;",
+      "+export const ANNUAL_RATE = 0.93;",
+      "-  return Math.round((monthlyInCents * 12 * ANNUAL_RATE) / 100) * 100;",
+      "+  return Math.round(monthlyInCents * 12 * ANNUAL_RATE);",
+    ];
+    expect(pathRe.test("shared/annualBilling.ts")).toBe(true);
+    expect(
+      diffLines.some((line) => symbolRe.test(line)),
+      "a repricing names no credit primitive — if this ever becomes true the arm "
+        + "has stopped proving what it claims",
+    ).toBe(false);
+  });
+
+  /**
+   * THE NEGATIVE CONTROL, and it is the measured one rather than an invented
+   * one: these are the modules the cash reader actually returned and that were
+   * deliberately NOT added, each with its reason in `money-surfaces.sh`. An
+   * arm over a plausible-sounding file nobody measured proves nothing; these
+   * four are the real candidates a future widening will be tempted by.
+   */
+  it.each([
+    /* `*_USD_PER_IMAGE` is HOUSE cost — what a render costs us, not a customer. */
+    "server/providers/falImages.ts",
+    "server/providers/falQueue.ts",
+    /* `ROLL_PRICE_FALLBACK = 0` is a safe absence; zero cannot misquote upward. */
+    "client/src/pages/CastingV2.tsx",
+    /* Derives from `annualBilling.ts` and is held to importing rather than
+       re-declaring the rate; covering the authority covers it. */
+    "client/src/features/settings/planMath.ts",
+    /* A rate LIMIT, which is what 11 of the cash reader's 25 hits were. */
+    "server/routes/imageProxy.ts",
+  ])("still leaves %s alone", (file) => {
+    expect(pathRe.test(file)).toBe(false);
+  });
+
+  /**
+   * ⚠ THE DRIFT GUARD FOR THIS ENTRY, DERIVED FROM THE MODULE ITSELF.
+   *
+   * The entry above is a path, and a path list is the second list working law 4
+   * warns about. There is no Atlas collector for cash, so the derivation
+   * available is the other direction: assert that the module this entry names
+   * still IS the authority — that it declares the rate and the cents function,
+   * and that no other non-test module declares its own `ANNUAL_RATE`. A second
+   * declaration appearing elsewhere is both a working-law-4 defect and a new
+   * uncovered money surface, and this is the only arm in the tree that would say
+   * so from the gate's side.
+   */
+  it("the module it names still declares the rate, and nothing else declares one", () => {
+    const code = codeOnly(read("shared/annualBilling.ts"));
+    expect(code, "annualBilling.ts no longer declares ANNUAL_RATE — re-point this entry")
+      .toMatch(/export const ANNUAL_RATE\s*=/);
+    expect(code, "annualBilling.ts no longer declares what a year costs")
+      .toMatch(/export function annualPriceInCents/);
+
+    /*
+      The population is the Atlas's own module list across all three roots —
+      CLIENT INCLUDED, which is the half that matters: `planMath.ts` is the module
+      that carried its own `ANNUAL_RATE` before #664, so the second declaration
+      this arm exists to catch has already happened once, there.
+    */
+    const others = atlasModulesUnder(/^(server|shared|client\/src)\//)
+      .filter((file) => file !== "shared/annualBilling.ts")
+      .filter((file) => {
+        const source = readListedSource(path.join(repoRoot, file));
+        return source !== null && /\bconst\s+ANNUAL_RATE\s*=/.test(codeOnly(source));
+      });
+    expect(
+      others,
+      "a second module declares its own ANNUAL_RATE. That is working law 4 — the "
+        + "drift annualBilling.ts was created to end — AND a money surface outside "
+        + "MONEY_PATHS. Make it import the shared one, or add it to the list: "
+        + others.join(", "),
+    ).toEqual([]);
   });
 });
 
