@@ -132,7 +132,72 @@
 # `server/moneySurfaceClassifier.test.ts` DERIVES the price-module population
 # from the Atlas rather than restating it, with those two exclusions by name, so
 # a price module added tomorrow reddens instead of arriving invisible.
-MONEY_PATHS='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/db/(billing|credits)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^server/casting/atomicCredits\.ts$|^server/casting/(castingCreditCosts|packagePricing)\.ts$|^server/casting/evidence/evidenceCandidateContract\.ts$|^server/wardrobe/creditCosts\.ts$|^server/castingV2/(castViewPackage|packageOrchestrator)\.ts$|^client/src/features/casting/(constants|castingPrices)\.ts$|^shared/const\.ts$|^drizzle/'
+#
+# ⚠ AND WHERE A BALANCE IS WRITTEN *DIRECTLY*, WITH NO PRIMITIVE IN SIGHT, WAS
+# MISSING FROM BOTH HALVES UNTIL 2026-10-01 (#1662). It is the fourth position
+# in the sentence above — after where money is DECIDED, where it is SET, and
+# where a refund is DECIDED BY A BRANCH.
+#
+# `server/db/admin.ts` holds `adjustUserCredits`: the "adjust any" cell of
+# CLAUDE.md's capability grid, and the one write in the product that moves a
+# customer's credits on a staff decision. It writes `credits.balance` and
+# `creditsPurchased` through drizzle `.set()` and inserts the ledger row itself
+# (`admin.ts:374`, `:382`, `:387`), so it names NONE of the symbols below —
+# `grep -E "$MONEY_SYMBOLS" server/db/admin.ts` returns nothing, at HEAD and on
+# every branch. And the path half named `^server/db/(billing|credits)\.ts$`, two
+# files either side of it. So a diff that changed how much an adjustment grants,
+# or removed its below-zero refusal (`admin.ts:368`), or changed which counter
+# it feeds, merged on the gate alone with nothing reading it as money.
+#
+# ROAD: never covered. Like the price modules above, it had never bitten because
+# every diff that touched it rode in on a neighbour — #1604's own PR triages as
+# money only because it ALSO touches `server/db/credits.ts` and `drizzle/`.
+#
+# ⚠ THE LAW-7 SWEEP FOUND ONE SIBLING AND IT SHIPS IN THE SAME COMMIT, because
+# the class is the fix and the instance is not. Read at the tree with comments
+# stripped — every non-comment `.update`/`.insert`/`.delete` of the `credits` or
+# `creditTransactions` tables under `server/` and `shared/` — there are FOUR
+# writers and exactly two were off this list:
+#
+#   server/db/credits.ts           already here
+#   server/db/billing.ts           already here
+#   server/db/admin.ts             ADDED — adjustUserCredits
+#   server/db/accountDeletion.ts   ADDED — deletes the customer's whole ledger
+#     and their credits row (`:628`, `:634`) inside the GDPR deletion. Its route
+#     (`server/routes/auth.ts`) is on this list; the module holding the
+#     statements was not, which is this card's own argument one file over. A
+#     mis-scoped `where` here destroys another customer's ledger.
+#
+#   server/db/connection.ts is NOT a writer and is the measured false positive a
+#     naive text reader produces: its only hits are a docblock EXAMPLE at
+#     `:74`–`:75`. It is the negative control of the derived guard below.
+#
+# MEASURED BEFORE AND AFTER, the standard #958, #1359 and #1622 all met — and on
+# TWO windows, because the 60 newest merged PRs now span barely two days under
+# the builder seats and a two-day window is a thin basis for a judgement:
+#
+#     60 newest PRs merged to main (#1657…#1516), before   9 of 60
+#                                                  after   9 of 60
+#     200 newest (#1657…#1254),                    before  31 of 200
+#                                                  after   31 of 200
+#
+# NOTHING NEW IS LABELLED, on either window: no PR in the newest 200 touches
+# either file at all. The widening costs no reviewer attention and closes a hole
+# whose first instance would have been an admin credit adjustment. The rejected
+# bulk options of #958 and #1622 both land at 17 of 60; this moves nothing, so
+# that judgement is untouched.
+#
+# ⚠ ONE HONEST LIMIT OF THAT MEASUREMENT, stated rather than left to be found:
+# the earlier figures' population could NOT be reproduced here. Four definitions
+# were driven against #1622's recorded 11-of-60-before / 13-of-60-after and none
+# matched (PRs merged to main: 5/6; first-parent commits: 4/5; first-parent
+# commits whose subject ends `(#N)`: 8/9). So the numbers above are NOT
+# continuous with #958's, #1359's or #1622's and must not be read as a trend.
+# What they ARE is a before/after on ONE stated population with the reader's own
+# positive and negative controls green — which is what the decision needs, and
+# the delta is zero on both windows either way. Defining that population once,
+# in code, so the next widening can compare, is its own card.
+MONEY_PATHS='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/db/(billing|credits|admin|accountDeletion)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^server/casting/atomicCredits\.ts$|^server/casting/(castingCreditCosts|packagePricing)\.ts$|^server/casting/evidence/evidenceCandidateContract\.ts$|^server/wardrobe/creditCosts\.ts$|^server/castingV2/(castViewPackage|packageOrchestrator)\.ts$|^client/src/features/casting/(constants|castingPrices)\.ts$|^shared/const\.ts$|^drizzle/'
 
 # ── 2 · SYMBOLS — where money is DECIDED ────────────────────────────────────
 #
