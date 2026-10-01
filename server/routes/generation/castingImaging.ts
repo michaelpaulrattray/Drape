@@ -1,4 +1,5 @@
 import { adminProcedure, router } from "../../_core/trpc";
+import { displayPrice, formatCredits } from "../../../shared/creditDisplay";
 import {
   getModelById, getModelAssets,
   createGeneration, updateGeneration, markGenerationOperationRunning,
@@ -246,7 +247,7 @@ export const castingImagingRouter = router({
           refundedCredits,
           error: new TRPCError({
             code: "BAD_REQUEST",
-            message: deductResult.error || `Insufficient credits. Need ${CREDIT_COSTS.castingImage} credits.`,
+            message: deductResult.error || `Insufficient credits. Need ${formatCredits(displayPrice(CREDIT_COSTS.castingImage))} credits.`,
           }),
         });
       }

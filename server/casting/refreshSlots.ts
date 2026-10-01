@@ -40,6 +40,7 @@ import { VIEW_ANGLE_LABELS, type CanonicalViewAngle } from "../../shared/boardTy
 // V8: refusal law lives in shared/refreshPolicy so the client's stale count
 // and this plan's rows derive from the SAME predicate — they cannot disagree
 import { refreshRefusalFor, type RefreshRefusal } from "../../shared/refreshPolicy";
+import { displayPrice, formatCredits } from "../../shared/creditDisplay";
 import { assertNotArchived } from "./modelGuards";
 import { selectIdentityAnchor } from "./identity/anchorSelector";
 import { createModuleLogger } from "../logging/logger";
@@ -267,7 +268,7 @@ export async function executeRefreshSlots(input: {
     { toolKind: "image" },
   );
   if (!deduct.success) {
-    throw new TRPCError({ code: "BAD_REQUEST", message: deduct.error || `Insufficient credits. Need ${totalCost} credits.` });
+    throw new TRPCError({ code: "BAD_REQUEST", message: deduct.error || `Insufficient credits. Need ${formatCredits(displayPrice(totalCost))} credits.` });
   }
   input.onCharged?.(totalCost);
 

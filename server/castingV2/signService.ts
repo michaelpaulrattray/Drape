@@ -73,6 +73,7 @@ import { storageCopyExact, storageReadBytes } from "../storage";
 import { mintViewThumbnail } from "./viewThumbnailMint";
 import { listLineageReferences } from "../db/castingV2ReferenceLibrary";
 import type { BodyAnchorRegion } from "../../shared/bodyAnchorRegions";
+import { displayPrice, formatCredits } from "../../shared/creditDisplay";
 import { readOpenKindProperties } from "../db/castingV2OpenKindProperties";
 import { deriveLibrary } from "./referenceLibrary";
 import { openKindOfSlot } from "./referenceSlots";
@@ -412,7 +413,7 @@ export async function signCandidate(
       operationId,
       error: new TRPCError({
         code: "BAD_REQUEST",
-        message: chargeResult.error || `Not enough credits. Signing a Cast costs ${price} credits.`,
+        message: chargeResult.error || `Not enough credits. Signing a Cast costs ${formatCredits(displayPrice(price))} credits.`,
       }),
       chargedCredits: 0,
       refundedCredits: 0,

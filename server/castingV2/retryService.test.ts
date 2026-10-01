@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
+import { displayRefund, formatCredits } from "../../shared/creditDisplay";
 
 /**
  * THE RETRY (#122 shape 1) — the money sequence for ONE re-rendered slice.
@@ -507,7 +508,7 @@ describe("the retry is priced from the tile's own row, not from the roll-slice c
     seed({ pointsCost: FOLLOW_SLICE });
     await expect(retryCandidate(dependencies("fails"), INPUT)).rejects.toMatchObject({
       code: "PRECONDITION_FAILED",
-      message: `That tile didn't arrive again. ${FOLLOW_SLICE} credits were refunded.`,
+      message: `That tile didn't arrive again. ${formatCredits(displayRefund(FOLLOW_SLICE))} credits were refunded.`,
     });
     expect(refunds).toEqual([{
       amount: FOLLOW_SLICE,
@@ -583,7 +584,7 @@ describe("when the engine fails again", () => {
   it("refunds the one slice under the RETRY's reference — never the roll's — and leaves the roll's status alone", async () => {
     await expect(retryCandidate(dependencies("fails"), INPUT)).rejects.toMatchObject({
       code: "PRECONDITION_FAILED",
-      message: `That tile didn't arrive again. ${ROLL_SLICE} credits were refunded.`,
+      message: `That tile didn't arrive again. ${formatCredits(displayRefund(ROLL_SLICE))} credits were refunded.`,
     });
     expect(refunds).toEqual([{
       amount: ROLL_SLICE,
@@ -607,7 +608,7 @@ describe("when the engine fails again", () => {
     vi.mocked(db.markCandidateDispatched).mockResolvedValueOnce(false);
     await expect(retryCandidate(dependencies(), INPUT)).rejects.toMatchObject({
       code: "PRECONDITION_FAILED",
-      message: `That tile didn't arrive again. ${ROLL_SLICE} credits were refunded.`,
+      message: `That tile didn't arrive again. ${formatCredits(displayRefund(ROLL_SLICE))} credits were refunded.`,
     });
     expect(refunds).toEqual([{
       amount: ROLL_SLICE,
@@ -807,7 +808,7 @@ describe("a retry whose dispatch WRITE throws — the live-process collision (#8
 
   it("CONTROL — an engine failure inside the unit never reaches the adjudicator; the unit's own refund and receipt stand", async () => {
     await expect(retryCandidate(dependencies("fails"), INPUT)).rejects.toMatchObject({
-      message: `That tile didn't arrive again. ${ROLL_SLICE} credits were refunded.`,
+      message: `That tile didn't arrive again. ${formatCredits(displayRefund(ROLL_SLICE))} credits were refunded.`,
     });
     expect(adjudicator.recover).not.toHaveBeenCalled();
     expect(adjudicator.handoff).not.toHaveBeenCalled();

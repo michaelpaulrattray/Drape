@@ -50,6 +50,7 @@ import { refusal } from "./refusalTag";
 import type { StatedInk } from "./castingIntent";
 
 import { CASTING_V2_COSTS, castingSliceCredits } from "../casting/castingCreditCosts";
+import { displayPrice, displayRefund, formatCredits } from "../../shared/creditDisplay";
 import { censusOfAttempt, censusSoFar } from "./callCensus";
 import { recordRefund, refundTruth } from "../casting/atomicCredits";
 import {
@@ -995,7 +996,7 @@ export async function createRoll(
       operationId: gate.operationId,
       error: new TRPCError({
         code: "BAD_REQUEST",
-        message: chargeResult.error || `Not enough credits. A roll costs ${price} credits.`,
+        message: chargeResult.error || `Not enough credits. A roll costs ${formatCredits(displayPrice(price))} credits.`,
       }),
       chargedCredits: 0,
       refundedCredits: 0,
@@ -1201,7 +1202,7 @@ export async function createRoll(
     // The CAS refuses if cancel already moved the roll to its terminal state.
     await setRollStatus({ userId: input.userId, rollId: roll.id, status: "failed" });
     const refundSentence = unrecordedRefunds === 0
-      ? `${refundedCredits} credits were refunded.`
+      ? `${formatCredits(displayRefund(refundedCredits))} credits were refunded.`
       // Never "you weren't charged" when the ledger says otherwise: quote the
       // operation so support can reconcile it by hand.
       : `Part of the refund could not be recorded — quote operation ${gate.operationId} and support will restore the balance.`;
