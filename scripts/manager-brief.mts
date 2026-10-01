@@ -38,6 +38,37 @@
  * manager. Sending it would hand the manager instructions about its own
  * plumbing, which is the opposite of the point.
  *
+ * # ⚠ AND IT WRITES THE SNAPSHOTS THE MANAGER CAN ACTUALLY READ (2026-10-01)
+ *
+ * **The first armed pass produced no sheet, and this was why.** `gh issue list
+ * --json …` prints COMPACT JSON: one line, no newline at the end. Pass
+ * `20261001-141427`'s queue snapshot was **171,326 bytes on a single line**, and
+ * the manager holds `Read`, `Grep` and `Glob` and nothing else. Measured on a
+ * byte-for-byte size control that same hour:
+ *
+ *  - `Read` returns **the first 21,249 of 171,326 characters** and says the file
+ *    *"has very long lines and cannot be paginated by line"*;
+ *  - `offset`/`limit` are LINE offsets, so `offset: 2` on a one-line file is
+ *    refused as past the end of the file — there is no second page to ask for;
+ *  - the real snapshot's first 21,249 characters hold **5 of its 54 card
+ *    numbers**, so 49 cards were unreachable by any tool the session had.
+ *
+ * The brief asked for exactly 54 rows, one per card, from a file the session
+ * could see 5 cards of. It spent ten minutes on that and was killed at the
+ * ceiling, and because `--output-format json` emits one envelope at the END, the
+ * log was empty and the pass read as *the manager produced nothing*.
+ *
+ * So the snapshots are re-written here, **pretty-printed**, and the brief cites
+ * THOSE paths. Same bytes of data, same shape, one JSON value per line — which
+ * is all `Read` needs to paginate: the real queue becomes 1,028 lines, and a
+ * 5,326-character body line comes back whole (the per-read cap is on the whole
+ * read, never on a line). The raw snapshots are left exactly where the runner
+ * put them, because the sheet writer's allowlists are read from them.
+ *
+ * ⚠ **The line counts go INTO the brief** (`{{QUEUE_LINES}}`, `{{PRS_LINES}}`).
+ * One read still will not hold 179 KB, so the manager has to page; a brief that
+ * does not say how long the file is leaves it to discover that by running out.
+ *
  * Fails toward NO PROMPT: every refusal exits non-zero having written nothing, the
  * runner then skips the manager, and the cut runs exactly as it did before this
  * card.
@@ -55,10 +86,16 @@ const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
 
 const outPath = ARGS.value("out") === null ? null : resolve(ARGS.value("out")!);
 
+/* The readable copies this run has written, so a later refusal takes them back
+   out. They are per-pass paths, so a leftover could not be mistaken for another
+   pass's — but a refused run that leaves files behind is the shape that plants a
+   stale artifact, and this script's whole contract is to leave nothing. */
+const written: string[] = [];
+
 function refuse(why: string): never {
-  if (outPath !== null) {
+  for (const path of [...(outPath === null ? [] : [outPath]), ...written]) {
     try {
-      rmSync(outPath, { force: true });
+      rmSync(path, { force: true });
     } catch {
       /* Must not mask the real reason. */
     }
@@ -102,16 +139,37 @@ if (body.trim() === "") refuse(`the brief at ${briefPath} is empty below its hea
 
 type QueueRow = { readonly number?: unknown };
 let cardCount = 0;
+let queueDoc: unknown = null;
 try {
-  const rows = JSON.parse(readFileSync(queuePath, "utf8")) as unknown;
-  if (!Array.isArray(rows)) refuse(`the queue snapshot at ${queuePath} is not an array`);
-  cardCount = (rows as QueueRow[]).filter(
+  queueDoc = JSON.parse(readFileSync(queuePath, "utf8")) as unknown;
+  if (!Array.isArray(queueDoc)) refuse(`the queue snapshot at ${queuePath} is not an array`);
+  cardCount = (queueDoc as QueueRow[]).filter(
     (row) => typeof row?.number === "number" && Number.isSafeInteger(row.number) && (row.number as number) > 0,
   ).length;
 } catch (error) {
   refuse(`the queue snapshot could not be read (${error instanceof Error ? error.message : String(error)})`);
 }
 if (cardCount === 0) refuse(`the queue snapshot at ${queuePath} names no cards`);
+
+/*
+  THE PULL-REQUEST SNAPSHOT IS PARSED NOW, NOT MERELY STATTED.
+
+  It was `existsSync` alone, because the manager read the file directly and the
+  runner had already checked it starts with `[`. It is re-written below, so it has
+  to be a document rather than a string — and parsing it here is the SAFE
+  direction: a snapshot this cannot read refuses the brief, the runner skips the
+  manager, and the pass cuts exactly as it did before #1658. Nothing can be made
+  worse by refusing here.
+*/
+let prsDoc: unknown = null;
+try {
+  prsDoc = JSON.parse(readFileSync(prsPath, "utf8")) as unknown;
+} catch (error) {
+  refuse(
+    `the pull-request snapshot at ${prsPath} could not be read (${error instanceof Error ? error.message : String(error)})`,
+  );
+}
+if (!Array.isArray(prsDoc)) refuse(`the pull-request snapshot at ${prsPath} is not an array`);
 
 /*
   THE AREA VOCABULARY, through the cutter's own index so the brief and the wall
@@ -133,9 +191,49 @@ try {
 }
 if (domains.length === 0) refuse("the Atlas yielded no domains, so the manager would have no vocabulary");
 
+/*
+  THE SNAPSHOTS THE MANAGER WILL ACTUALLY READ — see the docblock's own section.
+  `gh --json` prints one line; `Read` cannot paginate one line and shows the
+  first ~21,000 characters of it, which was 5 of 54 cards on the first armed
+  pass. Pretty-printing is the whole repair: one JSON value per line, so
+  `offset`/`limit` work.
+
+  ⚠ WRITTEN WITH `\n`, NEVER THE PLATFORM'S LINE ENDING. The line count below is
+  what the brief tells the manager to page by, and `readable.split("\n").length`
+  must be the number `Read` reports. On Windows a CRLF copy still counts the same
+  lines, but the byte figures a later reading quotes would drift from the bytes —
+  and `fingerprint-hashed-line-endings` is this repository's own receipt for what
+  that costs. `JSON.stringify` emits `\n` only, so this is a note rather than a
+  transformation.
+*/
+function readablePathFor(path: string): string {
+  return path.endsWith(".json") ? `${path.slice(0, -".json".length)}.readable.json` : `${path}.readable.json`;
+}
+
+function writeReadable(path: string, doc: unknown, label: string): { readonly path: string; readonly lines: number } {
+  const readablePath = readablePathFor(path);
+  const text = `${JSON.stringify(doc, null, 2)}\n`;
+  try {
+    writeFileSync(readablePath, text, "utf8");
+  } catch (error) {
+    refuse(
+      `the readable ${label} could not be written to ${readablePath} (${error instanceof Error ? error.message : String(error)})`,
+    );
+  }
+  written.push(readablePath);
+  /* The trailing newline makes a final empty element; the manager pages by the
+     lines `Read` numbers, which is this count. */
+  return { path: readablePath, lines: text.split("\n").length - 1 };
+}
+
+const queueReadable = writeReadable(queuePath, queueDoc, "queue snapshot");
+const prsReadable = writeReadable(prsPath, prsDoc, "pull-request snapshot");
+
 const substitutions: Record<string, string> = {
-  QUEUE_FILE: queuePath,
-  PRS_FILE: prsPath,
+  QUEUE_FILE: queueReadable.path,
+  PRS_FILE: prsReadable.path,
+  QUEUE_LINES: String(queueReadable.lines),
+  PRS_LINES: String(prsReadable.lines),
   PASS: pass,
   READ_AT: readAt,
   CARD_COUNT: String(cardCount),
@@ -161,7 +259,13 @@ try {
   refuse(`the prompt could not be written to ${outPath} (${error instanceof Error ? error.message : String(error)})`);
 }
 
-console.log(`BRIEF ${cardCount} cards | ${domains.length} areas | ${prompt.length} characters`);
+/* The readable line counts are ON the verdict line, because the runner prints it
+   and a shift reading a pass later has no other way to know the manager was
+   handed something it could page. A one-line snapshot would read `1 line` here,
+   which is the whole defect visible in the one place every pass records. */
+console.log(
+  `BRIEF ${cardCount} cards | ${domains.length} areas | ${prompt.length} characters | queue ${queueReadable.lines} lines, prs ${prsReadable.lines} lines readable`,
+);
 
 /* AND THE LAST STATEMENT ENDS THE PROCESS (`server/scriptExitDiscipline.test.ts`). */
 process.exit(0);

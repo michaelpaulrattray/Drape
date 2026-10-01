@@ -1733,6 +1733,48 @@ describe("the manager answers the soft readings and every wall still wins", () =
        eleven of the thirteen cards it listed reach the lane through the other. */
     expect(cli.match(/facts: managerFacts/g)?.length ?? 0).toBe(2);
   });
+
+  it("the runner's own verdict on its manager reaches the plan and the SEATS line", () => {
+    /*
+      ⚠ THE SILENCE THIS CLOSES, measured on pass `20261001-141427` — the first
+      pass the armed runner cut. Its manager was launched, ran to its ceiling and
+      was killed; the runner composed the sentence
+      `SHEET none | the manager's log is empty — the session produced nothing`
+      and `Write-Host`'d it to a console nothing keeps. The plan recorded
+      `state: "not asked"`, `note: null`, and the `SEATS` line said nothing at
+      all — so a pass whose manager DIED read exactly like a pass with no manager
+      wired, and the relay's own handoff had told the next shift to read the
+      manager line off the plan, where it had never been. The reason had to be
+      reconstructed from two file sizes and two timestamps.
+
+      A floor like the arm above, and deliberately so: it holds the field, its
+      separateness from `note`, and the fact that `not asked` is no longer mute.
+    */
+    const cli = readFileSync("scripts/cut-seat-batches.mts", "utf8");
+    /*
+      ⚠ THE FLAG IS ASSERTED AT ITS DECLARATION, NOT BY NAME ANYWHERE IN THE
+      FILE. The first shape of this line was `toContain('"manager-note"')`, and it
+      SURVIVED a sabotage that renamed the declaration — because
+      `ARGS.value("manager-note")` three lines later contains the same substring,
+      so the arm was reading its own consumer as its own wiring. An undeclared
+      flag makes `parseStrictArgsOrRefuse` reject the whole call, so the
+      declaration is the fact that matters.
+    */
+    expect(cli).toMatch(/value:\s*\[[^\]]*"manager-note-file",/s);
+    expect(cli).toContain("runnerLine: runnerManagerLine");
+    /* ⚠ A BLANK IS NOT A VERDICT. PowerShell hands an unset variable through as
+       an empty string, and `""` on the plan would read as a sentence the runner
+       gave rather than one it never had. */
+    expect(cli).toContain('return line === "" ? null : line;');
+    /* ⚠ AND AN UNREADABLE ONE CANNOT STOP THE PASS — the cheapest thing in the
+       cut must never be the thing that refuses it (#1658 §5). */
+    expect(cli).toMatch(/catch \{\s*return null;/);
+    /* `note` and `runnerLine` have different authors and are never merged. */
+    expect(cli).toContain("note: managerNote");
+    expect(cli).not.toMatch(/note:\s*managerNote\s*\?\?\s*runnerManagerLine/);
+    /* And `not asked` says so out loud when there is a reason to say. */
+    expect(cli).toContain("manager no sheet (");
+  });
 });
 
 describe("the cut derives rather than mirrors", () => {

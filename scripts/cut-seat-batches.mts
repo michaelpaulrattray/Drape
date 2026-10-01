@@ -139,6 +139,34 @@ const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
     /* #1658 — the manager's fact sheet, and the pass it must belong to. */
     "facts",
     "pass",
+    /*
+      THE RUNNER'S OWN VERDICT ON ITS MANAGER, CARRIED ONTO THE PLAN (2026-10-01).
+
+      ⚠ Without this the reason a pass had no sheet is LOST. The runner composes
+      one line — `SHEET none | the manager's log is empty …`, `BRIEF none | …`,
+      `MANAGER skipped | …` — and `Write-Host`s it to a console nothing keeps,
+      while the plan records `state: "not asked"`, `note: null`. On the first
+      armed pass that reason had to be RECONSTRUCTED from two file sizes and two
+      timestamps, and the relay's own handoff had told the next shift to read the
+      manager line off the plan, where it has never been.
+
+      It is a separate field from `note` on purpose: `note` is this script's
+      complaint about a sheet it read, and `runnerLine` is the runner's sentence
+      about a session this script never saw. One field with two authors is the
+      drift working law 4 is about, and a reader could not tell which of them was
+      speaking.
+
+      ⚠ **A FILE, NOT A STRING, AND THAT IS NOT FASTIDIOUSNESS.** The sentence it
+      carries is composed by the writer and reads
+      `SHEET none | the manager's log is empty — the session produced nothing`:
+      two spaces-and-pipes, an apostrophe, and an EM DASH. The runner's call goes
+      `railway.cmd` → `npx` → `tsx` → node, and each hop can re-split or re-encode
+      an argument; the runner's own patch script holds every byte it inserts to
+      ASCII for exactly this reason. A path has none of those hazards, and the
+      file is a durable per-pass artifact in its own right — a shift can read the
+      verdict even if the plan was never written.
+    */
+    "manager-note-file",
   ],
   boolean: ["no-jev", "quiet"],
 });
@@ -371,6 +399,32 @@ const nowMs = Date.now();
 */
 const factsPath = ARGS.value("facts");
 const passStamp = ARGS.value("pass");
+/*
+  THE RUNNER'S VERDICT LINE, READ OFF DISK.
+
+  Trimmed to `null` when blank or unreadable, because a blank is not a verdict:
+  PowerShell hands an unset variable through as an empty string, and `""` on the
+  plan would read as a sentence the runner gave rather than one it never had
+  (`nullish-default-misses-empty-string` is this repository's receipt for that
+  class).
+
+  ⚠ AND AN UNREADABLE FILE IS `null`, NEVER A REFUSAL. This field is a diagnostic
+  about a session that has already finished; refusing the whole cut over it would
+  let the cheapest thing in the pass stop the pass, which is the one thing #1658's
+  §5 forbids. The cut then looks exactly as it did before this field existed.
+*/
+const runnerManagerLine = (() => {
+  const path = ARGS.value("manager-note-file");
+  if (path === null || path.trim() === "") return null;
+  let text = "";
+  try {
+    text = readFileSync(resolve(path.trim()), "utf8");
+  } catch {
+    return null;
+  }
+  const line = text.trim();
+  return line === "" ? null : line;
+})();
 let managerFacts: SeatManagerFacts | undefined;
 let managerRows: ReadonlyMap<number, ManagerCardRow> = new Map();
 let managerNote: string | null = null;
@@ -682,6 +736,11 @@ const out = {
 
     `state` is one of `not asked`, `usable`, `missing`, `unparseable`, `stale`,
     `partial`, and `note` carries the sentence for every state but the first two.
+    `runnerLine` is the RUNNER's own verdict on the session — the only place the
+    reason a pass had no sheet survives, because the runner prints it to a console
+    nothing keeps. `note` and `runnerLine` have different authors and are never
+    merged: one is this script's complaint about a sheet it read, the other is a
+    sentence about a session it never saw.
     `managerVsJev` is the control the card asks for: the manager's reading beside
     the mechanical one and Jev's, per ordered card, for one week — his decision on
     retiring or keeping Jev here rests on that measured disagreement rate, so it
@@ -695,6 +754,10 @@ const out = {
   manager: {
     state: managerState,
     note: managerNote,
+    /* The runner's own verdict line, verbatim and untruncated — the only record
+       of WHY a pass had no sheet. `null` when the caller passed none, which is
+       how every hand-run cut and every pass before this field looks. */
+    runnerLine: runnerManagerLine,
     sheet: factsPath,
     pass: passStamp,
     readAt: managerSheetReadAt,
@@ -741,8 +804,15 @@ if (!ARGS.flag("quiet")) {
   /* WHICH READER DECIDED THIS PASS, on the line the runner logs (#1658). A pass
      that lost its sheet must say so where somebody will see it, not only in the
      plan JSON — the same argument the milestone word above was added under. */
+  /* ⚠ `not asked` USED TO PRINT NOTHING AT ALL, and a pass whose manager was
+     launched and died therefore read on the `SEATS` line exactly like a pass
+     with no manager wired — which is the silence this field was added to end.
+     With a runner line in hand it is now said out loud; with none (every
+     hand-run cut) the old silence is correct and kept. */
   const managerWord = managerState === "not asked"
-    ? ""
+    ? runnerManagerLine === null
+      ? ""
+      : ` | manager no sheet (${runnerManagerLine.slice(0, 90)})`
     : managerState === "usable"
       ? ` | manager ${managerRows.size} rows`
       : ` | manager ${managerState}${managerNote === null ? "" : ` (${managerNote.slice(0, 90)})`} — read as before`;
