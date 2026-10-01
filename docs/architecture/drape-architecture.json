@@ -112,7 +112,7 @@
     {
       "id": "domain:security",
       "name": "security",
-      "moduleCount": 10
+      "moduleCount": 11
     },
     {
       "id": "domain:settings",
@@ -5577,6 +5577,12 @@
     {
       "id": "module:server/security/correlationId.ts",
       "path": "server/security/correlationId.ts",
+      "domain": "security",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/security/crossSiteExpressGuard.ts",
+      "path": "server/security/crossSiteExpressGuard.ts",
       "domain": "security",
       "lifecycle": "active"
     },
@@ -13869,6 +13875,10 @@
     {
       "id": "test:server/roleManagement.test.ts",
       "path": "server/roleManagement.test.ts"
+    },
+    {
+      "id": "test:server/routes/authCrossSiteGuard.test.ts",
+      "path": "server/routes/authCrossSiteGuard.test.ts"
     },
     {
       "id": "test:server/routes/billingRequestPathVerdicts.test.ts",
@@ -32256,6 +32266,11 @@
     },
     {
       "from": "module:server/routes/emailAuth.ts",
+      "to": "module:server/security/crossSiteExpressGuard.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/emailAuth.ts",
       "to": "module:server/security/disposableEmails.ts",
       "kind": "imports"
     },
@@ -32307,6 +32322,11 @@
     {
       "from": "module:server/routes/emailVerification.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/emailVerification.ts",
+      "to": "module:server/security/crossSiteExpressGuard.ts",
       "kind": "imports"
     },
     {
@@ -33572,6 +33592,16 @@
     {
       "from": "module:server/security/adminSecurity.ts",
       "to": "module:server/auditLog.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/security/crossSiteExpressGuard.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/security/crossSiteExpressGuard.ts",
+      "to": "module:server/security/crossSiteGuard.ts",
       "kind": "imports"
     },
     {
