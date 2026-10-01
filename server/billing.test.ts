@@ -19,7 +19,18 @@ describe("Billing - Plan Tiers Configuration", () => {
   });
 
   it("should have correct monthly credits for all tiers", () => {
-    expect(PLAN_TIERS.free.monthlyCredits).toBe(5000);
+    /*
+      ⚠ THE FREE RUNG'S FIGURE IS A ONE-TIME SIGNUP GRANT, NOT A MONTHLY
+      ALLOWANCE (#1602, P1-3) — 13,500 ledger, 2,700 displayed. It is pinned as
+      a LITERAL on purpose: deriving it from `FREE_SIGNUP_GRANT_CREDITS` would
+      compare the table to itself and could not fail when the promise moved,
+      which is the shape the deleted velocity suite died of (CLAUDE.md).
+
+      The seven paid rungs below are UNCHANGED and are held on his word: the
+      proposal's grants break the #390 credits-per-dollar climb at three rungs.
+      The measurement is on `PLAN_TIERS` itself.
+    */
+    expect(PLAN_TIERS.free.monthlyCredits).toBe(13500);
     expect(PLAN_TIERS.starter.monthlyCredits).toBe(75000);
     expect(PLAN_TIERS.pro.monthlyCredits).toBe(200000);
     expect(PLAN_TIERS.studio.monthlyCredits).toBe(500000);
@@ -112,7 +123,10 @@ describe("Billing - Rollover Calculation", () => {
 
 describe("Billing - Monthly Credits", () => {
   it("should return correct monthly credits for each tier", () => {
-    expect(getMonthlyCredits("free")).toBe(5000);
+    /* 13,500 since #1602 — the one-time signup grant, read through the same
+       accessor every rung uses. The free rung never reaches a refresh; this
+       asserts only that the accessor reports the table. */
+    expect(getMonthlyCredits("free")).toBe(13500);
     expect(getMonthlyCredits("starter")).toBe(75000);
     expect(getMonthlyCredits("pro")).toBe(200000);
     expect(getMonthlyCredits("studio")).toBe(500000);
@@ -228,10 +242,10 @@ describe("Billing - Credit Adjustment for Plan Changes", () => {
   });
 
   it("should handle upgrade from free tier", () => {
-    // Free (5,000) to Starter (75,000), 15 days remaining of 30
-    // Additional credits: 75,000 - 5,000 = 70,000
-    // Prorated: 70,000 * (15/30) = 35,000
-    expect(calculateCreditAdjustment("free", "starter", 15, 30)).toBe(35000);
+    // Free (13,500 since #1602) to Starter (75,000), 15 days remaining of 30
+    // Additional credits: 75,000 - 13,500 = 61,500
+    // Prorated: 61,500 * (15/30) = 30,750
+    expect(calculateCreditAdjustment("free", "starter", 15, 30)).toBe(30750);
   });
 
   it("should handle upgrade to studio tier", () => {
