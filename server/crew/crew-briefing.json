@@ -1,7 +1,7 @@
 {
-  "edition": 598,
-  "updatedAt": "2026-10-01T05:02:22.000Z",
-  "shift": "Foreman night shift — the reading step you asked for yesterday went live at four this morning, did not work the first time it ran, and now does. The very first round it took part in, it produced nothing at all, and the crew carried on exactly as it did before, which is how it was built to fail: no work was lost and nothing broke. The reason was a stopwatch. It had ten minutes to read all 54 open cards and was stopped at ten minutes on the dot, about three minutes before it would have finished — and because it only reports at the very end, being stopped early meant losing everything it had done. I timed the same job twice with the stopwatch off: twelve and thirteen minutes. The limit is now twenty, which leaves room for the card list to grow. Then I measured what the reading is actually worth, on tonight's real queue rather than on a test one. Two of your own ordered cards were being held back by the old guesswork — the Stripe price work, and the test-drive block for this very page — one of them purely because its first line reads “Parent: #1598”, which the crew had been reading as “cannot start yet”. The reading freed both and gave a reason for each that I could check against the card, and it correctly held two others that really were waiting on work still in review. The price, which you should know rather than discover: about five dollars and twelve minutes of our own money and time every time the crew starts a round. One thing I cannot answer for you yet, and am not asking you to decide. I ran the same reading twice over the same 54 cards to see whether it agrees with itself. On “can this be started” it agreed 44 times out of 54; on “would these two jobs get in each other's way” only 36 out of 54, and that second one is what holds cards back. Neither run was simply better than the other — each caught something the other missed. You said you wanted to see how it performs before deciding anything, so that is the first measurement rather than a question. Nothing needs you tonight. One thing is stuck and is named below: the first pricing card's work can no longer be merged, because another branch changed the same files first, and in that state it goes quiet instead of failing loudly.",
+  "edition": 599,
+  "updatedAt": "2026-10-01T06:15:00.000Z",
+  "shift": "Foreman night shift — the pricing work is moving again. The thing that was stuck last night is unstuck, and it turned out to be stuck for a different reason than we thought.\n\nThe first pricing piece is the one that works out every credit number you see. It was waiting on two things. The first was a clash: another branch had changed the same files, so the two had to be brought back together by hand. The second is the one nobody had noticed — the review it had already been given was not an approval at all. It was a list of problems, and nobody had fixed them. Our own machinery had been reading it as a pass for six hours and telling this page the work was about to merge, which is why last night's shift left it alone. That misreading is now its own job to fix.\n\nThe problem the review found is worth you knowing, because it is exactly the kind of mistake that would have reached you with no warning. On a casting tile there is a small label showing what an action costs. The same number appears twice: once in the little box that pops up when you hover, and once on the face of the tile itself. Our checklist of places that need converting to the new prices had the hover box on it and had missed the face. So the tile would have shown you 240 when you hovered and 1,200 on the tile, at the same moment, and nothing we had would have complained. That is fixed, and I proved the fix works by deliberately breaking it four different ways and checking something went red each time.\n\nThen I went looking for the same mistake elsewhere, rather than assuming it was the only one — and it was not. There are fourteen more credit numbers in the app that our checklist cannot see, and three of them are in sentences that say the word 'credits' out loud: the referral line that promises someone credits for their first signed cast, and two lines in the add-credits and change-plan windows. They are missed because the check works from a fixed list of names, and a number can be called anything — these are called things like 'delta', 'reward' and 'earned'. Those two windows are exactly what three of the remaining pricing jobs work on, so this matters now rather than later. I have written it up as its own job rather than quietly widening this one, because you asked that the pricing work stay inside its ten cards.\n\nThe work is finished, all its checks passed first time, and it is waiting on the hand review it needs as a money change. I have not merged it — that is not a shift's to do. Nothing needs you tonight.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -14,7 +14,7 @@
       "title": "P1 — pricing, phase 1: the approved prices and plans, shown at the new scale, with the free plan and the renewal fix",
       "steps": [
         {
-          "state": "waiting",
+          "state": "in-progress",
           "title": "One display helper: every credit number you see is the ledger ÷ 5, prices rounding up and balances rounding down (#1600)"
         },
         {
@@ -145,7 +145,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-01T05:02:40.320Z",
+      "readAt": "2026-10-01T06:11:20.589Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -9091,7 +9091,7 @@
       "title": "One place works out every credit number you see (#1600, the first pricing piece)",
       "status": "in-review",
       "prNumber": 1649,
-      "note": "Cannot be merged as it stands — another branch changed the same files first, so somebody has to bring them back together before it can land. Its review by hand was already given, so doing that costs a second reading; left for the relay in one act."
+      "note": "Mergeable and all seven checks green on the first run; waiting only on its hand review as a money change. The census hole its review found is fixed, and the fourteen more like it are #1676."
     },
     {
       "id": "tracker-probe-slugs-1643",
@@ -9112,9 +9112,9 @@
     {
       "id": "p1-display-pr-conflicting",
       "severity": "warning",
-      "state": "open",
-      "title": "The first pricing card's work cannot be merged until somebody re-bases it (#1600)",
-      "detail": "The pull request for the credit-display card (#1600) can no longer be merged: another branch changed the same files first, so the two disagree and have to be brought back together by hand. It is a quiet kind of stuck — in this state no checks run at all, so its page still shows the last green result and nothing complains.\n\nI have deliberately not touched it. It is a money change, so your rule is that it gets a review by hand before it merges, and it already has one — given last night, after the last change to it. Bringing the branches back together moves the work on, which would throw that review away and make somebody read the whole thing again. That is the relay's call to make in one go, not a shift's to force.\n\nNothing is lost and nothing is at risk; the work simply waits. The other four money cards from last night are clear: all four merged between 04:43 and 04:45 this morning, while I was working. This is the last one of the five."
+      "state": "resolved",
+      "title": "The first pricing card's work was stuck twice over, and both are now cleared (#1600)",
+      "detail": "Cleared this shift. Two separate things were holding it, and only one of them was the one named here.\n\nThe clash is gone: the branches are back together, and the one real disagreement was in the file that decides which changes count as money changes — both sides had added to it, so I kept both. Its checks then ran for the first time in a day and all seven passed.\n\nThe second thing was the real blocker and it was invisible. The review this work had already been given was not an approval — it was a finding, with a problem to fix, and our verdict reader was treating it as a pass. So this page has been saying the work was about to merge since late last night while it sat untouched. That reading is a job of its own now (#1673). The problem it found is fixed and pushed, and the work is now genuinely waiting on nothing but its hand review."
     },
     {
       "id": "review-watch-leak-1515",
@@ -9411,7 +9411,7 @@
     249
   ],
   "nextUp": {
-    "readAt": "2026-10-01T05:02:40.319Z",
+    "readAt": "2026-10-01T06:11:20.588Z",
     "items": [
       {
         "issueNumber": 1658,
