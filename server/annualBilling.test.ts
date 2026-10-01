@@ -159,11 +159,40 @@ describe("one declaration — the mirror stays collapsed (working law 4)", () =>
     ).not.toMatch(declaration);
   });
 
-  it("the server checkout builder computes through the shared module, not inline", () => {
+  it("the server computes a period price through the shared module, not inline", () => {
+    /* ⚠ THE SUBJECT OF THIS ARM MOVED ON 2026-10-02 AND THE FLOOR DID NOT.
+       It used to read `periodPriceInCents(product.priceInCents, interval)` out
+       of `stripeService.ts`'s CHECKOUT BUILDER. #1605 bullet 1 took the amount
+       off that wire entirely — the session now carries a price id resolved
+       from a lookup key — so the arm's own string went away while its
+       SUBJECT, "the server works a year out through one module", did not: the
+       amount is now computed to be COMPARED against Stripe's, inside
+       `resolvePriceId`. Deleting the assertion would have been lowering the
+       floor to fit the move; it is pointed at the new site instead, and the
+       two negative controls stay on the service where the inline arithmetic
+       actually lived. */
     const service = code(read("server", "stripe", "stripeService.ts"));
     expect(service).toContain('from "@shared/annualBilling"');
     expect(service, "the inline 12 × 0.83 came back").not.toMatch(/\*\s*12\s*\*\s*0?\.83/);
-    expect(service).toContain("periodPriceInCents(product.priceInCents, interval)");
+
+    const catalogue = code(read("server", "stripe", "stripePriceCatalogue.ts"));
+    expect(catalogue).toContain('from "@shared/annualBilling"');
+    expect(
+      catalogue,
+      "the catalogue grew its own year arithmetic instead of asking the shared module",
+    ).not.toMatch(/\*\s*12\s*\*\s*0?\.83/);
+    expect(catalogue).toContain("periodPriceInCents(product.priceInCents, interval)");
+  });
+
+  it("⚠ and the checkout builder sends no computed amount at all any more (#1605 bullet 1)", () => {
+    /* The other half of the move, as a source reading rather than a belief:
+       the builder that used to compose `unit_amount` no longer mentions it.
+       `checkoutProductText.test.ts` proves the same thing at the wire, which
+       is the stronger evidence — this arm is here so that a re-added inline
+       price reddens the suite that OWNS the arithmetic too. */
+    const service = code(read("server", "stripe", "stripeService.ts"));
+    expect(service, "an inline price_data came back to checkout").not.toContain("price_data");
+    expect(service, "an ad-hoc price mint came back").not.toContain("prices.create");
   });
 
   it("planMath re-exports the shared arithmetic under the names its surfaces use", () => {

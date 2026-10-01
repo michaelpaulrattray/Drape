@@ -17,7 +17,7 @@
     {
       "id": "domain:billing",
       "name": "billing",
-      "moduleCount": 12
+      "moduleCount": 13
     },
     {
       "id": "domain:boards",
@@ -5689,6 +5689,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/stripe/stripePriceCatalogue.ts",
+      "path": "server/stripe/stripePriceCatalogue.ts",
+      "domain": "billing",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/stripe/stripeProducts.ts",
       "path": "server/stripe/stripeProducts.ts",
       "domain": "billing",
@@ -10121,6 +10127,22 @@
       "file": "server/db/discrepancyQueries.ts"
     },
     {
+      "id": "cost:server/stripe/stripePriceCatalogue.ts:PRICE_LOOKUP_KEY_VERSION",
+      "name": "PRICE_LOOKUP_KEY_VERSION",
+      "constant": "PRICE_LOOKUP_KEY_VERSION",
+      "credits": null,
+      "derivedFrom": "\"v2\"",
+      "file": "server/stripe/stripePriceCatalogue.ts"
+    },
+    {
+      "id": "cost:server/stripe/stripePriceCatalogue.ts:PRICE_UNAVAILABLE_SENTENCE",
+      "name": "PRICE_UNAVAILABLE_SENTENCE",
+      "constant": "PRICE_UNAVAILABLE_SENTENCE",
+      "credits": null,
+      "derivedFrom": "\"We could not price that plan just now, so nothing was changed and nothing was charged. This one is on us — please try again shortly.\"",
+      "file": "server/stripe/stripePriceCatalogue.ts"
+    },
+    {
       "id": "cost:server/wardrobe/creditCosts.ts:WARDROBE_CREDIT_COSTS.garmentAnalyze",
       "name": "WARDROBE_CREDIT_COSTS.garmentAnalyze",
       "constant": "WARDROBE_CREDIT_COSTS",
@@ -14196,6 +14218,10 @@
     {
       "id": "test:server/stripe/refundFailed.test.ts",
       "path": "server/stripe/refundFailed.test.ts"
+    },
+    {
+      "id": "test:server/stripe/stripePriceCatalogue.test.ts",
+      "path": "server/stripe/stripePriceCatalogue.test.ts"
     },
     {
       "id": "test:server/stripe/stripeRefund.test.ts",
@@ -31953,6 +31979,11 @@
     },
     {
       "from": "module:server/routes/billing.ts",
+      "to": "module:server/_core/spokenError.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/billing.ts",
       "to": "module:server/_core/trpc.ts",
       "kind": "imports"
     },
@@ -31979,6 +32010,11 @@
     {
       "from": "module:server/routes/billing.ts",
       "to": "module:server/stripe/planChangeSettlement.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/billing.ts",
+      "to": "module:server/stripe/stripePriceCatalogue.ts",
       "kind": "imports"
     },
     {
@@ -34102,6 +34138,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/stripe/stripePriceCatalogue.ts",
+      "to": "module:server/stripe/stripeProducts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/stripePriceCatalogue.ts",
+      "to": "module:shared/annualBilling.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/stripe/stripeProducts.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -34129,6 +34175,11 @@
     {
       "from": "module:server/stripe/stripeService.ts",
       "to": "module:server/stripe/environmentTag.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/stripeService.ts",
+      "to": "module:server/stripe/stripePriceCatalogue.ts",
       "kind": "imports"
     },
     {

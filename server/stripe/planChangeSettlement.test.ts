@@ -20,9 +20,10 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import type Stripe from "stripe";
 
-const { pricesCreate, subscriptionsUpdate, subscriptionsRetrieve, invoicesRetrieve, invoicesVoid } =
+const { pricesCreate, pricesList, subscriptionsUpdate, subscriptionsRetrieve, invoicesRetrieve, invoicesVoid } =
   vi.hoisted(() => ({
     pricesCreate: vi.fn(),
+    pricesList: vi.fn(),
     subscriptionsUpdate: vi.fn(),
     subscriptionsRetrieve: vi.fn(),
     invoicesRetrieve: vi.fn(),
@@ -31,7 +32,7 @@ const { pricesCreate, subscriptionsUpdate, subscriptionsRetrieve, invoicesRetrie
 
 vi.mock("stripe", () => ({
   default: class StripeDouble {
-    prices = { create: pricesCreate };
+    prices = { create: pricesCreate, list: pricesList };
     subscriptions = { retrieve: subscriptionsRetrieve, update: subscriptionsUpdate };
     invoices = { retrieve: invoicesRetrieve, voidInvoice: invoicesVoid };
     customers = { retrieve: vi.fn(), create: vi.fn() };
@@ -107,6 +108,8 @@ import { billingRouter } from "../routes/billing";
 import { handleStripeWebhook } from "./webhooks";
 import { settlementLedgerRef } from "./planChangeSettlement";
 import { PLAN_TIERS } from "../../drizzle/schema";
+import { SUBSCRIPTION_PRODUCTS } from "./stripeProducts";
+import { periodPriceInCents } from "@shared/annualBilling";
 import { wholeDisplayLedger } from "@shared/creditDisplay";
 import { deploymentTag } from "../_core/env";
 
@@ -166,6 +169,36 @@ beforeEach(() => {
   db.voidPendingPlanChangeSettlementsForUser.mockResolvedValue([]);
   db.getVoidPlanChangeSettlementInvoiceIdsForUser.mockResolvedValue([]);
   pricesCreate.mockResolvedValue({ id: "price_minted" });
+  /* ⚠ THE PLAN'S PRICE IS NOW AN OBJECT IN STRIPE'S CATALOGUE (#1605 bullet
+     1), so `updateSubscriptionPlan` resolves it by lookup key before it
+     touches the subscription. This suite measures what happens to CREDITS
+     after the change, so the catalogue simply answers; the resolver's own
+     refusals are driven in `stripePriceCatalogue.test.ts` and its wire in
+     `annualPlanChange.test.ts`.
+
+     It answers for whichever plan and interval an arm asks for rather than for
+     one fixed rung, because a hard-coded `pro` answer would refuse on the
+     amount check the moment an arm changed rung — which is the refusal
+     working, in a suite that is not about it. */
+  pricesList.mockImplementation(async ({ lookup_keys }: { lookup_keys: string[] }) => {
+    const key = lookup_keys[0];
+    const match = /^klieg_(.+)_(monthly|yearly)_v2$/.exec(key);
+    if (!match) return { data: [] };
+    const [, plan, keyInterval] = match;
+    const product = SUBSCRIPTION_PRODUCTS[plan];
+    if (!product) return { data: [] };
+    const interval = keyInterval === "yearly" ? "annual" : "monthly";
+    return {
+      data: [
+        {
+          id: `price_catalogue_${plan}_${keyInterval}`,
+          lookup_key: key,
+          unit_amount: periodPriceInCents(product.priceInCents, interval),
+          recurring: { interval: keyInterval === "yearly" ? "year" : "month" },
+        },
+      ],
+    };
+  });
   subscriptionsUpdate.mockResolvedValue({ latest_invoice: "in_change" });
   armStripeSubscription();
 });
