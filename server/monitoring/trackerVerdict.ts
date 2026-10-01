@@ -35,6 +35,8 @@
  * `server/trackerVerdict.test.ts`.
  */
 
+import { SENTRY_ORG, SENTRY_SERVER_PROJECT } from "../../shared/monitoringProjects";
+
 /** What a vendor read-back was able to say about a specific event id. */
 export type VendorLookup =
   /** The vendor's API confirmed the event id exists in the project. */
@@ -186,7 +188,7 @@ export function probeMarker(sha: string | undefined, nonce: string): string {
 }
 
 /** Where a probe learned which build it is probing. */
-export type ProbeBuildSource = "deployment" | "checkout" | "unknown";
+export type ProbeBuildSource = "health" | "deployment" | "checkout" | "unknown";
 
 export interface ProbeBuild {
   /** The commit, or `undefined` when neither road could answer. */
@@ -218,6 +220,34 @@ export interface ProbeBuild {
  * repository keeps paying for, so the note says which one it is and the caller
  * cannot print the sha without it.
  *
+ * # ⚠ AND A THIRD ROAD, WHICH IS THE ONLY ONE THAT CAN NAME THE SERVING BUILD
+ * FROM OUTSIDE IT (#1643)
+ *
+ * When the deploy rite fires this probe it has just read `/api/health` three
+ * times, and that response carries `build` — the commit the process now taking
+ * traffic was built from. That is a strictly better answer than either road
+ * above for the question *"which build is this run about?"*, because neither
+ * road can see production at all: `RAILWAY_GIT_COMMIT_SHA` is absent under
+ * `railway run`, and the git HEAD is whatever tree the operator happens to be
+ * standing in.
+ *
+ * ⚠ **IT IS PASSED IN RATHER THAN READ HERE, AND THAT IS THE CONTROL RATHER
+ * THAN A CONVENIENCE.** Only the caller knows whether its run is ABOUT the
+ * deployment. A probe that fetched production's health itself would stamp
+ * production's sha onto a laptop run pointed at a localhost DSN — a confident
+ * attribution that is wrong in the one direction that matters, and worse than
+ * the `checkout` note it would replace. So the rite, which read the artifact
+ * and knows what it is probing, hands the sha over; every other road keeps
+ * saying `checkout` and is right to.
+ *
+ * ⚠ **WHAT THE SHA CLAIMS, EXACTLY.** The probe's event is sent by the process
+ * running the script, never by the deployed one, so `health` does not mean
+ * *"this build emitted the event"*. It means *"the DSN, scrub and transport
+ * this run exercised are the ones that build is configured with"* — the same
+ * service variables — which is the question a dead pipe is asked. Anything
+ * stronger needs an admin-only probe inside the server, which #1542 named and
+ * did not build.
+ *
  * `gitHead` is injected rather than called here: this module is imported by the
  * server and must never spawn a process, and a reader that shells out cannot be
  * driven over its own failure arm.
@@ -231,7 +261,25 @@ export function readProbeBuild(
      ambient types — which is the whole reason that second check exists. */
   env: { readonly RAILWAY_GIT_COMMIT_SHA?: string | undefined },
   gitHead: () => string | undefined,
+  /**
+   * `/api/health`'s own `build`, from a caller that read it this run. Absent on
+   * every road but the rite's — see the block above for why it is not fetched
+   * here.
+   */
+  healthBuild?: string | undefined,
 ): ProbeBuild {
+  const serving = healthBuild?.trim();
+  if (serving) {
+    return {
+      sha: serving,
+      source: "health",
+      note:
+        "/api/health's `build` — the commit production is SERVING, read by the caller this run. The event " +
+        "itself is sent by this process using that service's own DSN, so the sha names the pipe under test, " +
+        "not the emitter.",
+    };
+  }
+
   const deployed = env.RAILWAY_GIT_COMMIT_SHA?.trim();
   if (deployed) {
     return {
@@ -270,4 +318,124 @@ export function readProbeBuild(
  */
 export function probeErrorMessage(marker: string): string {
   return `Klieg tracker probe — deliberate test exception, not a customer error (${marker})`;
+}
+
+/**
+ * THE PROBE'S MARK — the context it hands `captureServerError`, in ONE place for
+ * the same reason the message above is (#1650, 2026-10-01).
+ *
+ * `kind` reaches Sentry as a tag (`captureServerError` sets it on the scope,
+ * `shared/errorEventScrub.ts`'s `ALLOWED_TAG_KEYS` lets it travel), and it is
+ * what takes ~35 events a day out of his Errors feed: `!kind:probe`. Read at
+ * Sentry's own API on 2026-10-01 rather than assumed — every probe event of the
+ * preceding day carries `kind=probe` and `route=scripts/probe-error-tracker.mts`,
+ * the real `announcements.getActive` crashes beside them carry `kind=trpc`.
+ *
+ * ⚠ **IT IS DECLARED HERE RATHER THAN SPELLED AT THE CALL SITE BECAUSE THE
+ * SUITE CANNOT RUN THE SCRIPT.** `scripts/probe-error-tracker.mts` needs a
+ * Sentry account, so the arms in `server/trackerVerdict.test.ts` drive the
+ * scrub over a FIXTURE of the probe's event — and a fixture that spells these
+ * two strings itself is a second copy of them, green forever while the script
+ * renames its own tag to something his filter does not match (working law 4,
+ * and this function's own docblock one paragraph up). Both sides import this.
+ */
+export const PROBE_ERROR_CONTEXT = {
+  kind: "probe",
+  route: "scripts/probe-error-tracker.mts",
+} as const;
+
+/** Which declaration a slug came from, for the receipt. */
+export type ProbeSlugSource = "declared" | "environment";
+
+export interface ProbeSlugs {
+  readonly org: string;
+  readonly project: string;
+  readonly orgSource: ProbeSlugSource;
+  readonly projectSource: ProbeSlugSource;
+  /** What was actually used, for the receipt — never a reconstruction. */
+  readonly note: string;
+}
+
+/**
+ * WHICH SENTRY ORG AND PROJECT THE READ-BACK ASKS ABOUT.
+ *
+ * ⚠ **THIS FUNCTION EXISTS BECAUSE THE PROBE DECLINED TO MEASURE WHEN IT HAD
+ * EVERYTHING IT NEEDED, AND THAT IS THE MIRROR OF THE DEFECT IT WAS BUILT FOR.**
+ * Driven through the deploy rite's own invocation on 2026-10-01
+ * (`railway run --service Drape -- npx tsx scripts/probe-error-tracker.mts`),
+ * against a pipe that is demonstrably live, it returned:
+ *
+ *     lookup   not-checked — SENTRY_AUTH_TOKEN is set but SENTRY_ORG/SENTRY_PROJECT are not.
+ *     VERDICT  accepted-unverified  (finding)
+ *     EXIT     2
+ *
+ * The same run with the two slugs supplied by hand returned `arrived` / `EXIT 0`
+ * on attempt 3. So the pipe was healthy, the token carried `event:read`, and the
+ * only thing between the rite and a true verdict was two strings **this
+ * repository already declares**. Under #1643 that `EXIT 2` is a `problems` entry,
+ * so merging the rite step without this would have withheld
+ * `RITE EXIT STATUS: OK` from **every deploy from now on** — an instrument
+ * manufacturing the alarm it exists to raise honestly, which is the exact failure
+ * `readProbeStep`'s own header refuses one case of and would have shipped in
+ * another.
+ *
+ * # ⚠ Why importing the declaration is not the second copy the probe's docblock feared
+ *
+ * That docblock said the ids *"come from the environment and have no defaults
+ * here"* because the declaration lived in
+ * `client/src/features/admin/overview/dashboards.ts`, whose header carries his
+ * *"Links — no fourth key"* ruling and says **that module** must never grow a
+ * reader. Two things make this different, and both are read at the code rather
+ * than argued:
+ *
+ * 1. **The declaration MOVED** (#1420 part 1). It is `shared/monitoringProjects.ts`
+ *    — a module with NO imports, created precisely so a second reader that cannot
+ *    reach the client module takes the ids from the one declaration; `vite.config.ts`
+ *    is the first such reader and this is the second. `dashboards.ts` now
+ *    re-exports. **Importing the one declaration is the opposite of keeping a
+ *    second copy** — spelling `klieg-labs` into a script would have been working
+ *    law 4's parallel list, and that is what this avoids.
+ * 2. **His "no fourth key" ruling was about his PAGE, and the key already exists
+ *    because he provisioned it.** He declined a credentialled read-back *on the
+ *    admin overview*, so that page cannot carry numbers that disagree with the
+ *    dashboard. This probe is not that page: it already reads Sentry's API with
+ *    `SENTRY_AUTH_TOKEN`, which he put on the service himself, and his eye
+ *    validated that road on #1542. Nothing here widens what the probe reaches —
+ *    it only stops it declining to look.
+ *
+ * ⚠ **AND THE FETCH STAYS OUT OF BOTH DECLARING MODULES.** `monitoringProjects.ts`'s
+ * header forbids *it* growing a reader that fetches; the constants flow into this
+ * pure verdict module and the `fetch` stays in the script, where it already was.
+ *
+ * # The environment still wins
+ *
+ * A set `SENTRY_ORG`/`SENTRY_PROJECT` overrides, so a probe can be pointed at the
+ * browser project or a renamed org without a deploy. ⚠ **A BLANK variable is
+ * NOT an override** — a Railway variable that exists with an empty value reads as
+ * `""`, and `??` would pass that straight through to build
+ * `…/projects//events/…`, a 404 read as `lost-in-transit` on a healthy pipe. It
+ * is trimmed and an empty result falls back to the declaration.
+ */
+export function readProbeSlugs(env: {
+  readonly SENTRY_ORG?: string | undefined;
+  readonly SENTRY_PROJECT?: string | undefined;
+}): ProbeSlugs {
+  const fromEnvOrg = env.SENTRY_ORG?.trim();
+  const fromEnvProject = env.SENTRY_PROJECT?.trim();
+
+  const orgSource: ProbeSlugSource = fromEnvOrg ? "environment" : "declared";
+  const projectSource: ProbeSlugSource = fromEnvProject ? "environment" : "declared";
+  const org = fromEnvOrg || SENTRY_ORG;
+  const project = fromEnvProject || SENTRY_SERVER_PROJECT;
+
+  const both = orgSource === projectSource ? orgSource : null;
+  const note =
+    both === "declared"
+      ? `${org}/${project}, from shared/monitoringProjects.ts — the ids this repository declares.`
+      : both === "environment"
+        ? `${org}/${project}, both from the environment, overriding the declared ids.`
+        : `${org}/${project} — org from the ${orgSource === "environment" ? "environment" : "declaration"},`
+          + ` project from the ${projectSource === "environment" ? "environment" : "declaration"}.`;
+
+  return { org, project, orgSource, projectSource, note };
 }

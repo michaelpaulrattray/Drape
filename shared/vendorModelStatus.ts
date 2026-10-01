@@ -172,9 +172,21 @@ export const WIRED_DESPITE_SHUTDOWN: readonly AcknowledgedModelDebt[] = [
       "structural backstop. The id stays in the registry because he chose neither of the card's " +
       "two options — no re-point, no retirement — and the road returns on N8 as a build. " +
       "⚠ WHAT IS STILL WIRED IS THE LEGACY CASTING STUDIO'S three image paths " +
-      "(`server/casting/geminiGeneration.ts`, `geminiViews.ts`, `aiService.ts`), reachable only " +
-      "at /studio, which is admin-only since #364. That is N8's retirement (#29) and was never " +
-      "this card's scope; it is named here so the next reader does not take this line as covering it.",
+      "(`server/casting/geminiGeneration.ts`, `geminiViews.ts`, `aiService.ts`). That is N8's " +
+      "retirement (#29) and was never this card's scope; it is named here so the next reader does " +
+      "not take this line as covering it. " +
+      "⚠ THIS CLAUSE READ 'reachable only at /studio, which is admin-only since #364' UNTIL " +
+      "2026-10-01 AND THAT WAS FALSE — corrected at the code while sealing the lane's paid " +
+      "procedures (#1654). THREE of the four paid legacy procedures were indeed /studio-only and " +
+      "are now `adminProcedure`; the fourth, `generation.refreshSlots`, is reached by the LIVE " +
+      "CANVAS (`features/boards/canvas/nodes/useSheetController.ts:137` on `/app/canvas/:id`, with " +
+      "no admin check in `CastNode.tsx`), charges at `server/casting/refreshSlots.ts:261`, and " +
+      "renders through `generatePackageSlotCandidate` → `aiService.generateRemainingViews` → " +
+      "`geminiViews` — so a customer can be charged for a render on this id. It is NOT sealed " +
+      "because sealing it removes a live feature, which is a product decision; the three options " +
+      "and the recommendation are on #1654. ⚠ And this file's own warning applies to the " +
+      "reachability question exactly as it applies to the id: 'a shut-down id does not reliably " +
+      "fail loudly', so no complaint is not evidence of no traffic.",
   },
   {
     id: "gemini-3.1-flash-image-preview",

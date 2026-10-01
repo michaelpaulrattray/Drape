@@ -148,6 +148,16 @@ Sessions are managed through HTTP-only cookies containing JWT tokens. The cookie
 | `sameSite` | `lax` | Prevents CSRF while allowing normal navigation |
 | `maxAge` | 7 days | Limits session lifetime |
 
+⚠ **THE `sameSite` ROW WAS ASPIRATIONAL UNTIL 2026-10-01 AND READ AS A FACT
+(#1653).** `server/_core/cookies.ts` said `sameSite: isSecureRequest(req) ? "none" : "lax"`,
+so the value above was true only of a developer's laptop and the production
+cookie was `None` — which tells the browser to do the opposite of what the
+Purpose column claims. It is `lax` on every road now, and
+`server/crossSiteMutationGuard.test.ts` plus the two wire arms
+(`routes/googleAuth.test.ts`, `auth.logout.test.ts`) hold it there. Read this
+row as describing the product from that date, not before it: the repository's
+own security audit had carried the same finding as **M1** since 2026-07-25.
+
 ### Logout Implementation
 
 The logout endpoint clears the session cookie:

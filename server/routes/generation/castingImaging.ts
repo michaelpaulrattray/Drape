@@ -1,4 +1,4 @@
-import { protectedProcedure, router } from "../../_core/trpc";
+import { adminProcedure, router } from "../../_core/trpc";
 import {
   getModelById, getModelAssets,
   createGeneration, updateGeneration, markGenerationOperationRunning,
@@ -58,7 +58,25 @@ export const castingImagingRouter = router({
   // charge, never silently ignored. A new cast is established from the
   // structured attributes and brief alone; references join after the first
   // headshot, through the guarded iteration path.
-  castingImage: protectedProcedure
+  /*
+    ⚠ ADMIN-ONLY SINCE #1654 — his word, 2026-10-01: *"i agree with your
+    reccs."*, on sealing the legacy lane's paid procedures now.
+
+    The legacy studio PAGE has been admin-only since #364; its API was not.
+    This procedure deducts `CREDIT_COSTS.castingImage` and renders through
+    `aiService` → `geminiGeneration`, which point at `IMAGE_PRO` —
+    `gemini-3-pro-image-preview`, which Google shut down on 2026-06-25
+    (`shared/vendorModelStatus.ts`). So any approved account could spend on a
+    call that cannot succeed and rely on the refund path to get it back. The
+    page gate and the procedure gate now agree.
+
+    ⚠ `adminProcedure` rather than a refusal carrying the shut-down door's
+    sentence, and the card asked for that choice to be named: a door sentence
+    is for a door a customer MEETS, and no customer can reach this one — every
+    client caller is under `/studio`. A sentence nobody can read is machinery,
+    and this way there is no new copy to keep honest.
+  */
+  castingImage: adminProcedure
     .input(z.object({
       clientRequestId: z.string().uuid(),
       modelId: z.number(),

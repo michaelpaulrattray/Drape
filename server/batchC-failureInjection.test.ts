@@ -444,11 +444,21 @@ const appRouter = {
 };
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
-function authCtx(userId = 1): TrpcContext {
+/*
+  ⚠ THE ROLE IS A PARAMETER SINCE #1654, AND IT STILL DEFAULTS TO "user".
+  `generation.castingImage`, `generation.iterate` and
+  `generation.mintPackage` became `adminProcedure` when the legacy lane's
+  paid procedures were sealed, so the arms that DRIVE those three need a caller
+  the gate admits. Every other arm here is about a procedure a customer still
+  reaches, and the default is what keeps them honest — raising it for the whole
+  file would have made those arms stop testing the account they are written
+  about. `server/legacySpendSeal.test.ts` is where the gate itself is driven.
+*/
+function authCtx(userId = 1, role: "user" | "admin" = "user"): TrpcContext {
   const user = {
     id: userId, openId: `t-${userId}`, email: `t${userId}@x.com`, name: "T",
     loginMethod: "manus",
-    approved: true, role: "user", createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date(),
+    approved: true, role, createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date(),
   } as AuthenticatedUser;
   return {
     user,
@@ -626,7 +636,7 @@ describe("generation.iterate boundaries", () => {
     vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
     vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue(effectiveState() as never);
 
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     const result = await caller.generation.iterate({
       modelId: 7,
       feedback: "brighten the lighting",
@@ -660,7 +670,7 @@ describe("generation.iterate boundaries", () => {
     vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
     vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue(effectiveState() as never);
 
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(
       caller.generation.iterate({
         modelId: 7,
@@ -686,7 +696,7 @@ describe("generation.iterate boundaries", () => {
       }],
     }) as never);
 
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(
       caller.generation.iterate({
         modelId: 7,
@@ -707,7 +717,7 @@ describe("generation.iterate boundaries", () => {
       .mockResolvedValueOnce(effectiveState() as never)
       .mockRejectedValueOnce(new Error("snapshot drift"));
 
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(
       caller.generation.iterate({
         modelId: 7,
@@ -730,7 +740,7 @@ describe("generation.iterate boundaries", () => {
     vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
     vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue(effectiveState() as never);
 
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await caller.generation.iterate({
       modelId: 7,
       feedback: "make the jawline broader",
@@ -756,7 +766,7 @@ describe("generation.iterate boundaries", () => {
 
   it("image-only: generation success + asset write failure ⇒ refund once (derived id), honest error", async () => {
     vi.mocked(createModelAsset).mockResolvedValue({ success: false } as never);
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(
       caller.generation.iterate({ modelId: 7, feedback: "brighten the lighting", assetId: 100 }),
     ).rejects.toMatchObject({ message: expect.stringContaining("refunded") });
@@ -770,7 +780,7 @@ describe("generation.iterate boundaries", () => {
 
   it("createGeneration failure refuses BEFORE any deduction or image call", async () => {
     vi.mocked(createGeneration).mockResolvedValue({ success: false } as never);
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(
       caller.generation.iterate({ modelId: 7, feedback: "brighten the lighting", assetId: 100 }),
     ).rejects.toMatchObject({ message: expect.stringContaining("weren't charged") });
@@ -781,7 +791,7 @@ describe("generation.iterate boundaries", () => {
   it("identity commit success + audit-row completion failure ⇒ the result STANDS, no refund", async () => {
     llmScript.classify = '{"kind":"identity","categories":["person.face.jawline"],"operations":{}}';
     vi.mocked(updateGeneration).mockResolvedValue({ success: false } as never);
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     const result = await caller.generation.iterate({ modelId: 7, feedback: "sharper jawline", assetId: 100 });
     expect(result.success).toBe(true);
     expect(iterateModelRaw).toHaveBeenCalledTimes(1);
@@ -797,7 +807,7 @@ describe("generation.iterate boundaries", () => {
       violations: ["overall.facialIdentity"],
     });
 
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(
       caller.generation.iterate({ modelId: 7, feedback: "make the jawline sharper", assetId: 100 }),
     ).rejects.toMatchObject({
@@ -821,7 +831,7 @@ describe("generation.iterate boundaries", () => {
     llmScript.classify = '{"kind":"identity","categories":["person.face.jawline"],"operations":{}}';
     vi.mocked(verifyIdentityEdit).mockResolvedValue({ ok: false, checked: false, violations: [] });
 
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(
       caller.generation.iterate({ modelId: 7, feedback: "make the jawline sharper", assetId: 100 }),
     ).rejects.toMatchObject({
@@ -842,7 +852,7 @@ describe("generation.castingImage boundaries", () => {
   it("createGeneration failure after the deduction refunds once and stops before the image call", async () => {
     vi.mocked(getModelAssets).mockResolvedValue([] as never); // initial cast
     vi.mocked(createGeneration).mockResolvedValue({ success: false } as never);
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(caller.generation.castingImage({ modelId: 7 })).rejects.toMatchObject({
       message: expect.stringContaining("refunded"),
     });
@@ -860,7 +870,7 @@ describe("generation.castingImage boundaries", () => {
       storageKey: "casting/x.png",
       engineUsed: "test",
     } as never);
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(caller.generation.castingImage({ modelId: 7 })).rejects.toMatchObject({
       message: expect.stringContaining("refunded"),
     });
@@ -1126,7 +1136,7 @@ const RAW_INTERNAL = "connect ECONNREFUSED 10.7.7.7 x-api-key=SECRET_TOKEN paylo
 describe("public error sanitization at the paid doors", () => {
   it("iterate: a raw internal generation error reaches the client as safe wording + refund truth", async () => {
     vi.mocked(iterateModel).mockRejectedValue(new Error(RAW_INTERNAL));
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     let message = "";
     try {
       await caller.generation.iterate({ modelId: 7, feedback: "brighten the lighting", assetId: 100 });

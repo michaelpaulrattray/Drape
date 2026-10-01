@@ -1,4 +1,4 @@
-import { publicProcedure, protectedProcedure, router } from "../../_core/trpc";
+import { adminProcedure, publicProcedure, protectedProcedure, router } from "../../_core/trpc";
 import {
   getModelById, getUserGenerations, getUserById, getModelAssets,
   markGenerationOperationRunning, assertGenerationOperationSnapshotHead,
@@ -254,8 +254,19 @@ export const castingExportRouter = router({
     }),
 
   /** D-39 tiered mint execute: generates the tier's missing views (back
-   *  views pass the identity gate, retry-then-refund), names + mints. */
-  mintPackage: protectedProcedure
+   *  views pass the identity gate, retry-then-refund), names + mints.
+   *
+   *  ⚠ ADMIN-ONLY SINCE #1654 — it charges through `executeMintPackage`'s
+   *  `onCharged` and renders on the shut-down `IMAGE_PRO`. Reasoning on
+   *  `castingImage` in `castingImaging.ts`. Its only client caller is
+   *  `features/studio/hooks/useCastGate.ts`, under the sealed `/studio`.
+   *
+   *  ⚠ `mintPackagePlan` beside it stays `protectedProcedure` DELIBERATELY:
+   *  it is a price-and-eligibility READ that spends nothing, and four live
+   *  customer surfaces query it (`CastProfilePanel`, `ViewTabs`,
+   *  `PackageHealthDialog`, `CastStateHistory`). Sealing a read to close a
+   *  spend would take a working surface away for nothing. */
+  mintPackage: adminProcedure
     .input(z.object({
       clientRequestId: z.string().uuid(),
       modelId: z.number().int().positive(),
@@ -846,6 +857,27 @@ export const castingExportRouter = router({
   /** R5 refresh execute: regenerates the slots against the CURRENT headshot,
    *  new asset rows (newest-wins), per-slot named-and-refunded failures.
    *  Refuses the headshot, pinned, and never-attempted slots structurally. */
+  /*
+    ⚠ THE ONE PAID LEGACY PROCEDURE #1654 DID *NOT* SEAL, AND IT IS THE ONE A
+    CUSTOMER CAN REACH. Named here rather than left as an omission.
+
+    It charges (`executeRefreshSlots`, `server/casting/refreshSlots.ts:261`)
+    and renders through `generatePackageSlotCandidate` →
+    `aiService.generateRemainingViews` → `geminiViews`, i.e. the shut-down
+    `IMAGE_PRO`. Unlike the other three, its client callers are NOT behind the
+    sealed `/studio`: the canvas's `CastNode` sheet
+    (`features/boards/canvas/nodes/useSheetController.ts:137`, route
+    `/app/canvas/:id`, no `isAdmin` check anywhere in `CastNode.tsx`) and a
+    second canvas road through `features/casting/hooks/useCastingPackageRefresh.ts`.
+
+    So sealing it to admins TAKES A LIVE FEATURE AWAY FROM CUSTOMERS, which is
+    a product decision and not a transcription — #1654's census comment
+    carries the three options and the recommendation (refuse at the mouth now,
+    retire with N8). It stays `protectedProcedure` until that is answered.
+
+    ⚠ Do not read the three seals above as "the legacy paid lane is closed".
+    It is three of four.
+  */
   refreshSlots: protectedProcedure
     .input(z.object({
       clientRequestId: z.string().uuid(),

@@ -34,20 +34,47 @@
  * that goes green when it could not perform its measurement is the lying control
  * this repository has paid for three times over.
  *
- * # The ids are NOT copied into this file
+ * ⚠ **AND THE MIRROR OF THAT IS ALSO A DEFECT, WHICH IS WHAT 2026-10-01 FIXED:
+ * AN INSTRUMENT THAT DECLINES TO MEASURE WHEN IT CAN.** Refusing to guess a
+ * missing credential is honest; refusing to read an id the tree declares is a
+ * finding reported over a healthy pipe, and it sends the next reader to audit a
+ * DSN that is fine. The token is still never assumed.
  *
- * `SENTRY_ORG` and `SENTRY_PROJECT` come from the environment and have no
- * defaults here. The org and both project slugs are DECLARED once, in
- * `client/src/features/admin/overview/dashboards.ts` (his own instruction on
- * #1441: *"Put the three ids in one declared constant so a renamed project is
- * one edit"*), and that module's docblock forbids it growing a vendor reader —
- * so this script neither imports it nor keeps a second copy of its values.
- * Pass them, or the read-back declines rather than guessing.
+ * # The ids are NOT copied into this file — they are IMPORTED from the one declaration
+ *
+ * ⚠ **THIS SECTION SAID THE OPPOSITE UNTIL 2026-10-01 AND IT COST THE RITE ITS
+ * VERDICT.** It read *"come from the environment and have no defaults here …
+ * pass them, or the read-back declines rather than guessing"*, citing
+ * `client/src/features/admin/overview/dashboards.ts` and his *"Links — no fourth
+ * key"* ruling. Driven through the rite's own invocation against a live pipe,
+ * that produced `not-checked` → `accepted-unverified` → `EXIT 2`, which #1643
+ * reads as a `problems` entry — so every deploy receipt would have lost
+ * `RITE EXIT STATUS: OK` forever, over two strings this repository declares.
+ *
+ * `readProbeSlugs` (`server/monitoring/trackerVerdict.ts`) carries the full
+ * reading, including why his ruling does not bind this script. In short: the
+ * declaration MOVED to `shared/monitoringProjects.ts` (#1420 part 1), a
+ * no-imports module made for exactly this — a node-side reader that cannot reach
+ * the client module — and importing the one declaration is the opposite of the
+ * second copy that section feared. His ruling was about his PAGE not growing a
+ * credentialled reader; this script has read Sentry's API with his own
+ * `SENTRY_AUTH_TOKEN` since #1542, with his eye on that road.
+ *
+ * `SENTRY_ORG`/`SENTRY_PROJECT` still OVERRIDE when set, so the probe can be
+ * pointed at the browser project without a deploy. A blank variable is not an
+ * override.
  *
  * # Usage
  *
  *   npx tsx scripts/probe-error-tracker.mts                 # this process's env
  *   railway.cmd run --service Drape -- npx tsx scripts/probe-error-tracker.mts
+ *   … -- npx tsx scripts/probe-error-tracker.mts --health-build <sha>
+ *
+ * `--health-build` is `/api/health`'s own `build` field, and it is the deploy
+ * rite's road (#1643): the rite has just read it three times, so it can say
+ * which build production is SERVING, which neither the environment nor this
+ * checkout can. Passing anything else under that name is a lie the marker will
+ * carry into the feed — see `readProbeBuild`'s header.
  *
  * Exit 0 only on `arrived`. Any other verdict exits 2 — a finding, in the
  * gate-stall-check sense, so a rite step or `deploy-verify` can read it.
@@ -83,12 +110,26 @@ import {
   initErrorTracker,
 } from "../server/monitoring/errorTracker";
 import {
+  PROBE_ERROR_CONTEXT,
   probeErrorMessage,
   probeMarker,
   readProbeBuild,
+  readProbeSlugs,
   readTrackerProbe,
   type VendorLookup,
 } from "../server/monitoring/trackerVerdict";
+import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
+
+/*
+  THE WHOLE VOCABULARY, DECLARED ONCE. Until #1643 this script read no arguments
+  at all, so `--dry-run` — the safest-sounding word an operator can type at a
+  script that WRITES to a vendor — would have been ignored and the event sent
+  anyway. That is `strictArgs.mts`'s own founding incident, one script over.
+*/
+const args = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: ["health-build"],
+  boolean: [],
+});
 
 /**
  * How long to keep asking Sentry before calling an event absent.
@@ -120,21 +161,12 @@ interface LookupOutcome {
  */
 async function lookUpAtSentry(eventId: string): Promise<LookupOutcome> {
   const token = process.env.SENTRY_AUTH_TOKEN?.trim();
-  const org = process.env.SENTRY_ORG?.trim();
-  const project = process.env.SENTRY_PROJECT?.trim();
+  const { org, project, note: slugNote } = readProbeSlugs(process.env);
 
   if (!token) {
     return {
       lookup: "not-checked",
       note: "SENTRY_AUTH_TOKEN is not set in this process, so Sentry was never asked.",
-    };
-  }
-  if (!org || !project) {
-    return {
-      lookup: "not-checked",
-      note:
-        "SENTRY_AUTH_TOKEN is set but SENTRY_ORG/SENTRY_PROJECT are not. This script keeps no copy of the slugs " +
-        "on purpose — they are declared in client/src/features/admin/overview/dashboards.ts. Pass them and re-run.",
     };
   }
 
@@ -151,7 +183,7 @@ async function lookUpAtSentry(eventId: string): Promise<LookupOutcome> {
       if (response.status === 200) {
         return {
           lookup: "arrived",
-          note: `Sentry answered 200 for the event id on attempt ${attempts} (${org}/${project}).`,
+          note: `Sentry answered 200 for the event id on attempt ${attempts} · ${slugNote}`,
         };
       }
       if (response.status !== 404) {
@@ -201,7 +233,7 @@ const gitHead = (): string | undefined => {
 };
 
 const nonce = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-const build = readProbeBuild(process.env, gitHead);
+const build = readProbeBuild(process.env, gitHead, args.value("health-build") ?? undefined);
 const marker = probeMarker(build.sha, nonce);
 
 console.log("— error tracker probe (#1542) —");
@@ -218,10 +250,19 @@ const before = errorTrackerStatus();
 
 /* The real crash path, with the real options and the real scrub. `kind: "probe"`
    rides as a tag so the event is filterable in the feed as well as findable by
-   its marker. */
+   its marker.
+
+   ⚠ THAT IS READ AT SENTRY'S OWN API RATHER THAN BELIEVED FROM HERE (#1650,
+   2026-10-01). `GET /api/0/projects/klieg-labs/klieg-server/events/` returns
+   `kind=probe · route=scripts/probe-error-tracker.mts` on every probe event,
+   beside `kind=trpc` on the real crashes of the same day — so `!kind:probe` is
+   the whole filter, and #1650's request for a SECOND `probe` tag was declined
+   as the eighth entry on a seven-key allowlist carrying what the seventh
+   already carries (working law 4). The tag's survival through the projection is
+   pinned in `server/trackerVerdict.test.ts`; without that arm, dropping `kind`
+   from `ALLOWED_TAG_KEYS` would stop his filter matching with nothing red. */
 const eventId = await captureServerError(new Error(probeErrorMessage(marker)), {
-  kind: "probe",
-  route: "scripts/probe-error-tracker.mts",
+  ...PROBE_ERROR_CONTEXT,
 });
 
 await flushErrorTracker(10_000);

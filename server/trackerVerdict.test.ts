@@ -24,13 +24,16 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  PROBE_ERROR_CONTEXT,
   probeErrorMessage,
   probeMarker,
   readProbeBuild,
+  readProbeSlugs,
   readTrackerProbe,
   type TrackerProbeFacts,
 } from "./monitoring/trackerVerdict";
 import { scrubErrorEvent } from "../shared/errorEventScrub";
+import { SENTRY_ORG, SENTRY_SERVER_PROJECT } from "../shared/monitoringProjects";
 
 /** A healthy, arrived run — every arm below is this with one fact changed. */
 const arrived: TrackerProbeFacts = {
@@ -219,6 +222,56 @@ describe("⚠ which build the probe probed, and how it knows (#1542)", () => {
     const build = readProbeBuild({}, () => undefined);
     expect(probeMarker(build.sha, "run-one")).toBe("probe:unknown:run-one");
   });
+
+  /**
+   * ⚠ THE THIRD ROAD (#1643) — the only one that can name the SERVING build from
+   * outside it. The deploy rite has just read `/api/health` three times, so it
+   * holds the sha of the process now taking traffic; neither road above can see
+   * production at all.
+   */
+  describe("the rite's road: /api/health's own build (#1643)", () => {
+    const SERVING = "4942f8b465f9067e8ef25f06a55bbd54cb0ed0f2";
+
+    it("takes the health sha when the caller hands one over", () => {
+      const build = readProbeBuild({}, () => HEAD, SERVING);
+      expect(build).toMatchObject({ sha: SERVING, source: "health" });
+      expect(build.note).toContain("/api/health");
+      expect(build.note).toContain("SERVING");
+    });
+
+    it("⚠ OUTRANKS both older roads, and does not ask git at all", () => {
+      /* A deployed container that is ALSO handed health's answer: the two agree on
+         a normal night, and when they do not, the one that read the running
+         process wins. `never` throwing is the assertion. */
+      const build = readProbeBuild({ RAILWAY_GIT_COMMIT_SHA: DEPLOYED }, never, SERVING);
+      expect(build.sha).toBe(SERVING);
+      expect(build.source).toBe("health");
+    });
+
+    it("⚠ SAYS the event was not emitted by that build, so the sha cannot be over-read", () => {
+      /* The probe's event is sent by the script's process on the service's DSN.
+         The sha names the PIPE under test, not the emitter, and a note that let
+         that be misread would invite exactly the confident-wrong reading the two
+         older notes exist to prevent. */
+      const build = readProbeBuild({}, () => HEAD, SERVING);
+      expect(build.note).toContain("sent by this process");
+      expect(build.note).toContain("not the emitter");
+    });
+
+    it("treats absent, empty and blank as NOT PASSED — falls back rather than reporting a hole", () => {
+      /* `/api/health` returns `build: null` when the service names no commit, and
+         the reader turns that into `null`, so `--health-build` is simply not
+         passed. Were a blank to win here, the marker would read `probe::nonce`. */
+      for (const nothing of [undefined, "", "   "]) {
+        expect(readProbeBuild({}, () => HEAD, nothing).source).toBe("checkout");
+      }
+      expect(readProbeBuild({}, () => undefined, "").source).toBe("unknown");
+    });
+
+    it("trims it, exactly as it trims the other two", () => {
+      expect(readProbeBuild({}, never, ` ${SERVING}\n`).sha).toBe(SERVING);
+    });
+  });
 });
 
 describe("the probe's event against the REAL scrub (#1542's own done-when)", () => {
@@ -228,7 +281,10 @@ describe("the probe's event against the REAL scrub (#1542's own done-when)", () 
   const probeEvent = (message: string) => ({
     event_id: "abc123def456",
     message,
-    tags: { kind: "probe", route: "scripts/probe-error-tracker.mts", world: "railway:production" },
+    /* The probe's OWN two strings, imported rather than spelled — see
+       `PROBE_ERROR_CONTEXT`'s header. `world` is the tracker's, not the
+       probe's, and is spelled here on purpose. */
+    tags: { ...PROBE_ERROR_CONTEXT, world: "railway:production" },
     exception: {
       values: [{ type: "Error", value: message, stacktrace: { frames: [{ filename: "scripts/probe-error-tracker.mts" }] } }],
     },
@@ -249,5 +305,173 @@ describe("the probe's event against the REAL scrub (#1542's own done-when)", () 
     };
     const verdict = scrubErrorEvent(withRecipe, IMAGE_ORIGIN);
     expect(verdict.verdict).toBe("refuse");
+  });
+
+  /**
+   * ⚠ THE MARK HIS FEED FILTERS ON, PINNED — AND THE TWO ARMS ABOVE CANNOT SEE IT
+   * (#1650, 2026-10-01).
+   *
+   * #1650 was filed saying *"nothing marks them as probes, so the Errors feed
+   * and any count that reads it show them as real events"*, and asked for a
+   * second `probe` tag. **Read at Sentry's own API rather than at the card** —
+   * `GET /api/0/projects/klieg-labs/klieg-server/events/`, through the service's
+   * `SENTRY_AUTH_TOKEN` — all four probe events of 2026-09-30/10-01 carry
+   * `kind=probe` and `route=scripts/probe-error-tracker.mts`, while the two real
+   * `announcements.getActive` crashes beside them carry `kind=trpc`. So
+   * `!kind:probe` already filters them, and an eighth key on
+   * `ALLOWED_TAG_KEYS` carrying what the seventh carries is the parallel list
+   * working law 4 is about. The second tag is declined on the card.
+   *
+   * **What was genuinely missing is this arm.** The two above assert only that
+   * the event is NOT REFUSED; neither reads the projected output, so
+   * `scrubErrorEvent` is proven to pass the probe and never proven to pass its
+   * MARK. Drop `"kind"` from `ALLOWED_TAG_KEYS` — a seven-entry security
+   * allowlist that has been edited before — and both stay green while the
+   * projection silently drops the tag, his saved filter stops matching, and the
+   * ~35 probe events a day come back into the feed with nothing anywhere
+   * failing. A signal bought and unread, one line from the signal this product
+   * already paid for (#1542, and the DT law's clause 4).
+   */
+  it("the projection KEEPS the probe's mark — the tag his feed filters on", () => {
+    const verdict = scrubErrorEvent(probeEvent(probeErrorMessage(probeMarker("abcdef1", "n"))), IMAGE_ORIGIN);
+    if (verdict.verdict !== "send") throw new Error(`the probe's own event was refused: ${verdict.key}`);
+    expect(verdict.event.tags?.kind).toBe("probe");
+    expect(verdict.event.tags?.route).toBe("scripts/probe-error-tracker.mts");
+  });
+
+  it("and a tag key the allowlist does not name is DROPPED (so the arm above is not blind)", () => {
+    // The negative control for the arm above: without it, `tags.kind` surviving
+    // could mean the projection copies every tag it is handed, in which case the
+    // arm proves nothing about the allowlist at all.
+    const withStranger = { ...probeEvent("anything"), tags: { ...probeEvent("x").tags, nonsense: "travelled" } };
+    const verdict = scrubErrorEvent(withStranger, IMAGE_ORIGIN);
+    if (verdict.verdict !== "send") throw new Error("the control event was refused");
+    expect(verdict.event.tags?.kind).toBe("probe");
+    expect(verdict.event.tags).not.toHaveProperty("nonsense");
+  });
+
+  it("a REAL crash's mark travels too, and it is never `probe` (#1650's own clause)", () => {
+    // "real crashes never carry it" is a claim about the other side of the
+    // filter, and it is the half that decides whether `!kind:probe` hides a
+    // customer's crash. The tags are the ones Sentry actually holds on the two
+    // `announcements.getActive` events read on 2026-10-01.
+    const crash = {
+      event_id: "2ee63f40dfd643ca80818b50a883a60b",
+      message: "Failed query",
+      tags: { kind: "trpc", route: "announcements.getActive", trpcType: "query", world: "railway:production" },
+      exception: { values: [{ type: "Error", value: "Failed query" }] },
+    };
+    const verdict = scrubErrorEvent(crash, IMAGE_ORIGIN);
+    if (verdict.verdict !== "send") throw new Error("a real crash's event was refused");
+    expect(verdict.event.tags?.kind).toBe("trpc");
+    expect(verdict.event.tags?.kind).not.toBe("probe");
+  });
+});
+
+/**
+ * ⚠ WHICH ORG AND PROJECT THE READ-BACK ASKS ABOUT (#1643's remainder, 2026-10-01).
+ *
+ * The defect these arms exist for was found by DRIVING the rite's own invocation
+ * rather than by reading: the probe declined the read-back because
+ * `SENTRY_ORG`/`SENTRY_PROJECT` are not set on the service, returned
+ * `accepted-unverified` / `EXIT 2` over a pipe that then proved `arrived` the
+ * moment the two declared slugs were supplied — and under #1643 that exit is a
+ * `problems` entry, so it would have cost every future deploy its
+ * `RITE EXIT STATUS: OK`.
+ *
+ * ⚠ **THE EXPECTATIONS ARE DERIVED FROM THE DECLARATION, NEVER SPELLED AGAIN
+ * HERE.** A test that hardcodes `"klieg-labs"` is the second copy the whole
+ * one-edit promise exists to prevent (working law 4) — it would pass while a
+ * renamed project silently pointed the probe at nothing. The one literal arm
+ * asserts only that the declaration is non-empty and slug-shaped, which is the
+ * fact a derived comparison cannot notice going wrong.
+ */
+describe("the probe's org and project (#1643 remainder)", () => {
+  it("falls back to the ids this repository declares when the environment says nothing", () => {
+    const slugs = readProbeSlugs({});
+
+    expect(slugs.org).toBe(SENTRY_ORG);
+    expect(slugs.project).toBe(SENTRY_SERVER_PROJECT);
+    expect(slugs.orgSource).toBe("declared");
+    expect(slugs.projectSource).toBe("declared");
+    expect(slugs.note).toContain("shared/monitoringProjects.ts");
+  });
+
+  it("is the SERVER project, not the browser one — the probe reports through the node SDK", () => {
+    expect(readProbeSlugs({}).project).toBe(SENTRY_SERVER_PROJECT);
+  });
+
+  it("lets the environment override both, so a probe can be pointed elsewhere without a deploy", () => {
+    const slugs = readProbeSlugs({ SENTRY_ORG: "other-org", SENTRY_PROJECT: "other-project" });
+
+    expect(slugs.org).toBe("other-org");
+    expect(slugs.project).toBe("other-project");
+    expect(slugs.orgSource).toBe("environment");
+    expect(slugs.projectSource).toBe("environment");
+    expect(slugs.note).toContain("overriding the declared ids");
+  });
+
+  /*
+    ⚠ THE ARM THIS FUNCTION WAS WRITTEN AROUND. A Railway variable that exists
+    with an empty value arrives as `""`, which `??` passes straight through — the
+    URL becomes `…/projects//events/…`, Sentry answers 404 for ninety seconds and
+    the probe reports `lost-in-transit` on a healthy pipe. That is the expensive
+    verdict to get wrong, because it sends the next reader to audit a DSN that is
+    fine. Replace `||` with `??` in `readProbeSlugs` and these two go red.
+  */
+  it("treats a BLANK variable as absent rather than as an override", () => {
+    const slugs = readProbeSlugs({ SENTRY_ORG: "", SENTRY_PROJECT: "" });
+
+    expect(slugs.org).toBe(SENTRY_ORG);
+    expect(slugs.project).toBe(SENTRY_SERVER_PROJECT);
+    expect(slugs.orgSource).toBe("declared");
+  });
+
+  it("treats a whitespace-only variable as absent too", () => {
+    const slugs = readProbeSlugs({ SENTRY_ORG: "   ", SENTRY_PROJECT: "	" });
+
+    expect(slugs.org).toBe(SENTRY_ORG);
+    expect(slugs.project).toBe(SENTRY_SERVER_PROJECT);
+  });
+
+  it("trims a real override rather than carrying the operator's spaces into the URL", () => {
+    expect(readProbeSlugs({ SENTRY_ORG: "  spaced-org  " }).org).toBe("spaced-org");
+  });
+
+  it("says which side came from where when only one is overridden", () => {
+    const slugs = readProbeSlugs({ SENTRY_PROJECT: "klieg-web" });
+
+    expect(slugs.org).toBe(SENTRY_ORG);
+    expect(slugs.orgSource).toBe("declared");
+    expect(slugs.project).toBe("klieg-web");
+    expect(slugs.projectSource).toBe("environment");
+    expect(slugs.note).toContain("org from the declaration");
+    expect(slugs.note).toContain("project from the environment");
+  });
+
+  /*
+    The positive control on the declaration itself. Every arm above compares the
+    resolver against the constants, so all of them would still pass if both
+    constants were emptied — and the probe would then build a URL with two empty
+    segments. This is the one thing that cannot be derived.
+  */
+  it("⚠ positive control — the declared ids are real slugs, which no derived arm above can notice", () => {
+    for (const slug of [SENTRY_ORG, SENTRY_SERVER_PROJECT]) {
+      expect(slug).toMatch(/^[a-z0-9][a-z0-9-]*$/);
+      expect(slug.length).toBeGreaterThan(2);
+    }
+  });
+
+  /*
+    ⚠ AND THE READ-BACK IS NEVER REPORTED AS DONE WITHOUT THE TOKEN. The slugs
+    having a default must not leak into the credential: the probe's refusal half
+    is what makes it an instrument, and a resolver that answered for the token too
+    would have turned `not-checked` into a silent green.
+  */
+  it("resolves ids only — it says nothing about the credential", () => {
+    const slugs = readProbeSlugs({});
+
+    expect(Object.keys(slugs).sort()).toEqual(["note", "org", "orgSource", "project", "projectSource"]);
+    expect(JSON.stringify(slugs)).not.toContain("TOKEN");
   });
 });

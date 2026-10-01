@@ -133,6 +133,7 @@ import { BRIEFING_PATH, generatedFilesFrom, judgeQuietEdition, QUIET_REFUSAL, ty
 import { judgeBriefingConformance } from "./lib/briefingConformance.mts";
 import { eyeFrameKeysOf, judgeEyeFramePresence } from "./lib/eyeFramePresence.mts";
 import { probeProductionHealth } from "./lib/productionHealthProbe.mts";
+import { probeInvocation, readProbeStep } from "./lib/trackerProbeStep.mts";
 import { fetchWithClearedTimeout, settleSockets } from "./lib/exitSafeFetch.mts";
 import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
@@ -1293,6 +1294,73 @@ const latencies = healths.map((entry) => entry.db);
 // not a party to the subtraction. See scripts/lib/uptimeAnchor.mts.
 const anchor = uptimeAnchor(healths[0]!);
 
+/* ── 4a. the error tracker, PROBED (#1643 — the remainder of #1542) ─────── */
+
+/*
+  HE FOUND THE LAST DEAD PIPE HIMSELF, AND THAT IS THE DEFECT THIS CLOSES.
+
+  On 2026-09-30 the founder clicked *Errors*, reached the right Sentry project,
+  and read the *"Get Started … no event, ever"* panel over a server that had
+  printed `[Errors] reporting to Sentry` at every boot for three days. Nothing
+  in the product could tell him whether that quiet was three quiet days or a
+  pipe that had never carried anything. #1542 built the positive control that
+  answers it; this fires that control on every deploy, so the next dead pipe is
+  a line in a receipt rather than a question he has to think to ask.
+
+  ⚠ **IT RUNS AFTER HEALTH ON PURPOSE.** The probe's whole subject is the build
+  now taking traffic: before the health check there is no verdict on which
+  process that is, and `/api/health`'s `build` — the sha handed to the probe
+  below — is only trustworthy once the three readings have agreed the deploy is
+  up. Probing first would attribute an event to a build that had not landed.
+
+  ⚠ **AND IT NEVER ROLLS ANYTHING BACK** (#1643's own done-when). A tracker that
+  is down is not a reason to keep an old build serving, so a bad verdict costs
+  the run its `RITE EXIT STATUS: OK` and nothing else — the same ride the flag,
+  schema and asset problems already take.
+
+  ⚠ **AND THERE IS NO `--dry` GUARD HERE ON PURPOSE.** A rehearsal must not
+  write to a vendor, and a probe event is a write — it creates an issue in the
+  feed he opens. The guard would be dead code: `if (DRY) … process.exit(0)` at
+  the end of step 2 means a dry run never reaches the watch, let alone health, so
+  nothing walks this road. Read at the bytes rather than added for comfort;
+  `server/trackerProbeStep.test.ts` pins that ordering instead.
+
+  The spawn policy is here and the VERDICT is `scripts/lib/trackerProbeStep.mts`,
+  which is `productionHealthProbe.mts`'s split for its reason: a judgement that
+  only runs inside the script that pushes to production is a judgement nothing
+  can drive.
+*/
+const tracker = ((): { line: string; problems: readonly string[] } => {
+  /* The SERVING build, from the artifact this run just read three times — not
+     from `sha`, which is what was PUSHED. They are the same commit on a normal
+     night and are exactly what the uptime anchor exists to tell apart. */
+  const servingBuild = healths[0]!.build;
+  const { command, args: probeArgs } = probeInvocation({ service: SERVICE, healthBuild: servingBuild });
+
+  /*
+    `spawnSync` rather than `run()`: `run` returns a failure's text as an
+    ordinary string with no status, and the status is half of what is read here.
+    `shell` for the same reason every railway call in this script uses it —
+    `railway.cmd` is a batch file.
+
+    ⚠ The timeout is the probe's own read-back window (90s) plus room for the
+    wrapper, tsx and the SDK. Without one, a `railway run` that sits waiting on
+    an unlinked project hangs the rite AFTER the deploy has landed, which is the
+    worst place in the script to stop.
+  */
+  const result = spawnSync(command, probeArgs, {
+    encoding: "utf8",
+    shell: true,
+    maxBuffer: 8 * 1024 * 1024,
+    timeout: 4 * 60 * 1000,
+  });
+  const reading = readProbeStep({
+    output: `${result.stdout ?? ""}${result.stderr ?? ""}`,
+    status: result.status,
+  });
+  return { line: reading.line, problems: reading.problems };
+})();
+
 /* ── 5. the flags, OFF THE SERVICE ──────────────────────────────────────── */
 
 /*
@@ -1594,6 +1662,16 @@ if (assets.problems.length === 0) {
   say(`  *** STATIC ASSET PROBLEM — ${assets.problems.length} ***`);
   for (const problem of assets.problems) say(`  ! ${problem}`);
 }
+say("");
+say(`ERROR TRACKER, probed through the real crash path (#1643): ${tracker.line}`);
+if (tracker.problems.length === 0) {
+  say("  ✓ a deliberate test exception reached Sentry, so a quiet Errors feed is genuine silence");
+} else {
+  say(`  *** ERROR TRACKER PROBLEM — ${tracker.problems.length} ***`);
+  for (const problem of tracker.problems) say(`  ! ${problem}`);
+  say("  The deploy is NOT rolled back for this — a tracker that is down is no reason to keep");
+  say("  an old build serving. What it costs is the claim that errors are being reported.");
+}
 say("─".repeat(72));
 /*
   THE VERDICT RIDES IN THE EXIT STATUS, NOT IN AN EARLY REFUSAL.
@@ -1602,4 +1680,8 @@ say("─".repeat(72));
   mismatch takes away is the one thing that gets quoted — a custody block's
   `RITE EXIT STATUS: OK`.
 */
-process.exit(positions.mismatches.length + schema.problems.length + assets.problems.length === 0 ? 0 : 1);
+process.exit(
+  positions.mismatches.length + schema.problems.length + assets.problems.length + tracker.problems.length === 0
+    ? 0
+    : 1,
+);

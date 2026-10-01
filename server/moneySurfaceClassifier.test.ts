@@ -1,6 +1,14 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
+import { readListedSource } from "./testing/listedSource";
+import { codeOnly } from "./testing/withoutComments";
+
+/* This suite reads every module the Atlas lists (the direct-balance guard at the
+   foot of the file), so it carries the class floor rather than the 5 s default. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 /**
  * WHAT THE GATE CALLS A MONEY DIFF, AND WHY IT IS TWO READINGS (card #958).
@@ -585,5 +593,154 @@ describe("the symbol list cannot fall behind the primitive it names (#958)", () 
     for (const name of ["addCredits", "deductCredits"]) {
       expect(symbolRe.test(name), `SYMBOLS must name ${name}`).toBe(true);
     }
+  });
+});
+
+/**
+ * THE FOURTH POSITION IN THE SENTENCE — where a balance is WRITTEN DIRECTLY,
+ * with no primitive in sight (#1662).
+ *
+ * After where money is DECIDED (the symbol half), where it is SET (the price
+ * modules) and where a refund is DECIDED BY A BRANCH (#1622), one shape was
+ * still invisible to both halves: a module that reaches past the credit
+ * primitive and writes `credits.balance` and the ledger itself.
+ *
+ * `server/db/admin.ts`'s `adjustUserCredits` is the specimen and it is not an
+ * obscure one — it is the "adjust any" cell of `CLAUDE.md`'s capability grid,
+ * the one write in the product that moves a customer's credits on a staff
+ * decision. It names none of the symbols below and sat two files away from
+ * `^server/db/(billing|credits)\.ts$` on the path half.
+ *
+ * ⚠ ITS SIBLING SHIPPED IN THE SAME COMMIT, because the class is the fix and
+ * the instance is not (working law 7). `server/db/accountDeletion.ts` deletes a
+ * customer's whole ledger and their credits row inside the GDPR deletion. Its
+ * ROUTE (`server/routes/auth.ts`) was already read as money; the module holding
+ * the statements was not.
+ */
+describe("the direct-balance reading — a module that writes the ledger itself (#1662)", () => {
+  it.each([
+    ["server/db/admin.ts", "adjustUserCredits — the capability grid's 'adjust any'"],
+    ["server/db/accountDeletion.ts", "deletes the customer's credits row and ledger"],
+  ])("%s is a money diff (%s)", (file) => {
+    expect(pathRe.test(file)).toBe(true);
+  });
+
+  /**
+   * THE NEGATIVE CONTROL. `server/db/` holds forty-odd modules and most of them
+   * are casting reads; `money-surfaces.sh` says NAMED FILES, NEVER DIRECTORIES
+   * and this widening must not quietly become the directory.
+   */
+  it.each([
+    "server/db/connection.ts",
+    "server/db/moderatorQueries.ts",
+    "server/db/discrepancyQueries.ts",
+    "server/db/castingV2.ts",
+    "server/db/ipBlocking.ts",
+  ])("still leaves %s alone", (file) => {
+    expect(pathRe.test(file)).toBe(false);
+  });
+
+  /**
+   * AND THE WHOLE ARGUMENT FOR THE TWO ENTRIES ABOVE: the symbol half cannot
+   * see these writes. Real lines, copied from `server/db/admin.ts` and
+   * `server/db/accountDeletion.ts` at the commit that added them to the list.
+   * If an arm here ever goes green because a line started matching, the path
+   * entries are no longer what catches this class and the reasoning wants
+   * re-reading.
+   */
+  const SPECIMEN_LINES_DIRECT_WRITES = [
+    "          .update(credits)",
+    "            creditsPurchased: sql`${credits.creditsPurchased} + ${amount}`,",
+    "      await tx.insert(creditTransactions).values({",
+    "        .delete(creditTransactions)",
+    "        .delete(credits)",
+    '      if (newBalance < 0) {',
+  ];
+
+  it.each(SPECIMEN_LINES_DIRECT_WRITES)("the symbol half is blind to %s", (line) => {
+    expect(symbolRe.test(line)).toBe(false);
+  });
+
+  /*
+    ⚠ THE DRIFT GUARD, DERIVED RATHER THAN TYPED — the third of its kind in this
+    file, after the price modules and the refund adjudicators, and pointed at the
+    writers.
+
+    The POPULATION is every module the Atlas lists under `server/` or `shared/`,
+    and the reading is a non-comment `.update`/`.insert`/`.delete` of the
+    `credits` or `creditTransactions` tables. A module that starts writing a
+    balance directly tomorrow reddens here instead of arriving invisible to the
+    gate on its first day.
+
+    ⚠ COMMENTS ARE STRIPPED AND THAT IS LOAD-BEARING, NOT HYGIENE — the arm
+    below proves it with the specimen that measured it. `server/db/connection.ts`
+    carries `await tx.update(credits).set({ balance: 100 })` as a docblock
+    EXAMPLE of how to use the transaction helper. A raw text reader counts it and
+    reports a fifth writer that writes nothing, and the repair for a false
+    positive is normally to add an exclusion — which would have put a real
+    module's name on a silencer list for a defect in the reader.
+
+    ⚠ NO EXCLUSION MAP, DELIBERATELY. The other two guards carry one because they
+    have real remainders; all four writers here are on the list, so an empty map
+    would buy a rot arm that can only pass. A writer that genuinely moves no
+    customer money gets its reason in the failure message's own words, and the
+    map is written on the day it has an entry.
+  */
+  const DIRECT_BALANCE_WRITE = /\.\s*(?:update|insert|delete)\s*\(\s*(?:credits|creditTransactions)\s*\)/;
+
+  function atlasModules(): string[] {
+    const atlas = JSON.parse(read("docs/architecture/drape-architecture.json")) as {
+      modules?: { path?: string }[];
+    };
+    const modules = (atlas.modules ?? [])
+      .map((m) => m.path ?? "")
+      .filter((p) => /^(server|shared)\//.test(p) && !/\.test\.tsx?$/.test(p));
+    /* A collector that can come up empty reports a complete answer either way. */
+    if (modules.length === 0) {
+      throw new Error("the Atlas lists no server/ or shared/ module — reader broken");
+    }
+    return modules;
+  }
+
+  function directBalanceWriters(): string[] {
+    const writers: string[] = [];
+    for (const module of atlasModules()) {
+      /* A listed path can be gone from a shared working tree between the Atlas
+         being written and this read; a vanished file is skipped, never empty. */
+      const source = readListedSource(path.join(repoRoot, module));
+      if (source === null) continue;
+      if (DIRECT_BALANCE_WRITE.test(codeOnly(source))) writers.push(module);
+    }
+    return writers.sort();
+  }
+
+  it("the reader finds the writers everybody already agrees about", () => {
+    const writers = directBalanceWriters();
+    expect(writers).toContain("server/db/credits.ts");
+    expect(writers).toContain("server/db/billing.ts");
+    expect(writers.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("the reader does not count a docblock example as a writer", () => {
+    const source = readListedSource(path.join(repoRoot, "server/db/connection.ts"));
+    if (source === null) throw new Error("server/db/connection.ts is gone — re-aim this control");
+    expect(
+      DIRECT_BALANCE_WRITE.test(source),
+      "server/db/connection.ts no longer carries the docblock example this control is built on — "
+        + "find another comment-only specimen or this arm proves nothing",
+    ).toBe(true);
+    expect(DIRECT_BALANCE_WRITE.test(codeOnly(source))).toBe(false);
+    expect(directBalanceWriters()).not.toContain("server/db/connection.ts");
+  });
+
+  it("every module that writes a balance or the ledger directly is read as money", () => {
+    const missing = directBalanceWriters().filter((m) => !pathRe.test(m));
+    expect(
+      missing,
+      "these modules write the credits table or the ledger directly, name no credit primitive, "
+        + `and a diff touching only them is not read as money: ${missing.join(", ")}. Add each to `
+        + "MONEY_PATHS by name — or, if it genuinely moves no customer money, say so here with the "
+        + "reason and re-measure the 60-PR rate before widening in bulk.",
+    ).toEqual([]);
   });
 });

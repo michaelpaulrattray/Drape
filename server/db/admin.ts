@@ -31,6 +31,7 @@ import {
   getUserCredits,
   isDuplicateCreditReferenceError,
   normalizeCreditReferenceId,
+  purchasedCreditsRemaining,
   type CreditWriteResult,
 } from "./credits";
 import { createModuleLogger } from "../logging/logger";
@@ -355,7 +356,7 @@ export async function adjustUserCredits(
   try {
     return await withTransaction(async (tx) => {
       const [userCredits] = await tx
-        .select({ balance: credits.balance })
+        .select({ balance: credits.balance, purchasedBalance: credits.purchasedBalance })
         .from(credits)
         .where(eq(credits.userId, userId))
         .limit(1);
@@ -370,11 +371,35 @@ export async function adjustUserCredits(
       }
 
       if (amount > 0) {
+        /*
+          ⚠ THE PURCHASED UPPER BOUND IS SETTLED HERE TOO — the law-7 sibling
+          of #1604, found by sweeping every writer of this column.
+
+          `addCredits` settles the bound against the pre-grant balance before
+          every grant, so a bonus landing on an account that has already spent
+          its bought credits cannot resurrect them. This function does not go
+          through `addCredits` at all — it writes the balance itself — so an
+          admin's top-up of an emptied account would have left a stale 25,000
+          standing and the next renewal would have protected the admin's gift
+          as if the customer had paid for it. The error ran the customer's way,
+          which is why nothing would ever have complained.
+
+          Computed in JS from the balance read two statements up, rather than as
+          a `LEAST(…)` clause: MySQL evaluates `SET` assignments left to right,
+          and `balance` is assigned a literal here, so a clause would be right
+          only while it sat above that line. It is no more racy than the balance
+          write beside it, because it is the same read.
+
+          The deduct branch below needs nothing: `purchasedCreditsRemaining`
+          reads `min(column, balance)`, so a falling balance settles the answer
+          without a write — the same reason `deductCredits` is untouched.
+        */
         await tx
           .update(credits)
           .set({
             balance: newBalance,
             creditsPurchased: sql`${credits.creditsPurchased} + ${amount}`,
+            purchasedBalance: purchasedCreditsRemaining(userCredits),
           })
           .where(eq(credits.userId, userId));
       } else {
