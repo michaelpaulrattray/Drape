@@ -20,12 +20,30 @@ import { getUserByEmail } from "../db/users";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { checkRateLimit, getClientIp } from "../security/rateLimit";
 import { createModuleLogger } from "../logging/logger";
+import { refuseCrossSiteAuthRequest } from "../security/crossSiteExpressGuard";
 
 const log = createModuleLogger("emailVerification");
 
 const TOKEN_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export const emailVerificationRouter = Router();
+
+/**
+ * ⚠ **NO STATE-CHANGING REQUEST HERE MAY COME FROM ANOTHER SITE EITHER — #1659.**
+ *
+ * This router's SESSION MINT is `GET /verify-email`, which a form cannot carry,
+ * so it is not the login-CSRF road — and the guard lets every `GET` through
+ * untouched, which it must: arriving on a verification link from an email client
+ * is a cross-site navigation and is a customer, not an attack.
+ *
+ * It is mounted because of the OTHER route: `POST /resend-verification` is a
+ * state-changing auth route, and the rule `authCrossSiteGuard.test.ts` derives is
+ * *every mint-site module with a non-GET route carries this guard* — a rule with
+ * no exception list, rather than a list somebody has to keep. It costs nothing
+ * real: that endpoint's only caller is our own `VerifyEmail` page, same-origin,
+ * and nothing legitimate POSTs to it from anywhere else.
+ */
+emailVerificationRouter.use(refuseCrossSiteAuthRequest);
 
 /**
  * Generate a cryptographically secure verification token
