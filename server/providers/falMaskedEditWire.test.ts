@@ -109,6 +109,16 @@ describe("the masked edit's endpoint, on the bytes fetch() receives", () => {
       .toEqual([`data:image/png;base64,${PIXEL.toString("base64")}`]);
   });
 
+  it("renders at MEDIUM quality — his word 2026-10-01, no court: the rolled casts are already medium", async () => {
+    const { captured } = stubFalTransport();
+    const engine = createFalMaskedEditEngine({ apiKey: "test-key", pollIntervalMs: 1 });
+    await engine.edit(REQUEST);
+    /* At the wire (working law 5): the tier the provider is asked for, not a
+       constant near it. "high" here is the pre-2026-10-01 repaint and reddens. */
+    expect(captured[0]?.body.quality).toBe("medium");
+    expect(captured[0]?.body.quality).not.toBe("high");
+  });
+
   it("AN EXPLICIT MODEL STILL WINS — a court can still pin the old engine", async () => {
     const { captured } = stubFalTransport();
     const engine = createFalMaskedEditEngine({

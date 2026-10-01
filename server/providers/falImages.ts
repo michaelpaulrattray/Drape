@@ -411,7 +411,14 @@ export function createFalMaskedEditEngine(config: FalCreativeConfig) {
                 ),
                 image_size: { width: request.width, height: request.height },
                 num_images: 1,
-                quality: "high",
+                /* MEDIUM, on his word 2026-10-01 (terminal), verbatim: "Repaint to
+                   medium quality just do it without a court because i checked the
+                   rolled casts they are already medium and the quality is good."
+                   His finance guy's figure beside it: about $0.066 → $0.023 per
+                   repaint. The roll (text-to-image, above) already renders at medium;
+                   this is the masked edit joining it. The wardrobe plate below stays
+                   high — he ruled on the repaint only. */
+                quality: "medium",
                 output_format: "png",
               },
               timeoutMs,
