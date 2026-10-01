@@ -2,7 +2,17 @@ import { describe, expect, it } from "vitest";
 import type { TrpcContext } from "./_core/context";
 import { appRouter } from "./routers";
 
-function authCtx(): TrpcContext {
+/*
+  ⚠ THE ROLE IS A PARAMETER SINCE #1654, AND IT STILL DEFAULTS TO "user".
+  `generation.castingImage`, `generation.iterate` and
+  `generation.mintPackage` became `adminProcedure` when the legacy lane's
+  paid procedures were sealed, so the arms that DRIVE those three need a caller
+  the gate admits. Every other arm here is about a procedure a customer still
+  reaches, and the default is what keeps them honest — raising it for the whole
+  file would have made those arms stop testing the account they are written
+  about. `server/legacySpendSeal.test.ts` is where the gate itself is driven.
+*/
+function authCtx(role: "user" | "admin" = "user"): TrpcContext {
   return {
     user: {
       id: 1,
@@ -11,7 +21,7 @@ function authCtx(): TrpcContext {
       name: "R7 Direct Schema",
       loginMethod: "email",
       approved: true,
-      role: "user",
+      role,
       createdAt: new Date(),
       updatedAt: new Date(),
       lastSignedIn: new Date(),
@@ -23,7 +33,7 @@ function authCtx(): TrpcContext {
 
 describe("R7-1D direct Casting execute schemas", () => {
   it("requires a UUID clientRequestId on every direct and supporting writer", async () => {
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx("admin"));
     const invalidCalls = [
       () => caller.models.create({ clientRequestId: "retry", preferences: {} } as never),
       () => caller.models.delete({ clientRequestId: "retry", modelId: 7 } as never),
@@ -44,7 +54,7 @@ describe("R7-1D direct Casting execute schemas", () => {
   });
 
   it("keeps execute envelopes strict", async () => {
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx("admin"));
     await expect(caller.generation.castingImage({
       clientRequestId: "11111111-1111-4111-8111-111111111111",
       modelId: 7,

@@ -353,11 +353,21 @@ const appRouter = {
 };
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
-function authCtx(userId = 1): TrpcContext {
+/*
+  ⚠ THE ROLE IS A PARAMETER SINCE #1654, AND IT STILL DEFAULTS TO "user".
+  `generation.castingImage`, `generation.iterate` and
+  `generation.mintPackage` became `adminProcedure` when the legacy lane's
+  paid procedures were sealed, so the arms that DRIVE those three need a caller
+  the gate admits. Every other arm here is about a procedure a customer still
+  reaches, and the default is what keeps them honest — raising it for the whole
+  file would have made those arms stop testing the account they are written
+  about. `server/legacySpendSeal.test.ts` is where the gate itself is driven.
+*/
+function authCtx(userId = 1, role: "user" | "admin" = "user"): TrpcContext {
   const user = {
     id: userId, openId: `t-${userId}`, email: `t${userId}@x.com`, name: "T",
     loginMethod: "manus",
-    approved: true, role: "user", createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date(),
+    approved: true, role, createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date(),
   } as AuthenticatedUser;
   return {
     user,
@@ -437,7 +447,7 @@ beforeEach(() => {
 
 describe("generation.castingImage (M10)", () => {
   it("a creation reference is schema-REJECTED before anything runs (§10.3)", async () => {
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(
       caller.generation.castingImage({ modelId: 7, referenceImage: "data:image/png;base64,AAAA" } as never),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
@@ -447,7 +457,7 @@ describe("generation.castingImage (M10)", () => {
   });
 
   it("INITIAL headshot on an empty draft delegates one exact-key atomic create transition", async () => {
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     const result = await caller.generation.castingImage({ modelId: 7 });
     expect(result.success).toBe(true);
     expect(bootstrapModelSnapshot).toHaveBeenCalledWith({ userId: 1, modelId: 7 });
@@ -478,7 +488,7 @@ describe("generation.castingImage (M10)", () => {
       asset({ id: 2, viewType: "sideClose", storageUrl: "https://r2/side.png", pinned: true }),
       asset({ id: 3, viewType: "frontFull", storageUrl: "https://r2/body.png" }),
     ] as never);
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     const result = await caller.generation.castingImage({ modelId: 7 });
     expect(result.success).toBe(true);
     expect(commitHeadshotSnapshot).toHaveBeenCalledTimes(1);
@@ -487,7 +497,7 @@ describe("generation.castingImage (M10)", () => {
 
   it("snapshot bootstrap failure seals the claimed operation before receipt, credits, provider, or commit", async () => {
     vi.mocked(bootstrapModelSnapshot).mockRejectedValueOnce(new Error("snapshot bootstrap failed"));
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
 
     await expect(caller.generation.castingImage({ modelId: 7 }))
       .rejects.toThrow("snapshot bootstrap failed");
@@ -500,7 +510,7 @@ describe("generation.castingImage (M10)", () => {
 
   it("guard-order regression: minted refuses before deduction", async () => {
     vi.mocked(getModelById).mockResolvedValue(model({ status: "active", agencyId: "MOD-1" }) as never);
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(caller.generation.castingImage({ modelId: 7 })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
     expect(deductCredits).not.toHaveBeenCalled();
     expect(generateCastingImage).not.toHaveBeenCalled();
@@ -547,7 +557,7 @@ describe("generation.castingImage (M10)", () => {
       ledger: { assets: [snapshotAnchor] },
     } as never;
     vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue(effective);
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
 
     await expect(caller.generation.castingImage({ modelId: 7 }))
       .resolves.toMatchObject({ success: true, assetId: 501 });
@@ -596,7 +606,7 @@ describe("generation.castingImage (M10)", () => {
       ledger: { assets: [] },
     } as never;
     vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue(headless);
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
 
     await expect(caller.generation.castingImage({ modelId: 7 }))
       .resolves.toMatchObject({ success: true });
@@ -647,7 +657,7 @@ describe("generation.castingImage (M10)", () => {
         code: "PRECONDITION_FAILED",
         message: "This Cast is temporarily unavailable. No credits were used.",
       }));
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
 
     await expect(caller.generation.castingImage({ modelId: 7 }))
       .rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
@@ -945,7 +955,7 @@ describe("mint/add-views snapshot ordering", () => {
 
   it("bootstraps before the running receipt and settles through the atomic package writer", async () => {
     vi.mocked(getModelAssets).mockResolvedValue(fullPackage as never);
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(caller.generation.mintPackage({
       modelId: 7,
       tier: "core",
@@ -968,7 +978,7 @@ describe("mint/add-views snapshot ordering", () => {
   it("refuses a headless Cast for free before any paid work", async () => {
     vi.mocked(getModelAssets).mockResolvedValue([] as never);
     vi.mocked(bootstrapModelSnapshot).mockResolvedValueOnce({ status: "headless", modelId: 7 });
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(caller.generation.mintPackage({
       modelId: 7,
       tier: "core",
@@ -987,7 +997,7 @@ describe("mint/add-views snapshot ordering", () => {
     vi.mocked(getModelAssets).mockResolvedValue(fullPackage as never);
     vi.mocked(assertGenerationOperationSnapshotHead)
       .mockRejectedValueOnce(new Error("snapshot head changed before execution"));
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
 
     await expect(caller.generation.mintPackage({
       modelId: 7,
@@ -1047,7 +1057,7 @@ describe("mint/add-views snapshot ordering", () => {
     } as never;
     vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
     vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue(effective);
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
 
     const result = await caller.generation.mintPackage({
       modelId: 7,
@@ -1123,7 +1133,7 @@ describe("mint/add-views snapshot ordering", () => {
         code: "PRECONDITION_FAILED",
         message: "This Cast is temporarily unavailable. No credits were used.",
       }));
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
 
     await expect(caller.generation.mintPackage({
       modelId: 7,
@@ -1286,7 +1296,7 @@ describe("mint/add-views snapshot ordering", () => {
       failed: [],
     });
 
-    const result = await appRouter.createCaller(authCtx()).generation.mintPackage({
+    const result = await appRouter.createCaller(authCtx(1, "admin")).generation.mintPackage({
       modelId: 7,
       tier: "core",
       characterName: "Vera",
@@ -1348,7 +1358,7 @@ describe("mint/add-views snapshot ordering", () => {
       },
     });
 
-    await expect(appRouter.createCaller(authCtx()).generation.mintPackage({
+    await expect(appRouter.createCaller(authCtx(1, "admin")).generation.mintPackage({
       modelId: 7,
       tier: "core",
       characterName: "Vera",
@@ -1387,7 +1397,7 @@ describe("mint/add-views snapshot ordering", () => {
       new EvidenceMintSettlementUncertainError(new Error("private database detail")),
     );
 
-    await expect(appRouter.createCaller(authCtx()).generation.mintPackage({
+    await expect(appRouter.createCaller(authCtx(1, "admin")).generation.mintPackage({
       modelId: 7,
       tier: "core",
       characterName: "Vera",
@@ -1414,7 +1424,7 @@ describe("mint/add-views snapshot ordering", () => {
     // precondition — which is the sharper form of the contract: the Cast is
     // LOCKED before any of the mint's own preconditions are consulted, so a
     // second writer cannot slip in beside a refusal.
-    await expect(appRouter.createCaller(authCtx()).generation.mintPackage({
+    await expect(appRouter.createCaller(authCtx(1, "admin")).generation.mintPackage({
       modelId: 7,
       tier: "core",
       characterName: "Vera",
@@ -1437,7 +1447,7 @@ describe("mint/add-views snapshot ordering", () => {
       message: "Another operation is already changing this Cast. Wait for it to finish before retrying.",
     }));
 
-    await expect(appRouter.createCaller(authCtx()).generation.mintPackage({
+    await expect(appRouter.createCaller(authCtx(1, "admin")).generation.mintPackage({
       modelId: 7,
       tier: "core",
       characterName: "Vera",
