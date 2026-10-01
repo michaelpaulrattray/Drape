@@ -80,6 +80,7 @@
  *    both labels name a place.
  */
 import { useLocation } from 'wouter';
+import { displayBalance, formatCredits } from '@shared/creditDisplay';
 import { Eyebrow, Icon, P, WORKSPACE_ROLE_LABEL } from '@/foundation';
 import { showsMenuCount } from '@/foundation/menuCount';
 import { isStaffRole } from '@/features/staff/staffRole';
@@ -148,7 +149,7 @@ export function UserCard({
       <div className="dp-menu__identity">
         <span className="dp-menu__name">{userName}</span>
         <span className="dp-menu__meta">
-          <span className="dp-menu__balance">{creditsBalance.toLocaleString()}</span>
+          <span className="dp-menu__balance">{formatCredits(displayBalance(creditsBalance))}</span>
           <span>credits · {WORKSPACE_ROLE_LABEL}</span>
         </span>
       </div>

@@ -27,7 +27,7 @@ import { assertFinalModelDeleteEnabled } from "./models";
 import { storagePublicUrl } from "../storage";
 import { assertClientRequestId } from "../../shared/clientRequestId";
 import { CASTING_V2_COSTS, CASTING_V2_ROLL_PRICE_CREDITS,
-  CASTING_V2_RETRY_PRICE_CREDITS,
+  CASTING_V2_FOLLOW_PRICE_CREDITS,
 } from "../casting/castingCreditCosts";
 import {
   captureCastingReferenceAttachEnabled,
@@ -843,6 +843,19 @@ export const castingV2Router = router({
   config: protectedProcedure.input(z.object({}).strict()).query(({ ctx }) => ({
     enabled: captureCastingV2Enabled(ctx.user.id),
     rollPriceCredits: CASTING_V2_ROLL_PRICE_CREDITS,
+    /*
+      WHAT A FOLLOW COSTS, AND IT IS A SECOND NUMBER AS OF 2026-10-01 (#1601
+      item 1).
+
+      The dock carried ONE price line for Roll again and Follow together by his
+      ruling of 2026-08-02, which was honest while both were 8 x 20 = 160. A
+      Roll is 1,200 and a Follow 1,600 now, so one number cannot be true of
+      both and the sheet is handed both rather than inferring either. Which one
+      the dock's line states is a QUESTION FOR HIM (#1699) and the sheet's own
+      comment says what the interim is; this field exists so that answer is a
+      one-line change on the surface rather than a wire change.
+    */
+    followPriceCredits: CASTING_V2_FOLLOW_PRICE_CREDITS,
     candidatesPerRoll: CASTING_V2_COSTS.rollCandidateCount,
     /*
       THE HERO'S RECEIPT LINE (#435 §2d) — how long a sheet takes, so the
@@ -858,13 +871,26 @@ export const castingV2Router = router({
     // button fires, from here rather than from a literal in the client.
     refinePriceCredits: CASTING_V2_REFINE_PRICE_CREDITS,
     /*
-      THE RETRY BUTTON (#122 shape 1). Same law as the three above: the price
-      is on the paid affordance before it fires, server-derived; and the gate
-      is server-owned — a tile draws the button only where the door would
-      admit the tap, so the client never learns of a control that refuses.
+      THE RETRY BUTTON (#122 shape 1). The gate is server-owned — a tile draws
+      the button only where the door would admit the tap, so the client never
+      learns of a control that refuses.
+
+      ⚠ **`retryPriceCredits` LEFT THIS RESPONSE ON 2026-10-01 (#1601 item 1),
+      AND THE REASON IS THE WHOLE POINT OF THE FIELD.** It was
+      `CASTING_V2_COSTS.rollCandidate`: ONE account-level number printed on
+      every failed tile as `Retry · N credits`. Item 2 made the server charge
+      the tile's own recorded `pointsCost`, and item 1 makes a follow sheet's
+      slice 200 against a roll sheet's 150 — so the single quote would have
+      been wrong on screen for every follow sheet while the charge under it was
+      right. `followSlicePrice.test.ts`'s tripwire offered two ways out, and
+      this is the one that keeps the price per-tile rather than inventing a
+      per-tile wire field: the sheet already holds the roll row's own total and
+      its candidate count, so the number is derived where the tile is drawn.
+      The law is unchanged — the price is still on the paid affordance before
+      it fires, and it is still server truth; it is just the ROW's truth rather
+      than the account's.
     */
     retryEnabled: captureCastingRetryEnabled(ctx.user.id),
-    retryPriceCredits: CASTING_V2_RETRY_PRICE_CREDITS,
     /*
       ⚠ TWO FIELDS LEFT THIS RESPONSE ON 2026-09-24 (#1153), AND THE SECOND ONE
       IS WHY THE CARD ASKED FOR A COUNT RATHER THAN A FIX.

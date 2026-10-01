@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from "react";
+import { displayPrice, formatCredits } from "@shared/creditDisplay";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { showLowBalanceToast, LOW_BALANCE_THRESHOLD } from "@/features/billing/LowBalanceWarning";
@@ -223,7 +224,7 @@ export function useCastingGeneration({
     const totalCost = servedCost(costsQuery.data, "masterPrompt", CREDIT_COSTS.masterPrompt)
       + servedCost(costsQuery.data, "castingImage", CREDIT_COSTS.castingImage);
     if (!creditsData || creditsData.balance < totalCost) {
-      toast.error(`Insufficient credits. Need ${totalCost} credits.`);
+      toast.error(`Insufficient credits. Need ${formatCredits(displayPrice(totalCost))} credits.`);
       setIsTopupOpen(true);
       return;
     }

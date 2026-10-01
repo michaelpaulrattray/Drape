@@ -277,6 +277,7 @@ export {
   monthsFreePerYear as monthsFree,
 } from "@shared/annualBilling";
 import { annualPriceInCents as sharedAnnualPrice } from "@shared/annualBilling";
+import { displayBalance } from "@shared/creditDisplay";
 
 /**
  * WHAT A YEAR COSTS, SAID BY THE MONTH — card 390 item 2.
@@ -362,9 +363,31 @@ export function creditsPerDollar(priceInCents: number, credits: number): number 
   return credits / (priceInCents / 100);
 }
 
-/** `2,778` — credits per dollar, whole, because fractions of a credit buy nothing. */
+/**
+ * `556` — credits per dollar, whole, because fractions of a credit buy nothing.
+ *
+ * ⚠ **THE CONVERSION TO THE CUSTOMER'S SCALE HAPPENS HERE AND NOT AT THE THREE
+ * CALL SITES (#1600), AND THAT PLACEMENT IS THE WHOLE POINT.** A customer reads
+ * credits on the display scale, so the rate they are quoted has to be on it
+ * too. Converting at the call sites would have converted it for
+ * `creditsPerDollar` as well — and that function is what
+ * `card390-guard.test.ts` uses to assert the founder's bar that value per
+ * dollar must improve at every rung. Dividing both sides of a comparison moves
+ * nothing, so the assertion would have survived unchanged while no longer
+ * reading the ledger it is about.
+ *
+ * So the split is deliberate: `creditsPerDollar` answers the LEDGER question
+ * the guards ask, this answers the SCREEN question a customer asks, and the
+ * figure the example shows is a fifth of what it used to be for that reason
+ * rather than because any price moved.
+ *
+ * ⚠ Its own `Math.round(perDollar)` is still on the census as unrouted, and it
+ * is staying there: a RATE is not a credit count, and passing it through
+ * `displayBalance` would divide by five twice. The census reads a NAME and
+ * cannot see through a function boundary — a limit its own docblock states.
+ */
 export function formatCreditsPerDollar(priceInCents: number, credits: number): string {
-  const perDollar = creditsPerDollar(priceInCents, credits);
+  const perDollar = creditsPerDollar(priceInCents, displayBalance(credits));
   if (perDollar <= 0) return "free";
   return Math.round(perDollar).toLocaleString("en-US");
 }

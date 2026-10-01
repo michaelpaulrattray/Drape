@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { displayPrice, formatCredits } from "@shared/creditDisplay";
 import { Plus, RotateCw, X } from "lucide-react";
 
 import type { InkProvenance } from "@shared/inkProvenance";
@@ -1072,7 +1073,7 @@ export function RefinePanel({
       */}
       <p className="dpc-refine__note">
         Anything about them — not their clothes or the room
-          {" · "}{priceCredits} credits each
+          {" · "}{formatCredits(displayPrice(priceCredits))} credits each
       </p>
       <p className="dpc-refine__note">
         Or take something back — "undo", "remove the earrings" · free when you already have it

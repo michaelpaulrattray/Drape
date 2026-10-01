@@ -12,6 +12,7 @@ import { useLocation } from 'wouter';
 import { ArrowLeft, Check, Pencil } from 'lucide-react';
 import { ProfileAvatar } from '@/features/profile/ProfileVisual';
 import { BOARD_NAME_MAX_LENGTH } from "@shared/inputLimits";
+import { displayBalance, formatCredits } from "@shared/creditDisplay";
 
 interface BoardHeaderProps {
   name: string;
@@ -181,7 +182,7 @@ export function BoardHeader({
                     style={{ fontVariantNumeric: 'tabular-nums' }}
                   >
                     {creditsBalance !== null && creditsBalance !== undefined
-                      ? `${creditsBalance.toLocaleString()} credits`
+                      ? `${formatCredits(displayBalance(creditsBalance))} credits`
                       : '—'}
                   </span>
                   <button

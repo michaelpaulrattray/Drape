@@ -52,7 +52,7 @@
  *    one — which holds by construction, because nothing keeps one.
  * 3. ⚠ **A PLATE FAILURE NEVER FAILS THE SIGN.** {@link renderOutfitPlate}
  *    returns `null` for every fault there is and throws for none but a
- *    cancellation. The customer paid 450 credits for five views, not for a
+ *    cancellation. The customer paid 8,500 credits for five views, not for a
  *    reference photograph they will never see, and the road without a plate is
  *    exactly the road the product shipped yesterday — softer consistency,
  *    complete delivery, no refund.

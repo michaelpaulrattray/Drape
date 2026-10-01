@@ -1,5 +1,26 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { CastViewAngle } from "../../shared/boardTypes";
+import { CASTING_V2_SIGN_COSTS } from "../casting/castingCreditCosts";
+import { CASTING_V2_SIGN_PRICE_CREDITS, CAST_PACKAGE_VIEW_PRICE } from "./castViewPackage";
+
+
+/**
+ * THE SIGN'S MONEY, READ FROM THE PRODUCT — #1601 item 1, 2026-10-01.
+ *
+ * ⚠ **THIS SUITE PINNED `450`, `200`, `50`, `100` AND `500` AS LITERALS AND
+ * EVERY ONE OF THEM WENT RED ON TWO CONSTANT EDITS.** A Sign is 3,500 + 5 x
+ * 1,000 now. The arms are about the SPLIT — the promotion is kept once the Cast
+ * exists, the views refund under their own references, nothing is paid twice —
+ * and that is true at any price. So each number is derived from the part of the
+ * price it is about, which also makes the arms say WHICH part they mean:
+ * `PROMOTION` is the kept half, `VIEW_PRICE` the refundable slice, and a
+ * six-view Sign's total is composed rather than typed.
+ */
+const SIGN_PRICE = CASTING_V2_SIGN_PRICE_CREDITS;
+const PROMOTION = CASTING_V2_SIGN_COSTS.promotion;
+const VIEW_PRICE = CAST_PACKAGE_VIEW_PRICE;
+/** A Sign bought under the six-view package — composed, never typed. */
+const SIX_VIEW_SIGN = PROMOTION + 6 * VIEW_PRICE;
 
 /**
  * The Sign adjudicator: what a crashed ceremony resolves to, and in what order.
@@ -132,7 +153,7 @@ const promised = {
   source: "recorded" as const,
 };
 
-function chargeRow(amount = 450) {
+function chargeRow(amount = SIGN_PRICE) {
   return { referenceId: CHARGE_REFERENCE, type: "generation", amount: -amount };
 }
 function refundRow(reference: string, amount: number) {
@@ -160,7 +181,7 @@ const operation = {
   chargedCredits: 0,
   refundedCredits: 0,
   // What the server planned to charge — the cross-check on the promised views.
-  plannedCredits: 450,
+  plannedCredits: SIGN_PRICE,
 };
 
 beforeEach(() => {
@@ -190,7 +211,7 @@ describe("the boundary never committed", () => {
       promisedAngles: async () => promised,
     });
 
-    expect(outcome).toMatchObject({ type: "paid_failure", chargedCredits: 450, refundedCredits: 450 });
+    expect(outcome).toMatchObject({ type: "paid_failure", chargedCredits: SIGN_PRICE, refundedCredits: SIGN_PRICE });
     // The order is the defence. Fence, then locate, then refund, then seal.
     expect(journal).toEqual(["fence", "locate", "refund", "seal"]);
     expect(journal.indexOf("fence")).toBeLessThan(journal.indexOf("refund"));
@@ -202,7 +223,7 @@ describe("the boundary never committed", () => {
       unsettledAngles: async () => [],
       promisedAngles: async () => promised,
     });
-    expect(refunds).toEqual([{ amount: 450, reference: CHARGE_REFERENCE }]);
+    expect(refunds).toEqual([{ amount: SIGN_PRICE, reference: CHARGE_REFERENCE }]);
   });
 
   it("owes nothing when the crash landed before the charge", async () => {
@@ -216,14 +237,14 @@ describe("the boundary never committed", () => {
   });
 
   it("does not pay twice when an earlier pass already refunded", async () => {
-    ledgerRows = [chargeRow(), refundRow(CHARGE_REFERENCE, 450)];
+    ledgerRows = [chargeRow(), refundRow(CHARGE_REFERENCE, SIGN_PRICE)];
     const outcome = await recoverCastingV2SignOperation(operation, {
       unsettledAngles: async () => [],
       promisedAngles: async () => promised,
     });
     // Read, not re-issued: nothing owed, so nothing sent.
     expect(refunds).toHaveLength(0);
-    expect(outcome).toMatchObject({ type: "paid_failure", refundedCredits: 450 });
+    expect(outcome).toMatchObject({ type: "paid_failure", refundedCredits: SIGN_PRICE });
   });
 
   it("escalates rather than sealing a lie when the refund will not record", async () => {
@@ -286,12 +307,12 @@ describe("the Cast exists", () => {
     });
 
     expect(refunds).toHaveLength(2);
-    expect(refunds.every((entry) => entry.amount === 50)).toBe(true);
+    expect(refunds.every((entry) => entry.amount === VIEW_PRICE)).toBe(true);
     // Per-slot references, never the bare charge reference — refunding that
     // would hand back the promotion on a Cast that exists.
     expect(refunds.every((entry) => entry.reference.includes(":slot:"))).toBe(true);
     expect(refunds.some((entry) => entry.reference === CHARGE_REFERENCE)).toBe(false);
-    expect(outcome).toMatchObject({ type: "partial", chargedCredits: 450, refundedCredits: 100 });
+    expect(outcome).toMatchObject({ type: "partial", chargedCredits: SIGN_PRICE, refundedCredits: 2 * VIEW_PRICE });
   });
 
   it("writes the confession where the ROOM reads it, not only the log", async () => {
@@ -304,7 +325,7 @@ describe("the Cast exists", () => {
 
     // A slot that was refunded but has no marker renders as an empty shimmer
     // for ever — the founder's gate condition is that it confesses in place.
-    expect(markers).toEqual([{ angle: "backFull", refunded: 50 }]);
+    expect(markers).toEqual([{ angle: "backFull", refunded: VIEW_PRICE }]);
     expect(outcome.type).toBe("partial");
   });
 
@@ -330,7 +351,7 @@ describe("the Cast exists", () => {
       promisedAngles: async () => promised,
     });
     expect(outcome).toMatchObject({ type: "durable_success", refundedCredits: 0 });
-    expect(seals.at(-1)).toMatchObject({ chargedCredits: 450, refundedCredits: 0 });
+    expect(seals.at(-1)).toMatchObject({ chargedCredits: SIGN_PRICE, refundedCredits: 0 });
   });
 
   it("never refunds more than was charged", async () => {
@@ -339,7 +360,7 @@ describe("the Cast exists", () => {
     // support case, not a silent overpayment.
     ledgerRows = [
       chargeRow(),
-      refundRow(`${CHARGE_REFERENCE}:slot:frontClose`, 250),
+      refundRow(`${CHARGE_REFERENCE}:slot:frontClose`, 5 * VIEW_PRICE),
     ];
     cast = signedCast;
     const outcome = await recoverCastingV2SignOperation(operation, {
@@ -348,8 +369,8 @@ describe("the Cast exists", () => {
       promisedAngles: async () => promised,
     });
 
-    const paidBack = 250 + refunds.reduce((sum, entry) => sum + entry.amount, 0);
-    expect(paidBack).toBeLessThanOrEqual(450);
+    const paidBack = 5 * VIEW_PRICE + refunds.reduce((sum, entry) => sum + entry.amount, 0);
+    expect(paidBack).toBeLessThanOrEqual(SIGN_PRICE);
     expect(outcome.type).toBe("recovery_required");
   });
 
@@ -434,7 +455,7 @@ describe("a refund that was already in the ledger", () => {
    */
   it("is paid once and counted once", async () => {
     const slotReference = `${CHARGE_REFERENCE}:slot:backFull`;
-    ledgerRows = [chargeRow(), refundRow(slotReference, 50)];
+    ledgerRows = [chargeRow(), refundRow(slotReference, VIEW_PRICE)];
     cast = signedCast;
 
     const outcome = await recoverCastingV2SignOperation(operation, {
@@ -442,8 +463,8 @@ describe("a refund that was already in the ledger", () => {
       promisedAngles: async () => promised,
     });
 
-    // 50 back in total, not 100.
-    expect(outcome).toMatchObject({ type: "partial", chargedCredits: 450, refundedCredits: 50 });
+    // One view back in total, not two.
+    expect(outcome).toMatchObject({ type: "partial", chargedCredits: SIGN_PRICE, refundedCredits: VIEW_PRICE });
   });
 });
 
@@ -451,7 +472,7 @@ describe("a Sign bought under a different package", () => {
   /**
    * THE DEPLOY COLLISION, in the package's clothing.
    *
-   * A Sign charged 500 for six views, left non-terminal by the deploy that
+   * A Sign charged the six-view total, left non-terminal by the deploy that
    * retired the walk, then swept by five-view code: settle it against today's
    * profile and the walk's slice is charged, never generated and never
    * refunded. Silently. The promise is read from the operation's own durable
@@ -459,14 +480,14 @@ describe("a Sign bought under a different package", () => {
    * is the cross-check — a disagreement parks for a human rather than guessing.
    */
   it("refuses to settle a six-view Sign against a five-view profile", async () => {
-    ledgerRows = [chargeRow(500)];
+    ledgerRows = [chargeRow(SIX_VIEW_SIGN)];
     cast = signedCast;
     const outcome = await recoverCastingV2SignOperation(
-      { ...operation, plannedCredits: 500 },
+      { ...operation, plannedCredits: SIX_VIEW_SIGN },
       {
         unsettledAngles: async () => ["backFull"],
         // No durable rows: the fallback is today's five-view profile, which
-        // implies 450 and cannot be what a 500-credit Sign bought.
+        // implies the five-view total and cannot be what a six-view Sign bought.
         promisedAngles: async () => ({ angles: promised.angles, source: "profile" }),
       },
     );
@@ -477,10 +498,10 @@ describe("a Sign bought under a different package", () => {
   });
 
   it("settles a six-view Sign against the six views it actually bought", async () => {
-    ledgerRows = [chargeRow(500)];
+    ledgerRows = [chargeRow(SIX_VIEW_SIGN)];
     cast = signedCast;
     const outcome = await recoverCastingV2SignOperation(
-      { ...operation, plannedCredits: 500 },
+      { ...operation, plannedCredits: SIX_VIEW_SIGN },
       {
         unsettledAngles: async () => ["sideFull"],
         promisedAngles: async () => ({
@@ -490,8 +511,8 @@ describe("a Sign bought under a different package", () => {
       },
     );
     // The retired walk still refunds, because that Sign paid for it.
-    expect(refunds).toEqual([{ amount: 50, reference: `${CHARGE_REFERENCE}:slot:sideFull` }]);
-    expect(outcome).toMatchObject({ type: "partial", chargedCredits: 500, refundedCredits: 50 });
+    expect(refunds).toEqual([{ amount: VIEW_PRICE, reference: `${CHARGE_REFERENCE}:slot:sideFull` }]);
+    expect(outcome).toMatchObject({ type: "partial", chargedCredits: PROMOTION + 6 * VIEW_PRICE, refundedCredits: VIEW_PRICE });
   });
 });
 
@@ -539,9 +560,9 @@ describe("zero of N, settled after the crash", () => {
       promisedAngles: async () => promised,
     });
 
-    const base = refunds.filter((entry) => entry.amount === 200);
+    const base = refunds.filter((entry) => entry.amount === PROMOTION);
     expect(base).toHaveLength(1);
-    expect(outcome).toMatchObject({ refundedCredits: 200 });
+    expect(outcome).toMatchObject({ refundedCredits: PROMOTION });
   });
 
   it("keeps the promotion when one view survived the crash", async () => {
@@ -557,7 +578,7 @@ describe("zero of N, settled after the crash", () => {
       promisedAngles: async () => promised,
     });
 
-    expect(refunds.some((entry) => entry.amount === 200)).toBe(false);
+    expect(refunds.some((entry) => entry.amount === PROMOTION)).toBe(false);
   });
 
   it("does not pay the base twice when the live process already refunded it", async () => {
@@ -565,10 +586,10 @@ describe("zero of N, settled after the crash", () => {
       The reason both paths derive the reference from one helper. If the live
       orchestrator got the promotion refund out before it died, the row is
       already in the ledger and this pass must read it as settled — not issue a
-      second 200.
+      second promotion.
     */
     cast = { modelId: 901, candidateSignedCastId: 901, candidateStatus: "signed" };
-    ledgerRows = [chargeRow(), refundRow(`${CHARGE_REFERENCE}:promotion`, 200)];
+    ledgerRows = [chargeRow(), refundRow(`${CHARGE_REFERENCE}:promotion`, PROMOTION)];
     castAssets = [];
     unsettled = [];
 
@@ -577,9 +598,9 @@ describe("zero of N, settled after the crash", () => {
       promisedAngles: async () => promised,
     });
 
-    // The prior 200 is counted once, from the ledger — never re-issued and
+    // The prior promotion is counted once, from the ledger — never re-issued and
     // never added on top of itself.
-    expect(outcome).toMatchObject({ refundedCredits: 200 });
+    expect(outcome).toMatchObject({ refundedCredits: PROMOTION });
   });
 });
 

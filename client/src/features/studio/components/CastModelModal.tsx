@@ -6,6 +6,7 @@
  * later costs the same: pricing counts only missing slots.
  */
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { displayPrice, formatCredits } from "@shared/creditDisplay";
 import { Camera, ChevronRight, Loader2 } from 'lucide-react';
 import type { MintTier } from '@shared/boardTypes';
 import { honestModelName } from '@/features/casting/modelDisplayTruth';
@@ -439,7 +440,7 @@ export function CastModelModal({
                             ? 'Complete'
                             : plan.cost === 0
                               ? 'Free'
-                              : `${plan.cost.toLocaleString()} credits`}
+                              : `${formatCredits(displayPrice(plan.cost))} credits`}
                       </span>
                     </div>
                     <span className="block text-canvas-md text-canvas-ink-soft" style={{ lineHeight: 1.4 }}>

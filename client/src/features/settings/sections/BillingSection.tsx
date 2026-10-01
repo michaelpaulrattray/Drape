@@ -28,6 +28,7 @@
  * The heading is `Billing & plan`, which is the prototype's, not `Plan`.
  */
 import { toast } from "sonner";
+import { displayBalance, formatCredits } from "@shared/creditDisplay";
 
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/foundation";
@@ -99,7 +100,7 @@ export function BillingSection({
           label={planName}
           note={[
             planPriceInCents > 0 ? `${formatDollars(planPriceInCents)}/mo` : "No charge",
-            renews && allowance > 0 ? `${allowance.toLocaleString()} credits/mo` : null,
+            renews && allowance > 0 ? `${formatCredits(displayBalance(allowance))} credits/mo` : null,
             renewsAt ? `renews ${formatShortDate(renewsAt)}` : null,
           ]
             .filter(Boolean)
@@ -117,7 +118,7 @@ export function BillingSection({
       <div className="dp-set__cards" style={{ marginTop: "var(--s-7)" }}>
         <div className="dp-set__minicard">
           <span className="dp-set__minilabel">CREDITS REMAINING</span>
-          <span className="dp-set__mininum">{balance.toLocaleString()}</span>
+          <span className="dp-set__mininum">{formatCredits(displayBalance(balance))}</span>
           {/* A bar needs a denominator. Without a renewing allowance there is
               none, and an empty track under a real balance reads as nothing
               left — which is the opposite of true. */}

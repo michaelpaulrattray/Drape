@@ -86,9 +86,54 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
 /**
+ * THE FREE SIGNUP GRANT — ONE NUMBER, ONE TIME, ONE PLACE (#1602, P1-3).
+ *
+ * A new account is granted this once, at signup, and never again. It is **not**
+ * a monthly allowance: the free rung has no Stripe subscription, so no invoice
+ * ever arrives, so `refreshMonthlyCredits` is never reached for it. That is not
+ * a promise — `server/freeGrantOneTime.test.ts` drives the only road into the
+ * refresh and proves the free rung cannot take it, with a positive control.
+ *
+ * ⚠ **THREE PLACES USED TO HOLD 5,000 AND THEY WERE THREE COPIES** (working
+ * law 4): `PLAN_TIERS.free.monthlyCredits`, `INITIAL_CREDITS` in
+ * `server/db/credits.ts`, and the `points.balance` column default. All three
+ * read this constant now, so the grant cannot be half-changed.
+ *
+ * ⚠ **THE COLUMN DEFAULT IS THE ONE THAT CANNOT BE MOVED BY A MIGRATION FILE,
+ * AND #1602's BODY SAID IT COULD.** The card read *"the `points.balance` schema
+ * default (a migration; additive, so it applies itself in the rite)"*. It is
+ * neither additive nor self-applying, measured at the code:
+ *
+ *   - `scripts/lib/ceremonyAutoApply.mts:208-216` — every clause of an `ALTER
+ *     TABLE` must begin `ADD`; a `MODIFY` or `ALTER COLUMN … SET DEFAULT`
+ *     clause is classified **destructive** by name, so it never runs unattended.
+ *   - `scripts/lib/ceremonyAutoApply.mts:289-294` — worse, the plan is driven
+ *     by **missing objects** (`MissingObjects` is tables, columns and indexes
+ *     and nothing else, `:108-112`). A default on a column that already exists
+ *     names no missing object, so the statement is never *wanted*: it would be
+ *     neither applied nor refused. A numbered migration carrying it would sit
+ *     in the tree forever, reading as shipped, having never run.
+ *
+ * So the DDL goes where the rest of this card's hand work already goes — the
+ * go-live ceremony `scripts/raise-free-grant-1602.mts`, named on #1609 (P1-10)
+ * beside the existing-account raise. Until that ceremony runs, the stored
+ * default stays 5,000 and **nothing can read it**: the sole INSERT into this
+ * table (`initializeUserCredits`) names `balance` explicitly, which
+ * `server/freeGrantOneTime.test.ts` also pins.
+ */
+export const FREE_SIGNUP_GRANT_CREDITS = 13500;
+
+/**
  * Plan tier configuration with credit allocations
  */
-// Pricing: 50x display multiplier applied. Volume discounts at higher tiers.
+// Volume discounts at higher tiers. ⚠ THIS LINE READ *"50x display multiplier
+// applied"* UNTIL #1602 AND NAMED THE ONE NUMBER `shared/creditDisplay.ts`
+// EXISTS TO REFUSE: the scale is `LEDGER_PER_DISPLAY_CREDIT = 5`, and that
+// docblock names *"a `* 50` left over from the legacy multiplier"* as the
+// drift `server/creditDisplayGuard.test.ts` rejects. The guard reads code and
+// not prose, so the forbidden figure survived in a comment one line above the
+// table it described. A reader who trusted it would compute every display
+// figure on this page ten times too small.
 //
 // The ladder folded from twelve rungs to these eight on the founder's ruling
 // (#391, approved 2026-09-05: "go with your reccomendation" on the card's
@@ -99,15 +144,77 @@ export type InsertUser = typeof users.$inferInsert;
 // order. `ultimate` is a real, hand-sold product but is NOT offered: it never
 // appears in `billing.getPlans` and the checkout enums refuse it — the door is
 // an email line under the ladder (HIDDEN_PLAN_TIERS, stripeProducts.ts).
+//
+// ⚠ THE SEVEN PAID GRANTS BELOW ARE HIS ADOPTED VOLUME-DISCOUNT LADDER —
+// #1602 (P1-3), his word 2026-10-01 (terminal), and they ANSWER the hold this
+// block used to carry.
+//
+// Slice 1 moved the free grant and left these seven alone, because the
+// approved proposal (rev 21.6) lowered Pro and up while leaving every monthly
+// price where it was, and at those prices credits per dollar FELL at three
+// rungs — Studio below Pro, Scale below Business, Enterprise below Scale. That
+// breaks his own bar, quoted in `card390-guard.test.ts`: *"keep the monotonic
+// check: the figure must improve at every rung. If the real ladder breaks
+// that, the ladder is the bug."* So the ladder was put to him as the bug, not
+// the guard, and he replaced it. ⚠ Weakening that guard to admit a ladder is
+// still the one repair that is forbidden.
+//
+// His finance guy's note, handed over by him verbatim: *"adjust: volume-
+// discount ladder (Cid checked: every rung strictly better per $, no losing
+// case, yearly beats monthly at +15%, top-ups stay worse value). Prices
+// unchanged … Ledger = display x 5. Compare exact credits per $ in the check,
+// not rounded."* Then his own rounding, verbatim: *"adjust the ladder credit
+// numbers to be round on these plans : Business: 470,000 Scale: 2,750,000
+// Enterprise: 8,700,000 Ultimate (hidden): 28,000,000"*.
+//
+// Every price is UNCHANGED. What moved is the grant on all seven rungs:
+//
+//   plan         price      ledger       display    cr/$ (ledger, exact)
+//   Starter      $27            70,000     14,000   2592.592593
+//   Pro          $68           180,000     36,000   2647.058824
+//   Studio       $159          430,000     86,000   2704.402516
+//   Business     $840        2,350,000    470,000   2797.619048
+//   Scale        $4,800     13,750,000  2,750,000   2864.583333
+//   Enterprise   $15,000    43,500,000  8,700,000   2900.000000
+//   Ultimate     $48,000   140,000,000 28,000,000   2916.666667
+//
+// Strictly increasing at every rung, and every ledger figure a whole multiple
+// of 5 so no granted credit is invisible on the customer's scale. ⚠ The
+// comparison the guard makes is on the LEDGER column and it is EXACT —
+// `creditsPerDollar` does no rounding, which is what his note asks for;
+// `formatCreditsPerDollar` rounds, but only for the screen, and #1600 moved it
+// onto the display scale. Dividing both sides by 5 moves no inequality, so the
+// two scales cannot disagree about the climb.
+//
+// ⚠ STARTER WENT DOWN TOO — 75,000 → 70,000 ledger (15,000 → 14,000 display).
+// This supersedes the proposal's "starter unchanged", on his word, verbatim:
+// *"no paying customersd are on a plan so im not worried about starter."*
+// Existing Starter subscribers get the new figure at their next renewal like
+// every other rung.
+//
+// ⚠ PRO AND UP ALL FALL from today's amounts, so #1609 (P1-10) counts live
+// subscribers on those plans before go-live. Read at production 2026-10-01:
+// four accounts, none on a paid plan.
+//
+// Yearly needs no rule of its own: a year is billed at 9.96 months
+// (`ANNUAL_RATE` 0.83, applied to every rung alike), so yearly is better value
+// by construction and the climb survives the interval unchanged.
+//
+// ⚠ AND THE ONE THING THIS TABLE CANNOT SAY: Stripe carries these figures too
+// (*"my finance guy updated stripe to reflect this also just an FYI"*). The
+// app computes every credit number itself — his 2026-09-30 ruling — so Stripe
+// is the REFERENCE #1609 reconciles against, never a source this table reads.
 export const PLAN_TIERS = {
-  free: { name: 'Free', monthlyCredits: 5000, price: 0, rolloverPercent: 0 },
-  starter: { name: 'Starter', monthlyCredits: 75000, price: 2700, rolloverPercent: 50 },              // $27/mo  — $0.00036/cr
-  pro: { name: 'Pro', monthlyCredits: 200000, price: 6800, rolloverPercent: 75 },                     // $68/mo  — $0.00034/cr
-  studio: { name: 'Studio', monthlyCredits: 500000, price: 15900, rolloverPercent: 100 },              // $159/mo — $0.000318/cr
-  business: { name: 'Business', monthlyCredits: 3000000, price: 84000, rolloverPercent: 100 },         // $840/mo — $0.00028/cr
-  scale: { name: 'Scale', monthlyCredits: 20000000, price: 480000, rolloverPercent: 100 },             // $4,800/mo — $0.00024/cr
-  enterprise: { name: 'Enterprise', monthlyCredits: 75000000, price: 1500000, rolloverPercent: 100 },  // $15,000/mo — $0.0002/cr
-  ultimate: { name: 'Ultimate', monthlyCredits: 300000000, price: 4800000, rolloverPercent: 100 },     // $48,000/mo — $0.00016/cr — HIDDEN, arranged by email
+  // `monthlyCredits` is a ONE-TIME signup grant on this rung and nothing else
+  // reads it as monthly — see FREE_SIGNUP_GRANT_CREDITS above.
+  free: { name: 'Free', monthlyCredits: FREE_SIGNUP_GRANT_CREDITS, price: 0, rolloverPercent: 0 },
+  starter: { name: 'Starter', monthlyCredits: 70000, price: 2700, rolloverPercent: 50 },               // $27/mo     — 14,000 display — 2592.59 cr/$
+  pro: { name: 'Pro', monthlyCredits: 180000, price: 6800, rolloverPercent: 75 },                      // $68/mo     — 36,000 display — 2647.06 cr/$
+  studio: { name: 'Studio', monthlyCredits: 430000, price: 15900, rolloverPercent: 100 },              // $159/mo    — 86,000 display — 2704.40 cr/$
+  business: { name: 'Business', monthlyCredits: 2350000, price: 84000, rolloverPercent: 100 },          // $840/mo    — 470,000 display — 2797.62 cr/$
+  scale: { name: 'Scale', monthlyCredits: 13750000, price: 480000, rolloverPercent: 100 },              // $4,800/mo  — 2,750,000 display — 2864.58 cr/$
+  enterprise: { name: 'Enterprise', monthlyCredits: 43500000, price: 1500000, rolloverPercent: 100 },   // $15,000/mo — 8,700,000 display — 2900.00 cr/$
+  ultimate: { name: 'Ultimate', monthlyCredits: 140000000, price: 4800000, rolloverPercent: 100 },      // $48,000/mo — 28,000,000 display — 2916.67 cr/$ — HIDDEN, arranged by email
 } as const;
 
 export type PlanTier = keyof typeof PLAN_TIERS;
@@ -119,7 +226,14 @@ export type PlanTier = keyof typeof PLAN_TIERS;
 export const credits = mysqlTable("points", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull().unique(),
-  balance: int("balance").notNull().default(5000),
+  // ⚠ UNREADABLE BY CONSTRUCTION, AND THE STORED DEFAULT IS STILL 5,000 UNTIL
+  // THE GO-LIVE CEREMONY RUNS (#1602). Drizzle does not apply `.default()`
+  // client-side for MySQL — it omits the column and lets the stored default
+  // answer — so this declaration is the repo's INTENT and the database's own
+  // DEFAULT is the fact. The two are reconciled by `scripts/raise-free-grant-1602.mts`,
+  // not by a migration file, for the reason set out on FREE_SIGNUP_GRANT_CREDITS.
+  // Nothing reads either value: the sole INSERT names `balance` explicitly.
+  balance: int("balance").notNull().default(FREE_SIGNUP_GRANT_CREDITS),
   // The DB column still accepts the four folded rung values (#391): narrowing
   // a MySQL enum is a DESTRUCTIVE migration, which is the founder's ceremony
   // alone, and zero rows have ever held one (read at production the day of the

@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   CASTING_V2_COSTS,
-  CASTING_V2_RETRY_PRICE_CREDITS,
+  CASTING_V2_FOLLOW_PRICE_CREDITS,
   CASTING_V2_ROLL_PRICE_CREDITS,
   castingSliceCredits,
 } from "../casting/castingCreditCosts";
@@ -34,13 +34,14 @@ import { codeOnly } from "../testing/withoutComments";
  * only be inferred. A fourth site, `retryService`, charged a constant read
  * before the row it was charging for.
  *
- * None of it could ever be WRONG, because there is exactly one slice price in
- * the tree and a Follow and a Roll both cost 8 × 20 = 160. It becomes wrong on
- * the commit that sets them to 150 and 200 (item 1 of this card), and it
- * becomes wrong in the worst available way: `retryService` would charge a
- * Follow tile the Roll price and then WRITE that price onto the tile's row, so
- * the mis-charge becomes its own refund authority and the ledger reconciles
- * perfectly against the wrong number.
+ * None of it could ever have been WRONG while it was being built, because
+ * there was exactly one slice price in the tree and a Follow and a Roll both
+ * cost 8 × 20 = 160. ⚠ **That stopped being true on 2026-10-01: item 1 set
+ * them to 150 and 200, so every reading above is now load-bearing.** The shape
+ * it would have failed in is the worst available one: `retryService` would
+ * charge a Follow tile the Roll price and then WRITE that price onto the
+ * tile's row, so the mis-charge becomes its own refund authority and the
+ * ledger reconciles perfectly against the wrong number.
  *
  * # ⚠ THE THING THIS SUITE HAD TO SOLVE FIRST
  *
@@ -51,7 +52,9 @@ import { codeOnly } from "../testing/withoutComments";
  * (working law 2), and it is why `castingSliceCredits` takes its table as a
  * defaulted parameter: an ES const cannot be replaced from outside its own
  * module, so the seam is in the function and the arms below drive it with
- * **150 and 200**. A branch swap reddens them today.
+ * **150 and 200** — which, since item 1, is also what the real table holds.
+ * The seam stays anyway: the arms must keep failing for a reason that does not
+ * depend on today's two numbers.
  *
  * Where a divergence cannot be injected, the arm says so and a DIFFERENT
  * reading carries the weight — the retry arms hand the service a row at 200
@@ -89,11 +92,20 @@ describe("the selector picks the slice from the roll's own shape", () => {
 });
 
 describe("the two slices are two prices, not one price read twice", () => {
-  it("is EQUAL today, which is what makes this slice safe to ship", () => {
-    /* Not an aspiration — the reason item 2 could move the money path at all.
-       When this arm fails, item 1 has landed and the tripwire below is the
-       thing to read. */
-    expect(CASTING_V2_COSTS.followCandidate).toBe(CASTING_V2_COSTS.rollCandidate);
+  it("DISAGREE as of 2026-10-01, which is the day every arm in this file was written for", () => {
+    /*
+      ⚠ **THIS ARM READ `toBe` UNTIL #1601 ITEM 1 AND IT WAS NOT AN
+      ASPIRATION** — it recorded the one fact that made item 2 safe to ship at
+      all: a money path taught to pick between two prices that happened to be
+      equal could not charge anybody the wrong one while it was being built.
+      Its own instruction was *"when this arm fails, item 1 has landed"*. Item
+      1 has landed, so the arm states the new fact rather than being deleted:
+      a later change that quietly re-equalised the two slices would reprice a
+      Follow to a Roll, and this is where that shows.
+    */
+    expect(CASTING_V2_COSTS.followCandidate).not.toBe(CASTING_V2_COSTS.rollCandidate);
+    expect(CASTING_V2_COSTS.rollCandidate).toBe(150);
+    expect(CASTING_V2_COSTS.followCandidate).toBe(200);
   });
 
   it("declares `followCandidate` as its own numeric literal, never derived from the roll slice", () => {
@@ -116,22 +128,26 @@ describe("the two slices are two prices, not one price read twice", () => {
       .toBe(CASTING_V2_COSTS.rollCandidate * CASTING_V2_COSTS.rollCandidateCount);
   });
 
-  it("declares NO follow total, because nothing quotes one yet", async () => {
+  it("derives the follow total from its own slice, and it exists because something quotes it", () => {
     /*
-      The matching `CASTING_V2_FOLLOW_PRICE_CREDITS` was written and removed
-      inside this slice: `CASTING_V2_ROLL_PRICE_CREDITS` exists because
-      `castingV2.config` quotes it to the client, and a follow total has no
-      quoter until the dock's single price line is split (item 1, with #1600's
-      display helper). An exported price with no production reader is the shape
-      invariant 7 is about, and `check-cleanup-dispositions` caught it as
-      `unread` on this branch's first preflight.
+      ⚠ **THIS ARM REPLACES ONE THAT PINNED THE CONSTANT'S ABSENCE, ON THAT
+      ARM'S OWN INSTRUCTION: *"add it in the commit that quotes it, and delete
+      this arm then."*** `CASTING_V2_FOLLOW_PRICE_CREDITS` was written inside
+      item 2 and removed the same day, because `check-cleanup-dispositions`
+      read it as `unread` — an exported price with no production reader is
+      invariant 7's shape, and inventing a reader to justify a constant is the
+      coupling item 2 existed to defer.
 
-      This arm is here so the constant cannot come back WITHOUT its reader: a
-      module export is cheap to add and the next person's instinct will be
-      symmetry. Add it in the commit that quotes it, and delete this arm then.
+      The quoter arrived with item 1 and it had to: `castingV2.config` handed
+      the sheet ONE price line for Roll again and Follow together (his ruling,
+      2026-08-02), which was true only while the two slices agreed. The dock
+      now names the price of the button it fires, so the sheet needs both
+      numbers — and the arm below reads the router to prove the quote is real
+      rather than taking this constant's existence as evidence of it.
     */
-    const costs = await import("../casting/castingCreditCosts") as Record<string, unknown>;
-    expect("CASTING_V2_FOLLOW_PRICE_CREDITS" in costs).toBe(false);
+    expect(CASTING_V2_FOLLOW_PRICE_CREDITS)
+      .toBe(CASTING_V2_COSTS.followCandidate * CASTING_V2_COSTS.rollCandidateCount);
+    expect(CASTING_V2_FOLLOW_PRICE_CREDITS).not.toBe(CASTING_V2_ROLL_PRICE_CREDITS);
   });
 });
 
@@ -212,61 +228,95 @@ describe("the row writer writes the slice it is handed and refuses one it cannot
   });
 });
 
-describe("⚠ THE TRIPWIRE — two account-level quotes stop being truthful the day the slices diverge", () => {
-  it("names both surfaces that must become per-sheet, the moment item 1 lands", () => {
+describe("⚠ THE TRIPWIRE FIRED AND WAS DISCHARGED — neither account-level quote survives the divergence", () => {
+  /*
+    WHAT THIS BLOCK WAS, AND WHY IT IS NOT DELETED.
+
+    Item 2 left a `throw` here that fired the moment the two slices stopped
+    agreeing. It was the law-7 sweep's remainder ARMED rather than written
+    down, and it named two surfaces that each handed the client ONE number
+    standing for what was about to be two prices:
+
+      • `config.rollPriceCredits` — the sheet dock's `~ N credits`, carrying
+        the price once for Roll again AND Follow by his ruling of 2026-08-02;
+      • `config.retryPriceCredits` — the tile's `Retry · N credits`, while the
+        server had charged the tile's own recorded slice since item 2.
+
+    It fired on this commit, which is exactly what it was for. The arms below
+    are its discharge: each one reads the site the tripwire named and proves
+    the repair is THERE, so the next person who re-folds two prices into one
+    account-level quote meets a red suite rather than a sentence in a card.
+
+    The repairs were different in kind, and the asymmetry is the finding:
+
+      • the RETRY quote had no design question in it — the server already
+        charged the row, so the quote LEFT `config` (the tripwire's own second
+        option) and the sheet derives the number from the roll row's own total;
+      • the DOCK's did. One line cannot state 240 and 320, and cost is metadata
+        rather than button text (D-109), so where a tile's Follow price goes is
+        a founder decision. What shipped is the dock naming the price of the
+        button the DOCK fires — strictly truer than one number in every case —
+        and the uncovered case (an unfollowed sheet's tile Follow) is on his
+        desk as **#1699**. That is named here rather than left to be found.
+  */
+  const repoFile = (path: string) => codeOnly(readFileSync(join(repoRoot, path), "utf8"));
+
+  it("the account-level RETRY quote has left `castingV2.config` entirely", () => {
     /*
-      THIS IS THE LAW-7 SWEEP'S REMAINDER, ARMED RATHER THAN WRITTEN DOWN.
-
-      `castingV2.config` hands the client TWO single numbers for the whole
-      account, and both of them stand for what is about to be two prices:
-
-        • `rollPriceCredits` — drawn by the sheet's DOCK as `~ N credits`
-          (`client/src/pages/CastingSheet.tsx`). It covers Roll AND Follow
-          together by the founder's own ruling of 2026-08-02, recorded in
-          `CandidateTile`'s `rollPriceCredits` docblock: *"the dock states it
-          once, persistently, for rolls and follows together"*. Roll again and
-          Follow deliberately carry no price of their own BECAUSE that line
-          does. One number, two prices, from item 1 onward.
-
-        • `retryPriceCredits` — drawn on the tile as `Retry · N credits`. Since
-          this card's item 2 the SERVER charges the tile's own recorded slice,
-          so a Follow tile would be charged more than its own button said.
-
-      Both are display and both belong to #1600's routing slice plus item 1,
-      which is why neither is touched here — his rule of 2026-10-01 holds P1 to
-      its ten cards, and folding a surface into another card's slice is how a
-      half-built change ships under a cleanup's name. What this arm does is make
-      the coupling impossible to forget: it fails on the commit that diverges
-      the two prices, and it says what to do.
-
-      Not an instance, checked and recorded so it is not re-swept: the sheet's
-      own per-candidate `sliceCredits` divides `roll.priceCredits` — the ROW's
-      total — by that row's candidate count, so it follows a follow correctly;
-      and the Sign's view-count qualifier is already compared against
-      `plannedCredits` in `signRecovery`, which parks rather than assuming.
+      Read through `codeOnly` on purpose and it is load-bearing here: the
+      router, the sheet and the tile all EXPLAIN this removal in prose that
+      names the symbol, and a raw source match would read its own explanation
+      as the defect (#1636's class). `retryEnabled` — the door, always its own
+      field — must survive, so the arm names the price rather than banning the
+      word.
     */
-    const slicesAgree = CASTING_V2_COSTS.followCandidate === CASTING_V2_COSTS.rollCandidate;
-    if (!slicesAgree) {
-      throw new Error(
-        "The Roll and Follow slices now differ, so both of `castingV2.config`'s single "
-        + "price quotes are wrong for a Follow and the server charges the real thing:\n"
-        + "  1. `rollPriceCredits` — the sheet dock's `~ N credits`, which covers Roll AND "
-        + "Follow by his 2026-08-02 ruling. A Follow now costs more than the dock says.\n"
-        + "  2. `retryPriceCredits` — the tile's `Retry · N credits`. A Follow tile is "
-        + "charged its own row's slice.\n"
-        + "Both become per-sheet/per-tile with #1600's display helper, or they leave "
-        + "`config`. Sites: server/routes/castingV2.ts (`rollPriceCredits`, "
-        + "`retryPriceCredits`), client/src/pages/CastingSheet.tsx (the dock line), "
-        + "client/src/features/castingV2/components/CandidateTile.tsx (the retry label).",
-      );
-    }
-    /* While they agree, both quotes are coherent exactly because they ARE the
-       slice every sheet and every tile carries. */
-    expect(CASTING_V2_RETRY_PRICE_CREDITS).toBe(CASTING_V2_COSTS.rollCandidate);
-    expect(CASTING_V2_RETRY_PRICE_CREDITS).toBe(CASTING_V2_COSTS.followCandidate);
-    /* The dock's quote is the roll total, and it is only true of a follow sheet
-       while the slice it is built from is the follow's slice too. */
-    expect(CASTING_V2_ROLL_PRICE_CREDITS)
-      .toBe(CASTING_V2_COSTS.followCandidate * CASTING_V2_COSTS.rollCandidateCount);
+    const router = repoFile("server/routes/castingV2.ts");
+    expect(router).not.toContain("retryPriceCredits");
+    expect(router).toContain("retryEnabled");
+  });
+
+  it("the tile's retry price is derived from the ROLL ROW, not from the config quote", () => {
+    const sheet = repoFile("client/src/pages/CastingSheet.tsx");
+    /* The number the tile prints is this roll's own total over its own count. */
+    expect(sheet).toContain("const retryPrice = sliceCredits > 0 ? sliceCredits : undefined;");
+    expect(sheet).toContain("roll.data?.priceCredits");
+    /* And it is no longer read off the account. */
+    expect(sheet).not.toContain("config.data?.retryPriceCredits");
+  });
+
+  it("the dock states the price of the roll its own button will fire", () => {
+    /*
+      The sheet is handed BOTH totals and picks on `standingFollowId` — server
+      truth (`lineage.fromCandidateId`), not a client guess. An arm on the
+      source rather than on a render because this is a statement about which
+      WIRE FIELD feeds the line; what the line looks like is law 6's business
+      and the frames are on the PR.
+    */
+    const sheet = repoFile("client/src/pages/CastingSheet.tsx");
+    expect(sheet).toContain("config.data?.followPriceCredits");
+    expect(sheet).toContain("config.data?.rollPriceCredits");
+    expect(sheet).toContain("standingFollowId !== null");
+  });
+
+  it("serves both totals, and they are the two slices times the count", () => {
+    expect(repoFile("server/routes/castingV2.ts")).toContain("followPriceCredits");
+    expect(CASTING_V2_ROLL_PRICE_CREDITS).toBe(1200);
+    expect(CASTING_V2_FOLLOW_PRICE_CREDITS).toBe(1600);
+  });
+
+  it("⚠ names the one case the dock still cannot state, so it is not mistaken for finished", () => {
+    /*
+      A tile's **Follow** on a sheet that is not already following charges
+      1,600 while the dock quotes 1,200, because that line describes the dock's
+      own button. It is the narrowest remainder of his 2026-08-02 ruling, whose
+      premise — one price for both — died with the price table, and it is HIS
+      to answer: **#1699**, with two options and a recommendation.
+
+      This arm exists so the remainder cannot be read as an oversight. It
+      asserts the only thing that is actually true today — that the two totals
+      differ, which is precisely what makes a single dock line unable to cover
+      both — and the day one surface states both, this is the arm to rewrite.
+    */
+    expect(CASTING_V2_FOLLOW_PRICE_CREDITS).toBeGreaterThan(CASTING_V2_ROLL_PRICE_CREDITS);
   });
 });

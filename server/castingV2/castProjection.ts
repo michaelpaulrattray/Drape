@@ -19,7 +19,8 @@ import type { Model, ModelAsset } from "../../drizzle/schema";
 import { CAST_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
 import { storagePublicUrl } from "../storage";
 import type { CastLineage } from "../db/castingV2Sign";
-import { CAST_PACKAGE_VIEW_PRICE, CAST_PACKAGE_VIEWS, castPackageLabel } from "./castViewPackage";
+import { CASTING_V2_VIEW_RETRY_PRICE_CREDITS } from "../casting/castingCreditCosts";
+import { CAST_PACKAGE_VIEWS, castPackageLabel } from "./castViewPackage";
 import { castPronouns, type CastPronouns } from "./castPronouns";
 import { viewDeliveredUnchecked } from "./viewConformance";
 
@@ -326,10 +327,19 @@ function wasDeliveredUnjudged(asset: ModelAsset): boolean {
  * room and by the entrance that spends the money.
  *
  * His rule, verbatim (2026-09-25): *"you pay 50 for each view you keep."*
+ * ⚠ **The 50 in that sentence is history as of 2026-10-01 — a view is 1,000
+ * ledger (200 display) under his approved pricing (#1601 item 1), and a paid
+ * Try again is 1,850 (370 display), which is its own price rather than a
+ * view's.** His words are kept because the RULE in them is what this function
+ * is: you pay per view you keep, and asking again for a view you were refunded
+ * for is a purchase rather than a repair.
  *
- * - A view that failed was REFUNDED, so it has cost nothing. Asking again is
- *   an ordinary paid view. (#1208, his *"trying again deducts another 50cr.
- *   its not completely free"*.)
+ * - A view that failed was REFUNDED, so it has cost nothing. Asking again is a
+ *   paid ask, at the Try again price. (#1208, his *"trying again deducts
+ *   another 50cr. its not completely free"*.) ⚠ Until 2026-10-01 both callers
+ *   passed `CAST_PACKAGE_VIEW_PRICE` here and the two numbers were literally
+ *   the same; they are not any more, and `CASTING_V2_VIEW_RETRY_PRICE_CREDITS`
+ *   is what they pass.
  * - A view that arrived UNCHECKED was charged and kept. Asking again is free.
  *   (#1220, his *"go with the free try again"*.) Since #1612 part 2 that
  *   covers two roads — nobody looked, and somebody looked and the framing or
@@ -349,10 +359,10 @@ function wasDeliveredUnjudged(asset: ModelAsset): boolean {
  */
 export function castSlotRetryOffer(
   slot: Pick<CastSlotProjection, "state" | "standIn" | "unjudged" | "refundedCredits">,
-  viewPrice: number,
+  paidRetryPrice: number,
 ): CastSlotRetry | null {
   if (slot.state === "failed-refunded") {
-    return { priceCredits: viewPrice, reason: "refunded" };
+    return { priceCredits: paidRetryPrice, reason: "refunded" };
   }
   if (slot.state !== "ready") return null;
   /*
@@ -364,7 +374,7 @@ export function castSlotRetryOffer(
   if (slot.standIn === true) {
     return slot.refundedCredits === null
       ? null
-      : { priceCredits: viewPrice, reason: "refunded" };
+      : { priceCredits: paidRetryPrice, reason: "refunded" };
   }
   if (slot.unjudged === true) return { priceCredits: 0, reason: "unchecked" };
   return null;
@@ -669,7 +679,7 @@ export function projectSignedCast(input: {
       : slot))
     .map((slot) => {
       if (building) return slot;
-      const retry = castSlotRetryOffer(slot, CAST_PACKAGE_VIEW_PRICE);
+      const retry = castSlotRetryOffer(slot, CASTING_V2_VIEW_RETRY_PRICE_CREDITS);
       return retry ? { ...slot, retry } : slot;
     });
 

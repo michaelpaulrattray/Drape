@@ -370,9 +370,13 @@ describe("the canonical view package", () => {
   });
 
   it("derives the Sign price from the number of views it actually promises", () => {
-    // §H.10 as amended: 200 promotion + 5 × 50. Derived, so retiring a view
+    // §H.10 as amended, repriced #1601 item 1: 3,500 promotion + 5 × 1,000.
+    // Derived, so retiring a view
     // reprices the product rather than leaving a literal behind.
-    expect(CASTING_V2_SIGN_PRICE_CREDITS).toBe(450);
+    /* ⚠ **8,500 SINCE 2026-10-01 (#1601 item 1); it was 450 from 2026-07-30.**
+       Pinned by literal on purpose — the identity below would hold at any
+       price, so one side of it has to be a number somebody decided. */
+    expect(CASTING_V2_SIGN_PRICE_CREDITS).toBe(8500);
     expect(CASTING_V2_SIGN_PRICE_CREDITS).toBe(
       CASTING_V2_SIGN_COSTS.promotion + CAST_PACKAGE_VIEW_PRICE * CAST_PACKAGE_VIEWS.length,
     );

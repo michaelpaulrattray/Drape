@@ -66,7 +66,21 @@ const {
   VIEW_ARRIVAL_ATTEMPTS,
   VIEW_JUDGED_ATTEMPTS,
 } = await import("./packageOrchestrator");
-const { CAST_PACKAGE_VIEWS, composePackageViewPrompt, packageViewExpectation } = await import("./castViewPackage");
+const { CAST_PACKAGE_VIEWS, CAST_PACKAGE_VIEW_PRICE, CASTING_V2_SIGN_PRICE_CREDITS, composePackageViewPrompt, packageViewExpectation } = await import("./castViewPackage");
+const { CASTING_V2_SIGN_COSTS } = await import("../casting/castingCreditCosts");
+/**
+ * THE PACKAGE'S MONEY, READ FROM THE PRODUCT — #1601 item 1, 2026-10-01.
+ *
+ * ⚠ **`50`, `200` AND `450` WERE LITERALS IN EVERY MONEY ARM HERE, AND THEY ALL
+ * WENT RED ON TWO CONSTANT EDITS** (a view is 1,000 now and the promotion
+ * 3,500). The arms are about WHICH references a refund lands under and whether
+ * the base comes back — true at any price — so they read the price. The
+ * literals left in this file are prose narrating what a ruling cost on the day
+ * it was made.
+ */
+const VIEW_PRICE = CAST_PACKAGE_VIEW_PRICE;
+const PROMOTION = CASTING_V2_SIGN_COSTS.promotion;
+const SIGN_PRICE = CASTING_V2_SIGN_PRICE_CREDITS;
 import type { CastViewAngle } from "../../shared/boardTypes";
 
 const pass: ViewConformanceVerdict = {
@@ -336,10 +350,10 @@ describe("one regeneration, then named-and-refunded", () => {
     expect(result.failed).toEqual(["backFull"]);
     expect(refunds).toHaveLength(1);
     expect(refunds[0]).toEqual({
-      amount: 50,
+      amount: VIEW_PRICE,
       reference: packageSlotChargeReference(OPERATION_ID, "backFull"),
     });
-    expect(result.refundedCredits).toBe(50);
+    expect(result.refundedCredits).toBe(VIEW_PRICE);
     // Five landed. A failed view never blocks the others.
     expect(committed).toHaveLength(4);
   });
@@ -433,7 +447,7 @@ describe("one regeneration, then named-and-refunded", () => {
 
     /* The row the room already reads is untouched. */
     expect(stored.state).toBe("failed");
-    expect(stored.refunded).toBe(50);
+    expect(stored.refunded).toBe(VIEW_PRICE);
     expect(stored.conformance?.axes.angle.pass).toBe(true);
     expect(stored.at).toBe("2026-09-30T00:00:00.000Z");
     /* And the draw nobody heard about is IN THE ROW. */
@@ -446,7 +460,7 @@ describe("one regeneration, then named-and-refunded", () => {
        carrying nothing — the old conditional spreads existed for this reason
        and the derived version has to keep it. */
     const stored = slotFailureStatus(
-      { reason: "The view could not be generated", refunded: 50, refundReference: "ref" },
+      { reason: "The view could not be generated", refunded: VIEW_PRICE, refundReference: "ref" },
       "2026-09-30T00:00:00.000Z",
     );
     expect(Object.keys(stored).sort())
@@ -607,8 +621,8 @@ describe("generation failures", () => {
     // Five views, one attempt each.
     expect(generateView).toHaveBeenCalledTimes(5);
     expect(result.failed).toHaveLength(5);
-    // Nothing landed, so the base returns with the slices — 450, not 250.
-    expect(result.refundedCredits).toBe(450);
+    // Nothing landed, so the base returns with the slices — the whole Sign, not just the views.
+    expect(result.refundedCredits).toBe(SIGN_PRICE);
   });
 
   /*
@@ -791,8 +805,8 @@ describe("generation failures", () => {
     // And not one spaced wait, which is the whole of what she stops sitting through.
     expect(waitedMs).toHaveLength(0);
     expect(result.failed).toHaveLength(5);
-    // Zero of N: the base comes back with the slices, exactly as before (450, not 250).
-    expect(result.refundedCredits).toBe(450);
+    // Zero of N: the base comes back with the slices, exactly as before.
+    expect(result.refundedCredits).toBe(SIGN_PRICE);
   });
 
   it("still activates the Cast when every view fails — the master is usable", async () => {
@@ -813,7 +827,7 @@ describe("generation failures", () => {
       charges the customer for our outage. The Cast still stands; only the money
       moved.
     */
-    expect(result.refundedCredits).toBe(450);
+    expect(result.refundedCredits).toBe(SIGN_PRICE);
     expect(result.totalLoss).toBe(true);
   });
 });
@@ -880,7 +894,7 @@ describe("the judge cannot be trusted to be available", () => {
     const result = await buildCastPackage(deps({ judge } as never), input);
 
     expect(result.committed).toHaveLength(0);
-    expect(result.refundedCredits).toBe(450);
+    expect(result.refundedCredits).toBe(SIGN_PRICE);
   });
 });
 
@@ -943,7 +957,7 @@ describe("the fence", () => {
 });
 
 describe("honesty about money that did not move", () => {
-  it("reports an unrecorded refund and records 0 on the slot, never 50", async () => {
+  it("reports an unrecorded refund and records 0 on the slot, never the view's price", async () => {
     refundRecords = false;
     const judge = () => vi.fn(async (request: { angle: string }) =>
       request.angle === "backFull" ? fail : pass);
@@ -1026,11 +1040,11 @@ describe("zero of N — the base goes back too", () => {
     expect(result.committed).toHaveLength(0);
     // Five slices plus the base, each under its own idempotent reference — so a
     // recovery pass that arrives later finds duplicates, not a second payment.
-    expect(refunds.filter((entry) => entry.amount === 50)).toHaveLength(5);
-    const base = refunds.filter((entry) => entry.amount === 200);
+    expect(refunds.filter((entry) => entry.amount === VIEW_PRICE)).toHaveLength(5);
+    const base = refunds.filter((entry) => entry.amount === PROMOTION);
     expect(base).toHaveLength(1);
     expect(base[0].reference).toBe(packagePromotionChargeReference(input.operationId));
-    expect(result.refundedCredits).toBe(450);
+    expect(result.refundedCredits).toBe(SIGN_PRICE);
   });
 
   it("keeps the base when even one view lands", async () => {
@@ -1048,7 +1062,7 @@ describe("zero of N — the base goes back too", () => {
 
     expect(result.committed.length).toBeGreaterThan(0);
     expect(result.totalLoss).toBe(false);
-    expect(refunds.some((entry) => entry.amount === 200)).toBe(false);
+    expect(refunds.some((entry) => entry.amount === PROMOTION)).toBe(false);
   });
 
   it("still activates the Cast — she keeps the face she chose", async () => {
@@ -1544,7 +1558,7 @@ describe("only identity takes a picture away", () => {
 
     expect(committed).not.toContain("sideClose");
     expect(refunds).toEqual([
-      { amount: 50, reference: packageSlotChargeReference(OPERATION_ID, "sideClose") },
+      { amount: VIEW_PRICE, reference: packageSlotChargeReference(OPERATION_ID, "sideClose") },
     ]);
     const marker = failures.find((entry) => entry.angle === "sideClose");
     expect((marker?.failure as { reason: string }).reason).toBe("This view didn't hold the signed likeness");
@@ -1777,14 +1791,14 @@ describe("only identity takes a picture away", () => {
     });
     const result = await buildCastPackage(deps({ judge }), input);
 
-    const charged = CAST_PACKAGE_VIEWS.length * 50;
+    const charged = CAST_PACKAGE_VIEWS.length * VIEW_PRICE;
     const refunded = refunds.reduce((sum, entry) => sum + entry.amount, 0);
-    const kept = committed.length * 50;
+    const kept = committed.length * VIEW_PRICE;
 
     expect(committed).toContain("sideClose");
     expect(committed).not.toContain("backFull");
-    expect(refunded).toBe(50);
+    expect(refunded).toBe(VIEW_PRICE);
     expect(kept + refunded).toBe(charged);
-    expect(result.refundedCredits).toBe(50);
+    expect(result.refundedCredits).toBe(VIEW_PRICE);
   });
 });

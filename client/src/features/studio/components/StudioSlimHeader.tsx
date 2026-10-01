@@ -46,6 +46,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, PanelLeft } from 'lucide-react';
 import { useLocation } from 'wouter';
+import { displayBalance, formatCredits } from '@shared/creditDisplay';
 import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
 import { ProfileAvatar } from '@/features/profile/ProfileVisual';
 
@@ -135,7 +136,7 @@ export function StudioSlimHeader({
           className="px-2 py-1 rounded-canvas-sm transition-colors text-canvas-md text-canvas-ink-soft hover:bg-canvas-surface-inset"
           style={{ fontVariantNumeric: 'tabular-nums' }}
         >
-          {creditsBalance.toLocaleString()} credits
+          {formatCredits(displayBalance(creditsBalance))} credits
         </button>
         <span aria-hidden className="w-px h-4 bg-canvas-border" />
 
@@ -177,7 +178,7 @@ export function StudioSlimHeader({
                 </div>
                 <div className="flex items-baseline justify-between mt-0.5">
                   <span className="text-canvas-sm text-canvas-ink-soft" style={{ fontVariantNumeric: 'tabular-nums' }}>
-                    {creditsBalance.toLocaleString()} credits
+                    {formatCredits(displayBalance(creditsBalance))} credits
                   </span>
                   <button
                     type="button"

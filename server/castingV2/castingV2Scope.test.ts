@@ -127,12 +127,16 @@ describe("boot validation", () => {
   it("refuses to enable without the view-conformance validator", () => {
     // Sign (M7) is the other spendable surface, and it cannot land a view
     // without a second opinion (§I fail-closed). Unconfigured, every Sign
-    // would charge 450, fail all FIVE views closed, and refund the whole 450
-    // — the base included, per the founder's 2026-08-02 total-loss ruling — an
-    // empty package every time, with the money technically correct throughout.
+    // would charge 8,500, fail all FIVE views closed, and refund the whole
+    // 8,500 — the base included, per the founder's 2026-08-02 total-loss
+    // ruling — an empty package every time, with the money technically correct
+    // throughout.
     // (This said "charge 500 … refund 300" until 2026-08-25: six views, and a
-    // refund policy the founder had already reversed. See the docblock on
-    // `CastingV2ValidatorConfigurationError`.)
+    // refund policy the founder had already reversed; and "450" until
+    // 2026-10-01, when #1601 item 1 set the adopted price. See the docblock on
+    // `CastingV2ValidatorConfigurationError`. The arm below is what keeps this
+    // sentence honest — it reads both constants at the place the claim is
+    // made, which is the whole reason it exists.)
     expect(() =>
       validateCastingV2Environment({
         scope: "all",
@@ -146,13 +150,17 @@ describe("boot validation", () => {
   /*
     ⚠ THE ARM THAT TIES THE DOCBLOCK ABOVE TO THE CODE (ruled fable-1654 §3).
 
-    The comment beside this suite quotes three numbers — 450 charged, five
-    views, the whole 450 back — and for months it quoted three DIFFERENT ones
-    (500 / six / 300) while every arm in the product was green, because **a
-    comment cannot be run.** The pins for all three already existed and were
-    right: `castViewPackage.test` asserts the view list and derives 450 from its
-    length, and `packageOrchestrator.test`'s *"zero of N — the base goes back
-    too"* asserts the full 450 with the base under its own reference.
+    The comment beside this suite quotes three numbers — the Sign's price
+    charged, five views, the whole price back — and for months it quoted three
+    DIFFERENT ones (500 / six / 300) while every arm in the product was green,
+    because **a comment cannot be run.** The pins for all three already existed
+    and were right: `castViewPackage.test` asserts the view list and derives the
+    total from its length, and `packageOrchestrator.test`'s *"zero of N — the
+    base goes back too"* asserts the full price with the base under its own
+    reference.
+
+    ⚠ **IT PAID FOR ITSELF ON 2026-10-01**: #1601 item 1 moved the price to
+    8,500 and this arm is what sent somebody back to that sentence.
 
     What did NOT exist is anything joining them to THIS sentence, which is the
     one a reader meets when they ask why the scope refuses to boot. So this
@@ -161,13 +169,14 @@ describe("boot validation", () => {
     six frames — the Master plus the package's five — and the six SLOTS a
     signed Cast carries, five bought plus the sealed `frontClose`).
   */
-  it("the fail-closed docblock's numbers are the product's: five views, 450, refunded whole", async () => {
+  it("the fail-closed docblock's numbers are the product's: five views, 8,500, refunded whole", async () => {
     const { CAST_PACKAGE_VIEWS, CASTING_V2_SIGN_PRICE_CREDITS, CAST_PACKAGE_VIEW_PRICE } =
       await import("./castViewPackage");
     const { CASTING_V2_SIGN_COSTS } = await import("../casting/castingCreditCosts");
 
     expect(CAST_PACKAGE_VIEWS.length).toBe(5);
-    expect(CASTING_V2_SIGN_PRICE_CREDITS).toBe(450);
+    /* 8,500 since #1601 item 1 (3,500 + 5 × 1,000); 450 before it. */
+    expect(CASTING_V2_SIGN_PRICE_CREDITS).toBe(8500);
     // The charge the docblock names is the promotion plus EVERY view, and a
     // total loss gives all of it back — so the two numbers in that sentence are
     // one number, and it is this one.

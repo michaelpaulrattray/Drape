@@ -166,7 +166,9 @@ describe("R7-7D D5 inline Studio contract", () => {
     expect(panel).toContain(
       "workflow.activeSubject?.priceCredits ?? workflow.capability?.priceCredits",
     );
-    expect(panel).toContain("`${priceCredits} credits`");
+    /* Routed through the display helper (#1600); the arm's subject — the
+       panel states its price inline before spending — is unchanged. */
+    expect(panel).toContain("`${formatCredits(displayPrice(priceCredits))} credits`");
     expect(panel).toContain('"Loading quote…"');
     expect(panel).not.toMatch(/priceCredits\s*\?\?\s*350/);
   });

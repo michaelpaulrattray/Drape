@@ -63,24 +63,34 @@ export class CastingV2TransportConfigurationError extends Error {
  * §I's fail-closed law: where no trustworthy verifier exists, the request
  * refuses BEFORE the spend. Without the judge transport, every Sign would
  * charge the promotion plus five views, fail all five conformance checks, and
- * refund the WHOLE 450 — a Cast with an empty package, every single time, and
+ * refund the WHOLE 8,500 — a Cast with an empty package, every single time, and
  * the money technically correct throughout. Refusing to enable is the only
  * honest posture (invariant 7).
  *
  * ⚠ **THIS PARAGRAPH SAID "six views" AND "refund three hundred credits back",
  * AND ALL THREE NUMBERS IN IT WERE WRONG — corrected 2026-08-25 (opus-1272,
  * ruled fable-1654 §2).** The package is FIVE views (`CAST_PACKAGE_VIEWS`, and
- * `CASTING_V2_SIGN_PRICE_CREDITS` derives 450 = 200 + 5 × 50 from its length),
+ * `CASTING_V2_SIGN_PRICE_CREDITS` derives 8,500 = 3,500 + 5 × 1,000 from its length),
  * so the charge was never 500 and the checks were never six. The third is the
- * one that mattered: **a zero-of-N Sign does not keep the 200.** The founder
+ * one that mattered: **a zero-of-N Sign does not keep the 3,500.** The founder
  * ruled on 2026-08-02 that the promotion goes back too — *"nobody came here to
  * buy the preservation of a face they had already paid for on the sheet"* — and
  * `packageOrchestrator` has refunded it ever since, logging *"TOTAL LOSS — not
  * one view landed; the whole Sign refunded, base included"*. So this docblock
- * described a product that keeps 200 credits of a customer's money during our
+ * described a product that keeps 3,500 credits of a customer's money during our
  * own outage, which is the thing the confession law forbids and the exact
  * behaviour that ruling removed. **A comment cannot be run, so nothing went
  * red for six months.**
+ *
+ * ⚠ **AND ALL FOUR OF ITS FIGURES MOVED AGAIN ON 2026-10-01 — #1601 item 1
+ * set the adopted scale: the Sign 450 → 8,500, the promotion 200 → 3,500, a
+ * view 50 → 1,000.** They were missed in that commit while its own TEST
+ * docblock was corrected in the same diff, and the relay's review caught it.
+ * **That is the class and it is worth more than the four figures: a pin that
+ * lives beside a COPY of a sentence moves the copy when it reddens, never the
+ * source.** `castingV2Scope.test.ts`'s arm reads both constants at the place
+ * ITS claim is made — and the claim a reader actually meets when they ask why
+ * the scope refuses to boot is THIS one, three files away from the arm.
  */
 export class CastingV2ValidatorConfigurationError extends Error {
   constructor() {

@@ -72,7 +72,8 @@ import { createModuleLogger } from "../logging/logger";
 import { storageDelete, storageReadBytes } from "../storage";
 import { castPronouns } from "./castPronouns";
 import { castSlotRetryOffer, landedViewAsset, projectSignedCast } from "./castProjection";
-import { CAST_PACKAGE_VIEW_PRICE, castPackageView } from "./castViewPackage";
+import { CASTING_V2_VIEW_RETRY_PRICE_CREDITS } from "../casting/castingCreditCosts";
+import { castPackageView } from "./castViewPackage";
 import {
   renderViewAttempts,
   type PackageOrchestratorDependencies,
@@ -435,7 +436,7 @@ export async function retryCastView(
     been filled — by a sweep, by another tab — offers nothing, and the answer
     is a free refusal rather than a second picture nobody asked for.
   */
-  const offer = castSlotRetryOffer(slot, CAST_PACKAGE_VIEW_PRICE);
+  const offer = castSlotRetryOffer(slot, CASTING_V2_VIEW_RETRY_PRICE_CREDITS);
   if (!offer) {
     throw new TRPCError({
       code: "PRECONDITION_FAILED",

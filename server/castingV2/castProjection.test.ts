@@ -1,6 +1,22 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { Model, ModelAsset } from "../../drizzle/schema";
+import { CASTING_V2_VIEW_RETRY_PRICE_CREDITS } from "../casting/castingCreditCosts";
+import { CAST_PACKAGE_VIEW_PRICE } from "./castViewPackage";
+
+/**
+ * WHAT A VIEW COST AND WHAT ASKING AGAIN COSTS — two numbers since 2026-10-01
+ * (#1601 item 1), and this suite pinned both as the same literal `50`.
+ *
+ * ⚠ **THAT IS WHY THEY ARE SEPARATE NAMES HERE.** A refund is the VIEW's slice
+ * — what was charged for it — and a paid Try again is its own price, dearer
+ * because it is one render plus its own check rather than an amortised fifth of
+ * a package. While both were 50 no arm in this file could tell which one the
+ * projection was reading.
+ */
+const VIEW_PRICE = CAST_PACKAGE_VIEW_PRICE;
+const TRY_AGAIN_PRICE = CASTING_V2_VIEW_RETRY_PRICE_CREDITS;
+
 import {
   FAILED_SLOT_CONFESSION,
   landedViewAsset,
@@ -77,7 +93,7 @@ function asset(overrides: Partial<ModelAsset> = {}): ModelAsset {
     resolution: "2K",
     storageUrl: "https://cdn.example/view.png",
     storageKey: "casting-v2/casts/op/views/secret-key.png",
-    pointsCost: 50,
+    pointsCost: VIEW_PRICE,
     pinned: false,
     status: null,
     provenance: { provider: "fal", engine: "fal-ai/nano-banana-pro", providerRef: "SECRET-REF" },
@@ -105,7 +121,7 @@ const failed = (viewType: string) =>
     id: 500 + viewType.length,
     viewType: viewType as ModelAsset["viewType"],
     storageUrl: "",
-    status: { state: "failed", reason: "didn't arrive", refunded: 50 },
+    status: { state: "failed", reason: "didn't arrive", refunded: VIEW_PRICE },
   });
 
 const anchor = () =>
@@ -163,7 +179,7 @@ describe("the signed Cast projection", () => {
           viewType: "backFull",
           storageUrl: "",
           storageKey: null,
-          status: { state: "failed", reason: "This view didn't arrive", refunded: 50 },
+          status: { state: "failed", reason: "This view didn't arrive", refunded: VIEW_PRICE },
         }),
       ),
       lineage,
@@ -172,7 +188,7 @@ describe("the signed Cast projection", () => {
     expect(slot?.state).toBe("failed-refunded");
     expect(slot?.url).toBeNull();
     expect(slot?.note).toBe(FAILED_SLOT_CONFESSION);
-    expect(slot?.refundedCredits).toBe(50);
+    expect(slot?.refundedCredits).toBe(VIEW_PRICE);
     // It is not still "building" — that is the shimmer the ruling forbids.
     expect(slot?.state).not.toBe("building");
   });
@@ -186,7 +202,7 @@ describe("the signed Cast projection", () => {
           viewType: "backFull",
           storageUrl: "",
           storageKey: null,
-          // The refund itself failed to record. The room must say 0, not 50.
+          // The refund itself failed to record. The room must say 0, not the view's price.
           status: { state: "failed", reason: "This view didn't arrive", refunded: 0 },
         }),
       ),
@@ -219,7 +235,7 @@ describe("the signed Cast projection", () => {
           viewType: "frontClose",
           storageUrl: "",
           storageKey: null,
-          status: { state: "failed", reason: "This view didn't arrive", refunded: 50 },
+          status: { state: "failed", reason: "This view didn't arrive", refunded: VIEW_PRICE },
         }),
       ),
       lineage,
@@ -229,14 +245,14 @@ describe("the signed Cast projection", () => {
     // an explanation for is the refund rather than an absence.
     expect(slot?.state).toBe("ready");
     expect(slot?.url).toBe("https://cdn.example/anchor.png");
-    expect(slot?.refundedCredits).toBe(50);
+    expect(slot?.refundedCredits).toBe(VIEW_PRICE);
     /*
       ⚠ IT SAYS SO IN THE ROW'S ONE WORD NOW, NOT IN A SENTENCE UNDER THE TILE
       (#1347, his Desk reply 224). `ANCHOR_STANDIN_NOTE` is gone; the refund is
       what earns `reason: "refunded"`, and the room draws `Refunded · Try again`.
     */
     expect(slot?.note).toBeNull();
-    expect(slot?.retry).toEqual({ priceCredits: 50, reason: "refunded" });
+    expect(slot?.retry).toEqual({ priceCredits: TRY_AGAIN_PRICE, reason: "refunded" });
   });
 
   it("opens the room on the signed master while the package is still building", () => {
@@ -381,7 +397,7 @@ describe("the signed Cast projection", () => {
           viewType: "frontClose",
           storageUrl: "",
           storageKey: null,
-          status: { state: "failed", reason: "This view didn't arrive", refunded: 50 },
+          status: { state: "failed", reason: "This view didn't arrive", refunded: VIEW_PRICE },
         }),
       ),
       lineage,
@@ -464,7 +480,7 @@ describe("a view being asked for again (#1235)", () => {
     const atRest = backFull(projectSignedCast({ model: model(), assets, lineage }));
     // The control: without a running retry this is a confession WITH an offer.
     expect(atRest.state).toBe("failed-refunded");
-    expect(atRest.retry).toEqual({ priceCredits: 50, reason: "refunded" });
+    expect(atRest.retry).toEqual({ priceCredits: TRY_AGAIN_PRICE, reason: "refunded" });
     expect(atRest.retrying).toBeUndefined();
 
     const asking = backFull(projectSignedCast({
@@ -523,7 +539,7 @@ describe("a view being asked for again (#1235)", () => {
       room held one angle in one string and disabled every button from it.
     */
     expect(other.state).toBe("failed-refunded");
-    expect(other.retry).toEqual({ priceCredits: 50, reason: "refunded" });
+    expect(other.retry).toEqual({ priceCredits: TRY_AGAIN_PRICE, reason: "refunded" });
     expect(other.retrying).toBeUndefined();
   });
 

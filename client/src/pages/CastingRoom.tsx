@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useRoute } from "wouter";
 import { ArrowLeft, Download, Lock, Play, Plus } from "lucide-react";
 
+import { displayRefund, formatCredits } from "@shared/creditDisplay";
 import { Button, EmptyState, Skeleton } from "@/foundation";
 import { AppChrome } from "@/components/AppChrome";
 import { toast } from "sonner";
@@ -235,9 +236,16 @@ export default function CastingRoom() {
             not record is never reported as "you weren't charged" (the refund
             law this product has had since D-64).
           */
+          /*
+            The test stays on the LEDGER and only the printed number is
+            converted (#1600). Branching on the displayed figure would say
+            "You weren't charged" to somebody who was charged and refunded a
+            sum too small to show — and `creditDisplayFloor.test.ts` is
+            what keeps that sum impossible, at the price table rather than here.
+          */
           toast(result.refundRecorded
             ? (result.refundedCredits > 0
-              ? `It didn't arrive again. Your ${result.refundedCredits} credits are back.`
+              ? `It didn't arrive again. Your ${formatCredits(displayRefund(result.refundedCredits))} credits are back.`
               : "It didn't arrive again. You weren't charged.")
             : "It didn't arrive again — and the refund couldn't be recorded. Support can restore it.");
         },

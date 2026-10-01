@@ -70,6 +70,7 @@
  * left on the card rather than smuggled in beside a read-side repair.
  */
 import { trpc } from "@/lib/trpc";
+import { displayBalance, formatCredits } from "@shared/creditDisplay";
 
 import { useSpendWindow } from "@/features/billing/useCycleSpend";
 
@@ -118,10 +119,15 @@ export function UsageSection({
     number, and the same class the burn band already refuses to draw. An em
     dash says the honest thing and costs one character.
   */
-  const creditsUsed = spend ? spend.spent.toLocaleString() : "—";
+  const creditsUsed = spend ? formatCredits(displayBalance(spend.spent)) : "—";
   /* A window an hour old has a real spend and no meaningful rate: the divisor
      is clamped at a day, exactly as `readCycle` clamps it for the modals. */
-  const perDay = spend ? Math.round(spend.spent / Math.max(1, spend.days)).toLocaleString() : "—";
+  /* The rate is a number of DISPLAY credits per day, so it is formatted by the
+     helper rather than by a bare `toLocaleString` — which would be a credit
+     number reaching a customer outside the one place that converts them. */
+  const perDay = spend
+    ? formatCredits(displayBalance(Math.round(spend.spent / Math.max(1, spend.days))))
+    : "—";
 
   const storageUsed = storage?.used ?? 0;
   const storageLimit = storage?.limit ?? 0;

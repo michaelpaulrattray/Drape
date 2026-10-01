@@ -40,15 +40,20 @@ describe("R7-3 persistent Casting refinement composer", () => {
 
     expect(html).toContain("Refine this person");
     expect(html).toContain("Keeps their identity");
-    expect(html).toContain("Apply · 350 credits");
+    /* 350 ledger reads 70 (#1600). Rendered, so this is the routing proven
+       in a mounted component. */
+    expect(html).toContain("Apply · 70 credits");
     expect(html).not.toContain("credits per edit");
   });
 
   it("enables the priced Apply door only when an instruction exists", () => {
     expect(refineActionState("", false, 350)).toEqual({
       canSubmit: false,
-      ariaLabel: "Apply refinement for 350 credits",
-      label: "Apply · 350 credits",
+      /* 350 ledger reads 70 (#1600) — in BOTH strings, which is the point of
+         keeping the aria label in this arm: a screen reader hears the same
+         number the button shows. */
+      ariaLabel: "Apply refinement for 70 credits",
+      label: "Apply · 70 credits",
     });
     expect(refineActionState("make the lighting softer", false, 350).canSubmit).toBe(true);
   });

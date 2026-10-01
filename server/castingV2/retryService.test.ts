@@ -202,7 +202,20 @@ const {
 const { candidateChargeReference } = await import("./rollRecovery");
 const { RECOVERED_RETRY_SENTENCE, RETRY_SUPPORT_REVIEW_SENTENCE } = await import("./retryRecovery");
 const { ProviderError } = await import("../providers/types");
-const { CASTING_V2_RETRY_PRICE_CREDITS } = await import("../casting/castingCreditCosts");
+const { CASTING_V2_COSTS } = await import("../casting/castingCreditCosts");
+/**
+ * THE ROLL SLICE — what this fixture's rows cost, and the negative control for
+ * every arm that proves the service reads the ROW.
+ *
+ * ⚠ It was `ROLL_SLICE` until 2026-10-01, when #1601 item
+ * 1 deleted that constant: it was an account-level quote, and from the price
+ * table on there are two slices (a Roll's 150, a Follow's 200) so no single
+ * account number is true of every tile. Reading the roll slice out of the real
+ * table keeps these arms pinned to the product rather than to a literal, and
+ * it makes the control below REAL: 200 against 150 is a disagreement, where
+ * 200 against the old 20 was a disagreement nobody could get wrong.
+ */
+const ROLL_SLICE = CASTING_V2_COSTS.rollCandidate;
 const { CANDIDATE_RENDER } = await import("./briefCompiler");
 const directOperation = await import("../casting/directOperation");
 const db = await import("../db/castingV2");
@@ -256,7 +269,7 @@ function seed(failed: Partial<Row> = {}) {
       publicId: `cand-${index + 10}`,
       position: index,
       status: "ready",
-      pointsCost: 20,
+      pointsCost: ROLL_SLICE,
       failureClass: null,
       internalPrompt: { prompt: `words ${index + 1}` },
       attemptCount: 1,
@@ -266,7 +279,7 @@ function seed(failed: Partial<Row> = {}) {
       publicId: "cand-5",
       position: 7,
       status: "failed",
-      pointsCost: 20,
+      pointsCost: ROLL_SLICE,
       failureClass: "transport",
       internalPrompt: { prompt: "the words this tile was painted from" },
       attemptCount: 1,
@@ -383,7 +396,7 @@ describe("the sequence", () => {
       candidateId: "cand-5",
       rollId: "roll-public",
       outcome: "ready",
-      chargedCredits: CASTING_V2_RETRY_PRICE_CREDITS,
+      chargedCredits: ROLL_SLICE,
       refundedCredits: 0,
       refundRecorded: true,
       failureClass: null,
@@ -406,14 +419,14 @@ describe("the sequence", () => {
     expect(deduct).toHaveBeenCalledTimes(1);
     expect(deduct).toHaveBeenCalledWith(
       7,
-      CASTING_V2_RETRY_PRICE_CREDITS,
+      ROLL_SLICE,
       "generation",
       "Casting retry (pending)",
       `op:${RETRY_OPERATION_ID}:charge`,
       { toolKind: "image", engineUsed: "castingV2" },
     );
     // The row is the refund authority: its cost is set in the reset statement.
-    expect(dbCalls.reset).toHaveBeenCalledWith(5, CASTING_V2_RETRY_PRICE_CREDITS);
+    expect(dbCalls.reset).toHaveBeenCalledWith(5, ROLL_SLICE);
   });
 
   it("moves the roll from partial to complete when the rescued slice was the last one missing", async () => {
@@ -424,7 +437,7 @@ describe("the sequence", () => {
     });
     expect(receipts.success).toHaveBeenCalledWith(expect.objectContaining({
       operationId: RETRY_OPERATION_ID,
-      chargedCredits: CASTING_V2_RETRY_PRICE_CREDITS,
+      chargedCredits: ROLL_SLICE,
       refundedCredits: 0,
       terminalStatus: "succeeded",
     }));
@@ -451,7 +464,7 @@ describe("the sequence", () => {
 /**
  * ⚠ A TILE'S RETRY COSTS WHAT THAT TILE COST — #1601 item 2, third clause.
  *
- * The arms above assert the charge against `CASTING_V2_RETRY_PRICE_CREDITS`,
+ * The arms above assert the charge against `ROLL_SLICE`,
  * and they pass whether the service reads the CONSTANT or the ROW, because the
  * seeded row holds 20 and so does the constant. That ambiguity is the whole
  * defect: the price used to be read at the top of `retryCandidate`, before the
@@ -479,9 +492,9 @@ describe("the retry is priced from the tile's own row, not from the roll-slice c
 
     expect(deduct).toHaveBeenCalledTimes(1);
     expect(deduct.mock.calls[0][1]).toBe(FOLLOW_SLICE);
-    /* The arm's own negative control: if this were still reading the constant
-       the amount would be 20, and 20 is a value this expectation forbids. */
-    expect(deduct.mock.calls[0][1]).not.toBe(CASTING_V2_RETRY_PRICE_CREDITS);
+    /* The arm's own negative control: a service reading the roll slice would
+       charge 150 here, and 150 is a value this expectation forbids. */
+    expect(deduct.mock.calls[0][1]).not.toBe(ROLL_SLICE);
   });
 
   it("writes the SAME number back as the refund authority, so charge and refund cannot disagree", async () => {
@@ -507,10 +520,20 @@ describe("the retry is priced from the tile's own row, not from the roll-slice c
   });
 
   it("leaves a cheaper tile cheaper — the two directions are read, not assumed", async () => {
-    seed({ pointsCost: 150 });
+    /*
+      ⚠ **20, AND IT IS NOT AN ARBITRARY NUMBER.** It was 150 until 2026-10-01,
+      which was a value no arm could distinguish from the roll slice once the
+      price table set `rollCandidate` to exactly that — an arm a service
+      reading the constant would have passed (working law 2). 20 is what every
+      live candidate row in production actually held the day item 2 was
+      measured (483 rows, all at 20), so this is the real historical sheet: a
+      tile charged at the old scale is still charged its own recorded figure
+      after the table moved, and neither 150 nor 200 can satisfy it.
+    */
+    seed({ pointsCost: 20 });
     const deps = dependencies();
     await retryCandidate(deps, INPUT);
-    expect((deps as { deduct: ReturnType<typeof vi.fn> }).deduct.mock.calls[0][1]).toBe(150);
+    expect((deps as { deduct: ReturnType<typeof vi.fn> }).deduct.mock.calls[0][1]).toBe(20);
   });
 
   /*
@@ -560,10 +583,10 @@ describe("when the engine fails again", () => {
   it("refunds the one slice under the RETRY's reference — never the roll's — and leaves the roll's status alone", async () => {
     await expect(retryCandidate(dependencies("fails"), INPUT)).rejects.toMatchObject({
       code: "PRECONDITION_FAILED",
-      message: `That tile didn't arrive again. ${CASTING_V2_RETRY_PRICE_CREDITS} credits were refunded.`,
+      message: `That tile didn't arrive again. ${ROLL_SLICE} credits were refunded.`,
     });
     expect(refunds).toEqual([{
-      amount: CASTING_V2_RETRY_PRICE_CREDITS,
+      amount: ROLL_SLICE,
       reference: candidateChargeReference(RETRY_OPERATION_ID, "cand-5"),
     }]);
     // The original slice's refund lived under the ROLL's operation. Different
@@ -572,8 +595,8 @@ describe("when the engine fails again", () => {
     expect(rows.candidates.find((row) => row.id === 5)).toMatchObject({ status: "failed", failureClass: "timeout" });
     expect(dbCalls.setRollStatus).not.toHaveBeenCalled();
     expect(receipts.failure).toHaveBeenCalledWith(expect.objectContaining({
-      chargedCredits: CASTING_V2_RETRY_PRICE_CREDITS,
-      refundedCredits: CASTING_V2_RETRY_PRICE_CREDITS,
+      chargedCredits: ROLL_SLICE,
+      refundedCredits: ROLL_SLICE,
     }));
   });
 
@@ -584,15 +607,15 @@ describe("when the engine fails again", () => {
     vi.mocked(db.markCandidateDispatched).mockResolvedValueOnce(false);
     await expect(retryCandidate(dependencies(), INPUT)).rejects.toMatchObject({
       code: "PRECONDITION_FAILED",
-      message: `That tile didn't arrive again. ${CASTING_V2_RETRY_PRICE_CREDITS} credits were refunded.`,
+      message: `That tile didn't arrive again. ${ROLL_SLICE} credits were refunded.`,
     });
     expect(refunds).toEqual([{
-      amount: CASTING_V2_RETRY_PRICE_CREDITS,
+      amount: ROLL_SLICE,
       reference: candidateChargeReference(RETRY_OPERATION_ID, "cand-5"),
     }]);
     expect(receipts.failure).toHaveBeenCalledWith(expect.objectContaining({
-      chargedCredits: CASTING_V2_RETRY_PRICE_CREDITS,
-      refundedCredits: CASTING_V2_RETRY_PRICE_CREDITS,
+      chargedCredits: ROLL_SLICE,
+      refundedCredits: ROLL_SLICE,
     }));
     expect(dbCalls.setRollStatus).not.toHaveBeenCalled();
   });
@@ -612,7 +635,7 @@ describe("when the engine fails again", () => {
       message: expect.stringContaining(`quote operation ${RETRY_OPERATION_ID}`),
     });
     expect(receipts.failure).toHaveBeenCalledWith(expect.objectContaining({
-      chargedCredits: CASTING_V2_RETRY_PRICE_CREDITS,
+      chargedCredits: ROLL_SLICE,
       refundedCredits: 0,
     }));
   });
@@ -727,7 +750,7 @@ describe("a retry whose dispatch WRITE throws — the live-process collision (#8
   it("hands the retry to its own adjudicator in-process and throws the sentence the receipt was sealed with — never a failure receipt carrying 0 refunded", async () => {
     dispatchWriteThrows();
     adjudicator.recover.mockResolvedValueOnce({
-      type: "paid_failure", chargedCredits: CASTING_V2_RETRY_PRICE_CREDITS, refundedCredits: CASTING_V2_RETRY_PRICE_CREDITS,
+      type: "paid_failure", chargedCredits: ROLL_SLICE, refundedCredits: ROLL_SLICE,
     });
 
     await expect(retryCandidate(dependencies(), INPUT)).rejects.toMatchObject({
@@ -738,7 +761,7 @@ describe("a retry whose dispatch WRITE throws — the live-process collision (#8
       id: RETRY_OPERATION_ID,
       userId: INPUT.userId,
       status: "running",
-      chargedCredits: CASTING_V2_RETRY_PRICE_CREDITS,
+      chargedCredits: ROLL_SLICE,
       refundedCredits: 0,
     });
     /* The adjudicator sealed the receipt; this road writes no second one —
@@ -751,7 +774,7 @@ describe("a retry whose dispatch WRITE throws — the live-process collision (#8
   it("parks a dead-end verdict for support with the sweep's own words", async () => {
     dispatchWriteThrows();
     adjudicator.recover.mockResolvedValueOnce({
-      type: "recovery_required", reason: "no lock row", chargedCredits: CASTING_V2_RETRY_PRICE_CREDITS, refundedCredits: 0,
+      type: "recovery_required", reason: "no lock row", chargedCredits: ROLL_SLICE, refundedCredits: 0,
     });
 
     await expect(retryCandidate(dependencies(), INPUT)).rejects.toMatchObject({
@@ -762,7 +785,7 @@ describe("a retry whose dispatch WRITE throws — the live-process collision (#8
       userId: INPUT.userId,
       operationId: RETRY_OPERATION_ID,
       publicMessage: RETRY_SUPPORT_REVIEW_SENTENCE(RETRY_OPERATION_ID),
-      chargedCredits: CASTING_V2_RETRY_PRICE_CREDITS,
+      chargedCredits: ROLL_SLICE,
       refundedCredits: 0,
     });
     expect(adjudicator.handoff).not.toHaveBeenCalled();
@@ -784,12 +807,12 @@ describe("a retry whose dispatch WRITE throws — the live-process collision (#8
 
   it("CONTROL — an engine failure inside the unit never reaches the adjudicator; the unit's own refund and receipt stand", async () => {
     await expect(retryCandidate(dependencies("fails"), INPUT)).rejects.toMatchObject({
-      message: `That tile didn't arrive again. ${CASTING_V2_RETRY_PRICE_CREDITS} credits were refunded.`,
+      message: `That tile didn't arrive again. ${ROLL_SLICE} credits were refunded.`,
     });
     expect(adjudicator.recover).not.toHaveBeenCalled();
     expect(adjudicator.handoff).not.toHaveBeenCalled();
     expect(receipts.failure).toHaveBeenCalledWith(expect.objectContaining({
-      refundedCredits: CASTING_V2_RETRY_PRICE_CREDITS,
+      refundedCredits: ROLL_SLICE,
     }));
   });
 });

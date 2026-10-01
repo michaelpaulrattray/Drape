@@ -4,6 +4,7 @@
  * every change (D-15 — the footer total is the primary metric, DS §5.15).
  */
 import { useState } from "react";
+import { displayPrice, formatCredits } from "@shared/creditDisplay";
 import { Minus, Plus } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
@@ -63,7 +64,7 @@ export function VariationsPopoverContent({
       <div className="flex items-center justify-between gap-3 pt-3 border-t border-canvas-border">
         {/* Footer total is the primary metric (DS §5.15) */}
         <span className="text-canvas-lg font-medium text-canvas-ink tabular-nums">
-          {plan ? `~${plan.estimatedCreditCost.toLocaleString()} credits` : "—"}
+          {plan ? `~${formatCredits(displayPrice(plan.estimatedCreditCost))} credits` : "—"}
         </span>
         <div className="flex items-center gap-1.5">
           <button

@@ -9,10 +9,11 @@
  *
  * Measured against the committed Atlas on 2026-08-23, before the fix:
  *
- *   absent   `CASTING_V2_REFINE_PRICE_CREDITS = 25` — a top-level const rather
+ *   absent   `CASTING_V2_REFINE_PRICE_CREDITS` (25 then, 1,750 since #1601) — a top-level const rather
  *            than an object property, and the most-charged operation there is
- *   absent   `CASTING_V2_ROLL_PRICE_CREDITS` (160) and
- *            `CASTING_V2_SIGN_PRICE_CREDITS` (450) — the two most-quoted numbers
+ *   absent   `CASTING_V2_ROLL_PRICE_CREDITS` (160 then, 1,200 since #1601) and
+ *            `CASTING_V2_SIGN_PRICE_CREDITS` (450 then, 8,500 since #1601) — the two
+ *            most-quoted numbers
  *            in the whole Casting V2 program, because both are ARITHMETIC
  *   absent   all eight wardrobe prices and `INK_ADD_PRICE_CREDITS`, because the
  *            collector only ever opened one file
@@ -56,9 +57,11 @@ import { describe, expect, it } from "vitest";
 import { creditCostsFromSources } from "../scripts/generate-architecture.mts";
 import {
   CASTING_V2_COSTS,
+  CASTING_V2_FOLLOW_PRICE_CREDITS,
   CASTING_V2_REFINE_PRICE_CREDITS,
   CASTING_V2_ROLL_PRICE_CREDITS,
   CASTING_V2_SIGN_COSTS,
+  CASTING_V2_VIEW_RETRY_PRICE_CREDITS,
   CREDIT_COSTS,
 } from "./casting/castingCreditCosts";
 import { INK_ADD_PRICE_CREDITS } from "./casting/evidence/evidenceCandidateContract";
@@ -108,7 +111,7 @@ describe("the extractor's own population, proven able to fail", () => {
   });
 
   it("reads a top-level scalar price, which the old reader could not see at all", () => {
-    /* `CASTING_V2_REFINE_PRICE_CREDITS = 25` — a const, not an object property,
+    /* `CASTING_V2_REFINE_PRICE_CREDITS` — a const, not an object property,
        and the most-charged operation in the product. */
     const rows = creditCostsFromSources({
       "server/prices.ts": `export const REFINE_PRICE_CREDITS = 25;`,
@@ -310,11 +313,14 @@ describe("the committed Atlas against the values TypeScript evaluates", () => {
     }
   });
 
-  it("holds the four DERIVED prices at the numbers the modules compute", () => {
-    /* The fold, checked against TypeScript's own arithmetic. `160` and `450` are
-       the two numbers this program quotes most and neither was in the Atlas. */
+  it("holds the DERIVED prices at the numbers the modules compute", () => {
+    /* The fold, checked against TypeScript's own arithmetic. These are the
+       numbers this program quotes most and none of them was in the Atlas. */
     expect(atlasCredits(CASTING, "CASTING_V2_ROLL_PRICE_CREDITS")).toBe(
       CASTING_V2_ROLL_PRICE_CREDITS,
+    );
+    expect(atlasCredits(CASTING, "CASTING_V2_FOLLOW_PRICE_CREDITS")).toBe(
+      CASTING_V2_FOLLOW_PRICE_CREDITS,
     );
     expect(atlasCredits(PACKAGE, "CASTING_V2_SIGN_PRICE_CREDITS")).toBe(
       CASTING_V2_SIGN_PRICE_CREDITS,
@@ -323,9 +329,26 @@ describe("the committed Atlas against the values TypeScript evaluates", () => {
     expect(atlasCredits(CASTING, "CASTING_V2_REFINE_PRICE_CREDITS")).toBe(
       CASTING_V2_REFINE_PRICE_CREDITS,
     );
-    /* Pinned by literal as well, because a fold that returned the operands'
-       product for BOTH would satisfy the identities above. */
-    expect([CASTING_V2_ROLL_PRICE_CREDITS, CASTING_V2_SIGN_PRICE_CREDITS]).toEqual([160, 450]);
+    expect(atlasCredits(CASTING, "CASTING_V2_VIEW_RETRY_PRICE_CREDITS")).toBe(
+      CASTING_V2_VIEW_RETRY_PRICE_CREDITS,
+    );
+    /*
+      Pinned by literal as well, because a fold that returned the operands'
+      product for every one of them would satisfy the identities above.
+
+      ⚠ **THE FOUR LITERALS MOVED ON 2026-10-01 (#1601 item 1) AND THE OLD ONES
+      ARE RECORDED RATHER THAN OVERWRITTEN**: a Roll was 160, a Follow had no
+      price at all, a Sign was 450 and a Try again was a view's 50. A Follow's
+      own total is on this list now because something quotes it — the dock's
+      single price line could stand for both actions only while the two slices
+      agreed.
+    */
+    expect([
+      CASTING_V2_ROLL_PRICE_CREDITS,
+      CASTING_V2_FOLLOW_PRICE_CREDITS,
+      CASTING_V2_SIGN_PRICE_CREDITS,
+      CASTING_V2_VIEW_RETRY_PRICE_CREDITS,
+    ]).toEqual([1200, 1600, 8500, 1850]);
   });
 
   it("holds the price that lives outside both cost modules", () => {

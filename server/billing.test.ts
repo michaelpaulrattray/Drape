@@ -5,9 +5,16 @@ import { calculateRolloverCredits, getMonthlyCredits, mapStripeStatus, mapPlanTo
 import { LEDGER_PER_DISPLAY_CREDIT } from "../shared/creditDisplay";
 
 describe("Billing - Plan Tiers Configuration", () => {
-  // The seven survivors' prices and credits are HIS numbers, pinned exactly
-  // where they were before the #391 fold — the ruling was "leave the seven
-  // survivors' prices and credit amounts exactly where they are".
+  // The seven survivors' PRICES are HIS numbers, pinned exactly where they
+  // were before the #391 fold — that ruling was "leave the seven survivors'
+  // prices and credit amounts exactly where they are", and the prices have not
+  // moved since.
+  //
+  // ⚠ THE SECOND HALF OF THAT SENTENCE IS NO LONGER TRUE OF THE CREDITS, AND
+  // THIS COMMENT CLAIMED BOTH UNTIL #1602. The credit amounts moved twice
+  // after the fold — the free grant in slice 1, all seven paid rungs in slice 2
+  // (his adopted volume-discount ladder, 2026-10-01). The #391 ruling governs
+  // the prices below; the credit arm carries its own provenance.
   it("should have correct pricing for all tiers", () => {
     expect(PLAN_TIERS.free.price).toBe(0);
     expect(PLAN_TIERS.starter.price).toBe(2700);
@@ -20,14 +27,66 @@ describe("Billing - Plan Tiers Configuration", () => {
   });
 
   it("should have correct monthly credits for all tiers", () => {
-    expect(PLAN_TIERS.free.monthlyCredits).toBe(5000);
-    expect(PLAN_TIERS.starter.monthlyCredits).toBe(75000);
-    expect(PLAN_TIERS.pro.monthlyCredits).toBe(200000);
-    expect(PLAN_TIERS.studio.monthlyCredits).toBe(500000);
-    expect(PLAN_TIERS.business.monthlyCredits).toBe(3000000);
-    expect(PLAN_TIERS.scale.monthlyCredits).toBe(20000000);
-    expect(PLAN_TIERS.enterprise.monthlyCredits).toBe(75000000);
-    expect(PLAN_TIERS.ultimate.monthlyCredits).toBe(300000000);
+    /*
+      ⚠ THE FREE RUNG'S FIGURE IS A ONE-TIME SIGNUP GRANT, NOT A MONTHLY
+      ALLOWANCE (#1602, P1-3) — 13,500 ledger, 2,700 displayed. It is pinned as
+      a LITERAL on purpose: deriving it from `FREE_SIGNUP_GRANT_CREDITS` would
+      compare the table to itself and could not fail when the promise moved,
+      which is the shape the deleted velocity suite died of (CLAUDE.md).
+
+      ⚠ THE SEVEN PAID RUNGS MOVED IN SLICE 2 — his adopted volume-discount
+      ladder, his word 2026-10-01. Slice 1's note here said they were "UNCHANGED
+      and held on his word" because the proposal's grants broke the #390
+      credits-per-dollar climb at three rungs; he replaced the ladder rather
+      than the guard. Every PRICE is unchanged. Pinned as literals for the same
+      reason the free rung is: a derived pin compares the table to itself and
+      cannot fail when the promise moves.
+    */
+    expect(PLAN_TIERS.free.monthlyCredits).toBe(13500);
+    expect(PLAN_TIERS.starter.monthlyCredits).toBe(70000);
+    expect(PLAN_TIERS.pro.monthlyCredits).toBe(180000);
+    expect(PLAN_TIERS.studio.monthlyCredits).toBe(430000);
+    expect(PLAN_TIERS.business.monthlyCredits).toBe(2350000);
+    expect(PLAN_TIERS.scale.monthlyCredits).toBe(13750000);
+    expect(PLAN_TIERS.enterprise.monthlyCredits).toBe(43500000);
+    expect(PLAN_TIERS.ultimate.monthlyCredits).toBe(140000000);
+  });
+
+  it("⚠ EVERY PAID GRANT IS A WHOLE MULTIPLE OF THE DISPLAY SCALE", () => {
+    /*
+      His note's own clause — *"Ledger = display x 5"* — and the property that
+      makes it safe rather than merely true: a grant that is not a whole
+      multiple of `LEDGER_PER_DISPLAY_CREDIT` contains credits the customer is
+      granted and can never see, because `displayBalance` rounds DOWN.
+
+      Pinned here rather than left to the eye: the ladder arrived as seven
+      display figures that were multiplied by five by hand, and a single
+      mistyped digit would be invisible in every other arm in this file — the
+      climb survives it, the accessor reports it, and the only tell is a
+      fraction of a display credit nobody ever sees.
+    */
+    for (const [key, tier] of Object.entries(PLAN_TIERS)) {
+      expect(
+        tier.monthlyCredits % LEDGER_PER_DISPLAY_CREDIT,
+        `${key}'s grant of ${tier.monthlyCredits} ledger is not a whole number of display credits`,
+      ).toBe(0);
+    }
+  });
+
+  it("⚠ AND THAT CHECK CAN FAIL — a grant off the scale is caught", () => {
+    /*
+      Working law 2: verify the instrument before believing its finding. The
+      arm above is green over a table where all eight figures happen to be
+      multiples of five, which is exactly the condition under which a broken
+      reader is indistinguishable from a sound one. This drives the same
+      comparison over one figure moved a single credit off the scale and proves
+      it goes red.
+    */
+    const offScale = Object.values(PLAN_TIERS).map((tier, index) =>
+      index === 3 ? { ...tier, monthlyCredits: tier.monthlyCredits + 1 } : tier,
+    );
+    const allWhole = offScale.every((tier) => tier.monthlyCredits % LEDGER_PER_DISPLAY_CREDIT === 0);
+    expect(allWhole, "the scale check passed a grant with an invisible credit in it").toBe(false);
   });
 
   it("should have correct rollover percentages", () => {
@@ -132,14 +191,17 @@ describe("Billing - Rollover Calculation", () => {
 
 describe("Billing - Monthly Credits", () => {
   it("should return correct monthly credits for each tier", () => {
-    expect(getMonthlyCredits("free")).toBe(5000);
-    expect(getMonthlyCredits("starter")).toBe(75000);
-    expect(getMonthlyCredits("pro")).toBe(200000);
-    expect(getMonthlyCredits("studio")).toBe(500000);
-    expect(getMonthlyCredits("business")).toBe(3000000);
-    expect(getMonthlyCredits("scale")).toBe(20000000);
-    expect(getMonthlyCredits("enterprise")).toBe(75000000);
-    expect(getMonthlyCredits("ultimate")).toBe(300000000);
+    /* 13,500 since #1602 — the one-time signup grant, read through the same
+       accessor every rung uses. The free rung never reaches a refresh; this
+       asserts only that the accessor reports the table. */
+    expect(getMonthlyCredits("free")).toBe(13500);
+    expect(getMonthlyCredits("starter")).toBe(70000);
+    expect(getMonthlyCredits("pro")).toBe(180000);
+    expect(getMonthlyCredits("studio")).toBe(430000);
+    expect(getMonthlyCredits("business")).toBe(2350000);
+    expect(getMonthlyCredits("scale")).toBe(13750000);
+    expect(getMonthlyCredits("enterprise")).toBe(43500000);
+    expect(getMonthlyCredits("ultimate")).toBe(140000000);
   });
 });
 
@@ -215,54 +277,64 @@ describe("Billing - Credit Adjustment for Plan Changes", () => {
       bought lets upgrade-then-downgrade alternation mint allowance. The
       contract is the MIRROR now: each direction moves the same share.
     */
-    // Pro (200,000) to Starter (75,000), half the cycle left: −62,500
-    expect(calculateCreditAdjustment("pro", "starter", 15, 30)).toBe(-62500);
+    /*
+      ⚠ ALL SIX FIGURES IN THIS BLOCK MOVED WITH THE LADDER (#1602 slice 2),
+      and they are the half of this file a literal grep for the old grants did
+      not find: each is a DERIVED amount, so none of them contains a plan
+      figure to search for. They were re-read off the real function rather than
+      recomputed by hand, and the function is unchanged — only its inputs are.
+    */
+    // Pro (180,000) to Starter (70,000), half the cycle left: −55,000
+    expect(calculateCreditAdjustment("pro", "starter", 15, 30)).toBe(-55000);
     expect(calculateCreditAdjustment("pro", "starter", 15, 30)).toBe(
       -calculateCreditAdjustment("starter", "pro", 15, 30),
     );
-    // Studio to Pro
-    expect(calculateCreditAdjustment("studio", "pro", 15, 30)).toBe(-150000);
-    // Studio to Starter
-    expect(calculateCreditAdjustment("studio", "starter", 15, 30)).toBe(-212500);
+    // Studio (430,000) to Pro (180,000), half: −125,000
+    expect(calculateCreditAdjustment("studio", "pro", 15, 30)).toBe(-125000);
+    // Studio (430,000) to Starter (70,000), half: −180,000
+    expect(calculateCreditAdjustment("studio", "starter", 15, 30)).toBe(-180000);
   });
 
   it("should calculate prorated credits for upgrade", () => {
-    // Starter (75,000) to Pro (200,000), 15 days remaining of 30
-    // Additional credits: 200,000 - 75,000 = 125,000
-    // Prorated: 125,000 * (15/30) = 62,500
-    expect(calculateCreditAdjustment("starter", "pro", 15, 30)).toBe(62500);
+    // Starter (70,000) to Pro (180,000), 15 days remaining of 30
+    // Additional credits: 180,000 - 70,000 = 110,000
+    // Prorated: 110,000 * (15/30) = 55,000
+    expect(calculateCreditAdjustment("starter", "pro", 15, 30)).toBe(55000);
   });
 
   it("should calculate full credits for upgrade at start of period", () => {
     // Starter to Pro, 30 days remaining of 30
-    // Additional credits: 125,000
-    // Prorated: 125,000 * (30/30) = 125,000
-    expect(calculateCreditAdjustment("starter", "pro", 30, 30)).toBe(125000);
+    // Additional credits: 110,000
+    // Prorated: 110,000 * (30/30) = 110,000
+    expect(calculateCreditAdjustment("starter", "pro", 30, 30)).toBe(110000);
   });
 
   it("should calculate minimal credits for upgrade near end of period", () => {
     // Starter to Pro, 1 day remaining of 30
-    // Additional credits: 125,000
-    // Prorated: 125,000 * (1/30) = 4,166.67 -> 4,166
-    /* ⚠ 4,166 until #1604 slice 2. It is not a whole number of displayed
-       credits, so the grant is quantised to 4,165 — the customer is granted one
-       ledger credit less and every credit they are granted can be shown. */
-    expect(calculateCreditAdjustment("starter", "pro", 1, 30)).toBe(4165);
+    // Additional credits: 110,000
+    // Prorated: 110,000 * (1/30) = 3,666.67 -> 3,666
+    /* ⚠ 3,666 is not a whole number of DISPLAYED credits, so the grant is
+       quantised DOWN to 3,665 (#1604 slice 2) — the customer is granted one
+       ledger credit less and every credit they are granted can be shown. The
+       quantisation is the point of this arm and it survived the ladder change:
+       the figure moved 4,165 → 3,665 and is still short of the raw share. */
+    expect(calculateCreditAdjustment("starter", "pro", 1, 30)).toBe(3665);
     expect(calculateCreditAdjustment("starter", "pro", 1, 30) % LEDGER_PER_DISPLAY_CREDIT).toBe(0);
   });
 
   it("should handle upgrade from free tier", () => {
-    // Free (5,000) to Starter (75,000), 15 days remaining of 30
-    // Additional credits: 75,000 - 5,000 = 70,000
-    // Prorated: 70,000 * (15/30) = 35,000
-    expect(calculateCreditAdjustment("free", "starter", 15, 30)).toBe(35000);
+    // Free (13,500 since #1602 slice 1) to Starter (70,000), 15 days of 30
+    // Additional credits: 70,000 - 13,500 = 56,500
+    // Prorated: 56,500 * (15/30) = 28,250
+    expect(calculateCreditAdjustment("free", "starter", 15, 30)).toBe(28250);
   });
 
   it("should handle upgrade to studio tier", () => {
-    // Pro (200,000) to Studio (500,000), 20 days remaining of 30
-    // Additional credits: 500,000 - 200,000 = 300,000
-    // Prorated: 300,000 * (20/30) = 200,000
-    expect(calculateCreditAdjustment("pro", "studio", 20, 30)).toBe(200000);
+    // Pro (180,000) to Studio (430,000), 20 days remaining of 30
+    // Additional credits: 430,000 - 180,000 = 250,000
+    // Prorated: 250,000 * (20/30) = 166,666.67 -> 166,666 -> quantised 166,665
+    expect(calculateCreditAdjustment("pro", "studio", 20, 30)).toBe(166665);
+    expect(calculateCreditAdjustment("pro", "studio", 20, 30) % LEDGER_PER_DISPLAY_CREDIT).toBe(0);
   });
 
   it("should return 0 for same plan", () => {

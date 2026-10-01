@@ -23,7 +23,9 @@ describe('R7-4A strip-first package care', () => {
   it('shows direct priced repair actions while healthy views stay quiet', () => {
     const strip = read('client/src/features/casting/components/ImageViewer/ViewTabs.tsx');
     expect(strip).toContain("refreshVerb = 'Refresh'");
-    expect(strip).toContain('${refreshVerb} ${label} for ${refreshCost.toLocaleString()} credits');
+    /* Routed through the display helper (#1600); the verb and the label this
+       arm is about are untouched. */
+    expect(strip).toContain('${refreshVerb} ${label} for ${formatCredits(displayPrice(refreshCost))} credits');
     expect(strip).toContain("cost={plan?.refusal === null ? plan.cost : undefined}");
     expect(strip).toContain("evidenceAware ? 'Update coverage' : 'Refresh all'");
     expect(strip).not.toContain("pinningAvailable");

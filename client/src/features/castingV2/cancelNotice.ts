@@ -19,6 +19,8 @@
  * Every branch is a point-in-time statement and worded as one. A total stated
  * as final would be wrong by the time the user reads their balance.
  */
+import { displayRefund, formatCredits } from "@shared/creditDisplay";
+
 export type CancelOutcome = {
   refundedCredits: number;
   refundRecorded: boolean;
@@ -36,14 +38,33 @@ export function cancelNoticeFor(outcome: CancelOutcome): string {
       ? "1 still finishing"
       : `${outcome.stillFinishing} still finishing`;
 
+  /*
+    ⚠ THE BRANCHES STILL TEST THE LEDGER, AND ONLY THE PRINTED NUMBER IS
+    CONVERTED (#1600) — the other way round was tried first and is wrong.
+
+    A customer reads credits on the display scale (the ledger divided by five)
+    and `displayRefund` rounds DOWN, so a refund small enough would print as
+    "0 credits back" — the exact sentence this module was written to delete.
+    The tempting repair is to branch on the DISPLAYED figure, and it trades one
+    false sentence for another: a refund too small to show would then fall
+    through to "there was nothing to refund", which is false of a refund that
+    really happened, and R6's refund honesty says a non-zero refund states its
+    number.
+
+    So neither branch moves. What makes the zero impossible is the price table,
+    not this file: the smallest refundable unit in the product is one sheet
+    slice, and `creditDisplayFloor.test.ts` fails the moment any declared
+    refundable price displays as less than one credit — so a third branch
+    becomes necessary with a red test rather than with a customer reading a zero.
+  */
   if (outcome.stillFinishing > 0 && outcome.refundedCredits > 0) {
-    return `Cancelled · ${outcome.refundedCredits} credits back — ${finishing}, refunds complete as they land.`;
+    return `Cancelled · ${formatCredits(displayRefund(outcome.refundedCredits))} credits back — ${finishing}, refunds complete as they land.`;
   }
   if (outcome.stillFinishing > 0) {
     return `Cancelled — ${finishing}; refunds complete as they land.`;
   }
   if (outcome.refundedCredits > 0) {
-    return `Cancelled · ${outcome.refundedCredits} credits back.`;
+    return `Cancelled · ${formatCredits(displayRefund(outcome.refundedCredits))} credits back.`;
   }
   /*
     Nothing queued and nothing in flight: the roll had already finished. Saying

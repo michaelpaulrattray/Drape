@@ -31,6 +31,7 @@
  * The React half is `client/src/features/billing/useCycleSpend.ts`; this file
  * stays pure so it can be driven without a query client.
  */
+import { displayBalance, formatCredits } from "@shared/creditDisplay";
 
 /** Which window the server summed — `usage.getCycleSpend`'s own word for it. */
 export type SpendBasis = "period" | "rolling30";
@@ -75,12 +76,12 @@ export function spendWindowCopy(
          billing period` sits under a rate. The free window cannot use one
          string for both — *"averaged over in the last 30 days"*. */
       over: "this billing period",
-      note: allowance > 0 ? `of ${allowance.toLocaleString()} this billing period` : undefined,
+      note: allowance > 0 ? `of ${formatCredits(displayBalance(allowance))} this billing period` : undefined,
     };
   }
   return {
     heading: "Usage in the last 30 days",
     over: "the last 30 days",
-    note: `${balance.toLocaleString()} credits left`,
+    note: `${formatCredits(displayBalance(balance))} credits left`,
   };
 }

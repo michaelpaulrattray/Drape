@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Loader2, MoreHorizontal, Plus, RefreshCw } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { refundOutcomeText } from '@shared/refundCopy';
+import { displayPrice, formatCredits } from "@shared/creditDisplay";
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
 import { useStudioStore } from '@/features/studio/stores/useStudioStore';
@@ -129,12 +130,12 @@ function ViewThumbnail({
         <button
           type="button"
           onClick={(event) => { event.stopPropagation(); onRefresh(); }}
-          aria-label={`${refreshVerb} ${label} for ${refreshCost.toLocaleString()} credits`}
-          title={`${refreshVerb} ${label} · ${refreshCost.toLocaleString()} credits`}
+          aria-label={`${refreshVerb} ${label} for ${formatCredits(displayPrice(refreshCost))} credits`}
+          title={`${refreshVerb} ${label} · ${formatCredits(displayPrice(refreshCost))} credits`}
           className="absolute right-1 top-1 flex items-center gap-0.5 rounded-full bg-canvas-surface px-1.5 py-1 text-canvas-ink shadow-sm transition-colors hover:bg-canvas-surface-inset"
         >
           <RefreshCw className="h-2.5 w-2.5" />
-          <span className="text-[9px] font-medium leading-none">{refreshCost.toLocaleString()}</span>
+          <span className="text-[9px] font-medium leading-none">{formatCredits(displayPrice(refreshCost))}</span>
         </button>
       ) : null}
     </div>
@@ -176,7 +177,7 @@ function GhostSlot({
     <button
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       className="flex flex-col items-center justify-center gap-1 transition-colors duration-200 rounded-canvas-md text-canvas-ink-soft bg-canvas-surface/60 hover:bg-canvas-surface"
-      title={`${action}${cost === undefined ? '' : ` · ${cost.toLocaleString()} credits`}`}
+      title={`${action}${cost === undefined ? '' : ` · ${formatCredits(displayPrice(cost))} credits`}`}
       style={{
         width: 72,
         height: 90,
@@ -188,7 +189,7 @@ function GhostSlot({
       <Plus className="h-3 w-3" />
       <span className="text-canvas-xs font-medium">{label}</span>
       <span className="text-[9px] leading-none text-canvas-ink-faint">
-        {cost === undefined ? action : `${action} · ${cost.toLocaleString()}`}
+        {cost === undefined ? action : `${action} · ${formatCredits(displayPrice(cost))}`}
       </span>
     </button>
   );
@@ -217,7 +218,7 @@ function FailedSlot({
   const retryable = Boolean(onRetry);
   const retryLabel = `${label} failed — ${failure.reason}. ${refundOutcomeText(failure)}${
     retryable && cost !== undefined
-      ? ` ${action} for ${cost.toLocaleString()} credits.`
+      ? ` ${action} for ${formatCredits(displayPrice(cost))} credits.`
       : ''
   }`;
   return (
@@ -241,7 +242,7 @@ function FailedSlot({
           ? 'Needs attention'
           : cost === undefined
             ? action
-            : `${action} · ${cost.toLocaleString()}`}
+            : `${action} · ${formatCredits(displayPrice(cost))}`}
       </span>
     </button>
   );
@@ -490,10 +491,10 @@ export function ViewTabs() {
                 className="rounded-canvas-md bg-canvas-ink px-1.5 py-1.5 text-center text-[9px] font-medium leading-tight disabled:opacity-40"
                 style={{ color: 'var(--color-canvas-surface)' }}
                 aria-label={evidenceAware
-                  ? `Update coverage for ${actionableCost.toLocaleString()} credits`
-                  : `Refresh all ${bulkRefreshable.length} views for ${actionableCost.toLocaleString()} credits`}
+                  ? `Update coverage for ${formatCredits(displayPrice(actionableCost))} credits`
+                  : `Refresh all ${bulkRefreshable.length} views for ${formatCredits(displayPrice(actionableCost))} credits`}
               >
-                {evidenceAware ? 'Update coverage' : 'Refresh all'}<br />{actionableCost.toLocaleString()} credits
+                {evidenceAware ? 'Update coverage' : 'Refresh all'}<br />{formatCredits(displayPrice(actionableCost))} credits
               </button>
             )}
             {hasDetails && (

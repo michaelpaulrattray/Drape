@@ -62,7 +62,8 @@ describe("the sheet dock commits to one candidate", () => {
       "utf8",
     );
     expect(confirm).toContain("dpc-modal__cost");
-    expect(confirm).toContain("{priceCredits} credits");
+    /* Routed through the display helper (#1600). */
+    expect(confirm).toContain("{formatCredits(displayPrice(priceCredits))} credits");
     // Approximate, and the tilde stays — generation cost varies, and a number
     // presented as exact that then differs is worse than one that never
     // claimed to be.

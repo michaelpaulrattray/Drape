@@ -61,7 +61,9 @@ describe("the sites that spend actually ask", () => {
   it("⚠ the armed Cast button renders the SERVED price, not the literal", () => {
     expect(controlPanel).toContain("trpc.credits.getCosts.useQuery");
     expect(controlPanel).toContain('servedCost(costsQuery.data, "castingImage", CREDIT_COSTS.castingImage)');
-    expect(controlPanel).toContain("· ~{castingImageCost} credits");
+    /* Routed through the display helper (#1600); the served-price subject of
+       this arm is the line above and has not moved. */
+    expect(controlPanel).toContain("· ~{formatCredits(displayPrice(castingImageCost))} credits");
     expect(
       controlPanel,
       "the button must not print the client literal again under any spelling",
