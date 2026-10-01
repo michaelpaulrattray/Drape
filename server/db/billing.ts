@@ -17,6 +17,8 @@ import {
   getUserCredits,
   isDuplicateCreditReferenceError,
   normalizeCreditReferenceId,
+  planAllowanceRemaining,
+  purchasedCreditsRemaining,
   type CreditWriteResult,
 } from "./credits";
 import { createModuleLogger } from "../logging/logger";
@@ -109,6 +111,37 @@ export async function getUserByStripeCustomerId(
  * SET on the very balance it computed from — a concurrent write makes the
  * UPDATE match zero rows and the loop re-reads. Three misses fail loud; the
  * only caller is the Stripe webhook, and Stripe redelivers a failed event.
+ *
+ * ⚠ AND THE ROLLOVER RULE IS APPLIED TO THE PLAN'S PART OF THE BALANCE, NEVER
+ * TO CREDITS THE CUSTOMER BOUGHT (#1604, P1-5).
+ *
+ * The rollover percentage is a rule about a plan's own monthly allowance. Until
+ * this card it was applied to the WHOLE balance and the result SET, so a
+ * customer holding 25,000 credits they had paid for kept 12,500 of them through
+ * one Starter renewal and 6,250 through the next — their money, taken back by a
+ * plan rule that was never about it. Nobody had lost anything only because the
+ * one-time top-up product was removed in February and no road into
+ * `addTopupCredits` exists today; #1606 sells top-ups again and this ships
+ * first, which is the card's own stated order.
+ *
+ * So the balance the caller's rule sees is `planAllowanceRemaining(row)` — the
+ * balance minus the purchased credits still on it — and the purchased part is
+ * added back whole:
+ *
+ *     balance = grant + computeRollover(planPart) + purchasedRemaining
+ *
+ * The split is read from the SAME row the compare-and-set is conditioned on, so
+ * a concurrent spend cannot make the protection read one balance and the write
+ * another; and `purchasedBalance` is re-stated inside that same conditioned
+ * UPDATE, which is where the upper bound gets settled against a balance the
+ * customer has spent down.
+ *
+ * ⚠ `subscription_update` — the interval-switch road — passes the identity
+ * rule, and it stays exactly what it was: identity over the plan part plus the
+ * purchased part whole is identity over the balance. The behaviour of every
+ * road that has no purchased credits on it is unchanged, arithmetically and
+ * not merely in intent, which is why every existing arm in
+ * `server/creditRefreshRace.test.ts` still reads the same numbers.
  */
 export async function refreshMonthlyCredits(
   userId: number,
@@ -133,8 +166,11 @@ export async function refreshMonthlyCredits(
       }
 
       const balanceReadFrom = userCredits.balance;
-      const rolloverCredits = Math.max(0, Math.floor(computeRollover(balanceReadFrom)));
-      const newBalance = monthlyCredits + rolloverCredits;
+      // Both halves come off the one row the UPDATE below is conditioned on.
+      const purchasedKept = purchasedCreditsRemaining(userCredits);
+      const planAllowance = planAllowanceRemaining(userCredits);
+      const rolloverCredits = Math.max(0, Math.floor(computeRollover(planAllowance)));
+      const newBalance = monthlyCredits + rolloverCredits + purchasedKept;
 
       const written = await withTransaction(async (tx) => {
         const updateResult = await tx
@@ -142,6 +178,10 @@ export async function refreshMonthlyCredits(
           .set({
             balance: newBalance,
             rolloverCredits: rolloverCredits,
+            // The upper bound settled against the balance it was read beside —
+            // a customer who spent their bought credits down does not carry a
+            // stale protection into the next cycle (#1604).
+            purchasedBalance: purchasedKept,
             lastRefreshAt: new Date(),
           })
           .where(and(eq(credits.userId, userId), eq(credits.balance, balanceReadFrom)));

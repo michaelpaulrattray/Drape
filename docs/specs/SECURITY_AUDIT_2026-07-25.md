@@ -225,7 +225,56 @@ The design plainly contemplates that state: `access.redeem` is a `protectedProce
 
 **Wider point.** The claim "unapproved users cannot generate" was true of the UI and of both login screens, and false of the API — which is the same failure mode as H2 through H5: a rule that exists everywhere except the place that enforces it. It was caught only because writing the access-control matrix required checking each cell against code instead of restating intent.
 
-### M1 — Session cookie disables the browser's CSRF protection · MEDIUM · Post-R7
+### M1 — Session cookie disables the browser's CSRF protection · MEDIUM · ✅ **FIXED 2026-10-01 (#1653)**
+
+⚠ **IT WAS RE-DISCOVERED FROM OUTSIDE BEFORE IT WAS BUILT, AND THAT IS THE
+FINDING WORTH MORE THAN THE FIX.** The founder's engineering agent filed this
+in its monthly audit on 2026-10-01 as a new finding; the relay verified it at
+the code and filed #1653. **Neither looked here.** This entry had carried the
+same diagnosis, the same file, and the same recommended fix — `sameSite: "lax"`
+plus an `Origin` check — for **two months and one week**, in the document
+`CLAUDE.md` names as the current access-control findings. A finding written down
+and left on a *Post-R7* queue is indistinguishable from one nobody has had yet.
+
+**What shipped** (#1653): `sameSite: "lax"` on every road, and a cross-site
+refusal on every tRPC **mutation** (`server/security/crossSiteGuard.ts`, wired
+into the one base `server/_core/trpc.ts`'s five builders all derive from). The
+guard ships *beside* the cookie change rather than after it because a browser
+keeps a cookie's `SameSite` as written: every session minted before the deploy
+carries `None` until it is re-issued.
+
+⚠ **AND THE MECHANISM BELOW WAS WRONG IN BOTH DIRECTIONS — DRIVEN 2026-10-01
+AGAINST THE REAL SERVER, NOT REASONED.** This entry said tRPC mutations are
+*"incidentally hard to forge — the superjson envelope shape plus zod's numeric
+types reject urlencoded bodies"*, and #1653's own body said a `text/plain` body
+would be streamed by the adapter. **Neither is what happens.** zod never gets a
+say: `getContentTypeHandler` (`@trpc/server` 11.19) accepts exactly
+`application/json`, `multipart/form-data` and `application/octet-stream`, and
+answers **415 before any procedure runs** for anything else — measured,
+`text/plain` → `415 UNSUPPORTED_MEDIA_TYPE`. But **`multipart/form-data` is a
+CORS *simple* content type**, so it needs no preflight, and that is the real
+road: a cross-site multipart POST to `auth.logout` returned **`HTTP 200
+{"success":true}` with a `Set-Cookie` destroying the session**. A with-input
+mutation still fails (`Failed to parse body as FormData`), so the exposed
+surface is exactly the **mutations that declare no input — SEVEN of them**,
+derived from the Atlas rather than counted by hand, where this entry and #1653
+between them named three:
+
+| | the three named | the four missed |
+|---|---|---|
+| **money** | `billing.cancelSubscription`, `billing.createPortalSession` | **`billing.reactivateSubscription`** — it un-cancels a subscription, so a forged call puts a customer back on a plan she had ended |
+| **destructive** | — | **`profile.removeAvatar`** — it deletes her picture |
+| **other** | `auth.logout` | `generation.clearSession`, `profile.markCanvasIntroSeen` |
+
+**Still owed, and filed rather than folded in:** the second half of the fix
+below — an `Origin` check on the plain Express auth routes. `SameSite` governs
+when a cookie is *sent*, never whether a `Set-Cookie` is *stored*, so
+**login-CSRF survives this change**: a cross-site form POST to
+`/api/auth/login` still signs a victim into an attacker's account. It is **#1659**,
+on its own money/auth review, because a mistake in a login route locks every
+customer out of the product.
+
+**The original entry, kept verbatim as the record:**
 
 `sameSite: "none"` whenever the request is HTTPS (`server/_core/cookies.ts:45`) — i.e. always in production — and there is no CSRF token or `Origin`/`Sec-Fetch-Site` check anywhere in the app.
 
@@ -361,7 +410,7 @@ Target length: one screen. The test of success is that a future agent can answer
 |---|---|---|
 | 0 | C1 and its Canvas/Wardrobe ownership follow-through, C2, H1, H6, M7 option 1, M10, and R7 explicit Cast projections | Implemented and committed on local `main`; push/deploy and production verification remain separate |
 | 1 | H3 (allowlist fails closed), H5 (wire up velocity limits), H2 (IP blocking decision), H4 (Slack approval decision) | Immediately post-R7 |
-| 2 | M1 (sameSite), M2 (upload sizes), M5 (appId), L3, L4 | Post-R7 |
+| 2 | ~~M1 (sameSite)~~ **FIXED 2026-10-01, #1653 — see M1's own entry for what it cost to leave it here**, M2 (upload sizes), M5 (appId), L3, L4 | Post-R7 |
 | 3 | Access-control matrix in CLAUDE.md, `.strict()` on public/auth/billing schemas, consistent 429s | Post-R7, alongside phase 2 |
 | 4 | M3 (session revocation), L1/L2 rate-limit coverage | Before public launch |
 

@@ -16,7 +16,20 @@ the filed urgently like next we cant keep guessing things."*
 > file and reddens if a field the validator requires is not named here.
 >
 > The placeholders the runner fills: `{{QUEUE_FILE}}`, `{{PRS_FILE}}`,
-> `{{PASS}}`, `{{READ_AT}}`, `{{CARD_COUNT}}`, `{{AREAS}}`, `{{REPO}}`.
+> `{{QUEUE_LINES}}`, `{{PRS_LINES}}`, `{{PASS}}`, `{{READ_AT}}`,
+> `{{CARD_COUNT}}`, `{{AREAS}}`, `{{REPO}}`.
+>
+> ⚠ **`{{QUEUE_FILE}}` AND `{{PRS_FILE}}` ARE THE PRETTY-PRINTED COPIES, NOT THE
+> RUNNER'S RAW SNAPSHOTS, AND THE DIFFERENCE IS WHY THE FIRST ARMED PASS
+> PRODUCED NOTHING.** `gh --json` prints compact JSON — one line. `Read` cannot
+> paginate one line: on pass `20261001-141427` it would have returned the first
+> 21,249 of 171,326 characters, which hold **5 of that pass's 54 card numbers**,
+> and `offset: 2` on a one-line file is refused as past the end. The manager has
+> `Read`, `Grep` and `Glob` and nothing else, so 49 cards were unreachable while
+> this brief asked for 54 rows. `scripts/manager-brief.mts` now re-writes both
+> snapshots pretty-printed and substitutes those paths; the raw snapshots stay
+> where the runner put them, because the sheet writer reads its allowlists from
+> them. Never point these two placeholders back at the raw files.
 
 ---
 
@@ -44,11 +57,20 @@ code's.
 
 | | |
 |---|---|
-| The open cards | `{{QUEUE_FILE}}` — `gh issue list --state open`, with number, title, body, labels, createdAt |
-| The open pull requests | `{{PRS_FILE}}` — `gh pr list --state open`, with number, title, headRefName, labels and **the files each one changes** |
+| The open cards | `{{QUEUE_FILE}}` — `gh issue list --state open`, with number, title, body, labels, createdAt. **{{QUEUE_LINES}} lines** |
+| The open pull requests | `{{PRS_FILE}}` — `gh pr list --state open`, with number, title, headRefName, labels and **the files each one changes**. **{{PRS_LINES}} lines** |
 | This pass | `{{PASS}}`, queue read at `{{READ_AT}}` |
 | How many cards | `{{CARD_COUNT}}` — your sheet must hold exactly this many rows |
 | The repository | `{{REPO}}` — read any of it you need |
+
+⚠ **READ THE CARDS FILE IN PAGES, AND READ ALL OF IT BEFORE YOU WRITE A ROW.**
+One `Read` will not hold {{QUEUE_LINES}} lines of card bodies — the cap is on
+the whole read — so page it with `offset` and `limit` (200 lines at a time is a
+comfortable size) until you have seen every card. Both files are pretty-printed
+one value per line for exactly this reason. **If you find you have seen fewer
+than `{{CARD_COUNT}}` card numbers, you have not finished reading** — do not
+infer the rest, and do not write a sheet short of a row. A truthful `ready: "no"`
+on a card you read beats a guess on a card you did not.
 
 Worth reading before you judge, and in this order: `.agents/foreman/PROGRAM.md`
 (the current focus, the milestone gate, maintenance mode, the founder-ordered
@@ -68,9 +90,19 @@ A parent card that merely groups a rung is **not** a dependency. Neither is a
 card quoted as a precedent, a measurement, a sibling or a worked example.
 
 A dependency is: *this card cannot be started, or cannot be finished correctly,
-until that card's work exists.* Read the body AND the comments. If a card says
-"after #1649 merges" about one slice of itself but the rest is startable, it is
-not a dependency — say so in the reason.
+until that card's work exists.* If a card says "after #1649 merges" about one
+slice of itself but the rest is startable, it is not a dependency — say so in the
+reason.
+
+⚠ **YOU DO NOT HAVE THE COMMENTS, AND YOU ARE NOT EXPECTED TO GUESS AT THEM.**
+This sentence read *"Read the body AND the comments"* until 2026-10-01, and it
+asked for something no tool you hold can reach: `gh issue list --json` returns
+`number`, `title`, `body`, `labels` and `createdAt` and nothing else, and you
+have no `Bash` and no network. So judge from the body, the labels, the title and
+the pull requests' file lists — and where the body alone does not settle it, say
+that in the `reason` rather than inventing a reading. *"Its body names no
+prerequisite; nothing in the snapshot says whether his ruling moved it"* is a
+useful row. A confident dependency drawn from a comment you did not see is not.
 
 An empty list is a positive statement: **nothing open blocks it.** Say it when it
 is true; that is the answer that unblocks the queue.

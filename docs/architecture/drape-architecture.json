@@ -112,7 +112,7 @@
     {
       "id": "domain:security",
       "name": "security",
-      "moduleCount": 9
+      "moduleCount": 10
     },
     {
       "id": "domain:settings",
@@ -5581,6 +5581,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/security/crossSiteGuard.ts",
+      "path": "server/security/crossSiteGuard.ts",
+      "domain": "security",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/security/deleteUserData.ts",
       "path": "server/security/deleteUserData.ts",
       "domain": "security",
@@ -7841,7 +7847,7 @@
       "namespace": "generation",
       "name": "castingImage",
       "type": "mutation",
-      "auth": "protected",
+      "auth": "admin",
       "input": "strict",
       "rateLimited": true,
       "file": "server/routes/generation/castingImaging.ts"
@@ -7951,7 +7957,7 @@
       "namespace": "generation",
       "name": "iterate",
       "type": "mutation",
-      "auth": "protected",
+      "auth": "admin",
       "input": "strict",
       "rateLimited": true,
       "file": "server/routes/generation/castingRefinement.ts"
@@ -7971,7 +7977,7 @@
       "namespace": "generation",
       "name": "mintPackage",
       "type": "mutation",
-      "auth": "protected",
+      "auth": "admin",
       "input": "open",
       "rateLimited": true,
       "file": "server/routes/generation/castingExport.ts"
@@ -12974,6 +12980,10 @@
       "path": "server/crewWorkSwitches.test.ts"
     },
     {
+      "id": "test:server/crossSiteMutationGuard.test.ts",
+      "path": "server/crossSiteMutationGuard.test.ts"
+    },
+    {
       "id": "test:server/cycleSpend-db.test.ts",
       "path": "server/cycleSpend-db.test.ts"
     },
@@ -13226,6 +13236,10 @@
       "path": "server/landingEngineNames.test.ts"
     },
     {
+      "id": "test:server/legacySpendSeal.test.ts",
+      "path": "server/legacySpendSeal.test.ts"
+    },
+    {
       "id": "test:server/lib/boardBackfill.test.ts",
       "path": "server/lib/boardBackfill.test.ts"
     },
@@ -13444,6 +13458,14 @@
     {
       "id": "test:server/publicInputStrictness.test.ts",
       "path": "server/publicInputStrictness.test.ts"
+    },
+    {
+      "id": "test:server/purchasedCreditsGrantWire.test.ts",
+      "path": "server/purchasedCreditsGrantWire.test.ts"
+    },
+    {
+      "id": "test:server/purchasedCreditsRenewal.test.ts",
+      "path": "server/purchasedCreditsRenewal.test.ts"
     },
     {
       "id": "test:server/pushPathsToMain.test.ts",
@@ -20943,6 +20965,11 @@
     {
       "from": "module:server/_core/trpc.ts",
       "to": "module:server/security/adminSecurity.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/trpc.ts",
+      "to": "module:server/security/crossSiteGuard.ts",
       "kind": "imports"
     },
     {

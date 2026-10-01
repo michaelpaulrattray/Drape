@@ -42,6 +42,76 @@ export type CreditTransactionType =
   | "subscription";
 
 /**
+ * WHICH GRANTS ARE THE CUSTOMER'S OWN MONEY (#1604).
+ *
+ * ⚠ `subscription` IS NOT ONE OF THEM, and that is the whole distinction this
+ * predicate exists to hold. The `isPurchase` test inside `addCredits` — the
+ * one that feeds `creditsPurchased`, the admin panel's lifetime analytics —
+ * counts `purchase`, `topup` AND `subscription` together, because for
+ * "how much has this account ever paid us for" a plan's monthly allowance
+ * belongs with a top-up. For "what must a renewal not take back" it is the
+ * opposite: a plan's allowance is precisely the thing the plan's rollover
+ * percentage governs. Folding the two readings into one predicate would
+ * protect the allowance from its own rollover rule and no renewal would ever
+ * forfeit anything.
+ *
+ * So the two live side by side on purpose. `creditsPurchased`'s predicate is
+ * NOT changed by this card; the admin panel's numbers do not move.
+ */
+export function isPurchasedCreditGrant(type: CreditTransactionType | string): boolean {
+  return type === "topup" || type === "purchase";
+}
+
+/**
+ * HOW MANY OF A BALANCE'S CREDITS THE CUSTOMER PAID FOR — the only reader of
+ * `points.purchasedBalance`, and the whole of #1604's arithmetic.
+ *
+ * The product's rule, chosen here rather than inherited: **purchased credits
+ * are the LAST to go.** A plan's monthly allowance spends first. That rule is
+ * what makes one number enough where Phase 2 wants lots — the purchased
+ * credits remaining are the LESSER of the column and the live balance, exactly,
+ * with nothing written on the spend path.
+ *
+ * Worked, because the card's done-when is a row: a Starter account holding
+ * 25,000 bought credits and 10,000 of its allowance has `balance` 35,000 and
+ * `purchasedBalance` 25,000 — so 25,000 is protected and 10,000 is the plan's
+ * part, which is what the rollover percentage is applied to. Spend 30,000 of
+ * it and the balance is 5,000: the allowance went first, 20,000 of the bought
+ * credits went after it, and `min(25,000, 5,000)` says 5,000 remain. Right
+ * both times, from one number.
+ *
+ * ⚠ IT IS DEFENSIVE ABOUT ITS INPUTS AND SAYS SO. Both columns are
+ * `NOT NULL DEFAULT 0`, so neither can be absent on a live row; a caller
+ * holding a partial projection or a test double is the real case, and
+ * answering 0 there is the only direction that cannot invent protection for
+ * credits nobody bought.
+ */
+export function purchasedCreditsRemaining(row: {
+  balance: number;
+  purchasedBalance?: number | null;
+}): number {
+  const balance = Number.isFinite(row.balance) ? Math.max(0, Math.floor(row.balance)) : 0;
+  const purchased =
+    typeof row.purchasedBalance === "number" && Number.isFinite(row.purchasedBalance)
+      ? Math.max(0, Math.floor(row.purchasedBalance))
+      : 0;
+  return Math.min(purchased, balance);
+}
+
+/**
+ * The part of a balance the plan's own rules govern — everything that is not
+ * the customer's purchased credits. This is what a rollover percentage is
+ * applied to and what a plan-change unwind may claw back.
+ */
+export function planAllowanceRemaining(row: {
+  balance: number;
+  purchasedBalance?: number | null;
+}): number {
+  const balance = Number.isFinite(row.balance) ? Math.max(0, Math.floor(row.balance)) : 0;
+  return balance - purchasedCreditsRemaining(row);
+}
+
+/**
  * What a tool charge MADE — the founder's output-kind taxonomy (#401, his
  * words: "i think for now tools should just refer to was an image generated?
  * its filed as image or video? its video or LLM its LLM or Text … but it can
@@ -220,6 +290,10 @@ export async function initializeUserCredits(userId: number): Promise<void> {
         planTier: "free",
         creditsPurchased: 0,
         creditsUsed: 0,
+        // Named rather than left to the column default (#1604,
+        // `migration-before-code`): a new account has bought nothing, and the
+        // row says so instead of inheriting it.
+        purchasedBalance: 0,
         rolloverCredits: 0,
       });
 
@@ -446,16 +520,59 @@ export async function addCredits(
       const isPurchase =
         type === "purchase" || type === "topup" || type === "subscription";
 
-      const updateResult = await tx.execute(
-        isPurchase
+      /*
+        ⚠ THE PURCHASED UPPER BOUND IS SETTLED AGAINST THE BALANCE *BEFORE*
+        THIS GRANT LANDS (#1604), AND IT IS ITS OWN STATEMENT ON PURPOSE.
+
+        `purchasedBalance` is an upper bound that `purchasedCreditsRemaining`
+        reads as `min(column, balance)` — exact, because purchased credits
+        spend last. The one thing that can make the bound meaningless is a
+        grant: an account that bought 25,000 credits and spent every one of
+        them still carries 25,000 in the column, so the next bonus or admin
+        adjustment would arrive and be read as purchased credits the customer
+        never has. Settling the bound to the pre-grant balance is what closes
+        that, and it runs for EVERY grant kind.
+
+        It is a separate UPDATE rather than a clause because the clamp must
+        read the OLD balance. MySQL evaluates `SET` assignments left to right,
+        so a clamp folded into the statement below would be correct only while
+        it sat ABOVE the `balance` assignment — a silent, order-dependent
+        correctness nobody reading the SQL would suspect. Two statements inside
+        one transaction cost a grant one round trip, grants are not the hot
+        path (the deduct is, and this card does not touch it), and the second
+        statement below is still the one whose `affectedRows` decides whether
+        the account exists.
+      */
+      await tx.execute(
+        sql`UPDATE ${credits}
+            SET ${credits.purchasedBalance} = LEAST(${credits.purchasedBalance}, ${credits.balance})
+            WHERE ${credits.userId} = ${userId}`
+      );
+
+      /*
+        Three statements, and the two predicates are deliberately NOT one.
+        `isPurchase` decides the lifetime analytics counter and keeps its own
+        three types including `subscription`; `isPurchasedCreditGrant` decides
+        what a renewal must protect and excludes it. See the predicate's own
+        docblock — folding them would make a plan's allowance immune to its
+        plan's rollover rule.
+      */
+      const grantStatement = isPurchasedCreditGrant(type)
+        ? sql`UPDATE ${credits}
+                SET ${credits.balance} = ${credits.balance} + ${amount},
+                    ${credits.creditsPurchased} = COALESCE(${credits.creditsPurchased}, 0) + ${amount},
+                    ${credits.purchasedBalance} = ${credits.purchasedBalance} + ${amount}
+                WHERE ${credits.userId} = ${userId}`
+        : isPurchase
           ? sql`UPDATE ${credits}
                 SET ${credits.balance} = ${credits.balance} + ${amount},
                     ${credits.creditsPurchased} = COALESCE(${credits.creditsPurchased}, 0) + ${amount}
                 WHERE ${credits.userId} = ${userId}`
           : sql`UPDATE ${credits}
                 SET ${credits.balance} = ${credits.balance} + ${amount}
-                WHERE ${credits.userId} = ${userId}`
-      );
+                WHERE ${credits.userId} = ${userId}`;
+
+      const updateResult = await tx.execute(grantStatement);
 
       const affectedRows =
         (updateResult as any)[0]?.affectedRows ??

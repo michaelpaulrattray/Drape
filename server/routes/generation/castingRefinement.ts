@@ -1,4 +1,4 @@
-import { protectedProcedure, router } from "../../_core/trpc";
+import { adminProcedure, protectedProcedure, router } from "../../_core/trpc";
 import {
   getModelById, getModelAssets,
   createGeneration, updateGeneration, markGenerationOperationRunning,
@@ -117,7 +117,12 @@ export const castingRefinementRouter = router({
   // Iterate/refine a model image
   // Wire schema lives in iterateInput.ts (dependency-light so the contract
   // tests import the REAL schema, not a copy)
-  iterate: protectedProcedure
+  /* ⚠ ADMIN-ONLY SINCE #1654 — it spends `CREDIT_COSTS.iterate` through
+     `withAtomicCredits` and renders on the shut-down `IMAGE_PRO`. The full
+     reasoning, and why a seal rather than a door sentence, is on
+     `castingImage` in `castingImaging.ts`. Every other procedure in this
+     router moves no credits and stays `protectedProcedure`. */
+  iterate: adminProcedure
     .input(iterateInputSchema)
     .mutation(async ({ ctx, input }) => {
       const readMode = captureSnapshotReadMode(ctx.user.id);

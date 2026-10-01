@@ -705,6 +705,35 @@ async function openViewAudit(
  * nobody will ever reference them, which is a different fact from a failure
  * and gets its own outcome.
  */
+/**
+ * HOW MUCH WORK ONE SLOT TOOK — the loop's own two budgets, RETURNED rather
+ * than discarded (#1608).
+ *
+ * ⚠ **`verdicts.length` IS NOT THE NUMBER OF RENDERS AND MUST NOT BE READ AS
+ * ONE.** A verdict is pushed only once a picture has come back AND the judge has
+ * answered about it, so an attempt that never arrived contributes nothing to that
+ * array. A Try again whose first render failed to arrive and whose second landed
+ * is a DOUBLE render that `verdicts.length` reports as one — and the double-render
+ * rate is the number #1608 exists to put in front of a reader, against Squall's
+ * 30–60% estimate. Reading the wrong one would have understated it by exactly the
+ * arrival failures, which is the half nobody sees.
+ *
+ * Nothing new is measured here: `arrivalFailures` and `judgedAttempts` have been
+ * counted in this loop since #1208 (*"Counted rather than inferred from the
+ * attempt number"*) and thrown away at every return. That is the
+ * disappearing-technology law's clause 4 — read what the engine already gives
+ * you — and it is the same finding #1542 turned up one module over, where
+ * `errorTrackerStatus()` had been computing the deciding fact and had no caller.
+ */
+export interface ViewAttemptTally {
+  /** Render attempts actually begun, 1-based. The `1 or 2` #1608 asks for. */
+  readonly attempts: number;
+  /** Of those, how many never produced a picture. */
+  readonly arrivalFailures: number;
+  /** Of those, how many reached the judge. */
+  readonly judgedAttempts: number;
+}
+
 type ViewLanding<T> = (landed: {
   stored: { key: string; url: string };
   verdict: ViewConformanceVerdict;
@@ -735,9 +764,9 @@ export async function renderViewAttempts<T>(
   angle: CastViewAngle,
   land: ViewLanding<T>,
 ): Promise<
-  | { status: "landed"; value: T; verdicts: ViewConformanceVerdict[] }
-  | { status: "fenced"; verdicts: ViewConformanceVerdict[] }
-  | { status: "failed"; reason: string; verdicts: ViewConformanceVerdict[] }
+  | { status: "landed"; value: T; verdicts: ViewConformanceVerdict[]; tally: ViewAttemptTally }
+  | { status: "fenced"; verdicts: ViewConformanceVerdict[]; tally: ViewAttemptTally }
+  | { status: "failed"; reason: string; verdicts: ViewConformanceVerdict[]; tally: ViewAttemptTally }
 > {
   const engine = (dependencies.identityEngine ?? castingViewEngine)();
   const judge = (dependencies.judge ?? castingViewConformanceJudge)();
@@ -766,11 +795,18 @@ export async function renderViewAttempts<T>(
   */
   let arrivalFailures = 0;
   let judgedAttempts = 0;
+  /* The THIRD budget, and the only one of the three that is not also a limit:
+     `attempt` is scoped to the loop below, so the `failed` return — which sits
+     after it — cannot read it. Incremented at the top of the body rather than
+     derived from the two above, because a `break` can leave the loop without
+     either of them moving. */
+  let attemptsRun = 0;
   const wait = dependencies.wait ?? ((ms: number) => new Promise<void>((resolve) => {
     setTimeout(resolve, ms).unref?.();
   }));
 
   for (let attempt = 1; attempt <= VIEW_MAX_ATTEMPTS; attempt += 1) {
+    attemptsRun = attempt;
     let stored: { key: string; url: string } | null = null;
     try {
       /*
@@ -1133,10 +1169,10 @@ export async function renderViewAttempts<T>(
           { operationId: input.operationId, angle },
           "[packageOrchestrator] slot commit lost its fence — recovery owns this view",
         );
-        return { status: "fenced", verdicts };
+        return { status: "fenced", verdicts, tally: { attempts: attemptsRun, arrivalFailures, judgedAttempts } };
       }
 
-      return { status: "landed", value, verdicts };
+      return { status: "landed", value, verdicts, tally: { attempts: attemptsRun, arrivalFailures, judgedAttempts } };
     } catch (error) {
       if (stored) await drop(stored.key).catch(() => undefined);
       const failureClass = error instanceof ProviderError ? error.failureClass : "unknown";
@@ -1206,7 +1242,7 @@ export async function renderViewAttempts<T>(
     }
   }
 
-  return { status: "failed", reason: lastReason, verdicts };
+  return { status: "failed", reason: lastReason, verdicts, tally: { attempts: attemptsRun, arrivalFailures, judgedAttempts } };
 }
 
 /**

@@ -76,6 +76,7 @@ import { CAST_PACKAGE_VIEW_PRICE, castPackageView } from "./castViewPackage";
 import {
   renderViewAttempts,
   type PackageOrchestratorDependencies,
+  type ViewAttemptTally,
 } from "./packageOrchestrator";
 import { castingOutfitPlateEngine } from "./signEngine";
 import {
@@ -84,6 +85,7 @@ import {
   renderOutfitPlate,
   siblingPlateAngleFor,
   type OutfitReference,
+  type OutfitReferenceKind,
 } from "./outfitPlate";
 import { carriedFeatureWords, carriedInkCrops } from "./signService";
 import { conformanceProvenance } from "./viewConformance";
@@ -236,6 +238,91 @@ async function readCastSlots(userId: number, castPublicId: string): Promise<Cast
        second query. */
     deliveredOutfitKeys: deliveredOutfitKeysFrom(assets),
   };
+}
+
+/**
+ * WAS THE DELIVERED PICTURE JUDGED? (#1608)
+ *
+ * The LAST verdict is the delivered one: `renderViewAttempts` keeps every
+ * attempt's verdict oldest-first (D-114), and the earlier entries describe draws
+ * that were thrown away. Reading the first would answer about a picture the
+ * customer never saw.
+ *
+ * ⚠ **`unjudged` IS NOT A FAILURE** — it is *nobody looked*, which this road
+ * DELIVERS on purpose (the founder's ruling behind `judgeUnjudgedOnFailure`), so
+ * it is a property of a view the customer is holding. An empty array means the
+ * judge never answered at all, which is the same honest `false`.
+ */
+function judgedOf(verdicts: readonly { unjudged?: boolean }[]): boolean {
+  const delivered = verdicts.at(-1);
+  return delivered === undefined ? false : delivered.unjudged !== true;
+}
+
+/**
+ * THE SETTLED LINE — one per Try again, at the settle point (#1608).
+ *
+ * ⚠ **ONE LINE PER SETTLE, NEVER PER ATTEMPT**, which is the card's own wording
+ * and the reason this is a function rather than three `log.info` calls: the three
+ * settle exits below (arrived · fenced · did not arrive) must emit the SAME shape
+ * or the field nobody thought about is missing from exactly the road that was
+ * about to be measured. A per-attempt line already exists inside
+ * `renderViewAttempts` and answers a different question.
+ *
+ * # What it is for
+ *
+ * Cid reads the double-render rate after month one against Squall's 30–60%
+ * estimate. That rate is `attempts > 1` over all settles, so `attempts` is the
+ * load-bearing field and `ViewAttemptTally`'s header says why it cannot be
+ * `verdicts.length`.
+ *
+ * ⚠ **IT CHANGES NOTHING.** No prompt, no price, no refund, no charge, no
+ * dispatch — it reads what the settle already holds and says it once. #1608 is
+ * `monitoring only` and the suites it names are unchanged.
+ *
+ * ⚠ **AND THERE IS DELIBERATELY NO IN-PROCESS COUNTER BESIDE IT — see the card.**
+ * A module-level tally is this repository's own house shape (`faceScanService.ts`),
+ * and it is the wrong instrument for this question twice over: it resets on every
+ * deploy, and under deploy-on-merge a month-long rate would be summed over
+ * whatever happened since the last merge; and a counter with no reader is
+ * invariant 7 exactly — #1542's `errorTrackerStatus()` computed the deciding fact
+ * for months with no non-test caller. The log line is what a month is actually
+ * read from, and #1608's own done-when asks for the line.
+ */
+function logRetrySettled(input: {
+  readonly operationId: string;
+  readonly castId: string;
+  readonly angle: string;
+  readonly outcome: ViewRetryResult["outcome"] | "fenced";
+  readonly price: number;
+  readonly chargedCredits: number;
+  readonly refundedCredits: number;
+  readonly refundRecorded: boolean;
+  readonly outfit: OutfitReferenceKind | "none";
+  readonly tally: ViewAttemptTally;
+  /** Whether the DELIVERED picture was judged. `null` when none was delivered. */
+  readonly judged: boolean | null;
+}): void {
+  log.info(
+    {
+      operationId: input.operationId,
+      castId: input.castId,
+      angle: input.angle,
+      outcome: input.outcome,
+      /* The free retry and the paid one are the same road and must be told
+         apart in the reading, or the rate mixes two populations. */
+      paid: input.price > 0,
+      chargedCredits: input.chargedCredits,
+      refundedCredits: input.refundedCredits,
+      refundRecorded: input.refundRecorded,
+      attempts: input.tally.attempts,
+      arrivalFailures: input.tally.arrivalFailures,
+      judgedAttempts: input.tally.judgedAttempts,
+      doubleRendered: input.tally.attempts > 1,
+      outfit: input.outfit,
+      judged: input.judged,
+    },
+    "[viewRetryService] retry settled",
+  );
 }
 
 /**
@@ -503,6 +590,16 @@ export async function retryCastView(
   const commit = dependencies.commitRetried ?? commitRetriedViewAsset;
 
   let rendered: Awaited<ReturnType<typeof renderViewAttempts<{ assetId: number; url: string }>>>;
+  /* HOISTED for the settled line (#1608), not for the render. `outfitReference`
+     is computed inside the try below and the settle point sits after the catch,
+     so the one fact the line needs about the wardrobe — was a fresh plate minted
+     (`plate`), or did this view copy its delivered sibling (`delivered`, the
+     #1474 road) — would otherwise be out of scope. The union is DERIVED from
+     `OutfitReferenceKind` rather than respelled: the first draft of this line
+     wrote `"sibling"` for the sibling road from the prose, and the typechecker
+     caught it — the declaration's own word is `delivered`. `"none"` is the
+     master-only road, which is a real third answer and not a missing value. */
+  let outfitKind: OutfitReferenceKind | "none" = "none";
   try {
     /*
       WHAT TRAVELS BESIDE THE ANCHOR, RE-DERIVED BY THE SIGN'S OWN TWO READERS.
@@ -578,6 +675,7 @@ export async function retryCastView(
           description: source.briefText,
           operationId,
         });
+    outfitKind = outfitReference === null ? "none" : outfitReference.kind;
     rendered = await renderViewAttempts(
       dependencies,
       {
@@ -656,6 +754,23 @@ export async function retryCastView(
       refundedCredits: 0,
       refundRecorded: true,
     };
+    logRetrySettled({
+      operationId,
+      castId: input.castId,
+      angle: input.angle,
+      outcome: "ready",
+      price,
+      chargedCredits: price,
+      refundedCredits: 0,
+      refundRecorded: true,
+      outfit: outfitKind,
+      tally: rendered.tally,
+      /* The DELIVERED picture's own verdict is the last one — earlier entries
+         describe draws that were thrown away. `unjudged` is "nobody looked",
+         which #1278's road delivers on purpose, so it is a fact about this
+         view rather than a failure. */
+      judged: judgedOf(rendered.verdicts),
+    });
     await completeDirectOperationSuccess({
       userId: input.userId,
       operationId,
@@ -677,6 +792,22 @@ export async function retryCastView(
       { operationId, castId: input.castId, angle: input.angle },
       "[viewRetryService] the retried view lost its fence — recovery owns it",
     );
+    logRetrySettled({
+      operationId,
+      castId: input.castId,
+      angle: input.angle,
+      outcome: "fenced",
+      price,
+      chargedCredits: price,
+      refundedCredits: 0,
+      /* Nothing is refunded on this road BY DESIGN — the sweep owns the money —
+         so `refundRecorded` says false rather than claiming a refund this exit
+         never attempted. */
+      refundRecorded: false,
+      outfit: outfitKind,
+      tally: rendered.tally,
+      judged: judgedOf(rendered.verdicts),
+    });
     return completeDirectOperationFailure({
       userId: input.userId,
       operationId,
@@ -722,6 +853,22 @@ export async function retryCastView(
     refundedCredits: refunded,
     refundRecorded,
   };
+  logRetrySettled({
+    operationId,
+    castId: input.castId,
+    angle: input.angle,
+    outcome: "failed",
+    price,
+    chargedCredits: price,
+    refundedCredits: refunded,
+    refundRecorded,
+    outfit: outfitKind,
+    tally: rendered.tally,
+    /* No picture was delivered, so there is nothing to have judged. `null` is
+       the third answer and is not `false` — a view that arrived unjudged and a
+       view that never arrived are the two facts this field exists to separate. */
+    judged: null,
+  });
   await completeDirectOperationSuccess({
     userId: input.userId,
     operationId,

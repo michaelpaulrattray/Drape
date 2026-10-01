@@ -249,7 +249,17 @@ const appRouter = {
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
-function authCtx(userId = 1): TrpcContext {
+/*
+  ⚠ THE ROLE IS A PARAMETER SINCE #1654, AND IT STILL DEFAULTS TO "user".
+  `generation.castingImage`, `generation.iterate` and
+  `generation.mintPackage` became `adminProcedure` when the legacy lane's
+  paid procedures were sealed, so the arms that DRIVE those three need a caller
+  the gate admits. Every other arm here is about a procedure a customer still
+  reaches, and the default is what keeps them honest — raising it for the whole
+  file would have made those arms stop testing the account they are written
+  about. `server/legacySpendSeal.test.ts` is where the gate itself is driven.
+*/
+function authCtx(userId = 1, role: "user" | "admin" = "user"): TrpcContext {
   const user = {
     id: userId,
     openId: `test-user-${userId}`,
@@ -257,7 +267,7 @@ function authCtx(userId = 1): TrpcContext {
     name: `Test User ${userId}`,
     loginMethod: "manus",
     approved: true,
-    role: "user",
+    role,
     createdAt: new Date(),
     updatedAt: new Date(),
     lastSignedIn: new Date(),
@@ -360,7 +370,7 @@ describe("typed iteration reaches every canonical view with the complete typed f
   it.each(CANONICAL_VIEW_ANGLES.map((a) => [a, ITERATION_CROP_BY_VIEW[a]] as const))(
     "%s iterates successfully and hands iterateModel crop %s plus its own canonical angle",
     async (angle, expectedCrop) => {
-      const caller = appRouter.createCaller(authCtx());
+      const caller = appRouter.createCaller(authCtx(1, "admin"));
       const result = await caller.generation.iterate({
         modelId: 7,
         feedback: "brighten the lighting",
@@ -386,7 +396,7 @@ describe("non-canonical stored viewType fails closed", () => {
       vi.mocked(getModelAssets).mockResolvedValue([
         { ...SIX_ASSETS[0], id: 900, viewType: legacy },
       ] as never);
-      const caller = appRouter.createCaller(authCtx());
+      const caller = appRouter.createCaller(authCtx(1, "admin"));
       await expect(
         caller.generation.iterate({ modelId: 7, feedback: "brighten the lighting", assetId: 900 }),
       ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
@@ -401,7 +411,7 @@ describe("non-canonical stored viewType fails closed", () => {
 
 describe("shared-authority refusals: zero charge, no rows, no writes, no calls", () => {
   it("masked submission refuses after ownership/receipt claim and before money (M3, Batch 0 closure)", async () => {
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(
       caller.generation.iterate({
         modelId: 7,
@@ -422,7 +432,7 @@ describe("shared-authority refusals: zero charge, no rows, no writes, no calls",
     ["post-creation eyelash", "longer eyelashes", model()],
   ])("%s refuses FREE with typed copy", async (_label, feedback, m) => {
     vi.mocked(getModelById).mockResolvedValue(m as never);
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(
       caller.generation.iterate({ modelId: 7, feedback, assetId: assetIdFor("frontClose") }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
@@ -432,7 +442,7 @@ describe("shared-authority refusals: zero charge, no rows, no writes, no calls",
   it("returns a durable hair-length clarification before generation or credits", async () => {
     llmScript.classify = IDENTITY_HAIR_LENGTH;
     llmScript.normalize = NORMALIZED_HAIR_LENGTH;
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
 
     const result = await caller.generation.iterate({
       modelId: 7,
@@ -462,7 +472,7 @@ describe("shared-authority refusals: zero charge, no rows, no writes, no calls",
       result: { clarification },
     });
     llmScript.fail = true;
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
 
     await expect(caller.generation.iterate({
       modelId: 7,
@@ -481,7 +491,7 @@ describe("shared-authority refusals: zero charge, no rows, no writes, no calls",
 
   it("classifier OUTAGE fails closed and free — never an unchecked image-only fallback (M2)", async () => {
     llmScript.fail = true;
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(
       caller.generation.iterate({ modelId: 7, feedback: "a subtle general change", assetId: assetIdFor("frontClose") }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED", message: REFUSAL_COPY.classifierUnavailable });
@@ -493,7 +503,7 @@ describe("shared-authority refusals: zero charge, no rows, no writes, no calls",
       model({ status: "active", agencyId: "MOD-26-ABCDEF", name: "Vera" }) as never,
     );
     llmScript.classify = IDENTITY_JAWLINE;
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(
       caller.generation.iterate({ modelId: 7, feedback: "sharper jawline", assetId: assetIdFor("frontClose") }),
     ).rejects.toMatchObject({
@@ -505,7 +515,7 @@ describe("shared-authority refusals: zero charge, no rows, no writes, no calls",
 
   it("identity edit on a NON-ANCHOR view refuses with routing to the headshot", async () => {
     llmScript.classify = IDENTITY_JAWLINE;
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(
       caller.generation.iterate({ modelId: 7, feedback: "sharper jawline", assetId: assetIdFor("sideClose") }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED", message: REFUSAL_COPY.nonAnchorView });
@@ -514,7 +524,7 @@ describe("shared-authority refusals: zero charge, no rows, no writes, no calls",
 
   it("foreign owner: FORBIDDEN, nothing charged", async () => {
     vi.mocked(getModelById).mockResolvedValue(model({ userId: 2 }) as never);
-    const caller = appRouter.createCaller(authCtx(1));
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(
       caller.generation.iterate({ modelId: 7, feedback: "x", assetId: assetIdFor("threeQuarter") }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
@@ -523,7 +533,7 @@ describe("shared-authority refusals: zero charge, no rows, no writes, no calls",
 
   it("archived model reads as deleted (FR-4)", async () => {
     vi.mocked(getModelById).mockResolvedValue(model({ status: "archived" }) as never);
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(
       caller.generation.iterate({ modelId: 7, feedback: "x", assetId: assetIdFor("sideFull") }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
@@ -535,7 +545,7 @@ describe("shared-authority refusals: zero charge, no rows, no writes, no calls",
 
 describe("image-only results are asset-only (M17)", () => {
   it("bootstraps before receipt capture and the paid provider, then commits through the snapshot writer", async () => {
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await caller.generation.iterate({
       modelId: 7,
       feedback: "brighten the lighting",
@@ -558,7 +568,7 @@ describe("image-only results are asset-only (M17)", () => {
 
   it("refuses a headless package before a generation row, receipt, credits, provider, or snapshot write", async () => {
     vi.mocked(bootstrapModelSnapshot).mockResolvedValueOnce({ status: "headless", modelId: 7 });
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
 
     await expect(caller.generation.iterate({
       modelId: 7,
@@ -576,7 +586,7 @@ describe("image-only results are asset-only (M17)", () => {
   });
 
   it("identity documents byte-unchanged; display role + current revision stamped; no stale flags; no compaction", async () => {
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     const result = await caller.generation.iterate({
       modelId: 7,
       feedback: "brighten the lighting",
@@ -603,7 +613,7 @@ describe("image-only results are asset-only (M17)", () => {
 
   it("image-only works identically on a MINTED model (drafts and minted alike, §5.3)", async () => {
     vi.mocked(getModelById).mockResolvedValue(model({ status: "active", agencyId: "MOD-1" }) as never);
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     const result = await caller.generation.iterate({
       modelId: 7,
       feedback: "brighten the lighting",
@@ -636,7 +646,7 @@ describe("draft identity edit on the authoritative headshot — atomic commit", 
     };
     vi.mocked(getModelAssets).mockResolvedValue([displayHeadshot, ...SIX_ASSETS] as never);
 
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     const result = await caller.generation.iterate({
       modelId: 7,
       feedback: "sharper jawline",
@@ -651,7 +661,7 @@ describe("draft identity edit on the authoritative headshot — atomic commit", 
   });
 
   it("commits document + anchor role + new revision + stale flags (PINNED INCLUDED) atomically", async () => {
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     const result = await caller.generation.iterate({
       modelId: 7,
       feedback: "sharper jawline",
@@ -701,7 +711,7 @@ describe("draft identity edit on the authoritative headshot — atomic commit", 
 
   it("M20 step-9: a commit failure refunds exactly once and leaves no partial identity state", async () => {
     tx.failInsert = true;
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(
       caller.generation.iterate({ modelId: 7, feedback: "sharper jawline", assetId: assetIdFor("frontClose") }),
     ).rejects.toThrow();
@@ -731,7 +741,7 @@ describe("draft identity edit on the authoritative headshot — atomic commit", 
       },
     }) as never);
 
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await caller.generation.iterate({
       modelId: 7,
       feedback: "make his hair very long",
@@ -763,7 +773,7 @@ describe("draft identity edit on the authoritative headshot — atomic commit", 
   });
 
   it("a reference-assisted identity edit rides the same commit with source 'reference'", async () => {
-    const caller = appRouter.createCaller(authCtx());
+    const caller = appRouter.createCaller(authCtx(1, "admin"));
     await caller.generation.iterate({
       modelId: 7,
       feedback: "use the jawline from the reference",

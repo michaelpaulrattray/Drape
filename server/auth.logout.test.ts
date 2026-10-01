@@ -55,7 +55,11 @@ describe("auth.logout", () => {
     expect(clearedCookies[0]?.options).toMatchObject({
       maxAge: -1,
       secure: true,
-      sameSite: "none",
+      /* `lax`, never `none` — #1653. The clear reads the same
+         `getSessionCookieOptions` the mint does, so this arm also pins that
+         the two cannot drift: a clear whose attributes do not match the set is
+         a cookie the browser keeps. */
+      sameSite: "lax",
       httpOnly: true,
       path: "/",
     });
