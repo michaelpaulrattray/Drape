@@ -208,6 +208,26 @@ const NOT_THE_CLASS: Record<string, string> = {
     + " missing: a law surface that is gone is the defect. The litter this rule is"
     + " about is files in `scripts/`; a top-level directory has never vanished"
     + " mid-run",
+  /*
+    ⚠ THE ONLY CARVE-OUT HERE WHOSE READS ARE NOT READS AT ALL (#1813). The
+    count is a text match on `readFileSync\s*\(`, which cannot tell a call from
+    a string literal — and this suite's four occurrences are all FIXTURE SOURCE:
+    the text of fake test files it WRITES into a throwaway `git init` repository
+    so the derivation under test has something real to select. Named here rather
+    than spelled around, because writing `"readFileSync" + "("` to dodge a text
+    match would make the fixtures unreadable and hide why.
+  */
+  "server/pushedDocSuites.test.ts":
+    "lists NOTHING in the repository and READS nothing from it — it executes no"
+    + " read call at all. Every one of its four `readFileSync(` occurrences is"
+    + " inside a string literal holding the source of a fixture test file"
+    + " (`READER`, and the inline sources for `viaConstant.test.ts`,"
+    + " `tree.test.ts` and `self.test.ts`), written with `writeFileSync` into an"
+    + " `mkdtempSync` repository whose path no other process knows. Its only"
+    + " access to this tree is `execFileSync(\"git\", …)` inside the module under"
+    + " test, which reads blobs out of the object database at a COMMIT and so"
+    + " cannot meet a half-written working-tree file in the first place — the"
+    + " hazard this rule is about is unreachable here by construction",
 };
 
 const repoRoot = path.resolve(import.meta.dirname, "..", "..");
