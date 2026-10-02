@@ -95,7 +95,9 @@ import {
   classifyRemoteBranchDeletion,
   refuseDirtyWorktree,
   refuseProtectedPush,
+  refuseNoUnitShards,
   refuseUnknownJobName,
+  unitShardJobNames,
   sharesFiles,
   supplyChainStateOf,
   moneySymbolHits,
@@ -364,20 +366,34 @@ const GATE_WORKFLOW_PATH = ".github/workflows/gate.yml";
 // `review.yml` declared a `review` job here until #1065 — the action reviewer
 // is retired and the verdict is a hand verdict read off the PR's comments, so
 // there is no review job to key on and nothing of it to assert.
-for (const [needed, workflowPath] of [
-  [GATE_JOB_NAME, GATE_WORKFLOW_PATH],
-  [STATIC_SHAPES_JOB_NAME, GATE_WORKFLOW_PATH],
-  [BUNDLE_BUDGET_JOB_NAME, GATE_WORKFLOW_PATH],
-] as const) {
-  const file = join(REPO_ROOT, workflowPath);
-  if (!existsSync(file)) fail(`${workflowPath} is missing — cannot check job names`);
-  let declared: string[];
+const gateJobNames = ((): string[] => {
+  const file = join(REPO_ROOT, GATE_WORKFLOW_PATH);
+  if (!existsSync(file)) fail(`${GATE_WORKFLOW_PATH} is missing — cannot check job names`);
   try {
-    declared = extractJobNames(readFileSync(file, "utf8"));
+    return extractJobNames(readFileSync(file, "utf8"));
   } catch (error) {
-    fail(`${workflowPath}: ${(error as Error).message}`);
+    fail(`${GATE_WORKFLOW_PATH}: ${(error as Error).message}`);
   }
-  const refusal = refuseUnknownJobName(needed, declared, workflowPath);
+})();
+
+for (const needed of [GATE_JOB_NAME, STATIC_SHAPES_JOB_NAME, BUNDLE_BUDGET_JOB_NAME] as const) {
+  const refusal = refuseUnknownJobName(needed, gateJobNames, GATE_WORKFLOW_PATH);
+  if (refusal !== null) fail(refusal);
+}
+
+/**
+ * THE UNIT SUITE'S SHARDS, DERIVED FROM `gate.yml` RATHER THAN NAMED (#1811).
+ *
+ * The three constants above are single jobs, so each is a name asserted
+ * against the workflow. The unit suite is N jobs, so there is no name to
+ * assert — the LIST is read out of the workflow and an empty one refuses the
+ * run. That is the same fail-closed shape one step further: a renamed or
+ * deleted shard cannot read as a pass, because there is no shard to be
+ * silent.
+ */
+const UNIT_SHARD_JOB_NAMES = unitShardJobNames(gateJobNames);
+{
+  const refusal = refuseNoUnitShards(UNIT_SHARD_JOB_NAMES, gateJobNames, GATE_WORKFLOW_PATH);
   if (refusal !== null) fail(refusal);
 }
 
@@ -584,6 +600,10 @@ function readPr(number: number, worktrees: Map<string, string>): PrReading {
     gate: checkStateOf(view.statusCheckRollup ?? [], GATE_JOB_NAME),
     staticShapes: checkStateOf(view.statusCheckRollup ?? [], STATIC_SHAPES_JOB_NAME),
     bundleBudget: checkStateOf(view.statusCheckRollup ?? [], BUNDLE_BUDGET_JOB_NAME),
+    unitShards: UNIT_SHARD_JOB_NAMES.map((name) => ({
+      name,
+      state: checkStateOf(view.statusCheckRollup ?? [], name),
+    })),
     supplyChain: supplyChainStateOf(view.statusCheckRollup ?? [], SUPPLY_CHAIN_CHECK_NAME),
     review: reviewPresence(tally, reviewOwed),
     verdictCount,
@@ -967,6 +987,7 @@ console.log(`pr-merge-in-order — ${readings.length} PR(s), in the order they w
 for (const pr of readings) {
   console.log(
     `  #${pr.number}  ${pr.headRefName}  opened ${pr.createdAt}  gate=${pr.gate}  ` +
+    `units=${pr.unitShards.map((s) => s.state).join("/")}  ` +
     `semgrep=${pr.staticShapes}  bundle=${pr.bundleBudget}  socket=${pr.supplyChain}  review=${pr.review}  ` +
       `${pr.mergeable}/${pr.mergeStateStatus}  files=${pr.files.length}` +
       `${pr.worktreePath ? "" : "  (no worktree)"}`,

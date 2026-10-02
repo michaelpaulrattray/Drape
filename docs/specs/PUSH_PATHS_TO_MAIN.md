@@ -262,6 +262,8 @@ main:            required checks [gate-checks, founder-gate] · strict false
                   bundle-budget added 2026-09-19, #1035 — the first-download budget job, and
                   from 2026-09-26 the after-paint one too, #1421: two budgets, one check, because
                   a second check nobody registered would bind nobody here)
+                 re-read 2026-10-02: [gate-checks, founder-gate,
+                  Socket Security: Pull Request Alerts, static-shapes, bundle-budget]
 local-migration: required checks [gate-checks, founder-gate] · strict false
                  enforce_admins FALSE · allow_force_pushes false · allow_deletions false
                  no required_pull_request_reviews
@@ -270,6 +272,30 @@ collaborators:   michaelpaulrattray (admin) — one
 rulesets:        none
 default workflow token permissions: READ · can_approve_pull_request_reviews false
 ```
+
+⚠ **TWO CONTEXTS ARE OWED HERE AND ARE NOT ON THAT LIST YET — `unit-tests-1`
+AND `unit-tests-2` (#1811), AND THE ORDER IS THE WHOLE CARE.** The unit suite
+left `gate-checks` for two sharded jobs; registering them as required *before*
+that change is on `main` would wedge every open pull request, because a
+required check no workflow on that head declares reads as **pending for ever**.
+So the registration is the act immediately AFTER the merge, never inside the
+pull request that makes the jobs exist:
+
+```
+gh api -X PATCH repos/:owner/:repo/branches/main/protection/required_status_checks \
+  -f 'contexts[]=gate-checks' -f 'contexts[]=founder-gate' \
+  -f 'contexts[]=Socket Security: Pull Request Alerts' \
+  -f 'contexts[]=static-shapes' -f 'contexts[]=bundle-budget' \
+  -f 'contexts[]=unit-tests-1' -f 'contexts[]=unit-tests-2'
+```
+
+⚠ **AND THIS LIST IS NOT WHAT BINDS THE MERGE THAT ACTUALLY HAPPENS HERE.**
+`enforce_admins` is **false** and the one collaborator is an admin, so every
+context above is a rule for a non-admin who does not exist yet. What binds the
+road this repository really merges on is `scripts/lib/prMergeOrder.mts` reading
+each job **by name** — `PrReading.unitShards` for these two. Registering them
+is the half that makes them a rule; the reader is the half that makes them
+true, and #1034's own warning beside `static-shapes` is why both are done.
 
 ⚠ **The two protections are identical in every field but one, and the
 difference is GitHub's, not a choice.** `main`'s two required checks carry
