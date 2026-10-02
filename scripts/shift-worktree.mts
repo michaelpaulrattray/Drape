@@ -4,6 +4,8 @@
  *
  *     npx tsx scripts/shift-worktree.mts add <slug>
  *     npx tsx scripts/shift-worktree.mts remove <slug> [--force]
+ *     npx tsx scripts/shift-worktree.mts add --pr <n>            (a review)
+ *     npx tsx scripts/shift-worktree.mts remove --pr <n> [--force]
  *     npx tsx scripts/shift-worktree.mts list
  *     … any of the above with --dry-run
  *
@@ -11,6 +13,27 @@
  * junctions `node_modules` at the main tree's, copies `.env`, and checks the
  * checkout is not CRLF-smudged. `remove` takes the junction out FIRST, proves
  * it is gone, then unregisters the worktree and deletes the directory.
+ *
+ * ⚠ **AND `--pr <n>` IS THE REVIEW ROAD, WHICH HAD A CUT STEP AND NO REMOVAL
+ * STEP AT ALL UNTIL #1796.** Reviewing a pull request by hand meant typing
+ * `git worktree add -b team/<slug> … && mklink /J … && cp .env` and nothing
+ * afterwards — so **nineteen zero-file `drape-review-<n>` shells accumulated in
+ * three days**, each holding a live junction into the main tree's
+ * `node_modules`, and two more appeared inside the hour the Janitor swept them.
+ * Nobody skipped a step: the road had no second half to skip. The fix is this
+ * mode rather than a sweep, because a per-instance sweep against a per-review
+ * producer is the shape that let the stale-poller count reach 183.
+ *
+ * A review worktree differs from a shift's in exactly two ways, and both are
+ * deliberate: it is **DETACHED at `refs/pull/<n>/head`**, so it creates no local
+ * branch (the hand road's branch-per-review is the second contributor #1797
+ * measures, local `team/*` refs 115 → 295 in three days) and GitHub keeps that
+ * ref forever, which is the restore road for anything the removal destroys; and
+ * its removal asks `decideReviewRemoval` about that ref instead of asking
+ * `decideRemoval` about a branch, which on a detached HEAD would report the
+ * pull request's own commits as work about to vanish and refuse every review.
+ * **Everything destructive — junction out first, proven gone, unregister,
+ * delete — is the same code on both roads.**
  *
  * ⚠ READ THE HEADER OF `lib/shiftWorktree.mts` BEFORE CHANGING THE REMOVAL
  * PATH — it carries a measured table, not a rumour. The short version: three
@@ -78,18 +101,27 @@ import {
   branchReadFailed,
   branchToCreate,
   decideRemoval,
+  decideReviewRemoval,
   entryForPath,
   junctionMustBeGone,
   looksCrlfSmudged,
   parseWorktreeList,
   planFor,
+  prHeadFetchIntoRefArgs,
   prReadFailed,
+  readHeadAgainstPrHead,
   removalStateFromShipReading,
+  reviewCheckoutRef,
+  reviewPlanFor,
+  reviewWorktreeAddArgs,
   shipReadingFor,
+  validatePrNumber,
   validateSlug,
   worktreeListArgs,
   type RemovalState,
+  type ReviewRemovalVerdict,
   type ShipReading,
+  type WorktreePlan,
 } from "./lib/shiftWorktree.mts";
 /* The one reading that authorises a recursive delete on this machine, shared
    with the rite's own teardown rather than re-declared here (#654, law 7). */
@@ -111,6 +143,7 @@ function fail(message: string): never {
 const argv = process.argv.slice(2);
 const command = argv[0];
 let slug = "";
+let prArg: string | null = null;
 let force = false;
 let dryRun = false;
 
@@ -118,13 +151,24 @@ for (let i = 1; i < argv.length; i += 1) {
   const arg = argv[i];
   if (arg === "--force") force = true;
   else if (arg === "--dry-run") dryRun = true;
-  else if (arg.startsWith("--")) fail(`unknown flag ${arg} (known: --force, --dry-run)`);
+  else if (arg === "--pr") {
+    /* ⚠ A FLAG IS NEVER SWALLOWED AS THE VALUE. `remove --pr --dry-run` taking
+       `--dry-run` as the number would leave `dryRun` false on the one command
+       that deletes; refusing says so before anything is read. */
+    const value = argv[i + 1];
+    if (value === undefined || value.startsWith("--")) {
+      fail("--pr needs a pull request number, as in `--pr 1794`");
+    }
+    prArg = value;
+    i += 1;
+  } else if (arg.startsWith("--pr=")) prArg = arg.slice("--pr=".length);
+  else if (arg.startsWith("--")) fail(`unknown flag ${arg} (known: --pr, --force, --dry-run)`);
   else if (slug === "") slug = arg;
   else fail(`unexpected argument ${arg}`);
 }
 
 if (!command || !["add", "remove", "list"].includes(command)) {
-  fail("usage: shift-worktree <add|remove|list> [slug] [--force] [--dry-run]");
+  fail("usage: shift-worktree <add|remove|list> [slug|--pr <n>] [--force] [--dry-run]");
 }
 
 const repoRoot = path.resolve(import.meta.dirname, "..").replace(/\\/g, "/");
@@ -171,14 +215,26 @@ if (command === "list") {
   process.exit(0);
 }
 
-const check = validateSlug(slug);
-if (!check.ok) refuse(check.reason);
-const plan = planFor(slug, repoRoot, parentDir);
-/* ⚠ THE CONVENTION, AND `add`'s ALONE (#1613). It is not on `plan`, so nothing
-   on the removal path below can reach it by a property access — which is the
-   whole repair, because tightening five call sites would have left the derived
-   name one edit away from coming back. */
-const newBranch = branchToCreate(slug);
+/* ⚠ TWO PLANS, ONE REMOVAL (#1796). A shift's worktree is named by its slug and
+   a REVIEW worktree by the pull request it is for; everything downstream of this
+   point reads `plan`, so the destructive sequence has one owner whichever road
+   got here. `reviewPr` is non-null for exactly the review road and nothing else
+   derives it. */
+let plan: WorktreePlan;
+let reviewPr: number | null = null;
+if (prArg !== null) {
+  if (slug !== "") {
+    fail(`--pr ${prArg} and the slug \`${slug}\` name two different worktrees — give one or the other`);
+  }
+  const read = validatePrNumber(prArg);
+  if (!read.ok) refuse(read.reason);
+  reviewPr = read.pr;
+  plan = reviewPlanFor(reviewPr, repoRoot, parentDir);
+} else {
+  const check = validateSlug(slug);
+  if (!check.ok) refuse(check.reason);
+  plan = planFor(slug, repoRoot, parentDir);
+}
 
 // ---- add ------------------------------------------------------------------
 if (command === "add") {
@@ -189,39 +245,88 @@ if (command === "add") {
   if (process.platform !== "win32") {
     refuse("`add` junctions node_modules with `cmd /c mklink`, which only exists on Windows");
   }
-  if (existsSync(plan.path)) refuse(`${plan.path} already exists`);
-
-  // The tool's two halves must not contradict each other: `remove` deliberately
-  // says "the branch still exists locally", and `git worktree add -b` refuses a
-  // branch that exists. Removing a slug on Monday and re-adding it on Wednesday
-  // is an ordinary thing to do, and it used to end in a raw git error with no
-  // remedy named.
-  //
-  // NOT `-B`, which silently resets an existing branch — that is precisely the
-  // destruction this tool exists to prevent, and it would throw away commits
-  // the `remove` guards had just refused to destroy.
-  if (git(["rev-parse", "--verify", "--quiet", `refs/heads/${newBranch}`]).status === 0) {
+  /* ⚠ THE REVIEW REMEDY IS NAMED, BECAUSE THE UNNAMED ONE IS WHAT PRODUCED
+     `drape-review-1794b` (#1796). One pull request reviewed twice met a
+     directory in the way, and the second attempt invented a suffix by hand —
+     a directory the tool can then never address. There is exactly one path per
+     pull request, and the way past an occupied one is to take it down. */
+  if (existsSync(plan.path)) {
     refuse(
-      `the branch ${newBranch} already exists locally (a previous \`remove\` keeps it on purpose). Delete it with \`git branch -D ${newBranch}\` if it holds nothing you want, or choose another slug.`,
+      reviewPr === null
+        ? `${plan.path} already exists`
+        : `${plan.path} already exists — either PR #${reviewPr} is already cut for review, or a shell was left behind.`
+          + ` Take it down with \`npx tsx scripts/shift-worktree.mts remove --pr ${reviewPr}\` and cut it again.`
+          + " Do NOT make a second directory for one pull request.",
     );
   }
 
-  console.log(`shift-worktree add ${slug}`);
-  console.log(`  path   ${plan.path}`);
-  console.log(`  branch ${newBranch} (from origin/main)`);
-  console.log("");
+  if (reviewPr === null) {
+    /* ⚠ THE CONVENTION, AND `add`'s ALONE (#1613). It is declared inside this
+       arm, so nothing on the removal path below can reach it at all — which is
+       the whole repair, because tightening five call sites would have left the
+       derived name one edit away from coming back. A REVIEW worktree is detached
+       and has no branch, so this arm is also the only place one is made. */
+    const newBranch = branchToCreate(slug);
 
-  if (!dryRun) {
-    const fetched = git(["fetch", "origin", "main"]);
-    if (fetched.status !== 0) fail(`git fetch failed: ${fetched.err.trim()}`);
-  }
-  say("fetch origin/main");
+    // The tool's two halves must not contradict each other: `remove` deliberately
+    // says "the branch still exists locally", and `git worktree add -b` refuses a
+    // branch that exists. Removing a slug on Monday and re-adding it on Wednesday
+    // is an ordinary thing to do, and it used to end in a raw git error with no
+    // remedy named.
+    //
+    // NOT `-B`, which silently resets an existing branch — that is precisely the
+    // destruction this tool exists to prevent, and it would throw away commits
+    // the `remove` guards had just refused to destroy.
+    if (git(["rev-parse", "--verify", "--quiet", `refs/heads/${newBranch}`]).status === 0) {
+      refuse(
+        `the branch ${newBranch} already exists locally (a previous \`remove\` keeps it on purpose). Delete it with \`git branch -D ${newBranch}\` if it holds nothing you want, or choose another slug.`,
+      );
+    }
 
-  if (!dryRun) {
-    const added = git(["worktree", "add", plan.path, "-b", newBranch, "origin/main"]);
-    if (added.status !== 0) fail(`git worktree add failed: ${added.err.trim()}`);
+    console.log(`shift-worktree add ${slug}`);
+    console.log(`  path   ${plan.path}`);
+    console.log(`  branch ${newBranch} (from origin/main)`);
+    console.log("");
+
+    if (!dryRun) {
+      const fetched = git(["fetch", "origin", "main"]);
+      if (fetched.status !== 0) fail(`git fetch failed: ${fetched.err.trim()}`);
+    }
+    say("fetch origin/main");
+
+    if (!dryRun) {
+      const added = git(["worktree", "add", plan.path, "-b", newBranch, "origin/main"]);
+      if (added.status !== 0) fail(`git worktree add failed: ${added.err.trim()}`);
+    }
+    say(`create the worktree on ${newBranch}`);
+  } else {
+    /* ⚠ DETACHED, AT `refs/pull/<N>/head`, AND NEITHER HALF IS INCIDENTAL
+       (#1796). No local branch is created, so a review stops feeding the 295
+       local `team/*` refs #1797 measures; and the ref it checks out is the one
+       GitHub keeps forever, which is what lets `remove` prove the directory
+       holds nothing of ours without asking about a branch that does not exist. */
+    console.log(`shift-worktree add --pr ${reviewPr}`);
+    console.log(`  path   ${plan.path}`);
+    console.log(`  head   ${reviewCheckoutRef(reviewPr)} (detached — a review worktree has no branch)`);
+    console.log("");
+
+    if (!dryRun) {
+      const fetched = git(prHeadFetchIntoRefArgs(reviewPr));
+      if (fetched.status !== 0) {
+        fail(
+          `could not fetch ${reviewCheckoutRef(reviewPr)}: ${(fetched.err || fetched.out).trim().split(/\r?\n/)[0] ?? "no reason given"}.`
+          + ` Is #${reviewPr} a pull request on this repository?`,
+        );
+      }
+    }
+    say(`fetch ${reviewCheckoutRef(reviewPr)}`);
+
+    if (!dryRun) {
+      const added = git(reviewWorktreeAddArgs(reviewPr, plan.path));
+      if (added.status !== 0) fail(`git worktree add failed: ${added.err.trim()}`);
+    }
+    say(`create the worktree detached at PR #${reviewPr}'s head`);
   }
-  say(`create the worktree on ${newBranch}`);
 
   // The junction, not a copy: the install is over a gigabyte and every shift
   // would pay it twice a night under the overlap rule.
@@ -251,6 +356,15 @@ if (command === "add") {
 
   console.log("");
   console.log(dryRun ? "--dry-run: nothing was changed." : `Ready: cd ${plan.path}`);
+  /* ⚠ `add` NAMES ITS OWN TAKEDOWN, AND THAT IS THE WHOLE OF #1796 IN ONE LINE.
+     The hand-rolled review road had a cut step and no removal step, so nineteen
+     shells accumulated in three days — not because anyone skipped a documented
+     step, but because the road never had a second half to skip. A road that
+     prints its own closing command cannot be half a road, and the class is the
+     same for a shift's worktree, so both arms print it. */
+  console.log(
+    `When you are done: npx tsx scripts/shift-worktree.mts remove ${reviewPr === null ? slug : `--pr ${reviewPr}`}`,
+  );
   process.exit(0);
 }
 
@@ -265,7 +379,7 @@ if (!existsSync(plan.path)) {
   const stale = git(worktreeListArgs());
   const staleEntry = stale.status === 0 ? entryForPath(parseWorktreeList(stale.out), plan.path) : null;
   if (staleEntry === null) refuse(`${plan.path} does not exist`);
-  console.log(`shift-worktree remove ${slug}`);
+  console.log(`shift-worktree remove ${reviewPr === null ? slug : `--pr ${reviewPr}`}`);
   console.log(`  the directory is already gone, but git still has it registered — pruning.`);
   if (!dryRun) git(["worktree", "prune"]);
   say("prune the stale registration");
@@ -277,9 +391,13 @@ if (!existsSync(plan.path)) {
   console.log(
     dryRun
       ? "--dry-run: nothing was changed."
-      : branchReadFailed(staleBranch)
-        ? `Pruned. Which branch it was on could not be read — ${staleBranch.unreadable}.`
-        : `Pruned. The branch ${staleBranch.branch} still exists locally.`,
+      /* ⚠ A REVIEW WORKTREE'S DETACHED HEAD IS NOT A FAILED READ (#1796) — the
+         sentence below would call the normal state "could not be read". */
+      : reviewPr !== null
+        ? "Pruned. A review worktree leaves no branch behind."
+        : branchReadFailed(staleBranch)
+          ? `Pruned. Which branch it was on could not be read — ${staleBranch.unreadable}.`
+          : `Pruned. The branch ${staleBranch.branch} still exists locally.`,
   );
   process.exit(0);
 }
@@ -321,36 +439,45 @@ let unpushedCommits = 0;
 let dirtyFiles: string[] = [];
 
 if (registered) {
-  const unpushed = git(["log", "--oneline", "@{u}..HEAD"], plan.path);
-  if (unpushed.status === 0) {
-    unpushedCommits = unpushed.out.split(/\r?\n/).filter((l) => l.trim().length > 0).length;
-    // ⚠ AND THE UPSTREAM MAY BE `origin/main` RATHER THAN THIS BRANCH (review
-    // finding 4). `git worktree add -b team/x <path> origin/main` sets the new
-    // branch's upstream to origin/main, so before a `push -u` every commit
-    // reads as unpushed even when `origin/team/x` already has them. That
-    // over-refuses, which is the safe direction — but a guard that refuses on
-    // healthy input trains the `--force` habit, so ask the remote branch too
-    // and take the smaller honest count.
-    // ⚠ AND AGAINST THE BRANCH IT IS ON, NOT AGAINST `team/<slug>` (#1613).
-    // `origin/team/<slug>` is a ref that does not exist for a worktree made on
-    // an existing branch, so this command simply failed and the correction it
-    // exists for could never happen. With the branch unreadable there is
-    // nothing to ask, and the `@{u}` count stands — which over-refuses, the
-    // safe direction, rather than guessing a ref.
-    if (unpushedCommits > 0 && !branchReadFailed(branchRead)) {
-      const againstOwnRemote = git(["log", "--oneline", `origin/${branchRead.branch}..HEAD`], plan.path);
-      if (againstOwnRemote.status === 0) {
-        unpushedCommits = againstOwnRemote.out.split(/\r?\n/).filter((l) => l.trim().length > 0).length;
+  /* ⚠ THE UNPUSHED COUNT IS A SHIFT-WORKTREE QUESTION AND IS NOT PUT TO A REVIEW
+     WORKTREE (#1796). A detached HEAD has no upstream, so every probe below
+     would fall through to `origin/main..HEAD` and report the PULL REQUEST'S OWN
+     commits as unpushed work about to vanish — a refusal on the happy path of
+     every single review, which trains the `--force` habit that is the only thing
+     standing between a real find and a deleted directory. The review road asks
+     `decideReviewRemoval` instead, about the REF rather than about a branch. */
+  if (reviewPr === null) {
+    const unpushed = git(["log", "--oneline", "@{u}..HEAD"], plan.path);
+    if (unpushed.status === 0) {
+      unpushedCommits = unpushed.out.split(/\r?\n/).filter((l) => l.trim().length > 0).length;
+      // ⚠ AND THE UPSTREAM MAY BE `origin/main` RATHER THAN THIS BRANCH (review
+      // finding 4). `git worktree add -b team/x <path> origin/main` sets the new
+      // branch's upstream to origin/main, so before a `push -u` every commit
+      // reads as unpushed even when `origin/team/x` already has them. That
+      // over-refuses, which is the safe direction — but a guard that refuses on
+      // healthy input trains the `--force` habit, so ask the remote branch too
+      // and take the smaller honest count.
+      // ⚠ AND AGAINST THE BRANCH IT IS ON, NOT AGAINST `team/<slug>` (#1613).
+      // `origin/team/<slug>` is a ref that does not exist for a worktree made on
+      // an existing branch, so this command simply failed and the correction it
+      // exists for could never happen. With the branch unreadable there is
+      // nothing to ask, and the `@{u}` count stands — which over-refuses, the
+      // safe direction, rather than guessing a ref.
+      if (unpushedCommits > 0 && !branchReadFailed(branchRead)) {
+        const againstOwnRemote = git(["log", "--oneline", `origin/${branchRead.branch}..HEAD`], plan.path);
+        if (againstOwnRemote.status === 0) {
+          unpushedCommits = againstOwnRemote.out.split(/\r?\n/).filter((l) => l.trim().length > 0).length;
+        }
       }
-    }
-  } else {
-    // No upstream at all — every commit since main is unpushed, which is the
-    // MOST dangerous case and must never read as zero.
-    const sinceMain = git(["log", "--oneline", "origin/main..HEAD"], plan.path);
-    if (sinceMain.status === 0) {
-      unpushedCommits = sinceMain.out.split(/\r?\n/).filter((l) => l.trim().length > 0).length;
     } else {
-      fail("could not tell whether this branch has unpushed commits — refusing to guess about deleting work");
+      // No upstream at all — every commit since main is unpushed, which is the
+      // MOST dangerous case and must never read as zero.
+      const sinceMain = git(["log", "--oneline", "origin/main..HEAD"], plan.path);
+      if (sinceMain.status === 0) {
+        unpushedCommits = sinceMain.out.split(/\r?\n/).filter((l) => l.trim().length > 0).length;
+      } else {
+        fail("could not tell whether this branch has unpushed commits — refusing to guess about deleting work");
+      }
     }
   }
 
@@ -391,6 +518,30 @@ const ship: ShipReading | null = unpushedCommits > 0
     )
   : null;
 
+/**
+ * ⚠ THE REVIEW ROAD'S OWN READING, AND IT IS TAKEN ABOUT THE REF (#1796).
+ *
+ * `shipReadingFor` above cannot serve a review worktree — it asks which pull
+ * request names this BRANCH, and a review worktree is detached on purpose. The
+ * pull request number is not inferred here; it is the one the reviewer typed, so
+ * the reading goes straight to the comparison both roads share.
+ *
+ * ⚠ **AN UNREGISTERED SHELL IS NOT ASKED AND MUST NOT BE.** That is the state of
+ * all nineteen directories this card was filed about: git has let go of them, so
+ * there is no HEAD to compare and nothing to protect. `decideRemoval` already
+ * warns that it is removing a directory only, which is the honest sentence —
+ * asking git about a pruned worktree would come back `unreadable` and REFUSE the
+ * cleanup of litter, i.e. refuse the one case the card exists to make easy.
+ */
+const reviewVerdict: ReviewRemovalVerdict | null =
+  reviewPr !== null && registered
+    ? decideReviewRemoval(
+        readHeadAgainstPrHead(reviewPr, (args) => git(args, plan.path)),
+        reviewPr,
+        force,
+      )
+    : null;
+
 /* The fold lives in the library, not here, so the arms drive the real mapping
    rather than a copy — and so the fail-closed choice inside it has one owner. */
 const state: RemovalState = {
@@ -401,14 +552,21 @@ const state: RemovalState = {
   ...removalStateFromShipReading(ship),
 };
 
-console.log(`shift-worktree remove ${slug}`);
+console.log(`shift-worktree remove ${reviewPr === null ? slug : `--pr ${reviewPr}`}`);
 console.log(`  path       ${plan.path}`);
-/* ⚠ THE BRANCH IT IS ON, OR WHY THAT COULD NOT BE READ (#1613). This line sits
-   four lines above a recursive delete, and a shift reads it to decide whether to
-   pass `--force`; it printed `team/<slug>` and named a non-existent branch on the
-   run that found the defect. */
-console.log(`  branch     ${branchReadFailed(branchRead) ? `UNREADABLE — ${branchRead.unreadable}` : branchRead.branch}`);
-console.log(`  unpushed   ${state.unpushedCommits} commit(s)`);
+if (reviewPr === null) {
+  /* ⚠ THE BRANCH IT IS ON, OR WHY THAT COULD NOT BE READ (#1613). This line sits
+     four lines above a recursive delete, and a shift reads it to decide whether to
+     pass `--force`; it printed `team/<slug>` and named a non-existent branch on the
+     run that found the defect. */
+  console.log(`  branch     ${branchReadFailed(branchRead) ? `UNREADABLE — ${branchRead.unreadable}` : branchRead.branch}`);
+  console.log(`  unpushed   ${state.unpushedCommits} commit(s)`);
+} else {
+  /* ⚠ NOT A BRANCH LINE, BECAUSE THERE IS NO BRANCH (#1796). Printing
+     `branch UNREADABLE — detached HEAD` over a review worktree would read as a
+     fault on the happy path, four lines above a recursive delete. */
+  console.log(`  head       ${reviewCheckoutRef(reviewPr)} (detached — a review worktree has no branch)`);
+}
 console.log(`  uncommitted ${state.dirtyFiles.length} file(s)`);
 /* ⚠ PRINTED ONLY WHEN IT WAS ASKED (#1540) — a `merged  —` line on every clean
    removal would read as "checked, and it never merged", which is the confident
@@ -425,6 +583,18 @@ if (state.unpushedCommits > 0) {
   }`);
 }
 console.log("");
+
+/* ⚠ THE REVIEW VERDICT IS ASKED FIRST, AND `decideRemoval` STILL RUNS (#1796).
+   Two verdicts rather than one widened one, because `decideRemoval` is the
+   function that authorises a recursive delete and its arms are the coverage this
+   repository has already paid for — it is handed `unpushedCommits: 0` on this
+   road and judges exactly what it is still competent to judge (uncommitted work,
+   the missing registration, the force warnings). What a review worktree holds
+   that no remote has is this one's question, and only this one's. */
+if (reviewVerdict !== null) {
+  if (!reviewVerdict.proceed) refuse(reviewVerdict.reason);
+  console.log(`  ${reviewVerdict.note}`);
+}
 
 const verdict = decideRemoval(state, force);
 if (!verdict.proceed) refuse(verdict.reason);
@@ -489,8 +659,17 @@ console.log("");
 console.log(
   dryRun
     ? "--dry-run: nothing was changed."
-    : branchReadFailed(branchRead)
-      ? `Removed. Which branch it was on could not be read — ${branchRead.unreadable}.`
-      : `Removed. The branch ${branchRead.branch} still exists locally.`,
+    /* ⚠ AND IT SAYS WHAT A REVIEW LEAVES, WHICH IS NOTHING (#1796/#1797). The
+       slug road's sentence exists because `remove` keeps the branch on purpose;
+       a review road that printed it would be describing a branch it never made.
+       Local `team/*` refs went 115 → 295 in three days partly because the
+       hand-rolled review road cut one per review, so "no branch" is the fact
+       worth saying out loud rather than the absence of a fact. */
+    : reviewPr !== null
+      ? "Removed. A review worktree leaves no branch behind, and refs/pull/"
+        + `${reviewPr}/head still holds the commits.`
+      : branchReadFailed(branchRead)
+        ? `Removed. Which branch it was on could not be read — ${branchRead.unreadable}.`
+        : `Removed. The branch ${branchRead.branch} still exists locally.`,
 );
 process.exit(0);
