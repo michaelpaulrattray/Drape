@@ -177,6 +177,68 @@ const PLAN_DEFAULTED_TO_A_NAME =
 const SUBSCRIPTION_COLLAPSED_FROM_UNREAD = /!!\s*\w+\s*\?\s*\.\s*hasSubscription/;
 
 /**
+ * ⚠ **THE BILLING INTERVAL, COLLAPSED OUT OF AN UNREAD QUERY — #1755, and
+ * it is the FIFTH idiom in this family.**
+ *
+ * `status?.billingInterval === "year"` is `undefined === "year"` while the
+ * query is in flight, which is **false** — and on a billing surface `false`
+ * there does not mean *we have not been told*, it means **this customer is
+ * billed monthly**. Neither of the first four readers can see it: there is no
+ * `??` and no `!!`, only a comparison that answers confidently about nothing.
+ *
+ * # What it cost
+ *
+ * A **yearly** subscriber opened Add credits and the billing toggle sat in the
+ * MONTHLY position — a `role="switch"` with `aria-checked={false}`, which is
+ * an assertion and not a held state — then flipped under them when the status
+ * landed. ✅ **#664's own comment three lines above that line says this is
+ * the thing to prevent**, verbatim: *"the toggle opens on the interval the
+ * customer is BILLED on (#664) — `null` until they touch it, so an annual
+ * subscriber is not shown a monthly purchase they did not choose."* The
+ * `annualChoice` half did exactly that; the fallback undid it for the unread
+ * beat.
+ *
+ * # ⚠ What this reader does NOT see, stated because the remainder is real
+ *
+ * This is the OPTIONAL-CHAIN COMPARISON only. The sibling idiom — an interval
+ * read correctly as `null` and then defaulted a line later
+ * (`intervalChoice ?? billedInterval ?? "monthly"`) — is invisible to it, and
+ * `ChangePlanModal` has exactly that. **It is filed rather than covered here**:
+ * its repair is eight readers on a money surface, which is its own card, and a
+ * reader widened to catch it would have to understand that a `?? "monthly"`
+ * onto a THREE-WAY ladder is a defect while the same characters onto a plain
+ * boolean may not be. A clean run here is a floor, as it is for all four
+ * readers above.
+ */
+const INTERVAL_COLLAPSED_FROM_UNREAD = /\w+\s*\?\s*\.\s*billingInterval\s*===/;
+
+/**
+ * The declared remainder for the reader above — same two verdicts and the same
+ * rule as `DECLARED`: an entry whose site is gone reddens, so a fix means
+ * deleting its line.
+ */
+const INTERVAL_DECLARED: ReadonlyArray<{
+  readonly file: string;
+  readonly why: string;
+  readonly gate?: readonly string[];
+}> = [
+  {
+    file: "features/billing/ChangePlanModal.tsx",
+    why:
+      "THE EXPRESSION IS SAFE AND THE SURFACE IS NOT, and both halves are said"
+      + " here on purpose. The comparison sits in a THREE-WAY ladder whose third"
+      + " branch is `null`, so an unread status lands on `null` rather than on"
+      + " `monthly` — this reader's verdict is correct about these two lines."
+      + " ⚠ The line BELOW them is a separate defect in the same family:"
+      + " `intervalChoice ?? billedInterval ?? \"monthly\"` puts the collapse back,"
+      + " so the Monthly segment is drawn `--on` with `aria-pressed` true for a"
+      + " yearly subscriber's first frame. It is FILED, not fixed here: eight"
+      + " readers of `interval` on a money surface is its own card. #1755.",
+    gate: [": null;"],
+  },
+];
+
+/**
  * The declared remainder for the reader above. Same two verdicts and the same
  * rule as `DECLARED`: an entry whose site is gone reddens, so a fix means
  * deleting its line.
@@ -838,6 +900,164 @@ describe("an unread plan is not the free plan (#1741)", () => {
    * sentence with a wider type: `!null` is `true`. So each reader's declining
    * spelling is held here, file-specific, for the reason both siblings give.
    */
+  it("no client surface collapses the billing interval out of an unread status", () => {
+    const declared = new Set(INTERVAL_DECLARED.map((entry) => entry.file));
+    const offences: string[] = [];
+    let read = 0;
+    for (const file of tsSourcesUnder(CLIENT_SRC)) {
+      const source = readListedSource(file);
+      if (source === null) continue;
+      read += 1;
+      const relative = path.relative(CLIENT_SRC, file).replace(/\\/g, "/");
+      if (declared.has(relative)) continue;
+      withoutComments(source)
+        .split("\n")
+        .forEach((text, index) => {
+          if (INTERVAL_COLLAPSED_FROM_UNREAD.test(text)) {
+            offences.push(`${relative}:${index + 1}  ${text.trim()}`);
+          }
+        });
+    }
+    /* The floor, first and in the same arm: a walk that read nothing passes
+       this ban vacuously, which is #1733's class. */
+    expect(read, "the walk found almost no client source — check the root").toBeGreaterThan(200);
+    expect(
+      offences,
+      "the billing interval is compared through an optional chain, so it answers"
+      + " `monthly` about a customer nobody has read. On this surface that is not a"
+      + " cosmetic flicker: it is the position of a two-state CONTROL, the gate on a"
+      + " struck-through price, and the interval a checkout or plan change is sent at."
+      + " Read it `boolean | null` — `status ? status.billingInterval === \"year\" :"
+      + " null` — and let each reader answer for `null` in its own words. #1755.",
+    ).toEqual([]);
+  });
+
+  /**
+   * ⚠ Negative and positive control on the fifth reader before its verdicts
+   * count (working law 2), and here the defect and the repair differ by
+   * punctuation rather than by a word — the condition under which a guard most
+   * easily comes to cover its own fix.
+   */
+  it("the interval ban is exactly as narrow as it says", () => {
+    const matches = (line: string) => INTERVAL_COLLAPSED_FROM_UNREAD.test(line);
+
+    expect(
+      matches('  const annual = annualChoice ?? status?.billingInterval === "year";'),
+      "the card's own defect",
+    ).toBe(true);
+    expect(
+      matches('  return x ?. billingInterval === "month" ;'),
+      "whitespace is not a loophole",
+    ).toBe(true);
+    expect(
+      matches('    annualChoice ?? (status ? status.billingInterval === "year" : null);'),
+      "the repair must not read as the defect, or this suite covers its own fix",
+    ).toBe(false);
+    /* ⚠ THE STATED FLOOR, DRIVEN RATHER THAN ASSERTED IN PROSE. */
+    expect(
+      matches('  const interval = intervalChoice ?? billedInterval ?? "monthly";'),
+      "the floor: a correctly-null interval defaulted a line later is the same wrong"
+      + " answer and this reader cannot see it",
+    ).toBe(false);
+    expect(
+      matches('  const annual = status?.billingInterval ? true : false;'),
+      "the floor: a truthiness test is the same collapse and this reader cannot see it",
+    ).toBe(false);
+  });
+
+  it("every declared interval site is still there, and still rests on its gates", () => {
+    for (const entry of INTERVAL_DECLARED) {
+      const source = readListedSource(path.join(CLIENT_SRC, entry.file));
+      expect(
+        source,
+        `${entry.file} is gone — re-read the exemption, do not delete the arm`,
+      ).not.toBeNull();
+      const code = withoutComments(source ?? "");
+      expect(
+        INTERVAL_COLLAPSED_FROM_UNREAD.test(code),
+        `${entry.file} no longer compares the interval through an optional chain --`
+        + ` delete its INTERVAL_DECLARED entry. A standing exemption for code that is`
+        + ` gone is how a ban comes to cover less than it claims. #1755.`,
+      ).toBe(true);
+      for (const gate of entry.gate ?? []) {
+        expect(
+          code,
+          `${entry.file} no longer carries a gate its exemption names, so that`
+          + ` comparison is now a guess about an unread status. #1755. Missing: ${gate}`,
+        ).toContain(gate);
+      }
+    }
+  });
+
+  /**
+   * ⚠ **AND THE BAN PROVES THE COLLAPSE IS GONE, NOT WHAT THE SURFACE THEN
+   * SAYS — #1727's lesson, inherited for the fourth time.** `boolean | null`
+   * with every reader still written `annual ?` is the same wrong control with a
+   * wider type: `!null` is `true`, and `annual ? a : b` takes `b`. So each
+   * reader's declining spelling is held here.
+   */
+  it("Add credits declines to put its billing toggle in a position it was not told", () => {
+    const topup = withoutComments(
+      readListedSource(path.join(CLIENT_SRC, "features", "billing", "AddCreditsModal.tsx")) ?? "",
+    );
+
+    expect(
+      topup,
+      "the interval is a plain boolean again, so `false` means both `billed monthly`"
+      + " and `not read yet`, and a two-state control cannot tell them apart. #1755.",
+    ).toContain('annualChoice ?? (status ? status.billingInterval === "year" : null);');
+
+    /* ⚠ The toggle row is SLICED OUT before it is asserted on. A file-wide
+       `toContain` for a declining branch was measured surviving sabotage on this
+       very suite at #1747, satisfied by an identical line in a neighbouring
+       function — and `annual !== null` appears more than once in this file. */
+    const rowFrom = topup.indexOf('<div className="dp-topup__adjust">');
+    expect(
+      rowFrom,
+      "the billing-adjustment block is gone or renamed — #1755's arms cannot read it",
+    ).toBeGreaterThan(-1);
+    const rowEnd = topup.indexOf('className="dp-topup__pricerow"', rowFrom);
+    expect(rowEnd, "the price row no longer follows the toggle").toBeGreaterThan(rowFrom);
+    const row = topup.slice(rowFrom, rowEnd);
+
+    expect(
+      row,
+      "THE CARD'S OWN DEFECT. A `role=\"switch\"` has two states and both are"
+      + " assertions: `aria-checked={false}` says the customer is billed MONTHLY, it"
+      + " does not say `we have not been told`. ARIA does not allow `mixed` on a"
+      + " switch, so the row is not drawn at all until the interval is known — which"
+      + " is the card's other option in its own words. #1755.",
+    ).toContain("{annual !== null ? (");
+    expect(
+      row,
+      "the toggle is drawn unconditionally again, so the unread state is announced as"
+      + " a position the customer never chose. #1755.",
+    ).toMatch(/\{annual !== null \? \([\s\S]*aria-checked=\{annual\}/);
+
+    const priceRowFrom = topup.indexOf('className="dp-topup__pricerow"');
+    const priceRowEnd = topup.indexOf('className="dp-topup__duenote"', priceRowFrom);
+    expect(priceRowEnd, "the price row does not close where it used to").toBeGreaterThan(priceRowFrom);
+    expect(
+      topup.slice(priceRowFrom, priceRowEnd),
+      "the struck full-year price rests on `annual &&` again. It declines while unread"
+      + " today for a reason that is not about the interval at all, and a gate that"
+      + " happens to hold is not a gate — this line strikes out a year's list price"
+      + " BECAUSE the customer chose annual. #1755.",
+    ).toContain("{annual === true && hasSubscription === false && fullYear > 0 ? (");
+
+    /* The money path: an interval is never SENT off an unread status. */
+    expect(
+      topup,
+      "`submit` no longer refuses on an unread interval. The two sends below it name"
+      + " what the customer is charged and over what period, and `quoteReady` keeping"
+      + " that unreachable today is an implication rather than a gate. #1755.",
+    ).toContain("hasSubscription === null || annual === null) return;");
+    expect(
+      topup,
+      "the plan-change preview can fire against a guessed interval again. #1755.",
+    ).toContain("hasSubscription === true && annual !== null && !!selectedId");
+  });
+
   it("the two billing surfaces decline to name a charging road they have not been told", () => {
     const read = (...parts: string[]) =>
       withoutComments(readListedSource(path.join(CLIENT_SRC, ...parts)) ?? "");
@@ -887,24 +1107,56 @@ describe("an unread plan is not the free plan (#1741)", () => {
       renewal,
       "the interval-switch branch no longer requires the fact to be KNOWN true. #1749.",
     ).toContain("hasSubscription === true &&");
+    /*
+      ⚠ **RE-AIMED BY #1755, NOT WEAKENED, and this file carries the precedent
+      in its own words one screen up**: *"an arm whose subject a founder ruling
+      removes is not weakened, it is re-aimed at what still holds."*
+
+      It pinned `planRead && !annual ?`. #1755 made the interval `boolean |
+      null`, so `!annual` is `true` for the unread state — the same two meanings
+      of false this family exists about, now visible in the type — and the
+      condition says what it means: `annual === false`.
+
+      **Both halves are still held and the reason for each is unchanged.**
+      `planRead` stays because the two facts are genuinely different — an
+      account with no subscription has a KNOWN monthly interval and still gets
+      the nudge — and the interval test stays because a YEARLY subscriber must
+      not be offered the yearly deal they already pay for.
+    */
     expect(
       renewal,
       "the yearly nudge is no longer gated on the status having answered — so a YEARLY"
       + " subscriber is offered the yearly deal they already pay for, and after the fix"
       + " above it is the only text left in this paragraph. #664's own note on that"
-      + " default says the toggle exists to stop exactly this. #1749.",
-    ).toContain("planRead && !annual ?");
+      + " default says the toggle exists to stop exactly this. #1749, re-aimed by #1755.",
+    ).toContain("planRead && annual === false ?");
+    expect(
+      renewal,
+      "the nudge is back on `!annual`, which is TRUE for an unread interval — the"
+      + " negation reads a null as monthly. #1755.",
+    ).not.toContain("!annual");
 
     /* The money road. Sliced the same way, and from the LAST occurrence of the
        token so a comment quoting it cannot move the window. */
     const submitFrom = topup.lastIndexOf("const submit = () => {");
     expect(submitFrom, "`submit` is gone — #1749's arm cannot read it").toBeGreaterThan(-1);
+    /*
+      ⚠ **THE WINDOW IS ANCHORED ON CONTENT, NOT ON A CHARACTER COUNT — #1755.**
+      It read `submitFrom + 400`, and a comment added INSIDE `submit` pushed the
+      guard line past 400: the arm reddened over a function whose gate had
+      gotten stricter, which is the same false red #1725 and #1749 each left
+      behind in this file. `changePlan.mutate(` is the last statement of the
+      function and sits AFTER the guard, so the slice still cannot reach a
+      neighbour's identical line — which is the reason the count was there.
+    */
+    const submitEnd = topup.indexOf("changePlan.mutate(", submitFrom);
+    expect(submitEnd, "`submit` no longer ends in a plan change").toBeGreaterThan(submitFrom);
     expect(
-      topup.slice(submitFrom, submitFrom + 400),
+      topup.slice(submitFrom, submitEnd),
       "`submit` picks between BUYING a subscription and CHANGING one on a fact it may not"
       + " have. Unreachable while `quoteReady` needs the rung — which is exactly why it is"
       + " refused here rather than left to that gate. #1749.",
-    ).toContain("hasSubscription === null) return;");
+    ).toContain("hasSubscription === null");
 
     const change = read("features", "billing", "ChangePlanModal.tsx");
     expect(

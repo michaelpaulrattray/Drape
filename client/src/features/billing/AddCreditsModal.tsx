@@ -99,7 +99,32 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
   const { data: costs } = trpc.credits.getCosts.useQuery();
   const utils = trpc.useUtils();
 
-  const annual = annualChoice ?? status?.billingInterval === "year";
+  /*
+    ⚠ **AN UNREAD BILLING INTERVAL IS NOT "MONTHLY" — #1755, and it is the
+    EIGHTH instance of this shape on this surface** (#1703, #1725, #1727,
+    #1730, #1741, #1747, #1749 before it). This read
+
+        annualChoice ?? status?.billingInterval === "year"
+
+    and `status?.billingInterval` is `undefined` while the query is in flight,
+    so `=== "year"` answered **false** — the same two meanings of `false` the
+    seven cards above it are about, on a different field.
+
+    ⚠ **#664's OWN COMMENT THREE LINES UP SAYS THIS IS THE THING TO PREVENT**:
+    the toggle opens on the interval the customer is BILLED on, and
+    `annualChoice` is `null` until they touch it *"so an annual subscriber is
+    not shown a monthly purchase they did not choose"*. The `??` fallback did
+    exactly that for the unread beat, which is the half #664 could not see
+    because it was looking at the choice rather than at the read.
+
+    `null` is this surface's house answer for not-known-yet — the balance
+    (#1703), the charge (#1725), the rung (#1747), the subscription (#1749) —
+    and the type is what makes every reader below answer in its own words
+    rather than inherit a guess. Three of them are reachable while unread and
+    each one says what it does about `null` where it stands.
+  */
+  const annual: boolean | null =
+    annualChoice ?? (status ? status.billingInterval === "year" : null);
 
   /*
     ⚠ **AN UNREAD PLAN IS NOT THE FREE PLAN — #1747, the sibling of the same
@@ -240,9 +265,23 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
     offered ladder at all (#391's hidden one). Then the preview never runs and
     no quote is ever coming.
   */
-  const quoteEnabled = hasSubscription === true && !!selectedId;
+  /*
+    ⚠ **`annual !== null` IS A NO-OP TODAY AND IT IS STATED ANYWAY — #1755.**
+    `hasSubscription === true` already implies the status answered, which is
+    exactly when `annual` stops being null, so this gate can never be the one
+    that closes. It is here because *what interval is this quote for* is a
+    money question, and the card's done-when asks that no charge road derive
+    its interval from an unread status — a claim held by an implication is a
+    claim that dies the day either side of the implication moves. The same
+    judgement `submit` states one screen down.
+  */
+  const quoteEnabled = hasSubscription === true && annual !== null && !!selectedId;
   const { data: preview, isError: previewFailed } = trpc.billing.previewPlanChange.useQuery(
-    { newPlan: selectedId as never, interval: annual ? "annual" : "monthly" },
+    /* `annual === true`, not `annual ?`: an unread interval must not read as
+       monthly here. The query cannot fire in that state — see the gate above —
+       so this is the value behind a closed door said correctly rather than a
+       branch anybody reaches. */
+    { newPlan: selectedId as never, interval: annual === true ? "annual" : "monthly" },
     { enabled: quoteEnabled },
   );
   /* Enabled AND still trying: a failed read is not a read on its way. */
@@ -362,7 +401,12 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
       : hasSubscription
         ? (preview?.immediateCharge ?? null)
         : selected
-          ? annual
+          /* ⚠ #1755: `annual === true`, not `annual ?`. `selected` is null while
+             the rung is unread, so this branch is unreachable in that state —
+             but the figure under it is a PRICE, and a price quoted at a guessed
+             interval is the defect this card is about. Said correctly where it
+             stands rather than argued from the gate above it. */
+          ? annual === true
             ? annualPrice(selected.price)
             : selected.price
           : null;
@@ -425,7 +469,13 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
        anyway, because the two roads below are *buy a subscription* and *change
        the one you have*, and picking between them on an unanswered query is the
        one mistake on this surface that spends the customer's money. */
-    if (!selected || !quoteReady || hasSubscription === null) return;
+    /* ⚠ #1755: and `annual === null` beside it, for the same reason and with
+       the same reachability. The two sends below name an INTERVAL — what the
+       customer is charged and over what period — and the card's done-when is
+       that it is never derived from an unread status. `quoteReady` keeps this
+       unreachable today; the day either gate moves, this is the line that
+       decides whether a yearly subscriber is billed monthly by accident. */
+    if (!selected || !quoteReady || hasSubscription === null || annual === null) return;
     setWorking(true);
     if (!hasSubscription) {
       checkout.mutate({
@@ -496,23 +546,68 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
         )}
 
         <div className="dp-topup__adjust">
-          <div className="dp-topup__adjustrow">
-            <span className="dp-set__label">Billing adjustment</span>
-            <span className="dp-set__spacer" />
-            <span className="dp-set__note">Annual</span>
-            <span className="dp-plan__badge">{monthsFree()} MONTHS FREE</span>
-            <button
-              type="button"
-              className="dp-set__toggle"
-              role="switch"
-              aria-checked={annual}
-              aria-label="Pay yearly"
-              onClick={() => setAnnualChoice(!annual)}
-            />
-          </div>
+          {/*
+            ⚠ **THE ROW IS NOT DRAWN UNTIL THE INTERVAL IS KNOWN — #1755, and
+            this is the one reader of it a customer could actually SEE.**
+
+            A `role="switch"` has two states and both of them are assertions:
+            `aria-checked={false}` does not mean *we have not been told*, it
+            means **this customer is on monthly**. So for the beat
+            `billing.getStatus` was in flight, a yearly subscriber opened Add
+            credits and the control said they were billed monthly, then flipped
+            under them when the status landed.
+
+            ⚠ **A HELD STATE WAS CONSIDERED AND IS NOT AVAILABLE HERE.**
+            `aria-checked="mixed"` is the obvious third position and ARIA does
+            not allow it on `switch` — only on `checkbox` and
+            `menuitemcheckbox` — so a held toggle would be an invalid state,
+            announced to a screen reader as something else entirely. The card
+            offers the other road in its own words (*"or the surface declines
+            to draw the billing-adjustment row at all"*) and that is this.
+
+            It is the same answer this pane already gives four times over: the
+            balance sentence draws nothing until `status` answers (#1703), the
+            charge draws an em dash (#1725), the button holds (#1734), the
+            renewal line says nothing (#1749). **The price row below stays**,
+            because its em dash is already the honest shape and hiding it would
+            move the figure out of its slot.
+
+            ⚠ **AND THE CLICK GOES WITH IT, WHICH IS HALF THE REPAIR.**
+            `setAnnualChoice(!annual)` on a `null` reads `!null === true`, so a
+            customer pressing a control that LOOKS off would have chosen
+            ANNUAL — a purchase decision made by a negation over a value
+            nobody had.
+          */}
+          {annual !== null ? (
+            <div className="dp-topup__adjustrow">
+              <span className="dp-set__label">Billing adjustment</span>
+              <span className="dp-set__spacer" />
+              <span className="dp-set__note">Annual</span>
+              <span className="dp-plan__badge">{monthsFree()} MONTHS FREE</span>
+              <button
+                type="button"
+                className="dp-set__toggle"
+                role="switch"
+                aria-checked={annual}
+                aria-label="Pay yearly"
+                onClick={() => setAnnualChoice(!annual)}
+              />
+            </div>
+          ) : null}
 
           <div className="dp-topup__pricerow">
-            {annual && hasSubscription === false && fullYear > 0 ? (
+            {/*
+              ⚠ **`annual === true`, NOT `annual &&` — #1755.** The struck
+              full-year price declines while the status is unread either way
+              today, and the card reads the reason as `fullYear > 0`; read at
+              the code it is actually `hasSubscription === false`, which is
+              `null === false` and therefore already false. **Both readings
+              agree it declines and both are the wrong thing to rest on**: the
+              gate that should carry it is the interval itself, because this
+              line exists to strike out a year's list price BECAUSE the
+              customer chose annual, and an unread interval is not a choice.
+            */}
+            {annual === true && hasSubscription === false && fullYear > 0 ? (
               <span className="dp-topup__struck">{formatDollars(fullYear)}</span>
             ) : null}
             {/*
@@ -567,10 +662,15 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
           */}
           {selected ? (
             <span className="dp-set__value">
-              {formatCreditsPerDollar(priceAMonth(selected.price, annual), selected.credits)}{" "}
+              {/* ⚠ #1755: `annual === true` on both halves. `selected` is null
+                  until the rung is read, so neither is reachable on an unread
+                  status — and a RATE quoted at a guessed interval is still the
+                  wrong number, so the narrowing is written where it is read
+                  rather than inferred from the guard above. */}
+              {formatCreditsPerDollar(priceAMonth(selected.price, annual === true), selected.credits)}{" "}
               credits per $1
               {rateComparable
-                ? `, up from ${formatCreditsPerDollar(priceAMonth(currentPrice, annual), currentCredits)}`
+                ? `, up from ${formatCreditsPerDollar(priceAMonth(currentPrice, annual === true), currentCredits)}`
                 : null}
             </span>
           ) : null}
@@ -616,8 +716,12 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
                       ? "—"
                       : `+ ${formatCredits(displayBalance(option.credits - currentCredits))} credits a month`}
                     <span className="dp-topup__optionprice">
-                      {formatDollars(annual ? annualPrice(option.price) : option.price)}
-                      {annual ? " / yr" : " / mo"}
+                      {/* ⚠ #1755: the options list is empty until the rung is
+                          read (#1747), so an unread interval cannot reach
+                          here — said as `annual === true` all the same,
+                          because every other price on this pane is. */}
+                      {formatDollars(annual === true ? annualPrice(option.price) : option.price)}
+                      {annual === true ? " / yr" : " / mo"}
                     </span>
                   </button>
                 ))}
@@ -699,25 +803,37 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
           fact nobody has is nothing.
 
           ⚠ **THE YEARLY NUDGE IS THE SAME DEFECT ONE CLAUSE OVER, AND IT
-          WOULD HAVE BEEN THE ONLY TEXT LEFT IN THIS PARAGRAPH.** `annual` is
-          `annualChoice ?? status?.billingInterval === "year"`, so it is `false`
-          while unread — and #664's own comment on that default says the toggle
-          exists so *"an annual subscriber is not shown a monthly purchase they
-          did not choose"*. Unread, this offered a **yearly** subscriber the
-          yearly deal they already pay for, and after the fix above it would
-          have said it into an otherwise empty paragraph. It waits on
-          `planRead`, which is the status having ANSWERED rather than the
-          subscription existing — a customer with no subscription still gets
-          the nudge, as they always did.
+          WOULD HAVE BEEN THE ONLY TEXT LEFT IN THIS PARAGRAPH.** `annual` was
+          `annualChoice ?? status?.billingInterval === "year"`, so it was
+          `false` while unread — and #664's own comment on that default says
+          the toggle exists so *"an annual subscriber is not shown a monthly
+          purchase they did not choose"*. Unread, this offered a **yearly**
+          subscriber the yearly deal they already pay for, and after the fix
+          above it would have said it into an otherwise empty paragraph. It
+          waits on `planRead`, which is the status having ANSWERED rather than
+          the subscription existing — a customer with no subscription still
+          gets the nudge, as they always did.
 
-          ⚠ The toggle's own state, the struck price and the checkout interval
-          read the same unread `annual`; the toggle opening on *monthly* for a
-          yearly subscriber is a control's state rather than a sentence, and it
-          is **#1755** rather than this card (his rule of 2026-10-01).
+          ✅ **AND THE FIELD ITSELF IS THREE-STATE NOW — #1755 IS BUILT, so
+          this clause no longer carries the repair on its own.** `annual` is
+          `boolean | null`, the condition above reads `annual === false`
+          rather than `!annual`, and `planRead` stays beside it because the two
+          facts are genuinely different: an account with no subscription has a
+          KNOWN monthly interval, and the nudge is for them.
+
+          ✅ The three readers this block used to hand to #1755 — the
+          toggle's own state, the struck price and the checkout interval — are
+          answered where they stand: the billing-adjustment row is not drawn at
+          all until the interval is known, the struck price rests on
+          `annual === true`, and `submit` refuses on `annual === null` beside
+          its other two gates.
         */}
         <p className="dp-topup__renewal">
           {hasSubscription === true && preview?.kind === "interval-switch"
-            ? annual
+            /* ⚠ #1755: `annual === true`. `hasSubscription === true` already
+               means the status answered, so this cannot be the unread state --
+               the spelling is the file's, not a second gate. */
+            ? annual === true
               ? "Billed for the whole year today — your new billing year starts now, and the year's credits land with the payment."
               : "Billed monthly from today — unused time from your year comes off future bills automatically."
             : hasSubscription === false
@@ -727,7 +843,14 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
                 : quoteComing
                   ? "Working out how much of this cycle you are charged for."
                   : null}
-          {planRead && !annual ? ` Pay yearly instead and ${monthsFree()} of the twelve months are free.` : ""}
+          {/* ⚠ #1755: `annual === false`, not `!annual`. #1749 gated this on
+              `planRead` because the unread state read as monthly and offered a
+              yearly subscriber the deal they already pay for; with the interval
+              three-state the condition says what it means directly, and
+              `planRead` stays because the two facts are not the same one — an
+              account with no subscription has a KNOWN monthly interval and
+              still gets the nudge. */}
+          {planRead && annual === false ? ` Pay yearly instead and ${monthsFree()} of the twelve months are free.` : ""}
         </p>
       </div>
 
