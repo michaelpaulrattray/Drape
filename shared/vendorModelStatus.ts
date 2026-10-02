@@ -179,12 +179,30 @@ export const WIRED_DESPITE_SHUTDOWN: readonly AcknowledgedModelDebt[] = [
       "2026-10-01 AND THAT WAS FALSE — corrected at the code while sealing the lane's paid " +
       "procedures (#1654). THREE of the four paid legacy procedures were indeed /studio-only and " +
       "are now `adminProcedure`; the fourth, `generation.refreshSlots`, is reached by the LIVE " +
-      "CANVAS (`features/boards/canvas/nodes/useSheetController.ts:137` on `/app/canvas/:id`, with " +
+      "CANVAS (`client/src/features/boards/canvas/nodes/useSheetController.ts:137` on `/app/canvas/:id`, " +
+      "with " +
       "no admin check in `CastNode.tsx`), charges at `server/casting/refreshSlots.ts:261`, and " +
       "renders through `generatePackageSlotCandidate` → `aiService.generateRemainingViews` → " +
       "`geminiViews` — so a customer can be charged for a render on this id. It is NOT sealed " +
       "because sealing it removes a live feature, which is a product decision; the three options " +
-      "and the recommendation are on #1654. ⚠ And this file's own warning applies to the " +
+      "and the recommendation are on #1654. " +
+      "⚠ AND THERE IS A SECOND LIVE CANVAS ROAD ON THIS ID — `boardOps`, read at the code " +
+      "2026-10-02 and filed as #1785. The clause above names `refreshSlots` 'so the next reader " +
+      "does not take this line as covering it', and that is precisely what a one-entry-short list " +
+      "invites, because it reads identically to a complete one. " +
+      "`boardOps.runGeneration.execute` (`server/routes/boardOps.ts`, `protectedProcedure`, no " +
+      "admin check anywhere on the path) is reached from the Refresh button a stale cast node " +
+      "draws (`client/src/features/boards/canvas/NodeStatusBadge.tsx` → " +
+      "`client/src/features/boards/canvas/nodes/useCastNodeController.ts` → " +
+      "`client/src/features/boards/canvas/useCastActions.ts`), charges `CREDIT_COSTS.castingImage` " +
+      "in `server/lib/boardOps.ts`, and renders through `generateCastingImage` " +
+      "(`server/casting/geminiGeneration.ts`) — whose chat-NEW path takes `PRIMARY_MODEL = " +
+      "IMAGE_PRO` and whose stateless path walks `IMAGE_FALLBACK`, so EVERY leg of it is a " +
+      "shut-down id. `canvas.recast` and `canvas.variations` spend the same constant in the same " +
+      "router. The refund path is correct and carries its own truth into the node status, so no " +
+      "credits are lost — what is spent is the customer's wait. Its disposition is #1785's, on " +
+      "#1654's own precedent that sealing a live canvas road is his call and not a shift's. " +
+      "⚠ And this file's own warning applies to the " +
       "reachability question exactly as it applies to the id: 'a shut-down id does not reliably " +
       "fail loudly', so no complaint is not evidence of no traffic.",
   },
