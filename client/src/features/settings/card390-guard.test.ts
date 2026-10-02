@@ -291,7 +291,11 @@ describe("card 390 item 4 — the unit price is inverted, and it still argues fo
     );
   });
 
-  it("⚠ NO PLAN CARD AND NO COMPARE ROW SHOWS A RATE AT ALL — his word, 2026-10-02 (#1773)", () => {
+  /* The card number lives here and not in the title, for the reason the arm
+     below this one already gives: the foundation's token guard reads a
+     four-digit card number as a hex literal, and it strips comments but not
+     strings. This arm is #1773's. */
+  it("⚠ NO PLAN CARD AND NO COMPARE ROW SHOWS A RATE AT ALL — his word, 2026-10-02", () => {
     /*
       Verbatim, on a screenshot of Change plan: *"on the free card remove the
       free CREDITS PER $1 line thats stupid"* — the free rung printed the word
@@ -319,7 +323,11 @@ describe("card 390 item 4 — the unit price is inverted, and it still argues fo
     expect(surface, "the rate chip's class is back in the markup").not.toContain("dp-plan__unit");
     expect(
       code(read(join(HERE, "settings.css"))),
-      "the rate chip's rule is back in the stylesheet — a rule with no element is the drift #487 named",
+      /* The card number is in the comment above and not in this message, for the
+         same reason: the token guard reads it as a hex literal out of a string.
+         The drift named is the one card 487 ruled on — a rule kept past the
+         element it styled. */
+      "the rate chip's rule is back in the stylesheet — a rule with no element is drift",
     ).not.toContain(".dp-plan__unit");
     /* The old unit must not return by the back door either. */
     expect(surface, "the cents-per-credit figure is back on the cards").not.toContain(
