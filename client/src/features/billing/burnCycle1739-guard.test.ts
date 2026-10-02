@@ -41,13 +41,19 @@
  * Comments are stripped before any source match, so a docblock telling this
  * story cannot satisfy an arm about the code.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 import { withoutComments } from "../../../../server/testing/withoutComments";
 import { readListedSource } from "../../../../server/testing/listedSource";
+import { CONTENDED_TEST_TIMEOUT_MS } from "../../../../server/testing/contendedTestTimeout";
 import { alignToPreview, readBurn, readCycle } from "../settings/planMath";
+
+/* The one-caller arm walks `client/src`, `server` and `shared` off the real
+   tree, which is the contended-read population: fast here, red under load on
+   somebody else's machine rather than in CI. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 const HERE = join(process.cwd(), "client", "src", "features", "billing");
 const code = (name: string) => withoutComments(readFileSync(join(HERE, name), "utf8"));
