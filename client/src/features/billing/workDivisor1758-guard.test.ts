@@ -9,9 +9,12 @@
  * sentence on each surface that tells somebody what their money buys was priced
  * off a surface they cannot reach.
  *
- * **It read low by more than half, and the arithmetic is driven below rather
- * than quoted.** Pro's 180,000 ledger credits over the legacy 350 is *about 514
- * casting frames*; over the 200 a sheet slice actually costs it is 900.
+ * **It read low, and the arithmetic is driven below rather than quoted.** Pro's
+ * 180,000 ledger credits over the legacy 350 is *about 514 casting frames*; over
+ * the 200 a sheet slice actually costs it is 900. (#1758's body says *"more than
+ * half"* and quotes 1,200 — true while a slice cost 150, a price his one-price
+ * ruling of the same day moved. The arm below holds the direction for that
+ * reason.)
  *
  * #1607 took the plan cards off it by replacing the frames line with a count of
  * finished characters, derived server-side from the three prices the studio
@@ -116,47 +119,68 @@ describe("Card 1758 - the divisor, driven on the real prices", () => {
     expect(CASTING_V2_ONE_CHARACTER_CREDITS).toBeGreaterThan(0);
   });
 
-  it("the legacy divisor understated the work by more than half - the card's own arithmetic", () => {
+  it("the legacy divisor understated the work, and the DIRECTION is what is held", () => {
     /*
-      THE BEFORE ARM. Both figures are the real Pro grant read through the real
-      prices, so this records the defect rather than restating the card: the
-      sentence said 514 where the studio a customer actually uses answers 900.
-      It is a frames-over-frames comparison on purpose — the fix changes the
-      NOUN as well as the divisor, so the two counts after it are not
-      comparable, and the only honest measure of what was wrong is the unit the
-      broken sentence itself used.
+      THE BEFORE ARM, and it holds a relation rather than two figures. Read at
+      the real Pro grant through the real prices on 2026-10-02: the broken
+      sentence said **about 514 casting frames** where the studio a customer
+      actually uses answers **900**. It is a frames-over-frames comparison on
+      purpose — the fix changes the NOUN as well as the divisor, so the counts
+      after it are not comparable, and the only honest measure of what was wrong
+      is the unit the broken sentence itself used.
+
+      ⚠ **THE CARD'S OWN MAGNITUDE IS A PRICE OLD AND IS NOT ASSERTED HERE.**
+      #1758's body says *"understates by more than half ... reads as about 514
+      frames where the real answer is 1,200"*, which was true while a sheet
+      slice cost 150. His one-price ruling of 2026-10-02 (#1753) put it at 200,
+      so the real answer is 900 and the understatement is 43% rather than 57%.
+      Pinning either number would have shipped an arm his next price word
+      reddens for no reason; the relation is what the fix is about.
     */
     const pro = PLAN_TIERS.pro.monthlyCredits;
     const framesAtLegacyPrice = Math.floor(pro / CREDIT_COSTS.castingImage);
     const framesAtStudioPrice = Math.floor(pro / CASTING_V2_COSTS.rollCandidate);
-    expect(framesAtLegacyPrice).toBe(514);
-    expect(framesAtStudioPrice).toBe(900);
     expect(
-      framesAtLegacyPrice * 2,
-      "the legacy price no longer understates, so this arm has stopped measuring anything",
-    ).toBeLessThan(framesAtStudioPrice * 2);
-    expect(framesAtLegacyPrice).toBeLessThan(framesAtStudioPrice);
+      framesAtLegacyPrice,
+      "the legacy price is no longer the dearer one, so this arm has stopped measuring the defect",
+    ).toBeLessThan(framesAtStudioPrice);
+    /* And the divisor the surfaces actually use is a whole character rather
+       than a slice of one, so it is dearer than either — a count of characters
+       can never be read as a count of frames by accident. */
+    expect(CASTING_V2_ONE_CHARACTER_CREDITS).toBeGreaterThan(CREDIT_COSTS.castingImage);
+    expect(CASTING_V2_ONE_CHARACTER_CREDITS).toBeGreaterThan(CASTING_V2_COSTS.rollCandidate);
   });
 
-  it("the Add credits bullet's two counts are what the live ladder covers", () => {
-    /* The sentence a Starter subscriber reads on the Pro option, derived: the
-       arm moves with the prices and with the ladder, and names neither. */
-    const now = charactersPhrase(
-      charactersFor(PLAN_TIERS.starter.monthlyCredits, CASTING_V2_ONE_CHARACTER_CREDITS),
-    );
-    const next = charactersPhrase(
-      charactersFor(PLAN_TIERS.pro.monthlyCredits, CASTING_V2_ONE_CHARACTER_CREDITS),
-    );
-    expect(now).toBe("about 5 finished characters");
-    expect(next).toBe("about 15 finished characters");
-    /* And the count never promises more than the grant covers — the direction
-       that matters on a pricing surface. */
+  it("the bullet's two counts are properties of the live ladder, not figures typed here", () => {
+    /*
+      The sentence a Starter subscriber reads on the Pro option — *"That is
+      about 15 finished characters a month, up from about 5"* as the ladder and
+      the prices stand on 2026-10-02. The figures are in this comment and not in
+      the arm: #1607's guard makes the same choice, and its reason is measured —
+      the counts move with his price words, and a pinned pair would have shipped
+      three figures that were a day stale.
+    */
+    const phraseAt = (credits: number) =>
+      charactersPhrase(charactersFor(credits, CASTING_V2_ONE_CHARACTER_CREDITS));
     for (const rung of [PLAN_TIERS.free, PLAN_TIERS.starter, PLAN_TIERS.pro]) {
+      const phrase = phraseAt(rung.monthlyCredits);
+      expect(phrase, rung.name + ": no sentence at all").not.toBeNull();
+      /* The whole sentence the customer reads, including the plural rule. */
+      expect(phrase!).toMatch(/^about [\d,]+ finished characters?$/);
+      /* And the count never promises more than the grant covers — the one
+         direction a pricing surface may not get wrong. */
       const count = charactersFor(rung.monthlyCredits, CASTING_V2_ONE_CHARACTER_CREDITS);
       expect(count * CASTING_V2_ONE_CHARACTER_CREDITS).toBeLessThanOrEqual(
         rung.monthlyCredits,
       );
     }
+    /* `up from` is only ever read downward: a dearer rung covers at least as
+       much work as the rung the customer is leaving. */
+    expect(
+      charactersFor(PLAN_TIERS.pro.monthlyCredits, CASTING_V2_ONE_CHARACTER_CREDITS),
+    ).toBeGreaterThan(
+      charactersFor(PLAN_TIERS.starter.monthlyCredits, CASTING_V2_ONE_CHARACTER_CREDITS),
+    );
   });
 });
 
@@ -246,7 +270,7 @@ describe("Card 1758 - the Add credits bullet", () => {
 
   it("says the noun once, through the shared phrase", () => {
     expect(bullets()).toContain("nextPhrase");
-    expect(bullets()).toContain("nowPhrase");
+    expect(bullets()).toContain("nowCount");
     /* A second copy of the noun or the plural rule is what drifted on the
        compare grid; neither the singular nor the pipeline's old word is spelled
        on this surface at all. */

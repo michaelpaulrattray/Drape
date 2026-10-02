@@ -508,15 +508,19 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
     });
   };
 
-  /* `null` rather than 0: "up from about 0 finished characters" is a claim
-     about an allowance nobody has read (#1747). The phrase itself comes from
-     `charactersPhrase` rather than being composed here — the plural rule has
-     exactly one declaration, and the compare grid is what taught this file's
-     neighbour that two copies of it drift (#1607). */
-  const nowPhrase =
-    currentCredits === null
-      ? null
-      : charactersPhrase(charactersFor(currentCredits, oneCharacterCredits));
+  /*
+    `null` rather than 0: "up from about 0" is a claim about an allowance
+    nobody has read (#1747), and a rung whose credits cover no finished
+    character has nothing to compare either.
+
+    The NOUN is said once, by `charactersPhrase`, and the clause after the comma
+    carries the bare count — which is how the sentence read before and is the
+    reason the phrase helper exists at all: the compare grid composed its own
+    copy of the plural rule and printed `about 1 characters` (#1607, law 6).
+    A second copy here would be the same mistake in the same feature.
+  */
+  const nowCount =
+    currentCredits === null ? null : charactersFor(currentCredits, oneCharacterCredits);
   const nextPhrase = selected
     ? charactersPhrase(charactersFor(selected.credits, oneCharacterCredits))
     : null;
@@ -780,7 +784,7 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
             <span className="dp-topup__bullet">
               <Check size={12} strokeWidth={1.8} />
               That is {nextPhrase} a month
-              {nowPhrase === null ? "" : `, up from ${nowPhrase}`} — you
+              {nowCount ? `, up from about ${nowCount.toLocaleString()}` : ""} — you
               would move to {selected.name}.
             </span>
           ) : null}
