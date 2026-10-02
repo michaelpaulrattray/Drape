@@ -1,7 +1,7 @@
 {
-  "edition": 615,
-  "updatedAt": "2026-10-02T10:00:00.000Z",
-  "shift": "Night shift, 19:14: a view you were given without a check used to let you ask for it again free, over and over. When our checker cannot answer, the picture still arrives and you are told it was not checked, and you get a free Try again — that is your rule and it stands. What was missing was the word \"once\". Asking again did not change the fact that nobody had checked it, so the free offer came back every single time, and we would have kept rendering 2K views for nothing for as long as the checker stayed down. Now the first ask on an unchecked view is free and the second costs 370, exactly like asking again for a view that never arrived. Nothing on your screen changes: the line still reads Unchecked · Try again with no price on it, which is what you asked for in September, and a Try again that charges without saying so is already how the refunded one has always worked. It needed no change to the database — we can already tell which of her five views an ask was about from the record the ask leaves behind. Also checked, because the card asked for them and I did not want anyone building them twice: the two remaining pieces of that card — how a Sign gives money back when some views fail, and the rule that stops a refund happening twice — are already built and already tested, and I ran those tests rather than taking their word for it. It passed review and is merged.",
+  "edition": 616,
+  "updatedAt": "2026-10-02T11:05:00.000Z",
+  "shift": "Night shift, 20:32: the Portrait picture had one test and it was the wrong one. A Portrait is meant to be head and shoulders, and the only thing the studio checked was that the whole head was inside the frame — which a head-to-toe picture passes easily. So if you ever asked for a Portrait and got a full-length picture instead, nothing would have noticed. Tonight it learned to measure the distance. I took 43 pictures you already own, ran them through the tool that measures where things sit in a frame, and the two kinds separated cleanly with a wide empty gap in the middle: your Portraits all sit between 1.10 and 3.03 faces' worth of picture below the chin, your full-length ones between 4.61 and 10.39, and there is nothing at all in between. The line goes in the middle of that gap, at 3.7, the same way the close-up line was drawn last week. It is a measurement rather than an opinion: the same picture read ten times gave the same number to four decimal places. The strip is on your page and the pair either side of the line is the thing worth your eye — if you want it tighter, it is one number. Nothing you can see changes today: this is the measuring tape, not the rule, and the change that actually hands the checker over to it is a separate piece held for review. Two things found on the way: four of your own signed headshots have hair, a bun or a crown running off the top of the frame, which the tool reads correctly and which is simply what a rolled picture looks like; and one of our own checks had learned only two of the three ways a job like this can be finished, so it refused tonight's correct answer until it was taught the third. Cost: about 86 cents of our own money, no credits of yours.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -3392,6 +3392,21 @@
   ],
   "eyeItems": [
     {
+      "id": "portrait-band-1612",
+      "title": "Where a Portrait stops being a Portrait — six of your own, in order",
+      "question": "WHAT YOU ARE LOOKING AT — six pictures you already own, put in order of how much picture sits below the face. The number under each is the whole measurement: 1.10 means about one face's worth of chest below the chin, 7.72 means head to toe. The black line is where the studio now draws the boundary between a Portrait and a full-length picture.\n\nWHY IT MATTERS. Until tonight the Portrait slot had one test — is the whole head inside the frame — and a head-to-toe picture passes that easily. So a full-length picture delivered where you asked for a Portrait would have gone through unnoticed. Now the distance is measured, so it would not.\n\nTHE ONE THING WORTH YOUR EYE is the pair either side of the line: Hingu at 3.03, which we keep and say nothing about, and Jenny Craig at 4.61, which we would hand over marked unchecked with a free Try again beside it. Everything further out is obvious in both directions. The line sits in a wide empty gap — across every picture you own there is nothing at all between 3.03 and 4.61.\n\nIf you would rather it sat tighter — so Hingu's also got a free Try again — say so and it is one number. Nothing here throws a picture away: the strictest this can ever do is hand you the picture and offer another go.",
+      "state": "open",
+      "filedAt": "2026-10-02T11:00:00.000Z",
+      "issueNumber": 1612,
+      "frames": [
+        {
+          "key": "crew-eye/6f467225-de33-428d-b723-9084ae032e1e.png",
+          "arm": "your six, in order of room below",
+          "caption": "LEFT OF THE LINE, kept as they are: Jenny Craig 1.10, Shina 1.51, Kai 2.32, Hingu 3.03. RIGHT OF THE LINE, kept and offered a free Try again: Jenny Craig 4.61, Sifr2 7.72. The four on the left are the Portrait you are given when you sign; the two on the right are full-length pictures, standing in for a full-length picture arriving where a Portrait was asked for."
+        }
+      ]
+    },
+    {
       "id": "n2-test-drive-1644",
       "title": "Your N2 test drive — seven things to try, none of them waiting on you",
       "question": "YOUR N2 TEST DRIVE — seven things to try, in your own time. N2 is closed already; nothing waits on this. Each step says what to do, what you should see, and which card it proves. If a step does not match, reply here with its number and what you saw, and it becomes a bug.\n\n1. SIGN A CAST THAT IS NOT SHAPED LIKE A PERSON — Jingu, or roll a new creature and sign it. You should get all five views, including the close-up and the three-quarter that used to be refused for not having two eyes (#1582, #1612).\n\n2. SIGN A CAST WITH AN ASYMMETRIC OUTFIT — one bare shoulder, one draped sleeve. The side profile should arrive instead of being refunded at random (#1579).\n\n3. ON A SIGNED CAST, LOOK UNDER A VIEW'S NAME. A view that could not be checked shows one muted line, Unchecked · Try again, and pressing it costs nothing; a refunded view shows Refunded · Try again with its price before you press (#1220, #1347).\n\n4. OPEN AN OLD LINK — type /casting, or /app/boards, or an old /casting/cast/… link you have saved. Each should land on the new /app address with nothing broken (#1583, #1545).\n\n5. SIGN A CAST WHOSE BRIEF NAMES A DRESS OR A ROBE. The two full-length views should wear what the brief describes, not a plain modest version of it (#1278).\n\n6. REPLY ON ANY DESK CARD. Within about a minute the card on GitHub should carry your words under your name (#1539).\n\n7. CLICK ERRORS ON THE ADMIN OVERVIEW. Sentry should show real events for the project, not its welcome screen — the pipe is proven live end to end (#1542).\n\nThe two pictures are where steps 1–5 start: the casting tab, and a signed cast's room. — His word, 2026-10-01: \"test drive passes.\"",
@@ -6461,6 +6476,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "portrait-bound-1612",
+      "title": "The Portrait picture is measured, not guessed (#1612)",
+      "status": "in-review",
+      "prNumber": 1771,
+      "note": "Open and held — it touches a file where prices are declared, so it waits for a review by hand. Nothing you can see changes: it is the measuring tape, not the rule."
+    },
     {
       "id": "renewal-keeps-purchased-1604",
       "title": "A renewal never takes back credits you bought (#1604)",
