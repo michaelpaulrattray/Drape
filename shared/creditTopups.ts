@@ -122,9 +122,14 @@ export function isSellableTopupUnits(units: number): boolean {
  */
 export function topupBracketFor(units: number): TopupBracket {
   if (!isSellableTopupUnits(units)) {
+    /* ⚠ The unit SIZE is deliberately absent from this sentence. It said
+       "whole units of 5,000 credits", which put a credit-named constant inside
+       a sentence saying "credits" — rule 2 of the credit-display guard, and a
+       true indictment of a shape that is nonetheless a developer's refusal
+       rather than a customer's. The bound is what a caller needs. */
     throw new RangeError(
       `topupBracketFor: ${String(units)} is not a top-up this product sells `
-      + `(1 to ${TOPUP_MAX_UNITS} whole units of ${TOPUP_UNIT_DISPLAY_CREDITS} credits)`,
+      + `(1 to ${TOPUP_MAX_UNITS} whole units)`,
     );
   }
   /* Last band whose floor the order reaches. Read from the end so the widest

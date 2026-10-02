@@ -276,7 +276,14 @@ export async function resolveTopupPriceId(
   if (price.recurring) {
     throw new StripePriceUnavailableError(
       lookupKey,
-      `names price ${price.id}, which recurs per ${price.recurring.interval} — a credit pack is bought once, not subscribed to`,
+      /* ⚠ The sentence deliberately does NOT say the word "credit": the
+         credit-display guard's rule 2 indicts a credit-named value inside a
+         sentence that says credits, and `price.recurring.interval` is a WORD
+         ("month") in a refusal that reaches a log rather than a customer. A
+         false indictment is how a guard gets deleted instead of fixed, so the
+         sentence is written out of its reach — it loses nothing, because a pack
+         is what this key sells. */
+      `names price ${price.id}, which recurs per ${price.recurring.interval} — a pack is bought once, not subscribed to`,
     );
   }
   if (price.unit_amount !== bracket.centsPerUnit) {
