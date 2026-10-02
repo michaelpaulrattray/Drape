@@ -53,9 +53,25 @@ describe("ChangePlanModal", () => {
 
   it("the toggle opens on the billed interval, from getStatus's cache", () => {
     expect(source).toContain('status?.billingInterval === "year"');
-    expect(source).toContain("intervalChoice ?? billedInterval");
-    /* The old always-monthly opening state must not come back. */
+    /*
+      ⚠ **RE-AIMED BY #1763, NOT WEAKENED — and `AddCreditsModal`'s own arms in
+      this file were re-aimed the same way by #1755 one day earlier.**
+
+      This arm pinned `intervalChoice ?? billedInterval`, which was true of a
+      line that then said `?? "monthly"` and opened the toggle on MONTHLY for a
+      yearly subscriber whose status had not answered — the exact opening state
+      the arm below bans as a `useState` default, arrived at by a different
+      road. So the pin moves to the whole repaired expression: the customer's
+      own choice first, then the billed cycle, and `null` — not monthly — while
+      `getStatus` is in flight.
+    */
+    expect(source).toContain(
+      'intervalChoice ?? (status === undefined ? null : billedInterval ?? "monthly")',
+    );
+    /* The old always-monthly opening state must not come back, by either road:
+       a `useState` default, or a collapse at the read. */
     expect(source).not.toMatch(/useState<Interval>\("monthly"\)/);
+    expect(source).not.toMatch(/intervalChoice \?\? billedInterval \?\? "monthly"/);
   });
 
   it("a subscriber's change is confirmed against the server's own quote before it charges", () => {

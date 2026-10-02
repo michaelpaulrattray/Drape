@@ -303,8 +303,36 @@ export function exampleSentence(characters: number): string | null {
  * this sentence is what has to move.
  */
 export function creditsTail(priceInCents: number): string {
-  const arrival = priceInCents > 0 ? "credits a month" : "credits to start";
+  const arrival = grantsMonthly(priceInCents) ? "credits a month" : "credits to start";
   return `${arrival}, one pool for everything.`;
+}
+
+/**
+ * DOES THIS RUNG GRANT CREDITS EVERY MONTH — the one declaration of the rule
+ * `creditsTail` above states in prose, now that a second surface needs it
+ * (#1761).
+ *
+ * ⚠ **IT IS SPLIT OUT BECAUSE ADD CREDITS HAD ITS OWN ANSWER AND THE ANSWER WAS
+ * NO ANSWER AT ALL.** `AddCreditsModal` subtracted the account's current
+ * `monthlyCredits` from the target rung's to name the delta, and on the free
+ * rung that is a monthly allowance minus a ONE-TIME grant printed as a monthly
+ * figure — a free account was told *"+ 11,300 credits a month"* where Starter's
+ * whole allowance is **14,000**. Two surfaces asking *is this monthly* with one
+ * of them not asking is the shape #1607 fixed on the plan cards; two surfaces
+ * asking it with a copy of the test each is working law 4, and the copy is what
+ * drifts. So the rule is a function and both read it.
+ *
+ * ⚠ **THE PRICE IS THE TEST, NEVER THE RUNG'S ID** — `creditsTail`'s own reason
+ * above, kept here because this is where it now lives: a rung with nothing
+ * recurring to charge has nothing recurring to grant, whatever it is next
+ * called, and a fixed list of rung names is what his N3 principle rules out.
+ *
+ * A rung whose price is unread is NOT a rung with no price — that distinction
+ * belongs to the caller, which is why this takes a number rather than a
+ * `number | null`. Both surfaces hold their own unread state.
+ */
+export function grantsMonthly(priceInCents: number): boolean {
+  return priceInCents > 0;
 }
 
 /**
