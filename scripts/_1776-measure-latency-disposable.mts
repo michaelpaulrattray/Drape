@@ -20,7 +20,7 @@ import path from "node:path";
 import { castPackageView } from "../server/castingV2/castViewPackage";
 import { createFalRegionReader } from "../server/castingV2/falRegionReader";
 import { measureViewFraming } from "../server/castingV2/viewFramingGeometry";
-import type { CastViewAngle } from "../server/castingV2/castViewPackage";
+import type { CastViewAngle } from "../shared/boardTypes";
 
 const FAL = process.env.FAL_KEY;
 if (!FAL) throw new Error("no FAL_KEY in .env");
