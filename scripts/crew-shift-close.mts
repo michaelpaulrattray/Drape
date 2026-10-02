@@ -101,6 +101,7 @@ import {
   waitingOnHimFinding,
   type ResolvableBriefing,
 } from "../shared/crewCardResolution.js";
+import { crewCardHandbackInstruction } from "../shared/crewCardBuildState.js";
 import { openDatabase, resolveDatabaseUrl, worldOf } from "./lib/dbConnection.mts";
 import { refreshQueueCountsQuietly } from "./lib/crewQueueCount.mts";
 import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
@@ -337,6 +338,13 @@ try {
     + `\n  ${iso(row.startedAt)} → ${iso(row.endedAt)}`,
   );
   console.log("\nHis page now reads `Nothing running` unless another seat is open.");
+  /* ⚠ THE WORDS AGAIN, AT THE OTHER END (#1701). A close is the moment a card
+     is handed back, and the release word is the signal that was measurably
+     never written: the orders offer *"`RELEASED — <seat>` or the PR"* and no
+     reader can see a pull request, so a seat that shipped and closed left a
+     claim reading live for twelve hours. A card the shift did not finish is
+     RELEASED here or it idles the next seat. */
+  if (row.outcome !== "shipped") console.log(`\n${crewCardHandbackInstruction(row.shift)}`);
 
   /*
     ⚠ REFRESH HIS NUMBERS, NOW THAT THE ROW IS TERMINAL (#618).

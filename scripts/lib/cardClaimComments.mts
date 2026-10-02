@@ -56,6 +56,7 @@ import { resolve } from "node:path";
 import {
   CREW_CLAIM_LIVE_MS,
   crewCardCommentFact,
+  crewCardReleaseLine,
 } from "../../shared/crewCardBuildState.js";
 import { cardNumberOf } from "../../shared/crewShiftState.js";
 
@@ -242,7 +243,18 @@ export function renderCardClaimRefusal(
     + "\n   and the relay two four-hundred-line diffs for one merge (#1580); neither shift's ROW"
     + "\n   named the card, because it was the Nth of a batch, so nothing could refuse."
     + "\n\n   Take the next card instead, and say in your entry that you stood off this one."
-    + "\n   If that claim is yours under another name, or the other seat has finished, pass --same-card.";
+    + "\n   If that claim is yours under another name, or the other seat has finished, pass --same-card."
+    /* ⚠ #1701's SECOND SIGNAL, named where it actually bites. This refusal fired
+       on #1602 nine hours after the other seat had FINISHED and posted its pull
+       request, because the orders tell a seat it may release "or the PR" and no
+       reader can see a pull request as a release. A shift reading only the clock
+       takes `--same-card` and the lock is gone; a shift told what is missing
+       knows which three artifacts answer the question honestly. */
+    + `\n\n   ⚠ A finished seat owes a \`${crewCardReleaseLine()}\` comment and an open pull`
+    + "\n   request is NOT one — a pull request may be a half-finished slice, so it is read"
+    + "\n   as a warning and never as a handback (#1083, #1701). Before --same-card on the"
+    + "\n   clock alone, read the three artifacts that settle it: that seat's row is closed,"
+    + "\n   its pull request is merged, and its body puts your slice out of scope.";
 }
 
 /** The line to PRINT when the board could not be read — never a refusal. */

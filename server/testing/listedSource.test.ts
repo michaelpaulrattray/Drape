@@ -150,6 +150,19 @@ const NOT_THE_CLASS: Record<string, string> = {
     + " sites to one declaration), and every one of them SHOULD throw if it is"
     + " missing: a sweep arm that shrugs at an absent subject is the guard over"
     + " nothing this file exists to prevent",
+  "server/riteLock.test.ts":
+    "lists NOTHING in the repository — its one `readdirSync` is over a"
+    + " `mkdtempSync` directory it created in this very test, whose path no other"
+    + " process knows, so the hazard this rule is about cannot reach it: neither a"
+    + " parallel suite nor one of the ~440 untracked disposables in `scripts/` can"
+    + " plant or remove a file there. ⚠ Unlike `riteWorktree.test.ts` beside it,"
+    + " this suite DOES read a listed entry — the one `.txt` receipt the refused"
+    + " rite wrote — and that read MUST keep throwing: the arm exists to prove a"
+    + " refused-to-start rite leaves a receipt, so an absent transcript is the"
+    + " defect and a tolerant read would pass on the tree the arm refuses. Its"
+    + " `scripts/` names are two FIXED paths (`scripts/deploy-rite.mts`, the"
+    + " subject it reads for the invariant-7 arms, and `scripts/lib/riteLock.mts`,"
+    + " the module it imports), and both should throw if they are gone",
   "server/shiftDigest.test.ts":
     "lists the REPOSITORY ROOT for its top-level directory names — the derived"
     + " `roots` the path index needs — and never reads a listed entry. Its reads"

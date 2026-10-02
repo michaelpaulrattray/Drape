@@ -337,9 +337,130 @@ export type CrewCardCommentFact =
 */
 const LEAD = String.raw`^[\s*_⚠]*`;
 const DASH = String.raw`[—–-]`;
-const CLAIM_RE = new RegExp(`${LEAD}CLAIMED\\s*${DASH}\\s*([^,\\n*]*)`, "i");
-const RELEASE_RE = new RegExp(`${LEAD}RELEASED\\b`, "i");
-const REFUSAL_RE = new RegExp(`${LEAD}(?:NOT BUILT|NOT TAKEN)\\b`, "i");
+
+/*
+  ⚠ **THE THREE WORDS ARE DECLARED HERE AND THE READERS ARE BUILT FROM THEM,
+  BECAUSE THE WRITER OF A COMMENT COULD NOT SEE THEM AT ALL (#1701).**
+
+  The spellings below were literals inside the three expressions until
+  2026-10-02. That read fine from this side and failed completely from the
+  other: **0 of 5 refusals written on #1669 were visible to `REFUSAL_RE`**, and
+  the card read as ordinary untouched work to every pass, so one card cost
+  **seven builder-seat sessions in one day.** Every one of those seats wrote
+  `SKIPPED` or `WORKED` in good faith, because the orders that launch a seat
+  say only *"a card whose body is wrong against the code is REFUSED"* and
+  **name no word.** The release signal has the same defect, measured the same
+  night on a live refusal: the orders say a finished seat posts *"`RELEASED —
+  <seat>` or **the PR**"*, and *"or the PR"* is not a thing `RELEASE_RE` can
+  see — so a seat that shipped its pull request and closed, which is the
+  normal end of a card, left a claim reading live for the rest of its twelve
+  hours and `crew-shift-start` refused #1602 nine hours after the fact.
+
+  **This is the `spelling-not-meaning` class: a consumer keyed on a contract's
+  spelling while the instruction that produces it names only the meaning.**
+
+  ⚠ **THE REPAIR IS NOT TO WIDEN THESE EXPRESSIONS, AND THAT IS A MEASURED
+  POSITION RATHER THAN A PREFERENCE.** Teaching `REFUSAL_RE` to accept
+  `SKIPPED` makes the code follow the drift, and for the release signal the
+  option does not exist at all: the asymmetry four paragraphs up decides it —
+  *a missed release idles a seat, a FALSE release cancels a live claim and two
+  seats build the same card* — and an open pull request is DELIBERATELY a
+  warning rather than a handback (#1083), because a pull request may be a
+  half-finished slice, which is exactly what #1682 was. So the words stay as
+  narrow as they were and what changes is that **the writer is now told them**:
+  {@link crewCardHandbackInstruction} renders the instruction FROM these
+  constants, and the tracked tools a seat runs before any code print it.
+
+  ⚠ **The durable half of a refusal is still the `not-built` LABEL** — a
+  comment ages out of the reader's window and a label never does
+  ({@link CREW_NOT_BUILT_LABEL}, his word 2026-09-29) — so the rendered
+  instruction names the label beside the word. It had **five uses in this
+  repository's entire history** when #1701 was filed, for the same reason the
+  word was never written: nothing told a seat it existed.
+
+  The one half this cannot reach is the launch orders and the shift digest
+  themselves, which live in `.agents/` and are not a seat's to edit. That
+  remains owed on #1701; this closes the road a seat CAN be told on.
+*/
+
+/** `CLAIMED` — the word that takes a card. */
+export const CREW_CARD_CLAIM_WORD = "CLAIMED";
+
+/** `RELEASED` — the word that hands one back. An open pull request is not it. */
+export const CREW_CARD_RELEASE_WORD = "RELEASED";
+
+/**
+ * The words that refuse a card, canonical one FIRST — the instruction quotes
+ * `[0]` and the reader accepts them all.
+ */
+export const CREW_CARD_REFUSAL_WORDS: readonly [string, ...string[]] = ["NOT BUILT", "NOT TAKEN"];
+
+const CLAIM_RE = new RegExp(`${LEAD}${CREW_CARD_CLAIM_WORD}\\s*${DASH}\\s*([^,\\n*]*)`, "i");
+const RELEASE_RE = new RegExp(`${LEAD}${CREW_CARD_RELEASE_WORD}\\b`, "i");
+const REFUSAL_RE = new RegExp(`${LEAD}(?:${CREW_CARD_REFUSAL_WORDS.join("|")})\\b`, "i");
+
+/**
+ * The em dash the three lines are written with — the first alternative `DASH`
+ * accepts, so the rendered examples are the spelling this reader prefers rather
+ * than merely one it tolerates.
+ */
+const CANONICAL_DASH = "—";
+
+/** `<WORD> — <seat>, <at>`, the one shape all three lines share. */
+function handbackLine(word: string, seat: string | null | undefined, at: string): string {
+  const who = typeof seat === "string" && seat.trim() !== "" ? seat.trim() : "<seat>";
+  return `${word} ${CANONICAL_DASH} ${who}, ${at}`;
+}
+
+/** The line that TAKES a card, in the spelling {@link crewCardCommentFact} reads. */
+export function crewCardClaimLine(seat?: string | null, at = "<UTC time>"): string {
+  return handbackLine(CREW_CARD_CLAIM_WORD, seat, at);
+}
+
+/** The line that HANDS BACK a card, in the spelling the reader reads. */
+export function crewCardReleaseLine(seat?: string | null, at = "<UTC time>"): string {
+  return handbackLine(CREW_CARD_RELEASE_WORD, seat, at);
+}
+
+/** The line that REFUSES a card, in the spelling the reader reads. */
+export function crewCardRefusalLine(seat?: string | null, at = "<UTC time>"): string {
+  return handbackLine(CREW_CARD_REFUSAL_WORDS[0], seat, at);
+}
+
+/**
+ * WHAT TO WRITE WHEN YOU HAND A CARD BACK — the sentence a seat never had.
+ *
+ * Rendered from the constants above, so a word added to a reader reaches the
+ * instruction in the same edit, and every example line in it is DRIVEN through
+ * `crewCardCommentFact` by `server/crewCardBuildState.test.ts` rather than
+ * compared to a second copy of itself (working law 4, invariant 5). The three
+ * lines are the artifact; this prose is the reason.
+ */
+export function crewCardHandbackInstruction(seat?: string | null): string {
+  const other = CREW_CARD_REFUSAL_WORDS.slice(1);
+  return [
+    "HANDING A CARD BACK — the board reads the FIRST WORD of your comment, and",
+    "nothing else on the card is read as a refusal or a release (#1701):",
+    "",
+    `  refuse it    ${crewCardRefusalLine(seat)}`,
+    "               then the file:line that disagrees with the card, and why —",
+    `               and apply the \`${CREW_NOT_BUILT_LABEL}\` label, which never ages out`,
+    "               the way a comment does.",
+    "",
+    `  release it   ${crewCardReleaseLine(seat)}`,
+    "               ⚠ OPENING A PULL REQUEST IS NOT A RELEASE. A pull request is",
+    "               deliberately a warning and not a handback, because it may be",
+    "               a half-finished slice — so a card you partly shipped reads",
+    "               CLAIMED for twelve hours until you write the word.",
+    "",
+    `  take it      ${crewCardClaimLine(seat)}`,
+    "",
+    "Any other word — SKIPPED, WORKED, DONE, BUILT — is ordinary prose to the",
+    "board and the fact is lost. 0 of 5 refusals on #1669 were seen, and that one",
+    "card cost seven builder-seat sessions in a day.",
+    ...(other.length > 0 ? [`(\`${other.join("\`, \`")}\` is read too; the line above is the spelling to write.)`] : []),
+  ].join("\n");
+}
 
 /** One comment → one fact, or `null` when it is ordinary prose. */
 export function crewCardCommentFact(comment: CrewCardComment): CrewCardCommentFact | null {

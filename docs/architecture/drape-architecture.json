@@ -13532,6 +13532,10 @@
       "path": "server/prePushGate.test.ts"
     },
     {
+      "id": "test:server/predeployBoundedExit.test.ts",
+      "path": "server/predeployBoundedExit.test.ts"
+    },
+    {
       "id": "test:server/predeployVerdict.test.ts",
       "path": "server/predeployVerdict.test.ts"
     },
@@ -13990,6 +13994,10 @@
     {
       "id": "test:server/reviewerCharter.test.ts",
       "path": "server/reviewerCharter.test.ts"
+    },
+    {
+      "id": "test:server/riteLock.test.ts",
+      "path": "server/riteLock.test.ts"
     },
     {
       "id": "test:server/ritePushSequence.test.ts",

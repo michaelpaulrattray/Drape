@@ -17,9 +17,16 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  CREW_CARD_CLAIM_WORD,
+  CREW_CARD_REFUSAL_WORDS,
+  CREW_CARD_RELEASE_WORD,
   CREW_CLAIM_LIVE_MS,
   CREW_NOT_BUILT_LABEL,
   buildStateHoldsOffOffer,
+  crewCardClaimLine,
+  crewCardHandbackInstruction,
+  crewCardRefusalLine,
+  crewCardReleaseLine,
   handVerdictForPullRequest,
   crewCardBuildPhrase,
   crewCardBuildState,
@@ -577,5 +584,96 @@ describe("the list that travels, and the lookup the page does", () => {
     expect(crewCardBuildState({
       card: 1231, openPullRequests: [replacement, PR_1316], facts: [], nowMs: NOW,
     })).toMatchObject({ pullRequest: 1316 });
+  });
+});
+
+/**
+ * THE WORDS THE WRITER IS TOLD, DRIVEN THROUGH THE READER THAT WANTS THEM (#1701).
+ *
+ * ⚠ **EVERY ARM HERE PARSES — NOTHING COMPARES THE INSTRUCTION TO A SECOND COPY
+ * OF ITSELF.** That is the whole point of the card: the instruction and the
+ * reader were two literals in two files, they drifted, and **0 of 5 refusals
+ * written on #1669 were visible**. A guard asserting the rendered line equals a
+ * string typed in this file would be the same mistake one layer down — it would
+ * hold the instruction equal to a third copy and still not prove the board can
+ * see it. So the example lines go through `crewCardCommentFact`, which is the
+ * thing that actually decides (invariant 5 — assert at the wire).
+ *
+ * The negative control is not decoration: a reader that calls everything a
+ * refusal would pass every positive arm below (working law 2).
+ */
+describe("the handback vocabulary a seat is told", () => {
+  const SEAT = "seat1-20261002-134131";
+  const AT = "2026-10-02T04:05:00Z";
+
+  it("the three rendered lines are read as the three facts they name", () => {
+    const fact = (body: string) => crewCardCommentFact({ card: 1701, body, createdAt: AT });
+    expect(fact(crewCardRefusalLine(SEAT, AT))).toMatchObject({ kind: "refusal", card: 1701 });
+    expect(fact(crewCardReleaseLine(SEAT, AT))).toMatchObject({ kind: "release", card: 1701 });
+    expect(fact(crewCardClaimLine(SEAT, AT))).toMatchObject({ kind: "claim", seat: SEAT });
+  });
+
+  it("every refusal word the reader accepts is a refusal when written as a line", () => {
+    expect(CREW_CARD_REFUSAL_WORDS.length).toBeGreaterThan(0);
+    for (const word of CREW_CARD_REFUSAL_WORDS) {
+      expect(
+        crewCardCommentFact({ card: 1701, body: `${word} — ${SEAT}, ${AT}`, createdAt: AT }),
+        `the reader accepts \`${word}\` and the writer is never told it`,
+      ).toMatchObject({ kind: "refusal" });
+    }
+  });
+
+  /* THE NEGATIVE CONTROL, and it is the word the seats actually wrote. */
+  it("the words the seats wrote in good faith are still not facts", () => {
+    for (const body of ["SKIPPED — the premise is wrong", "WORKED — all three asks", "BUILT — PR #1729"]) {
+      expect(
+        crewCardCommentFact({ card: 1701, body, createdAt: AT }),
+        "a reader that sees these would make every arm above pass for the wrong reason",
+      ).toBeNull();
+    }
+  });
+
+  /*
+    ⚠ THE DERIVED ARM — a word added to a reader must reach the writer.
+
+    The instruction is RENDERED from the same constants the expressions are
+    built from, so this holds the rendering to the population rather than to a
+    sentence. The `not-built` label is in it on purpose: it is the durable half
+    of a refusal and had five uses in the repository's whole history, for the
+    same reason the word was never written — nothing told a seat it was there.
+  */
+  it("the instruction names every word, the label, and the pull-request trap", () => {
+    const text = crewCardHandbackInstruction(SEAT);
+    for (const word of [...CREW_CARD_REFUSAL_WORDS, CREW_CARD_RELEASE_WORD, CREW_CARD_CLAIM_WORD]) {
+      expect(text, `\`${word}\` is read by the board and absent from what a seat is told`)
+        .toContain(word);
+    }
+    expect(text).toContain(CREW_NOT_BUILT_LABEL);
+    expect(text).toContain(SEAT);
+    /* "or the PR" is the clause in the orders that actively misleads. */
+    expect(text.toLowerCase()).toContain("not a release");
+  });
+
+  /*
+    An unnamed seat renders a placeholder rather than a line that would parse
+    with an empty seat — the refusal message in `cardClaimComments.mts` prints
+    this form, where there is no shift to name.
+  */
+  it("with no seat it still parses, and says what to put there", () => {
+    expect(crewCardReleaseLine()).toContain("<seat>");
+    expect(crewCardCommentFact({ card: 1701, body: crewCardReleaseLine(), createdAt: AT }))
+      .toMatchObject({ kind: "release" });
+  });
+
+  /*
+    ⚠ A WORD CARRYING A REGEX METACHARACTER WOULD BUILD A BROKEN EXPRESSION
+    SILENTLY, and the expressions are now assembled rather than written. This is
+    the cost of deriving them and it is paid here rather than discovered.
+  */
+  it("the vocabulary is plain words, so the assembled expressions stay expressions", () => {
+    for (const word of [...CREW_CARD_REFUSAL_WORDS, CREW_CARD_RELEASE_WORD, CREW_CARD_CLAIM_WORD]) {
+      expect(word, `\`${word}\` would be read as a regular expression, not a word`)
+        .toMatch(/^[A-Z]+(?: [A-Z]+)*$/);
+    }
   });
 });

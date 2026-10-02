@@ -85,6 +85,7 @@ import {
   type CrewShiftSeat,
   type CrewShiftWorkKind,
 } from "../shared/crewShiftState.js";
+import { crewCardHandbackInstruction } from "../shared/crewCardBuildState.js";
 import { readOpenPullRequests, renderCardClaimWarning } from "./lib/cardClaimWarning.mts";
 import {
   postCardClaim,
@@ -657,6 +658,12 @@ try {
 
     console.log("\nHis page names this within a minute. Close it at shift end:");
     console.log(`  scripts/crew-shift-close.mts --id ${row.id} --outcome shipped --note '…' --pr <n>`);
+    /* ⚠ THE WORDS, AT THE ONE MOMENT A SEAT IS CERTAIN TO READ THEM (#1701).
+       This is the act a seat performs BEFORE any code, so the spelling arrives
+       before the card does — and it arrives from the same constants the board's
+       readers are built from, rather than from a document in `.agents/` that a
+       seat may not edit and the two halves of this contract drifted inside. */
+    if (row.cardRef) console.log(`\n${crewCardHandbackInstruction(row.shift)}`);
   }
 } catch (cause) {
   console.error(`FAILED: ${(cause as Error).message}`);

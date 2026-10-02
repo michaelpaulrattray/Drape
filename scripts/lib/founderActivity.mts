@@ -46,6 +46,8 @@
  */
 import { execFileSync } from "node:child_process";
 
+import { closeWithin } from "./boundedClose.mts";
+
 /**
  * ⚠ **THE RUNNER IS SHARED TOO, AND `shell: true` IS THE WHOLE OF IT** (review
  * of PR #723, finding 1 — verified at the artifact before it was believed:
@@ -118,6 +120,10 @@ export async function readFounderActivity(input: {
   openDatabase: (url: string) => Promise<{
     query: (sql: string) => Promise<[unknown, unknown]>;
     end: () => Promise<unknown>;
+    /* Declared because `closeWithin` reaches for it when the bound expires, and
+       the real `mysql2/promise` connection has it. Optional, so a fake stays
+       two keys and a POOL — which has no `destroy` — is still assignable. */
+    destroy?: () => void;
   }>;
   now?: () => number;
 }): Promise<FounderActivity> {
@@ -131,8 +137,15 @@ export async function readFounderActivity(input: {
     } finally {
       /* ⚠ The connection is closed even when the query throws. The rite's
          original shape closed it only on the happy path, so a failing read
-         leaked a handle into a script that then waits minutes on a deploy. */
-      await connection.end();
+         leaked a handle into a script that then waits minutes on a deploy.
+
+         ⚠ AND THE CLOSE IS BOUNDED (#1745). This site was found by that card's
+         DERIVED sweep of the deploy path and not by eye — the hand reading of
+         the same question had named four sites and stopped. Its own sentence
+         above was already the argument: a MySQL `end()` waits for the server to
+         acknowledge a quit packet, so the handle this block exists to not leak
+         is one an unbounded close can hold open anyway. */
+      await closeWithin(connection);
     }
     const first = Array.isArray(rows) ? (rows[0] as { latest?: unknown } | undefined) : undefined;
     const latest = first?.latest ? new Date(first.latest as string).getTime() : 0;

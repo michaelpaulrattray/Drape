@@ -114,6 +114,18 @@ const FLAGGED: Record<string, { door: boolean; why: string }> = {
       + "proven without a remote. The literal appears in its docblock and in the arm "
       + "asserting that failure is read from the status rather than the output.",
   },
+  "scripts/lib/riteLock.mts": {
+    door: false,
+    why: "The rite's one-per-checkout LOCK (#1726) — pure filesystem decision, and it "
+      + "takes the four fs calls it makes as an injected parameter, so it cannot "
+      + "spawn anything even in principle. It never names a ref and never sees "
+      + "DRAPE_DEPLOY_RITE, which the rite keeps sole custody of. The literal is in "
+      + "its docblock, recounting the 2026-10-01 incident it exists to prevent: a "
+      + "second rite in the same tree made the first's `git push` ship a commit its "
+      + "pre-checks had not seen, and both receipts then said something false. Its "
+      + "refusal text prints no git command at all — it says to WAIT, because the one "
+      + "thing an operator must not do here is force or delete past a live holder.",
+  },
   "scripts/lib/prMergeOrder.mts": {
     door: false,
     why: "The decision half of the merge runner below. It is PURE — no child "
