@@ -33,6 +33,7 @@ import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 import { CAST_VIEW_ANGLES } from "../../shared/boardTypes";
+import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
 import { readListedSource } from "../testing/listedSource";
 import { withoutComments } from "../testing/withoutComments";
 import { castPackageView } from "./castViewPackage";
@@ -44,6 +45,15 @@ import {
   viewConformanceRefuses,
 } from "./viewConformance";
 import type { FramingReader } from "./viewFramingGeometry";
+
+/*
+  ⚠ THE LAST ARM WALKS THE SOURCE TREE, so this suite is in #741's class: it
+  reads hundreds of files off the real tree and would go red under load on
+  somebody's machine rather than in CI. The timeout is declared at file level
+  because the guard derives its population from the WALK, not from which arm
+  does it.
+*/
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 /** A mask lit everywhere — `isPresent` holds and every edge is reached. */
 const FULL: Mask = { data: Buffer.alloc(40 * 40, 255), width: 40, height: 40 };
