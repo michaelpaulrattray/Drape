@@ -66,8 +66,18 @@
  *    including compare mode's row label and the footer primary.
  * 3. **The per-card perk list is gone** — it was the one fact that does not
  *    differ, and it is in the footnote where §6d puts such things.
- * 4. **The unit price is inverted** to credits per dollar
- *    (`formatCreditsPerDollar`), whole numbers that ASCEND up the ladder.
+ * 4. ~~**The unit price is inverted** to credits per dollar
+ *    (`formatCreditsPerDollar`), whole numbers that ASCEND up the ladder.~~
+ *    ⚠ **RETIRED BY HIS WORD, 2026-10-02 (#1773) — THERE IS NO RATE ON A
+ *    PLAN CARD AND NONE IN THE TABLE.** Verbatim: *"on the free card remove
+ *    the free CREDITS PER $1 line thats stupid"*, and on the reading that the
+ *    rate belongs on Add credits instead: *"yes i like this"*. Item 4's
+ *    *finding* stands and is why nothing replaced it: a sub-penny cost per
+ *    credit was not a value argument, and the answer turned out to be that a
+ *    plan card is not where the argument goes. **The rate's one home is Add
+ *    credits** — `formatCreditsPerDollar` lives on, read there and nowhere
+ *    else, which `card390-guard.test.ts` now pins as an asymmetry rather than
+ *    the card-403 symmetry it used to hold.
  * 5. ~~**§6c's blurb slot ships EMPTY and says so**~~ — **THE SLOT IS FILLED
  *    AS OF #404**, on his word, from `planBlurbs.ts`'s seven declared
  *    placeholders. Item 5's real finding is untouched and still guarded: the
@@ -94,7 +104,6 @@ import {
   formatDollars,
   formatShortDate,
   formatWholeDollars,
-  formatCreditsPerDollar,
   monthsFree,
   priceAMonth,
   readBurn,
@@ -786,29 +795,32 @@ export function ChangePlanModal({
                     .join(" ")}
                 >
                   {isRecommended ? <span className="dp-plan__tab">FITS YOUR USE</span> : null}
+                  {/*
+                    ⚠ **NO RATE ON A PLAN CARD — HIS WORD, 2026-10-02, AND IT
+                    RETIRES CARD 390 ITEM 4'S CHIP.** Verbatim on the Free card:
+                    *"on the free card remove the free CREDITS PER $1 line thats
+                    stupid"*; then, on the reading that the rate belongs on Add
+                    credits and not on a plan card at all: *"yes i like this"*.
+                    **The slot is ABSENT, not refilled** — the card's done-when
+                    asks for nothing in its place.
+
+                    **The free card was the instance; this expression was the
+                    class.** `formatCreditsPerDollar` answers the literal
+                    `"free"` when there is no divisor, so `free CREDITS PER $1`
+                    was one expression meeting a price of 0 rather than a
+                    free-card branch — which is why his word about one card
+                    takes the chip off all seven. The compare table's `Credits
+                    per dollar` row went with it in the same act.
+
+                    ⚠ **THE WRAPPER STAYS, ON ONE CHILD, ON PURPOSE.**
+                    `dp-plan__tierhead` is the anchor three guard suites slice
+                    the card from (cards 390, 425 and 1607 all do
+                    `indexOf("dp-plan__tierhead")`); tidying the wrapper away
+                    turns that into `-1` and reds all three for a reason that
+                    has nothing to do with what they assert.
+                  */}
                   <span className="dp-plan__tierhead">
                     <span className="dp-plan__tiername">{plan.name}</span>
-                    <span className="dp-plan__unit">
-                      {/*
-                        ⚠ **THE NOUN IS ON THE CARD AND NOT IN COMPARE MODE**,
-                        because compare mode has a row LABEL saying `Credits per
-                        dollar` and the card has nothing. The first draft read
-                        `3,145 PER $1` — looked at in the running app, it is a
-                        number with no unit sitting where `0.036¢ A CREDIT` used
-                        to name one. The old figure was hard to read; a nounless
-                        one is not readable at all.
-                      */}
-                      {/*
-                        ⚠ **THE RATE READS `priceOf`, WHICH IS THE PRICE
-                        PRINTED THREE LINES DOWN** (#661). With Annual on it
-                        used to divide by the MONTHLY price while the card
-                        showed the monthly EQUIVALENT — `2,778 CREDITS PER $1`
-                        standing over `$132 / month`, an arithmetic a customer
-                        can do and find wrong. One expression now, so the two
-                        move together or neither moves.
-                      */}
-                      {formatCreditsPerDollar(priceOf(plan), plan.credits)} CREDITS PER $1
-                    </span>
                   </span>
                   <span className="dp-plan__price">
                     {formatWholeDollars(priceOf(plan))}
@@ -1199,17 +1211,18 @@ function CompareGrid({
              repository has measured. */
           charactersPhrase(charactersFor(plan.credits, oneCharacterCredits)) ?? "—",
       },
-      {
-        /*
-          ⚠ **THIS ROW AND `Price a month` FOUR ROWS DOWN ARE THE SAME NUMBER
-          TWICE** (#661), so they read one `priceOf`. Before, the annual column
-          showed `$132` here and a rate divided from `$159` there — the two
-          rows contradicted each other inside one table.
-        */
-        label: "Credits per dollar",
-        mono: true,
-        read: (plan) => formatCreditsPerDollar(priceOf(plan), plan.credits),
-      },
+      /*
+        ⚠ **THE `Credits per dollar` ROW IS GONE — HIS WORD, 2026-10-02:
+        *"yes i like this"*, on the reading that the rate belongs on Add credits
+        and not on plans.** He pointed at the Free CARD; the table was the other
+        half of the same class, and a free-COLUMN fix would have left the rate
+        standing in six columns of the same table.
+
+        #661's finding is not lost with it — it was that this row and `Price a
+        month` must read one `priceOf`, and the surviving row is the one that
+        reads it. What that card's defect needed is now structural: there is no
+        second number here to contradict the price.
+      */
       {
         label: "Unspent credits",
         read: (plan) => rolloverSentence(plan.rolloverPercent).text,

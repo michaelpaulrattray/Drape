@@ -37,8 +37,16 @@
  *
  * ⚠ **THE FIGURE IS PRINTED THE OTHER WAY UP SINCE CARD 390** — credits per
  * dollar (2,778 → 6,250), which ASCENDS. Same claim, same arm, opposite
- * direction; the surfaces read `formatCreditsPerDollar`, and this header said
- * `planLadder.test.ts` for a file that has never existed.
+ * direction; and this header said `planLadder.test.ts` for a file that has
+ * never existed.
+ *
+ * ⚠ **"THE SURFACES" IS NOW ONE SURFACE — HIS WORD, 2026-10-02 (#1773).**
+ * This clause read *"the surfaces read `formatCreditsPerDollar`"* while the
+ * rate sat on a plan card, a compare row and Add credits. It is **Add credits
+ * alone** now: no plan card and no column of the compare table carries a rate.
+ * The monotonic claim above is untouched — it is a fact about the DATA and is
+ * asserted against the real table, so it holds whether or not a surface prints
+ * it.
  */
 /**
  * The tier key as the CLIENT sees it — a string off the wire.

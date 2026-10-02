@@ -102,13 +102,21 @@ const repoRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
  * ROUTING rather than by deletion.** 66 occurrences across 31 files under
  * `client/src/` now go through the helper. ⚠ **The remaining 42 do NOT all
  * represent work**: five of them are client rows that must never be routed —
- * the three `formatCreditsPerDollar` call sites whose conversion happens inside
- * that function, a FRAME count, and a RATE — each argued in
+ * the `formatCreditsPerDollar` call sites whose conversion happens inside that
+ * function, a FRAME count, and a RATE — each argued in
  * `creditDisplaySites.ts`'s own header. So this ratchet bottoms out above zero,
  * and a later slice reporting 0 has broken something rather than finished it.
  * ⚠ **THE FRAME COUNT IS GONE AND THE CLIENT FLOOR IS FOUR (#1607)** — its
  * SITE was deleted, which is the one door a row may leave by; the census's
  * own header records the reading.
+ * ⚠ **AND THE CLIENT FLOOR IS THREE AS OF CARD 1773, BY THAT SAME DOOR.** His
+ * word took the credits-per-dollar chip off every plan card and the rate row
+ * out of the compare table, so `ChangePlanModal`'s rate call site no longer
+ * exists — the three above became two, and this clause said *"the three"* until
+ * it did. **The floor's REASON is untouched**: the rate's remaining home is Add
+ * credits, the conversion still happens inside the function, and a rule that
+ * could follow a value through a call is still the only thing that would fix
+ * it. What changed is the population, not the argument.
  *
  * ✅ **42 → 19 (#1600 slice 3, the server routing) — AND THE RATCHET IS NOW AT
  * ITS FLOOR, which is why the shape of the contract changes with this number.**
@@ -138,8 +146,18 @@ const repoRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
   than the legacy studio's per-frame price, and nothing in the replacement is
   indicted. The budget comes off with the row: a row removed while its count
   stays leaves slack, and slack is how the next unrouted site ships green.
+
+  ⚠ **18 → 17 (card 1773), THE SAME DOOR AND NOT A SECOND KIND.** His word
+  took the `CREDITS PER $1` chip off every plan card and the `Credits per
+  dollar` row out of the compare table, so `ChangePlanModal`'s
+  `formatCreditsPerDollar(priceOf(plan), plan.credits)` site is gone — the
+  census's own stale-row arm is what reported it, budgeted 1 and found 0,
+  before this number was touched. **Nothing was routed and nothing is excused
+  elsewhere**: the rate's remaining home is Add credits, whose two rows stand
+  unchanged with their reasons. The budget comes off with the row for the
+  reason the note above gives.
 */
-const OCCURRENCES_CEILING = 18;
+const OCCURRENCES_CEILING = 17;
 
 const censusedOccurrences = UNROUTED.reduce((total, row) => total + row.count, 0);
 
