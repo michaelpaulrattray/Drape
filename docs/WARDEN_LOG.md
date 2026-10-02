@@ -32,6 +32,34 @@ The instruments and their own record pages:
 | actionlint + zizmor | `scripts/workflow-lint.sh` | `gate.yml`, second step | `scripts/workflow-lint.sh` header |
 | semgrep (OSS rulesets) | `pnpm warden:semgrep` | `gate.yml`, before install (run 1) | `docs/WARDEN_SEMGREP.md` |
 | access-control suites | `npx vitest run server/approvalGate.test.ts server/staffImageBoundary.test.ts server/publicInputStrictness.test.ts server/sessionIssuanceSites.test.ts` | inside `pnpm test` | CLAUDE.md, "Access control" |
+| override resolution (does each override still govern anything?) | `pnpm warden:overrides` | **no, and deliberately not** — see below | `scripts/lib/overrideResolution.mts` header |
+
+⚠ **THAT LAST ROW WAS ADDED BETWEEN RUNS, BY #1815, AND IT IS A STANDING PER-RUN
+READING FROM RUN 7 ON.** It names which `pnpm.overrides` entries govern no
+package in the tree — the other direction from #1808's bounds guard, which can
+only ever say the nine lines are safely written and never that three of them are
+archaeology. **It is free and offline and needs no install** (it reads
+`package.json` and `pnpm-lock.yaml` and nothing else), so it belongs beside
+`pnpm audit --prod` in §A rather than in the gate: both answer a question about
+the dependency floor, and both are this seat's to read. **It exits 0 whatever it
+finds** — a dead override is litter with a hygiene question attached, not a
+fault, and whether one is removed is a separate decision with its own receipt
+(#1815 reasons it out: a *bounded* dead override becomes a live floor the moment
+its package returns as a transitive, while a removed one is no protection at
+all). A gate arm was the other candidate and the card ruled against it: it would
+redden for litter and force the removal decision at exactly the moment nobody
+has context for it. `server/dependencyOverrideResolution.test.ts` is the control
+that proves the reader can fail — driven both ways, and against the real
+lockfile.
+
+**Its reading on the day it landed (2026-10-03, `98b5b318e`):** 3 of 9 govern
+nothing — `tar`, `lodash-es`, `mdast-util-to-hast`, all scaffold-era, all
+bounded by #1808. The six live ones resolve `brace-expansion@5.0.12`,
+`dompurify@3.4.16`, `esbuild@0.28.2`, `fast-uri@3.1.8`, `lodash@4.18.1`,
+`qs@6.16.0`. ⚠ **It does NOT answer the card's second shape** — an override
+whose *parents have caught up*, so the floor would hold without it. The lockfile
+records resolved versions and never the ranges parents declare; that answer
+needs a resolution run with the override removed, which is its own act.
 
 ---
 
