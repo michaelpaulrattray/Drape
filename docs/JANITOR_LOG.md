@@ -2686,3 +2686,402 @@ production variable, no migration, no flag.
 9. **A live builder seat may be working beside you.** Re-read `git worktree list`
    immediately before every destructive act — the held set moved twice during this
    run — and expect your closing counts to include work that is not yours.
+
+---
+
+## Run 12 — 2026-10-03 02:25–0x:xx AEST (Janitor, patrol #12, cards #1795 #1796 #1797 filed; PR #1798)
+
+Clock fired on the day (`patrol-clocks.mts`: *"3 seats' clocks have fired: Janitor
+(due today), Machinist (due today), Warden (due today) … NEXT: Janitor"*),
+Housekeeping ON, master ON, and — new since run 11 — **THERE IS NO CONFIRMED
+FOCUS**: P1 closed on 2026-10-02 and its completion card (#1787) cleared it, so
+the team is in MAINTENANCE MODE and an overdue patrol is the most admissible work
+on the board rather than merely outranking a focus. No new Crew replies
+(**259/259 acknowledged**). No card intent waiting on a shift. **No open pull
+request named any card when this run began.**
+
+Run 11's own nine-item next-run list was the agenda, **re-verified at the cards
+first rather than inherited** (law 2y): **#1515 has CLOSED** since, and so has
+**#1434**, which changes two of the items' premises outright.
+
+| what | outcome |
+|---|---|
+| **item 1 — the review-watch leak** | **DISCHARGED. ZERO copies**, #1515 closed |
+| **orphan dev servers** | **6 processes killed, 193.5 MB reclaimed** — not on run 11's list, and invisible to the check the previous shift used |
+| **directory shells** | **55 → 30**; 25 removed under manifest, `node_modules` 64 throughout |
+| **the review-shell CLASS** | **#1796** — 19 in three days, and run 11 took two of these as instances |
+| **the local-ref CLASS** | **#1797** — 115 → 295, and the sweeper was starved by #1434 being fixed |
+| **`.git` garbage** | **26 items / 20 MB removed**, garbage 26 → 0, HEAD verified either side |
+| **`%TEMP%`** | **159 → 4**; the leak traced to one line and **FIXED** (#1795, PR #1798) |
+| **item 2 — the four root frames** | **HELD. The floor has NOT expired**, by 19 hours, and the handoff's date was ambiguous by ten |
+| **item 6 — knip arrival** | **ANSWERED over three code-bearing nights** — ~4 symbols a night against ~16 before the sweep |
+| **the memory index** | **0 faults**, and `MEMORY.md` has SHRUNK — the sub-index rule is working |
+| **item 7 — backup retention** | **READ: 1 expired, 72.7 kB. NOT acted on** — his #1294 precondition was not met, and that is the whole reason |
+
+### A. ⚠ SIX ORPHAN DEV-SERVER PROCESSES, AND THE CHECK THAT COULD NOT SEE THEM
+
+Run 11's §F recorded *"Dev servers — none, for the first time in four runs"*, and
+the shift that closed four hours before this one wrote *"A dev server is NOT
+listening on :3000 — nothing of mine and nothing of anyone's, read at
+`netstat`."* **Both readings were honest and there were three live dev-server
+stacks on this machine.**
+
+`Win32_Process` over every command line naming the repository: **6 node
+processes**, a `cross-env` parent and a `tsx watch` child apiece, from **three
+FINISHED seat sessions** —
+`drape-shift-seat-1-20261002-202017` (20:40), `drape-shift-seat-1-20261002-224726`
+(23:05), `drape-shift-seat-2-20261002-224726` (23:41).
+
+⚠ **NOT ONE OF THEM HELD A PORT.** Read at `netstat -ano` per pid: zero listening
+sockets, and **nothing at all listening on 3000–3010**. That is why the previous
+shift's reading was both correct and blind: **`pnpm dev` auto-increments its port
+when one is busy, and a `tsx watch` whose server failed to bind — or whose files
+were deleted from under it when the seat removed its worktree — stays alive
+watching for changes while holding no socket.** So **a port scan is not a
+dev-server check**, and three of these had survived at least one previous reading.
+
+**Measured before killing, so the finding carries a number rather than an
+adjective: 193.5 MB working set and 16.9 s of CPU between them.** That is the
+defect `CLAUDE.local.md` names by hand — *"Six orphaned dev-server stacks
+accumulated on 2026-07-30/31 and lagged the founder's machine"* — arrived at
+again by a different road.
+
+**The kill was scoped by command line, never by a stale pid**, with the protected
+set printed as proof it had been seen and skipped: the **Foreman runner**
+(pid 20940) and the **live builder seat** `drape-shift-seat-1-20261003-021238`
+(pid 11884) were both named in the exclusion and both **re-read ALIVE
+afterwards**. Verification re-read the SUBJECT and not the variable the action
+used (run 11's item 8): `node.exe` naming any of the three closed seats **0
+remaining**, and `tsx watch|cross-env` **anywhere on the machine 0**.
+
+`drape-shift-seat-2-20261002-224726`'s **directory stays** — 12 files inside the
+7-day floor — while its process does not. **Two separate decisions, and the floor
+protects work rather than processes.**
+
+### B. The directory census — 55, against the 20 run 11 closed at
+
+Run 11 ended *"There is no orphan directory on this machine at this reading"* with
+**20** `drape-*` directories (15 registered, 5 named keeps). This run read **55**:
+**21 registered** and **34 unregistered**.
+
+⚠ **The junction canary was RE-DRIVEN before anything was touched** (run 11's item
+5), because the downside is the whole dependency tree, and it is recorded as a
+reading rather than a reference to run 11's: a junction built with
+`New-Item -ItemType Junction` at `C:\Users\Admin\Drape\node_modules`, **proven
+live by reading `react/package.json` THROUGH it (1,242 bytes)**, the walker shown
+to see **1 file and refuse the junction**, the holder removed with `rm -rf`, the
+target re-read **64 → 64**, and `require.resolve` of `react` and `vite` after.
+**PASS on all five.**
+
+⚠ **The walker's own first form was wrong and its control said so** — `Substring`
+threw on every command line shorter than its window, which is run 11's item 8
+class (*"iterate the real paths; never rewrite them"*) one argument over. Fixed
+before any verdict was taken from it.
+
+**The citation reader was controlled before it was believed** (run 8's rule), and
+both controls were driven rather than assumed: a name cited only in last night's
+mailbox entry **fired**, a name cited in five places including the Janitor log
+**fired**, and `drape-review-99999-cannot-exist` **returned nothing**.
+
+### C. ⚠ THE CITATION DOCTRINE GAINS ITS THIRD SHAPE: A CITATION THAT NAMES A DIRECTORY IN ORDER TO AVOID IT
+
+Run 10 excluded `docs/JANITOR_LOG.md`; run 11 extended that to a run's own
+manifest files and ruled that **a working document quoting a file's contents IS a
+use**. Four of this run's candidates were cited, and all four read the same way:
+
+> *"The dev server on `:3000` is **another seat's** (`drape-shift-seat-1-20261002-032327`, shift #497, live right now)"* — `output/pr-1605-annual-body.md:80`
+>
+> *"the other seat's `drape-shift-seat-1-20261002-102421` (leave it)"* — `.agents/mailbox/foreman-20261002-1040.md:99`
+
+**A "leave it alone" note is the OPPOSITE of a claim on the contents**, and the
+fact it records — a live process — is dead: all three seats are closed
+(`runner-pass` entries present; `crew-shift-state` showed two open runs, neither
+theirs), their processes were killed in §A, and **all four directories hold zero
+files.** Deleting the shell cannot invalidate the record. The other two were cited
+only by `.agents/shift-logs/seat-prompt-*.txt`, which is **the launcher's own
+inventory** and is run 11's first shape exactly.
+
+### D. 25 shells removed — and the CLASS behind 19 of them is #1796
+
+Manifest `output/_janitor12/run12-shell-manifest.txt`, written **before** any
+deletion with the grounds and the keeps in it. **Every row zero-file**, so the
+7-day floor had nothing to protect — run 11's own sentence, *a floor protects
+work, and a zero-file shell holds none*.
+
+**19 were `drape-review-<PR number>`, 1743 … 1789, each with a live junction into
+the main tree's `node_modules`.** Two carry a junction whose target is **mangled**
+(`C:\Users\Admin\drape-review-1766\UsersAdminDrapenode_modules`, separators
+stripped — the doubled-backslash trap, this time committed into a junction) and
+one (`drape-review-1765`) has **`Print Name Length: 0`**, no target at all.
+
+⚠ **Run 11 removed `drape-review-1440` and `drape-review-1475` as two zero-file
+shells on their individual merits. Three days later there were 19.** That is run
+11's own hardest lesson one section further down its log — *"The doctrine was
+right at three and became the thing that let it reach 183"* — and it is why this
+run read for the producer instead of only sweeping.
+
+**Found at the code:** `scripts/shift-worktree.mts` is correct and is what shifts
+use; its docblock already records that `git worktree remove --force` on this
+machine *"reports `Invalid argument`, unregisters the worktree and leaves the
+directory"*, so it follows with an `rmSync` and knows about the junction. **The
+hand-review road is a DIFFERENT road with only the first half** — an ad-hoc
+`worktree add` + `mklink /J node_modules` + `cp .env` one-liner with no removal
+counterpart — **and the `mklink` in the middle is precisely what guarantees the
+directory survives.** That the `.env` is gone from all 19 while the shell remains
+is the proof of the sequence. **#1796**, with the recommendation to route it
+through the tool that already exists.
+
+**Safety, recorded as readings**: the registered worktree set was **re-read
+immediately before acting** (a live seat was building beside me), each target
+**re-checked unregistered and still empty at the moment of deletion**, and
+**`node_modules` counted before, between EVERY SINGLE removal, and after — 64
+throughout**, with `react`, `vite` and `zod` all resolving at the end. **55 → 30
+directories; all 9 unregistered that remain carry a written ground** (4 frame
+directories as evidence under run 6 §C, `drape-janitor-run6-crew-eye-orphans` on
+#1143, and 4 inside the 7-day floor).
+
+### E. The refs — 295 local against run 11's 115, and the sweeper was starved by a FIX
+
+`delete_branch_on_merge` read at the artifact: **`true`** now, and **#1434 is
+CLOSED**. Run 11's item 3 predicted *"if it is ON, expect the remote near 12 and
+the finding is closed"*. **The remote reads 66** — because the setting only
+deletes on *future* merges and never went back for what predates it.
+
+**The local side ran the other way: 115 → 295 `team/*`, of which 242 hold NO
+remote counterpart.** Run 11's §C states its own local criterion — *"The remote
+manifest as the criterion … plus the worktree hold plus the local tip must equal
+the merged head"* — i.e. it deleted the local counterparts of **the branches that
+run deleted remotely**. ⚠ **So the moment GitHub took over the remote side, the
+local sweep's input went to near zero and local refs lost their only sweeper.
+Nothing broke; a criterion simply stopped selecting anything, and the thing that
+starved it was #1434 being FIXED.** **#1797.**
+
+⚠ **The trap for whoever sweeps it was MEASURED rather than reasoned about, and it
+is why nothing was deleted here. `git branch --merged main` is the wrong reader
+for this repository**: every PR is **squash**-merged, so a branch's own commits
+never become ancestors of `main`. Driven over the real 242: **95 are ancestors of
+main, 147 are not** — and that 147 is overwhelmingly finished, squash-merged work.
+A sweep trusting `--no-merged` keeps 147 dead branches; one trusting `--merged`
+and inverting it **destroys work this machine alone holds**. Run 11 kept 23 refs
+for that reason and was right. The criterion that survives automation is the one
+run 11 already used on the remote: PR state at two readers sharing no resolver,
+the worktree hold, and the tip equal to the recorded merge head.
+
+**Cost stated plainly so the card is not louder than the defect**: `.git` is
+1.84 GB but is dominated by a single **1.81 GB pack of real history**; a ref is
+~40 bytes. What it costs is a `git branch` 316 lines long and a `gc` that can
+never reclaim.
+
+### F. `.git` garbage — 26 items, 20 MB, and git itself named every one
+
+`git count-objects -v` reported **`garbage: 26`, `size-garbage: 20.25 MiB`** plus
+**9 `warning: no corresponding .pack`**. Not inference — git's own words.
+
+⚠ **A live builder seat shares this object store, so an in-flight `tmp_obj_*`
+would be its commit.** Read at the ages before touching anything: **all 17
+`tmp_obj_*` files date 2026-08-07 … 2026-08-09** (seven weeks) and **all 9 orphan
+`.idx` files 2026-07-09 … 2026-07-19** (three months), against live pack mtimes of
+2026-10-03. An index with no pack is useless by construction.
+
+Manifest `output/_janitor12/run12-git-garbage-manifest.txt`. `HEAD` and
+`HEAD^{tree}` read before and after, `git log -1` and the tracked working-tree
+state unchanged either side. **`.git` 1,858,094 kB → 1,837,338 kB (20 MB), garbage
+26 → 0.**
+
+### G. `%TEMP%` — 159 where run 11 closed at 0, and the producer is FIXED
+
+**159 `drape-*` directories**, 155 of them `drape-1420-*`, **every one empty**,
+423 kB total, created continuously from `2026-09-30 06:07Z` to **53 minutes before
+the reading** — so leaking at the time of reading, not historically.
+
+**Traced to one line.** `server/viteSourceMapUpload.test.ts:90`'s `tempTree()`
+made the directory and the cleanup list was filled in **by hand at each call
+site**: four did, and the fifth could not, because it makes its tree inline inside
+an argument (`mapFilesUnder(path.join(tempTree(), "never-built"))`) and has no
+local to push. **One empty directory per suite run, and nothing could ever go
+red** — a stray empty directory in `%TEMP%` raises no error, fails no assertion
+and blocks no gate. The arithmetic closes: 155 over 58 hours is ~2.7 suite runs an
+hour, and this suite runs inside both `pnpm test` and `pnpm preflight`.
+
+**#1795, FIXED in PR #1798**: the registration moved into the maker so every call
+site is covered by construction, the four by-hand pushes removed rather than left
+as a second road to one fact, and an `afterAll` arm that **reads the filesystem**
+for this run's own prefix, asserting non-vacuity first. Per-load `randomUUID`
+token in the prefix so a concurrent seat cannot redden it. **15/15 green, 0 leaked
+where it was 1 per run; 3 sabotage cases each red at the arm that owns it;
+`pnpm preflight` GREEN 178.7s, 391 files / 6,504 tests.**
+
+⚠ **Worth carrying forward: all three sabotages print `Tests 15 passed` with
+`Test Files 1 failed`**, because an `afterAll` failure lands on the FILE tally.
+Reading only the `Tests` line calls every one of them green.
+
+**155 swept** under `output/_janitor12/run12-temp-manifest.txt` — **with `rmdir`
+and not `rm -rf`, and that control earned itself**: it **refused the 4
+`drape-atlas-merge-*` trees**, which hold 60–107 files each (real git repositories
+from an interrupted `server/atlasMergeDriver.test.ts` run at
+`2026-09-30 06:07–06:08Z`). **This is the belt-and-braces run 11 found
+unavailable, working**: a weaker tool could not have destroyed them even if the
+emptiness check had been wrong. Held inside the floor, which expires
+**2026-10-07**.
+
+### H. ⚠ THE FOUR ROOT FRAMES STAY, AND RUN 11'S DATE WAS AMBIGUOUS BY TEN HOURS
+
+Run 11's item 2: *"The 4 `1389-strip-*.png` — the 7-day floor expires
+**2026-10-03**, so they are sweepable from that date. Nothing cites them and #1389
+is closed; the floor was the only remaining ground."*
+
+**Read at the bytes: the four were written `2026-09-26 11:54:47Z`, so the floor
+expires `2026-10-03 11:54:47Z`. At this run's reading (`2026-10-02 16:39Z`) there
+were 19 HOURS left on it.** The date in the handoff had arrived *locally* — this
+machine is UTC+10 and it was already 3 October here — while the instant had not.
+**So they are HELD, and run 13 takes them after 11:54Z.**
+
+**The lesson is the clock, not the frames.** This repository has been bitten by
+exactly this before: the park gate's freshness check parsed a UTC stamp with
+`[datetime]::Parse`, which assumes local, and every count read ten hours stale.
+**A floor is an INSTANT; a handoff that writes it as a bare date is ambiguous by
+ten hours here, and the ambiguity resolves in the direction of acting too early.**
+
+45 PNGs at the root: the **`436-*` seven** and the **`FABLE_R7_*` pair** on their
+standing citations as always, and everything else (`1600-*`, `1601-*`, `1739-*`,
+`1747-*`, `1753-*`, and these four) **inside the floor**. Nothing sweepable.
+
+### I. Dead-code reading — run 11's open question, answered
+
+Full row in `docs/JANITOR_KNIP.md` (2026-10-03). **Run 11 could only report a
+floor** because its two nightlies were the same tree, and it named the 29 Sep
+nightly as run 12's job. Three code-bearing nightlies were read:
+`36621391452`/`aee005bc`, `36767942019`/`2838b63f`, `36918793426`/`48997c36`.
+
+⚠ **THE EXTRACTOR WAS CONTROLLED FIRST AND THE CONTROL CAUGHT IT DEAD WRONG.** Its
+first form returned **0 symbols on all four logs** — pointed only at the new
+nightlies, it would have reported that arrival had **STOPPED**. Re-written and
+re-controlled against run 11's own kept reading: **64 symbols on the 28 Sep log, 0
+rows of disagreement** with `output/_janitor11/knip/28sep-symbols.txt`.
+
+**Counted at the SYMBOL** (run 11's warning that a row diff is an artifact):
+28→29 Sep **1 gone / 2 arrived**, 29→30 Sep **1 gone / 5 arrived**, 30 Sep→1 Oct
+**2 gone / 5 arrived**. **So arrival is 12 export symbols over three code-bearing
+nights — about 4 a night, against run 10's measured ~16 before #1437's sweep: a
+QUARTER of the old rate, and NOT stopped.** ⚠ The whole-window diff says 10/2
+where the nights sum to 12/4, because two symbols arrived and left inside the
+window; both are stated, because the window figure alone understates arrival by
+two. **Files held at 19 and duplicates at 2 all four nights; types moved 16 → 18 →
+23 → 24, and no row in that ledger has ever tracked the types column.** Every
+arrival is the same SURPLUS class #1437 swept, and every one is this fortnight's
+own P1/N2 work — the producer is current building, not legacy. **Nothing was
+touched**: dropping an export keyword is the deletion class.
+
+### J. The memory index — 0 faults, and it is SHRINKING on purpose
+
+`memory-index-audit.mts` (#1472), exit **0**. **Five** indexes walked (run 11:
+four), **293 memory files on disk and 293 pointed at**: unreachable 0, dangling 0,
+duplicate pointers 0, joined lines 0, ellipsis hooks 0.
+
+**`MEMORY.md` is 18,307 bytes / 114 lines / 111 pointers, DOWN from run 11's
+20,970 / 132 / 129 while the corpus grew 266 → 293 files.** That is the sub-index
+rule working as designed rather than drift — the silent-truncation failure this
+clock exists for (26,134 bytes on 2026-09-26, with a live pointer in the invisible
+tail) is moving away, not toward.
+
+### K. Backup retention — READ, and deliberately NOT acted on
+
+`janitor-backup-retention.mts`: **12 items, 24.4 MB · redundant 0 · expired 1 ·
+kept 9 · too-recent 2**. The expired one is
+**`drape-janitor-run9-disposables-2026-09-24.zip`, 72.7 kB, all 25 entries
+expired**.
+
+⚠ **`--delete-expired` was NOT run, and the reason is the authorisation rather
+than the file.** His word on #1294 authorises the tool to act by itself **"from a
+clean checkout of `main` at the tip"**; this tree was **one commit behind
+`origin/main`** (another seat's #1793 squash, `f45bc8f9`) and carried this run's
+own doc edits. **The main tree is the rite's to move, not a patrol's**, and
+72.7 kB is not a reason to bend a founder precondition or to fire a second
+production deploy that changes nothing he can read. **Run 13 starts from a
+tip-clean tree and takes it in one act.** The receipt table is unchanged at 6 rows.
+
+### L. `output/` purge remainder (#8)
+
+Untouched, on run 9's verdict as re-affirmed by run 11: the list is exhausted and
+its last row is `output/scratch`, which is LIVE and cited by
+`.claude/skills/verify/SKILL.md`, `.githooks/atlas-regenerate` and
+`.githooks/pre-commit`. **Never sweep it.**
+
+### M. The counts
+
+| | run 11 close | run 12 close |
+|---|---|---|
+| untracked disposables under `scripts/` | 717 | **781** (+64 in three days) |
+| of which sweepable | 1 | **70** ⚠ run 13's §A — see item 1 |
+| chain rows | 0 | **3** (#827) |
+| unresolvable by name | 526 | **533** |
+| `drape-*` directories | 20 | **30** (21 registered, 9 grounded keeps) |
+| orphan shells removed this run | 3 | **25** |
+| remote `team/*` refs | 40 | **66** |
+| local `team/*` branches | 115 | **295** ⚠ #1797 |
+| of which no remote counterpart | not read | **242** (95 ancestors of main, 147 not) |
+| `%TEMP%` `drape-*` | 0 | **4** (159 read, 155 swept, 4 held in floor) |
+| live review-watch copies | 1 | **0** |
+| dev server trees | 0 | **0** — but **6 portless dev-server PROCESSES killed** |
+| `node_modules` at the main tree, `ls -A` | 64 | **64** |
+| `.git` garbage items | not read | **26 → 0** (20 MB) |
+| retention receipt-table rows | 6 | **6** (1 expired, not acted on — §K) |
+| memory-index faults | 0 | **0** |
+
+### N. Anti-boredom check
+
+Every act traces to **run 11's own numbered next-run list** (items 1, 2, 3, 4, 5,
+6, 7), to **a standing instruction in this log's header** (the memory index on its
+three-day clock), or to **a hazard met on the way** (§A's six processes, found
+while reading for item 1's pollers; §F's garbage, found while pricing §E). **One
+code change was made and it is a test file** — #1795, filed as a card before it
+was built, per the rule that a defect a shift finds itself is carded first. **Two
+findings were filed and NOT worked** (#1796, #1797), because each is a change to
+another road's workflow or a 242-row destructive sweep, and neither is a litter
+sweep. **Spend: nothing** — no credits, no house money, no paid model call, no
+production variable, no migration, no flag. Production writes: the shift row and
+its heartbeats. Remote writes: 3 cards, 1 branch, 1 pull request.
+
+**Next run (~2026-10-06):**
+
+1. ⚠ **THE DISPOSABLE SWEEP IS THIS RUN'S BIGGEST UNTAKEN ITEM AND IT IS §A's JOB:
+   70 sweepable and 3 chain rows**, against the 5 run 11 faced. It was measured and
+   **deliberately left**: 70 files needs the second reader with its positive
+   controls driven first, a manifest with bytes and sha1 per row, an archive
+   verified by name AND size out of its own central directory, and a re-read after
+   — and deletion is the one act a gate cannot give back, so it is a unit of work
+   rather than the tail of one. **Do not take it in the last twenty minutes of a
+   shift.**
+2. **The 4 `1389-strip-*.png` are sweepable after `2026-10-03 11:54Z`** and not one
+   hour before — §H. Nothing cites them, #1389 is closed, and **the floor is an
+   instant, not a date**: read the mtime in UTC and compare in UTC.
+3. **Backup retention: 1 expired item,
+   `drape-janitor-run9-disposables-2026-09-24.zip`, 72.7 kB.** Needs `main` **at
+   `origin/main`'s tip and clean** — his #1294 wording — so **merge forward first,
+   run `--delete-expired`, and commit the receipt row in the same shift**. Also
+   re-read the two `too-recent` rows: run 10's zip expires ~2026-10-04 and run
+   11's ~2026-10-06.
+4. **The 4 `drape-atlas-merge-*` trees in `%TEMP%`** hold 60–107 files each from an
+   interrupted suite run; their floor expires **2026-10-07**. They are NOT the
+   #1795 leak and must not be counted as it.
+5. **#1796 and #1797 are filed and unworked.** Before taking either, re-read it at
+   the code (law 7c) — #1796's fix lives in another road's workflow, and #1797's
+   first act is **not** a deletion but choosing a criterion that cannot be starved.
+6. ⚠ **Read for PORTLESS dev servers, not for a port** — §A. The command to use is
+   a `Win32_Process` command-line match for `tsx.*watch|cross-env`, and the
+   protected set (`foreman-runner`, the live seat's directory) must be printed as
+   proof it was seen. **`netstat` on 3000–3010 found nothing while three stacks
+   were running.**
+7. **Re-drive the junction canary before any sweep outside the repository** — §B.
+   Three of run 11's removals and nineteen of this run's held a live link into the
+   repository's own `node_modules`, and a recorded pass is a record rather than a
+   reading.
+8. **The knip types column is arriving faster than exports** (16 → 24 over three
+   nights) and the ledger has never tracked it — §I. If a row is written next run,
+   write both series.
+9. **Run 11's item 8 was paid for TWICE more this run** and both in new places: a
+   PowerShell `Substring` threw on short command lines, and a Windows path pasted
+   into a Bash command broke its own quoting. **Iterate real paths; size every
+   window to its subject; and control a reader before any verdict is taken from it
+   — this run's extractor returned 0 on every log and its control is the only
+   reason that was not written up as "arrival has stopped".**

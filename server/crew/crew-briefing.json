@@ -1,7 +1,7 @@
 {
-  "edition": 619,
-  "updatedAt": "2026-10-02T15:40:00.000Z",
-  "shift": "Night shift, 00:58: pricing phase 1 is finished. Its last piece of building closed tonight, and the completion card with your test-drive list is at the top of this page (#1787). The short version: the whole pricing change is built and live — a sheet of eight faces is 320 credits whether you roll or follow, signing is 1,700, a refine is 350, a new free account gets 2,700 credits with no card and no phone number, the plans grant the new amounts, and Add credits sells packs on your volume ladder. One thing is not done and it is yours: no real card can be charged yet, because production's Stripe is still in test mode. Switching it over is your hand by your own rule, and it is the only thing left on the rung.\n\nBefore closing that last card I re-read all five of its pieces at the code rather than taking the previous shift's word that they were finished. They were — and I ran 221 checks across seven files to say so, instead of counting them by name. One of its five pieces had been declined on purpose, and following that refusal into the code is what found tonight's real catch.\n\nThe catch: on the canvas, the Refresh button on a cast that has gone out of sync charges 70 credits and sends the picture to two Google engines that were shut down in June. The money comes back when it fails, so nobody is out of pocket — they are charged, made to wait, and get nothing. It is the same fault you already ruled on once, when you said to seal the old studio's paid buttons; that sweep covered the old studio and missed the canvas's own button. Sealing it would take away a working canvas feature, so the choice is yours and it is named on the completion card. What I did fix is the reason nobody had noticed: our own list of known-bad engines named one canvas road and not this one, and nothing checked that the file addresses written in that list still existed. One of them did not. That change is waiting on review.\n\nNothing was spent tonight — no credits of yours, and no money of ours.",
+  "edition": 620,
+  "updatedAt": "2026-10-02T17:05:00.000Z",
+  "shift": "Janitor patrol, 02:25: a housekeeping night, so nothing you can see has changed and nothing was spent. The cleaning crew runs every three days and this was its turn. What it found is worth one paragraph.\n\nThree of our own build machines had been left running after the agents using them had finished — quietly eating memory on your computer since yesterday evening. They were invisible to the usual check, because that check looks for a program answering on a port and these three had stopped answering while still running. They are stopped now. Alongside them, 180-odd empty leftover folders had piled up in two places, including one being created fresh every twenty minutes by a mistake in one of our own test files. I found the line, fixed it, and that is the only code change of the night — it went through the gate and is merged.\n\nTwo things I measured and deliberately did not touch, because both are bigger than a tidy-up and getting them wrong could destroy work: the way our reviewing leaves a folder behind every single time, and the fact that our old branch names have piled up to nearly three hundred because the clean-up rule we had stopped selecting anything the day GitHub started tidying the other half itself. Both are written up as their own jobs. Nothing here needs you.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -149,7 +149,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-02T15:33:28.828Z",
+      "readAt": "2026-10-02T17:00:42.041Z",
       "items": [
         {
           "issueNumber": 1787,
@@ -9320,6 +9320,13 @@
       "status": "merged",
       "prNumber": 1775,
       "note": "Held for the relay by hand — money surface."
+    },
+    {
+      "id": "tempdir-leak-1795",
+      "title": "A test file left an empty folder behind on every run — the clean-up is moved into the one place that cannot be forgotten (#1795)",
+      "status": "merged",
+      "prNumber": 1798,
+      "note": "Merged fdb4a7aa — ordinary PR, gate green, no review owed."
     }
   ],
   "problems": [
@@ -9684,7 +9691,7 @@
     259
   ],
   "nextUp": {
-    "readAt": "2026-10-02T15:33:28.827Z",
+    "readAt": "2026-10-02T17:00:42.040Z",
     "items": [
       {
         "issueNumber": 1469,
@@ -9702,7 +9709,7 @@
         "urgent": false,
         "held": {
           "state": "blocked",
-          "because": "the relay — after P1-1…P1-8 are merged, before the rung's completion card."
+          "because": "YOU — the live Stripe keys and price objects, the Drape→Klieg rename, your eye on production. OPTIONS: GO LIVE NOW · WAIT. Recommend: go when ready."
         }
       },
       {
