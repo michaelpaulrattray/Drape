@@ -713,7 +713,7 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
           ⚠ The toggle's own state, the struck price and the checkout interval
           read the same unread `annual`; the toggle opening on *monthly* for a
           yearly subscriber is a control's state rather than a sentence, and it
-          is **#1750** rather than this card (his rule of 2026-10-01).
+          is **#1755** rather than this card (his rule of 2026-10-01).
         */}
         <p className="dp-topup__renewal">
           {hasSubscription === true && preview?.kind === "interval-switch"
