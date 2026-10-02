@@ -1799,3 +1799,141 @@ that ran rather than a number corrected by hand. Its sibling: the operation
 table's timestamps render in LOCAL time (UTC+10) even though `dbConnection.mts`
 parses them correctly as UTC — a Sign printed at `Oct 01 19:xx` ran at `09:xx`
 UTC, which is what settles §B2's before/after.
+
+### K. Addendum — #1799's two levers, MEASURED (builder seat `seat1-20261003-051104`, 2026-10-02)
+
+Not patrol 6's own reading. Run 6 filed **#1799** naming two levers and
+deliberately choosing neither; this is the measurement that chooses, taken by the
+builder seat that took the card. §F above is the before and is unchanged.
+
+**The question run 6 left open, verbatim from the card:** *"`import` is 357 s of
+the 780 worker-seconds — 46% of the suite's cost is module import, not
+assertions. 954 files each importing a graph. This lever reduces the work rather
+than redistributing it, and nothing has ever measured it here."*
+
+#### K.1 · Method, and the noise floor that decides what is readable
+
+Four arms, **interleaved round-robin** (A,B,C / A,B,C / A,B,C) rather than three
+runs of each in turn, because this box's own load moves across a sitting —
+`server/testing/workerCap.ts` records a 429 s reading an hour after a 179 s one
+on the same tree. Interleaving makes a drifting box show up as spread in every
+arm instead of as a win in one. Each arm is a full `vitest run` on `origin/main`
+`f876d5d9`, 983 files, this box (20 cores, 8 workers), nothing else running.
+
+⚠ **The noise floor was read FIRST and it governs every verdict below.** Two
+back-to-back baselines earlier the same night agreed to **0.6%** on `import`
+(420.2 s, 417.7 s) while their wall differed **8%** (179.5 s, 164.9 s) — so
+`import` worker-seconds, not wall, is the figure this card is read on. **Over the
+26-minute interleaved sitting the same baseline spread 416–471 s, which is 13% of
+its mean.** So: a lever under ~13% cannot be resolved on this box in one sitting,
+and only an effect far outside that band is decision-grade here.
+
+#### K.2 · The four arms
+
+| arm | `import` med / mean | `tests` med / mean | work (i+t) med / mean | wall med / mean | `import` range | green? |
+|---|---|---|---|---|---|---|
+| **baseline** | 438.1 / **442.0** | 675.1 / 697.6 | 1109.9 / **1139.6** | 169.2 / 173.7 | 416–471 | 955 pass, 0 fail |
+| `deps.optimizer.ssr` | 421.4 / **445.5** | 714.5 / 709.0 | 1177.8 / **1154.6** | 176.8 / 175.8 | 418–497 | 955 pass, 0 fail |
+| `pool: "threads"` | 375.3 / **401.2** | 678.4 / 690.4 | 1108.6 / **1091.6** | 164.8 / 164.3 | 375–453 | **2 files fail, all 3 rounds** |
+| `isolate: false` | 81.9 / **80.1** | 618.9 / 621.9 | 700.8 / **702.0** | 91.6 / 92.4 | 64–94 | **54–70 files fail** |
+
+Against baseline means: optimizer `import` **+0.8%**, work +1.3%, wall +1.2% ·
+threads `import` **−9.2%**, work −4.2%, wall −5.5% · `isolate: false` `import`
+**−81.9%**, work −38.4%, wall −46.8%.
+
+**1 · Dependency pre-bundling does nothing, and that is the headline for lever 2.**
+`deps.optimizer.ssr.enabled` is vitest's own documented answer to a high import
+cost, and here it is inside the noise in the wrong direction. So the 46% is **not**
+dependency resolution — it is not something a config setting can bundle away.
+
+**2 · The threads pool redistributes rather than reduces.** `import` falls 9.2%
+and `tests` is unchanged, so total work is 1091.6 against 1139.6 — a 4.2% move
+with ranges that overlap (375–453 against 416–471), i.e. **inside the noise floor
+of §K.1 and not decision-grade.** It also reddens two files in every round, both
+for the reason threads exist: `sharpTestCeiling` (the `VIPS_CONCURRENCY` ceiling)
+and `unwiringDiffer`'s relative-root arm (`process.chdir` is unavailable in a
+worker thread). Not worth two suites for an unreadable 4%.
+
+**3 · `isolate: false` is the ceiling probe, and it sizes the prize exactly.**
+It instantiates each module once per worker instead of once per test file, which
+is the only setting that removes the work rather than moving it. `import`
+**438 → 82 s**, wall **169 → 92 s**. ⚠ **It is a PROBE and not a candidate:** it
+lets module state leak between files and **54–70 of 983 files go red.**
+
+#### K.3 · What the measurement settles
+
+**The 46% is real, it is per-file re-instantiation of FIRST-PARTY modules, and
+~355 import worker-seconds of it are genuinely removable — but not by
+configuration.** The price is making ~60 suites isolation-independent, which is a
+porting programme and several cards, not a flag. **So lever 2 is measured to a
+conclusion and it is not available to this card.** That is the one thing run 6
+asked for and could not answer.
+
+#### K.4 · Lever 1 re-costed — run 5's "doubled runner minutes" is WRONG, and the real blocker is somewhere else
+
+Measured by driving the shard rather than reasoning about it: `--shard=1/2` and
+`--shard=2/2` on the same tree, **both green**.
+
+| | files | `import` | `tests` | wall |
+|---|---|---|---|---|
+| shard 1/2 | 477 pass, 15 skip (492) | 210.1 | 315.4 | 80.1 |
+| shard 2/2 | 478 pass, 13 skip (491) | 222.8 | 327.6 | 83.1 |
+| **both** | **983** | **432.9** | 643.0 | — |
+
+**The work is SPLIT, not duplicated** — 432.9 s of `import` across the two
+shards against 438.1 s in one run — and the two halves balance within **4.7%**.
+With the gate's own per-job setup measured at **26 s** (run 37036750361: set-up 2
++ checkout 11 + pnpm 5 + node 4 + install 4), a two-way shard beside
+`gate-checks` reads:
+
+- each shard job ≈ 26 s + ~201 s = **~227 s**; `gate-checks` without its test
+  step = 533.5 − 402.5 = **131 s**; `static-shapes` 126 s
+- gate wall **533.5 s → ~227 s, −57%**
+- runner-seconds **533.5 → 585 s, +9.7%** — because only the 26 s setup is paid
+  twice. ⚠ **Run 5 priced this as "doubled runner minutes" and that is wrong by
+  a factor of ten**; doubling would need each shard to run the whole suite.
+
+⚠ **AND THE REAL REASON THIS ADDENDUM SHIPS NO SHARD: IT IS NOT A `gate.yml`
+EDIT.** `gate-checks` is a **required status check on `main`**
+(`docs/specs/PUSH_PATHS_TO_MAIN.md`: *required checks [gate-checks,
+founder-gate]*), and `enforce_admins` is **off** (#460) — so, in this file's own
+words beside `static-shapes`, *"a job of its own is a decoration unless something
+reads it"*. `scripts/lib/prMergeOrder.mts` reads each gate job **by exact name**
+(`checkStateOf(rollup, name)`), with its own `PrReading` field and three roads
+(running waits, red stops, absent judged after mergeability), pinned in
+`server/prMergeOrder.test.ts`. **Moving `pnpm test` out of `gate-checks` without
+that reader would make the unit suite stop blocking any merge while the check
+still went red on the PR page** — the "installed and never connected" class this
+repository has now been bitten by five times, and the shape #1034 wrote that
+warning about.
+
+So lever 1 is a **merge-road contract change** wearing a performance card's
+name: gate.yml, plus a new state on the reading every seat's merge flows through,
+plus its guard. It is carded on its own rather than folded in here. **The simpler
+path, declined and named as the fidelity law requires: edit `gate.yml` alone and
+stop. It would have halved the gate's wall tonight and quietly cost the suite its
+power to block a merge.**
+
+#### K.5 · Close
+
+Nothing shipped against the gate, deliberately; **the lever that is cheap is not
+safe to take inside this card, and the lever that is safe is not available to
+it.** Spent: nothing — no render, no credit, no text call, no production
+variable, no flag.
+
+**16 full-suite runs and 2 half-suite shard runs, all local** — counted at the
+logs (`grep -c 'Duration '`): 1 + 1 + 2 standalone baselines, 12 in the arm
+runner (9 interleaved + 3 for the probe), 2 shard. Four disposables named with
+the card (`_1799-arms-`, `_1799-armD-`, `_1799-summarise-`,
+`_1799-import-attribution-`) and **three** arm configs, all deleted at close;
+the baseline arm needed no config of its own, which is why there are four arms
+and three configs.
+
+⚠ **That sentence read *"14 full-suite runs"* and *"the four arm configs"* when
+this addendum was first pushed, and both were wrong** — the runs were never
+counted, and the config count was the arm count written down twice. Caught in
+this seat's own close by counting at the logs and by `ls`, which is the same
+recount that caught run 6's `six`-over-seven one section above. **Two unforced
+count errors in one document in one night, from the same cause: a number
+remembered instead of read.** Left visible rather than quietly edited, because
+the correction is the only part of this that teaches anything.
