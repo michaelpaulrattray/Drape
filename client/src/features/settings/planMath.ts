@@ -239,14 +239,37 @@ export function formatWholeDollars(cents: number): string {
  *
  * So: where a preview exists, its days win. Where it does not, the client's own
  * reading stands, and nothing is being charged for it to disagree with.
+ *
+ * ⚠ **THAT LAST CLAUSE WAS THE DEFECT — #1730.** *"Nothing is being charged"*
+ * is true of the CHARGE and false of the COPY: the renewal line beside the
+ * figure stated a proration basis in the unaligned days while the quote was
+ * still in flight. Driven on the yearly fixture: **"Prorated for the 8 days
+ * left in this cycle"** became **"Prorated for the 343 days left in this
+ * cycle"** a second later — two bases for one charge, a second apart, each
+ * stated with the same confidence.
+ *
+ * A caller cannot tell the two returns apart by looking at the result, because
+ * a cycle that was never aligned and one Stripe happened to agree with are the
+ * same object. So the question is ASKABLE now, from the same predicate this
+ * function branches on — one declaration, two readers, rather than a copy of
+ * the condition at the surface that needs it (working law 4).
  */
+export function alignsToPreview(
+  preview: { daysRemaining?: number | null; totalDays?: number | null } | null | undefined,
+): boolean {
+  return Boolean(preview?.totalDays && preview.totalDays > 0);
+}
+
 export function alignToPreview(
   cycle: BillingCycle,
   preview: { daysRemaining?: number | null; totalDays?: number | null } | null | undefined,
 ): BillingCycle {
-  if (!preview?.totalDays || preview.totalDays <= 0) return cycle;
-  const cycleLength = Math.round(preview.totalDays);
-  const daysLeft = Math.max(0, Math.min(cycleLength, Math.round(preview.daysRemaining ?? 0)));
+  /* The predicate above is the authority on WHETHER; the `?? 0` only narrows
+     the type, and the guard below is the same answer rather than a second one. */
+  const totalDays = alignsToPreview(preview) ? preview?.totalDays ?? 0 : 0;
+  if (totalDays <= 0) return cycle;
+  const cycleLength = Math.round(totalDays);
+  const daysLeft = Math.max(0, Math.min(cycleLength, Math.round(preview?.daysRemaining ?? 0)));
   return { ...cycle, cycleLength, daysLeft };
 }
 

@@ -119,4 +119,57 @@ describe("AddCreditsModal", () => {
     expect(source).toMatch(/disabled=\{!selected \|\| working \|\| !quoteReady\}/);
     expect(source).toMatch(/if \(!selected \|\| !quoteReady\) return;/);
   });
+
+  /*
+    ⚠ **THE RENEWAL LINE STATES NO PRORATION BASIS UNTIL STRIPE HAS QUOTED ONE
+    — card 1730, and it is the arm above's subject one sentence over.**
+
+    The arm above stops a CHARGE being named before it is known; this stops the
+    BASIS for that charge being named before it is known, which was the half
+    nobody had looked at. `cycle` is `alignToPreview(rawCycle, preview)`, and
+    before the preview answers that is `rawCycle` — cut from `status`, which is
+    the CREDIT cycle and not the period Stripe prorates over. Driven on the
+    yearly fixture: *"Prorated for the 8 days left in this cycle"* became
+    *"Prorated for the 343 days left in this cycle"* a second later.
+
+    ⚠ **IT IS DELIBERATELY NOT A REGEX OVER THE SENTENCE.** The prose is derived
+    from a not-yet-aligned object, so there is no token a walk could see — card
+    1725's own reader says as much about its own limit. What is checkable is the
+    GATE, so the gate is what is pinned, in three parts that cannot each be
+    satisfied by the others.
+  */
+  it("the proration sentence asks whether the cycle is Stripe's before it states one (card 1730)", () => {
+    /* 1 · the predicate is the module's, not a copy of its condition here. */
+    expect(
+      source,
+      "the renewal line no longer asks `alignsToPreview` — a condition retyped beside this"
+      + " surface drifts from the one `alignToPreview` actually branches on, which is the"
+      + " mirror working law 4 is about",
+    ).toContain("alignsToPreview(preview)");
+
+    /* 2 · and the sentence is BEHIND it, not merely near it. */
+    const line = source.slice(source.indexOf("Prorated for the ${cycle.daysLeft}"));
+    expect(
+      source.slice(0, source.indexOf("Prorated for the ${cycle.daysLeft}")),
+      "the proration sentence is no longer gated on the cycle being Stripe's. An unaligned"
+      + " cycle is the CREDIT cycle, so the sentence names a basis the charge was not"
+      + " computed from. Card 1730.",
+    ).toContain("cycle && alignsToPreview(preview)");
+    expect(line.length, "the proration sentence is gone — re-read this arm rather than deleting it")
+      .toBeGreaterThan(0);
+
+    /* 3 · and a quote that is never coming gets no waiting sentence either —
+       the top rung and the hidden rung both leave `selectedId` null, so the
+       preview never runs and *"working out"* would be a permanent claim. */
+    expect(
+      source,
+      "the held sentence is no longer gated on a quote actually being on its way, so an"
+      + " account with no rung above its own reads `working out` forever. Card 1730.",
+    ).toContain("const quoteComing = quoteEnabled && !previewFailed;");
+    expect(
+      source,
+      "the preview query and the renewal line no longer read ONE fact about whether a quote"
+      + " is coming. Card 1730.",
+    ).toContain("{ enabled: quoteEnabled }");
+  });
 });
