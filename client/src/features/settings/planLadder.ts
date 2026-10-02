@@ -190,23 +190,20 @@ export function compareWindow(
 }
 
 /**
- * `about 214 casting frames` — credits translated into work.
- *
- * §6c: *"Credits translated into work, because a credit count means nothing."*
- * His example is *"about 240 stills, or five clips"*. **There are no clips** —
- * video is one of the five greyed tools in the prompt box — so the clause is
- * dropped rather than invented, and the still is the roll frame the studio
- * actually charges for (`credits.getCosts` → `castingImage`).
- */
-export function framesFor(credits: number, costPerFrame: number): number {
-  if (costPerFrame <= 0) return 0;
-  return Math.floor(credits / costPerFrame);
-}
-
-/**
  * HOW MANY FINISHED CHARACTERS A PLAN'S CREDITS COVER — the plan card's line 4
- * (#1607, P1-8). Both arguments are LEDGER numbers, so the ratio is
- * scale-neutral and no display conversion belongs in here.
+ * (#1607, P1-8) and the Add credits bullet (#1758). Both arguments are LEDGER
+ * numbers, so the ratio is scale-neutral and no display conversion belongs in
+ * here.
+ *
+ * ⚠ **IT REPLACED `framesFor(credits, costPerFrame)`, WHICH IS DELETED RATHER
+ * THAN LEFT BESIDE IT (#1758).** That function answered §6c's *"credits
+ * translated into work"* by dividing by the still the studio charges for, and
+ * its two callers both passed `credits.getCosts`'s `castingImage` — the LEGACY
+ * studio's 350, for a lane admin-only since #1654. #1607 took the plan cards
+ * off it; #1758 took Add credits off it, and that was the last caller. A
+ * surviving helper whose only argument is a per-frame price is an invitation to
+ * fetch that price again, which is the defect both cards are about, so it goes
+ * with its last reader and with its own test arm.
  *
  * ⚠ **IT ROUNDS DOWN, NOT TO THE NEAREST, AND THE DIRECTION IS A SAFETY
  * PROPERTY RATHER THAN A PREFERENCE.** `shared/creditDisplay.ts` sets the rule

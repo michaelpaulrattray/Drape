@@ -73,7 +73,7 @@ import {
   readBurn,
   readCycle,
 } from "@/features/settings/planMath";
-import { framesFor } from "@/features/settings/planLadder";
+import { charactersFor, charactersPhrase } from "@/features/settings/planLadder";
 import { useCycleSpend } from "./useCycleSpend";
 
 /**
@@ -96,7 +96,6 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
 
   const { data: plans } = trpc.billing.getPlans.useQuery();
   const { data: status } = trpc.billing.getStatus.useQuery();
-  const { data: costs } = trpc.credits.getCosts.useQuery();
   const utils = trpc.useUtils();
 
   /*
@@ -173,7 +172,25 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
   */
   const hasSubscription: boolean | null = status ? status.hasSubscription : null;
   const planRead = hasSubscription !== null;
-  const costPerFrame = costs?.castingImage ?? 0;
+  /*
+    WHAT ONE FINISHED CHARACTER COSTS — the divisor behind the §7.3 bullet that
+    says what the extra credits make, in LEDGER credits, off the same
+    `getPlans` the options list is built from (#1758).
+
+    ⚠ **THIS SURFACE DIVIDED BY `credits.getCosts`'s `castingImage` UNTIL NOW,
+    AND THAT IS THE LEGACY STUDIO'S PRICE.** `CREDIT_COSTS` is declared in
+    `castingCreditCosts.ts` as *"not part of the new scale"* and its lane has
+    been admin-only since #1654, so the one sentence here telling a customer
+    what their money buys was priced off a surface they cannot reach — at 350 a
+    frame against the 200 the studio they use actually charges, every figure
+    read low by more than half. #1607 took the same defect off the plan cards
+    one file over; this is its sibling, and the two surfaces now divide by one
+    server-derived number rather than by two.
+
+    `0` keeps its meaning — not known yet — and the bullet declines rather than
+    guessing, exactly as it did while the price list was unread.
+  */
+  const oneCharacterCredits = plans?.oneFinishedCharacterCredits ?? 0;
 
   /* Every rung ABOVE the current one — the only ones that add credits. */
   const options = useMemo(() => {
@@ -491,11 +508,22 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
     });
   };
 
-  /* `null` rather than 0 frames: "up from about 0 casting frames" is a claim
-     about an allowance nobody has read (#1747). */
-  const framesNow =
-    currentCredits === null ? null : framesFor(currentCredits, costPerFrame);
-  const framesNext = selected ? framesFor(selected.credits, costPerFrame) : 0;
+  /*
+    `null` rather than 0: "up from about 0" is a claim about an allowance
+    nobody has read (#1747), and a rung whose credits cover no finished
+    character has nothing to compare either.
+
+    The NOUN is said once, by `charactersPhrase`, and the clause after the comma
+    carries the bare count — which is how the sentence read before and is the
+    reason the phrase helper exists at all: the compare grid composed its own
+    copy of the plural rule and printed `about 1 characters` (#1607, law 6).
+    A second copy here would be the same mistake in the same feature.
+  */
+  const nowCount =
+    currentCredits === null ? null : charactersFor(currentCredits, oneCharacterCredits);
+  const nextPhrase = selected
+    ? charactersPhrase(charactersFor(selected.credits, oneCharacterCredits))
+    : null;
 
   return (
     <ModalScrim
@@ -738,11 +766,25 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
               ? `${formatCredits(displayBalance(delta))} credits land on your balance the moment this goes through — nothing to wait for.`
               : "Your balance updates the moment this goes through."}
           </span>
-          {costPerFrame > 0 && selected ? (
+          {/*
+            ⚠ **THE NOUN IS `finished characters`, AND IT CHANGED WITH THE
+            DIVISOR RATHER THAN BESIDE IT (#1758).** This read *"about N casting
+            frames a month"* — the pipeline's word for the unit a sheet slice
+            bills in, which is also the only unit the legacy per-frame price
+            could answer in. Divided by what a finished character costs, the
+            honest noun is the one the plan cards already use; `charactersPhrase`
+            is the single declaration of it, so the two surfaces cannot come to
+            disagree about what a customer's credits make.
+
+            `null` draws nothing, which is that helper's own rule: a plan whose
+            credits do not cover one finished character has no claim to make,
+            and *"about 0"* is a worse sentence than silence.
+          */}
+          {nextPhrase && selected ? (
             <span className="dp-topup__bullet">
               <Check size={12} strokeWidth={1.8} />
-              That is about {framesNext.toLocaleString()} casting frames a month
-              {framesNow === null ? "" : `, up from about ${framesNow.toLocaleString()}`} — you
+              That is {nextPhrase} a month
+              {nowCount ? `, up from about ${nowCount.toLocaleString()}` : ""} — you
               would move to {selected.name}.
             </span>
           ) : null}

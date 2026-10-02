@@ -18,7 +18,6 @@ import {
   cardTrio,
   compareWindow,
   COMPARE_COLUMNS,
-  framesFor,
   recommendPlan,
   rolloverSentence,
   type LadderPlan,
@@ -418,10 +417,16 @@ describe("the ladder, against the product's real price table", () => {
     }
   });
 
-  it("translates credits into work, and refuses to divide by a price it does not have", () => {
-    expect(framesFor(500_000, 350)).toBe(1_428);
-    /* A missing cost reader answers 0, and the surfaces then say nothing at all
-       rather than printing `Infinity frames`. */
-    expect(framesFor(500_000, 0)).toBe(0);
-  });
+  /*
+    ⚠ **THE `framesFor` ARM IS GONE WITH ITS SUBJECT (#1758), AND THE PRICE IN
+    IT IS WHY.** It read `framesFor(500_000, 350)` — 350 being
+    `CREDIT_COSTS.castingImage`, the LEGACY studio's headshot price, which both
+    money surfaces were passing in. So the arm was green on exactly the defect
+    the card is about: it held the arithmetic and said nothing about the
+    divisor, which is the half that was wrong. Credits translated into work is
+    now `charactersFor`, and both halves of what this arm held live where they
+    can go red for the right reason — the refusal to divide by a figure nobody
+    has read in `card1607-guard.test.ts`, and the divisor itself in
+    `workDivisor1758-guard.test.ts`, driven over the real prices.
+  */
 });
