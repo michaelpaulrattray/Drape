@@ -1,7 +1,7 @@
 {
   "edition": 612,
-  "updatedAt": "2026-10-02T05:20:00.000Z",
-  "shift": "Night shift, 15:20: a paying subscriber opening Add credits was told “Charged today, then on the same date each period.” — the sentence for somebody buying a brand-new subscription, not for somebody who already has one. It showed for the moment before the screen had been told which plan you are on, and it was the last line on that screen still speaking before it knew. Two nights ago the price stopped guessing, last night the plan name did; this was the sentence underneath them both. Fixed, with the same screen's “Pay yearly instead” offer, which was being shown to people already paying yearly. It is on pull request #1756, waiting for a review by hand because it is a money screen. Also tonight: your “at the rebuild” on the canvas colours is written onto its card and that question is closed.",
+  "updatedAt": "2026-10-02T05:30:00.000Z",
+  "shift": "Night shift, 15:20: a paying subscriber opening Add credits was told “Charged today, then on the same date each period.” — the sentence for somebody buying a brand-new subscription, not for somebody who already has one. It showed for the moment before the screen had been told which plan you are on, and it was the last line on that screen still speaking before it knew. Two nights ago the price stopped guessing, last night the plan name did; this was the sentence underneath them both. Fixed, with the same screen's “Pay yearly instead” offer, which was being shown to people already paying yearly. It is reviewed, merged and live on production as of tonight. Also tonight: your “at the rebuild” on the canvas colours is written onto its card and that question is closed.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -9222,9 +9222,9 @@
     {
       "id": "unread-subscription-1749",
       "title": "An unread subscription is not “no subscription” — Add credits stops naming a charging schedule it has not been told (#1749)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1756,
-      "note": "Open and held — a money screen a customer sees, so it waits for a review by hand."
+      "note": "Merged 81ed0690 and live on production (build 4a92a87a)."
     }
   ],
   "problems": [
@@ -9315,9 +9315,9 @@
     {
       "id": "unread-subscription-sentence-1749",
       "severity": "warning",
-      "state": "open",
-      "title": "Add credits tells a paying subscriber they are about to start a new subscription, for the moment before it knows they already have one (#1749)",
-      "detail": "Open Add credits and the line under the big number reads “Charged today, then on the same date each period.” That sentence is true of somebody buying a plan for the first time. It is not true of somebody who already pays you every month — their charge is worked out pro rata against the time left in the cycle they are already in, which is what the line says once the screen knows who they are.\n\nThe screen asks for your plan details and has to draw something before the answer arrives. Everything else on it already waits politely: the price shows a dash, the button holds. This one sentence did not — it said the confident thing.\n\nTwo things are fixed. The sentence now says nothing at all until the screen knows, which is the honest amount to say about a fact nobody has. And the “Pay yearly instead and 2 of the twelve months are free” offer in the same paragraph was being shown to people ALREADY paying yearly, for the same reason — it now waits too, and still appears for the people it is for.\n\nThe repair went wider than the sentence, deliberately. The same yes-or-no about whether you have a subscription is read in twelve places across the two money screens, and the sharpest of them decides whether pressing a plan button CHANGES your plan or BUYS you a second one. That one could not actually be reached today — last night's fix happens to stop it — but it was right for the wrong reason, which is the kind of thing that comes back when something above it moves.\n\nOn pull request #1756. It is a money screen, so it waits for a review by hand before it goes live."
+      "state": "resolved",
+      "title": "Add credits told a paying subscriber they were about to start a new subscription, for the moment before it knew they already had one (#1749)",
+      "detail": "Open Add credits and the line under the big number reads “Charged today, then on the same date each period.” That sentence is true of somebody buying a plan for the first time. It is not true of somebody who already pays you every month — their charge is worked out pro rata against the time left in the cycle they are already in, which is what the line says once the screen knows who they are.\n\nThe screen asks for your plan details and has to draw something before the answer arrives. Everything else on it already waits politely: the price shows a dash, the button holds. This one sentence did not — it said the confident thing.\n\nTwo things are fixed. The sentence now says nothing at all until the screen knows, which is the honest amount to say about a fact nobody has. And the “Pay yearly instead and 2 of the twelve months are free” offer in the same paragraph was being shown to people ALREADY paying yearly, for the same reason — it now waits too, and still appears for the people it is for.\n\nThe repair went wider than the sentence, deliberately. The same yes-or-no about whether you have a subscription is read in twelve places across the two money screens, and the sharpest of them decides whether pressing a plan button CHANGES your plan or BUYS you a second one. That one could not actually be reached today — last night's fix happens to stop it — but it was right for the wrong reason, which is the kind of thing that comes back when something above it moves.\n\nReviewed by hand, merged on pull request #1756, and live on production tonight — checked at the build that is actually serving, not at the merge."
     }
   ],
   "acknowledgedReplyIds": [
