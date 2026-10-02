@@ -1,7 +1,7 @@
 {
-  "edition": 623,
-  "updatedAt": "2026-10-02T22:50:00.000Z",
-  "shift": "Two questions for you, both from the weekend's security check, both needing one word each. They are at the top of your page.\n\nThe first: on 30 September a change of ours carried two already-known security holes into the live product, and the paid service that is meant to catch exactly that passed it. The alarm that did catch it went off six seconds after the change had shipped. The holes are closed and nobody was harmed; what is not fixed is that we have no reader of our own that would stop the next one. You can turn the alarm on in your Socket dashboard, which we cannot see, or we can add one check of our own to every change. I recommend ours, because it is the one we can prove is switched on.\n\nThe second: an alarm on your admin page fired 132 times in 28 hours, because it judges a success rate without caring that the day only had five jobs in it. The thing worth your attention is not the noise — it is that those are the only entries our log has ever marked critical, in two and a half months. The most serious level we have now means 'probably nothing'. Three ways to fix it, none of which turns the alarm off, and I recommend the one that stops it judging tiny days at all.\n\nBoth numbers in both questions were re-read at the real records tonight before they reached you, rather than taken from the patrol's report.\n\nNothing else needed doing. No card you have ordered was free to start, no patrol was due, and the one open bug on the board is a deliberate trap we filed for a screen that does not exist yet — I re-read it against the code and it is still correctly waiting.",
+  "edition": 624,
+  "updatedAt": "2026-10-02T23:55:00.000Z",
+  "shift": "Two of the three complaints about the picture checker are closed tonight, and both were closed by reading the code rather than by taking the last shift's word for it.\n\nThe first was your close-up that came back showing the whole neck and both shoulders — a portrait, not the face macro the view promises — and the checker waving it through every single time, fifty times out of fifty. It fails now, and it fails on a measurement rather than an opinion: the studio measures how much picture sits below the chin and compares it to the boundary you passed yourself. Your two bad pictures are outside it. The two correct ones, including the tusked creature under a cowl, still pass — which was the arm that mattered, because the last three attempts to fix this by rewording the instruction each broke a good picture.\n\nThe second was a close-up being thrown away and refunded because the checker could not see any clothing in it. That misreading still happens about one time in five and it is not going to stop — whether a shirt matches is not something you can measure with a ruler. What has gone is the cost. The picture is delivered now, with one free try again beside it, instead of vanishing. Only “this is not her” takes a picture away.\n\nOne thing turned up on the way that matters because of what week it is. The crew's own map of how the studio works still said a Sign costs 450 credits. It costs 1,700. The refine price was wrong in the same document, and so was a setting that was deleted two days ago but still described as live. All three went stale the moment the new prices landed, and nothing in our tooling can tell when a number somebody typed into a document has stopped being true. The three are corrected and live. I wrote the missing check up as its own job and deliberately did not build it tonight.\n\nNothing needed you, and nothing you have ordered was free to start: one of those jobs is already claimed, one is the Stripe work that is yours, and the rest are waiting on the next rung you name.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -149,7 +149,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-02T22:46:48.990Z",
+      "readAt": "2026-10-02T23:44:05.371Z",
       "items": [
         {
           "issueNumber": 1787,
@@ -9403,6 +9403,13 @@
       "status": "merged",
       "prNumber": 1798,
       "note": "Merged fdb4a7aa — ordinary PR, gate green, no review owed."
+    },
+    {
+      "id": "atlas-roads-money-prose-1612",
+      "title": "The crew's own map said a Sign costs 450 credits — three stale money claims corrected, and the gap that let them happen filed (#1612, #1821)",
+      "status": "merged",
+      "prNumber": 1820,
+      "note": "Merged 53264888 — ordinary PR, gate green in 4.2m, no review owed. Live on production."
     }
   ],
   "problems": [
@@ -9767,7 +9774,7 @@
     259
   ],
   "nextUp": {
-    "readAt": "2026-10-02T22:46:48.990Z",
+    "readAt": "2026-10-02T23:44:05.370Z",
     "items": [
       {
         "issueNumber": 1469,
