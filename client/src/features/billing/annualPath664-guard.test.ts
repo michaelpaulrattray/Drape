@@ -119,4 +119,65 @@ describe("AddCreditsModal", () => {
     expect(source).toMatch(/disabled=\{!selected \|\| working \|\| !quoteReady\}/);
     expect(source).toMatch(/if \(!selected \|\| !quoteReady\) return;/);
   });
+
+  /*
+    ⚠ **A WAITING LABEL THAT CAN NEVER FINISH IS NOT A WAITING LABEL — card
+    1734, and it is the arm above's blind spot rather than its sibling.**
+
+    That arm holds the button inert until a quote exists, which is right. It has
+    nothing to say about an account where a quote is never coming: the pane
+    offers only the rungs ABOVE this account's own, so with none, `selectedId`
+    is null, `previewPlanChange` never runs, `dueToday` stays null, and
+    `quoteReady` is false forever. The label then sat at *"Checking the
+    charge…"* permanently. Two ways in — the top rung, and the hidden rung
+    (#391, where `currentIndex` is -1).
+
+    ⚠ **AND THE PICKER ABOVE IT HAD THE SAME DEFECT POINTING THE OTHER WAY**,
+    which is why both are pinned here: it said *"No higher plan"* whenever
+    nothing was selected, so a FREE account read it for the beat the catalogue
+    was loading. Fixing one and not the other would have made the two disagree
+    during that beat, which is worse than either alone.
+  */
+  it("an account with no rung above its own is told so, by both the picker and the button (card 1734)", () => {
+    /* 1 · the two opposite causes of an empty ladder are told apart ONCE. */
+    expect(
+      source,
+      "the pane no longer distinguishes `the catalogue has not answered` from `there is"
+      + " nothing above you`. They are opposite facts and `options` is empty for both.",
+    ).toContain("const nothingAbove = laddered && options.length === 0;");
+    expect(
+      source,
+      "`laddered` no longer reads whether the catalogue has answered at all, so an unread"
+      + " plan list reads as a top-rung account.",
+    ).toContain("const laddered = Boolean(plans);");
+
+    /* 2 · ONE sentence, not two copies — the card's own requirement is that the
+       picker and the button agree, and two literals agree only until somebody
+       edits one of them. */
+    expect(
+      source,
+      "the `no higher plan` sentence is no longer a shared constant, so the picker and the"
+      + " button can drift into saying different things about the same account.",
+    ).toContain('const NO_HIGHER_PLAN = "No higher plan";');
+    expect(
+      (source.match(/NO_HIGHER_PLAN/g) ?? []).length,
+      "the shared sentence has fewer than its declaration plus two readers (the picker and"
+      + " the button) — one of the two surfaces has stopped using it.",
+    ).toBeGreaterThanOrEqual(3);
+    expect(
+      (source.match(/"No higher plan"/g) ?? []).length,
+      "a second literal copy of the sentence is back beside the constant.",
+    ).toBe(1);
+
+    /* 3 · and the button asks it BEFORE the quote, because `quoteReady` is
+       false in that state too and the first matching branch would otherwise be
+       the waiting one again. */
+    const label = source.slice(source.indexOf('{working\n'), source.indexOf("Checking the charge"));
+    expect(
+      label,
+      "the button's label no longer answers `nothing to quote` before `still quoting`, so"
+      + " the permanent `Checking the charge…` is back: `quoteReady` is false in both"
+      + " states and the first matching branch wins.",
+    ).toContain("nothingAbove");
+  });
 });
