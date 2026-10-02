@@ -148,6 +148,44 @@ diff that moves no pixel earns a look it did not need — that costs one reading
 A server-side change a customer reads earns none — that is the failure
 direction, and limb 4 is its remedy.
 
+### Cutting a worktree to look at a pull request — and taking it down
+
+Limb 3 means running the app, so a review cuts a worktree. **There is one
+command for it, and it has both halves:**
+
+```
+npx tsx scripts/shift-worktree.mts add    --pr <n>
+npx tsx scripts/shift-worktree.mts remove --pr <n>
+```
+
+`add --pr` cuts `../drape-review-<n>` **detached at `refs/pull/<n>/head`**,
+junctions `node_modules` at the main tree's, copies `.env`, and prints its own
+removal command. `remove --pr` takes the junction out first, **proves it is
+gone**, then unregisters the worktree and deletes the directory — the same
+destructive sequence a shift's worktree gets, because it is the same code.
+
+⚠ **DO NOT HAND-ROLL IT, AND THE REASON IS MEASURED (#1796).** The hand road
+was `git worktree add -b team/<slug> … && mklink /J … && cp .env` with nothing
+afterwards, and it left **nineteen zero-file `drape-review-<n>` shells in three
+days**, each holding a live junction into the main tree's `node_modules`; two
+more appeared inside the hour the Janitor swept them. Nobody skipped a step —
+the road had no second half to skip.
+
+Three things follow for a reviewer:
+
+- **One directory per pull request.** Reviewing `#1794` twice does not mean
+  `drape-review-1794b`; `add --pr` refuses an occupied path and names the
+  removal. A hand-suffixed directory is one no tool can address again.
+- **No local branch is created**, which is why `remove` says *"a review worktree
+  leaves no branch behind"*. The hand road's branch-per-review is the second
+  contributor to local `team/*` refs going 115 → 295 in three days (#1797).
+- **A refusal is real.** `remove --pr` refuses when a commit was typed in the
+  review worktree — `refs/pull/<n>/head` does not have it, so the directory is
+  its only copy. `--force` is there, and it says what it destroys. ⚠ Never reach
+  for `rm -rf <path>/node_modules/` instead: the trailing slash is the one
+  measured form that **empties the main tree's install**, and every other
+  worktree, the dev server and the founder's own session are using it.
+
 ## Enforcement invariants (CLAUDE.md "Enforcement invariants" — rules kept, measurement histories cut)
 
 The access grid says *what*; these say *where*. Every defect found in July

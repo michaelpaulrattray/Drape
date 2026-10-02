@@ -144,6 +144,67 @@ export function planFor(slug: string, repoRoot: string, parentDir: string): Work
 }
 
 /**
+ * A PULL REQUEST NUMBER, VALIDATED ONCE — because it becomes a directory name
+ * and an argument to a recursive delete, exactly as a slug does (#1796).
+ *
+ * ⚠ **THE PARSED NUMBER IS WHAT `reviewPlanFor` BUILDS THE PATH FROM, NEVER THE
+ * TYPED STRING.** That is the whole injection answer and it is structural rather
+ * than a list of forbidden characters: `../x`, `-f`, `1 2`, `1;rm` and
+ * `1794b` all fail `^[0-9]+$` here, and anything that passes it is a number by
+ * the time a path is made of it. `007` and `7` therefore name ONE directory,
+ * which is the property that matters — two spellings of one pull request must
+ * not become two shells on disk, since two shells is the whole defect.
+ */
+export function validatePrNumber(
+  raw: string,
+): { ok: true; pr: number } | { ok: false; reason: string } {
+  if (raw.length === 0) return { ok: false, reason: "--pr was given no number" };
+  if (!/^[0-9]+$/.test(raw)) {
+    return {
+      ok: false,
+      reason: `--pr takes a pull request number in digits, and \`${raw}\` is not one`,
+    };
+  }
+  const pr = Number(raw);
+  if (!Number.isSafeInteger(pr) || pr <= 0) {
+    return { ok: false, reason: `--pr ${raw} is not a pull request number this repository could have` };
+  }
+  return { ok: true, pr };
+}
+
+/**
+ * WHERE A REVIEW WORKTREE GOES — the second shape, and the reason there is a
+ * second one at all (#1796).
+ *
+ * ⚠ **IT KEEPS THE NAME THE HAND-ROLLED ROAD ALREADY USED, ON PURPOSE.** Nineteen
+ * `drape-review-<N>` shells were swept on the Janitor's run 12 and two more
+ * appeared inside the same hour; naming this `drape-shift-review-<N>` would have
+ * left every one of those unaddressable by the tool that is supposed to own
+ * them. So `remove --pr <N>` can take down a shell made before this existed,
+ * which is the half of the fix that pays today rather than tomorrow.
+ *
+ * ⚠ **AND ONE PATH PER PULL REQUEST IS THE POINT.** The two shells of 2026-10-02
+ * were `drape-review-1794` and `drape-review-1794b` — one pull request, two
+ * review ATTEMPTS, and the `b` was invented by hand because the first directory
+ * was in the way. A derived name has no suffix to invent: a second attempt meets
+ * `add`'s own "already exists" refusal, which names `remove --pr <N>`.
+ *
+ * `slug` is `review-<N>` because `WorktreePlan.slug` is what the CLI prints, and
+ * it is NOT a branch: a review worktree is detached by construction, so there is
+ * no `team/review-<N>` anywhere and nothing may derive one.
+ */
+export function reviewPlanFor(pr: number, repoRoot: string, parentDir: string): WorktreePlan {
+  const path = `${parentDir}/drape-review-${pr}`;
+  return {
+    slug: `review-${pr}`,
+    path,
+    nodeModulesLink: `${path}/node_modules`,
+    envSource: `${repoRoot}/.env`,
+    envTarget: `${path}/.env`,
+  };
+}
+
+/**
  * THE ONE PLACE THE `team/<slug>` CONVENTION IS RIGHT (#1613).
  *
  * ⚠ **IT IS FOR THE BRANCH `add` CREATES AND FOR NOTHING ELSE.** Before a
@@ -490,17 +551,126 @@ export function prHeadFetchArgs(pr: number): string[] {
 }
 
 /**
+ * THE REF A REVIEW WORKTREE IS CHECKED OUT AT (#1796).
+ *
+ * ⚠ **`refs/pull/<N>/head` IS NOT A BRANCH, AND THAT IS WHY IT IS THIS REF AND
+ * NOT A LOCAL ONE.** The hand-rolled road cut `-b team/<slug>` per review and
+ * deleted neither the branch nor the directory, which is the second contributor
+ * #1797 measures — local `team/*` refs went 115 → 295 in three days. A ref under
+ * `refs/pull/` never appears in `git branch`, so a review leaves nothing behind
+ * for that sweep to find, and the ref is simultaneously the RESTORE road for
+ * anything the removal destroys.
+ */
+export function reviewCheckoutRef(pr: number): string {
+  return `refs/pull/${pr}/head`;
+}
+
+/**
+ * THE FETCH `add --pr` MAKES — into a named ref, not into `FETCH_HEAD` (#1796).
+ *
+ * ⚠ **TWO DELIBERATE DIFFERENCES FROM `prHeadFetchArgs`, AND BOTH ARE LOAD
+ * BEARING.** It has a DESTINATION, because `FETCH_HEAD` is one slot shared by
+ * the whole repository and four seats fetch into it concurrently on this machine
+ * — a worktree created at `FETCH_HEAD` could be created at somebody else's
+ * fetch. And it is FORCED (`+`), because a pull request's head moves whenever
+ * its author pushes a repair, which is exactly when the reviewer looks again.
+ */
+export function prHeadFetchIntoRefArgs(pr: number): string[] {
+  return ["fetch", "--no-tags", "origin", `+refs/pull/${pr}/head:refs/pull/${pr}/head`];
+}
+
+/** The worktree `add --pr` creates: detached, at the pull request's own head. */
+export function reviewWorktreeAddArgs(pr: number, path: string): string[] {
+  return ["worktree", "add", "--detach", path, reviewCheckoutRef(pr)];
+}
+
+export type ReviewRemovalVerdict =
+  | { readonly proceed: true; readonly note: string }
+  | { readonly proceed: false; readonly reason: string };
+
+/**
+ * MAY A REVIEW WORKTREE BE REMOVED? — the one question `decideRemoval` cannot
+ * put, and the reason this road needed anything beyond a second plan (#1796).
+ *
+ * ⚠ **A REVIEW WORKTREE IS DETACHED, SO `decideRemoval`'s INPUT IS MEANINGLESS
+ * FOR IT AND WOULD HAVE REFUSED EVERY SINGLE REMOVAL.** Traced before it was
+ * written: a detached HEAD has no upstream, so the CLI's unpushed count falls
+ * back to `origin/main..HEAD` and reports the PULL REQUEST'S OWN COMMITS as
+ * unpushed; `shipReadingFor` is then handed an unreadable branch and answers
+ * `unreadable`; `decideRemoval` refuses. **The reviewer would meet a refusal on
+ * the happy path on every review and learn to type `--force` by reflex** — which
+ * is the habit `decideRemoval`'s own docblocks say must never be trained, since
+ * `--force` is what stands between a real find and a deleted directory.
+ *
+ * So the question is asked about the REF instead of about a branch: is this
+ * worktree's HEAD still contained by `refs/pull/<N>/head`? If it is, GitHub
+ * holds every commit in the directory and nothing here is only here. If HEAD
+ * sits past it, somebody committed in the review worktree and those commits are
+ * nowhere else — the same fact `decideRemoval` refuses on, and it refuses here
+ * the same way.
+ *
+ * ⚠ **`notMerged` CANNOT ARISE AND IS STILL REFUSED.** `readHeadAgainstPrHead`
+ * never returns it — only the branch hop can, and the review road has no branch
+ * hop. It is refused rather than dropped through a default, so a future edit that
+ * routes some other reading in here cannot make an unasked question read as a
+ * clean proceed.
+ */
+export function decideReviewRemoval(
+  ship: ShipReading,
+  pr: number,
+  force: boolean,
+): ReviewRemovalVerdict {
+  if ("shippedBy" in ship) {
+    return {
+      proceed: true,
+      note: `HEAD is inside PR #${pr}'s own head, which GitHub keeps at refs/pull/${pr}/head — nothing in this directory is only here`,
+    };
+  }
+  if ("pastMerge" in ship) {
+    const { commits } = ship.pastMerge;
+    if (force) {
+      return {
+        proceed: true,
+        note: `⚠ --force is destroying ${commits} commit(s) made in this review worktree — refs/pull/${pr}/head does not have them`,
+      };
+    }
+    return {
+      proceed: false,
+      reason:
+        `${commits} commit${commits === 1 ? " was" : "s were"} made in this review worktree and PR #${pr}'s head does not contain ${commits === 1 ? "it" : "them"}`
+        + ` — this directory is ${commits === 1 ? "its" : "their"} only copy. Push ${commits === 1 ? "it" : "them"} somewhere, or pass --force to destroy ${commits === 1 ? "it" : "them"}`,
+    };
+  }
+  if ("unreadable" in ship) {
+    if (force) {
+      return {
+        proceed: true,
+        note: `⚠ --force: whether this worktree still holds only PR #${pr}'s commits was NOT read (${ship.unreadable})`,
+      };
+    }
+    return {
+      proceed: false,
+      reason:
+        `whether this worktree's HEAD is still inside PR #${pr}'s head COULD NOT BE READ (${ship.unreadable})`
+        + " — so this refusal is the safe answer rather than a finding. Pass --force if you know the directory holds nothing",
+    };
+  }
+  return {
+    proceed: false,
+    reason:
+      `the reading came back \`notMerged\`, which the review road never asks for and cannot interpret`
+      + ` — refusing rather than guessing about deleting a directory`,
+  };
+}
+
+/**
  * THE READING, over injected runners so every branch is drivable with no
  * network and no GitHub (#1540).
  *
- * ⚠ **`merge-base --is-ancestor` USES EXIT 1 AS AN ANSWER AND EVERYTHING ELSE
- * AS AN ERROR, AND CONFLATING THE TWO IS HOW THIS WOULD GO QUIETLY WRONG.**
- * Exit 0 is *yes*, exit 1 is *no* — a real verdict — and 128 is *I could not
- * tell you* (a bad object, a broken repository). A reader that treated "not 0"
- * as *no* would turn every git failure into a confident refusal; one that
- * treated "not 1" as *yes* would turn it into a confident PROCEED over a
- * directory holding the only copy of somebody's work. Both are named here
- * because both are one character away.
+ * The branch resolves a pull request here; the comparison against that pull
+ * request's recorded head is `readHeadAgainstPrHead` below, shared with the
+ * review road (#1796), and the exit-code trap that reading turns on is named on
+ * it rather than restated here.
  */
 export function readShippedCommits(
   branch: string,
@@ -511,6 +681,37 @@ export function readShippedCommits(
   if (prReadFailed(pr)) return { unreadable: pr.unreadable };
   if (pr === null) return { notMerged: true };
 
+  return readHeadAgainstPrHead(pr, gitInWorktree);
+}
+
+/**
+ * DO THIS WORKTREE'S COMMITS SIT INSIDE A KNOWN PULL REQUEST'S HEAD? — the
+ * second half of `readShippedCommits`, lifted out so a REVIEW worktree can ask
+ * it without the branch hop (#1796).
+ *
+ * ⚠ **IT IS LIFTED, NOT COPIED, AND THAT IS THE POINT.** A review worktree is
+ * detached, so `readShippedCommits`'s first act — *which pull request names this
+ * branch* — has no question to put, while its second act is exactly the reading
+ * a review removal wants. Writing that reading a second time would be working
+ * law 4 on the one path in this file that ends in a recursive delete, and the
+ * three states below are each one character from their neighbour. So both
+ * callers drive these bytes: `readShippedCommits` reaches it after the branch
+ * resolves a pull request, `reviewShipReadingFor` reaches it with the number the
+ * reviewer typed.
+ *
+ * ⚠ **`merge-base --is-ancestor` USES EXIT 1 AS AN ANSWER AND EVERYTHING ELSE
+ * AS AN ERROR, AND CONFLATING THE TWO IS HOW THIS WOULD GO QUIETLY WRONG.**
+ * Exit 0 is *yes*, exit 1 is *no* — a real verdict — and 128 is *I could not
+ * tell you* (a bad object, a broken repository). A reader that treated "not 0"
+ * as *no* would turn every git failure into a confident refusal; one that
+ * treated "not 1" as *yes* would turn it into a confident PROCEED over a
+ * directory holding the only copy of somebody's work. Both are named here
+ * because both are one character away.
+ */
+export function readHeadAgainstPrHead(
+  pr: number,
+  gitInWorktree: (args: string[]) => { status: number; out: string; err: string },
+): ShipReading {
   const fetched = gitInWorktree(prHeadFetchArgs(pr));
   if (fetched.status !== 0) {
     const why = (fetched.err || fetched.out).trim().split(/\r?\n/)[0] ?? "no reason given";

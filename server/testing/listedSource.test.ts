@@ -150,6 +150,43 @@ const NOT_THE_CLASS: Record<string, string> = {
     + " sites to one declaration), and every one of them SHOULD throw if it is"
     + " missing: a sweep arm that shrugs at an absent subject is the guard over"
     + " nothing this file exists to prevent",
+  /*
+     JOINED THE CANDIDATE SET ON 2026-10-02 (#1796), through the door its
+     sibling `riteWorktree.test.ts` below came through — same tool, same shape.
+     The review road's arms count a FIXTURE's dependency install before, between
+     and after a removal (the Janitor's own canary, since the one deletion form
+     that destroys an install is the form a human types), and that `readdirSync`
+     is what put the suite in the scan.
+
+     ⚠ **A `BARE_READS_ALLOWED` ROW WAS TRIED FIRST AND IS THE WRONG HOME, which
+     is worth recording because the row looked like the stricter answer.** It
+     keeps a suite IN the class, so the count arm would redden on a ninth read —
+     but the helper arm fires on class membership regardless, and this suite has
+     NO listed entry to read through `readListedSource`. Adopting one would be
+     exactly the false alarm the `statIfPresent` note at the top of
+     `readsThroughAHelper` names: a walker told to take up a helper it has no
+     use for. ⚠ **The honest cost of the carve-out, driven rather than assumed:
+     with this row in place, planting a real walk of `scripts/` in that suite
+     with bare reads of what it listed left this guard GREEN.** A carve-out is
+     blind by name — true of all ten here — and the re-proving arm below only
+     holds that the file still matches the scan, not that this reason is still
+     true. The reason is therefore load-bearing prose, and it is why it names
+     every read.
+  */
+  "server/shiftWorktree.test.ts":
+    "lists NOTHING in the repository — EVERY `readdirSync` in it is over a"
+    + " fixture install it created under `mkdtempSync`, whose path no other"
+    + " process knows, so neither a parallel suite nor one of the ~440 untracked"
+    + " disposables in `scripts/` can plant or remove a file there. Its eight"
+    + " reads are three FIXED names whose CONTENTS it asserts"
+    + " (`scripts/shift-worktree.mts` twice, for the original sequence arms and"
+    + " the review road's, and `scripts/lib/shiftWorktree.mts` for the arm"
+    + " holding the exit-code reader to ONE copy) and five of the fixture's own"
+    + " `canary.txt`, read THROUGH a junction. Every one of them MUST keep"
+    + " throwing: a sequence arm whose subject has vanished is a guard over"
+    + " nothing (#35), and a canary that cannot be read is the exact false pass"
+    + " the first hand run of this measurement was thrown away for — `mklink`"
+    + " had failed unnoticed and the delete met an ordinary empty directory",
   "server/riteLock.test.ts":
     "lists NOTHING in the repository — its one `readdirSync` is over a"
     + " `mkdtempSync` directory it created in this very test, whose path no other"
