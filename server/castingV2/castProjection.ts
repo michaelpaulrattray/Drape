@@ -360,6 +360,21 @@ function wasDeliveredUnjudged(asset: ModelAsset): boolean {
 export function castSlotRetryOffer(
   slot: Pick<CastSlotProjection, "state" | "standIn" | "unjudged" | "refundedCredits">,
   paidRetryPrice: number,
+  /**
+   * HAS THIS VIEW'S ONE FREE TRY AGAIN ALREADY BEEN SPENT? (#1601 item 4.)
+   *
+   * A third ARGUMENT rather than a field on the slot, and the distinction is
+   * deliberate: `CastSlotProjection` is the wire shape the room is sent, and
+   * whether a free ask has been spent is not something the customer's screen
+   * needs to know — only its PRICE is, which the offer already carries. A field
+   * would have widened the contract for nothing and given the client a second
+   * place to re-derive a price from.
+   *
+   * Defaulted to `false` so the pure-reading callers that do not spend money
+   * (and every arm that predates this item) keep their old answer, and so the
+   * two roads that DO spend have to say the word.
+   */
+  freeRetrySpent = false,
 ): CastSlotRetry | null {
   if (slot.state === "failed-refunded") {
     return { priceCredits: paidRetryPrice, reason: "refunded" };
@@ -376,7 +391,26 @@ export function castSlotRetryOffer(
       ? null
       : { priceCredits: paidRetryPrice, reason: "refunded" };
   }
-  if (slot.unjudged === true) return { priceCredits: 0, reason: "unchecked" };
+  if (slot.unjudged === true) {
+    /*
+      ONE FREE TRY AGAIN, THEN IT IS A PURCHASE (#1601 item 4).
+
+      The reason word does not change and that is the point: she is still
+      holding a picture nothing vouched for, which is what the row says. What
+      changed is that she has already had the free look at it once, so the
+      second ask is an ordinary paid ask at the Try again price — the same
+      number a refunded view's ask costs.
+
+      ⚠ Before this, the free branch was a pure function of a state that a free
+      retry DOES NOT MOVE: an unchecked view whose retry also arrived unchecked
+      is still unchecked, so the free ask renewed itself every time the judge
+      was unavailable. The slot could not see the difference; only the operation
+      rows can (`listSpentFreeViewRetryAngles`).
+    */
+    return freeRetrySpent
+      ? { priceCredits: paidRetryPrice, reason: "unchecked" }
+      : { priceCredits: 0, reason: "unchecked" };
+  }
   return null;
 }
 
@@ -498,10 +532,28 @@ export function projectSignedCast(input: {
    * from the same state the room was shown rather than from a second opinion.
    */
   retryingAngles?: readonly CastViewAngle[];
+  /**
+   * The views of this Cast whose ONE free Try again has already been spent
+   * (`listSpentFreeViewRetryAngles`, #1601 item 4).
+   *
+   * ⚠ **ABSENT MEANS "NOT SPENT", WHICH IS THE GENEROUS DIRECTION, AND IT IS
+   * SAFE ONLY BECAUSE THE ENTRANCE PASSES IT.** The optional shape is here for
+   * the same reason `retryingAngles` has one — a caller that does not spend
+   * money should not have to take a read it has no use for — but the direction
+   * is the opposite of that one's: an absent busy list costs a tile its
+   * skeleton, an absent spent list offers a free render. What makes it safe is
+   * that `castSlotRetryOffer` is asked again by the one road that spends
+   * (`viewRetryService`), from a read that always includes this, so the worst a
+   * missing list can do is show a free price on a row that then charges.
+   * `viewRetryFreeOnce.test.ts` holds BOTH callers of this function to passing
+   * it, so the room and the till cannot part company by omission.
+   */
+  freeRetrySpentAngles?: readonly CastViewAngle[];
 }): SignedCastProjection {
   const evidence = slotEvidence(input.assets);
   const building = input.model.status === "provisioning";
   const retrying = new Set(input.retryingAngles ?? []);
+  const freeRetrySpent = new Set(input.freeRetrySpentAngles ?? []);
   const anchor = evidence.get("frontClose")?.anchor ?? null;
 
   /*
@@ -679,7 +731,11 @@ export function projectSignedCast(input: {
       : slot))
     .map((slot) => {
       if (building) return slot;
-      const retry = castSlotRetryOffer(slot, CASTING_V2_VIEW_RETRY_PRICE_CREDITS);
+      const retry = castSlotRetryOffer(
+        slot,
+        CASTING_V2_VIEW_RETRY_PRICE_CREDITS,
+        freeRetrySpent.has(slot.angle),
+      );
       return retry ? { ...slot, retry } : slot;
     });
 

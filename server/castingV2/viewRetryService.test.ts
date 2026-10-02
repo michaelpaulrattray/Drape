@@ -201,7 +201,23 @@ function dependencies(
   overrides: Partial<ViewRetryServiceDependencies> = {},
 ): ViewRetryServiceDependencies {
   return {
-    readSlots: async () => ({ modelId: 7, slots, deliveredOutfitKeys }),
+    /*
+      `freeRetrySpentAngles` is EMPTY in the default fixture, so every arm in this
+      file keeps the answer it had before #1601 item 4: an unchecked view's first
+      ask is free. An arm that wants the SECOND ask overrides `readSlots` and says
+      which angle is spent — `viewRetryFreeOnce.test.ts` owns the rule itself, and
+      what this file owns is what the till does with it.
+
+      ⚠ Its ABSENCE was how this fixture announced the change, and that is worth
+      recording: `tsconfig.json` excludes every test file, so the required field
+      did not redden the typecheck — 36 arms in this file went red at RUN time on
+      `read.freeRetrySpentAngles.includes` instead. The failure direction was the
+      honest one (a refusal, never a free render), but the compiler could not have
+      told anybody.
+    */
+    readSlots: async () => ({
+      modelId: 7, slots, deliveredOutfitKeys, freeRetrySpentAngles: [],
+    }),
     readOutfitBytes: async (key: string) => {
       outfitReads.push(key);
       return { bytes: Buffer.from("delivered-sibling-view"), contentType: "image/png" };
@@ -400,6 +416,127 @@ describe("try again on one view — what moves, and in what order", () => {
       different rows in a ledger, and only one of them is his ruling.
     */
     expect(journal).toEqual(["claim", "running", "render", "commit"]);
+    expect(deducts).toHaveLength(0);
+  });
+
+  it("the SECOND ask on an unchecked view is charged — the free one is spent (#1601 item 4)", async () => {
+    /*
+      HIS RULE, END TO END AT THE TILL: *"the first Try again on an unchecked view
+      is free, once; the second is paid."*
+
+      The slot is byte-for-byte the one the arm above drives — still `ready`, still
+      unjudged, still holding her picture — because **a free retry does not move
+      the slot's state**, and that is the whole defect this closes: a second
+      unchecked picture is still unchecked, so the free branch used to renew
+      itself for as long as the conformance judge stayed unavailable.
+
+      The only thing that differs is a fact the slot cannot carry, read off the
+      operation rows: this angle's free ask is gone. Note the `retry` on the slot
+      still says 0 — a deliberately STALE button, which is the shape a second tab
+      or a page left open really produces — and the till charges anyway, because
+      it re-reads the offer rather than trusting what was sent.
+    */
+    const spent = slot({
+      state: "ready",
+      url: "https://cdn.example/view.png",
+      unjudged: true,
+      note: null,
+      refundedCredits: null,
+      retry: { priceCredits: 0, reason: "unchecked" },
+    });
+    const result = await retryCastView(
+      dependencies([spent], {
+        readSlots: async () => ({
+          modelId: 7,
+          slots: [spent],
+          deliveredOutfitKeys,
+          freeRetrySpentAngles: [input.angle],
+        }),
+      }),
+      input,
+    );
+    expect(result.outcome).toBe("ready");
+    expect(result.chargedCredits).toBe(TRY_AGAIN_PRICE);
+    expect(deducts).toEqual([
+      { amount: TRY_AGAIN_PRICE, reference: `op:${OPERATION_ID}:charge` },
+    ]);
+    expect(journal).toEqual(["claim", "running", "deduct", "render", "commit"]);
+  });
+
+  it("a spent-free SECOND ask that fails refunds what it charged", async () => {
+    /*
+      The other half of the ledger, and it is not implied by the arm above: the
+      free road has nothing to give back, so every refund arm in this file was
+      written against the REFUNDED road. This is the first time an UNCHECKED view
+      can owe a refund at all, and conservation on it has never been driven.
+    */
+    engineAnswers = ["throw"];
+    const spent = slot({
+      state: "ready",
+      url: "https://cdn.example/view.png",
+      unjudged: true,
+      refundedCredits: null,
+      retry: { priceCredits: 0, reason: "unchecked" },
+    });
+    const result = await retryCastView(
+      dependencies([spent], {
+        readSlots: async () => ({
+          modelId: 7,
+          slots: [spent],
+          deliveredOutfitKeys,
+          freeRetrySpentAngles: [input.angle],
+        }),
+      }),
+      input,
+    );
+    expect(result.outcome).toBe("failed");
+    expect(result.refundedCredits).toBe(TRY_AGAIN_PRICE);
+    /*
+      ONE reference, and the refund is taken against the CHARGE's — item 5's
+      no-double-refund rule, which this road inherits rather than restates:
+      `recordRefund` derives the refund's own reference from the charge's, so a
+      second settle of the same operation is a duplicate and gives nothing back
+      twice. Asserted as the SAME string the deduct used, because that identity is
+      the property; a literal `:refund` here would be a second spelling of a rule
+      the ledger owns.
+    */
+    expect(refunds).toEqual([
+      { amount: TRY_AGAIN_PRICE, reference: `op:${OPERATION_ID}:charge` },
+    ]);
+    expect(refunds[0]?.reference).toBe(deducts[0]?.reference);
+    /* Her picture is untouched: the view she paid for is still the one on screen,
+       and no failure marker is written over it (#1233). */
+    expect(committed).toHaveLength(0);
+  });
+
+  it("a spent free ask on ANOTHER view does not charge this one", async () => {
+    /*
+      The negative control for the pair above, and the one that would catch the
+      cheapest mistake available here — reading the spent set as a CAST-level fact
+      rather than a per-slot one. #1235 is this surface's own record of what
+      cast-level reasoning costs on it.
+    */
+    const free = slot({
+      state: "ready",
+      url: "https://cdn.example/view.png",
+      unjudged: true,
+      refundedCredits: null,
+      retry: { priceCredits: 0, reason: "unchecked" },
+    });
+    const result = await retryCastView(
+      dependencies([free], {
+        readSlots: async () => ({
+          modelId: 7,
+          slots: [free],
+          deliveredOutfitKeys,
+          /* A different angle entirely — her close-up, not the back she asked for. */
+          freeRetrySpentAngles: ["closeUp"],
+        }),
+      }),
+      input,
+    );
+    expect(result.outcome).toBe("ready");
+    expect(result.chargedCredits).toBe(0);
     expect(deducts).toHaveLength(0);
   });
 

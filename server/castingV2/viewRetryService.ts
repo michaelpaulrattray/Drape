@@ -60,6 +60,7 @@ import { deductCredits } from "../db/credits";
 import {
   commitRetriedViewAsset,
   listRunningViewRetryAngles,
+  listSpentFreeViewRetryAngles,
   readCastViewRenderSource,
 } from "../db/castingV2ViewRetry";
 import {
@@ -121,6 +122,17 @@ export type ViewRetryServiceDependencies = PackageOrchestratorDependencies & {
 export type CastSlotsRead = {
   modelId: number;
   slots: ReturnType<typeof projectSignedCast>["slots"];
+  /**
+   * THE VIEWS WHOSE ONE FREE TRY AGAIN IS ALREADY SPENT (#1601 item 4).
+   *
+   * Carried out of the read rather than re-queried at the till, for the reason
+   * this whole type exists: the offer the room was shown and the offer the money
+   * moves against have to come from ONE reading. The entrance re-asks
+   * `castSlotRetryOffer` — it does not trust the client's price — and this is the
+   * third fact that answer needs, so it travels with the slots that are the
+   * other two.
+   */
+  freeRetrySpentAngles: readonly CastViewAngle[];
   /**
    * THE STORAGE KEY OF EACH DELIVERED FULL-LENGTH VIEW THAT HAS ONE (#1474).
    *
@@ -223,7 +235,7 @@ export function deliveredOutfitKeysFrom(
 async function readCastSlots(userId: number, castPublicId: string): Promise<CastSlotsRead | null> {
   const model = await getOwnedCastByPublicId(userId, castPublicId);
   if (!model) return null;
-  const [assets, lineage, promisedAngles, retryingAngles] = await Promise.all([
+  const [assets, lineage, promisedAngles, retryingAngles, freeRetrySpentAngles] = await Promise.all([
     listCastAssets(userId, model.id),
     getCastLineage(userId, model),
     listCastPromisedAngles(userId, model.id),
@@ -231,11 +243,18 @@ async function readCastSlots(userId: number, castPublicId: string): Promise<Cast
        the same statement, which is what makes a slot's Try again disappear and
        this entrance refuse for the same reason at the same moment. */
     listRunningViewRetryAngles({ userId, modelId: model.id, castId: castPublicId }),
+    /* WHOSE FREE ASK IS ALREADY SPENT (#1601 item 4). Read here and not at the
+       till for the same reason the line above is: one reading behind the button
+       and the charge. */
+    listSpentFreeViewRetryAngles({ userId, modelId: model.id, castId: castPublicId }),
   ]);
-  const projection = projectSignedCast({ model, assets, lineage, promisedAngles, retryingAngles });
+  const projection = projectSignedCast({
+    model, assets, lineage, promisedAngles, retryingAngles, freeRetrySpentAngles,
+  });
   return {
     modelId: model.id,
     slots: projection.slots,
+    freeRetrySpentAngles,
     /* #1474 — derived from the assets this function already read, never from a
        second query. */
     deliveredOutfitKeys: deliveredOutfitKeysFrom(assets),
@@ -437,7 +456,13 @@ export async function retryCastView(
     been filled — by a sweep, by another tab — offers nothing, and the answer
     is a free refusal rather than a second picture nobody asked for.
   */
-  const offer = castSlotRetryOffer(slot, CASTING_V2_VIEW_RETRY_PRICE_CREDITS);
+  const offer = castSlotRetryOffer(
+    slot,
+    CASTING_V2_VIEW_RETRY_PRICE_CREDITS,
+    /* THE THIRD FACT, from the SAME read the slot came out of (#1601 item 4) —
+       never a second query here, which would be a reading the room never had. */
+    read.freeRetrySpentAngles.includes(input.angle),
+  );
   if (!offer) {
     throw new TRPCError({
       code: "PRECONDITION_FAILED",

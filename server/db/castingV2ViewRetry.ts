@@ -24,7 +24,7 @@
  * Sign's to cover both would have relaxed a live money path to serve a new
  * one.
  */
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull, ne } from "drizzle-orm";
 
 import {
   castingCandidateVariants,
@@ -457,4 +457,106 @@ export async function retriedViewLanded(input: {
     const provenance = row.provenance as { retryOperationId?: unknown } | null;
     return provenance?.retryOperationId === input.operationId;
   });
+}
+
+/**
+ * The status a claim is written at, before anything about it is known.
+ *
+ * This is `generation_operations.status`'s own schema DEFAULT, spelled here
+ * because drizzle does not expose a column's default as a value. It is therefore
+ * a second spelling of one fact (working law 4) and it is held to the first:
+ * `viewRetryFreeOnce.test.ts` reads the default out of the drizzle column config
+ * and reddens if the two part company. Without that arm, renaming the status
+ * would leave this module quietly admitting every claimed row — which is the
+ * direction that hands out free renders.
+ */
+const CLAIMED_OPERATION_STATUS = "claimed";
+
+/**
+ * THE ONE FREE TRY AGAIN, SPENT OR NOT — read at the operation rows (#1601 item 4).
+ *
+ * His rule, from the card: an unchecked view's first Try again is free, **once**;
+ * the second is paid. Until this read existed the free offer was a pure function
+ * of the slot's state, and that state does not change when a free retry is taken
+ * — a view delivered unchecked is still unchecked after a second unchecked
+ * picture lands on it. So the free ask renewed itself every time the judge was
+ * unavailable, and a customer could have the house render a 2K view without limit
+ * for nothing.
+ *
+ * # Why this needs no migration, and no column
+ *
+ * The same reason {@link listRunningViewRetryAngles} needs none, and it is the
+ * #1235 reading reused rather than re-invented: `generation_operations` carries
+ * **no payload and no angle**, but it carries the HASH of the claim's subject,
+ * and {@link castViewRetrySubjectHash} recomputes that hash per angle from the
+ * same payload builder the entrance claims with. A closed vocabulary of five
+ * angles makes the recomputation exhaustive. Nothing is mirrored, and a changed
+ * payload shape reddens a test rather than silently handing out free renders.
+ *
+ * # Why `plannedCredits = 0` is the free/paid discriminator
+ *
+ * `markGenerationOperationRunning` writes the price the entrance read from
+ * {@link castSlotRetryOffer} into `plannedCredits`, and the two roads are 0 and
+ * `CASTING_V2_VIEW_RETRY_PRICE_CREDITS`. It is the house's own way of asking this
+ * question — `inkAddAcceptance` and `inkAddCancellation` both filter the same
+ * column for the same reason.
+ *
+ * ⚠ **`status <> 'claimed'` IS LOAD-BEARING AND IS NOT A TIDINESS FILTER.**
+ * `plannedCredits` defaults to 0 at the claim and is written one statement later,
+ * so a row still at `claimed` reads 0 whatever it was going to cost. Without this
+ * arm every PAID Try again would consume the free one for its angle during the
+ * milliseconds between the two statements. It also happens to be the right
+ * product answer either way: a claim that never reached `running` dispatched no
+ * render, so the customer has had nothing and keeps their free ask.
+ *
+ * ⚠ **THE LIMIT THIS CANNOT CLOSE, STATED RATHER THAN DISCOVERED LATER.** A PAID
+ * retry whose `markRunning` throws is settled as a failure with `plannedCredits`
+ * still at its default 0, so it reads here as a spent free ask on that angle.
+ * The exact closure is `plannedCredits` written at the CLAIM, which is a change
+ * to the shared claim path every road in the product takes — not this slice's to
+ * make. What it costs when it happens: one free Try again on a slot that would
+ * then have to become unchecked for the loss to be visible at all. Carded.
+ *
+ * ⚠ **A FREE ASK THAT DID NOT ARRIVE STILL COUNTS**, which is the card's own
+ * wording and the reason there is no landed-asset arm here. The asset row would
+ * have been the easier read — `pointsCost` 0 with a `castingV2.viewRetry`
+ * provenance — and it is the WRONG one: a free render that failed would renew
+ * the free ask, which is the loop this item exists to close.
+ *
+ * Unlike the busy read, an unavailable database THROWS rather than answering [].
+ * The sibling may answer "nothing is running" safely because its empty direction
+ * costs a tile its skeleton; the empty direction here hands out a free render.
+ * `listCastPromisedAngles` takes the same refusal for the same kind of fact.
+ */
+export function spentFreeViewRetryFilter(input: { userId: number; modelId: number }) {
+  return and(
+    eq(generationOperations.userId, input.userId),
+    eq(generationOperations.modelId, input.modelId),
+    eq(generationOperations.kind, "castingV2.viewRetry"),
+    eq(generationOperations.plannedCredits, 0),
+    ne(generationOperations.status, CLAIMED_OPERATION_STATUS),
+    isNull(generationOperations.subjectDeletedAt),
+  );
+}
+
+export async function listSpentFreeViewRetryAngles(input: {
+  userId: number;
+  modelId: number;
+  castId: string;
+}): Promise<CastViewAngle[]> {
+  assertPositiveId(input.userId, "userId");
+  assertPositiveId(input.modelId, "modelId");
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const rows = await db
+    .select({ payloadHash: generationOperations.payloadHash })
+    .from(generationOperations)
+    .where(spentFreeViewRetryFilter({ userId: input.userId, modelId: input.modelId }));
+  if (rows.length === 0) return [];
+  const spent = new Set(rows.map((row) => row.payloadHash));
+  return CAST_VIEW_ANGLES.filter((angle) => spent.has(castViewRetrySubjectHash({
+    modelId: input.modelId,
+    castId: input.castId,
+    angle,
+  })));
 }
