@@ -36,12 +36,29 @@ import { codeOnly } from "../testing/withoutComments";
  *
  * None of it could ever have been WRONG while it was being built, because
  * there was exactly one slice price in the tree and a Follow and a Roll both
- * cost 8 × 20 = 160. ⚠ **That stopped being true on 2026-10-01: item 1 set
- * them to 150 and 200, so every reading above is now load-bearing.** The shape
- * it would have failed in is the worst available one: `retryService` would
- * charge a Follow tile the Roll price and then WRITE that price onto the
- * tile's row, so the mis-charge becomes its own refund authority and the
- * ledger reconciles perfectly against the wrong number.
+ * cost 8 × 20 = 160. That stopped being true on 2026-10-01, when item 1 set
+ * them to 150 and 200. The shape it would have failed in is the worst available
+ * one: `retryService` would charge a Follow tile the Roll price and then WRITE
+ * that price onto the tile's row, so the mis-charge becomes its own refund
+ * authority and the ledger reconciles perfectly against the wrong number.
+ *
+ * ⚠ **THE TWO SLICES AGREE AGAIN SINCE #1753, AND THAT CHANGES WHICH OF
+ * THESE READINGS IS LOAD-BEARING — IT DOES NOT MAKE ANY OF THEM SAFE.** His
+ * one-price ruling of 2026-10-02 put `rollCandidate` at the follow's 200, so
+ * picking the wrong slice costs a customer nothing TODAY. Two things are
+ * unaffected and both are real:
+ *
+ *   — **the row-versus-constant reading still bites**, because production rows
+ *     hold the prices of the day they were written (483 of them at 20, and
+ *     one day's worth at 150). A retry priced from the constant overcharges
+ *     every one of those tiles whatever today's table says;
+ *   — **the selector's reading is one ruling away from biting again.** He has
+ *     moved these two numbers twice in two days. An arm that only fails while
+ *     they differ is an arm that was never testing the code.
+ *
+ * So nothing here is relaxed: the arms below are driven through the injected
+ * table precisely so that they keep failing on a branch swap while the real
+ * table cannot tell one branch from the other.
  *
  * # ⚠ THE THING THIS SUITE HAD TO SOLVE FIRST
  *
@@ -51,10 +68,16 @@ import { codeOnly } from "../testing/withoutComments";
  * fail standing in front of the only decision that sets a customer's bill
  * (working law 2), and it is why `castingSliceCredits` takes its table as a
  * defaulted parameter: an ES const cannot be replaced from outside its own
- * module, so the seam is in the function and the arms below drive it with
- * **150 and 200** — which, since item 1, is also what the real table holds.
- * The seam stays anyway: the arms must keep failing for a reason that does not
- * depend on today's two numbers.
+ * module, so the seam is in the function and the arms below drive it through a
+ * pair the product does not hold.
+ *
+ * ⚠ **THE INJECTED PAIR SHARES NO VALUE WITH THE REAL TABLE, AND THAT IS
+ * NEW IN #1753.** It was 150 and 200, chosen while those were the product's own
+ * two numbers — so an arm that reached the DEFAULT instead of its argument
+ * could still pass on the anchored side by coincidence. Both slices are 200 now,
+ * which would have widened that coincidence rather than closing it. The pair is
+ * 150 and 250: neither is a current price of anything, so each arm fails if the
+ * function reaches past its argument, and both fail on a branch swap.
  *
  * Where a divergence cannot be injected, the arm says so and a DIFFERENT
  * reading carries the weight — the retry arms hand the service a row at 200
@@ -65,8 +88,16 @@ import { codeOnly } from "../testing/withoutComments";
 
 const repoRoot = join(import.meta.dirname, "..", "..");
 
-/** Diverged numbers, standing in for item 1's table. Neither is today's 20. */
-const DIVERGED = { rollCandidate: 150, followCandidate: 200 } as const;
+/**
+ * A pair that disagrees, standing in for any day on which the product's two
+ * slices do. **Neither number is a current price**, which is the property that
+ * matters rather than their values: an arm that reached the module default
+ * instead of this argument would return 200 and fail both sides.
+ *
+ * 150 is what a Roll cost for the one day between #1601 item 1 and #1753; 250 is
+ * nothing the product has ever charged.
+ */
+const DIVERGED = { rollCandidate: 150, followCandidate: 250 } as const;
 
 describe("the selector picks the slice from the roll's own shape", () => {
   it("prices an UNANCHORED sheet in the roll slice — driven with diverged numbers", () => {
@@ -74,37 +105,58 @@ describe("the selector picks the slice from the roll's own shape", () => {
   });
 
   it("prices an ANCHORED sheet — a follow — in the follow slice", () => {
-    expect(castingSliceCredits({ anchored: true }, DIVERGED)).toBe(200);
+    expect(castingSliceCredits({ anchored: true }, DIVERGED)).toBe(250);
   });
 
   it("⚠ a branch swap is what these two arms exist to catch, so prove they disagree", () => {
-    /* The whole point of the injected table. With the real one both sides are
-       20 and this expectation is `20 !== 20` — false — which is exactly the
-       vacuity the seam removes. */
+    /* The whole point of the injected table, and it is doing the work again
+       since #1753: with the REAL one both sides are 200, so this expectation
+       would read `200 !== 200` — false — which is the vacuity the seam
+       removes. It was equally vacuous at 20 before #1601 item 1, and briefly
+       not between the two. */
     expect(castingSliceCredits({ anchored: true }, DIVERGED))
       .not.toBe(castingSliceCredits({ anchored: false }, DIVERGED));
   });
 
   it("defaults to the product's own table, so a production caller passes one argument", () => {
+    /*
+      ⚠ **THIS ARM IS VACUOUS ON PURPOSE AND MUST NOT BE READ AS COVER.** Both
+      members are 200 since #1753, so it passes with the two branches swapped.
+      What it still proves is the only thing it was ever for: that the parameter
+      is DEFAULTED, so a production caller passing one argument is priced from
+      the product's real table rather than from undefined. The branch choice is
+      proven three arms up, through `DIVERGED`.
+    */
     expect(castingSliceCredits({ anchored: false })).toBe(CASTING_V2_COSTS.rollCandidate);
     expect(castingSliceCredits({ anchored: true })).toBe(CASTING_V2_COSTS.followCandidate);
   });
 });
 
 describe("the two slices are two prices, not one price read twice", () => {
-  it("DISAGREE as of 2026-10-01, which is the day every arm in this file was written for", () => {
+  it("AGREE since 2026-10-02 — one price for a Roll and a Follow, at the follow's figure", () => {
     /*
-      ⚠ **THIS ARM READ `toBe` UNTIL #1601 ITEM 1 AND IT WAS NOT AN
-      ASPIRATION** — it recorded the one fact that made item 2 safe to ship at
-      all: a money path taught to pick between two prices that happened to be
-      equal could not charge anybody the wrong one while it was being built.
-      Its own instruction was *"when this arm fails, item 1 has landed"*. Item
-      1 has landed, so the arm states the new fact rather than being deleted:
-      a later change that quietly re-equalised the two slices would reprice a
-      Follow to a Roll, and this is where that shows.
+      ⚠ **THIS ARM HAS NOW BEEN INVERTED TWICE AND NEITHER INVERSION WAS A
+      CLIMBDOWN. IT IS A RECORD OF WHAT HE DECIDED, AND IT IS NOT DELETED.**
+
+        — it read `toBe` until #1601 item 1, recording the one fact that made
+          item 2 safe to ship: a money path taught to pick between two prices
+          that happened to be equal could not charge anybody the wrong one
+          while it was being built. Its instruction was *"when this arm fails,
+          item 1 has landed"*;
+        — item 1 landed and it became `not.toBe`, pinning the divergence;
+        — #1753 is his one-price ruling, verbatim: *"go with your reccomendation
+          on the roll and follow one price is better and we earn more for rolls
+          simple"*. So it reads `toBe` again, at 200.
+
+      **What it guards is no longer an inequality but a VALUE, and that is the
+      honest shape of it.** While the two agree, nothing in this file can catch a
+      Follow repriced to a Roll by value — only the declaration arm below can,
+      because it reads the source rather than the number. These three
+      expectations are what would catch the opposite mistake: a shift
+      "correcting" one of the two slices back to its old figure.
     */
-    expect(CASTING_V2_COSTS.followCandidate).not.toBe(CASTING_V2_COSTS.rollCandidate);
-    expect(CASTING_V2_COSTS.rollCandidate).toBe(150);
+    expect(CASTING_V2_COSTS.followCandidate).toBe(CASTING_V2_COSTS.rollCandidate);
+    expect(CASTING_V2_COSTS.rollCandidate).toBe(200);
     expect(CASTING_V2_COSTS.followCandidate).toBe(200);
   });
 
@@ -147,7 +199,14 @@ describe("the two slices are two prices, not one price read twice", () => {
     */
     expect(CASTING_V2_FOLLOW_PRICE_CREDITS)
       .toBe(CASTING_V2_COSTS.followCandidate * CASTING_V2_COSTS.rollCandidateCount);
-    expect(CASTING_V2_FOLLOW_PRICE_CREDITS).not.toBe(CASTING_V2_ROLL_PRICE_CREDITS);
+    /*
+      ⚠ **AND IT EQUALS THE ROLL'S TOTAL SINCE #1753, WHERE THIS LINE READ
+      `not.toBe` BEFORE.** The constant's own docblock carries why it survives the
+      equality: a Follow's total is DERIVED from a Follow's slice, so a surface
+      that wants it asks for it instead of reading a Roll's and trusting the two
+      to match. The inequality was never the point; the provenance is.
+    */
+    expect(CASTING_V2_FOLLOW_PRICE_CREDITS).toBe(CASTING_V2_ROLL_PRICE_CREDITS);
   });
 });
 
@@ -252,12 +311,20 @@ describe("⚠ THE TRIPWIRE FIRED AND WAS DISCHARGED — neither account-level qu
       • the RETRY quote had no design question in it — the server already
         charged the row, so the quote LEFT `config` (the tripwire's own second
         option) and the sheet derives the number from the roll row's own total;
-      • the DOCK's did. One line cannot state 240 and 320, and cost is metadata
-        rather than button text (D-109), so where a tile's Follow price goes is
-        a founder decision. What shipped is the dock naming the price of the
-        button the DOCK fires — strictly truer than one number in every case —
-        and the uncovered case (an unfollowed sheet's tile Follow) is on his
-        desk as **#1699**. That is named here rather than left to be found.
+      • the DOCK's did. One line could not state 240 and 320, and cost is
+        metadata rather than button text (D-109), so where a tile's Follow price
+        went was a founder decision. What shipped is the dock naming the price of
+        the button the DOCK fires — strictly truer than one number in every
+        case — and the uncovered case (an unfollowed sheet's tile Follow) went
+        to his desk as **#1699**.
+
+    ⚠ **HE ANSWERED #1699 ON 2026-10-02 BY REMOVING THE QUESTION (#1753):
+    one price for a Roll and a Follow, at the follow's 320.** So both surfaces
+    this block watches are honest with a single number again. **The arms below are
+    NOT relaxed on that account** — each still reads the site the tripwire
+    named, because the repair is the thing that has to survive, and the day he
+    splits the two prices again is the day the sheet needs every one of these
+    readings intact.
   */
   const repoFile = (path: string) => codeOnly(readFileSync(join(repoRoot, path), "utf8"));
 
@@ -300,23 +367,30 @@ describe("⚠ THE TRIPWIRE FIRED AND WAS DISCHARGED — neither account-level qu
 
   it("serves both totals, and they are the two slices times the count", () => {
     expect(repoFile("server/routes/castingV2.ts")).toContain("followPriceCredits");
-    expect(CASTING_V2_ROLL_PRICE_CREDITS).toBe(1200);
+    expect(CASTING_V2_ROLL_PRICE_CREDITS).toBe(1600);
     expect(CASTING_V2_FOLLOW_PRICE_CREDITS).toBe(1600);
   });
 
-  it("⚠ names the one case the dock still cannot state, so it is not mistaken for finished", () => {
+  it("⚠ the case the dock could not state is ANSWERED, and this is the arm that was rewritten", () => {
     /*
-      A tile's **Follow** on a sheet that is not already following charges
-      1,600 while the dock quotes 1,200, because that line describes the dock's
-      own button. It is the narrowest remainder of his 2026-08-02 ruling, whose
-      premise — one price for both — died with the price table, and it is HIS
-      to answer: **#1699**, with two options and a recommendation.
+      ⚠ **THIS IS THE REWRITE ITS OWN PREDECESSOR ASKED FOR.** It used to
+      assert `toBeGreaterThan` and name the uncovered case: a tile's **Follow**
+      on a sheet that is not already following charged 1,600 while the dock
+      quoted 1,200, because that line describes the dock's own button. That was
+      the narrowest remainder of his 2026-08-02 one-price ruling, whose premise
+      died with the price table, and it closed with the words *"the day one
+      surface states both, this is the arm to rewrite."*
 
-      This arm exists so the remainder cannot be read as an oversight. It
-      asserts the only thing that is actually true today — that the two totals
-      differ, which is precisely what makes a single dock line unable to cover
-      both — and the day one surface states both, this is the arm to rewrite.
+      He answered it on 2026-10-02 (**#1699 — #1753**) by restoring the premise
+      rather than by choosing where a second number goes: one price for both, at
+      the follow's figure. So every sheet, following or not, now has its dock
+      line and its tiles' Follow quoting the same number, and the remainder is
+      gone rather than tolerated.
+
+      The expectation is the equality, because that is the fact a single honest
+      dock line rests on. Split the two prices again and this reddens — which is
+      correct: the dock would need the selection back.
     */
-    expect(CASTING_V2_FOLLOW_PRICE_CREDITS).toBeGreaterThan(CASTING_V2_ROLL_PRICE_CREDITS);
+    expect(CASTING_V2_FOLLOW_PRICE_CREDITS).toBe(CASTING_V2_ROLL_PRICE_CREDITS);
   });
 });

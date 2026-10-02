@@ -9967,7 +9967,7 @@
       "name": "CASTING_V2_COSTS.rollCandidate",
       "constant": "CASTING_V2_COSTS",
       "member": "rollCandidate",
-      "credits": 150,
+      "credits": 200,
       "file": "server/casting/castingCreditCosts.ts"
     },
     {
@@ -9997,7 +9997,7 @@
       "id": "cost:server/casting/castingCreditCosts.ts:CASTING_V2_ROLL_PRICE_CREDITS",
       "name": "CASTING_V2_ROLL_PRICE_CREDITS",
       "constant": "CASTING_V2_ROLL_PRICE_CREDITS",
-      "credits": 1200,
+      "credits": 1600,
       "derivedFrom": "CASTING_V2_COSTS.rollCandidate * CASTING_V2_COSTS.rollCandidateCount",
       "file": "server/casting/castingCreditCosts.ts"
     },
@@ -10106,7 +10106,7 @@
       "id": "cost:server/castingV2/castViewPackage.ts:CASTING_V2_ONE_CHARACTER_CREDITS",
       "name": "CASTING_V2_ONE_CHARACTER_CREDITS",
       "constant": "CASTING_V2_ONE_CHARACTER_CREDITS",
-      "credits": 11450,
+      "credits": 11850,
       "derivedFrom": "CASTING_V2_ROLL_PRICE_CREDITS + CASTING_V2_REFINE_PRICE_CREDITS + CASTING_V2_SIGN_PRICE_CREDITS",
       "file": "server/castingV2/castViewPackage.ts"
     },
