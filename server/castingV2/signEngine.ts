@@ -42,6 +42,7 @@ import { createOpenRouterTextEngine, DEFAULT_INTERPRETER_MODEL } from "../provid
 import { createFalIdentityEngine } from "../providers/falQueue";
 import { createFalSunburstPlateEngine } from "../providers/falImages";
 import { falAllowanceOf } from "./falBudget";
+import { createFalRegionReader } from "./falRegionReader";
 import { ProviderQueue } from "../providers/providerQueue";
 import type { IdentityEngine } from "../providers/types";
 import { CAST_PACKAGE_VIEWS } from "./castViewPackage";
@@ -158,7 +159,29 @@ export function castingViewConformanceJudge(): ViewConformanceJudge {
       */
       throw new Error("OPENROUTER_API_KEY is required to validate a signed Cast package");
     }
+    /*
+      ⚠ **AND THE SEGMENTER IS REQUIRED TOO, ON THE SAME GROUND — #1612's
+      hand-over, and invariant 7 is why it is a throw and not a fallback.**
+
+      Since the hand-over the framing axis is a MEASUREMENT, and
+      `framingReader` is optional on the judge's config for exactly one reason:
+      a test that does not care about framing. A production judge built without
+      one would silently go back to asking a vision model the question his
+      ruling took away from it — *"a control that is not invoked does not
+      exist"*, arriving as an absence rather than an error.
+
+      It costs nothing in practice and that is checked rather than hoped:
+      `castingViewEngine` above refuses on this same variable before any money
+      moves, so a deployment that can render a view can always measure one. The
+      refusal is here anyway because the alternative is a Sign that charges for
+      five checked views and checked none of their crops.
+    */
+    const falKey = process.env.FAL_KEY;
+    if (!falKey) {
+      throw new Error("FAL_KEY is required to measure a signed Cast view's framing band");
+    }
     judge = createViewConformanceJudge({
+      framingReader: createFalRegionReader({ apiKey: falKey }),
       engine: createOpenRouterTextEngine({
         apiKey,
         // Vision-capable, and the same slug the interpreter is pinned to — one

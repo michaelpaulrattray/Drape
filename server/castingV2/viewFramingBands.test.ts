@@ -54,7 +54,7 @@
 import { describe, expect, it } from "vitest";
 
 import { CAST_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
-import { castPackageView } from "./castViewPackage";
+import { castPackageView, readerFramingQuestion } from "./castViewPackage";
 import { FRAMING_LANDMARKS, type FramingRule } from "./viewFramingGeometry";
 
 /**
@@ -557,5 +557,140 @@ describe("the hand-over's debt: the clauses discharged into a reader's remainder
       + " 2026-10-02 when `frontClose`'s \"a head-and-shoulders portrait\" was restated by a"
       + " measured bound; a view back on it owes a clause nothing measures.",
     ).toEqual([]);
+  });
+});
+
+/**
+ * ⚠ **WHAT THE JUDGE IS NO LONGER ASKED — the hand-over itself, and these arms
+ * are the ONLY thing standing between a narrowing and a deletion (#1612).**
+ *
+ * The three arms at the top of this file pair a RULE with a clause. These pair
+ * the POSTED QUESTION with the rules, which is a different question and is the
+ * one the hand-over turns on: a sentence may leave the judge's post only when
+ * the measurement answers it, and a measured clause that stays in the post must
+ * be declared as such on the band.
+ *
+ * ⚠ **The direction that matters is the SILENT one, exactly as it was for
+ * `unrestated`.** A sentence removed from the post with no rule answering it is
+ * a stated framing test deleted, on a surface where the consequence is a
+ * picture marked checked that nobody checked — and nothing above this block can
+ * see it, because every arm up there starts from a rule and asks what it cites.
+ */
+describe("the narrowing — a sentence leaves the judge's post only when a rule answers it", () => {
+  /** The clauses this view's rules restate, read off the citation table above. */
+  const citationsOf = (angle: CastViewAngle): string[] =>
+    castPackageView(angle).band.rules.map((rule) => CLAUSE_FOR[angle][keyOf(rule)]!);
+
+  for (const angle of CAST_VIEW_ANGLES) {
+    it(`${angle}: every sentence taken out of the post is still in the spec, verbatim`, () => {
+      const view = castPackageView(angle);
+      for (const sentence of view.band.restatedInFull ?? []) {
+        expect(
+          view.spec.framing,
+          `${angle} says its rules restate a sentence its spec no longer contains — the spec was`
+          + " reworded and the band was not re-read",
+        ).toContain(sentence);
+      }
+    });
+
+    it(`${angle}: every sentence taken out of the post is answered by a rule`, () => {
+      /*
+        THE LOAD-BEARING ARM. Without it a sentence could be listed, vanish from
+        the judge's post, and be measured by nothing — which is #1675's defect
+        pointed at the post instead of at the band, and with a worse consequence
+        because the picture is already paid for.
+      */
+      const view = castPackageView(angle);
+      const cited = citationsOf(angle);
+      for (const sentence of view.band.restatedInFull ?? []) {
+        const answering = cited.filter((clause) => sentence.includes(clause));
+        expect(
+          answering.length,
+          `${angle} stops asking the judge "${sentence.slice(0, 48)}…" and no rule cites a clause`
+          + " inside it",
+        ).toBeGreaterThan(0);
+      }
+    });
+
+    it(`${angle}: a measured clause the judge still sees is DECLARED, and one it cannot is not`, () => {
+      /*
+        The tie, in both directions, so the field can be neither silent nor
+        decorative. A rule whose clause sits inside a sentence that is still
+        posted is a clause answered twice — deterministically and by a reading
+        that may disagree — and that costs a correct picture an `Unchecked` mark
+        (part 2 means it costs nothing more than the mark). It is the whole
+        remainder of the hand-over, so it is declared per view.
+      */
+      const view = castPackageView(angle);
+      const removed = view.band.restatedInFull ?? [];
+      const overlapping = citationsOf(angle).filter(
+        (clause) => !removed.some((sentence) => sentence.includes(clause)),
+      );
+      if (overlapping.length > 0) {
+        expect(
+          view.band.readerAlsoAsked,
+          `${angle} still posts the clause "${overlapping[0]!.slice(0, 48)}…" that one of its own`
+          + " rules measures, and says nothing about it",
+        ).toBeTruthy();
+      } else {
+        expect(
+          view.band.readerAlsoAsked,
+          `${angle} declares a reader overlap it does not have — the field would be decorative`,
+        ).toBeUndefined();
+      }
+    });
+
+    it(`${angle}: the posted question is a subsequence of his own sentences`, () => {
+      /*
+        ⚠ **THE ONE GUARANTEE A SHIFT MUST NOT BE ABLE TO BREAK.** The other road
+        to this card's *"the prose framing spec stops being sent"* is to cut his
+        sentences at their commas and post the halves — which composes a sentence
+        he never wrote and stands it up as the standard a paid view is held to.
+        #1582 measured three careful rewordings of ONE framing spec and each
+        broke a correct picture. So the posted text is held to being his text:
+        every sentence of it appears in the spec, in the same order, verbatim.
+      */
+      const spec = castPackageView(angle).spec.framing;
+      const posted = readerFramingQuestion(angle);
+      let at = 0;
+      for (const sentence of posted.split(/(?<=\.)\s+/)) {
+        const found = spec.indexOf(sentence, at);
+        expect(
+          found,
+          `${angle} posts "${sentence.slice(0, 48)}…", which is not his sentence or is out of order`,
+        ).toBeGreaterThanOrEqual(0);
+        at = found + sentence.length;
+      }
+    });
+  }
+
+  it("⚠ CONTROL — the arms above are reading a real removal, on exactly one view", () => {
+    /*
+      Six of the seven specs state a measured test and a reader's test inside ONE
+      sentence, so there is nothing to remove from them without recomposing.
+      Without this control every arm above would pass on six views by having
+      nothing to check, and the suite would read as coverage.
+    */
+    const narrowed = CAST_VIEW_ANGLES.filter(
+      (angle) => (castPackageView(angle).band.restatedInFull ?? []).length > 0,
+    );
+    expect([...narrowed].sort()).toEqual(["closeUp"]);
+    expect(readerFramingQuestion("closeUp")).not.toContain("TOO LOOSE");
+    expect(castPackageView("closeUp").spec.framing).toContain("TOO LOOSE");
+  });
+
+  it("⚠ every view with a rule declares what the reader is still shown", () => {
+    /*
+      Stated as a population rather than per view, because the honest summary of
+      this slice is a number: five of the seven views measure something and
+      still show the reader a clause they measure. A view leaving that list is a
+      real improvement and should have to come here and say so.
+    */
+    const declaring = CAST_VIEW_ANGLES.filter(
+      (angle) => castPackageView(angle).band.readerAlsoAsked !== undefined,
+    );
+    expect([...declaring].sort()).toEqual(
+      ["backFull", "closeUp", "frontClose", "frontFull", "sideFull"],
+    );
   });
 });

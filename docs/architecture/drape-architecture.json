@@ -12707,6 +12707,10 @@
       "path": "server/castingV2/sheetPreview.test.ts"
     },
     {
+      "id": "test:server/castingV2/signEngineFramingReader.test.ts",
+      "path": "server/castingV2/signEngineFramingReader.test.ts"
+    },
+    {
       "id": "test:server/castingV2/signFeatureWords.test.ts",
       "path": "server/castingV2/signFeatureWords.test.ts"
     },
@@ -12841,6 +12845,10 @@
     {
       "id": "test:server/castingV2/viewFramingGeometry.test.ts",
       "path": "server/castingV2/viewFramingGeometry.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/viewFramingHandover.test.ts",
+      "path": "server/castingV2/viewFramingHandover.test.ts"
     },
     {
       "id": "test:server/castingV2/viewOutfitAuthority.test.ts",
@@ -28821,6 +28829,11 @@
     },
     {
       "from": "module:server/castingV2/signEngine.ts",
+      "to": "module:server/castingV2/falRegionReader.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signEngine.ts",
       "to": "module:server/castingV2/viewConformance.ts",
       "kind": "imports"
     },
@@ -29187,6 +29200,11 @@
     {
       "from": "module:server/castingV2/viewConformance.ts",
       "to": "module:server/castingV2/judgeFrame.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewConformance.ts",
+      "to": "module:server/castingV2/viewFramingGeometry.ts",
       "kind": "imports"
     },
     {

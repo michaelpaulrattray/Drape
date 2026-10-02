@@ -928,6 +928,51 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
         { must: "cutBy", landmark: "subject", edge: "top" },
       ],
       /*
+        ⚠ **THE TOO-LOOSE PAIR LEAVES THE JUDGE'S POST — the hand-over, #1612,
+        and this is the ONE view where his *"the prose framing spec stops being
+        sent"* is literally achievable.** The pair is `roomBelowAtMost face 0.3`
+        and `cutBy subject top`, which between them restate every TEST in these
+        two sentences:
+
+          *"the neck and shoulders are in frame"*  → 0.3 of a face-height of
+          room below the face, measured, on his own six frames (0.07 … 0.56 with
+          an empty band between 0.20 and 0.48).
+          *"the whole head fits with clear space above the hair"*  → the subject
+          is CUT BY the top edge, which is the same fact with no hairline in it.
+
+        **The first half of the first sentence is a PERMISSION and needs no
+        test**: *"The top of the head may be cropped and hair may run off the
+        left and right edges"* grants what `cutBy subject top` requires, and the
+        band leaves left and right unconstrained on purpose (his ruling lets
+        hair run off both edges, and a rule he did not state is not added here).
+        *"That is a portrait, not a close-up."* is the pair's own gloss and would
+        dangle without them, so it goes with them.
+
+        ⚠ **AND `TOO TIGHT` DELIBERATELY STAYS WITH THE READER, which is the one
+        judgement in this list worth arguing with.** `clearOf face bottom`
+        restates its second half (*"that lower edge touches the bottom of the
+        frame with no skin below it"*) and does NOT restate its first: *"the
+        bottom edge of the frame cuts the mouth"* names a FEATURE, and inferring
+        the mouth's position from the face region's lower edge is anatomy — which
+        is #1582's whole specimen (a rule stated in human anatomy refuses a being
+        built differently). So the too-tight sentence is posted as it always was
+        and the measurement answers it too; the cost of that overlap is a wrong
+        `unchecked` mark at worst, never a lost picture (part 2).
+      */
+      restatedInFull: [
+        "The top of the head may be cropped and hair may run off the left and right edges — "
+        + "but TOO LOOSE, and it fails: the neck and shoulders are in frame, or the whole "
+        + "head fits with clear space above the hair. That is a portrait, not a close-up.",
+      ],
+      readerAlsoAsked:
+        "the margin below the face. `clearOf face bottom` measures it, and its clause — \"with "
+        + "a margin of skin visible BELOW that lower edge\" — is the tail of a sentence whose "
+        + "head is the feature test (\"The mouth, every eye the reference shows … are entirely "
+        + "inside the frame\"), so removing it would leave a sentence he never wrote. The "
+        + "too-tight sentence stays posted for the same reason and on a stronger one: \"the "
+        + "bottom edge of the frame cuts the mouth\" is a feature, and inferring a mouth from "
+        + "the face region's lower edge is the anatomy #1582 was filed about.",
+      /*
         ⚠ **THE TWO CLAUSES OF HIS OWN SPEC THAT NO RULE ABOVE RESTATES — DECLARED
         AS DEBT BY #1675 AND DISCHARGED HERE AS A READER'S QUESTION (#1612, the
         hand-over's debt, 2026-10-01).** This is the view the types called FULLY
@@ -1086,6 +1131,25 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
         + "to the camera — a feature count and an orientation, neither of which this file's "
         + "landmarks can answer without the reference's own face scan.",
       /*
+        ⚠ **NOTHING LEAVES THIS VIEW'S POST, AND THE WHOLE SPEC IS ONE SENTENCE
+        — which is why {@link ViewFramingBand.readerAlsoAsked} is filled in
+        rather than this band carrying an empty `restatedInFull`.**
+
+        *"a head-and-shoulders portrait, square to the camera, every eye the
+        reference shows visible, the whole hair silhouette inside the frame with
+        headroom above it."* Both rules cite a clause of it and both of the
+        remaining clauses are the reader's, so there is no sentence boundary to
+        cut at. Removing the two measured clauses would compose *"square to the
+        camera, every eye the reference shows visible"* — a sentence he never
+        wrote, posted as the standard a paid Portrait is held to.
+      */
+      readerAlsoAsked:
+        "both of its measured clauses. \"a head-and-shoulders portrait\" (the 3.7 bound) and "
+        + "\"the whole hair silhouette inside the frame with headroom above it\" (clearOf "
+        + "subject top) are two of the four clauses of a single sentence, and the other two — "
+        + "an orientation and a feature count — are the reader's. There is no sentence "
+        + "boundary here, so removing them would recompose his sentence.",
+      /*
         ⚠ **`unrestated` IS GONE FROM THIS BAND AND THE RECORD OF WHY IS HERE —
         the debt list only ever shrinks, and this is the commit that empties it
         across every view.**
@@ -1225,6 +1289,12 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
         { must: "clearOf", landmark: "subject", edge: "bottom" },
       ],
       readerRemainder: "the pose — square to the camera, arms relaxed at the sides.",
+      readerAlsoAsked:
+        "the whole crop. Both rules cite \"nothing cropped at the top or bottom of the frame\", "
+        + "which is the last clause of this view's single sentence, and the clause before it "
+        + "says the same fact twice — \"from the top of the hair to the feet\". Cutting both "
+        + "out leaves \"the whole body standing square to the camera, arms relaxed at the "
+        + "sides\", which is a sentence written by a shift and not by him.",
     },
     directive:
       "FULL BODY FRONT VIEW. The subject stands square to camera, head to feet entirely inside the "
@@ -1444,6 +1514,10 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
         "that the walk is genuinely in motion rather than a standing pose, and that the body "
         + "is \"seen from the side\" rather than square to camera — a stride and an "
         + "orientation, neither of which two `clearOf subject` rules can tell apart.",
+      readerAlsoAsked:
+        "the crop. Both rules cite \"head to feet inside the frame\", which sits between the "
+        + "orientation clause and the stride clause inside this view's single sentence — so it "
+        + "has a comma on each side and no sentence boundary anywhere.",
     },
     directive:
       "STRICT RIGHT-FACING FULL BODY SIDE PROFILE, WALKING. The subject's nose and toes point toward "
@@ -1503,6 +1577,13 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
         + "\"where is the face\" on a picture of a back cannot answer honestly; and that the "
         + "body is \"seen from directly behind\" rather than turned away at some other angle, "
         + "which is a direction and not a crop.",
+      readerAlsoAsked:
+        "the crop. This view's whole framing spec is one sentence of three clauses — a "
+        + "direction, \"head to feet inside the frame\" (what both rules cite), and a "
+        + "concealment — so the measured clause is the middle one of three and removing it "
+        + "would compose \"the whole body seen from directly behind, face not visible\". That "
+        + "reads well, which is exactly what makes it tempting: it is still a sentence nobody "
+        + "wrote, standing as the standard on the most-refused view on production.",
     },
     directive:
       "FULL BODY FROM BEHIND, walking away from camera. Head to feet entirely inside the frame. "
@@ -2036,19 +2117,75 @@ export function composePackageViewPrompt(
 }
 
 /**
+ * THE FRAMING QUESTION THE READER IS STILL ASKED — the view's own spec with
+ * every sentence the rules restate in full taken out of it (#1612, the
+ * hand-over).
+ *
+ * # What it guarantees, and it is the only thing worth guaranteeing here
+ *
+ * **The result is a subsequence of his own sentences, verbatim.** Each
+ * {@link ViewFramingBand.restatedInFull} entry is removed as a literal
+ * substring and nothing is rewritten, re-ordered or re-punctuated, so no road
+ * through this function can change the standard a delivered picture is held to.
+ * The alternative — cutting his sentences at their commas so every measured
+ * clause could go — composes text he never wrote, and #1582 measured three
+ * careful rewordings of one framing spec each breaking a correct picture. That
+ * is the road this function deliberately does not take; `restatedInFull`'s
+ * docblock carries the reasoning and each band's `readerAlsoAsked` carries what
+ * it costs that view.
+ *
+ * ⚠ **A view with no entries returns its spec unchanged, and that is a correct
+ * answer rather than a missing feature** — six of the seven views state a
+ * measured test and a reader's test inside one sentence, so there is nothing to
+ * remove without recomposing. What changes for them is not this string: it is
+ * that the measurement is now the AUTHORITY on the framing axis
+ * (`viewConformance.ts`), so the reader can no longer pass a frame the geometry
+ * failed.
+ *
+ * ⚠ **AND IT REFUSES RATHER THAN RETURNING A SHORT STRING.** An entry that is
+ * not in the spec means the spec was reworded and the band was not re-read, and
+ * a silent no-op there would post the measured sentence to the judge again
+ * while every guard about the band stayed green. `viewFramingBands.test.ts`
+ * holds the same fact at build time; this is the same fact at run time, on the
+ * money path, where it costs a Sign rather than a red.
+ */
+export function readerFramingQuestion(angle: CastViewAngle): string {
+  const view = VIEWS[angle];
+  let question = view.spec.framing;
+  for (const sentence of view.band.restatedInFull ?? []) {
+    if (!question.includes(sentence)) {
+      throw new Error(
+        `${angle}'s band says the rules restate "${sentence.slice(0, 48)}…" in full, and its `
+        + "spec no longer contains that sentence — re-read the band beside the spec",
+      );
+    }
+    question = question.replace(sentence, "");
+  }
+  /* The entries end at sentence boundaries, so removing one leaves the single
+     space that followed it beside the space that preceded it. Collapsing runs
+     of whitespace is the whole repair, and it cannot reach inside a sentence. */
+  return question.replace(/\s{2,}/g, " ").trim();
+}
+
+/**
  * What the judge is told this slot should be — the spec, in customer words,
  * and nothing else.
  *
  * Deliberately assembled from `spec` alone. If this function ever reaches for
  * `directive` or a constant block, view conformance silently becomes prompt
  * compliance and the check stops being worth running.
+ *
+ * ⚠ **ITS `framing` IS THE READER'S QUESTION SINCE #1612's HAND-OVER, NOT THE
+ * WHOLE SPEC.** This function answers *"what is the judge told"*, and the judge
+ * is no longer told the sentences the measurement answers in full. The whole
+ * spec is still where it always was — `castPackageView(angle).spec.framing` —
+ * and that is what the band's guards, the record and any future court read.
  */
 export function packageViewExpectation(
   angle: CastViewAngle,
   wardrobeLine: string | null = null,
   description: string | null = null,
 ): CastPackageViewSpec {
-  const { spec } = VIEWS[angle];
   /*
     The SAME answer the generator was given, through the same function. Two
     call sites composing the sentence separately is how a judge comes to fail a
@@ -2061,7 +2198,7 @@ export function packageViewExpectation(
     function's own comment describes, arriving through a new door.
   */
   return {
-    framing: spec.framing,
+    framing: readerFramingQuestion(angle),
     wardrobe: wardrobeSpecFor(angle, wardrobeLine, viewDescriptionOf(description)),
   };
 }
