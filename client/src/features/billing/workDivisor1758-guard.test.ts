@@ -260,10 +260,20 @@ describe("Card 1758 - the Add credits bullet", () => {
       the bullet is gated on the PHRASE rather than on a number — so the one
       place that decides whether there is anything to say is the helper that
       knows what `0` means.
+
+      ⚠ **THE NOUN THE COUNT READS MOVED WITH #1761 AND THE PROPERTY DID NOT.**
+      This arm matched `currentCredits === null ? null` — the rung's declared
+      `monthlyCredits`. On the free rung that column is a ONE-TIME signup grant,
+      so counting it produced *"up from about 1"* inside a sentence governed by
+      *a month*; the count now reads `currentMonthlyCredits`, the baseline
+      derived from the PRICE. **What this arm holds is unchanged** — the unread
+      state is still `null` and still not a count of zero — so it follows the
+      rename rather than being relaxed, and `monthlyDelta1761-guard.test.ts`
+      holds the baseline itself.
     */
     expect(bullets()).toContain("nextPhrase &&");
     expect(bullets()).not.toMatch(/oneCharacterCredits\s*>\s*0/);
-    expect(source).toMatch(/currentCredits === null\s*\n?\s*\?\s*null/);
+    expect(source).toMatch(/currentMonthlyCredits === null\s*\n?\s*\?\s*null/);
     /* And the helper's own answer to a divisor nobody has read. */
     expect(charactersPhrase(charactersFor(PLAN_TIERS.pro.monthlyCredits, 0))).toBeNull();
   });
