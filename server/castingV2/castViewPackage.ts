@@ -29,7 +29,11 @@ import {
   VIEW_ANGLE_LABELS,
   type CastViewAngle,
 } from "../../shared/boardTypes";
-import { CASTING_V2_SIGN_COSTS } from "../casting/castingCreditCosts";
+import {
+  CASTING_V2_REFINE_PRICE_CREDITS,
+  CASTING_V2_ROLL_PRICE_CREDITS,
+  CASTING_V2_SIGN_COSTS,
+} from "../casting/castingCreditCosts";
 import { pronounsForSex, type CastPronouns } from "./castPronouns";
 import { PHOTOREAL_HUMAN_BLOCKS } from "./cohortPhotorealHuman";
 import { HOUSE_PHOTOGRAPH_PARAGRAPHS } from "./houseBlock";
@@ -180,6 +184,47 @@ export const CASTING_V2_SIGN_PROMOTION_PRICE = CASTING_V2_SIGN_COSTS.promotion;
  */
 export const CASTING_V2_SIGN_PRICE_CREDITS =
   CASTING_V2_SIGN_COSTS.promotion + CAST_PACKAGE_VIEW_PRICE * CAST_PACKAGE_VIEWS.length;
+
+/**
+ * WHAT ONE FINISHED CHARACTER COSTS — the plan card's worked example, derived
+ * from the three prices that make one (#1607, P1-8).
+ *
+ * His approved pricing page puts a worked example on every plan card: *"For
+ * example, about 6 finished characters."* A credit count argues nothing on its
+ * own, so the card translates it into the one piece of work the studio exists
+ * to produce — and **a "finished character" is the whole road, not a picture**:
+ * a Roll to find her, a Refine to correct what the roll got wrong, and a Sign
+ * to make her a fixed identity with her five canonical views.
+ *
+ * ⚠ **IT IS DERIVED FROM THE THREE LIVE PRICES AND CARRIES NO LITERAL.** The
+ * card's own rule is *"the example counts are derived from the constants, not
+ * typed"*, and the reason is measured rather than stylistic: the card body
+ * (written 2026-09-30) quotes `Free 1, Starter 6, Pro 16, Studio 38, Business
+ * 200, Scale 1,100, Enterprise 3,600`, and the top three of those were computed
+ * against the grant ladder he then **rounded** on 2026-10-01 (#1602). A typed
+ * count would have shipped three figures that were already a day stale.
+ *
+ * ⚠ **AND IT MOVES AGAIN ON HIS NEXT PRICE WORD, WHICH IS THE POINT.** His
+ * ruling of 2026-10-02 puts a Roll and a Follow on one price; the day that
+ * lands in `CASTING_V2_COSTS`, this figure and every count on every plan card
+ * follow it with no copy edit anywhere.
+ *
+ * **One Refine, not three.** The Refine docblock's own argument is that three
+ * variants at 1,750 come to 5,250 on the way to a Sign — a real pattern, and
+ * the wrong basis for an example, because an example that assumes the
+ * expensive path understates what a plan covers. One correction is the
+ * modest, defensible read.
+ *
+ * ⚠ **A FOLLOW IS DELIBERATELY NOT IN THIS SUM.** `castingSliceCredits` prices
+ * a follow sheet above a roll sheet, and a customer casting one character from
+ * scratch rolls rather than follows — a follow is how a SECOND character
+ * inherits a first one's face. Summing the dearer slice would quote every plan
+ * a lower count than the work it actually covers.
+ */
+export const CASTING_V2_ONE_CHARACTER_CREDITS =
+  CASTING_V2_ROLL_PRICE_CREDITS
+  + CASTING_V2_REFINE_PRICE_CREDITS
+  + CASTING_V2_SIGN_PRICE_CREDITS;
 
 /**
  * The wardrobe the whole package is in — **relative to the reference, never an

@@ -106,6 +106,9 @@ const repoRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
  * that function, a FRAME count, and a RATE — each argued in
  * `creditDisplaySites.ts`'s own header. So this ratchet bottoms out above zero,
  * and a later slice reporting 0 has broken something rather than finished it.
+ * ⚠ **THE FRAME COUNT IS GONE AND THE CLIENT FLOOR IS FOUR (#1607)** — its
+ * SITE was deleted, which is the one door a row may leave by; the census's
+ * own header records the reading.
  *
  * ✅ **42 → 19 (#1600 slice 3, the server routing) — AND THE RATCHET IS NOW AT
  * ITS FLOOR, which is why the shape of the contract changes with this number.**
@@ -128,7 +131,15 @@ const repoRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
  * always was**: an excess site reddens the negative control, and the ratchet
  * catches the other direction — a row quietly re-admitted with a bigger count.
  */
-const OCCURRENCES_CEILING = 19;
+/*
+  ⚠ **19 → 18 (#1607, P1-8).** One row left by the only clean door — its SITE
+  was deleted. `ChangePlanModal`'s frames line became a count of finished
+  CHARACTERS, derived from the three prices the studio actually charges rather
+  than the legacy studio's per-frame price, and nothing in the replacement is
+  indicted. The budget comes off with the row: a row removed while its count
+  stays leaves slack, and slack is how the next unrouted site ships green.
+*/
+const OCCURRENCES_CEILING = 18;
 
 const censusedOccurrences = UNROUTED.reduce((total, row) => total + row.count, 0);
 

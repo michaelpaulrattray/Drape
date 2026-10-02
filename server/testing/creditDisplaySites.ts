@@ -295,14 +295,13 @@ export type CreditDisplayReading = {
  * ✅ **AND IT HAS NOW SHRUNK BY ROUTING: 108 → 42 (#1600 slice 2).** Every
  * customer-visible credit number under `client/src/` goes through the helper.
  * What is left is 37 occurrences on the server, 2 in `shared/refundCopy.ts`,
- * and **FIVE CLIENT ROWS THAT ARE NOT WORK** — the first rows this list has
+ * and **FOUR CLIENT ROWS THAT ARE NOT WORK** — the first rows this list has
  * ever held that are not "still to route". They are named here rather than
  * left to be rediscovered later as a shrink that stalled:
  *
  * | row | why it stays |
  * |---|---|
  * | `formatCreditsPerDollar(…)` ×3 — `AddCreditsModal` twice, `ChangePlanModal` once | the conversion is INSIDE that function, so the rate a customer reads is already on their scale. The rules read a NAME and cannot see through a function boundary, which is a limit this file's header states. |
- * | `framesFor(plan.credits, costPerFrame).toLocaleString()` | a count of FRAMES, not of credits — credits divided by a cost, so already scale-free. Dividing it would make a correct number wrong. Rule 1 indicts it only because `credits` appears in the expression. |
  * | `Math.round(perDollar).toLocaleString("en-US")` | a RATE. Through `displayBalance` it would be divided by five twice. |
  *
  * ⚠ **TWO OF THOSE ROWS CHANGED THEIR EXPRESSION IN #1755 AND NEITHER
@@ -315,9 +314,22 @@ export type CreditDisplayReading = {
  * appears in the expression. A row updated here rather than deleted is what
  * keeps the count honest through a refactor.
  *
- * ⚠ **So the client half of this census has a FLOOR OF FIVE, and a later slice
+ *
+ * ⚠ **IT WAS FIVE UNTIL #1607, AND THE FIFTH LEFT BY THE ONE CLEAN DOOR — ITS
+ * SITE WAS DELETED.** The row was
+ * `framesFor(plan.credits, costPerFrame).toLocaleString()` on
+ * `ChangePlanModal`, excused as *"a count of FRAMES, not of credits"*, which
+ * was true. P1-8 replaced that line with a count of finished CHARACTERS,
+ * derived from the three prices the studio charges rather than from the legacy
+ * studio's per-frame price, and the expression it is derived through carries no
+ * `.toLocaleString()` beside a `credits` token — so no rule indicts the
+ * replacement and there is nothing to excuse. **The ceiling fell 19 → 18 in
+ * the same commit**, which is the ratchet doing its job: a row removed without
+ * its budget leaves slack for the next unrouted site to ship green.
+ *
+ * ⚠ **So the client half of this census has a FLOOR OF FOUR, and a later slice
  * that drives it to zero has done something wrong rather than something
- * thorough.** The honest repair for all five is a rule that follows a value
+ * thorough.** The honest repair for all four is a rule that follows a value
  * through a function call, which is a different instrument from the one this
  * file is — it is not pretended here, and it is not filed as debt against the
  * routing, because routing is not what would fix it.
@@ -410,7 +422,6 @@ export const UNROUTED: readonly {
   { file: "client/src/features/billing/AddCreditsModal.tsx", rule: "beside-the-word", expression: "rateComparable ? `, up from ${formatCreditsPerDollar(priceAMonth(currentPrice, annual === true), currentCredits)}` : null", count: 1, stays: "a RATE, not an amount: the conversion is INSIDE `formatCreditsPerDollar`, which calls `displayBalance` itself (`planMath.ts:390`). The rules read a name and cannot see through a function boundary. #1747 widened the guard in front of it from a bare positive check to the two null checks: both figures are read out of the plan catalogue by the account's own rung, and that rung is null until billing.getStatus answers - so a rate 'up from' an unread plan was another plan's rate." },
   { file: "client/src/features/billing/AddCreditsModal.tsx", rule: "beside-the-word", expression: "formatCreditsPerDollar(priceAMonth(selected.price, annual === true), selected.credits)", count: 1, stays: "a RATE, not an amount: the conversion is INSIDE `formatCreditsPerDollar`, which calls `displayBalance` itself (`planMath.ts:390`). The rules read a name and cannot see through a function boundary." },
   { file: "client/src/features/billing/ChangePlanModal.tsx", rule: "beside-the-word", expression: "formatCreditsPerDollar(priceOf(plan), plan.credits)", count: 1, stays: "a RATE, not an amount: the conversion is INSIDE `formatCreditsPerDollar`, which calls `displayBalance` itself (`planMath.ts:390`). The rules read a name and cannot see through a function boundary." },
-  { file: "client/src/features/billing/ChangePlanModal.tsx", rule: "formatted", expression: "framesFor(plan.credits, costPerFrame).toLocaleString()", count: 1, stays: "a count of FRAMES — credits divided by a per-frame cost, so already scale-free. Dividing it would make a correct number wrong. Rule 1 indicts it only because `credits` appears inside the expression." },
   { file: "client/src/features/settings/planMath.ts", rule: "named-on-the-way-out", expression: "Math.round(perDollar).toLocaleString(\"en-US\")", count: 1, stays: "the rate's own formatting, inside the function that has already converted. Through `displayBalance` it would be divided by five twice." },
   { file: "server/castingV2/reliabilityReport.ts", rule: "beside-the-word", expression: "report.creditsRefunded", count: 1, stays: "an OPERATOR diagnostic — a text table of delivery rates whose only consumers in the tree are its own suites. Ledger units, like every staff reading." },
   { file: "server/db/billing.ts", rule: "beside-the-word", expression: "creditAmount", count: 1, stays: "the `description` of a `creditTransactions` ROW. Its one live reader is the moderator credit history, which prints it beside the ledger `amount`; `credits.getTransactions` has no client caller. Ledger units, as the card asks of a staff surface. The trap when a customer history is built is #1736." },

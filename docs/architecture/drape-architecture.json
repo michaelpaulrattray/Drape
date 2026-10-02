@@ -10103,6 +10103,14 @@
       "file": "server/castingV2/castViewPackage.ts"
     },
     {
+      "id": "cost:server/castingV2/castViewPackage.ts:CASTING_V2_ONE_CHARACTER_CREDITS",
+      "name": "CASTING_V2_ONE_CHARACTER_CREDITS",
+      "constant": "CASTING_V2_ONE_CHARACTER_CREDITS",
+      "credits": 11850,
+      "derivedFrom": "CASTING_V2_ROLL_PRICE_CREDITS + CASTING_V2_REFINE_PRICE_CREDITS + CASTING_V2_SIGN_PRICE_CREDITS",
+      "file": "server/castingV2/castViewPackage.ts"
+    },
+    {
       "id": "cost:server/castingV2/castViewPackage.ts:CASTING_V2_SIGN_PRICE_CREDITS",
       "name": "CASTING_V2_SIGN_PRICE_CREDITS",
       "constant": "CASTING_V2_SIGN_PRICE_CREDITS",
@@ -10906,6 +10914,10 @@
     {
       "id": "test:client/src/features/referral/referralLinkWired.test.ts",
       "path": "client/src/features/referral/referralLinkWired.test.ts"
+    },
+    {
+      "id": "test:client/src/features/settings/card1607-guard.test.ts",
+      "path": "client/src/features/settings/card1607-guard.test.ts"
     },
     {
       "id": "test:client/src/features/settings/card385-guard.test.ts",
@@ -32081,6 +32093,11 @@
     {
       "from": "module:server/routes/billing.ts",
       "to": "module:server/auditLog.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/billing.ts",
+      "to": "module:server/castingV2/castViewPackage.ts",
       "kind": "imports"
     },
     {

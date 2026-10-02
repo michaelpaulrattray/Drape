@@ -35,6 +35,7 @@ import {
   OFFERED_PLAN_TIERS,
   ownPlanFacts,
 } from "../stripe/stripeProducts";
+import { CASTING_V2_ONE_CHARACTER_CREDITS } from "../castingV2/castViewPackage";
 import { appBaseUrl, PRODUCTION_APP_HOSTNAME } from "../_core/appOrigin";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { z } from "zod";
@@ -113,6 +114,26 @@ export const billingRouter = router({
       }),
       tiers: OFFERED_PLAN_TIERS,
       planOrder: OFFERED_PLAN_ORDER,
+      /*
+        WHAT ONE FINISHED CHARACTER COSTS — the divisor behind every plan
+        card's worked example (#1607, P1-8). A ledger number, like every
+        other figure in this projection; the surface divides it through
+        `@shared/creditDisplay`.
+
+        ⚠ **IT IS SERVED HERE RATHER THAN READ FROM `credits.getCosts`, AND
+        THAT IS THE REPAIR AS MUCH AS THE ADDITION.** The plan cards used to
+        translate a plan's credits into *"About N casting frames"* using
+        `CREDIT_COSTS.castingImage` — the LEGACY studio's price, for a lane
+        that has been admin-only since #1654 and retires with #29. So the one
+        number on the card that told a customer what their money buys was
+        priced off a surface they cannot reach. The example now comes from the
+        three prices the studio actually charges, on the same query the cards
+        already make, and this surface no longer reads a legacy price at all.
+
+        D-15's rule holds: the client is served the number and never carries a
+        literal.
+      */
+      oneFinishedCharacterCredits: CASTING_V2_ONE_CHARACTER_CREDITS,
     };
   }),
 
