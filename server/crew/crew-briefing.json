@@ -1,7 +1,7 @@
 {
-  "edition": 612,
-  "updatedAt": "2026-10-02T05:30:00.000Z",
-  "shift": "Night shift, 15:20: a paying subscriber opening Add credits was told “Charged today, then on the same date each period.” — the sentence for somebody buying a brand-new subscription, not for somebody who already has one. It showed for the moment before the screen had been told which plan you are on, and it was the last line on that screen still speaking before it knew. Two nights ago the price stopped guessing, last night the plan name did; this was the sentence underneath them both. Fixed, with the same screen's “Pay yearly instead” offer, which was being shown to people already paying yearly. It is reviewed, merged and live on production as of tonight. Also tonight: your “at the rebuild” on the canvas colours is written onto its card and that question is closed.",
+  "edition": 613,
+  "updatedAt": "2026-10-02T06:45:00.000Z",
+  "shift": "Night shift, 16:45: a sheet of eight now costs the same whether you roll fresh or follow a face you already like — 320 credits either way, which is your \"one price is better and we earn more for rolls\" from this morning. A roll was 240 and a follow 320 for one day; from this change the studio quotes one number and never asks you to hold two in your head, and the difference lives in our margin instead of on your screen. It is built, looked at in both light and dark, and waiting on review before it goes live. Two price lines on this page were also out of date against your own later words and are corrected here: the price table above, and your top-up packs, which now read the volume ladder you approved today rather than the flat prices from last week. One thing found while checking: the plan cards work out \"about N casting frames\" using the old studio's price, so every plan is telling you it buys less than half what it really does — that is written up as its own job.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -19,7 +19,7 @@
         },
         {
           "state": "in-progress",
-          "title": "The price table: Roll 240 · Follow 320 · Sign 1,700 · Refine 350 · Try again 350, in one place, with one free retry per unchecked view (#1601)"
+          "title": "The price table, and a sheet now costs the same whether you roll or follow: 320 · Sign 1,700 · Refine 350 · Try again 370, in one place, with one free retry per unchecked view (#1601, #1753)"
         },
         {
           "state": "in-progress",
@@ -39,7 +39,7 @@
         },
         {
           "state": "waiting",
-          "title": "Top-up packs for plan holders: 5,000 = $12 · 10,000 = $24 · 25,000 = $60, only after the renewal fix (#1606)"
+          "title": "Top-up packs for plan holders on your volume ladder: 5,000 = $12 · 10,000 = $22 · 25,000 = $50, plus a slider (#1606)"
         },
         {
           "state": "waiting",
@@ -145,7 +145,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-02T05:06:41.572Z",
+      "readAt": "2026-10-02T06:37:06.307Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -9581,7 +9581,7 @@
     258
   ],
   "nextUp": {
-    "readAt": "2026-10-02T05:06:41.571Z",
+    "readAt": "2026-10-02T06:37:06.306Z",
     "items": [
       {
         "issueNumber": 1469,
