@@ -101,13 +101,35 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
 
   const annual = annualChoice ?? status?.billingInterval === "year";
 
-  const currentId = status?.planTier ?? "free";
+  /*
+    ⚠ **AN UNREAD PLAN IS NOT THE FREE PLAN — #1747, the sibling of the same
+    line on `ChangePlanModal` and of #1746's repair in Settings.**
+
+    This read `?? "free"`, and on THIS surface the free rung is the bottom of
+    the ladder, so the default did not merely mis-name a plan — it made **every
+    paid rung read as above the customer's own**. A Pro subscriber opening Add
+    credits was offered a pre-selected **Starter** top-up, a rung *below* the
+    one they pay for, with its `+ N credits a month` computed against the FREE
+    grant rather than their own allowance.
+
+    ⚠ **AND IT IS PERMANENT RATHER THAN A BEAT.** `getPlans` and `getStatus`
+    ride one batched request, but a tRPC batch reply carries one entry per call
+    and either can fail alone — `getPlans` is a constant fold, `getStatus` reads
+    the database. Nothing here retries or refuses, so `plans` answered beside an
+    unanswered `status` holds for the life of the surface.
+  */
+  const currentId = status?.planTier ?? null;
   const hasSubscription = !!status?.hasSubscription;
   const costPerFrame = costs?.castingImage ?? 0;
 
   /* Every rung ABOVE the current one — the only ones that add credits. */
   const options = useMemo(() => {
     if (!plans) return [] as { id: string; name: string; credits: number; price: number }[];
+    /* ⚠ Which rungs are ABOVE this account is unanswerable until we know which
+       rung it is on, and `indexOf(null)` answering -1 happens to take the right
+       road below — so this line is here to say it on purpose rather than by
+       luck, and to keep the type honest (#1747). */
+    if (currentId === null) return [];
     const order = plans.planOrder as string[];
     const currentIndex = order.indexOf(currentId);
     /* #391 — an account on the hidden rung is not on the offered ladder;
@@ -157,7 +179,22 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
     two DISAGREE during that beat, which is worse than today; they say one
     thing because they read one fact and share one constant.
   */
-  const laddered = Boolean(plans);
+  /*
+    ⚠ **#1747 — THE EMPTY LADDER HAS A THIRD CAUSE, AND IT ARRIVES THROUGH THE
+    ONE DOOR #1734's FIX LEFT OPEN.** That card separated *"the catalogue has
+    not answered"* from *"there is nothing above you"* and gated the claim on
+    `plans`. An unread RUNG is neither: `options` is empty because we do not
+    know where the account stands, and with `plans` answered the old
+    `Boolean(plans)` called that **"No higher plan"** — told to a Pro
+    subscriber, which is the opposite of true and the same wrong direction
+    #1734 recorded on the picker.
+
+    So `laddered` is *"we know enough to say what is above you"*, which needs
+    both facts. Without the rung it takes the em-dash road the unread catalogue
+    already takes, and the button below waits on the same constant — they say
+    one thing because they read one fact.
+  */
+  const laddered = Boolean(plans) && currentId !== null;
   const nothingAbove = laddered && options.length === 0;
 
   /* The interval rides the preview (#664), so `due today` below is the
@@ -234,7 +271,16 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
   );
   const burn = useMemo(() => (ownCycle ? readBurn(ownCycle) : null), [ownCycle]);
 
-  const currentCredits = plans?.tiers[currentId as keyof typeof plans.tiers]?.monthlyCredits ?? 0;
+  /*
+    ⚠ **A LOOKUP KEYED ON A RUNG NOBODY HAS READ ANSWERED OUT OF THE FREE ROW,
+    AND `?? 0` COULD NOT TELL THAT FROM A REAL ZERO — #1747.** Both figures
+    below are now `null` until the rung is known, so a delta or a rate quoted
+    against them has to decline rather than quietly use another plan's numbers.
+  */
+  const currentCredits =
+    currentId === null
+      ? null
+      : plans?.tiers[currentId as keyof typeof plans.tiers]?.monthlyCredits ?? null;
   /*
     ⚠ A FREE PLAN HAS NO RATE TO BE BEATEN, so there is nothing to say "up
     from" about — seen in the running app on a free account, where the sentence
@@ -243,8 +289,14 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
     that rewrites it, so it is corrected here rather than filed. On a paid plan
     the comparison is real and the clause is drawn.
   */
-  const currentPrice = plans?.tiers[currentId as keyof typeof plans.tiers]?.price ?? 0;
-  const delta = selected ? selected.credits - currentCredits : 0;
+  const currentPrice =
+    currentId === null
+      ? null
+      : plans?.tiers[currentId as keyof typeof plans.tiers]?.price ?? null;
+  /* A delta against an unknown allowance is a number with no meaning, not a
+     zero — `null` so the sentences below drop rather than print `+ 0`. */
+  const delta =
+    selected && currentCredits !== null ? selected.credits - currentCredits : null;
 
   const fullYear = selected ? selected.price * 12 : 0;
   /*
@@ -341,7 +393,10 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
     });
   };
 
-  const framesNow = framesFor(currentCredits, costPerFrame);
+  /* `null` rather than 0 frames: "up from about 0 casting frames" is a claim
+     about an allowance nobody has read (#1747). */
+  const framesNow =
+    currentCredits === null ? null : framesFor(currentCredits, costPerFrame);
   const framesNext = selected ? framesFor(selected.credits, costPerFrame) : 0;
 
   return (
@@ -466,7 +521,7 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
             <span className="dp-set__value">
               {formatCreditsPerDollar(priceAMonth(selected.price, annual), selected.credits)}{" "}
               credits per $1
-              {currentPrice > 0
+              {currentPrice !== null && currentPrice > 0 && currentCredits !== null
                 ? `, up from ${formatCreditsPerDollar(priceAMonth(currentPrice, annual), currentCredits)}`
                 : null}
             </span>
@@ -488,7 +543,7 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
                 em dash is the house answer for a slot whose content is not yet
                 known, and it is what the button beside it waits on too.
               */}
-              {selected
+              {selected && delta !== null
                 ? `+ ${formatCredits(displayBalance(delta))} credits a month`
                 : nothingAbove
                   ? NO_HIGHER_PLAN
@@ -509,7 +564,9 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
                       setOpen(false);
                     }}
                   >
-                    + {formatCredits(displayBalance(option.credits - currentCredits))} credits a month
+                    {currentCredits === null
+                      ? "—"
+                      : `+ ${formatCredits(displayBalance(option.credits - currentCredits))} credits a month`}
                     <span className="dp-topup__optionprice">
                       {formatDollars(annual ? annualPrice(option.price) : option.price)}
                       {annual ? " / yr" : " / mo"}
@@ -525,15 +582,16 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
         <div className="dp-topup__bullets">
           <span className="dp-topup__bullet">
             <Check size={12} strokeWidth={1.8} />
-            {delta > 0
+            {delta !== null && delta > 0
               ? `${formatCredits(displayBalance(delta))} credits land on your balance the moment this goes through — nothing to wait for.`
               : "Your balance updates the moment this goes through."}
           </span>
           {costPerFrame > 0 && selected ? (
             <span className="dp-topup__bullet">
               <Check size={12} strokeWidth={1.8} />
-              That is about {framesNext.toLocaleString()} casting frames a month, up from about{" "}
-              {framesNow.toLocaleString()} — you would move to {selected.name}.
+              That is about {framesNext.toLocaleString()} casting frames a month
+              {framesNow === null ? "" : `, up from about ${framesNow.toLocaleString()}`} — you
+              would move to {selected.name}.
             </span>
           ) : null}
           <span className="dp-topup__bullet">
@@ -619,13 +677,33 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
             `quoteReady` is false in that state too and the first matching
             branch would otherwise be the waiting one again.
           */}
+          {/*
+            ⚠ **AND #1747 ADDS A FOURTH STATE AHEAD OF BOTH, FOUND BY LOOKING AT
+            THE SURFACE RATHER THAN BY READING IT (working law 6).** Making
+            `laddered` require the account's own rung — the repair above, so a
+            subscriber is no longer TOLD there is nothing above them — takes
+            `nothingAbove` false in that state, and the chain then fell through
+            to **"Checking the charge…" forever**: `selectedId` is null, the
+            preview never runs, `quoteReady` is false and no quote is ever
+            coming. That is precisely the permanent waiting label #1734 was
+            filed about, reached by a third road, and this card's own change is
+            what opened it.
+
+            So the held glyph, which is what the PICKER above says in the same
+            state — #1734's rule that the two must not disagree about this
+            account applies to not-knowing exactly as it applies to knowing.
+            Ahead of `nothingAbove` for the same reason `nothingAbove` is ahead
+            of the quote: the first matching branch would otherwise be a claim.
+          */}
           {working
             ? "Working…"
-            : nothingAbove
-              ? NO_HIGHER_PLAN
-              : quoteReady && dueToday !== null
-                ? `Add credits · ${formatDollars(dueToday)}`
-                : "Checking the charge…"}
+            : currentId === null
+              ? "—"
+              : nothingAbove
+                ? NO_HIGHER_PLAN
+                : quoteReady && dueToday !== null
+                  ? `Add credits · ${formatDollars(dueToday)}`
+                  : "Checking the charge…"}
         </Button>
       </div>
     </ModalScrim>

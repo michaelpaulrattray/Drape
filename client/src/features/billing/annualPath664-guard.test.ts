@@ -145,11 +145,17 @@ describe("AddCreditsModal", () => {
       "the pane no longer distinguishes `the catalogue has not answered` from `there is"
       + " nothing above you`. They are opposite facts and `options` is empty for both.",
     ).toContain("const nothingAbove = laddered && options.length === 0;");
+    /* ⚠ The anchor drops the semicolon on purpose — #1747 widened this
+       expression to `Boolean(plans) && currentId !== null`, because an unread
+       RUNG is a third cause of the same empty `options` and the claim was being
+       made to a subscriber. This arm still owns the CATALOGUE half and nothing
+       more; the rung half is pinned in `server/unreadPlanIdentity.test.ts`, so
+       neither suite restates the other's claim. */
     expect(
       source,
       "`laddered` no longer reads whether the catalogue has answered at all, so an unread"
       + " plan list reads as a top-rung account.",
-    ).toContain("const laddered = Boolean(plans);");
+    ).toContain("const laddered = Boolean(plans)");
 
     /* 2 · ONE sentence, not two copies — the card's own requirement is that the
        picker and the button agree, and two literals agree only until somebody

@@ -221,8 +221,30 @@ export function ChangePlanModal({
     number read and the number charged cannot be two arithmetics. The dialog
     waits for it: a charge is never confirmed against a figure nobody has.
   */
+  /*
+    ⚠ **THE LAW-7 SIBLING OF #1747, FOUND BY ITS SWEEP AND NOT A LIVE DEFECT —
+    read at the bytes before it was touched.** This placeholder was `?? "starter"`
+    and it is UNREACHABLE: the query's `enabled` is false on exactly the
+    condition that makes the default apply (`confirming !== null`), so the name
+    never travelled. Nothing was claimed to anybody.
+
+    It is changed anyway, for two reasons that are not tidiness. It is the same
+    CLASS — a plan identity defaulted to a plan NAME — and the class's whole cost
+    is that a wrong value sitting behind a gate becomes a wrong ANSWER the day
+    the gate moves; whoever removed `confirming !== null` to prefetch would have
+    quoted a **Starter** change to a customer confirming something else, with
+    nothing on screen looking wrong. And `null` is what the neighbouring surface
+    already passes on the identical idiom (`AddCreditsModal`: `newPlan:
+    selectedId as never`), so the two now agree instead of one of them carrying a
+    name. If that gate ever does move, a `null` fails validation loudly.
+
+    ⚠ It is invisible to `server/unreadPlanIdentity.test.ts`'s reader — the
+    identifier before the `??` is `id`, which carries neither "plan" nor "tier" —
+    so the gate is pinned by an arm there rather than by the walk. That is the
+    floor that suite states, with a live instance to show what it looks like.
+  */
   const changeQuote = trpc.billing.previewPlanChange.useQuery(
-    { newPlan: (confirming?.id ?? "starter") as never, interval },
+    { newPlan: (confirming?.id ?? null) as never, interval },
     { enabled: hasSubscriptionForQuote(status) && confirming !== null },
   );
 
@@ -263,7 +285,32 @@ export function ChangePlanModal({
     },
   });
 
-  const currentId = status?.planTier ?? "free";
+  /*
+    ⚠ **AN UNREAD PLAN IS NOT THE FREE PLAN — #1747, the same one-line shape
+    #1746 repaired on the Settings surfaces.**
+
+    This read `?? "free"`, and because every reader below keys a CATALOGUE
+    LOOKUP on it, that one default decided five separate things for a Pro
+    subscriber whose `getStatus` had not answered: the header named their plan
+    **"Free"**, the **free card carried `Current plan`**, and `recommendPlan`,
+    `cardTrio` and `compareWindow` arranged the whole ladder around the bottom
+    rung.
+
+    ⚠ **IT IS NOT A BEAT, WHICH IS WHY IT IS WORTH THE LINES.** `getPlans` and
+    `getStatus` ride ONE batched request, but a tRPC batch reply carries one
+    entry per call and either can fail alone — and they are not equally likely
+    to: `getPlans` is a constant fold over `SUBSCRIPTION_PRODUCTS`, `getStatus`
+    reads the database. With `plans` answered beside an unanswered `status`
+    nothing here retries or refuses, so that arrangement is **permanent for the
+    life of the surface**.
+
+    While BOTH were unread the surface was honest by accident — `ladder` is
+    empty, so every `ladder.length ?` guard below already declined. The repair
+    is to make the asymmetric state take that same road: `null` is the house
+    answer for not-known-yet, and the three helpers decline on it (their own
+    note explains why that is separate from #391's hidden rung).
+  */
+  const currentId = status?.planTier ?? null;
   const hasSubscription = !!status?.hasSubscription;
   const costPerFrame = costs?.castingImage ?? 0;
 
@@ -315,6 +362,13 @@ export function ChangePlanModal({
   );
   const burn = useMemo(() => (cycle ? readBurn(cycle) : null), [cycle]);
   const projected = cycle && burn ? Math.round(burn.perDay * cycle.cycleLength) : 0;
+  /*
+    The `ladder.length` guards are kept exactly as they were — an unread
+    CATALOGUE and an unread RUNG are two different absences and each helper
+    declines on its own. The helpers answer nothing for a `null` rung, so these
+    three go empty in the asymmetric state, which is the same empty the surface
+    already drew while `plans` was in flight.
+  */
   const recommended = useMemo(
     () => (ladder.length ? recommendPlan(ladder, currentId, projected) : null),
     [ladder, currentId, projected],
@@ -365,6 +419,14 @@ export function ChangePlanModal({
     it is a further move rather than the offer being made, and downgrades are
     secondary on purpose.
   */
+  /*
+    The catalogue answered and the account's own rung did not — the asymmetric
+    state this card is about, and the only one in which there is a ladder to
+    draw and no way to place the customer on it. While BOTH are unread `ladder`
+    is empty and this is false, so the ordinary loading beat is untouched.
+  */
+  const cannotArrange = ladder.length > 0 && currentId === null;
+
   const currentIndex = ladder.findIndex((plan) => plan.id === currentId);
   /*
     ⚠ **THE OFFER FALLS BACK TO THE NEXT RUNG WHEN THERE IS NOTHING TO
@@ -375,8 +437,21 @@ export function ChangePlanModal({
     footer because every column button is below the fold. Two modes computing
     "which one is the offer" separately is how they end up disagreeing.
   */
+  /*
+    ⚠ **AND THIS IS THE READER THE HELPERS CANNOT COVER, because it does its own
+    arithmetic on `currentIndex` — #1747.** With the rung unknown `currentIndex`
+    is -1, so `currentIndex + 1` is **0** and the fallback reaches for
+    `ladder[0]`, which is the FREE rung: the one ink button on a paying
+    customer's screen would read *"Upgrade to Free"*. It is the exact opposite
+    of an upgrade and it is the loudest thing on the surface.
+
+    So the offer requires a known rung. `recommended` is already `null` then,
+    and the fallback is the half that had to be said out loud.
+  */
   const offered =
-    recommended ?? ladder.find((plan, index) => index === currentIndex + 1) ?? null;
+    currentId === null
+      ? null
+      : recommended ?? ladder.find((plan, index) => index === currentIndex + 1) ?? null;
   const primaryId = offered?.id ?? null;
 
   return (
@@ -504,6 +579,32 @@ export function ChangePlanModal({
             intervalDiffers={intervalDiffers}
             switchBillingLabel={switchBillingLabel}
           />
+        ) : cannotArrange ? (
+          /*
+            ⚠ **THE SURFACE HAD TO BE LOOKED AT, NOT ONLY READ — working law 6,
+            and it is what this block is (#1747).** With the rung unknown the
+            ladder correctly draws NOTHING, which claims nothing and is the
+            whole point. Rendered, it is a modal with a heading, a billing
+            toggle and a hole where the plans were: honest and unreadable, and a
+            customer would call it broken rather than loading.
+
+            So one line, in their words, saying what we could not do and what to
+            do about it (the disappearing-technology law's refusal clause: a
+            refusal says what was refused and what to do). No engine, no query
+            name, no code.
+
+            ⚠ **It cannot flash during a normal load**, which is why the
+            condition is the CATALOGUE having answered rather than a timer or an
+            error flag: both queries ride one batch reply and resolve in the
+            same tick, so `ladder` is empty while `status` is unread and this
+            branch is unreachable until they come apart. Its stated limit: if
+            the two are ever split into separate requests, a fast catalogue and
+            a slow status would show this for that gap.
+          */
+          <p className="dp-plan__held">
+            We could not read which plan you are on just now, so there is nothing to
+            compare against. Close this and open it again in a moment.
+          </p>
         ) : (
           <>
           <div className="dp-plan__grid">
@@ -825,7 +926,12 @@ function CompareGrid({
   switchBillingLabel,
 }: {
   plans: LadderPlan[];
-  currentId: string;
+  /* `null` while the account's own rung is unread — #1747. Every `plan.id ===
+     currentId` below is then false, which is the answer wanted: no column is
+     marked current. `window5` is empty in that state, so the grid draws
+     nothing; the type is widened because a prop that cannot be null is a claim
+     this surface can no longer make. */
+  currentId: string | null;
   interval: Interval;
   costPerFrame: number;
   currentIndex: number;

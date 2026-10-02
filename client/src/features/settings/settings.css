@@ -864,6 +864,19 @@
   font: 400 11px/1.55 var(--font-sans);
   color: var(--metaStrong);
 }
+
+/* #1747 — the line that stands where the ladder would be when the account's own
+   rung could not be read. It takes the support line's type and colour on
+   purpose: it is the same register (a quiet aside about something we cannot do
+   for you), and inventing a louder one would make a transient read as an
+   alarm. Both tokens are theme-aware, so it needs no dark-mode rule of its own. */
+.dp-plan__held {
+  margin: 0;
+  padding: var(--s-6) var(--s-4);
+  font: 400 12px/1.6 var(--font-sans);
+  color: var(--metaStrong);
+  max-width: 46ch;
+}
 .dp-plan__request-link {
   color: var(--ink);
   text-decoration: underline;
