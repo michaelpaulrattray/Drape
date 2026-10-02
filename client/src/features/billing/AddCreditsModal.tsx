@@ -68,12 +68,22 @@
  */
 import { useMemo, useState } from "react";
 import { displayBalance, displaySpent, formatCredits } from "@shared/creditDisplay";
+import {
+  TOPUP_MAX_UNITS,
+  TOPUP_PACKS,
+  bestValueTopupUnits,
+  isSellableTopupUnits,
+  topupEligibility,
+  topupLedgerCredits,
+  topupPriceInCents,
+} from "@shared/creditTopups";
 import { Check, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/foundation";
 import { ModalScrim } from "@/foundation/CastingModal";
+import { LabelledField } from "@/foundation/LabelledField";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import "@/features/settings/settings.css";
 import {
@@ -100,7 +110,31 @@ import { useCycleSpend } from "./useCycleSpend";
  */
 const NO_HIGHER_PLAN = "No higher plan";
 
-export function AddCreditsModal({ onClose }: { onClose: () => void }) {
+/**
+ * THE UPGRADE OFFER — what an account with NO PLAN is shown here (#1606).
+ *
+ * ⚠ **IT WAS THE WHOLE OF THIS SURFACE UNTIL NOW, AND IT IS KEPT WORD FOR WORD
+ * RATHER THAN REPLACED.** Until the credit packs existed there was no road into
+ * `addTopupCredits` at all (`41a765ea` took it in February), so *"I need more
+ * credits now"* could only ever be answered with a bigger plan. The packs
+ * answer it directly for a plan holder; this pane is the branch the card's own
+ * sentence names — *"Free accounts are offered an upgrade, not a pack."*
+ *
+ * ⚠ **AND ITS SUBSCRIBER CLAUSES ARE UNREACHABLE FROM THIS SURFACE NOW, WHICH
+ * IS STATED RATHER THAN QUIETLY LEFT** (working law 7's sweep: when a road
+ * closes, ask what was bolted to it). A plan holder reaching Add credits gets
+ * the packs, so the proration basis (#1730), the interval-switch renewal line
+ * (#664) and the inert-until-quoted gate (#1725) can no longer be drawn here —
+ * `previewPlanChange`'s own `enabled` has always required
+ * `hasSubscription === true`. **Not one line of them is removed**, for two
+ * reasons that point the same way: their subject is live on `ChangePlanModal`,
+ * which is where a subscriber now changes a plan and which the nudge under the
+ * packs leads to; and a free account whose subscription row appears mid-session
+ * takes exactly those branches. Deleting them would be retiring correct
+ * controls to fit a route change, which is the class this repository has paid
+ * for three times.
+ */
+function PlanStepUpPane({ onClose }: { onClose: () => void }) {
   /* ⚠ The toggle opens on the interval the customer is BILLED on (#664) —
      `null` until they touch it, so an annual subscriber is not shown a
      monthly purchase they did not choose. */
@@ -1042,6 +1076,456 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
                 : quoteReady && dueToday !== null
                   ? `Add credits · ${formatDollars(dueToday)}`
                   : "Checking the charge…"}
+        </Button>
+      </div>
+    </ModalScrim>
+  );
+}
+
+/**
+ * THE CREDIT PACKS — what a plan holder is shown, and the whole of slice 2.
+ *
+ * His design, 2026-10-02 (terminal), verbatim: *"for our add credits we should
+ * be inspired by how higgsfield does it but obviously in ur own design language
+ * … they have a slider also."* Translated on #1606 and built here: three packs
+ * biggest first, a 5,000-step slider, what each amount buys in Rolls and Signs
+ * at the live prices, the credits-per-dollar chip, one *Best value* badge, and
+ * the honest nudge instead of a discount banner.
+ *
+ * # ONE INPUT, AND THE PACKS ARE POSITIONS ON IT
+ *
+ * `units` is the only state, and it is what the checkout sends. His design
+ * says *"The three packs are presets that snap the slider"*, so a pack row is
+ * a slider position with a name rather than a second kind of thing to buy —
+ * which is why there is no pack id anywhere on this surface or on the wire.
+ * Every figure below (the price, the rate, the badge, what it buys) is read
+ * from that one number through `shared/creditTopups.ts`.
+ *
+ * # WHAT IT BUYS IS DERIVED, NEVER TYPED
+ *
+ * His design: *"Each line says what it buys in the customer's words and at the
+ * live prices … DERIVED from the price table through the display helper, never
+ * typed."* The two divisors come off `getPlans` (`rollCredits`, `signCredits`,
+ * added for this pane on the projection that already serves
+ * `oneFinishedCharacterCredits`), so his next price word moves every count on
+ * this surface with no copy edit anywhere — and the counts FLOOR, because a
+ * claim about what a customer's money covers may never exceed what it covers
+ * (`creditDisplay.ts`'s asymmetry, read on a different question).
+ *
+ * ⚠ **AND THE EXAMPLE IN HIS OWN DESIGN IS ALREADY STALE, WHICH IS THE ARGUMENT
+ * FOR DERIVING IT.** He wrote *"about 104 Rolls, or 14 Signs for 25,000 (25,000
+ * ÷ 240, ÷ 1,700)"* on 2026-10-02, hours before his one-price ruling the same
+ * day (#1753) took a Roll from 240 to 320 display. The Signs figure still
+ * holds; the Rolls figure is 78 at the prices the product charges tonight. A
+ * typed count would have shipped his arithmetic and been wrong on the day it
+ * landed.
+ *
+ * # WHAT IS DELIBERATELY NOT COPIED FROM HIGGSFIELD
+ *
+ * Each is on the card and each is a rule rather than a preference: no engine
+ * name in what a pack buys (the disappearing-technology law — a customer buys
+ * Rolls and Signs, not engines); no struck-through price, because there is no
+ * former price to strike; no top-up discount for plan holders, because the
+ * ladder's own design is that a plan is the better value; and no *valid for 90
+ * days*, because purchased credits do not expire here (#1660 keeps them through
+ * every renewal), which this pane says in plain words instead.
+ *
+ * # THE DISAPPEARING-TECHNOLOGY GATE
+ *
+ * 1. **What must the customer learn?** Nothing. Pick an amount, read what it
+ *    buys, pay.
+ * 2. **What decision, and on what basis?** How many credits — with the basis on
+ *    every row in Rolls and Signs at the live prices, plus the one rate figure
+ *    that compares a pack with a plan.
+ * 3. **Where does the technology show?** Nowhere: no engine, no ledger figure,
+ *    no lookup key, no unit count. The slider's arithmetic is the display
+ *    helper's and its output is credits and dollars.
+ */
+function CreditPacksPane({
+  onClose,
+  onChangePlan,
+}: {
+  onClose: () => void;
+  onChangePlan: () => void;
+}) {
+  /*
+    The smallest pack is the opening position, not the biggest.
+
+    A customer who came here is out of credits and wants the smallest thing
+    that fixes it — the same reasoning the step-up pane's own default rests on
+    (*"somebody opening this needs more credits; the smallest step that solves
+    it is the right default"*). Biggest-first is how the ROWS are ORDERED, which
+    is his design's word and a different question from which one is selected.
+  */
+  const [units, setUnits] = useState(1);
+  const [working, setWorking] = useState(false);
+
+  const { data: plans } = trpc.billing.getPlans.useQuery();
+  const { data: status } = trpc.billing.getStatus.useQuery();
+
+  /*
+    ⚠ **0 KEEPS ITS ONE MEANING — not known yet.** Every count below declines
+    rather than guessing while the catalogue is unread, which is this surface's
+    house answer on nine cards (#1703, #1725, #1727, #1730, #1741, #1747,
+    #1749, #1755, #1761) and is why the sentences read `null` rather than
+    `about 0`.
+  */
+  const rollCredits = plans?.rollCredits ?? 0;
+  const signCredits = plans?.signCredits ?? 0;
+
+  /*
+    ⚠ **THE CHEAPEST BAND, ASKED OF THE LADDER AND NOT OF THE PACK LIST.** The
+    slider charges a band's rate at any whole number of units, so *best value*
+    is a property of the band — which is what makes the badge answerable for a
+    slider position as well as for a pack. `null` when every band shares one
+    rate: a badge on equal rates is a lie, and his design says so in terms.
+  */
+  const bestUnits = bestValueTopupUnits();
+
+  /*
+    ⚠ **THE CREDIT FIGURE A CUSTOMER READS COMES THROUGH THE DISPLAY HELPER,
+    NEVER FROM `topupDisplayCredits` DIRECTLY — and the compiler is what says
+    so.** P1-1's rule is that the helper is *the only source of any credit
+    number a customer sees*, and `formatCredits` takes a BRANDED
+    `DisplayCredits` to make that structural rather than remembered. The
+    ladder's own `topupDisplayCredits` answers the same figure for the server
+    and the arms; routing it through `displayBalance` is what makes it a number
+    this surface is allowed to print.
+
+    **`displayBalance` and not `displayPrice`**, because a pack is a GRANT: the
+    asymmetry is that a balance rounds DOWN and a price rounds UP, and this
+    figure is what lands on the balance. Nothing actually rounds — every unit
+    is 25,000 ledger, which divides exactly — and `server/creditPriceScale.test.ts`
+    already holds that for every sellable size. The direction is stated so a
+    future unit that does not divide cannot overstate what arrives.
+  */
+  const displayCredits = displayBalance(topupLedgerCredits(units));
+  const cents = topupPriceInCents(units);
+
+  /*
+    ⚠ **THE RATE IS THE SAME HELPER BOTH BILLING SURFACES USE (card 403), AND IT
+    TAKES A LEDGER FIGURE.** `formatCreditsPerDollar` divides by five inside
+    itself (#1600), so handing it `topupLedgerCredits` is the only way it lands
+    on the customer's scale — passing the display figure would quote a fifth of
+    the real rate and make every pack look twelve times worse than the plan
+    beside it.
+
+    ⚠ **AND THIS IS THE ONE FIGURE HIS 2026-10-02 WORD MOVED OFF THE PLAN CARDS
+    AND ONTO THIS ONE** (*"the rate belongs on Add credits, not on plans"*), so
+    it is the number a customer compares a pack with a plan by and it earns its
+    place on every row.
+  */
+  const rateFor = (unitCount: number) =>
+    formatCreditsPerDollar(topupPriceInCents(unitCount), topupLedgerCredits(unitCount));
+
+  /*
+    WHAT AN ORDER BUYS, FLOORED, IN THE TWO THINGS THE STUDIO SELLS.
+
+    `null` while a price is unread, so the sentence drops rather than claiming a
+    count it cannot have. The floor is the safety property: a count of what an
+    amount COVERS may never exceed what it covers.
+
+    ⚠ **IT TAKES UNITS AND ASKS THE LADDER FOR THE LEDGER FIGURE — there is no
+    `× 5` on this surface, and that is `creditDisplay.ts`'s own rule rather than
+    a preference.** Its header says `LEDGER_PER_DISPLAY_CREDIT` *"is not
+    exported to be multiplied elsewhere"*, and the first draft of this helper
+    did exactly that: took a display count and scaled it back up by hand, which
+    is a second copy of the scale on a money surface. `topupLedgerCredits`
+    already answers it, and taking `units` means the pack rows and the slider
+    ask the identical question.
+  */
+  const buys = (unitCount: number) => {
+    if (rollCredits <= 0 || signCredits <= 0) return null;
+    const ledger = topupLedgerCredits(unitCount);
+    return {
+      rolls: Math.floor(ledger / rollCredits),
+      signs: Math.floor(ledger / signCredits),
+    };
+  };
+
+  const topup = trpc.billing.createTopupCheckout.useMutation({
+    onSuccess: (data) => {
+      window.open(data.checkoutUrl, "_blank");
+      toast.info("Opening checkout…");
+      setWorking(false);
+      onClose();
+    },
+    onError: (error) => {
+      logRawFailure("billing.createTopupCheckout", error);
+      /*
+        The server's own refusal sentence reaches the customer through
+        `spokenError`, so a free account that got here by any road reads what
+        was refused and what to do rather than a generic failure.
+      */
+      toast.error(readableFailure(error, "Checkout could not be opened. Please try again."));
+      setWorking(false);
+    },
+  });
+
+  const submit = () => {
+    /*
+      ⚠ The bound is asked HERE as well as in the input schema and in the
+      ladder's own helpers. `units` is what decides the charge, and a surface
+      that can compose an unsellable amount is a surface that can open a
+      checkout for one.
+    */
+    if (working || !isSellableTopupUnits(units)) return;
+    setWorking(true);
+    topup.mutate({ units });
+  };
+
+  const chosenBuys = buys(units);
+
+  return (
+    <ModalScrim
+      label="Add credits"
+      scrimClassName="dp-topup__scrim"
+      cardClassName="dp-topup__card"
+      busy={working}
+      onDismiss={onClose}
+    >
+      <div className="dp-topup__pane">
+        <p className="dp-topup__eyebrow">CREDITS</p>
+        <h2 className="dp-topup__title">Add credits</h2>
+
+        {/*
+          The reason, off THIS account's own balance. It says nothing at all
+          until the server has answered — #1703's measured defect on this very
+          surface was `status?.balance ?? 0` telling a customer holding 3,688
+          credits that they had **0**, under the one heading whose job is to
+          talk about their balance.
+        */}
+        {status ? (
+          <p className="dp-topup__reason">
+            {formatCredits(displayBalance(status.balance))} credits on the balance today.
+          </p>
+        ) : null}
+
+        {/* His design: the three packs, biggest first. */}
+        <div className="dp-topup__packs" role="radiogroup" aria-label="How many credits">
+          {TOPUP_PACKS.map((pack) => {
+            const packBuys = buys(pack.units);
+            return (
+              <button
+                key={pack.units}
+                type="button"
+                className="dp-topup__pack"
+                role="radio"
+                aria-checked={pack.units === units}
+                onClick={() => setUnits(pack.units)}
+              >
+                <span className="dp-topup__packhead">
+                  <span className="dp-topup__packcredits">
+                    {formatCredits(displayBalance(topupLedgerCredits(pack.units)))} credits
+                  </span>
+                  {pack.units === bestUnits ? (
+                    <span className="dp-plan__badge">BEST VALUE</span>
+                  ) : null}
+                  <span className="dp-set__spacer" />
+                  <span className="dp-topup__packprice">{formatDollars(pack.cents)}</span>
+                </span>
+                {/*
+                  ⚠ **NO ENGINE NAME, AND THAT IS THE LAW RATHER THAN THE
+                  WORDING.** Higgsfield's rows name their models here; a
+                  customer buys the work, not the machine that does it.
+                */}
+                <span className="dp-topup__packbuys">
+                  {packBuys
+                    ? `About ${packBuys.rolls.toLocaleString()} Rolls, or ${packBuys.signs.toLocaleString()} Signs`
+                    : "—"}
+                  <span className="dp-topup__packrate">{rateFor(pack.units)} credits per $1</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/*
+          THE SLIDER — his design's own control, and the packs above are
+          positions on it.
+
+          ⚠ **ITS STEP IS THE UNIT AND ITS END IS THE LADDER'S OWN BOUND**, both
+          read rather than typed: a step that was not the unit would compose an
+          amount the ladder refuses, and an end past `TOPUP_MAX_UNITS` would put
+          a price on an order the server will not take. The thumb's value is
+          `units` itself, so the slider, the packs, the price, the rate and the
+          button cannot come to disagree — there is one number.
+        */}
+        {/*
+          ⚠ **THE NAME OF THE CONTROL IS `LabelledField`'s, NOT A FOURTH
+          TREATMENT.** The first draft wrote its own `<label className="dp-set__label">`
+          and `section11-guard.test.ts` caught it at the gate: #841's fold left
+          exactly one field-label treatment in the client, and a slider is a
+          control with a name like any other. The row also wants what that
+          component already owns — the label's confirm-shell `margin-top`
+          zeroed, and a `helper` slot for the rule under the control, which is
+          precisely where *what this amount buys* belongs.
+        */}
+        <LabelledField
+          label="Or choose an amount"
+          htmlFor="dp-topup-amount"
+          className="dp-topup__slider"
+          helper={
+            <>
+              {chosenBuys
+                ? `About ${chosenBuys.rolls.toLocaleString()} Rolls, or ${chosenBuys.signs.toLocaleString()} Signs`
+                : "—"}
+              {" · "}
+              {rateFor(units)} credits per $1
+            </>
+          }
+        >
+          <input
+            id="dp-topup-amount"
+            type="range"
+            className="dp-topup__range"
+            min={1}
+            max={TOPUP_MAX_UNITS}
+            step={1}
+            value={units}
+            aria-valuetext={`${formatCredits(displayCredits)} credits for ${formatDollars(cents)}`}
+            onChange={(event) => setUnits(Number(event.target.value))}
+          />
+          <p className="dp-topup__sliderline">
+            <span className="dp-topup__due">{formatDollars(cents)}</span>
+            <span className="dp-topup__duenote">
+              for {formatCredits(displayCredits)} credits
+            </span>
+          </p>
+        </LabelledField>
+
+        <div className="dp-topup__bullets">
+          <span className="dp-topup__bullet">
+            <Check size={12} strokeWidth={1.8} />
+            {formatCredits(displayCredits)} credits land on your balance the moment the payment
+            goes through — nothing to wait for.
+          </span>
+          {/*
+            His words on the card, and the opposite of what Higgsfield's page
+            says: *"Purchased credits never expire"*. #1660 is what makes it
+            true — a renewal tops the monthly allowance up and leaves purchased
+            credits alone.
+          */}
+          <span className="dp-topup__bullet">
+            <Check size={12} strokeWidth={1.8} />
+            Purchased credits never expire. They stay on your balance through every renewal.
+          </span>
+        </div>
+
+        {/*
+          §6f's MIRROR — the honest nudge, not a discount banner.
+
+          His design: *"top-ups are worse value than a plan by his finance
+          guy's design, so the row under the packs says what the existing path
+          says today — a bigger plan gives more for the money — with the move-up
+          action, no fake discount."*
+
+          ⚠ **AND THE SENTENCE IS TRUE AT EVERY SLIDER POSITION, WHICH IS WHY
+          THE LADDER WAS BUILT THE WAY IT WAS.** The best pack rate is 500
+          credits per $1 and the cheapest plan is 519, so there is no amount a
+          customer can choose here that beats a plan — the arm holding that
+          lives in `server/creditTopupLadder.test.ts` against `PLAN_TIERS`
+          itself, so a price edit that makes this row a lie goes red rather than
+          shipping.
+        */}
+        <div className="dp-plan__cross">
+          <span className="dp-set__rowtext">
+            <span className="dp-set__label">A bigger plan gives more for the money</span>
+            <span className="dp-set__note">
+              Credits on a plan arrive every month and cost less each.
+            </span>
+          </span>
+          <span className="dp-set__spacer" />
+          <Button variant="secondary" size="small" onClick={onChangePlan} disabled={working}>
+            Change plan
+          </Button>
+        </div>
+      </div>
+
+      <div className="dp-topup__foot">
+        <span className="dp-set__spacer" />
+        <Button variant="quiet" size="small" onClick={onClose} disabled={working}>
+          Cancel
+        </Button>
+        <Button variant="primary" size="small" onClick={submit} disabled={working}>
+          {/*
+            The price is on the button before the press, which is the one thing
+            a money button owes. It is never an em dash here: the figure is
+            composed from the ladder and the chosen amount, both of which this
+            surface holds — nothing about this price waits on a server, which is
+            exactly what the step-up pane's `Checking the charge…` was about.
+          */}
+          {working ? "Working…" : `Add credits · ${formatDollars(cents)}`}
+        </Button>
+      </div>
+    </ModalScrim>
+  );
+}
+
+/**
+ * ADD CREDITS — the shell, which reads the account's rung and nothing else.
+ *
+ * ⚠ **THE CHOICE BETWEEN THE TWO PANES IS ITSELF A READ, SO IT HAS THREE
+ * ANSWERS.** `topupEligibility` is slice 1's declaration of the card's rule
+ * (*"Plan holders only, enforced server-side"*) and it answers `unread` as its
+ * own state for the reason nine cards on this surface have paid for: a boolean
+ * would make an unanswered `getStatus` read as *"you have no plan"*, and a Pro
+ * subscriber would be shown the upgrade offer for the beat their status is in
+ * flight. So neither pane is drawn until the rung is known.
+ *
+ * ⚠ **AND THE HELD BEAT DRAWS THE CARD RATHER THAN NOTHING.** The scrim and the
+ * title are true of both roads, so they stand immediately and the decision
+ * arrives under them — which is #1703's answer on this very surface (*"say
+ * NOTHING until the server has answered"*) applied to a pane instead of a
+ * sentence. Dismissing works throughout; nothing is claimed.
+ *
+ * The panes are two components rather than two branches of one because each
+ * owns its own queries and mutations, and a surface that fires a Stripe
+ * proration read for a customer who is being sold a credit pack is the cost
+ * `AccountSurfaces`'s own gate exists to avoid.
+ */
+export function AddCreditsModal({
+  onClose,
+  onChangePlan,
+}: {
+  onClose: () => void;
+  /**
+   * The road to the plan ladder, and it is REQUIRED on purpose.
+   *
+   * ⚠ `AccountSurfaces`'s own docblock records what an optional one costs:
+   * *"the out-of-credits mounts open the top-up with no way to reach Change
+   * plan from it, which is the cross-link §6f exists to provide."* The nudge
+   * under the packs is that cross-link pointing the other way, so a mount that
+   * could forget it would ship a nudge with nowhere to go. The compiler asks
+   * every mount instead.
+   */
+  onChangePlan: () => void;
+}) {
+  const { data: status } = trpc.billing.getStatus.useQuery();
+  const eligibility = topupEligibility(status?.planTier);
+
+  if (eligibility === "may-buy") {
+    return <CreditPacksPane onClose={onClose} onChangePlan={onChangePlan} />;
+  }
+  if (eligibility === "needs-a-plan") {
+    return <PlanStepUpPane onClose={onClose} />;
+  }
+  return (
+    <ModalScrim
+      label="Add credits"
+      scrimClassName="dp-topup__scrim"
+      cardClassName="dp-topup__card"
+      busy={false}
+      onDismiss={onClose}
+    >
+      <div className="dp-topup__pane">
+        <p className="dp-topup__eyebrow">CREDITS</p>
+        <h2 className="dp-topup__title">Add credits</h2>
+      </div>
+      <div className="dp-topup__foot">
+        <span className="dp-set__spacer" />
+        <Button variant="quiet" size="small" onClick={onClose}>
+          Cancel
         </Button>
       </div>
     </ModalScrim>

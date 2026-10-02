@@ -1021,11 +1021,25 @@ export function ChangePlanModal({
         </p>
 
         {/* §6f — the honest version of "Expand credit limit" */}
+        {/*
+          ⚠ **THE SECOND SENTENCE WENT FALSE THE DAY ADD CREDITS GREW A
+          CHECKOUT — #1606 slice 2.** It read *"Pick an amount and the plan
+          moves with it — same thing, fewer decisions."* and it was true while
+          Add credits had no road into `addTopupCredits` at all (`41a765ea` took
+          it in February), so the only way to answer *I need more credits* was
+          to move the plan. From this commit a plan holder pressing this button
+          buys a one-off pack and their plan does not move — so the sentence
+          described the mechanism it no longer uses, on the row whose whole job
+          is to say where the button leads.
+
+          The label stays: *Just need more credits* is still exactly what this
+          row is for, and is now literally what it does.
+        */}
         <div className="dp-plan__cross">
           <span className="dp-set__rowtext">
             <span className="dp-set__label">Just need more credits</span>
             <span className="dp-set__note">
-              Pick an amount and the plan moves with it — same thing, fewer decisions.
+              Buy a one-off pack instead — your plan stays exactly as it is.
             </span>
           </span>
           <span className="dp-set__spacer" />

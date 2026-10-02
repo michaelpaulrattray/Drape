@@ -146,6 +146,18 @@ describe("R7-7E1 evidence-aware package foundation contract", () => {
       // read through it; the sign price it charges comes via castViewPackage.
       "db/castingV2.ts",
       "db/inkAddCandidates.ts",
+      // ⚠ A BILLING SURFACE ARRIVED ON 2026-10-02 (#1606 slice 2) — the third
+      // time this inventory has surfaced a new price READER, which is the job
+      // it was written for. The Add credits pane tells a customer what a credit
+      // pack buys in Rolls and Signs, and D-15's rule is that the client is
+      // SERVED the number and never carries a literal — so `getPlans` quotes
+      // `CASTING_V2_ROLL_PRICE_CREDITS` and `CASTING_V2_SIGN_PRICE_CREDITS` on
+      // the same projection that already serves `oneFinishedCharacterCredits`.
+      // Still a declaration-only read, which is the purity this suite is about:
+      // the price modules gain no dependency, and the alternative — the modal
+      // opening `castingV2.config` to price a pack — would put a money surface
+      // behind the casting scope chain.
+      "routes/billing.ts",
       "routes/castingV2.ts",
       "routes/generation/castingExport.ts",
     ]);

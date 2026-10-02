@@ -658,13 +658,61 @@ describe("card 661 — the rate is computed from the price standing beside it", 
       asserted (a rate reappearing on a plan surface reds here as well as in the
       card-403 arm above), and the `priceOf` hop checked at the foot of this arm
       still runs for `MODAL`, where the PRICE is still read through it.
+
+      ⚠ **A ONE-OFF CREDIT PACK HAS NO BILLING INTERVAL, SO ITS RATE IS
+      EXCLUDED BY NAME AND COUNTED SEPARATELY — #1606 slice 2.**
+
+      This arm's subject is a rate printed beside a PLAN price: turning Annual
+      on changes the charge, so a rate that did not move with it understated
+      what was being bought (PR #662's finding). Add credits now also prints a
+      rate for a credit PACK, computed from `topupPriceInCents` — a one-time
+      purchase with no interval at all, where `priceAMonth` would be a
+      category error rather than a safeguard.
+
+      **It is enumerated rather than tolerated.** The plan-rate population
+      stays pinned at exactly two per surface, so a plan rate that stopped
+      reading the toggle still reddens; the pack rate is held to its own two
+      facts below (no interval, and the LEDGER credit figure, because
+      `formatCreditsPerDollar` divides by five inside itself — handing it the
+      display figure would quote a fifth of the real rate and make every pack
+      look twelve times worse than the plan beside it). A count that had simply
+      been raised to three would have let a plan rate move into the exception.
     */
+    const TOPUP_RATE_CALLEE = "topupPriceInCents";
     const wanted: Record<string, number> = { [MODAL]: 0, [TOPUP]: 2 };
+    /* Exactly one pack-rate expression is expected, and it is `rateFor`'s —
+       the pack rows and the slider both call it, so one declaration serves
+       both and a second would be the mirror working law 4 bans. */
+    const wantedTopupRates: Record<string, number> = { [MODAL]: 0, [TOPUP]: 1 };
     for (const path of [MODAL, TOPUP]) {
       const surface = code(read(path));
-      const calls = [
+      const everyCall = [
         ...surface.matchAll(/formatCreditsPerDollar\(\s*([A-Za-z0-9_.]+)\(([^)]*)\)/g),
       ];
+      const packRates = everyCall.filter(([, callee]) => callee === TOPUP_RATE_CALLEE);
+      const calls = everyCall.filter(([, callee]) => callee !== TOPUP_RATE_CALLEE);
+      expect(
+        packRates.length,
+        `${path}: expected ${wantedTopupRates[path]} credit-pack rates, found ${packRates.length}`,
+      ).toBe(wantedTopupRates[path]);
+      for (const match of packRates) {
+        const [, , args] = match;
+        /* The `[^)]*` above stops at the first bracket, so the second argument
+           is read from a window of the SOURCE rather than from the match. */
+        const whole = surface.slice(match.index ?? 0, (match.index ?? 0) + 160);
+        /* The pack rate's own two facts. The second argument is what makes it
+           land on the customer's scale; the first is already the pack's price
+           in cents by its callee's name. */
+        expect(
+          args.replace(/\s+/g, " "),
+          `${path}: the pack rate's price is not the ladder's own unit count`,
+        ).toMatch(/^unitCount$/);
+        expect(
+          whole.replace(/\s+/g, " "),
+          `${path}: the pack rate is quoted against a display figure, so it reads a fifth`
+          + " of the real rate",
+        ).toContain("topupLedgerCredits(");
+      }
       expect(
         calls.length,
         `${path}: expected ${wanted[path]} printed rates through a helper, found ${calls.length}`,

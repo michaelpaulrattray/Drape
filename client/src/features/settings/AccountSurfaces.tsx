@@ -248,7 +248,12 @@ export function AccountSurfaces({
         <ChangePlanModal onClose={state.closeChangePlan} onAddCredits={state.openAddCredits} />
       ) : null}
 
-      {state.addCredits ? <AddCreditsModal onClose={state.closeAddCredits} /> : null}
+      {state.addCredits ? (
+        <AddCreditsModal
+          onClose={state.closeAddCredits}
+          onChangePlan={state.openChangePlan}
+        />
+      ) : null}
     </>
   );
 }
