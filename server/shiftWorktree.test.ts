@@ -27,7 +27,7 @@
  * so every refusal has an arm proving it does NOT fire on the clean case.
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -46,21 +46,29 @@ import {
   branchReadFailed,
   branchToCreate,
   decideRemoval,
+  decideReviewRemoval,
   entryForPath,
   mergedPrArgs,
   parseWorktreeList,
   prHeadFetchArgs,
+  prHeadFetchIntoRefArgs,
   prReadFailed,
+  readHeadAgainstPrHead,
   readMergedPullRequest,
   readShippedCommits,
   removalStateFromShipReading,
+  reviewCheckoutRef,
+  reviewPlanFor,
+  reviewWorktreeAddArgs,
   shipReadingFor,
   junctionMustBeGone,
   looksCrlfSmudged,
   planFor,
+  validatePrNumber,
   validateSlug,
   worktreeListArgs,
   type RemovalState,
+  type ShipReading,
 } from "../scripts/lib/shiftWorktree.mts";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 
@@ -1035,5 +1043,586 @@ describe("shipReadingFor — an unreadable branch is an unreadable READING (#161
     };
     shipReadingFor({ branch: "team/worktree-merged-branch-1540" }, gh, never);
     expect(asked[0]).toEqual(mergedPrArgs("team/worktree-merged-branch-1540"));
+  });
+});
+
+/**
+ * ⚠ **THE REVIEW ROAD — A CUT STEP WITH NO REMOVAL STEP, MEASURED AT 19 SHELLS
+ * IN THREE DAYS** (#1796, Janitor patrol #12).
+ *
+ * Reviewing a pull request by hand meant `git worktree add -b team/<slug> …
+ * && mklink /J … && cp .env` and nothing afterwards, so every review left a
+ * zero-file `drape-review-<n>` directory holding a LIVE JUNCTION into the main
+ * tree's `node_modules`. Two more appeared inside the hour the Janitor swept
+ * the nineteen — one pull request, two review attempts — so the producer is the
+ * thing to fix and a per-instance sweep cannot win against it.
+ *
+ * What is driven here is the whole of what the review road adds, and the order
+ * of the arms is the order of the risk:
+ *
+ *  1. the pull request number, because it becomes a directory name and then an
+ *     argument to a recursive delete, exactly as a slug does;
+ *  2. the three calls, asserted at the wire (working law 5) — a `--detach` that
+ *     silently became a `-b` would put the branch-per-review back, which is the
+ *     second contributor #1797 measures;
+ *  3. `decideReviewRemoval`, in all four states and both force positions,
+ *     including the NEGATIVE CONTROL that the happy path does not refuse —
+ *     a guard that refuses on every review trains the `--force` habit that is
+ *     the only thing between a real find and a deleted directory;
+ *  4. the exit-code mapping, injected AND then against a real git, because
+ *     `merge-base --is-ancestor` answers with exit 1 and errors with 128 and
+ *     the whole reading turns on not conflating them;
+ *  5. the real script, end to end, against a real repository with a real bare
+ *     remote carrying a real `refs/pull/7/head` and a real junction — with the
+ *     install counted before, between and after, which is the Janitor's own
+ *     canary and the only arm that can prove the removal step now exists.
+ */
+describe("validatePrNumber — a number that becomes a path and then a delete (#1796)", () => {
+  it("accepts the shapes a reviewer types", () => {
+    expect(validatePrNumber("1794")).toEqual({ ok: true, pr: 1794 });
+    expect(validatePrNumber("1")).toEqual({ ok: true, pr: 1 });
+  });
+
+  it("⚠ REFUSES everything that is not digits — including the `1794b` that was actually typed", () => {
+    /* `drape-review-1794b` was on this machine when this card was filed: a
+       second review of one pull request met the first directory in the way and
+       a suffix was invented by hand, producing a directory no tool can address
+       by pull request number. */
+    for (const raw of ["1794b", "-1", "1.5", "1e3", "1 2", "1;rm -rf /", "../x", "", " 7", "7 "]) {
+      const read = validatePrNumber(raw);
+      expect(read.ok, `the number ${JSON.stringify(raw)} was accepted`).toBe(false);
+    }
+  });
+
+  it("REFUSES zero and a number no repository could have", () => {
+    expect(validatePrNumber("0").ok).toBe(false);
+    expect(validatePrNumber("9".repeat(40)).ok).toBe(false);
+  });
+
+  it("⚠ THE PATH IS BUILT FROM THE NUMBER, SO TWO SPELLINGS NAME ONE DIRECTORY", () => {
+    /* The duplication this card is about is two directories for one pull
+       request. `007` and `7` must not be able to become two shells. */
+    const typed = validatePrNumber("007");
+    expect(typed).toEqual({ ok: true, pr: 7 });
+    if (!typed.ok) throw new Error("unreachable");
+    expect(reviewPlanFor(typed.pr, "/repo", "/parent").path).toBe(
+      reviewPlanFor(7, "/repo", "/parent").path,
+    );
+  });
+});
+
+describe("reviewPlanFor (#1796)", () => {
+  const plan = reviewPlanFor(1794, "/repo", "/parent");
+
+  it("keeps the name the hand-rolled road already used, so existing shells are addressable", () => {
+    /* Naming this `drape-shift-review-<n>` would have left the shells already
+       on this machine unreachable by the tool that is supposed to own them. */
+    expect(plan.path).toBe("/parent/drape-review-1794");
+  });
+
+  it("puts the worktree beside the repository, never inside it", () => {
+    expect(plan.path.startsWith("/parent/")).toBe(true);
+    expect(plan.path.startsWith("/repo/")).toBe(false);
+    expect(plan.nodeModulesLink).toBe("/parent/drape-review-1794/node_modules");
+    expect(plan.envSource).toBe("/repo/.env");
+    expect(plan.envTarget).toBe("/parent/drape-review-1794/.env");
+  });
+
+  it("⚠ CARRIES NO BRANCH — a review worktree is detached and nothing may derive one", () => {
+    expect(Object.keys(plan).sort()).toEqual(
+      ["envSource", "envTarget", "nodeModulesLink", "path", "slug"].sort(),
+    );
+    expect(JSON.stringify(plan)).not.toContain("team/");
+  });
+});
+
+describe("the review road's calls, asserted at the wire (#1796, working law 5)", () => {
+  it("the checkout ref is the pull request's own head, which is NOT a branch", () => {
+    /* `refs/pull/<n>/head` never appears in `git branch`, so a review leaves
+       nothing for #1797's local-ref sweep to find — and GitHub keeps it, so it
+       is simultaneously the restore road for anything the removal destroys. */
+    expect(reviewCheckoutRef(1794)).toBe("refs/pull/1794/head");
+    expect(reviewCheckoutRef(1794)).not.toContain("team/");
+  });
+
+  it("⚠ THE FETCH HAS A DESTINATION AND IS FORCED — both differ from the removal's fetch on purpose", () => {
+    expect(prHeadFetchIntoRefArgs(1794)).toEqual([
+      "fetch", "--no-tags", "origin", "+refs/pull/1794/head:refs/pull/1794/head",
+    ]);
+    /* A DESTINATION, because `FETCH_HEAD` is one slot shared by the whole
+       repository and four seats fetch into it concurrently on this machine — a
+       worktree created at `FETCH_HEAD` could be created at somebody else's
+       fetch. FORCED, because a pull request's head moves when its author
+       pushes a repair, which is exactly when the reviewer looks again. */
+    expect(prHeadFetchArgs(1794)).toEqual(["fetch", "--no-tags", "origin", "refs/pull/1794/head"]);
+    expect(prHeadFetchIntoRefArgs(1794).join(" ")).toContain(":");
+    expect(prHeadFetchArgs(1794).join(" ")).not.toContain(":");
+  });
+
+  it("⚠ THE WORKTREE IS `--detach` AND NEVER `-b` — a branch per review is #1797's second contributor", () => {
+    const args = reviewWorktreeAddArgs(1794, "/parent/drape-review-1794");
+    expect(args).toEqual([
+      "worktree", "add", "--detach", "/parent/drape-review-1794", "refs/pull/1794/head",
+    ]);
+    expect(args).not.toContain("-b");
+    expect(args).not.toContain("-B");
+  });
+});
+
+describe("decideReviewRemoval — the question decideRemoval cannot put (#1796)", () => {
+  it("⚠ NEGATIVE CONTROL — the happy path does NOT refuse, which is the whole reason this exists", () => {
+    /* Traced before this function was written: a detached HEAD has no upstream,
+       so the CLI's unpushed count falls back to `origin/main..HEAD` and reports
+       the PULL REQUEST'S OWN commits as work about to vanish; `shipReadingFor`
+       is handed an unreadable branch and answers `unreadable`; `decideRemoval`
+       refuses. Every single review would have met a refusal on its happy
+       path. */
+    const verdict = decideReviewRemoval({ shippedBy: 1794 }, 1794, false);
+    expect(verdict.proceed).toBe(true);
+    if (!verdict.proceed) throw new Error("unreachable");
+    expect(verdict.note).toContain("refs/pull/1794/head");
+  });
+
+  it("REFUSES commits made in the review worktree, and names how many", () => {
+    const verdict = decideReviewRemoval({ pastMerge: { pr: 1794, commits: 3 } }, 1794, false);
+    expect(verdict.proceed).toBe(false);
+    if (verdict.proceed) throw new Error("unreachable");
+    expect(verdict.reason).toContain("3 commits were made in this review worktree");
+    expect(verdict.reason).toContain("only copy");
+    expect(verdict.reason).toContain("--force");
+  });
+
+  it("one commit reads as one commit — the singular, because a reviewer reads this before deleting", () => {
+    const verdict = decideReviewRemoval({ pastMerge: { pr: 1794, commits: 1 } }, 1794, false);
+    expect(verdict.proceed).toBe(false);
+    if (verdict.proceed) throw new Error("unreachable");
+    expect(verdict.reason).toContain("1 commit was made");
+    expect(verdict.reason).not.toContain("1 commits");
+  });
+
+  it("--force proceeds past commits, and SAYS WHAT IT IS DESTROYING", () => {
+    const verdict = decideReviewRemoval({ pastMerge: { pr: 1794, commits: 2 } }, 1794, true);
+    expect(verdict.proceed).toBe(true);
+    if (!verdict.proceed) throw new Error("unreachable");
+    expect(verdict.note).toContain("--force is destroying 2 commit(s)");
+  });
+
+  it("⚠ A READING NOBODY COULD TAKE REFUSES, AND SAYS IT WAS NOT TAKEN", () => {
+    const verdict = decideReviewRemoval({ unreadable: "git is not on PATH" }, 1794, false);
+    expect(verdict.proceed).toBe(false);
+    if (verdict.proceed) throw new Error("unreachable");
+    expect(verdict.reason).toContain("COULD NOT BE READ");
+    expect(verdict.reason).toContain("git is not on PATH");
+    /* The refusal must not read as a finding about the directory — it is a
+       finding about the read. */
+    expect(verdict.reason).toContain("safe answer rather than a finding");
+  });
+
+  it("--force reaches an unreadable reading, and the note does not pretend it was read", () => {
+    const verdict = decideReviewRemoval({ unreadable: "offline" }, 1794, true);
+    expect(verdict.proceed).toBe(true);
+    if (!verdict.proceed) throw new Error("unreachable");
+    expect(verdict.note).toContain("NOT read");
+    expect(verdict.note).toContain("offline");
+  });
+
+  it("⚠ `notMerged` CANNOT ARISE AND IS STILL REFUSED — fail closed on a state with no meaning here", () => {
+    /* `readHeadAgainstPrHead` never returns it: only the branch hop can, and
+       the review road has no branch hop. Refused rather than dropped through a
+       default, so a future edit that routes some other reading in here cannot
+       make an unasked question read as a clean proceed. */
+    for (const force of [false, true]) {
+      const verdict = decideReviewRemoval({ notMerged: true }, 1794, force);
+      expect(verdict.proceed, `force=${force}`).toBe(false);
+    }
+  });
+});
+
+describe("readHeadAgainstPrHead — the exit codes, which are the whole reading (#1796)", () => {
+  /** A git runner that answers a scripted status per command, in order. */
+  function scripted(answers: { status: number; out?: string; err?: string }[]) {
+    const seen: string[][] = [];
+    let i = 0;
+    const git = (args: string[]) => {
+      seen.push(args);
+      const answer = answers[i] ?? { status: 1, err: "no scripted answer" };
+      i += 1;
+      return { status: answer.status, out: answer.out ?? "", err: answer.err ?? "" };
+    };
+    return { git, seen };
+  }
+
+  it("⚠ THE FETCH IS ASSERTED AT THE WIRE, and it reaches the PULL REQUEST's ref", () => {
+    const { git, seen } = scripted([{ status: 0 }, { status: 0 }]);
+    expect(readHeadAgainstPrHead(7, git)).toEqual({ shippedBy: 7 });
+    expect(seen[0]).toEqual(prHeadFetchArgs(7));
+    expect(seen[1]).toEqual(["merge-base", "--is-ancestor", "HEAD", "FETCH_HEAD"]);
+  });
+
+  it("a fetch that cannot be taken is `unreadable`, never an answer", () => {
+    const { git } = scripted([{ status: 128, err: "couldn't find remote ref" }]);
+    const reading = readHeadAgainstPrHead(7, git);
+    expect(reading).toHaveProperty("unreadable");
+    expect(JSON.stringify(reading)).toContain("refs/pull/7/head");
+  });
+
+  it("⚠ EXIT 1 IS AN ANSWER AND 128 IS AN ERROR — conflating them is how this goes quietly wrong", () => {
+    /* Exit 1 means HEAD is NOT contained, which is a verdict. 128 means git
+       could not tell you. A reader treating "not 0" as "no" turns every git
+       failure into a confident refusal; one treating "not 1" as "yes" turns it
+       into a confident PROCEED over the only copy of somebody's work. */
+    const answer = scripted([{ status: 0 }, { status: 1 }, { status: 0, out: "abc123 a fix\n" }]);
+    expect(readHeadAgainstPrHead(7, answer.git)).toEqual({ pastMerge: { pr: 7, commits: 1 } });
+    expect(answer.seen[2]).toEqual(["log", "--oneline", "FETCH_HEAD..HEAD"]);
+
+    const error = scripted([{ status: 0 }, { status: 128, err: "bad object" }]);
+    expect(readHeadAgainstPrHead(7, error.git)).toHaveProperty("unreadable");
+  });
+
+  it("⚠ A ZERO COUNT PAST A NON-ANCESTOR IS ARITHMETICALLY IMPOSSIBLE, so it refuses to invent one", () => {
+    const { git } = scripted([{ status: 0 }, { status: 1 }, { status: 0, out: "\n" }]);
+    const reading = readHeadAgainstPrHead(7, git);
+    expect(reading).toHaveProperty("unreadable");
+    expect(JSON.stringify(reading)).toContain("no commit separates them");
+  });
+
+  it("⚠ ONE READER, NOT TWO — `readShippedCommits` drives these same bytes", () => {
+    /* Working law 4, on the one path in this file that ends in a recursive
+       delete. The branch road and the review road must not grow two copies of
+       an exit-code mapping whose three states are each one character apart. */
+    const source = readFileSync(
+      join(import.meta.dirname, "..", "scripts", "lib", "shiftWorktree.mts"),
+      "utf8",
+    );
+    expect(source.match(/"--is-ancestor"/g) ?? []).toHaveLength(1);
+    expect(source).toContain("return readHeadAgainstPrHead(pr, gitInWorktree);");
+  });
+});
+
+/**
+ * THE REVIEW ROAD AGAINST REAL GIT AND A REAL REMOTE (#1796).
+ *
+ * ⚠ **THE INJECTED ARMS ABOVE PROVE THE MAPPING; ONLY THIS PROVES GIT ACTUALLY
+ * ANSWERS THAT WAY.** `refs/pull/<n>/head` is not a git concept — it is a ref
+ * GitHub happens to keep — so the fixture puts a real one in a real bare remote
+ * and fetches it, which is faithful because that is all GitHub's end of it is.
+ *
+ * Nothing here touches this repository: a fresh repo, a fresh bare remote, a
+ * temporary directory, and no network.
+ */
+describe("the review road against a real repository (#1796)", () => {
+  function git(cwd: string, args: string[]) {
+    const result = spawnSync("git", args, { cwd, encoding: "utf8" });
+    return { status: result.status ?? 1, out: result.stdout ?? "", err: result.stderr ?? "" };
+  }
+
+  function commit(repo: string, file: string, body: string) {
+    writeFileSync(join(repo, file), body);
+    expect(git(repo, ["add", file]).status).toBe(0);
+    expect(git(repo, ["commit", "-q", "-m", `add ${file}`]).status).toBe(0);
+  }
+
+  /** A repo, a bare remote, and a real `refs/pull/7/head` on it. */
+  function withRemote(name: string, body: (paths: { repo: string; parent: string }) => void) {
+    const parent = mkdtempSync(join(tmpdir(), `drape-review-${name}-`));
+    try {
+      const repo = join(parent, "repo");
+      mkdirSync(repo);
+      expect(git(parent, ["init", "-q", "--bare", "remote.git"]).status).toBe(0);
+      expect(git(repo, ["init", "-q", "-b", "main"]).status).toBe(0);
+      expect(git(repo, ["config", "user.email", "arm@example.com"]).status).toBe(0);
+      expect(git(repo, ["config", "user.name", "Arm"]).status).toBe(0);
+      expect(git(repo, ["remote", "add", "origin", join(parent, "remote.git")]).status).toBe(0);
+      commit(repo, "main.txt", "main\n");
+      expect(git(repo, ["push", "-q", "origin", "main"]).status).toBe(0);
+      /* THE PULL REQUEST'S HEAD, as GitHub keeps it: a commit pushed straight
+         to `refs/pull/7/head` with no branch anywhere naming it. */
+      commit(repo, "pr.txt", "the pull request\n");
+      expect(git(repo, ["push", "-q", "origin", "HEAD:refs/pull/7/head"]).status).toBe(0);
+      expect(git(repo, ["checkout", "-q", "main"]).status).toBe(0);
+      expect(git(repo, ["reset", "-q", "--hard", "HEAD~1"]).status).toBe(0);
+      /* THE PROOF THE FIXTURE CAN MEASURE ANYTHING: the ref is really on the
+         remote. A clean null is evidence only if the fixture could have
+         produced a positive. */
+      const remoteRefs = git(repo, ["ls-remote", "origin", "refs/pull/7/head"]);
+      expect(remoteRefs.status).toBe(0);
+      expect(remoteRefs.out, "refs/pull/7/head is not on the fixture's remote").toContain(
+        "refs/pull/7/head",
+      );
+      body({ repo, parent });
+    } finally {
+      rmSync(parent, { recursive: true, force: true });
+    }
+  }
+
+  it("HEAD at the pull request's head reads as SHIPPED — exit 0 from real git", () => {
+    withRemote("ancestor", ({ repo }) => {
+      expect(git(repo, prHeadFetchIntoRefArgs(7)).status).toBe(0);
+      expect(git(repo, ["checkout", "-q", "--detach", reviewCheckoutRef(7)]).status).toBe(0);
+      const reading: ShipReading = readHeadAgainstPrHead(7, (args) => git(repo, args));
+      expect(reading).toEqual({ shippedBy: 7 });
+      expect(decideReviewRemoval(reading, 7, false).proceed).toBe(true);
+    });
+  });
+
+  it("⚠ A COMMIT MADE IN THE REVIEW WORKTREE READS AS PAST IT AND REFUSES — exit 1 from real git", () => {
+    withRemote("past", ({ repo }) => {
+      expect(git(repo, prHeadFetchIntoRefArgs(7)).status).toBe(0);
+      expect(git(repo, ["checkout", "-q", "--detach", reviewCheckoutRef(7)]).status).toBe(0);
+      commit(repo, "reviewer-note.txt", "a repair typed in the review worktree\n");
+      const reading = readHeadAgainstPrHead(7, (args) => git(repo, args));
+      expect(reading).toEqual({ pastMerge: { pr: 7, commits: 1 } });
+      expect(decideReviewRemoval(reading, 7, false).proceed).toBe(false);
+    });
+  });
+});
+
+/**
+ * THE REAL SCRIPT, END TO END, WITH A REAL JUNCTION (#1796).
+ *
+ * ⚠ **THIS IS THE ONLY ARM THAT CAN SHOW THE REMOVAL STEP EXISTS, AND IT
+ * CARRIES THE JANITOR'S OWN CANARY.** The nineteen shells each held a live
+ * junction into the main tree's `node_modules`; the Janitor counts that install
+ * before, between and after every removal it performs, because the one deletion
+ * form that destroys it is the form a human types. So this fixture counts the
+ * install's entries before the add, after the add and after the remove, and
+ * reads a canary file THROUGH the junction first — a fixture whose `mklink`
+ * failed silently would otherwise report the install safe while the delete met
+ * an ordinary empty directory, which is exactly what happened to the first hand
+ * run of this file's older measurement.
+ *
+ * It runs the REAL script bytes against a temporary repository, which is
+ * faithful because the script derives its own repo root from its own location:
+ * copy the three files into `<tmp>/repo/scripts/`, and `<tmp>` is the parent the
+ * worktree is cut beside. **This repository is never touched** — the alternative
+ * (driving `--pr` against the live tree) would register a worktree in the shared
+ * `.git` and drop a `drape-review-*` directory into the very population the
+ * Janitor is sweeping.
+ */
+describe.runIf(process.platform === "win32")("shift-worktree --pr, driven end to end (#1796)", () => {
+  const suiteRepoRoot = join(import.meta.dirname, "..");
+
+  function git(cwd: string, args: string[]) {
+    const result = spawnSync("git", args, { cwd, encoding: "utf8" });
+    return { status: result.status ?? 1, out: result.stdout ?? "", err: result.stderr ?? "" };
+  }
+
+  /** The real script, run through this repository's own tsx, on a temp repo. */
+  function tool(repo: string, args: string[]) {
+    const result = spawnSync(
+      process.execPath,
+      [
+        join(suiteRepoRoot, "node_modules", "tsx", "dist", "cli.mjs"),
+        join(repo, "scripts", "shift-worktree.mts"),
+        ...args,
+      ],
+      { cwd: repo, encoding: "utf8" },
+    );
+    return { status: result.status ?? 1, out: `${result.stdout ?? ""}${result.stderr ?? ""}` };
+  }
+
+  /** A repository the real script can operate on, with a real install to junction. */
+  function withReviewFixture(
+    name: string,
+    body: (paths: { repo: string; install: string; reviewPath: string }) => void,
+  ) {
+    const parent = mkdtempSync(join(tmpdir(), `drape-prdrive-${name}-`));
+    try {
+      const repo = join(parent, "repo");
+      mkdirSync(join(repo, "scripts", "lib"), { recursive: true });
+      copyFileSync(
+        join(suiteRepoRoot, "scripts", "shift-worktree.mts"),
+        join(repo, "scripts", "shift-worktree.mts"),
+      );
+      for (const lib of ["shiftWorktree.mts", "riteWorktree.mts"]) {
+        copyFileSync(join(suiteRepoRoot, "scripts", "lib", lib), join(repo, "scripts", "lib", lib));
+      }
+      /* The install the junction points at, with the canary the Janitor reads. */
+      const install = join(repo, "node_modules");
+      mkdirSync(join(install, "react"), { recursive: true });
+      writeFileSync(join(install, "canary.txt"), "the main tree's install");
+      writeFileSync(join(install, "react", "index.js"), "module.exports = {};\n");
+      /* `add` refuses without one: a worktree without it cannot run the app. */
+      writeFileSync(join(repo, ".env"), "JWT_SECRET=fixture\n");
+      writeFileSync(join(repo, ".gitignore"), "node_modules/\n.env\n");
+
+      expect(git(parent, ["init", "-q", "--bare", "remote.git"]).status).toBe(0);
+      expect(git(repo, ["init", "-q", "-b", "main"]).status).toBe(0);
+      expect(git(repo, ["config", "user.email", "arm@example.com"]).status).toBe(0);
+      expect(git(repo, ["config", "user.name", "Arm"]).status).toBe(0);
+      expect(git(repo, ["remote", "add", "origin", join(parent, "remote.git")]).status).toBe(0);
+      expect(git(repo, ["add", "-A"]).status).toBe(0);
+      expect(git(repo, ["commit", "-q", "-m", "the fixture repository"]).status).toBe(0);
+      expect(git(repo, ["push", "-q", "origin", "main"]).status).toBe(0);
+      writeFileSync(join(repo, "pr.txt"), "what the pull request changed\n");
+      expect(git(repo, ["add", "pr.txt"]).status).toBe(0);
+      expect(git(repo, ["commit", "-q", "-m", "the pull request's commit"]).status).toBe(0);
+      expect(git(repo, ["push", "-q", "origin", "HEAD:refs/pull/7/head"]).status).toBe(0);
+      expect(git(repo, ["checkout", "-q", "main"]).status).toBe(0);
+      expect(git(repo, ["reset", "-q", "--hard", "HEAD~1"]).status).toBe(0);
+
+      body({ repo, install, reviewPath: join(parent, "drape-review-7") });
+    } finally {
+      /* ⚠ THE JUNCTION COMES OUT BEFORE THE RECURSIVE DELETE HERE TOO. A
+         fixture's teardown must not be the one deletion form that empties an
+         install — and on a failing arm the junction is exactly what is left. */
+      const link = join(parent, "drape-review-7", "node_modules");
+      if (existsSync(link)) spawnSync("cmd", ["/c", "rmdir", link.replace(/\//g, "\\")]);
+      rmSync(parent, { recursive: true, force: true });
+    }
+  }
+
+  it("⚠ ADD CUTS A DETACHED REVIEW WORKTREE AND REMOVE TAKES IT DOWN — the install counted throughout", () => {
+    withReviewFixture("roundtrip", ({ repo, install, reviewPath }) => {
+      const before = readdirSync(install).length;
+      expect(before, "the fixture's install is empty — nothing here could measure a loss")
+        .toBeGreaterThan(0);
+
+      const added = tool(repo, ["add", "--pr", "7"]);
+      expect(added.status, added.out).toBe(0);
+      expect(existsSync(reviewPath), added.out).toBe(true);
+      expect(
+        existsSync(join(reviewPath, "pr.txt")),
+        "the worktree is not at the pull request's head",
+      ).toBe(true);
+      expect(existsSync(join(reviewPath, ".env"))).toBe(true);
+
+      /* ⚠ READ THROUGH THE JUNCTION, NOT ITS EXIT CODE. A fixture whose
+         `mklink` failed would report the install safe below because the delete
+         met an ordinary empty directory — the exact false pass this file's
+         older measurement was thrown away for. */
+      expect(
+        readFileSync(join(reviewPath, "node_modules", "canary.txt"), "utf8"),
+        "the junction does not resolve — this arm cannot measure anything",
+      ).toBe("the main tree's install");
+      expect(readdirSync(install).length, "the add changed the install").toBe(before);
+
+      /* NO LOCAL BRANCH — the half of this that answers #1797. */
+      const branches = git(repo, ["branch", "--list"]);
+      expect(branches.out).not.toContain("review");
+      expect(branches.out).not.toContain("pull");
+
+      /* AND `add` NAMES ITS OWN TAKEDOWN, which is the whole defect in one
+         line: the hand road had a cut step and no removal step to skip. */
+      expect(added.out).toContain("remove --pr 7");
+
+      const removed = tool(repo, ["remove", "--pr", "7"]);
+      expect(removed.status, removed.out).toBe(0);
+      expect(existsSync(reviewPath), `the directory survived:\n${removed.out}`).toBe(false);
+      expect(
+        readFileSync(join(install, "canary.txt"), "utf8"),
+        "THE REMOVAL FOLLOWED THE JUNCTION AND EMPTIED THE INSTALL",
+      ).toBe("the main tree's install");
+      expect(readdirSync(install).length, "the removal changed the install").toBe(before);
+      expect(git(repo, ["worktree", "list", "--porcelain"]).out).not.toContain("drape-review-7");
+    });
+  });
+
+  it("⚠ A SECOND ATTEMPT ON ONE PULL REQUEST IS REFUSED AND NAMES THE REMOVAL — no `1794b` to invent", () => {
+    withReviewFixture("second-attempt", ({ repo, reviewPath }) => {
+      expect(tool(repo, ["add", "--pr", "7"]).status).toBe(0);
+      const again = tool(repo, ["add", "--pr", "7"]);
+      expect(again.status, again.out).toBe(1);
+      expect(again.out).toContain("already exists");
+      expect(again.out).toContain("remove --pr 7");
+      expect(again.out).toContain("Do NOT make a second directory");
+      expect(existsSync(reviewPath), "the refused second attempt removed the first").toBe(true);
+      expect(tool(repo, ["remove", "--pr", "7"]).status).toBe(0);
+    });
+  });
+
+  it("⚠ A COMMIT TYPED IN THE REVIEW WORKTREE REFUSES THE REMOVAL, AND THE DIRECTORY SURVIVES", () => {
+    withReviewFixture("commit-in-review", ({ repo, reviewPath }) => {
+      expect(tool(repo, ["add", "--pr", "7"]).status).toBe(0);
+      expect(git(reviewPath, ["config", "user.email", "arm@example.com"]).status).toBe(0);
+      expect(git(reviewPath, ["config", "user.name", "Arm"]).status).toBe(0);
+      writeFileSync(join(reviewPath, "note.txt"), "a repair typed in the review worktree\n");
+      expect(git(reviewPath, ["add", "note.txt"]).status).toBe(0);
+      expect(git(reviewPath, ["commit", "-q", "-m", "a repair"]).status).toBe(0);
+
+      const refused = tool(repo, ["remove", "--pr", "7"]);
+      expect(refused.status, refused.out).toBe(1);
+      expect(refused.out).toContain("REFUSING");
+      expect(refused.out).toContain("only copy");
+      expect(existsSync(reviewPath), "the refusal deleted the directory anyway").toBe(true);
+
+      /* ⚠ AND `--force` IS STILL A ROAD, because the alternative is a reviewer
+         hand-typing the one deletion form that empties the install. */
+      const forced = tool(repo, ["remove", "--pr", "7", "--force"]);
+      expect(forced.status, forced.out).toBe(0);
+      expect(existsSync(reviewPath)).toBe(false);
+    });
+  });
+
+  it("⚠ AN UNREGISTERED SHELL IS REMOVED, NOT REFUSED — that is the state of all nineteen", () => {
+    withReviewFixture("orphan-shell", ({ repo, install, reviewPath }) => {
+      expect(tool(repo, ["add", "--pr", "7"]).status).toBe(0);
+      /* The documented git 2.55 outcome, performed deliberately: the worktree
+         is unregistered and the directory and its junction are left standing.
+         That is what a `drape-review-*` shell IS — and asking git about a
+         pruned worktree would come back `unreadable` and refuse to clean up
+         litter, i.e. refuse the one case this card exists to make easy. */
+      git(repo, ["worktree", "remove", "--force", reviewPath]);
+      git(repo, ["worktree", "prune"]);
+      expect(existsSync(reviewPath), "the fixture could not produce a shell").toBe(true);
+      expect(existsSync(join(reviewPath, "node_modules"))).toBe(true);
+      const before = readdirSync(install).length;
+
+      const removed = tool(repo, ["remove", "--pr", "7"]);
+      expect(removed.status, removed.out).toBe(0);
+      expect(removed.out).toContain("registered");
+      expect(existsSync(reviewPath)).toBe(false);
+      expect(readFileSync(join(install, "canary.txt"), "utf8")).toBe("the main tree's install");
+      expect(readdirSync(install).length).toBe(before);
+    });
+  });
+
+  it("--dry-run on a review removal changes nothing", () => {
+    withReviewFixture("dry-run", ({ repo, reviewPath }) => {
+      expect(tool(repo, ["add", "--pr", "7"]).status).toBe(0);
+      const dry = tool(repo, ["remove", "--pr", "7", "--dry-run"]);
+      expect(dry.status, dry.out).toBe(0);
+      expect(dry.out).toContain("nothing was changed");
+      expect(existsSync(reviewPath)).toBe(true);
+      expect(existsSync(join(reviewPath, "node_modules"))).toBe(true);
+      expect(tool(repo, ["remove", "--pr", "7"]).status).toBe(0);
+    });
+  });
+});
+
+describe("the script's own text — the review road's sequence (#1796)", () => {
+  const source = readFileSync(join(import.meta.dirname, "..", "scripts", "shift-worktree.mts"), "utf8");
+
+  it("⚠ STILL EXACTLY ONE RECURSIVE DELETE — two roads, one destructive sequence", () => {
+    /* The point of routing the review road through this tool rather than giving
+       it its own is that the dangerous part has ONE owner. A second `rmSync`
+       here would mean the review road had quietly grown its own. */
+    expect(source.match(/rmSync\(/g) ?? []).toHaveLength(1);
+    expect(source).toContain("rmSync(plan.path, { recursive: true, force: true })");
+  });
+
+  it("⚠ THE REVIEW VERDICT IS ASKED BEFORE THE JUNCTION COMES OUT, let alone the delete", () => {
+    const review = source.indexOf("if (reviewVerdict !== null) {");
+    const proof = source.indexOf("junctionMustBeGone(");
+    const destroy = source.indexOf("rmSync(plan.path");
+    expect(review).toBeGreaterThan(-1);
+    expect(review).toBeLessThan(proof);
+    expect(proof).toBeLessThan(destroy);
+  });
+
+  it("⚠ THE UNPUSHED PROBES ARE NOT PUT TO A REVIEW WORKTREE", () => {
+    /* On a detached HEAD they report the pull request's own commits as work
+       about to vanish, and every review would meet a refusal on its happy path.
+       The guard is asserted first, so a later read cannot pass vacuously. */
+    const guard = source.indexOf("if (reviewPr === null) {\n    const unpushed");
+    expect(guard, "the review road reaches the unpushed probes again (#1796)").toBeGreaterThan(-1);
+    const probe = source.indexOf('git(["log", "--oneline", "@{u}..HEAD"]');
+    expect(probe).toBeGreaterThan(guard);
+  });
+
+  it("⚠ `--pr` NEVER SWALLOWS A FLAG AS ITS VALUE", () => {
+    /* `remove --pr --dry-run` taking `--dry-run` as the number would leave
+       `dryRun` false on the one command that deletes. */
+    expect(source).toContain('value.startsWith("--")');
   });
 });
