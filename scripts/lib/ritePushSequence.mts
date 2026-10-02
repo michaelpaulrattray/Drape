@@ -360,3 +360,126 @@ export function divergedRefMessage(ref: string, remote: string, shortSha: string
     "⚠ DO NOT force push either deploy ref. See #317.",
   ].join("\n");
 }
+
+/**
+ * ⚠ **A LANDED PUSH WAS BEING CALLED REFUSED — #1726, and the question the
+ * post-push check asks was the wrong one.**
+ *
+ * It asked *"is `origin/<ref>` EXACTLY the sha my pre-checks ran on?"* That is
+ * not what a deploy needs to know. On 2026-10-01 a second command in the same
+ * working tree committed a CHILD of the rite's commit while its checks ran, so
+ * `git push` shipped the ref as it then stood — `06aa189c..5fb877d5`, the
+ * rite's own receipt says so — and the check then printed
+ * **`REFUSED: origin/main is at 5fb877d5 — not f644f718`** over a push that had
+ * landed, on a production Railway served two minutes later. `scripts/lib/
+ * riteLock.mts` is why that collision cannot happen again; this is why the
+ * sentence would not have been false even if it did.
+ *
+ * The honest question is *"did `origin/<ref>` receive my commit?"*, and there
+ * are five answers rather than two:
+ *
+ * | kind | what it means | what the rite does |
+ * |---|---|---|
+ * | `exact` | the ref is the commit the checks ran on | the ordinary night |
+ * | `advanced` | the ref is a DESCENDANT — my commit shipped, inside a newer tip | proceed, and watch the tip that SHIPPED |
+ * | `absent` | no such ref on the remote | refuse |
+ * | `diverged` | the ref is neither, so my commit is not on it | refuse — the real #317 case |
+ * | `unreadable` | the remote's object is not in this clone, so nothing can be judged | refuse, saying it could not be read |
+ *
+ * ⚠ **`unreadable` IS NOT FOLDED INTO `diverged`, AND THAT IS THE ARM WORTH
+ * KEEPING.** `git merge-base --is-ancestor` exits 1 for *"no"* and 128 for
+ * *"I do not have that object"* — the second happens whenever the remote moved
+ * from somewhere other than this clone, which is every squash merge. Reading
+ * 128 as *"no"* would print the #317 race diagnosis, whose first instruction is
+ * a merge, over a tree that merely needs a fetch. Both refuse, so production is
+ * equally safe either way; what differs is whether the operator is told
+ * something false (CLAUDE.md: *a wrong confident diagnosis costs more than an
+ * honest shrug*).
+ *
+ * ⚠ **AND `shipped` IS WHY THIS RETURNS A VALUE RATHER THAN A BOOLEAN.** On the
+ * `advanced` road the sha production builds is the REMOTE's, not the one the
+ * checks ran on — so the watch that waits for Railway to create a deployment,
+ * and the die message that says none appeared, must both name the shipped tip.
+ * Leaving them on the checked sha is the other half of the same incident: the
+ * second rite waited 44 minutes for a build of a commit that was never a tip.
+ *
+ * A pure function of (ref, checked, remote, an injected ancestry reading), so
+ * every road is drivable without a remote.
+ */
+export type Ancestry = "yes" | "no" | "unknown";
+
+export type RefLandingKind = "exact" | "advanced" | "absent" | "diverged" | "unreadable";
+
+export type RefLanding = {
+  kind: RefLandingKind;
+  ref: string;
+  /** The commit the rite's pre-checks ran on. */
+  checked: string;
+  /** What `origin/<ref>` holds now, or "" when the ref is absent. */
+  remote: string;
+  /**
+   * The sha production will build — the remote tip whenever it carries the
+   * rite's commit, and "" on every road that refuses. Never guessed.
+   */
+  shipped: string;
+};
+
+export function judgeRefLanding(input: {
+  ref: string;
+  checked: string;
+  remote: string;
+  /** Is `ancestor` an ancestor of `descendant`? Status-read, never text. */
+  ancestry: (ancestor: string, descendant: string) => Ancestry;
+}): RefLanding {
+  const { ref, checked, remote } = input;
+  const base = { ref, checked, remote };
+  if (!remote) return { ...base, kind: "absent", shipped: "" };
+  if (remote === checked) return { ...base, kind: "exact", shipped: checked };
+  switch (input.ancestry(checked, remote)) {
+    case "yes": return { ...base, kind: "advanced", shipped: remote };
+    case "no": return { ...base, kind: "diverged", shipped: "" };
+    default: return { ...base, kind: "unreadable", shipped: "" };
+  }
+}
+
+/**
+ * The receipt lines for the `advanced` road — a note, not a refusal.
+ *
+ * It is spelled out rather than shortened to "ok" because the rite's whole
+ * output is a receipt somebody reads an hour later, and *"the commit I checked
+ * is not the commit that shipped"* is the single most important sentence such a
+ * reader can be handed. It names both shas and which one production builds.
+ */
+export function refAdvancedLines(landing: RefLanding): string[] {
+  const checked = landing.checked.slice(0, 8);
+  const shipped = landing.shipped.slice(0, 8);
+  return [
+    `origin/${landing.ref} = ${shipped}, a DESCENDANT of ${checked}  ✓`,
+    `⚠ the ref advanced under this rite: the checks ran on ${checked}, the push shipped ${shipped}.`,
+    `  ${checked} IS on origin/${landing.ref}, so it landed — but production builds ${shipped},`,
+    "  and everything below watches and verifies that tip. Something else committed to this",
+    "  working tree while the checks ran (#1726); the lock refuses a second RITE, not a commit.",
+  ];
+}
+
+/**
+ * The refusal for `unreadable`, kept apart from `divergedRefMessage` because
+ * the repair is a FETCH and not a merge. See the ⚠ above.
+ */
+export function unreadableRefMessage(landing: RefLanding): string {
+  return [
+    `origin/${landing.ref} is at ${landing.remote.slice(0, 8)} and this clone does not have that commit,`,
+    `so whether ${landing.checked.slice(0, 8)} landed cannot be read here at all.`,
+    "",
+    "This is NOT the #317 race and the merge repair is not the answer to it — a remote tip",
+    "that moved from another clone (every squash merge) reads exactly like this until the",
+    "object is fetched. Fetch, look, and only then decide:",
+    "",
+    "    git fetch origin",
+    `    git merge-base --is-ancestor ${landing.checked.slice(0, 8)} origin/${landing.ref}`,
+    "        # exit 0 → it landed and the rite can be re-run as-is",
+    "        # exit 1 → it did not; merge origin/" + landing.ref + " --no-edit, then re-run",
+    "",
+    "Nothing was reported as deployed and nothing here may be. ⚠ DO NOT force push.",
+  ].join("\n");
+}
