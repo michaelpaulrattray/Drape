@@ -1,0 +1,778 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<title>Klieg — Pricing Phase 2 · plan surface prototype (#1774)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!--
+  PRICING PHASE 2 — THE PLAN SURFACE, PROTOTYPE (card #1774)
+
+  This is a PROTOTYPE and it is authoritative on FORM AND NOTHING ELSE — his
+  own rule, quoted in `ChangePlanModal.tsx`'s header: *"the credits and things
+  like that in the mockup are obviously not the same as the live server that is
+  the source of truth a mockup isnt."*
+
+  What that means here, and it is the opposite of the usual mockup problem:
+  every figure below is DERIVED from the constants the product actually ships,
+  declared once in `FROM_THE_CODE` and computed by the same arithmetic the
+  client uses. Nothing is typed twice and nothing is a round number somebody
+  liked. `client/src/features/settings/pricingPhase2Prototype-guard.test.ts`
+  reads that block out of this file and compares it to the real
+  `PLAN_TIERS`, the real prices and the real top-up unit, so this file cannot
+  drift from the tree without a red.
+
+  THE ONE NUMBER THAT IS A PROPOSAL, NOT A READING: `SLIDER_DOLLARS_PER_UNIT`.
+  It is the price of one extra 5,000 credits a month on the top plan, it does
+  not exist in the product yet, and it is the single thing the founder has to
+  say yes to before anything is built. Its derivation and the alternatives are
+  in PRICING_PHASE2_PLANS_DESIGN.md §5.
+
+  HOW TO DRIVE IT
+    ?view=plans|compare|team   which surface
+    &theme=light|dark          sets data-theme, exactly as the app does
+    &w=desktop|phone          880px pane, or 390px
+  Default: plans · light · desktop.
+-->
+<style>
+/* ============================================================
+   TOKENS — copied VERBATIM from client/src/foundation/tokens.css.
+   A prototype that invents a colour is a prototype about a
+   different product; the no-hex guard's whole point is that these
+   are the only values that exist.
+   ============================================================ */
+:root {
+  --surface:#FFFFFF; --raised:#FAFAFB; --page:#FCFCFD; --wellSoft:#F7F7F9;
+  --well:#F6F6F8; --fill:#F4F4F6; --fillStrong:#F2F2F4; --media:#F1F1F3;
+  --rule:#F0F0F2; --ruleSoft:#EFEFF1; --border:#ECECEE; --borderSoft:#EAEAED;
+  --borderMedia:#E8E8EB; --borderInput:#E6E6E9; --borderCard:#E4E4E7;
+  --dots:#DEDEE2; --dotsStrong:#DADADE; --dashed:#D6D6DA; --sink:#D2D2D6;
+  --lineStrong:#C8C8CC; --lineSoft:#BFBFC5;
+  --muted:#B4B4BA; --faint:#A0A0A6; --meta:#8E8E94; --metaStrong:#6B6B70;
+  --linkHover:#5C5C61; --secondary:#3E3E42; --ink:#111112; --inkDeep:#0A0A0B;
+  --accentSolid:#E2685A; --accentInk:#A23E33; --accentWash:#FEF2F0;
+  --accentWashHover:#FCE6EC; --accentLine:#F1CDC6; --onWash:#FFFFFF;
+  --error:#C0473A; --errorInk:#C0473A; --onError:#FFFFFF;
+  --shadowCard:0 12px 34px rgba(17,17,18,.14);
+  --shadowPop:0 8px 22px rgba(17,17,18,.11);
+  --r-pill:999px; --r-chip:7px; --r-btn:8px; --r-ctl:9px; --r-sm:10px;
+  --r-md:11px; --r-lg:12px; --r-xl:13px; --r-2xl:14px;
+  --s-1:4px; --s-2:6px; --s-3:8px; --s-4:10px; --s-5:12px; --s-6:14px;
+  --s-7:16px; --s-8:20px; --s-9:24px; --s-10:28px; --s-11:32px; --s-12:44px;
+  --font-sans:Archivo,system-ui,-apple-system,sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,monospace;
+}
+[data-theme="dark"] {
+  --surface:#1C1C1F; --raised:#1A1A1D; --page:#141416; --wellSoft:#1F1F23;
+  --well:#202024; --fill:#232326; --fillStrong:#26262A; --media:#232326;
+  --rule:#2A2A2E; --ruleSoft:#2A2A2E; --border:#2C2C30; --borderSoft:#2C2C30;
+  --borderMedia:#303036; --borderInput:#33333A; --borderCard:#33333A;
+  --dots:#3A3A42; --dotsStrong:#3E3E46; --dashed:#44444C; --sink:#494951;
+  --lineStrong:#55555E; --lineSoft:#5E5E66;
+  --muted:#6E6E77; --faint:#8A8A92; --meta:#9A9AA2; --metaStrong:#9A9AA2;
+  --linkHover:#B4B4BA; --secondary:#B4B4BA; --ink:#EDEDEF; --inkDeep:#F5F5F7;
+  --accentSolid:#E2685A; --accentInk:#E88778;
+  --accentWash:rgba(226,104,90,.14); --accentWashHover:rgba(226,104,90,.22);
+  --accentLine:rgba(226,104,90,.32); --onWash:#FFFFFF;
+  --errorInk:#E08A7E;
+  --shadowCard:0 12px 34px rgba(0,0,0,.5); --shadowPop:0 8px 22px rgba(0,0,0,.44);
+}
+
+*,*::before,*::after { box-sizing:border-box; }
+body {
+  margin:0; padding:var(--s-11) var(--s-9);
+  background:var(--page); color:var(--ink);
+  font-family:var(--font-sans); -webkit-font-smoothing:antialiased;
+  display:flex; justify-content:center;
+}
+body[data-w="phone"] { padding:var(--s-7) 0; }
+
+/* ---- the modal shell, geometry from settings.css `.dp-plan__card` ---- */
+.card {
+  width:100%; max-width:880px;
+  background:var(--surface);
+  border:1px solid var(--borderCard); border-radius:var(--r-2xl);
+  box-shadow:var(--shadowCard); overflow:hidden;
+}
+body[data-w="phone"] .card { max-width:390px; border-radius:0; border-left:0; border-right:0; }
+.pane { padding:var(--s-8) var(--s-9) var(--s-9); }
+body[data-w="phone"] .pane { padding:var(--s-7) var(--s-7) var(--s-8); }
+
+/* ---- §6a the reason block ---- */
+.reason {
+  padding:var(--s-6) 15px; border:1px solid var(--borderCard);
+  border-radius:var(--r-lg); background:var(--raised);
+  display:flex; align-items:flex-start; gap:var(--s-7); margin-bottom:var(--s-8);
+}
+.reasonhead { font:500 13px/1.4 var(--font-sans); margin:0 0 var(--s-2); }
+.reasonbody { font:400 11.5px/1.6 var(--font-sans); color:var(--metaStrong); margin:0; }
+.reasonstat { flex:none; text-align:right; }
+.credits { font:400 11.5px/1.3 var(--font-mono); color:var(--ink); white-space:nowrap; }
+.creditsnote { display:block; font:400 10px/1.4 var(--font-sans); color:var(--meta); }
+
+/* ---- §6b interval row ---- */
+.intervals { display:flex; align-items:center; gap:var(--s-5); margin-bottom:var(--s-7); }
+.seg { display:inline-flex; border:1px solid var(--borderInput); border-radius:var(--r-btn); overflow:hidden; }
+.seg button {
+  border:0; background:transparent; color:var(--metaStrong); cursor:pointer;
+  padding:var(--s-2) var(--s-5); font:400 11.5px/1.4 var(--font-sans);
+  display:inline-flex; align-items:center; gap:var(--s-2);
+}
+.seg button[aria-checked="true"] { background:var(--fillStrong); color:var(--ink); font-weight:500; }
+.badge {
+  display:inline-flex; align-items:center; padding:2px var(--s-2);
+  border-radius:var(--r-chip); background:var(--accentSolid); color:var(--onWash);
+  font:500 8.5px/1.4 var(--font-mono); letter-spacing:.06em; white-space:nowrap;
+}
+.modeswitch {
+  margin-left:auto; border:0; background:transparent; color:var(--metaStrong);
+  font:400 11.5px/1.2 var(--font-sans); cursor:pointer; white-space:nowrap;
+}
+
+/* ---- the three individual cards ---- */
+.grid { display:grid; grid-template-columns:repeat(3,1fr); gap:var(--s-5); }
+body[data-w="phone"] .grid { grid-template-columns:1fr; }
+.tier {
+  position:relative; padding:17px 17px 18px;
+  border:1px solid var(--borderCard); border-radius:var(--r-lg);
+  display:flex; flex-direction:column; gap:var(--s-5);
+}
+.tier--current { border-color:var(--accentLine); background:var(--accentWash); }
+.tier--fits { box-shadow:var(--shadowPop); }
+.tab {
+  position:absolute; left:15px; top:-8px; padding:2px var(--s-2);
+  border-radius:var(--r-pill); background:var(--ink); color:var(--surface);
+  font:500 8.5px/1.5 var(--font-mono); letter-spacing:.09em; white-space:nowrap;
+}
+.tiername { font:500 15px/1.2 var(--font-sans); letter-spacing:-.02em; }
+.price {
+  display:flex; align-items:baseline; gap:var(--s-2);
+  font:500 25px/1 var(--font-sans); letter-spacing:-.03em;
+}
+.per { font:400 11.5px/1.2 var(--font-sans); color:var(--metaStrong); letter-spacing:0; }
+.interval { font:400 10px/1.4 var(--font-mono); color:var(--meta); letter-spacing:.06em; margin-top:-6px; }
+.blurb { font:400 11.5px/1.55 var(--font-sans); color:var(--metaStrong); }
+.btn {
+  border:1px solid var(--borderInput); background:transparent; color:var(--secondary);
+  border-radius:var(--r-btn); padding:var(--s-3) var(--s-5); cursor:pointer;
+  font:500 12px/1.2 var(--font-sans); width:100%;
+}
+.btn--primary { background:var(--ink); border-color:var(--ink); color:var(--surface); }
+.here {
+  font:500 8.5px/1.5 var(--font-mono); letter-spacing:.09em; color:var(--accentInk);
+  padding:var(--s-3) 0; text-align:center;
+}
+.block { display:flex; flex-direction:column; gap:5px; }
+.creditsline { font:500 13px/1.3 var(--font-sans); }
+.creditsfigure { font:500 15px/1.2 var(--font-mono); letter-spacing:-.01em; }
+.creditstail { font:400 11px/1.5 var(--font-sans); color:var(--metaStrong); }
+.makes { font:400 11px/1.55 var(--font-sans); color:var(--metaStrong); }
+.rollover { font:400 11px/1.5 var(--font-sans); color:var(--metaStrong); }
+.rollover--loss { color:var(--accentInk); }
+.perk {
+  display:flex; align-items:flex-start; gap:var(--s-2);
+  font:400 11px/1.5 var(--font-sans); color:var(--metaStrong);
+}
+.perk svg { flex:none; margin-top:2px; color:var(--meta); }
+
+/* ---- the slider on the top plan ---- */
+.slider { display:flex; flex-direction:column; gap:var(--s-2); }
+.slider input[type="range"] {
+  -webkit-appearance:none; appearance:none; width:100%; height:18px;
+  background:transparent; margin:0; cursor:pointer;
+}
+.slider input[type="range"]::-webkit-slider-runnable-track {
+  height:3px; border-radius:var(--r-pill);
+  /* the travelled part reads as spent, the rest as available — the control
+     has to look like it has somewhere to go */
+  background:linear-gradient(to right, var(--ink) 0 var(--fill,0%), var(--dots) var(--fill,0%) 100%);
+}
+.slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance:none; appearance:none; width:14px; height:14px;
+  margin-top:-5.5px; border-radius:var(--r-pill);
+  background:var(--ink); border:2px solid var(--surface); box-shadow:var(--shadowPop);
+}
+.sliderlabel {
+  font:400 10px/1.4 var(--font-mono); letter-spacing:.06em;
+  color:var(--meta); text-transform:uppercase;
+}
+.sliderends { display:flex; justify-content:space-between; font:400 9.5px/1.3 var(--font-mono); color:var(--muted); }
+
+/* ---- the shared "on every plan" / "coming" block ---- */
+.includes {
+  margin-top:var(--s-8); padding:var(--s-6) 15px;
+  border:1px solid var(--border); border-radius:var(--r-lg); background:var(--raised);
+  display:flex; flex-direction:column; gap:var(--s-3);
+}
+.includeshead { font:500 10px/1.4 var(--font-mono); letter-spacing:.09em; color:var(--meta); text-transform:uppercase; }
+.includesline { font:400 11.5px/1.6 var(--font-sans); color:var(--metaStrong); margin:0; }
+.coming {
+  display:inline-flex; align-items:center; padding:1px var(--s-2); margin-right:var(--s-2);
+  border-radius:var(--r-chip); background:var(--fill); color:var(--faint);
+  font:500 9px/1.5 var(--font-mono); letter-spacing:.08em; white-space:nowrap;
+}
+
+/* ---- the Enterprise band ---- */
+.ent {
+  margin-top:var(--s-5); padding:var(--s-7) 15px;
+  border:1px solid var(--borderCard); border-radius:var(--r-lg);
+  display:flex; align-items:flex-start; gap:var(--s-8);
+}
+body[data-w="phone"] .ent { flex-direction:column; gap:var(--s-5); }
+.entbody { flex:1; display:flex; flex-direction:column; gap:var(--s-2); }
+.entaction { flex:none; }
+.entaction .btn { width:auto; white-space:nowrap; }
+
+.trust {
+  margin:var(--s-8) 0 0; padding-top:var(--s-6); border-top:1px solid var(--rule);
+  font:400 11px/1.6 var(--font-sans); color:var(--metaStrong);
+}
+.cross {
+  margin-top:var(--s-6); padding-top:var(--s-6); border-top:1px solid var(--rule);
+  display:flex; align-items:center; gap:var(--s-5);
+}
+.crosstext { flex:1; display:flex; flex-direction:column; gap:2px; }
+.crosslabel { font:500 12px/1.3 var(--font-sans); }
+.crossnote { font:400 11px/1.5 var(--font-sans); color:var(--metaStrong); }
+.foot {
+  display:flex; align-items:center; gap:var(--s-5);
+  padding:var(--s-5) var(--s-9); border-top:1px solid var(--rule); background:var(--raised);
+}
+.help { font:400 11.5px/1.2 var(--font-sans); color:var(--metaStrong); }
+.quiet { margin-left:auto; border:0; background:transparent; color:var(--metaStrong); font:400 11.5px/1.2 var(--font-sans); cursor:pointer; }
+
+/* ---- compare mode ---- */
+.cmp { border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; }
+.cmpgroup + .cmpgroup { border-top:1px solid var(--border); }
+.cmphead { display:grid; grid-template-columns:168px repeat(4,1fr); background:var(--raised); }
+.cmprow { display:grid; grid-template-columns:168px repeat(4,1fr); }
+.cmprow + .cmprow { border-top:1px solid var(--ruleSoft); }
+.cell { padding:var(--s-5) var(--s-5); font:400 11.5px/1.45 var(--font-sans); }
+.cell--head { font:500 12px/1.4 var(--font-sans); }
+.cell--headprice { display:block; font:400 11px/1.5 var(--font-mono); color:var(--metaStrong); }
+.cell--label { font:400 11px/1.45 var(--font-sans); color:var(--metaStrong); }
+.cell--mono { font:400 11.5px/1.45 var(--font-mono); white-space:nowrap; }
+.cell--current { background:var(--accentWash); }
+.youarehere { display:block; font:500 8.5px/1.6 var(--font-mono); letter-spacing:.09em; color:var(--accentInk); }
+.grouptitle {
+  padding:var(--s-5) var(--s-5) var(--s-3);
+  font:500 10px/1.4 var(--font-mono); letter-spacing:.09em; color:var(--meta); text-transform:uppercase;
+  border-bottom:1px solid var(--ruleSoft);
+}
+.groupnote {
+  padding:var(--s-5); font:400 11px/1.6 var(--font-sans); color:var(--metaStrong);
+  background:var(--wellSoft);
+}
+.cmpfootnote { margin:var(--s-6) 0 0; font:400 11px/1.6 var(--font-sans); color:var(--meta); }
+
+/* phone compare — transposed, one plan per block */
+.cmpphone { display:flex; flex-direction:column; gap:var(--s-5); }
+.cmpcard { border:1px solid var(--borderCard); border-radius:var(--r-lg); overflow:hidden; }
+.cmpcard--current { border-color:var(--accentLine); }
+.cmpcardhead {
+  padding:var(--s-5); background:var(--raised); display:flex; align-items:baseline; gap:var(--s-3);
+  border-bottom:1px solid var(--border);
+}
+.cmppair { display:flex; gap:var(--s-5); padding:var(--s-3) var(--s-5); }
+.cmppair + .cmppair { border-top:1px solid var(--ruleSoft); }
+.cmppair dt { flex:none; width:128px; font:400 11px/1.5 var(--font-sans); color:var(--metaStrong); margin:0; }
+.cmppair dd { flex:1; margin:0; font:400 11.5px/1.5 var(--font-sans); text-align:right; }
+
+/* ---- the Team card, which does not ship yet ---- */
+.pending {
+  margin-bottom:var(--s-7); padding:var(--s-5) 15px;
+  border:1px dashed var(--dashed); border-radius:var(--r-lg);
+  font:400 11.5px/1.6 var(--font-sans); color:var(--metaStrong);
+}
+.seats { display:flex; align-items:center; gap:var(--s-3); }
+.seatbtn {
+  width:26px; height:26px; border-radius:var(--r-btn); border:1px solid var(--borderInput);
+  background:transparent; color:var(--secondary); cursor:pointer; font:500 13px/1 var(--font-sans);
+}
+.seatcount { font:500 13px/1 var(--font-mono); min-width:64px; text-align:center; }
+h1.proto { max-width:880px; font:500 12px/1.4 var(--font-mono); letter-spacing:.06em; color:var(--meta); text-transform:uppercase; margin:0 0 var(--s-5); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+/* ============================================================
+   FROM_THE_CODE — every figure this prototype draws, and where
+   each one is declared. The guard suite parses this object out of
+   this file and compares it to the real imports, so a price move
+   in the tree reddens rather than leaving a stale picture behind.
+   ============================================================ */
+const FROM_THE_CODE = {
+  // drizzle/schema.ts — PLAN_TIERS. `credits` is LEDGER; the screens divide.
+  ledgerPerDisplayCredit: 5,                                  // shared/creditDisplay.ts
+  tiers: {
+    free:       { name: "Free",       credits: 13500,     priceInCents: 0,       rolloverPercent: 0 },
+    starter:    { name: "Starter",    credits: 70000,     priceInCents: 2700,    rolloverPercent: 50 },
+    pro:        { name: "Pro",        credits: 180000,    priceInCents: 6800,    rolloverPercent: 75 },
+    studio:     { name: "Studio",     credits: 430000,    priceInCents: 15900,   rolloverPercent: 100 },
+    business:   { name: "Business",   credits: 2350000,   priceInCents: 84000,   rolloverPercent: 100 },
+    scale:      { name: "Scale",      credits: 13750000,  priceInCents: 480000,  rolloverPercent: 100 },
+    enterprise: { name: "Enterprise", credits: 43500000,  priceInCents: 1500000, rolloverPercent: 100 },
+  },
+  // server/castingV2/castViewPackage.ts — CASTING_V2_ONE_CHARACTER_CREDITS
+  // = Roll 1,600 + Refine 1,750 + Sign 8,500, in ledger credits.
+  oneFinishedCharacterCredits: 11850,
+  // shared/creditTopups.ts — TOPUP_UNIT_DISPLAY_CREDITS. The plan slider's
+  // step is the SAME unit as Add credits', which is the whole point of it.
+  sliderStepDisplayCredits: 5000,
+  // shared/annualBilling.ts — ANNUAL_RATE. 12 × 0.83 = 9.96 months paid for
+  // 12, and the "2 MONTHS FREE" badge DERIVES from it (monthsFreePerYear),
+  // which is why the badge is not a number in this block.
+  annualRate: 0.83,
+};
+
+/* THE ONE PROPOSED NUMBER — see the design brief §5. Dollars per extra 5,000
+   display credits a month on the top plan. Nothing in the tree declares it
+   yet; the guard suite therefore holds its PROPERTIES (monotonicity, the two
+   bounds it must sit between) rather than its value. */
+const SLIDER_DOLLARS_PER_UNIT = 9;
+
+/* ---------- the arithmetic, the same way the client does it ---------- */
+const L = FROM_THE_CODE.ledgerPerDisplayCredit;
+const T = FROM_THE_CODE.tiers;
+const ONE_CHAR = FROM_THE_CODE.oneFinishedCharacterCredits;
+const STEP = FROM_THE_CODE.sliderStepDisplayCredits;
+
+/* shared/creditDisplay.ts — displayBalance floors. */
+const displayBalance = (ledger) => Math.floor(ledger / L);
+/* formatCredits — M-style from a million up. */
+function formatCredits(display) {
+  if (display >= 1_000_000) {
+    const m = display / 1_000_000;
+    return (m >= 10 ? Math.round(m) : Math.round(m * 10) / 10) + "M";
+  }
+  return display.toLocaleString("en-US");
+}
+/* planLadder.ts — charactersFor: floor, then two significant figures downward. */
+function charactersFor(ledger) {
+  const exact = Math.floor(ledger / ONE_CHAR);
+  if (exact < 100) return exact;
+  const step = 10 ** (Math.floor(Math.log10(exact)) - 1);
+  return Math.floor(exact / step) * step;
+}
+function charactersPhrase(n) {
+  return n <= 0 ? null : `about ${n.toLocaleString("en-US")} finished character${n === 1 ? "" : "s"}`;
+}
+/* planLadder.ts — rolloverSentence. */
+function rolloverSentence(pct) {
+  if (pct >= 100) return { text: "Nothing you pay for expires", isLoss: false };
+  if (pct <= 0) return { text: "Anything unspent expires at renewal", isLoss: true };
+  const lost = 100 - pct;
+  const word = lost === 50 ? "Half" : lost === 25 ? "A quarter" : `${lost}%`;
+  return { text: `${word} of anything unspent expires`, isLoss: true };
+}
+/* planLadder.ts — creditsTail: "monthly" is derived from the PRICE, never the name. */
+const creditsTail = (priceInCents) =>
+  `${priceInCents > 0 ? "credits a month" : "credits to start"}, one pool for everything.`;
+/* shared/annualBilling.ts — annualPriceInCents and monthsFreePerYear, and
+   planMath.ts — monthlyEquivalent / priceAMonth. All four take and return
+   CENTS, the way the real ones do; the rounding to whole hundreds is the
+   product's, not a prototype simplification. */
+const annualPriceInCents = (monthly) =>
+  Math.round((monthly * 12 * FROM_THE_CODE.annualRate) / 100) * 100;
+const monthsFreePerYear = () => Math.round(12 - 12 * FROM_THE_CODE.annualRate);
+const priceAMonth = (cents, annual) =>
+  annual ? Math.round(annualPriceInCents(cents) / 12) : cents;
+/* planMath.ts — formatWholeDollars: `$149`, cents dropped. */
+const wholeDollars = (cents) => "$" + Math.round(cents / 100).toLocaleString("en-US");
+
+/* ---------- the slider's own ladder ---------- */
+const SLIDER_BASE_DISPLAY = displayBalance(T.studio.credits);        // 86,000
+const SLIDER_BASE_DOLLARS = T.studio.priceInCents / 100;             // 159
+/* THE CEILING IS DERIVED, NOT CHOSEN: the most whole 5,000-steps that still
+   sit under the rung the slider replaces (Business). Above it the answer is
+   the Enterprise card, which is what "anything really high would be a sales
+   department chat" means. */
+const SLIDER_MAX_UNITS = Math.floor((displayBalance(T.business.credits) - SLIDER_BASE_DISPLAY) / STEP);
+const sliderCredits = (units) => SLIDER_BASE_DISPLAY + units * STEP;
+const sliderDollars = (units) => SLIDER_BASE_DOLLARS + units * SLIDER_DOLLARS_PER_UNIT;
+
+/* ---------- copy ----------
+   CLASSIFICATION, which the brief carries in full:
+     [shipped]  the string the product renders today, verbatim
+     [adapted]  a shipped string with a named edit
+     [new]      written for this brief and owed Yuna's pass
+*/
+const COPY = {
+  // [shipped] client/src/features/settings/planBlurbs.ts
+  blurbs: {
+    free:    "For trying the studio out before you commit.",
+    starter: "For one creator casting a handful of faces a month.",
+    pro:     "For a creator posting weekly and building a roster.",
+    studio:  "For a team shooting a campaign a month.",
+  },
+  // [shipped] ChangePlanModal.tsx — EVERY_PLAN_PERK, kept per card on his #425 word.
+  everyPlanPerk: "Every model and every tool",
+  // [shipped] ChangePlanModal.tsx — TRUST_LINE
+  trust: "See the price before you make anything. Credits back if a result doesn't arrive.",
+  // [new] what every plan opens today — one statement, not five copies.
+  openToday: "Casting studio · Boards · Wardrobe · Credit packs whenever you need them",
+  // [new] the forward-looking half. "we'll say when" is the house sentence for
+  // an unshipped thing — CastSettingsModal.tsx: "Not available yet — we'll say
+  // when it lands."
+  comingLine: "The cinema studio — write the script, direct the takes, add voice, cut the film — and the image and video generators. We'll say when they land.",
+  // [adapted] from ChangePlanModal.tsx's "Need a higher limit? … larger plans
+  // are arranged personally." The line becomes a card; the promise is the same.
+  enterpriseBlurb: "For studios where casting never stops.",
+  enterpriseBody: "A pool built around your volume, invoiced, and arranged with us directly. Tell us what you are making and we will price it.",
+  // [new] Team, which does not ship until there is a workspace to put it in.
+  teamBlurb: "For a studio where several people cast out of one pool.",
+  teamBody: "Everyone works from the same credits, and you can see who spent what.",
+  teamPending: "Not available yet. A Team plan needs a workspace to live in — several people, one shared pool, one bill. We'll say when it lands.",
+  // [shipped] ChangePlanModal.tsx — the cross-sell row
+  crossLabel: "Just need more credits",
+  crossNote: "Buy a one-off pack instead — your plan stays exactly as it is.",
+  // [shipped] ChangePlanModal.tsx footer
+  help: "Having a problem? Go to the help centre.",
+};
+
+const CHECK = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+
+/* ---------- state ---------- */
+const q = new URLSearchParams(location.search);
+/* All three read-ins are matched against a fixed set rather than used as
+   given: this file composes markup from them, and a prototype is still a page
+   somebody opens. An unknown `view` is `plans`, not a hole in the title. */
+const VIEWS = ["plans", "compare", "team"];
+const view = VIEWS.includes(q.get("view") ?? "") ? q.get("view") : "plans";
+const theme = q.get("theme") === "dark" ? "dark" : "light";
+const width = q.get("w") === "phone" ? "phone" : "desktop";
+document.documentElement.setAttribute("data-theme", theme);
+document.body.setAttribute("data-w", width);
+
+/* The fixture account: on Free, which is production's only real state today
+   (#1609's own reading: six accounts, all free, no subscriber). */
+const CURRENT = "free";
+let annual = false;
+/* `&units=N` only so a still frame can show the slider mid-travel — the
+   control itself is what moves it. Clamped to the ladder's own bound. */
+let units = Math.max(0, Math.min(Number(q.get("units")) || 0, SLIDER_MAX_UNITS));
+let seats = 3;                       // the Team card's seat count
+
+const INDIVIDUAL = ["starter", "pro", "studio"];
+const TOP = "studio";
+
+/* ---------- views ---------- */
+function reasonBlock() {
+  const own = T[CURRENT];
+  return `
+  <div class="reason">
+    <div>
+      <p class="reasonhead">You are on ${own.name}.</p>
+      <p class="reasonbody">${CURRENT === "free"
+        ? "Your free credits arrived once when you signed up. A plan tops you up every month."
+        : "Your credits top up on the first of every month."}</p>
+    </div>
+    <span class="reasonstat">
+      <span class="credits">${formatCredits(displayBalance(own.credits))}</span>
+      <span class="creditsnote">credits left</span>
+    </span>
+  </div>`;
+}
+
+function intervalRow(modeLabel) {
+  return `
+  <div class="intervals">
+    <span class="seg" role="radiogroup" aria-label="Billing interval">
+      <button role="radio" aria-checked="${!annual}" onclick="setAnnual(false)">Monthly</button>
+      <button role="radio" aria-checked="${annual}" onclick="setAnnual(true)">
+        Yearly <span class="badge">${monthsFreePerYear()} MONTHS FREE</span>
+      </button>
+    </span>
+    <button class="modeswitch" onclick="setView('${view === "compare" ? "plans" : "compare"}')">${modeLabel}</button>
+  </div>`;
+}
+
+function tierCard(id) {
+  const t = T[id];
+  const isTop = id === TOP;
+  const isCurrent = id === CURRENT;
+  const recommended = id === "pro";                  // planLadder.recommendPlan's job
+  const displayCredits = isTop ? sliderCredits(units) : displayBalance(t.credits);
+  /* CENTS throughout, like `priceAMonth`'s own signature — the slider's
+     ladder is declared in whole dollars because that is how he priced it. */
+  const cents = isTop
+    ? priceAMonth(sliderDollars(units) * 100, annual)
+    : priceAMonth(t.priceInCents, annual);
+  const chars = isTop
+    ? charactersFor(displayCredits * L)
+    : charactersFor(t.credits);
+  const roll = rolloverSentence(t.rolloverPercent);
+
+  return `
+  <article class="tier ${isCurrent ? "tier--current" : ""} ${recommended ? "tier--fits" : ""}">
+    ${recommended ? `<span class="tab">FITS YOUR USE</span>` : ""}
+    <span class="tiername">${t.name}</span>
+    <span class="price">${wholeDollars(cents)}<span class="per">/ month</span></span>
+    ${annual ? `<span class="interval">BILLED YEARLY</span>` : ""}
+    <span class="blurb">${COPY.blurbs[id]}</span>
+    ${isCurrent
+      ? `<span class="here">CURRENT</span>`
+      : `<button class="btn ${recommended ? "btn--primary" : ""}">${
+          Object.keys(T).indexOf(id) > Object.keys(T).indexOf(CURRENT) ? "Upgrade" : "Downgrade"}</button>`}
+    <span class="block">
+      <span class="creditsline">
+        <span class="creditsfigure">${formatCredits(displayCredits)}</span>
+        <span class="creditstail"> ${creditsTail(t.priceInCents)}</span>
+      </span>
+      ${isTop ? `
+      <label class="slider">
+        <input type="range" min="0" max="${SLIDER_MAX_UNITS}" step="1" value="${units}"
+               style="--fill:${(units / SLIDER_MAX_UNITS) * 100}%"
+               aria-label="Credits a month"
+               aria-valuetext="${formatCredits(displayCredits)} credits a month for ${wholeDollars(cents)}"
+               oninput="setUnits(this.value)">
+        <span class="sliderends">
+          <span>${formatCredits(SLIDER_BASE_DISPLAY)}</span>
+          <span>${formatCredits(sliderCredits(SLIDER_MAX_UNITS))}</span>
+        </span>
+      </label>` : ""}
+      ${charactersPhrase(chars) ? `<span class="makes">For example, ${charactersPhrase(chars)}.</span>` : ""}
+      <span class="rollover ${roll.isLoss ? "rollover--loss" : ""}">${roll.text}</span>
+    </span>
+    <span class="perk">${CHECK}${COPY.everyPlanPerk}</span>
+  </article>`;
+}
+
+function includesBlock() {
+  return `
+  <div class="includes">
+    <span class="includeshead">On every plan</span>
+    <p class="includesline">${COPY.openToday}</p>
+    <p class="includesline"><span class="coming">COMING</span>${COPY.comingLine}</p>
+  </div>`;
+}
+
+function enterpriseBand() {
+  return `
+  <div class="ent">
+    <span class="entbody">
+      <span class="tiername">Enterprise</span>
+      <span class="blurb">${COPY.enterpriseBlurb}</span>
+      <span class="creditstail">${COPY.enterpriseBody}</span>
+    </span>
+    <span class="entaction"><button class="btn">Let's talk</button></span>
+  </div>`;
+}
+
+function plansView() {
+  return `
+  <div class="card">
+    <div class="pane">
+      ${reasonBlock()}
+      ${intervalRow("Compare plans")}
+      <div class="grid">${INDIVIDUAL.map(tierCard).join("")}</div>
+      ${includesBlock()}
+      ${enterpriseBand()}
+      <p class="trust">${COPY.trust}</p>
+      <div class="cross">
+        <span class="crosstext">
+          <span class="crosslabel">${COPY.crossLabel}</span>
+          <span class="crossnote">${COPY.crossNote}</span>
+        </span>
+        <button class="btn" style="width:auto">Add credits</button>
+      </div>
+    </div>
+    <footer class="foot">
+      <span class="help">${COPY.help}</span>
+      <button class="quiet">Cancel plan</button>
+    </footer>
+  </div>`;
+}
+
+/* ---------- compare ----------
+   FOUR FACTS DIFFER BY PLAN AND THAT IS THE WHOLE LIST, read at the code:
+   `planTier` is never consulted for a capability anywhere in the product —
+   only for the allowance, the rollover percentage and whether credit packs
+   may be bought. So a row that claimed views, refines or concurrency per plan
+   would be inventing a difference. The GROUPS are what the redesign adds: a
+   fact every column shares is said ONCE under its group instead of being
+   drawn four identical times, which is what made the old table read as a
+   wall of repeats.
+*/
+const COMPARE_COLUMNS = ["free", "starter", "pro", "studio"];
+
+const COMPARE_GROUPS = [
+  {
+    title: "What you make",
+    rows: [{
+      label: "Finished characters a month",
+      read: (id) => charactersPhrase(charactersFor(T[id].credits)) ?? "—",
+    }],
+    note: "A finished character is a roll to find her, a refine to correct her, and a sign that fixes her face. Every signed cast comes with the same five views, on every plan.",
+  },
+  {
+    title: "Credits",
+    rows: [
+      { label: "Credits", mono: true, read: (id) => formatCredits(displayBalance(T[id].credits)) + (T[id].priceInCents > 0 ? " a month" : " to start") },
+      { label: "Unspent credits", read: (id) => rolloverSentence(T[id].rolloverPercent).text },
+      { label: "Buy extra credits", read: (id) => T[id].priceInCents > 0 ? "Any time, in packs" : "On a plan" },
+    ],
+    note: "One pool. Every tool spends the same credits, and credits you have paid for never expire.",
+  },
+  {
+    title: "Cinema",
+    rows: [],
+    note: `<span class="coming">COMING</span>${COPY.comingLine}`,
+  },
+  {
+    title: "Help",
+    rows: [],
+    note: "The help centre, on every plan. Enterprise is arranged with us directly.",
+  },
+  {
+    title: "Price",
+    rows: [{ label: "Price a month", mono: true, read: (id) => T[id].priceInCents === 0 ? "Free" : wholeDollars(priceAMonth(T[id].priceInCents, annual)) }],
+  },
+];
+
+function compareDesktop() {
+  const head = `
+    <div class="cmphead">
+      <span class="cell cell--label"></span>
+      ${COMPARE_COLUMNS.map((id) => `
+        <span class="cell cell--head ${id === CURRENT ? "cell--current" : ""}">
+          ${id === CURRENT ? `<span class="youarehere">YOU ARE HERE</span>` : ""}
+          ${T[id].name}
+          ${/* no price under a rung whose NAME is the price — the Price row
+               below states it once, which is where a comparison puts it */
+            T[id].priceInCents === 0 ? ""
+              : `<span class="cell--headprice">${wholeDollars(priceAMonth(T[id].priceInCents, annual))}/mo</span>`}
+        </span>`).join("")}
+    </div>`;
+  const groups = COMPARE_GROUPS.map((g) => `
+    <div class="cmpgroup">
+      <div class="grouptitle">${g.title}</div>
+      ${g.rows.map((r) => `
+        <div class="cmprow">
+          <span class="cell cell--label">${r.label}</span>
+          ${COMPARE_COLUMNS.map((id) => `<span class="cell ${r.mono ? "cell--mono" : ""} ${id === CURRENT ? "cell--current" : ""}">${r.read(id)}</span>`).join("")}
+        </div>`).join("")}
+      ${g.note ? `<p class="groupnote" style="margin:0">${g.note}</p>` : ""}
+    </div>`).join("");
+  return `
+  <div class="card">
+    <div class="pane">
+      ${reasonBlock()}
+      ${intervalRow("Back to the plans")}
+      <div class="cmp">${head}${groups}</div>
+      <p class="cmpfootnote">${COPY.everyPlanPerk}, on every plan — the only differences are the ones shown above. Need more than ${T.studio.name}? The ${T.studio.name} plan's credit slider goes to ${formatCredits(sliderCredits(SLIDER_MAX_UNITS))} a month, and Enterprise is arranged with us directly.</p>
+      <p class="trust">${COPY.trust}</p>
+    </div>
+    <footer class="foot">
+      <span class="help">${COPY.help}</span>
+      <!-- §6e — the one ink button in compare mode lives in the footer,
+           because every per-column action is below the fold. -->
+      <button class="btn btn--primary" style="width:auto;margin-left:auto">Upgrade to ${T.pro.name} — ${wholeDollars(priceAMonth(T.pro.priceInCents, annual))}/mo</button>
+    </footer>
+  </div>`;
+}
+
+function comparePhone() {
+  /* TRANSPOSED, because four columns in 390px is not a comparison — it is a
+     row of truncations. The current plan comes first, then the ladder. */
+  const order = [CURRENT, ...COMPARE_COLUMNS.filter((id) => id !== CURRENT)];
+  const blocks = order.map((id) => `
+    <div class="cmpcard ${id === CURRENT ? "cmpcard--current" : ""}">
+      <div class="cmpcardhead">
+        <span class="tiername">${T[id].name}</span>
+        ${T[id].priceInCents === 0 ? ""
+          : `<span class="cell--headprice" style="margin-left:auto">${wholeDollars(priceAMonth(T[id].priceInCents, annual))}/mo</span>`}
+        ${id === CURRENT ? `<span class="youarehere" style="margin-left:auto">YOU ARE HERE</span>` : ""}
+      </div>
+      <dl style="margin:0">
+        ${COMPARE_GROUPS.flatMap((g) => g.rows.map((r) => `
+          <div class="cmppair"><dt>${r.label}</dt><dd>${r.read(id)}</dd></div>`)).join("")}
+      </dl>
+    </div>`).join("");
+  const notes = COMPARE_GROUPS.filter((g) => g.note).map((g) => `
+    <p class="includesline" style="margin:0"><strong style="font-weight:500">${g.title}.</strong> ${g.note}</p>`).join("");
+  return `
+  <div class="card">
+    <div class="pane">
+      ${reasonBlock()}
+      ${intervalRow("Back to the plans")}
+      <div class="cmpphone">${blocks}</div>
+      <div class="includes">${notes}</div>
+      <p class="trust">${COPY.trust}</p>
+    </div>
+    <footer class="foot">
+      <!-- §6e — compare mode carries a footer primary, and on a phone the
+           reason is stronger than on desktop: every per-plan action is below
+           four screens of table. -->
+      <button class="btn btn--primary">Upgrade to ${T.pro.name} — ${wholeDollars(priceAMonth(T.pro.priceInCents, annual))}/mo</button>
+    </footer>
+  </div>`;
+}
+
+/* ---------- Team, which is designed and does not ship ---------- */
+function teamView() {
+  const perSeatCents = T.pro.priceInCents;   // Team carries Pro's seat price
+  const pool = displayBalance(T.pro.credits) * seats;
+  const chars = charactersFor(pool * L);
+  return `
+  <div class="card">
+    <div class="pane">
+      <p class="pending">${COPY.teamPending}</p>
+      <!-- one column at the width a plan card actually gets in the three-up
+           grid, so the seat control is judged at the size it would ship at -->
+      <div class="grid" style="grid-template-columns:minmax(0,268px)">
+        <article class="tier">
+          <span class="tiername">Team</span>
+          <span class="price">${wholeDollars(priceAMonth(perSeatCents, annual))}<span class="per">/ seat / month</span></span>
+          <span class="blurb">${COPY.teamBlurb}</span>
+          <label class="slider">
+            <span class="sliderlabel">Seats</span>
+            <span class="seats">
+              <button class="seatbtn" onclick="setSeats(${seats - 1})">−</button>
+              <span class="seatcount">${seats}</span>
+              <button class="seatbtn" onclick="setSeats(${seats + 1})">+</button>
+            </span>
+            <span class="creditstail">${wholeDollars(priceAMonth(perSeatCents * seats, annual))} a month in total</span>
+          </label>
+          <button class="btn btn--primary">Choose Team</button>
+          <span class="block">
+            <span class="creditsline">
+              <span class="creditsfigure">${formatCredits(pool)}</span>
+              <span class="creditstail"> credits a month, one shared pool.</span>
+            </span>
+            <span class="makes">For example, ${charactersPhrase(chars)}.</span>
+            <span class="rollover">${rolloverSentence(T.pro.rolloverPercent).text}</span>
+          </span>
+          <span class="perk">${CHECK}${COPY.teamBody}</span>
+          <span class="perk">${CHECK}${COPY.everyPlanPerk}</span>
+        </article>
+      </div>
+      ${includesBlock()}
+    </div>
+  </div>`;
+}
+
+/* ---------- render ---------- */
+function render() {
+  const title = {
+    plans: "Pricing Phase 2 · plans",
+    compare: "Pricing Phase 2 · compare",
+    team: "Pricing Phase 2 · Team (not shipped — needs a workspace)",
+  }[view];
+  const body = view === "compare"
+    ? (width === "phone" ? comparePhone() : compareDesktop())
+    : view === "team" ? teamView() : plansView();
+  document.getElementById("root").innerHTML =
+    `<div style="width:100%;max-width:${width === "phone" ? 390 : 880}px"><h1 class="proto">${title} · ${theme} · ${width}</h1>${body}</div>`;
+}
+function setAnnual(v) { annual = v; render(); }
+function setUnits(v) { units = Number(v); render(); }
+function setSeats(v) { seats = Math.max(2, Math.min(20, v)); render(); }
+function setView(v) { q.set("view", v); location.search = q.toString(); }
+render();
+</script>
+</body>
+</html>

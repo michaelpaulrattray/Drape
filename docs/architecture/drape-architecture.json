@@ -10983,6 +10983,10 @@
       "path": "client/src/features/settings/planMath.test.ts"
     },
     {
+      "id": "test:client/src/features/settings/pricingPhase2Prototype-guard.test.ts",
+      "path": "client/src/features/settings/pricingPhase2Prototype-guard.test.ts"
+    },
+    {
       "id": "test:client/src/features/settings/section03-guard.test.ts",
       "path": "client/src/features/settings/section03-guard.test.ts"
     },
