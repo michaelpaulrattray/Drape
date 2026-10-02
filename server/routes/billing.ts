@@ -135,12 +135,24 @@ export const billingRouter = router({
         ⚠ **IT IS SERVED HERE RATHER THAN READ FROM `credits.getCosts`, AND
         THAT IS THE REPAIR AS MUCH AS THE ADDITION.** The plan cards used to
         translate a plan's credits into *"About N casting frames"* using
-        `CREDIT_COSTS.castingImage` — the LEGACY studio's price, for a lane
-        that has been admin-only since #1654 and retires with #29. So the one
-        number on the card that told a customer what their money buys was
-        priced off a surface they cannot reach. The example now comes from the
-        three prices the studio actually charges, on the same query the cards
-        already make, and this surface no longer reads a legacy price at all.
+        `CREDIT_COSTS.castingImage` — the LEGACY studio's price, which is not
+        part of the new scale and retires with #29. So the one number on the
+        card that told a customer what their money buys was priced off a road
+        they are not being sold: 350 a frame against the 200 the studio they
+        use actually charges, reading every figure low by more than half. The
+        example now comes from the three prices the studio actually charges, on
+        the same query the cards already make, and this surface no longer reads
+        a legacy price at all.
+
+        ⚠ **THIS PARAGRAPH SAID *"for a lane that has been admin-only since
+        #1654"* AND THAT GROUND WAS FALSE — corrected #1786, 2026-10-02.** The
+        repair above is unaffected and the honest reason is the stronger one
+        already stated: it was the wrong price for the road being sold. What
+        was wrong is *unreachable* — `CREDIT_COSTS.castingImage` is the
+        constant the LIVE canvas charges, through three `protectedProcedure`s
+        in `routes/boardOps.ts` with no admin check on any of them, and
+        `castingCreditCosts.ts`'s own docblock carries the full seven-reader
+        reading.
 
         D-15's rule holds: the client is served the number and never carries a
         literal.

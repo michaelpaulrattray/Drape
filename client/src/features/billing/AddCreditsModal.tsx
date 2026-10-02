@@ -228,13 +228,20 @@ function PlanStepUpPane({ onClose }: { onClose: () => void }) {
 
     ⚠ **THIS SURFACE DIVIDED BY `credits.getCosts`'s `castingImage` UNTIL NOW,
     AND THAT IS THE LEGACY STUDIO'S PRICE.** `CREDIT_COSTS` is declared in
-    `castingCreditCosts.ts` as *"not part of the new scale"* and its lane has
-    been admin-only since #1654, so the one sentence here telling a customer
-    what their money buys was priced off a surface they cannot reach — at 350 a
-    frame against the 200 the studio they use actually charges, every figure
-    read low by more than half. #1607 took the same defect off the plan cards
-    one file over; this is its sibling, and the two surfaces now divide by one
-    server-derived number rather than by two.
+    `castingCreditCosts.ts` as *"not part of the new scale"*, so the one
+    sentence here telling a customer what their money buys was priced off a road
+    they are not being sold — at 350 a frame against the 200 the studio they use
+    actually charges, every figure read low by more than half. #1607 took the
+    same defect off the plan cards one file over; this is its sibling, and the
+    two surfaces now divide by one server-derived number rather than by two.
+
+    ⚠ **THIS PARAGRAPH ALSO SAID the lane *"has been admin-only since #1654"*
+    AND CALLED IT *"a surface they cannot reach"*, AND BOTH WERE FALSE** (#1786,
+    2026-10-02). The repair is unaffected — the price-mismatch sentence above
+    was always the real defect and is the whole of it. What was wrong is the
+    reachability: the same constant is what the LIVE canvas charges, through
+    three `protectedProcedure`s in `server/routes/boardOps.ts`, and
+    `credits.getCosts` itself is a `publicProcedure`.
 
     `0` keeps its meaning — not known yet — and the bullet declines rather than
     guessing, exactly as it did while the price list was unread.

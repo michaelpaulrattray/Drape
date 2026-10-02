@@ -18,19 +18,95 @@
  * left where they are (#1601 item 1, 2026-10-01).
  *
  * The card's own words were *"retire the legacy `CREDIT_COSTS`"*, and that is
- * not what this commit does. Read at the code: its live readers are
- * `packagePricing.slotCost` (the D-15 package slots, reached from
- * `mintPackage` and the whole PARKED R7 evidence family),
- * `routes/generation/castingRefinement.ts` and `castingImaging.ts` — the
- * legacy lane, which has been **admin-only since #1654** and retires with the
- * legacy studio itself (#29, rung N8). The Atlas is this repository's deletion
- * authority and nothing is removed while its retirement view shows live
- * callers, so retiring these numbers is a DELETION card with a manifest, not a
- * line inside a price change.
+ * not what that commit did. The Atlas is this repository's deletion authority
+ * and nothing is removed while its retirement view shows live callers, so
+ * retiring these numbers is a DELETION card with a manifest, not a line inside
+ * a price change. **That conclusion is unchanged and the reading below makes it
+ * stronger, not weaker.**
  *
- * They are multiples of 5 already, so the price-scale sweep passes over them
- * without anybody having had to think about it; `flashMultiplier` is a RATIO
- * rather than a price and that sweep names it as one.
+ * ⚠ **THIS PARAGRAPH NAMED THREE READERS WHERE THERE ARE SEVEN, AND CALLED
+ * THEM ALL "the legacy lane, which has been admin-only since #1654" — IT IS
+ * NOT ADMIN-ONLY, AND TWO OF THE READERS IT DID NOT NAME ARE PUBLIC
+ * ENDPOINTS** (corrected #1786, read at the code 2026-10-02). The sentence was
+ * the stated ground for three separate declines on #1601 — item 1's
+ * retirement, the wardrobe fold, and `flashMultiplier`'s no-card — and every
+ * one of those answers was right. What was wrong is the premise under them, and
+ * a wrong premise that happens to support a right answer is the shape that
+ * costs something the fourth time it is used: following this reader list to the
+ * code is what found **#1785**, a customer-hittable charge on an engine Google
+ * shut down in June.
+ *
+ * ⚠ **WHY A SHORT LIST READ AS A COMPLETE ONE, WHICH IS THE PART WORTH
+ * KEEPING: `CREDIT_COSTS` HAS EXACTLY TWO DIRECT IMPORTERS AND ONE OF THEM
+ * READS NOTHING.** They are `packagePricing.ts:2`, which reads it, and
+ * `aiService.ts:84`, which is a bare `export { CREDIT_COSTS } from
+ * "./castingCreditCosts"`. **Every other reader reaches this table through that
+ * re-export** — the barrel shape `CLAUDE.md` records the Atlas edge graph
+ * having been blind to until `d614320f`, where 65 modules read as having no
+ * caller at all.
+ *
+ * **The seven, with each reach read at its own declaration rather than
+ * inferred** (value reads = `CREDIT_COSTS.<key>` outside comments and the
+ * import line):
+ *
+ * - `packagePricing.ts:6` (`slotCost`, 2) — **NOT admin-only**; see below.
+ * - `routes/generation/castingImaging.ts` (13) — `generation.castingImage`,
+ *   `adminProcedure` (`:80`). Admin-only, as claimed.
+ * - `routes/generation/castingRefinement.ts` (11) — `generation.iterate`,
+ *   `adminProcedure` (`:125`). Admin-only, as claimed.
+ * - `lib/boardOps.ts` (6) — the canvas plan/execute cores. **NOT admin-only.**
+ * - `routes/boardOps.ts` (3) — `boardOps.runGeneration.execute`,
+ *   `applyModelEdit.execute` and `runVariations.execute`, every one
+ *   `protectedProcedure`; the file imports **only** `protectedProcedure`
+ *   (`:8`), so there is no admin procedure anywhere on those paths. ⚠ Their
+ *   operation `kind` strings are `canvas.cast` / `canvas.recast` /
+ *   `canvas.variations`, and those are **not** callable ids — naming a reach
+ *   from the convenient string instead of the declaration is this correction's
+ *   own class of mistake, so the ids are written out above.
+ * - `routes/credits.ts:51` — **`credits.getCosts`, `publicProcedure`**,
+ *   returning the whole object. Read by three live client surfaces
+ *   (`ControlPanel.tsx`, `hooks/useCastingGeneration.ts`,
+ *   `ImageViewerPanel.tsx`), each with the local literal as its fallback
+ *   (`castingPrices.servedCost`).
+ * - `routes/generation/castingExport.ts:98` — **`generation.costs`,
+ *   `publicProcedure`**, the same object. (The callable id carries no
+ *   `castingExport` segment: the router is merged into `generation` by
+ *   procedure spread.)
+ *
+ * Both public ids are on `CLAUDE.md`'s enumerated public-endpoint allowlist —
+ * so **the two that serve this table to anyone are two the old sentence did not
+ * mention.** A price served publicly is the fact most likely to be wanted by
+ * the next reader, which is why they are named first among the corrections.
+ *
+ * ⚠ **AND THE OTHER REACH CLAIM IN THIS PARAGRAPH WAS UNDERSTATED THE SAME
+ * WAY.** It read *"`packagePricing.slotCost` (the D-15 package slots, reached
+ * from `mintPackage` and the whole PARKED R7 evidence family)"*, which says
+ * *parked*. `slotCost` has **nine production importers**, and two of them are
+ * neither `mintPackage` nor parked: `refreshSlots.ts` — the **LIVE canvas
+ * Refresh**, `generation.refreshSlots` and `refreshSlotsPlan`, both
+ * `protectedProcedure` (`castingExport.ts:889`, `:831`) — and
+ * `operationRecovery.ts`, the live recovery sweep started from
+ * `_core/index.ts:421`. The rest are `evidence/evidencePackageExecution.ts`,
+ * `evidence/evidencePackagePlan.ts`, `evidence/inkAcceptanceCommit.ts`,
+ * `evidence/inkCandidateGeneration.ts`, `mintPackage.ts` (which re-exports it
+ * again at `:79`) and `db/inkAddCandidates.ts`. **So this table is charged on a
+ * customer-reachable path through `slotCost` as well as through boards: the
+ * *sealed* reading fails twice over, not once.** `shared/vendorModelStatus.ts`
+ * already carries the `refreshSlots` half — #1654's own correction of this same
+ * premise, made one day earlier on the same table.
+ *
+ * The numbers are multiples of 5 already, so the price-scale sweep passes over
+ * them without anybody having had to think about it; `flashMultiplier` is a
+ * RATIO rather than a price and that sweep names it as one. ⚠ **It also has no
+ * production reader** — every mention outside this declaration is a test or a
+ * comment — so #1601's decision not to card it is right on sounder ground than
+ * the one it used: not *"it dies with its module because the lane is
+ * admin-only"*, but *nothing in production reads it*. Its **value** still
+ * leaves the building, because both public endpoints return the whole object.
+ *
+ * The retirement itself is deferred to the legacy studio's own (#29, rung N8),
+ * which carries it in its body so that #1601 closing does not take the deferral
+ * with it.
  */
 export const CREDIT_COSTS = {
   castingImage: 350,

@@ -207,8 +207,14 @@ export function compareWindow(
  * THAN LEFT BESIDE IT (#1758).** That function answered §6c's *"credits
  * translated into work"* by dividing by the still the studio charges for, and
  * its two callers both passed `credits.getCosts`'s `castingImage` — the LEGACY
- * studio's 350, for a lane admin-only since #1654. #1607 took the plan cards
- * off it; #1758 took Add credits off it, and that was the last caller. A
+ * studio's 350, against the 200 the studio a customer actually uses charges, so
+ * every figure read low by more than half. ⚠ **That clause said *"for a lane
+ * admin-only since #1654"* and the ground was false (#1786, 2026-10-02): the
+ * same constant is what the LIVE canvas charges, through three
+ * `protectedProcedure`s in `server/routes/boardOps.ts`.** The deletion stands on
+ * the reason above — the wrong price for the road being sold.
+ * #1607 took the plan cards off it; #1758 took Add credits off it, and that was
+ * the last caller. A
  * surviving helper whose only argument is a per-frame price is an invitation to
  * fetch that price again, which is the defect both cards are about, so it goes
  * with its last reader and with its own test arm.
