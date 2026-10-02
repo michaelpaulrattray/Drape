@@ -304,6 +304,17 @@ export type CreditDisplayReading = {
  * | `formatCreditsPerDollar(…)` ×3 — `AddCreditsModal` twice, `ChangePlanModal` once | the conversion is INSIDE that function, so the rate a customer reads is already on their scale. The rules read a NAME and cannot see through a function boundary, which is a limit this file's header states. |
  * | `Math.round(perDollar).toLocaleString("en-US")` | a RATE. Through `displayBalance` it would be divided by five twice. |
  *
+ * ⚠ **TWO OF THOSE ROWS CHANGED THEIR EXPRESSION IN #1755 AND NEITHER
+ * CHANGED ITS VERDICT**, which is the case the stale arm exists to make
+ * visible rather than to punish. `AddCreditsModal`'s billing interval became
+ * `boolean | null`, so both of its rate call sites narrow with
+ * `annual === true` where they read `annual`. **The site did not move and the
+ * reason it stays is untouched**: the conversion is still inside
+ * `formatCreditsPerDollar`, and rule 1 still indicts it only because `credits`
+ * appears in the expression. A row updated here rather than deleted is what
+ * keeps the count honest through a refactor.
+ *
+ *
  * ⚠ **IT WAS FIVE UNTIL #1607, AND THE FIFTH LEFT BY THE ONE CLEAN DOOR — ITS
  * SITE WAS DELETED.** The row was
  * `framesFor(plan.credits, costPerFrame).toLocaleString()` on
@@ -408,8 +419,8 @@ export const UNROUTED: readonly {
    */
   stays: string | null;
 }[] = [
-  { file: "client/src/features/billing/AddCreditsModal.tsx", rule: "beside-the-word", expression: "rateComparable ? `, up from ${formatCreditsPerDollar(priceAMonth(currentPrice, annual), currentCredits)}` : null", count: 1, stays: "a RATE, not an amount: the conversion is INSIDE `formatCreditsPerDollar`, which calls `displayBalance` itself (`planMath.ts:390`). The rules read a name and cannot see through a function boundary. #1747 widened the guard in front of it from a bare positive check to the two null checks: both figures are read out of the plan catalogue by the account's own rung, and that rung is null until billing.getStatus answers - so a rate 'up from' an unread plan was another plan's rate." },
-  { file: "client/src/features/billing/AddCreditsModal.tsx", rule: "beside-the-word", expression: "formatCreditsPerDollar(priceAMonth(selected.price, annual), selected.credits)", count: 1, stays: "a RATE, not an amount: the conversion is INSIDE `formatCreditsPerDollar`, which calls `displayBalance` itself (`planMath.ts:390`). The rules read a name and cannot see through a function boundary." },
+  { file: "client/src/features/billing/AddCreditsModal.tsx", rule: "beside-the-word", expression: "rateComparable ? `, up from ${formatCreditsPerDollar(priceAMonth(currentPrice, annual === true), currentCredits)}` : null", count: 1, stays: "a RATE, not an amount: the conversion is INSIDE `formatCreditsPerDollar`, which calls `displayBalance` itself (`planMath.ts:390`). The rules read a name and cannot see through a function boundary. #1747 widened the guard in front of it from a bare positive check to the two null checks: both figures are read out of the plan catalogue by the account's own rung, and that rung is null until billing.getStatus answers - so a rate 'up from' an unread plan was another plan's rate." },
+  { file: "client/src/features/billing/AddCreditsModal.tsx", rule: "beside-the-word", expression: "formatCreditsPerDollar(priceAMonth(selected.price, annual === true), selected.credits)", count: 1, stays: "a RATE, not an amount: the conversion is INSIDE `formatCreditsPerDollar`, which calls `displayBalance` itself (`planMath.ts:390`). The rules read a name and cannot see through a function boundary." },
   { file: "client/src/features/billing/ChangePlanModal.tsx", rule: "beside-the-word", expression: "formatCreditsPerDollar(priceOf(plan), plan.credits)", count: 1, stays: "a RATE, not an amount: the conversion is INSIDE `formatCreditsPerDollar`, which calls `displayBalance` itself (`planMath.ts:390`). The rules read a name and cannot see through a function boundary." },
   { file: "client/src/features/settings/planMath.ts", rule: "named-on-the-way-out", expression: "Math.round(perDollar).toLocaleString(\"en-US\")", count: 1, stays: "the rate's own formatting, inside the function that has already converted. Through `displayBalance` it would be divided by five twice." },
   { file: "server/castingV2/reliabilityReport.ts", rule: "beside-the-word", expression: "report.creditsRefunded", count: 1, stays: "an OPERATOR diagnostic — a text table of delivery rates whose only consumers in the tree are its own suites. Ledger units, like every staff reading." },
