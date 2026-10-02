@@ -1,7 +1,7 @@
 {
-  "edition": 617,
-  "updatedAt": "2026-10-02T12:35:00.000Z",
-  "shift": "Night shift, 21:45: the studio now measures the picture instead of asking about it. Until tonight, when a signed character's photograph came back, we showed it to a reading model and asked in words whether it was framed the way you ordered - and that answer moved. One of your own close-ups, read a hundred times against the rule it was supposed to break, came back fine on fifty of them. From tonight the crop is measured with the same tool the face scan uses, and the measurement has the final say: a picture outside the boundary is now marked and offered a free retry every single time, not half the time, and the record carries the number rather than a sentence you would have to trust. Your two tattooed close-ups that used to slip through now read 0.48 and 0.56 against a boundary of 0.3, and I checked the other direction too, which is the half that could have gone wrong: two of your correct close-ups - including the tusked one under the cowl - were read three times each under the new shorter question and passed every time, so nothing good started failing. One thing I did NOT do, and it is worth your eye rather than mine: you asked that the written framing rule stop being sent to the reading model at all, and on six of the seven camera angles that is not possible without rewriting your own sentences, because each of them states a measured thing and an unmeasurable thing inside one sentence - the back view's whole rule is 'the whole body seen from directly behind, head to feet inside the frame, face not visible', which is a direction, a crop and a hidden face with two commas between them. Cutting at the commas would put a sentence nobody wrote in front of the checker, and we already measured three careful rewrites of one rule breaking a correct picture each time, so I removed only what is fully answered and wrote down, next to each camera, exactly what is still being asked twice and why. It costs a mark and never a picture. Your 'looks right' on the Portrait boundary is recorded and that number is now yours. Cost tonight: about 37 cents of our own money, no credits of yours.",
+  "edition": 618,
+  "updatedAt": "2026-10-02T14:20:00.000Z",
+  "shift": "Night shift, 23:01: two things, and the second one is the more interesting. First, the rate line is gone from your plans. You said the free card's \"free CREDITS PER $1\" was stupid, and then that the rate belongs on Add credits and not on plan cards at all - so it is off every card now, and the compare table's \"Credits per dollar\" row went with it. The free card was never a special case: the word \"free\" is just what that calculation says when the price is zero, so one line was putting a rate on all seven cards, and your widened answer is what took it off all seven. Add credits still shows it, which is where you put it. It is merged and live, and I looked at it myself in both the light and the dark screens, before and after. Second, I found that a signed picture's crop-check had no time limit on it: if the measuring tool accepted the job and then never answered, your Sign or Try again would sit there for up to five minutes before giving up and handing the picture over unchecked. The card I was given suggested cutting it off at twenty seconds. I measured it before trusting it, on your own pictures, and a healthy check takes 21.5, 18.5 and 22.5 seconds - so twenty seconds would have cut off good checks rather than stuck ones, and that is the worse mistake of the two, because an unchecked picture comes with a free retry: we would have been giving the check away on every view to save time on a rare one. It is set at forty-five seconds, twice the slowest real one, which is the same rule the other check beside it was set by. That one is waiting on review. One honest limit I wrote down rather than hid: it stops the waiting, it does not cancel the stuck job, which still holds its place in the queue until the connection gives up - that needs a change to something shared with the face scan, so it is its own card. Cost tonight: about 15 cents of our own money for the measurements, no credits of yours.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -145,7 +145,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-02T12:27:07.118Z",
+      "readAt": "2026-10-02T14:10:30.998Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -6477,6 +6477,20 @@
   ],
   "pipeline": [
     {
+      "id": "rate-chip-off-plans-1773",
+      "title": "No plan card states a rate per dollar, and neither does the compare table (#1773)",
+      "status": "merged",
+      "prNumber": 1778,
+      "note": "Merged and live. Your word took it off the free card; your second word took it off all of them. Add credits keeps the rate."
+    },
+    {
+      "id": "framing-deadline-1776",
+      "title": "A signed picture's crop-check can no longer hold your Sign open for five minutes (#1776)",
+      "status": "in-review",
+      "prNumber": 1783,
+      "note": "Open and held for a review by hand - it touches the paths that decide refunds and free retries. The limit is 45 seconds, measured rather than guessed."
+    },
+    {
       "id": "portrait-bound-1612",
       "title": "The Portrait picture is measured, not guessed (#1612)",
       "status": "merged",
@@ -9258,7 +9272,7 @@
     {
       "id": "framing-measured-1612",
       "title": "The framing check is measured, not read — and the measurement has the final say (#1612)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1775,
       "note": "Held for the relay by hand — money surface."
     }
@@ -9267,9 +9281,9 @@
     {
       "id": "briefing-whitespace-guard-red-main",
       "severity": "warning",
-      "state": "open",
+      "state": "resolved",
       "title": "Every pull request is failing its gate on a check that has nothing to do with it, and it is this page's own note that is doing it (#1679)",
-      "detail": "Last night's note on this page was written in two paragraphs. One of the crew's own checks says any field that carries paragraphs must name the part of the page that keeps them as paragraphs, and the shift note has never been named. So the check fails, and because every pull request has to bring main into its branch before it can merge, every one of them inherits the failure.\n\nMeasured this shift on a clean copy of main: 16,031 tests pass and that one fails. The pull request that fixes it properly, #1693, is itself blocked on the same failure.\n\nThis edition's note is one paragraph, which clears it. That is the stopgap, not the repair - the next shift that writes two paragraphs breaks it again, which is exactly what #1693 is for."
+      "detail": "Last night's note on this page was written in two paragraphs. One of the crew's own checks says any field that carries paragraphs must name the part of the page that keeps them as paragraphs, and the shift note has never been named. So the check fails, and because every pull request has to bring main into its branch before it can merge, every one of them inherits the failure.\n\nFIXED and merged: #1679 landed as d886c898f, so the shift note is kept as paragraphs by the page and the check no longer fails. This row is resolved in the edition that ships with it."
     },
     {
       "id": "p1-display-pr-conflicting",
@@ -9618,7 +9632,7 @@
     259
   ],
   "nextUp": {
-    "readAt": "2026-10-02T12:27:07.118Z",
+    "readAt": "2026-10-02T14:10:30.998Z",
     "items": [
       {
         "issueNumber": 1469,
@@ -9657,11 +9671,6 @@
       {
         "issueNumber": 1689,
         "title": "N3: investigate cutting Refine's cost so its price can come down — count the ~7 Claude checks a Refine makes, court the fewest it can safely keep, report cost per Refine before any price change (his finance guy's note, 2026-10-01)",
-        "urgent": false
-      },
-      {
-        "issueNumber": 1773,
-        "title": "No plan card shows a \"CREDITS PER $1\" chip (his word 2026-10-02: the rate belongs on Add credits, not on plans)",
         "urgent": false
       },
       {
