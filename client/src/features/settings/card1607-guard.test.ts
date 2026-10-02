@@ -74,7 +74,10 @@ const code = (source: string) => withoutComments(source);
 /** The card draws the offered ladder; the hidden rung is never on it (#391). */
 const offered = () => OFFERED_PLAN_ORDER.map((id) => ({ id, ...PLAN_TIERS[id] }));
 
-describe("#1607 — the four lines, derived", () => {
+/* The card number stays out of the describe string: `#1607` is a valid hex
+   literal and `token-guard.test.ts` reads it as one. It strips comments, so
+   this is where the reference belongs — card #1607, P1-8. */
+describe("Card 1607 — the four lines, derived", () => {
   it("⚠ THE DIVISOR IS THE THREE PRICES THE STUDIO CHARGES, NOT THE LEGACY STUDIO'S", () => {
     /*
       The example's basis is the whole point of the line. It used to be
