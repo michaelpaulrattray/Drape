@@ -1,4 +1,5 @@
 import type { CanonicalViewAngle } from "../../../shared/boardTypes";
+import { displayPrice, formatCredits } from "../../../shared/creditDisplay";
 import { createHash, randomUUID } from "node:crypto";
 import type { GenerateContentConfig } from "@google/genai";
 import { TRPCError } from "@trpc/server";
@@ -1096,7 +1097,7 @@ export async function executeEvidencePackageSync(
       code: "BAD_REQUEST",
       message:
         charged.error
-        || `Insufficient credits. Need ${authority.plan.totalCost} credits.`,
+        || `Insufficient credits. Need ${formatCredits(displayPrice(authority.plan.totalCost))} credits.`,
     });
   }
   input.onCharged?.(authority.plan.totalCost);

@@ -7,7 +7,16 @@
  * deterministic `refundReference` support needs for manual reconciliation.
  * Every surface that speaks about the money derives its sentence here, so
  * "you weren't charged" can never be claimed for a refund that didn't land.
+ *
+ * ⚠ **`refunded` IS A LEDGER NUMBER AND THE SENTENCE SAYS THE DISPLAY ONE**
+ * (#1600, 2026-10-02). Every caller hands this the figure the ledger recorded,
+ * which is what it must stay — the reference it quotes and the row support
+ * reconciles are both ledger. The conversion belongs here rather than at the
+ * four call sites, because a sentence is built once and read on four surfaces:
+ * `ViewTabs`, `CastNode`, `useCastingPackageRefresh` and `useCastGate`.
  */
+
+import { displayRefund, formatCredits } from "./creditDisplay";
 
 export interface RefundedFailure {
   refunded: number;
@@ -17,7 +26,20 @@ export interface RefundedFailure {
 /** The money half of any failure sentence. */
 export function refundOutcomeText(f: RefundedFailure): string {
   if (f.refunded > 0) {
-    return `${f.refunded} credits refunded — you weren't charged.`;
+    const shown = displayRefund(f.refunded);
+    /*
+      ⚠ A REFUND SMALLER THAN ONE DISPLAY CREDIT MUST NOT READ AS ZERO.
+      `displayRefund` floors, which is right everywhere else — it never claims
+      more credits came back than did — but floored to 0 it would print
+      "0 credits refunded — you weren't charged", which is the one sentence a
+      refund line cannot say. It is unreachable today and this is a backstop
+      rather than a feature: every refundable unit in the product is a multiple
+      of 5 (`server/creditPriceScale.test.ts` refuses a declared price that is
+      not), so the branch exists for the day a proportional refund is not.
+    */
+    return shown > 0
+      ? `${formatCredits(shown)} credits refunded — you weren't charged.`
+      : `Your credits were refunded — you weren't charged.`;
   }
   return f.refundReference
     ? `The automatic refund couldn't be recorded — quote ${f.refundReference} and support will restore the credits.`

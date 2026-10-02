@@ -51,6 +51,7 @@ import { assertNotArchived } from "../casting/modelGuards";
 import { parseCastingPrompt, mergeParsedPreferences, resolveEngineChoices } from "../casting/promptParser";
 import { recordRefund, refundTruth } from "../casting/atomicCredits";
 import { publicErrorMessage } from "./publicError";
+import { displayPrice, formatCredits } from "../../shared/creditDisplay";
 import type { TransactionHandle } from "../db/connection";
 import { validateCreationIntent } from "../casting/identity/creationIntake";
 import { buildStructuredPatch } from "../casting/identity/structuredEdit";
@@ -406,7 +407,7 @@ export async function executeRunGeneration(input: RunGenerationInput) {
   if (!deduct.success) {
     throw new TRPCError({
       code: "BAD_REQUEST",
-      message: deduct.error || `Insufficient credits. Need ${cost} credits.`,
+      message: deduct.error || `Insufficient credits. Need ${formatCredits(displayPrice(cost))} credits.`,
     });
   }
   input.onCharged(cost);
@@ -1087,7 +1088,7 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
       { toolKind: "image" },
     );
     if (!deduct.success) {
-      throw new TRPCError({ code: "BAD_REQUEST", message: deduct.error || `Insufficient credits. Need ${cost} credits.` });
+      throw new TRPCError({ code: "BAD_REQUEST", message: deduct.error || `Insufficient credits. Need ${formatCredits(displayPrice(cost))} credits.` });
     }
     input.onCharged(cost);
 
@@ -1407,7 +1408,7 @@ export async function executeRunVariations(input: {
     { toolKind: "image" },
   );
   if (!deduct.success) {
-    throw new TRPCError({ code: "BAD_REQUEST", message: deduct.error || `Insufficient credits. Need ${totalCost} credits.` });
+    throw new TRPCError({ code: "BAD_REQUEST", message: deduct.error || `Insufficient credits. Need ${formatCredits(displayPrice(totalCost))} credits.` });
   }
   input.onCharged(totalCost);
   const positions = variationPositions(item, count);
