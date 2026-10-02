@@ -310,6 +310,11 @@ export async function retryCandidate(
     kind: "castingV2.retry",
     candidateLockPublicId: candidate.publicId,
     payload: { candidatePublicId: candidate.publicId, attempt: candidate.attemptCount + 1 },
+    /* #1767 — the price the entrance already read, written where the row is
+       born. The running transition below writes the very same `price`, so a
+       claim that dies in the gap between the two still says what it cost
+       instead of reading as a free ask. */
+    plannedCredits: price,
   });
   if (gate.type === "replay") {
     // Idempotency, not an error: the same request id returns the retry it

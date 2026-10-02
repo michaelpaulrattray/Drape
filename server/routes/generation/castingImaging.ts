@@ -118,6 +118,10 @@ export const castingImagingRouter = router({
         originBoardId: input.originBoardId,
         originItemId: input.originItemId,
         payload: { modelId: input.modelId },
+        /* #1767 — the same figure the running transition below writes, written
+           where the row is born so a row settled before it still says what it
+           was going to cost. */
+        plannedCredits: CREDIT_COSTS.castingImage,
         lockKey,
       });
       if (gate.type === "replay") {

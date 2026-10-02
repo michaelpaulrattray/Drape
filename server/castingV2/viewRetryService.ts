@@ -550,6 +550,21 @@ export async function retryCastView(
        would be a mirror of it, and its drift would reopen the double charge
        silently. */
     payload: castViewRetryClaimPayload({ castId: input.castId, angle: input.angle }),
+    /*
+      WHAT THIS TRY AGAIN COSTS, WRITTEN WHERE THE ROW IS BORN (#1767) — and on
+      THIS road it is not housekeeping, it is the defect itself.
+
+      `plannedCredits = 0` is how the product recognises a FREE Try again
+      (`spentFreeViewRetryFilter`). Until this line the column was written one
+      statement below, so a PAID retry whose `markRunning` threw settled as
+      `failed` carrying the schema default — indistinguishable from the free ask
+      the customer had not used. She then found her one free Try again on that
+      view already spent and was asked to pay 370 credits for it.
+
+      The figure is the same `price` the running transition writes, read off the
+      offer forty-five lines above; nothing here chooses a number.
+    */
+    plannedCredits: price,
   });
   if (gate.type === "replay") {
     // Idempotency, not an error: the same request id returns the view it

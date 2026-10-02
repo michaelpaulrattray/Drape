@@ -173,6 +173,10 @@ export async function acceptInkAddCandidate(
     kind: "evidence_candidate_accept",
     modelId: subject.modelId,
     payload: { candidateId: input.candidateId },
+    /* #1767 — the same figure the running transition below writes, written
+       where the row is born so a row settled before it still says what it
+       was going to cost. */
+    plannedCredits: 0,
     lockKey: modelOperationLockKey(subject.modelId),
   });
   if (gate.type === "replay") return closedAcceptedResult(gate.result);

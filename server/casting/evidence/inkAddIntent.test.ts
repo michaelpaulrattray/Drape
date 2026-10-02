@@ -235,6 +235,12 @@ describe("R7-7D D4A ink intent service", () => {
       clientRequestId: request.clientRequestId,
       kind: "evidence_intent_begin",
       modelId: 14,
+      /* #1767 — the claim says what the OPERATION will cost, and beginning an
+         intent costs nothing: the 350 above is what the ink add will cost when
+         she asks for it, charged by the separate candidate-generation operation
+         which declares its own. A 350 here would be the same money counted
+         twice, and this road never marks itself running at all. */
+      plannedCredits: 0,
       payload: {
         modelId: 14,
         normalizedDescriptor: "Add a blackwork full sleeve to his right arm",
