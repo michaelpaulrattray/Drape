@@ -1421,3 +1421,377 @@ guarded and deleted (`_98-machinist5-refusals-`, `_98-machinist5-facescans-`;
 a third, `_98-machinist5-schema-`, read `SHOW COLUMNS` and is deleted with
 them). Readings taken in a worktree at `origin/main` 655a496a, removed at close.
 No dev server started. **Spent: nothing** — no render, no credit, no text call.
+
+## Run 6 — 2026-10-03 03:41–05:0x AEST (Machinist, patrol #6; weekly clock, on the day)
+
+Readers: `pnpm machinist:bench` (all five rows, in a worktree at `origin/main`
+`dd817079`), `scripts/machinist-ledger-read.mts` (14d / 7d / 60d), `pnpm
+machinist:bundle` and `scripts/bundle-budget.mts`, the `gate-checks` job of the
+last ten green gate runs at step grain (`gh run view --json jobs`) plus CI's own
+vitest tally off two run LOGS a week apart, and six read-only disposables named
+where they are quoted. Windows: **14d**, **7d** and **60d** to 2026-10-02
+17:53Z, against `hayabusa.proxy.rlwy.net:23768` (production); the dev readings
+in §G against `:52008`. **Spent: nothing** — no render, no credit, no text call,
+no paid arm. Every figure is off rows, files, runs and logs already paid for.
+
+⚠ **Run 5 told this run what to open on, and the answer overturns run 5's own
+§E.** *"Run 6 re-reads all five rows first and that is the number it opens on."*
+Four of the five fell back; the fifth did not, and the fifth turns out to be a
+number this machine structurally cannot see. §E is therefore the run's spine and
+§I's worst number comes out of it.
+
+### A. Wall-clock per paid operation
+
+| kind | window | n | median | p95 | max | statuses |
+|---|---|---|---|---|---|---|
+| `castingV2.roll` | 14d | 59 | **30 s** | 60 s | 391 s | 44 succeeded · 14 partial · 1 failed |
+| `castingV2.roll` | 60d | 118 | 43 s | 126 s | 391 s | 86 · 29 partial · 3 failed |
+| `castingV2.sign` | 14d | 12 | 134 s | 319 s | 319 s | **7 partial** · 5 succeeded |
+| `castingV2.viewRetry` | 14d | 17 | 71 s | 131 s | 131 s | 17 succeeded |
+| `castingV2.refine` | 14d | **2** | **53 s** | 53 s | 53 s | 2 succeeded |
+| `castingV2.refine` | 60d | 226 | 120 s | 285 s | 390 s | 193 · 33 failed |
+| `castingV2.retry` | 14d | 2 | 38 s | 38 s | 38 s | 2 succeeded |
+
+- **The roll's median fell again, 34 s → 30 s**, on 59 rolls against run 5's 50.
+  Two consecutive falls now (46 → 34 → 30) across the stretch where Sunburst
+  became every account's roll engine.
+- **A refine ran for the first time in a month** — two of them, both succeeded,
+  **median 53 s against the long-run 120 s**, and **0 of 2 past the ~305 s
+  gateway wall**. n=2 is an anecdote and is recorded as one; what it ends is run
+  5's *"no refine ran in fourteen days"*.
+- **`castingV2.sign` is the fortnight's biggest mover: 12 operations, 7 of them
+  `partial` (58%), 950 credits refunded**, against run 5's n=2. §B2 reads it at
+  view grain, because `partial` says a view did not arrive and never which or
+  why.
+- **`castingV2.viewRetry` nearly tripled its population** (6 → 17) and every
+  operation succeeded at the operation grain; its losses are at view grain,
+  inside.
+- ⚠ **The 60-day refine row is the SIXTH reading of almost the same operations,
+  and the window is now actively losing rows.** 226 against run 5's 225 — two
+  new refines arrived and one aged out. More sharply: **60d rolls fell 306 → 118
+  and 60d slices 2,453 → 949** in one week, because candidate rows purge with
+  their session. **The 60-day window is not a stable denominator and must not be
+  trended.** The 14d and the per-day readings are the comparable ones. Stated
+  here because run 5 trended it in good faith.
+
+⚠ **AND NOTHING HAS BEEN CHARGED AT P1's NEW PRICES — 0 operations since the
+release merged** (`_98-machinist6-newprices-disposable.mts`). P1's scale change
+landed 2026-10-01 17:34:53Z (squash `143e5b30`); the last operation that charged
+anything is **2026-10-01 09:30:16Z, a refine at 25 credits** — the old scale,
+eight hours earlier. The three most recent charges are that refine and two Signs
+at 450. **So every credit figure in this ledger is priced at the OLD table, and
+the new one is live and unexercised.** A later run comparing credit figures
+across this boundary is comparing two scales.
+
+### B1. The roll at slice grain — the best news of the run, and it is rigorous
+
+Run 5 ended on *"one paid slice in seven did not arrive"* for the fourth run
+running. Read per UTC day (`_98-machinist6-slices-disposable.mts`):
+
+| day | slices | arrived | failed | stranded | did not arrive |
+|---|---|---|---|---|---|
+| 22 Sep | 258 | 211 | 42 | 5 | 47 — 18.2% |
+| 23 Sep | 56 | 56 | 0 | 0 | 0 |
+| 24 Sep | 24 | 22 | 2 | 0 | 2 — 8.3% |
+| 25 Sep | 64 | 57 | 7 | 0 | 7 — 10.9% |
+| 26 Sep | 8 | 8 | 0 | 0 | **0** |
+| 27 Sep | 40 | 40 | 0 | 0 | **0** |
+| 28 Sep | 24 | 24 | 0 | 0 | **0** |
+| **since 26 Sep** | **72** | **72** | **0** | **0** | **0 — 0.0%** |
+
+**72 paid slices have rolled since run 5's window and every one arrived.** The
+fortnight's 51 `content_policy` failures and 5 stranded slices are *the same 56*
+run 5 measured: the denominator grew by 72 and the numerator did not move by
+one. So the headline fall — 56 of 402 (13.9%) → **56 of 474 (11.8%)** — is
+arithmetic on a growing denominator, and the real statement is the zero. Money
+cross-check agrees exactly: 56 refunds / 1,120 credits, all *"Casting candidate
+did not arrive"*.
+
+**22 September is still the whole of it**: 47 of 56 on the one day, the matched
+engine comparison #1134 closed on. Outside it the fortnight is **9 of 216 =
+4.2%**, against run 5's 6.25% on 144. 60d: 949 slices, 100 did not arrive
+(10.5%) — on the shrinking denominator above. Nothing has rolled since 28 Sep.
+Still one caster: all of it `userId 1`. Receipt on **#129**, which stays
+`blocked`.
+
+### B2. The Sign at view grain — 7 of 50 views dropped, all on the axes #1612 hands over
+
+`_98-machinist6-signs-disposable.mts`, over the 10 Signs that produced view rows
+(two more carry `subjectDeletedAt` and hold none):
+
+| view | arrived | dropped |
+|---|---|---|
+| frontFull | 10 | 0 |
+| sideClose | 10 | 0 |
+| closeUp | 8 | 2 |
+| threeQuarter | 8 | 2 |
+| **backFull** | 7 | **3** |
+| **total** | **43** | **7 — 14%** |
+
+**4 dropped on wardrobe** (*"This view came back in the wrong clothing"* —
+backFull ×3, threeQuarter ×1), **3 on framing** (*"This view didn't come back at
+the angle it should"* — closeUp ×2, threeQuarter ×1), **0 on identity.**
+
+⚠ **This is a BEFORE baseline, not a live fault, and the dates are what settle
+it.** #1612's rule — only identity refuses; framing and wardrobe deliver charged
+with a free Try again — merged in PR #1775 at 2026-10-02 12:48:38Z (#1771 at
+11:26:40Z). **The last Sign ran 2026-10-01 09:xx UTC.** So all 12 predate both,
+and every one of the seven would now be delivered rather than refunded. Checked
+at the code rather than inferred from the merge: `viewConformanceRefuses` reads
+`REFUSING_AXIS = "identity"` and nothing else (`viewConformance.ts:808-814`),
+and both refusal sentences above no longer exist anywhere in the tree.
+
+⚠ **A working assumption of this run was wrong and the code corrected it.**
+`viewConformance.ts:605-607` folds all three axes into `pass`, and
+`viewConformance.ts:599` says `identity` and `wardrobe` are *"untouched, by name
+and on purpose"* — read together those argue that wardrobe still refuses, and
+this patrol had drafted that as a finding. It is false: `pass` is a derived
+projection for downstream readers, and the REFUSAL reads one axis. **Law 7c paid
+for itself in the gap between a grep and opening the file** — the card would have
+told a founder-ordered card that half of it was unbuilt.
+
+The retry road says the same thing one step on: 7 of the window's refunds are
+*"… didn't arrive when asked again"* (closeUp ×3, threeQuarter ×3, side profile
+×1) — the same two axes. **No Sign has run since the fix, so the AFTER is
+unmeasured and is owed.** Receipt on **#1612**.
+
+### C. Face scans — #38's ceiling confirmed a third time
+
+**350 rows in 14d, $35.00 of house money; 351 all time over 349 faces.** 49 new
+scans since run 5 (26 Sep ×8, 27 Sep ×39, 29 Sep ×1, 1 Oct ×1). At 59 rolls that
+is **5.93 scans/roll = $0.59/roll**, against run 5's 5.90 and #38's structural
+ceiling of 8 ($0.80/roll). **The model holds on a third reading** and nothing is
+filed; #38's one remaining obligation is still the pre-launch re-read of real
+usage, which this is not.
+
+**And looking at faces still costs the house more than rendering them:**
+
+| house line | 14d | 60d |
+|---|---|---|
+| **face scans** | **$35.00** | **$35.10** |
+| fal renders (priced floor) | $18.10 | $18.50 |
+| OpenRouter, account-wide | $32.73 | — |
+
+### D. Provider books
+
+- **OpenRouter, account-wide: $32.73 over 11 active days (14d)**, against run
+  5's $22.12. Run 5's dominant line (the 13 Sep reviewer court, $16.74) has aged
+  out of the window; the new shape is **two spikes — 26 Sep $13.34 over 719
+  requests and 30 Sep $8.06 over 476** — on days production took **one roll and
+  zero rolls**. ⚠ **So neither spike is customer traffic**; beyond that the
+  attribution is NOT established here, and the account is shared by courts, crew
+  readers and the product's own text calls.
+- **fal, off our surviving rows: $18.10 priced (14d), $18.50 (60d) — a floor.**
+  296 Sunburst text-to-image at the $0.015 measured by #1134, 130 GPT Image 2 at
+  $0.099 (retired engine, an upper bound), 8 edits. **24 flare calls and 18
+  Sunburst EDIT calls are still UNPRICED** — fal publishes an opaque `units`,
+  and the edit door is now the wardrobe plate's engine under path E, so the
+  unpriced set is no longer only a retired curiosity.
+- Balances are a reading for the rite's receipt and never a finding (his
+  standing rule).
+
+### E. The client and the house — run 5's unattributed rise, settled
+
+**House commands** (`pnpm machinist:bench`, hyperfine 1.20.0, this machine, 20
+logical processors, worktree at `origin/main` `dd817079`):
+
+| command | run 6 | run 5 | run 4 | r5 → r6 |
+|---|---|---|---|---|
+| `pnpm test` | **2m 59s** (178.8 s) | 3m 00s (179.6 s) | 130 s | **−0.5%** |
+| `pnpm check` | **24.12 s** | 30.2 s | 24.2 s | **−20%** |
+| `pnpm build` | **9.45 s** | 11.47 s | 8.4 s | **−18%** |
+| `pnpm architecture:check` | **7.87 s** | 9.86 s | 7.6 s | **−20%** |
+| `pnpm capability:check` | **1.03 s** | 1.27 s | 1.1 s | **−19%** |
+
+⚠ **Run 5 reported every row up 15–38% with its cause "NOT established", and
+refused to guess one. That was the right call: four of the five have fallen back
+to within 2% of run 4 and the rise was transient.** It was not load — run 5 drove
+that out, and this run's readings were taken *under* a concurrent production
+database read and came out LOWER, which is the confound pointing the wrong way to
+help. It was not the junction and not the stale processes either, both of which
+run 5 also drove out. **No cause is offered for a week-long transient that
+reverted; what matters is that the standing table is run 4's again and only one
+row is real.**
+
+**`pnpm test` is that row, and this machine cannot see what it is hiding.** 178.8
+s wall at **User 1,131 s + System 468 s = 1,599 s CPU — ≈8.9× parallelism.** On a
+CI runner the same suite runs at **≈2.4×**. §F reads the consequence.
+
+**Bundle** (`pnpm machinist:bundle` and `scripts/bundle-budget.mts`, same tree):
+
+| reading | run 6 | run 5 |
+|---|---|---|
+| **first-paint JS (the one that matters)** | **261.2 kB** gzip, budget 290.0 kB, **headroom 28.8 kB** | 260.3 kB, 29.7 kB |
+| JS shipped (gzip L9) | 711.8 kB over 33 chunks | 674.3 kB over 31 |
+| CSS shipped (gzip L9) | 46.2 kB | 45.9 kB |
+
+**First paint moved 0.9 kB in a week and #1265's budget holds with 10% room** —
+the guard re-pinned at run 5's close is doing its job. Total JS rose 37.5 kB
+(+5.6%) over two new chunks, which is deferred weight rather than first-download
+weight. Largest single chunk 261.2 kB, which is the entry. Attribution unchanged
+in shape: react-dom 11.6%, recharts 10.3%, `features/casting` 5.7%.
+
+### F. The gate at step grain — the suite is the only lever left, and its trigger is met
+
+Ten most recent green `gate.yml` runs (all 2026-10-02): 37036750361,
+37035109792, 37029532952, 37027696891, 37027138571, 37026907975, 37019386043,
+37017928655, 37017837406, 37015800081.
+
+| step | run 6 median of 10 | run 5 median of 10 | run 4 median of 4 |
+|---|---|---|---|
+| **Unit tests** | **402.5 s** | 284 s | 289 s |
+| Typecheck (`pnpm check`) | **65 s** | 39.5 s | 41.5 s |
+| Design-law controls | 20 s | 27 s | 27.5 s |
+| **whole `gate-checks` job** | **533.5 s** | 394 s | ~580 s |
+
+Unit-test step, sorted: 253, 318, 320, 364, 401, 404, 408, 412, 412, 413. **Unit
+tests are 75% of the job** (run 5: 72%, run 4: ~50%).
+
+⚠ **Run 5's own written trigger is met: *"card the shard when gate minutes per
+card crosses 10 again, or when Unit tests cross ~320 s."*** Gate minutes per card
+has NOT crossed 10 (below). Unit tests have, by 80 seconds on the median.
+**Carded: #1799.**
+
+**Why, read at vitest's own decomposition off two CI logs a week apart** rather
+than guessed — and it is not simply "more tests":
+
+| | 25 Sep (run 36172684433) | 2 Oct (run 37036750361) | change |
+|---|---|---|---|
+| Test Files | 840 | 982 | +142 (+17%) |
+| Tests | 13,740 | 16,679 | +2,939 (+21%) |
+| wall `Duration` | 220.4 s | 319.1 s | +45% |
+| `import` | 285.6 s | 357.3 s | +25% |
+| `tests` | 233.5 s | 422.8 s | **+81%** |
+
+Tracked test files at the two trees agree with CI: **841 at `655a496a` → 983 at
+`dd817079`**. Worker-seconds went **519 → 780 (+50%)** against a +45% wall, so CI
+is spending the new work rather than losing it — at a flat ≈2.4×. **Per-test work
+rose 37.8 → 46.8 ms (+24%): the fortnight's new tests are heavier than the
+suite's average**, which is how +17% more files bought +42% more wall.
+`gate.yml`'s Unit tests step did not change (diffed; one new step landed BEFORE
+typecheck, the eye-frame presence check, at 0–1 s).
+
+⚠ **And `import` is 357 s of the 780 — 46% of the suite's cost is module import,
+not assertions.** The shard redistributes the wall at doubled runner minutes;
+that number reduces the work. **#1799 names both levers with their sizes and
+chooses neither** — this ledger carries numbers, not optimisations.
+
+**The shift process** (`machinist-ledger-read.mts` §G):
+
+| figure | **7d** (to 10-02) | 14d | run 5's 7d | run 4's 7d | target |
+|---|---|---|---|---|---|
+| **cards landed per session** | **2.72** (231 / 85 landing of 159) | 2.19 | 1.50 | 1.38 | 3 |
+| gate minutes per card | **9.45** ✅ | 9.63 | 9.90 | 13.85 | 10 |
+| gate runs per card | **1.25** ✅ | 1.29 | 1.35 | 1.65 | 1.5 (aim) |
+
+**Cards per session rose 1.50 → 2.72 (+81%) — the figure run 5 called "the one
+process figure still missing" and "the least moved of the three".** The target is
+3. Four builder seats per pass (`MAX_SEATS = 4`, his order) is the obvious mover
+and this ledger does not claim it as the only one. **Gate minutes per card held
+at 9.45 despite the job growing 35%**, which is the same arithmetic: more cards
+per run amortises a slower run. 43 merged PRs in the 7d fit no closed session's
+window and are printed by the reader rather than dropped.
+
+### G. What was NOT read — and interaction latency now has a MEASURED reason
+
+Stated so the absence is not read as a zero (doctrine entry 1):
+
+- ⚠ **Interaction latency — UNREAD for the second run, and this time the reason
+  is read at the rows rather than being a budget decision.** Run 4's fixture
+  (verify-bot 823, session 90, `c19610ad…`) is now `expired` with 0 candidates.
+  The whole dev world holds **7 `ready` candidates on 5 sheets, and every road to
+  them is shut**: three sheets (69, 79, 80 — 2, 1, 1 tiles) belong to user
+  **28601, frozen since 2026-08-25 13:05Z**; one (96, 2 tiles) is unfrozen but is
+  a **#1098 non-UUID publicId**, a guaranteed `BAD_REQUEST`; one is `abandoned`.
+  Keep/Unkeep needs tiles and the chip edit is absent on the author road since
+  #535, so **the free walk reads nothing at all.** **The class is worth more than
+  the instance: run 4's reading sat on an inherited fixture that the product's
+  own retention then expired, silently — nothing goes red.** **Carded: #1800**,
+  which proposes a fixture the instrument MINTS rather than inherits and
+  deliberately does not decide between that and a real dev roll.
+  ⚠ **This patrol refused to clear `users.frozenAt` on a shared dev row to take a
+  reading**, and wrote the refusal into its own disposable rather than leaving it
+  to judgement — the precedent script for this job cleared it as a side effect.
+- **Page load and the canvas** remain unread by anything, as every run has said.
+- **The roll's phase decomposition** (run 4's §D) — not re-read; the roll's
+  median fell again rather than rose.
+- **`pnpm machinist:latency --controls`** was not run: it is in the gate on every
+  PR, so running it here would have proven nothing new.
+
+### H. Attempted and reverted; carded
+
+Nothing attempted on the product; this run wrote no product code and opened no PR
+against it.
+
+**Carded, filed not worked:** **#1799** (the gate's unit suite, §E/§F) and
+**#1800** (the latency instrument's lost fixture, §G) — both `seat:machinist`,
+one work label each.
+
+**Receipts as comments, no reopen:** **#1612** (the Sign view-grain BEFORE
+baseline, §B2), **#129** (the fortnight's slice numbers and the zero since
+26 Sep, §B1).
+
+**Deliberately NOT carded, each with its reason:**
+
+- **The four house-command rows that fell back** (§E) — a transient that reverted
+  leaves nothing to fix; carding it would be carding run 5's week.
+- **The 58% Sign partial rate** (§B2) — #1612's fix is merged and live, the
+  measurement is its BEFORE, and no Sign has run since. A card would be asking
+  for work already done.
+- **Face scans** (§C) — #38's model holds on a third reading.
+- **The 60-day window's shrinking denominator** (§A) — a property of retention
+  working as designed, not a defect; it is a reading instruction, and it is
+  written into §A where the next run will meet it.
+- **An `import`-cost fix** — a lever inside #1799, not a separate card.
+- **The two unpriced fal models** (§D) — #1196 owns the price court; nothing new.
+- **A wardrobe-axis finding** (§B2) — drafted and withdrawn at the code. Recorded
+  because a withdrawn finding is worth as much to the next seat as a filed one.
+
+**For the Janitor:** nothing. No orphan process was created by this run; the
+disposables are deleted at close and the worktree removed.
+
+### I. THE WORST NUMBER — run 6
+
+**The gate's unit-test step: 402.5 s of a 533.5 s job, up 42% in a week, and this
+machine reads the same suite as unchanged.** The suite gained 142 files and 2,939
+tests; CI's worker-seconds grew 50%; a 20-core preflight absorbed all of it at
+8.9× parallelism while a CI runner at 2.4× did not. **The defect is not that the
+suite grew — it is that the only instrument every shift runs before pushing is
+structurally blind to the growth, so the cost lands on the gate with no local
+warning.** Run 5's trigger is met and **#1799** carries it, with `import` at 46%
+of the cost named as the larger and less obvious lever.
+
+**Runner-up: nothing on the paid road, for the first time in five runs.** Run 5's
+worst number was one paid slice in seven not arriving, and **72 slices have since
+arrived with zero losses**. #129 is no longer the sentence this ledger ends on.
+
+**Best news of the run, recorded because a ledger that only carries faults is not
+a measurement:** 72 of 72 slices arrived; the roll's median fell 34 s → 30 s, a
+second consecutive fall; cards landed per session rose 1.50 → 2.72, the process
+figure that had never moved; first-paint JS held at 261.2 kB with 10% budget room;
+a refine ran again and took 53 s against a long-run 120 s; and #38's face-scan
+cost model held on a third, larger reading.
+
+### J. Close
+
+Seat: Machinist, patrol #6, one seat, shift `machinist-20261003-0341`, run row
+#529. Clock: run 5 was 2026-09-26, so this run is on the day; the clock counts
+from today. Ledger appended. **Two cards filed (#1799, #1800), two receipts,
+seven findings explicitly declined with reasons, one finding withdrawn at the
+code.** Six read-only disposables written, guarded and deleted
+(`_98-machinist6-signs-`, `-slices-`, `-devcensus-`, `-devmodels-`, `-sheet-`,
+`-mint-`, `-newprices-`); scratch in `output/_machinist6/`. Readings taken in a
+worktree at `origin/main` `dd817079`, removed at close. No dev server started.
+**Spent: nothing** — no render, no credit, no text call, no production variable,
+no flag, no migration.
+
+⚠ **One method note, paid for in re-work and worth the next seat's thirty
+seconds: a `DATE` column off mysql2 renders as `"Tue Sep 22"`, not ISO.** This
+run's per-day slice reader split its window with `String(row.day).slice(0,10) >=
+"2026-09-26"`, which is string garbage — **the per-day rows were correct and only
+the derived total was wrong**, which is exactly the shape that ships. Formatted in
+SQL (`date_format(…, '%Y-%m-%d')`) and re-run, so the receipt in §B1 is the text
+that ran rather than a number corrected by hand. Its sibling: the operation
+table's timestamps render in LOCAL time (UTC+10) even though `dbConnection.mts`
+parses them correctly as UTC — a Sign printed at `Oct 01 19:xx` ran at `09:xx`
+UTC, which is what settles §B2's before/after.
