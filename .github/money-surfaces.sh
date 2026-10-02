@@ -387,7 +387,59 @@
 # decision needs — they are not a trend, and must not be read as one. Defining
 # that population once in code is still its own card (#1662's recommendation,
 # unbuilt).
-MONEY_PATHS='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/routes/admin/changeRequests\.ts$|^server/db/(billing|credits|admin|accountDeletion)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^server/lib/adminActions/(approvalExecution|approvalStateBlocker|changeRequestActions)\.ts$|^server/casting/atomicCredits\.ts$|^server/casting/(castingCreditCosts|packagePricing)\.ts$|^server/casting/evidence/evidenceCandidateContract\.ts$|^server/wardrobe/creditCosts\.ts$|^server/castingV2/(castViewPackage|packageOrchestrator)\.ts$|^client/src/features/casting/(constants|castingPrices)\.ts$|^shared/(const|creditDisplay|annualBilling|changeRequestApproval|changeRequestLabels)\.ts$|^drizzle/'
+# ⚠ AND WHERE A TOP-UP'S PRICE IS SET ARRIVED WITH THE ROAD IT PRICES — 2026-10-02
+# (#1606), ON THE LIST IN THE COMMIT THAT CREATED IT. It is the seventh position
+# in the sentence above, and it is #1711's CASH half and #1359's CREDIT half in
+# one module: `shared/creditTopups.ts` declares what a bought credit pack COSTS
+# (1200¢ / 1100¢ / 1000¢ a unit) and how many credits it GRANTS (25,000 a unit).
+#
+# ⚠ THIS ENTRY IS NOT A REPAIR AND THAT IS THE ONLY INTERESTING THING ABOUT IT.
+# Every widening above was written after a diff had already merged unread — the
+# price modules, `admin.ts`, `annualBilling.ts`, the approval road. This file is
+# born on the list, which is the standing rule the public-endpoint list in
+# CLAUDE.md states for its own fifth route: *a route that exists but is not on
+# the list is how the list stops being the list.*
+#
+# THE DEFECT A DIFF TO IT COULD OTHERWISE SHIP UNREAD: move `centsPerUnit` and
+# every top-up is repriced; move the band floors and a customer pays the wrong
+# rate at the boundary; move `TOPUP_UNIT_LEDGER_CREDITS` and a paid pack grants
+# the wrong number of credits — and `grep -E "$MONEY_SYMBOLS"` matches NOTHING in
+# such a diff, because the grant goes through `addTopupCredits`, which lives two
+# modules away in `server/db/billing.ts` and does not appear here.
+#
+# ROAD: n/a — never uncovered. `git log -S "creditTopups" --all` returns exactly
+# the two commits of #1606, and nothing in `.github/` at any time.
+#
+# MEASURED BEFORE AND AFTER: the delta is ZERO BY CONSTRUCTION on every window,
+# and it is stated that way rather than dressed as a measurement. The module did
+# not exist before this card, so no merged PR can have touched it; the two
+# commits that do are this PR's own, which already triages as money four other
+# ways (`^server/stripe/`, `^server/routes/billing`, `^shared/creditDisplay` via
+# nothing — the first two suffice). The windows the entries above measure cannot
+# move, and running them to print an unchanged number would be ceremony rather
+# than evidence.
+#
+# ⚠ THE LAW-7 SWEEP, with its reader named: the class is *a module that sets what
+# a customer is charged, outside the list*, and the derived half of it is already
+# in `server/moneySurfaceClassifier.test.ts` — the Atlas's own price-collector
+# population, which is what reddened on this commit and asked for this line. It
+# names no other missing module at HEAD.
+#
+# ⚠ AND THE CASH-SIDE NAME READER WOULD NOT HAVE FOUND THIS MODULE, which is
+# worth more than the entry it is attached to. A `const`-name reader of #1711's
+# shape (names carrying RATE / CENTS / PRICE / AMOUNT / DOLLAR / USD / FEE) was
+# run over `server/`, `shared/`, `client/src/` and `drizzle/` on 2026-10-02 and
+# returns twelve modules, this one NOT among them: the cents live on a FIELD
+# inside `TOPUP_BRACKETS` (`centsPerUnit`), and the constants are named
+# `TOPUP_UNIT_*` and `TOPUP_MAX_UNITS`. ⚠ The figures are NOT comparable with
+# #1711's twenty-five — that reading is not reproduced here and must not be read
+# as a trend — but the direction is a reading rather than a belief: the two
+# halves cover different things, the CREDIT collector is what caught this
+# module, and a module pricing in cents alone with no price-shaped const name
+# would be in neither population. That hole is not closed here and is not
+# pretended to be.
+#
+MONEY_PATHS='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/routes/admin/changeRequests\.ts$|^server/db/(billing|credits|admin|accountDeletion)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^server/lib/adminActions/(approvalExecution|approvalStateBlocker|changeRequestActions)\.ts$|^server/casting/atomicCredits\.ts$|^server/casting/(castingCreditCosts|packagePricing)\.ts$|^server/casting/evidence/evidenceCandidateContract\.ts$|^server/wardrobe/creditCosts\.ts$|^server/castingV2/(castViewPackage|packageOrchestrator)\.ts$|^client/src/features/casting/(constants|castingPrices)\.ts$|^shared/(const|creditDisplay|annualBilling|creditTopups|changeRequestApproval|changeRequestLabels)\.ts$|^drizzle/'
 
 # ── 2 · SYMBOLS — where money is DECIDED ────────────────────────────────────
 #
