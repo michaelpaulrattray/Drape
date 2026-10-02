@@ -69,6 +69,20 @@
  * are themselves derived** — `LAW_SURFACES` plus `BRIEFING_FILE`, both already
  * declared elsewhere — never a list kept here.
  *
+ * # A STATED LIMIT, BECAUSE IT IS VISIBLE IN THE SELECTION RATHER THAN HIDDEN
+ *
+ * The reading is textual, so **a suite whose FIXTURE SOURCE contains both a read
+ * call and a path reads as a reader of that path.** `server/pushedDocSuites.test.ts`
+ * is itself the specimen: its fixtures are the text of fake test files, so a
+ * `docs/specs/…` push selects it. It fails toward running one extra fast suite,
+ * never toward missing one, which is the direction that cannot hide the defect
+ * this module exists for — and the alternative is a tokenizer, which this
+ * repository does not invent for a population of one.
+ *
+ * `server/testing/listedSource.test.ts` carries the mirror of this fact as a
+ * carve-out: the same fixture strings make that guard's text count read four
+ * reads where the suite executes none.
+ *
  * This is a MODULE (imported by the rite and by its suite) and it never exits.
  */
 import { execFileSync } from "node:child_process";
