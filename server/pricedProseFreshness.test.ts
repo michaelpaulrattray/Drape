@@ -470,15 +470,6 @@ const PROSE_NOT_A_CURRENT_PRICE: ReadonlyArray<{
   },
   {
     file: "client/src/features/billing/ChangePlanModal.tsx",
-    credits: 2_778,
-    quote: "showed the monthly EQUIVALENT",
-    why:
-      "A RATE, NOT A PRICE, and #661's defect specimen: `2,778 CREDITS PER $1` "
-      + "standing over `$132 / month` with Annual on, an arithmetic a customer "
-      + "can do and find wrong. The figure is what the card was filed about.",
-  },
-  {
-    file: "client/src/features/billing/ChangePlanModal.tsx",
     credits: 15_000,
     quote: "one pool for",
     why:
@@ -648,6 +639,23 @@ const PROSE_NOT_A_CURRENT_PRICE: ReadonlyArray<{
       + "array shrank 8 → 5 → 0, the surface announced there was nothing to "
       + "refund, and a roll's worth of credits was on its way back. The figure "
       + "is what was in flight at the time.",
+  },
+  {
+    file: "server/castingV2/viewRetryService.ts",
+    credits: 370,
+    quote: "already spent and was asked to pay",
+    why:
+      "⚠ CURRENT AND CORRECT, ON THE CUSTOMER'S SCALE RATHER THAN THE LEDGER'S "
+      + "— a paid Try again is `CASTING_V2_VIEW_RETRY_PRICE_CREDITS` = 1,850 "
+      + "ledger, which is 370 displayed, and the sentence is about what she was "
+      + "ASKED TO PAY. This guard's vocabulary is the Atlas's ledger figures, so "
+      + "every display price in prose arrives here as a figure nothing charges; "
+      + "`castingCreditCosts.ts`'s `350 -> 370 credits` is the same shape one "
+      + "module over. Stated rather than solved: folding `ledger ÷ 5` into the "
+      + "vocabulary would quiet this and blind the guard wherever a stale ledger "
+      + "figure equals a live display one — 350 is both the ink-add price and a "
+      + "Refine's display price today, which is the collision that makes it a "
+      + "trade rather than a fix.",
   },
 ];
 
