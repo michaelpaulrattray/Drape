@@ -41,6 +41,7 @@ import {
   type MissingObjects,
 } from "./lib/ceremonyAutoApply.mts";
 import { predeployVerdict } from "./lib/predeployVerdict.mts";
+import { closeLine, closeWithin } from "./lib/boundedClose.mts";
 import { openDatabase, worldOf } from "./lib/dbConnection.mts";
 
 const onRailway = Boolean(process.env.RAILWAY_ENVIRONMENT_NAME || process.env.RAILWAY_ENVIRONMENT);
@@ -86,7 +87,24 @@ const code = await (async (): Promise<number> => {
     console.log(`  (${error?.constructor?.name ?? "Error"}${error?.code ? ` · ${error.code}` : ""})`);
     return 1;
   } finally {
-    try { await connection?.end(); } catch { /* the verdict is already decided */ }
+    /*
+      ⚠ A BOUNDED CLOSE, AND THE OLD ONE COST A DEPLOY (#1745).
+
+      This was `try { await connection?.end(); } catch {}` — and a MySQL
+      `end()` waits for the server to acknowledge its quit packet, which on a
+      half-dead socket never comes. On 2026-10-02 this line printed its verdict
+      at 00:49:44 and then held the pre-deploy container for TEN MINUTES;
+      Railway killed it and failed the deployment of a green, healthy build.
+      `await` has no clock, so there was nothing to see and nothing to time out.
+
+      The comment that was here — *"the verdict is already decided"* — was the
+      argument for bounding it, written beside the code that did not.
+      `closeWithin` races the close against two seconds and destroys the socket
+      instead; `process.exit` below is the next statement either way, and the
+      exit code is the only thing the platform reads.
+    */
+    const line = closeLine(await closeWithin(connection));
+    if (line) console.log(`  ${line}`);
   }
 })();
 
