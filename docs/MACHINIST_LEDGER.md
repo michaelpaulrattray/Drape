@@ -1428,7 +1428,7 @@ Readers: `pnpm machinist:bench` (all five rows, in a worktree at `origin/main`
 `dd817079`), `scripts/machinist-ledger-read.mts` (14d / 7d / 60d), `pnpm
 machinist:bundle` and `scripts/bundle-budget.mts`, the `gate-checks` job of the
 last ten green gate runs at step grain (`gh run view --json jobs`) plus CI's own
-vitest tally off two run LOGS a week apart, and six read-only disposables named
+vitest tally off two run LOGS a week apart, and seven read-only disposables named
 where they are quoted. Windows: **14d**, **7d** and **60d** to 2026-10-02
 17:53Z, against `hayabusa.proxy.rlwy.net:23768` (production); the dev readings
 in §G against `:52008`. **Spent: nothing** — no render, no credit, no text call,
@@ -1778,9 +1778,13 @@ Seat: Machinist, patrol #6, one seat, shift `machinist-20261003-0341`, run row
 #529. Clock: run 5 was 2026-09-26, so this run is on the day; the clock counts
 from today. Ledger appended. **Two cards filed (#1799, #1800), two receipts,
 seven findings explicitly declined with reasons, one finding withdrawn at the
-code.** Six read-only disposables written, guarded and deleted
+code.** **Seven** read-only disposables written, guarded and deleted
 (`_98-machinist6-signs-`, `-slices-`, `-devcensus-`, `-devmodels-`, `-sheet-`,
-`-mint-`, `-newprices-`); scratch in `output/_machinist6/`. Readings taken in a
+`-mint-`, `-newprices-`); scratch in `output/_machinist6/`. ⚠ This sentence and
+the header above both read *"six"* when this run was first pushed, over a list
+of SEVEN names — caught in the close's own recount, against the `ls` taken
+before the deletion. One off a count nobody would have re-derived, in the
+document whose whole discipline is that its numbers are right. Readings taken in a
 worktree at `origin/main` `dd817079`, removed at close. No dev server started.
 **Spent: nothing** — no render, no credit, no text call, no production variable,
 no flag, no migration.
