@@ -119,4 +119,118 @@ describe("AddCreditsModal", () => {
     expect(source).toMatch(/disabled=\{!selected \|\| working \|\| !quoteReady\}/);
     expect(source).toMatch(/if \(!selected \|\| !quoteReady\) return;/);
   });
+
+  /*
+    ⚠ **A WAITING LABEL THAT CAN NEVER FINISH IS NOT A WAITING LABEL — card
+    1734, and it is the arm above's blind spot rather than its sibling.**
+
+    That arm holds the button inert until a quote exists, which is right. It has
+    nothing to say about an account where a quote is never coming: the pane
+    offers only the rungs ABOVE this account's own, so with none, `selectedId`
+    is null, `previewPlanChange` never runs, `dueToday` stays null, and
+    `quoteReady` is false forever. The label then sat at *"Checking the
+    charge…"* permanently. Two ways in — the top rung, and the hidden rung
+    (#391, where `currentIndex` is -1).
+
+    ⚠ **AND THE PICKER ABOVE IT HAD THE SAME DEFECT POINTING THE OTHER WAY**,
+    which is why both are pinned here: it said *"No higher plan"* whenever
+    nothing was selected, so a FREE account read it for the beat the catalogue
+    was loading. Fixing one and not the other would have made the two disagree
+    during that beat, which is worse than either alone.
+  */
+  it("an account with no rung above its own is told so, by both the picker and the button (card 1734)", () => {
+    /* 1 · the two opposite causes of an empty ladder are told apart ONCE. */
+    expect(
+      source,
+      "the pane no longer distinguishes `the catalogue has not answered` from `there is"
+      + " nothing above you`. They are opposite facts and `options` is empty for both.",
+    ).toContain("const nothingAbove = laddered && options.length === 0;");
+    expect(
+      source,
+      "`laddered` no longer reads whether the catalogue has answered at all, so an unread"
+      + " plan list reads as a top-rung account.",
+    ).toContain("const laddered = Boolean(plans);");
+
+    /* 2 · ONE sentence, not two copies — the card's own requirement is that the
+       picker and the button agree, and two literals agree only until somebody
+       edits one of them. */
+    expect(
+      source,
+      "the `no higher plan` sentence is no longer a shared constant, so the picker and the"
+      + " button can drift into saying different things about the same account.",
+    ).toContain('const NO_HIGHER_PLAN = "No higher plan";');
+    expect(
+      (source.match(/NO_HIGHER_PLAN/g) ?? []).length,
+      "the shared sentence has fewer than its declaration plus two readers (the picker and"
+      + " the button) — one of the two surfaces has stopped using it.",
+    ).toBeGreaterThanOrEqual(3);
+    expect(
+      (source.match(/"No higher plan"/g) ?? []).length,
+      "a second literal copy of the sentence is back beside the constant.",
+    ).toBe(1);
+
+    /* 3 · and the button asks it BEFORE the quote, because `quoteReady` is
+       false in that state too and the first matching branch would otherwise be
+       the waiting one again. */
+    const label = source.slice(source.indexOf('{working\n'), source.indexOf("Checking the charge"));
+    expect(
+      label,
+      "the button's label no longer answers `nothing to quote` before `still quoting`, so"
+      + " the permanent `Checking the charge…` is back: `quoteReady` is false in both"
+      + " states and the first matching branch wins.",
+    ).toContain("nothingAbove");
+  });
+
+  /*
+    ⚠ **THE RENEWAL LINE STATES NO PRORATION BASIS UNTIL STRIPE HAS QUOTED ONE
+    — card 1730, and it is the arm above's subject one sentence over.**
+
+    The arm above stops a CHARGE being named before it is known; this stops the
+    BASIS for that charge being named before it is known, which was the half
+    nobody had looked at. `cycle` is `alignToPreview(rawCycle, preview)`, and
+    before the preview answers that is `rawCycle` — cut from `status`, which is
+    the CREDIT cycle and not the period Stripe prorates over. Driven on the
+    yearly fixture: *"Prorated for the 8 days left in this cycle"* became
+    *"Prorated for the 343 days left in this cycle"* a second later.
+
+    ⚠ **IT IS DELIBERATELY NOT A REGEX OVER THE SENTENCE.** The prose is derived
+    from a not-yet-aligned object, so there is no token a walk could see — card
+    1725's own reader says as much about its own limit. What is checkable is the
+    GATE, so the gate is what is pinned, in three parts that cannot each be
+    satisfied by the others.
+  */
+  it("the proration sentence asks whether the cycle is Stripe's before it states one (card 1730)", () => {
+    /* 1 · the predicate is the module's, not a copy of its condition here. */
+    expect(
+      source,
+      "the renewal line no longer asks `alignsToPreview` — a condition retyped beside this"
+      + " surface drifts from the one `alignToPreview` actually branches on, which is the"
+      + " mirror working law 4 is about",
+    ).toContain("alignsToPreview(preview)");
+
+    /* 2 · and the sentence is BEHIND it, not merely near it. */
+    const line = source.slice(source.indexOf("Prorated for the ${chargeCycle.daysLeft}"));
+    expect(
+      source.slice(0, source.indexOf("Prorated for the ${chargeCycle.daysLeft}")),
+      "the proration sentence is no longer gated on the cycle being Stripe's. An unaligned"
+      + " cycle is the CREDIT cycle, so the sentence names a basis the charge was not"
+      + " computed from. Card 1730.",
+    ).toContain("chargeCycle && alignsToPreview(preview)");
+    expect(line.length, "the proration sentence is gone — re-read this arm rather than deleting it")
+      .toBeGreaterThan(0);
+
+    /* 3 · and a quote that is never coming gets no waiting sentence either —
+       the top rung and the hidden rung both leave `selectedId` null, so the
+       preview never runs and *"working out"* would be a permanent claim. */
+    expect(
+      source,
+      "the held sentence is no longer gated on a quote actually being on its way, so an"
+      + " account with no rung above its own reads `working out` forever. Card 1730.",
+    ).toContain("const quoteComing = quoteEnabled && !previewFailed;");
+    expect(
+      source,
+      "the preview query and the renewal line no longer read ONE fact about whether a quote"
+      + " is coming. Card 1730.",
+    ).toContain("{ enabled: quoteEnabled }");
+  });
 });

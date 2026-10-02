@@ -44,12 +44,28 @@ vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
  * decline to claim anything — an em dash in the figure's own slot, which is
  * what `BoardHeader`, `UserCard` and `StudioSlimHeader` already draw.
  *
+ * ⚠ **WHICH OF THE TWO THE SURFACE DRAWS IS NOT A TASTE QUESTION, AND #1727
+ * SETTLED IT ON THE HOUSE'S OWN PRECEDENT.** A figure that owns its own SLOT
+ * draws an **em dash**, so nothing below it moves when the real number lands —
+ * the Add-credits figure, `BoardHeader`, `UserCard`, and the Sign modal's cost
+ * line, whose `.dpc-modal__cost + .dpc-modal__actions` rule means an omitted
+ * element would walk the buttons up the card and back down. A price that is a
+ * **CLAUSE inside a sentence** is OMITTED instead, because an em dash there
+ * reads as a price of em-dash credits — the refine rail's `· N credits each`
+ * and the plan card's `$N/mo` entry, which is #1703's own
+ * `a sentence renders nothing` convention and what the `up from` clause below
+ * already does.
+ *
  * ⚠ **THE CREDIT-GRANT NOUNS ARE NOT IN THIS BAN AND THAT IS A STATED LIMIT,
  * NOT AN OVERSIGHT.** `allowance`, `earned`, `reward` and `creditsAwarded` are
  * figures a customer reads and three of them are defaulted to zero today
  * (`features/settings/ReferralBlock.tsx`, `features/settings/AccountSurfaces.tsx`).
  * They are a third noun group with their own surfaces and their own frames, and
- * they are carded rather than swept in here — see `DECLARED` below.
+ * they are carded rather than swept in here — **#1727**, which fixed the price
+ * family and left this group named. (`allowance`'s own zero is read by
+ * `allowance > 0`, so it quotes nothing today; the referral three are the live
+ * remainder.) Nothing about them is in `DECLARED`, because the regex cannot see
+ * them — the card is the only record, which is why it is named here.
  *
  * ⚠ **AND THE FLOOR IS THE SAME ONE #1703 STATED: this is the measured IDIOM,
  * not a proof of the property.** A surface can still reach a rendered zero
@@ -67,9 +83,17 @@ const CLIENT_SRC = path.resolve(__dirname, "..", "client", "src");
  *
  * `?? null` — the repair — is not matched, and neither is a `0` that is a real
  * literal elsewhere on the line.
+ *
+ * ⚠ **THE OPTIONAL `)` IS NOT COSMETIC — IT WAS A MEASURED HOLE (#1727).** A
+ * chained fallback is routinely parenthesised before its default
+ * (`(a ? x : y) ?? 0`), and `\s*` does not match a bracket, so the reader walked
+ * straight past one. Measured over the 415 files it reads, the night it was
+ * widened: **exactly one** new offence — `CastingSheet.tsx`'s own roll/follow
+ * `price`, declared below. One site is the whole cost of the widening, which is
+ * why it was widened rather than written down as a floor nobody acts on.
  */
 const MONEY_DEFAULTED_TO_ZERO =
-  /(\w*(?:charge|price|cost|amount|due|fee|refund|cents)\w*)\s*(?:\?\?|\|\|)\s*0\b/i;
+  /(\w*(?:charge|price|cost|amount|due|fee|refund|cents)\w*)\s*\)?\s*(?:\?\?|\|\|)\s*0\b/i;
 
 /**
  * ⚠ **THE MEASURED REMAINDER, AND IT ONLY SHRINKS.**
@@ -98,8 +122,19 @@ const DECLARED: ReadonlyArray<{
   readonly symbol: string;
   readonly verdict: "safe" | "debt";
   readonly why: string;
-  /** For `safe`: the verbatim gate the exemption rests on, held by its own arm. */
-  readonly gate?: string;
+  /**
+   * For `safe`: the verbatim gate(s) the exemption rests on, each held by the
+   * arm below.
+   *
+   * ⚠ **SEVERAL, BECAUSE A KEY IS `file::symbol` AND A FILE CAN REACH ONE
+   * IDENTIFIER THREE TIMES BEHIND THREE DIFFERENT GATES — #1727.** The dialog
+   * below is exactly that: one `cost`, a per-row button and a total, gated by a
+   * `canRefresh` predicate and by a filter. One entry can hold one key, so an
+   * exemption that could only name ONE gate would have left the other two
+   * described in prose and checked by nothing — which is the half of an
+   * exemption that rots.
+   */
+  readonly gate?: readonly string[];
 }> = [
   {
     file: "features/billing/AddCreditsModal.tsx",
@@ -112,7 +147,7 @@ const DECLARED: ReadonlyArray<{
       + " solely when the figure is above zero — so an unread catalogue omits the"
       + " clause rather than quoting a price of nothing, which is #1703's own"
       + " `a sentence renders nothing` convention.",
-    gate: "currentPrice > 0",
+    gate: ["currentPrice > 0"],
   },
   {
     file: "pages/CastingSheet.tsx",
@@ -121,7 +156,7 @@ const DECLARED: ReadonlyArray<{
     why:
       "The per-slice figure is converted to `undefined` before it travels, so a"
       + " zero draws no price at all rather than a price of zero.",
-    gate: "const retryPrice = sliceCredits > 0 ? sliceCredits : undefined;",
+    gate: ["const retryPrice = sliceCredits > 0 ? sliceCredits : undefined;"],
   },
   {
     file: "features/studio/components/CastModelModal.tsx",
@@ -131,37 +166,46 @@ const DECLARED: ReadonlyArray<{
       "Not a figure on its way to a customer: the `?? 0` feeds a `> 0` predicate"
       + " that decides whether a tier generates at all. An unread catalogue makes"
       + " it false, which draws no claim about money either way.",
-    gate: "(tiers?.[tier]?.cost ?? 0) > 0",
+    gate: ["(tiers?.[tier]?.cost ?? 0) > 0"],
+  },
+  {
+    file: "pages/CastingSheet.tsx",
+    symbol: "rollPriceCredits",
+    verdict: "safe",
+    why:
+      "The dock's roll/follow price, and its zero is DELIBERATE and read as a"
+      + " third state rather than as a figure: the cost line draws only under"
+      + " `price ? (`, so a zero holds the line back. It is the same promise the"
+      + " #1727 sites now keep, written the other way round — and the docblock"
+      + " above it records why it is not simply `null` (until the roll query"
+      + " resolves the sheet cannot know whether it is quoting a Roll or a"
+      + " Follow, and a price that CHANGES under the cursor is worse than one"
+      + " that arrives a moment late).",
+    gate: ["{price ? ("],
   },
   {
     file: "features/casting/components/PackageHealthDialog.tsx",
     symbol: "cost",
-    verdict: "debt",
+    verdict: "safe",
     why:
-      "#1727 — three sites, and all three put the figure on a PAID BUTTON:"
-      + " `Refresh all · 0 credits` and `Preview · 0 credits` while the plan"
-      + " query is in flight.",
-  },
-  {
-    file: "features/settings/AccountSurfaces.tsx",
-    symbol: "price",
-    verdict: "debt",
-    why:
-      "#1727 — `planPriceInCents` reaches the settings and billing panes, so a"
-      + " paying customer reads their plan as costing nothing for the beat"
-      + " `getStatus` is in flight. #1703 fixed `balance` on the line beside it.",
-  },
-  {
-    file: "pages/CastingSheet.tsx",
-    symbol: "signPriceCredits",
-    verdict: "debt",
-    why: "#1727 — the Sign price, on the paid button, before `config` answers.",
-  },
-  {
-    file: "pages/CastingSheet.tsx",
-    symbol: "refinePriceCredits",
-    verdict: "debt",
-    why: "#1727 — the Refine price, on the paid button, before `config` answers.",
+      "⚠ #1727 FILED THESE THREE AS DEBTS AND THE CODE SAYS OTHERWISE — read at"
+      + " the bytes, the zero cannot be rendered. Both per-row sites sit inside"
+      + " `canRefresh ? (…)`, and `canRefresh` ends `&& plan?.refusal === null`,"
+      + " which is FALSE when `plan` is undefined — so the button does not exist"
+      + " until the plan has answered. The total is reduced over `actionable`,"
+      + " whose filter already requires `!!plan`, and all three of ITS readers"
+      + " are gated on `actionable.length` being above 0 or 1 — which is 0 while"
+      + " the plan is in flight, because the filter drops every slot. And `cost`"
+      + " is a REQUIRED `number` on both row types (`RefreshSlotInfo` and"
+      + " `EvidencePackagePlanSlot`), so the `?? 0` has no reachable input at"
+      + " all. A genuine `0` here is a genuinely free action, which is a"
+      + " different and correct sentence.",
+    gate: [
+      ") && plan?.refusal === null;",
+      "return !!plan && plan.refusal === null && !refreshingSet.has(slot.angle)",
+      "actionable.length > 0",
+      "actionable.length > 1",
+    ],
   },
 ];
 
@@ -291,18 +335,70 @@ describe("a charge nobody has read yet is not a charge of zero (#1725)", () => {
    * exemption the same way, and the reason is the same: `spendWindowCopy` put a
    * guarded thing and an unguarded thing on one line and no review caught it.)
    */
-  it("every safe verdict still rests on the gate it names", () => {
+  it("every safe verdict still rests on every gate it names", () => {
     for (const entry of DECLARED) {
       if (entry.verdict !== "safe" || !entry.gate) continue;
       const source = readListedSource(path.join(CLIENT_SRC, entry.file));
       expect(source, `${entry.file} is gone — re-read the exemption, do not delete the arm`).not.toBeNull();
-      expect(
-        withoutComments(source ?? ""),
-        `${entry.file} no longer carries the gate that makes its \`${entry.symbol}\` default`
-        + ` safe, so that default is now a loading zero on a money surface. Either restore`
-        + ` the gate or fix the default and drop the exemption. #1725.`,
-      ).toContain(entry.gate);
+      const code = withoutComments(source ?? "");
+      for (const gate of entry.gate) {
+        expect(
+          code,
+          `${entry.file} no longer carries the gate \`${gate}\` that makes its`
+          + ` \`${entry.symbol}\` default safe, so that default is now a loading zero on a`
+          + ` money surface. Either restore the gate or fix the default and drop the`
+          + ` exemption. #1725.`,
+        ).toContain(gate);
+      }
     }
+  });
+
+  /**
+   * ⚠ **THE OTHER WAY TO REOPEN A REPAIRED SITE, AND THE BAN ABOVE CANNOT SEE
+   * IT — #1727.** Deleting a `debt` entry proves a `?? 0` is gone; it proves
+   * nothing about what the surface then DOES with the `null`. Format it anyway
+   * and `formatCredits(displayPrice(null as never))` renders `0`, so the
+   * customer is back where they started with a green ban.
+   *
+   * So each of the three repairs is held at its own declining branch. These are
+   * deliberately FILE-SPECIFIC text arms rather than a widened walk, for the
+   * reason #1725's own last arm gives: "a money-named identifier whose render
+   * declines when it is null" is not a shape a line-wise reader can judge.
+   */
+  it("the three #1727 surfaces each decline to name a price they have not been told", () => {
+    const read = (...parts: string[]) =>
+      withoutComments(readListedSource(path.join(CLIENT_SRC, ...parts)) ?? "");
+
+    expect(
+      read("pages", "CastingSheet.tsx"),
+      "the Sign price is defaulted again. `config` races `getRoll` on mount and can fail"
+      + " outright, so a zero here reaches the Sign button. #1727.",
+    ).toContain("const signPrice = config.data?.signPriceCredits ?? null;");
+    expect(
+      read("pages", "CastingSheet.tsx"),
+      "the Refine price is defaulted again — `0 credits each` beside a box that spends"
+      + " 1,750 a go. #1727.",
+    ).toContain("const refinePrice = config.data?.refinePriceCredits ?? null;");
+
+    expect(
+      read("features", "castingV2", "components", "SignConfirm.tsx"),
+      "the Sign modal formats its price without first asking whether it has one, so an"
+      + " unread price renders as `~ 0 credits` over an 8,500-credit button. The slot"
+      + " must stay (the actions' top margin leans on it) and the claim must go. #1727.",
+    ).toContain("priceCredits === null");
+    expect(
+      read("features", "castingV2", "components", "RefinePanel.tsx"),
+      "the refine rail states its per-ask price without first asking whether it has one."
+      + " #1727.",
+    ).toContain("priceCredits === null");
+
+    expect(
+      read("features", "settings", "sections", "BillingSection.tsx"),
+      "the plan card quotes a monthly price, or calls it `No charge`, before `getStatus`"
+      + " has answered — and that query is gated on the modal being open, so it is in"
+      + " flight for the first paint of every single open. A paying customer read their"
+      + " own plan as free. #1727.",
+    ).toContain("planPriceInCents === null");
   });
 
   /**

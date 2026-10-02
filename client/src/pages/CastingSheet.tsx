@@ -1063,8 +1063,28 @@ export default function CastingSheet() {
       : (standingFollowId !== null
         ? config.data?.followPriceCredits
         : config.data?.rollPriceCredits) ?? 0;
-  const signPrice = config.data?.signPriceCredits ?? 0;
-  const refinePrice = config.data?.refinePriceCredits ?? 0;
+  /*
+    ⚠ **`null` UNTIL THE SETTINGS ANSWER, NOT ZERO — #1727, and both of these
+    reach a PAID BUTTON.** `config` and `getRoll` are two unconditional queries
+    racing on mount (`getRoll` is gated on the roll id alone, `:516`), so the
+    sheet can be live before the prices are read — and a config query that
+    FAILS leaves them unread for the whole visit while the candidates, the Sign
+    button and the refine rail all work. Under `?? 0` that was `~ 0 credits` on
+    Sign and `0 credits each` on the rail: a stated price of nothing on the two
+    surfaces a customer presses to spend.
+
+    `null` is the only way to say *we have not been told yet*, and the two
+    consumers decline accordingly — the Sign modal draws an em dash in the
+    figure's own slot so nothing below it moves, and the rail's sentence omits
+    its price clause rather than quoting a price of nothing (#1703's
+    `a sentence renders nothing` convention).
+
+    The `price` above is NOT this shape and is deliberately left alone: its
+    zero is read by `price ? …` and means *the cost line waits*, which the
+    comment above it records.
+  */
+  const signPrice = config.data?.signPriceCredits ?? null;
+  const refinePrice = config.data?.refinePriceCredits ?? null;
   /*
     ONE CANDIDATE'S SHARE OF THIS ROLL'S OWN PRICE — read twice below, written
     once (working law 4).

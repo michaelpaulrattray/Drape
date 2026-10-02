@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { PLAN_TIERS } from "../../../../drizzle/schema";
 import { OFFERED_PLAN_ORDER } from "../../../../server/stripe/stripeProducts";
 import {
+  alignsToPreview,
   alignToPreview,
   annualPrice,
   creditsPerDollar,
@@ -169,6 +170,64 @@ describe("the four constants and what is derived from them", () => {
     /* With no preview, the client's own reading stands untouched. */
     expect(alignToPreview(cycleOf(), null)).toEqual(cycleOf());
     expect(alignToPreview(cycleOf(), { totalDays: 0 })).toEqual(cycleOf());
+  });
+
+  /*
+    ⚠ **AND A CALLER CAN NOW ASK WHETHER IT ALIGNED — #1730.** The two returns
+    above are indistinguishable at the result: a cycle Stripe never spoke about
+    and one Stripe happened to agree with are the same object. The renewal line
+    beside the charge needs the difference, because an unaligned cycle is the
+    CREDIT cycle and the sentence claims to describe the proration — it said
+    *"Prorated for the 8 days left in this cycle"* and became *"343 days"* a
+    second later on the yearly fixture.
+
+    Held HERE rather than at the surface so the predicate and the branch cannot
+    drift: `alignToPreview` calls this, so a change to one is a change to both.
+  */
+  it("says whether the preview had anything to align to", () => {
+    /* The positive half first: every input the function actually re-cuts on. */
+    expect(alignsToPreview({ daysRemaining: 18, totalDays: 30 })).toBe(true);
+    expect(alignsToPreview({ daysRemaining: 0, totalDays: 365 })).toBe(true);
+    expect(alignsToPreview({ totalDays: 1 })).toBe(true);
+
+    /* And the three ways there is nothing to align to. */
+    expect(alignsToPreview(null)).toBe(false);
+    expect(alignsToPreview(undefined)).toBe(false);
+    expect(alignsToPreview({ totalDays: 0 })).toBe(false);
+
+    /*
+      ⚠ **THE ARM THAT MAKES THE PAIR HONEST**: the predicate agrees with the
+      function at every one of those inputs. Without it the two could part — the
+      sentence declining on a cycle that WAS aligned, or stating a basis on one
+      that was not — which is exactly the shape a surface-side copy of the
+      condition would eventually take.
+    */
+    const base = cycleOf();
+    for (const preview of [
+      { daysRemaining: 18, totalDays: 30 },
+      { daysRemaining: 0, totalDays: 365 },
+      { totalDays: 1 },
+      { totalDays: 0 },
+      null,
+      undefined,
+    ] as const) {
+      const moved = alignToPreview(base, preview);
+      const reCut = moved.cycleLength !== base.cycleLength || moved.daysLeft !== base.daysLeft;
+      /* ⚠ The equivalence below is only a reading while every ALIGNING fixture
+         actually moves the base — a fixture that happened to match it would
+         make this arm vacuous rather than red. Said out loud, not assumed. */
+      if (alignsToPreview(preview)) {
+        expect(
+          reCut,
+          `the ${JSON.stringify(preview)} fixture no longer differs from the base cycle, so`
+          + " this arm cannot tell an alignment from a no-op — change the fixture, not the arm",
+        ).toBe(true);
+      }
+      expect(
+        alignsToPreview(preview),
+        `the predicate and the re-cut disagree about ${JSON.stringify(preview)}`,
+      ).toBe(reCut);
+    }
   });
 
   it("keeps the proration factor inside [0, 1] whatever the cycle says", () => {

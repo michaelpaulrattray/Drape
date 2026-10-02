@@ -21457,6 +21457,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/casting/atomicCredits.ts",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/casting/backViewGate.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
@@ -22199,6 +22204,11 @@
     {
       "from": "module:server/casting/evidence/evidencePackageExecution.ts",
       "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/evidence/evidencePackageExecution.ts",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -23603,6 +23613,11 @@
     },
     {
       "from": "module:server/casting/mintPackage.ts",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/mintPackage.ts",
       "to": "module:shared/modelLifecycle.ts",
       "kind": "imports"
     },
@@ -23874,6 +23889,11 @@
     {
       "from": "module:server/casting/refreshSlots.ts",
       "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/refreshSlots.ts",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -27368,6 +27388,11 @@
     },
     {
       "from": "module:server/castingV2/refineReask.ts",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineReask.ts",
       "to": "module:shared/inkPlacementVocabulary.ts",
       "kind": "imports"
     },
@@ -28008,6 +28033,11 @@
     },
     {
       "from": "module:server/castingV2/refineService.ts",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
       "to": "module:shared/inkCutRoute.ts",
       "kind": "imports"
     },
@@ -28392,6 +28422,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/retryService.ts",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/rollEngine.ts",
       "to": "module:server/_core/env.ts",
       "kind": "imports"
@@ -28644,6 +28679,11 @@
     {
       "from": "module:server/castingV2/rollService.ts",
       "to": "module:shared/castStyles.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollService.ts",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -28939,6 +28979,11 @@
     {
       "from": "module:server/castingV2/signService.ts",
       "to": "module:shared/bodyAnchorRegions.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signService.ts",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -29239,6 +29284,11 @@
     {
       "from": "module:server/castingV2/viewRetryService.ts",
       "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryService.ts",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -31223,6 +31273,11 @@
     },
     {
       "from": "module:server/lib/boardOps.ts",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/lib/boardOps.ts",
       "to": "module:shared/modelLifecycle.ts",
       "kind": "imports"
     },
@@ -32054,6 +32109,11 @@
     {
       "from": "module:server/routes/billing.ts",
       "to": "module:shared/annualBilling.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/billing.ts",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -33124,6 +33184,11 @@
     {
       "from": "module:server/routes/generation/castingImaging.ts",
       "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/generation/castingImaging.ts",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -34694,6 +34759,11 @@
     {
       "from": "module:shared/refreshPolicy.ts",
       "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/refundCopy.ts",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     }
   ],
@@ -36526,17 +36596,17 @@
       "message": "Names 2 of HairColourSection's 3 fields (server/castingV2/hairColourFromReference.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:753",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:754",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:753",
+      "subject": "server/castingV2/refineService.ts:754",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:929",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:930",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:929",
+      "subject": "server/castingV2/refineService.ts:930",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
@@ -36561,24 +36631,24 @@
       "message": "Names 7 of LockFacts's 7 fields (server/castingV2/castingIntent.ts), 7 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:1473",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:1474",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:1473",
+      "subject": "server/castingV2/rollService.ts:1474",
       "message": "Names 2 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:271",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:272",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:271",
+      "subject": "server/castingV2/rollService.ts:272",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:317",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:318",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:317",
+      "subject": "server/castingV2/rollService.ts:318",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     }
   ]

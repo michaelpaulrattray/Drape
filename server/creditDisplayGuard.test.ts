@@ -106,8 +106,29 @@ const repoRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
  * that function, a FRAME count, and a RATE — each argued in
  * `creditDisplaySites.ts`'s own header. So this ratchet bottoms out above zero,
  * and a later slice reporting 0 has broken something rather than finished it.
+ *
+ * ✅ **42 → 19 (#1600 slice 3, the server routing) — AND THE RATCHET IS NOW AT
+ * ITS FLOOR, which is why the shape of the contract changes with this number.**
+ * 22 occurrences routed, 9 corrected in the reader, and **3 ADDED that no rule
+ * could previously see** — all three in `atomicCredits.ts`, the shared charge
+ * wrapper, called `amount`. **Not one row left is work**: every row carries a
+ * `stays` reason, so the question this constant used to answer — *how much is
+ * left to do* — is answered instead by `stillToRoute` below, which must be ZERO.
+ * A bare count could never tell a remaining site from a declared one, and the
+ * five client rows are the proof that it had already stopped being able to.
+ *
+ * ⚠ **IT ROSE AND FELL IN THE SAME COMMIT, WHICH IS WHY THE NUMBER ALONE IS NO
+ * LONGER THE CONTRACT.** 42 → 16 by routing, 16 → 22 when `amount$` joined rule
+ * 2's vocabulary and found eight more, 22 → 19 once the three real ones were
+ * routed and the two dollar figures ruled out. A reader that reaches further
+ * raises this count while the product gets BETTER, and a reader that quietly
+ * stops parsing lowers it to zero.
+ *
+ * ⚠ **A RISE IS STILL A DEFECT, and the number is still here for the reason it
+ * always was**: an excess site reddens the negative control, and the ratchet
+ * catches the other direction — a row quietly re-admitted with a bigger count.
  */
-const OCCURRENCES_CEILING = 42;
+const OCCURRENCES_CEILING = 19;
 
 const censusedOccurrences = UNROUTED.reduce((total, row) => total + row.count, 0);
 
@@ -467,6 +488,141 @@ describe("the precision arms — correct code must not be refused", () => {
     );
     expect(sites).toEqual([]);
   });
+
+  /*
+    #1600 SLICE 3 — THE NAME IS READ AS A camelCase TAIL NOW, AND THESE THREE
+    ARE WHY. All three sat in the census for two days as rows nobody could ever
+    route: an id, a word and a dollar amount, each indicted because the sentence
+    around it says "credits" somewhere else. `NOT_AN_AMOUNT` already held every
+    word; it was matched EXACTLY, and on a property name only.
+
+    ⚠ The arm that matters is the LAST of the four, not the first three. A rule
+    that silences a sentence's non-numbers is only safe if the sentence's real
+    credit number still reddens — otherwise the repair for a false positive is a
+    false negative, which is the direction that ships a wrong number.
+  */
+  it("⚠ passes `refundResult.refundId` — a property whose name ENDS in a word that is never an amount", () => {
+    const sites = creditSitesIn(
+      "server/lib/adminActions/fixture.ts",
+      "export const f = (refundResult: { refundId: string }) =>\n"
+      + "  `Stripe refund ${refundResult.refundId}: 3 credits deducted.`;\n",
+    );
+    expect(sites).toEqual([]);
+  });
+
+  it("⚠ passes a BARE `refundType` — the same reading applied to an identifier, not only a property", () => {
+    const sites = creditSitesIn(
+      "server/lib/adminActions/fixture.ts",
+      "export const f = (refundType: string) => `A ${refundType} refund moved 3 credits.`;\n",
+    );
+    expect(sites).toEqual([]);
+  });
+
+  it("⚠ passes a figure in CENTS, which is money and not credits", () => {
+    const sites = creditSitesIn(
+      "server/lib/adminActions/fixture.ts",
+      "export const f = (refundAmountCents: number) =>\n"
+      + "  `Refund of $${(refundAmountCents / 100).toFixed(2)} issued, 3 credits deducted.`;\n",
+    );
+    expect(sites).toEqual([]);
+  });
+
+  it("⚠ THE ARM THAT GUARDS THE THREE ABOVE — the real sentence's CREDIT number still reddens, and it is the only hole that does", () => {
+    /* `changeRequestActions.ts:368`, the sentence those three rows came from:
+       four interpolations, of which exactly one is a quantity of credits. */
+    const sites = creditSitesIn(
+      "server/lib/adminActions/fixture.ts",
+      "export const f = (refundAmountCents: number, refundType: string, creditsToDeduct: number, refundResult: { refundId: string }) =>\n"
+      + "  `Stripe refund of $${(refundAmountCents / 100).toFixed(2)} issued (${refundType}). "
+      + "${creditsToDeduct} credits deducted. Refund ID: ${refundResult.refundId}`;\n",
+    );
+    expect(sites.map((site) => site.expression)).toEqual(["creditsToDeduct"]);
+  });
+
+  it("⚠ THE SLICE-3 FIND — a credit figure called `amount`, in the shared charge wrapper", () => {
+    /*
+      `atomicCredits.ts`'s `refundTruth`, which `withAtomicCredits` throws for
+      boards, mint, the legacy imaging lane and rolls. It quoted the LEDGER
+      figure and sat in no census row for as long as this guard has existed,
+      because rule 2's vocabulary had `credit`, `balance`, `cost` and `refund`
+      and this value is called `amount`. Third instance of one class, after
+      `cost` (#1649) and `delta` (#1676).
+    */
+    const sites = creditSitesIn(
+      "server/casting/fixture.ts",
+      "export const f = (outcome: { amount: number }) => `${outcome.amount} credits were refunded.`;\n",
+    );
+    expect(sites.map((site) => site.expression)).toEqual(["outcome.amount"]);
+  });
+
+  it("⚠ and the bare identifier too — the refusal `withAtomicCredits` throws", () => {
+    const sites = creditSitesIn(
+      "server/casting/fixture.ts",
+      "export const f = (amount: number) => `Insufficient credits. Need ${amount} credits.`;\n",
+    );
+    expect(sites.map((site) => site.expression)).toEqual(["amount"]);
+  });
+
+  it("⚠ `amount$` IS ANCHORED AT THE END, so a COMPOUND amount is not a credit name", () => {
+    /* The anchor is the whole reason the widening is safe: an unanchored
+       `amount` would read every `amountDue`, `amountPaid` and `amountCents` in
+       the billing tree as credits.
+
+       ⚠ **THIS ARM READ `amountCents` FIRST AND SURVIVED ITS OWN SABOTAGE
+       GREEN.** Removing the anchor changed nothing, because the `Cents` clause
+       in `cannotBeAnAmount` caught that fixture anyway — so the arm proved the
+       clause, not the anchor it is named after. A name NO other clause can reach
+       is what makes the anchor load-bearing. Memory
+       `surviving-sabotage-may-be-inert`, found on this guard's own arm. */
+    const sites = creditSitesIn(
+      "server/stripe/fixture.ts",
+      "export const f = (amountDue: number) => `${amountDue} credits`;\n",
+    );
+    expect(sites).toEqual([]);
+  });
+
+  it("⚠ and the `Cents` clause is what keeps a cents value out when its NAME says price", () => {
+    /* `priceInCents` matches rule 2's vocabulary on `price`, and carries no
+       `toFixed`, so neither the anchor nor the decimal rule reaches it. This is
+       the arm that makes the `Cents` clause load-bearing rather than a third
+       spelling of the other two — without it, sabotage case 6 (drop the clause)
+       survives GREEN, which is how the redundancy was found. */
+    const sites = creditSitesIn(
+      "server/stripe/fixture.ts",
+      "export const f = (priceInCents: number) => `${priceInCents} credits`;\n",
+    );
+    expect(sites).toEqual([]);
+  });
+
+  it("⚠ passes a DOLLAR figure in a credit sentence — the ledger is integer-only, so decimals are never credits", () => {
+    /* `webhooks.ts:1401`, reachable only once `amount$` was admitted. Two sites
+       in the real tree, and they are the measured price of that widening. */
+    const sites = creditSitesIn(
+      "server/stripe/fixture.ts",
+      "export const f = (amount: number, currency: string) =>\n"
+      + "  `Credits frozen: chargeback — $${(amount / 100).toFixed(2)} ${currency.toUpperCase()}`;\n",
+    );
+    expect(sites).toEqual([]);
+  });
+
+  it("⚠ CONTROL — the decimal rule does not excuse the WHOLE sentence, only the decimal hole", () => {
+    const sites = creditSitesIn(
+      "server/stripe/fixture.ts",
+      "export const f = (amount: number, creditsRestored: number) =>\n"
+      + "  `Refund of $${(amount / 100).toFixed(2)} failed. ${creditsRestored.toLocaleString()} credits restored.`;\n",
+    );
+    expect(sites.map((site) => site.expression)).toEqual(["creditsRestored.toLocaleString()"]);
+  });
+
+  it("⚠ CONTROL — a name whose tail merely LOOKS like one of the words is still read, because the match is case-sensitive", () => {
+    /* `paid` ends in a lowercase "id"; `Id` is the tail the rule reads. Without
+       the case, every `…paid` and `…valid` credit figure would go silent. */
+    const sites = creditSitesIn(
+      "server/stripe/fixture.ts",
+      "export const f = (creditsPaid: number) => `${creditsPaid.toLocaleString()} credits paid`;\n",
+    );
+    expect(sites.map((site) => site.expression)).toEqual(["creditsPaid.toLocaleString()"]);
+  });
 });
 
 /*
@@ -691,6 +847,32 @@ describe("the census is held to its contract", () => {
      slice that lands work and leaves the number above it has bought the
      product nothing the next slice can measure from. Equality is the only
      honest state at rest — the census IS the budget. */
+  it("⚠ holds NOTHING still to route — the routing is finished, and that is a checkable fact", () => {
+    /*
+      THE CARD'S OWN DONE-WHEN 1, AS AN ASSERTION RATHER THAN A HEADER.
+      Until slice 3 the list meant "still to route" by convention, and the five
+      client rows that were never work had their reasons in prose. A reason in
+      the DATA lets the suite say the difference out loud: a `stays: null` row is
+      outstanding work, and there are none.
+    */
+    const stillToRoute = UNROUTED.filter((row) => row.stays === null);
+    expect(stillToRoute.map((row) => `${row.file} ${row.expression}`)).toEqual([]);
+  });
+
+  it("⚠ holds every row to a REASON, so a row can never be parked silently", () => {
+    /*
+      The failure this refuses is the one the census was built against: a site
+      nobody wants to route, added as a row, and the list reading as progress.
+      A reason is prose and cannot be checked for truth — what CAN be checked is
+      that somebody wrote one, and the stale-row arm below checks the site is
+      still really there.
+    */
+    const unexplained = UNROUTED.filter(
+      (row) => row.stays !== null && row.stays.trim().length < 20,
+    );
+    expect(unexplained.map((row) => `${row.file} ${row.expression}`)).toEqual([]);
+  });
+
   it("⚠ keeps the ceiling AT the census, so a landed slice cannot leave slack behind", () => {
     expect(censusedOccurrences).toBe(OCCURRENCES_CEILING);
   });

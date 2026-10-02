@@ -226,7 +226,14 @@ export function RefinePanel({
   originalImageUrl: string | null;
   /** The master's small copy — the rail draws it where a version has one. */
   originalThumbUrl?: string | null;
-  priceCredits: number;
+  /**
+   * ⚠ **`null` IS "NOT READ YET", NEVER "FREE" — #1727.** The sheet's settings
+   * query races the roll query on mount and can fail outright, so this arrives
+   * unread; under `?? 0` the rail's note read **`0 credits each`** beside a box
+   * that spends 1,750 a go. The price CLAUSE stands down when it is `null` —
+   * the sentence before it is complete and true on its own.
+   */
+  priceCredits: number | null;
   /** A refine is in flight — for this face or any other on the sheet. */
   busy: boolean;
   /**
@@ -469,6 +476,22 @@ export function RefinePanel({
   const duplicateOf = pending.find(
     (entry) => entry.instruction.trim().toLowerCase() === trimmed.toLowerCase() && trimmed,
   );
+  /*
+    ⚠ **WHAT A REFINE COSTS, OR NOTHING AT ALL — #1727.** `null` is "the sheet's
+    settings have not answered", which is a different fact from free, and under
+    `?? 0` the meta line below read `· 0 credits each` beside a box that spends
+    1,750 a go. It is a suffix on a sentence rather than a figure in a slot, so
+    it stands DOWN rather than drawing an em dash (#1703's convention).
+
+    Derived here rather than branched in the JSX on purpose, and the reason is
+    the guard's and not tidiness: `wardrobeEditCopy.test.ts` requires that
+    element to carry no `?` and no `&&`, because the retired garment cell was a
+    ternary over this very sentence. The capability claim stays unconditional;
+    only its price suffix moves.
+  */
+  const refinePriceClause = priceCredits === null
+    ? ""
+    : ` · ${formatCredits(displayPrice(priceCredits))} credits each`;
   /*
     THE SENTENCE THAT MADE THE SELECTED VERSION (fable-753 §2b).
 
@@ -1071,9 +1094,29 @@ export function RefinePanel({
         which is his: a retirement that quietly widens something is the same
         mistake as one that quietly narrows it.
       */}
+      {/*
+        ⚠ **THE PRICE CLAUSE GOES WHEN THERE IS NO PRICE (#1727), rather than
+        quoting one of nothing.** This is a sentence, not a figure in a slot, so
+        #1703's `a sentence renders nothing` convention applies — an em dash
+        here would read as a price of em-dash credits each. What is left is the
+        half that is true whatever the price is: what a refine may ask for.
+
+        ⚠ **AND IT IS COMPUTED ABOVE THE ELEMENT RATHER THAN BRANCHED INSIDE IT,
+        BECAUSE THE CAPABILITY SENTENCE MUST STAY UNCONDITIONAL.**
+        `wardrobeEditCopy.test.ts` bans a `?` or `&&` anywhere in this element,
+        and its reason is live: the retired garment cell was a ternary wrapping
+        this sentence, and the arm was widened to the whole element precisely
+        because a narrower one read from AFTER the `?` and stayed green through
+        the sabotage it existed for. A price suffix is not that shape — but the
+        arm cannot tell the two apart, and the answer to a blunt guard that is
+        right about its subject is to satisfy it rather than to loosen it. The
+        sentence below is a literal with no branch over it; only the suffix
+        varies, and `refinePriceClause` can say nothing except what the price
+        is (held by that suite's own new arm).
+      */}
       <p className="dpc-refine__note">
         Anything about them — not their clothes or the room
-          {" · "}{formatCredits(displayPrice(priceCredits))} credits each
+          {refinePriceClause}
       </p>
       <p className="dpc-refine__note">
         Or take something back — "undo", "remove the earrings" · free when you already have it

@@ -10,6 +10,7 @@
  * (balance + transaction rows + the duplicate rule) — not independent mocks.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { displayRefund, formatCredits } from "../../shared/creditDisplay";
 
 const ledger = vi.hoisted(() => {
   const state = {
@@ -196,7 +197,9 @@ describe("withAtomicCredits refund contract (review finding 1)", () => {
       withAtomicCredits({ userId: 1, amount: 350, description: "Model iteration", referenceId: "gen-77", toolKind: "image" as const }, async () => {
         throw new Error("engine down");
       }),
-    ).rejects.toMatchObject({ message: expect.stringContaining("350 credits were refunded") });
+    ).rejects.toMatchObject({
+      message: expect.stringContaining(`${formatCredits(displayRefund(350))} credits were refunded`),
+    });
 
     ledger.failNextAdd = true;
     await expect(
@@ -212,7 +215,18 @@ describe("withAtomicCredits refund contract (review finding 1)", () => {
 describe("shared refund copy helpers (client surfaces, final correction 1)", () => {
   it("branches on the recorded outcome — never an unconditional 'not charged'", async () => {
     const { refundOutcomeText, refundBadgeText, slotFailureMessage } = await import("../../shared/refundCopy");
-    expect(refundOutcomeText({ refunded: 300 })).toContain("300 credits refunded");
+    /*
+      ⚠ **IT SAID `300 credits refunded` UNTIL #1600 SLICE 3, AND THE SUBJECT
+      MOVED RATHER THAN DIED.** `refunded` is still the LEDGER figure every
+      caller hands it — that has not changed and must not — but the sentence now
+      quotes the display scale, because the balance beside it does. 300 ledger is
+      60 display. The expected figure is DERIVED through the helper rather than
+      typed as 60: a literal here would be a second copy of the scale, which is
+      the exact working-law-4 defect `shared/creditDisplay.ts` exists to prevent.
+    */
+    expect(refundOutcomeText({ refunded: 300 }))
+      .toContain(`${formatCredits(displayRefund(300))} credits refunded`);
+    expect(refundOutcomeText({ refunded: 300 })).not.toContain("300 credits");
     expect(refundOutcomeText({ refunded: 0, refundReference: "refund:slot-gen-9" })).toContain("quote refund:slot-gen-9");
     expect(refundOutcomeText({ refunded: 0 })).toContain("contact support");
     expect(refundBadgeText(300)).toBe("You weren't charged");
@@ -222,5 +236,23 @@ describe("shared refund copy helpers (client surfaces, final correction 1)", () 
     const noMarker = slotFailureMessage({ label: "Side profile", reason: "gate", refunded: 0, markerPersisted: false });
     expect(noMarker).not.toContain('"Retry"');
     expect(noMarker).toContain("couldn't be saved to the package");
+  });
+
+  it("⚠ never says a refund of ZERO landed — the one sentence a refund line cannot print", async () => {
+    /*
+      `displayRefund` floors, which is right: it never claims more credits came
+      back than did. Floored to 0 beside the "you weren't charged" promise it
+      would read *"0 credits refunded — you weren't charged"*, which is a
+      contradiction on a money surface. UNREACHABLE TODAY and driven anyway —
+      every refundable unit in the product is a multiple of 5 and
+      `server/creditPriceScale.test.ts` refuses a declared price that is not, so
+      this arm is what makes the backstop a fact rather than a comment.
+    */
+    const { refundOutcomeText } = await import("../../shared/refundCopy");
+    expect(displayRefund(3)).toBe(0);
+    const sentence = refundOutcomeText({ refunded: 3 });
+    expect(sentence).not.toContain("0 credits");
+    expect(sentence).toContain("Your credits were refunded");
+    expect(sentence).toContain("you weren't charged");
   });
 });
