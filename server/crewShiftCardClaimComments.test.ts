@@ -43,7 +43,7 @@ import {
   renderCardClaimRefusal,
   type CardComment,
 } from "../scripts/lib/cardClaimComments.mts";
-import { CREW_CLAIM_LIVE_MS, crewCardCommentFact } from "../shared/crewCardBuildState";
+import { CREW_CLAIM_LIVE_MS, crewCardClaimLine, crewCardCommentFact } from "../shared/crewCardBuildState";
 
 /*
   ⚠ THIS SUITE IS IN #548's POPULATION, THROUGH THE MODULE IT DRIVES. Every arm
@@ -500,6 +500,18 @@ describe("posting this seat's claim", () => {
   it("asks gh to comment on the card it was given, and nothing else", () => {
     expect(cardClaimPostArgs(1725, "CLAIMED — x, y"))
       .toEqual(["issue", "comment", "1725", "--body", "CLAIMED — x, y"]);
+  });
+
+  /*
+    ⚠ ONE SPELLING, NOT TWO — and this arm exists because the branch very nearly
+    shipped two. #1701 landed on main while this one was open: it declared the
+    three handback words once and built the board's readers from them, exactly so
+    a writer and a reader could not drift (the shape that left 0 of 5 refusals on
+    #1669 invisible). This module's `cardClaimBody` was a second literal of the
+    same line. It is an alias now, and the arm holds it there.
+  */
+  it("the writer's line IS the board's declared claim line, not a copy of it", () => {
+    expect(cardClaimBody(SEAT, AT)).toBe(crewCardClaimLine(SEAT, AT));
   });
 
   /*
