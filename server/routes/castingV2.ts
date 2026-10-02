@@ -139,7 +139,7 @@ import {
   listSessionSignedCastNames,
   listSignedCasts,
 } from "../db/castingV2Sign";
-import { listRunningViewRetryAngles } from "../db/castingV2ViewRetry";
+import { listRunningViewRetryAngles, listSpentFreeViewRetryAngles } from "../db/castingV2ViewRetry";
 import { discard, setKept, undo } from "../castingV2/candidateService";
 import { updateModel } from "../db/models";
 import {
@@ -2074,7 +2074,9 @@ export const castingV2Router = router({
       enforceRateLimit(ctx.user.id, RATE_LIMITS.castingRead);
       const model = await getOwnedCastByPublicId(ctx.user.id, input.castId);
       if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
-      const [assets, lineage, promisedAngles, sessionId, retryingAngles] = await Promise.all([
+      const [
+        assets, lineage, promisedAngles, sessionId, retryingAngles, freeRetrySpentAngles,
+      ] = await Promise.all([
         listCastAssets(ctx.user.id, model.id),
         getCastLineage(ctx.user.id, model),
         listCastPromisedAngles(ctx.user.id, model.id),
@@ -2091,6 +2093,21 @@ export const castingV2Router = router({
           left — none of which the client's own memory of a press can survive.
         */
         listRunningViewRetryAngles({
+          userId: ctx.user.id,
+          modelId: model.id,
+          castId: input.castId,
+        }),
+        /*
+          WHOSE ONE FREE TRY AGAIN IS ALREADY SPENT (#1601 item 4).
+
+          The same statement the retry entrance makes, for the same reason as the
+          read above it: an unchecked view's first ask is free and its second is
+          an ordinary paid ask, and the row's link must mean what the till will
+          do. Read here rather than inferred from the slot, because a free ask
+          does not change the slot — a second unchecked picture is still
+          unchecked, which is exactly how the free ask used to renew itself.
+        */
+        listSpentFreeViewRetryAngles({
           userId: ctx.user.id,
           modelId: model.id,
           castId: input.castId,
@@ -2120,6 +2137,7 @@ export const castingV2Router = router({
         lineage,
         promisedAngles,
         retryingAngles,
+        freeRetrySpentAngles,
         siblings,
         // Whether her sheet is still a place you can go (§G.6 protects the
         // candidates, not the session).

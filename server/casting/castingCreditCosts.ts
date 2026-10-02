@@ -240,11 +240,20 @@ export const CASTING_V2_REFINE_PRICE_CREDITS = 1750;
  * plus its own check, and the spec priced it to stay profitable in the case
  * where that check has to run twice.
  *
- * The FREE Try again is untouched by this constant and is a different fact
- * entirely: an UNCHECKED view's ask is free (his #1220 *"go with the free try
- * again"*), and `castSlotRetryOffer` returns 0 for it. Making that free ask
- * durable and once-only is item 4 of #1601 and is NOT built — today an
- * unchecked view can be asked again free more than once.
+ * The FREE Try again is a different fact entirely, and this constant is now
+ * BOTH of its prices. An UNCHECKED view's FIRST ask is free (his #1220 *"go
+ * with the free try again"*) and `castSlotRetryOffer` returns 0 for it; its
+ * SECOND ask is an ordinary paid ask at this number — his rule on #1601, *"the
+ * first Try again on an unchecked view is free, once; the second is paid"*.
+ *
+ * ⚠ **THIS PARAGRAPH SAID THE ONCE-ONLY RULE WAS NOT BUILT UNTIL #1601 ITEM 4,
+ * AND WHAT IT DESCRIBED WAS A FREE RENDER WITH NO CEILING.** The free branch was
+ * a pure function of the slot's state, and a free retry does not move that
+ * state: a view delivered unchecked whose retry also arrived unchecked is still
+ * unchecked. So the free ask renewed itself for as long as the conformance judge
+ * stayed unavailable. The fact the slot could not carry lives on the operation
+ * rows (`listSpentFreeViewRetryAngles`), which is where #1235 already proved a
+ * per-slot fact can be read without a column.
  *
  * Charge and refund are one number here: `viewRetryService` charges
  * `offer.priceCredits` and refunds the same figure, so conservation does not

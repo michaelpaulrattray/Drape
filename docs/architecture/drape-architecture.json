@@ -12843,6 +12843,10 @@
       "path": "server/castingV2/viewRetryBusy.test.ts"
     },
     {
+      "id": "test:server/castingV2/viewRetryFreeOnce.test.ts",
+      "path": "server/castingV2/viewRetryFreeOnce.test.ts"
+    },
+    {
       "id": "test:server/castingV2/viewRetryOffer.test.ts",
       "path": "server/castingV2/viewRetryOffer.test.ts"
     },
