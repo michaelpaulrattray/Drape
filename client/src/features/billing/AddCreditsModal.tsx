@@ -50,6 +50,21 @@
  *
  * ⚠ **The two repairs are one shape read twice**: #1730 asked WHETHER the
  * quote has spoken before quoting it, #1739 asks WHICH sentence may listen.
+ *
+ * ## ⚠ AND THE DELTA ITSELF WAS IN THE WRONG UNIT ON THE BOTTOM RUNG — #1761
+ *
+ * Every `+ N credits a month` here is a subtraction, and on the free rung the
+ * figure it subtracted is a ONE-TIME signup grant. So the pane's one headline
+ * number mixed units: a monthly allowance minus a one-off, printed as monthly.
+ * A free account read **"+ 11,300 credits a month"** where Starter's whole
+ * allowance is **14,000**.
+ *
+ * ⚠ **IT IS NOT THE THREE-STATE SHAPE THE EIGHT CARDS ABOVE ARE ABOUT.** Every
+ * figure involved had been read and none of them was null; the arithmetic was
+ * simply over two different kinds of number. `currentMonthlyCredits` below is
+ * the one baseline all three sentences take, and *monthly* is derived from the
+ * PRICE through `planLadder`'s `grantsMonthly` — the same declaration the plan
+ * cards' arrival word has used since #1607.
  */
 import { useMemo, useState } from "react";
 import { displayBalance, displaySpent, formatCredits } from "@shared/creditDisplay";
@@ -73,7 +88,7 @@ import {
   readBurn,
   readCycle,
 } from "@/features/settings/planMath";
-import { charactersFor, charactersPhrase } from "@/features/settings/planLadder";
+import { charactersFor, charactersPhrase, grantsMonthly } from "@/features/settings/planLadder";
 import { useCycleSpend } from "./useCycleSpend";
 
 /**
@@ -207,8 +222,17 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
        turning downgrades into a top-up offer. There is nothing to add from
        up there, so the honest answer is no options. */
     if (currentIndex < 0) return [];
-    const currentCredits =
-      plans.tiers[currentId as keyof typeof plans.tiers]?.monthlyCredits ?? 0;
+    /*
+      ⚠ **A THIRD COPY OF THE DELTA LIVED HERE AND NOTHING HAS EVER READ IT —
+      #1761.** The row carried `delta: entry.credits - currentCredits` beside a
+      `currentCredits` read for it alone, and the annotation on the empty-array
+      branch above does not even list the field: the delta is computed once
+      below, the option list does its own subtraction in the JSX, and a grep for
+      a per-row `delta` over this surface answers nothing. It is removed rather
+      than corrected — a mirror of a figure three lines of arithmetic away is
+      working law 4, and a WRONG mirror is what the next reader of this memo
+      would have copied.
+    */
     return plans.subscriptions
       .filter((entry) => order.indexOf(entry.id as string) > currentIndex)
       .map((entry) => ({
@@ -216,7 +240,6 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
         name: entry.name,
         credits: entry.credits,
         price: entry.priceInCents,
-        delta: entry.credits - currentCredits,
       }));
   }, [plans, currentId]);
 
@@ -381,10 +404,58 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
     currentId === null
       ? null
       : plans?.tiers[currentId as keyof typeof plans.tiers]?.price ?? null;
+  /*
+    ⚠ **WHAT THIS ACCOUNT ALREADY GETS EVERY MONTH — AND ON THE FREE RUNG THE
+    ANSWER IS NOTHING, WHICH IS NOT THE SAME AS 13,500 (#1761).**
+
+    `currentCredits` above is the rung's declared `monthlyCredits`, and on the
+    free rung that column is a **ONE-TIME signup grant** — its own declaration
+    in `drizzle/schema.ts` says so, verbatim: *"`monthlyCredits` is a ONE-TIME
+    signup grant on this rung and nothing else reads it as monthly"*. Every
+    `+ N credits a month` on this pane subtracted it from a real monthly
+    allowance and printed the difference as a monthly figure, so a free account
+    opening Add credits read **"+ 11,300 credits a month"** where Starter's
+    whole allowance is **14,000** — told it would get 2,700 fewer credits a
+    month than it actually would, on the one line the brief's §7.2 calls the
+    decision (*"name the DELTA, not the tier"*).
+
+    ⚠ **IT IS ONLY WRONG ON THE FREE RUNG, AND THE REPAIR IS A NO-OP ABOVE IT.**
+    Every paid rung's `monthlyCredits` really is monthly, so `grantsMonthly`
+    answers true and this is `currentCredits` unchanged — a Starter subscriber
+    reading the Pro option gets the same figure it got before. The free rung's
+    baseline is **0**, which makes the delta the target rung's own allowance,
+    and that figure is independently the one the ledger writes: the subscription
+    grant's own line is `amount: monthlyCredits` (`refreshMonthlyCredits`,
+    `server/db/billing.ts`), so the bullet below saying those credits *land on
+    your balance* now names the number the transaction will.
+
+    ⚠ **THE TEST IS THE PRICE, AND IT IS `planLadder`'s DECLARATION RATHER THAN
+    A SECOND COPY OF IT.** `creditsTail` has drawn the plan cards' arrival word
+    off the price since #1607 and for the same reason — a rung with nothing
+    recurring to charge has nothing recurring to grant, whatever it is next
+    called. Keying on `currentId === "free"` would be the fixed list his N3
+    principle rules out, and keying on it HERE while the cards key on the price
+    is the drift working law 4 is about.
+
+    `null` keeps the one meaning it has everywhere on this surface — the rung or
+    the catalogue is unread (#1747) — because the free rung's answer is a real
+    0 rather than an absence. The two states stay distinguishable, which is the
+    discipline eight cards on this pane have paid for (#1703, #1725, #1727,
+    #1730, #1741, #1747, #1749, #1755).
+  */
+  const currentMonthlyCredits =
+    currentCredits === null || currentPrice === null
+      ? null
+      : grantsMonthly(currentPrice)
+        ? currentCredits
+        : 0;
+
   /* A delta against an unknown allowance is a number with no meaning, not a
      zero — `null` so the sentences below drop rather than print `+ 0`. */
   const delta =
-    selected && currentCredits !== null ? selected.credits - currentCredits : null;
+    selected && currentMonthlyCredits !== null
+      ? selected.credits - currentMonthlyCredits
+      : null;
 
   /* A rate is only comparable against a plan we have actually been told about. */
   const rateComparable = currentPrice !== null && currentPrice > 0 && currentCredits !== null;
@@ -518,9 +589,24 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
     reason the phrase helper exists at all: the compare grid composed its own
     copy of the plural rule and printed `about 1 characters` (#1607, law 6).
     A second copy here would be the same mistake in the same feature.
+
+    ⚠ **AND IT IS THE MONTHLY BASELINE IT COUNTS, WHICH MAKES THE FREE RUNG
+    DECLINE RATHER THAN ANSWER (#1761).** The sentence this feeds is *"That is
+    about 5 finished characters **a month**, up from about 1"*, and off the raw
+    `monthlyCredits` that `up from` was a count of what the ONE-TIME signup
+    grant covers — a figure that arrives once, said inside a clause governed by
+    *a month*. On the free rung the baseline is 0, `charactersFor` answers 0, and
+    0 is falsy where the clause is drawn, so the sentence loses its comparison
+    and keeps its claim: a free account reads what the plan makes a month and is
+    told nothing false about what it has now.
+
+    It is `rateComparable`'s reasoning one noun over — *a free plan has no rate
+    to be beaten* — and the same answer: there is nothing to be `up from`.
   */
   const nowCount =
-    currentCredits === null ? null : charactersFor(currentCredits, oneCharacterCredits);
+    currentMonthlyCredits === null
+      ? null
+      : charactersFor(currentMonthlyCredits, oneCharacterCredits);
   const nextPhrase = selected
     ? charactersPhrase(charactersFor(selected.credits, oneCharacterCredits))
     : null;
@@ -740,9 +826,13 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
                       setOpen(false);
                     }}
                   >
-                    {currentCredits === null
+                    {/* ⚠ #1761: the monthly baseline, not the rung's raw
+                        `monthlyCredits` — on the free rung that column is a
+                        one-time grant and this sentence says `a month`. The
+                        button above reads the same figure through `delta`. */}
+                    {currentMonthlyCredits === null
                       ? "—"
-                      : `+ ${formatCredits(displayBalance(option.credits - currentCredits))} credits a month`}
+                      : `+ ${formatCredits(displayBalance(option.credits - currentMonthlyCredits))} credits a month`}
                     <span className="dp-topup__optionprice">
                       {/* ⚠ #1755: the options list is empty until the rung is
                           read (#1747), so an unread interval cannot reach
