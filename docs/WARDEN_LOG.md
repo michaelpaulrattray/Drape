@@ -554,9 +554,36 @@ is the cheap way to learn whether a patched version exists *inside a major*, and
 the `fast-uri` 4.x hazard. A bare `npm view <pkg> version` answers a different question — the
 newest overall — and that is the question an unbounded override asks.
 
-### D. What this run leaves standing, and run 7's brief
+### D. The repair's receipts, taken after the merge — and one limit found by taking them
 
-**Filed: six findings, five as cards** — #1803 (repaired, PR #1804), #1805 (Socket), #1806 (the
+**#1803 is CLOSED and LIVE.** PR #1804 merged at 2026-10-02T20:01:26Z, squash `a966ab26`.
+
+| receipt | reading |
+|---|---|
+| gate on `52cca454` | **green, 8m11s** — and this is the arm that mattered, because it is the only clean install from the new lockfile: `gate-checks` pass, `static-shapes` pass, `bundle-budget` pass, `founder-gate` pass, `triage` pass |
+| Socket on the lockfile diff | `Pull Request Alerts` **pass** (17s), `Project Report` pass — a *lowering* diff, so this says nothing about #1805 either way |
+| review obligation | **none** — triage applied no `needs-fable`: not money/auth, no `client/src`, not `review.yml`. Merged on the gate alone, which is the standing rule |
+| **production** | **serves `a966ab26`, uptime 8.6 s** — polled until the `build` sha moved, so this is a NEW process and not the old one answering 200 (#296) |
+| `pnpm audit --prod` on `main` | **`No known vulnerabilities found`** |
+| `pnpm audit`, all scopes, on `main` | **`No known vulnerabilities found`** |
+| GitHub's own alerts | **all five `fixed` at 2026-10-02T20:01:32–33Z**, seven seconds after the squash — 114, 115 (high), 116, 117 (moderate), 118 (low) |
+
+So three readers that share no resolver agree the count is zero: `pnpm audit` at the lockfile, GitHub's dependency graph at the default branch, and the gate's install.
+
+⚠ **AND TAKING THAT LAST RECEIPT FOUND A LIMIT IN A READING THIS RUN ALREADY REPORTED, SO IT IS CORRECTED HERE RATHER THAN LEFT TO AGREE WITH ITSELF.** §A says *"4 alerts open (118, 116, 115, 114 — all `scope=runtime`)"*, which is exactly what `GET /dependabot/alerts?state=open&per_page=50` returned, and it matched both the push warning (*"4 vulnerabilities … 2 high, 1 moderate, 1 low"*) and `pnpm audit --prod`'s 4. **There was a fifth.** Alert **117** (`fast-uri`, `scope=development`) was created 2026-09-30T09:51:17Z — the same second as 116 — was never dismissed (`dismissed_reason: null`, `auto_dismissed_at: null`), and closed `fixed` with the other four.
+
+**What that establishes, and what it does not:**
+
+- **It does not change a single verdict.** 117 is the dev-scope moderate that `pnpm audit` (all scopes) had already counted as the fifth, and it was closed by this run's own repair.
+- ⚠ **It does establish that `state=open` on that endpoint did not return every open alert**, and the reason was NOT established — the alert's own fields rule out a dismissal, so it is something about the listing or about a repository rule for development-scope advisories. **It is not guessed at here.**
+- **The transferable half: `pnpm audit` and the alert listing answer different questions, and the listing is the one whose population this seat cannot yet account for.** The three figures agreed on 4 *because all three were reporting runtime scope*, which reads like corroboration and was partly coincidence. **Run 7 reads the alert list with no `state` filter and counts by `state` itself**, rather than asking the endpoint for "open" and trusting the length.
+
+**This is the same shape as §C.2, one layer out**: a number that agreed with two neighbours, on a population nobody had counted. Both were found by doing the next reading rather than by doubting the last one.
+
+
+### E. What this run leaves standing, and run 7's brief
+
+**Filed: six findings, five as cards** — #1803 (**repaired, merged `a966ab26`, live on production, and `pnpm audit` zero on both scopes** — §D), #1805 (Socket), #1806 (the
 second admin — **his word**), #1807 (the audit log's critical rows), #1808 (the unbounded
 overrides), #1809 (project law stale on #1659, corrected this shift). **Closed: nothing** — run
 5's four were closed by their own shifts.
@@ -569,7 +596,10 @@ overrides), #1809 (project law stale on #1659, corrected this shift). **Closed: 
    in again (it had not, as of this run: once on 2026-09-28 and never since).
 2. **`pnpm audit --prod` again, expecting 0** — and if it is not 0, the reading is now *also*
    whether #1804's floor held or whether a new chain arrived. This is the row that moved 0 → 4
-   unnoticed in one week, so it is the seat's most load-bearing single number.
+   unnoticed in one week, so it is the seat's most load-bearing single number. ⚠ **Read the
+   Dependabot alerts beside it with NO `state` filter, counting by `state` yourself** — §D records
+   why: `state=open` returned four when five were open, and the three figures that agreed on four
+   agreed because all three were reporting runtime scope.
 3. **The `secrets.yml` cron of 2026-10-05**, at its log, for the commit count and the zero.
 4. **Whether #1805 drew a ruling.** If he has turned Socket's known-vulnerability alert on, the
    next lockfile PR that adds a package is the proof, exactly as run 4 set it up — and that proof
