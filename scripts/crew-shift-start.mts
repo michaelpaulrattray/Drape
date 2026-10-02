@@ -87,10 +87,13 @@ import {
 } from "../shared/crewShiftState.js";
 import { readOpenPullRequests, renderCardClaimWarning } from "./lib/cardClaimWarning.mts";
 import {
+  postCardClaim,
   readCardClaim,
   readCardComments,
   renderCardClaimNote,
+  renderCardClaimPost,
   renderCardClaimRefusal,
+  type CardClaimVerdict,
 } from "./lib/cardClaimComments.mts";
 import {
   CREW_WORK_CATEGORIES,
@@ -193,8 +196,17 @@ function assertCardIsFree(input: {
   readonly exceptRunId?: number | null;
   /** This shift's own id, so its own earlier claim is not read as a rival's. */
   readonly mine: string | null;
-}): void {
-  if (ARGS.flag("same-card")) return;
+  /*
+    ⚠ **IT RETURNS THE BOARD'S VERDICT NOW (#1735), AND IT USED TO RETURN
+    NOTHING.** The claim is posted by this script once the row exists, and the
+    writer must not post over a verdict it did not see: `unreadable` is not
+    free, and this seat's own live claim wants silence rather than a second
+    line on every heartbeat. `null` is what `--same-card` returns — the flag
+    skips the read entirely, so there is no verdict to act on and the seat is
+    back to posting by hand, which is what asking to share a card means.
+  */
+}): CardClaimVerdict | null {
+  if (ARGS.flag("same-card")) return null;
 
   const collisions = findCardCollisions(input.openRuns, input.cardRef)
     .filter((row) => input.exceptRunId == null || Number(row.id) !== input.exceptRunId);
@@ -232,6 +244,38 @@ function assertCardIsFree(input: {
   if (note !== null) console.log(note);
   const taken = renderCardClaimRefusal(input.cardRef, verdict);
   if (taken !== null) refuse(taken);
+  return verdict;
+}
+
+/**
+ * CLAIM THE CARD ON THE CARD (#1735) — run once the row is written, never before.
+ *
+ * ⚠ **AFTER THE ROW, NOT BEFORE IT, AND THE ORDER IS THE WHOLE JUDGEMENT.**
+ * Posting first would claim a card for a start that then failed on the database
+ * — a twelve-hour lock held by nobody, which is worse than the convention it
+ * replaces. Posting after costs the seconds of one INSERT, against the
+ * twenty-seven minutes the measured collision actually ran for.
+ *
+ * It never fails the row: a `gh` that is absent, unauthenticated or slow prints
+ * the command to run by hand and the shift carries on.
+ */
+function claimCardOnTheCard(input: {
+  readonly cardRef: string | null | undefined;
+  readonly seat: string | null | undefined;
+  readonly verdict: CardClaimVerdict | null;
+}): void {
+  if (input.verdict === null) return;
+  const line = renderCardClaimPost(
+    input.cardRef,
+    postCardClaim({
+      cardRef: input.cardRef,
+      seat: input.seat,
+      verdict: input.verdict,
+      at: new Date().toISOString().replace(/\.\d{3}Z$/, "Z"),
+      dryRun: DRY_RUN,
+    }),
+  );
+  if (line !== null) console.log(line);
 }
 
 
@@ -338,12 +382,18 @@ try {
       heartbeat on one card would refuse against itself.
     */
     const reDeclared = arg("card");
+    /* ⚠ THE Nth CARD OF A BATCH IS WHERE THE COLLISION HAPPENS, so the claim is
+       posted on a re-declaration exactly as on the first (#1580's own finding:
+       a row names only the FIRST card, so a batch of N has one card's worth of
+       lock and N−1 of convention). Held until the UPDATE has reported. */
+    let reDeclaredVerdict: CardClaimVerdict | null = null;
+    const reDeclaringSeat = named ?? String(target.shift);
     if (reDeclared !== null) {
-      assertCardIsFree({
+      reDeclaredVerdict = assertCardIsFree({
         cardRef: reDeclared,
         openRuns: openRows,
         exceptRunId: verdict.run.id,
-        mine: named ?? String(target.shift),
+        mine: reDeclaringSeat,
       });
     }
 
@@ -360,6 +410,11 @@ try {
         + `\n  cardRef     ${reDeclared?.slice(0, CARD_REF_STORED_LENGTH) ?? `(unchanged — ${target.cardRef ?? "none"})`}`
         + "\nRe-run without --dry-run to perform it.",
       );
+      /* ⚠ THE CLAIM IS PART OF WHAT A REAL RUN WOULD CHANGE, SO THE DRY RUN SAYS
+         SO (#288's own rule: print exactly what would change and write nothing).
+         Omitting it would under-report the one act of this script that touches
+         something outside the database. */
+      claimCardOnTheCard({ cardRef: reDeclared, seat: reDeclaringSeat, verdict: reDeclaredVerdict });
       await conn.end();
       process.exit(0);
     }
@@ -397,6 +452,7 @@ try {
     console.log(`NOTED — run #${verdict.run.id} (${verdict.run.shift}), chosen by ${verdict.how}: ${noteMode}`);
     if (branch) console.log(`branch: ${branch}`);
     if (reDeclared) console.log(`card: ${reDeclared} — this row now names the card the seat is on`);
+    claimCardOnTheCard({ cardRef: reDeclared, seat: reDeclaringSeat, verdict: reDeclaredVerdict });
   } else {
     const shift = arg("shift");
     const seat = arg("seat");
@@ -525,7 +581,7 @@ try {
       `assertCardIsFree`, which is now the one place both readings live, because
       a heartbeat can RE-declare a card and two copies of this would drift.
     */
-    assertCardIsFree({ cardRef: arg("card"), openRuns: open, mine: shift });
+    const declaredVerdict = assertCardIsFree({ cardRef: arg("card"), openRuns: open, mine: shift });
 
     /*
       ⚠ IS A PULL REQUEST ALREADY OPEN ON THIS CARD? (#1083) — and this one
@@ -558,6 +614,8 @@ try {
         + "\n  startedAt / heartbeatAt  now"
         + "\nRe-run without --dry-run to perform it.",
       );
+      /* The claim too, for the reason the heartbeat's dry run gives. */
+      claimCardOnTheCard({ cardRef: arg("card"), seat: shift, verdict: declaredVerdict });
       await conn.end();
       process.exit(0);
     }
@@ -591,6 +649,12 @@ try {
       `\nOPENED — run #${row.id}: ${row.shift} (${row.seat}, ${row.workKind})`
       + `${row.cardRef ? ` on ${row.cardRef}` : ""}\n  ${row.intent}\n  started ${iso(row.startedAt)}`,
     );
+    /* ⚠ THE CLAIM, AT THE EARLIEST TRACKED MOMENT A SEAT COULD POST IT (#1735).
+       This is the act performed before any code, so the card says who is on it
+       before the branch is cut — rather than whenever the seat remembers, which
+       on 2026-10-01 was never and cost a full duplicate build. */
+    claimCardOnTheCard({ cardRef: row.cardRef, seat: row.shift, verdict: declaredVerdict });
+
     console.log("\nHis page names this within a minute. Close it at shift end:");
     console.log(`  scripts/crew-shift-close.mts --id ${row.id} --outcome shipped --note '…' --pr <n>`);
   }

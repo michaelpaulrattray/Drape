@@ -32,14 +32,18 @@ import { describe, expect, it, vi } from "vitest";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 import {
   CARD_COMMENT_READ_TIMEOUT_MS,
+  cardClaimBody,
+  cardClaimPostArgs,
   cardCommentListArgs,
+  postCardClaim,
   readCardClaim,
   readCardComments,
   renderCardClaimNote,
+  renderCardClaimPost,
   renderCardClaimRefusal,
   type CardComment,
 } from "../scripts/lib/cardClaimComments.mts";
-import { CREW_CLAIM_LIVE_MS } from "../shared/crewCardBuildState";
+import { CREW_CLAIM_LIVE_MS, crewCardCommentFact } from "../shared/crewCardBuildState";
 
 /*
   ⚠ THIS SUITE IS IN #548's POPULATION, THROUGH THE MODULE IT DRIVES. Every arm
@@ -105,24 +109,37 @@ describe("the incident, reproduced (#1580)", () => {
 });
 
 describe("whose claim it is", () => {
+  /*
+    ⚠ **THESE TWO ARMS READ `free` UNTIL #1735 AND NOW READ `mine`, AND THE
+    BEHAVIOUR THEY GUARD HAS NOT MOVED AT ALL.** Both reasons for not refusing
+    were one word while nothing acted on the answer; the writer added that day
+    posts a claim on `free`, so a seat's own live claim had to become sayable or
+    every heartbeat would have added another line. What each arm actually
+    asserts — that this seat is NOT refused — is asserted directly below,
+    against the renderer the script calls, rather than inferred from a word.
+  */
   it("lets a seat re-declare a card it claimed itself", () => {
     /* THE ARM THAT KEEPS A BATCH WORKING. A seat heartbeats `--card` more than
        once on the same card; its own claim must never refuse it. */
-    expect(readCardClaim({
+    const verdict = readCardClaim({
       cardRef: "#1554",
       comments: [claim("seat2-20260930-173234", SEAT1_CLAIMED_AT)],
       mine: "seat2-20260930-173234",
       now: JUST_AFTER,
-    })).toEqual({ kind: "free" });
+    });
+    expect(verdict).toEqual({ kind: "mine", at: SEAT1_CLAIMED_AT });
+    expect(renderCardClaimRefusal("#1554", verdict, JUST_AFTER)).toBeNull();
   });
 
   it("compares seat names the one way, so case and padding are not a rival", () => {
-    expect(readCardClaim({
+    const verdict = readCardClaim({
       cardRef: "#1554",
       comments: [{ body: "CLAIMED —  SEAT2-20260930-173234 , 05:54Z", createdAt: SEAT1_CLAIMED_AT }],
       mine: "seat2-20260930-173234",
       now: JUST_AFTER,
-    })).toEqual({ kind: "free" });
+    });
+    expect(verdict).toMatchObject({ kind: "mine" });
+    expect(renderCardClaimRefusal("#1554", verdict, JUST_AFTER)).toBeNull();
   });
 
   it("treats an unattributed claim as somebody else's", () => {
@@ -297,5 +314,210 @@ describe("the script spends both readers at every moment a card is declared", ()
     /* The defect underneath the defect: a strict parser that takes a flag and
        spends it nowhere. */
     expect(SOURCE).toContain('const reDeclared = arg("card");');
+  });
+});
+
+/**
+ * THE WRITE SIDE — THE CLAIM POSTED BEFORE THE BUILD (#1735).
+ *
+ * ⚠ **EVERY ARM INJECTS ITS TRANSPORT, so nothing here reaches GitHub** — the
+ * `post` hook exists for exactly that, and an arm that forgot it would comment
+ * on a live card from inside a test run.
+ *
+ * The arm that matters most is the self-check: the body is composed by this
+ * module and judged by the BOARD's reader, so a writer and a reader can never
+ * again hold two copies of one spelling. That is #1701's measured cost — 0 of 5
+ * refusals on #1669 invisible to the reader that looks for them — paid once and
+ * guarded here rather than re-learned on the claim signal.
+ */
+describe("posting this seat's claim", () => {
+  const SEAT = "seat1-20261002-134131";
+  const AT = "2026-10-02T04:05:00Z";
+
+  /** A recording transport: what would have gone to `gh`, and nothing sent. */
+  function recorder() {
+    const sent: { card: number; body: string }[] = [];
+    return { sent, post: (card: number, body: string) => { sent.push({ card, body }); } };
+  }
+
+  it("posts on a free board, and the line it posts reads back as a claim", () => {
+    const { sent, post } = recorder();
+    const outcome = postCardClaim({ cardRef: "#1725", seat: SEAT, verdict: { kind: "free" }, at: AT, post });
+    expect(outcome).toMatchObject({ kind: "posted" });
+    expect(sent).toEqual([{ card: 1725, body: `CLAIMED — ${SEAT}, ${AT}` }]);
+    /* ⚠ THE BOARD'S OWN JUDGE, not a second copy of the spelling. */
+    expect(crewCardCommentFact({ card: 1725, body: sent[0]!.body, createdAt: AT }))
+      .toMatchObject({ kind: "claim", seat: SEAT });
+  });
+
+  /*
+    THE INCIDENT, DRIVEN. Had the other seat's declare posted at 21:14Z, seat 1's
+    21:41Z read would have refused instead of coming back clean — and that is the
+    whole of this card. The 32-second residue is NOT closed and is not claimed to
+    be: the read-then-post window is stated in the module's own docblock.
+  */
+  it("the #1725 collision refuses once the first seat's declare has posted", () => {
+    const { sent, post } = recorder();
+    postCardClaim({
+      cardRef: "#1725", seat: "foreman-20261001-2114",
+      verdict: { kind: "free" }, at: "2026-10-01T21:14:00Z", post,
+    });
+    const verdict = readCardClaim({
+      cardRef: "#1725",
+      comments: [{ body: sent[0]!.body, createdAt: "2026-10-01T21:14:00Z" }],
+      mine: "seat1-20261002-070323",
+      now: Date.parse("2026-10-01T21:41:33Z"),
+    });
+    expect(verdict).toMatchObject({ kind: "claimed", seat: "foreman-20261001-2114" });
+    expect(renderCardClaimRefusal("#1725", verdict, Date.parse("2026-10-01T21:41:33Z")))
+      .toContain("foreman-20261001-2114");
+  });
+
+  it("stays silent on a heartbeat that re-declares a card this seat already holds", () => {
+    const { sent, post } = recorder();
+    const held = readCardClaim({
+      cardRef: "#1725",
+      comments: [{ body: `CLAIMED — ${SEAT}, ${AT}`, createdAt: AT }],
+      mine: SEAT,
+      now: Date.parse(AT) + 60_000,
+    });
+    expect(held, "a seat's own live claim must be distinguishable from an empty board")
+      .toMatchObject({ kind: "mine" });
+    expect(postCardClaim({ cardRef: "#1725", seat: SEAT, verdict: held, at: AT, post }))
+      .toMatchObject({ kind: "skipped" });
+    expect(sent, "every heartbeat would otherwise add a line").toEqual([]);
+  });
+
+  it("posts a fresh claim when this seat's own has aged out of the window", () => {
+    const { sent, post } = recorder();
+    const stale = readCardClaim({
+      cardRef: "#1725",
+      comments: [{ body: `CLAIMED — ${SEAT}, ${AT}`, createdAt: AT }],
+      mine: SEAT,
+      now: Date.parse(AT) + CREW_CLAIM_LIVE_MS + 60_000,
+    });
+    expect(stale).toMatchObject({ kind: "free" });
+    expect(postCardClaim({ cardRef: "#1725", seat: SEAT, verdict: stale, at: AT, post }))
+      .toMatchObject({ kind: "posted" });
+    expect(sent).toHaveLength(1);
+  });
+
+  /* ⚠ AN UNREAD BOARD IS NOT A FREE ONE — the one road on which claiming would
+     put two seats on one card believing they each hold it. */
+  it("never posts against a board it could not read, and says why", () => {
+    const { sent, post } = recorder();
+    const outcome = postCardClaim({
+      cardRef: "#1725", seat: SEAT, verdict: { kind: "unreadable" }, at: AT, post,
+    });
+    expect(outcome).toMatchObject({ kind: "skipped" });
+    expect((outcome as { why: string }).why).toContain("not a free one");
+    expect(sent).toEqual([]);
+  });
+
+  it("never papers over another seat's live claim", () => {
+    const { sent, post } = recorder();
+    expect(postCardClaim({
+      cardRef: "#1725", seat: SEAT,
+      verdict: { kind: "claimed", seat: "seat2", at: AT }, at: AT, post,
+    })).toMatchObject({ kind: "skipped" });
+    expect(sent).toEqual([]);
+  });
+
+  it("a dry run says what it would post and writes nothing (#288)", () => {
+    const { sent, post } = recorder();
+    const outcome = postCardClaim({
+      cardRef: "#1725", seat: SEAT, verdict: { kind: "free" }, at: AT, dryRun: true, post,
+    });
+    expect(outcome).toMatchObject({ kind: "skipped" });
+    expect(renderCardClaimPost("#1725", outcome)).toContain("would post");
+    expect(sent).toEqual([]);
+  });
+
+  it("says nothing about a free-text card ref, and nothing about a nameless row", () => {
+    const { sent, post } = recorder();
+    for (const input of [
+      { cardRef: "the lobby lane", seat: SEAT },
+      { cardRef: "#1725", seat: "   " },
+    ]) {
+      expect(postCardClaim({ ...input, verdict: { kind: "free" } as const, at: AT, post }))
+        .toMatchObject({ kind: "skipped" });
+    }
+    expect(sent).toEqual([]);
+  });
+
+  /*
+    ⚠ `gh` ABSENT, UNAUTHENTICATED OR SLOW MUST NOT FAIL A DESK ROW — #504's
+    ruling on the NEXT UP read, one script over. What it MUST do is tell the seat,
+    because a seat believing the tool claimed its card is the state this module
+    exists to prevent.
+  */
+  it("a refusing gh is a warning carrying the command to run by hand", () => {
+    const outcome = postCardClaim({
+      cardRef: "#1725", seat: SEAT, verdict: { kind: "free" }, at: AT,
+      post: () => { throw new Error("gh: command not found"); },
+    });
+    expect(outcome).toMatchObject({ kind: "failed" });
+    const line = renderCardClaimPost("#1725", outcome) ?? "";
+    expect(line).toContain("POST IT BY HAND BEFORE YOU BUILD");
+    expect(line).toContain("gh issue comment 1725 --body");
+    expect(line).toContain(SEAT);
+  });
+
+  /*
+    ⚠ THE SELF-CHECK, DRIVEN BY BREAKING IT. A writer whose line the board cannot
+    read must post NOTHING — the alternative is a seat that believes its card is
+    locked while every other seat reads it as free, which is strictly worse than
+    the hand-posted convention this replaces.
+  */
+  it("refuses to post a line the board would not read as a claim", () => {
+    /* The drift, driven through the seam — the words a seat would naturally
+       write, which is exactly the shape #1701 measured on the refusal signal. */
+    for (const drifted of ["TAKING #1725", "WORKING ON this one", "CLAIMING — SEAT, AT"]) {
+      const { sent, post } = recorder();
+      const outcome = postCardClaim({
+        cardRef: "#1725", seat: SEAT, verdict: { kind: "free" }, at: AT, post,
+        bodyFor: () => drifted,
+      });
+      expect(outcome, `\`${drifted}\` is unreadable and must not be posted`)
+        .toMatchObject({ kind: "skipped" });
+      expect((outcome as { why: string }).why).toContain("does not read back as a claim");
+      expect(renderCardClaimPost("#1725", outcome)).toContain("was NOT posted");
+      expect(sent, "a claim the board cannot see is worse than none").toEqual([]);
+    }
+  });
+
+  /* THE POSITIVE CONTROL ON THE SEAM: the check must pass something real, or the
+     arm above would be green against a predicate that refuses everything. */
+  it("the self-check passes the spelling the module actually writes", () => {
+    const { sent, post } = recorder();
+    expect(postCardClaim({
+      cardRef: "#1725", seat: SEAT, verdict: { kind: "free" }, at: AT, post,
+      bodyFor: cardClaimBody,
+    })).toMatchObject({ kind: "posted" });
+    expect(sent).toHaveLength(1);
+  });
+
+  it("asks gh to comment on the card it was given, and nothing else", () => {
+    expect(cardClaimPostArgs(1725, "CLAIMED — x, y"))
+      .toEqual(["issue", "comment", "1725", "--body", "CLAIMED — x, y"]);
+  });
+
+  /*
+    THE WIRING, read at the script's own bytes — `.agents/` is not where this
+    lives, and `vitest.setup.ts` strips `DATABASE_URL`, so no arm can reach the
+    script's block past its database connection. These two assertions are the
+    only thing that can say the writer is CALLED (invariant 7), and they name
+    both roads, because the Nth card of a batch is where #1580 measured the hole.
+  */
+  it("the shift script posts the claim on BOTH the declare and the re-declare", () => {
+    const source = readFileSync(
+      resolve(import.meta.dirname, "../scripts/crew-shift-start.mts"), "utf8",
+    );
+    expect(source).toContain("claimCardOnTheCard({ cardRef: row.cardRef");
+    expect(source).toContain("claimCardOnTheCard({ cardRef: reDeclared");
+    /* ⚠ AFTER THE ROW, NEVER BEFORE IT: a claim posted for a start that then
+       failed is a twelve-hour lock held by nobody. */
+    const declare = source.indexOf("claimCardOnTheCard({ cardRef: row.cardRef");
+    expect(source.lastIndexOf("the insert reported success", declare)).toBeGreaterThan(-1);
   });
 });
