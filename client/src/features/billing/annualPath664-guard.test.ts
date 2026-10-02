@@ -113,11 +113,24 @@ describe("AddCreditsModal", () => {
       `quoteReady` true immediately — so a customer whose plan catalogue had not
       arrived read `Add credits · $0.00` on a button that looked pressable,
       which is the very thing finding 4 was written to stop, one branch over.
+
+      ⚠ **AND #1749 MOVED THE STRING A THIRD TIME, IN THE SAME DIRECTION.**
+      `hasSubscription` is `boolean | null` now, so `!hasSubscription` was true
+      for the UNREAD state as well as for the no-subscription one — the exact
+      two-meanings-of-false this gate has been bitten by twice. `=== false`
+      names the one it was written for. The condition is held in that spelling
+      on purpose: `!hasSubscription` passing here again would mean the collapse
+      has come back, which is the thing the sibling arm below bans outright.
     */
-    expect(source).toContain("(!hasSubscription || (!!preview && !previewFailed))");
+    expect(source).toContain("(hasSubscription === false || (!!preview && !previewFailed))");
+    /* The negated form is the defect, not a stylistic variant — pinned so a
+       revert cannot pass this arm by rewriting it the old way. */
+    expect(source).not.toContain("(!hasSubscription ||");
     expect(source).toContain("const quoteReady = dueToday !== null &&");
     expect(source).toMatch(/disabled=\{!selected \|\| working \|\| !quoteReady\}/);
-    expect(source).toMatch(/if \(!selected \|\| !quoteReady\) return;/);
+    expect(source).toMatch(
+      /if \(!selected \|\| !quoteReady \|\| hasSubscription === null\) return;/,
+    );
   });
 
   /*
