@@ -10632,6 +10632,10 @@
       "path": "client/src/features/billing/annualPath664-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/billing/burnCycle1739-guard.test.ts",
+      "path": "client/src/features/billing/burnCycle1739-guard.test.ts"
+    },
+    {
       "id": "test:client/src/features/boards/canvas/placementAnnouncement.test.ts",
       "path": "client/src/features/boards/canvas/placementAnnouncement.test.ts"
     },

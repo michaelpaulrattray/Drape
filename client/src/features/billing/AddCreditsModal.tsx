@@ -30,6 +30,15 @@
  * disagreement is a real defect the brief records from the prototype: hand
  * written dates put *"the 21st"* against a proration of 19/31 days, which
  * implies the 24th.
+ *
+ * ## ⚠ AND THE OTHER SENTENCE IS NOT ABOUT THE CHARGE AT ALL — #1739
+ *
+ * The burn band says how long the balance they already hold will last. That is
+ * a claim about THIS account's own period, so it is the one sentence here the
+ * quote's period must never reach: a monthly subscriber reading the Annual
+ * option was told *"343 days left in this cycle"* and *"80 days before it
+ * resets"* about a balance that resets in 8. The two readings are `ownCycle`
+ * and `chargeCycle` below, and the comment there carries the measurement.
  */
 import { useMemo, useState } from "react";
 import { displayBalance, displaySpent, formatCredits } from "@shared/creditDisplay";
@@ -116,15 +125,49 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
   */
   const periodStart = status?.currentPeriodStart ? new Date(status.currentPeriodStart) : null;
   const cycleSpend = useCycleSpend(periodStart);
-  const rawCycle = useMemo(
+  /*
+    ⚠ **TWO CYCLES, AND THE NAMES ARE THE FIX — #1739.** This surface says two
+    things about time, and only one of them is about the charge:
+
+    · `ownCycle` — THIS account's billing period, off `getStatus`. The burn
+      band (§7.1) is about today's balance and the day it resets, so this is the
+      only basis that sentence can have.
+    · `chargeCycle` — the period the quote prorated over, re-cut by
+      `alignToPreview`. The renewal line (§7.4) stands beside the figure we are
+      about to charge and must quote the server's own two numbers.
+
+    They were `rawCycle` and `cycle` until #1739, and the burn band read the
+    second one. **So a monthly subscriber with the Annual toggle on read the
+    YEARLY plan's cycle in a sentence about the plan they are already on** —
+    driven on the dev subscriber fixture: *"320 of 4,008 spent with 8 days left
+    in this cycle — … runs out on 22 Jun."* became *"… 343 days left in this
+    cycle — … runs out on 22 Jun, 80 days before it resets."* the beat the
+    yearly quote landed, for an account whose balance resets in 8 days. Nothing
+    was charged wrongly and no figure moved; the sentence was about the wrong
+    month, and the `80 days before it resets` clause only exists because of it.
+
+    ⚠ **THE GENERIC NAME IS WHAT LET IT HAPPEN.** `cycle` reads like *the*
+    cycle, so a sentence needing this account's period reached for it and the
+    mistake was invisible at the call site — which is why this is a rename and
+    not a one-word repair. `burn` is computed from `ownCycle` here rather than
+    at its reader, so a later sentence cannot be handed the quote's period by
+    accident either.
+
+    ⚠ **THE SIBLING WAS READ, NOT ASSUMED (law 7's sweep).**
+    `alignToPreview` has exactly ONE caller in the product and it is this line;
+    `ChangePlanModal` passes `readCycle` straight to `readBurn`, so its own burn
+    band has always described the account's own cycle. `burnCycle1739-guard.test.ts`
+    pins that too, so the sibling cannot quietly acquire the defect later.
+  */
+  const ownCycle = useMemo(
     () => readCycle(status, cycleSpend),
     [status, cycleSpend],
   );
-  const cycle = useMemo(
-    () => (rawCycle ? alignToPreview(rawCycle, preview) : null),
-    [rawCycle, preview],
+  const chargeCycle = useMemo(
+    () => (ownCycle ? alignToPreview(ownCycle, preview) : null),
+    [ownCycle, preview],
   );
-  const burn = useMemo(() => (cycle ? readBurn(cycle) : null), [cycle]);
+  const burn = useMemo(() => (ownCycle ? readBurn(ownCycle) : null), [ownCycle]);
 
   const currentCredits = plans?.tiers[currentId as keyof typeof plans.tiers]?.monthlyCredits ?? 0;
   /*
@@ -248,11 +291,13 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
         <p className="dp-topup__eyebrow">CREDITS</p>
         <h2 className="dp-topup__title">Add more credits</h2>
 
-        {/* §7.1 — the reason, from the same four constants as §6a. */}
-        {cycle && burn?.emptyOn ? (
+        {/* §7.1 — the reason, from the same four constants as §6a, and all four
+            off THIS account's own cycle (#1739): this sentence is about the
+            balance they hold today, never about the plan they are looking at. */}
+        {ownCycle && burn?.emptyOn ? (
           <p className="dp-topup__reason">
-            {formatCredits(displaySpent(cycle.spent, cycle.remaining))} of {formatCredits(displayBalance(cycle.spent + cycle.remaining))}{" "}
-            spent with {cycle.daysLeft} {cycle.daysLeft === 1 ? "day" : "days"} left in this cycle
+            {formatCredits(displaySpent(ownCycle.spent, ownCycle.remaining))} of {formatCredits(displayBalance(ownCycle.spent + ownCycle.remaining))}{" "}
+            spent with {ownCycle.daysLeft} {ownCycle.daysLeft === 1 ? "day" : "days"} left in this cycle
             — at this rate the balance runs out on {formatShortDate(burn.emptyOn)}
             {burn.dryDays > 0
               ? `, ${burn.dryDays} ${burn.dryDays === 1 ? "day" : "days"} before it resets`
@@ -429,8 +474,8 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
             ? annual
               ? "Billed for the whole year today — your new billing year starts now, and the year's credits land with the payment."
               : "Billed monthly from today — unused time from your year comes off future bills automatically."
-            : hasSubscription && cycle
-              ? `Prorated for the ${cycle.daysLeft} ${cycle.daysLeft === 1 ? "day" : "days"} left in this cycle, then ${formatShortDate(cycle.renewsAt)}.`
+            : hasSubscription && chargeCycle
+              ? `Prorated for the ${chargeCycle.daysLeft} ${chargeCycle.daysLeft === 1 ? "day" : "days"} left in this cycle, then ${formatShortDate(chargeCycle.renewsAt)}.`
               : "Charged today, then on the same date each period."}
           {!annual ? ` Pay yearly instead and ${monthsFree()} of the twelve months are free.` : ""}
         </p>

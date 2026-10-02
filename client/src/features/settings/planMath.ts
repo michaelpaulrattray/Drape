@@ -239,6 +239,24 @@ export function formatWholeDollars(cents: number): string {
  *
  * So: where a preview exists, its days win. Where it does not, the client's own
  * reading stands, and nothing is being charged for it to disagree with.
+ *
+ * ⚠ **IT IS FOR THE SENTENCE BESIDE THE CHARGE, AND FOR NOTHING ELSE — #1739.**
+ * "Its days win" is correct about the proration line and WRONG about any
+ * sentence describing the balance the customer already holds: a preview of a
+ * plan they have not bought carries that plan's period, so an account billed
+ * monthly previewing the annual option gets 343 days where its own cycle has 8.
+ * `AddCreditsModal`'s burn band read this result for exactly that reason and
+ * told a customer their credits would run out *"80 days before it resets"* when
+ * the reset was 8 days away. The surface keeps BOTH readings under names that
+ * say which is which (`ownCycle` / `chargeCycle`); a new caller here is
+ * answering "what are we charging for?" and never "what does this account
+ * hold?".
+ *
+ * ⚠ **The result is not interchangeable with its input even when they agree.**
+ * They agree on a same-interval change — which is every case a reader is likely
+ * to try first — and differ only when the intervals do, so a wrong basis here
+ * tests clean and ships. Measured: one caller in the product (`AddCreditsModal`,
+ * the renewal line), and `ChangePlanModal` deliberately not one.
  */
 export function alignToPreview(
   cycle: BillingCycle,
