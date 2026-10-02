@@ -215,7 +215,36 @@ export function ChangePlanModal({
       : status?.billingInterval === "month"
         ? "monthly"
         : null;
-  const interval: Interval = intervalChoice ?? billedInterval ?? "monthly";
+  /*
+    ⚠ **AN UNREAD BILLING INTERVAL IS NOT "MONTHLY" — #1763, and it is #1755 on
+    the sibling surface with the collapse one line lower down.**
+
+    The ladder above is correct: `undefined` matches neither branch, so an
+    unread status lands on `null`. This line read `?? "monthly"` and put the
+    collapse straight back — and because the result was typed `Interval` rather
+    than `Interval | null`, **no reader below was ever asked**. A yearly
+    subscriber opening this saw the **Monthly** segment drawn filled in and
+    announced `aria-pressed` for the beat before `billing.getStatus` answered,
+    and then watched it flip.
+
+    ⚠ **THE TWO ABSENCES THE BRANCH BELOW SEPARATES ARE NOT THE SAME ABSENCE,
+    and reading them as one is what made the old default look reasonable.**
+    `billedInterval` is `null` both while the query is in flight AND once it has
+    answered about an account that has no cycle of its own — a free account, or
+    (the server's own note on `getStatus`) a subscription whose cached interval
+    is unknown. The first is *we have not been told*; the second is *there is
+    nothing to be told*, and on this surface that second state still has to
+    offer a purchase. So the default moves INSIDE the read: once the status has
+    answered, the control opens on Monthly as the choice on offer, which is a
+    claim about nothing. While it has not answered, `null` — and every reader
+    below answers for it in its own words, which is what the type is for.
+
+    This is exactly the shape `AddCreditsModal` carries (`annualChoice ?? (status
+    ? … : null)`); the spelling differs only because this surface names its two
+    states rather than carrying a boolean.
+  */
+  const interval: Interval | null =
+    intervalChoice ?? (status === undefined ? null : billedInterval ?? "monthly");
 
   const checkout = trpc.billing.createSubscriptionCheckout.useMutation({
     onSuccess: (data) => {
@@ -281,8 +310,23 @@ export function ChangePlanModal({
     floor that suite states, with a live instance to show what it looks like.
   */
   const changeQuote = trpc.billing.previewPlanChange.useQuery(
-    { newPlan: (confirming?.id ?? null) as never, interval },
-    { enabled: hasSubscriptionForQuote(status) && confirming !== null },
+    /* `interval === "annual"`, not `interval ?`: an unread interval must not be
+       quoted as monthly. The query cannot fire in that state — the gate below
+       names it — so this is the value behind a closed door said correctly
+       rather than a branch anybody reaches (#1763, the idiom #1755 settled on
+       the sibling surface). */
+    {
+      newPlan: (confirming?.id ?? null) as never,
+      interval: interval === "annual" ? "annual" : "monthly",
+    },
+    {
+      /* ⚠ `interval !== null` is implied today — `confirming` is set by a press
+         on a button the ladder does not draw while the status is unread — and
+         it is stated anyway, because *what cycle is this quote for* is a money
+         question and a claim held by an implication dies the day either side of
+         the implication moves. #1755's own reasoning, one surface over. */
+      enabled: hasSubscriptionForQuote(status) && confirming !== null && interval !== null,
+    },
   );
 
   /*
@@ -458,6 +502,15 @@ export function ChangePlanModal({
     next to a claim of a saving, with nothing on screen to check the claim
     against. The interval now changes the RATE, not the unit, and the year's
     total is shown at the confirm step, which is where it is charged.
+
+    ⚠ **`interval === "annual"` READS A NULL AS MONTHLY, AND THE REASON THAT IS
+    NOT THIS CARD'S DEFECT IS STRUCTURAL RATHER THAN LUCKY (#1763).** Every
+    caller of this is inside something the pane does not draw while the status
+    is unread — `trio` and `window5` are empty on a null rung (#1747), the
+    footer's `offered` is null with them, and the comparison table now declines
+    on a null cycle outright. The same holds for `switchBillingLabel` and for
+    the cards' own `billed yearly` line. **A null never reaches a price**; what
+    it would mean if one ever did is written here rather than discovered.
   */
   const priceOf = (plan: LadderPlan) => priceAMonth(plan.priceInCents, interval === "annual");
 
@@ -473,6 +526,12 @@ export function ChangePlanModal({
        the ladder declines on a null rung (see the declaration); refused here so
        it stays unreachable if it ever is. */
     if (hasSubscription === null) return;
+    /* ⚠ #1763: and the CYCLE beside the road, for the same reason and with the
+       same reachability. The send below names what a customer is charged and
+       over what period, and the card's done-when is that it is never derived
+       from an unread status — a yearly subscriber billed monthly by accident is
+       the one mistake on this surface that cannot be taken back with a click. */
+    if (interval === null) return;
     if (!hasSubscription) {
       setPending(plan.id);
       checkout.mutate({ plan: plan.id as never, interval });
@@ -612,25 +671,45 @@ export function ChangePlanModal({
             header — eyebrow, title, meta, right slot — and this is one control
             inside a modal. Rule: move the part, not the page it came from.
           */}
-          <span className="dp-segmented" role="group" aria-label="Billing interval">
-            <button
-              type="button"
-              className={`dp-segmented__seg${interval === "monthly" ? " dp-segmented__seg--on" : ""}`}
-              aria-pressed={interval === "monthly"}
-              onClick={() => setIntervalChoice("monthly")}
-            >
-              Monthly
-            </button>
-            <button
-              type="button"
-              className={`dp-segmented__seg${interval === "annual" ? " dp-segmented__seg--on" : ""}`}
-              aria-pressed={interval === "annual"}
-              onClick={() => setIntervalChoice("annual")}
-            >
-              Annual
-              <span className="dp-plan__badge">{monthsFree()} MONTHS FREE</span>
-            </button>
-          </span>
+          {/*
+            ⚠ **IT IS NOT DRAWN UNTIL THE CYCLE IS KNOWN — #1763, and that is
+            the same answer #1755 gave the billing toggle on Add credits.**
+
+            `aria-pressed` has two values and BOTH are assertions: `false` on
+            Monthly does not say *we have not been told*, it says **this
+            customer is not on monthly**, and the filled `--on` segment says it
+            again in paint. There is no held position available — a third ARIA
+            state would have to mean *partially pressed*, which is a different
+            claim — so the honest frame is no control, exactly as this pane
+            already declines the ladder (#1747), the reason block and the
+            footer button in that same beat.
+
+            **It is one beat and not a permanent hole**: `interval` is null only
+            while `billing.getStatus` is in flight, and the pane's own held line
+            below covers the same state in words. The *Compare plans* button
+            stays, because it asserts nothing about this account.
+          */}
+          {interval === null ? null : (
+            <span className="dp-segmented" role="group" aria-label="Billing interval">
+              <button
+                type="button"
+                className={`dp-segmented__seg${interval === "monthly" ? " dp-segmented__seg--on" : ""}`}
+                aria-pressed={interval === "monthly"}
+                onClick={() => setIntervalChoice("monthly")}
+              >
+                Monthly
+              </button>
+              <button
+                type="button"
+                className={`dp-segmented__seg${interval === "annual" ? " dp-segmented__seg--on" : ""}`}
+                aria-pressed={interval === "annual"}
+                onClick={() => setIntervalChoice("annual")}
+              >
+                Annual
+                <span className="dp-plan__badge">{monthsFree()} MONTHS FREE</span>
+              </button>
+            </span>
+          )}
           <button
             type="button"
             className="dp-plan__modeswitch"
@@ -640,7 +719,13 @@ export function ChangePlanModal({
           </button>
         </div>
 
-        {compare ? (
+        {/* ⚠ #1763: the table prices every column by the cycle and prints
+            *"Annual plans are charged once a year"* off it, so it does not open
+            on a cycle nobody has read either. While the status is in flight the
+            branch below falls to `cannotArrange`, which is this surface's own
+            sentence for exactly that state — so the customer reads why rather
+            than meeting an empty table. */}
+        {compare && interval !== null ? (
           <CompareGrid
             plans={window5}
             currentId={currentId}
@@ -978,7 +1063,12 @@ export function ChangePlanModal({
         ) : null}
       </footer>
 
-      {confirming && changeQuote.data ? (
+      {/* ⚠ #1763: the title NAMES the cycle (`— billed monthly`) and the press
+          SENDS it, so the dialog does not open on a cycle nobody has read. It
+          is unreachable while the status is in flight — the quote above cannot
+          fire without one — and said here because the title is a sentence a
+          customer reads beside a charge, not a value behind a gate. */}
+      {confirming && changeQuote.data && interval !== null ? (
         <ConfirmDialog
           title={
             interval === "annual"
