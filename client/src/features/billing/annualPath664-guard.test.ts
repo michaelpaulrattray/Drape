@@ -187,10 +187,11 @@ describe("AddCreditsModal", () => {
 
     The arm above stops a CHARGE being named before it is known; this stops the
     BASIS for that charge being named before it is known, which was the half
-    nobody had looked at. `cycle` is `alignToPreview(rawCycle, preview)`, and
-    before the preview answers that is `rawCycle` — cut from `status`, which is
-    the CREDIT cycle and not the period Stripe prorates over. Driven on the
-    yearly fixture: *"Prorated for the 8 days left in this cycle"* became
+    nobody had looked at. `chargeCycle` is `alignToPreview(ownCycle, preview)`
+    — the pair was `cycle` and `rawCycle` when this arm was written, renamed by
+    #1739 — and before the preview answers it is `ownCycle`, cut from `status`,
+    which is the CREDIT cycle and not the period Stripe prorates over. Driven on
+    the yearly fixture: *"Prorated for the 8 days left in this cycle"* became
     *"Prorated for the 343 days left in this cycle"* a second later.
 
     ⚠ **IT IS DELIBERATELY NOT A REGEX OVER THE SENTENCE.** The prose is derived
@@ -208,16 +209,24 @@ describe("AddCreditsModal", () => {
       + " mirror working law 4 is about",
     ).toContain("alignsToPreview(preview)");
 
-    /* 2 · and the sentence is BEHIND it, not merely near it. */
-    const line = source.slice(source.indexOf("Prorated for the ${cycle.daysLeft}"));
+    /* 2 · and the sentence is BEHIND it, not merely near it.
+
+       ⚠ The anchor is asserted to EXIST before it is used to cut. `indexOf`
+       answers -1 on a miss, and `slice(0, -1)` is then the whole file bar one
+       character — so a renamed anchor would have this arm searching the entire
+       source for the gate and passing on a copy of it somewhere else. Found
+       while #1739 renamed the local this anchor names, which is exactly the
+       move that would have triggered it. */
+    const anchor = "Prorated for the ${chargeCycle.daysLeft}";
+    const at = source.indexOf(anchor);
+    expect(at, "the proration sentence is gone — re-read this arm rather than deleting it")
+      .toBeGreaterThan(-1);
     expect(
-      source.slice(0, source.indexOf("Prorated for the ${cycle.daysLeft}")),
+      source.slice(0, at),
       "the proration sentence is no longer gated on the cycle being Stripe's. An unaligned"
       + " cycle is the CREDIT cycle, so the sentence names a basis the charge was not"
       + " computed from. Card 1730.",
-    ).toContain("cycle && alignsToPreview(preview)");
-    expect(line.length, "the proration sentence is gone — re-read this arm rather than deleting it")
-      .toBeGreaterThan(0);
+    ).toContain("chargeCycle && alignsToPreview(preview)");
 
     /* 3 · and a quote that is never coming gets no waiting sentence either —
        the top rung and the hidden rung both leave `selectedId` null, so the
