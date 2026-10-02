@@ -1,7 +1,7 @@
 {
-  "edition": 611,
-  "updatedAt": "2026-10-02T03:05:00.000Z",
-  "shift": "Night shift, 13:05: a paying customer who opened Change plan or Add credits could be shown the wrong plan entirely. If the part of the page that knows which plan you are on failed to load while the list of plans loaded fine, both screens quietly assumed you were on Free: Change plan put the word Current on the free box and arranged everything around it, and Add credits offered you a pre-picked Starter top-up, which is a smaller plan than the one you pay for, with the extra credits worked out against the free allowance instead of yours. Nothing was ever charged wrongly, but you could have bought the wrong thing. It is fixed and waiting on review. Two things only showed up once I opened the real screens and looked: the Add credits button sat on \"Checking the charge...\" forever, and Change plan showed a heading with an empty space under it, which reads as broken rather than as waiting; both now say plainly that we could not read your plan and to try again in a moment. Separately, the crew's own test suite has been failing on main since last night because yesterday's note on this page was written in two paragraphs, which one of our checks does not allow; this note is one paragraph, so that clears with this edition.",
+  "edition": 612,
+  "updatedAt": "2026-10-02T05:20:00.000Z",
+  "shift": "Night shift, 15:20: a paying subscriber opening Add credits was told “Charged today, then on the same date each period.” — the sentence for somebody buying a brand-new subscription, not for somebody who already has one. It showed for the moment before the screen had been told which plan you are on, and it was the last line on that screen still speaking before it knew. Two nights ago the price stopped guessing, last night the plan name did; this was the sentence underneath them both. Fixed, with the same screen's “Pay yearly instead” offer, which was being shown to people already paying yearly. It is on pull request #1756, waiting for a review by hand because it is a money screen. Also tonight: your “at the rebuild” on the canvas colours is written onto its card and that question is closed.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -145,7 +145,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-02T02:59:37.164Z",
+      "readAt": "2026-10-02T05:06:41.572Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -9215,9 +9215,16 @@
     {
       "id": "unread-plan-identity-1747",
       "title": "A plan nobody has read is not the free plan, on the two screens where you spend money (#1747)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1748,
       "note": "Open and held - it touches money and a customer sees it, so it waits for a review by hand."
+    },
+    {
+      "id": "unread-subscription-1749",
+      "title": "An unread subscription is not “no subscription” — Add credits stops naming a charging schedule it has not been told (#1749)",
+      "status": "in-review",
+      "prNumber": 1756,
+      "note": "Open and held — a money screen a customer sees, so it waits for a review by hand."
     }
   ],
   "problems": [
@@ -9301,9 +9308,16 @@
     {
       "id": "unread-plan-shows-free-1747",
       "severity": "warning",
+      "state": "resolved",
+      "title": "Change plan and Add credits could tell a paying customer they are on Free, and offer them a smaller plan (#1747)",
+      "detail": "RESOLVED — merged and live. Both screens ask for two things at once: the list of plans, and which plan you are on. Either can fail on its own, and when the second one did, both screens read the answer as “Free” — so a Pro subscriber saw Free marked as their plan on Change plan, and a pre-selected Starter top-up on Add credits, a plan below the one they pay for. Not a flicker: nothing retried, so it stayed that way. Fixed on pull request #1748, merged 2026-10-02. The same shape one field over is #1749, below."
+    },
+    {
+      "id": "unread-subscription-sentence-1749",
+      "severity": "warning",
       "state": "open",
-      "title": "Change plan and Add credits can tell a paying customer they are on Free, and offer them a smaller plan (#1747)",
-      "detail": "Both screens ask for two things at once: the list of plans, and which plan you are on. They travel together but either can fail on its own, and the plan list is the one almost certain to succeed because it is a fixed list, while your own plan has to be looked up.\n\nWhen only the second failed, both screens assumed Free. Change plan put the word Current on the free box, named your plan as Free in its heading, and arranged the recommendation around the bottom of the ladder. Add credits is worse: because Free is the bottom rung, every paid plan read as an upgrade, so a Pro customer was shown a pre-picked Starter top-up - a smaller plan than the one they pay for - with the extra credits worked out against the free allowance.\n\nIt does not correct itself. Nothing on either screen tries again, so it stays wrong until the page is closed and reopened.\n\nFixed on pull request #1748 and waiting on review. I drove both screens in the real app, in both the light and dark looks, with the fault switched on and off, and checked every number afterwards: the top-up now says plus 50,000 credits against a Pro account rather than plus 72,500 against a free one."
+      "title": "Add credits tells a paying subscriber they are about to start a new subscription, for the moment before it knows they already have one (#1749)",
+      "detail": "Open Add credits and the line under the big number reads “Charged today, then on the same date each period.” That sentence is true of somebody buying a plan for the first time. It is not true of somebody who already pays you every month — their charge is worked out pro rata against the time left in the cycle they are already in, which is what the line says once the screen knows who they are.\n\nThe screen asks for your plan details and has to draw something before the answer arrives. Everything else on it already waits politely: the price shows a dash, the button holds. This one sentence did not — it said the confident thing.\n\nTwo things are fixed. The sentence now says nothing at all until the screen knows, which is the honest amount to say about a fact nobody has. And the “Pay yearly instead and 2 of the twelve months are free” offer in the same paragraph was being shown to people ALREADY paying yearly, for the same reason — it now waits too, and still appears for the people it is for.\n\nThe repair went wider than the sentence, deliberately. The same yes-or-no about whether you have a subscription is read in twelve places across the two money screens, and the sharpest of them decides whether pressing a plan button CHANGES your plan or BUYS you a second one. That one could not actually be reached today — last night's fix happens to stop it — but it was right for the wrong reason, which is the kind of thing that comes back when something above it moves.\n\nOn pull request #1756. It is a money screen, so it waits for a review by hand before it goes live."
     }
   ],
   "acknowledgedReplyIds": [
@@ -9563,10 +9577,11 @@
     254,
     255,
     256,
-    257
+    257,
+    258
   ],
   "nextUp": {
-    "readAt": "2026-10-02T02:59:37.164Z",
+    "readAt": "2026-10-02T05:06:41.571Z",
     "items": [
       {
         "issueNumber": 1469,
@@ -9615,6 +9630,11 @@
       {
         "issueNumber": 1689,
         "title": "N3: investigate cutting Refine's cost so its price can come down — count the ~7 Claude checks a Refine makes, court the fewest it can safely keep, report cost per Refine before any price change (his finance guy's note, 2026-10-01)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1753,
+        "title": "One price for a Roll and a Follow: both cost the Follow's 320 credits a sheet (his word 2026-10-02), so the sheet says one number and a roll simply earns more",
         "urgent": false
       }
     ]
