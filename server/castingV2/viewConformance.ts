@@ -32,9 +32,14 @@ import { z } from "zod";
 import type { CastViewAngle } from "../../shared/boardTypes";
 import { createModuleLogger } from "../logging/logger";
 import { ProviderError, type ReferenceImage, type TextEngine } from "../providers/types";
-import { packageViewExpectation } from "./castViewPackage";
+import { castPackageView, packageViewExpectation } from "./castViewPackage";
 import { pronounsForSex, type CastPronouns } from "./castPronouns";
 import { boundForJudge, type JudgedFrame } from "./judgeFrame";
+import {
+  measureViewFraming,
+  type FramingMeasurement,
+  type FramingReader,
+} from "./viewFramingGeometry";
 
 const log = createModuleLogger("castingV2/viewConformance");
 
@@ -226,6 +231,80 @@ const judgeSystemFor = (pronouns: CastPronouns): string => [
   "The note is one short sentence saying what you saw. The VERDICT is your answer — never write a note that argues against your own verdict; if the note would say the image is fine, the verdict is \"matches\".",
 ].join(" ");
 
+/**
+ * ⚠ **THE FRAMING AXIS, FOLDED — the hand-over of #1612, and the measurement is
+ * the AUTHORITY rather than a second opinion.**
+ *
+ * His ruling, 2026-09-30: *"are the shoulders in frame", "is the face between
+ * the eyebrows and the bottom of the face", "is the whole body head-to-feet in
+ * frame" are geometry*, and a vision model reading a two-part prose rule
+ * answers whichever half is easiest — measured four ways in one afternoon, over-
+ * and under-refusing the SAME view in the same sitting (#1582, #1594, #1595,
+ * #1611). So the geometry decides where it can, and the reading is kept for the
+ * half no box answers.
+ *
+ * The order of these three branches IS the rule:
+ *
+ *  1. **`outOfBand` → `differs`, and the reader is not consulted.** This is the
+ *     whole point. #1611's frame — a close-up with the whole neck and shoulders
+ *     in it — read `matches` 50 times out of 100 against a spec that calls it
+ *     too loose; the measurement answers it the same way every time. A fold
+ *     that let a `matches` reading rescue an out-of-band frame would have
+ *     shipped the coin with extra steps.
+ *  2. **`cannotMeasure` → the reader may still FAIL it, but may not pass it.**
+ *     A segmenter that found no face is not evidence the crop is right, so the
+ *     axis cannot read `matches` off a question nobody answered; and a reader
+ *     that looked and said `differs` saw something real, so that is kept. The
+ *     result is `unsure`, which under part 2 of this card DELIVERS the view
+ *     charged and unchecked with a free Try again — the customer keeps the
+ *     picture and nobody pretends it was checked.
+ *  3. **`inBand` → the reading governs**, because what is left of the posted
+ *     question is the half the geometry cannot reach: an orientation, a turn, a
+ *     concealment, a stride, a feature count. Those are real tests and a pass
+ *     is not a pass without them.
+ *
+ * ⚠ **`null` is the pre-hand-over behaviour and exists for ONE reason**: a judge
+ * constructed with no reader at all, which is every test that does not care
+ * about framing. The production factory (`signEngine.ts`) refuses to build one
+ * without a reader, and `signEngineFramingReader.test.ts` asserts that at the
+ * wire — because an optional dependency on a money path is otherwise a silent
+ * road back to the coin.
+ */
+export function foldFramingAxis(input: {
+  measurement: FramingMeasurement | null;
+  read: { verdict: AxisVerdictWord; note?: string };
+}): AxisVerdict {
+  const { measurement, read } = input;
+  if (measurement === null) return axisFrom(read);
+  const failing = measurement.readings.filter((reading) => reading.held === false);
+  const unanswered = measurement.readings.filter((reading) => reading.held === null);
+  if (measurement.verdict === "outOfBand") {
+    return {
+      pass: false,
+      verdict: "differs",
+      note: `measured out of band: ${failing.map((reading) => reading.note).join("; ")}`,
+    };
+  }
+  if (measurement.verdict === "cannotMeasure") {
+    if (read.verdict === "differs") {
+      return {
+        pass: false,
+        verdict: "differs",
+        note: `the framing could not be measured and the reader turned it down: ${read.note ?? ""}`.trim(),
+      };
+    }
+    return {
+      pass: false,
+      verdict: "unsure",
+      note: `the framing could not be measured: ${unanswered.map((reading) => reading.note).join("; ")}`,
+    };
+  }
+  return axisFrom({
+    verdict: read.verdict,
+    note: `measured in band; ${read.note ?? "the reader raised nothing"}`,
+  });
+}
+
 /** Fail-closed on every axis, with one honest reason. */
 function unjudged(
   method: string,
@@ -247,6 +326,32 @@ function unjudged(
 
 export type ViewConformanceJudgeConfig = {
   engine: TextEngine;
+  /**
+   * ⚠ **THE SEGMENTER THAT ANSWERS THE FRAMING BAND — #1612's hand-over, and it
+   * belongs HERE for the same reason `boundForJudge` does.**
+   *
+   * Both roads into this judge — a Sign's five views and a Try again — reach it
+   * through one function, so a measurement taken here cannot be forgotten by a
+   * caller and cannot drift between the two. `viewRetryService` was the half of
+   * the refusal road that #1492 got stuck in, and it could not have been covered
+   * from `signService` at all.
+   *
+   * **It costs no new fal allowance, read rather than assumed** (the memory this
+   * repository keeps: a FIFTH declared fal path refuses to boot).
+   * `falRegionReader` calls `throughFalGate`, so every read here waits on the
+   * same `FAL_CONCURRENCY` courtesy pool the face scan and every other region
+   * read already share — `falBudget.ts`'s four paths and their sum of 19 are
+   * untouched by this change.
+   *
+   * **What it costs per Sign, stated** (law 3 of the disappearing-technology
+   * law): the five views a Sign buys name `subject` three times and
+   * `face`+`subject` once between them — `threeQuarter` names nothing, because a
+   * band with no rules is measured without a single call. That is **4 segmenter
+   * reads per Sign at ~1¢ each**, taken in parallel with the judge's own call,
+   * which runs 23–36 s on his own frames. A region read is a second or two
+   * against that, so the wall clock a customer waits does not move.
+   */
+  framingReader?: FramingReader;
   /**
    * Angles this judge must fail regardless of the picture, or `"all"`.
    *
@@ -299,6 +404,47 @@ export function createViewConformanceJudge(config: ViewConformanceJudgeConfig): 
       boundForJudge(input.candidate),
     ]);
     const frames: readonly JudgedFrame[] = [anchor.record, candidate.record];
+
+    /*
+      THE BAND IS MEASURED ON THE FRAME THE CUSTOMER GETS, and it starts HERE so
+      it runs beside the judge's own call rather than in front of it.
+
+      ⚠ **`input.candidate.bytes`, NOT `candidate.image`** — and the distinction
+      is the one `judgeFrame.ts` exists about. The bounded frame is a downscaled
+      copy made so the pair fits inside the reader's deadline; the band is a
+      statement about the PICTURE THAT IS DELIVERED, so it is measured on the
+      provider's own bytes. The geometry is scale-free by construction (both
+      terms of every rule come off the same mask in the same frame), so this is
+      not about the answer changing — it is about which frame the record is a
+      claim about.
+
+      ⚠ **`.catch` is not belt-and-braces: without it an abandoned measurement
+      is an unhandled rejection.** Every road below this line can return early —
+      a refusal, an account failure, a timeout, an unparsed reply — and the
+      promise would still be in flight. `measureViewFraming` already turns a
+      reader that throws into a `cannotMeasure` per rule, so this arm is for the
+      failure it cannot see (its own bug, a band that refuses), and it fails the
+      way the rest of this file fails: toward "nobody could tell", which
+      delivers.
+    */
+    const measuring: Promise<FramingMeasurement | null> = config.framingReader
+      ? measureViewFraming({
+        band: castPackageView(input.angle).band,
+        image: input.candidate.bytes,
+        reader: config.framingReader,
+      }).catch((error: unknown) => {
+        log.error(
+          { angle: input.angle, err: error },
+          "[viewConformance] the framing band could not be measured — the axis falls to the reader",
+        );
+        return {
+          verdict: "cannotMeasure",
+          readings: [],
+          landmarksRead: [],
+          method: `geometry:refused — ${error instanceof Error ? error.message : String(error)}`,
+        } satisfies FramingMeasurement;
+      })
+      : Promise.resolve(null);
 
     let text: string;
     try {
@@ -415,14 +561,30 @@ export function createViewConformanceJudge(config: ViewConformanceJudgeConfig): 
       `unsure` fails, which is §I stated in one place instead of relied upon in
       a prompt: an axis nobody could judge is not an axis that passed.
     */
+    /*
+      ⚠ **AND THE FRAMING AXIS IS THE ONE AXIS THAT IS NO LONGER THE READER'S
+      ANSWER — #1612's hand-over.** `identity` and `wardrobe` are untouched, by
+      name and on purpose: #1229 is a whole card about not moving the identity
+      sentence, and this change does not move a byte of it.
+    */
+    const measurement = await measuring;
     const axes: Record<ConformanceAxis, AxisVerdict> = {
       identity: axisFrom(parsed.data.identity),
-      angle: axisFrom(parsed.data.angle),
+      angle: foldFramingAxis({ measurement, read: parsed.data.angle }),
       wardrobe: axisFrom(parsed.data.wardrobe),
     };
     return {
       pass: CONFORMANCE_AXES.every((axis) => axes[axis].pass),
-      method: `judge:${config.engine.id}`,
+      /*
+        The method names BOTH readers, because a row that records a framing
+        verdict should say what answered it. `conformanceMethod` is matched for
+        EQUALITY against `"unavailable"` and nothing else (`viewDeliveredUnchecked`,
+        `castProjection`), so extending the success value is safe — checked at
+        every reader of the key rather than assumed.
+      */
+      method: measurement === null
+        ? `judge:${config.engine.id}`
+        : `judge:${config.engine.id}+${measurement.method}`,
       axes,
       frames,
     };

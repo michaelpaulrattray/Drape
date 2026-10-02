@@ -206,6 +206,103 @@ export type ViewFramingBand = {
    */
   readonly readerRemainder?: string;
   /**
+   * ⚠ **THE SENTENCES OF THIS VIEW'S OWN `spec.framing` THAT THE RULES ABOVE
+   * RESTATE IN FULL, AND WHICH THE JUDGE IS THEREFORE NO LONGER ASKED — the
+   * hand-over, #1612, his ruling of 2026-09-30.**
+   *
+   * # Why this is a list of SENTENCES and not of clauses
+   *
+   * His ruling is that *"the prose framing spec stops being sent to the vision
+   * model as a question"*. Measured at the seven live specs before a byte moved,
+   * that is literally achievable on ONE of them: **six specs state a measured
+   * test and a reader's test inside one sentence.** `backFull`'s whole framing
+   * spec is *"the whole body seen from directly behind, head to feet inside the
+   * frame, face not visible"* — a direction, a crop and a concealment, three
+   * clauses and two commas.
+   *
+   * So there were two roads and only one of them is honest for a shift to take:
+   *
+   *  1. **Cut his sentences at the commas** and post the halves. That composes
+   *     a sentence he never wrote — *"the whole body seen from directly behind,
+   *     face not visible"* — and posts it as the standard a delivered picture is
+   *     held to. **#1582 is the measurement that settles it**: three careful
+   *     rewordings of ONE framing spec were courted on 2026-09-30 and *each one
+   *     broke a correct picture*. Recomposing six is not a wiring, it is an
+   *     editorial change to what he judges, and this card's own body forbids it
+   *     (*"Not a rewording of the judge's sentences"*).
+   *  2. **Remove only what is restated IN FULL, verbatim, at sentence
+   *     granularity** — and declare the rest, with the reason, where the band
+   *     is. That is this field.
+   *
+   * # What the hand-over therefore is, on every view
+   *
+   * **The measurement becomes the AUTHORITY on the framing axis** — an
+   * `outOfBand` reading fails the axis whatever the reader thought, and an
+   * `inBand` reading is what a pass now requires. That half lands on all seven
+   * views and is the determinism his ruling is about: the same frame cannot
+   * answer two ways any more.
+   *
+   * **And the reader stops seeing the sentences listed here.** Today that is
+   * `closeUp`'s too-loose pair and nothing else — which is exactly the coin he
+   * measured (#1611: a close-up with the whole neck and shoulders in frame
+   * passed 50/50 against its own spec).
+   *
+   * ⚠ **THE NARROWING WAS DRIVEN BEFORE IT SHIPPED, because a shorter question
+   * is a different question and a reading can change when its context does**
+   * (`scripts/_1612-handover-court-disposable.mts`, 8 real judge calls on his
+   * own production frames, 2026-10-02). His two correct close-ups — asset 306
+   * and asset 345, the tusked face under a cowl — read `matches` on 3 of 3 each
+   * against the narrowed question, so nothing correct started failing; and
+   * #1611's own two frames now fail on the MEASUREMENT with the number in the
+   * note (*"0.48 of a face's height of picture sits below it (at most 0.3)"*
+   * and 0.56), where the old question answered them with a coin. The judge's
+   * own notes on the narrowed question are substantive rather than hedged
+   * (*"Tight front-on crop from forehead to chin with margin of neck skin
+   * visible below"*), which is what says it is answering the half it was left
+   * rather than guessing at a sentence that is no longer there.
+   *
+   * ⚠ **THE DECLARED SHORTFALL, because an undeclared one is the whole defect
+   * class this card is about.** On the six views whose sentences are mixed, the
+   * reader is still shown a clause the measurement now answers, so a reader that
+   * over-refuses on framing can still fail the axis after the geometry passed.
+   * Under part 2 of this card that costs a MARK and never a picture — the view
+   * is delivered, charged, `Unchecked · Try again` at a price of zero — but it
+   * is a wrong mark, and the fix is clause-granular sentences in his own words.
+   * **That is his editorial call, with a worked example per view on the card.**
+   *
+   * # What a reader may rely on
+   *
+   * Every entry is a VERBATIM substring of the live `spec.framing`, ending at a
+   * sentence boundary, and the question the judge is posted is what is left
+   * after the entries are removed — so the posted text is always a subsequence
+   * of his own sentences and a shift cannot reword the standard through this
+   * field. `viewFramingBands.test.ts` holds all of it, including the tie this
+   * repository would otherwise have no way to see: **a rule's cited clause must
+   * fall inside a sentence listed here, or the rule is answering something the
+   * judge is still being asked.**
+   */
+  readonly restatedInFull?: readonly string[];
+  /**
+   * ⚠ **WHICH MEASURED CLAUSE THIS VIEW STILL SHOWS THE READER, AND WHY IT
+   * CANNOT LEAVE — required, by a guard, exactly when it is true.**
+   *
+   * A rule whose cited clause sits inside a sentence the judge is STILL posted
+   * is a clause answered twice: once deterministically and once by a reading
+   * that may disagree. That is a real cost (a correct picture can be marked
+   * `Unchecked` by the reader after the geometry passed) and it is the whole
+   * remainder of the hand-over, so it is declared per view rather than left to
+   * be inferred from the absence of a {@link ViewFramingBand.restatedInFull}
+   * entry.
+   *
+   * ⚠ **AN ABSENCE IS NOT A DECLARATION — that sentence is the lesson #1675
+   * paid for.** Five clauses went unmeasured for a month because nothing in the
+   * band or its guard could tell *"the spec says nothing more"* from *"nobody
+   * wrote the rule"*. `viewFramingBands.test.ts` derives which views owe this
+   * field from the citations themselves and reddens on a missing one, so the
+   * field cannot drift into being decorative.
+   */
+  readonly readerAlsoAsked?: string;
+  /**
    * ⚠ **THE CLAUSES OF THIS VIEW'S OWN `spec.framing` THAT NEITHER A RULE NOR
    * {@link ViewFramingBand.readerRemainder} ACCOUNTS FOR — the hand-over's debt,
    * declared per view because that is the unit it is paid off in.**
