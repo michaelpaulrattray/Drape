@@ -39,7 +39,7 @@
  * this was pushed (a sixth undated id in the registry; a deleted debt line).
  */
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { MODELS } from "@shared/modelRegistry";
 import {
@@ -160,6 +160,59 @@ function parseRegistryIds(source: string): string[] {
   return ids;
 }
 
+/**
+ * THE PATHS A DEBT ENTRY CITES MUST EXIST (#1785).
+ *
+ * A `why` is prose, and the only part of prose a machine can hold is its
+ * citations. This list's whole promise is that *"an entry whose row no longer
+ * carries that status is a RED rather than a line nobody deletes"* — but a
+ * cited FILE that moves rots in silence, and the reader who most needs these
+ * addresses is the one deciding whether a shut-down id is still reachable.
+ *
+ * ⚠ **It earned itself on its first run, on a line it did not write.** The
+ * 2026-10-01 correction to the `gemini-3-pro-image-preview` entry cited
+ * `features/boards/canvas/nodes/useSheetController.ts:137` — a path relative
+ * to `client/src/`, not to the repository, so it resolved to nothing. Repaired
+ * in the commit that added this arm, which is the positive control the real
+ * population could not otherwise give.
+ *
+ * **The rule is narrow on purpose, and its limit is stated rather than left to
+ * be assumed:** a backticked token is a path when it contains a `/` AND ends
+ * in a known source extension, optionally followed by `:<line>`. A BARE
+ * filename (`CastNode.tsx`) is NOT checked — resolving one needs a tree walk,
+ * and this arm's green must not be read as covering them. Symbols
+ * (`IMAGE_PRO`), dotted members (`CREDIT_COSTS.castingImage`), procedure ids
+ * (`generation.refreshSlots`) and routes (`/app/canvas/:id`) are not paths and
+ * are not collected — driven as a negative control below, because an
+ * extractor that quietly collected one of them would redden the real-population
+ * arm for a reason that has nothing to do with rot, and point the diagnosis at
+ * the tree.
+ */
+const CITED_PATH = /`([^`]*\/[^`]*\.(?:ts|tsx|mts|cts|js|mjs|cjs|md|sh|yml|yaml|json|css))(?::\d+)?`/g;
+
+export function citedRepoPaths(why: string): string[] {
+  const found: string[] = [];
+  for (const match of why.matchAll(CITED_PATH)) found.push(match[1]);
+  return [...new Set(found)];
+}
+
+/** Which of a debt list's cited paths are not in the tree, with the citer named. */
+function missingCitedPaths(
+  debts: readonly AcknowledgedModelDebt[],
+  exists: (path: string) => boolean,
+): string[] {
+  const problems: string[] = [];
+  for (const debt of debts) {
+    for (const path of citedRepoPaths(debt.why)) {
+      if (!exists(path)) problems.push(`${debt.id}: cites \`${path}\`, which is not in the tree`);
+    }
+  }
+  return problems;
+}
+
+const existsInTree = (path: string): boolean =>
+  statSync(resolve(ROOT, path), { throwIfNoEntry: false }) !== undefined;
+
 describe("vendor model status — the registry's ids are dated and sourced (#1537)", () => {
   const registrySource = readFileSync(REGISTRY_PATH, "utf8");
   const importedIds = Object.values(MODELS) as string[];
@@ -184,6 +237,17 @@ describe("vendor model status — the registry's ids are dated and sourced (#153
       unclearDebt: STATUS_UNCLEAR_AT_SOURCE,
     });
     expect(problems).toEqual([]);
+  });
+
+  it("every file path a debt entry cites is in the tree — and the citations exist at all (#1785)", () => {
+    const cited = [...WIRED_DESPITE_SHUTDOWN, ...STATUS_UNCLEAR_AT_SOURCE]
+      .flatMap((debt) => citedRepoPaths(debt.why));
+    // The floor first: an extractor that silently found nothing would make the
+    // assertion below vacuous and green (invariant 7), and this suite's own
+    // "finds the registry's ids at all" arm is the precedent for saying so.
+    expect(cited.length).toBeGreaterThanOrEqual(5);
+    expect(missingCitedPaths([...WIRED_DESPITE_SHUTDOWN, ...STATUS_UNCLEAR_AT_SOURCE], existsInTree))
+      .toEqual([]);
   });
 
   it("carries no row for an id the registry does not ship", () => {
@@ -298,6 +362,35 @@ describe("vendor model status — the checker's own controls (working law 2)", (
   it("REFUSES an empty id set rather than reporting a clean tree", () => {
     const problems = auditVendorStatus({ ids: [], table: {}, shutdownDebt: [], unclearDebt: [] });
     expect(problems.join("\n")).toContain("the reader is broken");
+  });
+
+  it("REFUSES a debt entry citing a path that is not in the tree (#1785)", () => {
+    const problems = missingCitedPaths(
+      [{ id: "b", card: "#1", why: "reached from `server/does/not/exist.ts:12`" }],
+      () => false,
+    );
+    expect(problems.join("\n")).toContain("not in the tree");
+  });
+
+  it("CONTROL: says nothing about a debt entry whose cited path IS in the tree", () => {
+    const problems = missingCitedPaths(
+      [{ id: "b", card: "#1", why: "reached from `server/lib/boardOps.ts`" }],
+      (path) => path === "server/lib/boardOps.ts",
+    );
+    expect(problems).toEqual([]);
+  });
+
+  it("the path extractor collects a path, and nothing that merely looks like one", () => {
+    // Negative control. Without it, a symbol or a route collected by accident
+    // would redden the real-population arm for a reason that has nothing to do
+    // with a citation rotting — and the diagnosis would point at the tree.
+    expect(
+      citedRepoPaths(
+        "`server/lib/boardOps.ts` and `client/src/a/b.tsx:4` and `shared/x.mts` — " +
+          "but not `IMAGE_PRO`, `CREDIT_COSTS.castingImage`, `generation.refreshSlots`, " +
+          "`CastNode.tsx`, `/app/canvas/:id` or `geminiViews`",
+      ),
+    ).toEqual(["server/lib/boardOps.ts", "client/src/a/b.tsx", "shared/x.mts"]);
   });
 
   it("the second reader collects a declaration, and nothing that is not one", () => {
