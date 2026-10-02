@@ -305,6 +305,16 @@ export type CreditDisplayReading = {
  * | `framesFor(plan.credits, costPerFrame).toLocaleString()` | a count of FRAMES, not of credits — credits divided by a cost, so already scale-free. Dividing it would make a correct number wrong. Rule 1 indicts it only because `credits` appears in the expression. |
  * | `Math.round(perDollar).toLocaleString("en-US")` | a RATE. Through `displayBalance` it would be divided by five twice. |
  *
+ * ⚠ **TWO OF THOSE ROWS CHANGED THEIR EXPRESSION IN #1755 AND NEITHER
+ * CHANGED ITS VERDICT**, which is the case the stale arm exists to make
+ * visible rather than to punish. `AddCreditsModal`'s billing interval became
+ * `boolean | null`, so both of its rate call sites narrow with
+ * `annual === true` where they read `annual`. **The site did not move and the
+ * reason it stays is untouched**: the conversion is still inside
+ * `formatCreditsPerDollar`, and rule 1 still indicts it only because `credits`
+ * appears in the expression. A row updated here rather than deleted is what
+ * keeps the count honest through a refactor.
+ *
  * ⚠ **So the client half of this census has a FLOOR OF FIVE, and a later slice
  * that drives it to zero has done something wrong rather than something
  * thorough.** The honest repair for all five is a rule that follows a value
@@ -397,8 +407,8 @@ export const UNROUTED: readonly {
    */
   stays: string | null;
 }[] = [
-  { file: "client/src/features/billing/AddCreditsModal.tsx", rule: "beside-the-word", expression: "rateComparable ? `, up from ${formatCreditsPerDollar(priceAMonth(currentPrice, annual), currentCredits)}` : null", count: 1, stays: "a RATE, not an amount: the conversion is INSIDE `formatCreditsPerDollar`, which calls `displayBalance` itself (`planMath.ts:390`). The rules read a name and cannot see through a function boundary. #1747 widened the guard in front of it from a bare positive check to the two null checks: both figures are read out of the plan catalogue by the account's own rung, and that rung is null until billing.getStatus answers - so a rate 'up from' an unread plan was another plan's rate." },
-  { file: "client/src/features/billing/AddCreditsModal.tsx", rule: "beside-the-word", expression: "formatCreditsPerDollar(priceAMonth(selected.price, annual), selected.credits)", count: 1, stays: "a RATE, not an amount: the conversion is INSIDE `formatCreditsPerDollar`, which calls `displayBalance` itself (`planMath.ts:390`). The rules read a name and cannot see through a function boundary." },
+  { file: "client/src/features/billing/AddCreditsModal.tsx", rule: "beside-the-word", expression: "rateComparable ? `, up from ${formatCreditsPerDollar(priceAMonth(currentPrice, annual === true), currentCredits)}` : null", count: 1, stays: "a RATE, not an amount: the conversion is INSIDE `formatCreditsPerDollar`, which calls `displayBalance` itself (`planMath.ts:390`). The rules read a name and cannot see through a function boundary. #1747 widened the guard in front of it from a bare positive check to the two null checks: both figures are read out of the plan catalogue by the account's own rung, and that rung is null until billing.getStatus answers - so a rate 'up from' an unread plan was another plan's rate." },
+  { file: "client/src/features/billing/AddCreditsModal.tsx", rule: "beside-the-word", expression: "formatCreditsPerDollar(priceAMonth(selected.price, annual === true), selected.credits)", count: 1, stays: "a RATE, not an amount: the conversion is INSIDE `formatCreditsPerDollar`, which calls `displayBalance` itself (`planMath.ts:390`). The rules read a name and cannot see through a function boundary." },
   { file: "client/src/features/billing/ChangePlanModal.tsx", rule: "beside-the-word", expression: "formatCreditsPerDollar(priceOf(plan), plan.credits)", count: 1, stays: "a RATE, not an amount: the conversion is INSIDE `formatCreditsPerDollar`, which calls `displayBalance` itself (`planMath.ts:390`). The rules read a name and cannot see through a function boundary." },
   { file: "client/src/features/billing/ChangePlanModal.tsx", rule: "formatted", expression: "framesFor(plan.credits, costPerFrame).toLocaleString()", count: 1, stays: "a count of FRAMES — credits divided by a per-frame cost, so already scale-free. Dividing it would make a correct number wrong. Rule 1 indicts it only because `credits` appears inside the expression." },
   { file: "client/src/features/settings/planMath.ts", rule: "named-on-the-way-out", expression: "Math.round(perDollar).toLocaleString(\"en-US\")", count: 1, stays: "the rate's own formatting, inside the function that has already converted. Through `displayBalance` it would be divided by five twice." },
