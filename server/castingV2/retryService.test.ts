@@ -482,8 +482,23 @@ describe("the sequence", () => {
  * of the two the service actually read.
  */
 describe("the retry is priced from the tile's own row, not from the roll-slice constant", () => {
-  /** A tile that cost more than the account-level quote — item 1's Follow. */
-  const FOLLOW_SLICE = 200;
+  /**
+   * A tile that cost something other than the account's quote.
+   *
+   * ⚠ **IT WAS A LITERAL `200` — "item 1's Follow" — AND #1753 MADE 200 THE
+   * ROLL SLICE TOO, WHICH TURNED THIS FIXTURE FROM A CONTROL INTO A COINCIDENCE.**
+   * His one-price ruling put `rollCandidate` at 200, so the negative control
+   * below (`not.toBe(ROLL_SLICE)`) would have gone red while the service was
+   * perfectly correct — a test failing because a PRICE moved, which is the
+   * shape this suite exists to stop.
+   *
+   * Derived from the constant instead, so the two can never collide again
+   * whatever he prices a slice at. The figure does not need to be a price the
+   * product charges: the point is that the ROW is what the service reads, and a
+   * production row holds whatever it was written with (483 at 20, one day's
+   * worth at 150).
+   */
+  const FOLLOW_SLICE = ROLL_SLICE + 50;
 
   it("charges the row's recorded price, not the constant", async () => {
     seed({ pointsCost: FOLLOW_SLICE });

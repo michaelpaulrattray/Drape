@@ -10,7 +10,7 @@
  * The **ledger** is what the database stores, what is charged, and what is
  * refunded. It does not change under P1 and nothing here writes it. The
  * **display** scale is what a customer reads: `ledger / 5`. A balance of 18,440
- * reads 3,688; a Roll of 1,200 reads 240.
+ * reads 3,688; a Roll of 1,600 reads 320.
  *
  * `LEDGER_PER_DISPLAY_CREDIT` is the ONLY place that 5 lives. A second copy —
  * a `/ 5` at a render site, a `* 50` left over from the legacy multiplier — is
