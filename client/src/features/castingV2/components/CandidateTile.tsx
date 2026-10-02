@@ -114,11 +114,12 @@ export function CandidateTile({
    * The roll price. No longer printed on this button — the dock states it
    * once, persistently (founder ruling, 2026-08-02).
    *
-   * ⚠ **THAT RULING FOLDED ROLLS AND FOLLOWS INTO ONE LINE, AND THE PREMISE
-   * DIED ON 2026-10-01**: a Roll is 240 display and a Follow 320 (#1601 item
-   * 1), so one line cannot state both. The dock now names the price of the
-   * button the DOCK fires, and where a tile's Follow price goes is a question
-   * on his desk (#1699) — not a thing to answer here by printing it again.
+   * ⚠ **THAT RULING'S PREMISE DIED ON 2026-10-01 AND CAME BACK ON 2026-10-02.**
+   * The two prices diverged for one day (240 display against 320, #1601 item 1),
+   * so one line could not state both and the dock began naming the price of the
+   * button it fires. His one-price ruling (#1753) put them back together at 320
+   * for both, so the single line is honest again and #1699 is moot. Either way
+   * this button does not print a price.
    *
    * D-15's intent is no surprise spend, and it was written after Follow reading
    * as free cost the founder 640 credits. Its literal implementation had become

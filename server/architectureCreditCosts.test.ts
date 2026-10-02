@@ -11,7 +11,7 @@
  *
  *   absent   `CASTING_V2_REFINE_PRICE_CREDITS` (25 then, 1,750 since #1601) — a top-level const rather
  *            than an object property, and the most-charged operation there is
- *   absent   `CASTING_V2_ROLL_PRICE_CREDITS` (160 then, 1,200 since #1601) and
+ *   absent   `CASTING_V2_ROLL_PRICE_CREDITS` (160 then, 1,200 under #1601, and
  *            `CASTING_V2_SIGN_PRICE_CREDITS` (450 then, 8,500 since #1601) — the two
  *            most-quoted numbers
  *            in the whole Casting V2 program, because both are ARITHMETIC
@@ -342,13 +342,20 @@ describe("the committed Atlas against the values TypeScript evaluates", () => {
       own total is on this list now because something quotes it — the dock's
       single price line could stand for both actions only while the two slices
       agreed.
+
+      ⚠ **AND THE ROLL'S MOVED AGAIN ON 2026-10-02 (#1753): 1,200 — 1,600,
+      so the first two entries are now the SAME NUMBER.** That is his one-price
+      ruling, not a fold returning one operand twice: the two totals are derived
+      from two separately declared slices that happen to agree, and the identities
+      asserted above are what prove each still comes from its own. This arm went
+      red on the price change, which is exactly what a literal pin is for.
     */
     expect([
       CASTING_V2_ROLL_PRICE_CREDITS,
       CASTING_V2_FOLLOW_PRICE_CREDITS,
       CASTING_V2_SIGN_PRICE_CREDITS,
       CASTING_V2_VIEW_RETRY_PRICE_CREDITS,
-    ]).toEqual([1200, 1600, 8500, 1850]);
+    ]).toEqual([1600, 1600, 8500, 1850]);
   });
 
   it("holds the price that lives outside both cost modules", () => {

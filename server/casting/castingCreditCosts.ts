@@ -62,34 +62,53 @@ export const CASTING_V2_COSTS = {
   /**
    * One candidate on a sheet. The refundable unit.
    *
-   * **150 = 30 display** (his approved pricing, rev 21, adopted 2026-09-30;
-   * the rung is #1598). Eight of them is a Roll at 1,200 ledger / 240 display.
-   * It was **20** from 2026-07-30 to 2026-10-01.
+   * **200 = 40 display** — the same slice a Follow is priced in, on his
+   * ruling of 2026-10-02 (#1753), verbatim: *"go with your reccomendation on the
+   * roll and follow one price is better and we earn more for rolls simple"*.
+   * Eight of them is a sheet at 1,600 ledger / 320 display, and that is what a
+   * Roll and a Follow each cost.
+   *
+   * ⚠ **THE TWO PRICES AGREE AND THEY ARE STILL TWO PRICES.** A roll costs
+   * the house roughly a third of what a follow does (about $0.12 of engine time
+   * against $0.32-0.52, the reading he decided on — #1699), so one price does
+   * not mean one margin: it means a roll earns more, and a customer reads one
+   * number instead of two. Where the two differ now is the books, not the screen.
+   *
+   * It was **150** (30 display) for one day, 2026-10-01 to 2026-10-02, and
+   * **20** from 2026-07-30 to 2026-10-01.
    */
-  rollCandidate: 150,
+  rollCandidate: 200,
   /**
    * One candidate on a sheet that was cast from an attached face — a FOLLOW.
    *
-   * **200 = 40 display**, so a Follow is 1,600 ledger / 320 display. Dearer
-   * than a Roll because a follow candidate carries the anchor photograph and
-   * the lineage prompt through the engine, which the spec's own cost reading
-   * prices above an open roll.
+   * **200 = 40 display**, so a Follow is 1,600 ledger / 320 display.
+   *
+   * ⚠ **IT WAS DEARER THAN A ROLL FOR ONE DAY AND IS NOT ANY MORE.** The
+   * spec priced a follow candidate above an open roll because it carries the
+   * anchor photograph and the lineage prompt through the engine, and that cost
+   * reading still holds — what changed is his answer to it (#1753): one price
+   * for both, taken at the FOLLOW's number, so the dearer road sets the price and
+   * the cheaper one earns more. This slice did not move; `rollCandidate` came up
+   * to meet it.
    *
    * ⚠ **IT IS ITS OWN LITERAL AND MUST NEVER BE DERIVED FROM `rollCandidate`.**
-   * That sentence used to carry the caveat *"even while the two are equal"*;
-   * the equality is gone and the rule is simply the rule. They are two prices,
-   * and a `followCandidate: rollCandidate` would reprice a Follow to a Roll by
-   * a diff that looks like it changed one number. Working law 4 bans a second
-   * list shadowing a source of truth; it does not ask two independent facts to
-   * pretend to be one. `followSlicePrice.test.ts` reads the DECLARATION and
-   * refuses anything here but a bare numeral.
+   * That sentence carried the caveat *"even while the two are equal"*, dropped
+   * it on 2026-10-01 when the two diverged, and **the caveat is back and is
+   * load-bearing again** (#1753). They are two prices that agree, and a
+   * `followCandidate: rollCandidate` would reprice a Follow to a Roll by a diff
+   * that looks like it changed one number. Working law 4 bans a second list
+   * shadowing a source of truth; it does not ask two independent facts to pretend
+   * to be one. `followSlicePrice.test.ts` reads the DECLARATION and refuses
+   * anything here but a bare numeral — and while the two values agree that arm
+   * is the ONLY one in the file that can see this particular mistake, because
+   * every arm comparing values is satisfied by either answer.
    */
   followCandidate: 200,
   /** Candidates per roll (§F: the sheet is eight). */
   rollCandidateCount: 8,
 } as const;
 
-/** 8 × 150 = 1,200 credits (240 display). Derived, never hardcoded twice. */
+/** 8 × 200 = 1,600 credits (320 display). Derived, never hardcoded twice. */
 export const CASTING_V2_ROLL_PRICE_CREDITS =
   CASTING_V2_COSTS.rollCandidate * CASTING_V2_COSTS.rollCandidateCount;
 
@@ -101,10 +120,20 @@ export const CASTING_V2_ROLL_PRICE_CREDITS =
  * `check-cleanup-dispositions`'s reading — an exported price with no
  * production reader is invariant 7's shape — and left an arm pinning its
  * absence with the instruction *"add it in the commit that quotes it, and
- * delete this arm then."* This is that commit: `castingV2.config` hands it to
- * the sheet, because the dock's single price line could stand for both actions
- * only while the two slices agreed. That arm is gone, and the quoter is the
- * whole reason this symbol may exist.
+ * delete this arm then."* That commit was #1601 item 1: `castingV2.config` hands
+ * it to the sheet, because the dock's single price line could stand for both
+ * actions only while the two slices agreed. That arm is gone, and the quoter is
+ * the whole reason this symbol may exist.
+ *
+ * ⚠ **THE SLICES AGREE AGAIN SINCE #1753, SO THE REASON ABOVE HAS EXPIRED
+ * AND THE CONSTANT STAYS ON A DIFFERENT ONE.** A Follow has its own declared
+ * price, and a total derived from it is how a surface quotes a Follow without
+ * quoting a Roll and trusting the two to match. Deleting it would put the sheet
+ * back to inferring a follow's price from the roll's — the mirror working law
+ * 4 bans — and would have to be undone the next time he moves one price and
+ * not the other. The quoter is still real (`routes/castingV2.ts`), so invariant 7
+ * is satisfied either way; what changed is only that the figure it carries now
+ * equals its neighbour's.
  */
 export const CASTING_V2_FOLLOW_PRICE_CREDITS =
   CASTING_V2_COSTS.followCandidate * CASTING_V2_COSTS.rollCandidateCount;
@@ -127,16 +156,16 @@ export const CASTING_V2_FOLLOW_PRICE_CREDITS =
  * photograph would not load never reaches a price — it is a free refusal
  * before the claim — so there is no third state to price.
  *
- * ⚠ **THE TABLE IS STILL A PARAMETER, AND THE REASON HAS CHANGED RATHER THAN
- * EXPIRED.** It was a seam because the two slices were equal and an arm over
- * equal numbers proves nothing (working law 2): with the table read from
- * module scope, an arm could assert that `anchored: true` returns
- * `followCandidate` and still pass with the two branches SWAPPED. The real
- * table now disagrees with itself — 150 against 200 — so the default alone
- * would catch a swap today. The seam stays because the arms must keep failing
- * for a reason that does not depend on today's two numbers: the day somebody
- * prices a Follow at a Roll again, the injected table is what keeps every arm
- * in `followSlicePrice.test.ts` non-vacuous.
+ * ⚠ **THE TABLE IS A PARAMETER BECAUSE THE TWO SLICES AGREE, AND THAT
+ * REASON IS LOAD-BEARING AGAIN SINCE #1753.** An arm over equal numbers proves
+ * nothing (working law 2): with the table read from module scope, an arm could
+ * assert that `anchored: true` returns `followCandidate` and still pass with the
+ * two branches SWAPPED — 200 either way. The real table disagreed with itself
+ * for exactly one day (150 against 200, #1601 item 1 until #1753), which is the
+ * only window in which the default alone would have caught a swap. It would not
+ * now. **So the injected table is not a nicety — it is the whole reason any arm
+ * in `followSlicePrice.test.ts` can see a branch swap at all**, and it is what
+ * reddens the day somebody prices a Follow at a Roll for real.
  */
 export function castingSliceCredits(
   roll: { anchored: boolean },

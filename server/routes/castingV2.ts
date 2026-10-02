@@ -845,16 +845,21 @@ export const castingV2Router = router({
     enabled: captureCastingV2Enabled(ctx.user.id),
     rollPriceCredits: CASTING_V2_ROLL_PRICE_CREDITS,
     /*
-      WHAT A FOLLOW COSTS, AND IT IS A SECOND NUMBER AS OF 2026-10-01 (#1601
-      item 1).
+      WHAT A FOLLOW COSTS. It is a second number, and since #1753 it is the
+      same number.
 
       The dock carried ONE price line for Roll again and Follow together by his
-      ruling of 2026-08-02, which was honest while both were 8 x 20 = 160. A
-      Roll is 1,200 and a Follow 1,600 now, so one number cannot be true of
-      both and the sheet is handed both rather than inferring either. Which one
-      the dock's line states is a QUESTION FOR HIM (#1699) and the sheet's own
-      comment says what the interim is; this field exists so that answer is a
-      one-line change on the surface rather than a wire change.
+      ruling of 2026-08-02, which was honest while both were 8 x 20 = 160. They
+      diverged on 2026-10-01 (#1601 item 1) — 1,200 against 1,600 — so one
+      number could not be true of both and the sheet was handed both rather than
+      inferring either. ⚠ **His ruling of 2026-10-02 put them back together at
+      the follow's figure (#1753)**, so the dock's line is one number said once
+      again and #1699 is moot.
+
+      The field stays, on the reason it was built for: a surface that wants a
+      Follow's price asks for it and is told, rather than reading a Roll's and
+      trusting the two to agree. The day he moves one and not the other, that is a
+      price change and not a wire change.
     */
     followPriceCredits: CASTING_V2_FOLLOW_PRICE_CREDITS,
     candidatesPerRoll: CASTING_V2_COSTS.rollCandidateCount,
