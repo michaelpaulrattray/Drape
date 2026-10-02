@@ -203,11 +203,18 @@ describe("card 387 item 2 — the law-7 sweep: no cycle claimed where none runs"
 
   it("the plan card claims `credits/mo` only where a month actually renews", () => {
     /* The allowance now goes through the display helper (#1600); the GATE this
-       arm is about — `renews && allowance > 0` — is what it reads, and that has
-       not moved. The figure inside the claim is deliberately still matched, so
-       a claim rebuilt from a raw ledger number would not satisfy it. */
+       arm is about — a renewing period AND an allowance worth measuring — is
+       what it reads, and that has not moved. The figure inside the claim is
+       deliberately still matched, so a claim rebuilt from a raw ledger number
+       would not satisfy it.
+
+       ⚠ **THE ALLOWANCE HALF OF THE GATE IS A NAMED CONSTANT NOW (#1741)** and
+       this arm reads the name, exactly as the two below already read
+       `quotable` — the definition is held once, in the arm under this one. The
+       alternative was a third literal copy of the same condition, which is the
+       shape #1703 already went red on here and the reason that docblock exists. */
     expect(billing(), "the /mo allowance is claimed without a renewal again").toMatch(
-      /renews && allowance > 0 \? `\$\{formatCredits\(displayBalance\(allowance\)\)\} credits\/mo`/,
+      /renews && granted \? `\$\{formatCredits\(displayBalance\(allowance\)\)\} credits\/mo`/,
     );
   });
 
@@ -225,13 +232,29 @@ describe("card 387 item 2 — the law-7 sweep: no cycle claimed where none runs"
    * place and its USE at each site. Both facts stay checkable, the new condition
    * is held too, and a future site that re-inlines a weaker gate reddens — which
    * the old shape could not have told from a correct inline one.
+   *
+   * ⚠ **AND IT HAPPENED A SECOND TIME, THE SAME WAY, ONE DAY LATER — #1741,
+   * 2026-10-02.** The allowance half gained its own condition: an allowance
+   * read off a plan catalogue keyed on a DEFAULTED plan id is another plan's
+   * grant rather than a zero, so `allowance` is `number | null` and the gate
+   * now requires it to have been read. Four conditions, two named gates, and
+   * this arm holds both definitions — because a claim gated on a name is only
+   * as strong as the name's definition, and that definition is the one line
+   * nothing else reads.
    */
-  it("the quotable gate names all three conditions a balance claim needs", () => {
+  it("the gate names all four conditions a balance-against-allowance claim needs", () => {
     expect(
       billing(),
       "the gate behind every allowance claim lost a condition — it must require a renewing"
       + " period, an allowance to measure against, AND a balance that has actually been read",
-    ).toMatch(/const quotable = balance !== null && renews && allowance > 0;/);
+    ).toMatch(/const quotable = balance !== null && renews && granted;/);
+    expect(
+      billing(),
+      "`granted` is the allowance half of that gate and it lost a condition. An allowance"
+      + " nobody has read yet is not an allowance of zero: keyed off a defaulted plan id it"
+      + " was the FREE rung's grant, which sails through `> 0` and had the pane quote"
+      + " another plan's figure at a subscriber. #1741.",
+    ).toMatch(/const granted = allowance !== null && allowance > 0;/);
   });
 
   it("the percentage-of-allowance sentence is gated the same way", () => {

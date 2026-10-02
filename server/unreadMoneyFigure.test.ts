@@ -58,14 +58,35 @@ vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
  *
  * ⚠ **THE CREDIT-GRANT NOUNS ARE NOT IN THIS BAN AND THAT IS A STATED LIMIT,
  * NOT AN OVERSIGHT.** `allowance`, `earned`, `reward` and `creditsAwarded` are
- * figures a customer reads and three of them are defaulted to zero today
- * (`features/settings/ReferralBlock.tsx`, `features/settings/AccountSurfaces.tsx`).
+ * figures a customer reads, and three of them were defaulted to zero the day
+ * this was written (`features/settings/ReferralBlock.tsx`,
+ * `features/settings/AccountSurfaces.tsx`); **two remain, both in
+ * `ReferralBlock.tsx` — re-measured 2026-10-02, see the ⚠ below.**
  * They are a third noun group with their own surfaces and their own frames, and
  * they are carded rather than swept in here — **#1727**, which fixed the price
- * family and left this group named. (`allowance`'s own zero is read by
- * `allowance > 0`, so it quotes nothing today; the referral three are the live
- * remainder.) Nothing about them is in `DECLARED`, because the regex cannot see
- * them — the card is the only record, which is why it is named here.
+ * family and left this group named. Nothing about them is in `DECLARED`, because
+ * the regex cannot see them — the card is the only record, which is why it is
+ * named here.
+ *
+ * ⚠ **AND THE PARENTHESIS THAT USED TO CLOSE THAT CLAUSE WAS WRONG, MEASURED BY
+ * #1741 (2026-10-02) — SO `allowance` HAS LEFT THE REMAINDER AND THE REFERRAL
+ * TWO HAVE NOT.** It read *"(`allowance`'s own zero is read by `allowance > 0`,
+ * so it quotes nothing today; the referral three are the live remainder.)"* —
+ * true of a zero, and it was not a zero in the window that mattered.
+ * `AccountSurfaces` looked the plan catalogue up by `status?.planTier ?? "free"`,
+ * so wherever `getPlans` has answered and `getStatus` has not — two independent
+ * entries in one batch reply, one a constant fold and one a database read —
+ * `allowance` was the FREE rung's grant: a real number above zero, which sailed
+ * through `allowance > 0` and had `spendWindowCopy` quote *"of 13,500 this
+ * billing period"* at a subscriber. **A
+ * `?? 0` that is never reached because something upstream hands down a confident
+ * wrong number is not a safe default; it is a default nobody could see.** The
+ * same lookup handed this suite's own `planPriceInCents` repair a 0 from that
+ * rung before its `null` floor was ever reached — ⚠ **#1727's fix could be
+ * walked around, and the walk-around was the plan ID rather than the price.**
+ * Fixed at the key in #1741; `allowance` is `number | null` there now, and
+ * `server/unreadPlanIdentity.test.ts` is the ban on the shape that caused it.
+ * The referral two (`ReferralBlock.tsx`) are the live remainder of this group.
  *
  * ⚠ **AND THE FLOOR IS THE SAME ONE #1703 STATED: this is the measured IDIOM,
  * not a proof of the property.** A surface can still reach a rendered zero
