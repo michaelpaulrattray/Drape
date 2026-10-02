@@ -82,9 +82,16 @@ describe("Card 1607 — the four lines, derived", () => {
     /*
       The example's basis is the whole point of the line. It used to be
       `CREDIT_COSTS.castingImage` — declared in `castingCreditCosts.ts` as *"not
-      part of the new scale"*, for a lane admin-only since #1654 — so the one
-      figure telling a customer what their money buys was priced off a surface
-      they cannot reach.
+      part of the new scale"* — so the one figure telling a customer what their
+      money buys was priced off a road they are not being sold: 350 a frame
+      against the 200 the studio they use actually charges.
+
+      ⚠ This paragraph said *"for a lane admin-only since #1654"* and *"a
+      surface they cannot reach"*, and both were false (#1786, 2026-10-02). The
+      arm below is unaffected — it never read reachability — and the price
+      mismatch above was always the real defect. The same constant is what the
+      LIVE canvas charges, through three `protectedProcedure`s in
+      `server/routes/boardOps.ts`.
 
       Driven against the three live constants rather than against 11,450: the
       day his 2026-10-02 one-price ruling lands on `CASTING_V2_COSTS`, this arm
