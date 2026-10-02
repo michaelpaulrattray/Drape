@@ -146,6 +146,24 @@ const PLAN_DEFAULTED_TO_A_NAME =
  * #1727 FILED THREE DEBTS THE CODE SAID WERE SAFE** and had to correct them in
  * its own guard. The moderator entry below is the one that changed class under
  * that reading: it looks identical to the two modals and is not the same fact.
+ *
+ * ⚠ **THE LIST HAS SHRUNK ONCE AND THE SHAPE OF THAT IS WORTH KEEPING — #1747,
+ * 2026-10-02.** Both `debt` rows — `AddCreditsModal` and `ChangePlanModal` —
+ * were fixed and their entries DELETED, which is what the "list only shrinks"
+ * arm below turns into the receipt: with the sites repaired, leaving the rows
+ * here would redden. The declining branches each one now takes are held by the
+ * two arms at the foot of this suite, because deleting a row proves the `??
+ * "free"` is gone and proves nothing about what the surface then does with the
+ * `null` — this suite's own inherited lesson from #1727.
+ *
+ * What the repair turned out to need beyond the one-line default, and it is the
+ * part a future reader of this list should not have to rediscover: the three
+ * shared ladder helpers (`recommendPlan`, `cardTrio`, `compareWindow`) all began
+ * with `findIndex`, which answers **-1** both for an unread rung and for #391's
+ * HIDDEN rung — two situations wanting opposite answers, and `cardTrio`'s -1
+ * path deliberately draws the bottom three. Defaulting to `null` without
+ * teaching them the difference would have routed the unread state into the
+ * hidden rung's arrangement: the same wrong ladder by another road.
  */
 const DECLARED: ReadonlyArray<{
   readonly file: string;
@@ -155,38 +173,6 @@ const DECLARED: ReadonlyArray<{
   /** For `safe`: the verbatim gate(s) the exemption rests on. */
   readonly gate?: readonly string[];
 }> = [
-  {
-    file: "features/billing/AddCreditsModal.tsx",
-    symbol: "planTier",
-    verdict: "debt",
-    why:
-      "#1741's shape on the top-up surface, read at the bytes: there is no loading"
-      + " gate, and `options` is memoised on `[plans, currentId]`. While BOTH queries"
-      + " are unread `options` is empty and the button reads `No higher plan`, which"
-      + " claims nothing about a plan. The reachable defect is the ASYMMETRIC state —"
-      + " `getPlans` answered, `getStatus` not, which one batch reply can carry"
-      + " because `getPlans` is a constant fold and `getStatus` reads the database."
-      + " There `currentId` is \"free\", `order.indexOf` answers 0, EVERY paid rung"
-      + " reads as above the customer's, and a Pro subscriber is offered a"
-      + " pre-selected Starter top-up whose `+ N credits a month` delta is computed"
-      + " against the FREE grant — permanently, not for a beat. Carded rather than"
-      + " fixed here: #1606 is rebuilding this surface, and the frames are its own.",
-  },
-  {
-    file: "features/billing/ChangePlanModal.tsx",
-    symbol: "planTier",
-    verdict: "debt",
-    why:
-      "The same line on the ladder surface, and `currentId` reaches four readers:"
-      + " `currentName` (`ladder.find(id === currentId)?.name` — so the header names"
-      + " the customer's plan \"Free\"), `recommendPlan`, `cardTrio` and"
-      + " `compareWindow`, plus `plan.id === currentId` which draws `Current plan` on"
-      + " the FREE card. Same state as the row above and reachable for the same"
-      + " reason: `ladder` is empty while `plans` is unread, so nothing is claimed"
-      + " then — it is `plans` ANSWERED beside an unanswered `status` that turns a"
-      + " defaulted id into a wrong answer rather than no answer. Its own card and"
-      + " its own frames.",
-  },
   {
     file: "features/moderator/UserInvestigationWidgets.tsx",
     symbol: "planTier",
@@ -447,5 +433,218 @@ describe("an unread plan is not the free plan (#1741)", () => {
       + " #1703 guarded the balance on this line and left the allowance beside it, which"
       + " is the same half-guard one noun over. #1741.",
     ).toContain("allowance !== null && allowance > 0");
+  });
+
+  /**
+   * ⚠ **THE TWO MONEY SURFACES, AND THEY NEEDED MORE THAN THE DEFAULT — #1747.**
+   *
+   * The arm above covers the Settings surfaces, where the defaulted id reached
+   * CAPTIONS. On these two it reached the OFFER: which rungs exist above the
+   * account, which card is marked current, which plan the one ink button sells.
+   * So each of these holds a declining branch that the `?? null` alone does not
+   * give, and every one of them was a reachable wrong claim before this card:
+   *
+   * | surface | what it told a Pro subscriber |
+   * |---|---|
+   * | Change plan | header **"Free today"**, `Current plan` on the free card, and the one ink button reading **"Upgrade to Free"** |
+   * | Add credits | a pre-selected **Starter** top-up, its delta against the free grant |
+   */
+  it("the two money surfaces decline to arrange a ladder around a plan they have not been told", () => {
+    const read = (...parts: string[]) =>
+      withoutComments(readListedSource(path.join(CLIENT_SRC, ...parts)) ?? "");
+
+    const ladder = read("features", "settings", "planLadder.ts");
+    /*
+      ⚠ **EACH HELPER IS SLICED OUT BEFORE IT IS ASSERTED ON, AND A FILE-WIDE
+      `toContain` WAS MEASURED SURVIVING SABOTAGE HERE.** `cardTrio` and
+      `compareWindow` both decline with the identical line `if (currentId ===
+      null) return [];` — so an arm reading the whole file stayed GREEN with
+      `cardTrio`'s deleted, satisfied by its neighbour's copy. That is the
+      `:not(:disabled)` class this repository has shipped before: a guard whose
+      subject is one of several identical lines cannot name which one it found.
+    */
+    const bodyOf = (name: string) => {
+      const from = ladder.indexOf(`export function ${name}(`);
+      expect(from, `planLadder no longer declares ${name} — #1747's arms cannot read it`)
+        .toBeGreaterThan(-1);
+      /* The next top-level `export` is the end of this body. Anchored at the
+         start of a line so a mention inside a docblock cannot cut it short. */
+      const rest = ladder.slice(from + 1);
+      const next = rest.search(/^export /m);
+      return next === -1 ? ladder.slice(from) : ladder.slice(from, from + 1 + next);
+    };
+
+    expect(
+      bodyOf("cardTrio"),
+      "`cardTrio` no longer separates an UNREAD rung from #391's HIDDEN rung. Both make"
+      + " `findIndex` answer -1, and the -1 path draws the bottom three cards on purpose —"
+      + " so without this line an unread rung inherits that arrangement and a Pro"
+      + " subscriber is shown the free rung's ladder by another road. #1747.",
+    ).toContain("if (currentId === null) return [];");
+    expect(
+      bodyOf("compareWindow"),
+      "`compareWindow` no longer declines on an unread rung, so the five-column comparison"
+      + " is centred on nothing — and `Math.max(0, -1)` below reads an unknown rung as the"
+      + " BOTTOM one. #1747.",
+    ).toContain("if (currentId === null) return [];");
+    expect(
+      bodyOf("recommendPlan"),
+      "`recommendPlan` no longer declines on an unread rung. #1747.",
+    ).toContain("if (currentId === null) return null;");
+    /* The narrow half: `cardTrio`'s own -1 fallback must still be there, or this
+       card has quietly taken #391's hidden-rung behaviour with it. */
+    expect(
+      bodyOf("cardTrio"),
+      "#391's hidden-rung fallback is gone. An account on the unpriced top rung is not on"
+      + " the offered ladder and is deliberately shown the first three with nothing marked"
+      + " current — that is a KNOWN rung and is not what #1747 changed.",
+    ).toContain("if (currentIndex < 0) return ladder.slice(0, 3);");
+
+    const change = read("features", "billing", "ChangePlanModal.tsx");
+    expect(
+      change,
+      "the ladder is keyed on a DEFAULTED tier again, so the free card is marked `Current"
+      + " plan` on a subscriber's screen and the whole trio is arranged around the bottom"
+      + " rung. #1747.",
+    ).toContain("const currentId = status?.planTier ?? null;");
+    expect(
+      change,
+      "⚠ the ONE reader the helpers cannot cover: `offered` does its own arithmetic, and"
+      + " `currentIndex + 1` is 0 when the rung is unknown — so the single ink button on a"
+      + " paying customer's screen reads `Upgrade to Free`. It is the loudest thing on the"
+      + " surface and the exact opposite of an upgrade. #1747.",
+    ).toContain(": recommended ?? ladder.find((plan, index) => index === currentIndex + 1)");
+
+    const topup = read("features", "billing", "AddCreditsModal.tsx");
+    expect(
+      topup,
+      "the top-up surface keys the rung lookup on a defaulted tier again, so every paid"
+      + " rung reads as above the customer's and a Pro subscriber is offered a Starter"
+      + " top-up. #1747.",
+    ).toContain("const currentId = status?.planTier ?? null;");
+    expect(
+      topup,
+      "⚠ `No higher plan` is claimed off an empty ladder again. #1734 gave that claim three"
+      + " states and gated it on `plans`; an unread RUNG is a third cause of the same empty"
+      + " `options`, and with the catalogue answered the old `Boolean(plans)` told a"
+      + " subscriber there is nothing above them. #1747.",
+    ).toContain("const laddered = Boolean(plans) && currentId !== null;");
+    expect(
+      topup,
+      "the allowance is read out of the catalogue by a defaulted rung again — and that is a"
+      + " real number from the WRONG PLAN, which `?? 0` cannot be told from a zero. The"
+      + " delta on the button is then out by a whole plan. #1747.",
+    ).toContain("currentCredits !== null ? selected.credits - currentCredits : null");
+  });
+
+  /**
+   * ⚠ **THE TWO REPAIRS THE SOURCE READ COULD NOT HAVE FOUND — both came from
+   * LOOKING at the surfaces, which is working law 6 earning its place (#1747).**
+   *
+   * Keying the lookup on `null` is correct and, on its own, shipped two states
+   * no customer should be shown. Each is held here because each is a branch a
+   * later edit can quietly delete without any other arm noticing:
+   *
+   * 1. **Add credits** — making `laddered` require the rung takes `nothingAbove`
+   *    false, and the button then fell through to **"Checking the charge…"
+   *    permanently**: no rung means no `selectedId`, so the preview never runs
+   *    and no quote is ever coming. That is #1734's own defect, reached by a
+   *    third road, opened by this card's fix.
+   * 2. **Change plan** — the ladder correctly drew NOTHING, which rendered as a
+   *    modal with a heading and a hole. Honest and unreadable: a customer reads
+   *    it as broken rather than waiting.
+   */
+  it("neither surface renders an honest blank a customer would read as broken", () => {
+    const read = (...parts: string[]) =>
+      withoutComments(readListedSource(path.join(CLIENT_SRC, ...parts)) ?? "");
+
+    const topup = read("features", "billing", "AddCreditsModal.tsx");
+    /* ⚠ Read as an ORDER rather than as a block of text: what makes this branch
+       correct is that it is asked BEFORE `nothingAbove`, and a `toContain` over
+       the formatted chain breaks the moment prettier re-indents it.
+
+       ⚠ `lastIndexOf`, measured rather than assumed: `{working` appears three
+       times in this file and the FIRST is `busy={working}` on the modal body, so
+       an `indexOf` slice swallowed the PICKER's own `nothingAbove` branch and
+       read its position as the button's. The arm then failed against a correct
+       tree, which is the direction that wastes a shift. */
+    const buttonAt = topup.lastIndexOf("{working", topup.indexOf("Checking the charge"));
+    const label = topup.slice(buttonAt, topup.indexOf("Checking the charge"));
+    expect(label.length, "the confirm button's label chain could not be found").toBeGreaterThan(0);
+    expect(
+      label.indexOf("currentId === null"),
+      "the confirm button no longer answers for an unknown rung at all, so it falls through"
+      + " to `Checking the charge…` and waits forever on a quote that cannot be asked for:"
+      + " no rung means no `selectedId`, so the preview never runs. That is #1734's defect"
+      + " reached by a third road, and this card's own fix is what opened it. #1747.",
+    ).toBeGreaterThan(-1);
+    expect(
+      label.indexOf("currentId === null"),
+      "the unknown-rung branch has moved BELOW `nothingAbove`, which is where it stops"
+      + " working: `nothingAbove` is false in that state and `quoteReady` is false too, so"
+      + " the first matching branch becomes the waiting one again. The order is the whole"
+      + " of the repair. #1747.",
+    ).toBeLessThan(label.indexOf("nothingAbove"));
+
+    const change = read("features", "billing", "ChangePlanModal.tsx");
+    expect(
+      change,
+      "the Change plan modal draws a hole where the ladder would be. Correct about the"
+      + " facts and unreadable on screen — a heading, a billing toggle and nothing else."
+      + " #1747.",
+    ).toContain("cannotArrange ?");
+    expect(
+      change,
+      "⚠ the held line's condition is no longer the CATALOGUE having answered. That is what"
+      + " keeps it off the ordinary loading beat: both queries ride one batch reply, so"
+      + " `ladder` is empty while `status` is unread and this branch cannot be reached until"
+      + " they come apart. A timer or a bare `currentId === null` flashes it on every open."
+      + " #1747.",
+    ).toContain("const cannotArrange = ladder.length > 0 && currentId === null;");
+    expect(
+      change,
+      "the held line names no machinery and tells the customer what to do — the"
+      + " disappearing-technology law's refusal clause. #1747.",
+    ).toContain("We could not read which plan you are on just now");
+  });
+
+  /**
+   * ⚠ **THE SITE THIS SUITE'S READER CANNOT SEE, PINNED BY HAND — #1747's law-7
+   * sweep, and it is the stated floor with a live instance behind it.**
+   *
+   * `ChangePlanModal` passes the confirm dialog's quote input as
+   * `(confirming?.id ?? null) as never`. The identifier before the `??` is `id`,
+   * which carries neither "plan" nor "tier", so `PLAN_DEFAULTED_TO_A_NAME` walks
+   * straight past it however the default is spelled — the walk above would be
+   * silent if it read `?? "starter"` again, which is what it read before this
+   * card.
+   *
+   * It was never a live defect and the sweep says so: the query's `enabled` is
+   * false on exactly the condition that makes the default apply, so nothing
+   * travelled. What is held here is the PAIR of facts that keeps it that way —
+   * the placeholder carries no plan name, AND the gate is still the thing that
+   * stops it. Either one alone is a trap: a name behind a gate becomes a wrong
+   * answer the day somebody prefetches, and a gate with nothing behind it is
+   * fine until the placeholder grows a name again.
+   */
+  it("the confirm quote's placeholder names no plan, and its gate is still what stops it", () => {
+    const change = withoutComments(
+      readListedSource(path.join(CLIENT_SRC, "features", "billing", "ChangePlanModal.tsx")) ?? "",
+    );
+
+    expect(
+      change,
+      "the confirm dialog's quote input defaults to a plan NAME again. Unreachable today"
+      + " because the query is disabled when `confirming` is null — and that is exactly the"
+      + " trap: it becomes a Starter quote shown to a customer confirming something else the"
+      + " day that gate moves, with nothing on screen looking wrong. `null` fails loudly"
+      + " instead. #1747.",
+    ).toContain("newPlan: (confirming?.id ?? null) as never");
+    expect(
+      change,
+      "the confirm quote is no longer gated on there BEING something to confirm, so the"
+      + " placeholder above now travels. Restore the gate or stop sending a placeholder."
+      + " #1747.",
+    ).toContain("enabled: hasSubscriptionForQuote(status) && confirming !== null");
   });
 });

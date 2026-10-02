@@ -63,6 +63,34 @@ export type LadderPlan = {
 export const COMPARE_COLUMNS = 5;
 
 /**
+ * ⚠ **AN UNKNOWN RUNG AND A RUNG THAT IS NOT ON THE LADDER ARE DIFFERENT FACTS,
+ * AND ALL THREE HELPERS BELOW READ THEM AS ONE UNTIL #1747.**
+ *
+ * Every one of them starts with `ladder.findIndex((plan) => plan.id ===
+ * currentId)`, and that answers **-1** for two situations which want opposite
+ * answers:
+ *
+ * · **#391's HIDDEN RUNG** — a real plan, read off `getStatus`, deliberately
+ *   absent from the offered ladder because he has not priced it. There is
+ *   genuinely nothing above it to sell, so `cardTrio` falls back to the first
+ *   three with nothing marked current. **That behaviour is correct and is
+ *   unchanged.**
+ * · **A RUNG NOBODY HAS READ YET** — `billing.getStatus` has not answered.
+ *   Arranging a ladder around it is arranging it around a guess.
+ *
+ * The call sites could not tell them apart because the caller's own `?? "free"`
+ * turned the second into the FIRST RUNG rather than into -1 — so a Pro
+ * subscriber got the free rung's arrangement, marked current, with the rung
+ * above it as the offer. Keying on `status?.planTier ?? null` is the repair, and
+ * it only works if these three then DECLINE on `null` instead of inheriting the
+ * hidden rung's answer: `cardTrio(ladder, null, …)` returning the bottom three
+ * is the same wrong ladder under a different route.
+ *
+ * So each takes `PlanTier | null` and answers nothing at all for `null`. The
+ * type is what makes it unmissable at a future call site; the `-1` paths below
+ * are untouched.
+ */
+/**
  * The recommendation: the cheapest plan whose monthly credits cover the
  * projected spend of this cycle.
  *
@@ -79,9 +107,12 @@ export const COMPARE_COLUMNS = 5;
  */
 export function recommendPlan(
   ladder: LadderPlan[],
-  currentId: PlanTier,
+  currentId: PlanTier | null,
   projectedSpend: number,
 ): LadderPlan | null {
+  /* Nothing is recommended against a rung nobody has read — see the note above
+     this function. Separate from the `-1` below, which is #391's hidden rung. */
+  if (currentId === null) return null;
   const currentIndex = ladder.findIndex((plan) => plan.id === currentId);
   if (currentIndex < 0) return null;
   const current = ladder[currentIndex];
@@ -103,9 +134,14 @@ export function recommendPlan(
  */
 export function cardTrio(
   ladder: LadderPlan[],
-  currentId: PlanTier,
+  currentId: PlanTier | null,
   recommended: LadderPlan | null,
 ): LadderPlan[] {
+  /* ⚠ THE ONE PLACE THE TWO FACTS GIVE OPPOSITE ANSWERS, so the order of these
+     two lines is the whole fix: `null` draws NO cards, where the `-1` below
+     draws the bottom three on purpose (#391). Collapsing them is what offered a
+     Pro subscriber the free rung's arrangement. */
+  if (currentId === null) return [];
   const currentIndex = ladder.findIndex((plan) => plan.id === currentId);
   if (currentIndex < 0) return ladder.slice(0, 3);
   const wanted = new Set<number>([currentIndex]);
@@ -134,9 +170,14 @@ export function cardTrio(
  */
 export function compareWindow(
   ladder: LadderPlan[],
-  currentId: PlanTier,
+  currentId: PlanTier | null,
   recommended: LadderPlan | null,
 ): LadderPlan[] {
+  /* ⚠ Before the short-circuit below, not after it: a ladder of five or fewer
+     rungs returns whole, so a `null` rung would otherwise draw the full
+     comparison centred on nothing. And `Math.max(0, -1)` two lines down is a
+     floor that silently reads an unknown rung as the BOTTOM one. */
+  if (currentId === null) return [];
   if (ladder.length <= COMPARE_COLUMNS) return ladder;
   const currentIndex = Math.max(0, ladder.findIndex((plan) => plan.id === currentId));
   const recommendedIndex = recommended

@@ -157,19 +157,17 @@ const DECLARED: ReadonlyArray<{
    */
   readonly gate?: readonly string[];
 }> = [
-  {
-    file: "features/billing/AddCreditsModal.tsx",
-    /* The capture is the identifier the default sits on — `…?.price ?? 0` —
-       rather than the `currentPrice` it is assigned to. */
-    symbol: "price",
-    verdict: "safe",
-    why:
-      "`currentPrice` is never formatted. Its only reader is the `up from` clause, which is drawn"
-      + " solely when the figure is above zero — so an unread catalogue omits the"
-      + " clause rather than quoting a price of nothing, which is #1703's own"
-      + " `a sentence renders nothing` convention.",
-    gate: ["currentPrice > 0"],
-  },
+  /*
+    #1747 removed this list's AddCreditsModal `price` row, and the shape of that
+    is worth one line because it is the direction this suite wants. The row was
+    `safe`: `currentPrice` defaulted to 0 and the `up from` clause declined on
+    `> 0`, so no zero was ever quoted. What #1747 found is that the ZERO was not
+    the only wrong number available — the figure is read out of the plan
+    catalogue by the account's own rung, and that rung was itself defaulted to
+    the free one, so the clause could quote the FREE plan's rate to a Pro
+    subscriber with every gate here satisfied. The default is `null` now and the
+    site no longer defaults a money figure at all, so its entry goes.
+  */
   {
     file: "pages/CastingSheet.tsx",
     symbol: "priceCredits",
