@@ -1,7 +1,7 @@
 {
-  "edition": 613,
-  "updatedAt": "2026-10-02T06:45:00.000Z",
-  "shift": "Night shift, 16:45: a sheet of eight now costs the same whether you roll fresh or follow a face you already like — 320 credits either way, which is your \"one price is better and we earn more for rolls\" from this morning. A roll was 240 and a follow 320 for one day; from this change the studio quotes one number and never asks you to hold two in your head, and the difference lives in our margin instead of on your screen. It is built, looked at in both light and dark, and waiting on review before it goes live. Two price lines on this page were also out of date against your own later words and are corrected here: the price table above, and your top-up packs, which now read the volume ladder you approved today rather than the flat prices from last week. One thing found while checking: the plan cards work out \"about N casting frames\" using the old studio's price, so every plan is telling you it buys less than half what it really does — that is written up as its own job.",
+  "edition": 614,
+  "updatedAt": "2026-10-02T08:40:00.000Z",
+  "shift": "Night shift, 18:40: a customer on a plan can buy credits again. That road has been missing since February — when someone ran out mid-shoot their only option was a bigger plan — and this builds it on the volume ladder you approved today: 5,000 credits for $12, 10,000 for $22, 25,000 for $50, and the same rate at any size in between, so the slider and the pack never disagree. A free account is offered a plan instead, in one sentence. This is the money half only — the checkout and the credits landing when the payment does; the Add credits screen you described this morning is the next job, so nothing is on your screen yet. One thing worth knowing: the written record of your ruling said the slider should be charged at the 5,000 price times however many you buy, which was true of last week's flat prices and would have charged $24 for the 10,000 pack you priced at $22. The three prices your own hand made in Stripe settled it, and the wrong arithmetic is now a test that fails if anyone puts it back. It is waiting on review before it goes live.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -38,11 +38,11 @@
           "title": "Checkout on Stripe's own prices: the yearly price you see is the one you are charged (#1605)"
         },
         {
-          "state": "waiting",
-          "title": "Top-up packs for plan holders on your volume ladder: 5,000 = $12 · 10,000 = $22 · 25,000 = $50, plus a slider (#1606)"
+          "state": "in-progress",
+          "title": "Top-up packs for plan holders on your volume ladder: 5,000 = $12 · 10,000 = $22 · 25,000 = $50, plus a slider — the checkout and the credits landing are built and in review; the Add credits screen is next (#1606)"
         },
         {
-          "state": "waiting",
+          "state": "done",
           "title": "Plan cards in Rinoa's four lines, with Yuna's final pass (#1607)"
         },
         {
@@ -145,7 +145,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-02T06:37:06.307Z",
+      "readAt": "2026-10-02T08:24:28.483Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -9581,7 +9581,7 @@
     258
   ],
   "nextUp": {
-    "readAt": "2026-10-02T06:37:06.306Z",
+    "readAt": "2026-10-02T08:24:28.483Z",
     "items": [
       {
         "issueNumber": 1469,
@@ -9599,18 +9599,8 @@
         "urgent": false
       },
       {
-        "issueNumber": 1602,
-        "title": "P1-3 — Plan grants and the free grant: PLAN_TIERS to the new amounts, 13,500 once for free, and every existing free account raised to it",
-        "urgent": false
-      },
-      {
         "issueNumber": 1606,
         "title": "P1-7 — Top-up checkout for plan holders: 5,000 = $12 · 10,000 = $24 · 25,000 = $60, granted as fixed ledger amounts — only after P1-5",
-        "urgent": false
-      },
-      {
-        "issueNumber": 1607,
-        "title": "P1-8 — Plan cards and the pricing page in Rinoa's four lines, at the new scale, with Yuna's final pass before it goes live",
         "urgent": false
       },
       {
@@ -9630,11 +9620,6 @@
       {
         "issueNumber": 1689,
         "title": "N3: investigate cutting Refine's cost so its price can come down — count the ~7 Claude checks a Refine makes, court the fewest it can safely keep, report cost per Refine before any price change (his finance guy's note, 2026-10-01)",
-        "urgent": false
-      },
-      {
-        "issueNumber": 1753,
-        "title": "One price for a Roll and a Follow: both cost the Follow's 320 credits a sheet (his word 2026-10-02), so the sheet says one number and a roll simply earns more",
         "urgent": false
       }
     ]
