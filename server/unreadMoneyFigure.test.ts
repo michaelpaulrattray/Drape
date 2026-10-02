@@ -465,6 +465,20 @@ describe("a charge nobody has read yet is not a charge of zero (#1725)", () => {
    * line-wise walk can judge — the branches sit on different lines, and a
    * regex loose enough to catch it would redden on every `: 0` in the tree.
    * The ban stays the idiom; this holds the one surface it was written for.
+   *
+   * ⚠ **#1749 MOVED THIS PATTERN AND THE MOVE IS WHY THE ARM READS THE WAY IT
+   * DOES NOW.** `hasSubscription` became `boolean | null`, so the declaration
+   * grew a THIRD branch above the two this arm was written for: unread answers
+   * `null` before either road is chosen. The arm reddened on a change that
+   * makes the figure strictly MORE honest — the same thing that happened to
+   * it at #1725 — and the repair is the same one: point it at the conditions
+   * rather than at the old line, and add the new branch to what it holds.
+   *
+   * So it now holds THREE facts, each named: the unread branch answers `null`
+   * (#1749), the subscriber branch answers the preview-or-`null` (#664), and
+   * the checkout branch still ends in `null` rather than a zero (#1725, this
+   * arm's own subject). Deleting any one of the three is the way this figure
+   * gets a confident number nobody has.
    */
   it("the Add credits figure keeps BOTH of its branches unknown-until-read", () => {
     const source = readListedSource(
@@ -472,12 +486,14 @@ describe("a charge nobody has read yet is not a charge of zero (#1725)", () => {
     );
     expect(
       withoutComments(source ?? ""),
-      "`dueToday` no longer holds `null` on both branches. The checkout branch's fallback is"
-      + " a bare ternary `: 0`, which the idiom ban cannot see — and a zero there is the same"
-      + " $0.00 the subscriber branch was fixed for, under a button that looks pressable."
-      + " #1725.",
+      "`dueToday` no longer holds `null` on all THREE of its branches. The checkout branch's"
+      + " fallback being a bare ternary `: 0` is what the idiom ban cannot see — and a zero"
+      + " there is the same $0.00 the subscriber branch was fixed for, under a button that"
+      + " looks pressable (#1725). The unread branch answering anything but `null` is the"
+      + " same defect one state earlier: a road chosen before we know which road it is"
+      + " (#1749).",
     ).toMatch(
-      /const dueToday: number \| null = hasSubscription\s*\?\s*\(preview\?\.immediateCharge \?\? null\)\s*:\s*selected[\s\S]{0,160}?:\s*null;/,
+      /const dueToday: number \| null =\s*hasSubscription === null\s*\?\s*null\s*:\s*hasSubscription\s*\?\s*\(preview\?\.immediateCharge \?\? null\)\s*:\s*selected[\s\S]{0,200}?:\s*null;/,
     );
   });
 });
