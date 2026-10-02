@@ -30,9 +30,17 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { judgeBriefingConformance } from "../scripts/lib/briefingConformance.mts";
+import { briefingReadingSuites, judgeBriefingConformance } from "../scripts/lib/briefingConformance.mts";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+import { runHook } from "./testing/hookDriver";
+
+/* #1679 put real `git grep` and `git rev-list` processes in this suite (the
+   derivation is read AT THE COMMIT, which is the whole point of it), so it
+   joined #548's population the moment those arms landed. File level, never per
+   arm: a number typed onto one `it(…)` is not inherited by its neighbour. */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const realBriefing = readFileSync(path.join(repoRoot, "server/crew/crew-briefing.json"), "utf8");
@@ -116,5 +124,71 @@ describe("judgeBriefingConformance", () => {
     expect(rite).toContain("judgeBriefingConformance(");
     // The refusal is real, not a log line: the red branch dies.
     expect(rite).toMatch(/conformance\.ok && !DRY[\s\S]{0,200}die\(/);
+  });
+});
+
+/**
+ * #169's SHAPE A SECOND TIME, AND WHAT CLOSED IT (#1679).
+ *
+ * The judge above answers *does this edition PARSE*. Edition 599 parsed and
+ * still turned `main` red: its `shift` field was written as five paragraphs,
+ * `crewBodyWhitespace.test.ts` holds that a briefing field carrying a blank
+ * line is rendered by a class that keeps one, and **the first PR to merge main
+ * forward — #1678, a pricing PR — failed its gate for a reason that had nothing
+ * to do with its diff.** The cause is #169's own sentence applied to a
+ * different guard: the arm exists and runs on PRs, and an edition push never
+ * rides a PR.
+ *
+ * So the rite runs the client suites that read the briefing, and the list is
+ * DERIVED at the commit rather than named — the thing being proven here is that
+ * the derivation finds a real population and that an empty one refuses, because
+ * a `git grep` over a glob fails to EMPTY rather than loudly, and a step that
+ * checks nothing while printing `ok` is the shape invariant 7 is about.
+ */
+describe("briefingReadingSuites — the other half of the edition gate (#1679)", () => {
+  it("finds the real client suites at HEAD, and the whitespace guard is one", () => {
+    const suites = briefingReadingSuites(repoRoot, "HEAD");
+    expect(suites.length, "an empty derivation is the failure this exists to refuse").toBeGreaterThan(0);
+    expect(suites).toContain("client/src/features/admin/components/crew/crewBodyWhitespace.test.ts");
+    expect(suites).toContain("client/src/features/admin/components/crew/crewTypes.test.ts");
+  });
+
+  it("selects CLIENT readers only — the server's are the judge's own job", () => {
+    const suites = briefingReadingSuites(repoRoot, "HEAD");
+    expect(suites.every((suite) => suite.startsWith("client/src/")), suites.join(", ")).toBe(true);
+    // Named because it is the obvious thing to fold in and must not be: it is
+    // this judge's own suite, and it already runs here.
+    expect(suites).not.toContain("server/briefingConformance.test.ts");
+  });
+
+  it("POSITIVE CONTROL: it can come back empty — the reader is not matching everything", () => {
+    // Without this, a derivation that returned every file would make the arms
+    // above pass for the wrong reason (working law 2). The repository's FIRST
+    // commit predates `client/src` entirely.
+    /* ⚠ `runHook`, not a bare `execFileSync`, and the reason is this repository's
+       own pinned population (#943, `server/testing/hookDriver.test.ts`): a suite
+       that spawns a child synchronously AND holds the characters `.status`
+       anywhere in its CODE joins that population and must be declared there with
+       a reason. This suite holds them at the `pipeline.0.status` regex above — a
+       claim about the briefing's own JSON, nothing to do with a child process —
+       so a bare call here earns a declared entry whose reason is a coincidence of
+       characters, which is how a pinned population rots. The driver is the honest
+       answer either way: it is the house reader, it THROWS on a process that
+       never started rather than handing back a sentinel, and it takes this file
+       out of the population instead of into the list. PR #1693 went red here. */
+    const listed = runHook("git", ["rev-list", "--max-parents=0", "HEAD"], { cwd: repoRoot });
+    expect(listed.status, listed.stderr).toBe(0);
+    const first = listed.stdout.trim().split(/\r?\n/)[0]!;
+    expect(first, "no root commit read — the control cannot ask its question").toMatch(/^[0-9a-f]{7,40}$/);
+    expect(briefingReadingSuites(repoRoot, first)).toEqual([]);
+  });
+
+  it("the deploy rite runs them, refuses on an empty population, and dies on a red", () => {
+    const rite = readFileSync(path.join(repoRoot, "scripts/deploy-rite.mts"), "utf8");
+    expect(rite).toContain("briefingReadingSuites(");
+    // An empty derivation REFUSES rather than printing ok over nothing.
+    expect(rite).toMatch(/suites\.length === 0 && !DRY[\s\S]{0,120}die\(/);
+    // And a red suite refuses too — a log line would leave the hole open.
+    expect(rite).toMatch(/!verdict\.ok[\s\S]{0,400}this edition would redden/);
   });
 });
