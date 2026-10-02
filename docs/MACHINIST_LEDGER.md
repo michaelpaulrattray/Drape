@@ -1799,3 +1799,49 @@ that ran rather than a number corrected by hand. Its sibling: the operation
 table's timestamps render in LOCAL time (UTC+10) even though `dbConnection.mts`
 parses them correctly as UTC — a Sign printed at `Oct 01 19:xx` ran at `09:xx`
 UTC, which is what settles §B2's before/after.
+
+---
+
+## §F's AFTER — the shard landed (#1811, `foreman-20261003-0700`, 2026-10-02)
+
+⚠ **NOT A PATROL RUN.** Appended by the Foreman shift that built #1811, because
+run 6 §F's trigger is the reason the card exists and its before/after belongs
+beside the before. Run 7 owns the next full reading.
+
+**Read at step grain on PR #1816's own two gate runs** (`gh run view --json jobs`),
+which is the same instrument §F used, and the step is still named `Unit tests`
+so the series is continuous.
+
+| job | run 6 before | after (run 37068536821) | change |
+|---|---|---|---|
+| `gate-checks` (whole job) | **533.5 s** | **143 s** | **−73%** |
+| `unit-tests-1` | — | 235 s (492 files) | new |
+| `unit-tests-2` | — | 236 s (492 files) | new |
+| `static-shapes` | 126 s | 145 s | +15% |
+| **gate WALL** (the longest parallel job) | **533.5 s** | **236 s** | **−55.8%** |
+| **runner-seconds** (the three jobs above) | **533.5 s** | **614 s** | **+15.1%** |
+
+**The split is exact and balanced**: 492 + 492 = 984, and the tree collected 984
+because `558af8636` (#1808) landed one new test file while the run was queued —
+983 the hour before. Halves within 0.4%.
+
+⚠ **TWO NUMBERS THE CARD PREDICTED AND MISSED, STATED RATHER THAN ROUNDED
+AWAY.** #1811 priced the wall at ~227 s (got 236 s, close) and the runner cost
+at **+9.7%** (got **+15.1%**). The gap is per-job setup: the card measured 26 s
+from run 37036750361's set-up/checkout/pnpm/node/install steps, and the real
+figure for a job that installs is nearer 40 s — `gate-checks` also came in at
+143 s against the predicted 131 s. **The direction and the size of the trade
+hold; the second decimal did not.** −57% predicted, −55.8% measured.
+
+⚠ **AND THE FIRST GATE RUN IS THE ONE WORTH READING, because it was GREEN in
+the way that matters least.** `pnpm test -- --shard=N/2` — the documented
+separator — makes pnpm 10 discard everything after it, so both jobs ran all 983
+files and the gate got SLOWER while every tally stayed green. The wall figures
+from that run (4m38s, 7m12s) are readings of the whole suite, not of a half.
+**A lever that silently does not engage looks exactly like a lever that
+engaged.** Both defects (that, and the suite's undeclared need for
+`fetch-depth: 0`) now have driven arms in `server/prMergeOrder.test.ts`.
+
+**Still not taken, and still the bigger prize:** §K.3's ~355 removable `import`
+worker-seconds behind an isolation port of ~60 suites. The shard redistributes
+the work; only that removes it.
