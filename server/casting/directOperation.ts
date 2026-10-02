@@ -107,6 +107,18 @@ export async function beginDirectOperation(input: {
   originBoardId?: number | null;
   originItemId?: number | null;
   payload: unknown;
+  /**
+   * WHAT THIS ASK IS ABOUT TO COST (#1767) — passed straight to
+   * `claimGenerationOperation`, whose docblock carries the whole reason.
+   *
+   * Pass it wherever the price is in hand before the claim, which on this
+   * repository's roads is nearly everywhere: the entrance reads the offer, or
+   * the constant, one statement earlier than the row that records it. Where it
+   * genuinely is not — the legacy studio's mint and refresh derive theirs from
+   * a plan read AFTER claiming — leave it off and take the default, and expect
+   * `server/plannedCreditsAtClaim.test.ts` to ask you for a reason.
+   */
+  plannedCredits?: number;
   lockKey?: string;
   /**
    * THE SENTENCE A BUSY LOCK SAYS, when the generic one is wrong (#1257).

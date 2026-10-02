@@ -73,6 +73,10 @@ export const modelsRouter = router({
           preferences: input.preferences,
           name: input.name?.trim() || null,
         },
+    /* #1767 — the same figure the running transition below writes, written
+       where the row is born so a row settled before it still says what it
+       was going to cost. */
+        plannedCredits: 0,
       });
       if (gate.type === "replay") {
         const modelId = (gate.result as { modelId?: unknown } | null)?.modelId;

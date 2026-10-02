@@ -1526,4 +1526,97 @@ describeWithDatabase("R7 durable generation-operation foundation (disposable DB)
     expect(inserted.insertId).toBeGreaterThan(0);
     await connection.execute("DELETE FROM models WHERE id = ?", [inserted.insertId]);
   });
+
+  /**
+   * WHAT AN ASK COSTS, ON THE ROW, FROM THE MOMENT THE ROW EXISTS (#1767).
+   *
+   * `server/plannedCreditsAtClaim.test.ts` drives everything up to the wire —
+   * what each entrance SENDS — and says plainly that it cannot drive the INSERT,
+   * because `vitest.setup.ts` strips `DATABASE_URL` so a unit suite can never
+   * reach a database. This is that missing half, and it belongs here beside the
+   * other durable-contract arms rather than in a second disposable-DB harness.
+   *
+   * The defect it closes: `plannedCredits` was written one statement AFTER the
+   * claim, over a schema default of 0, so a PAID operation settled inside that
+   * gap carried the same 0 a free one does — and 0 is how the product
+   * recognises a free Try again (`spentFreeViewRetryFilter`).
+   */
+  it("writes plannedCredits at the CLAIM, so a row settled before markRunning still says what it cost", async () => {
+    const createdModel = await modelDb.createModel({
+      userId,
+      name: "Planned credits at claim",
+      masterPrompt: "{}",
+      technicalSchema: {},
+      preferences: {},
+      status: "draft",
+    });
+    if (!createdModel.modelId) throw new Error("model insert failed");
+
+    const claimed = await operations.claimGenerationOperation({
+      userId,
+      clientRequestId: randomUUID(),
+      kind: "casting.headshot",
+      modelId: createdModel.modelId,
+      payload: { modelId: createdModel.modelId },
+      plannedCredits: 370,
+    });
+    if (claimed.type !== "claimed") throw new Error("claim failed");
+
+    /* Read off the ROW, at `claimed` — before any running transition has had a
+       chance to write the figure. This is the exact state a process death
+       between the two statements leaves behind. */
+    const [[atClaim]] = await connection.query<RowDataPacket[]>(
+      "SELECT status, plannedCredits FROM generation_operations WHERE id = ?",
+      [claimed.operationId],
+    );
+    expect(atClaim!.status).toBe("claimed");
+    expect(atClaim!.plannedCredits, "the claim did not persist the price").toBe(370);
+
+    /* NEGATIVE CONTROL — a claim that says nothing still takes the schema
+       default, which is what every road did before this existed and is what two
+       declared roads still do. Without this arm a column that had somehow become
+       NOT NULL with a 370 default would pass the assertion above. */
+    const silent = await operations.claimGenerationOperation({
+      userId,
+      clientRequestId: randomUUID(),
+      kind: "casting.headshot",
+      modelId: createdModel.modelId,
+      payload: { modelId: createdModel.modelId, variant: "silent" },
+    });
+    if (silent.type !== "claimed") throw new Error("second claim failed");
+    const [[withoutPrice]] = await connection.query<RowDataPacket[]>(
+      "SELECT plannedCredits FROM generation_operations WHERE id = ?",
+      [silent.operationId],
+    );
+    expect(withoutPrice!.plannedCredits, "an unpriced claim no longer takes the default").toBe(0);
+
+    /* AND THE IDEMPOTENCY CHECK THE CARD NAMED AS MOST LIKELY TO BREAK: the
+       first `markRunning` overwrites a figure written at the claim rather than
+       comparing against it (the comparison lives inside the `running` branch),
+       and the REPLAY then compares against what markRunning itself wrote. */
+    const lockKey = `model:${createdModel.modelId}`;
+    await operations.acquireGenerationOperationLock({
+      userId, operationId: claimed.operationId, kind: "casting.headshot", lockKey,
+    });
+    await operations.markGenerationOperationRunning({
+      userId, operationId: claimed.operationId, modelId: createdModel.modelId,
+      plannedCredits: 500, requiredLockKey: lockKey, phase: "generating",
+    });
+    const [[running]] = await connection.query<RowDataPacket[]>(
+      "SELECT status, plannedCredits FROM generation_operations WHERE id = ?",
+      [claimed.operationId],
+    );
+    expect(running!.status).toBe("running");
+    expect(running!.plannedCredits, "markRunning did not overwrite the claim's figure").toBe(500);
+    /* The replay is idempotent on the figure markRunning wrote ... */
+    await expect(operations.markGenerationOperationRunning({
+      userId, operationId: claimed.operationId, modelId: createdModel.modelId,
+      plannedCredits: 500, requiredLockKey: lockKey, phase: "generating",
+    })).resolves.toMatchObject({ operationId: claimed.operationId });
+    /* ... and still refuses a DIFFERENT one, which is the half that had to survive. */
+    await expect(operations.markGenerationOperationRunning({
+      userId, operationId: claimed.operationId, modelId: createdModel.modelId,
+      plannedCredits: 501, requiredLockKey: lockKey, phase: "generating",
+    })).rejects.toThrow(/cannot change its planned credits/);
+  });
 });
