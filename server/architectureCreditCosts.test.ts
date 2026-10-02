@@ -342,13 +342,20 @@ describe("the committed Atlas against the values TypeScript evaluates", () => {
       own total is on this list now because something quotes it — the dock's
       single price line could stand for both actions only while the two slices
       agreed.
+
+      ⚠ **AND THE ROLL'S MOVED AGAIN ON 2026-10-02 (#1753): 1,200 — 1,600,
+      so the first two entries are now the SAME NUMBER.** That is his one-price
+      ruling, not a fold returning one operand twice: the two totals are derived
+      from two separately declared slices that happen to agree, and the identities
+      asserted above are what prove each still comes from its own. This arm went
+      red on the price change, which is exactly what a literal pin is for.
     */
     expect([
       CASTING_V2_ROLL_PRICE_CREDITS,
       CASTING_V2_FOLLOW_PRICE_CREDITS,
       CASTING_V2_SIGN_PRICE_CREDITS,
       CASTING_V2_VIEW_RETRY_PRICE_CREDITS,
-    ]).toEqual([1200, 1600, 8500, 1850]);
+    ]).toEqual([1600, 1600, 8500, 1850]);
   });
 
   it("holds the price that lives outside both cost modules", () => {

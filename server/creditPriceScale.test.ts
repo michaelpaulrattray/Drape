@@ -211,8 +211,11 @@ describe("every declared price in the product", () => {
       refine: credits(`${CASTING}CASTING_V2_REFINE_PRICE_CREDITS`),
       paidTryAgain: credits(`${CASTING}CASTING_V2_VIEW_RETRY_PRICE_CREDITS`),
     }).toEqual({
-      rollSlice: 150,      // 30 display × 8 = a Roll at 240
-      followSlice: 200,    // 40 display × 8 = a Follow at 320
+      // ⚠ ONE PRICE FOR BOTH since #1753 (his ruling, 2026-10-02). The roll
+      // slice came up to the follow's; it was 150 for the one day before that,
+      // and 20 before #1601 item 1. The two are still two declared prices.
+      rollSlice: 200,      // 40 display × 8 = a Roll at 320
+      followSlice: 200,    // 40 display × 8 = a Follow at 320, unmoved
       signPromotion: 3500, // 700 display, kept once the Cast exists
       signView: 1000,      // 200 display, the refundable slice × 5 views
       refine: 1750,        // 350 display
