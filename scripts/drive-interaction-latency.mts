@@ -21,10 +21,23 @@
  *                — only under `--spend` — Roll again, Follow and Retry, each of
  *                which renders for real and costs the driven account credits.
  *
+ * THE SHEET IS MINTED BY DEFAULT, NEVER INHERITED (#1800). Run 4 read this
+ * instrument on a publicId it was handed and wrote that id into its record; a
+ * sheet has a 30-day idle clock and its candidates purge with it, so by run 6
+ * the session was `expired` with 0 candidates and the reading was simply missing
+ * — no red, no error. With no `--token`/`--session` the walk now mints (or
+ * re-finds and RESETS) its own sheet on its own dev account through
+ * `lib/latencyFixture.mts`, so the clock is pushed forward by the act of
+ * measuring. Pass both to walk a sheet of your own instead; the table and the
+ * JSON both say which of the two it was, because a fixture reading misfiled as a
+ * real one is the hazard this convenience introduces.
+ *
  * Usage:
  *   npx tsx scripts/drive-interaction-latency.mts --controls
+ *   npx tsx scripts/drive-interaction-latency.mts                 # mints its own sheet, free walk
  *   npx tsx scripts/drive-interaction-latency.mts --base http://localhost:3000 \
- *     --token <app_session_id for the sheet's OWNER> --session <sheet publicId> \
+ *     [--mint]                                       # say it explicitly; refuses beside --token/--session
+ *     [--token <app_session_id for the sheet's OWNER> --session <sheet publicId>] \
  *     [--samples 8] [--json output/latency.json] [--wait 300] [--spend]  *     [--brief "a fitness creator in their 30s"]     # typed first; an EMPTY sheet has an empty box
  *     [--only follow]                                # one action alone — re-read one paid number
  *
@@ -61,7 +74,7 @@ import { resolveBrowser } from "./lib/systemBrowser.mts";
 
 const args = parseStrictArgsOrRefuse(process.argv.slice(2), {
   value: ["base", "token", "session", "samples", "json", "wait", "brief", "only"],
-  boolean: ["controls", "spend"],
+  boolean: ["controls", "spend", "mint"],
 });
 
 const CONTROLS_ONLY = args.flag("controls");
@@ -122,19 +135,73 @@ if (CONTROLS_ONLY) {
 
 /* ─────────────────────────────── the walk ────────────────────────────────── */
 
-if (!TOKEN) throw new Error("--token <app_session_id JWT for the sheet's owner> is required");
-if (!SESSION) throw new Error("--session <the sheet's publicId> is required — this drive never guesses a sheet");
+/*
+  WHOSE SHEET, AND WHERE IT CAME FROM (#1800).
+
+  The pair is inherited only when BOTH are given. Anything else mints, because
+  the alternative — the state this card was filed about — is an instrument whose
+  fixture quietly expired between patrols.
+
+  The import is DYNAMIC on purpose, and for two independent reasons: `--controls`
+  runs in the gate with no database, no `.env` and no dev world, and must keep
+  importing none of that; and `scriptExitDiscipline` classifies an imported
+  script as a module rather than an entrypoint, which is what lets the fixture
+  carry a `--prove` block instead of a terminal exit. Its `importSpecifiers`
+  reads `import("…")`, so this counts.
+*/
+const inherited = Boolean(TOKEN) && Boolean(SESSION);
+if (args.flag("mint") && (TOKEN || SESSION)) {
+  console.error(
+    "REFUSING: --mint was given beside --token/--session. One of those is the sheet this walk reads, and "
+    + "a run that quietly picked between them is how a fixture reading gets filed as a real one. Pass --mint "
+    + "alone to measure the minted sheet, or the pair alone to measure yours.",
+  );
+  process.exit(1);
+}
+if (!inherited && (TOKEN || SESSION)) {
+  console.error(
+    `REFUSING: --${TOKEN ? "token" : "session"} was given without --${TOKEN ? "session" : "token"}. The page `
+    + "admits only the sheet's OWNER, so the two are one fact and half of it cannot be used. Pass both, or "
+    + "neither and let the walk mint its own sheet.",
+  );
+  process.exit(1);
+}
+
+let token = TOKEN;
+let session = SESSION;
+let fixtureNote: string | null = null;
+
+if (!inherited) {
+  const { ensureLatencyFixture } = await import("./lib/latencyFixture.mts");
+  const fixture = await ensureLatencyFixture();
+  token = fixture.token;
+  session = fixture.sessionPublicId;
+  fixtureNote = `MINTED FIXTURE — ${fixture.outcome}, ${fixture.readyTiles} ready tile(s) on ${fixture.openId} (${fixture.userId})`;
+  console.log(fixtureNote);
+  if (fixture.healed.length > 0) {
+    /* Said out loud rather than repaired in silence: a frozen fixture account is
+       exactly what made the last two patrols unreadable, and a run that heals it
+       without reporting teaches the next reader nothing. */
+    console.log(`  healed on the fixture's own account: ${fixture.healed.join("; ")}`);
+  }
+  console.log(
+    "  no engine rendered these tiles — they are rows cloned from a donor's ready candidate. The click, the\n"
+    + "  mutation, the write and the re-render are all the product's own, which is what makes a Keep/Unkeep\n"
+    + "  number here the same number a rolled sheet gives. It is NOT evidence about render quality or an\n"
+    + "  engine's latency. See scripts/lib/latencyFixture.mts.",
+  );
+}
 
 /* The spend door — the one implementation of "may I spend?" (#345). Without
    the word, the three rendering actions are reported as not measured. */
 const SPEND = spendAuthorized("render a roll, a follow and a retry on the driven account");
 
-const { browser, page } = await openDrivenPage({ base: BASE, token: TOKEN });
+const { browser, page } = await openDrivenPage({ base: BASE, token });
 const readings: ClickReading[] = [];
 const notes: Record<string, string> = {};
 
 try {
-  const url = `${BASE}/app/casting/s/${SESSION}`;
+  const url = `${BASE}/app/casting/s/${session}`;
   await page.goto(url, { waitUntil: "domcontentloaded", timeout: 90_000 });
   /*
     The sheet LOADED, or an honest refusal. Wait on the THING (the verify
@@ -307,11 +374,20 @@ try {
 }
 
 const rows = summarise(SHEET_ACTIONS, readings, notes);
-console.log(`\nINTERACTION LATENCY — ${BASE}, sheet ${SESSION}, ${new Date().toISOString()}\n`);
+console.log(`\nINTERACTION LATENCY — ${BASE}, sheet ${session}, ${new Date().toISOString()}\n`);
+/* Which sheet this was read ON sits beside the numbers, never only in the
+   scrollback above them: a minted-fixture p95 pasted into the ledger as a
+   reading on a real roll is the one misfiling this convenience makes possible. */
+console.log(fixtureNote === null ? "sheet supplied by hand (--token/--session)" : fixtureNote);
 console.log(renderTable(rows));
 
 if (JSON_OUT) {
-  writeFileSync(JSON_OUT, JSON.stringify({ base: BASE, session: SESSION, at: new Date().toISOString(), spend: SPEND, rows, readings }, null, 2));
+  writeFileSync(JSON_OUT, JSON.stringify({
+    base: BASE, session, at: new Date().toISOString(), spend: SPEND,
+    /* So a later reader of the file can tell a minted sheet from a hand-supplied
+       one without needing the scrollback. */
+    fixture: fixtureNote !== null, fixtureNote, rows, readings,
+  }, null, 2));
   console.log(`\nwritten: ${JSON_OUT}`);
 }
 
