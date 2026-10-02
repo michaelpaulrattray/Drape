@@ -1,7 +1,7 @@
 {
-  "edition": 614,
-  "updatedAt": "2026-10-02T08:40:00.000Z",
-  "shift": "Night shift, 18:40: a customer on a plan can buy credits again. That road has been missing since February — when someone ran out mid-shoot their only option was a bigger plan — and this builds it on the volume ladder you approved today: 5,000 credits for $12, 10,000 for $22, 25,000 for $50, and the same rate at any size in between, so the slider and the pack never disagree. A free account is offered a plan instead, in one sentence. This is the money half only — the checkout and the credits landing when the payment does; the Add credits screen you described this morning is the next job, so nothing is on your screen yet. One thing worth knowing: the written record of your ruling said the slider should be charged at the 5,000 price times however many you buy, which was true of last week's flat prices and would have charged $24 for the 10,000 pack you priced at $22. The three prices your own hand made in Stripe settled it, and the wrong arithmetic is now a test that fails if anyone puts it back. It is waiting on review before it goes live.",
+  "edition": 615,
+  "updatedAt": "2026-10-02T10:20:00.000Z",
+  "shift": "Night shift, 19:14: a view you were given without a check used to let you ask for it again free, over and over. When our checker cannot answer, the picture still arrives and you are told it was not checked, and you get a free Try again — that is your rule and it stands. What was missing was the word \"once\". Asking again did not change the fact that nobody had checked it, so the free offer came back every single time, and we would have kept rendering 2K views for nothing for as long as the checker stayed down. Now the first ask on an unchecked view is free and the second costs 370, exactly like asking again for a view that never arrived. Nothing on your screen changes: the line still reads Unchecked · Try again with no price on it, which is what you asked for in September, and a Try again that charges without saying so is already how the refunded one has always worked. It needed no change to the database — we can already tell which of her five views an ask was about from the record the ask leaves behind. Also checked, because the card asked for them and I did not want anyone building them twice: the two remaining pieces of that card — how a Sign gives money back when some views fail, and the rule that stops a refund happening twice — are already built and already tested, and I ran those tests rather than taking their word for it. It is waiting on review before it goes live.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -145,7 +145,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-02T08:24:28.483Z",
+      "readAt": "2026-10-02T09:43:32.914Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -9225,6 +9225,13 @@
       "status": "merged",
       "prNumber": 1756,
       "note": "Merged 81ed0690 and live on production (build 4a92a87a)."
+    },
+    {
+      "id": "free-retry-once-1601",
+      "title": "One free Try again per unchecked view, not an unlimited supply (#1601 item 4)",
+      "status": "in-review",
+      "prNumber": 1766,
+      "note": "Open and held — it moves money, so it waits for a review by hand."
     }
   ],
   "problems": [
@@ -9581,7 +9588,7 @@
     258
   ],
   "nextUp": {
-    "readAt": "2026-10-02T08:24:28.483Z",
+    "readAt": "2026-10-02T09:43:32.914Z",
     "items": [
       {
         "issueNumber": 1469,
@@ -9600,7 +9607,7 @@
       },
       {
         "issueNumber": 1606,
-        "title": "P1-7 — Top-up checkout for plan holders: 5,000 = $12 · 10,000 = $24 · 25,000 = $60, granted as fixed ledger amounts — only after P1-5",
+        "title": "P1-7 — Top-up checkout for plan holders on his ladder: 5,000 = $12 · 10,000 = $22 · 25,000 = $50 ($12/$11/$10 per 5,000-credit unit), with a 5,000-step slider — granted as ledger amounts, purchased credits never expire",
         "urgent": false
       },
       {
