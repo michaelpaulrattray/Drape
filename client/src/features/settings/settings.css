@@ -708,13 +708,13 @@
 
 .dp-plan__tierhead { display: flex; align-items: baseline; gap: var(--s-3); }
 .dp-plan__tiername { font: 500 15px/1.2 var(--font-sans); letter-spacing: -.02em; color: var(--ink); }
-.dp-plan__unit {
-  margin-left: auto;
-  font: 400 10px/1.4 var(--font-mono);
-  letter-spacing: .04em;
-  color: var(--faint);
-  white-space: nowrap;
-}
+/* `.dp-plan__unit` — the rate chip — is DELETED, not left unused (#1773, his
+   word: *"on the free card remove the free CREDITS PER $1 line thats stupid"*,
+   and the same hour, on the rate belonging to Add credits rather than to plans,
+   *"yes i like this"*). The same choice `.dp-plan__tab--inline` got six lines
+   above and for the same reason: a rule with no element is a thing the next
+   reader has to work out the absence of. `.dp-plan__tierhead` keeps its flex —
+   it has one child now, which renders as the name alone. */
 .dp-plan__price {
   display: flex;
   align-items: baseline;

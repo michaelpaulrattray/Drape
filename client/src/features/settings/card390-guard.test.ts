@@ -255,14 +255,22 @@ describe("card 390 item 4 — the unit price is inverted, and it still argues fo
 
       Read at BOTH files rather than at the one his card named: an arm whose
       population is the surface already fixed cannot see the next surface drift.
+
+      ⚠ **THE UNIT RULE SURVIVES #1773; THE "BOTH" DOES NOT.** His word of
+      2026-10-02 took the rate off Change plan entirely — *"on the free card
+      remove the free CREDITS PER $1 line thats stupid"*, then, on the rate
+      belonging to Add credits rather than to plans, *"yes i like this"* — so
+      there is ONE surface arguing value now and the second unit must still not
+      exist on either. The arm keeps the half that is a rule (no cents per
+      credit, anywhere) and moves the half that was a count.
     */
     for (const path of [MODAL, TOPUP]) {
       const surface = code(read(path));
-      expect(surface, `${path} stopped printing credits per dollar`).toContain(
-        "formatCreditsPerDollar",
-      );
       expect(surface, `${path} is back on cents per credit`).not.toContain("formatCentsPerCredit");
     }
+    expect(code(read(TOPUP)), `${TOPUP} stopped printing credits per dollar`).toContain(
+      "formatCreditsPerDollar",
+    );
     /*
       ⚠ `toContain` IS WEAKER THAN THE CLAIM, AND IT WAS MEASURED BEFORE THIS
       LINE WAS WRITTEN. The top-up sentence prints TWO figures — the chosen rung
@@ -283,16 +291,56 @@ describe("card 390 item 4 — the unit price is inverted, and it still argues fo
     );
   });
 
-  it("the surface prints the inverted figure and not the old one", () => {
+  it("⚠ NO PLAN CARD AND NO COMPARE ROW SHOWS A RATE AT ALL — his word, 2026-10-02 (#1773)", () => {
+    /*
+      Verbatim, on a screenshot of Change plan: *"on the free card remove the
+      free CREDITS PER $1 line thats stupid"* — the free rung printed the word
+      `free` where the paid rungs printed a number, because a plan that costs
+      nothing has no dollar to divide by. And the same hour, on the reading that
+      the rate belongs on Add credits and not on plans at all: *"yes i like
+      this"*. So the slot is ABSENT on every card, and the compare table's row
+      goes with it: a table that kept the row would put the number back in front
+      of him one tab over.
+
+      ⚠ **AN ABSENCE ARM NEEDS ITS CONTROLS OR IT PASSES ON A DELETED FILE.**
+      Three here: the surface still renders plan cards, the rate still exists in
+      the product on Add credits, and the formatter itself is still exported —
+      this is about where a number is PRINTED, not about deleting the arithmetic
+      that `card390-guard`'s own monotonic arms are built on.
+    */
     const surface = code(read(MODAL));
-    expect(surface).toContain("formatCreditsPerDollar");
-    expect(surface, "the cents-per-credit figure is still on the cards").not.toContain(
+    expect(surface, "a rate is printed on the plan surface again").not.toContain(
+      "formatCreditsPerDollar(",
+    );
+    expect(surface, "the rate chip's text is back on the cards").not.toContain("CREDITS PER $1");
+    expect(surface, "the compare table's rate row is back").not.toContain(
+      'label: "Credits per dollar"',
+    );
+    expect(surface, "the rate chip's class is back in the markup").not.toContain("dp-plan__unit");
+    expect(
+      code(read(join(HERE, "settings.css"))),
+      "the rate chip's rule is back in the stylesheet — a rule with no element is the drift #487 named",
+    ).not.toContain(".dp-plan__unit");
+    /* The old unit must not return by the back door either. */
+    expect(surface, "the cents-per-credit figure is back on the cards").not.toContain(
       "formatCentsPerCredit",
     );
     expect(surface, "the compare row still asks for cost per credit").not.toContain(
       "Cost per credit",
     );
-    expect(surface).toContain('label: "Credits per dollar"');
+
+    /* CONTROL 1 — this is still the plan surface, so the absences above are
+       about a removed chip and not about a renamed or emptied file. */
+    expect(surface, "this is no longer the surface that renders plan cards").toContain("{plan.name}");
+    expect(surface, "the compare table is gone entirely").toContain('label: "Price a month"');
+    /* CONTROL 2 — the rate still exists in the product, on the surface he put
+       it on. Without this the arms above are satisfied by deleting the feature. */
+    expect(code(read(TOPUP)), "Add credits lost the rate too — it is the surface it belongs on")
+      .toContain("formatCreditsPerDollar(");
+    /* CONTROL 3 — the arithmetic is untouched; only the printing moved. */
+    expect(code(read(MATH)), "the formatter itself was deleted with the chip").toContain(
+      "export function formatCreditsPerDollar",
+    );
   });
 });
 
@@ -588,7 +636,13 @@ describe("card 661 — the rate is computed from the price standing beside it", 
       and its first argument checked, and the population is derived from the
       calls found rather than from a number typed here.
     */
-    const wanted: Record<string, number> = { [MODAL]: 2, [TOPUP]: 2 };
+    /* ⚠ MODAL is 0 as of #1773 — the rate left the plan surface on his word, so
+       there is nothing there to compute from an interval-aware price. The arm
+       that holds that absence is in the item-4 block above; this one keeps
+       watching the surface the rate actually lives on. The pairing #661 was
+       filed about cannot recur on Change plan because there is no longer a
+       second number to disagree with the first. */
+    const wanted: Record<string, number> = { [MODAL]: 0, [TOPUP]: 2 };
     for (const path of [MODAL, TOPUP]) {
       const surface = code(read(path));
       const calls = [
