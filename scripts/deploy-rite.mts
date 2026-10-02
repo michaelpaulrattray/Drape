@@ -144,6 +144,7 @@ import { runScriptGuardsOnCommit } from "./lib/scriptGuards.mts";
 import { runTypecheckOnCommit } from "./lib/typecheckOnCommit.mts";
 import { BRIEFING_PATH, generatedFilesFrom, judgeQuietEdition, QUIET_REFUSAL, type QuietVerdict } from "./lib/quietEdition.mts";
 import { briefingReadingSuites, judgeBriefingConformance } from "./lib/briefingConformance.mts";
+import { pushedDocSuites } from "./lib/pushedDocSuites.mts";
 import { eyeFrameKeysOf, judgeEyeFramePresence } from "./lib/eyeFramePresence.mts";
 import { probeProductionHealth } from "./lib/productionHealthProbe.mts";
 import { probeInvocation, readProbeStep } from "./lib/trackerProbeStep.mts";
@@ -941,6 +942,102 @@ function productionUrl(): string | undefined {
       + "\n  field as a single paragraph. Then commit and re-run.");
   }
   say(`  briefing client suites: ${suites.length === 0 ? "none found (dry run)" : `ok (${suites.length} on ${shortSha})`}`);
+}
+
+/*
+  AND THE SUITES THAT PIN EVERY OTHER INSTRUCTION SURFACE THIS PUSH TOUCHES (#1813).
+
+  #169's shape a THIRD time, and the block above is the second. `ca13c631` (card
+  #1809, a Warden patrol's docs commit) went to `main` through this rite at
+  19:57Z on 2026-10-02 carrying two bare `file:line` pointers in `CLAUDE.md`.
+  `server/prosePointerDiscipline.test.ts` reddened on `main` from that moment,
+  and the first PR to run its gate afterwards — #1812, docs-only — failed
+  `gate-checks` on an arm its diff never touched. **Nothing in the rite read
+  `CLAUDE.md`, so nothing could have said so.** The block above would not have
+  helped: it is the briefing's readers, by name and by design.
+
+  The rite deliberately does not run `pnpm test` (eight minutes, his word), so
+  this is not "run everything". `scripts/lib/pushedDocSuites.mts` is the owner
+  and its header carries the reading: a suite is about a pushed path when, with
+  COMMENTS STRIPPED, it reads from disk and either names that path (or a
+  containing directory) in a literal, or names the declared constant that holds
+  it (`LAW_SURFACES`, `BRIEFING_FILE`) — the one hop, taken on the symbol. Two
+  looser readings were measured and rejected there; both selected more suites
+  than the grep they were meant to beat.
+
+  MEASURED on this tree: a `CLAUDE.md` push derives 11 suites in ~1.2s and runs
+  200 tests in ~1.6s. Seconds, like the atlas and capability checks.
+
+  ⚠ **THREE REFUSALS, AND EACH ANSWERS A DIFFERENT BLINDNESS.** A remote tip
+  this clone cannot read means the range is unknown and so is the population —
+  the closing-keyword check (#376) refuses on exactly that ground and this
+  follows it, because a check that silently examines the wrong tree is worse than
+  one that stops. A DECLARED surface in the push that selects no suite at all
+  means the reader has gone blind on the file this card exists for. And a red
+  suite refuses the push, which is the whole point.
+
+  ⚠ **AN EMPTY SELECTION IS ORDINARY HERE, UNLIKE THE BLOCK ABOVE** — most
+  pushed paths have no suite about them, and refusing on that would refuse every
+  push. It is the `blindSurfaces` reading, derived from the declared constants,
+  that carries the invariant-7 half. And an empty list is never handed to
+  vitest: `vitest run` with no files runs the WHOLE suite, which is the trap the
+  block above also sidesteps.
+
+  The briefing's client readers are excluded by passing them as `already`, from
+  the same `briefingReadingSuites` call the block above uses rather than a copy
+  of its answer — so nothing runs twice and the two blocks cannot disagree.
+*/
+{
+  const root = path.resolve(import.meta.dirname, "..");
+  const remoteTip = git("ls-remote", "origin", "refs/heads/main").split(/\s+/)[0] ?? "";
+  const readable = /^[0-9a-f]{40}$/.test(remoteTip)
+    && (git("cat-file", "-t", remoteTip).startsWith("commit")
+      || (git("fetch", "--quiet", "origin", "main"), git("cat-file", "-t", remoteTip).startsWith("commit")));
+  if (!readable && !DRY) {
+    die("the instruction-surface suites (#1813) cannot tell which paths this push adds — the push does not fire.\n"
+      + "    The remote tip of main could not be resolved, so the population is unknown and NOTHING has been checked.\n"
+      + "    This is the reader refusing to examine the wrong tree, not a finding about the commits.\n"
+      + "  repair: git fetch origin main, then re-run the rite");
+  }
+  const changed = !readable
+    ? []
+    : git("diff", "--name-only", "--no-renames", remoteTip, sha).split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const selection = pushedDocSuites(root, sha, changed, briefingReadingSuites(root, sha));
+  if (selection.blindSurfaces.length > 0 && !DRY) {
+    die(`a law surface in this push has NO suite reading it at ${shortSha} — the rite is blind to what this edit does, so the push does not fire (#1813).\n`
+      + `    blind: ${selection.blindSurfaces.join(", ")}\n`
+      + "    Each of these is a DECLARED surface (`LAW_SURFACES` / `BRIEFING_FILE`), and this\n"
+      + "    derivation has always returned at least `prosePointerDiscipline.test.ts` for `CLAUDE.md`.\n"
+      + "  repair: if a guard was renamed or stopped reading the surface, point `pushedDocSuites`\n"
+      + "  (scripts/lib/pushedDocSuites.mts) at where it went — never delete the step to get past it.");
+  }
+  const verdict = selection.suites.length === 0
+    ? { ok: true, suites: [] as string[], printed: "", couldNotRun: undefined }
+    : runScriptGuardsOnCommit(root, sha, { suites: [...selection.suites] });
+  if (verdict.couldNotRun !== undefined) {
+    die(`the instruction-surface suites could not be RUN on ${shortSha} — the rite is blind, so the push does not fire.\n`
+      + verdict.couldNotRun.split("\n").map((line) => `    ${line}`).join("\n")
+      + "\n  NOTHING IN THE COMMIT IS IMPLICATED: no suite was ever handed a tree."
+      + "\n  repair: re-run the rite unchanged. A refusal that repeats on the same commit is a real fault in the machine.");
+  }
+  if (!verdict.ok && !DRY) {
+    const owners = [...selection.byPath.entries()]
+      .map(([changedPath, suites]) => `      ${changedPath} → ${suites.join(", ")}`)
+      .join("\n");
+    die(`a suite that pins an instruction surface is RED on ${shortSha} — the push does not fire, because this commit would redden \`main\` for every PR behind it (#1813).\n`
+      + verdict.printed.split("\n").map((line) => `    ${line}`).join("\n")
+      + `\n    what this push touches, and what reads it:\n${owners}`
+      + "\n  repair: this is almost always the PROSE rather than the code — #1809 was two bare"
+      + "\n  `file:line` pointers in CLAUDE.md, repaired by naming the symbol instead of the line."
+      + "\n  Fix the surface, commit, and re-run.");
+  }
+  say(`  instruction-surface suites: ${
+    !readable
+      ? "unread (dry run — remote tip unresolved)"
+      : selection.suites.length === 0
+      ? `none about the ${changed.length} path(s) this push touches`
+      : `${verdict.ok ? "ok" : "WOULD REFUSE (dry run)"} (${selection.suites.length} on ${shortSha})`
+  }`);
 }
 
 /*
