@@ -1,7 +1,7 @@
 {
-  "edition": 616,
-  "updatedAt": "2026-10-02T11:05:00.000Z",
-  "shift": "Night shift, 20:32: the Portrait picture had one test and it was the wrong one. A Portrait is meant to be head and shoulders, and the only thing the studio checked was that the whole head was inside the frame — which a head-to-toe picture passes easily. So if you ever asked for a Portrait and got a full-length picture instead, nothing would have noticed. Tonight it learned to measure the distance. I took 43 pictures you already own, ran them through the tool that measures where things sit in a frame, and the two kinds separated cleanly with a wide empty gap in the middle: your Portraits all sit between 1.10 and 3.03 faces' worth of picture below the chin, your full-length ones between 4.61 and 10.39, and there is nothing at all in between. The line goes in the middle of that gap, at 3.7, the same way the close-up line was drawn last week. It is a measurement rather than an opinion: the same picture read ten times gave the same number to four decimal places. The strip is on your page and the pair either side of the line is the thing worth your eye — if you want it tighter, it is one number. Nothing you can see changes today: this is the measuring tape, not the rule, and the change that actually hands the checker over to it is a separate piece held for review. Two things found on the way: four of your own signed headshots have hair, a bun or a crown running off the top of the frame, which the tool reads correctly and which is simply what a rolled picture looks like; and one of our own checks had learned only two of the three ways a job like this can be finished, so it refused tonight's correct answer until it was taught the third. Cost: about 86 cents of our own money, no credits of yours.",
+  "edition": 617,
+  "updatedAt": "2026-10-02T12:35:00.000Z",
+  "shift": "Night shift, 21:45: the studio now measures the picture instead of asking about it. Until tonight, when a signed character's photograph came back, we showed it to a reading model and asked in words whether it was framed the way you ordered - and that answer moved. One of your own close-ups, read a hundred times against the rule it was supposed to break, came back fine on fifty of them. From tonight the crop is measured with the same tool the face scan uses, and the measurement has the final say: a picture outside the boundary is now marked and offered a free retry every single time, not half the time, and the record carries the number rather than a sentence you would have to trust. Your two tattooed close-ups that used to slip through now read 0.48 and 0.56 against a boundary of 0.3, and I checked the other direction too, which is the half that could have gone wrong: two of your correct close-ups - including the tusked one under the cowl - were read three times each under the new shorter question and passed every time, so nothing good started failing. One thing I did NOT do, and it is worth your eye rather than mine: you asked that the written framing rule stop being sent to the reading model at all, and on six of the seven camera angles that is not possible without rewriting your own sentences, because each of them states a measured thing and an unmeasurable thing inside one sentence - the back view's whole rule is 'the whole body seen from directly behind, head to feet inside the frame, face not visible', which is a direction, a crop and a hidden face with two commas between them. Cutting at the commas would put a sentence nobody wrote in front of the checker, and we already measured three careful rewrites of one rule breaking a correct picture each time, so I removed only what is fully answered and wrote down, next to each camera, exactly what is still being asked twice and why. It costs a mark and never a picture. Your 'looks right' on the Portrait boundary is recorded and that number is now yours. Cost tonight: about 37 cents of our own money, no credits of yours.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -145,7 +145,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-02T09:43:32.914Z",
+      "readAt": "2026-10-02T12:27:07.118Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -3395,7 +3395,7 @@
       "id": "portrait-band-1612",
       "title": "Where a Portrait stops being a Portrait — six of your own, in order",
       "question": "WHAT YOU ARE LOOKING AT — six pictures you already own, put in order of how much picture sits below the face. The number under each is the whole measurement: 1.10 means about one face's worth of chest below the chin, 7.72 means head to toe. The black line is where the studio now draws the boundary between a Portrait and a full-length picture.\n\nWHY IT MATTERS. Until tonight the Portrait slot had one test — is the whole head inside the frame — and a head-to-toe picture passes that easily. So a full-length picture delivered where you asked for a Portrait would have gone through unnoticed. Now the distance is measured, so it would not.\n\nTHE ONE THING WORTH YOUR EYE is the pair either side of the line: Hingu at 3.03, which we keep and say nothing about, and Jenny Craig at 4.61, which we would hand over marked unchecked with a free Try again beside it. Everything further out is obvious in both directions. The line sits in a wide empty gap — across every picture you own there is nothing at all between 3.03 and 4.61.\n\nIf you would rather it sat tighter — so Hingu's also got a free Try again — say so and it is one number. Nothing here throws a picture away: the strictest this can ever do is hand you the picture and offer another go.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-10-02T11:00:00.000Z",
       "issueNumber": 1612,
       "frames": [
@@ -6479,7 +6479,7 @@
     {
       "id": "portrait-bound-1612",
       "title": "The Portrait picture is measured, not guessed (#1612)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1771,
       "note": "Open and held — it touches a file where prices are declared, so it waits for a review by hand. Nothing you can see changes: it is the measuring tape, not the rule."
     },
@@ -9254,6 +9254,13 @@
       "status": "merged",
       "prNumber": 1766,
       "note": "Merged ba10019f0 — reviewed by hand, money surface."
+    },
+    {
+      "id": "framing-measured-1612",
+      "title": "The framing check is measured, not read — and the measurement has the final say (#1612)",
+      "status": "in-review",
+      "prNumber": 1775,
+      "note": "Held for the relay by hand — money surface."
     }
   ],
   "problems": [
@@ -9607,10 +9614,11 @@
     255,
     256,
     257,
-    258
+    258,
+    259
   ],
   "nextUp": {
-    "readAt": "2026-10-02T09:43:32.914Z",
+    "readAt": "2026-10-02T12:27:07.118Z",
     "items": [
       {
         "issueNumber": 1469,
@@ -9649,6 +9657,16 @@
       {
         "issueNumber": 1689,
         "title": "N3: investigate cutting Refine's cost so its price can come down — count the ~7 Claude checks a Refine makes, court the fewest it can safely keep, report cost per Refine before any price change (his finance guy's note, 2026-10-01)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1773,
+        "title": "No plan card shows a \"CREDITS PER $1\" chip (his word 2026-10-02: the rate belongs on Add credits, not on plans)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1774,
+        "title": "Pricing Phase 2 — the plans redesigned: three individual plans with a credit slider on the top one, Team priced per seat behind a workspace, Enterprise as a sales conversation, no rate chips on plan cards, forward-looking copy marked \"coming\", and a compare table organised by what a customer makes",
         "urgent": false
       }
     ]
