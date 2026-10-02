@@ -89,6 +89,7 @@ import path from "node:path";
 import { closingKeywordHits, closingKeywordRefusal } from "./lib/closingKeyword.mts";
 import { dirtyEntriesFrom, judgeDirtyTree } from "./lib/dirtyTreeGuard.mts";
 import { inWorktreeOf } from "./lib/riteWorktree.mts";
+import { closeWithin } from "./lib/boundedClose.mts";
 import { openDatabase } from "./lib/dbConnection.mts";
 import { productionDatabaseUrl, readFounderActivity } from "./lib/founderActivity.mts";
 import { decideWatch, foreignServiceContext, listedRows, watchOutcome } from "./lib/deployWatch.mts";
@@ -1041,7 +1042,13 @@ const inFlight = await (async (): Promise<string> => {
         WHERE status IN ('claimed', 'running')
           AND leaseExpiresAt > NOW()`,
     );
-    await connection.end();
+    /* BOUNDED (#1745) — see `lib/boundedClose.mts`. The rite is the OTHER half
+       of that card's sweep: an unbounded `end()` here cannot fail a deploy the
+       way the pre-deploy command's could (production is untouched, and a stalled
+       terminal is visible), but it stalls the rite at a point where nothing says
+       why, and the rite's own `settleSockets` already treats this class as real.
+       Bounding all four sites is one rule rather than three arguments. */
+    await closeWithin(connection);
     const open = Number(rows[0]?.open ?? 0);
     const live = Number(operationRows[0]?.live ?? 0);
     const parts = [
@@ -1467,7 +1474,7 @@ const schema = await (async (): Promise<{ line: string; migration: readonly stri
     const migration = await autoApply(connection, missing, async () => (await read()).missing);
     if (migration.applied > 0) verdict = (await read()).verdict;
 
-    await connection.end();
+    await closeWithin(connection); /* BOUNDED (#1745) */
     const enumerated =
       Object.keys(DECLARED_BUT_UNMIGRATED).length
       + Object.keys(DECLARED_COLUMNS_BUT_UNMIGRATED).length;
@@ -1618,7 +1625,7 @@ say(await (async () => {
     const connection = await openDatabase(url);
     const since = new Date(Date.now() - 7 * 86_400_000).toISOString();
     const traffic = await readFalTraffic(connection, since);
-    await connection.end();
+    await closeWithin(connection); /* BOUNDED (#1745) */
     const prices = await readFalPrices(traffic.models.map((model) => model.model));
     return falLine(balance, { traffic, priced: priceFalCalls(traffic.models, prices) });
   } catch {

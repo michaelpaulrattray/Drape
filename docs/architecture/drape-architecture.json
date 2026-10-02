@@ -13532,6 +13532,10 @@
       "path": "server/prePushGate.test.ts"
     },
     {
+      "id": "test:server/predeployBoundedExit.test.ts",
+      "path": "server/predeployBoundedExit.test.ts"
+    },
+    {
       "id": "test:server/predeployVerdict.test.ts",
       "path": "server/predeployVerdict.test.ts"
     },
