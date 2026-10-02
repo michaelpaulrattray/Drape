@@ -463,6 +463,28 @@ export function createFalRegionReader(input: {
   const { apiKey, signal } = input;
 
   /**
+   * WHICH SIGNAL ONE CALL RUNS UNDER — the reader's own, the caller's, or both
+   * (#1781).
+   *
+   * The reader takes a signal at construction and every read has used it since;
+   * `region` and `subject` now take one PER CALL as well, because the judge's
+   * framing measurement has a deadline and this reader is a module-level
+   * singleton shared by every view of every Sign — read at `signEngine.ts`,
+   * where `judge` is cached, before this was written. **Aborting the
+   * construction-time signal would cancel every other customer's read in the
+   * process**, so the deadline's signal has to arrive with the call.
+   *
+   * Both can cancel, so neither is dropped. `AbortSignal.any` is only reached
+   * when both exist, which on production is never — nothing passes a
+   * construction signal today — so the common path composes nothing.
+   */
+  const signalFor = (perCall?: AbortSignal): AbortSignal | undefined => {
+    if (perCall === undefined) return signal;
+    if (signal === undefined) return perCall;
+    return AbortSignal.any([signal, perCall]);
+  };
+
+  /**
    * `keep: "all"` exists for the half frames, and the distinction is real.
    *
    * A region is one region, so the whole-frame path takes the first answer. A
@@ -534,19 +556,26 @@ export function createFalRegionReader(input: {
     prompt: string,
     keep: "first" | "all" = "first",
     imageUrl?: string,
+    /* The CALLER's deadline, when it has one — see `signalFor`. The address
+       check above is deliberately not given it: `referenced` is memoised per
+       URL across callers, so one caller's deadline would abort a check another
+       is awaiting. That is the shared-read rule, and it costs nothing — the
+       check already bounds itself with `MASK_FETCH_TIMEOUT_MS`. */
+    callSignal?: AbortSignal,
   ): Promise<Mask | null> => {
+    const theirs = signalFor(callSignal);
     const address = imageUrl ? await addressIfIdentical(image, imageUrl) : null;
     const json = await post(apiKey, SAM3, {
       image_url: address ?? dataUri(image), prompt: askedAs(prompt), include_scores: true,
       output_format: "png",
-    }, signal);
+    }, theirs);
     const masks: any[] = Array.isArray(json.masks) ? json.masks : [];
     const urls = masks
       .map((entry) => (typeof entry === "string" ? entry : entry?.url))
       .filter((url): url is string => typeof url === "string" && url.length > 0);
     if (urls.length === 0) return null;
-    if (keep === "first") return fetchMask(urls[0], signal);
-    const every = await Promise.all(urls.map((url) => fetchMask(url, signal)));
+    if (keep === "first") return fetchMask(urls[0], theirs);
+    const every = await Promise.all(urls.map((url) => fetchMask(url, theirs)));
     return every.length === 1 ? every[0] : unionMasks(...every);
   };
 
@@ -632,6 +661,11 @@ export function createFalRegionReader(input: {
    */
   const bilateralHalves = async (
     image: Buffer, name: string, imageUrl?: string, axisKey?: string,
+    /* The caller's deadline reaches the two SIDE reads and deliberately not
+       `axisOf` below: the axis promise is memoised per frame AND per face
+       across callers, so one deadline would abort a read another caller is
+       awaiting. The shared-read rule, same as `addressIfIdentical`. */
+    callSignal?: AbortSignal,
   ): Promise<{
     atImageLeft: Mask | null;
     atImageRight: Mask | null;
@@ -656,7 +690,7 @@ export function createFalRegionReader(input: {
         .extract({ left: crop.left, top: 0, width: crop.width, height })
         .png()
         .toBuffer();
-      const mask = await askRegion(bytes, noun, "all");
+      const mask = await askRegion(bytes, noun, "all", undefined, callSignal);
       return mask ? placeInFrame(mask, crop, width, height) : null;
     }));
 
@@ -683,16 +717,17 @@ export function createFalRegionReader(input: {
    */
   const bilateral = async (
     image: Buffer, name: string, imageUrl?: string, axisKey?: string,
+    callSignal?: AbortSignal,
   ): Promise<Mask | null> => {
-    const halves = await bilateralHalves(image, name, imageUrl, axisKey);
-    if (halves === null) return askRegion(image, singularOf(name), "all", imageUrl);
+    const halves = await bilateralHalves(image, name, imageUrl, axisKey, callSignal);
+    if (halves === null) return askRegion(image, singularOf(name), "all", imageUrl, callSignal);
     const found = [halves.atImageLeft, halves.atImageRight].filter((mask): mask is Mask => mask !== null);
     if (found.length === 0) return null;
     return found.length === 1 ? found[0] : unionMasks(...found);
   };
 
   return {
-    async region({ image, name, absentIsAnswer, imageUrl, axisKey }) {
+    async region({ image, name, absentIsAnswer, imageUrl, axisKey, signal: callSignal }) {
       assertPicture(image, name);
       /*
         AN EMPTY ANSWER MEANS TWO DIFFERENT THINGS, and which one is the
@@ -773,10 +808,10 @@ export function createFalRegionReader(input: {
       };
 
       if (BILATERAL.has(name)) {
-        const both = await bilateral(image, name, imageUrl, axisKey);
+        const both = await bilateral(image, name, imageUrl, axisKey, callSignal);
         return both ?? absent();
       }
-      const mask = await askRegion(image, name, "first", imageUrl);
+      const mask = await askRegion(image, name, "first", imageUrl, callSignal);
       if (!mask) return absent();
       return mask;
     },
@@ -833,6 +868,10 @@ export function createFalRegionReader(input: {
         HOW the answer is produced changes with it.
       */
       if (!BILATERAL.has(name) && declaredTwoSided !== true) return null;
+      /* NO per-call signal, and it is declared rather than omitted (#1781):
+         `regionSides` has one consumer, the masked refine, and a refine has no
+         deadline to cancel on. Widening the interface for a signal nobody
+         passes is a control that is not invoked. */
       const halves = await bilateralHalves(image, name, imageUrl, axisKey);
       if (halves === null) return null;
 
@@ -849,16 +888,19 @@ export function createFalRegionReader(input: {
       };
     },
 
-    async subject({ image }) {
+    async subject({ image, signal: callSignal }) {
       assertPicture(image, "the whole subject");
+      const theirs = signalFor(callSignal);
       const json = await post(apiKey, BIREFNET, {
         image_url: dataUri(image), mask_only: true, model: "Matting", output_format: "png",
-      }, signal);
+      }, theirs);
       const url = json?.mask_image?.url ?? json?.image?.url;
       if (!url) throw new MaskError("the matting model returned no mask");
-      return fetchMask(url, signal);
+      return fetchMask(url, theirs);
     },
 
+    /* NO per-call signal, for `regionSides`' reason: its callers place an
+       addition and none of them has a deadline. */
     async landmark({ image, name }) {
       assertPicture(image, name);
       const json = await post(apiKey, POINT, { image_url: dataUri(image), prompt: name }, signal);

@@ -477,6 +477,16 @@ export async function detectBornWorn(input: {
   reader: RegionReader;
   /** Injectable so a court can drive one class at a time. */
   classes?: readonly BornWornClass[];
+  /**
+   * ⚠ **DECLARED SINCE THIS FUNCTION WAS WRITTEN AND READ BY NOTHING UNTIL
+   * #1781 — a parameter that promised cancellation and dropped it.**
+   *
+   * It is wired now, to the one call below that can use it, because
+   * `RegionReader.region` takes a per-call signal from this card on. Nothing
+   * passes it yet: this detector has no production caller at all (the born-ink
+   * road is held at `CASTING_BORN_INK_SCOPE`), so the honest state is that the
+   * field is real rather than that it is exercised.
+   */
   signal?: AbortSignal;
 }): Promise<BornWornScan> {
   const classes = (input.classes ?? BORN_WORN_CLASSES).filter((entry) => entry.armed);
@@ -519,7 +529,12 @@ export async function detectBornWorn(input: {
       continue;
     }
     try {
-      const mask = await input.reader.region({ image: input.image, name: entry.region, absentIsAnswer: true });
+      const mask = await input.reader.region({
+        image: input.image,
+        name: entry.region,
+        absentIsAnswer: true,
+        signal: input.signal,
+      });
       const covered = binaryCoverage(mask);
       if (covered > entry.floor) {
         scan.detections.push({ facet: entry.id, region: entry.region, mask, coverage: covered });

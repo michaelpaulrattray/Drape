@@ -12075,6 +12075,10 @@
       "path": "server/castingV2/followSlicePrice.test.ts"
     },
     {
+      "id": "test:server/castingV2/framingReadCancellation.test.ts",
+      "path": "server/castingV2/framingReadCancellation.test.ts"
+    },
+    {
       "id": "test:server/castingV2/framingTrimRetirement.test.ts",
       "path": "server/castingV2/framingTrimRetirement.test.ts"
     },
