@@ -27,6 +27,7 @@ import {
   reachesEdge,
   type FramingLandmark,
   type FramingReader,
+  type FramingRule,
 } from "./viewFramingGeometry";
 
 const WIDTH = 200;
@@ -236,6 +237,120 @@ describe("measureViewFraming — the close-up band, both directions", () => {
     const measured = await measureViewFraming({ band, image: FRAME, reader });
     expect(measured.verdict).toBe("cannotMeasure");
     expect(measured.readings.some((reading) => reading.held === false)).toBe(true);
+  });
+});
+
+/**
+ * THE PORTRAIT BAND — the view whose debt the `frontClose` bound court paid
+ * (#1612, 2026-10-02), and the arms that make the payment real.
+ *
+ * ⚠ **The hole this band had is the one a unit suite is worst at noticing: it
+ * was not a wrong answer, it was a question nobody asked.** `clearOf subject
+ * top` is satisfied by a full-length body with room over its hair, so a
+ * whole-body frame delivered into the Portrait slot measured `inBand` and every
+ * arm in this file agreed with it. The positive control below is that frame.
+ *
+ * The bound is READ OFF THE BAND rather than typed here, so these arms prove the
+ * number BINDS wherever it is set rather than proving it equals 3.7 twice. The
+ * one arm that does name 3.7 names the court beside it, because that number is
+ * his eye's to close (law 9) and an edit that moves it should have to read why.
+ */
+describe("measureViewFraming — the portrait band, both directions", () => {
+  const band = castPackageView("frontClose").band;
+
+  /** The declared distance bound, derived — never a second copy of the number. */
+  const BOUND = ((): number => {
+    const rule = band.rules.find(
+      (candidate): candidate is Extract<FramingRule, { must: "roomBelowAtMost" }> =>
+        candidate.must === "roomBelowAtMost",
+    );
+    if (!rule) throw new Error("the portrait band declares no distance rule to measure");
+    return rule.inItsOwnHeights;
+  })();
+
+  /**
+   * A face mask with EXACTLY this much picture below it, in its own heights.
+   *
+   * Built from the bound rather than from a constant, so an arm either side of
+   * the line stays either side of the line when the line moves.
+   */
+  const faceWithRoomOf = (room: number): Mask => {
+    const height = 50;
+    const bottom = Math.round(HEIGHT - 1 - room * height);
+    return maskOf({ x: 40, y: bottom - height + 1, width: 120, height });
+  };
+
+  /** The whole subject, clear of the top edge — the band's other rule, satisfied. */
+  const SUBJECT_WITH_HEADROOM = maskOf({ x: 20, y: 20, width: 160, height: HEIGHT - 20 });
+
+  it("NEGATIVE CONTROL: a head-and-shoulders portrait reads in band", async () => {
+    /* 240 rows of picture below a 120-row face is 2.0 face-heights, which is
+       where his own sealed Portraits sit (measured 1.10 … 3.03). */
+    const { reader } = readerOf({
+      subject: SUBJECT_WITH_HEADROOM,
+      face: maskOf({ x: 40, y: 40, width: 120, height: 120 }),
+    });
+    const measured = await measureViewFraming({ band, image: FRAME, reader });
+    expect(measured.verdict).toBe("inBand");
+    expect(measured.readings.every((reading) => reading.held === true)).toBe(true);
+  });
+
+  it("POSITIVE CONTROL: a full-length body in the Portrait slot is out of band", async () => {
+    /* THE DEFECT THIS RULE EXISTS FOR, as a frame: 320 rows below a 40-row face
+       is 8.0 face-heights, inside the measured `frontFull` range of 4.61 … 10.39
+       — and it has headroom over its hair, so the band's OTHER rule holds. Before
+       the court this frame measured in band. */
+    const { reader } = readerOf({
+      subject: SUBJECT_WITH_HEADROOM,
+      face: maskOf({ x: 40, y: 40, width: 120, height: 40 }),
+    });
+    const measured = await measureViewFraming({ band, image: FRAME, reader });
+    expect(measured.verdict).toBe("outOfBand");
+    const failed = measured.readings.filter((reading) => reading.held === false);
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.rule.must).toBe("roomBelowAtMost");
+  });
+
+  it("POSITIVE CONTROL: hair running off the top is out of band, and the distance holds", async () => {
+    /* The rule the band already had, kept under the new one: 4 of his 11 sealed
+       anchors fail exactly this way (a bun, a spiked crown, a crystal crown) and
+       the segmenter is right about all four. */
+    const { reader } = readerOf({
+      subject: maskOf({ x: 20, y: 0, width: 160, height: HEIGHT - 20 }),
+      face: maskOf({ x: 40, y: 40, width: 120, height: 120 }),
+    });
+    const measured = await measureViewFraming({ band, image: FRAME, reader });
+    expect(measured.verdict).toBe("outOfBand");
+    const failed = measured.readings.filter((reading) => reading.held === false);
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.rule.must).toBe("clearOf");
+  });
+
+  it("the declared bound is what binds, on both of its sides", async () => {
+    const at = async (room: number) => {
+      const { reader } = readerOf({
+        subject: SUBJECT_WITH_HEADROOM,
+        face: faceWithRoomOf(room),
+      });
+      return (await measureViewFraming({ band, image: FRAME, reader })).verdict;
+    };
+    expect(await at(BOUND - 0.1), "a frame just inside the bound is in band").toBe("inBand");
+    expect(await at(BOUND + 0.1), "a frame just outside the bound is out of band").toBe("outOfBand");
+    /* AND THE EDGE ITSELF IS INSIDE — `roomBelowAtMost` is at-most, so the bound
+       is a frame the product keeps. An off-by-one here would refuse a picture for
+       being exactly on the line nobody can see. */
+    expect(await at(BOUND), "a frame exactly on the bound is kept").toBe("inBand");
+  });
+
+  it("the bound is the court's number, and moving it means reading the court", () => {
+    expect(
+      BOUND,
+      "the portrait distance bound was measured on 43 production frames on 2026-10-02: his"
+      + " sealed Portraits read 1.10 … 3.03 face-heights and his full-length views 4.61 …"
+      + " 10.39, and 3.7 is the geometric middle of that empty band — the same method that"
+      + " put the close-up's 0.3 in the middle of 0.20 … 0.48. His eye closes it (law 9);"
+      + " the court is on the band in `castViewPackage.ts`.",
+    ).toBe(3.7);
   });
 });
 

@@ -721,19 +721,29 @@ type CastPackageView = {
    *
    * ⚠ **AND THAT SLICE IS NOT A WIRING — MEASURED 2026-10-01, WHEN IT WAS PICKED
    * UP, AND THE PARAGRAPH ABOVE IS WHY IT LOOKED LIKE ONE.** *"Deletes that
-   * sentence and one band is left"* is only true where the band says everything
-   * the sentence says, and on four views it does not: `closeUp` owes an
-   * ORIENTATION and a feature-PRESENCE test, `frontClose` owes how much of her is
-   * in the picture, `sideFull` and `backFull` each owe which way the body faces.
-   * **Five clauses, and `closeUp` is the one view whose band carries no
-   * `readerRemainder` and therefore read as fully measured.** Each is declared on
-   * its own band as `unrestated` and held there; the hand-over is paid off per
+   * sentence and one band is left"* was only true where the band said everything
+   * the sentence says, and on four views it did not: `closeUp` owed an
+   * ORIENTATION and a feature-PRESENCE test, `frontClose` owed how much of her is
+   * in the picture, `sideFull` and `backFull` each owed which way the body faces.
+   * **Five clauses, and `closeUp` was the one view whose band carried no
+   * `readerRemainder` and therefore read as fully measured.** Each was declared
+   * on its own band as `unrestated` and held there; the hand-over is paid off per
    * view, and deleting the prose question on a view that still owes one deletes a
    * stated framing test with no line of code saying so.
    *
    * It went unseen because the guard above pairs RULES with clauses in both
    * directions and **neither direction can see a clause no rule ever cited** —
    * the one-way blindness this repository keeps paying for.
+   *
+   * ⚠ **ALL FIVE ARE PAID AND NO BAND CARRIES `unrestated` — 2026-10-02.** Four
+   * went to a reader's remainder (#1717) and the fifth, `frontClose`'s *"a
+   * head-and-shoulders portrait"*, is restated by a measured `roomBelowAtMost
+   * face` bound (the court is on that band). **So the precondition is met on
+   * every view and the hand-over is a wiring again** — with one correction the
+   * sentence at the top of this block still needs: on `closeUp` it is a
+   * NARROWING of the judge's framing question rather than a deletion of it, and
+   * on `frontClose` too. A hand-over written as *delete `spec.framing` from the
+   * post* would take four views' stated reader questions with it.
    *
    * A view whose framing also asks something geometry does not answer here says
    * so in `band.readerRemainder`, in its own words.
@@ -1009,48 +1019,94 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
       It stays with the reader, named below.
     */
     band: {
-      rules: [{ must: "clearOf", landmark: "subject", edge: "top" }],
+      rules: [
+        { must: "clearOf", landmark: "subject", edge: "top" },
+        /*
+          ⚠ **HOW MUCH OF HER IS IN THE PICTURE — #1675's sharpest debt and the
+          LAST of its five, PAID BY MEASUREMENT on 2026-10-02 (#1612, the
+          `frontClose` bound court).**
+
+          The rule above and the remainder below said nothing about distance:
+          `clearOf subject top` is satisfied by a full-length body with room over
+          its hair, so **a whole-body frame delivered into the Portrait slot
+          measured in band.** The hand-over leaves the measurement as the framing
+          axis's whole answer, so it would have shipped that hole.
+
+          Road 2 — declaring it a reader's question forever — would have been a
+          LIE about this one, which is why it was the only debt left standing.
+          The other four were an orientation, a stride, a concealment and a
+          feature count: things no box can answer. This one is a box.
+
+          # The court, because the NUMBER is the whole of it (law 9)
+
+          0.3 above took six of his frames and a Desk reply. This took **43
+          production frames, his account, all time, through the real segmenter**
+          (`fal-ai/sam-3/image` for the face, BiRefNet for the silhouette; 86
+          calls, ~$0.86 of house money, `_1612-portrait-bound-disposable.mts`).
+          Two populations, both of them real delivered pictures:
+
+              THE PORTRAITS    the 11 `frontClose` rows      1.10 … 3.03
+              THE FULL LENGTH  the 11 `frontFull` rows       4.61 … 10.39
+
+          **An empty band from 3.03 to 4.61 with nothing in it**, and 3.7 is its
+          geometric middle (√(3.03 × 4.61) = 3.74) — the same method that put 0.3
+          in the middle of 0.20 … 0.48, so the two bounds are chosen the same way
+          rather than each to taste. It clears the loosest portrait by a factor of
+          1.22 and sits under the tightest full length by 1.25.
+
+          **It is a measurement and not a draw**: asset 295 read ten times
+          returned 1.5058 ten times, to four decimal places.
+
+          ⚠ **THE IN-BAND POPULATION IS THE SEALED ANCHORS, AND THAT IS A PROXY —
+          WRITTEN HERE RATHER THAN LEFT TO BE ASSUMED.** All 11 carry an `anchor/`
+          key and no conformance record at all: `activateSignedCast` seals this
+          slot from the Master and nothing ever judges it, so **no `frontClose`
+          RENDER exists on production to measure.** The Master is framed chest-up
+          and square to camera, which is what the Portrait directive asks for, so
+          it is the right proxy for the DISTANCE — but a render's spread around it
+          is unmeasured, and that is what a later court would widen.
+
+          ⚠ **AND THE READING THAT LOOKS LIKE A DEFECT IS NOT ONE: 4 of those 11
+          anchors read `clearOf subject top` FALSE**, and at the frames the
+          segmenter is right on all four — Pika's spiked crown, Sifr2's and Yimi's
+          buns and Hingu's crystal crown each run off the top edge. A Master is a
+          roll frame and was never rendered against *"the whole hair silhouette
+          inside the frame"*; a Try again on this slot is. The rule stands.
+
+          ⚠ **THE BACK VIEWS HAVE NO FACE, so this rule has NO ANSWER on them** —
+          11 of 11 `backFull` frames returned no face region, which folds to
+          `cannotMeasure` rather than to a pass. That is why the out-of-band
+          population above is `frontFull` alone, and it is reported rather than
+          averaged into a range it cannot be in.
+        */
+        { must: "roomBelowAtMost", landmark: "face", inItsOwnHeights: 3.7 },
+      ],
       readerRemainder:
         "whether every eye the reference shows is visible, and whether the subject is square "
         + "to the camera — a feature count and an orientation, neither of which this file's "
         + "landmarks can answer without the reference's own face scan.",
       /*
-        ⚠ **THE DISTANCE — the sharpest of #1675's five and now THE ONLY ONE LEFT,
-        because the rule above and the remainder beside it between them say
-        nothing about HOW MUCH OF HER IS IN THE PICTURE.** `clearOf subject top` is
-        satisfied by a full-length body with room over its hair, so a whole-body
-        frame delivered into the Portrait slot measures in band. Today the reader
-        catches that correctly; hand the axis over with this unpaid and nothing
-        does.
+        ⚠ **`unrestated` IS GONE FROM THIS BAND AND THE RECORD OF WHY IS HERE —
+        the debt list only ever shrinks, and this is the commit that empties it
+        across every view.**
 
-        **It is the only one of the five that road 2 would be a LIE about.** The
-        other four were an orientation, a stride, a concealment and a feature
-        count — things no box can answer, so declaring them a reader's question
-        forever is the truth. This one is a box: it is geometry, it is payable,
-        and `roomBelowAtMost` on the face is the shape — the close-up's own
-        too-loose bound with a wider number. Writing it into the remainder would
-        be filing a measurable test as unmeasurable to clear a list.
+        It read `["a head-and-shoulders portrait"]`, declared by #1675 and left
+        standing by #1717 because it was the one clause of the five a rule could
+        honestly restate. The rule above restates it, `viewFramingBands.test.ts`
+        cites it, and that suite's `OWED_AT_THE_HAND_OVER` keeps the clause on the
+        record so a later edit cannot quietly drop the rule and the memory of it
+        together.
 
-        What it waits for is the NUMBER, and that is law 9 rather than effort:
-        0.3 took six of his frames and a Desk reply (*"this looks good"*, #248).
-        A second bound invented in the commit that hands the axis over is how a
-        band comes to refuse pictures nobody measured. The court it needs is the
-        delivered `frontClose` frames on production through the real segmenter,
-        the bound chosen in an empty band between the two populations, and his eye
-        on the two frames either side of it.
-
-        ⚠ **AND IT IS NOT CEREMONIAL DEBT ON A DEAD ENTRY — MEASURED 2026-10-01,
-        BECAUSE THE TEMPTING READING IS THAT IT IS.** This angle is not in
-        `CAST_PACKAGE_VIEWS`, so no new Sign renders it, and the obvious
-        conclusion is that no judge ever reads this spec and the debt costs
-        nothing. It is false: `castProjection` builds a historical Cast's slots
-        from the promise it BOUGHT (see the anchor comment at the top of that
-        read), every era that bought a `frontClose` has one, and
-        `castSlotRetryOffer` offers a Try again on it — which reaches
-        `viewRetryService`, `castPackageView(angle)` and this sentence. A customer
-        can still have this view judged today.
+        ⚠ **AND THIS WAS NEVER CEREMONIAL DEBT ON A DEAD ENTRY — measured
+        2026-10-01, because the tempting reading is that it is.** This angle is
+        not in `CAST_PACKAGE_VIEWS`, so no new Sign renders it, and the obvious
+        conclusion is that no judge ever reads this spec. It is false:
+        `castProjection` builds a historical Cast's slots from the promise it
+        BOUGHT (see the anchor comment at the top of that read), every era that
+        bought a `frontClose` has one, and `castSlotRetryOffer` offers a Try again
+        on it — which reaches `viewRetryService`, `castPackageView(angle)` and
+        this sentence. A customer can still have this view judged today.
       */
-      unrestated: ["a head-and-shoulders portrait"],
     },
     directive:
       "FRONT-FACING HEAD AND SHOULDERS PORTRAIT. Square to camera, head straight with no tilt, "
