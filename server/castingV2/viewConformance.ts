@@ -348,10 +348,35 @@ export type ViewConformanceJudgeConfig = {
    * `face`+`subject` once between them — `threeQuarter` names nothing, because a
    * band with no rules is measured without a single call. That is **4 segmenter
    * reads per Sign at ~1¢ each**, taken in parallel with the judge's own call,
-   * which runs 23–36 s on his own frames. A region read is a second or two
-   * against that, so the wall clock a customer waits does not move.
+   * which runs 23–36 s on his own frames.
+   *
+   * ⚠ **THIS CLAUSE READ *"a region read is a second or two against that"*
+   * UNTIL #1776, AND IT WAS WRONG BY ABOUT TEN TIMES.** Driven on his own
+   * frames through the real segmenter: a TWO-landmark band measures in
+   * **21.5 / 18.5 / 22.5 s**, so a single region read is ~10 s, not one or two.
+   * **The conclusion still holds and that is why the sentence is corrected
+   * rather than reversed** — 21.5 s inside a 23–36 s judge call still adds
+   * nothing to the wall clock, because the two run in parallel. What the wrong
+   * number hid was the SHAPE of the risk: a leg believed to take a second does
+   * not look like one that needs a deadline, and it had none (#1776).
    */
   framingReader?: FramingReader;
+  /**
+   * HOW LONG THE MEASUREMENT MAY RUN BEFORE THE AXIS FALLS TO THE READER —
+   * {@link FRAMING_MEASUREMENT_TIMEOUT_MS} when it is not given, which is what
+   * every production caller gets.
+   *
+   * ⚠ **IT EXISTS SO THE DEADLINE CAN BE DRIVEN THROUGH THE REAL JUDGE, AND
+   * THAT IS THE WHOLE REASON.** The alternative was a fake clock, and the judge
+   * does real work either side of this promise (it downscales both frames
+   * before the measurement starts); faking timers around that proved to stall
+   * on the frame work rather than on the thing under test, which is a test that
+   * passes or hangs for reasons unrelated to its subject.
+   *
+   * It is never set in production, and `viewFramingDeadline.test.ts` holds that
+   * by DERIVING the caller list from the tree rather than by saying so here.
+   */
+  framingDeadlineMs?: number;
   /**
    * Angles this judge must fail regardless of the picture, or `"all"`.
    *
@@ -428,11 +453,11 @@ export function createViewConformanceJudge(config: ViewConformanceJudgeConfig): 
       delivers.
     */
     const measuring: Promise<FramingMeasurement | null> = config.framingReader
-      ? measureViewFraming({
+      ? withinFramingDeadline(measureViewFraming({
         band: castPackageView(input.angle).band,
         image: input.candidate.bytes,
         reader: config.framingReader,
-      }).catch((error: unknown) => {
+      }), config.framingDeadlineMs ?? FRAMING_MEASUREMENT_TIMEOUT_MS).catch((error: unknown) => {
         log.error(
           { angle: input.angle, err: error },
           "[viewConformance] the framing band could not be measured — the axis falls to the reader",
@@ -589,6 +614,89 @@ export function createViewConformanceJudge(config: ViewConformanceJudgeConfig): 
       frames,
     };
   };
+}
+
+/**
+ * HOW LONG THE BAND MEASUREMENT MAY HOLD A PAID VIEW — #1776.
+ *
+ * ## The defect, in what a customer waits
+ *
+ * The measurement was started with no deadline of any kind. The judge's own
+ * call beside it is capped at 75 s (`timeoutMs` below); a segmenter that
+ * ACCEPTS and never answers is bounded only by the transport, which is
+ * undici's ~300 s headers timeout (measured at 306.6 s in #1177). So the
+ * slowest leg set the wall clock, and a Sign or a Try again could sit for five
+ * minutes before folding to `cannotMeasure` and delivering.
+ *
+ * ## Why 45 s, and why it is NOT the 20 s the card proposed
+ *
+ * ⚠ **20 s was measured to break working measurements, which is the dangerous
+ * direction: a bound that fires on a healthy read converts a real check into
+ * `cannotMeasure`, and an unchecked view is DELIVERED with a free Try again.**
+ * That trades a rare five-minute wait for routinely giving the check away.
+ *
+ * Driven on his own production frames through the real segmenter, on the
+ * widest band there is:
+ *
+ * | view | landmarks | verdict | seconds |
+ * |---|---|---|---|
+ * | `closeUp` (asset 306) | 2 | `inBand` | **21.5** |
+ * | `closeUp` (asset 322) | 2 | `outOfBand` | **18.5** |
+ * | `frontClose` (asset 306) | 2 | `outOfBand` | **22.5** |
+ *
+ * Every one of those three is at or above 20 s. **The widest band in the
+ * product reads TWO distinct landmarks** — read off the bands rather than
+ * assumed: `closeUp` names `face` + `subject`, `frontFull` and `backFull` name
+ * `subject` alone, `threeQuarter` and `sideClose` name none — so 22.5 s is the
+ * worst case and not a sample of a longer tail.
+ *
+ * 45 s is **twice the worst success observed**, which is the rule the judge's
+ * own 75 s was set by, in the docblock a few lines below. It leaves the hung
+ * case ~6.7× shorter than the transport's ceiling while no healthy read comes
+ * near it.
+ *
+ * ## ⚠ What this does NOT do, stated rather than implied
+ *
+ * **It stops the WAITING; it does not cancel the REQUEST.** The abandoned call
+ * keeps running and keeps its `FAL_CONCURRENCY` slot until the transport gives
+ * up, so a hung segmenter still costs the pool one of its five for ~300 s.
+ *
+ * The honest fix for that is an `AbortSignal` threaded to the reader's `post`,
+ * which already takes one (`falRegionReader.ts:55`, forwarded to `fetch` at
+ * `:77`). What stops it being this change is that `RegionReader.region()` and
+ * `.subject()` take no signal, and that type is shared with `faceScan`,
+ * `bornWornDetector` and `carriedGeometry` — widening it is a change to a
+ * shared interface on several paths, and it is its own card rather than a
+ * rider on this one.
+ */
+export const FRAMING_MEASUREMENT_TIMEOUT_MS = 45_000;
+
+/**
+ * Bound one measurement, and REJECT when the bound passes.
+ *
+ * Rejecting rather than resolving is deliberate: the `.catch` already on the
+ * call turns any failure into a `cannotMeasure` whose `method` names the
+ * reason, so a deadline that rejects lands in the one place that already
+ * decides what an unmeasurable band does — rather than inventing a second
+ * route to the same verdict, which is working law 4's shape.
+ *
+ * The timer is cleared on BOTH outcomes. A `setTimeout` left running holds the
+ * event loop open, and this is called once per view on every Sign.
+ *
+ * It is local rather than `casting/geminiClient`'s `withTimeout`, which does
+ * the same job: that helper's every consumer is inside `server/casting/`, the
+ * legacy tree the retirement program is unpicking, and a V2 money path taking
+ * its first dependency on it would be one more caller to unpick for ten lines.
+ */
+function withinFramingDeadline<T>(work: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error(`the framing measurement passed its ${ms / 1000}s deadline`)),
+      ms,
+    );
+  });
+  return Promise.race([work, deadline]).finally(() => clearTimeout(timer));
 }
 
 /**
