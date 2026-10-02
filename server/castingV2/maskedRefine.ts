@@ -274,12 +274,35 @@ export type RegionReader = {
     about a frame it was not read from. Omit it and every frame reads its own,
     which is what this did before.
   */
+  /*
+    `signal` — GIVE THE SLOT BACK WHEN THE CALLER HAS STOPPED WAITING (#1781).
+
+    A caller with a deadline of its own — the view judge's framing measurement
+    is the one that has one — abandons the promise when the bound passes, and
+    without this the call keeps running and keeps one of the reader's five
+    `FAL_CONCURRENCY` slots until the transport gives up at ~300 s. Every region
+    read in the product queues behind the same pool, so a hung read on one view
+    is a scan on another view waiting for it.
+
+    Optional on purpose: a caller with no deadline has nothing to cancel, and
+    the readers that take one say so in their own code rather than passing
+    `undefined` to look diligent.
+
+    ⚠ **A READER MAY DECLINE TO FORWARD IT ON A SHARED READ, AND THE PRODUCTION
+    ONE DOES.** `falRegionReader` memoises the face-axis read and the
+    frame-address check across callers; cancelling one of those on one caller's
+    deadline would abort a read somebody else is waiting on, which is worse than
+    the slot it frees. The rule it applies, stated there: a read made FOR ONE
+    CALLER takes that caller's signal, a read SHARED between callers keeps the
+    reader's own.
+  */
   region(input: {
     image: Buffer;
     name: string;
     absentIsAnswer?: boolean;
     imageUrl?: string;
     axisKey?: string;
+    signal?: AbortSignal;
   }): Promise<Mask>;
   /**
    * THE SAME REGION WITH ITS TWO SIDES STILL APART — optional, and the option
@@ -327,8 +350,8 @@ export type RegionReader = {
      */
     declaredTwoSided?: true;
   }): Promise<SideRegions | null>;
-  /** A soft whole-subject matte, for edge ramps. */
-  subject(input: { image: Buffer }): Promise<Mask>;
+  /** A soft whole-subject matte, for edge ramps. `signal` as on `region`. */
+  subject(input: { image: Buffer; signal?: AbortSignal }): Promise<Mask>;
   /**
    * WHERE A THING WOULD BE, even when nothing can see it.
    *

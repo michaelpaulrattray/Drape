@@ -486,9 +486,14 @@ async function readLandmark(
   image: Buffer,
   landmark: FramingLandmark,
   absentIsAnswer: boolean,
+  /* The measurement's own deadline, so an abandoned read gives its provider
+     slot back instead of holding it to the transport's ~300 s (#1781). The
+     reader decides what it can honour — `falRegionReader` declines on its
+     shared reads and says so there. */
+  signal?: AbortSignal,
 ): Promise<Mask> {
-  if (landmark === "subject") return reader.subject({ image });
-  return reader.region({ image, name: landmark, absentIsAnswer });
+  if (landmark === "subject") return reader.subject({ image, signal });
+  return reader.region({ image, name: landmark, absentIsAnswer, signal });
 }
 
 /**
@@ -507,8 +512,22 @@ export async function measureViewFraming(input: {
   band: ViewFramingBand;
   image: Buffer;
   reader: FramingReader;
+  /**
+   * ABANDONING THIS MEASUREMENT ALSO CANCELS ITS READS — #1781.
+   *
+   * The caller's deadline (`withinFramingDeadline`) stops WAITING on this
+   * promise; without the signal the reads it started keep running and keep one
+   * of the reader's five `FAL_CONCURRENCY` slots each until the transport gives
+   * up. Every region read in the product queues behind that pool, so a hung
+   * measurement on one view is a face scan on another view waiting for it.
+   *
+   * Optional, and what it costs when absent is latency rather than
+   * correctness — which is why the deadline itself is #1776's change and this
+   * is a separate one.
+   */
+  signal?: AbortSignal;
 }): Promise<FramingMeasurement> {
-  const { band, image, reader } = input;
+  const { band, image, reader, signal } = input;
   const landmarksRead: FramingLandmark[] = [];
   const masks = new Map<FramingLandmark, Promise<Mask>>();
   /*
@@ -527,7 +546,7 @@ export async function measureViewFraming(input: {
     const held = masks.get(landmark);
     if (held) return held;
     landmarksRead.push(landmark);
-    const asked = readLandmark(reader, image, landmark, false);
+    const asked = readLandmark(reader, image, landmark, false, signal);
     masks.set(landmark, asked);
     return asked;
   };

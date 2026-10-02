@@ -452,11 +452,19 @@ export function createViewConformanceJudge(config: ViewConformanceJudgeConfig): 
       way the rest of this file fails: toward "nobody could tell", which
       delivers.
     */
-    const measuring: Promise<FramingMeasurement | null> = config.framingReader
-      ? withinFramingDeadline(measureViewFraming({
+    /* Bound once, because the deadline now takes a CALLBACK (#1781) and a
+       property read inside one is no longer narrowed by the ternary around it.
+       A `!` would have said the same thing with nothing holding it true. */
+    const framingReader = config.framingReader;
+    const measuring: Promise<FramingMeasurement | null> = framingReader
+      ? withinFramingDeadline((signal) => measureViewFraming({
         band: castPackageView(input.angle).band,
         image: input.candidate.bytes,
-        reader: config.framingReader,
+        reader: framingReader,
+        /* #1781 — the bound passing also cancels the reads it started, so the
+           abandoned measurement gives its provider slots back instead of
+           holding them to the transport's ~300 s. */
+        signal,
       }), config.framingDeadlineMs ?? FRAMING_MEASUREMENT_TIMEOUT_MS).catch((error: unknown) => {
         log.error(
           { angle: input.angle, err: error },
@@ -655,19 +663,30 @@ export function createViewConformanceJudge(config: ViewConformanceJudgeConfig): 
  * case ~6.7× shorter than the transport's ceiling while no healthy read comes
  * near it.
  *
- * ## ⚠ What this does NOT do, stated rather than implied
+ * ## ⚠ ~~What this does NOT do~~ — CLOSED BY #1781, and the paragraph is kept
+ * ## because the ROAD is what a later reader needs
  *
- * **It stops the WAITING; it does not cancel the REQUEST.** The abandoned call
- * keeps running and keeps its `FAL_CONCURRENCY` slot until the transport gives
- * up, so a hung segmenter still costs the pool one of its five for ~300 s.
+ * ~~**It stops the WAITING; it does not cancel the REQUEST.** The abandoned
+ * call keeps running and keeps its `FAL_CONCURRENCY` slot until the transport
+ * gives up, so a hung segmenter still costs the pool one of its five for
+ * ~300 s.~~
  *
- * The honest fix for that is an `AbortSignal` threaded to the reader's `post`,
- * which already takes one (`falRegionReader.ts:55`, forwarded to `fetch` at
- * `:77`). What stops it being this change is that `RegionReader.region()` and
- * `.subject()` take no signal, and that type is shared with `faceScan`,
- * `bornWornDetector` and `carriedGeometry` — widening it is a change to a
- * shared interface on several paths, and it is its own card rather than a
- * rider on this one.
+ * That was true of #1776 and is no longer true of this file. The fix is the one
+ * this paragraph named: an `AbortSignal` threaded to the reader's `post`, which
+ * already took one. {@link withinFramingDeadline} owns the controller, aborts
+ * it when the bound passes, and `measureViewFraming` carries the signal to
+ * `RegionReader.region` / `.subject`, which now take one PER CALL.
+ *
+ * ⚠ **Per call, and the reason is a fact about this product rather than a
+ * preference**: `signEngine.ts` caches `judge` at module level, so there is ONE
+ * framing reader for every view of every Sign in the process. Aborting the
+ * reader's construction-time signal — which is what a first reading of
+ * `createFalRegionReader` suggests — would cancel every other customer's read.
+ *
+ * What is still true, and is the honest remainder: `falRegionReader` declines
+ * the caller's signal on its two SHARED reads (the memoised face axis and the
+ * frame-address check), because one caller's deadline must not abort a read
+ * another caller is awaiting. Both are bounded by their own timeouts.
  */
 export const FRAMING_MEASUREMENT_TIMEOUT_MS = 45_000;
 
@@ -688,14 +707,40 @@ export const FRAMING_MEASUREMENT_TIMEOUT_MS = 45_000;
  * legacy tree the retirement program is unpicking, and a V2 money path taking
  * its first dependency on it would be one more caller to unpick for ten lines.
  */
-function withinFramingDeadline<T>(work: Promise<T>, ms: number): Promise<T> {
+function withinFramingDeadline<T>(
+  /*
+    ⚠ **A FACTORY, NOT A PROMISE, AND THAT IS #1781's WHOLE SHAPE.** The
+    controller has to exist BEFORE the work starts or the work cannot be told
+    about it — so this hands the signal in rather than taking a promise already
+    in flight. Taking a promise is what let the previous version stop the
+    waiting without stopping the request.
+  */
+  start: (signal: AbortSignal) => Promise<T>,
+  ms: number,
+): Promise<T> {
+  const giveUp = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
   const deadline = new Promise<never>((_, reject) => {
     timer = setTimeout(
-      () => reject(new Error(`the framing measurement passed its ${ms / 1000}s deadline`)),
+      () => {
+        /*
+          ABORT FIRST, THEN REJECT. The reads are the thing holding the provider
+          slot, and rejecting first would let the caller's `.catch` and the rest
+          of the view's road run while they are still in flight — the same
+          ordering bug one level up from the one this card is about.
+        */
+        giveUp.abort(new Error(`the framing measurement passed its ${ms / 1000}s deadline`));
+        reject(new Error(`the framing measurement passed its ${ms / 1000}s deadline`));
+      },
       ms,
     );
   });
+  const work = start(giveUp.signal);
+  /*
+    `work` keeps a handler through the race even when the deadline wins, so its
+    later rejection — which is now the NORMAL way an abandoned measurement ends,
+    since the abort makes its reads throw — is handled rather than unhandled.
+  */
   return Promise.race([work, deadline]).finally(() => clearTimeout(timer));
 }
 
