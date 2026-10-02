@@ -212,10 +212,19 @@ export function wholeDisplayLedger(ledger: number): number {
 /**
  * Display credits above which the product reads them in millions.
  *
- * Read from the plan table rather than chosen: Business is 3,000,000 ledger
- * (600,000 display) and Scale is 20,000,000 ledger (4,000,000 display), so a
+ * Read from the plan table rather than chosen: Business is 2,350,000 ledger
+ * (470,000 display) and Scale is 13,750,000 ledger (2,750,000 display), so a
  * threshold of one million display credits is exactly the card's "M-style from
  * Scale up" and moves with the tiers rather than needing to be re-picked.
+ *
+ * ⚠ **THOSE FOUR FIGURES READ 3,000,000 / 600,000 / 20,000,000 / 4,000,000
+ * UNTIL #1607, AND THE RUNGS HAD ALREADY MOVED UNDER THEM** — #1602 slice 2
+ * adopted his volume-discount ladder on 2026-10-01, a day after this block was
+ * written. The CONCLUSION is unchanged and that is the only reason this was a
+ * stale comment rather than a defect: 470,000 is still under a million and
+ * 2,750,000 is still over it, so the threshold still lands exactly between
+ * Business and Scale. A comment cannot fail a test, which is why it is read
+ * here rather than trusted.
  */
 export const MILLIONS_STYLE_FROM: DisplayCredits = 1_000_000 as DisplayCredits;
 

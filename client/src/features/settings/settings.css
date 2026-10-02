@@ -772,12 +772,34 @@
    item 5 found it standing in §6c's positioning-statement slot; the slot is
    empty and this is what the credits buy. Same type, honest name. */
 .dp-plan__makes { font: 400 11px/1.55 var(--font-sans); color: var(--metaStrong); }
-.dp-plan__credits { font: 500 12.5px/1.3 var(--font-mono); color: var(--ink); }
-.dp-plan__creditsunit {
-  font: 400 10px/1.3 var(--font-mono);
-  letter-spacing: .06em;
-  color: var(--faint);
-  white-space: nowrap;
+/* LINE 3 — *"credits, one pool, second and lighter"* (#1607). It was a mono
+   figure in `--ink` with a letterspaced `A MONTH` stamp beside it; it is a
+   SENTENCE now, so it takes the prose type the other three lines take and the
+   FIGURE keeps the emphasis. Second and lighter is relative to the price
+   above it (28px, `--ink`), which stays the only large number on the card.
+
+   ⚠ `.dp-plan__creditsunit` went with the stamp. It had one consumer, the
+   `A MONTH` span, and that span said something false on the free rung — the
+   rule it carried was *"one class per fact"*, and the fact is gone. */
+.dp-plan__credits {
+  font: 400 11px/1.55 var(--font-sans);
+  color: var(--metaStrong);
+  /* ⚠ **TWO LINES RESERVED, FOR THE REASON `.dp-plan__blurb` RESERVES THEM —
+     AND THIS WAS FOUND AT THE RUNNING APP RATHER THAN REASONED** (#1607, law
+     6). The sentence is one line on Pro (47 characters) and two on Business
+     (48), so the credits block, the example and the perk row on the Business
+     card sat 17px BELOW its two neighbours. It is the same misalignment #404
+     measured on the blurb and the same remedy, for the same stated reason: the
+     figure in front of the sentence changes length with the ladder, so a
+     layout that lines up for today's seven grants is a trap set for the next
+     price change. A character cap cannot stand in for it — width is not
+     length. */
+  min-height: calc(2 * 1.55 * 11px);
+}
+.dp-plan__creditsfigure {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
 }
 .dp-plan__rollover { font: 400 11px/1.5 var(--font-sans); color: var(--metaStrong); }
 .dp-plan__rollover--loss { color: var(--accentInk); }
@@ -786,6 +808,16 @@
    eventually i need to make benefits between each plan."* Same treatment it had
    before card 390 removed it — one row today, a list the day a benefit
    actually moves per rung. */
+/* THE TRUST LINE (#1607) — one sentence under the ladder in both modes. It
+   takes the quietest type on the pane deliberately: it is a reassurance a
+   customer reads once and then stops noticing, not an argument competing with
+   the prices above it. */
+.dp-plan__trust {
+  margin: var(--s-4) 0 0;
+  font: 400 11px/1.55 var(--font-sans);
+  color: var(--faint);
+}
+
 .dp-plan__perks { display: flex; flex-direction: column; gap: 7px; }
 .dp-plan__perk {
   display: flex;

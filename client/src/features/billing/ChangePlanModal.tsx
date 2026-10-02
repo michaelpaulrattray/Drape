@@ -103,7 +103,10 @@ import {
 import {
   cardTrio,
   compareWindow,
-  framesFor,
+  charactersFor,
+  charactersPhrase,
+  creditsTail,
+  exampleSentence,
   recommendPlan,
   rolloverSentence,
   type LadderPlan,
@@ -143,6 +146,41 @@ const EVERY_PLAN_PERK = "Every model and every tool";
 */
 const ONE_FOR_EVERY_PLAN = `${EVERY_PLAN_PERK}, on every plan — the only differences are the ones shown above.`;
 
+/**
+ * THE TRUST LINE — his approved pricing page's own sentence, once per pane
+ * (#1607, P1-8).
+ *
+ * ⚠ **BOTH HALVES ARE CAPABILITY CLAIMS AND BOTH WERE READ AT THE CODE BEFORE
+ * THIS SHIPPED**, which is the card's rule for every string it quotes: *"re-
+ * derive every string against present capability before shipping."*
+ *
+ * **"See the price before you make anything"** — every spending control in the
+ * studio carries its price in the label a customer presses, and each one of
+ * them goes through `displayPrice`: the sheet dock
+ * (`features/casting/ControlPanel.tsx`), a tile's Retry
+ * (`castingV2/components/CandidateTile.tsx`), a Refine
+ * (`castingV2/components/RefinePanel.tsx`), a Sign
+ * (`castingV2/components/SignConfirm.tsx`), a view's Try again
+ * (`casting/components/ImageViewer/ViewTabs.tsx`).
+ *
+ * **"Credits back if a result doesn't arrive"** — and the wording is precise
+ * rather than generous. Under the founder's catastrophic-only refund ruling a
+ * frame the verification layer merely DISPUTES is delivered and charged
+ * (`castingV2/refineService.ts`), so a promise of credits back on a result
+ * somebody does not LIKE would be false. What refunds is an arrival that did
+ * not happen: a failed sheet slice refunds its own recorded `pointsCost`, a
+ * failed view refunds its slice, a lost Sign refunds through `signRecovery`,
+ * and a refine is one unit that refunds whole. This sentence says exactly that
+ * and nothing wider.
+ *
+ * ⚠ **It sits OUTSIDE the card/compare branch so it is stated once in either
+ * mode** — the duplication card 390 removed and card 425 was careful not to
+ * reintroduce. It is not a second copy of the perk footnote above it: that one
+ * is about what a plan includes, this one is about what spending is like.
+ */
+const TRUST_LINE =
+  "See the price before you make anything. Credits back if a result doesn't arrive.";
+
 export function ChangePlanModal({
   onClose,
   onAddCredits,
@@ -169,7 +207,6 @@ export function ChangePlanModal({
 
   const { data: plans } = trpc.billing.getPlans.useQuery();
   const { data: status, refetch: refetchStatus } = trpc.billing.getStatus.useQuery();
-  const { data: costs } = trpc.credits.getCosts.useQuery();
   const utils = trpc.useUtils();
 
   const billedInterval: Interval | null =
@@ -332,7 +369,19 @@ export function ChangePlanModal({
     `(confirming?.id ?? "starter")` one file over.
   */
   const hasSubscription: boolean | null = status ? status.hasSubscription : null;
-  const costPerFrame = costs?.castingImage ?? 0;
+  /*
+    WHAT ONE FINISHED CHARACTER COSTS — the divisor behind line 4's example
+    (#1607, P1-8), in LEDGER credits, off the same `getPlans` the ladder is
+    built from.
+
+    ⚠ **THIS READ `credits.getCosts`'s `castingImage` UNTIL NOW, AND THAT IS THE
+    LEGACY STUDIO'S PRICE.** `CREDIT_COSTS` is declared as *"not part of the new
+    scale"* and its lane has been admin-only since #1654, so the one line on the
+    card that told a customer what their money buys was priced off a surface
+    they cannot reach. `0` keeps its meaning — not known yet — and the sentence
+    declines rather than guessing, exactly as the frames line did.
+  */
+  const oneCharacterCredits = plans?.oneFinishedCharacterCredits ?? 0;
 
   /*
     The ladder, derived from the server's own list. `getPlans.subscriptions`
@@ -596,7 +645,7 @@ export function ChangePlanModal({
             plans={window5}
             currentId={currentId}
             interval={interval}
-            costPerFrame={costPerFrame}
+            oneCharacterCredits={oneCharacterCredits}
             currentIndex={currentIndex}
             ladder={ladder}
             pending={pending}
@@ -637,7 +686,7 @@ export function ChangePlanModal({
               const isCurrent = plan.id === currentId;
               const isRecommended = plan.id === recommended?.id;
               const rollover = rolloverSentence(plan.rolloverPercent);
-              const frames = framesFor(plan.credits, costPerFrame);
+              const example = exampleSentence(charactersFor(plan.credits, oneCharacterCredits));
               const blurb = blurbFor(plan.id);
               const planIndex = ladder.findIndex((entry) => entry.id === plan.id);
               return (
@@ -755,15 +804,55 @@ export function ChangePlanModal({
                     it rather than gating it (card 390 item 1).
                   */}
                   <span className="dp-plan__block">
+                    {/*
+                      §6c'S CREDITS LINE, REWRITTEN AS RINOA'S LINE 3 (#1607,
+                      P1-8): *"15,000 credits a month, one pool for
+                      everything."* It was the figure plus the stamp `A MONTH`,
+                      and two things were wrong with that pair.
+
+                      ⚠ **THE FIRST IS THAT `A MONTH` WAS FALSE ON THE FREE
+                      RUNG.** `PLAN_TIERS.free.monthlyCredits` is a ONE-TIME
+                      signup grant — its own declaration says so — so a free
+                      account read *"2,700 A MONTH"* about 2,700 credits that
+                      arrive once. `creditsTail` derives the arrival from the
+                      PRICE rather than from the rung's name.
+
+                      ⚠ **THE SECOND IS THAT A CREDIT COUNT WITH NO SENTENCE
+                      AROUND IT DOES NOT SAY WHETHER IT IS ONE POOL OR SIX.**
+                      His approved page answers that in the line itself, which
+                      matters while the per-use buckets on it stay Phase 2.
+
+                      **The figure keeps its own weight and the sentence is
+                      lighter** — the card's *"second and lighter"*. `2.8M`
+                      above a million is `formatCredits`'s doing and needed no
+                      new formatter.
+                    */}
                     <span className="dp-plan__credits">
-                      {formatCredits(displayBalance(plan.credits))}{" "}
-                      <span className="dp-plan__creditsunit">A MONTH</span>
+                      <span className="dp-plan__creditsfigure">
+                        {formatCredits(displayBalance(plan.credits))}
+                      </span>{" "}
+                      {creditsTail(plan.priceInCents)}
                     </span>
-                    {frames > 0 ? (
-                      <span className="dp-plan__makes">
-                        About {frames.toLocaleString()} casting frames.
-                      </span>
-                    ) : null}
+                    {/*
+                      LINE 4 — the worked example (#1607). It replaced *"About
+                      N casting frames."*, which named the pipeline's unit for a
+                      sheet slice and was priced off the LEGACY studio's
+                      `castingImage`. A finished character is Roll + Refine +
+                      Sign, derived server-side from the three live prices
+                      (`CASTING_V2_ONE_CHARACTER_CREDITS`).
+
+                      ⚠ **It keeps `.dp-plan__makes`, and the class is still
+                      honest**: card 390 item 5's finding was that what the
+                      credits MAKE had been standing in the positioning slot,
+                      and this is still that fact in still that place. The
+                      guard arm holding it reads the class and its position,
+                      both unchanged.
+
+                      `null` draws nothing — `blurbFor`'s rule, for the same
+                      reason: *"about 0 finished characters"* is worse than
+                      silence.
+                    */}
+                    {example ? <span className="dp-plan__makes">{example}</span> : null}
                     <span
                       className={
                         rollover.isLoss
@@ -810,6 +899,8 @@ export function ChangePlanModal({
           */}
           </>
         )}
+
+        <p className="dp-plan__trust">{TRUST_LINE}</p>
 
         {/*
           #391 — THE HIDDEN TOP RUNG'S DOOR, and it is deliberately just an
@@ -946,7 +1037,7 @@ function CompareGrid({
   plans,
   currentId,
   interval,
-  costPerFrame,
+  oneCharacterCredits,
   currentIndex,
   ladder,
   pending,
@@ -962,7 +1053,7 @@ function CompareGrid({
      this surface can no longer make. */
   currentId: string | null;
   interval: Interval;
-  costPerFrame: number;
+  oneCharacterCredits: number;
   currentIndex: number;
   ladder: LadderPlan[];
   pending: string | null;
@@ -986,16 +1077,37 @@ function CompareGrid({
   const rows: { label: string; mono?: boolean; price?: boolean; read: (plan: LadderPlan) => string }[] =
     [
       {
-        label: "Credits a month",
+        /*
+          ⚠ **THE LABEL LOST `a month`, AND IT IS THE SAME CORRECTION THE CARDS
+          TOOK (#1607).** The free column's figure is a one-time signup grant,
+          so a row headed *"Credits a month"* stated something false about one
+          of its five columns — and a comparison row cannot carry a per-column
+          qualifier, which is why the word comes OFF the label rather than
+          into the cells. The cards say which it is in their own sentence;
+          this table's job is the like-for-like read.
+        */
+        label: "Credits",
         mono: true,
         read: (plan) => formatCredits(displayBalance(plan.credits)),
       },
       {
+        /*
+          ⚠ **IT COUNTED FRAMES AT THE LEGACY STUDIO'S PRICE (#1607).** Same
+          repair as the cards': a finished character is Roll + Refine + Sign,
+          derived from the three prices the studio charges, and `frames` was
+          the pipeline's word for a sheet slice.
+        */
         label: "What that makes",
         read: (plan) =>
-          costPerFrame > 0
-            ? `about ${framesFor(plan.credits, costPerFrame).toLocaleString()} frames`
-            : "—",
+          /* `—` keeps its meaning: the divisor is not known yet, or no whole
+             character fits. Both are "nothing to state", and neither is 0.
+
+             ⚠ **THE PHRASE COMES FROM `charactersPhrase` AND IS NOT COMPOSED
+             HERE.** It was, for one afternoon, and it read `about 1
+             characters` on the free column — a second copy of the card's noun
+             rule, which is working law 4 with the shortest drift this
+             repository has measured. */
+          charactersPhrase(charactersFor(plan.credits, oneCharacterCredits)) ?? "—",
       },
       {
         /*

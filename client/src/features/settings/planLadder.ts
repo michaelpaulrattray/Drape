@@ -204,6 +204,113 @@ export function framesFor(credits: number, costPerFrame: number): number {
 }
 
 /**
+ * HOW MANY FINISHED CHARACTERS A PLAN'S CREDITS COVER — the plan card's line 4
+ * (#1607, P1-8). Both arguments are LEDGER numbers, so the ratio is
+ * scale-neutral and no display conversion belongs in here.
+ *
+ * ⚠ **IT ROUNDS DOWN, NOT TO THE NEAREST, AND THE DIRECTION IS A SAFETY
+ * PROPERTY RATHER THAN A PREFERENCE.** `shared/creditDisplay.ts` sets the rule
+ * this follows: *"a balance rounds DOWN and a price rounds UP, so the product
+ * never shows a balance higher than what is spendable."* "How many characters
+ * does this plan cover" is a balance-side question — a customer shown 16 who
+ * can only finish 15 has been overpromised, which is the one defect a pricing
+ * surface cannot have.
+ *
+ * ⚠ **SO TWO OF THE CARD'S OWN QUOTED FIGURES COME OUT ONE LOWER, AND THAT IS
+ * EXPECTED.** #1607's body quotes `Pro 16` and `Studio 38`; at the adopted
+ * ladder Pro covers 15.7 and Studio 37.5, so this answers 15 and 37. The card
+ * calls its wording *"quotation, not requirement"* and asks for the counts to
+ * be derived, which is what makes the difference a finding rather than a
+ * mismatch.
+ *
+ * ⚠ **ABOVE A HUNDRED IT ALSO ROUNDS DOWN TO TWO SIGNIFICANT FIGURES**, because
+ * the sentence that carries it says *"about"*. `about 3,799 finished
+ * characters` is a computed figure wearing an estimate's word — his approved
+ * page's own examples at those rungs read `200`, `1,100`, `3,600` — and a
+ * number nobody can act on at that precision is the disappearing-technology
+ * law's clause 6. It rounds DOWN for the same reason the floor does, so the
+ * promise only ever gets more conservative. Under a hundred the exact floor is
+ * already a number a person reads at a glance, so nothing is thrown away.
+ */
+export function charactersFor(credits: number, oneCharacterCredits: number): number {
+  if (oneCharacterCredits <= 0) return 0;
+  const exact = Math.floor(credits / oneCharacterCredits);
+  if (exact < 100) return exact;
+  /* Two significant figures, always downward: 205 -> 200, 3,799 -> 3,700. */
+  const step = 10 ** (Math.floor(Math.log10(exact)) - 1);
+  return Math.floor(exact / step) * step;
+}
+
+/**
+ * `about 15 finished characters` — the phrase, and `For example, about 15
+ * finished characters.` — line 4's sentence around it, or `null`
+ * when there is no count to state (#1607, P1-8).
+ *
+ * `null` is a real answer and the card draws NOTHING for it, which is
+ * `blurbFor`'s own rule one function up: a plan whose credits do not cover one
+ * finished character has no example to give, and *"about 0 finished
+ * characters"* is a worse sentence than silence. Nothing on today's ladder
+ * reaches it — the free grant covers one — so this is the soft landing under a
+ * future price change rather than a branch in use.
+ *
+ * ⚠ **THE NOUN IS `finished characters` AND IT NAMES NO ENGINE AND NO STAGE.**
+ * The disappearing-technology law's clause 6 asks for the customer's own
+ * vocabulary; `casting frames`, which this line replaced, is the pipeline's
+ * word for the unit a sheet slice bills in, and it described a roll candidate
+ * rather than anything a customer would call finished.
+ *
+ * ⚠ **THE PHRASE IS SPLIT OUT BECAUSE THE COMPARE GRID COMPOSED ITS OWN AND
+ * GOT THE SINGULAR WRONG — SEEN IN THE RUNNING APP (law 6).** Its *"What that
+ * makes"* row read **`about 1 characters`** on the free column: the row had a
+ * second copy of the noun rule, which is working law 4 and drifted the moment
+ * one of the two learned about plurals. One declaration, two readers now — the
+ * card wraps the phrase in a sentence, the table prints it bare.
+ */
+export function charactersPhrase(characters: number): string | null {
+  if (characters <= 0) return null;
+  return `about ${characters.toLocaleString()} finished character${characters === 1 ? "" : "s"}`;
+}
+
+export function exampleSentence(characters: number): string | null {
+  const phrase = charactersPhrase(characters);
+  return phrase === null ? null : `For example, ${phrase}.`;
+}
+
+/**
+ * WHAT FOLLOWS THE CREDIT FIGURE ON LINE 3 — `credits a month, one pool for
+ * everything.` (#1607, P1-8).
+ *
+ * The figure itself is formatted by `@shared/creditDisplay`'s `formatCredits`,
+ * which already reads a million and up as `2.8M` — the card's *"M-style from
+ * Scale up"* needed no new formatter, only this sentence around it. The two are
+ * separate so the card can give the number its own weight and the sentence a
+ * lighter one, which is the card's *"second and lighter"*.
+ *
+ * ⚠ **A FREE GRANT IS NOT A MONTHLY ALLOWANCE AND THIS SURFACE SAID IT WAS.**
+ * `PLAN_TIERS.free.monthlyCredits` is a ONE-TIME signup grant — its own
+ * declaration in `drizzle/schema.ts` says so, *"and nothing else reads it as
+ * monthly"* — and the plan card drew it under the stamp `A MONTH`, so a free
+ * account was told its 2,700 credits arrive every month. They arrive once.
+ * Found while writing line 3, inside this card's own line, so it is fixed here
+ * rather than filed.
+ *
+ * ⚠ **"Monthly" IS DERIVED FROM THE PRICE, NEVER FROM THE RUNG'S NAME.** A
+ * rung with nothing recurring to charge has nothing recurring to grant, which
+ * is true of whatever the free rung is called next; keying on `id === "free"`
+ * would be the fixed list his N3 principle rules out (*"we really cannot be
+ * working from fixed lists in a fluid editing application"*).
+ *
+ * ⚠ **`one pool for everything` IS A CLAIM AND IT WAS CHECKED.** There is one
+ * balance per account (`points.balance`) and every tool spends it; the per-use
+ * buckets on his approved page are Phase 2 and are not built. The day they are,
+ * this sentence is what has to move.
+ */
+export function creditsTail(priceInCents: number): string {
+  const arrival = priceInCents > 0 ? "credits a month" : "credits to start";
+  return `${arrival}, one pool for everything.`;
+}
+
+/**
  * `Half of anything unspent expires` / `Nothing you pay for expires`.
  *
  * §6c: *"Rollover said as loss, not percentage … Same fact; only one of them
