@@ -48,7 +48,16 @@ export function BillingSection({
   onAddCredits,
 }: {
   planName: string;
-  planPriceInCents: number;
+  /**
+   * ⚠ **`null` = NOT READ YET, AND IT IS NOT A PRICE OF ZERO (#1727).**
+   * `getStatus` is in flight for the first paint of every open of this modal,
+   * so a paying customer's own plan card said **"No charge"** and then became
+   * their real monthly price. The note below drops the price entry rather than
+   * claiming either way — the same thing it already does for the allowance and
+   * the renewal date, and the same thing `balance` does for the figures under
+   * it (#1703).
+   */
+  planPriceInCents: number | null;
   allowance: number;
   balance: number | null;
   renewsAt: Date | null;
@@ -113,7 +122,11 @@ export function BillingSection({
         <SettingsCard
           label={planName}
           note={[
-            planPriceInCents > 0 ? `${formatDollars(planPriceInCents)}/mo` : "No charge",
+            planPriceInCents === null
+              ? null
+              : planPriceInCents > 0
+                ? `${formatDollars(planPriceInCents)}/mo`
+                : "No charge",
             renews && allowance > 0 ? `${formatCredits(displayBalance(allowance))} credits/mo` : null,
             renewsAt ? `renews ${formatShortDate(renewsAt)}` : null,
           ]

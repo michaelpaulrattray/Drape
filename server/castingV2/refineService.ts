@@ -75,6 +75,7 @@ import {
   VariantOwnershipError,
 } from "../db/castingV2Variants";
 import { isRefineStep, type RefineStep } from "../../shared/refineSteps";
+import { displayPrice, formatCredits } from "../../shared/creditDisplay";
 import { isRefineFigure, type RefineFigure } from "../../shared/refineFigure";
 import { cutRefineFigure } from "./refineFigure";
 import { getBriefForOwnedCandidate, getOwnedCandidateOnVersion, getOwnedCandidateWithSelectedFace } from "../db/castingV2";
@@ -6051,7 +6052,7 @@ async function refineCandidateCounted(
       operationId,
       error: new TRPCError({
         code: "BAD_REQUEST",
-        message: charge.error || `Not enough credits. A refinement costs ${price} credits.`,
+        message: charge.error || `Not enough credits. A refinement costs ${formatCredits(displayPrice(price))} credits.`,
       }),
       chargedCredits: 0,
       refundedCredits: 0,

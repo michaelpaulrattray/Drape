@@ -23,6 +23,7 @@
  */
 
 import { randomUUID } from "node:crypto";
+import { displayPrice, displayRefund, formatCredits } from "../../shared/creditDisplay";
 import { deductCredits, addCredits, normalizeCreditReferenceId } from "../db";
 import type { CreditToolKind } from "../db/credits";
 import { TRPCError } from "@trpc/server";
@@ -127,11 +128,25 @@ export async function recordRefund(
   return { recorded: result.success, amount, reference, duplicate: result.duplicate === true };
 }
 
-/** The user-facing sentence for a refund outcome. */
+/**
+ * The user-facing sentence for a refund outcome.
+ *
+ * ⚠ **IT QUOTED THE LEDGER FIGURE UNTIL #1600 SLICE 3 (2026-10-02), AND IT WAS
+ * THE BIGGEST OF THE SITES THAT SLICE FOUND** — reached from `withAtomicCredits`
+ * itself, so from boards, the legacy imaging lane, mint and rolls. `amount` is
+ * the ledger number and stays the ledger number; what a customer READS is the
+ * display scale, because the balance on the same screen is.
+ *
+ * It was in no census row because no rule could see it: rule 2's vocabulary had
+ * `credit`, `balance`, `cost`, `refund` and seven more, and this value is called
+ * `amount`. **A credit number can be called anything** — #1676's own sentence,
+ * paid for a third time here.
+ */
 export function refundTruth(outcome: RefundOutcome): string {
+  const shown = formatCredits(displayRefund(outcome.amount));
   return outcome.recorded
-    ? `${outcome.amount} credits were refunded.`
-    : `The automatic refund could not be recorded — quote reference ${outcome.reference} and support will restore the ${outcome.amount} credits.`;
+    ? `${shown} credits were refunded.`
+    : `The automatic refund could not be recorded — quote reference ${outcome.reference} and support will restore the ${shown} credits.`;
 }
 
 export async function withAtomicCredits<T>(
@@ -175,7 +190,7 @@ export async function withAtomicCredits<T>(
   if (!deductResult.success) {
     throw new TRPCError({
       code: "BAD_REQUEST",
-      message: deductResult.error || `Insufficient credits. Need ${amount} credits.`,
+      message: deductResult.error || `Insufficient credits. Need ${formatCredits(displayPrice(amount))} credits.`,
     });
   }
   onCharged?.(amount, chargeReferenceId);

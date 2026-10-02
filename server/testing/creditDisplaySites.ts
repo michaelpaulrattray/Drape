@@ -162,7 +162,7 @@ export const DISPLAY_HELPERS = [
 const STRICT_CREDIT_NAME = /credit|balance|pointscost|allowance|cost$|spent$/i;
 
 /** Names that mean credits when the word "credit" is right beside them (rule 2). */
-const LOOSE_CREDIT_NAME = /credit|balance|pointscost|allowance|cost|price|spent|remaining|refund|grant/i;
+const LOOSE_CREDIT_NAME = /credit|balance|pointscost|allowance|cost|price|spent|remaining|refund|grant|amount$/i;
 
 /** The scale multipliers a hand-written conversion would use. */
 const SCALE_LITERALS = new Set([5, 50]);
@@ -311,6 +311,75 @@ export type CreditDisplayReading = {
  * through a function call, which is a different instrument from the one this
  * file is — it is not pretended here, and it is not filed as debt against the
  * routing, because routing is not what would fix it.
+ *
+ * ✅ **THE ROUTING IS FINISHED — 42 → 16 (#1600 slice 3, 2026-10-02), AND THIS
+ * LIST IS NOW A DIFFERENT KIND OF ARTIFACT.** 19 occurrences routed, 7
+ * corrected in the reader; **not one row left means "still to route"**. So
+ * `stays` below is REQUIRED on every row and the guard refuses a row without
+ * one. `stays: null` means work outstanding, and a list holding none of them
+ * means the routing is done — a fact a guard can check, where "the rows that
+ * are left are fine, see the header" is a fact only prose can claim.
+ *
+ * **What the 19 were, and they were live rather than theoretical.** The price
+ * table landed on production at `143e5b30` (2026-10-01 17:34Z), so from that
+ * minute a refused Roll read *"Not enough credits. A roll costs 1200
+ * credits."* on a screen whose every other number said **240**, and a
+ * per-candidate refund of 30 display read *"150 credits were refunded."*
+ * Twelve refusal sentences (`rollService`, `signService`, `refineService`,
+ * `retryService`, `viewRetryService`, `boardOps` ×3, `mintPackage`,
+ * `refreshSlots`, the evidence execution, the legacy imaging lane, and
+ * `withAtomicCredits`'s own), four refund sentences, the Re-ask question and
+ * its Yes option, the plan-change toast's two branches, and
+ * `shared/refundCopy`'s one sentence behind four surfaces.
+ *
+ * ⚠ **AND THE NINE CORRECTED IN THE READER WERE NOT CREDIT NUMBERS AT ALL** —
+ * `refundResult.refundId` ×2, `refundType` ×2, `(refundAmountCents /
+ * 100).toFixed(2)` ×2, `f.refundReference`, and the two `(amount / 100)
+ * .toFixed(2)` dollar figures `amount$` would otherwise have admitted: an id, a
+ * word and four dollar amounts, each indicted because the sentence around it
+ * says "credits" somewhere else. `isNotAnAmountName` and the `Cents` clause are the repair, and the
+ * measurement sits on them. **A row that cannot be routed is worse than a
+ * missing row**, because this list's only contract is that it shrinks and such
+ * a row can never leave.
+ *
+ * ⚠ **AND THE SLICE FOUND THREE SITES THE CENSUS NEVER HELD, ALL THREE IN THE
+ * SHARED CHARGE WRAPPER — the worst direction a reader can be wrong in.**
+ * `server/casting/atomicCredits.ts` quotes a credit figure three times: the
+ * generic *"Insufficient credits. Need N credits."* that `withAtomicCredits`
+ * throws for BOARDS, MINT, the legacy imaging lane and rolls, and
+ * `refundTruth`'s two — *"N credits were refunded."* and *"support will restore
+ * the N credits."* Every one of them was the ledger number, and **no rule could
+ * reach any of them, because the value is called `amount`.** That is #1676's own
+ * sentence — *a credit number can be called anything* — paid for a third time,
+ * after `cost` (#1649) and `delta` (#1676).
+ *
+ * `amount$` is now in rule 2's vocabulary, anchored at the END of the name so it
+ * reads `amount`, `outcome.amount` and `creditAmount` and not `amountCents`.
+ * **It was measured before it was kept**: over the whole population it reaches
+ * **8 occurrences** — the 3 above, the admin's own change-request confirmation
+ * (×2), the dispute webhook's `actions` line, and **two DOLLAR figures**,
+ * `` `$${(amount / 100).toFixed(2)} ${currency}` `` in a sentence that also says
+ * credits. Those last two are why `isFixedPointFormat` landed in the same
+ * commit: a widening that trades one false negative for two false positives has
+ * not been measured, it has been hoped for.
+ *
+ * # ⚠ THE ONE JUDGEMENT IN THIS SLICE: A STORED DESCRIPTION STAYS IN LEDGER
+ *
+ * Four rows below are the `description` written onto a `creditTransactions`
+ * row — *"Monthly credit refresh (180000 credits + 0 rollover)"*, *"Credit
+ * top-up: N credits"*, *"Annual credit grant — 12 months up front (N credits +
+ * rollover)"*. The card names *"billing/webhook descriptions"* among the server
+ * strings a customer sees, and **read at the code that is not where they go**:
+ * the one live reader is the MODERATOR credit history, which prints the
+ * description beside the ledger `amount` — and `credits.getTransactions`, the
+ * customer-facing procedure, **has no client caller at all**. Routing them
+ * would put a display figure beside a ledger amount on the one surface this
+ * card says stays in ledger units, which is the two-scales-on-one-screen
+ * defect wearing staff clothes.
+ *
+ * So they stay, and **the trap is filed rather than left in a docblock**: the
+ * day a customer-facing transaction history is built, these descriptions arrive
+ * carrying ledger numbers. That is #1736.
  */
 export const UNROUTED: readonly {
   file: string;
@@ -318,41 +387,32 @@ export const UNROUTED: readonly {
   expression: string;
   /** How many times this exact shape appears in this file. */
   count: number;
+  /**
+   * WHY IT IS STILL HERE — `null` means still to route, which is work.
+   *
+   * ⚠ Every row carried that meaning implicitly until slice 3, and the five
+   * client rows that were never work had their reasons in the HEADER, where no
+   * guard can read them. A reason in the DATA is checkable: the guard holds
+   * every row to having one, and holds the still-to-route rows to being gone.
+   */
+  stays: string | null;
 }[] = [
-  { file: "client/src/features/billing/AddCreditsModal.tsx", rule: "beside-the-word", expression: "currentPrice > 0 ? `, up from ${formatCreditsPerDollar(priceAMonth(currentPrice, annual), currentCredits)}` : null", count: 1 },
-  { file: "client/src/features/billing/AddCreditsModal.tsx", rule: "beside-the-word", expression: "formatCreditsPerDollar(priceAMonth(selected.price, annual), selected.credits)", count: 1 },
-  { file: "client/src/features/billing/ChangePlanModal.tsx", rule: "beside-the-word", expression: "formatCreditsPerDollar(priceOf(plan), plan.credits)", count: 1 },
-  { file: "client/src/features/billing/ChangePlanModal.tsx", rule: "formatted", expression: "framesFor(plan.credits, costPerFrame).toLocaleString()", count: 1 },
-  { file: "client/src/features/settings/planMath.ts", rule: "named-on-the-way-out", expression: "Math.round(perDollar).toLocaleString(\"en-US\")", count: 1 },
-  { file: "server/casting/evidence/evidencePackageExecution.ts", rule: "beside-the-word", expression: "authority.plan.totalCost", count: 1 },
-  { file: "server/casting/mintPackage.ts", rule: "beside-the-word", expression: "totalCost", count: 1 },
-  { file: "server/casting/refreshSlots.ts", rule: "beside-the-word", expression: "totalCost", count: 1 },
-  { file: "server/castingV2/refineReask.ts", rule: "beside-the-word", expression: "input.priceCredits", count: 2 },
-  { file: "server/castingV2/refineService.ts", rule: "beside-the-word", expression: "price", count: 1 },
-  { file: "server/castingV2/reliabilityReport.ts", rule: "beside-the-word", expression: "report.creditsRefunded", count: 1 },
-  { file: "server/castingV2/retryService.ts", rule: "beside-the-word", expression: "price", count: 1 },
-  { file: "server/castingV2/retryService.ts", rule: "beside-the-word", expression: "refunded", count: 1 },
-  { file: "server/castingV2/rollService.ts", rule: "beside-the-word", expression: "price", count: 1 },
-  { file: "server/castingV2/rollService.ts", rule: "beside-the-word", expression: "refundedCredits", count: 1 },
-  { file: "server/castingV2/signService.ts", rule: "beside-the-word", expression: "price", count: 1 },
-  { file: "server/castingV2/viewRetryService.ts", rule: "beside-the-word", expression: "price", count: 1 },
-  { file: "server/db/billing.ts", rule: "beside-the-word", expression: "creditAmount", count: 1 },
-  { file: "server/db/billing.ts", rule: "beside-the-word", expression: "monthlyCredits", count: 1 },
-  { file: "server/db/billing.ts", rule: "beside-the-word", expression: "rolloverCredits", count: 1 },
-  { file: "server/lib/adminActions/changeRequestActions.ts", rule: "beside-the-word", expression: "(refundAmountCents / 100).toFixed(2)", count: 2 },
-  { file: "server/lib/adminActions/changeRequestActions.ts", rule: "beside-the-word", expression: "creditsToDeduct", count: 2 },
-  { file: "server/lib/adminActions/changeRequestActions.ts", rule: "beside-the-word", expression: "refundResult.refundId", count: 2 },
-  { file: "server/lib/adminActions/changeRequestActions.ts", rule: "beside-the-word", expression: "refundType", count: 2 },
-  { file: "server/lib/boardOps.ts", rule: "beside-the-word", expression: "cost", count: 2 },
-  { file: "server/lib/boardOps.ts", rule: "beside-the-word", expression: "totalCost", count: 1 },
-  { file: "server/routes/billing.ts", rule: "beside-the-word", expression: "creditAdjustment", count: 2 },
-  { file: "server/routes/generation/castingImaging.ts", rule: "beside-the-word", expression: "CREDIT_COSTS.castingImage", count: 1 },
-  { file: "server/stripe/webhooks.ts", rule: "beside-the-word", expression: "creditsRestored", count: 1 },
-  { file: "server/stripe/webhooks.ts", rule: "beside-the-word", expression: "creditsToRestore", count: 2 },
-  { file: "server/stripe/webhooks.ts", rule: "beside-the-word", expression: "currentBalance", count: 1 },
-  { file: "server/stripe/webhooks.ts", rule: "beside-the-word", expression: "grantCredits", count: 1 },
-  { file: "shared/refundCopy.ts", rule: "beside-the-word", expression: "f.refunded", count: 1 },
-  { file: "shared/refundCopy.ts", rule: "beside-the-word", expression: "f.refundReference", count: 1 },
+  { file: "client/src/features/billing/AddCreditsModal.tsx", rule: "beside-the-word", expression: "currentPrice > 0 ? `, up from ${formatCreditsPerDollar(priceAMonth(currentPrice, annual), currentCredits)}` : null", count: 1, stays: "a RATE, not an amount: the conversion is INSIDE `formatCreditsPerDollar`, which calls `displayBalance` itself (`planMath.ts:390`). The rules read a name and cannot see through a function boundary." },
+  { file: "client/src/features/billing/AddCreditsModal.tsx", rule: "beside-the-word", expression: "formatCreditsPerDollar(priceAMonth(selected.price, annual), selected.credits)", count: 1, stays: "a RATE, not an amount: the conversion is INSIDE `formatCreditsPerDollar`, which calls `displayBalance` itself (`planMath.ts:390`). The rules read a name and cannot see through a function boundary." },
+  { file: "client/src/features/billing/ChangePlanModal.tsx", rule: "beside-the-word", expression: "formatCreditsPerDollar(priceOf(plan), plan.credits)", count: 1, stays: "a RATE, not an amount: the conversion is INSIDE `formatCreditsPerDollar`, which calls `displayBalance` itself (`planMath.ts:390`). The rules read a name and cannot see through a function boundary." },
+  { file: "client/src/features/billing/ChangePlanModal.tsx", rule: "formatted", expression: "framesFor(plan.credits, costPerFrame).toLocaleString()", count: 1, stays: "a count of FRAMES — credits divided by a per-frame cost, so already scale-free. Dividing it would make a correct number wrong. Rule 1 indicts it only because `credits` appears inside the expression." },
+  { file: "client/src/features/settings/planMath.ts", rule: "named-on-the-way-out", expression: "Math.round(perDollar).toLocaleString(\"en-US\")", count: 1, stays: "the rate's own formatting, inside the function that has already converted. Through `displayBalance` it would be divided by five twice." },
+  { file: "server/castingV2/reliabilityReport.ts", rule: "beside-the-word", expression: "report.creditsRefunded", count: 1, stays: "an OPERATOR diagnostic — a text table of delivery rates whose only consumers in the tree are its own suites. Ledger units, like every staff reading." },
+  { file: "server/db/billing.ts", rule: "beside-the-word", expression: "creditAmount", count: 1, stays: "the `description` of a `creditTransactions` ROW. Its one live reader is the moderator credit history, which prints it beside the ledger `amount`; `credits.getTransactions` has no client caller. Ledger units, as the card asks of a staff surface. The trap when a customer history is built is #1736." },
+  { file: "server/db/billing.ts", rule: "beside-the-word", expression: "monthlyCredits", count: 1, stays: "the `description` of a `creditTransactions` ROW. Its one live reader is the moderator credit history, which prints it beside the ledger `amount`; `credits.getTransactions` has no client caller. Ledger units, as the card asks of a staff surface. The trap when a customer history is built is #1736." },
+  { file: "server/db/billing.ts", rule: "beside-the-word", expression: "rolloverCredits", count: 1, stays: "the `description` of a `creditTransactions` ROW. Its one live reader is the moderator credit history, which prints it beside the ledger `amount`; `credits.getTransactions` has no client caller. Ledger units, as the card asks of a staff surface. The trap when a customer history is built is #1736." },
+  { file: "server/lib/adminActions/changeRequestActions.ts", rule: "beside-the-word", expression: "amount", count: 2, stays: "the confirmation returned to the ADMIN who pressed Approve — `Refunded N credits to <email> via change request #N`, and its grant twin. Staff read it; the customer is never shown either sentence. Reached only once `amount$` joined rule 2's vocabulary." },
+  { file: "server/lib/adminActions/changeRequestActions.ts", rule: "beside-the-word", expression: "creditsToDeduct", count: 2, stays: "a change-request REVIEW NOTE, and the confirmation returned to the ADMIN who pressed Approve. The path says admin and so does the reader: no customer sees either sentence." },
+  { file: "server/stripe/webhooks.ts", rule: "beside-the-word", expression: "Math.abs(priorRevoke.amount)", count: 1, stays: "the webhook's own `actions` array — its reply to Stripe and its log line. An operator reading, never a sentence. Reached only once `amount$` joined rule 2's vocabulary." },
+  { file: "server/stripe/webhooks.ts", rule: "beside-the-word", expression: "creditsRestored", count: 1, stays: "a change-request review note, appended for staff after a Stripe refund failed." },
+  { file: "server/stripe/webhooks.ts", rule: "beside-the-word", expression: "creditsToRestore", count: 2, stays: "the webhook's own `actions` array — its reply to Stripe and its log line. An operator reading, never a sentence." },
+  { file: "server/stripe/webhooks.ts", rule: "beside-the-word", expression: "currentBalance", count: 1, stays: "the webhook's own `actions` array — its reply to Stripe and its log line. An operator reading, never a sentence." },
+  { file: "server/stripe/webhooks.ts", rule: "beside-the-word", expression: "grantCredits", count: 1, stays: "the `description` of a `creditTransactions` ROW. Its one live reader is the moderator credit history, which prints it beside the ledger `amount`; `credits.getTransactions` has no client caller. Ledger units, as the card asks of a staff surface. The trap when a customer history is built is #1736." },
 ];
 
 function isStaff(file: string): boolean {
@@ -387,7 +447,7 @@ function insideALogCall(node: ts.Node): boolean {
  * credit-named the object is. `refund.id` is an identifier; `plan.name` is a
  * word. Both tripped rule 2 in the first census.
  */
-const NOT_AN_AMOUNT = new Set([
+const NOT_AN_AMOUNT_WORDS = [
   "id",
   "name",
   "label",
@@ -401,18 +461,72 @@ const NOT_AN_AMOUNT = new Set([
   "message",
   "reason",
   "description",
-]);
+] as const;
+
+/* The set is DERIVED from the list above, never typed out beside it — the
+   suffix reading needs the order and the membership test needs the set, and
+   two copies of thirteen words is working law 4 in miniature. */
+const NOT_AN_AMOUNT = new Set<string>(NOT_AN_AMOUNT_WORDS);
+
+/**
+ * Is this NAME one of the words above, read as a camelCase TAIL?
+ *
+ * ⚠ **THE SET WAS MATCHED EXACTLY, AND ON A PROPERTY NAME ONLY, WHICH LEFT
+ * THREE SHAPES OF ONE MISTAKE SITTING IN THE CENSUS** (#1600 slice 3,
+ * 2026-10-02): `refundResult.refundId` (an id), `f.refundReference` (a
+ * reference) and the bare identifier `refundType` (a word) — all three indicted
+ * because the sentence they sit in says "credits" somewhere else, and none of
+ * them a number. A census row that cannot be routed is worse than a missing
+ * one: the list's whole contract is that it only shrinks, and a row nobody can
+ * ever remove is a permanent excuse.
+ *
+ * It cannot silence a credit amount, and that is a property of the WORDS rather
+ * than a hope: every one of them is a non-numeric noun, and nothing in this
+ * product names a quantity `…Id`, `…Reference`, `…Type`, `…Status` or
+ * `…Reason`. Measured over the whole population the hour it landed: **5
+ * occurrences left the census, all five of them a string.**
+ */
+/**
+ * Is this `x.toFixed(n)` — the idiom for a number with DECIMALS?
+ *
+ * ⚠ **THE LEDGER IS INTEGER-ONLY**, which is the whole reason `displayBalance`
+ * floors and `displayPrice` ceils rather than returning a fraction. So a value
+ * being formatted to decimal places is money or a percentage, never a quantity
+ * of credits — `` `$${(amount / 100).toFixed(2)} ${currency}` `` in a sentence
+ * that also says "credits" is the measured instance. Added with `amount$` in
+ * rule 2's vocabulary, which is what made these two reachable at all; without
+ * it the widening would have traded one false negative for two false positives.
+ */
+function isFixedPointFormat(node: ts.CallExpression): boolean {
+  return ts.isPropertyAccessExpression(node.expression) && node.expression.name.text === "toFixed";
+}
+
+function isNotAnAmountName(name: string): boolean {
+  if (NOT_AN_AMOUNT.has(name)) return true;
+  for (const word of NOT_AN_AMOUNT_WORDS) {
+    if (name.endsWith(word.charAt(0).toUpperCase() + word.slice(1))) return true;
+  }
+  return false;
+}
 
 /**
  * A shape that cannot be a number, so cannot be a credit number.
  *
- * Two, both measured rather than imagined: a pluralising ternary
+ * Three, every one measured rather than imagined: a pluralising ternary
  * (`n === 1 ? "" : "s"`), which reads as an interpolation beside the word
- * "credit" and is punctuation; and a property access landing on one of the
- * names above.
+ * "credit" and is punctuation; a property access or bare identifier whose name
+ * is one of the words above; and **a figure in CENTS, which is money and not
+ * credits** — `` `$${(refundAmountCents / 100).toFixed(2)} (${refundType}).
+ * ${creditsToDeduct} credits deducted.` `` is one sentence holding a dollar
+ * amount, a word and a credit amount, and only the last of the three is this
+ * guard's business. `Cents` is this product's own suffix for money-in-cents and
+ * it never names a quantity of credits.
  */
 function cannotBeAnAmount(node: ts.Node): boolean {
-  if (ts.isPropertyAccessExpression(node) && NOT_AN_AMOUNT.has(node.name.text)) return true;
+  if (ts.isPropertyAccessExpression(node) && isNotAnAmountName(node.name.text)) return true;
+  if (ts.isIdentifier(node) && isNotAnAmountName(node.text)) return true;
+  if (namesIn(node).some((name) => /Cents$/.test(name))) return true;
+  if (ts.isCallExpression(node) && isFixedPointFormat(node)) return true;
   if (
     ts.isConditionalExpression(node) &&
     ts.isStringLiteralLike(node.whenTrue) &&
