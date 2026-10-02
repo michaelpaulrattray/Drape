@@ -311,7 +311,27 @@ export function ChangePlanModal({
     note explains why that is separate from #391's hidden rung).
   */
   const currentId = status?.planTier ?? null;
-  const hasSubscription = !!status?.hasSubscription;
+  /*
+    ⚠ **THE SUBSCRIPTION FACT IS THREE-STATE TOO — #1749's law-7 sweep, and
+    this file is where the sharper half of it lives.** #1747 fixed the rung on
+    both modals and left this boolean collapsing with `!!` on both, so an
+    unanswered `status` still answered *"no subscription"* here.
+
+    ⚠ **WHAT THAT DECIDES ON THIS SURFACE IS WHICH ROAD A PRESS TAKES.**
+    `act()` below sends an account with no subscription to Stripe CHECKOUT and
+    a subscriber to the confirm step — and `!hasSubscription` put an unread
+    subscriber on the checkout road, which creates a SECOND subscription
+    instead of changing the one they have.
+
+    ⚠ **IT WAS NOT REACHABLE AND THE SWEEP SAYS SO RATHER THAN CLAIMING THE
+    CATCH.** Every caller of `act()` is a button inside `cards` or
+    `comparison`, and #1747 made all three ladder helpers decline on a null
+    rung — so while the status is unread this surface draws its held line and
+    NO plan buttons at all. This is a wrong value behind a gate, which becomes
+    a wrong answer the day the gate moves; the same judgement #1747 made about
+    `(confirming?.id ?? "starter")` one file over.
+  */
+  const hasSubscription: boolean | null = status ? status.hasSubscription : null;
   const costPerFrame = costs?.castingImage ?? 0;
 
   /*
@@ -399,6 +419,11 @@ export function ChangePlanModal({
     read before it is paid. Checkout keeps its own confirm — Stripe's page.
   */
   const act = (plan: LadderPlan) => {
+    /* ⚠ #1749: unread is not "no subscription", and the two roads below are
+       *buy a new subscription* and *change the one you have*. Unreachable while
+       the ladder declines on a null rung (see the declaration); refused here so
+       it stays unreachable if it ever is. */
+    if (hasSubscription === null) return;
     if (!hasSubscription) {
       setPending(plan.id);
       checkout.mutate({ plan: plan.id as never, interval });
@@ -410,7 +435,7 @@ export function ChangePlanModal({
   /* A subscriber's OWN tier can still change its billing cycle — without
      this, the toggle argues annual prices while the rung most people are
      deciding about carries no button at all. */
-  const intervalDiffers = hasSubscription && billedInterval !== null && interval !== billedInterval;
+  const intervalDiffers = hasSubscription === true && billedInterval !== null && interval !== billedInterval;
   const switchBillingLabel =
     interval === "annual" ? "Switch to annual billing" : "Switch to monthly billing";
 
@@ -825,7 +850,11 @@ export function ChangePlanModal({
       <footer className="dp-plan__foot">
         <span className="dp-plan__help">Having a problem? Go to the help centre.</span>
         <span className="dp-set__spacer" />
-        {hasSubscription ? (
+        {/* ⚠ #1749: `=== true` rather than truthy. The unread state declines
+            either way — hiding a control is the safe direction — and it is
+            spelled so the next reader does not have to work out which of the
+            two meanings of `false` this branch was written for. */}
+        {hasSubscription === true ? (
           <Button variant="quiet" size="small" onClick={() => setConfirmingDrop(true)}>
             Drop to Free
           </Button>
@@ -1146,7 +1175,15 @@ function describeChange(
 }
 
 /* `enabled` needs the subscription fact before `hasSubscription` is derived
-   below the queries — one tiny reader keeps the two truths one expression. */
+   below the queries — one tiny reader keeps the two truths one expression.
+
+   ⚠ **THIS ONE STAYS A `boolean` ON PURPOSE — #1749's sweep read it and left
+   it.** It answers a query's `enabled`, where *unread* and *no subscription*
+   genuinely want the same behaviour: do not ask Stripe to price a plan change
+   until we know there is a plan to change. Making it three-state here would
+   buy nothing and would put a `null` into a prop typed `boolean`. The name says
+   `ForQuote` rather than `hasSubscription` for exactly this reason, and its
+   return is the only reader. */
 function hasSubscriptionForQuote(status: { hasSubscription?: boolean } | undefined): boolean {
   return !!status?.hasSubscription;
 }

@@ -119,7 +119,35 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
     unanswered `status` holds for the life of the surface.
   */
   const currentId = status?.planTier ?? null;
-  const hasSubscription = !!status?.hasSubscription;
+  /*
+    ⚠ **AN UNREAD SUBSCRIPTION IS NOT "NO SUBSCRIPTION" — #1749, and it is
+    the line above ONE TYPE OVER.** #1747 made the unread PLAN representable
+    and left this beside it still collapsing with `!!`, so the same unanswered
+    `status` that can no longer mis-name a rung could still answer *"this
+    customer has no subscription"* — which is the sentence the renewal line
+    below reads off it. A paying subscriber was told **"Charged today, then on
+    the same date each period."**, the checkout road's sentence, true of a new
+    subscription and false of theirs.
+
+    ⚠ **IT IS THREE-STATE AT THE POINT OF USE RATHER THAN GATED AT THE ONE
+    OFFENDING LINE, and that is the whole repair.** Seven readers take this
+    fact, and six of them are right today **by construction rather than by
+    intent**: `options` is empty while `currentId` is null (#1747's doing), so
+    `selected` and `selectedId` are null, so the figure em-dashes, the button
+    is inert and `submit` cannot fire. Not one of those six says so. Gating the
+    renewal line alone would leave the next reader of a `boolean` named
+    *hasSubscription* to discover for itself that `false` has two meanings —
+    the shape this card is the sixth instance of (#1703, #1725, #1727, #1730,
+    #1741, #1747). With `boolean | null` the compiler asks every site, and each
+    one answers in its own words below.
+
+    `planRead` is DERIVED from it, never a second read of `status` — working
+    law 4 at its smallest. The renewal line's yearly clause needs *has the
+    status answered* rather than *is there a subscription*, and two reads of one
+    query drift the moment one of them is edited.
+  */
+  const hasSubscription: boolean | null = status ? status.hasSubscription : null;
+  const planRead = hasSubscription !== null;
   const costPerFrame = costs?.castingImage ?? 0;
 
   /* Every rung ABOVE the current one — the only ones that add credits. */
@@ -212,7 +240,7 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
     offered ladder at all (#391's hidden one). Then the preview never runs and
     no quote is ever coming.
   */
-  const quoteEnabled = hasSubscription && !!selectedId;
+  const quoteEnabled = hasSubscription === true && !!selectedId;
   const { data: preview, isError: previewFailed } = trpc.billing.previewPlanChange.useQuery(
     { newPlan: selectedId as never, interval: annual ? "annual" : "monthly" },
     { enabled: quoteEnabled },
@@ -323,13 +351,21 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
     defect, one branch over, and it would have survived a fix aimed only at the
     line the card named.
   */
-  const dueToday: number | null = hasSubscription
-    ? (preview?.immediateCharge ?? null)
-    : selected
-      ? annual
-        ? annualPrice(selected.price)
-        : selected.price
-      : null;
+  /* ⚠ #1749: the unread state is named FIRST rather than falling into the
+     checkout branch. It lands on `null` either way today — `selected` is null
+     while the rung is unknown — but *which road a charge is on* is not a
+     question an unanswered query may be asked, and the branch it fell into is
+     the one that quotes a brand-new subscription's full price. */
+  const dueToday: number | null =
+    hasSubscription === null
+      ? null
+      : hasSubscription
+        ? (preview?.immediateCharge ?? null)
+        : selected
+          ? annual
+            ? annualPrice(selected.price)
+            : selected.price
+          : null;
 
   const checkout = trpc.billing.createSubscriptionCheckout.useMutation({
     onSuccess: (data) => {
@@ -381,10 +417,15 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
     working law 4: one source, and the button cannot state a price the figure
     does not have.
   */
-  const quoteReady = dueToday !== null && (!hasSubscription || (!!preview && !previewFailed));
+  const quoteReady = dueToday !== null && (hasSubscription === false || (!!preview && !previewFailed));
 
   const submit = () => {
-    if (!selected || !quoteReady) return;
+    /* ⚠ #1749: `hasSubscription === null` is unreachable here while `quoteReady`
+       is derived from a figure that is null without the rung — and it is stated
+       anyway, because the two roads below are *buy a subscription* and *change
+       the one you have*, and picking between them on an unanswered query is the
+       one mistake on this surface that spends the customer's money. */
+    if (!selected || !quoteReady || hasSubscription === null) return;
     setWorking(true);
     if (!hasSubscription) {
       checkout.mutate({
@@ -471,7 +512,7 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
           </div>
 
           <div className="dp-topup__pricerow">
-            {annual && !hasSubscription && fullYear > 0 ? (
+            {annual && hasSubscription === false && fullYear > 0 ? (
               <span className="dp-topup__struck">{formatDollars(fullYear)}</span>
             ) : null}
             {/*
@@ -639,19 +680,54 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
           than claiming a basis for a charge that is not going to happen, which
           is what it did before.
         */}
+        {/*
+          ⚠ **AND THE FOURTH STATE IS *WE HAVE NOT BEEN TOLD WHICH ROAD THIS
+          IS* — #1749.** The three above are all about the QUOTE; this one is
+          about the customer. `!hasSubscription` was `true` the instant the
+          surface mounted, so the first thing a Pro subscriber read under the
+          figure was the checkout road's sentence — confident, and about
+          somebody else's account. It is the only line here that spoke from an
+          unanswered query: the figure beside it already drew an em dash
+          (#1725), the button already held (#1734), and this sentence named a
+          charging schedule.
+
+          `hasSubscription === false` is the whole repair. The unread state
+          falls through every branch below it — `chargeCycle` is cut from
+          `status` and `quoteComing` needs the query — and lands on `null`,
+          which is this line's own existing answer for *there is nothing
+          honest to say*. No new copy, because the right amount to say about a
+          fact nobody has is nothing.
+
+          ⚠ **THE YEARLY NUDGE IS THE SAME DEFECT ONE CLAUSE OVER, AND IT
+          WOULD HAVE BEEN THE ONLY TEXT LEFT IN THIS PARAGRAPH.** `annual` is
+          `annualChoice ?? status?.billingInterval === "year"`, so it is `false`
+          while unread — and #664's own comment on that default says the toggle
+          exists so *"an annual subscriber is not shown a monthly purchase they
+          did not choose"*. Unread, this offered a **yearly** subscriber the
+          yearly deal they already pay for, and after the fix above it would
+          have said it into an otherwise empty paragraph. It waits on
+          `planRead`, which is the status having ANSWERED rather than the
+          subscription existing — a customer with no subscription still gets
+          the nudge, as they always did.
+
+          ⚠ The toggle's own state, the struck price and the checkout interval
+          read the same unread `annual`; the toggle opening on *monthly* for a
+          yearly subscriber is a control's state rather than a sentence, and it
+          is **#1755** rather than this card (his rule of 2026-10-01).
+        */}
         <p className="dp-topup__renewal">
-          {hasSubscription && preview?.kind === "interval-switch"
+          {hasSubscription === true && preview?.kind === "interval-switch"
             ? annual
               ? "Billed for the whole year today — your new billing year starts now, and the year's credits land with the payment."
               : "Billed monthly from today — unused time from your year comes off future bills automatically."
-            : !hasSubscription
+            : hasSubscription === false
               ? "Charged today, then on the same date each period."
               : chargeCycle && alignsToPreview(preview)
                 ? `Prorated for the ${chargeCycle.daysLeft} ${chargeCycle.daysLeft === 1 ? "day" : "days"} left in this cycle, then ${formatShortDate(chargeCycle.renewsAt)}.`
                 : quoteComing
                   ? "Working out how much of this cycle you are charged for."
                   : null}
-          {!annual ? ` Pay yearly instead and ${monthsFree()} of the twelve months are free.` : ""}
+          {planRead && !annual ? ` Pay yearly instead and ${monthsFree()} of the twelve months are free.` : ""}
         </p>
       </div>
 

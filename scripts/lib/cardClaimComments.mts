@@ -124,8 +124,20 @@ export function readCardComments(
 
 /** What the board says about this card right now, for this seat. */
 export type CardClaimVerdict =
-  /** Nothing to say: no card number, or no live claim by anybody else. */
+  /** Nothing to say: no card number, or nobody's live claim — so nothing to refuse. */
   | { readonly kind: "free" }
+  /**
+   * THIS seat's own live claim is the newest fact (#1735).
+   *
+   * ⚠ **It was folded into `free` until the writer below existed, and the fold
+   * was right while nothing acted on the answer.** `free` meant *nothing to
+   * refuse*, and a seat's own claim is indeed nothing to refuse. But a caller
+   * that POSTS a claim on `free` would post one on every heartbeat that
+   * re-declares the card, so the two reasons for not refusing had to stop being
+   * one word. A stale claim of this seat's own is still `free`: it has aged out
+   * of the board's window, and a fresh one is exactly what should be written.
+   */
+  | { readonly kind: "mine"; readonly at: string }
   /** The board could not be read. Never a refusal — an unread board is not a clean one. */
   | { readonly kind: "unreadable" }
   /** Somebody else has their hands on it. */
@@ -182,10 +194,17 @@ export function readCardClaim(input: {
     .sort((a, b) => b.at.localeCompare(a.at))[0];
 
   if (!newest || newest.kind !== "claim") return { kind: "free" };
-  if (sameSeat(newest.seat, input.mine)) return { kind: "free" };
 
   const atMs = Date.parse(newest.at);
-  if (!Number.isFinite(atMs) || now - atMs > CREW_CLAIM_LIVE_MS) return { kind: "free" };
+  const live = Number.isFinite(atMs) && now - atMs <= CREW_CLAIM_LIVE_MS;
+  /* ⚠ THE LIVENESS TEST MOVED ABOVE THIS LINE (#1735) AND THE REFUSAL DID NOT
+     MOVE WITH IT. `sameSeat` returned `free` before the window was consulted,
+     which was right for a reader and wrong for a writer: a seat's own STALE
+     claim has aged off the board and wants a fresh one, while its own LIVE
+     claim wants silence. Both still refuse nothing, which is the only thing
+     the refusal path ever asked. */
+  if (sameSeat(newest.seat, input.mine)) return live ? { kind: "mine", at: newest.at } : { kind: "free" };
+  if (!live) return { kind: "free" };
   return { kind: "claimed", seat: newest.seat, at: newest.at };
 }
 
@@ -246,4 +265,196 @@ export function renderCardClaimNote(
   if (verdict.kind !== "unreadable") return null;
   return `\n⚠ could not read ${cardRef}'s comments, so nobody checked whether another seat has`
     + "\n  claimed it. That is not a free card — it is an unread one (`gh auth status`).";
+}
+
+/**
+ * THE WRITE SIDE — POSTING THE CLAIM, SO IT EXISTS BEFORE THE BUILD DOES (#1735).
+ *
+ * # The incident this closes, at the timestamps
+ *
+ * Two seats built #1725 in full on 2026-10-01, and the loser found out when the
+ * winner merged:
+ *
+ * ```
+ * 21:14:00Z   the other seat branched on #1725 — and posted NO claim
+ * 21:41:33Z   seat 1 ran all three checks of the claim rule. All three were CLEAN.
+ * 21:42:05Z   the other seat's pull request appeared                      (+32 s)
+ * 21:51:20Z   it merged; seat 1's finished build — code, a guard, sabotage
+ *             and a two-theme render — was thrown away
+ * ```
+ *
+ * ⚠ **THE CARD'S OWN FRAMING WAS CORRECTED BY THE OTHER SEAT, AGAINST ITS OWN
+ * INTEREST, AND THE CORRECTION IS WHAT THIS CODE ANSWERS.** The card read the
+ * failure as a 32-second simultaneous start. It was not: **twenty-seven minutes**
+ * separated that branch from seat 1's check, and all three checks came back clean
+ * **because no claim had been posted**, not because the rule is blind. In its own
+ * words: *"I ran the first two checks of the two-seat rule, found it free, and
+ * skipped the third. The proximate cause is my missing comment."*
+ *
+ * **So the rule's defect is not its width — it is that it is CHECKED by machinery
+ * and ANNOUNCED by hand.** A seat that performs two of three acts believes it has
+ * complied, and the claim it owes benefits only *other* seats, which is exactly
+ * the kind of act that gets skipped. That is invariant 7 with a twist: not a
+ * control nobody invokes, but one invoked too late to bind.
+ *
+ * # Why it is posted HERE
+ *
+ * The card's recommendation is that the runner post the claim at launch, before
+ * any seat reads anything. The runner is `.agents/foreman/foreman-runner.ps1`,
+ * which is untracked and not a seat's to edit. **This is the same act at the
+ * earliest TRACKED moment**: declaring a card on the Desk row is the one thing a
+ * seat does *before any code*, this module is already the reader asked at that
+ * moment, and the standing orders already require the comment. Nothing new is
+ * asked of a seat — the act it was asked to remember is simply performed.
+ *
+ * The window left is the few hundred milliseconds between this module's READ and
+ * its POST, against twenty-seven minutes measured, and unbounded for a seat that
+ * never comments at all. **That residue is real and is not claimed to be closed**;
+ * the runner remains the only place it can be.
+ *
+ * # ⚠ THE LINE IS PROVEN READABLE BEFORE IT IS POSTED, NEVER AFTER
+ *
+ * The body is composed here and then handed to `crewCardCommentFact` — the
+ * board's own judge — and a line that does not read back as a claim is **not
+ * posted at all**. That is assert-at-the-wire (invariant 5), and it is the arm
+ * this file most needs: #1701 measured the cost of a writer and a reader keeping
+ * two copies of one spelling, where **0 of 5 refusals on #1669 were visible** to
+ * the reader that looks for them. A claim nobody can read is worse than no claim,
+ * because the seat that wrote it believes the card is locked.
+ */
+
+/** Twenty seconds, the same bound the read side sets, and for the same reason. */
+export const CARD_CLAIM_POST_TIMEOUT_MS = 20_000;
+
+/** What happened when the claim was posted — never a throw, on any road. */
+export type CardClaimPostOutcome =
+  /** Posted. The board names this seat on the card from now on. */
+  | { readonly kind: "posted"; readonly body: string }
+  /** Deliberately not posted, with the reason a seat reads. */
+  | { readonly kind: "skipped"; readonly why: string }
+  /** `gh` refused, is absent, or is unauthenticated. A warning, never a failure. */
+  | { readonly kind: "failed"; readonly body: string; readonly why: string };
+
+/**
+ * The claim line, in the spelling {@link crewCardCommentFact} reads.
+ *
+ * ⚠ **The em dash is the first alternative the board's `DASH` accepts**, so this
+ * is the spelling the judge prefers rather than one it merely tolerates — and
+ * {@link postCardClaim} PROVES that rather than trusting this sentence.
+ */
+export function cardClaimBody(seat: string, at: string): string {
+  return `CLAIMED — ${seat}, ${at}`;
+}
+
+/** The `gh` call, as an array, so a caller with its own transport spends the same one. */
+export function cardClaimPostArgs(card: number, body: string): readonly string[] {
+  return ["issue", "comment", String(card), "--body", body];
+}
+
+/**
+ * POST THIS SEAT'S CLAIM — pure in its decisions, impure only in the one call.
+ *
+ * It declines in five states and each is a sentence rather than silence: no card
+ * number to post against, a row naming no shift, a dry run, a board this seat
+ * already holds, and a board that could not be read — because **an unread board
+ * is not a free one**, and claiming a card whose comments were never seen is how
+ * two seats both come to believe they hold it.
+ */
+export function postCardClaim(input: {
+  readonly cardRef: string | null | undefined;
+  readonly seat: string | null | undefined;
+  readonly verdict: CardClaimVerdict;
+  readonly at: string;
+  /** A dry run says what it would do and writes nothing (#288). */
+  readonly dryRun?: boolean;
+  /** Injected by the suite, so no arm reaches the network. */
+  readonly post?: (card: number, body: string) => void;
+  /*
+    ⚠ **A SEAM FOR THE SELF-CHECK, AND IT IS THE ONLY REASON IT EXISTS.** The
+    check below is the one thing standing between a drifted spelling and a claim
+    nobody can read, and a writer that cannot be made to drift cannot prove it —
+    working law 3: a backstop whose only test runs through the thing that usually
+    behaves is an untested backstop. Production passes nothing and gets
+    {@link cardClaimBody}.
+  */
+  readonly bodyFor?: (seat: string, at: string) => string;
+  readonly cwd?: string | null;
+}): CardClaimPostOutcome {
+  const card = cardNumberOf(input.cardRef);
+  if (card === null) return { kind: "skipped", why: "no card number to claim" };
+  const seat = typeof input.seat === "string" ? input.seat.trim() : "";
+  if (seat === "") return { kind: "skipped", why: "this row names no shift, so a claim would name nobody" };
+  if (input.verdict.kind === "mine") {
+    return { kind: "skipped", why: `already claimed by this seat at ${input.verdict.at}` };
+  }
+  if (input.verdict.kind === "unreadable") {
+    return { kind: "skipped", why: "the board could not be read, and an unread board is not a free one" };
+  }
+  if (input.verdict.kind === "claimed") {
+    /* Unreachable through the shift script, which refuses first — stated rather
+       than assumed, because a second caller must not be able to paper over a
+       rival's live claim with its own. */
+    return { kind: "skipped", why: `another seat holds it (${input.verdict.seat ?? "unnamed"})` };
+  }
+
+  const body = (input.bodyFor ?? cardClaimBody)(seat, input.at);
+  /* ⚠ THE SELF-CHECK, against the board's own judge rather than a copy of it. */
+  const readsBack = crewCardCommentFact({ card, body, createdAt: input.at });
+  if (readsBack?.kind !== "claim") {
+    return {
+      kind: "skipped",
+      why: `the line this would post does not read back as a claim (${JSON.stringify(body)})`
+        + " — nothing was posted, because a claim the board cannot see is worse than none (#1701)",
+    };
+  }
+
+  if (input.dryRun === true) return { kind: "skipped", why: `dry run — would post ${JSON.stringify(body)}` };
+
+  const post = input.post ?? ((number: number, text: string) => {
+    /* `gh` with no shell — it is an .exe, and the shell form emits DEP0190. */
+    execFileSync("gh", [...cardClaimPostArgs(number, text)], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      timeout: CARD_CLAIM_POST_TIMEOUT_MS,
+      ...(input.cwd ? { cwd: input.cwd } : {}),
+    });
+  });
+  try {
+    post(card, body);
+    return { kind: "posted", body };
+  } catch (cause) {
+    return { kind: "failed", body, why: (cause as Error).message };
+  }
+}
+
+/**
+ * The line to PRINT for an outcome — or `null` when there is nothing worth a
+ * seat's attention.
+ *
+ * ⚠ **A FAILED POST TELLS THE SEAT TO POST IT BY HAND AND NEVER STOPS THE
+ * NIGHT.** `gh` being absent or unauthenticated must not fail a Desk row — that
+ * is #504's ruling on the NEXT UP read wearing a third hat — but a seat that
+ * believes the tool claimed its card when it did not is in the exact state this
+ * module exists to prevent, so the warning carries the command to run.
+ */
+export function renderCardClaimPost(
+  cardRef: string | null | undefined,
+  outcome: CardClaimPostOutcome,
+): string | null {
+  if (outcome.kind === "posted") {
+    return `claimed ${cardRef} on the card: ${outcome.body}`
+      + "\n  Posted for you — you do not need to comment it by hand.";
+  }
+  if (outcome.kind === "failed") {
+    return `\n⚠ could not post this seat's claim on ${cardRef} (${outcome.why.split("\n")[0]}).`
+      + "\n  POST IT BY HAND BEFORE YOU BUILD, or another seat reads the card as free:"
+      + `\n    gh issue comment ${cardNumberOf(cardRef) ?? "<n>"} --body ${JSON.stringify(outcome.body)}`;
+  }
+  /* A skip for a reason the seat can act on is worth a line; the ordinary ones
+     (no card, already mine) are not, and would be noise on every heartbeat. */
+  if (outcome.why.startsWith("the line this would post")) {
+    return `\n⚠ this seat's claim on ${cardRef} was NOT posted: ${outcome.why}`;
+  }
+  if (outcome.why.startsWith("dry run")) return `claim: ${outcome.why}`;
+  return null;
 }

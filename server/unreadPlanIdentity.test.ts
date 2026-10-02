@@ -125,6 +125,86 @@ const PLAN_DEFAULTED_TO_A_NAME =
   /(\w*(?:plan|tier)\w*)\s*\)?\s*(?:\?\?|\|\|)\s*(["'`])(?!—)/i;
 
 /**
+ * ⚠ **THE SUBSCRIPTION FACT, COLLAPSED OUT OF AN UNREAD QUERY — #1749, and
+ * it is the FOURTH idiom in this family rather than a fourth noun.**
+ *
+ * The three suites before it each ban a DEFAULT: `?? 0` for a balance (#1703),
+ * `?? 0` for a price (#1725/#1727), `?? "free"` for a plan name (#1741). This
+ * one is not a default at all. `!!status?.hasSubscription` has no `??` in it,
+ * so every one of those three readers walks straight past it — **and the
+ * answer it produces is the same kind of lie**: `false`, meaning *this customer
+ * has no subscription*, said about a customer nobody has read.
+ *
+ * It belongs in THIS suite rather than a fifth file because it is the same
+ * query, the same two surfaces and the same fix as #1747 one line below: the
+ * plan rung and the subscription fact are read off one `getStatus`, were
+ * collapsed by one commit's worth of idiom, and are repaired together.
+ *
+ * # What it cost
+ *
+ * A Pro subscriber opened Add credits and the renewal line under the figure
+ * read **"Charged today, then on the same date each period."** — the checkout
+ * road's sentence, true of a new subscription and false of theirs — while the
+ * figure beside it already drew an honest em dash and the button already held.
+ * One line on the surface spoke from the unanswered query, and it was the one
+ * that named a charging schedule.
+ *
+ * # ⚠ WHY IT IS `=== false` RATHER THAN A GATE AT THE OFFENDING LINE
+ *
+ * `AddCreditsModal` has SEVEN readers of this fact and `ChangePlanModal` five.
+ * Six of the seven were right **by construction and not one of them said so**:
+ * #1747 made `currentId` null, which empties `options`, which nulls `selected`,
+ * which em-dashes the figure and inerts the button. Gating one line leaves the
+ * next reader to rediscover that `false` has two meanings. `boolean | null`
+ * makes the compiler ask all twelve.
+ *
+ * # The floor, and it is the narrowest one in this family
+ *
+ * This is the OPTIONAL-CHAIN COLLAPSE only — `!!x?.hasSubscription`. Measured
+ * under `client/src` the day it was written: **11 sites** use `!!x?.y` at all,
+ * of which **3** read `hasSubscription` and the remaining 8 read store state or
+ * already-resolved data, where `false`-while-absent is the right answer. A
+ * surface can still reach the same wrong fact another way — `status?.x === true`
+ * read before the query answers, or a prop typed `boolean` fed a collapse in
+ * its parent. What this holds is that the shape which told a subscriber they
+ * had no subscription cannot come back unannounced.
+ */
+/* The whitespace is `\s*` at every joint, and that is not decoration: the
+   narrowness control below asserted `!! status ?. hasSubscription` matches and
+   the first draft of this pattern did not — it had `\?\.` butted against
+   `\w+`. A guard that only sees the formatter's output is a guard on the
+   formatter. */
+const SUBSCRIPTION_COLLAPSED_FROM_UNREAD = /!!\s*\w+\s*\?\s*\.\s*hasSubscription/;
+
+/**
+ * The declared remainder for the reader above. Same two verdicts and the same
+ * rule as `DECLARED`: an entry whose site is gone reddens, so a fix means
+ * deleting its line.
+ */
+const SUBSCRIPTION_DECLARED: ReadonlyArray<{
+  readonly file: string;
+  readonly why: string;
+  readonly gate?: readonly string[];
+}> = [
+  {
+    file: "features/billing/ChangePlanModal.tsx",
+    why:
+      "⚠ READ AT THE CODE AND LEFT ON PURPOSE — `hasSubscriptionForQuote` answers a"
+      + " query's `enabled`, and that is the ONE consumer for which unread and"
+      + " no-subscription genuinely want the same behaviour: do not ask Stripe to price"
+      + " a plan change until we know there is a plan to change. Three-state here would"
+      + " buy nothing and would put a `null` into a prop typed `boolean`. It is a"
+      + " separate function with a separate name for exactly this reason, and its"
+      + " return is its only reader — the surface's own `hasSubscription` is"
+      + " `boolean | null` three lines down and is what every RENDER reads.",
+    gate: [
+      "function hasSubscriptionForQuote(status: { hasSubscription?: boolean } | undefined): boolean {",
+      "const hasSubscription: boolean | null = status ? status.hasSubscription : null;",
+    ],
+  },
+];
+
+/**
  * ⚠ **THE MEASURED REMAINDER, AND IT ONLY SHRINKS.**
  *
  * Every site the walk finds must be on this list with a reason, and every entry
@@ -646,5 +726,202 @@ describe("an unread plan is not the free plan (#1741)", () => {
       + " placeholder above now travels. Restore the gate or stop sending a placeholder."
       + " #1747.",
     ).toContain("enabled: hasSubscriptionForQuote(status) && confirming !== null");
+  });
+  /**
+   * ⚠ **THE SUBSCRIPTION FACT — #1749. The sibling arms, and they use the
+   * second vocabulary rather than the first.** `SUBSCRIPTION_COLLAPSED_FROM_UNREAD`'s
+   * own docblock carries why this is an idiom and not a noun; these hold it.
+   */
+  it("no client surface collapses the subscription fact out of an unread status", () => {
+    const declared = new Set(SUBSCRIPTION_DECLARED.map((entry) => entry.file));
+    const offences: string[] = [];
+    let read = 0;
+    for (const file of tsSourcesUnder(CLIENT_SRC)) {
+      const source = readListedSource(file);
+      if (source === null) continue;
+      read += 1;
+      const relative = path.relative(CLIENT_SRC, file).replace(/\\/g, "/");
+      if (declared.has(relative)) continue;
+      withoutComments(source)
+        .split("\n")
+        .forEach((text, index) => {
+          if (SUBSCRIPTION_COLLAPSED_FROM_UNREAD.test(text)) {
+            offences.push(`${relative}:${index + 1}  ${text.trim()}`);
+          }
+        });
+    }
+    /* The floor, first and in the same arm: a walk that read nothing passes
+       this ban vacuously, which is #1733's class. */
+    expect(read, "the walk found almost no client source — check the root").toBeGreaterThan(200);
+    expect(
+      offences,
+      "the subscription fact is collapsed to `false` where it is not yet known. An unread"
+      + " status and an account with no subscription are opposite facts on a billing"
+      + " surface: one of them is charged today at a brand-new subscription's price, the"
+      + " other has a plan already. Keep it `boolean | null` and let each reader answer"
+      + " for `null` in its own words. If this site genuinely wants them identical — a"
+      + " query's `enabled` is the one that does — add it to SUBSCRIPTION_DECLARED with"
+      + " the gate that makes it so. #1749.",
+    ).toEqual([]);
+  });
+
+  /**
+   * ⚠ Negative and positive control on the second reader before its verdicts
+   * count (working law 2). The arm above can only be trusted if it reddens on
+   * the collapse and stays quiet on the repair — and here the two differ by
+   * punctuation rather than by a word, which is the condition under which a
+   * guard most easily comes to cover its own fix.
+   */
+  it("the subscription ban is exactly as narrow as it says", () => {
+    const matches = (line: string) => SUBSCRIPTION_COLLAPSED_FROM_UNREAD.test(line);
+
+    expect(
+      matches("  const hasSubscription = !!status?.hasSubscription;"),
+      "the card's own defect",
+    ).toBe(true);
+    expect(matches("  return !! status ?. hasSubscription ;"), "whitespace is not a loophole").toBe(true);
+    expect(
+      matches("  const hasSubscription: boolean | null = status ? status.hasSubscription : null;"),
+      "the repair must not read as the defect, or this suite covers its own fix",
+    ).toBe(false);
+    expect(
+      matches("  const on = !!status?.hasSubscription === true;"),
+      "the collapse is the collapse however it is then compared",
+    ).toBe(true);
+    expect(
+      matches("  if (hasSubscription === null) return;"),
+      "a three-state read is the repair",
+    ).toBe(false);
+    /* ⚠ THE STATED FLOOR, DRIVEN RATHER THAN ASSERTED IN PROSE: this reads the
+       optional-chain collapse and nothing else. A truthiness test written without
+       `!!`, or on a destructured field, is invisible to it — so a clean run here
+       is a floor and not a proof. */
+    expect(
+      matches("  const hasSubscription = Boolean(status?.hasSubscription);"),
+      "the floor: Boolean(…) is the same collapse and this reader cannot see it",
+    ).toBe(false);
+    expect(
+      matches("  if (status?.hasSubscription) {"),
+      "the floor: a bare truthiness test is the same collapse and this reader cannot see it",
+    ).toBe(false);
+  });
+
+  it("every declared subscription site is still there, and still rests on its gates", () => {
+    for (const entry of SUBSCRIPTION_DECLARED) {
+      const source = readListedSource(path.join(CLIENT_SRC, entry.file));
+      expect(
+        source,
+        `${entry.file} is gone — re-read the exemption, do not delete the arm`,
+      ).not.toBeNull();
+      const code = withoutComments(source ?? "");
+      expect(
+        SUBSCRIPTION_COLLAPSED_FROM_UNREAD.test(code),
+        `${entry.file} no longer collapses the subscription fact — delete its`
+        + ` SUBSCRIPTION_DECLARED entry. A standing exemption for code that is gone is how`
+        + ` a ban comes to cover less than it claims. #1749.`,
+      ).toBe(true);
+      for (const gate of entry.gate ?? []) {
+        expect(
+          code,
+          `${entry.file} no longer carries a gate its exemption names, so that collapse is`
+          + ` now a guess about an unread status. Either restore the gate or fix the`
+          + ` collapse and drop the exemption. #1749. Missing: ${gate}`,
+        ).toContain(gate);
+      }
+    }
+  });
+
+  /**
+   * ⚠ **AND THE BAN PROVES THE COLLAPSE IS GONE, NOT WHAT THE SURFACE THEN
+   * SAYS — #1727's lesson, inherited for the third time.** `boolean | null`
+   * with every reader still written `!hasSubscription` is the same wrong
+   * sentence with a wider type: `!null` is `true`. So each reader's declining
+   * spelling is held here, file-specific, for the reason both siblings give.
+   */
+  it("the two billing surfaces decline to name a charging road they have not been told", () => {
+    const read = (...parts: string[]) =>
+      withoutComments(readListedSource(path.join(CLIENT_SRC, ...parts)) ?? "");
+
+    const topup = read("features", "billing", "AddCreditsModal.tsx");
+
+    expect(
+      topup,
+      "the subscription fact is a plain boolean again, so `false` means both `no"
+      + " subscription` and `not read yet` and the renewal line cannot tell them apart."
+      + " #1749.",
+    ).toContain("const hasSubscription: boolean | null = status ? status.hasSubscription : null;");
+    expect(
+      topup,
+      "`planRead` is no longer DERIVED from the fact above it. Two reads of one query"
+      + " drift the moment one is edited — working law 4, and the yearly clause below is"
+      + " the consumer that needs *has it answered* rather than *is there a plan*. #1749.",
+    ).toContain("const planRead = hasSubscription !== null;");
+
+    /* ⚠ The renewal line is SLICED OUT before it is asserted on. A file-wide
+       `toContain` for a declining branch was measured surviving sabotage on this
+       very suite at #1747, satisfied by an identical line in a neighbouring
+       function — and `hasSubscription === false` appears twice in this file. */
+    const renewalFrom = topup.indexOf('<p className="dp-topup__renewal">');
+    expect(
+      renewalFrom,
+      "the renewal paragraph is gone or renamed — #1749's arms cannot read it",
+    ).toBeGreaterThan(-1);
+    const renewalEnd = topup.indexOf("</p>", renewalFrom);
+    expect(renewalEnd, "the renewal paragraph does not close").toBeGreaterThan(renewalFrom);
+    const renewal = topup.slice(renewalFrom, renewalEnd);
+
+    expect(
+      renewal,
+      "THE CARD'S OWN DEFECT. The renewal line takes the checkout road's sentence on"
+      + " `!hasSubscription`, which is true while the status is unread — so a paying"
+      + " subscriber reads the new-subscription charging schedule about their own"
+      + " account. `=== false` is the whole repair; the unread state then falls through"
+      + " to this line's existing `null`. #1749.",
+    ).toContain(": hasSubscription === false");
+    expect(
+      renewal,
+      "the renewal line is back on a negated truthy read, which answers the unread state"
+      + " as `no subscription`. #1749.",
+    ).not.toContain("!hasSubscription");
+    expect(
+      renewal,
+      "the interval-switch branch no longer requires the fact to be KNOWN true. #1749.",
+    ).toContain("hasSubscription === true &&");
+    expect(
+      renewal,
+      "the yearly nudge is no longer gated on the status having answered — so a YEARLY"
+      + " subscriber is offered the yearly deal they already pay for, and after the fix"
+      + " above it is the only text left in this paragraph. #664's own note on that"
+      + " default says the toggle exists to stop exactly this. #1749.",
+    ).toContain("planRead && !annual ?");
+
+    /* The money road. Sliced the same way, and from the LAST occurrence of the
+       token so a comment quoting it cannot move the window. */
+    const submitFrom = topup.lastIndexOf("const submit = () => {");
+    expect(submitFrom, "`submit` is gone — #1749's arm cannot read it").toBeGreaterThan(-1);
+    expect(
+      topup.slice(submitFrom, submitFrom + 400),
+      "`submit` picks between BUYING a subscription and CHANGING one on a fact it may not"
+      + " have. Unreachable while `quoteReady` needs the rung — which is exactly why it is"
+      + " refused here rather than left to that gate. #1749.",
+    ).toContain("hasSubscription === null) return;");
+
+    const change = read("features", "billing", "ChangePlanModal.tsx");
+    expect(
+      change,
+      "Change plan's subscription fact is a plain boolean again. #1749.",
+    ).toContain("const hasSubscription: boolean | null = status ? status.hasSubscription : null;");
+
+    const actFrom = change.lastIndexOf("const act = (plan: LadderPlan) => {");
+    expect(actFrom, "`act` is gone — #1749's arm cannot read it").toBeGreaterThan(-1);
+    expect(
+      change.slice(actFrom, actFrom + 400),
+      "⚠ THE SHARPEST SITE IN THE SWEEP. `act` sends an account with no subscription to"
+      + " Stripe CHECKOUT and a subscriber to the confirm step — so an unread subscriber"
+      + " was on the checkout road, which creates a SECOND subscription instead of changing"
+      + " the one they have. Unreachable today only because #1747 made the ladder decline"
+      + " on a null rung and the plan buttons are not drawn; a wrong value behind a gate"
+      + " becomes a wrong answer the day the gate moves. #1749.",
+    ).toContain("hasSubscription === null) return;");
   });
 });
