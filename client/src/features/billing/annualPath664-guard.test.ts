@@ -91,8 +91,27 @@ describe("AddCreditsModal", () => {
     expect(source).toMatch(/previewPlanChange\.useQuery\(\s*\{[^}]*\binterval:/s);
   });
 
-  it("the toggle opens on the billed interval", () => {
-    expect(source).toContain('annualChoice ?? status?.billingInterval === "year"');
+  it("the toggle opens on the billed interval, and on nothing at all until it is read", () => {
+    /*
+      ⚠ **RE-AIMED BY #1755, NOT WEAKENED.** It pinned the whole expression
+      `annualChoice ?? status?.billingInterval === "year"`, which was #664's
+      repair and also #1755's defect: `status?.billingInterval` is `undefined`
+      while the query is in flight, so the `===` answered **false**, and a
+      `role="switch"` drew `aria-checked={false}` at a YEARLY subscriber. The
+      string moved; **#664's subject did not**, and it is held in three pieces
+      here rather than as one line that moves whenever the read is tightened.
+    */
+    /* #664's own half: the customer's CHOICE still wins, and it is null until
+       they make one. */
+    expect(source).toContain("annualChoice ?? (");
+    /* And the fallback is still the interval they are BILLED on. */
+    expect(source).toContain('status.billingInterval === "year"');
+    /* #1755's half: and it is three-state, so the unread beat is not a
+       position. The old always-monthly opening state must not come back
+       either, in its own spelling or in an optional chain's. */
+    expect(source).toContain("const annual: boolean | null =");
+    expect(source).not.toContain('status?.billingInterval === "year"');
+    expect(source).not.toMatch(/useState<boolean>\(false\)/);
   });
 
   it("an interval switch rewrites the renewal line — the old cycle's date must not be quoted beside a charge that resets it", () => {
@@ -128,8 +147,12 @@ describe("AddCreditsModal", () => {
     expect(source).not.toContain("(!hasSubscription ||");
     expect(source).toContain("const quoteReady = dueToday !== null &&");
     expect(source).toMatch(/disabled=\{!selected \|\| working \|\| !quoteReady\}/);
+    /* ⚠ #1755 added a fourth condition in the same direction, so this pins the
+       three it was written for and leaves room for the next one rather than
+       reddening on a gate that got STRICTER. The interval's own arm lives in
+       `server/unreadPlanIdentity.test.ts` with the rest of its family. */
     expect(source).toMatch(
-      /if \(!selected \|\| !quoteReady \|\| hasSubscription === null\) return;/,
+      /if \(!selected \|\| !quoteReady \|\| hasSubscription === null/,
     );
   });
 

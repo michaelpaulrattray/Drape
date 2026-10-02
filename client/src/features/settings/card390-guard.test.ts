@@ -615,10 +615,27 @@ describe("card 661 — the rate is computed from the price standing beside it", 
         */
         if (callee === "priceAMonth") {
           const second = args.split(",")[1]?.trim();
+          /*
+            ⚠ **RE-AIMED BY #1755, NOT WEAKENED.** This read `.toBe("annual")`,
+            which was the live toggle when it was written and is now a
+            `boolean | null`: the unread beat reads neither annual nor monthly,
+            and `priceAMonth` takes a `boolean`, so every call site narrows with
+            `annual === true`. **The subject is unchanged and is the PR #662
+            reviewer's own finding** — the interval must be the live value and
+            never hard-wired — so what is held is that the toggle's own
+            identifier is what the rate follows, and that a literal is still
+            refused by name. `annual === false` would pass the first assertion
+            and is caught by the second: it is a hard-wiring wearing the
+            identifier.
+          */
           expect(
             second,
             `${path}: \`priceAMonth\` is called with \`${second}\` instead of the live toggle`,
-          ).toBe("annual");
+          ).toMatch(/^annual( === true)?$/);
+          expect(
+            second,
+            `${path}: the rate's interval is hard-wired rather than read from the toggle`,
+          ).not.toMatch(/^(true|false)$/);
         }
       }
       /*
