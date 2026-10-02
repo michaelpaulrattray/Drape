@@ -23,7 +23,6 @@
  *   reading goes red, so a green run means the arm can still fail (working law
  *   2: verify the instrument before believing its finding).
  */
-import { execFileSync, spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
@@ -31,6 +30,7 @@ import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+import { runHook } from "./testing/hookDriver";
 import {
   RITE_LOCK_PATH,
   acquireRiteLock,
@@ -206,10 +206,14 @@ describe("#1726 · isPidAlive reads EPERM as alive, which is the whole trap", ()
   });
 
   it("says no about a process that has exited — driven, not assumed", () => {
-    const child = spawnSync(process.execPath, ["-e", "process.exit(0)"], { encoding: "utf8" });
-    expect(child.status).toBe(0);
-    expect(child.pid).toBeGreaterThan(0);
-    expect(isPidAlive(child.pid!)).toBe(false);
+    /* The child PRINTS its own pid rather than the pid being read off the
+       spawn handle: `runHook` returns a verdict and not a handle, and reading
+       the pid out of stdout means the number can only exist if a real process
+       really ran. It has exited by the time runHook returns. */
+    const child = runHook(process.execPath, ["-e", "console.log(process.pid)"]);
+    const pid = Number(child.stdout.trim());
+    expect(Number.isInteger(pid) && pid > 0, child.stdout).toBe(true);
+    expect(isPidAlive(pid)).toBe(false);
   });
 
   it("⚠ EPERM is ALIVE and ESRCH is dead — the branch no real pid on one machine can reach", () => {
@@ -269,12 +273,17 @@ function scratch(): { dir: string; runner: string; lock: string; clean: () => vo
   };
 }
 
-/** Run the runner with tsx's loader, so it can import a `.mts` source. */
+/**
+ * Run the runner with tsx's loader, so it can import a `.mts` source.
+ *
+ * Through `runHook` rather than a bare `spawnSync`: it THROWS when the spawn
+ * never happened or the child was killed, instead of handing back
+ * `status: null` for a run that did not occur. Every arm below reads this
+ * child's stdout, and a stub reading of an empty stdout is exactly the false
+ * green that discriminator exists to prevent (#943).
+ */
 function startRite(runner: string, lock: string, startedAt: string) {
-  return spawnSync(process.execPath, ["--import", "tsx", runner, lock, startedAt], {
-    encoding: "utf8",
-    timeout: 60_000,
-  });
+  return runHook(process.execPath, ["--import", "tsx", runner, lock, startedAt], { timeout: 60_000 });
 }
 
 describe("#1726 · two real rites, seconds apart, in one scratch checkout", () => {
@@ -286,7 +295,7 @@ describe("#1726 · two real rites, seconds apart, in one scratch checkout", () =
       expect(JSON.parse(first.stdout.trim().split(/\r?\n/).at(-1)!).ok, first.stderr).toBe(true);
 
       /* ⚠ THEN THE HOLDER IS RESTAMPED WITH *THIS TEST PROCESS'S* PID, AND
-         THAT IS DELIBERATE RATHER THAN A SHORTCUT. `spawnSync` waits, so the
+         THAT IS DELIBERATE RATHER THAN A SHORTCUT. `runHook` waits, so the
          rite above has already EXITED — its lock is genuinely stale and a
          second rite would correctly WIN, which proves the takeover road (the
          next arm) and not the refusal. The only pid this suite can prove is
@@ -553,13 +562,12 @@ describe("#1726 · the real rite refuses to start, before any check", () => {
       const env = { ...process.env };
       for (const key of Object.keys(env)) if (key.startsWith("RAILWAY_")) delete env[key];
 
-      const result = spawnSync(process.execPath, ["--import", TSX_LOADER, RITE_PATH], {
+      const result = runHook(process.execPath, ["--import", TSX_LOADER, RITE_PATH], {
         cwd: dir,
-        encoding: "utf8",
         env,
         timeout: 90_000,
       });
-      const output = `${result.stdout ?? ""}${result.stderr ?? ""}`;
+      const output = `${result.stdout}${result.stderr}`;
 
       expect(result.status, output).toBe(1);
       expect(output).toContain("another deploy rite is already running in this checkout");
@@ -597,12 +605,13 @@ describe("#1726 · the lock path is gitignored, so it can never be committed", (
     /* `output/` is on the ignore list for the Janitor's reason (#96: it holds
        minted session JWTs), and the lock lives there deliberately. Asking git
        rather than grepping the file covers a negation rule arriving later. */
-    const result = spawnSync("git", ["check-ignore", "-q", RITE_LOCK_PATH], { encoding: "utf8" });
+    const result = runHook("git", ["check-ignore", "-q", RITE_LOCK_PATH]);
     expect(result.status, `git check-ignore said ${result.status} for ${RITE_LOCK_PATH}`).toBe(0);
   });
 
   it("and it is not tracked", () => {
-    const tracked = execFileSync("git", ["ls-files", "--", RITE_LOCK_PATH], { encoding: "utf8" }).trim();
-    expect(tracked).toBe("");
+    const tracked = runHook("git", ["ls-files", "--", RITE_LOCK_PATH]);
+    expect(tracked.status).toBe(0);
+    expect(tracked.stdout.trim()).toBe("");
   });
 });
