@@ -2967,7 +2967,15 @@ QUARTER of the old rate, and NOT stopped.** ⚠ The whole-window diff says 10/2
 where the nights sum to 12/4, because two symbols arrived and left inside the
 window; both are stated, because the window figure alone understates arrival by
 two. **Files held at 19 and duplicates at 2 all four nights; types moved 16 → 18 →
-23 → 24, and no row in that ledger has ever tracked the types column.** Every
+23 → 24.** ⚠ **My first draft of this said "no row in that ledger has ever
+tracked the types column" and that was FALSE — the column has existed since the
+table was created and every row fills it. Corrected before the push.** What is
+true is narrower: **the types count is recorded and the types SET has never been
+DIFFED**, so its arrival is a number with no named population behind it, unlike
+the exports. And the rate claim was wrong too: types +8 against export ROWS +6
+and export SYMBOLS +8, so types grew at the SAME rate as export symbols rather
+than faster — the "faster" reading came from comparing a symbol count to a row
+count, which is the artifact this very section warns about one paragraph up. Every
 arrival is the same SURPLUS class #1437 swept, and every one is this fortnight's
 own P1/N2 work — the producer is current building, not legacy. **Nothing was
 touched**: dropping an export keyword is the deletion class.
@@ -3076,9 +3084,12 @@ its heartbeats. Remote writes: 3 cards, 1 branch, 1 pull request.
    Three of run 11's removals and nineteen of this run's held a live link into the
    repository's own `node_modules`, and a recorded pass is a record rather than a
    reading.
-8. **The knip types column is arriving faster than exports** (16 → 24 over three
-   nights) and the ledger has never tracked it — §I. If a row is written next run,
-   write both series.
+8. **The knip types SET has never been diffed** — only its count is recorded —
+   so there is no named population behind types arrival the way there is for
+   exports (§I). If a row is written next run, extract and diff both sets. ⚠ **Do
+   NOT carry forward that types arrive "faster than exports": that was my own
+   error, corrected in §I before the push, and it came from comparing a symbol
+   count to a row count.** At the symbol level both moved +8 over the window.
 9. **Run 11's item 8 was paid for TWICE more this run** and both in new places: a
    PowerShell `Substring` threw on short command lines, and a Windows path pasted
    into a Bash command broke its own quoting. **Iterate real paths; size every
