@@ -551,7 +551,7 @@ describe("a plate that does not land never costs the Sign anything", () => {
       written. The plate engine's constructor throws on a missing `FAL_KEY`,
       which is the correct refusal for that door. Built in the argument list
       that throw is SYNCHRONOUS inside `buildCastPackage` — before any view is
-      dispatched, and after the five audit rows and the 450-credit charge
+      dispatched, and after the five audit rows and the 8,500-credit charge
       already exist. Five paid views would have been lost to a missing
       environment variable, with nothing refusing and nothing refunding.
 

@@ -360,7 +360,7 @@ export function inkAskIntents(delta: RefineDelta | null | undefined): readonly R
  *
  * No apology and no promise with a date on it. Nothing was charged, and the
  * sentence says so, because a free outcome that does not say it is free reads as
- * a silent 25 credits.
+ * a silent 1,750 credits.
  */
 export function inkReferenceNote(take: InkReferenceTake | null): string {
   const cannot = "I can't put it on her yet — the step that cuts a design out of a photograph "

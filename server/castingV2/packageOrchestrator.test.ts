@@ -1436,7 +1436,7 @@ describe("⚠ what the character cap pushed out is said out loud", () => {
     docblock says why it hands `dropped` back: *"a cap that silently truncates
     reads, from the outside, exactly like a feature that was never there."* Its
     ONLY consumer took `.clause` and discarded the rest — so a feature falling
-    off the tail of a 450-credit package left no log, no counter and no row.
+    off the tail of an 8,500-credit package left no log, no counter and no row.
     **The producer's arms were all green while that was true**, which is
     arm-at-the-producer's exact silhouette.
   */

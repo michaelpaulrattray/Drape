@@ -2215,7 +2215,7 @@ export function validateCastingBornInkEnvironment(input: {
  *
  * ⚠ **AND WHETHER A WORDS-ROAD TATTOO MAY BE TRANSFORMED IS STILL HIS
  * QUESTION, DELIBERATELY NOT ANSWERED HERE.** Today such an account meets
- * D-137's free wall; opening it turns a free refusal into a 25-credit render,
+ * D-137's free wall; opening it turns a free refusal into a 1,750-credit render,
  * so it is a widen with numbers attached and not a consequence of a re-parent.
  * This commit makes the question ASKABLE; it does not answer it.
  */
@@ -2609,7 +2609,16 @@ export function validateCastingConceptUploadEnvironment(input: {
 
 /**
  * THE RETRY BUTTON (#122 shape 1) — whether one failed sheet slice may be
- * rendered again, same words, for 20 credits, refunded again on failure.
+ * rendered again, same words, for what that tile itself cost, refunded again on
+ * failure.
+ *
+ * ⚠ This sentence quoted a flat twenty until 2026-10-02, and both halves of it
+ * had moved: a flat figure became the TILE'S OWN recorded price in #1601 item 2
+ * (his rule — *"a single-candidate retry charges and refunds its own row's
+ * `pointsCost`"*), so a roll sheet's tile is 150 and a follow sheet's is 200,
+ * and the account-level constant that twenty was read from is deleted. A price
+ * written as a figure where the product no longer has one is the shape #1702 is
+ * about; naming the mechanism is what makes it stay true.
  *
  * His own word (2026-08-26): *"should we also allow a try option aswell?"* —
  * yes, on engine-error and didn't-arrive tiles. Off, and absent means off,

@@ -60,7 +60,7 @@ export function SignConfirm({
    *
    * `signVersion.ts` holds the rule and the words; this component only draws
    * them. It is `null` while the answer is still being fetched and `null` if
-   * the fetch fails, which is deliberate: the line is a claim about where 450
+   * the fetch fails, which is deliberate: the line is a claim about where 8,500
    * credits are going, and silence is today's product while a wrong sentence
    * would be a new defect.
    */

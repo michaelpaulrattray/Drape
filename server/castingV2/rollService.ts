@@ -1563,7 +1563,7 @@ export async function dispatchCandidate(input: {
       cast history — fired exactly once, on D-93's own incident, with zero false
       positives.** The founder ruled the flip happens now rather than at
       invites: he is the only affectable user today, so a misfire costs one
-      20-credit self-refund and produces exactly the evidence needed to fix it,
+      200-credit self-refund and produces exactly the evidence needed to fix it,
       while waiting would only guarantee that the first stranger's garbage tile
       arrives before the alarm is armed.
 

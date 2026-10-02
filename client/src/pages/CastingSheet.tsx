@@ -1177,7 +1177,7 @@ export default function CastingSheet() {
     surfaces that must agree about who is in the tray all read it: the strip
     itself, the kept count, and the Sign target below.
 
-    It is deliberately ABOVE `keptTiles`: aiming the 450-credit ceremony at the
+    It is deliberately ABOVE `keptTiles`: aiming the 8,500-credit ceremony at the
     server's list while the strip drew the optimistic one is exactly the ring
     and target disagreeing that `signTarget.ts` was written to end.
   */
@@ -1198,7 +1198,7 @@ export default function CastingSheet() {
     question and the two of them disagreeing is how a click armed a different
     woman (fable-729 §5). Today the server's loader keeps signed candidates out
     of the shortlist entirely (fable-744 §3b), so this filter passes everything;
-    it stays because the ceremony it aims costs 450 credits.
+    it stays because the ceremony it aims costs 8,500 credits.
 
     Aimed at the VISIBLE tray rather than the server's: a face just kept is the
     newest keep, so she is the one the button offers, and Sign takes a
@@ -1413,7 +1413,7 @@ export default function CastingSheet() {
     than folded in; it is not what the founder hit and it wants its own design.)
 
     ⚠ It is `null` while the answer is in flight and `null` if the read fails.
-    That is deliberate too: this is a claim about where 450 credits are going,
+    That is deliberate too: this is a claim about where 8,500 credits are going,
     and an absent sentence is exactly today's product while a wrong one would be
     a defect worse than the card.
   */
@@ -2015,7 +2015,7 @@ export default function CastingSheet() {
           AN OUTCOME THAT NEEDS A SENTENCE SAYS IT — free or paid.
 
           A FREE one because silence would leave someone assuming
-          they had just spent 25 credits on a face they were already
+          they had just spent 1,750 credits on a face they were already
           looking at (D-163 rule 4). A PAID one that could only be
           served in part because naming the part left out is the
           whole of D-181. This line used to read `kind === "selected"`
@@ -2314,7 +2314,7 @@ export default function CastingSheet() {
       AND A NEW SENTENCE. `RefinePanel` used to be keyed by the face, so its own
       state died with it; the draft is held here now, so the clearing has to be
       too — or walking the viewer with ←/→ carries a half-typed instruction onto
-      the next candidate and the box spends 25 credits on whoever you landed on.
+      the next candidate and the box spends 1,750 credits on whoever you landed on.
     */
     setAskDraft("");
     faceSelection.select(null);
@@ -3246,7 +3246,7 @@ export default function CastingSheet() {
               drawing always put it).
 
               It was a quiet text button under each tile, which the founder
-              could not find on his first look at his own product — a 450-credit
+              could not find on his first look at his own product — an 8,500-credit
               action hiding in the same visual weight as "Discard". The drawing
               puts it bottom-right in the dock, filled, acting on the current
               selection, and that is where a decision of this size belongs.
@@ -3480,7 +3480,7 @@ export default function CastingSheet() {
               /*
                 Keyed by the face. Without it, walking the viewer with ←/→
                 carries a half-typed instruction from one candidate to the next,
-                and the box then spends 25 credits on whoever you landed on.
+                and the box then spends 1,750 credits on whoever you landed on.
               */
               /*
                 ⚠ **THE ASK BOX IS NO LONGER TOLD EITHER HALF OF *MAY SHE EDIT

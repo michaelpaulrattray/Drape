@@ -585,7 +585,7 @@ export const OUTFIT_PLATE_SIZE = { width: 3504, height: 2336 } as const;
  * # What it costs, stated beside the choice (disappearing-technology law, 3)
  *
  *   price     one extra render per Sign, **$0.14–$0.15** at this size. House
- *             money; no customer credit moves, and the Sign's 450 is untouched.
+ *             money; no customer credit moves, and the Sign's 8,500 is untouched.
  *
  *             ⚠ **THIS BAND IS RECORDED HERE RATHER THAN CITED, since #1554.**
  *             It read *"the band `createFalSunburstViewEngine` records"* until
@@ -626,7 +626,7 @@ export function createFalSunburstPlateEngine(config: {
 }): IdentityEngine {
   if (!config.apiKey) {
     /* Refused at construction for the reason its sibling is: a Sign that
-       reaches dispatch has already taken 450 credits. */
+       reaches dispatch has already taken 8,500 credits. */
     throw new ProviderError("capability", "the outfit plate needs FAL_KEY to render");
   }
   const model = config.model ?? FAL_GPT_IMAGE_25_SUNBURST_EDIT;
