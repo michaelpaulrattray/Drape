@@ -289,6 +289,10 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
     that rewrites it, so it is corrected here rather than filed. On a paid plan
     the comparison is real and the clause is drawn.
   */
+  /* Named rather than inlined at the clause below: the 'up from' comparison
+     needs BOTH figures, and spelling all three checks inside the JSX made
+     the sentence unreadable and pushed the credit census's extraction past
+     its window. One name says what the condition means. */
   const currentPrice =
     currentId === null
       ? null
@@ -297,6 +301,9 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
      zero — `null` so the sentences below drop rather than print `+ 0`. */
   const delta =
     selected && currentCredits !== null ? selected.credits - currentCredits : null;
+
+  /* A rate is only comparable against a plan we have actually been told about. */
+  const rateComparable = currentPrice !== null && currentPrice > 0 && currentCredits !== null;
 
   const fullYear = selected ? selected.price * 12 : 0;
   /*
@@ -521,7 +528,7 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
             <span className="dp-set__value">
               {formatCreditsPerDollar(priceAMonth(selected.price, annual), selected.credits)}{" "}
               credits per $1
-              {currentPrice !== null && currentPrice > 0 && currentCredits !== null
+              {rateComparable
                 ? `, up from ${formatCreditsPerDollar(priceAMonth(currentPrice, annual), currentCredits)}`
                 : null}
             </span>
