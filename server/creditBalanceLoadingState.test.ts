@@ -86,6 +86,45 @@ const CLIENT_SRC = path.resolve(__dirname, "..", "client", "src");
 const BALANCE_DEFAULTED_TO_ZERO = /\w*balance\w*\s*(?:\?\?|\|\|)\s*0\b/i;
 
 /**
+ * ⚠ **THE FOUR LINES THIS GUARD WAS WRITTEN ABOUT, VERBATIM — card 1733.**
+ *
+ * They are the `-` side of #1703's own diff, not a paraphrase: the arm below
+ * holds the reader to still matching each of them, and to NOT matching the `+`
+ * side beside it. Without that, the pattern and the defect it was written for
+ * are only connected by a sentence, and **a reader that has stopped reading is
+ * indistinguishable from a clean tree** — this suite's whole verdict is *no
+ * client surface does this*, so matching nothing IS passing.
+ *
+ * Driven on main before this arm existed: blind `BALANCE_DEFAULTED_TO_ZERO`
+ * — replace it with a pattern that matches nothing anywhere — and the suite
+ * returned **3 passed (3)**, green, unchanged. Its three arms were a floor on
+ * the WALK, the exemption's precondition, and the offence list; none of them
+ * held the PATTERN.
+ */
+const MEASURED_SPECIMENS: ReadonlyArray<{ readonly before: string; readonly after: string }> = [
+  {
+    /* `UserCard`, through `AppChrome` — the account menu's own figure. */
+    before: "                  creditsBalance={creditsData?.balance ?? 0}",
+    after: "                  creditsBalance={creditsData?.balance ?? null}",
+  },
+  {
+    /* The Add credits sentence this card was filed about. */
+    before: "            {formatCredits(displayBalance(status?.balance ?? 0))} credits on the balance today.",
+    after: "            {formatCredits(displayBalance(status.balance))} credits on the balance today.",
+  },
+  {
+    /* `AccountSurfaces` → `SettingsModal`, the billing pane's prop. */
+    before: "          balance={status?.balance ?? 0}",
+    after: "          balance={status?.balance ?? null}",
+  },
+  {
+    /* `StudioSlimHeader` — the `||` spelling, which is why the ban is on both. */
+    before: "                  creditsBalance={creditsData?.balance || 0}",
+    after: "                  creditsBalance={creditsData?.balance ?? null}",
+  },
+];
+
+/**
  * ⚠ **THE ONE MEASURED EXEMPTION, WITH THE PRECONDITION THAT MAKES IT SAFE —
  * and the precondition is held by its own arm below, which is the only reason
  * an exemption is allowed to exist here at all.**
@@ -159,6 +198,54 @@ function offences(): { readonly offences: Offence[]; readonly read: number; read
 }
 
 describe("a credit balance nobody has read yet is not a balance of zero (#1703)", () => {
+  /**
+   * ⚠ **THE POSITIVE CONTROL ON THE READER ITSELF — card 1733, and it comes
+   * before the floor because it is the one this suite did not have.**
+   *
+   * The floor below holds the WALK: that it found files, and files that print a
+   * balance. Nothing held the PATTERN. So a hand edit that narrowed
+   * `BALANCE_DEFAULTED_TO_ZERO` — a stray anchor, a lost alternation, a `\b`
+   * in the wrong place — left every arm green and every verdict worthless,
+   * which is working law 2 exactly: *a green suite proves nothing if the
+   * checker cannot fail.*
+   *
+   * Both directions, because only the pair is a control: a reader that matches
+   * the defect but also matches the repair would redden the whole tree on the
+   * day it shipped and be deleted rather than believed.
+   */
+  it("still reads the four lines it was written about, and none of their repairs", () => {
+    /* ⚠ The loop below asserts NOTHING over an empty list, which is how a
+       control quietly becomes a comment. Four is the measured population of
+       #1703's own diff; a fifth is welcome and a fourth going missing is not. */
+    expect(
+      MEASURED_SPECIMENS.length,
+      "the specimen list has shrunk below the four lines #1703 measured — the arm below"
+      + " iterates it, so an empty list passes while proving nothing. Card 1733.",
+    ).toBeGreaterThanOrEqual(4);
+
+    for (const { before, after } of MEASURED_SPECIMENS) {
+      expect(
+        after,
+        `a specimen's repair is identical to its defect, so the pair proves nothing:\n  ${before.trim()}`,
+      ).not.toBe(before);
+      expect(
+        BALANCE_DEFAULTED_TO_ZERO.test(before),
+        `the reader no longer matches a line #1703 measured:\n  ${before.trim()}\n`
+        + "A pattern that has stopped reading and a clean tree are the same green here.",
+      ).toBe(true);
+      expect(
+        BALANCE_DEFAULTED_TO_ZERO.test(after),
+        `the reader matches the REPAIR of a line #1703 measured:\n  ${after.trim()}\n`
+        + "Keeping the balance `null` is the fix, so a reader that flags it would redden"
+        + " the tree on the day it shipped.",
+      ).toBe(false);
+    }
+
+    /* And it is not simply matching every line with a zero on it. */
+    expect(BALANCE_DEFAULTED_TO_ZERO.test("  const dryDays = Math.max(0, cycle.daysLeft);")).toBe(false);
+    expect(BALANCE_DEFAULTED_TO_ZERO.test("  const remainingShare = balance / allowance;")).toBe(false);
+  });
+
   /**
    * ⚠ THE FLOOR COMES FIRST, because for a guard whose verdict is "nothing under
    * `client/src` does this", **reading less IS passing**. A walk that resolved

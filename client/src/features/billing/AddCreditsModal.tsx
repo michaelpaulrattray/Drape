@@ -30,6 +30,14 @@
  * disagreement is a real defect the brief records from the prototype: hand
  * written dates put *"the 21st"* against a proration of 19/31 days, which
  * implies the 24th.
+ *
+ * ⚠ **AND THAT WAS TRUE ONLY ONCE THE PREVIEW EXISTED — #1730.** For the held
+ * second it had nothing to say, and the sentence rendered anyway, off the
+ * unaligned cycle: **"Prorated for the 8 days left in this cycle"** became
+ * **"Prorated for the 343 days"** when the quote landed. The paragraph above
+ * described the settled state and read as a promise about every state, which
+ * is how it survived review. `alignsToPreview` makes the question askable, and
+ * the renewal line asks it before it says anything.
  */
 import { useMemo, useState } from "react";
 import { displayBalance, displaySpent, formatCredits } from "@shared/creditDisplay";
@@ -42,6 +50,7 @@ import { ModalScrim } from "@/foundation/CastingModal";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import "@/features/settings/settings.css";
 import {
+  alignsToPreview,
   alignToPreview,
   annualPrice,
   formatCreditsPerDollar,
@@ -142,10 +151,25 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
   /* The interval rides the preview (#664), so `due today` below is the
      charge for the purchase the toggle describes — not the monthly figure
      wearing an annual page. */
+  /*
+    ⚠ **WHETHER A QUOTE IS COMING AT ALL — the query's own door, read once and
+    used twice (#1730).** The renewal line below needs exactly this fact to tell
+    *we have not been told yet* from *there is nothing to tell*, and a copy of
+    the condition beside the query is the mirror working law 4 is about. It is
+    the query's `enabled`, so the two cannot drift.
+
+    The pane offers only the rungs ABOVE this account's own, so `selectedId` is
+    null when there are none — the top rung, or a rung that is not on the
+    offered ladder at all (#391's hidden one). Then the preview never runs and
+    no quote is ever coming.
+  */
+  const quoteEnabled = hasSubscription && !!selectedId;
   const { data: preview, isError: previewFailed } = trpc.billing.previewPlanChange.useQuery(
     { newPlan: selectedId as never, interval: annual ? "annual" : "monthly" },
-    { enabled: hasSubscription && !!selectedId },
+    { enabled: quoteEnabled },
   );
+  /* Enabled AND still trying: a failed read is not a read on its way. */
+  const quoteComing = quoteEnabled && !previewFailed;
 
   /*
     #385 — the cycle spend is SUMMED from the ledger, never taken off
@@ -474,14 +498,44 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
         {/* §7.4 — the renewal line, branching on interval. An interval
             switch resets the cycle (#664), so quoting the OLD renewal date
             beside it would be the prototype's date-vs-charge defect again. */}
+        {/*
+          ⚠ **AND IT STATES NO BASIS UNTIL STRIPE HAS QUOTED ONE — #1730, the
+          same defect one noun over from #1703 and #1725.**
+
+          `cycle` is `alignToPreview(rawCycle, preview)`, and before the preview
+          answers that is `rawCycle` — cut from `status`, which is the CREDIT
+          cycle rather than the period Stripe prorates over. So this sentence
+          read **"Prorated for the 8 days left in this cycle"** and became
+          **"Prorated for the 343 days left in this cycle"** when the quote
+          landed (the yearly fixture). Two bases for one charge, stated with
+          equal confidence a second apart.
+
+          The module's own header says the alignment exists so the copy and the
+          charge read the same two numbers. That was true once the preview
+          existed and had nothing to say about the held second, which is the
+          gap `alignsToPreview` now closes — and it is the SAME predicate
+          `alignToPreview` branches on, not a second copy of it.
+
+          **Three states, and the third is the one that did not exist before:**
+          a quote is coming (say so, name no number); a quote has arrived (the
+          sentence as it always was); there is no quote to come — a failed read,
+          or an account with no rung above its own, where `previewPlanChange`
+          never runs. In that last state the line says nothing at all rather
+          than claiming a basis for a charge that is not going to happen, which
+          is what it did before.
+        */}
         <p className="dp-topup__renewal">
           {hasSubscription && preview?.kind === "interval-switch"
             ? annual
               ? "Billed for the whole year today — your new billing year starts now, and the year's credits land with the payment."
               : "Billed monthly from today — unused time from your year comes off future bills automatically."
-            : hasSubscription && cycle
-              ? `Prorated for the ${cycle.daysLeft} ${cycle.daysLeft === 1 ? "day" : "days"} left in this cycle, then ${formatShortDate(cycle.renewsAt)}.`
-              : "Charged today, then on the same date each period."}
+            : !hasSubscription
+              ? "Charged today, then on the same date each period."
+              : cycle && alignsToPreview(preview)
+                ? `Prorated for the ${cycle.daysLeft} ${cycle.daysLeft === 1 ? "day" : "days"} left in this cycle, then ${formatShortDate(cycle.renewsAt)}.`
+                : quoteComing
+                  ? "Working out how much of this cycle you are charged for."
+                  : null}
           {!annual ? ` Pay yearly instead and ${monthsFree()} of the twelve months are free.` : ""}
         </p>
       </div>
