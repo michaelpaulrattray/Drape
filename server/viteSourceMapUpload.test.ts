@@ -1,8 +1,9 @@
+import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 
 /**
  * THE BROWSER'S SOURCE MAPS GO TO SENTRY AND NOWHERE ELSE (#1420 part 1).
@@ -87,11 +88,43 @@ async function loadUploadOptions(outDir: string, release: string) {
   return mod.sourceMapUploadOptions({ authToken: FAKE_TOKEN, release, outDir });
 }
 
+const trees: string[] = [];
+
+/**
+ * THE REGISTRATION LIVES HERE, AND IT USED TO LIVE AT THE CALL SITES (#1795).
+ *
+ * `trees` was pushed BY HAND after each `tempTree()`, which is working law 4
+ * inside one file - four of the five call sites did it and the fifth could not,
+ * because it makes its tree inline inside an argument
+ * (`mapFilesUnder(path.join(tempTree(), "never-built"))`). So that one directory
+ * leaked on every run, and **nothing could ever go red**: a stray empty
+ * directory in `%TEMP%` raises no error, fails no assertion and blocks no gate.
+ * Janitor patrol #12 read **155** of them in under three days, one per run of
+ * this suite. Registering inside the maker covers every call site by
+ * construction, including any added later.
+ *
+ * The prefix carries a per-load token so the arm below can tell THIS run's trees
+ * from a concurrent run's - builder seats and shifts run this suite at the same
+ * time, and a bare `drape-1420-*` read would go red on somebody else's work.
+ */
+const TEMP_PREFIX = `drape-1420-${randomUUID().slice(0, 8)}-`;
+let treesMade = 0;
+
 function tempTree(): string {
-  return fs.mkdtempSync(path.join(os.tmpdir(), "drape-1420-"));
+  const tree = fs.mkdtempSync(path.join(os.tmpdir(), TEMP_PREFIX));
+  treesMade += 1;
+  trees.push(tree);
+  return tree;
 }
 
-const trees: string[] = [];
+/** This run's surviving trees, read off the DISK rather than off `trees`. */
+function survivingTrees(): string[] {
+  return fs
+    .readdirSync(os.tmpdir(), { withFileTypes: true })
+    .filter((e) => e.isDirectory() && e.name.startsWith(TEMP_PREFIX))
+    .map((e) => e.name)
+    .sort();
+}
 
 afterEach(() => {
   vi.resetModules();
@@ -99,6 +132,18 @@ afterEach(() => {
     const tree = trees.pop();
     if (tree) fs.rmSync(tree, { recursive: true, force: true });
   }
+});
+
+afterAll(() => {
+  /* Non-vacuity FIRST. An arm that passes because nothing was ever created
+     proves nothing, and that is the shape this suite was already in. */
+  expect(treesMade, "this suite must actually have made temp trees").toBeGreaterThan(0);
+  /* The claim, read where the leak actually was: the filesystem. No amount of
+     bookkeeping in `trees` can rescue this one. */
+  expect(
+    survivingTrees(),
+    `every temp tree this suite made must be gone; ${treesMade} were made`,
+  ).toEqual([]);
 });
 
 describe("vite.config — source maps exist only to be uploaded", () => {
@@ -159,7 +204,6 @@ describe("vite.config — the upload options handed to the plugin", () => {
 
   it("DERIVES the delete-after glob from the outDir it is given, in posix form", async () => {
     const outDir = path.join(tempTree(), "dist", "public");
-    trees.push(outDir.split(path.sep).slice(0, -2).join(path.sep));
     const options = await loadUploadOptions(outDir, "abc1234");
     const globs = options.sourcemaps?.filesToDeleteAfterUpload;
     expect(globs).toEqual([`${outDir.replace(/\\/g, "/")}/**/*.map`]);
@@ -195,7 +239,6 @@ describe("mapFilesUnder — the reader behind the refusal", () => {
   it("finds maps at any depth, ignores everything else, and sorts", async () => {
     const { mapFilesUnder } = await import("../vite.config");
     const root = tempTree();
-    trees.push(root);
     fs.mkdirSync(path.join(root, "assets", "nested"), { recursive: true });
     fs.writeFileSync(path.join(root, "index.html"), "<html></html>");
     fs.writeFileSync(path.join(root, "assets", "z-app.js"), "//");
@@ -213,7 +256,6 @@ describe("mapFilesUnder — the reader behind the refusal", () => {
   it("answers [] for a clean output tree — the positive control for the arm below", async () => {
     const { mapFilesUnder } = await import("../vite.config");
     const root = tempTree();
-    trees.push(root);
     fs.mkdirSync(path.join(root, "assets"), { recursive: true });
     fs.writeFileSync(path.join(root, "assets", "z-app.js"), "//");
     expect(mapFilesUnder(root)).toEqual([]);
@@ -231,7 +273,6 @@ describe("the refusal — a surviving .map fails the build", () => {
 
   it("THROWS, naming the file, when a map is still in the published output", async () => {
     const root = tempTree();
-    trees.push(root);
     /* The guard reads the config's own outDir, so the arm has to put the file
        there. Anything else would pass by measuring the wrong tree. */
     const { config } = await loadConfig({ token: FAKE_TOKEN, sha: "abc1234" });
