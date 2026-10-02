@@ -1,32 +1,32 @@
 {
-  "edition": 618,
-  "updatedAt": "2026-10-02T14:20:00.000Z",
-  "shift": "Night shift, 23:01: two things, and the second one is the more interesting. First, the rate line is gone from your plans. You said the free card's \"free CREDITS PER $1\" was stupid, and then that the rate belongs on Add credits and not on plan cards at all - so it is off every card now, and the compare table's \"Credits per dollar\" row went with it. The free card was never a special case: the word \"free\" is just what that calculation says when the price is zero, so one line was putting a rate on all seven cards, and your widened answer is what took it off all seven. Add credits still shows it, which is where you put it. It is merged and live, and I looked at it myself in both the light and the dark screens, before and after. Second, I found that a signed picture's crop-check had no time limit on it: if the measuring tool accepted the job and then never answered, your Sign or Try again would sit there for up to five minutes before giving up and handing the picture over unchecked. The card I was given suggested cutting it off at twenty seconds. I measured it before trusting it, on your own pictures, and a healthy check takes 21.5, 18.5 and 22.5 seconds - so twenty seconds would have cut off good checks rather than stuck ones, and that is the worse mistake of the two, because an unchecked picture comes with a free retry: we would have been giving the check away on every view to save time on a rare one. It is set at forty-five seconds, twice the slowest real one, which is the same rule the other check beside it was set by. That one is waiting on review. One honest limit I wrote down rather than hid: it stops the waiting, it does not cancel the stuck job, which still holds its place in the queue until the connection gives up - that needs a change to something shared with the face scan, so it is its own card. Cost tonight: about 15 cents of our own money for the measurements, no credits of yours.",
+  "edition": 619,
+  "updatedAt": "2026-10-02T15:40:00.000Z",
+  "shift": "Night shift, 00:58: pricing phase 1 is finished. Its last piece of building closed tonight, and the completion card with your test-drive list is at the top of this page (#1787). The short version: the whole pricing change is built and live — a sheet of eight faces is 320 credits whether you roll or follow, signing is 1,700, a refine is 350, a new free account gets 2,700 credits with no card and no phone number, the plans grant the new amounts, and Add credits sells packs on your volume ladder. One thing is not done and it is yours: no real card can be charged yet, because production's Stripe is still in test mode. Switching it over is your hand by your own rule, and it is the only thing left on the rung.\n\nBefore closing that last card I re-read all five of its pieces at the code rather than taking the previous shift's word that they were finished. They were — and I ran 221 checks across seven files to say so, instead of counting them by name. One of its five pieces had been declined on purpose, and following that refusal into the code is what found tonight's real catch.\n\nThe catch: on the canvas, the Refresh button on a cast that has gone out of sync charges 70 credits and sends the picture to two Google engines that were shut down in June. The money comes back when it fails, so nobody is out of pocket — they are charged, made to wait, and get nothing. It is the same fault you already ruled on once, when you said to seal the old studio's paid buttons; that sweep covered the old studio and missed the canvas's own button. Sealing it would take away a working canvas feature, so the choice is yours and it is named on the completion card. What I did fix is the reason nobody had noticed: our own list of known-bad engines named one canvas road and not this one, and nothing checked that the file addresses written in that list still existed. One of them did not. That change is waiting on review.\n\nNothing was spent tonight — no credits of yours, and no money of ours.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
-      "state": "confirmed",
-      "title": "P1 — Pricing, phase 1: the new credit prices, the free grant, the renewal fix and checkout on Stripe's prices (money: every PR held for the relay's verdict)",
+      "state": "none",
+      "title": "No focus is set — P1 is complete and the next rung is yours to name. Until you do, the crew works maintenance only: your background switches, the patrols on their clocks, and a bug a customer can actually hit.",
       "quote": "after n2 is wrapped up start the pricing/money work then proceed onto n2b and n2c",
       "quotedAt": "2026-10-01T07:40:00+10:00"
     },
     "milestone": {
-      "title": "P1 — pricing, phase 1: the approved prices and plans, shown at the new scale, with the free plan and the renewal fix",
+      "title": "P1 — pricing, phase 1: its building is DONE. The approved prices, plans and free grant are live; the one step left is switching the money over to live mode, which is yours (#1787, #1609)",
       "steps": [
         {
           "state": "done",
           "title": "One display helper: every credit number you see is the ledger ÷ 5, prices rounding up and balances rounding down (#1600)"
         },
         {
-          "state": "in-progress",
+          "state": "done",
           "title": "The price table, and a sheet now costs the same whether you roll or follow: 320 · Sign 1,700 · Refine 350 · Try again 370, in one place, with one free retry per unchecked view (#1601, #1753)"
         },
         {
-          "state": "in-progress",
+          "state": "done",
           "title": "Plan grants and the free grant: the new monthly amounts, 2,700 credits once for free, and every existing free account raised to it (#1602)"
         },
         {
-          "state": "in-progress",
+          "state": "done",
           "title": "Free signup with no card and no phone: the grant lands on a verified email or Google sign-in, guarded by quiet limits (#1603)"
         },
         {
@@ -34,11 +34,11 @@
           "title": "The renewal fix: a monthly refresh never overwrites credits you bought (#1604)"
         },
         {
-          "state": "in-progress",
+          "state": "done",
           "title": "Checkout on Stripe's own prices: the yearly price you see is the one you are charged (#1605)"
         },
         {
-          "state": "in-progress",
+          "state": "done",
           "title": "Top-up packs for plan holders on your volume ladder: 5,000 = $12 · 10,000 = $22 · 25,000 = $50, plus a slider — the checkout and the credits landing are built and in review; the Add credits screen is next (#1606)"
         },
         {
@@ -52,6 +52,10 @@
         {
           "state": "waiting",
           "title": "Go-live checklist for the relay's and your hand: live Stripe objects, Railway variables, the existing-account raise (#1609)"
+        },
+        {
+          "title": "The completion card and your eight-item test-drive list are on this page — drive it, then name the next rung (#1787)",
+          "state": "waiting"
         }
       ]
     },
@@ -68,7 +72,7 @@
       },
       {
         "key": "P1",
-        "title": "Pricing, phase 1 — the new credit prices, the free grant and the renewal fix (founder-ordered 2026-09-30; FIRST after N2, then N2b, then N2c — his word 2026-10-01)",
+        "title": "Pricing, phase 1 — its building is FINISHED and live; the rung stays open on one step that is yours, switching the money to live mode (#1787, #1609)",
         "state": "current"
       },
       {
@@ -145,8 +149,14 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-02T14:10:30.998Z",
+      "readAt": "2026-10-02T15:33:28.828Z",
       "items": [
+        {
+          "issueNumber": 1787,
+          "title": "P1 is built and live — pricing phase 1's completion card and your test-drive list (the app is right; the till is not open yet)",
+          "kind": "rung",
+          "rung": "P1"
+        },
         {
           "issueNumber": 1242,
           "title": "N2b — Personality and voice are born at Sign, as editable text: two drafted lines on the cast's page, badged Drafted for you, free to edit (founder-ordered 2026-09-25)",
@@ -284,11 +294,39 @@
           "title": "Research for later: cutting Sign's cost (~ today, five NBP 2K views ~/usr/bin/bash.75 of it) — one 4K sheet cropped, GPT Image 2.5 views, a cheaper check model, fewer default views; quality and cost per Sign, no build now (his finance guy's note, 2026-10-01)",
           "kind": "roadmap",
           "rung": null
+        },
+        {
+          "issueNumber": 1788,
+          "title": "A workspace: several people, one shared pool of credits, one bill — the dependency a per-seat Team plan cannot ship without",
+          "kind": "roadmap",
+          "rung": null
         }
       ]
     }
   },
   "needsYou": [
+    {
+      "id": "p1-complete-1787",
+      "title": "Pricing is built and live — drive it, then tell me the next rung",
+      "productImpact": "The whole pricing change is finished and running. Every credit number you or a customer sees now comes from one place, and the numbers are these: a sheet of eight faces costs 320 credits, and following an existing face to make a new character also costs 320 — one price for both, on your word. Signing a cast is 1,700, and if one of its five pictures fails, 200 comes back for that picture while the rest of the work stands. A refine is 350. A picture delivered without being checked gets one free Try again; a second ask on the same picture costs 370.\n\nA brand-new free account is given 2,700 credits, once, on a verified email or a Google sign-in, with no card and no phone number — about one finished character to try the studio with. The plans run Starter 14,000 a month at $27 up to Enterprise 8,700,000 at $15,000, and every rung is better value per dollar than the one below it. Add credits sells 5,000 for $12, 10,000 for $22 and 25,000 for $50 with a slider between them, and each row says what that money buys in Rolls and Signs rather than only in credits. No plan card states a credits-per-$1 rate any more — that was your word, and the rate lives on Add credits where you put it.\n\nOne thing is not done and it is yours: NO REAL CARD CAN BE CHARGED YET. Production's Stripe is still in test mode. The live keys, the live price objects, and renaming the business from Drape to Klieg in the Stripe dashboard are your hand by your own rule. So the app is right and the till is not open.",
+      "workedExample": "Eight things worth your hands, and the whole list is on the card:\n\n1. Roll a sheet — the dock should say 320 credits before you press, and 320 should leave your balance.\n2. Follow a face from a cast you already have — the same 320.\n3. Sign a cast — 1,700. If a view comes back refused, look for “Refunded · Try again” under its name and check 200 came back.\n4. A view delivered unchecked — press Try again and it should cost nothing; press it a second time on the same view and it should cost 370.\n5. Settings → Change plan — seven rungs, and no “credits per $1” line anywhere on the cards or in the compare table.\n6. Settings → Add credits — three packs biggest first, the slider, and each row saying what it buys. In both the light and the dark screens.\n7. A brand-new account on an email you have not used — you should land with 2,700 credits and never be asked for a card or a phone number.\n8. Both screens on 5 and 6 — I read them in both before merging, but those are the two you will look at most.\n\nTwo things pricing turned up that I deliberately did not fold in, because you told the crew to hold this rung to its ten cards. The first is the canvas Refresh button charging 70 credits for a render on engines shut down in June (#1785) — the same fault you already ruled on for the old studio, and sealing it removes a live canvas feature, so it is your call. The second is a comment in the price code that describes a table as small and admin-only when it is read in seven places, two of them public (#1786) — nothing a customer sees is wrong; it is the sentence that led me to the first one.",
+      "options": [
+        {
+          "key": "n2b",
+          "label": "N2b next — personality and voice, born at Sign, as editable text",
+          "consequence": "What your own order of 1 October already points at: “then proceed onto n2b and n2c”. The crew starts it on your word and nothing else changes."
+        },
+        {
+          "key": "other",
+          "label": "Something else — name it and the crew turns to it",
+          "consequence": "A rung boundary is exactly where you change your mind about what matters, which is why the crew is not allowed to pick for you."
+        }
+      ],
+      "recommendation": "Drive the eight items, then say N2b — it is where your own order already points, and nothing about pricing is waiting on that answer.",
+      "state": "open",
+      "filedAt": "2026-10-02T15:40:00+10:00",
+      "issueNumber": 1787
+    },
     {
       "id": "eye-gallery-1467",
       "title": "The picture gallery on this page: should it fill itself in, or stay as it is?",
@@ -3370,7 +3408,7 @@
     {
       "id": "topup-pack-labels-1606",
       "issueNumber": 1606,
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-10-01T20:20:00.000Z",
       "title": "Your three credit top-up packs — answered: RELABEL",
       "productImpact": "YOUR ANSWER, 2026-10-01 20:14, verbatim and entire: “RELABEL”.\n\nSo the three top-up prices in Stripe get names that say what the buyer actually receives — 5,000, 10,000 and 25,000 credits — at the same $12, $24 and $60. No price moves and no customer sees any of it; what changes is that your own books will say what was sold.\n\nWe are about to build the credit top-up packs — the thing somebody on a plan buys when they run low.\n\nThe three prices already sitting in your Stripe account charge exactly what you approved: $12, $24 and $60. But each one is NAMED with a credit number that is a tenth of what the buyer is meant to get. The $12 one is called “500 credits” when the pack is 5,000.\n\nNobody would be charged a wrong amount either way, and no customer ever sees these names. They are the labels on our own shelf — the words that show up in Stripe when your finance guy, or whoever handles a refund months later, asks what somebody bought.",
@@ -6477,6 +6515,13 @@
   ],
   "pipeline": [
     {
+      "id": "dead-engine-record-1785",
+      "title": "Our list of known-bad engines names the canvas's second road, and a file address in it can no longer rot (#1785)",
+      "status": "in-review",
+      "prNumber": null,
+      "note": "The record half of tonight's catch. Your decision on the road itself is on the card, not in this change."
+    },
+    {
       "id": "rate-chip-off-plans-1773",
       "title": "No plan card states a rate per dollar, and neither does the compare table (#1773)",
       "status": "merged",
@@ -6486,7 +6531,7 @@
     {
       "id": "framing-deadline-1776",
       "title": "A signed picture's crop-check can no longer hold your Sign open for five minutes (#1776)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1783,
       "note": "Open and held for a review by hand - it touches the paths that decide refunds and free retries. The limit is 45 seconds, measured rather than guessed."
     },
@@ -9279,6 +9324,13 @@
   ],
   "problems": [
     {
+      "id": "canvas-refresh-dead-engine-1785",
+      "severity": "warning",
+      "state": "open",
+      "title": "On the canvas, Refresh charges 70 credits for a picture that cannot be made — the engines behind it were shut down in June (#1785)",
+      "detail": "A cast on the canvas that has gone out of sync shows a Refresh button. Pressing it takes 70 credits and sends the work to two Google engines Google turned off on 25 June. The refund is correct, so the credits come back; what a customer loses is the wait and the picture.\n\nThis is the fault you already settled once. When the old studio's paid buttons were doing the same thing you said to seal them, and that was done — but the sweep covered the old studio's own part of the code, and the canvas has its own button, in a different place, spending the same price. Our list of known-bad engines named one canvas road and not this one.\n\nWhat needs you: sealing it would take a working canvas feature away, which is a product decision, so it is yours — and it is best answered beside the other canvas road on the same engines rather than separately. The card carries the three options. What is already fixed is the record: the list now names this road, and a check now refuses a file address in it that no longer exists. One of them did not."
+    },
+    {
       "id": "briefing-whitespace-guard-red-main",
       "severity": "warning",
       "state": "resolved",
@@ -9632,7 +9684,7 @@
     259
   ],
   "nextUp": {
-    "readAt": "2026-10-02T14:10:30.998Z",
+    "readAt": "2026-10-02T15:33:28.827Z",
     "items": [
       {
         "issueNumber": 1469,
@@ -9642,16 +9694,6 @@
       {
         "issueNumber": 1598,
         "title": "Pricing v2: final credit prices at ×10 display (Roll 240 · Follow 320 · Sign 1,700 · Refine 350 · Try again 350)",
-        "urgent": false
-      },
-      {
-        "issueNumber": 1601,
-        "title": "P1-2 — The price table: Roll 1,200 · Follow 1,600 · Sign 8,500 (3,500 + 5 × 1,000) · Refine 1,750 · Try again 1,750, in one place, with one free retry per unchecked view",
-        "urgent": false
-      },
-      {
-        "issueNumber": 1606,
-        "title": "P1-7 — Top-up checkout for plan holders on his ladder: 5,000 = $12 · 10,000 = $22 · 25,000 = $50 ($12/$11/$10 per 5,000-credit unit), with a 5,000-step slider — granted as ledger amounts, purchased credits never expire",
         "urgent": false
       },
       {
