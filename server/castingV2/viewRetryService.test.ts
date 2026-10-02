@@ -208,12 +208,19 @@ function dependencies(
       which angle is spent — `viewRetryFreeOnce.test.ts` owns the rule itself, and
       what this file owns is what the till does with it.
 
-      ⚠ Its ABSENCE was how this fixture announced the change, and that is worth
-      recording: `tsconfig.json` excludes every test file, so the required field
-      did not redden the typecheck — 36 arms in this file went red at RUN time on
-      `read.freeRetrySpentAngles.includes` instead. The failure direction was the
-      honest one (a refusal, never a free render), but the compiler could not have
-      told anybody.
+      ⚠ Its ABSENCE was how this fixture announced the change, and the lesson is
+      about the READING rather than about the compiler: 36 arms in this file went
+      red at RUN time on `read.freeRetrySpentAngles.includes`, and `pnpm check`
+      would have named this line instead. Driven after the fact — the bare
+      `tsc -p tsconfig.json` that had been run exits 0 (the root project excludes
+      every test file) while `pnpm check` exits 2 and points at the property.
+      Two of its five projects exist to typecheck tests, and BOTH of them include
+      this file and report the same TS2322 when run alone: `check:casting-tests`
+      and `check:server-tests`. Which one a `pnpm check` run names is a race —
+      the five run in parallel and a failure cuts the others off, measured as
+      casting-tests on three runs of four and server-tests on the other — so no
+      single project name belongs in this paragraph as the one that catches it.
+      A hand-assembled typecheck is not the typecheck.
     */
     readSlots: async () => ({
       modelId: 7, slots, deliveredOutfitKeys, freeRetrySpentAngles: [],
