@@ -36,6 +36,14 @@
  * green while its subject was unproven** — and the cheap half of the repair is
  * that the arm now exists at all.
  *
+ * ⚠ **AND THE LIST IS NOW EMPTY — 2026-10-02, the `frontClose` bound court.**
+ * Four of the five were discharged into a reader's remainder (#1717) and the
+ * fifth, *"a head-and-shoulders portrait"*, is restated by a measured rule whose
+ * bound was read off 43 of his own production frames. **No view owes a clause,
+ * which is what the hand-over was waiting for.** The arms do not retire with the
+ * debt: every one of them is written about a list that may grow again, and the
+ * next clause to arrive — a reworded spec, an eighth view — meets them.
+ *
  * # And the population is derived, never typed
  *
  * The views are read from the package's own table. A view added tomorrow with
@@ -63,6 +71,10 @@ const CLAUSE_FOR: Record<CastViewAngle, Record<string, string>> = {
   },
   frontClose: {
     "clearOf subject top": "the whole hair silhouette inside the frame with headroom above it",
+    /* ROAD 1, paid 2026-10-02 by the `frontClose` bound court: the last of
+       #1675's five, and the only one a box could honestly answer. The number and
+       the two populations it was chosen between are on the band itself. */
+    "roomBelowAtMost face": "a head-and-shoulders portrait",
   },
   threeQuarter: {},
   sideClose: {},
@@ -234,7 +246,10 @@ const OWED_AT_THE_HAND_OVER: ReadonlyArray<{ angle: CastViewAngle; clause: strin
   { angle: "closeUp", clause: "front-on crop of the face" },
   { angle: "closeUp", clause: "The mouth, every eye the reference shows" },
   /* HOW MUCH OF HER IS IN THE PICTURE — the sharpest of the five: a full-length
-     body with headroom satisfies this band's only rule. */
+     body with headroom satisfied this band's only rule. PAID 2026-10-02 by road
+     1, a measured `roomBelowAtMost face` bound; it stays on this record because
+     the record is what proves a later edit cannot drop the rule and the memory
+     of the debt in one act. */
   { angle: "frontClose", clause: "a head-and-shoulders portrait" },
   /* Which way the body faces. Both are retired-or-live directions that two
      `clearOf subject` rules cannot tell apart. */
@@ -420,10 +435,29 @@ describe("the hand-over's debt: the clauses discharged into a reader's remainder
   }
 
   /**
-   * THE TWO LISTS ARE ONE FACT, and this is the arm that keeps them so: every
-   * clause the record says was owed is now either discharged above or still owed
-   * on its band. A discharge with no debt behind it means the record is wrong
-   * somewhere, and so does a debt that is neither paid nor outstanding.
+   * THE LISTS ARE ONE FACT, and this is the arm that keeps them so: every clause
+   * the record says was owed is now outstanding on its band, discharged into a
+   * remainder above, or restated by a rule. A discharge with no debt behind it
+   * means the record is wrong somewhere, and so does a debt that is none of the
+   * three.
+   *
+   * ⚠ **IT KNEW TWO OF THE THREE ROADS AND WENT RED ON THE FIRST CLAUSE TO TAKE
+   * THE THIRD — 2026-10-02, and the red was CORRECT both times over.** Road 1 —
+   * a RULE restates the clause — is the road `frontClose`'s bound court paid its
+   * debt by, and this arm had no reading for it: written when road 2 was the only
+   * discharge anybody had used, it treated *"not outstanding and not in the
+   * remainder ledger"* as *"vanished from the record"*. So it refused a payment
+   * for being made in the one currency the band type names FIRST.
+   *
+   * **The repair is a derivation rather than a third list.** Road 1's discharge
+   * is already stated, held in both directions, at the top of this file:
+   * `CLAUSE_FOR` names the clause each rule restates, one arm holds every
+   * citation to a clause the spec still contains, and another holds every cited
+   * clause to still having its rule. A second list of road-1 discharges beside it
+   * would be working law 4's own shape on the file whose whole job is to stop one
+   * fact being written twice — and `accountedFor` in the block above was already
+   * reading all three roads this way, so the two readings now agree instead of
+   * one of them being a short list.
    */
   it("every clause that was owed is either discharged or still outstanding", () => {
     const discharged = new Set(
@@ -431,11 +465,41 @@ describe("the hand-over's debt: the clauses discharged into a reader's remainder
     );
     for (const { angle, clause } of OWED_AT_THE_HAND_OVER) {
       const outstanding = (castPackageView(angle).band.unrestated ?? []).includes(clause);
+      const restatedByARule = Object.values(CLAUSE_FOR[angle]).includes(clause);
       expect(
-        outstanding || discharged.has(`${angle} :: ${clause}`),
-        `${angle} owed "${clause}" and it is now neither on its band nor in the ledger above.`
-        + ` A clause cannot leave the record by disappearing from it.`,
+        outstanding || discharged.has(`${angle} :: ${clause}`) || restatedByARule,
+        `${angle} owed "${clause}" and it is now none of the three: not on its band, not in`
+        + ` the ledger above, and no rule cites it. A clause cannot leave the record by`
+        + ` disappearing from it.`,
       ).toBe(true);
+    }
+  });
+
+  /**
+   * ⚠ **AND A CLAUSE IS PAID BY EXACTLY ONE ROAD — the arm the repair above
+   * needs beside it, because widening an OR is how a guard stops failing.**
+   *
+   * The arm above now accepts three answers where it accepted two, and an
+   * accepting arm earns a refusing one: a clause claimed by a rule AND a
+   * remainder is a clause the hand-over would delete a test for twice, and a
+   * clause both outstanding and restated is a debt list that has stopped being
+   * read. The per-clause pairs for those two collisions already exist in the
+   * block above; this says it once over the whole record, so a FOURTH road
+   * invented later cannot quietly make the OR true for nothing.
+   */
+  it("a clause that was owed is paid by exactly one road, or by none yet", () => {
+    for (const { angle, clause } of OWED_AT_THE_HAND_OVER) {
+      const roads = [
+        (castPackageView(angle).band.unrestated ?? []).includes(clause) && "still owed",
+        Object.values(CLAUSE_FOR[angle]).includes(clause) && "a rule restates it",
+        (castPackageView(angle).band.readerRemainder ?? "").includes(clause)
+          && "the remainder claims it",
+      ].filter((road): road is string => road !== false);
+      expect(
+        roads,
+        `${angle}'s "${clause}" is accounted for ${roads.length} ways at once — a clause is`
+        + ` measured, or read, or still owed, and never two of them.`,
+      ).toHaveLength(1);
     }
   });
 
@@ -455,30 +519,43 @@ describe("the hand-over's debt: the clauses discharged into a reader's remainder
    * opens with.**
    *
    * The hand-over is paid off per view: deleting a view's prose framing question
-   * while it owes a clause deletes a stated test. After this slice exactly one
-   * view still owes, and it is `frontClose` — the one debt of the five that is
-   * real GEOMETRY and therefore the one road 2 would be a lie about. What it
-   * waits for is a measured bound and his eye on it (law 9), not a sentence.
+   * while it owes a clause deletes a stated test.
    *
-   * ⚠ **It is NOT ceremonial debt on a retired entry, which is the reading that
-   * would make it safe to ignore.** `frontClose` is absent from
+   * ⚠ **NO VIEW OWES ONE — 2026-10-02, and this arm read `["frontClose"]` until
+   * the debt it describes was paid.** That is the shape this file warns about two
+   * blocks up (*"an arm asserting it would redden on the fix"*) and it is
+   * deliberate here rather than an oversight: the docblock that wrote it said so
+   * — *"paying this debt should force somebody to come here and say so"*. This is
+   * somebody saying so.
+   *
+   * The clause was *"a head-and-shoulders portrait"*, the one debt of the five
+   * that is real GEOMETRY and therefore the one road 2 would have been a lie
+   * about. It is paid by a `roomBelowAtMost face` rule whose bound was measured
+   * on 43 of his own production frames, in an empty band between two populations
+   * that do not touch; **his eye closes the number** (law 9), and moving it means
+   * coming to the band and reading the court.
+   *
+   * ⚠ **It was NOT ceremonial debt on a retired entry, which is the reading that
+   * would have made it safe to ignore.** `frontClose` is absent from
    * `CAST_PACKAGE_VIEWS`, so no new Sign renders it — but `castProjection` builds
    * a historical Cast's slots from the package she BOUGHT, and `castSlotRetryOffer`
    * offers a Try again on one, which reaches `viewRetryService` and this spec. A
    * customer can still have a `frontClose` judged today.
    *
-   * Pinned rather than derived-and-shrugged-at, on the same ground as the two
-   * unmeasured views above: paying this debt should force somebody to come here
-   * and say so, and a SECOND view arriving in this list is a finding.
+   * **The empty expectation is the stronger statement and is why it is kept
+   * rather than deleted with the debt**: a view arriving with an unpaid clause —
+   * a reworded spec, an eighth view — reddens here by name, and the list can
+   * never silently grow back to one.
    */
-  it("exactly one view still owes, and the hand-over is paid off per view", () => {
+  it("no view still owes, and the hand-over is paid off per view", () => {
     const owing = CAST_VIEW_ANGLES.filter(
       (angle) => (castPackageView(angle).band.unrestated ?? []).length > 0,
     );
     expect(
       [...owing].sort(),
-      "the views whose prose framing question cannot be deleted yet. `frontClose` owes a"
-      + " measured bound for \"a head-and-shoulders portrait\"; everything else is paid.",
-    ).toEqual(["frontClose"]);
+      "a view whose prose framing question cannot be deleted yet. The list reached zero on"
+      + " 2026-10-02 when `frontClose`'s \"a head-and-shoulders portrait\" was restated by a"
+      + " measured bound; a view back on it owes a clause nothing measures.",
+    ).toEqual([]);
   });
 });
