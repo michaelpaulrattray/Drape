@@ -1,7 +1,7 @@
 {
-  "edition": 621,
-  "updatedAt": "2026-10-02T18:25:00.000Z",
-  "shift": "Machinist patrol, 03:41: a measuring night — no code changed, nothing was spent, and the news is mostly good. Every picture a paid roll has produced since last week arrived: 72 of 72, with none lost and nothing refunded. The time a roll takes fell again, from 34 seconds to 30. And the crew is now landing nearly twice as many jobs per session as it was a week ago, which is the four-agents-at-once change paying off.\n\nTwo things are worth your attention and both are about signing. Nothing has been charged at the new prices yet — not one roll, sign or refine since they went live on Thursday — so the pricing drive on your page is still genuinely untried. And before the view check was changed on your ruling, your last ten signings were losing 7 pictures out of 50, every one of them for the clothing or the camera angle rather than the face. That is fixed and live, and no cast has been signed since, so signing one is what proves it.\n\nThe one thing that got worse is ours, not yours: our own test suite grew by a fifth in a week and the checking machine that every job waits on is now 42% slower because of it. The odd part is that it is invisible on this computer, which is fast enough to absorb it. Written up as its own job, with the two ways out and what each would cost. Nothing here needs you.",
+  "edition": 622,
+  "updatedAt": "2026-10-02T19:55:00.000Z",
+  "shift": "Warden patrol, 05:24: the weekly security check. One thing needs a one-line answer from you and it is at the top of your page.\n\nKlieg has six accounts, and two of them can use the admin panel — yours, and one created on 28 September. An admin can read every customer's bug report, change anybody's credit balance, and see the whole audit log, so I am asking rather than assuming: is that second one yours or your engineer's? It is almost certainly your engineering agent. But the app itself cannot make somebody an admin — the only control for changing roles offers \"user\" or \"moderator\" and refuses to touch an admin at all — so the role was set straight in the database, and a change made that way leaves no record anywhere. Nothing is broken and nobody has lost anything. I just will not write \"fine\" into the record without your word on it.\n\nOne real fault, found and already fixed. Four known security holes had turned up in code we are built on, two of them serious, and nothing told us — our own weekly check read four where it read zero last week. GitHub had spotted them three days ago and could not fix them itself, because they sit too deep in somebody else's package. None of the four can be reached by a customer, and I checked that in our own code rather than taking it on trust. The repair is in review now and takes the count to zero.\n\nThe rest was quiet in the good way. No secret has ever reached our code history — checked again across all 4,102 commits. No blocked addresses, nobody locked out, no sign of anyone attacking the sign-in, and no customer's private work has leaked into the staff records. One hole in our own written rules was closed too: they still said a weakness in the sign-in page was open, two days after it was fixed.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -149,7 +149,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-02T17:00:42.041Z",
+      "readAt": "2026-10-02T19:51:16.581Z",
       "items": [
         {
           "issueNumber": 1787,
@@ -305,6 +305,28 @@
     }
   },
   "needsYou": [
+    {
+      "id": "second-admin-1806",
+      "title": "Is the second admin account yours? One appeared on 28 September",
+      "productImpact": "Klieg has six accounts. Two of them can use the admin panel: yours, and one created on 28 September at 5:13 in the morning. It signed in once that day and has not signed in since.\n\nAn admin in Klieg can read every customer's bug report, change anybody's credit balance, see the whole audit log and take any staff action. There is no smaller kind of admin — the role is all of it. That is why I am asking you instead of deciding it myself.\n\nIt is almost certainly your engineering agent: the account's email begins \"eng\" and your team arrived around then. But \"almost certainly\" is not a record, and this is the one place in the product where that is not good enough.\n\nHere is the part worth knowing. The app itself cannot make somebody an admin. The only control for changing a role offers \"user\" or \"moderator\", refuses to change your own role, refuses to touch an admin at all, and writes three separate records when it is used. I checked every other place in the code that can write a role; there is one more and it is switched off on the live service. So this role was set straight in the database — and a change made that way cannot leave a record. Nothing failed to log it; nothing was ever asked to.\n\nThat is also why nobody told you. The only reason the crew noticed is that this weekly check counts the accounts, and last week's count said one admin.",
+      "workedExample": "You can see it yourself in about ten seconds: open the admin panel, go to the users list, and filter by the admin role. Two rows come back. One is you.\n\nWhat I checked, so you do not have to take my word for it: the account's role and creation date on the live database; both places in the code that can write a role; and the audit log, whose most recent staff action is 2 September — so nothing in it mentions this.\n\nI did not read the account's email address or its sign-in identifier. I compared identifiers by fingerprint instead, so nothing personal was copied into a report to answer a yes-or-no question.",
+      "options": [
+        {
+          "key": "mine",
+          "label": "It is mine or my engineer's — leave it",
+          "consequence": "I write it into the security record with your word beside it, and the weekly check stops reading it as a surprise. Nothing changes for you or for any customer."
+        },
+        {
+          "key": "not-mine",
+          "label": "It is not mine — take it off",
+          "consequence": "I remove the admin role tonight and read everything that account has done since 28 September, then come back with what it touched. The account itself is not deleted without your word."
+        }
+      ],
+      "recommendation": "Just tell me which. I am not recommending an answer to a question about your own decision — but if it is your engineer's, say so and the whole thing becomes one line in the record.",
+      "state": "open",
+      "filedAt": "2026-10-03T05:52:00+10:00",
+      "issueNumber": 1806
+    },
     {
       "id": "p1-complete-1787",
       "title": "Pricing is built and live — drive it, then tell me the next rung",
@@ -9691,7 +9713,7 @@
     259
   ],
   "nextUp": {
-    "readAt": "2026-10-02T17:00:42.040Z",
+    "readAt": "2026-10-02T19:51:16.580Z",
     "items": [
       {
         "issueNumber": 1469,
