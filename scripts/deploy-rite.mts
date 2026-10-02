@@ -83,7 +83,7 @@
 */
 import "dotenv/config";
 import { execFileSync, spawnSync } from "node:child_process";
-import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 import { closingKeywordHits, closingKeywordRefusal } from "./lib/closingKeyword.mts";
@@ -123,10 +123,22 @@ import {
   DEPLOY_SOURCE_REF,
   deployRefOrderProblem,
   divergedRefMessage,
+  judgeRefLanding,
   pushFailureMessage,
   pushInSequence,
+  refAdvancedLines,
+  refOf,
+  unreadableRefMessage,
+  type Ancestry,
   type PushOutcome,
 } from "./lib/ritePushSequence.mts";
+import {
+  RITE_LOCK_PATH,
+  acquireRiteLock,
+  isPidAlive,
+  releaseRiteLock,
+  type RiteLockFs,
+} from "./lib/riteLock.mts";
 import { runScriptGuardsOnCommit } from "./lib/scriptGuards.mts";
 import { runTypecheckOnCommit } from "./lib/typecheckOnCommit.mts";
 import { BRIEFING_PATH, generatedFilesFrom, judgeQuietEdition, QUIET_REFUSAL, type QuietVerdict } from "./lib/quietEdition.mts";
@@ -296,6 +308,59 @@ const run = (command: string, args: string[], shell = false, env?: NodeJS.Proces
 const git = (...args: string[]) => run("git", args).trim();
 
 /*
+  ONE RITE PER CHECKOUT (#1726) — AND IT REFUSES BEFORE ANY CHECK.
+
+  Two rites ran in this tree 63 seconds apart on 2026-10-01 and **both wrote a
+  false sentence onto their own receipt**: one printed REFUSED after a push that
+  had LANDED, the other waited 44 minutes for a build that had already served.
+  `lib/riteLock.mts` carries the full reading of both. A second rite is refused
+  here, before a single second is spent on a guard, a custody check, a railway
+  call or a push.
+
+  ⚠ **WHY IT SITS HERE AND NOT AT THE VERY TOP, SAID RATHER THAN LEFT TO BE
+  WONDERED AT.** Two things legitimately precede it: the #148 guard above, which
+  is a refusal about the ENVIRONMENT and costs nothing, and `git` itself, which
+  this needs in order to record what the holder is deploying. Everything after
+  this line is a check — `core.hooksPath`, the atlas driver, the typecheck, the
+  suites, the atlases, the census — and none of them runs for a second rite.
+
+  It sits AFTER the receipt handler, so the refusal writes its own receipt and
+  its own `index.log` line exactly like any other verdict. A refused-to-start
+  rite that left no record would be indistinguishable from a rite nobody ran,
+  which is the whole shape that handler exists to prevent.
+
+  ⚠ `--dry` takes the lock too. A dry run performs the same minutes of custody
+  checks and its receipt can be made just as false; one rule is also one fewer
+  thing to be wrong about.
+*/
+const lockFs: RiteLockFs = { mkdirSync, writeFileSync, readFileSync, unlinkSync };
+{
+  const lock = acquireRiteLock({
+    path: RITE_LOCK_PATH,
+    directory: path.dirname(RITE_LOCK_PATH),
+    holder: { pid: process.pid, startedAt: startedAtIso, receipt: receiptFile, sha: git("rev-parse", "HEAD") },
+    fs: lockFs,
+    isPidAlive,
+  });
+  if (!lock.ok) die(lock.why);
+  if (lock.note) say(`  rite lock: ${lock.note}`);
+  /*
+    Released in its OWN exit listener rather than inside the receipt handler:
+    node runs listeners in registration order, so the receipt is written while
+    the lock is still held and the lock is given back immediately after. Folding
+    it into that handler would mean choosing a position inside a block whose
+    whole subject is something else.
+  */
+  process.on("exit", () => {
+    const outcome = releaseRiteLock({ path: RITE_LOCK_PATH, pid: process.pid, fs: lockFs });
+    /* `not-ours` means somebody took this lock over while we held it — a stale
+       takeover of a process that was alive after all. Printed rather than
+       swallowed, because it is the one reading that says the exclusion failed. */
+    if (outcome === "not-ours") console.log(`[deploy-rite] the rite lock is no longer ours — ${RITE_LOCK_PATH}`);
+  });
+}
+
+/*
   THE MARKER THE PRE-PUSH GATE LOOKS FOR (ordered fable-982).
 
   `.githooks/pre-push` refuses any push to `main` unless
@@ -330,6 +395,28 @@ const gitPushStatus = (...args: string[]): PushOutcome => {
     output: `${result.stdout ?? ""}${result.stderr ?? ""}`.trim()
       || String(result.error?.message ?? ""),
   };
+};
+
+/*
+  IS A AN ANCESTOR OF B — AND THE THIRD ANSWER IS WHY THIS IS NOT A BOOLEAN
+  (#1726).
+
+  `git merge-base --is-ancestor` answers in its EXIT STATUS, which `run()` above
+  discards: 0 for yes, **1 for no, and 128 for "I do not have that object"**.
+  Those last two must not collapse. A remote tip that moved from another clone —
+  every squash merge — reads as 128 until it is fetched, and reading that as
+  "no" prints the race diagnosis over a tree that needs nothing but a fetch.
+  `spawnSync` for the same reason `gitPushStatus` uses it: the status has to be
+  a value rather than an exception.
+*/
+const gitAncestry = (ancestor: string, descendant: string): Ancestry => {
+  const result = spawnSync("git", ["merge-base", "--is-ancestor", ancestor, descendant], {
+    encoding: "utf8",
+    maxBuffer: 1024 * 1024,
+  });
+  if (result.status === 0) return "yes";
+  if (result.status === 1) return "no";
+  return "unknown";
 };
 
 /*
@@ -1113,12 +1200,50 @@ if (!DRY) {
   that did not happen — and production builds from `main` (since 2026-09-06),
   so a branch left behind deploys the previous commit under this one's name.
 */
+/*
+  ⚠ AND THE QUESTION IT ASKS IS "DID MY COMMIT LAND", NOT "IS THE REF EXACTLY
+  MY COMMIT" (#1726).
+
+  Those two are the same sentence on a normal night and they came apart on
+  2026-10-01: a second command committed a CHILD of this commit in this working
+  tree while the checks ran, `git push` shipped the ref as it then stood, and
+  this block printed `REFUSED: origin/main is at 5fb877d5 — not f644f718` over a
+  push that had landed and a production Railway served two minutes later. The
+  lock above is why that collision cannot recur; `judgeRefLanding` is why the
+  sentence would be true even if it did.
+
+  `shippedSha` is the tip production actually builds — this commit on every
+  ordinary road, the descendant on the `advanced` one — and the watch and its
+  refusal below both name IT. That is the other half of the same incident: the
+  second rite spent 44 minutes waiting for a build of a commit that was never a
+  tip, then refused with a sentence about a deployment that had already served.
+*/
+let shippedSha = sha;
 for (const branch of BRANCHES) {
-  const ref = branch.includes(":") ? branch.split(":")[1]! : branch;
+  const ref = refOf(branch);
   const remote = git("ls-remote", "origin", `refs/heads/${ref}`).split(/\s+/)[0] ?? "";
-  if (remote !== sha) die(divergedRefMessage(ref, remote, shortSha));
-  say(`  origin/${ref} = ${shortSha}  ✓`);
+  const landing = judgeRefLanding({
+    ref,
+    checked: sha,
+    remote,
+    /* ⚠ `--dry` pushed NOTHING, so a remote tip that already contains this
+       commit means this tree is BEHIND origin — the opposite situation, and the
+       refusal below is the right answer to it. The ancestry question is simply
+       not asked on that road, rather than asked and then second-guessed. */
+    ancestry: DRY ? () => "no" : gitAncestry,
+  });
+  if (landing.kind === "unreadable") die(unreadableRefMessage(landing));
+  if (landing.kind === "absent" || landing.kind === "diverged") die(divergedRefMessage(ref, remote, shortSha));
+  if (landing.kind === "advanced") {
+    for (const line of refAdvancedLines(landing)) say(`  ${line}`);
+    /* Only production's own ref moves what is watched. A second ref advancing
+       is worth saying and changes nothing about the deploy (contract 3). */
+    if (ref === DEPLOY_SOURCE_REF) shippedSha = landing.shipped;
+  } else {
+    say(`  origin/${ref} = ${shortSha}  ✓`);
+  }
 }
+const shippedShort = shippedSha.slice(0, 8);
 if (DRY) { say(""); say("DRY RUN — stopping before the watch."); process.exit(0); }
 
 /* ── 3. watch to a terminal state ───────────────────────────────────────── */
@@ -1171,7 +1296,7 @@ for (let attempt = 0; Date.now() - started < WATCH_CEILING_MS; attempt += 1) {
   /* EVERY fetched row is searched for the pushed sha — a foreign row created
      after mine sits at index 0 and would otherwise hide a settled own row
      until the timeout (review of #149). */
-  const decision = decideWatch(priorDeployment, listDeployments(), sha);
+  const decision = decideWatch(priorDeployment, listDeployments(), shippedSha);
   if (decision.kind === "settled" || decision.kind === "running") {
     deployment = { id: decision.id, status: decision.status };
   }
@@ -1189,7 +1314,7 @@ for (let attempt = 0; Date.now() - started < WATCH_CEILING_MS; attempt += 1) {
        redeploy from the dashboard, typically. Say so and keep waiting for the
        row built from THIS push rather than adopting his. */
     if (decision.kind === "foreign") {
-      say(`  newest deployment ${decision.id.slice(0, 8)} is on ${decision.commitHash.slice(0, 8)}, not ${shortSha} — not mine, waiting (${waited}s)`);
+      say(`  newest deployment ${decision.id.slice(0, 8)} is on ${decision.commitHash.slice(0, 8)}, not ${shippedShort} — not mine, waiting (${waited}s)`);
     }
     if (decision.kind === "unattributed") {
       say(`  newest deployment ${decision.id.slice(0, 8)} carries no commit hash — cannot be attributed to this push, waiting (${waited}s)`);
@@ -1199,7 +1324,7 @@ for (let attempt = 0; Date.now() - started < WATCH_CEILING_MS; attempt += 1) {
 }
 if (!deployment) {
   die(priorDeployment
-    ? `Railway never created a deployment of ${shortSha} newer than ${priorDeployment.slice(0, 8)}. The push LANDED and no build of it was seen — nothing here may be reported as deployed.`
+    ? `Railway never created a deployment of ${shippedShort} newer than ${priorDeployment.slice(0, 8)}. The push LANDED and no build of it was seen — nothing here may be reported as deployed.`
     : "no deployment row could be read at all");
 }
 const elapsed = Math.round((Date.now() - started) / 1000);
@@ -1238,7 +1363,11 @@ const outcome = watchOutcome({
   status: deployment.status,
   elapsedSeconds: elapsed,
   ceilingSeconds: WATCH_CEILING_MS / 1000,
-  shortSha,
+  /* THE SHIPPED tip, not the checked one (#1726). Both sentences this builds
+     are about the artifact — what `origin/main` carries and what
+     `/api/health`'s `build` will read — so on the `advanced` road the checked
+     sha would be the one sha neither of them holds. */
+  shortSha: shippedShort,
   ref: DEPLOY_SOURCE_REF,
   service: SERVICE,
   baseUrl: BASE,
@@ -1552,7 +1681,12 @@ const assets = await (async (): Promise<{ line: string; problems: string[] }> =>
 
 say("");
 say("─".repeat(72));
-say(`\`${shortSha}\` · origin/main == HEAD · deploy SUCCESS · health ×3 — 200 ·`);
+/* The custody block quotes THIS line, so it states the tip production is
+   serving and says plainly when that is not the commit the checks ran on
+   (#1726) — `origin/main == HEAD` was unconditional and is false on that road. */
+say(`\`${shippedShort}\` · ${shippedSha === sha
+  ? "origin/main == HEAD"
+  : `origin/main advanced past the checked ${shortSha}`} · deploy SUCCESS · health ×3 — 200 ·`);
 say(`healthy · db ${latencies.map((value) => value.toFixed(2)).join(" / ")} ms ·`);
 say(`paid work at push: ${inFlight}`);
 say(`**UPTIME ANCHOR ${anchor}** (uptime ${healths[0]!.uptime.toFixed(1)} s)`);
