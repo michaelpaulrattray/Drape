@@ -645,13 +645,28 @@ describe("#493 — the briefing cannot list one card in two homes", () => {
       boundary, and `currentLadderRung` reads no-current as `null`, which holds
       every rung card until his word opens the next one. A schema demanding
       exactly one would refuse the edition that correctly says "between rungs".
+
+      ⚠ **AND THIS ARM BUILDS ITS OWN TWO-CURRENT STATE RATHER THAN BORROWING
+      THE REAL EDITION'S — corrected in edition 619 (2026-10-02), the first
+      edition that actually used the zero-current state the arm below defends.**
+      It read the live ladder and asserted *"the real briefing names exactly
+      one"* as its own negative control, so the moment THE MILESTONE GATE
+      cleared the focus at P1's boundary — the state the paragraph above calls
+      deliberate — this arm went red while the schema was behaving exactly as
+      designed. A positive control whose precondition is the product's current
+      state can only fire while the product sits in one of the states it
+      permits, which is the narrowest possible coverage and reads as a
+      regression when it lapses. It now forces TWO rungs `current` from
+      whatever the ladder holds, so the refusal is driven in every state: one
+      current, none, or a ladder somebody has not touched in a month.
     */
     const base = valid();
-    const current = base.program.ladder.filter((rung: { state: string }) => rung.state === "current");
-    expect(current.length, "the real briefing names exactly one — the negative control for this arm").toBe(1);
-    const second = base.program.ladder.find((rung: { state: string }) => rung.state !== "current");
-    expect(second, "the ladder needs a second rung for this arm to be able to fail").toBeDefined();
-    second!.state = "current";
+    const ladder = base.program.ladder as { key: string; state: string }[];
+    expect(ladder.length, "the ladder needs two rungs for this arm to be able to fail").toBeGreaterThanOrEqual(2);
+    // The subject is the SCHEMA's refusal, so the fixture states the condition
+    // outright instead of inferring it from whichever rung is live tonight.
+    ladder[0].state = "current";
+    ladder[1].state = "current";
     expect(() => crewBriefingSchema.parse(base)).toThrow(/at most one rung as `current`/);
   });
 
