@@ -27,6 +27,7 @@ import {
   deductCredits,
   addCredits,
   creditReferrerOnPaidAction,
+  addTopupCredits,
   getCreditTransactionByRef,
   appendChangeRequestReviewNote,
 } from "../db";
@@ -47,6 +48,11 @@ import { captureProductEvent } from "../monitoring/productEvents";
 import { MONEY_EVENT_FOR_STRIPE_TYPE } from "../../shared/productEventCatalogue";
 import { createModuleLogger } from "../logging/logger";
 import { checkEventEnvironment } from "./environmentTag";
+import {
+  TOPUP_CHECKOUT_KIND,
+  isSellableTopupUnits,
+  topupLedgerCredits,
+} from "../../shared/creditTopups";
 import { deploymentTag } from "../_core/env";
 import { getDb } from "../db/connection";
 /* The reader is GENERIC — `ER_DUP_ENTRY` / errno 1062 up the short cause chain —
@@ -85,12 +91,19 @@ export interface WebhookResult {
   /**
    * Credits this event actually granted, when it granted any (#509 part 2).
    *
-   * Reported by `handleInvoicePaymentSucceeded` alone, from the single statement
-   * in this file that grants a period's allowance. It is READ by the product
-   * event stream at the dispatcher tail and by nothing else; it changes no money
-   * decision. Its ABSENCE means *"this delivery granted nothing"*, which is the
-   * truth of a proration-only invoice — and it is why the event is named
-   * `payment made` rather than the card's *"credits bought"*.
+   * Reported by TWO handlers, and the second arrived with #1606: the period
+   * allowance from `handleInvoicePaymentSucceeded`, and a bought credit pack
+   * from `grantPurchasedCredits`. It is READ by the product event stream at the
+   * dispatcher tail and by nothing else; it changes no money decision. Its
+   * ABSENCE means *"this delivery granted nothing"*, which is the truth of a
+   * proration-only invoice, of a REPLAYED top-up the ledger reference answered,
+   * and of every refusal — and it is why the event is named `payment made`
+   * rather than the card's *"credits bought"*.
+   *
+   * ⚠ This sentence read *"by `handleInvoicePaymentSucceeded` alone"* until
+   * #1606 wired the second one. A field documented as having one writer, with a
+   * second added quietly, is how a reader comes to believe a figure means
+   * something narrower than it does.
    */
   creditsGranted?: number;
 }
@@ -415,7 +428,147 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
     // Non-blocking — don't fail the webhook for referral credit issues
   }
 
+  if (type === TOPUP_CHECKOUT_KIND) {
+    return await grantPurchasedCredits(session, userId);
+  }
+
   return { success: true, message: "Checkout completed, subscription will be processed separately" };
+}
+
+/**
+ * THE CREDITS A CUSTOMER BOUGHT, LANDING WHEN THE MONEY DID (#1606).
+ *
+ * This is the only road into `addTopupCredits`, which has had no caller since
+ * the one-time top-up product was removed in February (`41a765ea`).
+ *
+ * ## Why it grants the metadata's own figure and computes nothing
+ *
+ * The session carries `ledgerCredits` written by the builder that resolved the
+ * price, so a price change tomorrow cannot re-value a purchase that is already
+ * paid for. The card's rule, verbatim: *the FIXED ledger amount, never
+ * dollars-to-credits arithmetic.*
+ *
+ * ⚠ **AND THE TWO FIGURES ARE CROSS-CHECKED RATHER THAN TRUSTED.** `topupUnits`
+ * and `ledgerCredits` were written in one breath by one function, so they agree
+ * or something wrote this session that is not us — a dashboard-made session, a
+ * copied one, a tampered one. The env tag already refuses another WORLD's
+ * objects; it says nothing about a hand-made object in this one. Disagreement
+ * refuses without granting and logs `fatal`, because the alternative is reading
+ * an attacker-chosen number as an amount of money.
+ *
+ * ## Why an unpaid session is refused rather than retried
+ *
+ * `payment_status` is `paid` for every card checkout by the time this event
+ * fires; delayed payment methods are the shape that completes unpaid, and this
+ * product sends `payment_method_types: ["card"]`. So an unpaid completion is
+ * either a payment method we did not ask for or a session we did not make, and
+ * a redelivery would not change either — it is recorded as refused (the shape
+ * the environment check uses) so Stripe stops asking, and it is logged loudly
+ * rather than swallowed. The grant for an async method that later settles
+ * arrives as `checkout.session.async_payment_succeeded`, which this endpoint
+ * does not subscribe to; the day this product sells by one, that case is a card
+ * and not a default.
+ *
+ * ## The replay answer is two deep, on purpose
+ *
+ * `handleStripeWebhook` claims the event id before any handler runs, so the
+ * ordinary redelivery never reaches this function. The ledger reference is the
+ * one that matters anyway: a handler that granted and then failed RELEASES its
+ * claim — by design, so a failed effect is retried — and on that retry the
+ * unique index on `(userId, referenceId)` is what makes the second grant a
+ * no-op rather than a second 25,000 credits. It is keyed on the SESSION id, not
+ * the event id, because a session is paid once and several events can speak
+ * about it, while one event id is only ever one delivery of one of them.
+ *
+ * No audit row: the credit ledger line IS this event's record, which is how the
+ * subscription renewal's grant two functions down already works.
+ */
+async function grantPurchasedCredits(
+  session: Stripe.Checkout.Session,
+  userId: number,
+): Promise<WebhookResult> {
+  const unitsRaw = session.metadata?.topupUnits;
+  const ledgerRaw = session.metadata?.ledgerCredits;
+  const units = Number(unitsRaw);
+  const ledgerCredits = Number(ledgerRaw);
+
+  if (!isSellableTopupUnits(units)) {
+    log.fatal(
+      { sessionId: session.id, userId, topupUnits: unitsRaw },
+      "[Webhook] REFUSED a credit purchase: the session names a unit count this product does not sell — nothing granted",
+    );
+    return {
+      success: true,
+      refused: true,
+      message: `Top-up session ${session.id} names an unsellable unit count (${String(unitsRaw)})`,
+    };
+  }
+
+  const expected = topupLedgerCredits(units);
+  if (ledgerCredits !== expected) {
+    log.fatal(
+      { sessionId: session.id, userId, topupUnits: units, ledgerCredits: ledgerRaw, expected },
+      "[Webhook] REFUSED a credit purchase: the session's credit figure is not the one its own unit count buys — nothing granted",
+    );
+    return {
+      success: true,
+      refused: true,
+      message: `Top-up session ${session.id} claims ${String(ledgerRaw)} credits where ${units} unit(s) buy ${expected}`,
+    };
+  }
+
+  if (session.payment_status !== "paid") {
+    log.error(
+      { sessionId: session.id, userId, paymentStatus: session.payment_status },
+      "[Webhook] REFUSED a credit purchase: the checkout completed without being paid — nothing granted",
+    );
+    return {
+      success: true,
+      refused: true,
+      message: `Top-up session ${session.id} completed ${session.payment_status} — no credits granted`,
+    };
+  }
+
+  const result = await addTopupCredits(userId, expected, `topup_${session.id}`);
+
+  if (!result.success) {
+    /* FAIL THE EVENT so Stripe redelivers: the customer has paid and the
+       credits are not there. The claim released by this return is what makes
+       the redelivery able to do the work. */
+    log.error(
+      { sessionId: session.id, userId, credits: expected, error: result.error },
+      "[Webhook] a paid credit purchase could not be granted — failing the event so Stripe redelivers",
+    );
+    return {
+      success: false,
+      message: `Failed to grant ${expected} purchased credits to user ${userId}`,
+      error: result.error,
+    };
+  }
+
+  if (result.duplicate) {
+    log.info(
+      { sessionId: session.id, userId, credits: expected },
+      "[Webhook] credit purchase already granted — the ledger reference answered",
+    );
+    return {
+      success: true,
+      message: `Top-up for session ${session.id} was already granted`,
+    };
+  }
+
+  log.info(
+    { sessionId: session.id, userId, credits: expected, units, newBalance: result.newBalance },
+    `[Webhook] granted ${expected} purchased credits to user ${userId}`,
+  );
+  return {
+    success: true,
+    message: `Granted ${expected} purchased credits to user ${userId}`,
+    /* Reported for the product event stream only (#509 part 2). It rides the
+       FRESH grant alone: a replay the ledger reference answered granted nothing
+       on this delivery, which is exactly what the field's absence means. */
+    creditsGranted: expected,
+  };
 }
 
 /**

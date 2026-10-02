@@ -10,6 +10,7 @@ import {
 import {
   getOrCreateStripeCustomer,
   createSubscriptionCheckoutSession,
+  createTopupCheckoutSession,
   createCustomerPortalSession,
   getSubscriptionDetails,
   cancelSubscription,
@@ -27,6 +28,13 @@ import {
 } from "../stripe/planChangeSettlement";
 import { stripeIntervalOf } from "@shared/annualBilling";
 import { displayBalance, formatCredits } from "@shared/creditDisplay";
+import {
+  TOPUP_MAX_UNITS,
+  TOPUP_NEEDS_A_PLAN_SENTENCE,
+  topupEligibility,
+  topupLedgerCredits,
+  topupPriceInCents,
+} from "@shared/creditTopups";
 import {
   SUBSCRIPTION_PRODUCTS,
   SubscriptionPlan,
@@ -253,6 +261,138 @@ export const billingRouter = router({
         metadata: {
           plan: input.plan,
           interval: input.interval,
+          stage: "checkout_initiated",
+        },
+        req: ctx.req,
+      });
+
+      return { checkoutUrl };
+    }),
+
+  /**
+   * BUY CREDITS — a one-off pack, for an account that is on a plan (#1606).
+   *
+   * The road it rebuilds died in February with the old top-up product
+   * (`41a765ea`), and `addTopupCredits` has sat with no caller since — which is
+   * why `server/db/billing.ts`'s own docblock says *"#1606 sells top-ups
+   * again"*. Nothing of the deleted machinery comes back with it: the credit
+   * PURCHASE VELOCITY CAPS that used to be called from inside the old
+   * `createTopupCheckout` are NOT reinstated here (this card's law-7 clause
+   * says so in terms, and the audit's H5 records why — what counts as too fast,
+   * and what a blocked customer is told, is a product decision and belongs on
+   * a card of its own, named on #1598).
+   *
+   * The shape follows `createSubscriptionCheckout` above clause for clause
+   * (frozen account, customer id saved AND its verdict read, the price resolved
+   * from Stripe's catalogue, an audit row) because every one of those clauses
+   * was paid for by a real defect on the subscription road and a one-off sale
+   * has the same four exposures. What differs:
+   *
+   *  · **`units`, not a pack id.** The three packs and the slider are one
+   *    ladder (`shared/creditTopups.ts`), so there is one input and no second
+   *    list of sizes to keep in step. `.strict()` and a bound, because
+   *    `quantity` is what decides the charge.
+   *  · **The plan rung is a gate.** `topupEligibility` is the card's own rule,
+   *    and the refusal is a sentence that offers a plan rather than naming a
+   *    tier (the disappearing-technology law's refusal clause).
+   *  · **Nothing is granted here.** The credits land when the webhook says the
+   *    money did. This procedure's only effect on the account is a Stripe
+   *    customer id, exactly as the subscription road's does.
+   */
+  createTopupCheckout: protectedProcedure
+    .input(z.object({
+      /* The ladder's own bound, read from the ladder (working law 4). A
+         fractional or out-of-range count never reaches the resolver — which
+         refuses it too, because an input schema is not the only caller a money
+         helper can ever have. */
+      units: z.number().int().min(1).max(TOPUP_MAX_UNITS),
+    }).strict())
+    .mutation(async ({ ctx, input }) => {
+      const user = await getUserById(ctx.user.id);
+      if (!user) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      }
+      if (user.frozenAt) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Your account is currently under review. Purchases are temporarily paused while we verify your billing records. This usually resolves within 24-48 hours.",
+        });
+      }
+
+      const subscription = await getSubscriptionByUserId(ctx.user.id);
+
+      /* ⚠ A MISSING CREDITS ROW IS `free` HERE, AND ONLY HERE. On the server
+         the rung is READ, so its absence is a fact about the account rather
+         than a beat in a render — `getStatus` above answers the same way for
+         the same reason. The three-state reading still earns its keep: an
+         `unread` verdict can only mean a rung this product does not recognise,
+         and that must refuse rather than fall through to a sale. */
+      const eligibility = topupEligibility(subscription?.planTier ?? "free");
+      if (eligibility !== "may-buy") {
+        log.info(
+          { userId: ctx.user.id, planTier: subscription?.planTier ?? null, eligibility },
+          "[Billing] top-up refused — the account is not on a plan",
+        );
+        throw spokenError({
+          code: "FORBIDDEN",
+          message: TOPUP_NEEDS_A_PLAN_SENTENCE,
+        });
+      }
+
+      const customerId = await getOrCreateStripeCustomer(
+        ctx.user.id,
+        user.email || `user-${ctx.user.id}@${PRODUCTION_APP_HOSTNAME}`,
+        user.displayName || user.name || undefined,
+        subscription?.stripeCustomerId
+      );
+
+      /* The subscription road's reasoning, unchanged and for a reason that is
+         stronger here: this session's completion is found by its OWN metadata,
+         but `getOrCreateStripeCustomer` can MINT a new customer when the saved
+         one is gone, and a customer id the account does not hold would leave
+         the next subscription webhook unable to find its user. Refusing costs
+         a retry and nothing else — no session, no charge. */
+      if (customerId !== subscription?.stripeCustomerId) {
+        const saved = await updateUserSubscription(ctx.user.id, { stripeCustomerId: customerId });
+        if (!saved.success) {
+          log.error(
+            { userId: ctx.user.id, customerId, error: saved.error },
+            "[Billing] Stripe customer id could not be saved — refusing the top-up checkout rather than mint a session against an id the account does not hold",
+          );
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "We could not set up your billing account. Nothing was charged — please try again in a moment.",
+          });
+        }
+      }
+
+      const baseUrl = appBaseUrl();
+
+      const checkoutUrl = await createTopupCheckoutSession(
+        customerId,
+        input.units,
+        `${baseUrl}/app?credits=added`,
+        `${baseUrl}/app?credits=canceled`,
+        ctx.user.id,
+      ).catch((error: unknown) => {
+        throw billingRefusalFor(error, "top-up checkout", {
+          userId: ctx.user.id,
+          units: input.units,
+        });
+      });
+
+      /* The audit row records the INTENT, which is all that has happened: the
+         grant writes its own ledger line when the webhook lands. Credits in
+         ledger units, like every other row in this log. */
+      await logAuditEvent({
+        userId: ctx.user.id,
+        action: AUDIT_ACTIONS.CREDITS_PURCHASED,
+        resourceType: "credits",
+        resourceId: customerId,
+        metadata: {
+          units: input.units,
+          ledgerCredits: topupLedgerCredits(input.units),
+          cents: topupPriceInCents(input.units),
           stage: "checkout_initiated",
         },
         req: ctx.req,

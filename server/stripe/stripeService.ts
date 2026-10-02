@@ -15,7 +15,12 @@ import {
   type BillingIntervalChoice,
 } from "@shared/annualBilling";
 import { wholeDisplayLedger } from "@shared/creditDisplay";
-import { resolvePriceId, StripePriceUnavailableError } from "./stripePriceCatalogue";
+import {
+  resolvePriceId,
+  resolveTopupPriceId,
+  StripePriceUnavailableError,
+} from "./stripePriceCatalogue";
+import { TOPUP_CHECKOUT_KIND, topupLedgerCredits } from "@shared/creditTopups";
 import { environmentMetadata } from "./environmentTag";
 import { subscriptionPeriodSec } from "./subscriptionPeriods";
 import { PLAN_TIERS, PlanTier } from "../../drizzle/schema";
@@ -125,6 +130,66 @@ export async function createSubscriptionCheckoutSession(
   });
 
   log.info(`[Stripe] Created ${interval} subscription checkout session ${session.id} for plan ${plan}`);
+  return session.url!;
+}
+
+/**
+ * Create a Stripe Checkout session for a one-off credit top-up (#1606).
+ *
+ * Three things here are decisions rather than transcription, and each is the
+ * subscription builder's own reasoning read on a one-off sale:
+ *
+ *  · **ONE PRICE, `quantity` UNITS.** The ladder's rate bands ARE three Stripe
+ *    prices quoted per 5,000 credits, so the band decides which price and the
+ *    order decides the quantity. No amount is composed here — `resolveTopupPriceId`
+ *    refuses when Stripe's figure is not the one this product shows, which is
+ *    what keeps the screen and the charge from drifting apart silently.
+ *  · **`mode: "payment"`.** A credit pack is bought once. The catalogue refuses
+ *    a recurring price under these keys for the same reason.
+ *  · **THE GRANT RIDES THE SESSION'S METADATA, IN LEDGER CREDITS.** The webhook
+ *    grants `ledgerCredits` as it is written here; it never multiplies a price
+ *    back into credits. That is the card's own rule ("the FIXED ledger amount,
+ *    never dollars-to-credits arithmetic") and it is why a later price change
+ *    cannot retroactively re-value a purchase that is already paid for.
+ *
+ * ⚠ The env tag is on the metadata because `checkout.session.completed` is one
+ * of the tagged event types: without it this session's own completion would be
+ * refused at production's webhook and the customer would pay for nothing.
+ */
+export async function createTopupCheckoutSession(
+  customerId: string,
+  units: number,
+  successUrl: string,
+  cancelUrl: string,
+  userId: number,
+): Promise<string> {
+  const priceId = await resolveTopupPriceId(stripe, units);
+  const ledgerCredits = topupLedgerCredits(units);
+
+  const session = await stripe.checkout.sessions.create({
+    customer: customerId,
+    mode: "payment",
+    payment_method_types: ["card"],
+    line_items: [
+      {
+        price: priceId,
+        quantity: units,
+      },
+    ],
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    metadata: {
+      userId: userId.toString(),
+      type: TOPUP_CHECKOUT_KIND,
+      topupUnits: units.toString(),
+      ledgerCredits: ledgerCredits.toString(),
+      ...environmentMetadata(),
+    },
+  });
+
+  log.info(
+    `[Stripe] Created top-up checkout session ${session.id} for user ${userId} — ${units} unit(s), ${ledgerCredits} ledger credits`,
+  );
   return session.url!;
 }
 
