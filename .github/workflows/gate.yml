@@ -294,8 +294,23 @@ jobs:
       - name: Capability Atlas (static)
         run: pnpm capability:check
 
-      - name: Unit tests
-        run: pnpm test
+      # ⚠ THE UNIT SUITE IS NOT HERE ANY MORE — IT IS `unit-tests-1` AND
+      # `unit-tests-2` BELOW (#1811, Machinist run 6's #1799).
+      #
+      # It was 402.5 s of this job's 533.5 s (median of ten green runs,
+      # 2026-10-02) and three quarters of the gate every seat waits on. Split
+      # two ways the work is SPLIT and not duplicated — measured on
+      # `f876d5d9`, `import` 432.9 s across both shards against 438.1 s in one
+      # run, halves balancing within 4.7% — so the gate wall falls ~57% for
+      # ~10% more runner-seconds (only the 26 s per-job setup is paid twice).
+      #
+      # ⚠ AND MOVING IT OUT IS ONLY HALF THE ACT. `enforce_admins` on `main`
+      # is off (#460) and every merge here is made by an admin, so a job that
+      # `scripts/lib/prMergeOrder.mts` does not read by name binds no merge —
+      # the "installed and never connected" shape #1034 wrote its warning
+      # about. `unitShardJobNames` derives both names from THIS file and
+      # `PrReading.unitShards` carries their states, so a red shard refuses a
+      # merge and an EMPTY derivation refuses the run.
 
       # The design laws' own controls (#512): each law against a synthetic page
       # built to break it, and a compliant page it must not redden. It proves
@@ -323,6 +338,115 @@ jobs:
       # (the clock read as a 13 ms change) before it was trusted. ~7 s.
       - name: Interaction-latency controls (the reader must still tell fast from slow from never)
         run: npx tsx scripts/drive-interaction-latency.mts --controls
+
+  # THE UNIT SUITE, SHARDED (#1811 out of #1799, Machinist run 6).
+  #
+  # Two explicit jobs rather than a matrix, and that is a deliberate choice
+  # rather than verbosity: `extractJobNames` (scripts/lib/prMergeOrder.mts)
+  # reads a workflow's job names STATICALLY, and a matrix `name:` carrying
+  # `${{ matrix.shard }}` would reach it uninterpolated — so the merge tool's
+  # startup assertion, the one thing standing between a renamed job and a
+  # silent permissive read, would need a second reader that expands matrices.
+  # Two literal names cost four lines and keep every existing derivation
+  # exactly as it is.
+  #
+  # ⚠ THE STEP NAME STAYS EXACTLY `Unit tests`, in both. The Machinist reads
+  # the gate at step grain (`gh run view --json jobs`), and run 6's before
+  # figures — the ones this card's after will be compared against — are keyed
+  # on that string. Renaming it would silently end that series.
+  #
+  # The shard COUNT lives here and nowhere else: the merge tool derives both
+  # names from this file, so a third shard is two jobs' worth of YAML and no
+  # TypeScript at all.
+  unit-tests-1:
+    name: unit-tests-1
+    needs: resolve
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # A failed resolve must redden this required check, never skip it.
+      - name: Refuse unless resolve succeeded
+        if: ${{ needs.resolve.result != 'success' }}
+        env:
+          RESULT: ${{ needs.resolve.result }}
+        run: |
+          echo "::error::resolve did not succeed ($RESULT) — this run gates nothing."
+          exit 1
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # The same merge ref `gate-checks` tests — see the header.
+          ref: ${{ needs.resolve.outputs.ref }}
+          # ⚠ FULL HISTORY, AND THE UNIT SUITE IS WHY — NOT THE SECRET SCAN.
+          # `gate-checks` carries `fetch-depth: 0` for its gitleaks walk, and
+          # that happened to serve the test step sitting in the same job. It
+          # was load-bearing for BOTH and nothing said so: `quietEdition.test.ts`
+          # runs `git show <commit>~1:…` over real past editions and
+          # `briefingConformance.test.ts` runs `git grep`/`git rev-list` at
+          # historical commits. On the default depth-1 clone those commits do
+          # not exist and both suites fail — measured on this card's first gate
+          # run (#1816), 2 files red out of 983.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Unit tests
+        run: pnpm test --shard=1/2
+
+  unit-tests-2:
+    name: unit-tests-2
+    needs: resolve
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # A failed resolve must redden this required check, never skip it.
+      - name: Refuse unless resolve succeeded
+        if: ${{ needs.resolve.result != 'success' }}
+        env:
+          RESULT: ${{ needs.resolve.result }}
+        run: |
+          echo "::error::resolve did not succeed ($RESULT) — this run gates nothing."
+          exit 1
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # The same merge ref `gate-checks` tests — see the header.
+          ref: ${{ needs.resolve.outputs.ref }}
+          # ⚠ FULL HISTORY, AND THE UNIT SUITE IS WHY — NOT THE SECRET SCAN.
+          # `gate-checks` carries `fetch-depth: 0` for its gitleaks walk, and
+          # that happened to serve the test step sitting in the same job. It
+          # was load-bearing for BOTH and nothing said so: `quietEdition.test.ts`
+          # runs `git show <commit>~1:…` over real past editions and
+          # `briefingConformance.test.ts` runs `git grep`/`git rev-list` at
+          # historical commits. On the default depth-1 clone those commits do
+          # not exist and both suites fail — measured on this card's first gate
+          # run (#1816), 2 files red out of 983.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Unit tests
+        run: pnpm test --shard=2/2
 
   founder-gate:
     name: founder-gate

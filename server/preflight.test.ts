@@ -488,7 +488,20 @@ describe("the drift arm — preflight against the real gate", () => {
     const tooling = gateCommands.filter((c) => TOOLING.test(c));
     expect(tooling.length).toBeGreaterThanOrEqual(5);
     expect(tooling).toContain("pnpm check");
-    expect(tooling).toContain("pnpm test");
+    /*
+      ⚠ THE UNIT SUITE IS ASSERTED THROUGH THE MATCHER, NOT AS A LITERAL
+      (#1811). This arm read `toContain("pnpm test")` until the suite was
+      sharded out of `gate-checks` into `unit-tests-1` and `unit-tests-2`,
+      whose commands are `pnpm test -- --shard=N/2` — and it went red on a
+      change that broke nothing, which is a mirror of the workflow's spelling
+      rather than a control of the reader (working law 4).
+
+      `gateCommandMatches` is the same reader the adoption and excuse arms
+      below use, word-boundary by default, so this still fails exactly when it
+      should: if the gate stopped running the unit suite at all, nothing here
+      matches and the control goes red — which is the one thing it is for.
+    */
+    expect(tooling.some((command) => gateCommandMatches(command, "pnpm test"))).toBe(true);
   });
 
   it("every tooling step in the gate is either adopted by preflight or excused with a reason", () => {

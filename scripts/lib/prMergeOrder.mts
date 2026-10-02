@@ -44,6 +44,22 @@ import { readPullRequestConflict } from "../../shared/crewShiftState.js";
 export type GateState = "green" | "red" | "running" | "absent";
 
 /**
+ * ONE NAMED GATE CHECK AND ITS STATE, for the jobs there is more than one of
+ * (#1811 — the unit suite is `unit-tests-1` and `unit-tests-2`).
+ *
+ * ⚠ **THE NAME TRAVELS WITH THE STATE ON PURPOSE.** `staticShapes` and
+ * `bundleBudget` are scalar fields because there is exactly one of each and
+ * the field name IS the job name; a sharded suite has neither property. A
+ * list of bare states would say "something is red" and could not say which
+ * shard to open, and — the direction that actually costs — a list built from
+ * a hard-coded count would quietly stop covering a third shard the day
+ * `gate.yml` grew one. The names are derived from the workflow by
+ * `unitShardJobNames` and carried here, so the reading can only ever be about
+ * jobs that exist.
+ */
+export type GateCheck = { readonly name: string; readonly state: GateState };
+
+/**
  * Socket's reading has a FIFTH state the gate's jobs do not: `skipped`. Socket
  * reads a PR seconds after it opens, and when GitHub has not yet computed
  * mergeability — or cannot yet see the base commit — it posts `NEUTRAL` with
@@ -161,6 +177,30 @@ export type PrReading = {
    * judged after mergeability.
    */
   bundleBudget: GateState;
+  /**
+   * THE UNIT SUITE ON THIS HEAD — `gate.yml`'s `unit-tests-N` jobs (#1811),
+   * one entry per shard, in the workflow's own order.
+   *
+   * ⚠ **IT LEFT `gate-checks` AND THIS FIELD IS WHY THAT WAS SAFE.** The suite
+   * was 402.5 s of a 533.5 s serial job (Machinist run 6, `docs/MACHINIST_LEDGER.md`
+   * §K); sharded it costs ~10% more runner-seconds for ~57% less wall. But
+   * `enforce_admins` on `main` is off (#460) and the account that merges here
+   * is an admin, so moving the tests into jobs this tool does not read would
+   * have turned a failing suite into a red badge that blocks nobody — the
+   * exact "installed and never connected" shape `staticShapes` above was
+   * written against, one job later.
+   *
+   * Same four states and the same three roads as its two neighbours: running
+   * waits, red stops, absent is judged after mergeability.
+   *
+   * ⚠ **AND AN EMPTY LIST IS A REFUSAL, NEVER A PASS.** A field of this shape
+   * fails silently in the permissive direction if it is never populated — no
+   * entry is `"red"`, so every road falls through and a red suite merges. The
+   * population is derived from `gate.yml` by `unitShardJobNames`, which
+   * refuses an empty derivation at startup, and `decideMergeAction` refuses
+   * an empty list again here rather than trusting that it did.
+   */
+  unitShards: readonly GateCheck[];
   /**
    * SOCKET'S OWN SUPPLY-CHAIN VERDICT on this head (`Socket Security: Pull
    * Request Alerts`) — the founder's ruling on #35, verbatim and entire: **"A"**,
@@ -580,6 +620,63 @@ export function refuseUnknownJobName(
   );
 }
 
+/**
+ * THE SHARDS OF THE UNIT SUITE, DERIVED FROM THE WORKFLOW'S OWN JOB NAMES
+ * (#1811) — never a count, never a list, never a constant.
+ *
+ * `gate.yml` declares `unit-tests-1` and `unit-tests-2` today. A third shard
+ * is two jobs' worth of YAML and NOTHING here: this reads whatever the
+ * workflow declares, so the merge road cannot fall behind the gate. That is
+ * the property the alternative loses — a `SHARD_COUNT = 2` beside this would
+ * be a second list shadowing the workflow (working law 4), and the way it
+ * would fail is the silent one: shard 3 goes red, nothing reads it, the merge
+ * proceeds.
+ *
+ * Sorted NUMERICALLY rather than lexically, so ten shards do not order
+ * `1, 10, 2`. Nothing depends on the order being right — every road below is
+ * a `some()` — but a wrong order would print the shards in a confusing order
+ * in the one place a human reads them, which is the refusal.
+ *
+ * Returns a list and never throws on an empty one; `refuseNoUnitShards`
+ * below is what the caller refuses with, for the same reason
+ * `briefingReadingSuites` leaves that decision to the rite: an empty
+ * population means something different to each caller, and a step that
+ * silently checks nothing is the shape invariant 7 exists about.
+ */
+export function unitShardJobNames(declared: readonly string[]): string[] {
+  return declared
+    .map((name) => [name, /^unit-tests-(\d+)$/.exec(name)] as const)
+    .filter((pair): pair is readonly [string, RegExpExecArray] => pair[1] !== null)
+    .sort((a, b) => Number(a[1][1]) - Number(b[1][1]))
+    .map(([name]) => name);
+}
+
+/**
+ * Refuse at startup when the workflow declares no unit-test shard at all.
+ * Returns a refusal reason, or `null` when at least one was found.
+ *
+ * ⚠ **THIS IS THE ARM THAT MATTERS, AND IT GUARDS THE PERMISSIVE DIRECTION.**
+ * Every other reading in this module fails toward stopping; an empty shard
+ * list fails toward merging, because no entry can be `"red"`. So a gate.yml
+ * that lost the suite — a rename, a bad merge, a job deleted — must stop this
+ * tool rather than let it read the silence as a green suite.
+ */
+export function refuseNoUnitShards(
+  shards: readonly string[],
+  declared: readonly string[],
+  workflowPath: string,
+): string | null {
+  if (shards.length > 0) return null;
+  return (
+    `${workflowPath} declares no \`unit-tests-N\` job — it declares ` +
+    `${declared.map((n) => `\`${n}\``).join(", ")}. The unit suite moved out of ` +
+    `\`gate-checks\` into sharded jobs (#1811), and this tool reads them by name because ` +
+    `\`enforce_admins\` is off here. An empty list would make every shard road fall through ` +
+    `and a RED suite merge, so it refuses instead. If the suite moved again, update ` +
+    `\`unitShardJobNames\` beside the move.`
+  );
+}
+
 /** The merge order is the order opened; the number breaks a same-second tie. */
 export function orderByOpened(prs: readonly PrReading[]): PrReading[] {
   return [...prs].sort((a, b) => {
@@ -707,6 +804,24 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
     };
   }
 
+  /* 3.0 ⚠ THE CONFIGURATION REFUSAL, AND IT SITS ABOVE EVERY HEAD READING ON
+     PURPOSE. An empty `unitShards` is not a fact about this PR, it is this
+     tool having lost the unit suite — and it is the one reading here that
+     fails PERMISSIVELY, because no entry can be red. Below a `wait` it could
+     be masked for ever by a stalled gate, so it is answered before anything
+     that can wait. `pr-merge-in-order.mts` refuses this at startup too; this
+     is the arm that holds for any other caller of `decideMergeAction`. */
+  if (pr.unitShards.length === 0) {
+    return {
+      kind: "stop",
+      reason:
+        "no `unit-tests-N` shard was read for this head, and this tool will not read that " +
+        "silence as a green suite. The unit suite left `gate-checks` for sharded jobs (#1811) " +
+        "and is read by name here because `enforce_admins` is off on `main`. Read " +
+        "`.github/workflows/gate.yml` — if the jobs were renamed, `unitShardJobNames` moves " +
+        "with them.",
+    };
+  }
   // 3. The gate, before anything that costs a network round trip or a clock —
   //    but only the two states that are readings of THIS head. `absent` moved
   //    below mergeability; see step 5.5 for the measurement that moved it.
@@ -719,6 +834,29 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
       reason:
         "gate-checks FAILED. This tool never retries a gate and never merges past one — " +
         "read the run, fix it, push. `pnpm preflight` catches the cheap causes before the push.",
+    };
+  }
+  /* 3.1 THE UNIT SUITE, first of the gate's siblings because it is the one
+     that was INSIDE `gate-checks` until #1811 — a diff that fails the tests
+     should be sent to the test output before anything else, which is the
+     order the old serial job gave it for free. */
+  const runningShards = pr.unitShards.filter((shard) => shard.state === "running");
+  if (runningShards.length > 0) {
+    return {
+      kind: "wait",
+      reason: `${runningShards.map((s) => s.name).join(" and ")} (the unit suite) is running`,
+    };
+  }
+  const redShards = pr.unitShards.filter((shard) => shard.state === "red");
+  if (redShards.length > 0) {
+    return {
+      kind: "stop",
+      reason:
+        `${redShards.map((s) => s.name).join(" and ")} FAILED — the unit suite refuses this ` +
+        "diff. This tool never retries a gate and never merges past one: read the run, fix it, " +
+        "push. `pnpm preflight` catches the cheap causes before the push, and `pnpm test -- " +
+        `--shard=${redShards[0]!.name.replace("unit-tests-", "")}/${pr.unitShards.length}\` ` +
+        "runs the failing half alone.",
     };
   }
   // 3.2 The semgrep job, immediately after the gate and read exactly like it:
@@ -978,6 +1116,29 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
 
     Below here the branch is mergeable, so this absence is the real one.
   */
+  /* The unit shards' absent is read on the gate's own road, for the gate's own
+     reason, and it is the same sentence `staticShapes` and `bundleBudget`
+     carry one job apart: all four are jobs of ONE workflow run, so
+     `gate=absent` and a shard absent are one fact — no run on this head yet —
+     and the stall reader above answers both. Only a head whose gate HAS run
+     and whose shard has not reaches this line: a workflow edited to drop the
+     job, or a head gated by a workflow from before #1811. That is a refusal,
+     not a wait.
+
+     ⚠ It names the shards it did not see, because with more than one job the
+     interesting fact is WHICH — a head from before the split has both absent
+     and a head that lost one job has one. */
+  const absentShards = pr.unitShards.filter((shard) => shard.state === "absent");
+  if (absentShards.length > 0) {
+    return {
+      kind: "stop",
+      reason:
+        `gate-checks ran on this head but ${absentShards.map((s) => `\`${s.name}\``).join(" and ")} ` +
+        "did not, and this tool will not read that silence as a green suite. Either the head was " +
+        "gated by a workflow from before #1811 (merge main into the branch and let the gate run " +
+        "again) or gate.yml on this branch has lost a unit-test shard (read it).",
+    };
+  }
   /* The semgrep job's absent is read on the gate's own road, for the gate's own
      reason: both are jobs of ONE workflow run, so `gate=absent` and
      `staticShapes=absent` are one fact (no run on this head yet) and the

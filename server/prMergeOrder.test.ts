@@ -51,7 +51,9 @@ import {
   orderByOpened,
   mergeNotice,
   refuseProtectedPush,
+  refuseNoUnitShards,
   refuseUnknownJobName,
+  unitShardJobNames,
   reviewAbsenceClause,
   sharesFiles,
   supplyChainStateOf,
@@ -92,6 +94,20 @@ const MONEY = extractMoneyPattern(moneyDeclaration);
 const SYMBOLS = extractMoneySymbols(moneyDeclaration);
 /* #1627: the rules of the review are DERIVED from what `review.yml` sources,
    so this fixture reads the real workflow rather than naming the files. */
+/*
+  THE SHARD NAMES THE FIXTURE AND EVERY ARM BELOW USE ARE READ OUT OF THE REAL
+  `gate.yml` (#1811) — never typed here.
+
+  ⚠ A LITERAL `["unit-tests-1", "unit-tests-2"]` WOULD BE THE DEFECT THIS CARD
+  IS ABOUT, ONE LAYER UP. Rename the jobs and a mirrored list keeps every arm
+  green about jobs that no longer exist, which is exactly the silence
+  `refuseUnknownJobName` exists to prevent for the scalar checks. Read from the
+  workflow, a rename reddens here first.
+*/
+const GATE_UNIT_SHARDS = unitShardJobNames(
+  extractJobNames(readFileSync(join(REPO_ROOT, ".github/workflows/gate.yml"), "utf8")),
+);
+
 const REVIEW_RULES = reviewRuleFiles(reviewYml);
 const ctx: MergeContext = {
   moneyPattern: MONEY,
@@ -112,6 +128,7 @@ const pr = (over: Partial<PrReading> = {}): PrReading => ({
   gate: "green",
   staticShapes: "green",
   bundleBudget: "green",
+  unitShards: GATE_UNIT_SHARDS.map((name) => ({ name, state: "green" as const })),
   supplyChain: "green",
   review: "declined",
   verdictCount: 0,
@@ -488,6 +505,117 @@ describe("decideMergeAction — the branch order is the contract", () => {
     expect(
       decideMergeAction(pr({ gate: "green", staticShapes: "green", bundleBudget: "green", supplyChain: "green" }), ctx).kind,
     ).toBe("merge");
+  });
+
+  /*
+    ⚠ THE UNIT SUITE, SHARDED (#1811) — AND THE RED ARM IS THE ONE THAT
+    MATTERS.
+
+    The card said so before a line was written, and it named the exact way
+    this goes wrong: *"The dangerous direction is a field that is never
+    populated: it reads `undefined`, no `=== red` fires, and a red suite
+    merges silently."* Every arm below drives `decideMergeAction` directly
+    rather than through the model that usually behaves (working law 3), and
+    the empty-list arm is the negative control for the whole field — it is
+    the shape the fixture's own default would hide.
+  */
+  it("⚠ STOPS on a red unit shard — the suite left gate-checks and must still refuse a merge", () => {
+    const a = decideMergeAction(
+      pr({ unitShards: [
+        { name: GATE_UNIT_SHARDS[0]!, state: "red" },
+        { name: GATE_UNIT_SHARDS[1]!, state: "green" },
+      ] }),
+      ctx,
+    );
+    expect(a.kind).toBe("stop");
+    expect(a.kind === "stop" && a.reason).toMatch(/FAILED — the unit suite refuses this diff/);
+    /* It names WHICH half, because that is what a shift opens. */
+    expect(a.kind === "stop" && a.reason).toContain(GATE_UNIT_SHARDS[0]!);
+  });
+
+  it("STOPS when the OTHER shard is the red one — neither half is privileged", () => {
+    const a = decideMergeAction(
+      pr({ unitShards: [
+        { name: GATE_UNIT_SHARDS[0]!, state: "green" },
+        { name: GATE_UNIT_SHARDS[1]!, state: "red" },
+      ] }),
+      ctx,
+    );
+    expect(a.kind).toBe("stop");
+    expect(a.kind === "stop" && a.reason).toContain(GATE_UNIT_SHARDS[1]!);
+    expect(a.kind === "stop" && a.reason).not.toContain(`${GATE_UNIT_SHARDS[0]!} FAILED`);
+  });
+
+  it("waits while a unit shard is still running, and names it", () => {
+    const a = decideMergeAction(
+      pr({ unitShards: [
+        { name: GATE_UNIT_SHARDS[0]!, state: "green" },
+        { name: GATE_UNIT_SHARDS[1]!, state: "running" },
+      ] }),
+      ctx,
+    );
+    expect(a.kind).toBe("wait");
+    expect(a.kind === "wait" && a.reason).toContain(GATE_UNIT_SHARDS[1]!);
+  });
+
+  it("⚠ an EMPTY shard list STOPS — the permissive direction, refused before anything can wait", () => {
+    /* This is the arm the card is about. With no entries no `=== "red"` can
+       fire, so every road below falls through and a red suite merges. It is
+       answered above the gate's own roads on purpose: under a `wait` a
+       stalled gate would mask it for ever. */
+    const a = decideMergeAction(pr({ unitShards: [], gate: "running" }), ctx);
+    expect(a.kind).toBe("stop");
+    expect(a.kind === "stop" && a.reason).toMatch(/no `unit-tests-N` shard was read/);
+  });
+
+  it("STOPS when gate-checks ran on a MERGEABLE head and a shard did not — silence is not a pass", () => {
+    const a = decideMergeAction(
+      pr({ gate: "green", unitShards: [
+        { name: GATE_UNIT_SHARDS[0]!, state: "green" },
+        { name: GATE_UNIT_SHARDS[1]!, state: "absent" },
+      ] }),
+      ctx,
+    );
+    expect(a.kind).toBe("stop");
+    expect(a.kind === "stop" && a.reason).toMatch(/did not, and this tool will not read that silence/);
+    expect(a.kind === "stop" && a.reason).toContain(GATE_UNIT_SHARDS[1]!);
+  });
+
+  it("when every gate job is absent it is the gate's own wait, not the shard stop", () => {
+    const a = decideMergeAction(
+      pr({ gate: "absent", staticShapes: "absent", bundleBudget: "absent",
+        unitShards: GATE_UNIT_SHARDS.map((name) => ({ name, state: "absent" as const })) }),
+      ctx,
+    );
+    expect(a.kind).toBe("wait");
+    expect(a.kind === "wait" && a.reason).toMatch(/no gate-checks run/);
+  });
+
+  it("SYNCS a conflicting PR whose shards are absent — the conflict explains the silence", () => {
+    const a = decideMergeAction(
+      pr({ gate: "absent", staticShapes: "absent", bundleBudget: "absent", supplyChain: "absent",
+        unitShards: GATE_UNIT_SHARDS.map((name) => ({ name, state: "absent" as const })),
+        mergeable: "CONFLICTING", mergeStateStatus: "DIRTY" }),
+      ctx,
+    );
+    expect(a.kind).toBe("sync-main");
+  });
+
+  it("⚠ the unit suite is answered before semgrep: a diff failing both is sent to the tests", () => {
+    /* The order the serial `gate-checks` job gave for free until #1811 split
+       it — the tests ran before semgrep could be reached. */
+    const a = decideMergeAction(
+      pr({ staticShapes: "red", unitShards: [
+        { name: GATE_UNIT_SHARDS[0]!, state: "red" },
+        { name: GATE_UNIT_SHARDS[1]!, state: "green" },
+      ] }),
+      ctx,
+    );
+    expect(a.kind === "stop" && a.reason).toMatch(/the unit suite refuses this diff/);
+  });
+
+  it("merges when the gate, both shards, semgrep, the budget and Socket are all green — the control", () => {
+    expect(decideMergeAction(pr({ gate: "green", supplyChain: "green" }), ctx).kind).toBe("merge");
   });
 
   it("⚠ the GATE is answered before Socket: a diff failing both is told about the gate", () => {
@@ -893,6 +1021,124 @@ describe("🟡 3 · the job names are asserted against the workflows, not mirror
     expect(refuseUnknownJobName("gate-checks", gateJobs, "gate.yml")).toBeNull();
     expect(refuseUnknownJobName("static-shapes", gateJobs, "gate.yml")).toBeNull();
     expect(refuseUnknownJobName("bundle-budget", gateJobs, "gate.yml")).toBeNull();
+  });
+
+  /*
+    THE UNIT SHARDS ARE A LIST, NOT A NAME — so what is asserted is that the
+    workflow declares at least one and that the derivation finds exactly the
+    ones it declares (#1811).
+  */
+  /** A YAML line, either line ending. */
+  const RE_LINES = /\r?\n/;
+  /** A `run:` step invoking the unit suite, whatever follows it. */
+  const RE_PNPM_TEST = /^\s*run:\s*pnpm test\b/;
+  it("reads the unit-test shards the real gate.yml declares, in numeric order", () => {
+    const shards = unitShardJobNames(gateJobs);
+    expect(shards.length).toBeGreaterThanOrEqual(2);
+    expect(shards).toEqual(gateJobs.filter((n) => /^unit-tests-\d+$/.test(n)));
+    expect(shards).toEqual([...shards].sort((a, b) =>
+      Number(/\d+$/.exec(a)![0]) - Number(/\d+$/.exec(b)![0])));
+  });
+
+  it("⚠ gate.yml still runs the unit suite ONLY in those shard jobs — `gate-checks` must not keep a copy", () => {
+    /* The move's own negative control. If a later edit put `pnpm test` back
+       into `gate-checks`, the gate would pay for the suite three times and
+       this card's whole measurement would be wrong — and nothing else would
+       say so. The population is every `run:` line in the file. */
+    const yaml = readFileSync(join(REPO_ROOT, ".github/workflows/gate.yml"), "utf8");
+    const unitRuns = yaml.split(RE_LINES).filter((line) => RE_PNPM_TEST.test(line));
+    expect(unitRuns).toHaveLength(unitShardJobNames(gateJobs).length);
+    for (const line of unitRuns) expect(line).toMatch(/--shard=\d+\/\d+/);
+  });
+
+  it("⚠ the shard flag is passed in a form pnpm FORWARDS — never behind `--`, which discards it", () => {
+    /*
+      ⚠ MEASURED ON THIS CARD'S FIRST GATE RUN, AND IT IS THE SILENT KIND.
+      `gate.yml` shipped `pnpm test -- --shard=1/2` — the documented separator
+      — and pnpm 10 DROPPED everything after the `--`. Both shard jobs ran the
+      WHOLE suite: `Test Files 953 passed | 28 skipped (983)` in a job meant to
+      hold 492. Driven locally, four files on the command line:
+
+        no flag                           -> 4 files   (control)
+        pnpm test -- --shard=1/2 <files>  -> 983 files  (flag AND files dropped)
+        pnpm test --shard=1/2 <files>     -> 2 files    (correct)
+        pnpm exec vitest run --shard=1/2  -> 2 files    (correct)
+
+      Nothing would ever have said so. Both jobs go GREEN running everything;
+      the gate simply stops getting faster, and the card's whole measurement
+      becomes a fiction that reads like a success. So the FORM is pinned, not
+      only the numbers — a flag that does not arrive is the defect, and the
+      arm below counts shard strings that may never reach vitest.
+    */
+    const yaml = readFileSync(join(REPO_ROOT, ".github/workflows/gate.yml"), "utf8");
+    const unitRuns = yaml.split(RE_LINES).filter((line) => RE_PNPM_TEST.test(line));
+    expect(unitRuns.length).toBeGreaterThan(0);
+    for (const line of unitRuns) expect(line).not.toMatch(/\s--\s/);
+  });
+
+  it("⚠ every job that runs the unit suite checks out the FULL history", () => {
+    /*
+      ⚠ ALSO MEASURED ON THE FIRST GATE RUN — 2 of 983 files red, and the
+      reason was not in the suite at all.
+
+      The unit suite reads GIT HISTORY: `quietEdition.test.ts` runs
+      `git show <commit>~1:<briefing>` over real past editions, and
+      `briefingConformance.test.ts` runs `git grep`/`git rev-list` at
+      historical commits. On actions/checkout's default depth-1 clone those
+      commits do not exist and both suites fail.
+
+      It had never surfaced because the suite only ever ran inside
+      `gate-checks`, which carries `fetch-depth: 0` for its gitleaks walk —
+      so one job's stated reason was quietly serving two requirements. The
+      moment the suite moved to a job of its own, the undeclared half went
+      with nothing to hold it. This arm is that half, written down.
+    */
+    const yaml = readFileSync(join(REPO_ROOT, ".github/workflows/gate.yml"), "utf8");
+    const lines = yaml.split(RE_LINES);
+    /* Job blocks: a `  <key>:` at two spaces starts one and ends the last. */
+    const starts = lines
+      .map((line, i) => [i, /^ {2}([A-Za-z0-9_-]+):\s*$/.exec(line)] as const)
+      .filter((pair): pair is readonly [number, RegExpExecArray] => pair[1] !== null);
+    expect(starts.length).toBeGreaterThanOrEqual(5);
+
+    const runsTheSuite = starts.filter(([start], n) => {
+      const end = starts[n + 1]?.[0] ?? lines.length;
+      return lines.slice(start, end).some((line) => RE_PNPM_TEST.test(line));
+    });
+    /* The population must be the shards themselves — if this found nothing
+       the arm would pass by checking nothing, which is invariant 7's shape. */
+    expect(runsTheSuite.map(([, key]) => key[1])).toEqual(unitShardJobNames(gateJobs));
+
+    for (const [start, key] of runsTheSuite) {
+      const end = starts[starts.findIndex(([s]) => s === start) + 1]?.[0] ?? lines.length;
+      expect(
+        lines.slice(start, end).some((line) => /^\s*fetch-depth:\s*0\s*$/.test(line)),
+        `${key[1]} runs the unit suite, which reads git history, so it needs fetch-depth: 0`,
+      ).toBe(true);
+    }
+  });
+
+  it("⚠ every shard the workflow declares is covered exactly once — no gap, no overlap", () => {
+    /* `pnpm test --shard=i/n` splits by FILE, so the denominators must all
+       equal the shard count and the numerators must be 1..n with none
+       missing. A `--shard=1/2` beside a `--shard=2/3` would silently drop a
+       third of the suite while both jobs went green. */
+    const yaml = readFileSync(join(REPO_ROOT, ".github/workflows/gate.yml"), "utf8");
+    const pairs = [...yaml.matchAll(/--shard=(\d+)\/(\d+)/g)].map((m) => [Number(m[1]), Number(m[2])] as const);
+    const total = unitShardJobNames(gateJobs).length;
+    expect(pairs).toHaveLength(total);
+    expect([...new Set(pairs.map(([, n]) => n))]).toEqual([total]);
+    expect(pairs.map(([i]) => i).sort((a, b) => a - b))
+      .toEqual(Array.from({ length: total }, (_, i) => i + 1));
+  });
+
+  it("REFUSES a workflow that declares no shard at all, rather than reading the silence as green", () => {
+    const refusal = refuseNoUnitShards([], ["gate-checks", "static-shapes"], "gate.yml");
+    expect(refusal).not.toBeNull();
+    expect(refusal).toMatch(/unit-tests-N/);
+    expect(refusal).toMatch(/RED suite merge/);
+    /* And the positive control: a real derivation is never refused. */
+    expect(refuseNoUnitShards(unitShardJobNames(gateJobs), gateJobs, "gate.yml")).toBeNull();
   });
 
   it("REFUSES a name the workflow does not declare, naming what it does", () => {
