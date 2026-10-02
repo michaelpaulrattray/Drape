@@ -248,12 +248,15 @@ describe("card 387 item 2 — the law-7 sweep: no cycle claimed where none runs"
       "the gate behind every allowance claim lost a condition — it must require a renewing"
       + " period, an allowance to measure against, AND a balance that has actually been read",
     ).toMatch(/const quotable = balance !== null && renews && granted;/);
+    /* The card is named in the docblock above, not in the message: the
+       foundation token guard reads a `#` followed by hex digits inside a STRING
+       as a colour literal, and every issue number from 100 up is valid hex. */
     expect(
       billing(),
       "`granted` is the allowance half of that gate and it lost a condition. An allowance"
       + " nobody has read yet is not an allowance of zero: keyed off a defaulted plan id it"
       + " was the FREE rung's grant, which sails through `> 0` and had the pane quote"
-      + " another plan's figure at a subscriber. #1741.",
+      + " another plan's figure at a subscriber.",
     ).toMatch(/const granted = allowance !== null && allowance > 0;/);
   });
 
