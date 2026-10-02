@@ -139,6 +139,37 @@ what lets the STOP be proven without a remote.
 a detector that matches the words, and the answer is to write down why it is not
 a door rather than to narrow the detector.
 
+### 1d · `scripts/lib/riteLock.mts` — names `git push`, and cannot push
+
+Added 2026-10-02 (#1726). It is the rite's **one-per-checkout lock**: a second
+rite started in the same working tree is refused before any check runs.
+
+- **It is pure, and more strongly than 1c is.** It takes the four filesystem
+  calls it makes as an injected parameter (`RiteLockFs`), so it has no import of
+  `node:child_process` and no path to a spawn even by accident. It never names a
+  ref, and it never sees `DRAPE_DEPLOY_RITE`.
+- **The literal is prose, in its docblock**, recounting the incident it exists
+  to prevent. On 2026-10-01 two rites ran in one tree 63 seconds apart: the
+  second committed a child of the first's commit while the first was still in
+  its pre-checks, so the first's `git push origin main` shipped the ref as it
+  then stood (`06aa189c..5fb877d5`, in its own receipt) and then printed
+  `REFUSED` over a push that had landed and that Railway served two minutes
+  later. The second waited 44 minutes for a build that had already served.
+- **Its refusal text prints no git command at all**, which is the one way it
+  differs from 1c. The recovery is to WAIT for the running rite, and the one
+  thing an operator must not do is force or delete past a live holder — so the
+  message names the lock file only after saying nothing has been pushed.
+
+`server/riteLock.test.ts` is **not** on the list and does not need to be: it
+never writes the words, so the detector does not see it. Recorded here anyway,
+because it is the file a reader of this entry will open next and it *does* spawn
+real processes — and none of them can reach a protected ref. Its `node` children
+run a scratch runner against a `mkdtemp` directory; its git calls are
+`merge-base`, `ls-files` and `check-ignore`, all reads; and the one time it runs
+the real `deploy-rite.mts`, it runs it in a scratch directory where the rite
+refuses on the lock before reaching its first check, which that arm asserts by
+the SILENCE of the `core.hooksPath` refusal.
+
 ### 2 · CI — nothing
 
 All four workflows (`gate.yml`, `review.yml`, `knip.yml`, `secrets.yml`)
