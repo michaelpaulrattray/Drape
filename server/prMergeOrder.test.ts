@@ -1051,8 +1051,75 @@ describe("🟡 3 · the job names are asserted against the workflows, not mirror
     for (const line of unitRuns) expect(line).toMatch(/--shard=\d+\/\d+/);
   });
 
+  it("⚠ the shard flag is passed in a form pnpm FORWARDS — never behind `--`, which discards it", () => {
+    /*
+      ⚠ MEASURED ON THIS CARD'S FIRST GATE RUN, AND IT IS THE SILENT KIND.
+      `gate.yml` shipped `pnpm test -- --shard=1/2` — the documented separator
+      — and pnpm 10 DROPPED everything after the `--`. Both shard jobs ran the
+      WHOLE suite: `Test Files 953 passed | 28 skipped (983)` in a job meant to
+      hold 492. Driven locally, four files on the command line:
+
+        no flag                           -> 4 files   (control)
+        pnpm test -- --shard=1/2 <files>  -> 983 files  (flag AND files dropped)
+        pnpm test --shard=1/2 <files>     -> 2 files    (correct)
+        pnpm exec vitest run --shard=1/2  -> 2 files    (correct)
+
+      Nothing would ever have said so. Both jobs go GREEN running everything;
+      the gate simply stops getting faster, and the card's whole measurement
+      becomes a fiction that reads like a success. So the FORM is pinned, not
+      only the numbers — a flag that does not arrive is the defect, and the
+      arm below counts shard strings that may never reach vitest.
+    */
+    const yaml = readFileSync(join(REPO_ROOT, ".github/workflows/gate.yml"), "utf8");
+    const unitRuns = yaml.split(RE_LINES).filter((line) => RE_PNPM_TEST.test(line));
+    expect(unitRuns.length).toBeGreaterThan(0);
+    for (const line of unitRuns) expect(line).not.toMatch(/\s--\s/);
+  });
+
+  it("⚠ every job that runs the unit suite checks out the FULL history", () => {
+    /*
+      ⚠ ALSO MEASURED ON THE FIRST GATE RUN — 2 of 983 files red, and the
+      reason was not in the suite at all.
+
+      The unit suite reads GIT HISTORY: `quietEdition.test.ts` runs
+      `git show <commit>~1:<briefing>` over real past editions, and
+      `briefingConformance.test.ts` runs `git grep`/`git rev-list` at
+      historical commits. On actions/checkout's default depth-1 clone those
+      commits do not exist and both suites fail.
+
+      It had never surfaced because the suite only ever ran inside
+      `gate-checks`, which carries `fetch-depth: 0` for its gitleaks walk —
+      so one job's stated reason was quietly serving two requirements. The
+      moment the suite moved to a job of its own, the undeclared half went
+      with nothing to hold it. This arm is that half, written down.
+    */
+    const yaml = readFileSync(join(REPO_ROOT, ".github/workflows/gate.yml"), "utf8");
+    const lines = yaml.split(RE_LINES);
+    /* Job blocks: a `  <key>:` at two spaces starts one and ends the last. */
+    const starts = lines
+      .map((line, i) => [i, /^ {2}([A-Za-z0-9_-]+):\s*$/.exec(line)] as const)
+      .filter((pair): pair is readonly [number, RegExpExecArray] => pair[1] !== null);
+    expect(starts.length).toBeGreaterThanOrEqual(5);
+
+    const runsTheSuite = starts.filter(([start], n) => {
+      const end = starts[n + 1]?.[0] ?? lines.length;
+      return lines.slice(start, end).some((line) => RE_PNPM_TEST.test(line));
+    });
+    /* The population must be the shards themselves — if this found nothing
+       the arm would pass by checking nothing, which is invariant 7's shape. */
+    expect(runsTheSuite.map(([, key]) => key[1])).toEqual(unitShardJobNames(gateJobs));
+
+    for (const [start, key] of runsTheSuite) {
+      const end = starts[starts.findIndex(([s]) => s === start) + 1]?.[0] ?? lines.length;
+      expect(
+        lines.slice(start, end).some((line) => /^\s*fetch-depth:\s*0\s*$/.test(line)),
+        `${key[1]} runs the unit suite, which reads git history, so it needs fetch-depth: 0`,
+      ).toBe(true);
+    }
+  });
+
   it("⚠ every shard the workflow declares is covered exactly once — no gap, no overlap", () => {
-    /* `pnpm test -- --shard=i/n` splits by FILE, so the denominators must all
+    /* `pnpm test --shard=i/n` splits by FILE, so the denominators must all
        equal the shard count and the numerators must be 1..n with none
        missing. A `--shard=1/2` beside a `--shard=2/3` would silently drop a
        third of the suite while both jobs went green. */
