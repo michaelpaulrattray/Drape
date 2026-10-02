@@ -101,6 +101,10 @@ export const RITE_DISK_READS: ReadonlyArray<{ readonly path: string; readonly wh
     path: "server/castingV2/castingV2Scope.ts",
     why: "the roll engine's model variable name is scanned from these bytes (#1174)",
   },
+  {
+    path: "server/testing/withoutComments.ts",
+    why: "the instruction-surface step (#1813) strips comments with THE one source walk before deciding which suites a docs push must run — a fifth private copy of that walk is #1623's bug a fifth time, so the rite imports it across trees rather than owning one",
+  },
   /* The six `shared/` modules the briefing judge imports at module load —
      exact entries, not a `shared/` prefix, so the founder's parked product
      edits under `shared/` stay desk-only. The suite DERIVES the rite's static

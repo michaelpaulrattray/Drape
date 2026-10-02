@@ -208,6 +208,34 @@ const NOT_THE_CLASS: Record<string, string> = {
     + " missing: a law surface that is gone is the defect. The litter this rule is"
     + " about is files in `scripts/`; a top-level directory has never vanished"
     + " mid-run",
+  /*
+    ⚠ THE ONLY CARVE-OUT HERE WHOSE READS ARE NOT READS AT ALL (#1813). The
+    count is a text match on `readFileSync\s*\(`, which cannot tell a call from
+    a string literal — and this suite's four occurrences are all FIXTURE SOURCE:
+    the text of fake test files it WRITES into a throwaway `git init` repository
+    so the derivation under test has something real to select. Named here rather
+    than spelled around, because writing `"readFileSync" + "("` to dodge a text
+    match would make the fixtures unreadable and hide why.
+  */
+  "server/pushedDocSuites.test.ts":
+    "lists NOTHING in the repository. FOUR of its five `readFileSync(`"
+    + " occurrences are not reads at all — each sits inside a string literal"
+    + " holding the source of a fixture test file (the `READER` constant and the"
+    + " three inline fixture sources beside it: the constant-reading one, the"
+    + " directory-walking one and the self-reading one), deliberately NOT named"
+    + " here in backticks, because they are fixture filenames rather than suites"
+    + " in this tree and the suite-pointer guard reads a backticked name as a"
+    + " pointer (#647). Each is written with `writeFileSync` into an"
+    + " `mkdtempSync` repository whose path no other process knows. The FIFTH is"
+    + " a real read and it is a FIXED name — `scripts/deploy-rite.mts`, read by"
+    + " the invariant-7 wiring arms to prove the rite CALLS the derivation"
+    + " rather than merely importing it — and it MUST keep throwing, on"
+    + " `atlasMergeDriver.test.ts`'s grounds one row up: a wiring arm whose"
+    + " subject has vanished is a guard over nothing. Its only other access to"
+    + " this tree is `execFileSync(\"git\", …)` inside the module under test,"
+    + " which reads blobs out of the object database at a COMMIT and so cannot"
+    + " meet a half-written working-tree file at all — the litter this rule is"
+    + " about is unreachable here by construction",
 };
 
 const repoRoot = path.resolve(import.meta.dirname, "..", "..");
