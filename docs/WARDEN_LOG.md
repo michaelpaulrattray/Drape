@@ -454,3 +454,166 @@ Stripe dashboard for delivery-retry history (it would sharpen W5-C severity and 
 access); W5-E fraud cap (his decision, already made).
 
 **Spent: nothing.** No disposable scripts written, no money, no credits.
+
+---
+
+## Run 6 — 2026-10-03 05:24–06:5x AEST (Warden, patrol #6, crew run #531)
+
+Ran because `patrol-clocks.mts` read the seat **DUE today** (7 days since run 5) with his
+Security switch ON, no new replies, no card taps, and **no `founder-ordered` card on offer** —
+read one by one rather than off the digest: #1469 and #1689 held by the milestone gate (the
+ladder's `current` rung is P1), #1609 blocked on his hand, #1598's only remainder is an outside
+wording pass, #1612 claimed 7.7 h earlier and never released, #1774 claimed 4.7 h earlier. No
+confirmed focus, so MAINTENANCE MODE and a fired clock is the most admissible work on the board.
+
+**Run 5's brief worked in its stated order**, which is the first time runs 4 and 5's undischarged
+items have all been taken: the scheduled secrets runs at their logs, `pnpm audit --prod`, **Socket
+under Higher Noise — which finally had a subject**, the audit rows, the surface diff, and whether
+run 5's four money cards landed.
+
+**Six findings, five filed, one repaired tonight.** The headline is that this seat's own
+per-run reading went from 0 to 4 and nobody would have been told.
+
+### A. Findings baseline — the readings
+
+| reading | at | verdict | done with it |
+|---|---|---|---|
+| gitleaks, full history — the **2026-09-21** scheduled run (run 4's item 1, run 5 skipped it) | run **35649341912**, 2026-09-21T20:09:54Z, `3700a0ea`, cron | **3793 commits scanned, `no leaks found`** | Read at the log, not at the conclusion. |
+| gitleaks, full history — the **2026-09-28** scheduled run | run **36486134864**, 2026-09-28T21:26:45Z, `6c658b9a`, cron | **4102 commits scanned, `no leaks found`** | Baseline 3390 → 3683 → 3793 → **4102**, still zero. The cron is Monday; 2026-09-28 was the last one and nothing is missing. |
+| **`pnpm audit --prod`** (run 3's addition, this seat's per-run reading) | `7ac831b5`, lockfile at HEAD | ⚠ **4 — 2 high, 1 moderate, 1 low.** All scopes: **5** (one more moderate, dev) | **Run 4 read 0.** W6-A → **#1803**, **repaired tonight in PR #1804**. GitHub's own push warning independently reported the same 4 on the default branch — a second reader sharing no resolver with the first. |
+| **Socket under Higher Noise — run 4's item 3, UNMEASURED for two runs, MEASURED now** | PR **#1599** (`dfdcc3a33`), merged 2026-09-30T09:51:10Z | ⚠ **`Pull Request Alerts` = pass**, ten hours after two **high** advisories were published; Dependabot alerted **six seconds after the merge** | W6-B → **#1805**. Not proposed as a build: run 4 named a gate `audit` step in its not-a-brief list and that ruling is respected; what changed is the evidence. |
+| the Dependabot road's liveness, both halves | `automated-security-fixes`, `vulnerability-alerts`, the alert list | **alerts ON (204), automated fixes `{"enabled":true,"paused":false}`, 4 alerts open** (118, 116, 115, 114 — all `scope=runtime`, 2026-09-30) — **and no security PR followed**; newest Dependabot PR of any kind is #1057, 2026-09-21 | The ALERT half is live and proven again. The FIX half produced nothing and the reason is structural, not a fault: all four are deep pnpm transitives whose only lever is a top-level bump, and `jspdf@4.2.1` is already newest. Recorded on #1803. |
+| `audit_logs` (run 3's item 3, taken every run) | production, **1,120 rows**, 2026-07-10 → 2026-10-02 | **494 rows since run 4's 626.** Severity all time: **980 info, 138 warning, 2 critical** — run 4 read 620/6/**0** | ⚠ **Both `critical` rows are `system.health_alert`**, and 130 of the 138 warnings are too — **132 identical rows in 28 hours** on a `total24h` of **5**. W6-E → **#1807**. |
+| the metadata-only boundary, all time | the nine boundary keys over `audit_logs.metadata` | `masterPrompt` 0 · `technicalSchema` 0 · `preferences` 0 · `resultUrl` 0 · `imageUrl` 0 · `imageKey` 0 · `passwordHash` 0 · `brief` 0 · ⚠ **`description` 132** | **The 132 are a FALSE POSITIVE of this seat's own instrument** — all are the health alerts' own `description` field. **0 rows carry a bug report's prose** (no `bug%` action exists in the table at all), so #255's exception holds. The instrument lesson is §C. |
+| `abuse.*` rows | production, all time | **still zero** | Unchanged since run 2. The login-attack detector has had nothing to report. |
+| `blocked_ips` / staff population / suspensions / lockouts | production | **0 blocked IPs · 0 suspended · 0 frozen · 0 with failed logins · 0 locked** · ⚠ **2 admins, 4 users** | Run 4 read **1 admin, 3 users**. W6-C → **#1806**, on his Desk with the hold — the one finding that needs his word. |
+| **the road that can grant `admin`** | `server/routes/admin/roles.ts`, `server/db/security.ts:125`, `server/db/users.ts:53-58`, swept for every write to `users.role` | **the product CANNOT grant admin.** `changeUserRole` is `z.enum(["user","moderator"])`, refuses self-change, refuses to touch an admin, re-checks all three at the db layer, and writes **three** records (audit row + admin action + immutable log). The only other road is `upsertUser` matching `OWNER_OPEN_ID` — **and that is INERT: `OWNER_OPEN_ID` and `OWNER_NAME` are both absent on the live service** | Read by **fingerprint** — neither value was printed, and no account's `openId` is the empty string the inert comparison would need. So the second admin was set **directly in the database**, which cannot leave a record. On #1806. |
+| the security surface's diff since run 4 | `git log --since=2026-09-19` over `server/security`, `_core`, the auth routes, billing, admin, stripe, `.github` | **55 commits.** Three are authentication **fixes**: `6b36c31cc` (#1653, the `SameSite=None` cookie), `fe9293c2d` (#1659, login-CSRF on the Express routes), `2ea7a7996` (#1681, the Google state nonce bound to nothing the browser held) | All three narrow. ⚠ **And reading them found `CLAUDE.md:751` still naming #1659 as OPEN** — W6-D → **#1809**, corrected this shift. |
+| semgrep, tree | run **37051101317** (PR #1802, `team/local-branch-sweep-1797`), job `static-shapes`, semgrep 1.174.0 | **`Ran 76 rules on 2033 files: 0 findings`** | 1831 → 2033 files, which is the fortnight's test growth the Machinist measured (841 → 983 test files). Row appended to `docs/WARDEN_SEMGREP.md`. |
+| actionlint + zizmor | the same run | **`No findings to report. Good job!`** | Unchanged. |
+| access-control suites + the wired controls | `7ac831b5` | **7 files / 172 tests green** — `approvalGate`, `staffImageBoundary`, `publicInputStrictness`, `sessionIssuanceSites`, `loginAttackAlert`, `bugReportInbox`, `moneySurfaceClassifier` | Run 5 read 5 files / 74; run 4 read 6 / 55. Keyed on the **Test Files** line as well as the Tests line. Five mint sites still five. |
+| branch protection | `GET …/branches/main/protection` | required: `gate-checks`, `founder-gate`, `Socket Security: Pull Request Alerts`, `static-shapes`, `bundle-budget`; `strict: false`; `enforce_admins: false`; `required_pull_request_reviews: null` | **Unchanged from run 4.** `enforce_admins` is still his call, stated on #858 with no recommendation, and still gets none. |
+| **run 5's four money cards** | the queue | **all four landed and all four are CLOSED** — #1359 (W5-A), #1360 (W5-B), #1361 (W5-C), #1362 (W5-D) | Run 5's item 2 discharged. W5-A's classifier fix is `109387a0e` (#1385) and W5-B's input closure is `a53b90079` (#1388), both in this run's surface diff. |
+
+### B. The repair that shipped — #1803 / PR #1804
+
+Every patched version was **already inside the range its parent declares** (`minimatch@10.2.6`
+asks `brace-expansion: ^5.0.8`; `jspdf@4.2.1` asks `dompurify: ^3.3.1`), so no parent bump and no
+semver contract moved. Three entries joined `pnpm.overrides`, which is the pattern `cf764795a`
+established here for exactly this.
+
+```
+pnpm audit --prod   4 findings, exit 1   ->  No known vulnerabilities found
+pnpm audit (all)    5 findings, exit 1   ->  No known vulnerabilities found
+lockfile            moves exactly three packages, one patch step each
+                    brace-expansion 5.0.9 -> 5.0.12 · dompurify 3.4.15 -> 3.4.16
+                    fast-uri 3.1.7 -> 3.1.8
+```
+
+**Severity stated honestly rather than inflated**: nothing on a customer's path is exposed today.
+`brace-expansion` is reached only by `@sentry/bundler-plugins`' `glob`, which no request path
+calls; `dompurify` is jspdf's **optional** dependency behind `jsPDF.html()`, and
+`server/casting/pdfService.ts` never calls `html()` in 887 lines. Latent, not live — and fixed
+anyway, because "unreachable today" describes today's call graph.
+
+⚠ **The repair's own first attempt was wrong and the diff caught it, which is W6-F → #1808.**
+Written in the house style (`">=3.1.8"`), pnpm resolved `fast-uri` to **4.2.1** — a major bump
+across `ajv` from a one-line CVE floor. All three new entries are `^`-bounded instead.
+**The six that already existed are all unbounded `>=` and carry the same hazard**; that is #1808
+and it is deliberately not folded into #1804, because an override exists precisely because a
+parent's range was too low, so each of the six needs reading rather than a blanket edit.
+
+⚠ **What the local suite does NOT prove, stated on the PR rather than implied**: the shift
+worktree junctions `node_modules` to the main tree's and a builder seat was running the suite
+there, so the lockfile was moved with `pnpm install --lockfile-only` rather than mutating a shared
+install under another seat's run. **No local run executed against the new resolution.** The gate's
+clean install, the full suite, the build and Socket's read of the lockfile diff are the arms that
+matter.
+
+### C. Controls and instruments
+
+**Nothing new was built and nothing was driven for its own sake.** Every reading above traces to
+run 5's written brief or to run 4's undischarged items.
+
+**Working law 2 was paid twice tonight, in opposite directions:**
+
+1. ✅ **`pnpm audit` is a verified instrument this run** — it exited **1 with four findings** on the
+   tree before the change and **0** after, on the same tree. A green audit that had never been
+   seen red would have proved nothing.
+2. ⚠ **This seat's boundary reader is NOT a verified instrument, and it nearly read as one.** The
+   metadata-only check is `metadata like '%description%'`, and it returned **132 hits where run 4
+   returned 0** — every one a `system.health_alert`, whose own metadata carries a field called
+   `description`. The boundary holds (no bug-report row exists), but **run 4 read 0 because the
+   health alerts had not fired yet, not because the reader was sound.** A substring over a JSON
+   blob cannot tell a leaked customer sentence from a legitimate field of the same name. **Run 7's
+   reader keys on the field's path together with the action**, and until it does, a 0 from this
+   check is not evidence. Recorded on #1807.
+
+⚠ **And one instrument caveat about reading a provider's own tree**: `npm view <pkg>@^N.x version`
+is the cheap way to learn whether a patched version exists *inside a major*, and it is what caught
+the `fast-uri` 4.x hazard. A bare `npm view <pkg> version` answers a different question — the
+newest overall — and that is the question an unbounded override asks.
+
+### D. The repair's receipts, taken after the merge — and one limit found by taking them
+
+**#1803 is CLOSED and LIVE.** PR #1804 merged at 2026-10-02T20:01:26Z, squash `a966ab26`.
+
+| receipt | reading |
+|---|---|
+| gate on `52cca454` | **green, 8m11s** — and this is the arm that mattered, because it is the only clean install from the new lockfile: `gate-checks` pass, `static-shapes` pass, `bundle-budget` pass, `founder-gate` pass, `triage` pass |
+| Socket on the lockfile diff | `Pull Request Alerts` **pass** (17s), `Project Report` pass — a *lowering* diff, so this says nothing about #1805 either way |
+| review obligation | **none** — triage applied no `needs-fable`: not money/auth, no `client/src`, not `review.yml`. Merged on the gate alone, which is the standing rule |
+| **production** | **serves `a966ab26`, uptime 8.6 s** — polled until the `build` sha moved, so this is a NEW process and not the old one answering 200 (#296) |
+| `pnpm audit --prod` on `main` | **`No known vulnerabilities found`** |
+| `pnpm audit`, all scopes, on `main` | **`No known vulnerabilities found`** |
+| GitHub's own alerts | **all five `fixed` at 2026-10-02T20:01:32–33Z**, seven seconds after the squash — 114, 115 (high), 116, 117 (moderate), 118 (low) |
+
+So three readers that share no resolver agree the count is zero: `pnpm audit` at the lockfile, GitHub's dependency graph at the default branch, and the gate's install.
+
+⚠ **AND TAKING THAT LAST RECEIPT FOUND A LIMIT IN A READING THIS RUN ALREADY REPORTED, SO IT IS CORRECTED HERE RATHER THAN LEFT TO AGREE WITH ITSELF.** §A says *"4 alerts open (118, 116, 115, 114 — all `scope=runtime`)"*, which is exactly what `GET /dependabot/alerts?state=open&per_page=50` returned, and it matched both the push warning (*"4 vulnerabilities … 2 high, 1 moderate, 1 low"*) and `pnpm audit --prod`'s 4. **There was a fifth.** Alert **117** (`fast-uri`, `scope=development`) was created 2026-09-30T09:51:17Z — the same second as 116 — was never dismissed (`dismissed_reason: null`, `auto_dismissed_at: null`), and closed `fixed` with the other four.
+
+**What that establishes, and what it does not:**
+
+- **It does not change a single verdict.** 117 is the dev-scope moderate that `pnpm audit` (all scopes) had already counted as the fifth, and it was closed by this run's own repair.
+- ⚠ **It does establish that `state=open` on that endpoint did not return every open alert**, and the reason was NOT established — the alert's own fields rule out a dismissal, so it is something about the listing or about a repository rule for development-scope advisories. **It is not guessed at here.**
+- **The transferable half: `pnpm audit` and the alert listing answer different questions, and the listing is the one whose population this seat cannot yet account for.** The three figures agreed on 4 *because all three were reporting runtime scope*, which reads like corroboration and was partly coincidence. **Run 7 reads the alert list with no `state` filter and counts by `state` itself**, rather than asking the endpoint for "open" and trusting the length.
+
+**This is the same shape as §C.2, one layer out**: a number that agreed with two neighbours, on a population nobody had counted. Both were found by doing the next reading rather than by doubting the last one.
+
+
+### E. What this run leaves standing, and run 7's brief
+
+**Filed: six findings, five as cards** — #1803 (**repaired, merged `a966ab26`, live on production, and `pnpm audit` zero on both scopes** — §D), #1805 (Socket), #1806 (the
+second admin — **his word**), #1807 (the audit log's critical rows), #1808 (the unbounded
+overrides), #1809 (project law stale on #1659, corrected this shift). **Closed: nothing** — run
+5's four were closed by their own shifts.
+
+**Run 7 (~2026-10-10) takes, in order:**
+
+1. **#1806's answer, and nothing else first.** It is the only finding on his Desk and the only one
+   where the honest state is "unknown until he says". If he has answered, record it and lift the
+   hold; if he has not, **do not re-ask and do not assume** — read whether the account has signed
+   in again (it had not, as of this run: once on 2026-09-28 and never since).
+2. **`pnpm audit --prod` again, expecting 0** — and if it is not 0, the reading is now *also*
+   whether #1804's floor held or whether a new chain arrived. This is the row that moved 0 → 4
+   unnoticed in one week, so it is the seat's most load-bearing single number. ⚠ **Read the
+   Dependabot alerts beside it with NO `state` filter, counting by `state` yourself** — §D records
+   why: `state=open` returned four when five were open, and the three figures that agreed on four
+   agreed because all three were reporting runtime scope.
+3. **The `secrets.yml` cron of 2026-10-05**, at its log, for the commit count and the zero.
+4. **Whether #1805 drew a ruling.** If he has turned Socket's known-vulnerability alert on, the
+   next lockfile PR that adds a package is the proof, exactly as run 4 set it up — and that proof
+   is now cheap, because #1803 established what the pre-merge readers say about a known high.
+5. The `audit_logs` read, the surface diff and the standing two (semgrep, the suites), as always —
+   **with the boundary reader rewritten per §C.2 before its 0 is believed.**
+
+**Not a Warden brief, named so it is not re-proposed:** a gate `audit` step (run 4's ruling stands;
+#1805 carries the evidence and leaves the decision his); `enforce_admins` (his call, #858, still no
+recommendation); the Socket dashboard's policy (not this seat's access); a row-level
+reconciliation of the credit ledger (run 5's limit); W5-E's fraud cap (his decision, already
+made); whether the casting writers belong in `audit_logs` (run 2's question, still nobody's card).
+
+**Spent: nothing.** No money, no customer credits, no house money, no paid model call, no render,
+no production variable, no flag, no migration. Four read-only disposables against production, all
+deleted at close. One production fast-forward of the main tree (`7ac831b5` → `f876d5d9`) to clear
+the ordinary merge race before the rite, which rewrote no history.

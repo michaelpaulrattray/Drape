@@ -112,12 +112,15 @@
       "wouter@3.7.1": "patches/wouter@3.7.1.patch"
     },
     "overrides": {
-      "tar": ">=7.5.18",
-      "lodash": ">=4.17.23",
-      "lodash-es": ">=4.17.23",
-      "qs": ">=6.14.1",
-      "mdast-util-to-hast": ">=13.2.1",
-      "esbuild": ">=0.28.1"
+      "tar": "^7.5.18",
+      "lodash": "^4.17.23",
+      "lodash-es": "^4.17.23",
+      "qs": "^6.14.1",
+      "mdast-util-to-hast": "^13.2.1",
+      "esbuild": "^0.28.1",
+      "brace-expansion": "^5.0.12",
+      "dompurify": "^3.4.16",
+      "fast-uri": "^3.1.8"
     },
     "onlyBuiltDependencies": [
       "@tailwindcss/oxide",

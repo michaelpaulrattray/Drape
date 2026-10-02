@@ -424,12 +424,25 @@ describe("a self-prove block runs only for the file that was invoked", () => {
     "scripts/lib/outsider.mts",
     "scripts/lib/verdictContradiction.mts",
     "scripts/lib/worldGuard.mts",
+    "scripts/lib/latencyFixture.mts",
   ] as const;
 
   it.each(PROVERS)("%s guards its controls on direct invocation", (path) => {
     const source = sourceOf(path);
     expect(source).toMatch(/invokedDirectly && process\.argv\.includes\("--prove"\)/);
-    expect(source).toMatch(/import\.meta\.url/);
+    /*
+      EITHER PLATFORM SIGNAL, and the widening is a correction rather than a
+      relaxation (#1800). This arm read `import.meta.url` alone, and all five
+      modules it judged answer the question with `import.meta.main` — four of
+      them contain the `url` token only inside the shared comment explaining why
+      the OLD idiom was wrong on Windows (`file:///C:/…` against a backslashed
+      `argv[1]`, a comparison that never matches, so the block silently never
+      fires). So the arm was being satisfied by prose about the bug it exists to
+      prevent. The rule it means to pin is that `invokedDirectly` comes from a
+      platform signal and never from argv, and the regex above is what actually
+      holds that; this one holds the signal's name.
+    */
+    expect(source).toMatch(/import\.meta\.(main|url)/);
   });
 
   it("no module in scripts/lib takes --prove off the importer's argv", () => {
