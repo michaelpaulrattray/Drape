@@ -61,6 +61,10 @@ export async function runFinalCastDeletionCeremony(input: {
     kind: "model.delete",
     modelId: input.modelId,
     payload: { modelId: input.modelId },
+    /* #1767 — the same figure the running transition below writes, written
+       where the row is born so a row settled before it still says what it
+       was going to cost. */
+    plannedCredits: 0,
     lockKey,
   });
 

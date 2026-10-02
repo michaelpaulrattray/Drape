@@ -501,21 +501,33 @@ const CLAIMED_OPERATION_STATUS = "claimed";
  * question — `inkAddAcceptance` and `inkAddCancellation` both filter the same
  * column for the same reason.
  *
- * ⚠ **`status <> 'claimed'` IS LOAD-BEARING AND IS NOT A TIDINESS FILTER.**
- * `plannedCredits` defaults to 0 at the claim and is written one statement later,
- * so a row still at `claimed` reads 0 whatever it was going to cost. Without this
- * arm every PAID Try again would consume the free one for its angle during the
- * milliseconds between the two statements. It also happens to be the right
- * product answer either way: a claim that never reached `running` dispatched no
- * render, so the customer has had nothing and keeps their free ask.
+ * ⚠ **`status <> 'claimed'` IS KEPT, AND ITS REASON CHANGED UNDER IT (#1767) —
+ * RE-READ BEFORE TOUCHING IT.** It was written because `plannedCredits`
+ * defaulted to 0 at the claim and was written one statement later, so a row
+ * still at `claimed` read 0 whatever it was going to cost and every PAID Try
+ * again would have consumed the free one for its angle during the milliseconds
+ * between the two statements. **That reason is now discharged**: the entrance
+ * passes the price INTO the claim, so a paid retry's row says 370 from the
+ * moment it exists.
  *
- * ⚠ **THE LIMIT THIS CANNOT CLOSE, STATED RATHER THAN DISCOVERED LATER.** A PAID
- * retry whose `markRunning` throws is settled as a failure with `plannedCredits`
- * still at its default 0, so it reads here as a spent free ask on that angle.
- * The exact closure is `plannedCredits` written at the CLAIM, which is a change
- * to the shared claim path every road in the product takes — not this slice's to
- * make. What it costs when it happens: one free Try again on a slot that would
- * then have to become unchecked for the loss to be visible at all. Carded.
+ * The arm stays, on the other reason the paragraph above always carried and
+ * which no change to the claim path can discharge: **a claim that never reached
+ * `running` dispatched no render, so the customer has had nothing and keeps
+ * their free ask.** A FREE retry's claim truthfully carries 0 from birth now,
+ * so without this filter a free ask that was claimed and then died would read
+ * as spent — the filter is what stops that, and it is a product answer rather
+ * than a timing one. Removing it would hand that customer's free Try again to a
+ * row that rendered nothing. `viewRetryFreeOnce.test.ts` has an arm naming it.
+ *
+ * ✅ **THE LIMIT THIS PARAGRAPH USED TO STATE IS CLOSED (#1767).** It read: *a
+ * PAID retry whose `markRunning` throws is settled as a failure with
+ * `plannedCredits` still at its default 0, so it reads here as a spent free ask
+ * on that angle* — the exact closure named there was `plannedCredits` written
+ * at the CLAIM, *"a change to the shared claim path every road in the product
+ * takes — not this slice's to make"*. It was carded as #1767 and made: see
+ * `claimGenerationOperation`'s `plannedCredits` docblock, and
+ * `server/plannedCreditsAtClaim.test.ts`, which drives this very sequence — a
+ * paid claim whose `markRunning` throws — and reads the claim at the wire.
  *
  * ⚠ **A FREE ASK THAT DID NOT ARRIVE STILL COUNTS**, which is the card's own
  * wording and the reason there is no landed-asset arm here. The asset row would

@@ -167,6 +167,10 @@ export async function stageOwnedInkIntentReference(
         intentId: input.intentId,
         contentHash: image.contentHash,
       },
+      /* #1767 — a free evidence operation, and this road never marks the
+         operation running at all, so without this the row's 0 would be the
+         schema default standing in for a fact nobody stated. */
+      plannedCredits: 0,
       lockKey: modelOperationLockKey(intent.modelId),
       resumeClaimedEvidence: true,
     });
@@ -246,6 +250,10 @@ export async function stageOwnedReferencePlate(
       kind: "evidence_plate_ingest",
       modelId: input.modelId,
       payload: { modelId: input.modelId, contentHash: image.contentHash },
+      /* #1767 — a free evidence operation, and this road never marks the
+         operation running at all, so without this the row's 0 would be the
+         schema default standing in for a fact nobody stated. */
+      plannedCredits: 0,
       lockKey: modelOperationLockKey(input.modelId),
       resumeClaimedEvidence: true,
     });
@@ -365,6 +373,10 @@ export async function discardOwnedReferencePlate(input: {
       kind: "evidence_plate_discard",
       modelId: plate.modelId,
       payload: { modelId: plate.modelId, plateId: input.plateId },
+      /* #1767 — a free evidence operation, and this road never marks the
+         operation running at all, so without this the row's 0 would be the
+         schema default standing in for a fact nobody stated. */
+      plannedCredits: 0,
       lockKey: modelOperationLockKey(plate.modelId),
       resumeClaimedEvidence: true,
     });

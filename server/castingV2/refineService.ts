@@ -5753,6 +5753,11 @@ async function refineCandidateCounted(
       candidatePublicId: input.candidatePublicId,
       instruction: instruction.trim(),
     },
+    /* #1767 — the price the entrance already read, written where the row is
+       born. The running transition below writes the very same `price`, so a
+       claim that dies in the gap between the two still says what it cost
+       instead of reading as a free ask. */
+    plannedCredits: price,
   });
   if (gate.type === "replay") {
     // Idempotency, not an error: the same request id returns the refinement it

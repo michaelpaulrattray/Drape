@@ -124,6 +124,46 @@ interface ClaimGenerationOperationInput {
   originBoardId?: number | null;
   originItemId?: number | null;
   payload: unknown;
+  /**
+   * WHAT THIS ASK IS ABOUT TO COST, WRITTEN WHERE THE ROW IS BORN (#1767).
+   *
+   * Until this existed the column was written by
+   * {@link markGenerationOperationRunning}, **one statement after the claim**,
+   * over a schema default of `0`. So between those two statements — and
+   * permanently, for a row settled inside that gap — a PAID operation carried
+   * the same `0` a free one does, and nothing downstream could tell them apart.
+   *
+   * ⚠ **IT IS NOT HYPOTHETICAL AND IT COSTS A CUSTOMER SOMETHING.** `0` is how
+   * the product recognises a FREE Try again
+   * (`spentFreeViewRetryFilter`, `server/db/castingV2ViewRetry.ts`). A paid
+   * retry whose `markRunning` threw settled as `failed` with `plannedCredits`
+   * still `0`, so her one free ask on that view read as already spent and she
+   * was asked to pay for it. Nothing charged, nothing inconsistent — she simply
+   * found a free thing gone.
+   *
+   * ⚠ **IT DOES NOT TOUCH `payloadHash`, which is the thing that could have
+   * made this dangerous, and that is read at the code rather than assumed**:
+   * `hashGenerationOperationSubject` (`server/casting/operationContract.ts`)
+   * builds an EXPLICIT object of `kind`, `modelId`, `originBoardId`,
+   * `originItemId` and `payload` — it does not canonicalise whatever it is
+   * handed — so a claim that now carries a price hashes exactly as it did
+   * before and an in-flight replay cannot read as a `payload_conflict`.
+   *
+   * ⚠ **AND IT DOES NOT MOVE `markGenerationOperationRunning`'s IDEMPOTENCY
+   * CHECK.** That check (`operation.plannedCredits !== input.plannedCredits`)
+   * runs only when the row is already `running`, which it can only be because
+   * `markRunning` itself wrote the figure; a value written at the claim is
+   * overwritten by the first `markRunning` and never compared against one.
+   * `server/plannedCreditsAtClaim.test.ts` drives both directions.
+   *
+   * **OPTIONAL, deliberately.** Two roads cannot know their price before they
+   * claim — the legacy studio's mint and refresh both derive it from a plan
+   * read out of the database AFTER claiming — and inventing a number for them
+   * would be worse than the default they already have. They are declared, with
+   * their reason, in that suite's own population, so a NEW road cannot join
+   * them silently.
+   */
+  plannedCredits?: number;
 }
 
 type AcquireGenerationOperationLockResult =
@@ -722,6 +762,13 @@ export async function claimGenerationOperation(
   assertOptionalPositiveId(input.modelId, "modelId");
   assertOptionalPositiveId(input.originBoardId, "originBoardId");
   assertOptionalPositiveId(input.originItemId, "originItemId");
+  /* The same bar `markGenerationOperationRunning` applies to the same column,
+     said in the same words — a price that is not a non-negative integer is a
+     bug wherever it is written, and a claim is the earlier of the two places. */
+  if (input.plannedCredits !== undefined
+    && (!Number.isSafeInteger(input.plannedCredits) || input.plannedCredits < 0)) {
+    throw new TypeError("plannedCredits must be a non-negative integer");
+  }
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -769,6 +816,11 @@ export async function claimGenerationOperation(
       originItemId: input.originItemId ?? null,
       payloadHash,
       status: "claimed" as const,
+      /* #1767 — the price is written where the row is born, so a row settled
+         before `markRunning` ever runs still says what it was going to cost.
+         Omitted means the column keeps its schema default of 0, which is what
+         every road did before this existed. */
+      ...(input.plannedCredits === undefined ? {} : { plannedCredits: input.plannedCredits }),
     };
     if (input.modelId != null) {
       await withTransaction(async (tx) => {

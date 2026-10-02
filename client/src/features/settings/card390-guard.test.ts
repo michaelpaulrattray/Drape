@@ -245,54 +245,115 @@ describe("card 390 item 4 — the unit price is inverted, and it still argues fo
     expect(formatCreditsPerDollar(0, PLAN_TIERS.free.monthlyCredits)).toBe("free");
   });
 
-  it("⚠ BOTH BILLING SURFACES ARGUE VALUE IN THE SAME UNIT (card 403)", () => {
+  it("⚠ THE RATE LIVES ON ADD CREDITS AND NOWHERE ELSE (his word, card 1773 — card 403 INVERTED)", () => {
     /*
-      Item 4 was written about Change plan, and Add credits went on saying the
-      same fact in cents per credit for a fortnight — *"0.036¢ a credit, down
-      from 0.041¢"* — so a customer who opened both in one session met one fact
-      in two units. §6b's own rule about the annual badge is *"use one framing
-      everywhere"*, and this is that rule in a second place.
+      ⚠ **THIS ARM ASSERTED THE OPPOSITE UNTIL 2026-10-02, AND THAT IS SAID
+      HERE RATHER THAN EDITED QUIETLY.** It read `BOTH BILLING SURFACES ARGUE
+      VALUE IN THE SAME UNIT (card 403)` and looped both files demanding that
+      each print credits per dollar. **Card 403's finding was real and is not
+      being overturned** — Add credits said the same fact in cents per credit
+      for a fortnight, so a customer opening both surfaces in one session met
+      one fact in two units. What is overturned is the REMEDY it chose, which
+      was symmetry.
 
-      Read at BOTH files rather than at the one his card named: an arm whose
-      population is the surface already fixed cannot see the next surface drift.
+      His word settles it the other way (#1773, 2026-10-02): *"on the free card
+      remove the free CREDITS PER $1 line thats stupid"*, then, on the reading
+      that the rate belongs on Add credits and not on a plan card at all, *"yes
+      i like this"*. **One home, rather than one unit in two places** — and
+      card 403's defect is closed harder by this than it was by symmetry, since
+      there is now only one surface that can state the unit at all.
     */
-    for (const path of [MODAL, TOPUP]) {
-      const surface = code(read(path));
-      expect(surface, `${path} stopped printing credits per dollar`).toContain(
-        "formatCreditsPerDollar",
-      );
-      expect(surface, `${path} is back on cents per credit`).not.toContain("formatCentsPerCredit");
-    }
-    /*
-      ⚠ `toContain` IS WEAKER THAN THE CLAIM, AND IT WAS MEASURED BEFORE THIS
-      LINE WAS WRITTEN. The top-up sentence prints TWO figures — the chosen rung
-      and the one being left — and with only the arms above, a sabotage that put
-      `formatDollars` on the FIRST of them stayed green: the import and the
-      second call kept the token in the file. So the sentence is pinned by its
-      shape rather than by a word appearing somewhere in the file.
-    */
+    const surface = code(read(MODAL));
     const topup = code(read(TOPUP));
-    expect(
-      topup.match(/formatCreditsPerDollar\(/g)?.length ?? 0,
-      "the top-up sentence stopped reading the shared unit on both sides",
-    ).toBeGreaterThanOrEqual(2);
+
+    /*
+      ⚠ **THE POSITIVE HALF IS FIRST BECAUSE THE NEGATIVE HALF IS WORTHLESS
+      WITHOUT IT.** An absence arm whose subject has left the product entirely
+      passes for the wrong reason — deleting `formatCreditsPerDollar` outright
+      would satisfy every `not.toContain` below. So Add credits is held to
+      printing it before Change plan is held to not.
+    */
+    expect(topup, "Add credits stopped printing credits per dollar — his word puts the rate HERE").toContain(
+      "formatCreditsPerDollar",
+    );
+
+    /* Change plan carries no rate, in either shape it had: the card chip and
+       the compare row. */
+    expect(surface, "a credits-per-dollar rate is back on the plan surface").not.toContain(
+      "formatCreditsPerDollar",
+    );
+    expect(surface, "the compare table's rate row is back").not.toContain(
+      'label: "Credits per dollar"',
+    );
+    expect(surface, "the chip's own class is back on the plan card").not.toContain("dp-plan__unit");
+    /* And the chip's printed words, which is what he actually read on screen. */
+    expect(surface, "the chip's text is back on the plan card").not.toContain("CREDITS PER $1");
+
+    /*
+      Card 403's own negative survives on BOTH files, and neither his word nor
+      this change licenses it: nothing drifts back to the second unit.
+    */
+    for (const [path, text] of [
+      [MODAL, surface],
+      [TOPUP, topup],
+    ] as const) {
+      expect(text, `${path} is back on cents per credit`).not.toContain("formatCentsPerCredit");
+    }
     expect(topup, "a cents-per-credit figure is back on the top-up surface").not.toContain("¢");
     /* And the formatter itself is gone, so there is nothing to drift back to. */
     expect(code(read(MATH)), "the second unit's formatter is back in planMath").not.toContain(
       "export function formatCentsPerCredit",
     );
+
+    /*
+      ⚠ `toContain` IS WEAKER THAN THE CLAIM ON THE SURVIVING SURFACE, AND IT
+      WAS MEASURED BEFORE THIS LINE WAS FIRST WRITTEN. The top-up sentence
+      prints TWO figures — the chosen rung and the one being left — and with
+      only the arms above, a sabotage that put `formatDollars` on the FIRST of
+      them stayed green: the import and the second call kept the token in the
+      file. So the sentence is pinned by its shape rather than by a word
+      appearing somewhere in the file. **#1773 moved the rate's home and did not
+      touch that sentence, so this half is carried over unchanged.**
+    */
+    expect(
+      topup.match(/formatCreditsPerDollar\(/g)?.length ?? 0,
+      "the top-up sentence stopped reading the shared unit on both sides",
+    ).toBeGreaterThanOrEqual(2);
   });
 
-  it("the surface prints the inverted figure and not the old one", () => {
+  it("⚠ THE TABLE LOST A ROW, NOT ITS NEIGHBOURS (card 1773)", () => {
+    /*
+      This arm read *"the surface prints the inverted figure and not the old
+      one"* and held the rate PRESENT on the cards and in the table. Its
+      negative half is untouched and still here — neither unit comes back. What
+      replaces its positive half is the question his ruling actually raises:
+      **a row was cut out of a literal array, and the risk of that is the
+      neighbour that leaves with it.** He asked for the rate gone, not for a
+      thinner comparison.
+
+      The four surviving labels are listed by name rather than counted, because
+      a count would pass a swap and the point is WHICH rows a customer still
+      has to compare plans with.
+    */
     const surface = code(read(MODAL));
-    expect(surface).toContain("formatCreditsPerDollar");
-    expect(surface, "the cents-per-credit figure is still on the cards").not.toContain(
-      "formatCentsPerCredit",
-    );
+    for (const label of [
+      "Credits",
+      "What that makes",
+      "Unspent credits",
+      "Price a month",
+    ]) {
+      expect(surface, `the compare table lost its \`${label}\` row with the rate`).toContain(
+        `label: "${label}"`,
+      );
+    }
+    /* And neither unit is anywhere on the surface — the old one by its row
+       label, the new one by its own. */
     expect(surface, "the compare row still asks for cost per credit").not.toContain(
       "Cost per credit",
     );
-    expect(surface).toContain('label: "Credits per dollar"');
+    expect(surface, "the rate row is back in the table").not.toContain(
+      'label: "Credits per dollar"',
+    );
   });
 });
 
@@ -588,7 +649,17 @@ describe("card 661 — the rate is computed from the price standing beside it", 
       and its first argument checked, and the population is derived from the
       calls found rather than from a number typed here.
     */
-    const wanted: Record<string, number> = { [MODAL]: 2, [TOPUP]: 2 };
+    /*
+      ⚠ **`MODAL` IS 0 SINCE #1773 AND THE ROW STAYS IN THE POPULATION.** His
+      word took the rate off every plan card and out of the compare table, so
+      Change plan prints no rate to be interval-aware ABOUT — and the honest
+      spelling of that is a count of zero, held, rather than a file quietly
+      dropped from the loop. Two things keep the arm's teeth on it: zero is
+      asserted (a rate reappearing on a plan surface reds here as well as in the
+      card-403 arm above), and the `priceOf` hop checked at the foot of this arm
+      still runs for `MODAL`, where the PRICE is still read through it.
+    */
+    const wanted: Record<string, number> = { [MODAL]: 0, [TOPUP]: 2 };
     for (const path of [MODAL, TOPUP]) {
       const surface = code(read(path));
       const calls = [
