@@ -83,6 +83,7 @@ import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/foundation";
 import { ModalScrim } from "@/foundation/CastingModal";
+import { LabelledField } from "@/foundation/LabelledField";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import "@/features/settings/settings.css";
 import {
@@ -1350,10 +1351,30 @@ function CreditPacksPane({
           `units` itself, so the slider, the packs, the price, the rate and the
           button cannot come to disagree — there is one number.
         */}
-        <div className="dp-topup__slider">
-          <label className="dp-set__label" htmlFor="dp-topup-amount">
-            Or choose an amount
-          </label>
+        {/*
+          ⚠ **THE NAME OF THE CONTROL IS `LabelledField`'s, NOT A FOURTH
+          TREATMENT.** The first draft wrote its own `<label className="dp-set__label">`
+          and `section11-guard.test.ts` caught it at the gate: #841's fold left
+          exactly one field-label treatment in the client, and a slider is a
+          control with a name like any other. The row also wants what that
+          component already owns — the label's confirm-shell `margin-top`
+          zeroed, and a `helper` slot for the rule under the control, which is
+          precisely where *what this amount buys* belongs.
+        */}
+        <LabelledField
+          label="Or choose an amount"
+          htmlFor="dp-topup-amount"
+          className="dp-topup__slider"
+          helper={
+            <>
+              {chosenBuys
+                ? `About ${chosenBuys.rolls.toLocaleString()} Rolls, or ${chosenBuys.signs.toLocaleString()} Signs`
+                : "—"}
+              {" · "}
+              {rateFor(units)} credits per $1
+            </>
+          }
+        >
           <input
             id="dp-topup-amount"
             type="range"
@@ -1371,14 +1392,7 @@ function CreditPacksPane({
               for {formatCredits(displayCredits)} credits
             </span>
           </p>
-          <p className="dp-topup__sliderbuys">
-            {chosenBuys
-              ? `About ${chosenBuys.rolls.toLocaleString()} Rolls, or ${chosenBuys.signs.toLocaleString()} Signs`
-              : "—"}
-            {" · "}
-            {rateFor(units)} credits per $1
-          </p>
-        </div>
+        </LabelledField>
 
         <div className="dp-topup__bullets">
           <span className="dp-topup__bullet">

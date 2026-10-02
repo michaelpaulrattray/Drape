@@ -1285,7 +1285,36 @@ describe("an unread plan is not the free plan (#1741)", () => {
     const read = (...parts: string[]) =>
       withoutComments(readListedSource(path.join(CLIENT_SRC, ...parts)) ?? "");
 
-    const topup = read("features", "billing", "AddCreditsModal.tsx");
+    /*
+      ⚠ **NARROWED TO THE UPGRADE PANE BY #1606 SLICE 2, AND IT IS A REPAIR OF
+      THE WINDOW RATHER THAN OF THE CLAIM.** Add credits holds TWO panes now —
+      the credit packs a plan holder is sold, and this file's subject, the
+      upgrade offer a free account gets — so the file has two `const submit = `
+      declarations and `lastIndexOf` found the wrong one. **Every assertion
+      below is unchanged and the pane it is about is unchanged**; what moved is
+      which half of the file is read, and the arm went RED on a correct surface
+      until it did.
+
+      It is the same class this file already carries one screen down in the
+      other direction: *"a file-wide `toContain` for a declining branch was
+      measured surviving sabotage on this very suite at #1747, satisfied by an
+      identical line in a neighbouring function"*. A false red and a false green
+      are one defect — an arm reading a neighbour — and slicing answers both.
+      A missing anchor fails loudly here rather than returning an empty band.
+    */
+    const whole = read("features", "billing", "AddCreditsModal.tsx");
+    const paneFrom = whole.indexOf("function PlanStepUpPane(");
+    expect(
+      paneFrom,
+      "the upgrade pane is gone or renamed — #1749's arms cannot find their subject",
+    ).toBeGreaterThan(-1);
+    const paneEnd = whole.indexOf("function CreditPacksPane(", paneFrom);
+    expect(
+      paneEnd,
+      "the credit-packs pane is gone, so the slice below cannot be bounded — if Add"
+      + " credits really has one pane again, this anchor is what says so out loud",
+    ).toBeGreaterThan(paneFrom);
+    const topup = whole.slice(paneFrom, paneEnd);
 
     expect(
       topup,

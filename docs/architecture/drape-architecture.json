@@ -15743,6 +15743,11 @@
     },
     {
       "from": "module:client/src/features/billing/AddCreditsModal.tsx",
+      "to": "module:client/src/foundation/LabelledField.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/AddCreditsModal.tsx",
       "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
