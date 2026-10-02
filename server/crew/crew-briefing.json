@@ -1,7 +1,7 @@
 {
-  "edition": 610,
-  "updatedAt": "2026-10-02T01:20:00.000Z",
-  "shift": "Night shift, 11:20: on Add credits there is a line telling you how long your credits will last. For an account billed one way, looking at the other option, that line quietly started describing the plan you are only looking at — and then told you your credits run out “79 days before it resets”, when your balance actually resets in 8 days. Nothing was ever charged wrongly and no price moved; the sentence was about the wrong month. It is fixed and waiting on review.\n\nI drove it in the real app before and after, in both the light and dark looks, and the fixture showed the fault on its own with nothing staged: before, “320 of 4,008 spent with 343 days left in this cycle … 79 days before it resets”; after, “320 of 4,008 spent with 8 days left in this cycle”. The sentence a paragraph below it — the one about what you are being charged today — is untouched and still says 343, because for that sentence 343 is the right number. That is the whole of it: two sentences, two different questions, and one of them had been reading the other's answer.\n\nWhy it happened is worth a line, because it is the kind of thing that comes back. The two readings of your billing period were both called “cycle”, so the sentence that needed yours reached for the other one and nobody could see the mistake by looking at it. They have names now that say which is which, and a check holds it. The card also asked me to look at the Change plan screen for the same fault — it does not have it, read at the code rather than assumed, and there is now a check that stops it catching it later.\n\nWhile I was working, five other pricing fixes landed on top of mine, one of them in the same two files. I merged them together by hand rather than letting a tool guess: both repairs stand, and I found that one of the checks the other fix left behind would have quietly stopped working the moment anything was renamed. That is fixed too.\n\nAlso now live on your account: the out-of-credits numbers from last night are deployed — running out of credits on a Roll says 240 now, not 1200, and a cancelled roll says 240 came back. Both of those problems are cleared off this page.",
+  "edition": 611,
+  "updatedAt": "2026-10-02T03:05:00.000Z",
+  "shift": "Night shift, 13:05: a paying customer who opened Change plan or Add credits could be shown the wrong plan entirely. If the part of the page that knows which plan you are on failed to load while the list of plans loaded fine, both screens quietly assumed you were on Free: Change plan put the word Current on the free box and arranged everything around it, and Add credits offered you a pre-picked Starter top-up, which is a smaller plan than the one you pay for, with the extra credits worked out against the free allowance instead of yours. Nothing was ever charged wrongly, but you could have bought the wrong thing. It is fixed and waiting on review. Two things only showed up once I opened the real screens and looked: the Add credits button sat on \"Checking the charge...\" forever, and Change plan showed a heading with an empty space under it, which reads as broken rather than as waiting; both now say plainly that we could not read your plan and to try again in a moment. Separately, the crew's own test suite has been failing on main since last night because yesterday's note on this page was written in two paragraphs, which one of our checks does not allow; this note is one paragraph, so that clears with this edition.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -145,7 +145,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-02T01:15:33.078Z",
+      "readAt": "2026-10-02T02:59:37.164Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -9208,18 +9208,25 @@
     {
       "id": "burn-cycle-1739",
       "title": "The credits-runway line on Add credits describes the cycle you are on (#1739)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1744,
       "note": "Open and held — it is a billing screen, so it waits for a review by hand."
+    },
+    {
+      "id": "unread-plan-identity-1747",
+      "title": "A plan nobody has read is not the free plan, on the two screens where you spend money (#1747)",
+      "status": "in-review",
+      "prNumber": 1748,
+      "note": "Open and held - it touches money and a customer sees it, so it waits for a review by hand."
     }
   ],
   "problems": [
     {
       "id": "briefing-whitespace-guard-red-main",
       "severity": "warning",
-      "state": "resolved",
-      "title": "Main was red for an hour on a check the deploy never runs, and the first pricing PR to catch up with main failed its gate for it (#1679)",
-      "detail": "Edition 599 wrote the shift note on this page in five paragraphs. A check in the crew's own test suite says every field that carries paragraphs must name the piece of the page that keeps them as paragraphs, and the shift note was never named. The deploy that ships an edition does not run that check, so main went red at 06:15 and the first pull request to bring main into its branch, the plan-downgrade fix on #1661, failed its gate for a reason that had nothing to do with its change.\n\nThe relay fixed the record: this edition's note is one paragraph, main is green again, and the pull request only needs to pick main up. The durable fix is card #1679: let a shift write paragraphs and have this page keep them, and make the deploy run that check before it ships an edition."
+      "state": "open",
+      "title": "Every pull request is failing its gate on a check that has nothing to do with it, and it is this page's own note that is doing it (#1679)",
+      "detail": "Last night's note on this page was written in two paragraphs. One of the crew's own checks says any field that carries paragraphs must name the part of the page that keeps them as paragraphs, and the shift note has never been named. So the check fails, and because every pull request has to bring main into its branch before it can merge, every one of them inherits the failure.\n\nMeasured this shift on a clean copy of main: 16,031 tests pass and that one fails. The pull request that fixes it properly, #1693, is itself blocked on the same failure.\n\nThis edition's note is one paragraph, which clears it. That is the stopgap, not the repair - the next shift that writes two paragraphs breaks it again, which is exactly what #1693 is for."
     },
     {
       "id": "p1-display-pr-conflicting",
@@ -9292,11 +9299,11 @@
       "detail": "Measured at the code, not guessed. The new prices went live at 17:34 yesterday and the screens all moved with them, but the messages the server sends did not.\n\nSo today, if you try to roll a sheet without enough credits, the message reads “Not enough credits. A roll costs 1200 credits” — next to a balance and a button that both say 240. Signing says 8500 instead of 1,700. A cancelled roll says 1200 credits came back when 240 did. The same on the canvas, on Refine and on a paid Try again.\n\nNobody is charged or refunded the wrong amount; the money is right. What is wrong is every sentence about it.\n\nThe fix is written, tested and on pull request #1738. It touches money, so it is held for a review by hand rather than merged by the shift that wrote it. This row goes when that merges.\n\n✅ RESOLVED — live on production, read at the deployed build rather than at the merge. Card #1600 is closed, PR #1738 merged as 906c3158d, and production's own health answer reports build 08f2c184, which carries that commit (checked with `git merge-base --is-ancestor`, not by reading the date). So running out of credits now quotes 240 for a Roll, 1,700 for a Sign and 240 back on a cancelled roll."
     },
     {
-      "id": "burn-cycle-wrong-basis-1739",
+      "id": "unread-plan-shows-free-1747",
       "severity": "warning",
       "state": "open",
-      "title": "The “how long your credits will last” line on Add credits describes the wrong month (#1739)",
-      "detail": "Live on production right now; the fix is built and waiting on review (PR #1744).\n\nOn the Add credits pane, the line under the heading tells you how long your balance will last. If you are billed on one cycle and looking at the other option, that line adopts the cycle of the plan you have NOT bought — so it says “343 days left in this cycle” for an account whose credits reset in 8 days, and then adds “79 days before it resets”, which is arithmetic on the wrong number.\n\nNothing is charged wrongly and no price is affected. It is a sentence about the wrong month, and it appears the moment the price quote arrives, so you would see the right line flicker into the wrong one.\n\nDriven in the running app on the dev subscriber account, both looks, with nothing staged — the fixture reproduces it on its own. The repair keeps the two readings of your billing period under names that say which is which, so the next sentence somebody writes cannot pick up the wrong one by accident."
+      "title": "Change plan and Add credits can tell a paying customer they are on Free, and offer them a smaller plan (#1747)",
+      "detail": "Both screens ask for two things at once: the list of plans, and which plan you are on. They travel together but either can fail on its own, and the plan list is the one almost certain to succeed because it is a fixed list, while your own plan has to be looked up.\n\nWhen only the second failed, both screens assumed Free. Change plan put the word Current on the free box, named your plan as Free in its heading, and arranged the recommendation around the bottom of the ladder. Add credits is worse: because Free is the bottom rung, every paid plan read as an upgrade, so a Pro customer was shown a pre-picked Starter top-up - a smaller plan than the one they pay for - with the extra credits worked out against the free allowance.\n\nIt does not correct itself. Nothing on either screen tries again, so it stays wrong until the page is closed and reopened.\n\nFixed on pull request #1748 and waiting on review. I drove both screens in the real app, in both the light and dark looks, with the fault switched on and off, and checked every number afterwards: the top-up now says plus 50,000 credits against a Pro account rather than plus 72,500 against a free one."
     }
   ],
   "acknowledgedReplyIds": [
@@ -9559,7 +9566,7 @@
     257
   ],
   "nextUp": {
-    "readAt": "2026-10-02T01:15:33.077Z",
+    "readAt": "2026-10-02T02:59:37.164Z",
     "items": [
       {
         "issueNumber": 1469,
