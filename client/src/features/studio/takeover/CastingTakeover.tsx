@@ -22,6 +22,7 @@ import { displayBalance, formatCredits } from '@shared/creditDisplay';
 import { trpc } from '@/lib/trpc';
 import { showLowBalanceToast, LOW_BALANCE_THRESHOLD } from '@/features/billing/LowBalanceWarning';
 import { AddCreditsModal } from '@/features/billing/AddCreditsModal';
+import { ChangePlanModal } from '@/features/billing/ChangePlanModal';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 import { useCastingFormStore } from '@/features/casting/stores/useCastingFormStore';
 import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
@@ -261,6 +262,8 @@ export function CastingTakeover({
   const prefs = useCastingFormStore((s) => s.prefs);
   const modelNameInStore = useCastingFormStore((s) => s.modelName);
   const { isTopupOpen, setIsTopupOpen } = useCastingUIStore();
+  /* #1606 slice 2 — the plan ladder the credit packs' nudge leads to. */
+  const [isPlanOpen, setIsPlanOpen] = useState(false);
   const utils = trpc.useUtils();
   const persistedModel = trpc.models.get.useQuery(
     { modelId: currentModelId ?? 0 },
@@ -483,7 +486,7 @@ export function CastingTakeover({
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
       e.stopPropagation();
-      if (showCastModal || isTopupOpen || identityDialog || detailsOpen || identityChangeOpen) return; // inner surfaces own their Esc
+      if (showCastModal || isTopupOpen || isPlanOpen || identityDialog || detailsOpen || identityChangeOpen) return; // inner surfaces own their Esc
       if (confirmingLeave) {
         setConfirmingLeave(false);
         return;
@@ -492,7 +495,7 @@ export function CastingTakeover({
     };
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
-  }, [attemptClose, confirmingLeave, showCastModal, isTopupOpen, identityDialog, detailsOpen, identityChangeOpen]);
+  }, [attemptClose, confirmingLeave, showCastModal, isTopupOpen, isPlanOpen, identityDialog, detailsOpen, identityChangeOpen]);
 
   // Founder ruling (Batch C final corrections): a minted identity must never
   // present as editable-in-place. This session is honestly framed as the
@@ -748,7 +751,35 @@ export function CastingTakeover({
         existingDraft={!!editContext?.draft}
       />
 
-      {isTopupOpen ? <AddCreditsModal onClose={() => setIsTopupOpen(false)} /> : null}
+      {isTopupOpen ? (
+        <AddCreditsModal
+          onClose={() => setIsTopupOpen(false)}
+          onChangePlan={() => {
+            setIsTopupOpen(false);
+            setIsPlanOpen(true);
+          }}
+        />
+      ) : null}
+      {/*
+        #1606 slice 2 — THE PLAN LADDER, BESIDE THE CREDIT PACKS.
+
+        Add credits sells credit packs to a plan holder now, and the nudge under
+        them (*a bigger plan gives more for the money*) needs somewhere to go.
+        `AccountSurfaces`'s own docblock already records what its absence costs:
+        *"the out-of-credits mounts open the top-up with no way to reach Change
+        plan from it, which is the cross-link §6f exists to provide."* This page
+        is one of those mounts, so it takes the pair — and `onAddCredits` leads
+        back, exactly as the pair does in `AccountSurfaces`.
+      */}
+      {isPlanOpen ? (
+        <ChangePlanModal
+          onClose={() => setIsPlanOpen(false)}
+          onAddCredits={() => {
+            setIsPlanOpen(false);
+            setIsTopupOpen(true);
+          }}
+        />
+      ) : null}
       </div>
     </div>
   );

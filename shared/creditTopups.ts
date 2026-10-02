@@ -166,20 +166,95 @@ export function topupDisplayCredits(units: number): number {
   return units * TOPUP_UNIT_DISPLAY_CREDITS;
 }
 
-/*
- * ⚠ THERE IS NO `TOPUP_PACKS` LIST HERE, AND ITS ABSENCE IS A DECISION.
+/**
+ * THE THREE PACKS — derived from the bands, never declared beside them.
  *
- * A pack IS a band's own first order — 1, 2 and 5 units — so the three of them
- * are already derivable from `TOPUP_BRACKETS` and `topupBracketPackSize` with
- * no second declaration. One was written and then taken back out, because the
- * only thing that would read it is the Add credits surface, which is this
- * card's NEXT slice: an export whose only importers are its own tests is what
- * `scripts/sweep-uncalled-exports-disposable.mts` lists and what the deletion
- * door then demands a verdict for, and the only verdict that fits the table is
- * *ruled for removal, waiting on a blocker* — which would be false of a symbol
- * about to gain a consumer, and would turn red the day it gained one. It
- * arrives with the surface that draws it.
+ * ⚠ **THIS SYMBOL WAS WRITTEN IN SLICE 1 AND TAKEN BACK OUT, BY DESIGN, AND
+ * THIS IS THE COMMIT THAT WAS WAITING FOR.** Its note read: *"the only thing
+ * that would read it is the Add credits surface, which is this card's NEXT
+ * slice … It arrives with the surface that draws it."* An export whose only
+ * importers are its own tests is what `sweep-uncalled-exports-disposable.mts`
+ * lists and what the deletion door then demands a verdict for — and the only
+ * verdict that table has is *ruled for removal, waiting on a blocker*, which
+ * would be false of a symbol about to gain a consumer. The consumer is
+ * `client/src/features/billing/AddCreditsModal.tsx`, in this commit.
+ *
+ * **A pack IS a band's own first order.** 1 unit, 2 units, 5 units — his three
+ * brackets read at their own floors, which is exactly how he named the Stripe
+ * prices. So there is no second list of sizes to keep in step with the ladder
+ * (working law 4), and a band he moves moves its pack with it.
+ *
+ * Ordered **biggest first**, because his design says so in terms: *"The three
+ * packs, biggest first"*. The surface draws them in array order and holds no
+ * opinion about it.
  */
+export interface TopupPack {
+  /** Units of {@link TOPUP_UNIT_DISPLAY_CREDITS}, which is what a checkout sends. */
+  readonly units: number;
+  /** What it costs, in cents, at this band's own rate. */
+  readonly cents: number;
+}
+
+/*
+ * ⚠ **THERE IS NO `displayCredits` ON A PACK, AND IT WAS WRITTEN AND TAKEN OUT
+ * IN THIS SAME COMMIT.** It carried `topupBracketPackSize(bracket)` — the
+ * 25,000 / 10,000 / 5,000 a customer reads — and the surface never read it: a
+ * credit figure a customer sees has to come through `displayBalance` to be
+ * printable at all (P1-1's rule, made structural by `DisplayCredits` being a
+ * branded type), so the screen derives it from `topupLedgerCredits` and this
+ * field was a second copy of the same number one conversion away. Working law
+ * 4 bans exactly that, and the compiler happened to enforce it here.
+ */
+export const TOPUP_PACKS: readonly TopupPack[] = TOPUP_BRACKETS
+  .map((bracket) => ({
+    units: bracket.fromUnits,
+    cents: topupPriceInCents(bracket.fromUnits),
+  }))
+  .reverse();
+
+/**
+ * WHICH ORDER SIZE IS THE BEST VALUE — the units behind the one badge, or
+ * `null` when there is nothing to badge.
+ *
+ * ⚠ **A BADGE ON EQUAL RATES IS A LIE, AND THAT IS HIS DESIGN'S OWN WORDING**:
+ * *"One badge only, Best value, on the pack with the best credits per dollar
+ * once the finance figures give the packs different rates; today all three are
+ * $12 per 5,000, so no badge until they differ."* That sentence was written
+ * under the FLAT ladder; his volume ladder of the same day gives the three
+ * bands three different rates, so the badge is earned — **but the condition
+ * stays**, because it is the honest one and because a flat ladder is one price
+ * word away from coming back.
+ *
+ * ⚠ **AND IT IS A PROPERTY OF THE BANDS RATHER THAN OF THE PACKS**, which is
+ * what makes it true of the slider too. The slider charges a band's rate at any
+ * whole number of units, so *best value* means *the cheapest band*, and the
+ * surface can ask the same question of a slider position as of a pack.
+ *
+ * Returns the cheapest band's floor. With every band at one rate there is no
+ * best, and the answer is `null` rather than the first or the last — a
+ * tie-break would put a badge on a pack that is not better than its
+ * neighbours.
+ *
+ * ⚠ **THE BANDS ARE A PARAMETER, AND THAT IS `castingSliceCredits`'s REASON
+ * RATHER THAN A CONVENIENCE.** The no-badge branch exists for a ladder whose
+ * rates are equal, and the live ladder's are not — so an arm over the real
+ * constants can only ever drive ONE of the two answers, and the branch that
+ * exists to stop a lie would be the untested one (working law 2: an arm over
+ * numbers that cannot disagree proves nothing). `server/creditTopupLadder.test.ts`
+ * hands it a flat ladder to see the `null`.
+ */
+export function bestValueTopupUnits(
+  brackets: readonly TopupBracket[] = TOPUP_BRACKETS,
+): number | null {
+  if (brackets.length === 0) return null;
+  const rates = brackets.map((bracket) => bracket.centsPerUnit);
+  const cheapest = Math.min(...rates);
+  if (rates.every((rate) => rate === cheapest)) return null;
+  /* The FIRST band at the cheapest rate: two bands sharing one rate are one
+     rate, and the smaller order reaches it sooner. */
+  const band = brackets.find((bracket) => bracket.centsPerUnit === cheapest);
+  return band ? band.fromUnits : null;
+}
 
 /**
  * THE WORD A CHECKOUT SESSION CALLS ITSELF BY, declared once.

@@ -457,7 +457,17 @@ export default function DrapeStudio() {
         onResolvePackage={() => openCastingDetails()}
       />
 
-      {isTopupOpen ? <AddCreditsModal onClose={() => setIsTopupOpen(false)} /> : null}
+      {/* #1606 slice 2: the nudge under the credit packs leads to the plan
+          ladder, and this page already owns that surface two lines down. */}
+      {isTopupOpen ? (
+        <AddCreditsModal
+          onClose={() => setIsTopupOpen(false)}
+          onChangePlan={() => {
+            setIsTopupOpen(false);
+            account.openChangePlan();
+          }}
+        />
+      ) : null}
 
       {/* Settings, Change plan and Add credits — one mount, section 03. */}
       <AccountSurfaces state={account} avatarUrl={profileImage} onAvatarChange={setProfileImage} />

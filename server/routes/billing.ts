@@ -43,7 +43,11 @@ import {
   OFFERED_PLAN_TIERS,
   ownPlanFacts,
 } from "../stripe/stripeProducts";
-import { CASTING_V2_ONE_CHARACTER_CREDITS } from "../castingV2/castViewPackage";
+import {
+  CASTING_V2_ONE_CHARACTER_CREDITS,
+  CASTING_V2_SIGN_PRICE_CREDITS,
+} from "../castingV2/castViewPackage";
+import { CASTING_V2_ROLL_PRICE_CREDITS } from "../casting/castingCreditCosts";
 import { appBaseUrl, PRODUCTION_APP_HOSTNAME } from "../_core/appOrigin";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { z } from "zod";
@@ -142,6 +146,36 @@ export const billingRouter = router({
         literal.
       */
       oneFinishedCharacterCredits: CASTING_V2_ONE_CHARACTER_CREDITS,
+      /*
+        WHAT A CREDIT PACK BUYS, IN THE TWO THINGS A CUSTOMER ASKS FOR (#1606
+        slice 2, P1-7). Ledger numbers, like every other figure here; the
+        surface divides them through `@shared/creditDisplay`.
+
+        His design for Add credits asks that every pack row say what it buys
+        *"in the customer's words and at the live prices"* — *about 78 Rolls,
+        or 14 Signs* — and *"DERIVED from the price table through the display
+        helper, never typed"*. A Roll and a Sign are the two ends of the road
+        the studio sells: the one that finds her and the one that fixes her.
+
+        ⚠ **THEY ARE SERVED HERE RATHER THAN READ FROM `castingV2.config`, AND
+        THE REASON IS THE SURFACE RATHER THAN TASTE.** That query is the casting
+        sheet's own, behind the casting scope chain; a billing modal that had to
+        open it to price a pack would be a money surface holding a feature flag.
+        `oneFinishedCharacterCredits` above arrived on this projection for the
+        same reason (#1607) and this is the second and third figure of the same
+        kind, not a new idea.
+
+        ⚠ **AND THE ROLL FIGURE IS THE ROLL'S, NOT THE FOLLOW'S.** They agree
+        today under his one-price ruling of 2026-10-02 (#1753) and they are
+        still two declared prices; a pack row counts what a customer casting a
+        new character spends, which is a Roll. `followCandidate` is deliberately
+        absent for the same reason it is absent from the character sum above.
+
+        D-15's rule holds: the client is served the number and never carries a
+        literal.
+      */
+      rollCredits: CASTING_V2_ROLL_PRICE_CREDITS,
+      signCredits: CASTING_V2_SIGN_PRICE_CREDITS,
     };
   }),
 

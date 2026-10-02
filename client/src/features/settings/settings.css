@@ -1056,6 +1056,158 @@
   flex: none;
 }
 
+/* ------------------------------------------------------------
+   3b · THE CREDIT PACKS AND THE SLIDER (#1606 slice 2)
+
+   His design asks for three packs biggest first and a slider
+   between them, in this product's own language rather than
+   Higgsfield's: monochrome, one rule per row, no gradient, no
+   struck price. Every token here is already in the system —
+   nothing new is declared for this surface, which is the
+   promotion pass's own test of whether a section earned one.
+   ------------------------------------------------------------ */
+
+.dp-topup__packs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  margin-top: var(--s-7);
+}
+
+/* A row is a radio, so the SELECTED state has to be visible without
+   colour doing the work: the ink border is the whole signal, which is
+   how `.dp-plan__card--current` reads one file over. */
+.dp-topup__pack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  width: 100%;
+  padding: 11px var(--s-6);
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+}
+.dp-topup__pack:hover { background: var(--raised); }
+.dp-topup__pack[aria-checked="true"] {
+  border-color: var(--ink);
+  background: var(--raised);
+}
+
+.dp-topup__packhead {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  width: 100%;
+}
+.dp-topup__packcredits {
+  font: 500 13.5px/1.2 var(--font-sans);
+  letter-spacing: -.016em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.dp-topup__packprice {
+  font: 500 13.5px/1.2 var(--font-sans);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* The basis line: what it buys, then the rate. Both are secondary to
+   the two figures above them — a row argues with its price first. */
+.dp-topup__packbuys {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-3);
+  width: 100%;
+  font: 400 11px/1.5 var(--font-sans);
+  color: var(--metaStrong);
+}
+.dp-topup__packrate {
+  margin-left: auto;
+  font: 400 10px/1.5 var(--font-mono);
+  letter-spacing: .02em;
+  color: var(--faint);
+  white-space: nowrap;
+}
+
+.dp-topup__slider {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  margin-top: var(--s-7);
+  padding: 15px var(--s-7);
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-lg);
+  background: var(--raised);
+}
+
+/*
+  The range input is styled rather than replaced, so the keyboard and
+  the screen reader get the real control and we only change how it
+  looks. `appearance: none` on the track plus an explicit thumb in both
+  vendor spellings is the whole of it; `accent-color` alone would leave
+  the browser's blue on Chromium, which is the one colour this system
+  does not have.
+*/
+.dp-topup__range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 18px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.dp-topup__range::-webkit-slider-runnable-track {
+  height: 2px;
+  border-radius: 1px;
+  background: var(--rule);
+}
+.dp-topup__range::-moz-range-track {
+  height: 2px;
+  border-radius: 1px;
+  background: var(--rule);
+}
+.dp-topup__range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -6px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ink);
+}
+.dp-topup__range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ink);
+}
+/*
+  NO FOCUS RULE HERE, AND THAT IS DELIBERATE RATHER THAN AN OMISSION.
+  `tokens.css`'s root rule gives every focusable thing an accent outline, and
+  its text-entry carve-out names `[type="range"]` among the types that KEEP it
+  — a range is a control, not a text box. A reset here would be an outline
+  reset in a stylesheet `anchoredPanel.test.ts` reads, written to replace a
+  ring the system already draws correctly.
+*/
+
+.dp-topup__sliderline {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+}
+.dp-topup__sliderbuys {
+  font: 400 11px/1.5 var(--font-sans);
+  color: var(--metaStrong);
+}
+
 /* ============================================================
    The two global rules the brief asks for as rules and not as
    per-element patches (§3): a pill's contents and every mono

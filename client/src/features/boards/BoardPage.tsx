@@ -25,6 +25,7 @@ import { CastPickerModal } from './canvas/CastPickerModal';
 import { BoardLoadingFrame } from './BoardLoadingFrame';
 import { CastingTakeover, type CastEditContext } from '@/features/studio/takeover/CastingTakeover';
 import { AddCreditsModal } from '@/features/billing/AddCreditsModal';
+import { ChangePlanModal } from '@/features/billing/ChangePlanModal';
 import { FirstRunIntro } from './components/FirstRunIntro';
 import { useGenerationJobs } from './stores/useGenerationJobs';
 import { useOptimisticFills } from './stores/useOptimisticFills';
@@ -177,6 +178,8 @@ function BoardPageImpl() {
   // no permanent number on the canvas. Same query the takeover refetches
   // after every generation, so the figure stays honest across surfaces.
   const [isTopupOpen, setIsTopupOpen] = useState(false);
+  /* #1606 slice 2 — the plan ladder the credit packs' nudge leads to. */
+  const [isPlanOpen, setIsPlanOpen] = useState(false);
   const { data: headerCredits } = trpc.credits.getBalance.useQuery(undefined, {
     enabled: isAuthenticated,
   });
@@ -2460,7 +2463,35 @@ function BoardPageImpl() {
           which reads the balance off `billing.getStatus` itself rather than
           being handed one, so the figure it shows and the figure it charges
           against come from the same read. */}
-      {isTopupOpen ? <AddCreditsModal onClose={() => setIsTopupOpen(false)} /> : null}
+      {isTopupOpen ? (
+        <AddCreditsModal
+          onClose={() => setIsTopupOpen(false)}
+          onChangePlan={() => {
+            setIsTopupOpen(false);
+            setIsPlanOpen(true);
+          }}
+        />
+      ) : null}
+      {/*
+        #1606 slice 2 — THE PLAN LADDER, BESIDE THE CREDIT PACKS.
+
+        Add credits sells credit packs to a plan holder now, and the nudge under
+        them (*a bigger plan gives more for the money*) needs somewhere to go.
+        `AccountSurfaces`'s own docblock already records what its absence costs:
+        *"the out-of-credits mounts open the top-up with no way to reach Change
+        plan from it, which is the cross-link §6f exists to provide."* This page
+        is one of those mounts, so it takes the pair — and `onAddCredits` leads
+        back, exactly as the pair does in `AccountSurfaces`.
+      */}
+      {isPlanOpen ? (
+        <ChangePlanModal
+          onClose={() => setIsPlanOpen(false)}
+          onAddCredits={() => {
+            setIsPlanOpen(false);
+            setIsTopupOpen(true);
+          }}
+        />
+      ) : null}
 
       {/* Version history modal */}
       {versionHistoryItemId !== null && (() => {

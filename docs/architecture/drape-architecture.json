@@ -10675,6 +10675,10 @@
       "path": "client/src/features/billing/burnCycle1739-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/billing/creditPacks1606-guard.test.ts",
+      "path": "client/src/features/billing/creditPacks1606-guard.test.ts"
+    },
+    {
       "id": "test:client/src/features/billing/monthlyDelta1761-guard.test.ts",
       "path": "client/src/features/billing/monthlyDelta1761-guard.test.ts"
     },
@@ -15753,6 +15757,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/billing/AddCreditsModal.tsx",
+      "to": "module:shared/creditTopups.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/billing/ChangePlanModal.tsx",
       "to": "module:client/src/features/billing/useCycleSpend.ts",
       "kind": "imports"
@@ -15900,6 +15909,11 @@
     {
       "from": "module:client/src/features/boards/BoardPage.tsx",
       "to": "module:client/src/features/billing/AddCreditsModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/BoardPage.tsx",
+      "to": "module:client/src/features/billing/ChangePlanModal.tsx",
       "kind": "imports"
     },
     {
@@ -19440,6 +19454,11 @@
     {
       "from": "module:client/src/features/studio/takeover/CastingTakeover.tsx",
       "to": "module:client/src/features/billing/AddCreditsModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/studio/takeover/CastingTakeover.tsx",
+      "to": "module:client/src/features/billing/ChangePlanModal.tsx",
       "kind": "imports"
     },
     {
@@ -32170,6 +32189,11 @@
     {
       "from": "module:server/routes/billing.ts",
       "to": "module:server/auditLog.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/billing.ts",
+      "to": "module:server/casting/castingCreditCosts.ts",
       "kind": "imports"
     },
     {
