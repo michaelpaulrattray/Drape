@@ -161,20 +161,20 @@ export function topupDisplayCredits(units: number): number {
   return units * TOPUP_UNIT_DISPLAY_CREDITS;
 }
 
-/**
- * The three packs, DERIVED from the bands rather than listed again.
+/*
+ * ⚠ THERE IS NO `TOPUP_PACKS` LIST HERE, AND ITS ABSENCE IS A DECISION.
  *
- * A pack is a band's own first order — which is what makes the three of them
- * the only sizes where a round number of credits meets a fresh rate, and why
- * his design puts them beside the slider instead of inside it. Add a fourth
- * band and a fourth pack appears; there is no second place to edit.
+ * A pack IS a band's own first order — 1, 2 and 5 units — so the three of them
+ * are already derivable from `TOPUP_BRACKETS` and `topupBracketPackSize` with
+ * no second declaration. One was written and then taken back out, because the
+ * only thing that would read it is the Add credits surface, which is this
+ * card's NEXT slice: an export whose only importers are its own tests is what
+ * `scripts/sweep-uncalled-exports-disposable.mts` lists and what the deletion
+ * door then demands a verdict for, and the only verdict that fits the table is
+ * *ruled for removal, waiting on a blocker* — which would be false of a symbol
+ * about to gain a consumer, and would turn red the day it gained one. It
+ * arrives with the surface that draws it.
  */
-export const TOPUP_PACKS: readonly { units: number; displayCredits: number; cents: number }[] =
-  TOPUP_BRACKETS.map((bracket) => ({
-    units: bracket.fromUnits,
-    displayCredits: topupBracketPackSize(bracket),
-    cents: bracket.centsPerUnit * bracket.fromUnits,
-  }));
 
 /**
  * THE WORD A CHECKOUT SESSION CALLS ITSELF BY, declared once.

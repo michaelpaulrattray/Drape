@@ -50,8 +50,8 @@ import { createTopupCheckoutSession } from "./stripeService";
 import { topupPriceLookupKey, StripePriceUnavailableError } from "./stripePriceCatalogue";
 import {
   TOPUP_CHECKOUT_KIND,
+  TOPUP_BRACKETS,
   TOPUP_MAX_UNITS,
-  TOPUP_PACKS,
   topupBracketFor,
   topupBracketPackSize,
   topupLedgerCredits,
@@ -165,11 +165,14 @@ describe("the session is a one-off purchase of N units at the band's own price",
   });
 
   it("his three packs reach the wire as their own band's price, one each", async () => {
-    for (const pack of TOPUP_PACKS) {
+    for (const bracket of TOPUP_BRACKETS) {
       vi.clearAllMocks();
-      await mint(pack.units);
+      await mint(bracket.fromUnits);
       expect(sentSession().line_items).toEqual([
-        { price: `price_topup_${pack.displayCredits}`, quantity: pack.units },
+        {
+          price: `price_topup_${topupBracketPackSize(bracket)}`,
+          quantity: bracket.fromUnits,
+        },
       ]);
     }
   });

@@ -41,7 +41,6 @@ import {
   TOPUP_BRACKETS,
   TOPUP_MAX_UNITS,
   TOPUP_NEEDS_A_PLAN_SENTENCE,
-  TOPUP_PACKS,
   TOPUP_UNIT_DISPLAY_CREDITS,
   TOPUP_UNIT_LEDGER_CREDITS,
   isSellableTopupUnits,
@@ -54,7 +53,15 @@ import {
 } from "@shared/creditTopups";
 import { PLAN_TIERS } from "../drizzle/schema";
 
-/** His ruling's three packs: display credits → dollars. */
+/**
+ * His ruling's three packs: display credits → dollars.
+ *
+ * ⚠ There is no `TOPUP_PACKS` constant to compare against, on purpose (the
+ * reason is on the gap where it would be in `shared/creditTopups.ts`), so the
+ * packs are DERIVED here from the bands exactly as a surface will derive them —
+ * which makes these arms a reading of the ladder rather than of a convenience
+ * list that could drift from it.
+ */
 const HIS_PACKS = [
   { displayCredits: 5_000, cents: 1_200 },
   { displayCredits: 10_000, cents: 2_200 },
@@ -75,20 +82,20 @@ describe("the ladder is the one he ruled, band for band", () => {
 
   it("the unit is 5,000 credits, which is the slider's step and the smallest pack", () => {
     expect(TOPUP_UNIT_DISPLAY_CREDITS).toBe(5_000);
-    expect(TOPUP_PACKS[0].displayCredits).toBe(TOPUP_UNIT_DISPLAY_CREDITS);
+    expect(topupBracketPackSize(TOPUP_BRACKETS[0])).toBe(TOPUP_UNIT_DISPLAY_CREDITS);
+    expect(HIS_PACKS[0].displayCredits).toBe(TOPUP_UNIT_DISPLAY_CREDITS);
   });
 
   it("the three packs are 5,000/$12 · 10,000/$22 · 25,000/$50, DERIVED from the bands", () => {
-    expect(
-      TOPUP_PACKS.map((p) => ({ displayCredits: p.displayCredits, cents: p.cents })),
-    ).toEqual(HIS_PACKS);
-    /* Derived, so the population cannot silently shrink: three bands, three
-       packs, and each pack is its own band's first order. */
-    expect(TOPUP_PACKS.length).toBe(TOPUP_BRACKETS.length);
-    TOPUP_PACKS.forEach((pack, i) => {
-      expect(pack.units).toBe(TOPUP_BRACKETS[i].fromUnits);
-      expect(pack.displayCredits).toBe(topupBracketPackSize(TOPUP_BRACKETS[i]));
-    });
+    const packs = TOPUP_BRACKETS.map((bracket) => ({
+      displayCredits: topupBracketPackSize(bracket),
+      cents: topupPriceInCents(bracket.fromUnits),
+    }));
+    expect(packs).toEqual(HIS_PACKS);
+    /* Three bands, three packs — the population cannot silently shrink, and
+       each pack's price comes off the real pricing function rather than a
+       multiplication repeated here. */
+    expect(packs.length).toBe(TOPUP_BRACKETS.length);
   });
 
   it("the pack sizes are the three sizes his Stripe keys are named for", () => {
@@ -133,9 +140,13 @@ describe("the ladder's shape — a volume discount, held to being one", () => {
 
 describe("⚠ the superseded flat reading is NOT what this product charges", () => {
   it("the slider at a pack's size costs exactly the pack", () => {
-    for (const pack of TOPUP_PACKS) {
-      expect(topupPriceInCents(pack.units)).toBe(pack.cents);
-    }
+    /* His three pack prices, by name, against what an order of that many units
+       is charged — the two readings a bracketed ladder must keep equal. */
+    HIS_PACKS.forEach((pack, i) => {
+      const units = TOPUP_BRACKETS[i].fromUnits;
+      expect(topupDisplayCredits(units)).toBe(pack.displayCredits);
+      expect(topupPriceInCents(units)).toBe(pack.cents);
+    });
   });
 
   it("'the 5,000 pack's price with quantity' overcharges from two units up", () => {
@@ -168,7 +179,7 @@ describe("credits granted are the product's one scale, not a second copy of ÷5"
   });
 
   it("his three packs grant 25,000 / 50,000 / 125,000 ledger credits", () => {
-    expect(TOPUP_PACKS.map((p) => topupLedgerCredits(p.units))).toEqual([
+    expect(TOPUP_BRACKETS.map((b) => topupLedgerCredits(b.fromUnits))).toEqual([
       25_000, 50_000, 125_000,
     ]);
   });
