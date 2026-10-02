@@ -30,7 +30,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   containingPaths,
@@ -39,10 +39,12 @@ import {
 } from "../scripts/lib/pushedDocSuites.mts";
 import { LAW_SURFACES } from "../scripts/lib/lawText.mts";
 import { BRIEFING_FILE } from "../scripts/lib/briefingConformance.mts";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 
-/* A tree-walking, repository-building suite: both of the repo-wide guards want
-   this declared at file level. */
-export const CONTENDED_TEST_TIMEOUT_MS = 120_000;
+/* Every arm here drives real `git` child processes against repositories it
+   builds, so the class's timeout is declared at file level — vitest's 5s
+   default goes red under load on somebody's machine and not in CI (#548). */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const repoRoot = path.resolve(import.meta.dirname, "..");
 const made: string[] = [];
