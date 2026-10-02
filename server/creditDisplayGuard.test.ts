@@ -138,8 +138,24 @@ const repoRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
   than the legacy studio's per-frame price, and nothing in the replacement is
   indicted. The budget comes off with the row: a row removed while its count
   stays leaves slack, and slack is how the next unrouted site ships green.
+
+  ⚠ **18 → 17 (#1773), BY THE SAME DOOR AND FOR THE SAME REASON.** The site was
+  deleted: the credits-per-dollar chip left every plan card on his word — *"on
+  the free card remove the free CREDITS PER $1 line thats stupid"*, and the same
+  hour, on the rate belonging to Add credits rather than to plans, *"yes i like
+  this"*. The budget comes off with the row.
+
+  ⚠ **AND IT TOUCHES THE FLOOR-OF-FOUR SENTENCE IN `creditDisplaySites.ts`'s
+  header, which is why this is not a bare decrement.** That sentence says the
+  client half has a floor of four and that *"a later slice that drives it to
+  zero has done something wrong rather than something thorough"* — the four
+  being sites where the conversion happens INSIDE a function the rules cannot
+  see through. One of the four is gone now, and it did not go by the road that
+  sentence was warning about: nothing was re-expressed to dodge a rule, and no
+  rule was widened. **The surface it stood on no longer prints the number at
+  all.** The floor is three, for the same reason it was four.
 */
-const OCCURRENCES_CEILING = 18;
+const OCCURRENCES_CEILING = 17;
 
 const censusedOccurrences = UNROUTED.reduce((total, row) => total + row.count, 0);
 
