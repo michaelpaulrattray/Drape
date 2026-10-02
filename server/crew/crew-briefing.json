@@ -1,7 +1,7 @@
 {
   "edition": 615,
-  "updatedAt": "2026-10-02T10:20:00.000Z",
-  "shift": "Night shift, 19:14: a view you were given without a check used to let you ask for it again free, over and over. When our checker cannot answer, the picture still arrives and you are told it was not checked, and you get a free Try again — that is your rule and it stands. What was missing was the word \"once\". Asking again did not change the fact that nobody had checked it, so the free offer came back every single time, and we would have kept rendering 2K views for nothing for as long as the checker stayed down. Now the first ask on an unchecked view is free and the second costs 370, exactly like asking again for a view that never arrived. Nothing on your screen changes: the line still reads Unchecked · Try again with no price on it, which is what you asked for in September, and a Try again that charges without saying so is already how the refunded one has always worked. It needed no change to the database — we can already tell which of her five views an ask was about from the record the ask leaves behind. Also checked, because the card asked for them and I did not want anyone building them twice: the two remaining pieces of that card — how a Sign gives money back when some views fail, and the rule that stops a refund happening twice — are already built and already tested, and I ran those tests rather than taking their word for it. It is waiting on review before it goes live.",
+  "updatedAt": "2026-10-02T10:00:00.000Z",
+  "shift": "Night shift, 19:14: a view you were given without a check used to let you ask for it again free, over and over. When our checker cannot answer, the picture still arrives and you are told it was not checked, and you get a free Try again — that is your rule and it stands. What was missing was the word \"once\". Asking again did not change the fact that nobody had checked it, so the free offer came back every single time, and we would have kept rendering 2K views for nothing for as long as the checker stayed down. Now the first ask on an unchecked view is free and the second costs 370, exactly like asking again for a view that never arrived. Nothing on your screen changes: the line still reads Unchecked · Try again with no price on it, which is what you asked for in September, and a Try again that charges without saying so is already how the refunded one has always worked. It needed no change to the database — we can already tell which of her five views an ask was about from the record the ask leaves behind. Also checked, because the card asked for them and I did not want anyone building them twice: the two remaining pieces of that card — how a Sign gives money back when some views fail, and the rule that stops a refund happening twice — are already built and already tested, and I ran those tests rather than taking their word for it. It passed review and is merged.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -9229,9 +9229,9 @@
     {
       "id": "free-retry-once-1601",
       "title": "One free Try again per unchecked view, not an unlimited supply (#1601 item 4)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1766,
-      "note": "Open and held — it moves money, so it waits for a review by hand."
+      "note": "Merged ba10019f0 — reviewed by hand, money surface."
     }
   ],
   "problems": [
