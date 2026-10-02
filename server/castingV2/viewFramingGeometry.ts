@@ -64,17 +64,27 @@
  *    so in its own `readerRemainder`. A remainder that is written down is a
  *    scope line; one that is not is a silence, and this file would rather be
  *    short than quiet.
- *  - ⚠ **AND IT DOES NOT COVER EVERY CLAUSE OF THE VIEWS IT DOES COVER —
- *    measured 2026-10-01, when the hand-over was picked up.** Four views state a
- *    framing clause that neither a rule nor a remainder accounts for, and the
- *    worst of them is `closeUp`, the ONE view this file's own types called fully
- *    measured. Each is declared on its band as {@link ViewFramingBand.unrestated}
+ *  - ⚠ **AND IT DID NOT COVER EVERY CLAUSE OF THE VIEWS IT DOES COVER —
+ *    measured 2026-10-01, when the hand-over was picked up.** Four views stated a
+ *    framing clause that neither a rule nor a remainder accounted for, and the
+ *    worst of them was `closeUp`, the ONE view this file's own types called fully
+ *    measured. Each was declared on its band as {@link ViewFramingBand.unrestated}
  *    and held there; the hand-over is paid off per view, and a view whose debt is
  *    not empty cannot hand its framing axis over without deleting a stated test.
  *    **The reason it went unseen is worth more than the list**: the guard pairing
  *    bands with sentences holds every RULE to citing a clause and every CITED
  *    clause to keeping its rule, and neither direction can see a clause no rule
  *    ever cited.
+ *
+ *    ⚠ **ALL FIVE ARE PAID — 2026-10-02.** Four went to a reader's remainder
+ *    (#1717: two orientations, a direction and a feature count, none of which a
+ *    box answers) and the fifth, `frontClose`'s *"a head-and-shoulders
+ *    portrait"*, is restated by a `roomBelowAtMost face` rule whose bound was
+ *    measured on 43 of his own production frames rather than chosen. **No band
+ *    carries `unrestated` today**, so the hand-over's precondition is met on
+ *    every view; what it still is not, is done — `measureViewFraming` has no
+ *    production caller, and the slice that gives it the framing axis is its own
+ *    money change.
  */
 import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
@@ -154,6 +164,15 @@ export type FramingRule =
    * failed on five of five of his frames (see {@link FRAMING_LANDMARKS}). Room
    * below the face is the same fact with no body part in it, which is why it
    * works on a creature with tusks and a cowl.
+   *
+   * ⚠ **IT HAS TWO CONSUMERS NOW AND THEY ASK IT IN OPPOSITE DIRECTIONS — 2026-10-02.**
+   * The close-up's 0.3 is a TOO-LOOSE bound (any more picture below the face and
+   * it has stopped being a close-up); `frontClose`'s 3.7 is the same bound with
+   * the same sign doing a different job — any more and a head-and-shoulders
+   * Portrait has become a full length. One rule, two numbers, each measured on
+   * its own population and each written beside the view that owns it. **Neither
+   * is derivable from the other**, which is why the band declares the number
+   * rather than this file holding a default.
    *
    * Scale-free by construction: both terms are read off the same frame in the
    * same pixels, so re-framing cannot move the ratio on its own.
