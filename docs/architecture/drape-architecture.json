@@ -13263,6 +13263,10 @@
       "path": "server/dependencyOverrideBounds.test.ts"
     },
     {
+      "id": "test:server/dependencyOverrideResolution.test.ts",
+      "path": "server/dependencyOverrideResolution.test.ts"
+    },
+    {
       "id": "test:server/deployTriggerClaims.test.ts",
       "path": "server/deployTriggerClaims.test.ts"
     },
