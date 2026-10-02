@@ -835,6 +835,92 @@ describe("try again on one view — what moves, and in what order", () => {
     expect(proofs).toEqual(["cast-view:7:backFull"]);
   });
 
+  it("⚠ THE CLAIM SAYS WHAT IT WILL COST, so a paid ask that dies before it runs is not read as her free one (#1767)", async () => {
+    /*
+      THE DEFECT, DRIVEN AS ITS OWN SEQUENCE.
+
+      `plannedCredits = 0` is how the product recognises a FREE Try again
+      (`spentFreeViewRetryFilter`, `server/db/castingV2ViewRetry.ts`). It used to
+      be written by `markGenerationOperationRunning`, ONE STATEMENT AFTER the
+      claim, over a schema default of 0 — so a PAID retry whose `markRunning`
+      threw settled as `failed` still carrying that 0, indistinguishable from the
+      free ask she had not used. Nothing was charged; she simply found her one
+      free Try again on that view gone, and was asked to pay 370 credits for it.
+
+      Asserted at the WIRE (invariant 5) rather than on the constant beside it:
+      what is read is the claim the entrance actually sent. And `markRunning`
+      THROWS here, which is the whole point — a version of this arm with a
+      healthy `markRunning` would pass against the old code too, because the old
+      code wrote the right figure one statement later.
+    */
+    const claims: Array<{ plannedCredits?: number }> = [];
+    const deps = dependencies([slot()], {
+      begin: async (claim) => {
+        journal.push("claim");
+        claims.push(claim as never);
+        return { type: "execute" as const, operationId: OPERATION_ID };
+      },
+      markRunning: (async () => {
+        journal.push("running");
+        throw new Error("the process died between the claim and the running transition");
+      }) as ViewRetryServiceDependencies["markRunning"],
+    });
+
+    /* The settle itself is the real `completeDirectOperationFailure`, which is
+       not injectable here and needs a database, so the entrance rethrows rather
+       than returning. That is this fixture's shape, not the product's — in
+       production the row is written `failed` and the customer is told. What
+       matters for THIS arm is the sequence and what the claim carried, both of
+       which are complete before the settle is reached. */
+    await expect(retryCastView(deps, input)).rejects.toThrow(/died between the claim and the running transition/);
+
+    /* The ask really did die inside the gap — the defect's own sequence, not a
+       convenient one. Nothing was charged, which was always correct. */
+    expect(journal).toEqual(["claim", "running"]);
+    expect(deducts).toEqual([]);
+
+    /* And the claim had already said what it was going to cost. */
+    expect(claims).toHaveLength(1);
+    expect(
+      claims[0]!.plannedCredits,
+      "the claim did not carry the price — a paid Try again that dies here reads as her spent free one",
+    ).toBe(TRY_AGAIN_PRICE);
+    expect(claims[0]!.plannedCredits, "the fixture's price is the default 0 — this arm proves nothing").not.toBe(0);
+  });
+
+  it("⚠ AND THE OTHER DIRECTION: a FREE ask claims 0, so the figure is the price and not a flag (#1767)", async () => {
+    /*
+      Without this the arm above is satisfied by an entrance that writes the paid
+      price onto every claim, free ones included — which would spend a customer's
+      free ask the moment she used it and then hand it back forever after. The
+      column is the PRICE, and on a free ask the price is 0.
+    */
+    const claims: Array<{ plannedCredits?: number }> = [];
+    /* The same unjudged fixture the free-deduct arm above uses, so the two arms
+       are asking about one slot rather than two different ones. */
+    const free = slot({
+      state: "ready",
+      url: "https://cdn.example/view.png",
+      unjudged: true,
+      note: null,
+      refundedCredits: null,
+      retry: { priceCredits: 0, reason: "unchecked" },
+    });
+    const deps = dependencies([free], {
+      begin: async (claim) => {
+        claims.push(claim as never);
+        return { type: "execute" as const, operationId: OPERATION_ID };
+      },
+    });
+
+    await retryCastView(deps, input);
+
+    expect(claims).toHaveLength(1);
+    expect(claims[0]!.plannedCredits, "a free Try again claimed a price").toBe(0);
+    /* A free ask never touches the deduct at all — the fixture really is free. */
+    expect(deducts).toEqual([]);
+  });
+
   it("a second view may be asked for while the first one renders — the key is per slot", async () => {
     /*
       HIS SECOND REPORT, GUARDED FROM THE OTHER SIDE (#1235, #1257).

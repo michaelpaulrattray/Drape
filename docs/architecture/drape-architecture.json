@@ -13595,6 +13595,10 @@
       "path": "server/planChangeQuote.test.ts"
     },
     {
+      "id": "test:server/plannedCreditsAtClaim.test.ts",
+      "path": "server/plannedCreditsAtClaim.test.ts"
+    },
+    {
       "id": "test:server/prMergeOrder.test.ts",
       "path": "server/prMergeOrder.test.ts"
     },
@@ -36791,10 +36795,10 @@
       "message": "Names 7 of LockFacts's 7 fields (server/castingV2/castingIntent.ts), 7 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:1474",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:1479",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:1474",
+      "subject": "server/castingV2/rollService.ts:1479",
       "message": "Names 2 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

@@ -124,6 +124,8 @@ export async function cancelInkAddIntent(
 
   const gate = await (dependencies.begin ?? beginDirectOperation)({
     ...claim,
+    /* #1767 — the same figure the running transition below writes. */
+    plannedCredits: 0,
     lockKey: modelOperationLockKey(subject.modelId),
   });
   if (gate.type === "replay") return closedCancelledResult(gate.result);
@@ -291,6 +293,8 @@ export async function cancelInkProjectionCandidate(
   }
   const gate = await (dependencies.begin ?? beginDirectOperation)({
     ...claim,
+    /* #1767 — the same figure the running transition below writes. */
+    plannedCredits: 0,
     lockKey: modelOperationLockKey(subject.modelId),
   });
   if (gate.type === "replay") {

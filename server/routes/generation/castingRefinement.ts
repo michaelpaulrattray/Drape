@@ -157,6 +157,10 @@ export const castingRefinementRouter = router({
           maskBase64: input.maskBase64 ?? null,
           referenceImage: input.referenceImage ?? null,
         },
+        /* #1767 — the same figure the running transition below writes, written
+           where the row is born so a row settled before it still says what it
+           was going to cost. */
+        plannedCredits: CREDIT_COSTS.iterate,
         lockKey,
       });
       if (gate.type === "replay") {
@@ -943,6 +947,10 @@ export const castingRefinementRouter = router({
         kind: "casting.compact",
         modelId: input.modelId,
         payload: { modelId: input.modelId },
+        /* #1767 — the same figure the running transition below writes, written
+           where the row is born so a row settled before it still says what it
+           was going to cost. */
+        plannedCredits: 0,
         lockKey,
       });
       if (gate.type === "replay") {

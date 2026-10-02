@@ -511,7 +511,24 @@ export default function AdminCrew() {
             <p className="dp-chrome dp-crew__stamp" data-testid="crew-edition-stamp">
               Briefing edition {stateQuery.data.briefing.edition}, written{" "}
               {staffDateTime(stateQuery.data.briefing.updatedAt)} by{" "}
-              {stateQuery.data.briefing.shift}
+              {/* THE SHIFT'S NOTE, ON ITS OWN LINES (#1679).
+                  It is the only briefing field rendered by the PAGE rather than
+                  by a crew component, which is why nothing mapped it and an
+                  edition written in paragraphs turned main red on
+                  `crewBodyWhitespace.test.ts`.
+
+                  ⚠ "written … by" IS KEPT WORD FOR WORD, and that is deliberate
+                  rather than incidental: it is a founder ruling (#415 — the
+                  stamp names WHO wrote the briefing, which the bar above cannot
+                  say) and `counts415-guard.test.ts` holds it. What changed is
+                  only that the field is WRAPPED so it can keep its blank lines,
+                  which that guard's own docblock says is not what it forbids.
+
+                  Read at the editions, the field is not a byline anyway: the
+                  last five run 390 to 2,906 characters and every one of them
+                  names its own author first ("Relay, 08:40:", "Foreman night
+                  shift —"). A block is what a note that long needs. */}
+              <span className="dp-crew__stampnote">{stateQuery.data.briefing.shift}</span>
               {live.available
                 ? ` · GitHub read ${staffDateTime(live.desk.readAt)}${live.stale ? " and not answering since" : ""}`
                 : " · GitHub has not answered yet"}

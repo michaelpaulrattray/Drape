@@ -399,6 +399,9 @@ export async function beginInkAnywhereIntent(
       anatomy: plan.anatomy,
       recipeVersion: plan.recipeVersion,
     },
+    /* #1767 — beginning an intent is free and this road never marks the
+       operation running, so the row's 0 is stated rather than defaulted. */
+    plannedCredits: 0,
     lockKey: modelOperationLockKey(input.modelId),
   });
   if (gate.type === "replay") {

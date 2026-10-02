@@ -718,6 +718,10 @@ async function executeCandidate(
     kind: input.operationKind,
     modelId: intent.modelId,
     payload: { intentId: input.intentId },
+    /* #1767 — the same figure the running transition below writes, written
+       where the row is born so a row settled before it still says what it
+       was going to cost. */
+    plannedCredits: INK_ADD_PRICE_CREDITS,
     lockKey: modelOperationLockKey(intent.modelId),
   });
   if (gate.type === "replay") {
@@ -967,6 +971,10 @@ async function executeProjectionCandidate(
     kind: input.operationKind,
     modelId: input.modelId,
     payload,
+    /* #1767 — the same figure the running transition below writes, written
+       where the row is born so a row settled before it still says what it
+       was going to cost. */
+    plannedCredits: projectionPrice,
     lockKey: modelOperationLockKey(input.modelId),
   });
   if (gate.type === "replay") {

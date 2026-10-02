@@ -629,6 +629,10 @@ export const castingExportRouter = router({
           modelId: input.modelId,
           restorePointId: input.restorePointId,
         },
+        /* #1767 — the same figure the running transition below writes, written
+           where the row is born so a row settled before it still says what it
+           was going to cost. */
+        plannedCredits: 0,
         lockKey,
       });
       if (gate.type === "replay") {
@@ -726,6 +730,10 @@ export const castingExportRouter = router({
         kind: "casting.restore",
         modelId: input.modelId,
         payload: { modelId: input.modelId, angle: input.angle, assetId: input.assetId },
+        /* #1767 — the same figure the running transition below writes, written
+           where the row is born so a row settled before it still says what it
+           was going to cost. */
+        plannedCredits: 0,
         lockKey,
       });
       if (gate.type === "replay") {

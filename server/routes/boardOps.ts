@@ -116,6 +116,10 @@ async function executeCanvasOperation<Result extends PublicOperationResult>(inpu
     originBoardId: input.originBoardId,
     originItemId: input.originItemId,
     payload: input.payload,
+    /* #1767 — the caller hands the price in, so it is in hand one statement
+       before the claim rather than one statement after it; the running
+       transition below writes the very same field. */
+    plannedCredits: input.plannedCredits,
     lockKey: input.lockKey,
   });
   if (gate.type === "replay") return gate.result as Result;
@@ -532,6 +536,10 @@ export const boardOpsRouter = router({
               itemId: input.itemId,
               semantics: "exact_editable_copy",
             },
+            /* #1767 — a fork is free and this road never marks the operation
+               running at all, so without this the row's 0 would be the schema
+               default standing in for a fact nobody stated. */
+            plannedCredits: 0,
             lockKey: modelOperationLockKey(model.id),
           });
           if (gate.type === "replay") {
