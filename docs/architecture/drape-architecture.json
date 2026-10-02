@@ -13503,6 +13503,10 @@
       "path": "server/lobby.test.ts"
     },
     {
+      "id": "test:server/localBranchSweep.test.ts",
+      "path": "server/localBranchSweep.test.ts"
+    },
+    {
       "id": "test:server/loginRefusalNotes.test.ts",
       "path": "server/loginRefusalNotes.test.ts"
     },

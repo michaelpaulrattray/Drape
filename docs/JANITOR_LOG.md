@@ -40,6 +40,32 @@ founder 2026-08-26, *"do it"*). What lives here and nowhere else:
    `server/memoryIndexAudit.test.ts` proves the READER against fixture trees,
    which is the half that can be automated; this clock is the other half.
 
+4. **The local `team/*` branch ledger** (#1797) —
+   `npx tsx scripts/janitor-local-branches.mts`, read-only by default, with
+   `--delete` and `--delete --dry-run`. ⚠ **DO NOT HAND-ROLL THIS CRITERION
+   AGAIN, AND THE REASON IS THE CARD.** Run 11 keyed its local sweep on *the
+   branches that same run deleted remotely*; the moment
+   `delete_branch_on_merge` went on (#1434) and GitHub took the remote side
+   over, that input went to near zero and local refs **lost their only
+   sweeper** — 115 → 295 in three days while the remote fell to 66, the two
+   counts moving in opposite directions for one reason. Nothing broke; a
+   criterion stopped selecting anything. The criterion now asks the PULL
+   REQUEST, which cannot be taken away by automating something else: a
+   worktree's hold first, then a MERGED pull request (GitHub REST), then that
+   pull request's recorded head read over the git protocol, which must EQUAL
+   the local tip. **Two readers sharing no resolver**, which is what the card
+   asked for, and `refs/pull/<n>/head` is both the criterion and the restore
+   road because it is not a branch and survives the deletion.
+   ⚠ **AND `git branch --merged` IS THE WRONG READER FOR THIS REPOSITORY.**
+   Every merge here is a squash, so a branch's own commits never become
+   ancestors of `main`: of the **121 refs this criterion calls deletable, 121
+   are NOT ancestors of `origin/main`** (measured 2026-10-02). Trusting
+   `--no-merged` keeps every one of them; trusting `--merged` and inverting it
+   **deletes work this machine alone holds.** The tool writes its manifest
+   BEFORE deleting anything, two restore roads per row, and re-reads the hold
+   and every tip immediately before the delete — which fired on run 11 inside
+   one sitting when a seat moved a worktree's branch mid-run.
+
 Every Janitor run BEGINS by reading this file and ENDS by appending to it.
 Findings are deduped against the queue, open and closed. knip, the Atlas
 and the un-wiring differ are three readers with no shared resolver, and
