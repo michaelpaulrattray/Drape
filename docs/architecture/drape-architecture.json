@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 77
+      "moduleCount": 78
     },
     {
       "id": "domain:staff",
@@ -6037,6 +6037,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:shared/creditTopups.ts",
+      "path": "shared/creditTopups.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:shared/crewCardBuildState.ts",
       "path": "shared/crewCardBuildState.ts",
       "domain": "shared",
@@ -6812,6 +6818,16 @@
       "id": "route:billing.createSubscriptionCheckout",
       "namespace": "billing",
       "name": "createSubscriptionCheckout",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": false,
+      "file": "server/routes/billing.ts"
+    },
+    {
+      "id": "route:billing.createTopupCheckout",
+      "namespace": "billing",
+      "name": "createTopupCheckout",
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
@@ -10220,6 +10236,21 @@
       "constant": "LEDGER_PER_DISPLAY_CREDIT",
       "credits": 5,
       "file": "shared/creditDisplay.ts"
+    },
+    {
+      "id": "cost:shared/creditTopups.ts:TOPUP_UNIT_DISPLAY_CREDITS",
+      "name": "TOPUP_UNIT_DISPLAY_CREDITS",
+      "constant": "TOPUP_UNIT_DISPLAY_CREDITS",
+      "credits": 5000,
+      "file": "shared/creditTopups.ts"
+    },
+    {
+      "id": "cost:shared/creditTopups.ts:TOPUP_UNIT_LEDGER_CREDITS",
+      "name": "TOPUP_UNIT_LEDGER_CREDITS",
+      "constant": "TOPUP_UNIT_LEDGER_CREDITS",
+      "credits": 25000,
+      "derivedFrom": "TOPUP_UNIT_DISPLAY_CREDITS * LEDGER_PER_DISPLAY_CREDIT",
+      "file": "shared/creditTopups.ts"
     }
   ],
   "vocabulary": [
@@ -12976,6 +13007,14 @@
       "path": "server/creditToolKind.test.ts"
     },
     {
+      "id": "test:server/creditTopupCheckout.test.ts",
+      "path": "server/creditTopupCheckout.test.ts"
+    },
+    {
+      "id": "test:server/creditTopupLadder.test.ts",
+      "path": "server/creditTopupLadder.test.ts"
+    },
+    {
       "id": "test:server/credits.test.ts",
       "path": "server/credits.test.ts"
     },
@@ -14270,6 +14309,14 @@
     {
       "id": "test:server/stripe/subscriptionNewerGuard.test.ts",
       "path": "server/stripe/subscriptionNewerGuard.test.ts"
+    },
+    {
+      "id": "test:server/stripe/topupCheckoutWire.test.ts",
+      "path": "server/stripe/topupCheckoutWire.test.ts"
+    },
+    {
+      "id": "test:server/stripe/topupGrant.test.ts",
+      "path": "server/stripe/topupGrant.test.ts"
     },
     {
       "id": "test:server/stripe/voidInvoiceStatus.test.ts",
@@ -32146,6 +32193,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/routes/billing.ts",
+      "to": "module:shared/creditTopups.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/routes/boardOps.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -34266,6 +34318,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/stripe/stripePriceCatalogue.ts",
+      "to": "module:shared/creditTopups.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/stripe/stripeProducts.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -34318,6 +34375,11 @@
     {
       "from": "module:server/stripe/stripeService.ts",
       "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/stripeService.ts",
+      "to": "module:shared/creditTopups.ts",
       "kind": "imports"
     },
     {
@@ -34388,6 +34450,11 @@
     {
       "from": "module:server/stripe/webhooks.ts",
       "to": "module:server/stripe/subscriptionPeriods.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/webhooks.ts",
+      "to": "module:shared/creditTopups.ts",
       "kind": "imports"
     },
     {
@@ -34703,6 +34770,11 @@
     {
       "from": "module:shared/castingRealization.ts",
       "to": "module:shared/castingVocabularies.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/creditTopups.ts",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {

@@ -90,6 +90,8 @@ export {
   updateUserSubscription,
   getUserByStripeCustomerId,
   refreshMonthlyCredits,
+  // The credit-purchase grant, reachable again since #1606 sold top-ups back.
+  addTopupCredits,
   getSubscriptionByUserId,
   getCycleSpend,
 } from "./billing";

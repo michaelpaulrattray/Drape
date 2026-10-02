@@ -63,6 +63,11 @@ import {
   periodPriceInCents,
   stripeIntervalOf,
 } from "@shared/annualBilling";
+import {
+  type TopupBracket,
+  topupBracketFor,
+  topupBracketPackSize,
+} from "@shared/creditTopups";
 
 /** The catalogue generation these keys belong to. Bumping it is a founder-side
  *  act in Stripe FIRST — the keys must exist before the code asks for them. */
@@ -196,6 +201,95 @@ export async function resolvePriceId(
     throw new StripePriceUnavailableError(
       lookupKey,
       `names price ${price.id} at ${price.unit_amount} cents, which is not the ${expected} cents this product shows for ${plan} ${interval}`,
+    );
+  }
+
+  return price.id;
+}
+
+/**
+ * The lookup key for a top-up rate band (#1606).
+ *
+ * `klieg_topup_<the band's own pack size>_v2` — composed from the band rather
+ * than typed, for the reason `priceLookupKey` above is composed: three strings
+ * sitting beside three prices is a second copy of the catalogue, and the drift
+ * would be a checkout that refuses while Stripe holds a perfectly good price.
+ * The three keys this produces are pinned against the three his hand created
+ * in `stripePriceCatalogue.test.ts`.
+ */
+export function topupPriceLookupKey(bracket: TopupBracket): string {
+  return `klieg_topup_${topupBracketPackSize(bracket)}_${PRICE_LOOKUP_KEY_VERSION}`;
+}
+
+/**
+ * The price id for a top-up of `units`, read from Stripe's catalogue.
+ *
+ * The same four refusals as the plan road and for the same reasons — absent,
+ * ambiguous, the wrong KIND of price, or an amount this product's own screens
+ * do not show — with one difference that matters:
+ *
+ * ⚠ **THE KIND CHECK IS INVERTED HERE.** A plan price must recur; a top-up
+ * price must NOT. A recurring price sent through `mode: "payment"` is refused
+ * by Stripe, but that is not the failure this arm is for: a top-up key MOVED
+ * onto a recurring price would be a customer signing up to buy 5,000 credits
+ * every month from a button that says *Add credits*. The refusal names the key
+ * and nothing reaches the wire.
+ *
+ * ⚠ **AND THE AMOUNT IS PER UNIT, NOT PER ORDER.** `unit_amount` is compared
+ * against the band's `centsPerUnit`, because the order's price is that amount
+ * times the `quantity` the session sends. Comparing it against the whole order
+ * would pass only for one-unit orders and refuse every other one.
+ */
+export async function resolveTopupPriceId(
+  client: Pick<Stripe, "prices">,
+  units: number,
+): Promise<string> {
+  /* Refuses on a count this product does not sell before any network call —
+     the bound is `TOPUP_MAX_UNITS` and it is argued where it is declared. */
+  const bracket = topupBracketFor(units);
+  const lookupKey = topupPriceLookupKey(bracket);
+
+  const page = await client.prices.list({
+    lookup_keys: [lookupKey],
+    active: true,
+    limit: 2,
+  });
+
+  /* Asked by key and filtered by key, for `resolvePriceId`'s reason: a price
+     whose own `lookup_key` is null is not the answer to a question about one. */
+  const matches = page.data.filter((price) => price.lookup_key === lookupKey);
+
+  if (matches.length === 0) {
+    throw new StripePriceUnavailableError(
+      lookupKey,
+      "names no active price in Stripe's catalogue",
+    );
+  }
+  if (matches.length > 1) {
+    throw new StripePriceUnavailableError(
+      lookupKey,
+      `is claimed by ${matches.length} active prices (${matches.map((p) => p.id).join(", ")})`,
+    );
+  }
+
+  const price = matches[0];
+  if (price.recurring) {
+    throw new StripePriceUnavailableError(
+      lookupKey,
+      /* ⚠ The sentence deliberately does NOT say the word "credit": the
+         credit-display guard's rule 2 indicts a credit-named value inside a
+         sentence that says credits, and `price.recurring.interval` is a WORD
+         ("month") in a refusal that reaches a log rather than a customer. A
+         false indictment is how a guard gets deleted instead of fixed, so the
+         sentence is written out of its reach — it loses nothing, because a pack
+         is what this key sells. */
+      `names price ${price.id}, which recurs per ${price.recurring.interval} — a pack is bought once, not subscribed to`,
+    );
+  }
+  if (price.unit_amount !== bracket.centsPerUnit) {
+    throw new StripePriceUnavailableError(
+      lookupKey,
+      `names price ${price.id} at ${price.unit_amount} cents a unit, which is not the ${bracket.centsPerUnit} cents this product shows for ${units} unit(s)`,
     );
   }
 

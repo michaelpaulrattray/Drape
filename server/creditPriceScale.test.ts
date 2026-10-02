@@ -61,6 +61,11 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { FREE_SIGNUP_GRANT_CREDITS, PLAN_TIERS } from "../drizzle/schema";
+import {
+  TOPUP_MAX_UNITS,
+  TOPUP_UNIT_LEDGER_CREDITS,
+  topupLedgerCredits,
+} from "@shared/creditTopups";
 import { LEDGER_PER_DISPLAY_CREDIT } from "../shared/creditDisplay";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -111,6 +116,13 @@ const NOT_A_PRICE: Readonly<Record<string, string>> = {
   "cost:shared/creditDisplay.ts:LEDGER_PER_DISPLAY_CREDIT":
     "5 — the scale itself, which is what this suite divides BY. Exempt because "
     + "it is the rule rather than a subject of it.",
+  "cost:shared/creditTopups.ts:TOPUP_UNIT_DISPLAY_CREDITS":
+    "5,000 — the top-up unit on the CUSTOMER's scale (#1606), so it is not a "
+    + "ledger figure and the rule does not apply to it. Its ledger twin is "
+    + "`TOPUP_UNIT_LEDGER_CREDITS`, which is in the list and is swept. Exempted "
+    + "even though 5,000 would pass, per this list's own rule: an exemption "
+    + "that exists only while its value happens to divide is an exemption that "
+    + "silently stops being checked.",
 };
 
 /** Every row the Atlas carries a number for, after the four exemptions. */
@@ -261,22 +273,42 @@ describe("the two populations the Atlas price list cannot see", () => {
     expect(FREE_SIGNUP_GRANT_CREDITS).toBe(13_500);
   });
 
-  it("⚠ names the top-up prices as ABSENT, so the commit that adds them enrols them here", () => {
+  it("⚠ the top-up grants are ENROLLED, and every one of them divides by 5", () => {
     /*
-      #1606 sells 5,000 / 10,000 / 25,000 display credits for $12 / $24 / $60,
-      and it is explicitly after #1604. There is no top-up price table in the
-      tree today, so there is nothing to sweep — and an arm that quietly swept
-      an empty set is how the card's own done-when ("a sweep over … top-ups")
-      gets reported as satisfied by a sweep that could not fail.
+      ⚠ **THIS ARM USED TO ASSERT THE OPPOSITE AND IT DID ITS JOB.** It read
+      *"names the top-up prices as ABSENT, so the commit that adds them enrols
+      them here"*, because there was no top-up table in the tree and an arm that
+      quietly swept an empty set is how a done-when gets reported as satisfied by
+      a sweep that could not fail. #1606 declared the ladder, the Atlas emitted
+      its two rows, this arm reddened, and this is the enrolment it asked for.
 
-      This arm is the coupling instead: the day a top-up constant is declared,
-      the Atlas emits it, this arm reddens, and whoever added it decides whether
-      it joins `pricedRows()` or `NOT_A_PRICE`.
+      What it asserts now is the product claim rather than the Atlas's: every
+      amount a top-up can GRANT, at every sellable size, is a ledger figure that
+      displays exactly. The grant is `units × TOPUP_UNIT_LEDGER_CREDITS`, so a
+      unit size that did not divide would make a bought balance unshowable — the
+      customer pays for 5,000 credits and reads 4,999.
     */
     const topups = ATLAS.creditCosts.filter((row) => /topup|top_up/i.test(row.id));
+    /* The floor: the rows exist, so the arm below is a reading. */
     expect(
-      topups.map((row) => row.id),
-      "a top-up price now exists — enrol it: its ledger amounts are fixed grants and must divide by 5",
-    ).toEqual([]);
+      topups.map((row) => row.id).sort(),
+      "the top-up ladder's constants are no longer in the Atlas price list — a rename, or the collector stopped seeing them",
+    ).toEqual([
+      "cost:shared/creditTopups.ts:TOPUP_UNIT_DISPLAY_CREDITS",
+      "cost:shared/creditTopups.ts:TOPUP_UNIT_LEDGER_CREDITS",
+    ]);
+
+    expect(TOPUP_UNIT_LEDGER_CREDITS).toBe(25_000);
+    expect(displaysExactly(TOPUP_UNIT_LEDGER_CREDITS)).toBe(true);
+
+    const unshowable: string[] = [];
+    for (let units = 1; units <= TOPUP_MAX_UNITS; units++) {
+      if (!displaysExactly(topupLedgerCredits(units))) {
+        unshowable.push(`${units} unit(s) = ${topupLedgerCredits(units)}`);
+      }
+    }
+    expect(unshowable, "a top-up grant that cannot be displayed exactly").toEqual([]);
+    /* And the whole ladder was swept, not the first rung of it. */
+    expect(TOPUP_MAX_UNITS).toBeGreaterThanOrEqual(3);
   });
 });

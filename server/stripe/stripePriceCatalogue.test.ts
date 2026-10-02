@@ -44,9 +44,17 @@ import type Stripe from "stripe";
 import {
   priceLookupKey,
   resolvePriceId,
+  resolveTopupPriceId,
+  topupPriceLookupKey,
   StripePriceUnavailableError,
   PRICE_LOOKUP_KEY_VERSION,
 } from "./stripePriceCatalogue";
+import {
+  TOPUP_BRACKETS,
+  TOPUP_MAX_UNITS,
+  topupBracketFor,
+  topupBracketPackSize,
+} from "@shared/creditTopups";
 import { SUBSCRIPTION_PRODUCTS } from "./stripeProducts";
 import { periodPriceInCents } from "@shared/annualBilling";
 
@@ -220,6 +228,163 @@ describe("resolvePriceId — the refusals, each naming the key", () => {
        returned a falsy id instead of throwing. */
     const { client } = clientReturning([]);
     await expect(resolvePriceId(client, "pro", "annual")).rejects.toBeInstanceOf(
+      StripePriceUnavailableError,
+    );
+  });
+});
+
+/**
+ * THE TOP-UP SIDE OF THE CATALOGUE (#1606, P1-7).
+ *
+ * Same resolver shape, same four refusals, and one of them INVERTED: a plan
+ * price must recur and a credit pack's must not. The reading the keys are
+ * pinned against is his own hand's, on 2026-10-02 in test mode — three active
+ * one-off prices, per 5,000 credits, at 1200¢ / 1100¢ / 1000¢ (ids on #1606).
+ */
+const TOPUP_KEYS_READ_FROM_STRIPE = [
+  "klieg_topup_5000_v2",
+  "klieg_topup_10000_v2",
+  "klieg_topup_25000_v2",
+];
+
+/** A well-formed active top-up price for the band `units` falls in. */
+function topupPriceFor(units: number, overrides: Partial<Stripe.Price> = {}): Partial<Stripe.Price> {
+  const bracket = topupBracketFor(units);
+  return {
+    id: `price_topup_${topupBracketPackSize(bracket)}`,
+    lookup_key: topupPriceLookupKey(bracket),
+    unit_amount: bracket.centsPerUnit,
+    recurring: null,
+    ...overrides,
+  };
+}
+
+describe("the top-up keys this product composes are the three Stripe holds", () => {
+  it("composes exactly the three keys read out of the catalogue", () => {
+    expect(TOPUP_BRACKETS.map(topupPriceLookupKey).sort()).toEqual(
+      [...TOPUP_KEYS_READ_FROM_STRIPE].sort(),
+    );
+  });
+
+  it("the population is the whole ladder, so an empty band table cannot pass", () => {
+    expect(TOPUP_BRACKETS.length).toBe(TOPUP_KEYS_READ_FROM_STRIPE.length);
+    expect(TOPUP_BRACKETS.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("the key is named for the band's own pack size, not for the order", () => {
+    /* Three units is a 15,000-credit order charged at the 2–4 band's rate, and
+       the key it asks Stripe for is still the band's own 10,000 one. A key
+       composed from the ORDER would name `klieg_topup_15000_v2`, which exists
+       nowhere. */
+    expect(topupPriceLookupKey(topupBracketFor(3))).toBe("klieg_topup_10000_v2");
+    expect(TOPUP_KEYS_READ_FROM_STRIPE).not.toContain("klieg_topup_15000_v2");
+  });
+
+  it("carries the same catalogue generation as the plan keys", () => {
+    expect(
+      TOPUP_BRACKETS.map(topupPriceLookupKey).every((k) =>
+        k.endsWith(`_${PRICE_LOOKUP_KEY_VERSION}`),
+      ),
+    ).toBe(true);
+  });
+});
+
+describe("resolveTopupPriceId — the happy path, and what reaches Stripe", () => {
+  it("returns the id of the one active price the band's key names", async () => {
+    const { client, list } = clientReturning([topupPriceFor(1)]);
+    await expect(resolveTopupPriceId(client, 1)).resolves.toBe("price_topup_5000");
+    expect(list).toHaveBeenCalledWith({
+      lookup_keys: ["klieg_topup_5000_v2"],
+      active: true,
+      limit: 2,
+    });
+  });
+
+  it("every sellable unit count resolves, so one band cannot stand in for three", async () => {
+    for (let units = 1; units <= TOPUP_MAX_UNITS; units++) {
+      const { client, list } = clientReturning([topupPriceFor(units)]);
+      const bracket = topupBracketFor(units);
+      await expect(resolveTopupPriceId(client, units)).resolves.toBe(
+        `price_topup_${topupBracketPackSize(bracket)}`,
+      );
+      expect(list.mock.calls[0][0].lookup_keys).toEqual([topupPriceLookupKey(bracket)]);
+    }
+  });
+
+  it("an unsellable count refuses BEFORE any question reaches Stripe", async () => {
+    /* The bound is the ladder's, and the resolver is held to it independently
+       of the input schema — a money helper's caller list is never closed. */
+    const { client, list } = clientReturning([topupPriceFor(1)]);
+    await expect(resolveTopupPriceId(client, 0)).rejects.toThrow(RangeError);
+    await expect(resolveTopupPriceId(client, TOPUP_MAX_UNITS + 1)).rejects.toThrow(RangeError);
+    await expect(resolveTopupPriceId(client, 2.5)).rejects.toThrow(RangeError);
+    expect(list).not.toHaveBeenCalled();
+  });
+});
+
+describe("resolveTopupPriceId — the refusals, each naming the key", () => {
+  async function topupRefusalFor(data: Array<Partial<Stripe.Price>>, units = 1) {
+    const { client } = clientReturning(data);
+    const error = await resolveTopupPriceId(client, units).then(
+      (id) => ({ resolvedInsteadOfRefusing: id }) as unknown,
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(StripePriceUnavailableError);
+    return error as StripePriceUnavailableError;
+  }
+
+  it("1 · an absent key refuses and never returns a fallback price", async () => {
+    const error = await topupRefusalFor([]);
+    expect(error.lookupKey).toBe("klieg_topup_5000_v2");
+    expect(error.message).toMatch(/no active price/i);
+  });
+
+  it("2 · two active prices claiming one key refuses rather than taking the first", async () => {
+    const error = await topupRefusalFor([
+      topupPriceFor(1, { id: "price_topup_old" }),
+      topupPriceFor(1, { id: "price_topup_new" }),
+    ]);
+    expect(error.message).toContain("price_topup_old");
+    expect(error.message).toContain("price_topup_new");
+  });
+
+  it("3 · ⚠ INVERTED — a RECURRING price under a top-up key refuses", async () => {
+    /* The defect it guards is not a Stripe API error: it is a customer
+       subscribing to buy 5,000 credits every month from a button that says
+       Add credits. */
+    const error = await topupRefusalFor([
+      topupPriceFor(1, { recurring: { interval: "month" } as Stripe.Price.Recurring }),
+    ]);
+    expect(error.message).toMatch(/recurs per month/);
+    expect(error.message).toMatch(/bought once/);
+  });
+
+  it("4 · an amount that is not the band's rate refuses, naming both numbers", async () => {
+    const band = topupBracketFor(2);
+    const error = await topupRefusalFor(
+      [topupPriceFor(2, { unit_amount: band.centsPerUnit - 100 })],
+      2,
+    );
+    expect(error.message).toContain(String(band.centsPerUnit));
+    expect(error.message).toContain(String(band.centsPerUnit - 100));
+  });
+
+  it("⚠ the amount is compared PER UNIT, so a multi-unit order is not refused for being one", async () => {
+    /* The arithmetic slip this arm exists for: comparing `unit_amount` against
+       the ORDER's price passes for one unit and refuses every other order,
+       which would read as a catalogue problem rather than a code one. */
+    const { client } = clientReturning([topupPriceFor(5)]);
+    await expect(resolveTopupPriceId(client, 5)).resolves.toBe("price_topup_25000");
+  });
+
+  it("a price with no lookup_key is not the answer to a question about one", async () => {
+    const error = await topupRefusalFor([topupPriceFor(1, { lookup_key: null })]);
+    expect(error.message).toMatch(/no active price/i);
+  });
+
+  it("the refusal is the only outcome — nothing resolves to undefined or empty", async () => {
+    const { client } = clientReturning([]);
+    await expect(resolveTopupPriceId(client, 1)).rejects.toBeInstanceOf(
       StripePriceUnavailableError,
     );
   });
