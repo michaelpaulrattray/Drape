@@ -1979,6 +1979,29 @@ from that run (4m38s, 7m12s) are readings of the whole suite, not of a half.
 engaged.** Both defects (that, and the suite's undeclared need for
 `fetch-depth: 0`) now have driven arms in `server/prMergeOrder.test.ts`.
 
+### The independent reading, which is the one to trust
+
+PR #1816's figures are the change measuring itself. **PR #1817 is somebody
+else's card** (`seat1`, #1813) and was the first ordinary pull request to meet
+the sharded gate, half an hour later — run `37070037313`:
+
+| job | seconds |
+|---|---|
+| `gate-checks` | 123 |
+| `unit-tests-1` | 211 |
+| `unit-tests-2` | 163 |
+| **wall** | **211 s against 533.5 s — −60%** |
+
+⚠ **Its halves are 211 s and 163 s — 29% apart, against 0.4% on #1816.** The
+file split is fixed and exact; the *time* split is not, because vitest shards by
+file count and files are not equal work. **So −57% is the shape of the win and
+not a constant**, and the wall on any given run is the slower half. A future
+seat reading one run should expect that spread.
+
+And the merge road reads them: `pr-merge-in-order --pr 1817 --dry-run` prints
+`units=green/green` beside `gate=green`, which is the half that actually binds
+a merge here.
+
 **Still not taken, and still the bigger prize:** §K.3's ~355 removable `import`
 worker-seconds behind an isolation port of ~60 suites. The shard redistributes
 the work; only that removes it.
