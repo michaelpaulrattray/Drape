@@ -27,7 +27,7 @@
  * thing.
  */
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -221,6 +221,50 @@ it("reads itself", () => { expect(me).toBeTruthy(); });
     const { dir, sha } = repoWith({ "CLAUDE.md": "# law\n", "server/reads.test.ts": READER });
     expect(pushedDocSuites(dir, sha, []).suites).toEqual([]);
     expect(pushedDocSuites(dir, sha, []).blindSurfaces).toEqual([]);
+  });
+});
+
+describe("the WIRE — a control that is not invoked does not exist (invariant 7)", () => {
+  /*
+    The module above is driven to death and would still be decoration if the
+    rite did not call it. `dirtyTreeGuard.test.ts` sets this precedent for the
+    rite's other guards and states the reason: the rite is a 1,900-line script
+    on the deploy path, and a builder seat must not RUN it to find out — so its
+    bytes are read instead.
+
+    ⚠ Deliberately NOT a check that the string appears somewhere: the import
+    line alone satisfies that, which is the exact lesson `scriptWorldGuard` and
+    the first cut of `listedSource`'s helper arm both learned (*"matching the
+    bare identifier is satisfied by the import line alone"*). The CALL is what
+    is asserted, and so is each refusal that makes the call mean something.
+  */
+  const rite = readFileSync(path.join(repoRoot, "scripts", "deploy-rite.mts"), "utf8");
+
+  it("the rite CALLS it, not merely imports it", () => {
+    expect(rite).toMatch(/\bpushedDocSuites\s*\(\s*root\s*,\s*sha\s*,/);
+  });
+
+  it("hands it the paths the push adds, not the working tree", () => {
+    // The bytes judged and the bytes deployed must be the same tree — the same
+    // reason `briefingReadingSuites` reads at the commit.
+    expect(rite).toMatch(/git\("diff",\s*"--name-only",\s*"--no-renames",\s*remoteTip,\s*sha\)/);
+  });
+
+  it("excludes what the briefing block already ran, from that block's own reader", () => {
+    expect(rite).toMatch(/pushedDocSuites\([^)]*briefingReadingSuites\(root,\s*sha\)\)/);
+  });
+
+  it.each([
+    ["an unreadable remote tip", /cannot tell which paths this push adds/],
+    ["a law surface with no reader", /has NO suite reading it at/],
+    ["suites that could not be run", /instruction-surface suites could not be RUN/],
+    ["a red suite", /that pins an instruction surface is RED on/],
+  ])("refuses on %s", (_why, refusal) => {
+    expect(rite).toMatch(refusal);
+  });
+
+  it("never hands vitest an empty list, which would run the WHOLE suite", () => {
+    expect(rite).toMatch(/selection\.suites\.length === 0\s*\n?\s*\?/);
   });
 });
 

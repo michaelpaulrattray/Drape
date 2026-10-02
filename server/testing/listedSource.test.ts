@@ -218,20 +218,24 @@ const NOT_THE_CLASS: Record<string, string> = {
     match would make the fixtures unreadable and hide why.
   */
   "server/pushedDocSuites.test.ts":
-    "lists NOTHING in the repository and READS nothing from it — it executes no"
-    + " read call at all. Every one of its four `readFileSync(` occurrences is"
-    + " inside a string literal holding the source of a fixture test file — the"
-    + " `READER` constant and the three inline fixture sources beside it (the"
-    + " constant-reading one, the directory-walking one and the self-reading"
-    + " one), deliberately NOT named here in backticks because they are fixture"
-    + " filenames rather than suites in this tree and the suite-pointer guard"
-    + " reads a backticked name as a pointer (#647). Each is written with"
-    + " `writeFileSync` into an `mkdtempSync` repository whose path no other"
-    + " process knows. Its only"
-    + " access to this tree is `execFileSync(\"git\", …)` inside the module under"
-    + " test, which reads blobs out of the object database at a COMMIT and so"
-    + " cannot meet a half-written working-tree file in the first place — the"
-    + " hazard this rule is about is unreachable here by construction",
+    "lists NOTHING in the repository. FOUR of its five `readFileSync(`"
+    + " occurrences are not reads at all — each sits inside a string literal"
+    + " holding the source of a fixture test file (the `READER` constant and the"
+    + " three inline fixture sources beside it: the constant-reading one, the"
+    + " directory-walking one and the self-reading one), deliberately NOT named"
+    + " here in backticks, because they are fixture filenames rather than suites"
+    + " in this tree and the suite-pointer guard reads a backticked name as a"
+    + " pointer (#647). Each is written with `writeFileSync` into an"
+    + " `mkdtempSync` repository whose path no other process knows. The FIFTH is"
+    + " a real read and it is a FIXED name — `scripts/deploy-rite.mts`, read by"
+    + " the invariant-7 wiring arms to prove the rite CALLS the derivation"
+    + " rather than merely importing it — and it MUST keep throwing, on"
+    + " `atlasMergeDriver.test.ts`'s grounds one row up: a wiring arm whose"
+    + " subject has vanished is a guard over nothing. Its only other access to"
+    + " this tree is `execFileSync(\"git\", …)` inside the module under test,"
+    + " which reads blobs out of the object database at a COMMIT and so cannot"
+    + " meet a half-written working-tree file at all — the litter this rule is"
+    + " about is unreachable here by construction",
 };
 
 const repoRoot = path.resolve(import.meta.dirname, "..", "..");
