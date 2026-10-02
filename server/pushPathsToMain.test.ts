@@ -126,6 +126,32 @@ const FLAGGED: Record<string, { door: boolean; why: string }> = {
       + "refusal text prints no git command at all — it says to WAIT, because the one "
       + "thing an operator must not do here is force or delete past a live holder.",
   },
+  "scripts/lib/localBranchSweep.mts": {
+    door: false,
+    why: "The local `team/*` branch sweep's criterion (#1797) — PURE, no child "
+      + "processes at all; the CLI injects every reader. The literal is in "
+      + "`restoreRoads`, which RETURNS a restore line as text for a human to run "
+      + "after a ref has been deleted, and the ref it names is always "
+      + "`refs/heads/team/<branch>` built from the row being restored. It cannot "
+      + "reach main twice over: the population is filtered at the `team/` prefix by "
+      + "`isSweepable`, so `main` is unrepresentable rather than merely excluded, and "
+      + "nothing here spawns a push in the first place. The sweep's one destructive "
+      + "act is `git branch -D` on a LOCAL ref in the CLI, which changes no remote.",
+  },
+  "server/localBranchSweep.test.ts": {
+    door: false,
+    why: "The suite for the module above (#1797). It spawns real `git` child "
+      + "processes — but at repositories it creates under the OS temp directory with "
+      + "a bare remote beside them, never at a remote, because the criterion rests on "
+      + "two facts about this repository no fixture can assert: that a SQUASH merge "
+      + "leaves a branch's commits off `main`, and that `refs/pull/<n>/head` survives "
+      + "the branch's deletion. Both are performed rather than simulated, and the "
+      + "restore road is DRIVEN — the branch deleted, the pull ref read back, the "
+      + "branch restored from it. Its fixture trunk is `main`, which is safe here "
+      + "because the repository is a fresh `git init` in a temp directory with no "
+      + "`origin` but its own bare neighbour. The literal appears in the arm asserting "
+      + "`restoreRoads` returns the sha road first.",
+  },
   "scripts/lib/prMergeOrder.mts": {
     door: false,
     why: "The decision half of the merge runner below. It is PURE — no child "

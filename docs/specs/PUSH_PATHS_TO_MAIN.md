@@ -170,6 +170,35 @@ the real `deploy-rite.mts`, it runs it in a scratch directory where the rite
 refuses on the lock before reaching its first check, which that arm asserts by
 the SILENCE of the `core.hooksPath` refusal.
 
+### 1e · `scripts/lib/localBranchSweep.mts` and its suite — a restore line, and a `team/` prefix
+
+Added 2026-10-02 (#1797), the local `team/*` branch sweep's criterion.
+
+- **The module is pure**, with no `node:child_process` import at all: the CLI
+  (`scripts/janitor-local-branches.mts`) takes every reading and hands it in.
+- **The literal is a RETURN VALUE, which is new on this list.** `restoreRoads`
+  composes `git push origin <sha>:refs/heads/<branch>` as **text for a human to
+  run** after a local ref has been deleted — the first of the two restore roads
+  every deletable row carries. Nothing executes it.
+- **It cannot name `main` even by accident, and that is structural.** The
+  population is filtered at the `team/` prefix by `isSweepable`, so `main`, a
+  `release/*` cut and a founder's own branch are **unrepresentable** rather than
+  excluded by a later assertion — which is what run 11 had to assert by hand.
+  The branch in the restore line is always the row being restored.
+- **The sweep's one destructive act changes no remote.** `--delete` runs
+  `git branch -D` on a LOCAL ref, after writing its manifest and after re-reading
+  both the worktree holds and every tip. The second restore road
+  (`refs/pull/<n>/head`) is GitHub's own and survives the deletion.
+
+`server/localBranchSweep.test.ts` **is** on the list, and it is the more
+interesting of the two: it spawns real `git` and performs a real **squash merge**
+and a real **branch deletion**, because the whole criterion rests on two facts no
+fixture can assert — that a squash leaves the branch's commits off `main`, and
+that the pull ref outlives the branch. Its trunk is named `main`, which is safe
+only because every repository it touches is a fresh `git init` under `mkdtemp`
+whose sole remote is a bare neighbour created in the same directory. It never
+names this repository's `origin`.
+
 ### 2 · CI — nothing
 
 All four workflows (`gate.yml`, `review.yml`, `knip.yml`, `secrets.yml`)
