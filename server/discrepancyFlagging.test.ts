@@ -506,12 +506,22 @@ describe("Credit Discrepancy Flagging", () => {
     expect(computeDiscrepancies(credits, gens, ops, users, 1).users).toHaveLength(0);
   });
 
-  it("a SIGN: the operation's own 450 charge is the record, not its five 50-credit audit rows", () => {
-    // A Sign charges 450 through its operation and writes five `generations`
-    // rows at 50 each, all LINKED to that operation (so `unlinkedCost` is 0).
-    // Counting the rows instead would read 450 − 250 = +200, and climb 200 per
-    // Sign for ever — #119's own defect class, a premise that drifts with
-    // ordinary use.
+  it("a SIGN: the operation's own charge is the record, not its five audit rows", () => {
+    // THE FIGURES BELOW ARE THIS FIXTURE'S, AND THEY ARE THE PRE-#1601 SCALE.
+    // In it a Sign charges 450 through its operation and writes five
+    // `generations` rows at 50 each, all LINKED to that operation (so
+    // `unlinkedCost` is 0); counting the rows instead reads 450 − 250 = +200,
+    // and climbs 200 per Sign for ever — #119's own defect class, a premise
+    // that drifts with ordinary use.
+    //
+    // ⚠ A SIGN COSTS 8,500 TODAY (3,500 + 5 × 1,000, #1601 item 1), and the
+    // round numbers are kept rather than re-scaled because what is under test
+    // is a RATIO — operation-authoritative against rows-only — which is scale
+    // invariant, and because re-scaling a fixture proves nothing it did not
+    // already prove. The title said `450 charge` and `50-credit audit rows`
+    // until #1702, which is a claim about the product rather than about this
+    // fixture, and a reader who came here to learn what a Sign costs learned
+    // a figure two repricings old.
     const credits: CreditAgg[] = [{ userId: 1, grossDeductions: 450, totalRefunds: 0 }];
     const gens: GenAgg[] = [
       { userId: 1, completedCost: 250, pendingCost: 0, failedCost: 0, unlinkedCost: 0, totalGenerations: 5, failedGenerations: 0 },

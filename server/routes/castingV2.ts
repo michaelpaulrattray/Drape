@@ -271,7 +271,7 @@ async function loadRollProjection(userId: number, rollPublicId: string): Promise
   const lineage = await getRollLineage(userId, roll);
   /*
     Signed candidates need their Cast's public id, or the tile can badge but not
-    LINK — which is the half-fix that leaves a 500-credit purchase as decoration.
+    LINK — which is the half-fix that leaves an 8,500-credit purchase as decoration.
   */
   const castPublicIdByCandidateId = await listCastPublicIdsForCandidates(userId, candidates);
   return projectRoll({
@@ -1405,7 +1405,7 @@ export const castingV2Router = router({
     }),
 
   /**
-   * Refine one face — one paid edit, 25 credits (M8, D-121).
+   * Refine one face — one paid edit, 1,750 credits (M8, D-121).
    *
    * Rate-limited on the generation bucket like every other paid surface. The
    * instruction is capped at 200 characters because it is ONE adjustment, not a
@@ -2375,7 +2375,17 @@ export const castingV2Router = router({
   /** Refunds only what never started. Delivered work is never refunded (§H.6). */
   /**
    * THE RETRY BUTTON (#122 shape 1): one failed slice rendered again with its
-   * own words, 20 credits, refunded again on failure. A PAID procedure, so it
+   * own words, for what that TILE itself cost — read off its own `pointsCost`,
+   * never from a price this module quotes — refunded again on failure.
+   *
+   * ⚠ **AND THE SENTENCE THAT NAMED THE TWO SLICES WENT STALE IN A DAY, WHICH
+   * IS #1702's WHOLE SUBJECT HAPPENING TO #1702's OWN REPAIR.** It read *"a
+   * roll sheet's slice is 150 and a follow sheet's is 200"* — true for the one
+   * day between #1601 item 1 and his one-price ruling of 2026-10-02 (#1753),
+   * which took `rollCandidate` up to meet `followCandidate` at 200. The figures
+   * are gone rather than corrected: the charge has come off any single price
+   * since #1601 item 2, so a module that names one is inventing a fact it does
+   * not use. (It quoted a flat twenty until 2026-10-01.) A PAID procedure, so it
    * sits in the paid bucket with `createRoll` and `refine`; the flag's own
    * door is inside the service (NOT_FOUND off the flag, before any row is
    * read). `clientRequestId` is the idempotency key; the candidate lock inside

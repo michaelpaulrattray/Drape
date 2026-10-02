@@ -417,7 +417,7 @@ describe("Credit Reconciliation Logic", () => {
       expect(result.hasDiscrepancy).toBe(false);
     });
 
-    it("a SIGN is explained by its operation's 450 charge, not by its five 50-credit rows", () => {
+    it("a SIGN is explained by its operation's charge, not by its five audit rows", () => {
       const credits = buildCreditData([{ amount: -450, type: "generation" }]);
       const gens = buildGenData(
         Array.from({ length: 5 }, () => ({
@@ -428,6 +428,11 @@ describe("Credit Reconciliation Logic", () => {
       const result = reconcile(credits, gens, 450);
 
       // Rows-only would read 450 − 250 = +200, and climb 200 per Sign for ever.
+      // ⚠ Those are THIS FIXTURE's figures on the pre-#1601 scale; a Sign
+      // costs 8,500 today (#1601 item 1). They are kept because the reading
+      // under test is a ratio, and re-scaling a fixture proves nothing new —
+      // what changed with #1702 is that the title no longer states the old
+      // price as the product's.
       expect(result.reading.unlinkedCost).toBe(0);
       expect(result.reading.completedCost).toBe(250);
       expect(result.reading.expectedCost).toBe(450);

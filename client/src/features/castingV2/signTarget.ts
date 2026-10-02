@@ -1,7 +1,7 @@
 /**
  * WHO THE SIGN DOCK CAN BE AIMED AT — one rule, in one place (fable-729 §5).
  *
- * Sign is the 450-credit ceremony, and the tray is where it is aimed: a single
+ * Sign is the 8,500-credit ceremony, and the tray is where it is aimed: a single
  * click on a kept face selects her, an accent ring says who, and the button
  * names no number because the ring already does.
  *
@@ -31,8 +31,8 @@ export type SignableEntry = { signed?: boolean };
  * set — the ruling chose the loader as the product and deleted the projection's
  * field rather than widening the filter.
  *
- * The predicate stays anyway, because what it protects is the aim of a
- * 450-credit ceremony and the thing keeping a signed face out of range is a
+ * The predicate stays anyway, because what it protects is the aim of an
+ * 8,500-credit ceremony and the thing keeping a signed face out of range is a
  * `WHERE` clause one layer and one repository away. If that filter is ever
  * widened — deliberately or by accident — this is the line that stops a click
  * from arming a woman who has already been signed, instead of the defect

@@ -231,8 +231,10 @@ export async function getOwnedCastingSession(
  * `createRoll` compiles the brief before it writes the roll row, and the
  * compile is a text call the customer waits through. For that window nothing on
  * the server knows a roll is happening, so a second tab — or the same tab after
- * leaving and coming back — draws the sheet as idle while 160 credits are
- * committed. His report, 2026-09-27.
+ * leaving and coming back — draws the sheet as idle while 1,600 credits are
+ * committed. His report is 2026-09-27, when a roll was 160; the figure here is
+ * today's and has moved twice since (160 → 1,200 on #1601 item 1, → 1,600 on
+ * his one-price ruling #1753), which is the argument for not dating it.
  *
  * **This writes a fact and takes no authority.** It is not a lock and not a
  * claim: two tabs may stamp the same sheet, the later write simply wins, and

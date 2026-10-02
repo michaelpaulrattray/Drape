@@ -17,7 +17,7 @@
  * words, with the candidate facets as the answers.
  *
  * **Near-miss typo (D-179).** "Piink hair" files verbatim today and then costs
- * 25 credits to render something nobody asked for. Correcting it silently would
+ * 1,750 credits to render something nobody asked for. Correcting it silently would
  * be the model authoring the record, which D-172 forbids. The third answer is to
  * ask, for free: *"Did you mean pink?"* — and the CONFIRMATION is what keeps
  * D-172 intact, because the user chose the word.
@@ -1357,7 +1357,7 @@ function splitDesignHandle(named: string): { designPublicId: string; asked: stri
  *
  * The already-true door refuses an ask the face already satisfies, free, and
  * that protection stays exactly where it is: an accidental repeat must never
- * cost anybody 25 credits for the picture they are looking at.
+ * cost anybody 1,750 credits for the picture they are looking at.
  *
  * But the founder asked for a way to re-roll a version he does not like —
  * *"allow a refresh or regeneration of the same edit"* — and the moment the
@@ -1402,7 +1402,7 @@ export function sameAgainReask(input: {
  * rather than about the words (founder ruling, 2026-08-07).
  *
  * She asks for eyes that sweep up and her eyes measurably already do. Rendering
- * that spends 25 credits to produce the picture she is looking at and then asks
+ * that spends 1,750 credits to produce the picture she is looking at and then asks
  * a reader whether it complied, which is how a false pass gets manufactured
  * (D-235). So the product asks instead, for free.
  *

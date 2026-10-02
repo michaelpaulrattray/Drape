@@ -15,7 +15,7 @@
  * `identityEngine:` injections in this tree hands the loop a double, so before
  * this file the default could have been pointed at any endpoint at all and the
  * suite would have been green — the same shape the #1443 shift found on the
- * Re-imagine door, and invariant 7 on a road that spends 450 credits.
+ * Re-imagine door, and invariant 7 on a road that spends 8,500 credits.
  *
  * Nothing leaves the machine: `global.fetch` is stubbed and the database
  * module is replaced, so no request is made, no row is read and no money
@@ -219,7 +219,7 @@ describe("the engine a signed view is actually rendered by", () => {
       no reference images"*). An edit with nothing to edit is the one request
       this door cannot serve, measured on the real door during #1278's build.
       Refused before dispatch, it becomes a sentence `renderOutfitPlate` turns
-      into "no plate"; sent, it becomes a 422 after the Sign's 450 credits have
+      into "no plate"; sent, it becomes a 422 after the Sign's 8,500 credits have
       already moved.
     */
     stubFalTransport();
@@ -244,7 +244,7 @@ describe("the engine a signed view is actually rendered by", () => {
       and the arm that comes across covers the live constant first. The door
       itself refuses a non-multiple before dispatch (`falImages.ts`'s creative
       and masked-edit engines both check `% 16`), so a bad constant here would
-      surface as a refusal on a road that has already taken 450 credits.
+      surface as a refusal on a road that has already taken 8,500 credits.
     */
     expect(OUTFIT_PLATE_SIZE.width % 16).toBe(0);
     expect(OUTFIT_PLATE_SIZE.height % 16).toBe(0);

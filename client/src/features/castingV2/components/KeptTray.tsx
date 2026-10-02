@@ -9,7 +9,8 @@ import { canBeSigned } from "../signTarget";
  *
  * It was four 24×30px chips, overlapping, with a `title` tooltip and no click.
  * The founder's finding: the tray's one job is comparing a shortlist before a
- * 500-credit Sign, and nothing is comparable at 24px — it read as a decorative
+ * 500-credit Sign (the price the day he said it; 8,500 since #1601), and
+ * nothing is comparable at 24px — it read as a decorative
  * stack rather than as the thing you decide with.
  *
  * Three changes, each answering that job:
@@ -41,7 +42,7 @@ export type KeptEntry = {
    * defect this was written for was a signed face drawn as an ordinary radio
    * labelled *"Sign 03 from ROLL 02"*, whose click wrote a selection nothing
    * could honour while the accent ring stayed on a different woman. A dead
-   * click on the control that aims a 450-credit ceremony.
+   * click on the control that aims an 8,500-credit ceremony.
    */
   signed?: boolean;
 };

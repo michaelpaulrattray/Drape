@@ -30,8 +30,8 @@
  *   discrepancy = gross generation deductions − expected
  *
  * Why the operation's own charge is authoritative where it exists: a Sign
- * charges 450 through its operation and writes five audit rows at 50 each,
- * so a rows-only formula climbs 200 per Sign for ever — #119's own defect
+ * charges 8,500 through its operation and writes five audit rows at 1,000 each,
+ * so a rows-only formula climbs 3,500 per Sign for ever — #119's own defect
  * class, a premise that drifts with ordinary use (measured before this was
  * chosen: rows-only read 150 on the founder's account, operation-authoritative
  * 5,160, this hybrid 1,050 — ⚠ ALL THREE ARE READINGS FROM THE 2026-08-26
@@ -137,7 +137,7 @@
  *
  * ⚠ THAT IS #119'S OWN DEFECT CLASS, ONE DOOR OVER, AND IT IS WHY THIS IS
  * WORTH THE WORDS. The rule above makes an operation's own charge authoritative
- * precisely so a Sign's five audit rows cannot be added to the 450 it charged.
+ * precisely so a Sign's five audit rows cannot be added to the 8,500 it charged.
  * That guard keys on the row NAMING its operation. A row that never recorded
  * its `operationId` walks straight past it and is added anyway — the rule
  * defeated by a shape it did not anticipate rather than by a wrong premise.

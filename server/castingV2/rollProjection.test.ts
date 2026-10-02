@@ -574,7 +574,7 @@ describe("a real failed compile reaches the sheet as a confession", () => {
  *
  * The failure this forecloses is quiet and nasty: the sheet renders the
  * original while the Sign button spends the refinement, so the picture the user
- * is looking at is not the one they are about to pay 450 credits for. Nothing
+ * is looking at is not the one they are about to pay 8,500 credits for. Nothing
  * throws; the surface simply lies about what its own button does.
  */
 describe("a refined candidate projects its refinement", () => {
