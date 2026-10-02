@@ -1014,23 +1014,28 @@ export default function CastingSheet() {
 
   /*
     THE DOCK'S PRICE IS THE PRICE OF THE BUTTON THE DOCK FIRES (#1601 item 1,
-    2026-10-01).
+    2026-10-01), AND SINCE #1753 THAT IS ONE NUMBER FOR BOTH BUTTONS.
 
     It was `rollPriceCredits` alone, which was honest while a Roll and a Follow
     were both 8 x 20 = 160 — his 2026-08-02 ruling folded the two into one line
-    precisely because there was one number. A Roll is 240 display and a Follow
-    320 from the price table on, so the line names whichever one Roll again
-    will actually charge: a sheet standing in a follow family rolls a follow,
-    and that is already server truth (`lineage.fromCandidateId`, read into
-    `standingFollowId` directly above).
+    precisely because there was one number. They diverged on 2026-10-01 (240
+    against 320), so the line began naming whichever one Roll again will actually
+    charge: a sheet standing in a follow family rolls a follow, and that is
+    already server truth (`lineage.fromCandidateId`, read into `standingFollowId`
+    directly above).
 
-    ⚠ **WHAT IS STILL NOT ANSWERED, AND IT IS A QUESTION FOR HIM RATHER THAN A
-    GAP SOMEBODY FORGOT: #1699.** On a sheet that is NOT following, a tile's
-    Follow charges the follow price while this line quotes the roll's, and
-    cost is metadata rather than button text (D-109) — so where Follow's price
-    goes is his call and not a shift's. This is strictly closer to the truth
-    than one account-level number in every case, and the one case it does not
-    cover is on his desk.
+    ⚠ **#1699 IS ANSWERED AND THE GAP IS CLOSED — his ruling, 2026-10-02:**
+    *"go with your reccomendation on the roll and follow one price is better and
+    we earn more for rolls simple"*. One price for both, at the follow's 320. So a
+    tile's Follow and this line state the same figure on every sheet, following or
+    not, and the selection below is a no-op while that holds.
+
+    **It is kept rather than collapsed, and that is a choice with a reason.** The
+    condition asks the only question that could ever make the two differ again,
+    and it asks it of server truth. A surface that reads ONE price for both
+    actions has to be rewritten the day he splits them; a line that picks does
+    not. What his ruling changed is the price, not the shape — and he has moved
+    these two numbers twice in two days.
   */
   /*
     ⚠ NOT `roll.isPending`, AND THE FRAME IS WHAT SETTLED IT. A tRPC query with
@@ -1090,11 +1095,17 @@ export default function CastingSheet() {
     once (working law 4).
 
     Derived rather than sent because the per-slice cost is internal, and it is
-    the ROW's figure rather than the account's: a follow sheet's row carries
-    1,600 and a roll sheet's 1,200, so this follows a follow without anybody
-    asking what kind of sheet it is. The cancel line states a total the server
-    has already refunded; the retry label states what the server is about to
-    charge, which is that same row's `pointsCost` (#1601 item 2).
+    the ROW's figure rather than the account's. The cancel line states a total the
+    server has already refunded; the retry label states what the server is about
+    to charge, which is that same row's `pointsCost` (#1601 item 2).
+
+    ⚠ **READING THE ROW IS NOT A FORMALITY, AND IT IS WHAT MAKES THIS LINE
+    RIGHT ON AN OLD SHEET.** When this was written a follow sheet's row carried
+    1,600 and a roll sheet's 1,200, and the derivation followed a follow without
+    anybody asking what kind of sheet it was. Since #1753 both carry 1,600 —
+    but a row holds the price of the day it was written, and production has rows
+    at 20 and one day's worth at 150. An account-level quote would misprice every
+    one of those tiles; this cannot, whatever he prices a slice at next.
   */
   const rollCounts = roll.data?.counts;
   const sliceCredits =

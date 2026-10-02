@@ -55,6 +55,7 @@ import { resolve } from "node:path";
 
 import {
   CREW_CLAIM_LIVE_MS,
+  crewCardClaimLine,
   crewCardCommentFact,
   crewCardReleaseLine,
 } from "../../shared/crewCardBuildState.js";
@@ -336,14 +337,24 @@ export type CardClaimPostOutcome =
   | { readonly kind: "failed"; readonly body: string; readonly why: string };
 
 /**
- * The claim line, in the spelling {@link crewCardCommentFact} reads.
+ * The claim line — {@link crewCardClaimLine}'s spelling, not a second one.
  *
- * ⚠ **The em dash is the first alternative the board's `DASH` accepts**, so this
- * is the spelling the judge prefers rather than one it merely tolerates — and
- * {@link postCardClaim} PROVES that rather than trusting this sentence.
+ * ⚠ **THIS WAS A LITERAL `CLAIMED — ${seat}, ${at}` UNTIL #1701 LANDED ON MAIN
+ * WHILE THIS BRANCH WAS OPEN, AND LEAVING IT WOULD HAVE SHIPPED THE DEFECT
+ * #1701 EXISTS TO REMOVE.** That card declared the three handback words once in
+ * `shared/crewCardBuildState.ts` and built the board's readers from them,
+ * precisely so a writer and a reader could not hold two copies of one spelling
+ * — the shape that left **0 of 5 refusals on #1669 invisible**. A second
+ * literal here, in the module that WRITES the claim, is that mistake with the
+ * ink still wet (working law 4).
+ *
+ * So this is now a thin alias, kept only because {@link postCardClaim}'s seam
+ * names a `(seat, at) => string` and a caller reading this file should see what
+ * it posts without crossing into `shared/`. `postCardClaim` PROVES the result
+ * through the board's own judge rather than trusting either sentence.
  */
 export function cardClaimBody(seat: string, at: string): string {
-  return `CLAIMED — ${seat}, ${at}`;
+  return crewCardClaimLine(seat, at);
 }
 
 /** The `gh` call, as an array, so a caller with its own transport spends the same one. */

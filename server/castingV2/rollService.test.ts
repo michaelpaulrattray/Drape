@@ -1671,13 +1671,15 @@ describe("no roll is born on a path", () => {
  *
  * ⚠ **These arms are about the WIRING, not about the numbers, and they say so
  * because the numbers cannot tell them apart.** A Follow slice and a Roll slice
- * are both 20 today, so no arm in this file can distinguish "read the right
- * one" from "read either one". The arm that CAN is in `followSlicePrice.test.ts`
- * (the selector, driven with 150 and 200) and in `retryService.test.ts` (a tile
- * seeded at 200 while the constant is 20). What is proven here is the thing
- * those two cannot see: that one number reaches the row writer, the operation's
- * `plannedCredits` and the deduct, and that it is the number the selector
- * returns for this roll's own shape.
+ * are both 200 since #1753 (his one-price ruling; they were both 20 before #1601
+ * item 1, and 150 against 200 for the one day between), so no arm in this file
+ * can distinguish "read the right one" from "read either one". The arms that CAN
+ * are in `followSlicePrice.test.ts` (the selector, driven through an injected
+ * pair that shares no value with the real table) and in `retryService.test.ts`
+ * (a tile seeded off the table while the constant sits on it). What is proven
+ * here is the thing those two cannot see: that one number reaches the row
+ * writer, the operation's `plannedCredits` and the deduct, and that it is the
+ * number the selector returns for this roll's own shape.
  *
  * The ORDERING — picked before the claim — is not observed at runtime: the
  * derivation lexically precedes `begin`, which `pnpm check` enforces because
