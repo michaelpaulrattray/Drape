@@ -730,12 +730,28 @@ describe("an unread plan is not the free plan (#1741)", () => {
       + " `options`, and with the catalogue answered the old `Boolean(plans)` told a"
       + " subscriber there is nothing above them. #1747.",
     ).toContain("const laddered = Boolean(plans) && currentId !== null;");
+    /*
+      ⚠ **THE DELTA GAINED A SECOND UNREAD FACT WITH #1761 AND #1747's PROPERTY
+      IS UNCHANGED.** The baseline it subtracts is now derived from the rung's
+      PRICE as well as its credits — on the free rung `monthlyCredits` is a
+      ONE-TIME signup grant, so subtracting it printed a monthly figure 2,700
+      display low. Both reads must have answered before a delta exists, which is
+      strictly MORE than this arm asked for, so what is pinned moves to the
+      declaration that now decides it. `monthlyDelta1761-guard.test.ts` holds
+      the baseline's own arithmetic; this holds that an unread rung still
+      produces no delta at all.
+    */
     expect(
       topup,
       "the allowance is read out of the catalogue by a defaulted rung again — and that is a"
       + " real number from the WRONG PLAN, which `?? 0` cannot be told from a zero. The"
       + " delta on the button is then out by a whole plan. #1747.",
-    ).toContain("currentCredits !== null ? selected.credits - currentCredits : null");
+    ).toContain("currentCredits === null || currentPrice === null");
+    expect(
+      topup,
+      "the delta stopped reading the price-derived baseline, so an unread rung can reach the"
+      + " subtraction again. #1747 + #1761.",
+    ).toContain("selected && currentMonthlyCredits !== null");
   });
 
   /**
