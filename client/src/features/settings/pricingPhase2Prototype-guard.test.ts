@@ -99,7 +99,7 @@ function numberNamed(block: string, key: string): number | null {
   return match === null ? null : Number(match[1].replace(/_/g, ""));
 }
 
-describe("#1774 — the Phase 2 prototype's figures are the product's figures", () => {
+describe("Card 1774 — the Phase 2 prototype's figures are the product's figures", () => {
   it("carries every OFFERED rung, with the tree's own name, price, allowance and rollover", () => {
     const block = fromTheCodeBlock();
     for (const tier of OFFERED_PLAN_ORDER) {
@@ -154,7 +154,7 @@ describe("#1774 — the Phase 2 prototype's figures are the product's figures", 
   });
 });
 
-describe("#1774 §5 — the credit slider's proposed price still holds its own argument", () => {
+describe("Card 1774 §5 — the credit slider's proposed price still holds its own argument", () => {
   /** The three numbers the prototype's slider ladder is built from. */
   function sliderLadder(): { baseDisplay: number; baseDollars: number; perUnit: number; maxUnits: number } {
     const source = prototypeSource();
