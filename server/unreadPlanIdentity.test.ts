@@ -202,13 +202,15 @@ const SUBSCRIPTION_COLLAPSED_FROM_UNREAD = /!!\s*\w+\s*\?\s*\.\s*hasSubscription
  *
  * This is the OPTIONAL-CHAIN COMPARISON only. The sibling idiom — an interval
  * read correctly as `null` and then defaulted a line later
- * (`intervalChoice ?? billedInterval ?? "monthly"`) — is invisible to it, and
- * `ChangePlanModal` has exactly that. **It is filed rather than covered here**:
- * its repair is eight readers on a money surface, which is its own card, and a
- * reader widened to catch it would have to understand that a `?? "monthly"`
- * onto a THREE-WAY ladder is a defect while the same characters onto a plain
- * boolean may not be. A clean run here is a floor, as it is for all four
- * readers above.
+ * (`intervalChoice ?? billedInterval ?? "monthly"`) — is invisible to it.
+ * ✅ **It is no longer a gap: the SIXTH reader below covers it (#1763), and
+ * `ChangePlanModal`'s instance of it is repaired.** The reason it is a second
+ * reader rather than a widened regex is the one this file gives for every
+ * split: the two idioms differ in what makes them safe, so one reader cannot
+ * state both verdicts — a `?? "monthly"` is a defect at the end of a nullable
+ * chain and correct inside a branch that has already answered for the unread
+ * state. A clean run here is still a floor, as it is for all four readers
+ * above.
  */
 const INTERVAL_COLLAPSED_FROM_UNREAD = /\w+\s*\?\s*\.\s*billingInterval\s*===/;
 
@@ -225,16 +227,73 @@ const INTERVAL_DECLARED: ReadonlyArray<{
   {
     file: "features/billing/ChangePlanModal.tsx",
     why:
-      "THE EXPRESSION IS SAFE AND THE SURFACE IS NOT, and both halves are said"
-      + " here on purpose. The comparison sits in a THREE-WAY ladder whose third"
-      + " branch is `null`, so an unread status lands on `null` rather than on"
-      + " `monthly` — this reader's verdict is correct about these two lines."
-      + " ⚠ The line BELOW them is a separate defect in the same family:"
-      + " `intervalChoice ?? billedInterval ?? \"monthly\"` puts the collapse back,"
-      + " so the Monthly segment is drawn `--on` with `aria-pressed` true for a"
-      + " yearly subscriber's first frame. It is FILED, not fixed here: eight"
-      + " readers of `interval` on a money surface is its own card. #1755.",
+      "THE EXPRESSION IS SAFE, and it is the three-way ladder that makes it so:"
+      + " the comparison's third branch is `null`, so an unread status lands"
+      + " there rather than on `monthly` — this reader's verdict is correct about"
+      + " these two lines. ✅ The line BELOW them put the collapse straight back"
+      + " (`intervalChoice ?? billedInterval ?? \"monthly\"`), which drew the"
+      + " Monthly segment `--on` with `aria-pressed` true for a yearly"
+      + " subscriber's first frame; #1755 filed it and #1763 FIXED it, and the"
+      + " sixth reader below is what keeps it fixed. #1755, #1763.",
     gate: [": null;"],
+  },
+];
+
+/**
+ * ⚠ **AN INTERVAL READ HONESTLY AS `null` AND THEN DEFAULTED A LINE LATER —
+ * #1763, and it is the SIXTH idiom in this family.**
+ *
+ * `ChangePlanModal` got the hard half right and gave it back one line down:
+ *
+ * ```ts
+ * const billedInterval: Interval | null = … : null;        // correct
+ * const interval: Interval = intervalChoice ?? billedInterval ?? "monthly";
+ * ```
+ *
+ * The fifth reader cannot see this and says so in its own docblock: there is no
+ * optional chain here, only a default onto a value that was already honest. And
+ * the result was typed `Interval`, so **not one of the readers below it was ever
+ * asked** — thirteen of them at the measurement, from the segment's
+ * `aria-pressed` to the interval a checkout is sent at.
+ *
+ * # Why it is a reader and not one widened regex
+ *
+ * Because the same characters are correct one branch over. `?? "monthly"` at
+ * the END of a nullable chain is a guess about an unread query; the same
+ * default INSIDE a branch that has already answered for the unread state is the
+ * opposite — it names the cycle on offer to an account that has none of its own
+ * (a free account, or the server's own *"null means unknown"* subscription).
+ * A regex cannot tell those apart, so the safe site is DECLARED with the gate
+ * it rests on, and an arm proves that gate is still there.
+ *
+ * # What this reader does NOT see
+ *
+ * `|| "monthly"` and a ternary spelling of the same default. Both are the same
+ * wrong answer; neither appears in the tree, and the narrowness arm drives them
+ * as the stated floor rather than leaving them to prose.
+ */
+const INTERVAL_DEFAULTED_TO_A_CYCLE = /\?\?\s*"(monthly|annual)"/;
+
+/**
+ * The declared remainder for the reader above — same two verdicts and the same
+ * rule as `DECLARED`: an entry whose site is gone reddens, so a fix means
+ * deleting its line.
+ */
+const INTERVAL_DEFAULT_DECLARED: ReadonlyArray<{
+  readonly file: string;
+  readonly why: string;
+  readonly gate?: readonly string[];
+}> = [
+  {
+    file: "features/billing/ChangePlanModal.tsx",
+    why:
+      "THE DEFAULT SITS INSIDE THE READ, which is the whole repair (#1763)."
+      + " `status === undefined ? null : billedInterval ?? \"monthly\"` answers"
+      + " `null` while the query is in flight and only then offers monthly as the"
+      + " cycle on offer — a claim about nothing, for an account that has no cycle"
+      + " of its own. The gate below is that null branch: lose it and this is the"
+      + " defect again, with the ban unable to tell the difference.",
+    gate: ["status === undefined ? null :", "const interval: Interval | null ="],
   },
 ];
 
@@ -957,7 +1016,8 @@ describe("an unread plan is not the free plan (#1741)", () => {
     expect(
       matches('  const interval = intervalChoice ?? billedInterval ?? "monthly";'),
       "the floor: a correctly-null interval defaulted a line later is the same wrong"
-      + " answer and this reader cannot see it",
+      + " answer and this reader cannot see it -- the SIXTH reader below is what"
+      + " covers it (#1763), and this arm is what proves the two do not overlap",
     ).toBe(false);
     expect(
       matches('  const annual = status?.billingInterval ? true : false;'),
@@ -987,6 +1047,153 @@ describe("an unread plan is not the free plan (#1741)", () => {
         ).toContain(gate);
       }
     }
+  });
+
+  it("no client surface defaults a billing cycle onto an interval it read as unknown", () => {
+    const declared = new Set(INTERVAL_DEFAULT_DECLARED.map((entry) => entry.file));
+    const offences: string[] = [];
+    let read = 0;
+    for (const file of tsSourcesUnder(CLIENT_SRC)) {
+      const source = readListedSource(file);
+      if (source === null) continue;
+      read += 1;
+      const relative = path.relative(CLIENT_SRC, file).replace(/\\/g, "/");
+      if (declared.has(relative)) continue;
+      withoutComments(source)
+        .split("\n")
+        .forEach((text, index) => {
+          if (INTERVAL_DEFAULTED_TO_A_CYCLE.test(text)) {
+            offences.push(`${relative}:${index + 1}  ${text.trim()}`);
+          }
+        });
+    }
+    /* The floor, first and in the same arm: a walk that read nothing passes
+       this ban vacuously, which is #1733's class. */
+    expect(read, "the walk found almost no client source — check the root").toBeGreaterThan(200);
+    expect(
+      offences,
+      "a billing cycle is defaulted onto an interval that was read as unknown, so"
+      + " the surface asserts a cycle nobody has been told. The honest shape is the"
+      + " default INSIDE the read — `status === undefined ? null : billed ?? \"monthly\"`"
+      + " — and a type of `Interval | null`, so every reader below is asked rather"
+      + " than inheriting the guess. #1763.",
+    ).toEqual([]);
+  });
+
+  /**
+   * ⚠ Negative and positive control on the sixth reader before its verdicts
+   * count (working law 2). The defect and the repair share the characters this
+   * reader keys on, which is why the safe site is declared with a gate rather
+   * than written into the regex.
+   */
+  it("the cycle-default ban is exactly as narrow as it says", () => {
+    const matches = (line: string) => INTERVAL_DEFAULTED_TO_A_CYCLE.test(line);
+
+    expect(
+      matches('  const interval: Interval = intervalChoice ?? billedInterval ?? "monthly";'),
+      "the card's own defect",
+    ).toBe(true);
+    expect(
+      matches('  const i = choice ??  billed ??   "annual" ;'),
+      "whitespace and the other cycle are not loopholes",
+    ).toBe(true);
+    expect(
+      matches('  const interval: Interval | null = intervalChoice ?? billedInterval;'),
+      "the repair must not read as the defect, or this suite covers its own fix",
+    ).toBe(false);
+    /* ⚠ THE STATED FLOOR, DRIVEN RATHER THAN ASSERTED IN PROSE. Neither
+       spelling is in the tree; both are the same wrong answer. */
+    expect(
+      matches('  const interval = intervalChoice || billedInterval || "monthly";'),
+      "the floor: the same default written with `||` is invisible to this reader",
+    ).toBe(false);
+    expect(
+      matches('  const interval = billedInterval === null ? "monthly" : billedInterval;'),
+      "the floor: the same default written as a ternary is invisible to this reader",
+    ).toBe(false);
+  });
+
+  it("every declared cycle-default site is still there, and still rests on its gates", () => {
+    for (const entry of INTERVAL_DEFAULT_DECLARED) {
+      const source = readListedSource(path.join(CLIENT_SRC, entry.file));
+      expect(
+        source,
+        `${entry.file} is gone — re-read the exemption, do not delete the arm`,
+      ).not.toBeNull();
+      const code = withoutComments(source ?? "");
+      expect(
+        INTERVAL_DEFAULTED_TO_A_CYCLE.test(code),
+        `${entry.file} no longer defaults a billing cycle -- delete its`
+        + ` INTERVAL_DEFAULT_DECLARED entry. A standing exemption for code that is`
+        + ` gone is how a ban comes to cover less than it claims. #1763.`,
+      ).toBe(true);
+      for (const gate of entry.gate ?? []) {
+        expect(
+          code,
+          `${entry.file} no longer carries a gate its exemption names, so its`
+          + ` default is now a guess about an unread status. #1763. Missing: ${gate}`,
+        ).toContain(gate);
+      }
+    }
+  });
+
+  /**
+   * ⚠ **AND THE BAN PROVES THE COLLAPSE IS GONE, NOT WHAT THE SURFACE THEN
+   * SAYS — #1727's lesson, inherited for the fifth time.** `Interval | null`
+   * with the segment still written `interval === "monthly"` is the same wrong
+   * control with a wider type: `null === "monthly"` is `false`, which paints
+   * and announces exactly what the defect painted and announced.
+   */
+  it("Change plan declines to press a billing interval it was not told", () => {
+    const plan = withoutComments(
+      readListedSource(path.join(CLIENT_SRC, "features/billing/ChangePlanModal.tsx")) ?? "",
+    );
+    expect(plan, "ChangePlanModal is gone or renamed — #1763's arms cannot read it")
+      .not.toEqual("");
+
+    /* The three-state read itself, in the one spelling that puts the default
+       inside the branch that has already answered. */
+    expect(
+      plan,
+      "the interval is collapsed to a cycle again, so every reader below inherits"
+      + " a guess about an unread status. #1763.",
+    ).toContain(
+      'intervalChoice ?? (status === undefined ? null : billedInterval ?? "monthly")',
+    );
+    expect(
+      plan,
+      "the interval is typed non-null again, which is what stopped the readers"
+      + " below from ever being asked. #1763.",
+    ).toContain("const interval: Interval | null =");
+
+    /* ⚠ THE CONTROL IS NOT DRAWN AT ALL while the cycle is unknown: both of its
+       `aria-pressed` values are assertions and ARIA has no held state for a
+       pressed button, which is the same answer #1755 took on Add credits. */
+    expect(
+      plan,
+      "the segmented control is drawn before the cycle is known, so one of its two"
+      + " segments is announced pressed about a customer nobody has read. #1763.",
+    ).toContain("{interval === null ? null : (");
+
+    /* The two money roads, each refusing rather than inheriting. */
+    expect(
+      plan,
+      "a plan change or a checkout can be sent at a cycle derived from an unread"
+      + " status — the one mistake here a customer cannot click back. #1763.",
+    ).toContain("if (interval === null) return;");
+    expect(
+      plan,
+      "the plan-change preview can fire against a guessed cycle again. #1763.",
+    ).toContain("confirming !== null && interval !== null");
+    expect(
+      plan,
+      "the confirm dialog names a cycle (`— billed monthly`) beside a charge"
+      + " before the status has answered. #1763.",
+    ).toContain("confirming && changeQuote.data && interval !== null ?");
+    expect(
+      plan,
+      "the comparison table prices every column by a cycle nobody has read. #1763.",
+    ).toContain("compare && interval !== null ?");
   });
 
   /**
