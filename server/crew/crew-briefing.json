@@ -1,7 +1,7 @@
 {
-  "edition": 622,
-  "updatedAt": "2026-10-02T19:55:00.000Z",
-  "shift": "Warden patrol, 05:24: the weekly security check. One thing needs a one-line answer from you and it is at the top of your page.\n\nKlieg has six accounts, and two of them can use the admin panel — yours, and one created on 28 September. An admin can read every customer's bug report, change anybody's credit balance, and see the whole audit log, so I am asking rather than assuming: is that second one yours or your engineer's? It is almost certainly your engineering agent. But the app itself cannot make somebody an admin — the only control for changing roles offers \"user\" or \"moderator\" and refuses to touch an admin at all — so the role was set straight in the database, and a change made that way leaves no record anywhere. Nothing is broken and nobody has lost anything. I just will not write \"fine\" into the record without your word on it.\n\nOne real fault, found and already fixed. Four known security holes had turned up in code we are built on, two of them serious, and nothing told us — our own weekly check read four where it read zero last week. GitHub had spotted them three days ago and could not fix them itself, because they sit too deep in somebody else's package. None of the four can be reached by a customer, and I checked that in our own code rather than taking it on trust. The repair is in review now and takes the count to zero.\n\nThe rest was quiet in the good way. No secret has ever reached our code history — checked again across all 4,102 commits. No blocked addresses, nobody locked out, no sign of anyone attacking the sign-in, and no customer's private work has leaked into the staff records. One hole in our own written rules was closed too: they still said a weakness in the sign-in page was open, two days after it was fixed.",
+  "edition": 623,
+  "updatedAt": "2026-10-02T22:50:00.000Z",
+  "shift": "Two questions for you, both from the weekend's security check, both needing one word each. They are at the top of your page.\n\nThe first: on 30 September a change of ours carried two already-known security holes into the live product, and the paid service that is meant to catch exactly that passed it. The alarm that did catch it went off six seconds after the change had shipped. The holes are closed and nobody was harmed; what is not fixed is that we have no reader of our own that would stop the next one. You can turn the alarm on in your Socket dashboard, which we cannot see, or we can add one check of our own to every change. I recommend ours, because it is the one we can prove is switched on.\n\nThe second: an alarm on your admin page fired 132 times in 28 hours, because it judges a success rate without caring that the day only had five jobs in it. The thing worth your attention is not the noise — it is that those are the only entries our log has ever marked critical, in two and a half months. The most serious level we have now means 'probably nothing'. Three ways to fix it, none of which turns the alarm off, and I recommend the one that stops it judging tiny days at all.\n\nBoth numbers in both questions were re-read at the real records tonight before they reached you, rather than taken from the patrol's report.\n\nNothing else needed doing. No card you have ordered was free to start, no patrol was due, and the one open bug on the board is a deliberate trap we filed for a screen that does not exist yet — I re-read it against the code and it is still correctly waiting.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -149,7 +149,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-02T19:51:16.581Z",
+      "readAt": "2026-10-02T22:46:48.990Z",
       "items": [
         {
           "issueNumber": 1787,
@@ -3448,6 +3448,60 @@
         }
       ],
       "recommendation": "Answered: RELABEL. The renaming is one job in Stripe, done for your test and live accounts in the same sitting so the two cannot drift apart; it is written on the go-live card with the exact amounts. Nothing is waiting on you here any more."
+    },
+    {
+      "id": "socket-missed-advisories-1805",
+      "issueNumber": 1805,
+      "state": "open",
+      "filedAt": "2026-10-02T22:50:00.000Z",
+      "title": "A security check passed two known holes into the live product — one setting, or one step?",
+      "productImpact": "On 30 September one of our own changes pulled in a piece of borrowed code that already had two publicly known security holes in it. Both were rated serious, and both had been published ten hours before we shipped it.\n\nThe paid service we use to catch exactly this passed it. Six seconds after the change went live, a different reader noticed and raised the alarm. The holes sat in the live product until they were patched earlier this week.\n\nNobody was harmed, and the holes are closed. What is still open is that we have no reader of our own that would stop the next one — the thing that caught this only speaks after a change has already shipped.\n\nI checked every fact here myself tonight rather than taking the patrol's word for it: the timings, the severity, and that both holes are in code that reaches customers rather than a developer-only tool. One thing I would want you to know: the check that passed it is one of the checks we require on every single change, so anyone looking would reasonably have believed it was covering this.",
+      "workedExample": "The whole thing, in order, on 30 September:\n\n09:51:10 — our change goes live.\n09:51:16 — six seconds later, a different reader says: two serious known holes just arrived.\n\nIn between those two lines, the check that is meant to catch this had already said yes.",
+      "options": [
+        {
+          "key": "dashboard",
+          "label": "Turn the alarm on in your Socket dashboard",
+          "consequence": "Costs nothing and changes no code. But we cannot see your dashboard, so we could never prove to you that it is on and working."
+        },
+        {
+          "key": "gate",
+          "label": "Add one check of our own to every change",
+          "consequence": "Takes seconds, needs no password, and would have caught this one. Honest cost: it will sometimes stop a change over a hole in somebody else's code that we cannot fix the same day."
+        },
+        {
+          "key": "neither",
+          "label": "Leave it as it is",
+          "consequence": "We keep finding these after they have shipped, which is how this one was found. Workable while the product is small; it does not stay workable."
+        }
+      ],
+      "recommendation": "Add the check of our own.\n\nIt is the one we can see working and prove is switched on, and it fails in the safe direction — it stops a change rather than letting one through. If your dashboard setting turns out to be on as well, that is a free second pair of eyes rather than a waste."
+    },
+    {
+      "id": "health-alarm-noise-1807",
+      "issueNumber": 1807,
+      "state": "open",
+      "filedAt": "2026-10-02T22:50:00.000Z",
+      "title": "An alarm cried wolf 132 times in a day — and it owns the word 'critical'",
+      "productImpact": "We have an alarm that watches how many picture jobs succeed. If the success rate drops below 80% it writes a line into the log on your admin page.\n\nIt does not care how many jobs it is judging. On a quiet day the product might run five jobs all day, so two failures reads as 40% and the alarm goes off. Production is quiet every day right now — six accounts, and one of them casts.\n\nOn 29 and 30 September it fired 132 times in 28 hours. Every one of those lines says the same thing.\n\nHere is the part that actually matters. Our log has three levels: ordinary, warning, and critical. Until 29 September, across two and a half months and more than a thousand entries, nothing had ever been critical. The only two critical entries that have ever existed are this alarm, firing on a day with five jobs.\n\nSo if you ever go looking for what was critical, the only answer you have ever had is a false alarm. That is the real cost — not the noise, but that the most serious level in our log now means 'probably nothing'. A reader learns to skip it, and then misses the first real one.",
+      "workedExample": "The newest of the 132 lines, in its own words:\n\n\"The 24-hour generation success rate has dropped to 60% (threshold: 80%).\"\n\nWhat it does not say is that the day had five jobs in it: three finished and two failed. Read at the live rows tonight — 1,120 entries all time, 980 ordinary, 138 warning, 2 critical. Both criticals are this alarm, and only 8 warnings in the entire log are anything else.",
+      "options": [
+        {
+          "key": "floor",
+          "label": "Ignore small days",
+          "consequence": "The alarm says nothing until there are enough jobs for the number to mean anything. Fixes the wrong judgement itself rather than hiding it."
+        },
+        {
+          "key": "collapse",
+          "label": "One line a day",
+          "consequence": "It judges exactly as it does now but writes one line a day instead of 132. Quieter, but the judgement underneath is still wrong."
+        },
+        {
+          "key": "rank",
+          "label": "Never let this one be called critical",
+          "consequence": "It keeps firing as often, but stops occupying the most serious level. Gives 'critical' its meaning back and leaves the noise."
+        }
+      ],
+      "recommendation": "Ignore small days.\n\nIt is the only one of the three that fixes the wrong judgement instead of making a false alarm quieter, and it leaves 'critical' meaning something. None of the three switches the alarm off."
     }
   ],
   "eyeItems": [
@@ -9713,7 +9767,7 @@
     259
   ],
   "nextUp": {
-    "readAt": "2026-10-02T19:51:16.580Z",
+    "readAt": "2026-10-02T22:46:48.990Z",
     "items": [
       {
         "issueNumber": 1469,
