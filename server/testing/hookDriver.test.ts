@@ -224,6 +224,8 @@ describe("the class is keyed on the SHAPE now, because three greps were keyed on
       "DECLARED REMAINDER: asserts EXACT codes (toBe(2)), so a non-run fails loudly rather than passing — the loud half of the class, worth migrating but not silent",
     "server/shiftWorktree.test.ts":
       "DECLARED REMAINDER: asserts EXACT codes (toBe(0)) on filesystem helpers (mklink, rm) rather than on a gate's verdict — same loud half",
+    "server/localBranchSweep.test.ts":
+      "DECLARED REMAINDER, and the loudest of the three (#1797): every bare call is fixture CONSTRUCTION in a mkdtemp repository — init, config, commit, push to a bare neighbour, merge --squash — asserted at EXACT toBe(0), so a child that never ran fails rather than passes. The one status that is a VERDICT is `merge-base --is-ancestor`, asserted toBe(1) on purpose: exit 1 means NOT an ancestor and is the fact the whole criterion turns on, so a non-run cannot read as that answer either. No gate's verdict is read here — the criterion goes through `readHeadAgainstPrHead` with an injected runner, which is why these calls are the fixture's and not the subject's",
     "server/testing/hookDriver.test.ts":
       "THIS FILE — it carries the reader's own positive controls, which are source-shaped strings the reader necessarily matches (#943). It drives nothing directly: every child here goes through runHook or runHookAsync, which are its subjects",
     "server/preflight.test.ts":
