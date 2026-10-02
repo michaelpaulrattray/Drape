@@ -1919,6 +1919,21 @@ power to block a merge.**
 Nothing shipped against the gate, deliberately; **the lever that is cheap is not
 safe to take inside this card, and the lever that is safe is not available to
 it.** Spent: nothing — no render, no credit, no text call, no production
-variable, no flag. 14 full-suite runs and 2 shard runs, all local. Disposables
-named with the card (`_1799-arms-`, `_1799-armD-`, `_1799-summarise-`,
-`_1799-import-attribution-`) and the four arm configs deleted at close.
+variable, no flag.
+
+**16 full-suite runs and 2 half-suite shard runs, all local** — counted at the
+logs (`grep -c 'Duration '`): 1 + 1 + 2 standalone baselines, 12 in the arm
+runner (9 interleaved + 3 for the probe), 2 shard. Four disposables named with
+the card (`_1799-arms-`, `_1799-armD-`, `_1799-summarise-`,
+`_1799-import-attribution-`) and **three** arm configs, all deleted at close;
+the baseline arm needed no config of its own, which is why there are four arms
+and three configs.
+
+⚠ **That sentence read *"14 full-suite runs"* and *"the four arm configs"* when
+this addendum was first pushed, and both were wrong** — the runs were never
+counted, and the config count was the arm count written down twice. Caught in
+this seat's own close by counting at the logs and by `ls`, which is the same
+recount that caught run 6's `six`-over-seven one section above. **Two unforced
+count errors in one document in one night, from the same cause: a number
+remembered instead of read.** Left visible rather than quietly edited, because
+the correction is the only part of this that teaches anything.
