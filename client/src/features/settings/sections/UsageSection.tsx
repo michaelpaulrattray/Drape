@@ -89,7 +89,12 @@ export function UsageSection({
   allowance,
   balance,
 }: {
-  allowance: number;
+  /**
+   * ⚠ **`null` = NOT READ YET, AND IT IS NOT A GRANT OF 0 (#1741).** It is
+   * only ever a denominator here, and `spendWindowCopy` is what decides
+   * whether a denominator may be quoted at all.
+   */
+  allowance: number | null;
   balance: number | null;
 }) {
   /*

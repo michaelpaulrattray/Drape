@@ -88,10 +88,20 @@ export function SettingsModal({
   user: { name?: string | null; email?: string | null; authProvider?: string | null } | null;
   avatarUrl: string | null;
   onAvatarChange: (url: string) => void;
-  planName: string;
+  /**
+   * ⚠ **`null` = NOT READ YET, AND IT IS A DIFFERENT FACT FROM FREE (#1741).**
+   * `getStatus` is gated on this modal being open, so it is in flight for the
+   * first paint of every open — and the header below is the first thing read.
+   * The two consumers take the two house conventions and they are not
+   * interchangeable: the header OMITS its clause (an em dash inside a sentence
+   * reads as a plan called "—"), the plan card draws the em dash in its own
+   * title slot so nothing under it moves when the name lands.
+   */
+  planName: string | null;
   /** `null` = not read yet, which is a different fact from free (#1727). */
   planPriceInCents: number | null;
-  allowance: number;
+  /** `null` = not read yet, which is a different fact from a grant of 0 (#1741). */
+  allowance: number | null;
   balance: number | null;
   renewsAt: Date | null;
 }) {
@@ -147,8 +157,17 @@ export function SettingsModal({
     >
       <header className="dp-set__head">
         <span className="dp-set__title">Settings</span>
+        {/*
+          ⚠ **THE PLAN CLAUSE IS OMITTED WHILE THE PLAN IS UNREAD, NOT
+          EM-DASHED — #1741.** This is a sentence, and #1727's own rule splits
+          on exactly that: a figure in its own SLOT draws an em dash so nothing
+          below it moves; a CLAUSE inside a sentence is dropped, because
+          "Klieg Studio · — plan" claims there is a plan called em dash. The
+          workspace name is true on its own and is what remains.
+        */}
         <span className="dp-set__workspace">
-          {WORKSPACE_NAME} · {planName} plan
+          {WORKSPACE_NAME}
+          {planName === null ? null : ` · ${planName} plan`}
         </span>
         <button
           type="button"

@@ -57,6 +57,16 @@ export type SpendBasis = "period" | "rolling30";
  * So there is no default: the window is named only once the server has said
  * which one it summed, and until then the heading is the bare noun.
  *
+ * ⚠ **AND THE ALLOWANCE IS THE THIRD HALF OF THE SAME GUARD — #1741.** The
+ * paragraph below caught `balance` and left `allowance` on the reading that a
+ * zero quotes nothing. True of a zero; it was not a zero. `allowance` reached
+ * here out of a plan-catalogue lookup keyed on a DEFAULTED plan id, so for the
+ * beat before `billing.getStatus` answered it was the FREE rung's grant — and
+ * the period branch printed *"of 13,500 this billing period"* at a subscriber
+ * whose allowance is nothing like it. Real window words, a real-looking figure,
+ * the wrong plan. It is `number | null` now and a `null` gets no note, on the
+ * same ground as the other two.
+ *
  * ⚠ **AND THE SAME RULE NOW BINDS THE FIGURE, WHICH IT DID NOT — #1703, 2026-10-01.**
  * The guard above is about the basis, and the basis comes from
  * `usage.getCycleSpend`; `balance` comes from `billing.getStatus`, which is a
@@ -70,7 +80,7 @@ export type SpendBasis = "period" | "rolling30";
 export function spendWindowCopy(
   basis: SpendBasis | null,
   balance: number | null,
-  allowance: number,
+  allowance: number | null,
 ): { heading: string; over: string | null; note?: string } {
   if (basis === null) {
     /* The honest loading state: a title that claims nothing, no note, and no
@@ -86,7 +96,13 @@ export function spendWindowCopy(
          billing period` sits under a rate. The free window cannot use one
          string for both — *"averaged over in the last 30 days"*. */
       over: "this billing period",
-      note: allowance > 0 ? `of ${formatCredits(displayBalance(allowance))} this billing period` : undefined,
+      /* ⚠ `null` IS NOT ZERO AND NEITHER MAY BE QUOTED (#1741) — see the
+         docblock. A `null` here is "nobody has read the plan yet"; a 0 is the
+         free rung, which has no period to measure against in the first place. */
+      note:
+        allowance !== null && allowance > 0
+          ? `of ${formatCredits(displayBalance(allowance))} this billing period`
+          : undefined,
     };
   }
   return {

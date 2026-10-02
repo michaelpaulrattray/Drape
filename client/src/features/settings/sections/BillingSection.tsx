@@ -47,7 +47,14 @@ export function BillingSection({
   onChangePlan,
   onAddCredits,
 }: {
-  planName: string;
+  /**
+   * ⚠ **`null` = NOT READ YET, AND IT IS NOT THE FREE PLAN (#1741).** The
+   * plan card's title is its own SLOT, so this one draws the em dash rather
+   * than being omitted — an absent title would collapse the row and walk the
+   * two money buttons up the card, which is the same argument the Sign modal's
+   * cost line makes. The header one screen up is a sentence and omits instead.
+   */
+  planName: string | null;
   /**
    * ⚠ **`null` = NOT READ YET, AND IT IS NOT A PRICE OF ZERO (#1727).**
    * `getStatus` is in flight for the first paint of every open of this modal,
@@ -58,7 +65,12 @@ export function BillingSection({
    * it (#1703).
    */
   planPriceInCents: number | null;
-  allowance: number;
+  /**
+   * ⚠ **`null` = NOT READ YET, AND IT IS NOT A GRANT OF 0 (#1741).** Every
+   * claim that quotes it — the `credits/mo` entry, the bar, the percentage —
+   * stands down together, exactly as they already do for `balance`.
+   */
+  allowance: number | null;
   balance: number | null;
   renewsAt: Date | null;
   onChangePlan: () => void;
@@ -112,22 +124,32 @@ export function BillingSection({
     down together: the figure, the track and the percentage. An em dash is the
     house answer for a figure not yet known (`BoardHeader`, `UsageSection`).
   */
-  const remainingShare = balance !== null && renews && allowance > 0 ? balance / allowance : 0;
-  const quotable = balance !== null && renews && allowance > 0;
+  /*
+    ⚠ **AND AN ALLOWANCE NOBODY HAS READ YET IS NOT AN ALLOWANCE OF ZERO —
+    #1741, one noun further along the same sentence.** `allowance` arrived here
+    as `0` while `getStatus` was in flight, and under a catalogue resolved off a
+    defaulted plan id it arrived as the FREE rung's grant instead — a real
+    number belonging to another plan. Both are claims nobody made, so the
+    denominator is held exactly as the numerator above it is.
+  */
+  const granted = allowance !== null && allowance > 0;
+  const remainingShare = balance !== null && renews && granted ? balance / allowance : 0;
+  const quotable = balance !== null && renews && granted;
   const invoices = invoicesData?.invoices ?? [];
 
   return (
     <>
       <SettingsGroup title="Billing & plan">
         <SettingsCard
-          label={planName}
+          /* An em dash in the title's own slot — see the prop's docblock (#1741). */
+          label={planName ?? "—"}
           note={[
             planPriceInCents === null
               ? null
               : planPriceInCents > 0
                 ? `${formatDollars(planPriceInCents)}/mo`
                 : "No charge",
-            renews && allowance > 0 ? `${formatCredits(displayBalance(allowance))} credits/mo` : null,
+            renews && granted ? `${formatCredits(displayBalance(allowance))} credits/mo` : null,
             renewsAt ? `renews ${formatShortDate(renewsAt)}` : null,
           ]
             .filter(Boolean)
@@ -167,7 +189,7 @@ export function BillingSection({
               continuation.
             */}
             <button type="button" className="dp-set__linkbtn" onClick={onAddCredits}>
-              {renews && allowance > 0 ? "more credits" : "Add more credits"}
+              {renews && granted ? "more credits" : "Add more credits"}
             </button>
           </span>
         </div>

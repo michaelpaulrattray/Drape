@@ -134,10 +134,75 @@ export function AccountSurfaces({
     Ultimate account gets captioned "Free" (PR #583 finding 1). The catalogue
     lookup stays only as the fallback for an older server bundle mid-deploy.
   */
-  const planId = status?.planTier ?? "free";
-  const tier = plans?.tiers?.[planId as keyof NonNullable<typeof plans>["tiers"]];
-  const planName = status?.planName ?? tier?.name ?? "Free";
-  const allowance = status?.planMonthlyCredits ?? tier?.monthlyCredits ?? 0;
+  /*
+    ⚠ **AND THE LOOKUP IS KEYED ON A TIER THE SERVER ACTUALLY STATED, NEVER ON
+    A DEFAULT — #1741, and it is the line the whole defect hangs off.**
+
+    It read `status?.planTier ?? "free"`. The two queries above ride ONE batched
+    request (`httpBatchLink`, `main.tsx`) and are two INDEPENDENT entries in its
+    reply, so one can fail while the other answers — and they are not equally
+    likely to: `getPlans` is a constant fold over `SUBSCRIPTION_PRODUCTS`
+    (`server/routes/billing.ts:95`) and `getStatus` reads the database. So the
+    reachable state is `plans` defined beside an undefined `status`, and
+    ⚠ **it is PERMANENT for the life of the surface rather than one beat** —
+    nothing here retries or refuses. In it, `tier` was the FREE rung's row and
+    every fallback below answered out of the wrong plan:
+    `tier?.name` is **"Free"**, `tier?.monthlyCredits` is a real-looking
+    allowance belonging to somebody else's plan, and `tier?.price` is 0 — which
+    is **#1727's own repair walked around**, because that fix set this chain's
+    FLOOR to `null` and left its SOURCE a guess.
+
+    Keyed on `null` instead, the lookup does not happen until the server has
+    named the tier — so there is nothing to walk around, and #391's mid-deploy
+    fallback gets BETTER rather than weaker: it now resolves against the real
+    `planTier` an older bundle did send, instead of against "free".
+  */
+  const planId = status?.planTier ?? null;
+  const tier =
+    planId === null
+      ? undefined
+      : plans?.tiers?.[planId as keyof NonNullable<typeof plans>["tiers"]];
+  /*
+    ⚠ **AN UNREAD STATUS IS NOT A FREE ACCOUNT — #1741, the NAME half of
+    #1727, and three different facts were wearing one shape.**
+
+    `getStatus` is gated on a surface being OPEN (the block above), so `status`
+    is undefined for the first paint of **every single open** — not only on a
+    slow network. A Pro subscriber opening Settings read
+    **"Klieg Studio · Free plan"** in the header and **"Free"** as the title of
+    their own plan card, then watched both become their real plan.
+
+    So the three states are kept apart rather than collapsed into two:
+
+    | state | what it means | what is rendered |
+    |---|---|---|
+    | `status === undefined` | nobody has asked yet | held — `null` travels |
+    | answered, field present | today's server | the fact |
+    | answered, field absent | an older bundle mid-deploy (#391) | the catalogue by the real tier, then "Free" |
+
+    The third row is why the `??` chains stay BELOW the branch rather than
+    being deleted as unreachable: the TYPE says `planName` is always sent, and
+    that type is this bundle's reading of this server, not of the one answering.
+    The second row is the one #1727 fixed for the price; this is the same
+    sentence about the name, the plan id and the allowance, and `balance` took
+    it in #1703.
+  */
+  const planName = status === undefined ? null : (status.planName ?? tier?.name ?? "Free");
+  /*
+    ⚠ **THE CREDIT-GRANT NOUN — AND #1727 LEFT IT ON A READING THE LINE ABOVE
+    HAS NOW FALSIFIED.** Its comment said `allowance`'s zero "is read by
+    `allowance > 0` and therefore quotes nothing", and that was true of a zero.
+    The zero was only one of its two bad values: with the catalogue keyed on
+    "free" it was the free rung's GRANT instead — a number well above zero, which
+    sails straight through `allowance > 0` and had `spendWindowCopy` quote
+    **"of 13,500 this billing period"** at a subscriber whose allowance is
+    nothing like it. **A default that is never reached because something upstream
+    hands down a confident wrong number is not a safe default; it is a default
+    nobody could see.** Held as `null`, every claim that quotes it stands down
+    together — the shape `balance` already has.
+  */
+  const allowance =
+    status === undefined ? null : (status.planMonthlyCredits ?? tier?.monthlyCredits ?? 0);
   /*
     ⚠ **`null` UNTIL `getStatus` ANSWERS — #1727, and this one is certain
     rather than racy.** The query is gated on a surface being OPEN (the block
@@ -148,10 +213,14 @@ export function AccountSurfaces({
 
     The catalogue fallback stays for the mid-deploy case #391 describes; what
     changed is only its floor. `balance` on the line below took the same repair
-    in #1703, and `allowance` above is a credit-grant noun whose zero is read
-    by `allowance > 0` and therefore quotes nothing — carded, not swept here.
+    in #1703. ⚠ **The floor was not enough on its own** — see #1741 above: a
+    `tier` resolved off a DEFAULTED plan id handed this chain a 0 from the free
+    rung before the floor was ever reached, so the pane could still read
+    "No charge" at a subscriber. The two halves are one repair, and the
+    `allowance` clause this sentence used to end on is answered there.
   */
-  const planPriceInCents = status?.planPriceInCents ?? tier?.price ?? null;
+  const planPriceInCents =
+    status === undefined ? null : (status.planPriceInCents ?? tier?.price ?? null);
   const renewsAt = status?.currentPeriodEnd ? new Date(status.currentPeriodEnd) : null;
 
   return (

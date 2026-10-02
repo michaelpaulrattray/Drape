@@ -180,15 +180,39 @@ describe("card #391 — an account ON the hidden rung still knows its own plan (
     expect(code(billing)).toContain("ownPlanFacts(");
   });
 
+  /**
+   * ⚠ **THE OPTIONAL CHAIN MOVED UP A LINE AND THE PROPERTY DID NOT — #1741,
+   * 2026-10-02, and the arm is STRONGER for it rather than merely re-matched.**
+   *
+   * It read `toContain("status?.planName")`, three times, which asserted the
+   * own-row field appears SOMEWHERE in the file. #1741 branched the whole block
+   * on `status === undefined` — because an unread status is not a free account —
+   * so the `?.` is spent once at the branch and the reads below it are plain
+   * property access. Three true things stopped matching, for a change that made
+   * the caption strictly more careful.
+   *
+   * What #391 actually cares about is the ORDER: the own row is preferred and
+   * the catalogue is only its fallback, because an account on the hidden rung is
+   * not in `plans.tiers` at all and deriving its caption there is how a
+   * hand-sold Ultimate reads "Free". So that is what is pinned now — each field
+   * read from `status` BEFORE its `tier?.` fallback, in one expression. A
+   * substring could never have told that order from its reverse.
+   */
   it("Settings actually reads it — the caption prefers the own-row fields over the catalogue", () => {
     const surfaces = readFileSync(
       join(HERE, "..", "client", "src", "features", "settings", "AccountSurfaces.tsx"),
       "utf8",
     );
     const src = code(surfaces);
-    expect(src).toContain("status?.planName");
-    expect(src).toContain("status?.planMonthlyCredits");
-    expect(src).toContain("status?.planPriceInCents");
+    expect(src, "the plan NAME no longer prefers the own row over the catalogue").toContain(
+      "status.planName ?? tier?.name",
+    );
+    expect(src, "the ALLOWANCE no longer prefers the own row over the catalogue").toContain(
+      "status.planMonthlyCredits ?? tier?.monthlyCredits",
+    );
+    expect(src, "the PRICE no longer prefers the own row over the catalogue").toContain(
+      "status.planPriceInCents ?? tier?.price",
+    );
   });
 });
 
