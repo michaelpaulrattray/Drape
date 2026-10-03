@@ -659,3 +659,109 @@ describe("the seat cut invokes it", () => {
     expect(body).not.toContain("superseded");
   });
 });
+
+/*
+  ⚠ THE PROXY A HISTORY READ MUST USE IS DOCUMENTED, AND A DOCBLOCK WITH NO ARM
+  IS A CONTROL WITH NO CALLER (#1872).
+
+  The close no longer overwrites `heartbeatAt`, so rows closed from that card
+  onward carry the real last check-in. **The 563 closed before it do not, and
+  never will** — so a re-measurement of this instrument's floor, lane parser or
+  window over history has to fall back to the row's LIFETIME, and #1866's first
+  pass is what happens when it does not: it read `heartbeatAt` and returned 0
+  superseded rows in 565 where #1863 had measured 2.
+
+  That fact now lives in `readRunSupersession`'s docblock, which is exactly what
+  the card asks for — and prose is the one kind of deliverable this repository
+  has repeatedly lost without noticing. This arm was added because the sabotage
+  pass deleted the paragraph and the whole suite stayed GREEN.
+
+  ⚠ **IT IS KEYED ON THE FACTS, NOT THE WORDING.** Three tokens, each
+  load-bearing: both field names the proxy is built from, and the word that
+  carries its admissibility argument. A rewrite that keeps the facts passes; a
+  deletion reddens. A guard that fires on a rewording teaches a shift to edit
+  the guard, which is the warning `crewHeartbeat.test.ts` already carries.
+*/
+describe("the history proxy is written down where a re-measurement will look (#1872)", () => {
+  const SOURCE = readFileSync("shared/crewShiftState.ts", "utf8");
+
+  /** The docblock immediately above the verdict — the subject, sliced out. */
+  const verdictDocblock = (source: string): string => {
+    const declaration = source.indexOf("export function readRunSupersession(");
+    expect(declaration, "`readRunSupersession` is not declared here any more").toBeGreaterThan(-1);
+    const opens = source.lastIndexOf("/**", declaration);
+    expect(opens, "the verdict carries no docblock at all").toBeGreaterThan(-1);
+    return source.slice(opens, declaration);
+  };
+
+  /* Its own title, which is how the slice proves it is the right docblock. A
+     docblock does not name the function beneath it, so the declaration's name
+     is not available as an anchor here. */
+  const VERDICT_TITLE = "IS THIS OPEN ROW'S PROCESS DEAD?";
+
+  it("it names the lifetime proxy and why it is admissible", () => {
+    const docblock = verdictDocblock(SOURCE);
+    /* Verify the slice is the right one before trusting what it contains —
+       otherwise this reads a neighbouring docblock and proves nothing. */
+    expect(docblock).toContain(VERDICT_TITLE);
+
+    /* Case-insensitive: the prose writes `SUPERSET` in capitals, and a guard
+       that depends on the capitalisation of a word in a sentence is a guard
+       about typography. */
+    const lowered = docblock.toLowerCase();
+    for (const fact of ["startedat", "endedat", "superset"]) {
+      expect(
+        lowered.includes(fact),
+        `The verdict's docblock no longer names \`${fact}\`. A read spanning `
+          + "2026-10-03 must use the row's LIFETIME for every row closed before "
+          + "it — all 563 carry `heartbeatAt == endedAt` — and that is the only "
+          + "place a shift re-measuring this floor will look. #1866's first pass "
+          + "returned 0 superseded rows in 565 for exactly this reason.",
+      ).toBe(true);
+    }
+  });
+
+  /*
+    POSITIVE CONTROL, ONE PER FACT. The arm above is a presence test over prose,
+    which passes just as well when the slice is wrong or the reader has stopped
+    reading.
+
+    ⚠ **IT GUTS THE TOKEN, NEVER A SENTENCE, AND THE FIRST VERSION DID THE
+    OPPOSITE.** That one deleted the section by matching its heading, so a
+    sabotage pass that merely reworded the heading made the CONTROL fail while
+    the real arm stayed correctly green — a red manufactured by the control's
+    own anchor rather than by the fact going missing. Each token is removed from
+    the whole source instead: neither the slice's anchors (`VERDICT_TITLE`, the
+    declaration) contains any of them, so the slice is unaffected and the only
+    thing that changes is the fact under test.
+  */
+  it("and each of those readings can say no", () => {
+    for (const fact of ["startedat", "endedat", "superset"]) {
+      const gutted = SOURCE.replace(new RegExp(fact, "gi"), "(removed)");
+      const docblock = verdictDocblock(gutted);
+      /* The slice must still be the right one — a control that reddens because
+         it sliced nothing proves nothing about the fact it is guarding. */
+      expect(docblock).toContain(VERDICT_TITLE);
+      expect(docblock.toLowerCase().includes(fact)).toBe(false);
+    }
+  });
+
+  /*
+    ⚠ THE LIMIT, NAMED RATHER THAN CHASED. This is keyed on the FACTS, so prose
+    that still carries all three passes — deleting only the imperative headline
+    leaves `startedAt`, `endedAt` and the superset argument in the sentences
+    around it, and the sabotage pass confirmed that stays green. That is the
+    arm behaving as designed, not a hole: what must survive is the information a
+    shift re-measuring the floor needs, and a guard tight enough to fire on a
+    reworded heading is a guard about typography that teaches a shift to edit it.
+  */
+  it("a docblock that genuinely lacks the facts is refused — the reader is not blind", () => {
+    const synthetic = `/**\n * ${VERDICT_TITLE}\n * Nothing at all about history.\n */\n`
+      + "export function readRunSupersession(";
+    const docblock = verdictDocblock(synthetic);
+    expect(docblock).toContain(VERDICT_TITLE);
+    for (const fact of ["startedat", "endedat", "superset"]) {
+      expect(docblock.toLowerCase().includes(fact)).toBe(false);
+    }
+  });
+});
