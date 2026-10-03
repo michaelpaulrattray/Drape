@@ -20,8 +20,11 @@ import {
   pinCandidates, pinningTests, pinsIn, reachesDoors, readCommittedAtlas, reasonOfNote, renderCapabilityPage, committedPageIsFresh, lfOnly,
   CAPABILITY_MD, CASTING_ENTRANCE, bareDoorId, declaredReferenceRefusals, declaredUploadRefusals, type Finding,
   importedModules, narrowSharedBareIdPins, rollRaiseSitesIn, sharedBareDoorIds, type DeclaredId,
+  declaredSourceNames, roadProseNames, roadProseSymbolFindings, type ProseName,
 } from "../scripts/lib/capabilityAtlas.mts";
-import { ROADS, UNMAPPED_ENTRANCES, type Road } from "../scripts/capability-atlas-roads.mts";
+import {
+  LAWS, ROADS, UNDECLARED_PROSE_NAMES, UNMAPPED_ENTRANCES, type Road,
+} from "../scripts/capability-atlas-roads.mts";
 import { CORPUS, type CorpusRow } from "../scripts/capability-atlas-corpus.mts";
 import { cannotSaySentence } from "./castingV2/cannotSayCopy";
 import { CONCEPT_DESCRIBE_COPY } from "./castingV2/conceptDescribeCopy";
@@ -1366,5 +1369,202 @@ describe("every way into the casting studio is on the map", () => {
     const committed = readCommittedAtlas();
     expect(committed, "regenerate the census").not.toBeNull();
     expect(committed!.static.procedures).toEqual(declaredCastingProcedures());
+  });
+});
+
+/* ── #1821: THE PROSE'S SYMBOLS ARE HELD TO THE SOURCE TOO ──────────────────
+   Every door, flag, procedure and entrance in the roads map was validated
+   against the code and refused the generation on a bad one. Nothing held an
+   IDENTIFIER written into a `summary` or a `notes` line, so the map asserted a
+   deleted price constant as live for two days — on the artifact its own header
+   calls "the map an agent reads to understand how the casting studio works",
+   during his pricing week.
+
+   These arms drive the CAPABILITY, not the population: the check errs toward
+   calling a name declared (its own docblock says why, and that direction is a
+   choice), so a clean reading over the real tree is a floor. What must hold is
+   that an undeclared name IS reported, a live one is NOT, and the enumerated
+   remainder cannot outlive the prose it excuses. */
+
+const PROSE_ROAD = (notes: string[]): Road => ({
+  id: "fixture", title: "A fixture road", entrances: [], summary: "A summary.",
+  doors: [], procedures: [], flags: [], notes,
+});
+
+const proseFindings = (input: {
+  notes: string[];
+  declarations?: string[];
+  modules?: string[];
+  doorIds?: string[];
+  enumerated?: Record<string, { readonly why: string }>;
+}): Finding[] =>
+  roadProseSymbolFindings({
+    names: roadProseNames({ roads: [PROSE_ROAD(input.notes)], laws: [], unmapped: {} }),
+    declarations: new Set(input.declarations ?? []),
+    modules: new Set(input.modules ?? []),
+    doorIds: new Set(input.doorIds ?? []),
+    enumerated: input.enumerated ?? {},
+  });
+
+describe("the roads map's backticked symbols are held to the source (#1821)", () => {
+  it("POSITIVE CONTROL — a backticked name the tree does not declare is REPORTED", () => {
+    const findings = proseFindings({ notes: ["the charge reads `aPriceConstantNobodyDeclares`."] });
+    expect(findings.map((f) => [f.kind, f.subject, f.severity])).toEqual([
+      ["road-cites-undeclared-symbol", "aPriceConstantNobodyDeclares", "error"],
+    ]);
+    /* The message has to tell the writer what to DO — a refusal that only says
+       no is how an allowlist fills up with shrugs. */
+    expect(findings[0]!.message).toContain("fixture.notes[0]");
+    expect(findings[0]!.message).toContain("UNDECLARED_PROSE_NAMES");
+  });
+
+  it("NEGATIVE CONTROL — each of the three DERIVED exemptions silences it on its own", () => {
+    const note = ["`aDeclaredThing`, `a_door_id` and `someModule` walk into a sentence."];
+    expect(proseFindings({ notes: note }).map((f) => f.subject).sort()).toEqual([
+      "aDeclaredThing", "a_door_id", "someModule",
+    ]);
+    expect(
+      proseFindings({
+        notes: note,
+        declarations: ["aDeclaredThing"],
+        doorIds: ["a_door_id"],
+        modules: ["someModule"],
+      }),
+    ).toEqual([]);
+  });
+
+  it("reads only what a person WROTE — a dotted name, a path and a prose word are not symbols", () => {
+    /* The reader takes BARE identifiers. `castingV2.config` is a member
+       expression, `refineService.ts` is a file and `fal-ai/sam-3/image` is a
+       provider route — holding any of those to a declaration would make the
+       check unusable and the writer would turn it off. */
+    expect(
+      proseFindings({
+        notes: ["`castingV2.config`, `refineService.ts`, `fal-ai/sam-3/image`, `a sentence`."],
+      }),
+    ).toEqual([]);
+  });
+
+  it("ROT — an enumerated entry no road says any more is REPORTED", () => {
+    const findings = proseFindings({
+      notes: ["a sentence that mentions nothing."],
+      enumerated: { aNameNoRoadSays: { why: "a reason long enough to be a real reason here" } },
+    });
+    expect(findings.map((f) => [f.kind, f.subject])).toEqual([
+      ["stale-undeclared-prose-name", "aNameNoRoadSays"],
+    ]);
+    expect(findings[0]!.message).toContain("dead weight");
+  });
+
+  it("ROT — an enumerated entry the tree has STARTED declaring is REPORTED", () => {
+    const findings = proseFindings({
+      notes: ["the road still says `aNameNowDeclared`."],
+      declarations: ["aNameNowDeclared"],
+      enumerated: { aNameNowDeclared: { why: "a reason long enough to be a real reason here" } },
+    });
+    expect(findings.map((f) => [f.kind, f.subject])).toEqual([
+      ["stale-undeclared-prose-name", "aNameNowDeclared"],
+    ]);
+    expect(findings[0]!.message).toContain("the excuse has become wrong");
+  });
+
+  it("a name said on two roads is ONE finding, and names both places", () => {
+    const names: ProseName[] = [
+      { where: "one.notes[0]", name: "aGhost" },
+      { where: "two.summary", name: "aGhost" },
+      { where: "two.summary", name: "aGhost" },
+    ];
+    const findings = roadProseSymbolFindings({
+      names, declarations: new Set(), modules: new Set(), doorIds: new Set(), enumerated: {},
+    });
+    expect(findings).toHaveLength(1);
+    expect(findings[0]!.message).toContain("one.notes[0], two.summary");
+  });
+});
+
+describe("the declared set reads CODE, and the real map is clean (#1821)", () => {
+  it("POSITIVE CONTROL — every enumerated name reads UNDECLARED against the real tree", () => {
+    /* ⚠ THIS IS THE ARM THAT DECIDES THE WHOLE CHECK, and it holds TWO separate
+       decisions in `declaredSourceNames` that were both found by sabotage rather
+       than foreseen. Each was attributed to the other at first, so both are
+       named here with the specimen that actually reddens for it:
+
+       1 · THE SUBJECT IS NOT ITS OWN EVIDENCE. The enumerated list lives in
+           capability-atlas-roads.mts as `NAME: { why: … }`, and `NAME:` is a
+           member declaration — so with that module in the walked population ALL
+           SIX entries read as names the tree had started declaring, and the rot
+           arm reported every one of them. An allowlist that cancels itself by
+           existing. Driven: un-skip that file and all six lines below go red.
+
+       2 · A DECLARATION IS CODE, SO THE WALK READS `codeOnly`. Driven on the
+           same six: reading the raw bytes makes `NOT_FOUND` declared, because a
+           name this repository merely writes down is not a name it declares.
+           That is the direction that MATTERS — a stale sentence quoting its own
+           dead symbol would launder itself into an exemption.
+
+       `CASTING_V2_RETRY_PRICE_CREDITS` is the reason the check exists and is
+       below with the rest; what the obituary assertion proves is the distinction
+       the whole reader turns on — the name is PRESENT in the tree's bytes and
+       ABSENT from its declarations, and those are not the same question. */
+    const { declarations, modules } = declaredSourceNames();
+    expect(declarations.size).toBeGreaterThan(10_000);
+
+    const wronglyDeclared = Object.keys(UNDECLARED_PROSE_NAMES).filter((name) =>
+      declarations.has(name),
+    );
+    expect(
+      wronglyDeclared,
+      "each of these is excused as a name the tree does not declare, and the declared " +
+        "set now contains it — either the excuse is stale, or the reader has started " +
+        "counting prose as code",
+    ).toEqual([]);
+
+    const obituary = readFileSync(
+      join(import.meta.dirname, "casting", "castingCreditCosts.ts"),
+      "utf8",
+    );
+    expect(obituary).toContain("CASTING_V2_RETRY_PRICE_CREDITS");
+    expect(declarations.has("CASTING_V2_RETRY_PRICE_CREDITS")).toBe(false);
+
+    /* And the other direction in the same breath, so a set that answered "no"
+       to everything could not pass the lines above. */
+    expect(declarations.has("roadProseSymbolFindings")).toBe(true);
+    expect(modules.has("briefCompiler")).toBe(true);
+    expect(modules.has("aModuleThatHasNeverExisted")).toBe(false);
+  });
+
+  it("the REAL map is clean, and dropping one enumerated line reproduces the defect", () => {
+    const { declarations, modules } = declaredSourceNames();
+    const names = roadProseNames({ roads: ROADS, laws: LAWS, unmapped: UNMAPPED_ENTRANCES });
+    expect(names.length).toBeGreaterThan(20);
+
+    const doorIds = new Set<string>();
+    for (const entry of buildStaticAtlas().declared) {
+      doorIds.add(entry.id);
+      doorIds.add(bareDoorId(entry.id));
+    }
+
+    const read = (enumerated: Record<string, { readonly why: string }>) =>
+      roadProseSymbolFindings({ names, declarations, modules, doorIds, enumerated });
+
+    expect(read(UNDECLARED_PROSE_NAMES)).toEqual([]);
+
+    /* ⚠ THE DEFECT, DRIVEN THROUGH THE REAL PROSE. Take the specimen's line out
+       of the enumerated remainder and the check must report the very sentence
+       that shipped a wrong Sign price onto the map an agent reads. If this ever
+       returns nothing, the guard has stopped being able to catch what it was
+       built for, whatever the clean reading above says. */
+    const { CASTING_V2_RETRY_PRICE_CREDITS: _specimen, ...withoutSpecimen } = UNDECLARED_PROSE_NAMES;
+    const reproduced = read(withoutSpecimen);
+    expect(reproduced.map((f) => [f.kind, f.subject])).toEqual([
+      ["road-cites-undeclared-symbol", "CASTING_V2_RETRY_PRICE_CREDITS"],
+    ]);
+  });
+
+  it("every enumerated reason is a REASON, not just a name", () => {
+    const reasonless = Object.entries(UNDECLARED_PROSE_NAMES)
+      .filter(([, entry]) => entry.why.trim().length < 40)
+      .map(([name]) => name);
+    expect(reasonless).toEqual([]);
   });
 });
