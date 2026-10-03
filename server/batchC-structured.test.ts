@@ -41,6 +41,24 @@ const evidenceRuntime = vi.hoisted(() => ({
   adapter: null as object | null,
 }));
 
+/*
+  ⚠ THE CANVAS CASTING DOOR IS HELD OPEN FOR THIS SUITE (#1785, his word:
+  "seal"). This file tests the ROAD — locking, charging, snapshots, identity
+  immutability — and that road now sits behind a compiled-shut door, so without
+  this every arm here would assert the door's refusal instead of the behaviour
+  it was written for, and would go on passing while the thing it guards rotted.
+
+  `server/canvasCastSeal.test.ts` is where the door ITSELF is proven, including
+  that these same calls refuse when it is shut. The door's own module says the
+  road behind it stays compiled and tested precisely so that re-opening it is
+  the deletion of the `assertCanvasCastOpen()` calls and nothing else; this mock
+  is what keeps that true.
+*/
+vi.mock("@shared/canvasCastDoor", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  CANVAS_CAST_OPEN: true,
+}));
+
 vi.mock("./db", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./db")>();
   const boardItemReader = vi.fn();
