@@ -266,6 +266,48 @@ export type QueueRoad = "rest" | "graphql";
 /** `execFileSync`-shaped, so the arms can drive every branch with no network. */
 export type GhExec = (args: readonly string[], options?: { readonly maxBuffer?: number }) => string;
 
+/**
+ * THE READ BUFFER FOR EVERY `gh` CAPTURE, DECLARED ONCE (#1870).
+ *
+ * `execFileSync`'s default is 1 MiB and **an exceeded buffer is a THROW**, so
+ * on a queue read it is not a short answer — it is an UNREAD BOARD. Every one
+ * of the four readings that capture a page of card bodies wraps its call in a
+ * `catch` that returns `null` or `[]`, and every one of them is in the
+ * machinery that decides what gets built or what reaches his Desk. So the
+ * failure mode is silence with a wrong cause attached, which is #1867 exactly:
+ * the briefing outgrew the same 1 MiB default and three nights were spent
+ * diagnosing a git clone.
+ *
+ * Measured 2026-10-04 at the live board, projected at the LARGEST row observed
+ * rather than the mean, because a mean is not what breaks a bounded page: a
+ * 200-card page of bodies is **2.09 MiB** worst case (mean 3,452 bytes a card,
+ * largest 10,936), and a 100-row pull-request page is **1.33 MiB** (mean 6,891,
+ * largest 13,972). Both are past 1 MiB today. 32 MiB is the figure this
+ * repository already uses for a repository-artifact read, and it is a CEILING
+ * rather than an allocation — node grows the buffer to the output it gets.
+ *
+ * ⚠ **IT IS A DEFAULT, NOT A RULE AT THE CALL SITE, AND THAT IS THE DECISION
+ * THIS CARD EXISTED TO MAKE.** The card put two shapes side by side — every
+ * implementation honours the option it declares, or the figure sits where no
+ * call site can forget it — and the measured failure is FORGETTING: four of
+ * four readings forgot, and two of the three `GhExec` implementations declared
+ * the option and dropped it. So both halves ship: the figure is the default
+ * (nothing can forget it) **and** an explicit option still wins (the declared
+ * contract is kept, and `crewQueueCount.mts` already passes a larger one).
+ */
+export const GH_READ_MAX_BUFFER = 32 * 1024 * 1024;
+
+/**
+ * The one owner of that decision, so three `execFileSync` wrappers cannot
+ * drift into three answers (working law 4).
+ *
+ * Each wrapper keeps its own `timeout` and `cwd` — those genuinely differ per
+ * reader — and asks this for the buffer alone. A caller's explicit figure wins
+ * so that a reader needing more than the default says so at its own call.
+ */
+export const ghReadMaxBuffer = (options?: { readonly maxBuffer?: number }): number =>
+  options?.maxBuffer ?? GH_READ_MAX_BUFFER;
+
 export type GhTransport = {
   /** The drop-in `gh` wrapper: same argv in, same JSON text out. */
   run: GhExec;

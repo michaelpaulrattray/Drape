@@ -164,7 +164,7 @@ import { heldStatesFromLabels } from "../shared/crewNextUpHold.js";
 
 import { buildBoard, readCardComments, readNotBuiltCards } from "./lib/cardBuildState.mts";
 import { readOpenPullRequests } from "./lib/cardClaimWarning.mts";
-import { type GhExec, makeGhTransport } from "./lib/ghQueueTransport.mts";
+import { type GhExec, ghReadMaxBuffer, makeGhTransport } from "./lib/ghQueueTransport.mts";
 import { OPEN_QUEUE_LIMIT } from "./lib/nextUpItems.mts";
 import { compareOrderedBand, rankFromLabels } from "./lib/orderedBand.mts";
 import { deriveBands, type Row as BandRow } from "./lib/standingExceptions.mts";
@@ -291,9 +291,20 @@ if (record !== undefined) {
 
 /* ─── the queue ─── */
 
-/** `gh` with no shell — it is an .exe, and the shell form emits DEP0190. */
-const RAW_GH: GhExec = (args) =>
-  execFileSync("gh", [...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+/**
+ * `gh` with no shell — it is an .exe, and the shell form emits DEP0190.
+ *
+ * ⚠ It takes `options` and HONOURS them (#1870). It declared the parameter and
+ * ignored it, which matters most HERE: an unreadable queue read as EMPTY is one
+ * of the two conditions that PARKS THE TEAM on the short road (#504), and an
+ * exceeded read buffer is a throw, not a short answer.
+ */
+const RAW_GH: GhExec = (args, options) =>
+  execFileSync("gh", [...args], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+    maxBuffer: ghReadMaxBuffer(options),
+  });
 
 /**
  * ⚠ **THE QUEUE READ GOES OVER REST FIRST (#1399), AND THIS IS THE GATE WHERE IT

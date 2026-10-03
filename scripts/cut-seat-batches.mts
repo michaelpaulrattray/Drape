@@ -86,6 +86,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { readOpenPullRequests } from "./lib/cardClaimWarning.mts";
+import { GH_READ_MAX_BUFFER } from "./lib/ghQueueTransport.mts";
 import { buildBoard, readCardComments, readNotBuiltCards } from "./lib/cardBuildState.mts";
 import {
   managerRowsByCard,
@@ -229,7 +230,16 @@ function readOpenCards(): SeatCandidateCard[] {
         const out = execFileSync(
           "gh",
           ["issue", "list", "--state", "open", "--limit", "200", "--json", "number,title,body,labels,createdAt"],
-          { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: GH_READ_TIMEOUT_MS },
+          /* The buffer is the declared one (#1870): this asks for `body` on a
+             200-card page — 2.09 MiB at the largest rows measured — and the
+             `catch` below returns `[]`, so an overflow reads as a board with no
+             cards on it and every seat is cut empty. */
+          {
+            encoding: "utf8",
+            stdio: ["ignore", "pipe", "pipe"],
+            timeout: GH_READ_TIMEOUT_MS,
+            maxBuffer: GH_READ_MAX_BUFFER,
+          },
         );
         const parsed = JSON.parse(out);
         return Array.isArray(parsed) ? parsed : [];

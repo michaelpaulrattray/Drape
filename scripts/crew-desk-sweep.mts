@@ -104,7 +104,7 @@ import {
   planShellDamage,
 } from "../shared/crewShellDamage.js";
 import { buildBoard, readCardComments, readNotBuiltCards } from "./lib/cardBuildState.mts";
-import { type GhExec, makeGhTransport } from "./lib/ghQueueTransport.mts";
+import { type GhExec, ghReadMaxBuffer, makeGhTransport } from "./lib/ghQueueTransport.mts";
 import { readOpenPullRequests } from "./lib/cardClaimWarning.mts";
 import {
   type OrderedIssue,
@@ -170,9 +170,21 @@ function ghWrite(args: string[]): boolean {
   }
 }
 
-/** `gh` with no shell — it is an .exe, and the shell form emits DEP0190. */
-const RAW_GH: GhExec = (args) =>
-  execFileSync("gh", [...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+/**
+ * `gh` with no shell — it is an .exe, and the shell form emits DEP0190.
+ *
+ * ⚠ It takes `options` and HONOURS them (#1870). It declared the parameter and
+ * ignored it, so a buffer passed through `makeGhTransport` — which forwards on
+ * both roads — was silently dropped here; and with no buffer at all the two
+ * body-carrying reads below sat on node's 1 MiB default, where an overflow
+ * throws into `gh`'s catch and reads as an unreadable board.
+ */
+const RAW_GH: GhExec = (args, options) =>
+  execFileSync("gh", [...args], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+    maxBuffer: ghReadMaxBuffer(options),
+  });
 
 /**
  * ⚠ **THE QUEUE READS GO OVER REST FIRST (#1399).** GitHub's SECONDARY (burst)

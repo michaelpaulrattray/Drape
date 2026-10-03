@@ -26,6 +26,7 @@ import {
   readPullRequestConflict,
   type PullRequestMergeability,
 } from "../../shared/crewShiftState.js";
+import { GH_READ_MAX_BUFFER } from "./ghQueueTransport.mts";
 
 /**
  * Twenty seconds. `gh pr list` on this repository is well under a second, and
@@ -125,10 +126,15 @@ export function readOpenPullRequests(
     const out = execFileSync(
       "gh",
       [...OPEN_PR_LIST_ARGS],
+      /* The buffer is the declared one (#1870): `OPEN_PR_LIST_ARGS` asks for
+         `body` on a 100-row page — 1.33 MiB at the largest rows measured — and
+         the `catch` below returns `null`, which every caller reads as "the
+         pull-request board could not be read" rather than as an overflow. */
       {
         encoding: "utf8",
         stdio: ["ignore", "pipe", "pipe"],
         timeout: OPEN_PR_READ_TIMEOUT_MS,
+        maxBuffer: GH_READ_MAX_BUFFER,
         ...(cwd ? { cwd } : {}),
       },
     );
