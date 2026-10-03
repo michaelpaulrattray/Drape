@@ -77,9 +77,15 @@ const PLAN = "client/src/features/billing/ChangePlanModal.tsx";
  * written for the pane read that card needs; the shared one REFUSES a missing
  * anchor rather than answering an empty string, which is the property every
  * negative arm below rests on. The three remaining private copies
- * (`burnCycle1739`, `creditPacks1606` and `workDivisor1758`) are a declared
- * remainder with a card of their own — **#1848** — because a promotion across
- * five guards is its own pass. `monthlyDelta1761` resolves here too, in this same commit.
+ * (`burnCycle1739`, `creditPacks1606` and `workDivisor1758`) were a declared
+ * remainder with a card of their own — **#1848, closed 2026-10-03** — because
+ * a promotion across five guards is its own pass; all three call the shared
+ * reader directly now and no `function band(` survives under `client/src`.
+ * `monthlyDelta1761` resolves here too, from #1845's own commit.
+ *
+ * ⚠ This alias is the one thing #1848 did NOT change, and it is a call-site
+ * forwarder rather than a second implementation: what it costs is the reader's
+ * `label`, which defaults to `band` through it.
  */
 const band = (source: string, from: string, to: string) => sourceBand(source, from, to);
 
