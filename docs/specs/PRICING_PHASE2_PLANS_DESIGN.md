@@ -377,6 +377,7 @@ ruling of his, so it was not done.
 | new | from | the edit |
 |---|---|---|
 | the Enterprise card's body | `Need a higher limit? Write to support@klieglabs.com — larger plans are arranged personally.` | the same promise, as a card with an action instead of a line with a mailto |
+| `Back to plans` | `Back to the nearest three` | the compare control's return label named the §3 mechanism this brief deletes. It was literal while `compareWindow` showed the five rungs nearest the account and `cardTrio` showed three of seven; with three rungs the whole ladder there is no window and no nearest, and the label told a customer their cards were a moving selection out of something longer. **It was missed by #1832 and found on PR #1849 — #1850.** |
 
 **`[new]` — written for this brief, and every one is owed Yuna's pass:**
 
