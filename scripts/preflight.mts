@@ -129,7 +129,7 @@ function changedFiles(): { files: string[]; baseUsed: string | null } {
  * draft asked git for `server/**\/*.test.ts`; git's default pathspec is
  * wildmatch WITHOUT pathname semantics, so `*` already matches `/` and the
  * literal slash after `**` makes the pattern require at least one
- * subdirectory. `server/foo.test.ts` — 263 of the repository's files — matched
+ * subdirectory. <server/foo.test.ts> — 263 of the repository's files — matched
  * NOTHING, and this script's own new arm reported "no neighbouring suite"
  * while sitting in the most-populated test directory in the tree. It failed
  * silently and in the direction that runs fewer tests, which is the only
@@ -137,6 +137,15 @@ function changedFiles(): { files: string[]; baseUsed: string | null } {
  *
  * Listing once and filtering in TypeScript costs one process and cannot have
  * a glob dialect.
+ *
+ * ⚠ NOTE THE ANGLE BRACKETS ON THE TWO EXAMPLE FILENAMES ABOVE AND BELOW.
+ * A backticked <name>.test.ts in prose IS a pointer to
+ * server/testing/suitePointers.ts, and #1821 brought `.mts` into that reader's
+ * population — so the rule that guard states for writing ABOUT pointers now
+ * reaches this file: do not backtick an example. Both were backticked until
+ * then, and both were excused only because server/preflight.test.ts backticks
+ * the same three names in its own comments, which is an excuse and not a
+ * reason.
  */
 function repoTestFiles(): string[] {
   // `isCollectedTest` rather than a second copy of the rule: this predicate and
@@ -149,7 +158,7 @@ function repoTestFiles(): string[] {
   // `changedFiles()` deliberately collects untracked files, on the stated
   // ground that a new test file written this shift is exactly the thing worth
   // running. But a file can only be SELECTED if it appears here, so while this
-  // was `git ls-files` alone a brand-new `server/thing.test.ts` was the one
+  // was `git ls-files` alone a brand-new <server/thing.test.ts> was the one
   // file in the diff that could never run — and because `server/` holds 263
   // tracked neighbours the directory read as covered and preflight reported
   // green. Silent, and in the fewer-tests direction, which is the only one
