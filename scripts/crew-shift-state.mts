@@ -58,6 +58,7 @@ import {
   CREW_SHIFT_LIVE_HEARTBEAT_MS,
   deriveShiftRunState,
   describeRunSupersession,
+  describeShiftAge,
   hasEverCheckedIn,
   looksLive,
   type RunSupersession,
@@ -87,14 +88,11 @@ function iso(value: unknown): string {
   return value instanceof Date ? `${value.toISOString().replace("T", " ").slice(0, 19)} UTC` : String(value);
 }
 
-function ago(value: Date | string, now: number): string {
-  const ms = now - new Date(value).getTime();
-  if (!Number.isFinite(ms)) return "(unreadable)";
-  const minutes = Math.round(ms / 60_000);
-  if (minutes < 1) return `${Math.max(0, Math.round(ms / 1000))}s ago`;
-  if (minutes < 90) return `${minutes} min ago`;
-  return `${(minutes / 60).toFixed(1)} h ago`;
-}
+/* MOVED to `shared/crewShiftState.ts` as `describeShiftAge` (#1866) — the seat
+   cut needs the same sentence, and a second copy of a formatter two readers
+   print is the drift working law 4 is about. Kept as a local alias so the
+   printing below reads as it did. */
+const ago = describeShiftAge;
 
 /** Which world answered — the same plain naming both writers print. */
 function whichWorld(): "PRODUCTION" | "DEV" {

@@ -458,6 +458,100 @@ export function readRunSupersession(input: {
 }
 
 /**
+ * HOW LONG AGO, IN WORDS — one owner, because it already had two (#1866).
+ *
+ * This was a local `ago()` inside `crew-shift-state.mts` and the seat cut needed
+ * the same sentence, which is the moment a second copy gets written (working law
+ * 4). It is here rather than there because `crew-shift-state.mts` is a command
+ * and the cut cannot import one.
+ *
+ * ⚠ **An unreadable time says so rather than printing a number.** A fixture row
+ * carries no dates at all (`.agents/foreman/drive-runner-seats-1281.ps1` writes
+ * `{ shift, cardRef }`), and `NaN min ago` in a sentence a relay acts on is
+ * worse than an admission.
+ */
+export function describeShiftAge(value: Date | string | null | undefined, now: number): string {
+  if (value === null || value === undefined) return "(unreadable)";
+  const ms = now - asMillis(value);
+  if (!Number.isFinite(ms)) return "(unreadable)";
+  const minutes = Math.round(ms / 60_000);
+  if (minutes < 1) return `${Math.max(0, Math.round(ms / 1000))}s ago`;
+  if (minutes < 90) return `${minutes} min ago`;
+  return `${(minutes / 60).toFixed(1)} h ago`;
+}
+
+/** What the collision sentence needs off a colliding row. Nothing to write. */
+export type CollidingShiftRun = {
+  readonly shift: string;
+  readonly startedAt?: Date | string | null;
+  readonly heartbeatAt?: Date | string | null;
+  /**
+   * The #1863 verdict for this row, when the caller read it — `undefined` when
+   * it did not, which is a different sentence from a verdict that came back
+   * `unreadable` and is kept apart from it here.
+   */
+  readonly supersession?: RunSupersession | null;
+};
+
+/**
+ * WHY A CARD IS NOT ON OFFER, AS A FACT RATHER THAN A CLAIM (#1866).
+ *
+ * # The sentence this replaces, and what it cost
+ *
+ * `scripts/cut-seat-batches.mts` withheld every card an open shift row names —
+ * correct, and the one guard that stops two seats building one card (#608). What
+ * it WROTE about the withholding was *"a seat is sitting on it right now"*, and
+ * that is a claim no reader of this file can make: row #548 named #1807 and
+ * stayed open for **9.5 hours after its process died**, so for nine of those
+ * hours the pass digest told the relay a seat was on a card nobody was on.
+ * Nobody looked, because a dead row's collision read exactly like a live one.
+ *
+ * # ⚠ IT CHANGES WHAT IS SAID AND NOT WHAT IS OFFERED, AND THAT IS DELIBERATE
+ *
+ * The tempting repair is to let the cut OFFER a card whose only holder is a dead
+ * row. It was measured before it was written, over the real rows, and it is not
+ * worth having: across all 565 recorded runs exactly two would ever have been
+ * called superseded while open, they withheld their cards for 7.42 hours after
+ * the verdict became available, and **6.99 of those 7.42 hours were already
+ * withheld by a live `CLAIMED` comment** that the board reads anyway — #1807's
+ * own window recovers 0.00 h. Twenty-six minutes over the product's whole
+ * history is not a reason to change what four autonomous sessions are handed
+ * with no human in the loop, on the guard whose failure costs a wasted seat and
+ * a conflicting branch.
+ *
+ * **The recovery that is actually worth having needs no new authority: somebody
+ * CLOSES the dead row.** That recovers the whole window AND clears the false
+ * sentence from his Working-now table — and it only ever happens if the pass
+ * digest says the row is dead, which is what this sentence now does.
+ *
+ * `deriveShiftRunState` is the reading, not `looksLive`: the live window is two
+ * minutes and drives a REFUSAL, so a seat quietly building for half an hour
+ * would read as not-live and the sentence would cry wolf on every pass. The
+ * three-hour stall window is the one his own page uses.
+ */
+export function describeCardCollision(runs: readonly CollidingShiftRun[], now: number): string {
+  if (runs.length === 0) return "no open shift row names it";
+  const parts = runs.map((run) => {
+    const state = deriveShiftRunState({ heartbeatAt: run.heartbeatAt ?? "", endedAt: null }, now);
+    /* A row whose `heartbeatAt` has never moved off `startedAt` has not checked
+       in at all, and saying "last check-in 4 min ago" about it would be reading
+       the OPEN as a check-in (#295's own tell). */
+    const everCheckedIn = run.startedAt !== null && run.startedAt !== undefined
+      && run.heartbeatAt !== null && run.heartbeatAt !== undefined
+      && hasEverCheckedIn({ startedAt: run.startedAt, heartbeatAt: run.heartbeatAt });
+    const when = everCheckedIn
+      ? `last check-in ${describeShiftAge(run.heartbeatAt, now)}`
+      : `no check-in yet, opened ${describeShiftAge(run.startedAt, now)}`;
+    const dead = run.supersession?.kind === "superseded"
+      ? ` — ⚠ its process is DEAD: ${run.supersession.by.length} later \`${run.supersession.lane}\``
+        + " sessions opened AND closed while it sat silent, so this row needs closing"
+      : "";
+    return `${run.shift} (${state}, ${when})${dead}`;
+  });
+  return `an open shift row names it: ${parts.join("; ")}`;
+}
+
+/**
  * THE ONE SENTENCE BOTH READERS PRINT.
  *
  * One owner for the same reason the verdict has one: `crew-shift-state.mts` and

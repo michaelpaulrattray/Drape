@@ -116,7 +116,12 @@ import {
   type SeatTakeableCard,
 } from "./lib/seatBatches.mts";
 import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
-import { findCardCollisions } from "../shared/crewShiftState.js";
+import {
+  describeCardCollision,
+  findCardCollisions,
+  type RunSupersession,
+} from "../shared/crewShiftState.js";
+import { readRunSupersessions } from "./lib/crewRunSupersession.mts";
 import { jevSpendUsd } from "./lib/jev.mjs";
 import {
   CREW_WORK_CATEGORIES,
@@ -246,8 +251,25 @@ function readOpenCards(): SeatCandidateCard[] {
 
 /* ── HIS SWITCHES, AND WHO IS ALREADY SITTING ON A CARD ────────────────────── */
 
-/** One open row of `crew_shift_runs`, shaped for `findCardCollisions`. */
-type OpenShiftRun = { readonly cardRef: string | null; readonly shift: string };
+/**
+ * One open row of `crew_shift_runs`, shaped for `findCardCollisions` — and
+ * since #1866 for `describeCardCollision` beside it, which is why the times are
+ * here.
+ *
+ * ⚠ **They are OPTIONAL on purpose.** The `--shift-runs` fixture road is fed by
+ * hand (`.agents/foreman/drive-runner-seats-1281.ps1` writes
+ * `{ shift, cardRef }` and nothing else), and a fixture that cannot say when a
+ * row checked in must still be able to withhold its card. The sentence admits
+ * what it could not read rather than printing a number off a NaN.
+ */
+type OpenShiftRun = {
+  readonly cardRef: string | null;
+  readonly shift: string;
+  readonly id?: number;
+  readonly startedAt?: string | null;
+  readonly heartbeatAt?: string | null;
+  readonly supersession?: RunSupersession | null;
+};
 
 /**
  * ONE DATABASE READ, TWO FACTS, AND THE SECOND ONE CLOSES A REAL HOLE.
@@ -306,12 +328,38 @@ async function readWorld(): Promise<{ switches: CrewWorkSwitchState; openRuns: O
           refuse("`crew_shift_runs` does not exist in this world, so a seat already sitting on a card cannot be seen");
         }
         const [runRows] = await conn.query<any[]>(
-          "SELECT shift, cardRef FROM `crew_shift_runs` WHERE endedAt IS NULL",
+          "SELECT id, shift, cardRef, startedAt, heartbeatAt FROM `crew_shift_runs` WHERE endedAt IS NULL",
         );
-        openRuns = runRows.map((row) => ({
+        const rows = runRows.map((row) => ({
+          id: Number(row.id),
           shift: String(row.shift),
           cardRef: row.cardRef === null || row.cardRef === undefined ? null : String(row.cardRef),
+          startedAt: row.startedAt instanceof Date ? row.startedAt.toISOString() : String(row.startedAt ?? ""),
+          heartbeatAt: row.heartbeatAt instanceof Date ? row.heartbeatAt.toISOString() : String(row.heartbeatAt ?? ""),
         }));
+        /*
+          IS A COLLIDING ROW'S PROCESS DEAD? (#1863's reading, #1866's use.)
+
+          ⚠ **WRAPPED, AND THE WRAP IS THE DESIGN.** `readRunSupersessions`
+          THROWS on a failed read on purpose — its two existing callers print
+          "not readable" beside the row — but this file's `catch` calls
+          `refuse()`, so an unwrapped call would turn a lost LANE READ into
+          SEATS 0. The verdict only improves a sentence; losing it must cost the
+          pass the sentence and never the pass. That is the same asymmetry
+          `--facts` is granted at the head of this file.
+        */
+        /* ONE clock for the pass — `nowMs`, the same instant the sentence and the
+           plan are stamped with. `readWorld` is declared above that binding and
+           called below it, so it is live by the time this runs. */
+        let verdicts = new Map<number, RunSupersession>();
+        try {
+          verdicts = await readRunSupersessions(conn, rows.map((row) => ({
+            id: row.id, shift: row.shift, startedAt: row.startedAt, heartbeatAt: row.heartbeatAt,
+          })), nowMs);
+        } catch {
+          verdicts = new Map();
+        }
+        openRuns = rows.map((row) => ({ ...row, supersession: verdicts.get(row.id) ?? null }));
       }
       return { switches, openRuns };
     } finally {
@@ -509,6 +557,16 @@ const inBand = cards.filter((card) =>
   (review of 2026-09-26). `findCardCollisions` is the reader `crew-shift-start.mts`
   uses for this question, and it normalises `#608` / `608` / `#0608` to one card,
   so a seat that wrote its row with a bare number still collides.
+
+  ⚠ **THE FILTER IS UNCHANGED BY #1866 AND THE SENTENCE IS NOT.** This used to
+  write *"a seat is sitting on it right now"* about every collision, which is a
+  claim about a process and not a fact about a row: #548 named #1807 and sat open
+  for 9.5 hours after its process died, and the pass digest vouched for it the
+  whole time. `describeCardCollision` writes what the rows SAY — the run state
+  his own page derives, the last check-in, and #1863's death verdict when it is
+  available — so a relay reading the digest can see a row that needs closing.
+  **Closing it is the recovery; offering past it is not** (the arithmetic is in
+  `describeCardCollision`'s own block: 0.43 h recoverable across 565 runs).
 */
 const sittingOn: SeatSkippedCard[] = [];
 const candidates = inBand.filter((card) => {
@@ -517,7 +575,7 @@ const candidates = inBand.filter((card) => {
   sittingOn.push({
     number: card.number,
     title: card.title,
-    why: `a seat is sitting on it right now (${collisions.map((run) => run.shift).join(", ")})`,
+    why: describeCardCollision(collisions, nowMs),
   });
   return false;
 });
