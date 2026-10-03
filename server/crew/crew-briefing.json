@@ -149,7 +149,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-03T03:09:05.531Z",
+      "readAt": "2026-10-03T05:30:13.833Z",
       "items": [
         {
           "issueNumber": 1787,
@@ -291,7 +291,7 @@
         },
         {
           "issueNumber": 1690,
-          "title": "Research for later: cutting Sign's cost (~ today, five NBP 2K views ~/usr/bin/bash.75 of it) — one 4K sheet cropped, GPT Image 2.5 views, a cheaper check model, fewer default views; quality and cost per Sign, no build now (his finance guy's note, 2026-10-01)",
+          "title": "Research for later: cutting Sign's cost (~$1 today, five NBP 2K views ~$0.75 of it) — one 4K sheet cropped, GPT Image 2.5 views, a cheaper check model, fewer default views; quality and cost per Sign, no build now (his finance guy's note, 2026-10-01)",
           "kind": "roadmap",
           "rung": null
         },
@@ -9804,7 +9804,7 @@
     259
   ],
   "nextUp": {
-    "readAt": "2026-10-03T03:09:05.531Z",
+    "readAt": "2026-10-03T05:30:13.833Z",
     "items": [
       {
         "issueNumber": 1469,
