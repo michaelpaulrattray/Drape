@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { PLAN_TIERS } from "../../../../drizzle/schema";
 import {
@@ -12,6 +12,7 @@ import {
 import { CAST_PACKAGE_VIEWS } from "../../../../server/castingV2/castViewPackage";
 import { topupEligibility } from "../../../../shared/creditTopups";
 import { readListedSource } from "../../../../server/testing/listedSource";
+import { CONTENDED_TEST_TIMEOUT_MS } from "../../../../server/testing/contendedTestTimeout";
 
 /**
  * CARDS #1832, #1833 AND #1834 — THE PLAN SURFACE REBUILT TO HIS PHASE 2 BRIEF.
@@ -53,6 +54,11 @@ import { readListedSource } from "../../../../server/testing/listedSource";
  * What a source read CAN do is refuse a typed number, and that is what every
  * arm below does.
  */
+
+/* Several arms read five source files off the real tree through
+   `readListedSource`, which is the contended-read population: fast here, red
+   under load on somebody else's machine rather than in CI (#741). */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 const HERE = __dirname;
 const MODAL = join(HERE, "ChangePlanModal.tsx");

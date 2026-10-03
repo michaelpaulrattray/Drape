@@ -630,7 +630,19 @@
 .dp-plan__reasonstat { flex: none; text-align: right; }
 
 /* §6b — the segmented interval control */
-.dp-plan__intervals { display: flex; align-items: center; gap: var(--s-5); margin-bottom: var(--s-7); }
+/* ⚠ IT WRAPS FOR THE SAME MEASURED REASON (#1832). The segmented control plus
+   the mode switch is 309px in plan mode and 357px in compare mode — `Back to
+   the plans` is the longer label — against 276px of pane at 390px, read off
+   `scrollWidth > clientWidth` in a drive rather than guessed at. Nothing is
+   hidden: the switch drops to its own line and keeps its full label, which is
+   the honest answer for a control a customer has to be able to read. */
+.dp-plan__intervals {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-5);
+  margin-bottom: var(--s-7);
+}
 /* ⚠ THERE IS NO `.dp-plan__segments` HERE, AND THAT IS THE POINT.
    The interval control uses `.dp-segmented` from `foundation.css`, which
    already existed with a real consumer — the promotion pass's rule 6.
@@ -949,7 +961,12 @@
    where #391's support line stood. */
 .dp-plan__ent {
   display: flex;
-  align-items: center;
+  /* ⚠ `flex-start`, NOT `center`, and the frames are why. Centred, the action
+     lands beside the AUDIENCE LINE and the body sentence wraps underneath it in
+     an L — read in the running app against frame 01, where the button sits on
+     the heading's own line and the body runs the full width beneath. Working
+     law 6: the difference is invisible in source and obvious in a render. */
+  align-items: flex-start;
   gap: var(--s-6);
   margin-top: var(--s-5);
   padding: var(--s-6) 15px;
@@ -1006,6 +1023,28 @@
 @media (max-width: 640px) {
   .dp-plan__comparewide { display: none; }
   .dp-plan__comparephone { display: flex; flex-direction: column; gap: var(--s-5); padding: var(--s-5); }
+  /* ⚠ THE PANE'S OWN GUTTER COMES IN, for the reason the scrim's does one
+     section up: 24px either side of a 390px screen is 48px spent on nothing,
+     and it is the difference between a compare block reading and truncating.
+     Measured in a drive: the pane gave a phone 276px of content width. */
+  .dp-plan__pane { padding: var(--s-6) var(--s-5) var(--s-7); }
+  /* The three cards stack rather than squeeze — `auto-fill` at `minmax(212px,
+     1fr)` fits exactly one column at this width anyway; this says so. */
+  .dp-plan__grid { grid-template-columns: minmax(0, 1fr); }
+  /* The band's action drops under its words instead of stealing their width. */
+  .dp-plan__ent { flex-wrap: wrap; }
+  /*
+    ⚠ THE FOOTER WRAPS, AND THIS IS A PRE-EXISTING DEFECT THE REBUILD PUT IN
+    FRONT OF AN EYE RATHER THAN ONE IT CAUSED. At 390px the help sentence, two
+    quiet buttons and (in compare mode) the ink primary share one flex row, so
+    `Having a problem? Go to the help centre.` wraps to FOUR lines in a column
+    the width of two words while the buttons squeeze beside it. It is the same
+    footer today; his brief is the first thing to ask what this surface looks
+    like on a phone, which is how it was seen at all. The sentence takes its own
+    line and the controls keep theirs.
+  */
+  .dp-plan__foot { flex-wrap: wrap; row-gap: var(--s-4); }
+  .dp-plan__help { flex: 1 1 100%; }
 }
 .dp-plan__cmpcard {
   display: flex;
@@ -1018,14 +1057,23 @@
 .dp-plan__cmpcard--current { border-color: var(--accentLine); background: var(--accentWash); }
 .dp-plan__cmpcardhead { display: flex; align-items: baseline; gap: var(--s-4); }
 .dp-plan__cmppairs { margin: 0; display: flex; flex-direction: column; gap: var(--s-3); }
+/* ⚠ IT WRAPS, AND THE READING THAT PUT THAT HERE WAS A MEASUREMENT RATHER THAN
+   A GUESS. The first spelling was `flex: none; min-width: 124px` on the label,
+   and a drive at 390px read `dp-plan__cmppair 231>224` — the pair was wider
+   than the block holding it, on every one of the four plans, in both themes.
+   `Finished characters a month` beside `about 15 finished characters` does not
+   fit a 224px column and no label width makes it fit; what fits is letting the
+   value drop to its own line when it must. */
 .dp-plan__cmppair {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: var(--s-4);
+  justify-content: space-between;
+  gap: 2px var(--s-4);
   font: 400 11.5px/1.5 var(--font-sans);
 }
-.dp-plan__cmppair dt { color: var(--metaStrong); flex: none; min-width: 124px; }
-.dp-plan__cmppair dd { margin: 0; color: var(--secondary); }
+.dp-plan__cmppair dt { color: var(--metaStrong); min-width: 0; }
+.dp-plan__cmppair dd { margin: 0; color: var(--secondary); text-align: right; }
 
 /* #1747 — the line that stands where the ladder would be when the account's own
    rung could not be read. It takes the support line's type and colour on
