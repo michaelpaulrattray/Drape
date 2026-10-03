@@ -188,7 +188,8 @@ export type DeclaredNotABackup = { readonly name: string; readonly why: string }
  * the record of a paid, founder-judged court ages out at all is his, exactly as
  * `docs/JANITOR_BACKUP_RETENTION.md` says of `output/`. This entry records that
  * it is kept and why it is outside this rule; it does not say it is worth keeping
- * forever. The ten seat `output-drape-shift-seat-*` folders inside it (61.7 MB)
+ * forever. The ten other `output-*` folders inside it (61.7 MB in 244 files —
+ * NINE `output-drape-shift-seat-*` trees and one `output-drape-pinned-42652964`)
  * are a DIFFERENT class — law-6 frames and probe output from merged pull
  * requests, not paid measurements — so the reason below names them as separate
  * rather than covering them, because folding them in is how a half-decision
@@ -200,8 +201,8 @@ export const DECLARED_NOT_A_BACKUP: readonly DeclaredNotABackup[] = [
     why:
       "not a backup — the 2026-10-03 worktree sweep's keep pile, 1.42 GiB whose 91% is the #1394 "
       + "court's full-resolution renders (primary paid evidence, the output/ class this rule states "
-      + "it has no competence over); the ten seat output/ folders inside it are a separate undecided "
-      + "class. Permanent keep until he decides otherwise (#1826).",
+      + "it has no competence over); the ten other output-* folders inside it (nine seat trees and "
+      + "one pinned tree) are a separate undecided class. Permanent keep until he decides otherwise (#1826).",
   },
 ];
 

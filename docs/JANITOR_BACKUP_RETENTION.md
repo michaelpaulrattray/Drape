@@ -114,7 +114,7 @@ to delete, after #1823 found that the removal tool could not see ignored files.
 | folder | size | what it is |
 |---|---|---|
 | `output-drape-shift-sign-engine-court-1394` | **1,390.5 MB · 188 files** | the #1394 Sign-engine court — 155 full-resolution renders (1,384.7 MB), 13 eye strips, 20 files of rows and logs. **91% of the whole pile** |
-| ten `output-drape-shift-seat-*` folders | 61.7 MB · 244 files | seat worktrees' own `output/` sets, 27 Sep – 3 Oct |
+| ten other `output-*` folders | 61.7 MB · 244 files | **nine** `output-drape-shift-seat-*` trees and one `output-drape-pinned-42652964`, their own `output/` sets, 21 Aug – 3 Oct |
 | `frames-card-1447` | 2.1 MB · 19 files | a card's frames directory |
 
 **The defect was a number with no names in it.** The run has always printed
@@ -173,8 +173,14 @@ that number is the signal it needs its own line and its own reason.
   is kept and why it sits outside this rule; **it does not claim the bytes are
   worth keeping forever.** Nothing here authorises deleting any of it, and
   `--delete-expired` has never been authorised for this class.
-- **The ten seat `output/` folders are a DIFFERENT CLASS and are judged
-  separately.** They are law-6 frames and probe output from merged pull requests,
+- **The ten other `output-*` folders are a DIFFERENT CLASS and are judged
+  separately** — nine seat trees and one pinned tree, 61.7 MB in 244 files.
+  ⚠ **The card that filed this called them *"ten seat folders, 263 files"* and
+  both halves are off**: `output-drape-pinned-42652964` is not a seat tree, and
+  263 does not fit the pile (188 + 19 + 263 = 470 against a measured 451). Read
+  at the artifact: **9 + 1, and 244 files.** The bytes in the card were right and
+  the nouns were carried rather than measured, which is the cheaper half of the
+  same mistake. They are law-6 frames and probe output from merged pull requests,
   not paid measurements. Folding them into the court's decision is how a
   half-decision ships under an authorised one's name, so the declared reason names
   them as separate rather than covering them.
