@@ -462,6 +462,63 @@ export function crewCardHandbackInstruction(seat?: string | null): string {
   ].join("\n");
 }
 
+/**
+ * IS THE CARD THIS RUN NAMES STILL OPEN? — the three answers a close can get.
+ *
+ * `none` is a run row that names no card; `unknown` is a card whose state could
+ * not be READ, which is never the same fact as a card that is closed.
+ */
+export type CrewClosingCardState = "open" | "closed" | "unknown" | "none";
+
+/**
+ * SHOULD THE CLOSE PRINT {@link crewCardHandbackInstruction}? — #1829.
+ *
+ * # What was wrong, and it was one condition
+ *
+ * The close printed the instruction on every outcome EXCEPT `shipped`:
+ *
+ * ```ts
+ * if (row.outcome !== "shipped") console.log(crewCardHandbackInstruction(row.shift));
+ * ```
+ *
+ * So the one outcome nearly every shift uses was the one that never told a
+ * seat to write `RELEASED`, and its claim read live for the full
+ * {@link CREW_CLAIM_LIVE_MS}. **The exemption looks sound because a shipped
+ * card is usually CLOSED, and a closed card cannot be held** — it is unsound
+ * for the case that actually happened: a shift that works a card to a HELD
+ * state, ships its edition, and closes. Measured 2026-10-03, run #535 on
+ * #1807: the card was correctly `blocked` and correctly still open, the row
+ * closed `shipped` 8 h 38 m earlier, and his Security switch read
+ * *"1 being built"* over a card nobody was building.
+ *
+ * # The question, asked the right way round
+ *
+ * The outcome was never the thing to ask about. **What decides whether a
+ * handback is owed is whether the card is still open**, because an open card is
+ * the only kind a claim can hold off a seat. So the one silence is
+ * `shipped` + a card KNOWN to be closed, and everything else prints.
+ *
+ * # ⚠ IT FAILS TOWARD PRINTING, AND THE ASYMMETRY IS THE WHOLE ARGUMENT
+ *
+ * A redundant instruction costs one line of a close's output. A missing one
+ * costs twelve hours of a card no seat may take — #1669 is the measured price
+ * of that, one card and seven builder-seat sessions in a day. So `unknown`
+ * prints: a `gh` that could not answer is not evidence the card is finished,
+ * and this reader must never let an unreadable signal be the thing that
+ * silences the instruction.
+ *
+ * This is the third appearance of one class — #1559 (a claim reading live for
+ * twelve hours after the crew finished), #1701 (the board reads the first word
+ * and nothing else) — and both earlier repairs were correct. The word existed
+ * and was right; it simply was not printed on the road every shift takes.
+ */
+export function closeShouldPrintHandback(input: {
+  readonly outcome: string;
+  readonly cardState: CrewClosingCardState;
+}): boolean {
+  return !(input.outcome === "shipped" && input.cardState === "closed");
+}
+
 /** One comment → one fact, or `null` when it is ordinary prose. */
 export function crewCardCommentFact(comment: CrewCardComment): CrewCardCommentFact | null {
   const { card, body, createdAt } = comment;
