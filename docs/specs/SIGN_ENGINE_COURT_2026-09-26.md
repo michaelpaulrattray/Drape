@@ -315,8 +315,22 @@ and the side-by-side sheet is an eye item below.
 
 ## The frames
 
-All under `C:\Users\Admin\drape-shift-sign-engine-court-1394\output\1394-sign-engine\`
-(gitignored — they are artifacts, not repository content):
+⚠ **The path this section named until 2026-10-03 no longer exists, and the frames do.**
+It read `C:\Users\Admin\drape-shift-sign-engine-court-1394\output\1394-sign-engine\` — that worktree
+was removed by the sweep #1823 was filed about, which moved everything it was about
+to delete to safety first. **They are now under**
+`C:\Users\Admin\drape-worktree-keep-2026-10-03\output-drape-shift-sign-engine-court-1394\1394-sign-engine\`
+(still gitignored — they are artifacts, not repository content): **155 PNG renders,
+1,384.7 MB; the thirteen JPG strips, 5.6 MB; 253 KB of rows and logs.**
+
+**Nothing here is the only copy of a judged frame.** All thirteen strips below have a
+published object of identical byte length in the production bucket, read at the bucket
+2026-10-03, and the deploy rite re-reads all of them on every push. What is unique to
+that directory is the full-resolution renders the strips were cut from and the raw rows
+this document does not quote. **Whether that record ages out is #1826 and is his
+decision; do not delete it.**
+
+The layout inside it is unchanged:
 
 - `<anchor>/<angle>/<arm>-<draw>.png` — every main-phase render, 76 of them
 - `<anchor>/chain-<tier>/step-<n>.png` — the chain, step 0 being the anchor
