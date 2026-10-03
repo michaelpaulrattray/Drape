@@ -13143,6 +13143,10 @@
       "path": "server/crewCloseHandback.test.ts"
     },
     {
+      "id": "test:server/crewCloseShippedPullRequest.test.ts",
+      "path": "server/crewCloseShippedPullRequest.test.ts"
+    },
+    {
       "id": "test:server/crewHeartbeat.test.ts",
       "path": "server/crewHeartbeat.test.ts"
     },
