@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 50
+      "moduleCount": 51
     },
     {
       "id": "domain:wardrobe",
@@ -5773,6 +5773,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/testing/sourceBand.ts",
+      "path": "server/testing/sourceBand.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/testing/sourceSweepSuites.ts",
       "path": "server/testing/sourceSweepSuites.ts",
       "domain": "unassigned",
@@ -10685,6 +10691,10 @@
       "path": "client/src/features/billing/creditPacks1606-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/billing/freeAddCredits1836-guard.test.ts",
+      "path": "client/src/features/billing/freeAddCredits1836-guard.test.ts"
+    },
+    {
       "id": "test:client/src/features/billing/monthlyDelta1761-guard.test.ts",
       "path": "client/src/features/billing/monthlyDelta1761-guard.test.ts"
     },
@@ -14441,6 +14451,10 @@
       "path": "server/testing/migrationColumns.test.ts"
     },
     {
+      "id": "test:server/testing/sourceBand.test.ts",
+      "path": "server/testing/sourceBand.test.ts"
+    },
+    {
       "id": "test:server/testing/withoutComments.test.ts",
       "path": "server/testing/withoutComments.test.ts"
     },
@@ -15859,6 +15873,11 @@
     {
       "from": "module:client/src/features/billing/ChangePlanModal.tsx",
       "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/ChangePlanModal.tsx",
+      "to": "module:shared/creditTopups.ts",
       "kind": "imports"
     },
     {
@@ -18684,6 +18703,11 @@
     {
       "from": "module:client/src/features/settings/sections/BillingSection.tsx",
       "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/BillingSection.tsx",
+      "to": "module:shared/creditTopups.ts",
       "kind": "imports"
     },
     {

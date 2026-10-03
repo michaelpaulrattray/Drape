@@ -301,7 +301,7 @@ export type CreditDisplayReading = {
  *
  * | row | why it stays |
  * |---|---|
- * | `formatCreditsPerDollar(…)` ×2 — `AddCreditsModal` twice (×3 until card 1773 took `ChangePlanModal`'s with the chip) | the conversion is INSIDE that function, so the rate a customer reads is already on their scale. The rules read a NAME and cannot see through a function boundary, which is a limit this file's header states. |
+ * | ~~`formatCreditsPerDollar(…)` ×2 — `AddCreditsModal` twice~~ (×3 until card 1773 took `ChangePlanModal`'s with the chip; **×0 since #1845 took both of Add credits's with the rate sentence on the plan pane**) | the conversion is INSIDE that function, so the rate a customer reads is already on their scale. The rules read a NAME and cannot see through a function boundary, which is a limit this file's header states. |
  * | `Math.round(perDollar).toLocaleString("en-US")` | a RATE. Through `displayBalance` it would be divided by five twice. |
  *
  * ⚠ **TWO OF THOSE ROWS CHANGED THEIR EXPRESSION IN #1755 AND NEITHER
@@ -345,6 +345,20 @@ export type CreditDisplayReading = {
  * was touched, and the ceiling fell 18 → 17 in the same commit. The two
  * `AddCreditsModal` rows are untouched and keep their reasons: his ruling moved
  * the rate's home, it did not route anything.
+ *
+ * ⚠ **THAT LAST SENTENCE WAS TRUE OF THE FILE AND FALSE OF THE SURFACE, AND
+ * #1845 IS THE CORRECTION.** One of those two `AddCreditsModal` rows was the
+ * rate on `PlanStepUpPane` — the pane a FREE account opens, which #1836 had
+ * relabelled a plan surface the same hour (eyebrow `PLANS`, heading *Choose a
+ * plan*). So his word had already reached it and this census could not say so,
+ * because it keys on FILES and that file draws three surfaces. Both rows are
+ * gone by the clean door and the ceiling fell 17 → 15; the stale-row arm
+ * reported both at budgeted 1, found 0, before the number was touched.
+ *
+ * **Measured after: `AddCreditsModal.tsx` has no censused site and the reader
+ * indicts none in it.** The rate's surviving home — the credit PACKS pane —
+ * computes it through `rateFor`, a name the rules do not read, so it was never
+ * censused and nothing was routed or excused to make that true.
  *
  * ✅ **THE ROUTING IS FINISHED — 42 → 16 (#1600 slice 3, 2026-10-02), AND THIS
  * LIST IS NOW A DIFFERENT KIND OF ARTIFACT.** 19 occurrences routed, 7
@@ -431,8 +445,6 @@ export const UNROUTED: readonly {
    */
   stays: string | null;
 }[] = [
-  { file: "client/src/features/billing/AddCreditsModal.tsx", rule: "beside-the-word", expression: "rateComparable ? `, up from ${formatCreditsPerDollar(priceAMonth(currentPrice, annual === true), currentCredits)}` : null", count: 1, stays: "a RATE, not an amount: the conversion is INSIDE `formatCreditsPerDollar`, which calls `displayBalance` itself (`planMath.ts:390`). The rules read a name and cannot see through a function boundary. #1747 widened the guard in front of it from a bare positive check to the two null checks: both figures are read out of the plan catalogue by the account's own rung, and that rung is null until billing.getStatus answers - so a rate 'up from' an unread plan was another plan's rate." },
-  { file: "client/src/features/billing/AddCreditsModal.tsx", rule: "beside-the-word", expression: "formatCreditsPerDollar(priceAMonth(selected.price, annual === true), selected.credits)", count: 1, stays: "a RATE, not an amount: the conversion is INSIDE `formatCreditsPerDollar`, which calls `displayBalance` itself (`planMath.ts:390`). The rules read a name and cannot see through a function boundary." },
   { file: "client/src/features/settings/planMath.ts", rule: "named-on-the-way-out", expression: "Math.round(perDollar).toLocaleString(\"en-US\")", count: 1, stays: "the rate's own formatting, inside the function that has already converted. Through `displayBalance` it would be divided by five twice." },
   { file: "server/castingV2/reliabilityReport.ts", rule: "beside-the-word", expression: "report.creditsRefunded", count: 1, stays: "an OPERATOR diagnostic — a text table of delivery rates whose only consumers in the tree are its own suites. Ledger units, like every staff reading." },
   { file: "server/db/billing.ts", rule: "beside-the-word", expression: "creditAmount", count: 1, stays: "the `description` of a `creditTransactions` ROW. Its one live reader is the moderator credit history, which prints it beside the ledger `amount`; `credits.getTransactions` has no client caller. Ledger units, as the card asks of a staff surface. The trap when a customer history is built is #1736." },

@@ -907,11 +907,75 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
           326    neck and a shoulder strap   0.52
           371    neck and both shoulders     0.56   <- #1611
 
-      0.3 sits in the middle of an empty band between 0.20 and 0.48 — a factor
+      0.3 sat in the middle of an empty band between 0.20 and 0.48 — a factor
       of 2.4 with nothing in it — rather than being fitted to a boundary case.
-      ⚠ It is still a number chosen from six frames on one shift's reading, and
+      ⚠ It was still a number chosen from six frames on one shift's reading, and
       **his eye closes it** (law 9): 314 and 326 are the two it separates, and
       they are the two a person could argue about.
+
+      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+      ⚠ **AND HIS EYE CLOSED IT AGAINST THE NUMBER — 0.3 → 0.7, 2026-10-03
+      (#1837, founder-ordered). THE SENTENCE ABOVE IS KEPT AS THE ORIGIN AND IS
+      NO LONGER THE LAW.**
+
+      He was shown the two Sifr2 close-ups from #1612's template court and
+      judged both. His words, verbatim and entire, in the order he said them:
+
+          *"stop the example, sifr2 right hand pcitrue looks like a closeup
+           to me."*
+          *"on Sifr2 Yes it reads as a closeup."*
+
+      The right-hand picture is the example-assisted render at **0.42** of a
+      face-height of room below the face; the left is today's road at **0.51**.
+      **The 0.3 line called both out of band.** Law 9 — a reading is a pointer
+      to look, never a fact to file, and the frame goes in front of his eyes —
+      so the line is wrong and the eye is not.
+
+      ⚠ **WHAT THAT OVERTURNS IS HIS OWN EARLIER SENTENCE, AND SAYING SO IS THE
+      WHOLE POINT OF THIS PARAGRAPH.** The posted spec above still reads *"TOO
+      LOOSE … the neck and shoulders are in frame"*, and the frames he has now
+      called close-ups are exactly that: asset 322 is *neck and both shoulders*
+      at 0.48 and asset 326 is *neck and a shoulder strap* at 0.52, both inside
+      the new line. **A later reader will meet that sentence, meet this number,
+      and conclude one of them is a mistake.** Neither is: the sentence is what
+      he wrote in the abstract, the number is what he said at the frames, and
+      this product's law is that the frames win. The sentence is not posted to
+      the engine on this view anyway — it is the one entry in
+      `restatedInFull`, so the measurement replaced it rather than joining it.
+
+      **The new line is set by the same method as the other two, not to taste:**
+
+          THE CLOSE-UPS   his own frames, now including his two judgements
+                          0.07 · 0.18 · 0.20 · 0.42 · 0.48 · 0.51 · 0.52 · 0.56
+          THE PORTRAITS   the 11 sealed `frontClose` anchors (#1612's court)
+                          1.10 … 3.03
+
+      **An empty band from 0.56 to 1.10**, and the top of the close-up
+      population that HIS EYE has ruled on is **0.51**. Taken between his
+      highest judged close-up and the lowest portrait: √(0.51 × 1.10) = 0.7490
+      → **0.7**, rounded to the one decimal the other two bounds carry (3.7 from
+      3.74, 0.3 from 0.3098 — each, like this one, landing slightly tight).
+      It clears his 0.51 by a factor of 1.37 and sits under the tightest
+      portrait by 1.57.
+
+      ⚠ **THE CONSERVATIVE INPUT IS DELIBERATE AND IS NAMED.** 0.52 and 0.56
+      (assets 326 and 371) also fall inside the new line, and he has NOT judged
+      those two — they are admitted as a consequence of his ruling rather than
+      by a reading of their own, because any line above 0.51 admits them and a
+      line between 0.51 and 0.52 would be fitted to a boundary case, which is
+      the thing all three of these numbers are chosen to avoid. Using 0.51
+      rather than 0.56 as the band's lower edge is the tighter of the two
+      honest choices.
+
+      ⚠ **AND #1611 IS ANSWERED BY THIS, NOT BY A SEPARATE FIX.** Its specimen
+      is asset 322 at 0.48 — *"a too-loose close-up passed 50/50"* — and under
+      the new line that picture is simply IN BAND, which is his eye's verdict on
+      its siblings. Nothing about the coin it measured changes; what changes is
+      that the question it was asking no longer has two answers.
+
+      **His eye closes this one too**, and the strip of close-ups and portraits
+      in order with the line drawn goes to his Desk as an eye item.
 
       The headroom test reads the whole silhouette rather than the hair: a
       headwrap, a horn, a branch or a bald crown all decide "is there clear
@@ -924,21 +988,33 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
     band: {
       rules: [
         { must: "clearOf", landmark: "face", edge: "bottom" },
-        { must: "roomBelowAtMost", landmark: "face", inItsOwnHeights: 0.3 },
+        { must: "roomBelowAtMost", landmark: "face", inItsOwnHeights: 0.7 },
         { must: "cutBy", landmark: "subject", edge: "top" },
       ],
       /*
         ⚠ **THE TOO-LOOSE PAIR LEAVES THE JUDGE'S POST — the hand-over, #1612,
         and this is the ONE view where his *"the prose framing spec stops being
-        sent"* is literally achievable.** The pair is `roomBelowAtMost face 0.3`
+        sent"* is literally achievable.** The pair is `roomBelowAtMost face 0.7`
         and `cutBy subject top`, which between them restate every TEST in these
         two sentences:
 
-          *"the neck and shoulders are in frame"*  → 0.3 of a face-height of
-          room below the face, measured, on his own six frames (0.07 … 0.56 with
-          an empty band between 0.20 and 0.48).
+          *"the neck and shoulders are in frame"*  → 0.7 of a face-height of
+          room below the face, measured — on his own frames and then on HIS EYE,
+          which moved this number from 0.3 on 2026-10-03 (#1837, the block
+          above).
           *"the whole head fits with clear space above the hair"*  → the subject
           is CUT BY the top edge, which is the same fact with no hairline in it.
+
+        ⚠ **AND `restate` IS NOW THE GENEROUS WORD FOR THE FIRST OF THOSE TWO,
+        WHICH IS STATED HERE RATHER THAN LEFT FOR SOMEBODY TO DISCOVER.** At 0.3
+        the measurement agreed with his sentence; at 0.7 it is WIDER than the
+        sentence, because he looked at two frames with a neck and shoulders in
+        them and called both close-ups. So this entry no longer removes a
+        sentence the rule merely re-says — it removes a sentence the rule
+        **supersedes**, on his eye. That is the right outcome and the only one
+        law 9 allows, and it is why the posted spec must keep losing this
+        sentence: posting it while measuring 0.7 would hold a paid view to two
+        standards that disagree.
 
         **The first half of the first sentence is a PERMISSION and needs no
         test**: *"The top of the head may be cropped and hair may run off the
