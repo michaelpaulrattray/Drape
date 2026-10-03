@@ -159,6 +159,27 @@ const RAW_GH: QueueGhReader = (args, options) =>
  */
 const REAL_GH: QueueGhReader = makeGhTransport({ exec: RAW_GH }).run;
 
+/**
+ * ⚠ **THE SAME SEAM, FOR A CREW READING THAT IS NOT A COUNT (#1829).**
+ *
+ * The close now asks one more question of `gh` — *is the card this run names
+ * still open?* — and it asks it through THIS reader rather than its own
+ * `execFileSync`. The docblock on {@link QueueGhReader} is why, in its own
+ * words: four readings here called `gh`, and until they went through one named
+ * function the whole reading was undrivable. **A fifth caller with a private
+ * `execFileSync` would re-open exactly that, and it would do it on the shift
+ * close**, where a `gh` with no `timeout` is the one road a `catch` cannot
+ * rescue ({@link QUEUE_GH_TIMEOUT_MS}).
+ *
+ * It is an alias and not a second seam: the timeout, the REST-first transport
+ * and the pass-through for everything that is not a queue LIST read are the
+ * ones the counts already run on. A single-object read like
+ * `gh issue view N --json state` is precisely what #1399 measured as still
+ * answering when the list shape was refused, and the transport hands it
+ * straight to `gh` untouched.
+ */
+export const crewGhReader: QueueGhReader = REAL_GH;
+
 const TABLE = "crew_queue_counts";
 const TITLES_COLUMN = "titles";
 const EXCLUDED_COLUMN = "excluded";
