@@ -132,8 +132,22 @@ const COMPANION_CARRIED = new Set([
 const PORTALLED = new Map<string, readonly string[]>([
   // The viewer is portalled to document.body; measured white in both themes.
   ["dp-btn--onmedia", ["features/castingV2/components/CandidateViewer.tsx"]],
-  // The plan modal is portalled; measured --ink + underline in both themes.
-  ["dp-plan__request-link", ["features/billing/ChangePlanModal.tsx"]],
+  /*
+    ⚠ **`dp-plan__request-link` WAS THE SECOND ENTRY AND IT IS GONE, BECAUSE ITS
+    ANCHOR IS GONE — card 1833, 2026-10-03.** The plan surface's *"Need a higher
+    limit? Write to support@…"* line is replaced by the Enterprise band, whose
+    action is a `<button>` (the foundation's rule) rather than an `<a>`, so the
+    class has no call site and the CSS block went with it.
+
+    **The measurement it recorded is kept in this file's header on purpose** —
+    `rgb(17,17,18)` / `rgb(237,237,239)` with an underline, and the finding that
+    ROOTING that rule broke it. That reading is the whole reason card 1531's
+    "fix" was declined, and it stays readable after the subject stops existing;
+    an exemption, unlike a measurement, may not outlive its element. Deleting
+    the entry rather than leaving it empty is what the arm below is for: a
+    pinned class with no anchor reddens, so the set cannot quietly describe a
+    surface the product no longer has.
+  */
 ]);
 
 /** Every source file under client/src, read once. */

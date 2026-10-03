@@ -41,6 +41,7 @@ import { join } from "node:path";
 import { withoutComments } from "../../../../server/testing/withoutComments";
 import { readListedSource } from "../../../../server/testing/listedSource";
 import { CONTENDED_TEST_TIMEOUT_MS } from "../../../../server/testing/contendedTestTimeout";
+import { sourceBand } from "../../../../server/testing/sourceBand";
 import { PLAN_TIERS } from "../../../../drizzle/schema";
 import { CASTING_V2_ONE_CHARACTER_CREDITS } from "../../../../server/castingV2/castViewPackage";
 import {
@@ -59,20 +60,6 @@ const code = (name: string) => withoutComments(readFileSync(join(HERE, name), "u
 
 const ADD_CREDITS = "client/src/features/billing/AddCreditsModal.tsx";
 const CHANGE_PLAN = "client/src/features/billing/ChangePlanModal.tsx";
-
-/**
- * The slice of a surface between two anchors, so an arm about one sentence
- * cannot be satisfied by another sentence in the same file. A missing anchor
- * fails loudly rather than returning an empty band, which every `not.toContain`
- * below would otherwise pass.
- */
-function band(source: string, from: string, to: string): string {
-  const start = source.indexOf(from);
-  expect(start, "the opening anchor is gone from the surface: " + from).toBeGreaterThan(-1);
-  const end = source.indexOf(to, start + from.length);
-  expect(end, "the closing anchor is gone from the surface: " + to).toBeGreaterThan(-1);
-  return source.slice(start, end);
-}
 
 /** Every production `.ts`/`.tsx` under the three roots whose code names `token`. */
 function productionFilesNaming(token: RegExp, skipFile?: string): string[] {
@@ -246,7 +233,8 @@ describe("Card 1758 - the Add credits bullet", () => {
   const source = code("AddCreditsModal.tsx");
   /* Sliced between two class names that appear once each, so an arm about this
      sentence cannot be satisfied by the renewal line under it. */
-  const bullets = () => band(source, "dp-topup__bullets", "dp-topup__renewal");
+  const bullets = () =>
+    sourceBand(source, "dp-topup__bullets", "dp-topup__renewal", "the work bullet");
 
   it("divides by the server's figure and nothing else", () => {
     expect(source).toContain("plans?.oneFinishedCharacterCredits");
