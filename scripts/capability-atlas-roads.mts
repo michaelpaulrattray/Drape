@@ -391,6 +391,104 @@ export const ROADS: readonly Road[] = [
 export const UNMAPPED_ENTRANCES: Readonly<Record<string, string>> = {};
 
 /**
+ * THE BACKTICKED NAMES IN THE PROSE THAT THE TREE DOES NOT DECLARE — each with
+ * its own reason (#1821, 2026-10-03).
+ *
+ * # What this closes
+ *
+ * The generator held every DOOR, FLAG, PROCEDURE and ENTRANCE in this file to
+ * the source and refused to generate on a bad one. **It held no identifier in
+ * the prose to anything.** So a backticked symbol in a `summary` or a `notes`
+ * line was an unguarded mirror of the tree — working law 4 — and the cost was
+ * measured rather than imagined: `CASTING_V2_RETRY_PRICE_CREDITS` was asserted
+ * in the PRESENT TENSE as the live account-level retry quote for two days after
+ * #1601 item 1 deleted it, on the map whose own header calls it *"the map an
+ * agent reads to understand how the casting studio works"*, during his pricing
+ * week. An agent quoting it would have told him a wrong price. That is law 7c's
+ * own failure shape, in the artifact law 7c sends you to.
+ *
+ * # Why this list is SIX lines and not fifteen
+ *
+ * ⚠ **THE CARD PROPOSED "an enumerated exception list for door ids and
+ * historical names" AND THAT WOULD HAVE BEEN THE DRIFT IT WAS GUARDING
+ * AGAINST.** A door id is already a derived set in this very module's
+ * generator; a module name is `git`'s to answer. Hand-listing either is a
+ * second list shadowing a source of truth, and it rots in exactly the way the
+ * stale symbol above rotted.
+ *
+ * So the exemptions are DERIVED and only the unmechanical remainder is written
+ * here. Measured on the day it landed: **57 distinct backticked bare
+ * identifiers in the road prose — 49 declarations, 1 door id, 1 module, and
+ * these 6.** A list of six is a list a writer reads; a list of fifteen is a
+ * list a writer appends to.
+ *
+ * # What earns a line
+ *
+ * Not "the check is inconvenient". A name belongs here when it is REAL prose
+ * about something that is deliberately not a TypeScript declaration — a word
+ * the customer reads, a token a log is grepped for, a wire code, or a symbol
+ * whose DEATH is the sentence's content. The last of those is the valuable
+ * kind, and it is the same argument `server/testing/suitePointers.ts` makes for
+ * its own enumerated absences: a paragraph explaining that something died is
+ * worthless without naming what died, and a guard that indicts it teaches
+ * people to delete the history instead.
+ *
+ * ⚠ **An entry ROTS IN TWO DIRECTIONS and both redden.** If the tree starts
+ * declaring the name, the excuse is now wrong and the line goes; if no road
+ * says the name any more, the line is dead weight nobody can audit. Neither is
+ * left to a reader to notice.
+ */
+export const UNDECLARED_PROSE_NAMES: Readonly<Record<string, { readonly why: string }>> = {
+  CASTING_V2_RETRY_PRICE_CREDITS: {
+    why:
+      "DELETED by #1601 item 1 (2026-10-01) — a price nothing quotes may not sit in " +
+      "castingCreditCosts.ts, which keeps only its obituary (invariant 7). The road sentence " +
+      "naming it is that obituary and is in the PAST TENSE: it records that the constant was " +
+      "the ROLL slice, that charging it would have made a mis-charge its own refund authority " +
+      "through resetCandidateForRetry, and that a tile's price is the candidate row's own now. " +
+      "⚠ THIS IS THE SPECIMEN THIS WHOLE CHECK EXISTS FOR — the same sentence asserted the " +
+      "constant as LIVE until 2026-10-03, and nothing anywhere disagreed.",
+  },
+  unsupported_cohort: {
+    why:
+      "The brief wall RETIRED by #1495 (2026-09-30). The road sentence is the account of its " +
+      "retirement — it names the wall a roll used to be stopped by, then the two-valued " +
+      "author option that outlived it one module out and died too. Naming the dead wall is the " +
+      "sentence's whole content; it is also the specimen capabilityAtlas.mts's own wrapped-raise " +
+      "paragraph is written about, in the past tense, for the same reason.",
+  },
+  droppedFactIn: {
+    why:
+      "RETIRED for the Re-imagine road on purpose (#535) — reimagine.ts:50 carries the " +
+      "retirement and the reason: the result lands in the customer's own box where she reads, " +
+      "edits and undoes it before she spends, so her reading is the check a fact-survival guard " +
+      "used to be. The road sentence says 'is retired for this road on purpose', which is a " +
+      "design decision that cannot be recorded without the name.",
+  },
+  cohortWallRetried: {
+    why:
+      "A LOG-LINE TOKEN by design, never a declaration. interpreter.ts puts it in one string " +
+      "'so the count is one grep' and prints the invocation — grep cohortWallRetried <the " +
+      "service log> — in its own docblock. A word whose purpose is to be greppable in an " +
+      "operator's terminal is exactly the kind of name that is not a symbol.",
+  },
+  NOT_FOUND: {
+    why:
+      "A tRPC error CODE on the wire, not a symbol this tree declares — it comes from " +
+      "@trpc/server's own code set. The two doorsNote lines using it say what a door answers a " +
+      "caller WITH, which is the wire's vocabulary and the right one for a map of entrances.",
+  },
+  Unchecked: {
+    why:
+      "The customer's own word, and the only word a customer ever sees on an unchecked view " +
+      "(viewRetryRow.ts holds it as the VALUE of the `unchecked` key, so the declared name is " +
+      "the key and the backticked word is the copy). The sign-views road quotes it to say what " +
+      "the surface reads — no axis name, no verdict word, no percentage — which is the " +
+      "disappearing-technology law being described, in the customer's vocabulary.",
+  },
+};
+
+/**
  * THE LAWS — invariants that hold across every road. Each cites where it is
  * enforced or proven; the render carries them as the map's closing section.
  */

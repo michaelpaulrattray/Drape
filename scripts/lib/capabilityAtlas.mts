@@ -55,7 +55,14 @@ import { fileURLToPath } from "node:url";
 
 import { readIfPresent } from "./listedEntry.mts";
 import { CORPUS, UNREACHABLE_DOORS, KNOWN_DEBTS, type CorpusRow, type CorpusState } from "../capability-atlas-corpus.mts";
-import { ROADS, LAWS, UNMAPPED_ENTRANCES, type Road } from "../capability-atlas-roads.mts";
+import { codeOnly } from "../../server/testing/withoutComments";
+import {
+  ROADS,
+  LAWS,
+  UNMAPPED_ENTRANCES,
+  UNDECLARED_PROSE_NAMES,
+  type Road,
+} from "../capability-atlas-roads.mts";
 import { CANNOT_SAY_COPY, cannotSaySentence, type CannotSayReason } from "../../server/castingV2/cannotSayCopy";
 import { CONCEPT_DESCRIBE_COPY } from "../../server/castingV2/conceptDescribeCopy";
 import { ROLL_REFUSAL_COPY } from "../../server/castingV2/briefRefusalCopy";
@@ -121,6 +128,8 @@ export type Finding = {
     | "stale-unreachable-doc"     // a drive PRODUCED an id documented as unreachable
     | "road-cites-unknown-door"   // the roads map names a door the source does not declare
     | "road-cites-unknown-procedure" // a road names a procedure the entrance does not expose
+    | "road-cites-undeclared-symbol"  // a road backticks an identifier the tree does not declare — see #1821
+    | "stale-undeclared-prose-name"   // an UNDECLARED_PROSE_NAMES line the tree now declares, or no road says
     | "unmapped-entrance"         // a procedure the entrance exposes that no road names — see #1203
     | "stale-unmapped-entrance"   // an UNMAPPED_ENTRANCES line whose procedure is now mapped, or gone
     | "belief-mismatch"           // observed ≠ expect
@@ -650,6 +659,233 @@ export function entranceCoverageFindings(input: {
  * word: `codeLinesOf` is the FIXED-NAME door, so a missing declared source
  * still throws.
  */
+/**
+ * EVERY TREE THAT HOLDS PRODUCT TYPESCRIPT — the population the declared set is
+ * read from. Deliberately ALL of it rather than the casting subtree: a name
+ * declared in a tree this does not walk reads as undeclared, and that is the one
+ * direction of error that stops a correct sentence from shipping.
+ */
+const DECLARATION_TREES = ["server", "client", "shared", "scripts", "drizzle"] as const;
+
+/** A backticked BARE identifier: no dot, no slash, no space, no colon. */
+const PROSE_NAME = /`([A-Za-z_$][A-Za-z0-9_$]*)`/g;
+
+/* A declaration by any form this repository actually writes. */
+const DECLARED_BY_KEYWORD =
+  /(?:^|[\s;{(,])(?:export\s+)?(?:declare\s+)?(?:async\s+)?(?:const|let|var|function|class|type|interface|enum)\s+([A-Za-z_$][A-Za-z0-9_$]*)/g;
+/* A member or property, including the optional and definite-assignment forms.
+   `retryPriceCredits?: number` is a declaration, and the `?` is what the first
+   draft of this reader tripped over — it reported a live prop as undeclared. */
+const DECLARED_AS_MEMBER =
+  /^\s*(?:(?:public|private|protected|readonly|static|async|get|set)\s+)*([A-Za-z_$][A-Za-z0-9_$]*)\s*[?!]?\s*[:(<=]/gm;
+/* A destructured binding or an object shorthand. Broad on purpose — see the
+   DIRECTION note below. */
+const DECLARED_AS_SHORTHAND = /[{,]\s*([A-Za-z_$][A-Za-z0-9_$]*)\s*[,}]/g;
+
+/**
+ * WHAT THE TREE DECLARES, AND WHAT MODULES IT HAS (#1821).
+ *
+ * # THE DIRECTION OF ERROR, STATED BECAUSE IT IS A CHOICE
+ *
+ * These patterns err toward DECLARED. A name this reader wrongly calls declared
+ * lets one stale sentence through — the check is a FLOOR, and that sentence was
+ * unguarded entirely the day before. A name it wrongly calls undeclared REFUSES
+ * THE GENERATION of a correct map, which blocks a push over a sentence nobody
+ * should have to rewrite. The second is strictly worse, so every ambiguous shape
+ * resolves toward declared and the shorthand pattern is deliberately broad.
+ *
+ * It follows that a clean reading is a floor and not coverage, and the arms in
+ * `capabilityAtlas.test.ts` drive the CAPABILITY rather than the population: an
+ * invented name must be reported, and a live symbol must not be.
+ *
+ * # WHY MODULE NAMES COME BACK TOO
+ *
+ * The road prose says `briefCompiler` for a FILE. A module the tree holds is not
+ * a stale claim, so it is exempt — and it is exempt by a DERIVED set rather than
+ * by a line in a list, which is the difference between this check and the one
+ * the card that ordered it proposed.
+ */
+export function declaredSourceNames(): { declarations: Set<string>; modules: Set<string> } {
+  const declarations = new Set<string>();
+  const modules = new Set<string>();
+  const isSource = (name: string) => /\.(tsx?|mts)$/.test(name);
+
+  const files: string[] = [];
+  for (const tree of DECLARATION_TREES) {
+    const dir = path.join(repoRoot, tree);
+    if (!fs.existsSync(dir)) continue;
+    files.push(...listFiles(dir, isSource));
+  }
+  /* ⚠ THE SUBJECT OF THE CHECK IS NOT ITS OWN EVIDENCE, and this was measured
+     rather than foreseen: with the roads module in the population, every KEY of
+     UNDECLARED_PROSE_NAMES read as a declaration (`NAME: {` is a member), so the
+     rot arm reported all six entries as excuses the tree had started declaring —
+     an allowlist that cancels itself by existing. */
+  const subject = path.join(repoRoot, "scripts", "capability-atlas-roads.mts");
+  /* The root's own source files — the vitest configs, seed.ts, drizzle's config.
+     A small set, and leaving it out would be a hole in the refusing direction. */
+  for (const entry of fs.readdirSync(repoRoot, { withFileTypes: true })) {
+    if (entry.isFile() && isSource(entry.name)) files.push(path.join(repoRoot, entry.name));
+  }
+
+  if (files.length === 0) {
+    throw new Error(
+      "declaredSourceNames: walked the declaration trees and found no TypeScript. " +
+        "An empty population would call every name in the prose stale.",
+    );
+  }
+
+  for (const file of files) {
+    modules.add(path.basename(file).replace(/\.(tsx?|mts)$/, ""));
+    if (path.resolve(file) === subject) continue;
+    /* ⚠ `readIfPresent` AND NOT A BARE READ, which `listedSource.test.ts`
+       caught on the first push of this reader. This is a WALKED list, and a file
+       that vanishes between the listing and the read would ENOENT the deploy
+       rite on a clean tree (#223) — so the walk tolerates an absence. The
+       module's FIXED-name reads above must keep throwing, and that difference is
+       each site's own statement about what it is reading. */
+    const raw = readIfPresent(file);
+    if (raw === null) continue;
+    /* ⚠ `codeOnly` AND NOT THE RAW BYTES. A declaration is CODE: with comments
+       and literal contents in, any name this repository merely WRITES ABOUT read
+       as declared — `CASTING_V2_RETRY_PRICE_CREDITS` is in castingCreditCosts.ts
+       purely as its own obituary, which is exactly the sentence the check exists
+       to catch, and reading comments would have exempted it by quoting it. */
+    const text = codeOnly(raw);
+    for (const pattern of [DECLARED_BY_KEYWORD, DECLARED_AS_MEMBER, DECLARED_AS_SHORTHAND]) {
+      pattern.lastIndex = 0;
+      let match: RegExpExecArray | null;
+      while ((match = pattern.exec(text))) declarations.add(match[1]!);
+    }
+  }
+
+  return { declarations, modules };
+}
+
+/** One backticked bare identifier in the hand-written prose, and where it sits. */
+export type ProseName = { readonly where: string; readonly name: string };
+
+/**
+ * EVERY BACKTICKED BARE IDENTIFIER IN THE MAP'S HAND-WRITTEN PROSE (#1821).
+ *
+ * The hand-written fields only — summary, doorsNote, notes, the LAWS and the
+ * UNMAPPED_ENTRANCES reasons. The doors, flags, procedures and entrances arrays
+ * are already held to the source by their own findings, and reading them again
+ * here would be a second answer to a settled question.
+ */
+export function roadProseNames(input: {
+  roads: readonly Road[];
+  laws: ReadonlyArray<{ law: string; where: string }>;
+  unmapped: Readonly<Record<string, string>>;
+}): ProseName[] {
+  const prose: Array<{ where: string; text: string }> = [];
+  for (const road of input.roads) {
+    prose.push({ where: `${road.id}.summary`, text: road.summary });
+    if (road.doorsNote) prose.push({ where: `${road.id}.doorsNote`, text: road.doorsNote });
+    road.notes.forEach((note, index) => prose.push({ where: `${road.id}.notes[${index}]`, text: note }));
+  }
+  input.laws.forEach((law, index) =>
+    prose.push({ where: `LAWS[${index}]`, text: `${law.law} ${law.where}` }),
+  );
+  for (const [procedure, why] of Object.entries(input.unmapped)) {
+    prose.push({ where: `UNMAPPED_ENTRANCES.${procedure}`, text: why });
+  }
+
+  if (prose.length === 0) {
+    throw new Error(
+      "roadProseNames: the roads map carries no prose. An empty population answers " +
+        "every question with clean.",
+    );
+  }
+
+  const out: ProseName[] = [];
+  for (const { where, text } of prose) {
+    PROSE_NAME.lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = PROSE_NAME.exec(text))) out.push({ where, name: match[1]! });
+  }
+  return out;
+}
+
+/**
+ * THE PROSE'S SYMBOLS, HELD TO THE SOURCE — and the enumerated remainder held to
+ * the prose (#1821).
+ *
+ * Three exemptions are DERIVED and one is written down:
+ *
+ *   - the tree DECLARES the name;
+ *   - the census declares it as a door id, full or bare — the generator's own
+ *     set, never a copy of it;
+ *   - the tree holds a MODULE by that name, because the prose names files;
+ *   - otherwise UNDECLARED_PROSE_NAMES carries its reason, or it is a finding.
+ *
+ * And the list cannot outlive its population, which is the failure mode of every
+ * allowlist this repository has kept: an entry the tree now declares is reported
+ * (the excuse has become wrong), and so is one no road says any more (dead weight
+ * nobody can audit). That pair is the contract server/testing/suitePointers.ts
+ * holds its own enumerated absences to.
+ */
+export function roadProseSymbolFindings(input: {
+  names: readonly ProseName[];
+  declarations: ReadonlySet<string>;
+  modules: ReadonlySet<string>;
+  doorIds: ReadonlySet<string>;
+  enumerated: Readonly<Record<string, { readonly why: string }>>;
+}): Finding[] {
+  const findings: Finding[] = [];
+  const said = new Map<string, string[]>();
+  for (const { where, name } of input.names) {
+    const seen = said.get(name) ?? [];
+    if (!seen.includes(where)) seen.push(where);
+    said.set(name, seen);
+  }
+
+  for (const [name, wheres] of [...said].sort(([a], [b]) => a.localeCompare(b))) {
+    if (input.declarations.has(name) || input.doorIds.has(name) || input.modules.has(name)) continue;
+    if (name in input.enumerated) continue;
+    findings.push({
+      id: `road-symbol:${name}`,
+      severity: "error",
+      kind: "road-cites-undeclared-symbol",
+      subject: name,
+      message:
+        `the roads map backticks "${name}" at ${wheres.join(", ")}, and the tree declares no ` +
+        "such name, no door by that id and no module so called — repoint the sentence at what " +
+        "the code really calls it, or (where the name's DEATH, or a word that is deliberately " +
+        "not a symbol, is the sentence's content) add it to UNDECLARED_PROSE_NAMES in " +
+        "capability-atlas-roads.mts with the reason a later reader will need",
+    });
+  }
+
+  for (const name of Object.keys(input.enumerated)) {
+    if (!said.has(name)) {
+      findings.push({
+        id: `stale-prose-name:${name}`,
+        severity: "error",
+        kind: "stale-undeclared-prose-name",
+        subject: name,
+        message:
+          `UNDECLARED_PROSE_NAMES excuses "${name}" and no road prose says it any more — ` +
+          "delete the line; an entry nothing mentions is dead weight nobody can audit",
+      });
+      continue;
+    }
+    if (input.declarations.has(name)) {
+      findings.push({
+        id: `stale-prose-name:${name}`,
+        severity: "error",
+        kind: "stale-undeclared-prose-name",
+        subject: name,
+        message:
+          `UNDECLARED_PROSE_NAMES excuses "${name}" as a name the tree does not declare, and ` +
+          "the tree declares it now — delete the line, the excuse has become wrong",
+      });
+    }
+  }
+
+  return findings;
+}
+
 export function declaredFlags(): string[] {
   const text = codeLinesOf(path.join(SOURCE_DIR, "castingV2Scope.ts"));
   const ids = new Set<string>();
@@ -1566,6 +1802,25 @@ export function buildStaticAtlas(corpus: readonly CorpusRow[] = CORPUS): StaticA
 
   const procedures = declaredCastingProcedures();
   findings.push(...entranceCoverageFindings({ procedures, roads: ROADS, unmapped: UNMAPPED_ENTRANCES }));
+
+  /*
+    AND THE PROSE'S OWN SYMBOLS (#1821). Every door, flag, procedure and entrance
+    above is held to the source; until this, no NUMBER and no IDENTIFIER in a
+    `summary` or a `notes` line was held to anything, so the map could assert a
+    deleted constant as live indefinitely — and did, for two days, about a price,
+    during his pricing week. The door ids come from `declared` rather than from a
+    hand list, which is the exemption the card proposed and law 4 refuses.
+  */
+  const { declarations, modules } = declaredSourceNames();
+  findings.push(
+    ...roadProseSymbolFindings({
+      names: roadProseNames({ roads: ROADS, laws: LAWS, unmapped: UNMAPPED_ENTRANCES }),
+      declarations,
+      modules,
+      doorIds: new Set([...declaredIds, ...declared.map((entry) => bareDoorId(entry.id))]),
+      enumerated: UNDECLARED_PROSE_NAMES,
+    }),
+  );
 
   return {
     declared,
