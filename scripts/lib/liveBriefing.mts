@@ -100,6 +100,29 @@ export type BriefingChoice = {
 };
 
 /**
+ * A READ THAT PRODUCED NO BYTES, CARRYING THE REASON IT DID NOT (#1867).
+ *
+ * The contract of `chooseBriefing`'s reader used to be `string | null`, and a
+ * null meant only "no bytes" — so this module composed the one cause it could
+ * think of, *"this clone may not hold that commit"*, and printed it as a fact.
+ * It was wrong for three nights: the real cause was the reader's 1 MiB buffer,
+ * and every shift that read the line went to check its clone.
+ *
+ * So a failing reader says WHY. The type lives here, with the contract it
+ * belongs to; the reader that does the I/O is `briefingAtCommit.mts`, which
+ * imports these — this module stays pure, because its injected reader is what
+ * lets its arms drive the original incident's exact shape.
+ */
+export type BriefingReadFailure = { readonly reason: string };
+
+/** Bytes, or the reason there are none. A bare `null` still means "no reason given". */
+export type BriefingRead = string | BriefingReadFailure;
+
+/** The narrowing every caller of a `BriefingRead` needs. */
+export const briefingReadFailed = (read: BriefingRead): read is BriefingReadFailure =>
+  typeof read !== "string";
+
+/**
  * The four fields a reply read needs, or null when the bytes are not a briefing.
  *
  * Exported (as `parseBriefingFacts`) because the reply reader's WRITE road has
@@ -142,13 +165,14 @@ export const liveCommit = (rows: DeploymentRow[]): string | null =>
  * @param rows        Railway's listing for the app service, newest first.
  * @param treeJson    `server/crew/crew-briefing.json` as the tree holds it, or
  *                    null when it could not be read at all.
- * @param showAtCommit  Reads the same path at a commit; null when git cannot
- *                    (a sha this clone does not have, a deleted path).
+ * @param showAtCommit  Reads the same path at a commit. On failure it returns
+ *                    a `{ reason }` saying what went wrong — a bare `null` is
+ *                    still accepted and means no reason was given (#1867).
  */
 export function chooseBriefing(
   rows: DeploymentRow[],
   treeJson: string | null,
-  showAtCommit: (sha: string) => string | null,
+  showAtCommit: (sha: string) => BriefingRead | null,
 ): BriefingChoice {
   const treeFacts = treeJson === null ? null : parseBriefingFacts(treeJson);
   const treeEdition = treeFacts?.edition ?? null;
@@ -158,8 +182,18 @@ export function chooseBriefing(
   const sha = liveCommit(rows);
   if (!sha) return fallback("no SUCCESS deployment row carries a commit — Railway could not be read, or nothing has deployed");
 
-  const deployedJson = showAtCommit(sha);
-  if (deployedJson === null) return fallback(`the briefing could not be read at ${sha.slice(0, 8)} — this clone may not hold that commit`);
+  const read = showAtCommit(sha);
+  /* THE REASON IS THE READER'S, NEVER THIS MODULE'S GUESS (#1867). Where no
+     reason arrives there is no cause in the sentence at all — "could not be
+     read" is the whole honest claim, and a shift chases git's answer rather
+     than a clone that was never the problem. */
+  if (read === null || briefingReadFailed(read)) {
+    const reason = read === null ? null : read.reason;
+    return fallback(
+      `the briefing could not be read at ${sha.slice(0, 8)}${reason === null ? "" : ` — ${reason}`}`,
+    );
+  }
+  const deployedJson = read;
 
   const deployedFacts = parseBriefingFacts(deployedJson);
   if (!deployedFacts) return fallback(`the briefing at ${sha.slice(0, 8)} does not parse`);

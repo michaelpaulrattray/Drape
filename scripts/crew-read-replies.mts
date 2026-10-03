@@ -72,9 +72,10 @@
  *   --all     print the whole thread, acknowledged or not
  *   --write   apply `answered` to the items he has replied to (#749)
  */
-import { execFileSync, execSync } from "node:child_process";
+import { execSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 
+import { briefingAtCommit } from "./lib/briefingAtCommit.mts";
 import { openDatabase, resolveDatabaseUrl, utc } from "./lib/dbConnection.mts";
 import { listedRows } from "./lib/deployWatch.mts";
 import { chooseBriefing, describeSource, parseBriefingFacts } from "./lib/liveBriefing.mts";
@@ -155,15 +156,11 @@ const deploymentRows = (() => {
   }
 })();
 
-const choice = chooseBriefing(deploymentRows, treeJson, (sha) => {
-  try {
-    return execFileSync("git", ["show", `${sha}:server/crew/crew-briefing.json`], {
-      encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 30_000,
-    });
-  } catch {
-    return null;
-  }
-});
+/* ONE READER, SHARED WITH THE MIRROR (#1867). This used to be a local
+   `execFileSync` with no `maxBuffer`, and so did the mirror's — the briefing
+   crossed 1 MiB, both reads began failing with ENOBUFS, and the sentence a
+   shift read blamed its git clone. */
+const choice = chooseBriefing(deploymentRows, treeJson, briefingAtCommit);
 
 const briefing = choice.facts;
 if (!briefing) console.error("[warn] no briefing could be parsed on any road — showing the WHOLE thread and no card titles.");

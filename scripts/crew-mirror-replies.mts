@@ -98,6 +98,7 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
+import { briefingAtCommit } from "./lib/briefingAtCommit.mts";
 import { openDatabase, resolveDatabaseUrl, utc } from "./lib/dbConnection.mts";
 import { listedRows } from "./lib/deployWatch.mts";
 import { chooseBriefing, describeSource } from "./lib/liveBriefing.mts";
@@ -279,15 +280,11 @@ function readDeployedHosts(): Map<string, number | null> {
       return [];
     }
   })();
-  const choice = chooseBriefing(deploymentRows, treeJson, (sha) => {
-    try {
-      return execFileSync("git", ["show", `${sha}:server/crew/crew-briefing.json`], {
-        encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 30_000,
-      });
-    } catch {
-      return null;
-    }
-  });
+  /* ONE READER, SHARED WITH `crew-read-replies.mts` (#1867). Both tools used
+     to carry a copy of this with no `maxBuffer`; the card's own prescription
+     said the mirror already had the fix, and line 301's 32 MiB belongs to the
+     `gh issue view` call below, not to this read. */
+  const choice = chooseBriefing(deploymentRows, treeJson, briefingAtCommit);
   chat(describeSource(choice));
   /* DERIVED from the one index both halves of the reply namespace already come
      out of (`hostIndex`), never a second walk of `needsYou` and `eyeItems` —

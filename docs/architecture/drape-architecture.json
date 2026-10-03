@@ -11363,6 +11363,10 @@
       "path": "server/boardsCasting.test.ts"
     },
     {
+      "id": "test:server/briefingAtCommit.test.ts",
+      "path": "server/briefingAtCommit.test.ts"
+    },
+    {
       "id": "test:server/briefingConformance.test.ts",
       "path": "server/briefingConformance.test.ts"
     },
