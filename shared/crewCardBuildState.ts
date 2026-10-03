@@ -519,6 +519,117 @@ export function closeShouldPrintHandback(input: {
   return !(input.outcome === "shipped" && input.cardState === "closed");
 }
 
+/**
+ * THE PULL REQUEST A CLOSING RUN NAMES, as far as `gh` would say — #1859.
+ *
+ * `state` is lower-cased before it reaches here, and `unknown` is a state this
+ * reader has never seen rather than a guess at one.
+ */
+export interface ClosingPullRequestFacts {
+  readonly number: number;
+  readonly isDraft: boolean;
+  readonly state: "open" | "closed" | "merged" | "unknown";
+}
+
+/**
+ * What the close learned about the pull request it is closing on.
+ *
+ * `none` is a close that named no `--pr`, which is not a claim and costs no
+ * `gh` call. `unreadable` is the honest third answer and is **never** read as a
+ * clean bill — see {@link closingPullRequestFinding}.
+ */
+export type ClosingPullRequestReading =
+  | { readonly kind: "none" }
+  | { readonly kind: "unreadable"; readonly why: string }
+  | { readonly kind: "read"; readonly facts: ClosingPullRequestFacts };
+
+/**
+ * DOES THE PULL REQUEST AGREE THAT THIS RUN SHIPPED? — #1859.
+ *
+ * # Why a close is where a seat's claims get checked at all
+ *
+ * The runner's close-stamp is the team's one mechanical honesty check: after a
+ * shift's process exits it re-reads that shift's mailbox entry and tests every
+ * *"merged"* against `gh`, so a shift that died mid-close cannot leave claims
+ * standing as facts (#101). **It has exactly one call site and that call site
+ * is the focus-shift path** — `.agents/foreman/foreman-runner.ps1`, read
+ * 2026-10-04 — so no builder seat's claims have ever been checked by anything.
+ * A seat is forbidden to write a mailbox entry at all (the standing orders: a
+ * seat *"never touches `.agents/`"*, and four seats writing into one mailbox is
+ * the shared-scratchpad collision those same orders warn about), so there is no
+ * entry for a stamp to read even if one were invoked.
+ *
+ * **So the question #1859 asks is which artifact a seat's claims SHOULD be
+ * checked against, and the answer taken here is its own close.** A seat's
+ * durable claims are three: the pull request, its comments on the cards, and
+ * this run row. The first two are already derived rather than believed — the
+ * pass digest re-reads them from GitHub after every seat exits and never quotes
+ * what a seat said (`scripts/lib/seatPassDigest.mts`). **The row is the one
+ * surface carrying a seat's own assertion**: `--outcome shipped` and `--pr N`
+ * are things the seat SAYS, his Recent-shifts strip renders them, and until now
+ * nothing compared them to the pull request they name.
+ *
+ * # ⚠ AND IT FIRES WHERE A STAMP CANNOT: WHILE THE SEAT IS STILL ALIVE
+ *
+ * A stamp runs after the process is gone, so its finding reaches a reader and
+ * never a fixer. This runs as the seat's own last act, one command away from
+ * the repair — which is exactly the defect it is pointed at. PR #1376: a seat
+ * closed its row `shipped` with its pull request still a DRAFT; the merge tool
+ * refuses a draft, marking it ready is the AUTHOR's act, and **a seat that has
+ * ended cannot lift it** — so the pull request sat unmergeable with a green
+ * gate and a pass verdict until the relay lifted the flag by hand.
+ *
+ * # What it will and will not say
+ *
+ * Only `shipped` is judged. A `stopped` or `failed` close over a draft is
+ * coherent — unfinished work, unfinished pull request — and a finding there
+ * would be noise on the one road that is already honest.
+ *
+ * ⚠ **`unreadable` IS NOT A FINDING, DELIBERATELY, AND THE LIMIT IS STATED
+ * RATHER THAN HIDDEN.** `gh pr view` throws both for a pull request that does
+ * not exist and for a `gh` that is broken, unauthenticated or timing out, and
+ * telling those apart means matching GitHub's prose. A machine without `gh`
+ * would otherwise exit 2 on every close, which is how a shift learns to ignore
+ * an exit code. So the reason is PRINTED, the reading is named UNKNOWN in as
+ * many words, and the exit stays clean — the same direction
+ * {@link closeShouldPrintHandback} runs in, for the same reason.
+ *
+ * ⚠ **AND IT DOES NOT ASK WHETHER THE PULL REQUEST NAMES THE ROW'S CARD**,
+ * though {@link pullRequestBuildsCard} would answer it for free. A seat batch
+ * holds several cards and the row names only the FIRST, so a seat that ships
+ * its second card's pull request would fail that test correctly and be told it
+ * was wrong. A check with a known false positive on the common road is worse
+ * than no check.
+ */
+export function closingPullRequestFinding(input: {
+  readonly runId: number;
+  readonly outcome: string;
+  readonly reading: ClosingPullRequestReading;
+}): string | null {
+  if (input.outcome !== "shipped") return null;
+  if (input.reading.kind !== "read") return null;
+  const { number, isDraft, state } = input.reading.facts;
+  if (isDraft) {
+    return `\u26a0 FINDING \u2014 run #${input.runId} is closing \`shipped\` on PR #${number}, which is still a DRAFT.`
+      + "\n  The merge tool refuses a draft and marking it ready is the AUTHOR's act, so a shift"
+      + "\n  that has ended cannot lift it: PR #1376 sat unmergeable with a green gate and a pass"
+      + "\n  verdict until the relay lifted the flag by hand."
+      + "\n"
+      + "\n  One command, and you are still here to run it:"
+      + `\n    gh pr ready ${number}`;
+  }
+  if (state === "closed") {
+    return `\u26a0 FINDING \u2014 run #${input.runId} is closing \`shipped\` on PR #${number}, which is CLOSED`
+      + "\n  and was never merged. `shipped` over a pull request its own artifact says did not"
+      + "\n  land is the claim the runner's close-stamp exists to catch, and no stamp runs for"
+      + "\n  a seat."
+      + "\n"
+      + "\n  If the work landed in another pull request, name that one; if it did not land, the"
+      + "\n  outcome is `stopped`.";
+  }
+  return null;
+}
+
 /** One comment → one fact, or `null` when it is ordinary prose. */
 export function crewCardCommentFact(comment: CrewCardComment): CrewCardCommentFact | null {
   const { card, body, createdAt } = comment;

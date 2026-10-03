@@ -65,6 +65,21 @@
  * control sits on the path everything takes, so it cannot quietly stop
  * existing.
  *
+ * # ⚠ AND WHAT IT CHECKS FOR A BUILDER SEAT, BECAUSE NOTHING ELSE DOES (#1859)
+ *
+ * The runner's close-stamp re-reads a shift's mailbox entry after the process
+ * is gone and tests every *"merged"* against `gh` — the team's one mechanical
+ * honesty check. **It has exactly one call site and that call site is the
+ * focus-shift path**, and a builder seat is forbidden to write a mailbox entry
+ * at all, so a seat's claims have never been checked by anything.
+ *
+ * A seat's own assertion is made HERE: `--outcome shipped --pr N`. So the close
+ * asks the pull request whether it agrees — `closingPullRequestFinding`, whose
+ * docblock carries the reasoning and the two checks it deliberately declines.
+ * It fires where a stamp cannot: while the seat is still alive and the repair
+ * is one command away (PR #1376 — a seat closed `shipped` on a DRAFT, and a
+ * seat that has ended cannot mark its own pull request ready).
+ *
  * # ⚠ THREE GUARDS THIS SCRIPT DID NOT HAVE, AND THE INCIDENT THAT BOUGHT THEM
  *
  * Issue #288, 2026-08-30, on PRODUCTION. An operator wanting to READ the live
@@ -103,11 +118,13 @@ import {
 } from "../shared/crewCardResolution.js";
 import {
   closeShouldPrintHandback,
+  closingPullRequestFinding,
   crewCardHandbackInstruction,
 } from "../shared/crewCardBuildState.js";
 import { openDatabase, resolveDatabaseUrl, worldOf } from "./lib/dbConnection.mts";
 import { refreshQueueCountsQuietly } from "./lib/crewQueueCount.mts";
 import { readClosingCardState } from "./lib/crewClosingCardState.mts";
+import { readClosingPullRequest } from "./lib/crewClosingPullRequest.mts";
 import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
 const TABLE = "crew_shift_runs";
@@ -447,6 +464,33 @@ try {
       const waiting = deskItemsWaitingOnHim(desk, closingIssue);
       if (waiting.length > 0) findings.push(`\n${waitingOnHimFinding(closingIssue, waiting)}`);
     }
+  }
+
+  /*
+    ⚠ DOES THE PULL REQUEST AGREE THAT THIS RUN SHIPPED? (#1859)
+
+    The runner's close-stamp checks a shift's written claims against `gh` once
+    the process is gone — and it has exactly ONE call site, on the focus-shift
+    path, so no builder seat's claims have ever been checked by anything. A seat
+    cannot write the mailbox entry a stamp would read either. **So the claim a
+    seat DOES make is the one checked here**: `--outcome shipped --pr N`, tested
+    against what that pull request says about itself.
+
+    The rule and the two things it deliberately does not check are
+    `closingPullRequestFinding`'s own docblock. What belongs here is the
+    ordering, and it is this script's standing rule: the read happens AFTER the
+    UPDATE, every road it can take comes back as a reading rather than a throw,
+    and an unreadable `gh` prints its reason and carries no exit code — a check
+    that can cost a shift its close is a check that gets skipped.
+  */
+  if (prNumber !== null) {
+    const prReading = readClosingPullRequest(Number(prNumber), (line) => console.error(line));
+    const prFinding = closingPullRequestFinding({
+      runId: Number(row.id),
+      outcome: String(row.outcome),
+      reading: prReading,
+    });
+    if (prFinding !== null) findings.push(`\n${prFinding}`);
   }
 
   /*
