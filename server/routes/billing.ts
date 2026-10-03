@@ -41,6 +41,7 @@ import {
   PURCHASABLE_PLANS,
   OFFERED_PLAN_ORDER,
   OFFERED_PLAN_TIERS,
+  SELF_SERVE_PLAN_ORDER,
   ownPlanFacts,
 } from "../stripe/stripeProducts";
 import {
@@ -126,6 +127,22 @@ export const billingRouter = router({
       }),
       tiers: OFFERED_PLAN_TIERS,
       planOrder: OFFERED_PLAN_ORDER,
+      /*
+        THE SELF-SERVE LADDER — which rungs the plan surface DRAWS (#1832,
+        Pricing Phase 2). `free` plus the three individual plans; the rungs
+        above are the Enterprise band's conversation (#1833).
+
+        ⚠ **IT IS SERVED RATHER THAN FILTERED ON THE CLIENT, AND THAT IS
+        WORKING LAW 4 ON THE ONE SURFACE WHERE A SECOND LIST WOULD BE WORST.**
+        A client-side `["starter", "pro", "studio"]` is a second copy of the
+        ladder: the day he hand-sells a rung into the band, or adds a fourth
+        individual plan, the surface and the catalogue disagree and the
+        disagreement is a price in front of a customer. `planOrder` stays
+        beside it — it is still what the `tiers` projection is keyed by and
+        what the compare table's Upgrade/Downgrade direction is read from, so
+        this is a narrower view of one list and not a rival to it.
+      */
+      selfServeOrder: SELF_SERVE_PLAN_ORDER,
       /*
         WHAT ONE FINISHED CHARACTER COSTS — the divisor behind every plan
         card's worked example (#1607, P1-8). A ledger number, like every

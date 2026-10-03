@@ -658,11 +658,32 @@ describe("an unread plan is not the free plan (#1741)", () => {
     /*
       ⚠ **EACH HELPER IS SLICED OUT BEFORE IT IS ASSERTED ON, AND A FILE-WIDE
       `toContain` WAS MEASURED SURVIVING SABOTAGE HERE.** `cardTrio` and
-      `compareWindow` both decline with the identical line `if (currentId ===
+      `compareWindow` both declined with the identical line `if (currentId ===
       null) return [];` — so an arm reading the whole file stayed GREEN with
       `cardTrio`'s deleted, satisfied by its neighbour's copy. That is the
       `:not(:disabled)` class this repository has shipped before: a guard whose
       subject is one of several identical lines cannot name which one it found.
+
+      ⚠ **THOSE TWO HELPERS ARE DELETED (card 1832, 2026-10-03) AND THE SLICER
+      STAYS, WHICH IS THE POINT OF KEEPING IT.** `recommendPlan` is the one
+      left, so the sabotage finding above no longer has two copies to hide
+      between — and that is exactly the state in which a file-wide read looks
+      harmless and quietly stops being a reading. The slicer is one function, it
+      refuses on a name it cannot find, and it costs nothing.
+
+      **Why they went, in one line**: they windowed a seven-rung ladder down to
+      three cards and five columns, and his Phase 2 brief removed the RUNGS
+      instead of the columns — `free` plus three individual plans is the whole
+      self-serve ladder, so there is nothing left to window. `planLadder.ts`'
+      header carries the full reading.
+
+      ⚠ **WHAT #1747'S PROPERTY NEEDED IN THEIR PLACE, because deleting a
+      refusal is how a defect comes back by another road:** the declining branch
+      is now ONE gate on the surface (`cannotArrange`), asserted below over
+      `ChangePlanModal` itself, and the `-1` fallback #391 relies on moved into
+      `offered` — where card 1832 found a SECOND way into *"Upgrade to Free"*
+      that this arm's own sentence predicted and did not cover. The `offered`
+      assertion further down is tightened in the same commit.
     */
     const bodyOf = (name: string) => {
       const from = ladder.indexOf(`export function ${name}(`);
@@ -676,30 +697,27 @@ describe("an unread plan is not the free plan (#1741)", () => {
     };
 
     expect(
-      bodyOf("cardTrio"),
-      "`cardTrio` no longer separates an UNREAD rung from #391's HIDDEN rung. Both make"
-      + " `findIndex` answer -1, and the -1 path draws the bottom three cards on purpose —"
-      + " so without this line an unread rung inherits that arrangement and a Pro"
-      + " subscriber is shown the free rung's ladder by another road. #1747.",
-    ).toContain("if (currentId === null) return [];");
-    expect(
-      bodyOf("compareWindow"),
-      "`compareWindow` no longer declines on an unread rung, so the five-column comparison"
-      + " is centred on nothing — and `Math.max(0, -1)` below reads an unknown rung as the"
-      + " BOTTOM one. #1747.",
-    ).toContain("if (currentId === null) return [];");
-    expect(
       bodyOf("recommendPlan"),
       "`recommendPlan` no longer declines on an unread rung. #1747.",
     ).toContain("if (currentId === null) return null;");
-    /* The narrow half: `cardTrio`'s own -1 fallback must still be there, or this
-       card has quietly taken #391's hidden-rung behaviour with it. */
+    /* The narrow half, and it is #391's rather than #1747's: a rung that is
+       READ but not on the drawn ladder must answer nothing too. The hidden rung
+       has always been one; every arranged-directly rung became one with card
+       1832. Two different absences, the same -1. */
     expect(
-      bodyOf("cardTrio"),
-      "#391's hidden-rung fallback is gone. An account on the unpriced top rung is not on"
-      + " the offered ladder and is deliberately shown the first three with nothing marked"
-      + " current — that is a KNOWN rung and is not what #1747 changed.",
-    ).toContain("if (currentIndex < 0) return ladder.slice(0, 3);");
+      bodyOf("recommendPlan"),
+      "`recommendPlan` no longer separates an UNREAD rung from a rung that is simply not on"
+      + " the drawn ladder. Both make `findIndex` answer -1, and a recommendation made in"
+      + " the second state is arranged around a plan the customer is not on. #391 + #1747.",
+    ).toContain("if (currentIndex < 0) return null;");
+    /* The ladder helpers no longer hold the UNREAD refusal for the cards or the
+       table, so the gate that does is pinned here. Without it the three cards
+       draw with no card marked current and every button reading `Upgrade`. */
+    expect(
+      read("features", "billing", "ChangePlanModal.tsx"),
+      "the surface's own declining gate is gone, and the two deleted ladder helpers were"
+      + " the only other thing holding #1747's property for the cards and the table.",
+    ).toContain("const cannotArrange = ladder.length > 0 && currentId === null;");
 
     const change = read("features", "billing", "ChangePlanModal.tsx");
     expect(
@@ -708,12 +726,34 @@ describe("an unread plan is not the free plan (#1741)", () => {
       + " plan` on a subscriber's screen and the whole trio is arranged around the bottom"
       + " rung. #1747.",
     ).toContain("const currentId = status?.planTier ?? null;");
+    /*
+      ⚠ **THIS ARM'S SUBJECT IS UNCHANGED AND ITS GUARD IS STRICTLY STRONGER —
+      card 1832 found the SECOND road into the sentence it describes.** The
+      condition was `currentId === null`, which answers the UNREAD rung and NOT
+      a rung that is real, read, and simply not on the drawn ladder: there
+      `currentIndex` is -1 too and `recommended` is null too, so the fallback
+      ran and `ladder[0]` is the FREE rung. An account on #391's hidden rung —
+      or, from card 1832, on any arranged-directly rung — would have been shown
+      *"Upgrade to Free"* as its one ink button, with the free card carrying the
+      primary. Never reachable (zero rows on either), and card 1832 is the day
+      the gate moves, because the Enterprise band makes those rungs ordinary.
+
+      `currentIndex < 0` states both facts at once rather than as two guards
+      that can come apart.
+    */
     expect(
       change,
       "⚠ the ONE reader the helpers cannot cover: `offered` does its own arithmetic, and"
-      + " `currentIndex + 1` is 0 when the rung is unknown — so the single ink button on a"
+      + " `currentIndex + 1` is 0 when the index is -1 — so the single ink button on a"
       + " paying customer's screen reads `Upgrade to Free`. It is the loudest thing on the"
-      + " surface and the exact opposite of an upgrade. #1747.",
+      + " surface and the exact opposite of an upgrade. A `currentId === null` guard is NOT"
+      + " enough: a hidden or arranged-directly rung is read, non-null, and still -1."
+      + " #1747 + #1832.",
+    ).toContain("currentIndex < 0");
+    expect(
+      change,
+      "the offer's fallback no longer reads the next rung up, so the one ink button has no"
+      + " target when the account already fits its plan. #1747.",
     ).toContain(": recommended ?? ladder.find((plan, index) => index === currentIndex + 1)");
 
     const topup = read("features", "billing", "AddCreditsModal.tsx");

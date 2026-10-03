@@ -10699,6 +10699,10 @@
       "path": "client/src/features/billing/monthlyDelta1761-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/billing/plansRedesign1832-guard.test.ts",
+      "path": "client/src/features/billing/plansRedesign1832-guard.test.ts"
+    },
+    {
       "id": "test:client/src/features/billing/workDivisor1758-guard.test.ts",
       "path": "client/src/features/billing/workDivisor1758-guard.test.ts"
     },

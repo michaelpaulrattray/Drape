@@ -15,9 +15,6 @@ import {
   type BillingCycle,
 } from "./planMath";
 import {
-  cardTrio,
-  compareWindow,
-  COMPARE_COLUMNS,
   recommendPlan,
   rolloverSentence,
   type LadderPlan,
@@ -357,44 +354,31 @@ describe("the ladder, against the product's real price table", () => {
     expect(recommendPlan(LADDER, "nonesuch", 10)).toBeNull();
   });
 
-  it("draws three cards — current, recommendation, anchor — and never fewer", () => {
-    const recommended = recommendPlan(LADDER, "studio", PLAN_TIERS.studio.monthlyCredits + 1);
-    const trio = cardTrio(LADDER, "studio", recommended);
-    expect(trio.map((plan) => plan.id)).toEqual(["studio", "business", "scale"]);
+  /*
+    ⚠ **TWO ARMS STOOD HERE — `cardTrio`'s three cards and `compareWindow`'s
+    five columns — AND THEY ARE GONE WITH THEIR SUBJECTS (card 1832, 2026-10-03).**
 
-    /* No recommendation: still three, still including the plan they are on. */
-    const flat = cardTrio(LADDER, "studio", null);
-    expect(flat).toHaveLength(3);
-    expect(flat.map((plan) => plan.id)).toContain("studio");
+    Both functions are DELETED. They existed for one reason, written in
+    `planLadder.ts`' own header: seven rungs do not fit in an 880px modal, so a
+    window picked a few of them. His Phase 2 brief removed the RUNGS instead of
+    the columns — *"redicidualous amounts of credits at a rediculous price no
+    one would pay"* — and the self-serve ladder is now `free` plus three
+    individual plans, which is the whole thing. **There is nothing left to
+    window**, and a test demanding a mechanism whose reason has gone is how a
+    dead mechanism keeps a live reputation (the credit-velocity caps' own
+    lesson: a suite that cannot fail when its subject is deleted).
 
-    /* At the TOP of the ladder there is nothing above, so it fills downwards
-       rather than drawing one card. */
-    const top = cardTrio(LADDER, "enterprise", null);
-    expect(top).toHaveLength(3);
-    expect(top.map((plan) => plan.id)).toContain("enterprise");
-  });
+    ⚠ **WHAT THE DELETED ARMS WERE REALLY HOLDING, SO IT IS NOT LOST WITH
+    THEM.** Beyond the windowing they asserted ONE thing worth keeping: both
+    helpers DECLINED on an unread rung (#1747), which is what stopped a Pro
+    subscriber meeting the free rung's arrangement marked current. That refusal
+    now lives in one place rather than three — `recommendPlan`'s own `null`
+    (asserted in the arm above) and the surface's `cannotArrange` gate, which
+    `plansRedesign1832-guard.test.ts` holds against the pane.
 
-  it("the compare window is five wide and always holds both the plan and the offer", () => {
-    /* Derived for the same reason as the arm above (#1602): this one only
-       asserts the window's SHAPE, so the stale literal passed either way —
-       which is exactly why it would have been left behind. */
-    const recommended = recommendPlan(
-      LADDER,
-      "starter",
-      LADDER.find((plan) => plan.id === "studio")!.credits + 1,
-    );
-    const window = compareWindow(LADDER, "starter", recommended);
-    expect(window).toHaveLength(COMPARE_COLUMNS);
-    expect(window.map((plan) => plan.id)).toContain("starter");
-    expect(window.map((plan) => plan.id)).toContain(recommended!.id);
-
-    /* Bottom of the ladder: the window cannot slide below index 0. */
-    expect(compareWindow(LADDER, "free", null)[0].id).toBe("free");
-    /* Top of the ladder: nor past the end. */
-    const atTop = compareWindow(LADDER, "enterprise", null);
-    expect(atTop[atTop.length - 1].id).toBe("enterprise");
-    expect(atTop).toHaveLength(COMPARE_COLUMNS);
-  });
+    `COMPARE_COLUMNS` is deleted too: the column count is the population's
+    length, read from the ladder the server serves.
+  */
 
   it("says rollover as a LOSS, and only where there is one", () => {
     /*

@@ -230,17 +230,61 @@ describe("card #391 — the email door ships with the fold", () => {
   const MODAL = join(HERE, "..", "client", "src", "features", "billing", "ChangePlanModal.tsx");
   const CSS = join(HERE, "..", "client", "src", "features", "settings", "settings.css");
 
+  /*
+    ⚠ **THE DOOR IS A BAND NOW, NOT A SENTENCE — HIS OWN WORD SUPERSEDES THE
+    STYLING HALF OF #391, AND ONLY THAT HALF (card 1833, 2026-10-03).**
+
+    #391's ruling, 2026-09-05, verbatim: *"just an email link for now, keep it
+    simple. they request a higher limit and we can send them the link if we
+    approve"* — and its line's own comment declined three alternatives BY NAME:
+    a form, a request table, a greyed-out card. **The band is none of the
+    three.** What changed is his brief of 2026-10-02 (#1774, approved *"frames
+    right numbers right"*): *"anything really high would be a sale department
+    chat"*, which moves three PRICED rungs into the conversation the hidden rung
+    was already in. One sentence cannot carry three rungs and an action; the
+    band can, and his approved frames 01-02 and 06-07 are what it looks like.
+
+    **So the arms below hold what #391 was really protecting, which was never
+    the type size:** the door EXISTS, it is an email and nothing else, and it
+    publishes no price and no allowance for a rung he has not priced. The
+    *"styled as a sentence, never a card"* arm is retired with the sentence, and
+    this paragraph is why — a guard whose subject his own later word replaced is
+    deleted with its reason written down, not left to redden a correct build.
+  */
   it("the plan modal's CODE carries the mailto, on the address the product already uses", () => {
     const modal = code(readFileSync(MODAL, "utf8"));
-    expect(modal).toContain("mailto:support@klieglabs.com");
-    expect(modal).toContain("dp-plan__request");
+    /* ⚠ COMPOSED, SO IT IS READ IN TWO HALVES. The address is a constant now
+       (`SALES_EMAIL`) because the subject carries the account's own plan and
+       balance, so the old contiguous literal cannot be looked for — and reading
+       only the template would pass on an address typed into a different one. */
+    expect(modal, "the sales address left the modal").toContain(
+      '"support@klieglabs.com"',
+    );
+    expect(modal, "the door is no longer a mail — #391 asked for an email link").toContain(
+      "mailto:${SALES_EMAIL}",
+    );
+    expect(modal, "the Enterprise band is gone, so there is no door at all").toContain(
+      "dp-plan__ent",
+    );
     /* His ruling forbids publishing the hidden price at the door. */
     expect(modal).not.toContain("48,000");
     expect(modal).not.toContain("$48");
   });
 
-  it("the line is styled as a sentence, never a card", () => {
+  it("the band names no price and no allowance — the durable half of his ruling", () => {
+    const modal = code(readFileSync(MODAL, "utf8"));
     const css = readFileSync(CSS, "utf8");
-    expect(css).toContain(".dp-plan__request");
+    const from = modal.indexOf("dp-plan__ent");
+    expect(from, "the band was not found — this arm is reading nothing").toBeGreaterThan(-1);
+    const band = modal.slice(from, modal.indexOf("dp-plan__trust", from));
+    expect(band.length, "the band slice is empty — the anchors have moved").toBeGreaterThan(200);
+    /*
+      A rung he has not priced must not be advertised by its own door, and the
+      band stands for THREE of them. Nothing in it may state money or an
+      allowance: no dollars, no credit figure, no `priceInCents`, no `credits`.
+    */
+    expect(band, "the band states a price").not.toMatch(/\$|formatWholeDollars|priceAMonth|priceInCents/);
+    expect(band, "the band states an allowance").not.toMatch(/formatCredits|monthlyCredits/);
+    expect(css, "the band has no style of its own").toContain(".dp-plan__ent");
   });
 });

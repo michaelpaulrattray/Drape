@@ -51,6 +51,64 @@ export const PURCHASABLE_PLANS = PAID_PLAN_ORDER.filter(
 ) as [PurchasablePlanTier, ...PurchasablePlanTier[]];
 
 /**
+ * THE RUNGS THAT ARE ARRANGED DIRECTLY RATHER THAN BOUGHT — Pricing Phase 2
+ * (#1832, his approved brief #1774: *"anything really high would be a sale
+ * department chat"*).
+ *
+ * His complaint is the ground, verbatim: *"redicidualous amounts of credits at
+ * a rediculous price no one would pay"*, said of the top of the ladder. The
+ * design's §1 read it at the rows and he is right — production has six
+ * accounts, all free, no subscriber; nobody has ever been offered $4,800 a
+ * month and taken it. So these three stop being self-serve CARDS and become one
+ * **Enterprise** band with a *Let's talk* action (#1833).
+ *
+ * ⚠ **THEY DO NOT LEAVE `PLAN_TIERS`, AND THEY DO NOT LEAVE
+ * {@link PURCHASABLE_PLANS} EITHER — both halves are deliberate and the second
+ * is the one worth reading twice.**
+ *
+ * - Out of `PLAN_TIERS` and the column would caption a hand-sold Business
+ *   account **"Free"**, which is PR #583's finding 1 and the one thing a
+ *   billing surface must never do. {@link ownPlanFacts} is the only road by
+ *   which such an account learns its own plan's name.
+ * - Out of `PURCHASABLE_PLANS` and the three billing input enums would REFUSE
+ *   the rung — so an account he hand-sells Business could not change its own
+ *   billing cycle, and the hand-sold checkout link this band's conversation
+ *   ends in would be rejected by the server that is supposed to honour it.
+ *   **A rung leaving a SURFACE is a design change; a rung leaving a money
+ *   enum is a refusal, and nobody asked for one.** The usual argument the
+ *   other way — invariant 5's *a money path with no surface* — is answered by
+ *   #391's own precedent: `ultimate` has been exactly this for a month, a real
+ *   rung with no card, reached by a link he sends by hand.
+ *
+ * So what this constant decides is narrow and stated: which rungs the
+ * self-serve ladder DRAWS.
+ */
+export const ARRANGED_DIRECTLY_PLAN_TIERS = [
+  "business",
+  "scale",
+  "enterprise",
+] as const;
+
+function isArrangedDirectly(tier: PlanTier): boolean {
+  return (ARRANGED_DIRECTLY_PLAN_TIERS as readonly string[]).includes(tier);
+}
+
+/**
+ * THE SELF-SERVE LADDER — `free` plus the three individual plans, in order.
+ *
+ * Derived from {@link OFFERED_PLAN_ORDER} by removing the rungs above, never
+ * typed: a fourth individual plan added to `PLAN_TIERS` joins the surface by
+ * existing, and a rung moved into the band leaves it by one edit in one place.
+ * `free` is in the ORDER because the compare table has a Free column — a
+ * like-for-like read against where a customer already is — and the plan CARDS
+ * draw the paid rungs only, which is the design's §3 decision 2: Free is the
+ * state you are in, not a plan you buy.
+ */
+export const SELF_SERVE_PLAN_ORDER: PlanTier[] = OFFERED_PLAN_ORDER.filter(
+  (tier) => !isArrangedDirectly(tier),
+);
+
+/**
  * The offered tiers as an object — `billing.getPlans`'s explicit `tiers`
  * projection (invariant 8: the full `PLAN_TIERS` must not cross the public
  * wire, because the hidden rung's price is deliberately unpublished).
