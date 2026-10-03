@@ -326,6 +326,204 @@ export function branchForRemoval(entry: WorktreeEntry | null): WorktreeBranch {
 }
 
 /**
+ * ⚠ THE STATUS READ, AND `--ignored=matching` IS THE WHOLE REPAIR OF #1823.
+ *
+ * It read `git status --porcelain` from the day it was written, and **`git
+ * status` does not list ignored files.** `output/` is on `.gitignore`, so a
+ * worktree holding a court's entire artifact set was indistinguishable, at that
+ * reading, from one holding nothing — and this module's verdict is what
+ * authorises a recursive delete. Measured 2026-10-03: the sweep asked about
+ * `drape-shift-sign-engine-court-1394`, was told `uncommitted 0 file(s)`, and
+ * the directory held **1.357 GB in 188 files** — 155 renders, the rows JSON and
+ * the eye strips his *"keep NBP 2k for signing views"* was given on. Reproduced
+ * against a real repository in this module's suite rather than argued.
+ *
+ * ⚠ **AND IT HAD NEVER BEEN SEEN BECAUSE OF WHO ASKS.** A seat removes its own
+ * tree knowing what it put there; a SWEEP removes somebody else's, and the only
+ * thing it can ask is this tool.
+ *
+ * ONE call answers both questions — `!!` lines are the ignored population and
+ * every other line is the dirty one — rather than a second `git status` beside
+ * the first, because two readings of one tree drift (working law 4) and the
+ * drift would sit four lines above a recursive delete.
+ *
+ * `--ignored=matching` rather than a scoped read of `output/`: the scoped form
+ * answers for the one directory this card was filed about and goes silent on the
+ * next one somebody adds. Measured on a real seat worktree, matching mode
+ * COLLAPSES a wholly-ignored directory to `node_modules/` and never descends
+ * into it, so the cost is a listing of a handful of paths rather than a walk of
+ * the install: 5.1 s cold, 0.04 s warm, two lines out on a clean tree.
+ */
+export function worktreeStatusArgs(): string[] {
+  return ["status", "--porcelain", "--ignored=matching"];
+}
+
+/** The two populations of one `git status --porcelain --ignored=matching`. */
+export type WorktreeStatus = {
+  /** Tracked files modified or staged, plus untracked non-ignored files. */
+  readonly dirty: readonly string[];
+  /** Paths git is ignoring — a file, or a wholly-ignored directory with its slash. */
+  readonly ignored: readonly string[];
+};
+
+/**
+ * Split a porcelain status into dirty and ignored.
+ *
+ * ⚠ **THE FIRST TWO COLUMNS DECIDE, NEVER A SUBSTRING.** Porcelain's shape is
+ * `XY <path>` and `!!` in the X/Y position is the ignored marker; a path may
+ * itself contain `!!`, so the test is on the prefix. The slice-and-trim of the
+ * rest is the reading this tool has always made, kept byte for byte, so the
+ * dirty population does not change meaning in the commit that adds the other one.
+ */
+export function parseWorktreeStatus(porcelain: string): WorktreeStatus {
+  const dirty: string[] = [];
+  const ignored: string[] = [];
+  for (const raw of porcelain.split(/\r?\n/)) {
+    const path = raw.slice(3).trim();
+    if (path.length === 0) continue;
+    (raw.startsWith("!!") ? ignored : dirty).push(path);
+  }
+  return { dirty, ignored };
+}
+
+/**
+ * THE IGNORED PATHS WORTH KEEPING — a NAMED set, which is the shape the card
+ * asked for rather than a flat *ignored files present* (#1823).
+ *
+ * ⚠ **"IGNORED" IS NOT "VALUABLE", AND REFUSING ON ALL OF IT WOULD REFUSE EVERY
+ * WORKTREE THIS PROGRAM HAS EVER CUT.** `node_modules` is a junction to the main
+ * tree's install, `.vite`, `dist` and `.tools` regenerate, `.env` is copied in
+ * by the runner identical to every other tree's, and `docs/architecture/index.html`
+ * is a derivation of a committed file. A guard firing on all of those is a guard
+ * that gets `--force`d by habit — this module's own stated hazard, and the reason
+ * the set is enumerated rather than inverted.
+ *
+ * **Each reason is read off `.gitignore`'s own comment for that rule**, and
+ * `server/shiftWorktree.test.ts` asserts every prefix here is still a rule in
+ * that file — so an ignore rule renamed out from under this set reddens instead
+ * of quietly making it unreachable.
+ *
+ * ⚠ **A LOOSE FRAME IS ALREADY COVERED AND MUST NOT GET A SECOND RULE.** The
+ * card names *"`output/`, loose frames"*; a `.png` dropped at the worktree root
+ * matches no ignore pattern, so it is a `??` entry and the dirty refusal below
+ * has always caught it. Read at `.gitignore`: no image or frame pattern exists
+ * there. What hides a frame from the old reading is being UNDER one of these.
+ *
+ * ⚠ **THE HONEST REMAINDER: VALUE CANNOT BE DERIVED.** A new ignore rule for
+ * something worth keeping will not add itself here, and no reader can tell a
+ * court's renders from a build cache by their path. This is a judgement and a
+ * floor, never a complete list.
+ */
+export const KEPT_IGNORED_PATHS: readonly { readonly prefix: string; readonly why: string }[] = [
+  { prefix: "output/", why: "drive-script and court artifacts — renders, reports, rows JSON, minted frames" },
+  { prefix: ".calibration/", why: "real-spend calibration output, founder-reviewed before it is disposed of" },
+  { prefix: ".theme-shots/", why: "theme-parity screenshots — the frames working law 6 is satisfied with" },
+  { prefix: ".playwright-mcp/", why: "browser console logs and page snapshots from a drive" },
+];
+
+/**
+ * The entry of {@link KEPT_IGNORED_PATHS} a path falls under, or `null`.
+ *
+ * ⚠ Git QUOTES a path containing a space or a non-ASCII byte (`!! "a b/"`), so
+ * the leading quote comes off before the test — otherwise the one directory
+ * whose name forced a quote would read as disposable. The trailing slash is
+ * normalised off both sides because git prints a wholly-ignored directory WITH
+ * one and an individual file without.
+ */
+export function keptIgnoredPrefixFor(
+  path: string,
+): { readonly prefix: string; readonly why: string } | null {
+  const normalised = path.replace(/^"/, "").replace(/\\/g, "/").replace(/\/+$/, "");
+  for (const entry of KEPT_IGNORED_PATHS) {
+    const base = entry.prefix.replace(/\/+$/, "");
+    if (normalised === base || normalised.startsWith(`${base}/`)) return entry;
+  }
+  return null;
+}
+
+/**
+ * Which ignored paths are worth keeping, and which are disposable.
+ *
+ * Both halves come back, because the printed line says how many were LOOKED at.
+ * A reading that prints only when it finds something cannot be told apart from a
+ * reading nobody ever took — which is the whole defect of #1823 in other clothes.
+ */
+export function classifyIgnored(
+  paths: readonly string[],
+): { readonly kept: readonly string[]; readonly disposable: readonly string[] } {
+  const kept: string[] = [];
+  const disposable: string[] = [];
+  for (const path of paths) {
+    (keptIgnoredPrefixFor(path) === null ? disposable : kept).push(path);
+  }
+  return { kept, disposable };
+}
+
+/** One kept ignored path with what it measured on disk. */
+export type KeptIgnoredPath = {
+  readonly path: string;
+  readonly bytes: number;
+  readonly files: number;
+  /** `true` when the walk hit its entry cap, so both figures are a floor. */
+  readonly capped: boolean;
+};
+
+/**
+ * Bytes as a person reads them.
+ *
+ * ⚠ **A FIFTH DECLARATION, NAMED AS ONE RATHER THAN PRETENDED AWAY.** Four
+ * `kb()` helpers already exist — `scripts/lib/afterPaintBudget.mts`,
+ * `scripts/lib/bundleBudget.mts`, `scripts/lib/bundleFold.mts` (exported) and
+ * `scripts/janitor-backup-retention.mts` — and **not one reaches GB**, which is
+ * the unit the 1.357 GB that filed this card is read in. This module also has NO
+ * IMPORTS on purpose (`scripts/lib/riteWorktree.mts`'s header leans on it: this
+ * file takes numbers and booleans so both directions drive without a disk), so
+ * it may not borrow the exported one. The consolidation is a Retro proposal and
+ * is deliberately NOT done here.
+ */
+export function humanBytes(bytes: number): string {
+  if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(2)} GB`;
+  if (bytes >= 1024 ** 2) return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
+  if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} kB`;
+  return `${bytes} B`;
+}
+
+/** One kept path, worded once for the refusal, the warning and the printed line. */
+export function describeKeptIgnored(kept: KeptIgnoredPath): string {
+  const floor = kept.capped ? "at least " : "";
+  return `${kept.path} (${floor}${humanBytes(kept.bytes)} in ${floor}${kept.files} file${kept.files === 1 ? "" : "s"})`;
+}
+
+/**
+ * THE LINE THE TOOL PRINTS ABOUT IGNORED FILES — one owner, so the arms drive
+ * the sentence a reader actually sees rather than a copy of it.
+ *
+ * ⚠ **IT PRINTS ON EVERY REMOVAL, INCLUDING WHEN THERE IS NOTHING TO SAY.**
+ * #1540's lesson was that a line on every clean run can read as a confident
+ * wrong sentence; this is the mirror case and it points the other way — the
+ * reader who authorised deleting 1.36 GB was looking at a report with NO
+ * ignored line at all, and silence about a population cannot be told apart from
+ * an empty one.
+ */
+export function ignoredReadingLine(state: {
+  readonly keptIgnored: readonly KeptIgnoredPath[];
+  readonly disposableIgnored: readonly string[];
+}): string {
+  const total = state.keptIgnored.length + state.disposableIgnored.length;
+  const counted = `${total} path(s)`;
+  if (state.keptIgnored.length === 0) {
+    return total === 0
+      ? `${counted} — git is ignoring nothing in this worktree`
+      : `${counted}, none worth keeping (${state.disposableIgnored.join(", ")})`;
+  }
+  const kept = state.keptIgnored.map(describeKeptIgnored).join("; ");
+  const rest = state.disposableIgnored.length === 0
+    ? ""
+    : `; ${state.disposableIgnored.length} disposable (${state.disposableIgnored.join(", ")})`;
+  return `${counted} — ⚠ WORTH KEEPING: ${kept}${rest}`;
+}
+
+/**
  * Whether a removal may proceed, given what was read off the worktree.
  *
  * Kept pure so both directions are drivable without a real repository in the
@@ -383,6 +581,27 @@ export type RemovalState = {
    * merged this branch and then 2 commits were made on it", it pushes.
    */
   readonly unshippedPastMerge: { readonly pr: number; readonly commits: number } | null;
+  /**
+   * IGNORED PATHS WORTH KEEPING, each measured on disk (#1823).
+   *
+   * ⚠ **THE FACT `dirtyFiles` CANNOT SEE, AND THE REASON 1.36 GB READ AS CLEAN.**
+   * `git status` does not list ignored files, so this is a separate population
+   * rather than more entries in that one — and it is separate in the VERDICT
+   * too, because the refusal it earns names different acts (move it out, not
+   * commit it).
+   */
+  readonly keptIgnored: readonly KeptIgnoredPath[];
+  /**
+   * The rest of the ignored population — `node_modules/`, `.env`, `dist/`.
+   *
+   * ⚠ **IT DECIDES NOTHING AND IS CARRIED ANYWAY, BECAUSE THE COUNT IS THE
+   * PROOF THE READING HAPPENED.** Nothing here is ever refused on: these
+   * regenerate, and a guard that fired on them would be `--force`d away on its
+   * first week. What they buy is the printed line being able to say *two paths,
+   * none worth keeping* rather than saying nothing — which is what the report
+   * that lost the court said.
+   */
+  readonly disposableIgnored: readonly string[];
 };
 
 /** `true` when the merged-PR read did not land. One owner, two consumers. */
@@ -427,6 +646,40 @@ export function decideRemoval(state: RemovalState, force: boolean): RemovalVerdi
       overridable: true,
     };
   }
+  /**
+   * ⚠ THE REFUSAL THE CARD'S EVIDENCE ARGUES FOR, AND IT IS NARROWER THAN THE
+   * CARD'S OWN SENTENCE — said here rather than left to be noticed (#1823).
+   *
+   * The card asked for the reading and a printed line and added *"Not as a
+   * refusal by default"*, justifying it entirely with *"`node_modules`, `.vite`
+   * and `dist` are ignored too and are genuinely disposable"*. That argument is
+   * honoured exactly: nothing in `disposableIgnored` is ever refused on, and a
+   * flat *ignored files present* refusal would have fired on every worktree this
+   * program has cut. What it does not cover is the NAMED set the same sentence
+   * goes on to ask for.
+   *
+   * **A printed warning cannot stop the reader this card is about.** The defect
+   * was found when a SWEEP — not a seat — removed somebody else's tree and could
+   * only ask the tool; a warning in a log read after the delete is invariant 7's
+   * own failure (a control that does not block is not a control). So the kept set
+   * refuses, `--force` clears it exactly as it clears the other two, and the
+   * force path SAYS what it is destroying with the bytes in it.
+   *
+   * ⚠ **AND IT IS AFTER THE OTHER TWO ON PURPOSE.** Commits, then tracked work,
+   * then artifacts: a worktree with all three gets the most valuable sentence
+   * first, and a refusal naming renders over lost commits would send a shift to
+   * copy a directory and `--force` past the commits.
+   */
+  if (state.keptIgnored.length > 0 && !force) {
+    const named = state.keptIgnored.map(describeKeptIgnored).join("; ");
+    return {
+      proceed: false,
+      reason: `the worktree holds ignored work that is worth keeping: ${named}`
+        + " — `git status` does not list ignored files, which is why this used to read as clean (#1823);"
+        + " move it out, or pass --force to destroy it",
+      overridable: true,
+    };
+  }
   const warnings: string[] = [];
   /* ⚠ **A MERGED BRANCH'S COMMITS ARE NOT "DESTROYED" AND MUST NOT SAY THEY
      ARE** (#1540). This warning fired over work that had already shipped —
@@ -444,6 +697,15 @@ export function decideRemoval(state: RemovalState, force: boolean): RemovalVerdi
   }
   if (force && state.dirtyFiles.length > 0) {
     warnings.push(`--force is destroying ${state.dirtyFiles.length} uncommitted file(s)`);
+  }
+  /* ⚠ THE ONE SENTENCE A SWEEP OPERATOR WOULD HAVE WANTED ON 2026-10-03 (#1823).
+     It names the paths and the bytes rather than a count, because the count is
+     what the old report had: `uncommitted 0 file(s)` was a true number about the
+     wrong population. */
+  if (force && state.keptIgnored.length > 0) {
+    warnings.push(
+      `--force is destroying ignored work worth keeping: ${state.keptIgnored.map(describeKeptIgnored).join("; ")}`,
+    );
   }
   if (!state.registered) {
     warnings.push("git does not have this path registered as a worktree — removing the directory only");
