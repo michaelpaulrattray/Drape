@@ -857,7 +857,18 @@
   border-radius: var(--r-lg);
   overflow: hidden;
 }
-.dp-plan__comparegrid { display: grid; grid-template-columns: 132px repeat(5, 1fr); }
+/* ⚠ THE COLUMN COUNT IS A CUSTOM PROPERTY, SET BY THE SURFACE FROM THE
+   POPULATION IT DREW (#1832). It read `repeat(5, 1fr)` while the ladder was
+   seven rungs wide and a window picked five of them; the self-serve ladder is
+   `free` plus three individual plans and its length is the SERVER's to change
+   (`SELF_SERVE_PLAN_ORDER`). A number typed here is the stale figure this
+   program keeps digging out of documents, in the one place no test reads it.
+   The fallback is the honest one: 1 column, so a stylesheet loaded without the
+   property degrades to a stack rather than to a lie about four plans. */
+.dp-plan__comparegrid {
+  display: grid;
+  grid-template-columns: 132px repeat(var(--dp-plan-cols, 1), minmax(0, 1fr));
+}
 .dp-plan__cell {
   padding: var(--s-4);
   box-shadow: inset 0 -1px 0 var(--rule), inset -1px 0 0 var(--rule);
@@ -886,14 +897,135 @@
   color: var(--metaStrong);
 }
 
-/* #391 — the hidden top rung's door: one quiet line under the ladder, both
-   modes. A sentence, not a card — it must never read as a rung. */
-.dp-plan__request {
-  margin: var(--s-6) 0 0;
-  padding: 0 var(--s-4);
+/* ⚠ `.dp-plan__request` STOOD HERE AND IS GONE — #1833 replaced #391's quiet
+   mailto line with the Enterprise band below, on his brief's own word
+   (*"anything really high would be a sale department chat"*). */
+
+/* ---- #1832 · ON EVERY PLAN, and what is COMING ----
+   A fact every rung shares has no decision value in a per-rung slot: drawn
+   three times it is noise, drawn once under the cards it is the floor the
+   comparison stands on. It is also where the compare table's group notes
+   collect on a phone, which is why the block is not named after the cards. */
+.dp-plan__includes {
+  margin-top: var(--s-7);
+  padding: var(--s-6) 15px;
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-lg);
+  background: var(--raised);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+.dp-plan__includesline {
+  margin: 0;
+  font: 400 11.5px/1.6 var(--font-sans);
+  color: var(--metaStrong);
+}
+/* The group's own name, when a note has left its heading (the phone table). */
+.dp-plan__notegroup { color: var(--ink); font-weight: 500; }
+/* ⚠ COMING IS A STATEMENT ABOUT A THING A CUSTOMER WANTS, SO IT READS AS A
+   LABEL AND NOT AS A WARNING — the quiet mono chip this system already uses for
+   a stamp (`.dp-plan__tab`'s type at the pane's own weight), never the accent
+   fill, which is the colour that sells a plan. */
+.dp-plan__coming {
+  display: inline-flex;
+  align-items: center;
+  margin-right: var(--s-2);
+  padding: 1px var(--s-2);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-chip);
+  background: var(--surface);
+  color: var(--faint);
+  font: 500 8.5px/1.5 var(--font-mono);
+  letter-spacing: .09em;
+  white-space: nowrap;
+  vertical-align: 1px;
+}
+
+/* ---- #1833 · the Enterprise band ----
+   Full width under the three, not a fourth column: four cards at 880px is
+   205px each, and a comparison between three priced things and one unpriced
+   one is not a comparison (the design's §3 decision 3). It stands exactly
+   where #391's support line stood. */
+.dp-plan__ent {
+  display: flex;
+  align-items: center;
+  gap: var(--s-6);
+  margin-top: var(--s-5);
+  padding: var(--s-6) 15px;
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-lg);
+}
+.dp-plan__entbody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  min-width: 0;
+}
+.dp-plan__entnote { font: 400 11.5px/1.6 var(--font-sans); color: var(--metaStrong); }
+
+/* ---- #1834 · the grouped compare table ----
+   A heading and, under it, only the rows that genuinely differ; the shared
+   sentence once at the foot of the group. Both span the whole grid, which is
+   what keeps one grid (and therefore one set of aligned columns) rather than a
+   stack of grids that drift apart by a pixel. */
+.dp-plan__grouptitle {
+  grid-column: 1 / -1;
+  padding: var(--s-5) var(--s-4) var(--s-3);
+  box-shadow: inset 0 -1px 0 var(--rule);
+  font: 500 9.5px/1.4 var(--font-mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.dp-plan__groupnote {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: var(--s-4);
+  box-shadow: inset 0 -1px 0 var(--rule);
   font: 400 11px/1.55 var(--font-sans);
   color: var(--metaStrong);
 }
+/* The price under a column's name, so a column reads without scrolling to the
+   Price group. Same `priceOf` the group states — never a second arithmetic. */
+.dp-plan__cellprice {
+  display: block;
+  margin-top: 2px;
+  font: 400 10.5px/1.4 var(--font-mono);
+  color: var(--metaStrong);
+  white-space: nowrap;
+}
+
+/* ⚠ TWO SHAPES, ONE DECLARATION — AND `display: none` RATHER THAN A VISUALLY
+   HIDDEN CLASS, DELIBERATELY. A transposition moves cells out of their rows,
+   which no media query can do to one grid, so the phone layout is a different
+   DOM reading the same groups. `display: none` takes the hidden shape out of
+   the accessibility tree as well as the paint, so a screen reader meets exactly
+   one table; a `visibility`/`clip` hide would leave two for it to read. */
+.dp-plan__comparephone { display: none; }
+@media (max-width: 640px) {
+  .dp-plan__comparewide { display: none; }
+  .dp-plan__comparephone { display: flex; flex-direction: column; gap: var(--s-5); padding: var(--s-5); }
+}
+.dp-plan__cmpcard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  padding: var(--s-5);
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-lg);
+}
+.dp-plan__cmpcard--current { border-color: var(--accentLine); background: var(--accentWash); }
+.dp-plan__cmpcardhead { display: flex; align-items: baseline; gap: var(--s-4); }
+.dp-plan__cmppairs { margin: 0; display: flex; flex-direction: column; gap: var(--s-3); }
+.dp-plan__cmppair {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-4);
+  font: 400 11.5px/1.5 var(--font-sans);
+}
+.dp-plan__cmppair dt { color: var(--metaStrong); flex: none; min-width: 124px; }
+.dp-plan__cmppair dd { margin: 0; color: var(--secondary); }
 
 /* #1747 — the line that stands where the ladder would be when the account's own
    rung could not be read. It takes the support line's type and colour on
@@ -907,11 +1039,12 @@
   color: var(--metaStrong);
   max-width: 46ch;
 }
-.dp-plan__request-link {
-  color: var(--ink);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
+/* ⚠ `.dp-plan__request-link` IS DELETED WITH ITS ANCHOR (#1833). It styled the
+   support mailto the Enterprise band replaces, and the band's action is a
+   `<button>` — the foundation's own rule, and an `<a>` wearing `dp-btn` would
+   be a second copy of the primitive's look. `anchorCascade.test.ts` carried a
+   measured exemption for it and that entry is removed in the same commit,
+   which is where the reading of its computed colour is kept. */
 
 /* §6f — the cross-link to Add credits */
 .dp-plan__cross {

@@ -98,13 +98,50 @@ describe("card 390 — the ladder on screen is the product's, never the mockup's
       The sharper form of the arm above, and the one that survives a rename: the
       component may not contain ANY rung's name, ours included. Every one of the
       twelve reaches the screen through `billing.getPlans` → `planLadder`.
+
+      ⚠ **ONE EXPRESSION IS CUT OUT BEFORE THE SCAN, AND IT IS NOT A RUNG'S
+      NAME — card 1834, 2026-10-03.** The compare table's `Price a month` row
+      answers a price of nothing with the WORD, which is his approved frame 04:
+      `plan.priceInCents === 0 ? "Free" : formatWholeDollars(...)`. That literal
+      is a PRICE, and it coincides with a rung's name only because the rung is
+      named after its price — rename `free` to `Trial` tomorrow and *"Free"* in
+      a price cell is still the right word, which is precisely the case this
+      arm's rule is not about.
+
+      **The cut is one anchored expression rather than a word on an allowlist**,
+      so a `"Free"` anywhere else in the modal — a card heading, a plan
+      identity, a chip — still reddens. The slice is asserted present, so a
+      refactor that moves the expression turns this into a RED to be read rather
+      than a carve-out that quietly covers the whole file.
+
+      ⚠ **And the band's heading went the other way in this same commit**: its
+      first draft typed `Enterprise` and THIS ARM CAUGHT IT. It reads
+      `plans.tiers[BAND_TIER].name` off the wire now. The exemption below is a
+      price word; a rung's name is still a defect, and the proof is that the one
+      found here was fixed in the surface rather than exempted in the guard.
     */
-    const surface = code(read(MODAL));
+    const whole = code(read(MODAL));
+    /* The zero-price reading, anchored on both ends so it cannot grow. */
+    const PRICE_WORD = /plan\.priceInCents === 0 \? "Free" : formatWholeDollars\(priceOf\(plan\)\)/;
+    expect(
+      whole,
+      "the compare table's zero-price reading has moved — re-read it and re-anchor this cut, " +
+        "because an unanchored exemption would cover every `Free` in the file",
+    ).toMatch(PRICE_WORD);
+    const surface = whole.replace(PRICE_WORD, " PRICE_WORD ");
     for (const tier of Object.values(PLAN_TIERS)) {
       expect(surface, `\`${tier.name}\` is hard-coded in the modal`).not.toContain(
         `"${tier.name}"`,
       );
     }
+    /* WORKING LAW 2 — the cut did not blind the reader. The same scan over the
+       surface with a rung's name put back finds it. */
+    expect(
+      Object.values(PLAN_TIERS).some((tier) =>
+        `${surface}<span>"${PLAN_TIERS.free.name}"</span>`.includes(`"${tier.name}"`),
+      ),
+      "the reader can no longer see a hard-coded plan name at all",
+    ).toBe(true);
     expect(surface, "the modal stopped reading the server's plan list").toContain(
       "trpc.billing.getPlans.useQuery()",
     );
@@ -331,15 +368,27 @@ describe("card 390 item 4 — the unit price is inverted, and it still argues fo
       neighbour that leaves with it.** He asked for the rate gone, not for a
       thinner comparison.
 
-      The four surviving labels are listed by name rather than counted, because
-      a count would pass a swap and the point is WHICH rows a customer still
-      has to compare plans with.
+      The surviving labels are listed by name rather than counted, because a
+      count would pass a swap and the point is WHICH rows a customer still has
+      to compare plans with.
+
+      ⚠ **THE LIST MOVED WITH HIS PHASE 2 BRIEF AND GREW — card 1834, approved
+      *"frames right numbers right"*, 2026-10-03.** `What that makes` is now
+      `Finished characters a month` (the design's §4 names the row), and the
+      fourth differing fact — whether credit packs may be bought — joins it as
+      `Buy extra credits`, read from `topupEligibility` rather than from a
+      price. **The intent of this arm is untouched and is why it was updated
+      rather than deleted**: a row cut from a literal array takes its neighbour
+      with it, so the rows a customer compares plans with are named here, and
+      the count went UP rather than down. The two absence arms below are
+      unchanged — neither unit of rate comes back.
     */
     const surface = code(read(MODAL));
     for (const label of [
+      "Finished characters a month",
       "Credits",
-      "What that makes",
       "Unspent credits",
+      "Buy extra credits",
       "Price a month",
     ]) {
       expect(surface, `the compare table lost its \`${label}\` row with the rate`).toContain(
@@ -542,9 +591,44 @@ describe("card 390 items 1, 3, 5 and 6 — the form of a card", () => {
       about. The half that survives his ruling is the half that was really the
       rule: no inline style overriding a class.
     */
+    /*
+      ⚠ **THE READING IS NARROWED TO WHAT THE RULE ABOVE ACTUALLY SAYS — card
+      1832, 2026-10-03 — AND THE HOUSE WAS ALREADY DOING THE THING IT BANNED.**
+
+      It was `not.toMatch(/style=\{\{/)`, a blanket on every inline style, and
+      the rule it enforces is *no inline style OVERRIDING A CLASS*. A **CSS
+      CUSTOM PROPERTY overrides nothing** — it is an INPUT to the class, which
+      reads it with `var()`. The compare grid's column count is one:
+      `--dp-plan-cols` is set from the population the surface drew, because the
+      self-serve ladder's length is the server's to change
+      (`SELF_SERVE_PLAN_ORDER`) and a `repeat(4, 1fr)` typed in a stylesheet is
+      the stale figure this program keeps digging out of documents, in the one
+      place no test reads it.
+
+      ⚠ **It is not a new idiom this arm had simply never met** —
+      `pages/CastingSheet.tsx` has shipped `style={{ ["--dp-grid-min" as
+      string]: "252px" }}` for months, and this guard only ever read the plan
+      modal. A blanket here would have made two files disagree about the house
+      style, with the one under a guard losing.
+
+      So: an inline style that sets any property NOT beginning `--` is still the
+      defect item 6 was about, and the positive control below proves this reader
+      can still see one.
+    */
     const surface = code(read(MODAL));
     const css = code(read(join(HERE, "settings.css")));
-    expect(surface, "an inline style is overriding a class again").not.toMatch(/style=\{\{/);
+    const inlineStyles = [...surface.matchAll(/style=\{\{([^}]*)\}\}/g)].map((m) => m[1]);
+    const overriding = inlineStyles.filter(
+      (body) => !/^\s*\[?\s*["']?--/.test(body),
+    );
+    expect(overriding, "an inline style is overriding a class again").toEqual([]);
+    /* WORKING LAW 2 — the narrowed reader must still catch the original defect.
+       Item 6's own specimen, driven through the same two expressions. */
+    const specimen = 'style={{ position: "static", display: "inline-block" }}';
+    const caught = [...specimen.matchAll(/style=\{\{([^}]*)\}\}/g)]
+      .map((m) => m[1])
+      .filter((body) => !/^\s*\[?\s*["']?--/.test(body));
+    expect(caught, "the narrowed reader can no longer see item 6's own defect").toHaveLength(1);
     /* POSITIVE CONTROL — the reader can see this file's classes at all, so the
        absence arms below are readings rather than an empty string passing. */
     expect(surface).toContain("dp-plan__tab");
