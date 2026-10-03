@@ -1,7 +1,7 @@
 {
-  "edition": 626,
-  "updatedAt": "2026-10-03T03:15:00.000Z",
-  "shift": "Housekeeping tonight. Nothing a customer would see — but one thing worth knowing about how we tidy up, because it nearly cost you something.\n\nYour machine was carrying 22 full copies of the Klieg codebase, left behind by crew sessions that had already finished. There is one now, and 6.3 gigabytes are back.\n\nBefore deleting any of them I asked what was inside, with the same check the crew always uses. It said the biggest one was empty. It was not. It held the whole picture court you judged on 28 September — all 155 renders behind your \"keep NBP 2k for signing views\" — 1.4 gigabytes of them, plus the before-and-after frames from a job in September that exist nowhere else. The reason the check lied is dull and matters: it asks Git what is in a folder, and Git does not mention files it has been told to ignore. That folder was one of those.\n\nEverything was moved somewhere safe before a single deletion, and the list of what moved where is written on the job. The fault in the check is now its own job. The uncomfortable part, said plainly: every tidy-up this crew has ever done asked that same question and got that same answer, so I cannot tell you what earlier ones took with them.\n\nTwo smaller things on your desk. The question about the second admin account told you a safeguard had been put in place — it had not; nothing was built, and that sentence is struck out with what is actually true beside it. Your question there is unchanged and still needs your answer. And the picture-checker job now says on its own line what it is waiting for, which is your eye: the framing example did not pass your test, and the cheaper question is whether the close-up boundary is simply a shade tight.",
+  "edition": 627,
+  "updatedAt": "2026-10-03T07:40:20.906Z",
+  "shift": "Your answers from the terminal this morning are on their cards and the Desk now agrees with them. The second admin account is your engineer's (closed). The security scanner gap gets a gate step and the noisy alarm will ignore small days (both ordered, both buildable). The framing example is stopped; your eye says the 0.42 Sifr2 picture is a close-up, so the close-up line moves once you say whether today's 0.51 picture is one too. Pricing Phase 1 is closed on your drive with the Stripe switch parked until the full app is built, your account sits on Starter so Add credits shows you the packs, and Pricing Phase 2 is the focus with four build cards cut from the approved brief. One card still has a question for you: the canvas Refresh button charges 70 credits for a render on two Google models shut down in June (#1785) — seal it, re-point it, or leave it; the relay recommends seal.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -323,7 +323,7 @@
         }
       ],
       "recommendation": "Just tell me which. I am not recommending an answer to a question about your own decision — but if it is your engineer's, say so and the whole thing becomes one line in the record.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-10-03T05:52:00+10:00",
       "issueNumber": 1806
     },
@@ -345,7 +345,7 @@
         }
       ],
       "recommendation": "Drive the eight items, then say N2b — it is where your own order already points, and nothing about pricing is waiting on that answer.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-10-02T15:40:00+10:00",
       "issueNumber": 1787
     },
@@ -3452,7 +3452,7 @@
     {
       "id": "socket-missed-advisories-1805",
       "issueNumber": 1805,
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-10-02T22:50:00.000Z",
       "title": "A security check passed two known holes into the live product — one setting, or one step?",
       "productImpact": "On 30 September one of our own changes pulled in a piece of borrowed code that already had two publicly known security holes in it. Both were rated serious, and both had been published ten hours before we shipped it.\n\nThe paid service we use to catch exactly this passed it. Six seconds after the change went live, a different reader noticed and raised the alarm. The holes sat in the live product until they were patched earlier this week.\n\nNobody was harmed, and the holes are closed. What is still open is that we have no reader of our own that would stop the next one — the thing that caught this only speaks after a change has already shipped.\n\nI checked every fact here myself tonight rather than taking the patrol's word for it: the timings, the severity, and that both holes are in code that reaches customers rather than a developer-only tool. One thing I would want you to know: the check that passed it is one of the checks we require on every single change, so anyone looking would reasonably have believed it was covering this.",
@@ -3479,7 +3479,7 @@
     {
       "id": "health-alarm-noise-1807",
       "issueNumber": 1807,
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-10-02T22:50:00.000Z",
       "title": "An alarm cried wolf 132 times in a day — and it owns the word 'critical'",
       "productImpact": "We have an alarm that watches how many picture jobs succeed. If the success rate drops below 80% it writes a line into the log on your admin page.\n\nIt does not care how many jobs it is judging. On a quiet day the product might run five jobs all day, so two failures reads as 40% and the alarm goes off. Production is quiet every day right now — six accounts, and one of them casts.\n\nOn 29 and 30 September it fired 132 times in 28 hours. Every one of those lines says the same thing.\n\nHere is the part that actually matters. Our log has three levels: ordinary, warning, and critical. Until 29 September, across two and a half months and more than a thousand entries, nothing had ever been critical. The only two critical entries that have ever existed are this alarm, firing on a day with five jobs.\n\nSo if you ever go looking for what was critical, the only answer you have ever had is a false alarm. That is the real cost — not the noise, but that the most serious level in our log now means 'probably nothing'. A reader learns to skip it, and then misses the first real one.",
@@ -3509,7 +3509,7 @@
       "id": "framing-template-court-1612-pika",
       "title": "Pika, with and without the example — the one picture the checker threw out",
       "question": "The creature was in the court on purpose: if a grey mannequin example is going to drag a cast toward looking like an ordinary person, it will show here first.\n\nOn the LEFT, no example. On the RIGHT, the one picture out of five that the checker refused as not her — her wide grin of teeth is gone and the mouth is closed. I looked at it rather than taking the checker's word, and the checker is right: that is not her.\n\nWhat I am NOT claiming is that the example caused it. The other four pictures taken with the example keep the grin and the eye-tipped spikes and are plainly her. One in five is not proof of anything, and the decision above does not rest on it — it rests on the crop not improving.\n\nWorth thirty seconds of your eye because it is the risk the idea always carried, and because if you ever want this tried again, this is the failure to watch for.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-10-03T02:35:00.000Z",
       "issueNumber": 1612,
       "frames": [
@@ -3524,7 +3524,7 @@
       "id": "framing-template-court-1612-sifr2",
       "title": "Sifr2, with and without the framing example — did the crop come in enough?",
       "question": "This is the pair that decides it, and it is a straight before and after on the same cast.\n\nOn the LEFT is what the studio sends today for a close-up. On the RIGHT is the same thing with a stored example picture attached showing where to crop, plus a sentence telling the engine the example is a guide and nothing else.\n\nWhat to look for: the right-hand picture IS tighter. Less chest, less shoulder, the face bigger in the frame. That is the idea working.\n\nAnd then look at how much neck and collarbone is still there. A close-up is supposed to stop just under the chin. It has come in and it has not come in far enough — which is exactly what the numbers say: the typical picture moved from 0.51 of a face-height of room below the chin to 0.42, where we need 0.30.\n\nThis cast is the one that produced your original complaint about close-ups coming back as portraits, so it is the fairest possible test. My recommendation is on the job: stop here, and consider instead whether 0.30 is simply a shade tight.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-10-03T02:35:00.000Z",
       "issueNumber": 1612,
       "frames": [
