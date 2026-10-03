@@ -39,8 +39,29 @@ import { join } from "node:path";
  *
  * # SCOPE, STATED RATHER THAN IMPLIED
  *
- * Tracked `.ts` and `.tsx` only. `.md` and `.mts` are a second population and
- * are not claimed here — a clean reading over this one says nothing about them.
+ * ⚠ **THIS SECTION DECLARED TWO WHOLE FILE TYPES OUT OF SCOPE AND THE QUESTION
+ * HAD NEVER BEEN ASKED — WIDENED 2026-10-03 (#1821).** It read *"Tracked `.ts`
+ * and `.tsx` only. `.md` and `.mts` are a second population and are not claimed
+ * here — a clean reading over this one says nothing about them."* Honest, and
+ * **never measured** — which is what a stated limit looks like when nobody has
+ * driven it: indistinguishable from a clean tree.
+ *
+ * Measured the day it was widened: **1,976 pointers across 3,091 files, 1,933
+ * resolve, 43 dangle.** Of the 966 the widening ADDED — 728 in `.md`, 238 in
+ * `.mts` — **20 dangle across 14 basenames, and every one of the 20 is correct
+ * as written**: deliberate history (the credit-velocity caps, the Slack
+ * retirement, the imagination meter, the ink plate road, the two paths, the
+ * framing trim) or a backticked illustration. **So there was no dirt to sweep.
+ * The finding was that a dangling pointer written in a `.md` or an `.mts`
+ * shipped green** — and `docs/` is where this repository's law files live.
+ * `CLAUDE.md` is in the population now, and its law-7 section is the paragraph
+ * the harm above is quoted from.
+ *
+ * **Tracked `.ts`, `.tsx`, `.mts` and `.md` may POINT. Only `.ts`/`.tsx` is what
+ * a pointer may RESOLVE TO**, and the two lists are read separately below rather
+ * than one being used twice — a suite file is only ever a `.ts` or a `.tsx`, and
+ * deriving the resolution target from the widened list would let a later
+ * widening quietly make some other file satisfy a pointer.
  */
 
 /**
@@ -219,6 +240,96 @@ export const DELIBERATELY_ABSENT: Record<string, { readonly why: string }> = {
       "The third, at `preflight.test.ts:372` — 'a shift writes server/thing.test.ts'. Same " +
       "example, same reason: it describes a file a shift is about to create.",
   },
+
+  /* ── THE NINE THE WIDENING ADDED (#1821, 2026-10-03) ──────────────────────
+     Every one was read at its own deletion commit before it was written here,
+     because "deleted with X" is a claim and `git log --diff-filter=D` is the
+     artifact. Not one of them is dirt: the widening found 20 dangling pointers
+     across 14 basenames in `.md` and `.mts`, five of those basenames were
+     already enumerated above, and all 20 are correct as written. ⚠ THE CARD
+     THAT ORDERED THIS SAID FOURTEEN ENTRIES WERE OWED; NINE WERE, and the
+     difference is the five already here — a population counted from a reading
+     the card did not re-take against this list. */
+
+  "castingPathCopy.test.ts": {
+    why:
+      "Deleted when the sheet and the ask box stopped asking which path a cast was born on " +
+      "(#203 slice 2 step c, `d77568565`, PR #1152). It is named in " +
+      "`docs/specs/CASTING_V2_TWO_PATHS_TOGGLE_EVIDENCE.md`'s copy-provenance table, in the " +
+      "row for the Basics line, as the arm that refused either path sentence containing the " +
+      "struck word 'anywhere' — the roll frame being waist-up is why that word was struck in " +
+      "the first place. The mention is the provenance of a CORRECTION, which is the kind of " +
+      "sentence this list exists to protect: the evidence document records what the copy used " +
+      "to say and what refused it, and neither half can be written without naming the guard.",
+  },
+  "imaginationMeter.test.ts": {
+    why:
+      "Deleted with the imagination level itself (#535, `ce886cac2`, PR #598, 2026-09-06 — " +
+      "Re-imagine replaced the meter with a press on the brief box, on his word 'build it'). " +
+      "`docs/specs/REIMAGINE_DESIGN_2026-09-06.md` names it at the head of the list of suites " +
+      "that 'retire or move with their subjects', beside the imagination arms of four suites " +
+      "that survived. That list is the design's own account of what the feature's removal cost " +
+      "in coverage, and a list of retired suites that may not name them is not a list.",
+  },
+  "inkTemplates.test.ts": {
+    why:
+      "Deleted with the ink studio's plate road (#1158 slice 2, `eef3c5c42`, PR #1165, on his " +
+      "ruling 'It retires with N2'). `docs/specs/V3B_INK_AND_MARKS_DESIGN_NOTE.md` names it in " +
+      "the clause saying it 'goes red the moment `views` moves in either direction' — the " +
+      "sentence is recording which of two unbuilt alternatives the template set did NOT settle, " +
+      "and the guard it cites is how the reader knows the question was held open rather than " +
+      "answered by whichever blank the routing happened to name.",
+  },
+  "inkPlateEngines.test.ts": {
+    why:
+      "Deleted with the plate road in the same commit as `inkTemplates.test.ts` (#1158 slice 2). " +
+      "The V3B design note names it for a lesson that outlived both the suite and the road: its " +
+      "'leaves an already legal canvas alone' control was moved to a CONSTRUCTED size, because " +
+      "not one of the six live blanks is a multiple of 16 on both edges while the retired arm " +
+      "sheet was — 'a control tied to whichever asset happens to be legal this week is a control " +
+      "that stops testing anything the week that changes'. That is the paragraph, and it needs " +
+      "the name.",
+  },
+  "slackApproval.test.ts": {
+    why:
+      "Deleted with Slack entire (#800, `dad85ae5d`, PR #802, on his word 'retire slack " +
+      "everything runs through moderator and admin at the moment'). `docs/archive/CODEBASE_AUDIT.md` " +
+      "names it in a table of the repository's largest test files AS IT STOOD when that audit was " +
+      "taken — 527 lines of Slack approval flow. ⚠ It sits under `docs/archive/`, and an archived " +
+      "audit is a DATED READING: repointing it would make it describe a tree it was never taken " +
+      "over, and editing it to satisfy a guard is the shape this list refuses — the guard would " +
+      "be teaching people to rewrite history to stay green.",
+  },
+  "slackThreeChannel.test.ts": {
+    why:
+      "Deleted with Slack entire (#800), in the same commit as `slackApproval.test.ts`. The same " +
+      "archived audit cites it as the worked EXAMPLE of its third test-naming style — the " +
+      "<feature><noun> shape — so the sentence needs a real name from that tree to make its " +
+      "point, and the tree it names is the one the audit was taken over. Same reason as its " +
+      "sibling: an archived reading is dated, not stale.",
+  },
+  "feature.test.ts": {
+    why:
+      "NOT a suite and never was: a naming-convention PLACEHOLDER in " +
+      "`docs/archive/CODEBASE_AUDIT.md`'s inconsistent-naming table, where the three styles are " +
+      "written as <feature>, <feature><action> and <feature><noun> with a real file beside each. " +
+      "It is the `foo`/`bar`/`thing` shape one document over, and it is enumerated rather than " +
+      "un-backticked for the archive reason above. ⚠ The rule for writing ABOUT pointers is " +
+      "still the one this module's header states — do not backtick an example — and it binds " +
+      "every file a shift may edit; an archived audit is not one of those.",
+  },
+  "featureAction.test.ts": {
+    why:
+      "The second placeholder in the same table row of the same archived audit, for the same " +
+      "reason as `feature.test.ts`. Its real example beside it is a file that still exists.",
+  },
+  "featureNoun.test.ts": {
+    why:
+      "The third placeholder in that row, and the one whose real example — " +
+      "`slackThreeChannel.test.ts` — is itself enumerated above, deleted with #800. One table " +
+      "row, three placeholders and one genuinely dead name, which is a fair picture of why this " +
+      "population had never been measured.",
+  },
 };
 
 /*
@@ -244,26 +355,64 @@ export const DELIBERATELY_ABSENT: Record<string, { readonly why: string }> = {
   case.** The "still mentioned" arm is what now checks that continuously.
 */
 
-/** Every backticked suite pointer in the tracked `.ts`/`.tsx` population. */
+/**
+ * WHO MAY POINT — every tracked file type that carries prose about suites
+ * (#1821). `.md` is here because this repository's law files are `.md`, and
+ * `.mts` because its scripts and generators are.
+ */
+export const POINTER_POPULATION = ["*.ts", "*.tsx", "*.mts", "*.md"] as const;
+
+/**
+ * WHAT A POINTER MAY RESOLVE TO — deliberately NOT {@link POINTER_POPULATION}.
+ * A suite file is only ever a `.ts` or a `.tsx`; reading one list for both
+ * questions would let a later widening of the first quietly answer the second.
+ */
+export const SUITE_POPULATION = ["*.ts", "*.tsx"] as const;
+
+/** Every backticked suite pointer in the tracked prose population. */
 export function suitePointers(repoRoot: string): PointerReading[] {
-  const tracked = execFileSync("git", ["ls-files", "*.ts", "*.tsx"], {
-    cwd: repoRoot,
-    encoding: "utf8",
-    maxBuffer: 64 * 1024 * 1024,
-  })
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
+  /*
+    ⚠ THE LISTING HELPER IS INSIDE THIS FUNCTION ON PURPOSE, AND IT WAS MOVED
+    HERE BY A GUARD RATHER THAN BY TASTE (#1821). `populationDerivers` in
+    scripts/lib/preflight.mts finds a deriver by splitting a module at its
+    `export function` boundaries and keeping the chunk whose OWN text runs the
+    `git ls-files` call — so the first draft of this widening, which factored
+    the listing out to a module-level const, silently dropped
+    suitePointerDiscipline.test.ts out of preflight's ALWAYS-RUN set. The guard
+    said so in its own words: *an ALWAYS_RUN_SUITES member no longer derives its
+    population — it runs for nothing*. A refactor that reads as tidying and
+    removes a guard from the always-run set is the path-three death class one
+    floor down, and the detector's reading is a reasonable rule to stay inside
+    rather than to erode from in here.
+  */
+  const trackedUnder = (globs: readonly string[], what: string): string[] => {
+    const files = execFileSync("git", ["ls-files", ...globs], {
+      cwd: repoRoot,
+      encoding: "utf8",
+      maxBuffer: 64 * 1024 * 1024,
+    })
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
 
-  if (tracked.length === 0) {
-    /* A sweep over no files answers every question with "clean". */
-    throw new Error(
-      `suitePointers: git ls-files returned nothing under ${repoRoot}. ` +
-        "An empty population is a broken reading, not a clean tree.",
-    );
-  }
+    /* A sweep over no files answers every question with "clean" — and it names
+       WHICH of the two listings came back empty, because they ask different
+       questions and only one of them can be answered by a `.md`. */
+    if (files.length === 0) {
+      throw new Error(
+        `suitePointers: git ls-files returned no ${what} under ${repoRoot}. ` +
+          "An empty population is a broken reading, not a clean tree.",
+      );
+    }
+    return files;
+  };
 
-  const basenames = new Set(tracked.map((file) => file.split("/").pop() ?? file));
+  const tracked = trackedUnder(POINTER_POPULATION, "prose files");
+
+  /* The resolution target is its own reading, for the reason SUITE_POPULATION
+     states: widening who may point must never widen what counts as a suite. */
+  const suiteFiles = trackedUnder(SUITE_POPULATION, "suite files");
+  const basenames = new Set(suiteFiles.map((file) => file.split("/").pop() ?? file));
   const readings: PointerReading[] = [];
 
   for (const file of tracked) {

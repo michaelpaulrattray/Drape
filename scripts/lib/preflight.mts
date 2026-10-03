@@ -329,7 +329,7 @@ export const ALWAYS_RUN_SUITES: ReadonlyArray<{ readonly file: string; readonly 
   {
     file: "server/suitePointerDiscipline.test.ts",
     reason:
-      "derives its population (every tracked .ts/.tsx docblock that backticks a suite name) from `git ls-files` via `suitePointers()`; a pointer added under any tree is its subject and no literal says so. ⚠ THE CARD SAID TWO — the derived arm found this third one the hour the set was written, which is why the arm is derived (#647, #1037). ~1.4 s measured.",
+      "derives its population (every tracked .ts/.tsx/.mts/.md file that backticks a suite name — widened from .ts/.tsx alone by #1821, which measured the two unclaimed types and found 20 dangling pointers across 14 basenames in them) from `git ls-files` via `suitePointers()`; a pointer added under any tree is its subject and no literal says so. ⚠ THE CARD SAID TWO — the derived arm found this third one the hour the set was written, which is why the arm is derived (#647, #1037). ~1.4 s measured.",
   },
   {
     file: "server/errorMessageInterpolation.test.ts",

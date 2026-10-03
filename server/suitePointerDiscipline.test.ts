@@ -2,7 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 import { resolve } from "node:path";
 
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
-import { DELIBERATELY_ABSENT, suitePointers } from "./testing/suitePointers";
+import {
+  DELIBERATELY_ABSENT,
+  POINTER_POPULATION,
+  SUITE_POPULATION,
+  suitePointers,
+} from "./testing/suitePointers";
 
 /**
  * A DOCBLOCK THAT NAMES ITS OWN GUARD MUST NAME ONE THAT EXISTS (#647).
@@ -33,10 +38,62 @@ const danglingPointers = (root: string) =>
 
 describe("every backticked suite pointer resolves (#647)", () => {
   it("sweeps a real population — a clean answer over no pointers is not an answer", () => {
-    /* Measured at 359 on the day this landed. The floor is deliberately far
-       below it: this arm exists to catch a reader that has stopped reading,
-       not to pin a number that moves every week. */
+    /* Measured at 359 on the day this landed, and 1,976 after #1821 widened the
+       population to `.mts` and `.md`. The floor is deliberately far below both:
+       this arm exists to catch a reader that has stopped reading, not to pin a
+       number that moves every week. */
     expect(suitePointers(ROOT).length).toBeGreaterThan(100);
+  });
+
+  /* ── THE WIDENING HAS ITS OWN ARMS (#1821) ───────────────────────────────
+     A floor of 100 is satisfied by the `.ts`/`.tsx` half alone, so nothing above
+     would notice `.mts` or `.md` quietly leaving the glob again — and a
+     population that can shrink back to the one its own header used to declare
+     out of scope is the memory `directory-population-loses-promoted-subject` is
+     about: widening a derived population without widening its test leaves a
+     folder-shaped arm green. These name the families, so a narrowing says WHICH
+     one went rather than passing. */
+
+  it("reads every file family it claims, and names the one that went", () => {
+    const seen = new Set(
+      suitePointers(ROOT).map((row) =>
+        row.file.endsWith(".md") ? ".md" : row.file.endsWith(".mts") ? ".mts" : ".ts/.tsx",
+      ),
+    );
+    expect([...seen].sort()).toEqual([".md", ".mts", ".ts/.tsx"]);
+  });
+
+  it("does not let the resolution target inherit the widening", () => {
+    /* The two lists are the whole reason a `.md` cannot become a thing a pointer
+       resolves TO. If a later edit collapses them into one read, this is what
+       says so — and it is pinned at the VALUES, because the names agreeing is
+       not the claim. */
+    expect([...SUITE_POPULATION]).toEqual(["*.ts", "*.tsx"]);
+    expect([...POINTER_POPULATION]).toEqual(["*.ts", "*.tsx", "*.mts", "*.md"]);
+    expect(POINTER_POPULATION.length).toBeGreaterThan(SUITE_POPULATION.length);
+  });
+
+  it("POSITIVE CONTROL for the widening — a dangling pointer in a .md and in an .mts is SEEN", () => {
+    /* Both halves of the new population drive a real, non-resolving pointer, so
+       a reader that silently stopped opening one of the two file types fails
+       here by name rather than by a count. `CLAUDE.md`'s own law-7 section
+       names the deleted credit-velocity suite; `capabilityAtlas.mts` names the
+       segment-store route suite #1160 removed. */
+    const rows = suitePointers(ROOT);
+
+    const inMarkdown = rows.filter((row) => row.file === "CLAUDE.md");
+    expect(inMarkdown.length).toBeGreaterThan(0);
+    expect(inMarkdown.some((row) => row.names === "velocityLimits.test.ts" && !row.resolves)).toBe(true);
+
+    const inScript = rows.filter((row) => row.file === "scripts/lib/capabilityAtlas.mts");
+    expect(inScript.length).toBeGreaterThan(0);
+    expect(inScript.some((row) => !row.resolves)).toBe(true);
+
+    /* And the other direction in the same breath: a pointer in a `.md` that
+       names a LIVE suite resolves, so a reader answering "no" to everything in
+       the new half cannot pass the lines above. */
+    expect(rows.some((row) => row.file.endsWith(".md") && row.resolves)).toBe(true);
+    expect(rows.some((row) => row.file.endsWith(".mts") && row.resolves)).toBe(true);
   });
 
   it("names nothing that does not exist", () => {
