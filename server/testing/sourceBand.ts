@@ -30,9 +30,9 @@
  *
  * So nothing here is new behaviour. This is the reader of record; the two
  * suites #1845 touches resolve to it, and **the remaining three copies are a
- * declared remainder with a card of their own** rather than a silent one — a
- * promotion across five guards is its own pass under the standing orders' §2c,
- * not a passenger on a copy fix.
+ * declared remainder with a card of their own — #1848** rather than a silent
+ * one. A promotion across five guards is its own pass under the standing
+ * orders' §2c, not a passenger on a copy fix.
  *
  * # Deliberately dependency-free, and it THROWS
  *

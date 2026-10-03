@@ -78,8 +78,8 @@ const PLAN = "client/src/features/billing/ChangePlanModal.tsx";
  * anchor rather than answering an empty string, which is the property every
  * negative arm below rests on. The three remaining private copies
  * (`burnCycle1739`, `creditPacks1606` and `workDivisor1758`) are a declared
- * remainder with a card of their own, because a promotion across five guards
- * is its own pass. `monthlyDelta1761` resolves here too, in this same commit.
+ * remainder with a card of their own — **#1848** — because a promotion across
+ * five guards is its own pass. `monthlyDelta1761` resolves here too, in this same commit.
  */
 const band = (source: string, from: string, to: string) => sourceBand(source, from, to);
 
