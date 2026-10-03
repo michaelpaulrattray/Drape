@@ -43,13 +43,13 @@
  *   npx tsx scripts/_1612-template-shape-disposable.mts
  */
 import "dotenv/config";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 
 import sharp from "sharp";
 
 import { createFalIdentityEngine } from "../server/providers/falQueue";
 import { composePackageViewPrompt } from "../server/castingV2/castViewPackage";
-import { framingTemplateClause } from "../server/castingV2/viewFramingTemplate";
+import { framingTemplateClause, readViewFramingTemplate } from "../server/castingV2/viewFramingTemplate";
 import { pronounsForSex } from "../server/castingV2/castPronouns";
 import { PLATE_VIEW_ASPECT_RATIO } from "../server/castingV2/outfitPlate";
 import { readFalBalance } from "./lib/falSpend.mts";
@@ -105,11 +105,9 @@ type Row = {
 const rows: Row[] = [];
 
 for (const angle of ANGLES) {
-  const templatePath = `assets/views/${angle}-framing-template.png`;
-  const template = {
-    bytes: readFileSync(templatePath),
-    contentType: "image/png",
-  };
+  /* Through the product's own door — see the court disposable's note. */
+  const template = readViewFramingTemplate(angle);
+  if (!template) throw new Error(`no framing template for ${angle} — the real reader refused it`);
   const templateMeta = await sharp(template.bytes).metadata();
   console.log(`template ${angle}: ${templateMeta.width}x${templateMeta.height}`);
 

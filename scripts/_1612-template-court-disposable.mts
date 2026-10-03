@@ -39,7 +39,7 @@
  *   npx tsx scripts/_1612-template-court-disposable.mts
  */
 import "dotenv/config";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 
 import { ProviderQueue } from "../server/providers/providerQueue";
 import { createOpenRouterTextEngine, DEFAULT_INTERPRETER_MODEL } from "../server/providers/openrouterText";
@@ -48,7 +48,7 @@ import { createFalRegionReader } from "../server/castingV2/falRegionReader";
 import { createViewConformanceJudge } from "../server/castingV2/viewConformance";
 import { castPackageView, composePackageViewPrompt } from "../server/castingV2/castViewPackage";
 import { measureViewFraming } from "../server/castingV2/viewFramingGeometry";
-import { framingTemplateClause } from "../server/castingV2/viewFramingTemplate";
+import { framingTemplateClause, readViewFramingTemplate } from "../server/castingV2/viewFramingTemplate";
 import { pronounsForSex } from "../server/castingV2/castPronouns";
 import { readFalBalance } from "./lib/falSpend.mts";
 
@@ -94,10 +94,12 @@ const FIXTURES = [
   },
 ] as const;
 
-const template = {
-  bytes: readFileSync(`assets/views/${ANGLE}-framing-template.png`),
-  contentType: "image/png",
-};
+/* ⚠ **Read through the PRODUCT'S OWN DOOR, not `readFileSync` around it.** The
+   court's whole claim is about what a Sign would send, so the digest check and
+   the fail-soft read are part of what is being measured — and a court that
+   loaded the bytes its own way could pass while the real reader refused them. */
+const template = readViewFramingTemplate(ANGLE);
+if (!template) throw new Error(`no framing template for ${ANGLE} — the real reader refused it`);
 const engine = createFalIdentityEngine({ apiKey: FAL });
 const framingReader = createFalRegionReader({ apiKey: FAL });
 const judge = createViewConformanceJudge({
