@@ -52,13 +52,46 @@
  *  - **It does not judge identity.** The identity axis stays a reading, stays
  *    reference-relative, and stays fail-closed: a different person is the one
  *    failure that breaks the promise a signed cast makes (#1229 is untouched).
- *  - **It is not wired into the judge yet.** This slice builds the instrument
- *    and drives its controls; the slice that hands the framing axis over to it,
- *    deletes the prose framing question from the judge's post and changes what a
- *    framing verdict COSTS is a money surface and is its own change. Until then
- *    `spec.framing` is still the sentence the reader is asked, and this file is
- *    a second statement of the same band — **declared scaffolding, and the thing
- *    that resolves it is the deletion of that sentence, not a promise.**
+ *  - ✅ ~~**It is not wired into the judge yet.** This slice builds the
+ *    instrument and drives its controls; the slice that hands the framing axis
+ *    over to it, deletes the prose framing question from the judge's post and
+ *    changes what a framing verdict COSTS is a money surface and is its own
+ *    change. Until then `spec.framing` is still the sentence the reader is
+ *    asked, and this file is a second statement of the same band — **declared
+ *    scaffolding, and the thing that resolves it is the deletion of that
+ *    sentence, not a promise.**~~
+ *
+ *    ⚠ **THE SCAFFOLDING DECLARATION IS DISCHARGED — THE HAND-OVER LANDED
+ *    2026-10-02 (PR #1775, squash `73b348186`), AND THIS BULLET WENT ON SAYING
+ *    THE OPPOSITE FOR A DAY.** It is struck rather than deleted because the
+ *    fidelity law's own rule is that a declared shortcut is resolved by the
+ *    real source arriving, and the record of the declaration being KEPT is
+ *    what makes the resolution checkable. All three acts it named are done:
+ *    `measureViewFraming` is reached in production from `signEngine.ts`, which
+ *    builds the Sign judge with `framingReader: createFalRegionReader(…)` and
+ *    **refuses to exist without `FAL_KEY`** rather than falling back to a
+ *    reading (invariant 7); `foldFramingAxis` (`viewConformance.ts`) makes the
+ *    MEASUREMENT the authority, so an `outOfBand` reading fails the axis
+ *    whatever the vision model thought and the reader is not consulted; and
+ *    what a framing verdict costs changed with part 2 — a framing verdict that
+ *    did not hold now DELIVERS the picture, charged and marked unchecked, with
+ *    the free Try again, because only the identity axis refuses. Both acts are
+ *    driven in `viewFramingHandover.test.ts` — the fold directly rather than
+ *    through a model (working law 3), the wire on the outgoing bytes
+ *    (invariant 5).
+ *
+ *    ⚠ **What is NOT discharged, and it is a stated shortfall rather than a
+ *    silence:** the deletion of the prose framing question is SENTENCE-GRANULAR.
+ *    Only a sentence the rules restate IN FULL leaves the post
+ *    (`band.restatedInFull` — today the close-up's too-loose pair and nothing
+ *    else); on the five views whose specs state a measured test and a reader's
+ *    test inside one sentence, the reader is still shown a clause the
+ *    measurement now answers, and each says so on its band
+ *    (`band.readerAlsoAsked`). Cutting at the commas would post a sentence
+ *    nobody wrote as the standard a paid view is held to, which #1582 measured
+ *    three times. **So this file is no longer a second statement of the band —
+ *    it is the authority — and the remaining cost of the overlap is a MARK and
+ *    never a picture.**
  *  - **It does not cover every view.** Two of the seven bands have a half that
  *    is not geometry — a head's TURN and a profile's CONCEALMENT — and each says
  *    so in its own `readerRemainder`. A remainder that is written down is a
@@ -82,9 +115,22 @@
  *    portrait"*, is restated by a `roomBelowAtMost face` rule whose bound was
  *    measured on 43 of his own production frames rather than chosen. **No band
  *    carries `unrestated` today**, so the hand-over's precondition is met on
- *    every view; what it still is not, is done — `measureViewFraming` has no
+ *    every view; ~~what it still is not, is done — `measureViewFraming` has no
  *    production caller, and the slice that gives it the framing axis is its own
- *    money change.
+ *    money change.~~
+ *
+ *    ⚠ **AND THAT CLOSING CLAUSE WAS THE SAME STALE FACT A SECOND TIME, read
+ *    at the code 2026-10-03 (#1612).** `measureViewFraming` HAS a production
+ *    caller — `signEngine.ts`, via the judge's `framingReader` — and the money
+ *    change it calls "its own" is the one that shipped as PR #1775's own second
+ *    half. **It is struck here and answered in full at the bullet above**; the
+ *    duplicate is kept visible rather than quietly removed because the reason
+ *    this went unnoticed for a day is that ONE docblock said it TWICE, so a
+ *    reader who corrected the sentence they happened to land on would have left
+ *    the other one standing. The sibling sweep is `grep` for the SENTENCE, not
+ *    the card number: the capability atlas's `sign-views` road had already been
+ *    re-driven and says the measurement is the authority, so this file was the
+ *    last place in the tree still describing the instrument as unwired.
  */
 import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
