@@ -451,6 +451,19 @@ const PROSE_NOT_A_CURRENT_PRICE: ReadonlyArray<{
   },
   {
     file: "client/src/features/billing/AddCreditsModal.tsx",
+    credits: 519,
+    quote: "a free account looking at Starter read",
+    why:
+      "A RATE, NOT A PRICE — credits per dollar, and the MEASURED reading of "
+      + "the sentence #1845 removed: a free account opening this pane read "
+      + "`519 credits per $1` under the heading *Choose a plan*, which is the "
+      + "line his #1773 word forbids on a plan surface. It is recorded in the "
+      + "paragraph that replaces the sentence, because three cards' findings "
+      + "rode it and a deletion with no record of what it said re-opens them. "
+      + "Re-scaling it would falsify a measurement.",
+  },
+  {
+    file: "client/src/features/billing/AddCreditsModal.tsx",
     credits: 11_300,
     quote: "opening Add credits read",
     why:

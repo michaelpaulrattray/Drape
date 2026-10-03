@@ -309,8 +309,10 @@ describe("card 390 item 4 — the unit price is inverted, and it still argues fo
 
     /*
       ⚠ **AND THE FREE ACCOUNT'S PANE IS A PLAN SURFACE, SO IT CARRIES NO RATE
-      (#1845).** It printed `6,250 credits per $1, up from 5,185` under the
-      heading *Choose a plan* until this card. Both the call and the printed
+      (#1845).** Measured at the real ladder before it went: a free account
+      looking at Starter read `519 credits per $1` under the heading *Choose a
+      plan* (`624` on annual), with no *up from* clause — the free rung has no
+      price for the comparison to beat. Both the call and the printed
       words are refused: the words because that is what he read on screen, the
       call because a rate computed and formatted some other way is the same
       defect wearing different code.

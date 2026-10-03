@@ -430,9 +430,9 @@ function PlanStepUpPane({ onClose }: { onClose: () => void }) {
       : plans?.tiers[currentId as keyof typeof plans.tiers]?.monthlyCredits ?? null;
   /*
     ⚠ **THE CLAUSE THIS FIGURE WAS NAMED FOR IS GONE, AND THE FIGURE IS NOT —
-    #1845.** It was read by the rate sentence's *"up from"* half (*"2,778
-    credits per $1, up from free"* on a free account, which is what #403
-    corrected), and that whole sentence left this pane with his #1773 rule. The
+    #1845.** It was read by the rate sentence's *"up from"* half — the sentence
+    seen in the running app as *2,778 credits per $1, up from free*, which is
+    what #403 corrected — and that sentence left this pane with his #1773 rule. The
     price survives because `currentMonthlyCredits` below tests it: a rung with
     nothing recurring to CHARGE has nothing recurring to GRANT, and that test is
     `planLadder`'s own declaration rather than a `currentId === "free"` list.
@@ -811,8 +811,13 @@ function PlanStepUpPane({ onClose }: { onClose: () => void }) {
             and left the rate standing on it, so the commit that named the pane
             correctly is the one that put the rate on a plan surface.
 
-            It read `6,250 credits per $1, up from 5,185`, both halves drawn
-            through `formatCreditsPerDollar(priceAMonth(…))`. **Three findings
+            **What it actually printed, measured at the real ladder rather than
+            remembered**: a free account looking at Starter read `519 credits per $1`,
+            and NO *up from* clause at all — the comparison needed a current
+            price above zero and the free rung has none, so the clause only ever
+            drew for a subscriber reading a higher rung, which is a pane this
+            card does not touch. Both halves of it went through
+            `formatCreditsPerDollar(priceAMonth(…))`. **Three findings
             rode that line and none of them is overturned**: #403 (one fact, one
             unit, on both billing surfaces — closed harder by the rate having
             ONE home than it ever was by symmetry), #661 (the rate followed the
