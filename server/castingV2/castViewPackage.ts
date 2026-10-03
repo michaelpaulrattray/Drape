@@ -959,6 +959,34 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
       It clears his 0.51 by a factor of 1.37 and sits under the tightest
       portrait by 1.57.
 
+      ⚠ **AND THE BAND IS NOT EMPTY — MEASURED 2026-10-03 WHILE DRAWING THE
+      STRIP THIS CARD OWES HIM, AND THE NUMBER ABOVE IS LEFT ALONE UNTIL HIS EYE
+      SAYS OTHERWISE.** The close-up population either bound was ever chosen
+      from is SIX frames. Production has **ten** delivered `closeUp` rows on his
+      account, and the four nobody had read are
+      342 (0.155) · 332 (0.333) · 390 (0.404) · **384 (0.826)**.
+
+          asset 384, Hingu — a bandaged skull, head and the top of the shoulders
+
+      **0.826 sits inside the gap this paragraph calls empty**, so the sentence
+      above was true of the frames it had and false of the product. Under the
+      0.7 line that picture is turned away — one delivered close-up in ten.
+
+      ⚠ **NOTHING IS MOVED ON THAT FINDING, AND THAT IS THE POINT.** A shift
+      re-fitting the line to a frame it just found would be fitting to a boundary
+      case, which is the one thing all three of these bounds are chosen to avoid,
+      and it would be a shift overruling his eye with arithmetic. 384 is on the
+      strip on his Desk with the plain question under it — *is this a close-up?*
+      — and law 9 closes it: if he says yes the line moves above 0.826 by the
+      stated method; if he says no it stays at 0.7 and the band has its first
+      measured frame on the portrait side of the gap. **Either answer is worth
+      more than this paragraph's old confidence.**
+
+      The reproduction arm, so the four new numbers are not a lone reading: all
+      ten previously recorded values — the six close-ups and the four portraits
+      quoted here — came back identical to two decimals through the same reader
+      on the same frames (10/10), and no portrait read below 0.7.
+
       ⚠ **THE CONSERVATIVE INPUT IS DELIBERATE AND IS NAMED.** 0.52 and 0.56
       (assets 326 and 371) also fall inside the new line, and he has NOT judged
       those two — they are admitted as a consequence of his ruling rather than
