@@ -46,6 +46,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { withoutComments } from "../../../../server/testing/withoutComments";
+import { sourceBand } from "../../../../server/testing/sourceBand";
 import { CASTING_V2_ROLL_PRICE_CREDITS } from "../../../../server/casting/castingCreditCosts";
 import { CASTING_V2_SIGN_PRICE_CREDITS } from "../../../../server/castingV2/castViewPackage";
 import { displayBalance, formatCredits } from "../../../../shared/creditDisplay";
@@ -68,18 +69,6 @@ const read = (relative: string) =>
 /** The stylesheet, read whole — there are no comments to strip from a claim
  *  about a selector, and stripping them would eat the CSS block comments. */
 const readRaw = (relative: string) => readFileSync(join(process.cwd(), relative), "utf8");
-
-/**
- * The slice of a surface between two anchors, so an arm about the pack rows
- * cannot be satisfied by the slider line underneath them.
- */
-function band(source: string, from: string, to: string): string {
-  const start = source.indexOf(from);
-  expect(start, "the opening anchor is gone from the surface: " + from).toBeGreaterThan(-1);
-  const end = source.indexOf(to, start + from.length);
-  expect(end, "the closing anchor is gone from the surface: " + to).toBeGreaterThan(-1);
-  return source.slice(start, end);
-}
 
 /** Every unit count this product sells — the population for a property. */
 const sellable = () =>
@@ -177,7 +166,12 @@ describe("what an amount buys — derived from the live prices, and floored", ()
       establishes that the pane floors. An arm that only did the first would go
       green over a `Math.ceil` on the screen.
     */
-    const helper = band(read(SURFACE), "const buys = (unitCount: number)", "const topup =");
+    const helper = sourceBand(
+      read(SURFACE),
+      "const buys = (unitCount: number)",
+      "const topup =",
+      "the pane's buys helper",
+    );
     expect(helper).toContain("const ledger = topupLedgerCredits(unitCount);");
     expect(helper, "the pane's Roll count no longer floors").toContain(
       "rolls: Math.floor(ledger / rollCredits),",
@@ -220,7 +214,12 @@ describe("what an amount buys — derived from the live prices, and floored", ()
       String(CASTING_V2_SIGN_PRICE_CREDITS),
     ]) {
       expect(
-        band(surface, "function CreditPacksPane", "export function AddCreditsModal"),
+        sourceBand(
+          surface,
+          "function CreditPacksPane",
+          "export function AddCreditsModal",
+          "the credit packs pane",
+        ),
         `a price literal (${literal}) is typed into the credit-packs pane`,
       ).not.toContain(literal);
     }
@@ -264,7 +263,12 @@ describe("one Best value badge, and none at all when the rates are equal", () =>
     const best = bestValueTopupUnits();
     expect(TOPUP_PACKS.filter((pack) => pack.units === best).length).toBe(1);
 
-    const packs = band(read(SURFACE), 'className="dp-topup__packs"', 'className="dp-topup__slider"');
+    const packs = sourceBand(
+      read(SURFACE),
+      'className="dp-topup__packs"',
+      'className="dp-topup__slider"',
+      "the pack rows",
+    );
     expect(packs, "the badge is drawn from something other than the ladder's own answer").toContain(
       "pack.units === bestUnits",
     );
@@ -289,7 +293,12 @@ describe("the slider is the ladder's own bound, and the packs are positions on i
   });
 
   it("the control's min, max and step are read from the ladder and not typed", () => {
-    const slider = band(read(SURFACE), 'className="dp-topup__slider"', "dp-topup__bullets");
+    const slider = sourceBand(
+      read(SURFACE),
+      'className="dp-topup__slider"',
+      "dp-topup__bullets",
+      "the slider block",
+    );
     expect(slider, "the slider's end is a literal, so it can price an order the server refuses")
       .toContain("max={TOPUP_MAX_UNITS}");
     expect(slider).toContain("min={1}");
@@ -302,7 +311,12 @@ describe("the slider is the ladder's own bound, and the packs are positions on i
   });
 
   it("⚠ ONE STATE, SO A PACK AND THE SLIDER CANNOT COST DIFFERENT THINGS", () => {
-    const pane = band(read(SURFACE), "function CreditPacksPane", "export function AddCreditsModal");
+    const pane = sourceBand(
+      read(SURFACE),
+      "function CreditPacksPane",
+      "export function AddCreditsModal",
+      "the credit packs pane",
+    );
     /* The packs set the same number the slider does — his design's *"the three
        packs are presets that snap the slider"*. */
     expect(pane).toContain("onClick={() => setUnits(pack.units)}");
@@ -316,12 +330,17 @@ describe("the slider is the ladder's own bound, and the packs are positions on i
   });
 
   it("the amount's own price is on the button before the press", () => {
-    const foot = band(read(SURFACE), "function CreditPacksPane", "export function AddCreditsModal");
+    const foot = sourceBand(
+      read(SURFACE),
+      "function CreditPacksPane",
+      "export function AddCreditsModal",
+      "the credit packs pane",
+    );
     expect(foot).toContain("`Add credits · ${formatDollars(cents)}`");
     /* It is never an em dash: the figure is composed from the ladder and the
        chosen amount, so nothing about this price waits on a server. */
     expect(
-      band(foot, "variant=\"primary\"", "</Button>"),
+      sourceBand(foot, "variant=\"primary\"", "</Button>", "the money button"),
       "the money button can draw a held glyph where a price belongs",
     ).not.toContain('"—"');
   });
@@ -329,21 +348,31 @@ describe("the slider is the ladder's own bound, and the packs are positions on i
 
 describe("the surface sends the top-up checkout and bounds what it sends", () => {
   it("fires `createTopupCheckout` with the unit count and nothing else", () => {
-    const pane = band(read(SURFACE), "function CreditPacksPane", "export function AddCreditsModal");
+    const pane = sourceBand(
+      read(SURFACE),
+      "function CreditPacksPane",
+      "export function AddCreditsModal",
+      "the credit packs pane",
+    );
     expect(pane).toContain("trpc.billing.createTopupCheckout.useMutation");
     expect(pane).toContain("topup.mutate({ units });");
     /* No amount, no price, no lookup key on the wire — the server composes all
        three from the unit count (slice 1's own contract). */
     for (const word of ["cents", "priceId", "lookup"]) {
       expect(
-        band(pane, "const submit = ", "const chosenBuys"),
+        sourceBand(pane, "const submit = ", "const chosenBuys", "the submit handler"),
         `the surface sends \`${word}\` to the checkout, which the server must own`,
       ).not.toContain(word);
     }
   });
 
   it("⚠ THE BOUND IS ASKED AT THE SURFACE TOO, NOT ONLY IN THE INPUT SCHEMA", () => {
-    const pane = band(read(SURFACE), "const submit = ", "const chosenBuys");
+    const pane = sourceBand(
+      read(SURFACE),
+      "const submit = ",
+      "const chosenBuys",
+      "the submit handler",
+    );
     expect(
       pane,
       "the surface can open a checkout for an amount the ladder refuses to price",
@@ -353,8 +382,13 @@ describe("the surface sends the top-up checkout and bounds what it sends", () =>
 
 describe("the plan nudge, and the road it leads to", () => {
   it("the row is drawn under the packs with the move-up action", () => {
-    const pane = band(read(SURFACE), "function CreditPacksPane", "export function AddCreditsModal");
-    const nudge = band(pane, 'className="dp-plan__cross"', "</div>");
+    const pane = sourceBand(
+      read(SURFACE),
+      "function CreditPacksPane",
+      "export function AddCreditsModal",
+      "the credit packs pane",
+    );
+    const nudge = sourceBand(pane, 'className="dp-plan__cross"', "</div>", "the plan nudge");
     expect(nudge).toContain("A bigger plan gives more for the money");
     expect(nudge, "the nudge has nowhere to go").toContain("onClick={onChangePlan}");
     /* His design: *no fake discount*. There is no former price to strike and a
@@ -371,7 +405,12 @@ describe("the plan nudge, and the road it leads to", () => {
       plan from it"*. A required prop makes the compiler ask every mount, which
       is why this arm holds the DECLARATION rather than counting call sites.
     */
-    const shell = band(read(SURFACE), "export function AddCreditsModal", "const { data: status }");
+    const shell = sourceBand(
+      read(SURFACE),
+      "export function AddCreditsModal",
+      "const { data: status }",
+      "the modal shell",
+    );
     expect(shell, "the plan road is optional again").toContain("onChangePlan: () => void;");
     expect(shell, "the plan road is optional again").not.toContain("onChangePlan?:");
   });
@@ -388,7 +427,9 @@ describe("the plan nudge, and the road it leads to", () => {
       plan,
       "the cross-row still tells a customer that buying credits moves their plan",
     ).not.toContain("the plan moves with it");
-    expect(band(plan, 'className="dp-plan__cross"', "</div>")).toContain(
+    expect(
+      sourceBand(plan, 'className="dp-plan__cross"', "</div>", "the cross-row on Change plan"),
+    ).toContain(
       "your plan stays exactly as it is",
     );
   });
@@ -396,7 +437,12 @@ describe("the plan nudge, and the road it leads to", () => {
 
 describe("the shell reads the rung, and neither pane is drawn until it is known", () => {
   it("three answers, and the unread one claims nothing", () => {
-    const shell = band(read(SURFACE), "export function AddCreditsModal", "ModalScrim");
+    const shell = sourceBand(
+      read(SURFACE),
+      "export function AddCreditsModal",
+      "ModalScrim",
+      "the modal shell",
+    );
     expect(shell).toContain("topupEligibility(status?.planTier)");
     expect(shell).toContain('eligibility === "may-buy"');
     expect(shell).toContain('eligibility === "needs-a-plan"');
@@ -420,7 +466,12 @@ describe("the shell reads the rung, and neither pane is drawn until it is known"
 
 describe("the disappearing-technology law, on the one surface it is easiest to break", () => {
   it("⚠ NO ENGINE NAME, NO LOOKUP KEY AND NO LEDGER WORD REACHES THIS PANE", () => {
-    const pane = band(read(SURFACE), "function CreditPacksPane", "export function AddCreditsModal");
+    const pane = sourceBand(
+      read(SURFACE),
+      "function CreditPacksPane",
+      "export function AddCreditsModal",
+      "the credit packs pane",
+    );
     /*
       Higgsfield's own rows name their models in exactly this slot (*"up to N
       Nano Banana images"*), which is what his design says to take the shape of
@@ -443,7 +494,12 @@ describe("the disappearing-technology law, on the one surface it is easiest to b
   });
 
   it("⚠ EVERY CREDIT FIGURE A CUSTOMER READS COMES THROUGH THE DISPLAY HELPER", () => {
-    const pane = band(read(SURFACE), "function CreditPacksPane", "export function AddCreditsModal");
+    const pane = sourceBand(
+      read(SURFACE),
+      "function CreditPacksPane",
+      "export function AddCreditsModal",
+      "the credit packs pane",
+    );
     /* `formatCredits` takes a branded `DisplayCredits`, so this is the
        compiler's rule as much as the arm's — what the arm adds is that the
        scale is never re-applied by hand on the way in. */
@@ -466,7 +522,12 @@ describe("the disappearing-technology law, on the one surface it is easiest to b
     const css = readRaw(CSS);
     /* The promotion pass's own test of a new section: if it had to invent a
        token, the section is not in the system's language. */
-    const block = band(css, ".dp-topup__packs {", "The two global rules");
+    const block = sourceBand(
+      css,
+      ".dp-topup__packs {",
+      "The two global rules",
+      "the pack rows stylesheet block",
+    );
     for (const token of block.matchAll(/var\((--[a-zA-Z0-9-]+)\)/g)) {
       expect(
         css.includes(token[1]) || readRaw("client/src/foundation/tokens.css").includes(token[1]),

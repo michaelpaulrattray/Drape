@@ -37,6 +37,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { sourceBand } from "../../../../server/testing/sourceBand";
 import { withoutComments } from "../../../../server/testing/withoutComments";
 import { PLAN_TIERS } from "../../../../drizzle/schema";
 import { OFFERED_PLAN_ORDER } from "../../../../server/stripe/stripeProducts";
@@ -60,14 +61,14 @@ const offered = () =>
 /**
  * The slice of a surface between two anchors, so an arm about one sentence
  * cannot be satisfied by another sentence in the same file.
+ *
+ * ⚠ **THE SHARED READER SINCE #1845** (`server/testing/sourceBand.ts`), which
+ * is also what repaired this suite: #1845 deleted the rate chip two of these
+ * bands anchored on, and the reader REFUSED by name rather than answering an
+ * empty string — which is how the two arms were found rather than silently
+ * passing over nothing.
  */
-function band(source: string, from: string, to: string): string {
-  const start = source.indexOf(from);
-  expect(start, "the opening anchor is gone from the surface: " + from).toBeGreaterThan(-1);
-  const end = source.indexOf(to, start + from.length);
-  expect(end, "the closing anchor is gone from the surface: " + to).toBeGreaterThan(-1);
-  return source.slice(start, end);
-}
+const band = (source: string, from: string, to: string) => sourceBand(source, from, to);
 
 describe("Card 1761 - the free rung's monthly delta, driven on the real ladder", () => {
   it("⚠ THE DELTA FROM FREE IS THE TARGET RUNG'S OWN ALLOWANCE, NOT A SUBTRACTION", () => {
@@ -200,7 +201,10 @@ describe("Card 1761 - the three sentences on the surface take one baseline", () 
     */
     const code = source();
 
-    const deltaDecl = band(code, "const delta =", "const rateComparable");
+    /* ⚠ The closing anchor was `const rateComparable` until #1845 removed that
+       gate with the rate sentence it existed for. `const fullYear` is the next
+       declaration in source order, so the band is the same bytes. */
+    const deltaDecl = band(code, "const delta =", "const fullYear");
     expect(deltaDecl).toContain("selected.credits - currentMonthlyCredits");
     expect(deltaDecl, "the chosen plan's delta subtracts the raw column again").not.toMatch(
       /selected\.credits\s*-\s*currentCredits\b/,
@@ -242,13 +246,22 @@ describe("Card 1761 - the three sentences on the surface take one baseline", () 
     expect(bullets, "the comparison stopped being a clause at all").toContain("up from about");
 
     /* THE POSITIVE CONTROL for the two `not.toMatch` arms above: `currentCredits`
-       is still on the surface and still read by the rate chip, so their silence
-       is the arithmetic having moved and not the reader failing to see a name. */
+       is still on the surface and still READ by something, so their silence is
+       the arithmetic having moved and not the reader failing to see a name.
+
+       ⚠ **THE READER IT NAMED WAS THE RATE CHIP, AND #1845 DELETED THE CHIP** —
+       his #1773 rule put the credits-per-$1 rate on Add credits and off every
+       plan surface, and the pane a free account opens is a plan surface. So the
+       control is re-pointed at the reader that survives rather than relaxed:
+       `currentMonthlyCredits` is what reads the raw column now, and it is the
+       declaration this whole suite is about. A control pointed at a deleted
+       line would have had to be weakened to a file-level `toContain`, which is
+       the arm that proves least. */
     expect(code, "the raw column left the surface, so the arms above prove nothing").toContain(
       "currentCredits",
     );
-    const rateChip = band(code, 'className="dp-set__value"', 'className="dp-topup__select"');
-    expect(rateChip, "the rate comparison stopped reading the declared credits").toContain(
+    const baseline = band(code, "const currentMonthlyCredits =", "const delta =");
+    expect(baseline, "the baseline stopped reading the declared credits column").toContain(
       "currentCredits",
     );
   });

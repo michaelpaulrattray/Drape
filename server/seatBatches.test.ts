@@ -1046,9 +1046,30 @@ describe("the milestone comes from the ladder he declared, not the top of his ba
        flips the ladder without it — which is the guard doing its job. N2 → P1
        on 2026-10-01: *"after n2 is wrapped up start the pricing/money work then
        proceed onto n2b and n2c"* (terminal), after his Desk word *"close"* on
-       #1218, the last N2 card. The next flip is P1 → N2b, on P1's completion
-       card and his word. */
-    expect(focusRungFromLadder(ladder)).toBe("P1");
+       #1218, the last N2 card.
+
+       ⚠ **P1 → P2 on 2026-10-03, and his word SUPERSEDED the sentence this
+       comment used to end on** — it read *"The next flip is P1 → N2b"*, and he
+       named the other rung instead, verbatim (terminal): *"phase 2 gets built
+       next not n2b"*, with the brief approved the same morning (*"frames right
+       numbers right"*, #1774). P1's building is done (#1601 and #1606 closed,
+       #1787 closed on his drive *"im test driven the credit changes and
+       everything is good"*); #1609 stays open and PARKED on his own word
+       *"im not switching stripe to live until the full app is build"*, which is
+       his hand and not a rung's remaining work. N2b (#1242) waits behind P2.
+
+       ⚠ **AND #1840 IS WHY THE PIN AND THE EDITION MOVE IN ONE COMMIT.** His
+       focus word reached `PROGRAM.md` at `91749d2b9` and did NOT reach this
+       briefing, so for the hours between, `focusRungFromLadder` read `"P1"`
+       while the board held four `rung:P2` cards he had just ordered — driven at
+       the gate: `rungHoldFor(["founder-ordered", "rung:P2"], "P1")` returned
+       *"on rung P2, and the milestone is P1 — the milestone gate holds it"* for
+       every one of #1832, #1833, #1834 and #1835, with a `rung:P1` card and a
+       rungless card as the positive and negative controls. **The edition is the
+       only artifact this gate reads; a focus recorded anywhere else is a focus
+       no seat can act on.** The next flip is P2 → N2b, on P2's completion card
+       and his word. */
+    expect(focusRungFromLadder(ladder)).toBe("P2");
   });
 
   describe("tonight's two measured shapes, driven through the ordered gate", () => {

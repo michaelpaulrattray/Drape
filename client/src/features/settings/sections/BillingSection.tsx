@@ -29,6 +29,9 @@
  */
 import { toast } from "sonner";
 import { displayBalance, formatCredits } from "@shared/creditDisplay";
+/* #1836 — the one declaration of who may buy credits, read here so this
+   section, §6f and the Add-credits door cannot answer it differently. */
+import { topupEligibility } from "@shared/creditTopups";
 
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/foundation";
@@ -77,6 +80,21 @@ export function BillingSection({
   onAddCredits: () => void;
 }) {
   const { data: invoicesData } = trpc.billing.getInvoices.useQuery({ limit: 5 });
+  /*
+    #1836 — the rung, for the two credit controls below.
+
+    ⚠ **IT COSTS NO REQUEST.** `AccountSurfaces` mounts this section and already
+    holds `billing.getStatus`, so TanStack serves this from the same cache entry
+    rather than asking again; reading it here instead of drilling the answer
+    through `SettingsModal` keeps the rule where the controls are.
+
+    ⚠ **AND IT IS READ AS `may-buy`, NEVER AS `planTier !== "free"`**, so the
+    unread beat declines — the direction every one of the eight cards from #1703
+    to #1755 was filed about, and the cheap error here: a subscriber loses two
+    controls for the beat their status is in flight, where a free account
+    SEEING them is the thing his word forbids.
+  */
+  const { data: status } = trpc.billing.getStatus.useQuery();
   const portal = trpc.billing.createPortalSession.useMutation({
     onSuccess: (result) => {
       if (result?.portalUrl) window.open(result.portalUrl, "_blank");
@@ -158,9 +176,35 @@ export function BillingSection({
           <Button variant="secondary" size="small" onClick={onChangePlan}>
             Change plan
           </Button>
-          <Button variant="primary" size="small" onClick={onAddCredits}>
-            Add credits
-          </Button>
+          {/*
+            ⚠ **AND THIS ONE IS PRIMARY-WEIGHTED, WHICH IS WHY IT IS THE LIKELY
+            BUTTON HE PRESSED — #1836.** His word, 2026-10-03: *"you shouldnt be
+            able to use add credits if your on the free plan at all , not sure
+            why i could click the button it should be greyed out or only display
+            plans when i click it im in a free account"*.
+
+            It sits on the plan card, in ink, beside `Change plan` — the loudest
+            thing on Settings → Billing, offering a free account the one thing
+            they cannot buy.
+
+            ⚠ **FOUND BY LOOKING AT THE RUNNING APP, NOT BY GREPPING FOR IT
+            (working law 6).** A repository-wide search for the string had
+            already been run on this card and returned the §6f row and the
+            modal's own titles; **this button and the link below it were missed
+            because the sweep read for a SURFACE and these are controls.** They
+            turned up the moment a free fixture opened this page.
+
+            ⚠ **REMOVED RATHER THAN DISABLED**, which is the card's own
+            recommendation and law 6's: *a disabled control with no road is a
+            decision put in front of someone with nowhere to go.* `Change plan`
+            is the road, it is already here, and for a free account it is the
+            whole answer to *how do I get more credits*.
+          */}
+          {topupEligibility(status?.planTier) === "may-buy" ? (
+            <Button variant="primary" size="small" onClick={onAddCredits}>
+              Add credits
+            </Button>
+          ) : null}
         </SettingsCard>
       </SettingsGroup>
 
@@ -188,9 +232,15 @@ export function BillingSection({
               it only works as one — so where the sentence is gone, so is the
               continuation.
             */}
-            <button type="button" className="dp-set__linkbtn" onClick={onAddCredits}>
-              {renews && granted ? "more credits" : "Add more credits"}
-            </button>
+            {/* #1836 — the same rule under the balance. A free account reads
+                `Add more credits` here, which is the same promise one weight
+                down; the figure and its bar stay, because what they say is
+                true. */}
+            {topupEligibility(status?.planTier) === "may-buy" ? (
+              <button type="button" className="dp-set__linkbtn" onClick={onAddCredits}>
+                {renews && granted ? "more credits" : "Add more credits"}
+              </button>
+            ) : null}
           </span>
         </div>
         <div className="dp-set__minicard">

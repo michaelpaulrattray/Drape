@@ -48,6 +48,7 @@ import { join } from "node:path";
 import { withoutComments } from "../../../../server/testing/withoutComments";
 import { readListedSource } from "../../../../server/testing/listedSource";
 import { CONTENDED_TEST_TIMEOUT_MS } from "../../../../server/testing/contendedTestTimeout";
+import { sourceBand } from "../../../../server/testing/sourceBand";
 import { alignToPreview, readBurn, readCycle } from "../settings/planMath";
 
 /* The one-caller arm walks `client/src`, `server` and `shared` off the real
@@ -57,20 +58,6 @@ vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 const HERE = join(process.cwd(), "client", "src", "features", "billing");
 const code = (name: string) => withoutComments(readFileSync(join(HERE, name), "utf8"));
-
-/**
- * The slice of a surface between two anchors, so an arm about one sentence
- * cannot be satisfied by another sentence in the same file. A missing anchor
- * fails loudly rather than returning an empty band, which every `not.toContain`
- * below would otherwise pass.
- */
-function band(source: string, from: string, to: string): string {
-  const start = source.indexOf(from);
-  expect(start, "the opening anchor is gone from the surface: " + from).toBeGreaterThan(-1);
-  const end = source.indexOf(to, start + from.length);
-  expect(end, "the closing anchor is gone from the surface: " + to).toBeGreaterThan(-1);
-  return source.slice(start, end);
-}
 
 describe("#1739 · the mechanism, driven over the real readings", () => {
   /* The fixture is the card's own measured account, in LEDGER units: display is
@@ -147,7 +134,12 @@ describe("#1739 · Add credits reads each cycle under the name that says which i
   const source = code("AddCreditsModal.tsx");
 
   it("the burn band is keyed on the account's own cycle", () => {
-    const reason = band(source, "burn?.emptyOn ?", "dp-topup__adjust");
+    const reason = sourceBand(
+      source,
+      "burn?.emptyOn ?",
+      "dp-topup__adjust",
+      "the burn band",
+    );
     expect(reason).toContain("ownCycle.daysLeft");
     expect(reason).toContain("ownCycle.spent");
     expect(reason).toContain("ownCycle.remaining");
@@ -162,7 +154,12 @@ describe("#1739 · Add credits reads each cycle under the name that says which i
   });
 
   it("the renewal line still quotes the charge's own period", () => {
-    const renewal = band(source, "dp-topup__renewal", "</p>");
+    const renewal = sourceBand(
+      source,
+      "dp-topup__renewal",
+      "</p>",
+      "the renewal line",
+    );
     expect(renewal).toContain("chargeCycle.daysLeft");
     expect(renewal).toContain("chargeCycle.renewsAt");
     expect(renewal).not.toContain("ownCycle");

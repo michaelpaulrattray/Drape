@@ -1,60 +1,32 @@
 {
-  "edition": 627,
-  "updatedAt": "2026-10-03T07:40:20.906Z",
-  "shift": "Your answers from the terminal this morning are on their cards and the Desk now agrees with them. The second admin account is your engineer's (closed). The security scanner gap gets a gate step and the noisy alarm will ignore small days (both ordered, both buildable). The framing example is stopped; your eye says the 0.42 Sifr2 picture is a close-up, so the close-up line moves once you say whether today's 0.51 picture is one too. Pricing Phase 1 is closed on your drive with the Stripe switch parked until the full app is built, your account sits on Starter so Add credits shows you the packs, and Pricing Phase 2 is the focus with four build cards cut from the approved brief. One card still has a question for you: the canvas Refresh button charges 70 credits for a render on two Google models shut down in June (#1785) — seal it, re-point it, or leave it; the relay recommends seal.",
+  "edition": 630,
+  "updatedAt": "2026-10-03T12:38:26.513Z",
+  "shift": "A button on the canvas was charging you 70 credits for a picture that could never arrive. If a cast node had drifted out of sync with the person behind it, the node offered a Refresh — and that Refresh sent the job to an engine Google switched off in June. The money came back on the refund path, so nobody lost credits, but you paid for it in waiting and in a picture that never came. You saw this one and said: seal.\n\nIt is sealed. Not deleted — nothing of yours is touched. Your boards, your casts, your pictures, moving nodes, renaming them, filling one from the library, popping a view out, Duplicate, Download, Delete, and the free Fork that copies a cast all work exactly as they did. What has stopped is the three asks that would have spent credits reaching that dead engine. Each one now says, in one sentence, that making new pictures on the canvas is unavailable while we rebuild it, and that your work is safe. None of them names an engine or a vendor at you.\n\nThe part worth knowing is where the stopping happens. The refusal comes before any charge — not after a charge with a refund behind it, which is the thing that was wrong in the first place. And the canvas no longer OFFERS what it cannot do: the Variations button is greyed with its reason instead of opening a panel that quotes you a price and then refuses, and the Recast row sits sealed beside a Fork that still works and is still free. Being told something costs 560 credits and then being turned down is worse than not being offered it.\n\nOne honest note. The shift that started this last night died when the power cut, mid-build. Its work was not lost — the relay saved it and I picked it up where it stopped, read every line of it against the code rather than trusting the report, and finished the half it had declared and not built.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
-      "state": "none",
-      "title": "No focus is set — P1 is complete and the next rung is yours to name. Until you do, the crew works maintenance only: your background switches, the patrols on their clocks, and a bug a customer can actually hit.",
-      "quote": "after n2 is wrapped up start the pricing/money work then proceed onto n2b and n2c",
-      "quotedAt": "2026-10-01T07:40:00+10:00"
+      "state": "confirmed",
+      "title": "Pricing Phase 2 — the plans redesigned. Three plans instead of seven, with a credit slider on the biggest; Enterprise becomes a conversation rather than a support address; and Compare plans is organised by what you make. The brief you approved is the spec, and four build cards are cut from it.",
+      "quote": "phase 2 gets built next not n2b",
+      "quotedAt": "2026-10-03T17:33:25+10:00"
     },
     "milestone": {
-      "title": "P1 — pricing, phase 1: its building is DONE. The approved prices, plans and free grant are live; the one step left is switching the money over to live mode, which is yours (#1787, #1609)",
+      "title": "P2 — pricing, phase 2: the plan surface rebuilt to the brief you approved. Four cards, one per surface, and every one of them waits for an eye on the frames before it goes live",
       "steps": [
         {
-          "state": "done",
-          "title": "One display helper: every credit number you see is the ledger ÷ 5, prices rounding up and balances rounding down (#1600)"
+          "title": "Three plans instead of seven — Starter $27, Pro $68, Studio $159, with Free as the state you are in rather than a card, and an Enterprise band instead of a support address (#1832, #1833)",
+          "state": "waiting"
         },
         {
-          "state": "done",
-          "title": "The price table, and a sheet now costs the same whether you roll or follow: 320 · Sign 1,700 · Refine 350 · Try again 370, in one place, with one free retry per unchecked view (#1601, #1753)"
+          "title": "Studio's credit slider at $9 for each extra 5,000 a month — built last, because it needs a price created inside Stripe by hand before anything on screen can be bought (#1832)",
+          "state": "waiting"
         },
         {
-          "state": "done",
-          "title": "Plan grants and the free grant: the new monthly amounts, 2,700 credits once for free, and every existing free account raised to it (#1602)"
+          "title": "Compare plans organised by what you make, with the cinema row marked coming (#1834)",
+          "state": "waiting"
         },
         {
-          "state": "done",
-          "title": "Free signup with no card and no phone: the grant lands on a verified email or Google sign-in, guarded by quiet limits (#1603)"
-        },
-        {
-          "state": "done",
-          "title": "The renewal fix: a monthly refresh never overwrites credits you bought (#1604)"
-        },
-        {
-          "state": "done",
-          "title": "Checkout on Stripe's own prices: the yearly price you see is the one you are charged (#1605)"
-        },
-        {
-          "state": "done",
-          "title": "Top-up packs for plan holders on your volume ladder: 5,000 = $12 · 10,000 = $22 · 25,000 = $50, plus a slider — the checkout and the credits landing are built and in review; the Add credits screen is next (#1606)"
-        },
-        {
-          "state": "done",
-          "title": "Plan cards in Rinoa's four lines, with Yuna's final pass (#1607)"
-        },
-        {
-          "state": "done",
-          "title": "The retry-settled log line, monitoring only (#1608)"
-        },
-        {
-          "state": "waiting",
-          "title": "Go-live checklist for the relay's and your hand: live Stripe objects, Railway variables, the existing-account raise (#1609)"
-        },
-        {
-          "title": "The completion card and your eight-item test-drive list are on this page — drive it, then name the next rung (#1787)",
+          "title": "Team priced per seat at $68 a seat, after the shared workspace exists (#1835, #1788)",
           "state": "waiting"
         }
       ]
@@ -72,7 +44,12 @@
       },
       {
         "key": "P1",
-        "title": "Pricing, phase 1 — its building is FINISHED and live; the rung stays open on one step that is yours, switching the money to live mode (#1787, #1609)",
+        "title": "Pricing, phase 1 — built, driven and live. Its one remaining step is yours and is parked on your word: switching the money to live mode (#1787, #1609)",
+        "state": "done"
+      },
+      {
+        "key": "P2",
+        "title": "Pricing, phase 2 — the plans redesigned: three plans with a credit slider on the biggest, Enterprise as a conversation, and Compare plans organised by what you make",
         "state": "current"
       },
       {
@@ -149,14 +126,8 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-03T05:30:13.833Z",
+      "readAt": "2026-10-03T12:38:07.600Z",
       "items": [
-        {
-          "issueNumber": 1787,
-          "title": "P1 is built and live — pricing phase 1's completion card and your test-drive list (the app is right; the till is not open yet)",
-          "kind": "rung",
-          "rung": "P1"
-        },
         {
           "issueNumber": 1242,
           "title": "N2b — Personality and voice are born at Sign, as editable text: two drafted lines on the cast's page, badged Drafted for you, free to edit (founder-ordered 2026-09-25)",
@@ -287,12 +258,6 @@
           "issueNumber": 1655,
           "title": "Stripe SDK 20 → 22: upgrade AFTER pricing phase 1, never during it (his word 2026-10-01, on Squall's audit)",
           "kind": "parked",
-          "rung": null
-        },
-        {
-          "issueNumber": 1690,
-          "title": "Research for later: cutting Sign's cost (~$1 today, five NBP 2K views ~$0.75 of it) — one 4K sheet cropped, GPT Image 2.5 views, a cheaper check model, fewer default views; quality and cost per Sign, no build now (his finance guy's note, 2026-10-01)",
-          "kind": "roadmap",
           "rung": null
         },
         {
@@ -3479,7 +3444,7 @@
     {
       "id": "health-alarm-noise-1807",
       "issueNumber": 1807,
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-10-02T22:50:00.000Z",
       "title": "An alarm cried wolf 132 times in a day — and it owns the word 'critical'",
       "productImpact": "We have an alarm that watches how many picture jobs succeed. If the success rate drops below 80% it writes a line into the log on your admin page.\n\nIt does not care how many jobs it is judging. On a quiet day the product might run five jobs all day, so two failures reads as 40% and the alarm goes off. Production is quiet every day right now — six accounts, and one of them casts.\n\nOn 29 and 30 September it fired 132 times in 28 hours. Every one of those lines says the same thing.\n\nHere is the part that actually matters. Our log has three levels: ordinary, warning, and critical. Until 29 September, across two and a half months and more than a thousand entries, nothing had ever been critical. The only two critical entries that have ever existed are this alarm, firing on a day with five jobs.\n\nSo if you ever go looking for what was critical, the only answer you have ever had is a false alarm. That is the real cost — not the noise, but that the most serious level in our log now means 'probably nothing'. A reader learns to skip it, and then misses the first real one.",
@@ -9440,6 +9405,20 @@
       "status": "merged",
       "prNumber": 1820,
       "note": "Merged 53264888 — ordinary PR, gate green in 4.2m, no review owed. Live on production."
+    },
+    {
+      "id": "plans-surface-1832",
+      "title": "Three plans, the Enterprise band and a grouped Compare plans — the plan surface rebuilt to your Phase 2 brief (#1832, #1833, #1834)",
+      "status": "merged",
+      "prNumber": 1849,
+      "note": "Held for the relay by hand — a money surface and a customer-visible one."
+    },
+    {
+      "id": "seal-canvas-1785",
+      "title": "The canvas Refresh can no longer charge 70 credits for a picture that cannot arrive — sealed on your word (#1785)",
+      "status": "in-review",
+      "prNumber": 1853,
+      "note": "Held for the relay by hand — a customer-visible canvas diff."
     }
   ],
   "problems": [
@@ -9804,7 +9783,7 @@
     259
   ],
   "nextUp": {
-    "readAt": "2026-10-03T05:30:13.833Z",
+    "readAt": "2026-10-03T12:38:07.600Z",
     "items": [
       {
         "issueNumber": 1469,
@@ -9822,7 +9801,7 @@
         "urgent": false,
         "held": {
           "state": "blocked",
-          "because": "YOU — the live Stripe keys and price objects, the Drape→Klieg rename, your eye on production. OPTIONS: GO LIVE NOW · WAIT. Recommend: go when ready."
+          "because": "launch day, on his own word — not on him. Nothing here is a decision; every relay-side step is receipted below."
         }
       },
       {
@@ -9840,8 +9819,38 @@
         "urgent": false
       },
       {
+        "issueNumber": 1690,
+        "title": "Research for later: cutting Sign's cost (~$1 today, five NBP 2K views ~$0.75 of it) — one 4K sheet cropped, GPT Image 2.5 views, a cheaper check model, fewer default views; quality and cost per Sign, no build now (his finance guy's note, 2026-10-01)",
+        "urgent": false
+      },
+      {
         "issueNumber": 1774,
         "title": "Pricing Phase 2 — the plans redesigned: three individual plans with a credit slider on the top one, Team priced per seat behind a workspace, Enterprise as a sales conversation, no rate chips on plan cards, forward-looking copy marked \"coming\", and a compare table organised by what a customer makes",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1785,
+        "title": "The canvas \"Refresh\" button charges 70 credits for a render on two Gemini ids Google shut down in June — #1654's sweep covered the legacy router and not the canvas's own paid road",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1805,
+        "title": "Warden W6-B: Socket passed the PR that put two published high-severity advisories into the production tree, and the only reader that caught them fired six seconds after the merge",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1832,
+        "title": "P2-1 — Three individual plans with the credit slider on Studio ($9 per 5,000 credits): the plan cards and pricing surface rebuilt to the brief",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1835,
+        "title": "P2-4 — Team priced per seat ($68 a seat), after the workspace (#1788) exists",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1837,
+        "title": "The close-up line is too tight: both Sifr2 pictures read as close-ups to his eye at 0.51 and 0.42 while the band's line sits at 0.30 — move it by measurement, above 0.51",
         "urgent": false
       }
     ]

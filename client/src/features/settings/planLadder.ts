@@ -29,6 +29,33 @@
  *    length — and a control that mis-states its own count is the shape of every
  *    stale figure this program has been digging out of documents all week.
  *
+ * ⚠ **POINT 1 IS SPENT AND THE MECHANISM IT ARGUED FOR IS DELETED — PRICING
+ * PHASE 2 (#1832, his approved brief #1774), 2026-10-03. IT IS KEPT BECAUSE
+ * ITS REASONING IS WHY THE DELETION IS A DELETION AND NOT A REWRITE.**
+ *
+ * `cardTrio` and `compareWindow` existed for ONE reason, stated above: seven
+ * rungs do not fit. He has now removed the rungs rather than the columns —
+ * *"redicidualous amounts of credits at a rediculous price no one would pay"*,
+ * said of the top of the ladder and read at the rows in the design's §1 (six
+ * accounts, all free, no subscriber; nobody has ever been offered $4,800 a
+ * month and taken it). The self-serve ladder is `free` plus **three individual
+ * plans** (`SELF_SERVE_PLAN_ORDER`, served by `billing.getPlans`), and the
+ * rungs above it are the Enterprise band's conversation (#1833).
+ *
+ * **Three rungs are the whole individual ladder, so there is nothing left to
+ * window**, and a mechanism whose reason has gone is removed rather than left
+ * pointing at itself (the design's §3 decision 1). Point 2 stands exactly as
+ * written — the label still says `Compare plans` and still states no count.
+ *
+ * ⚠ **WHAT THE DELETION HAD TO CARRY FORWARD, because it was the only thing
+ * either function did besides windowing**: both DECLINED on an unread rung
+ * (#1747 — the note below this paragraph), and that refusal is what kept a Pro
+ * subscriber from meeting the free rung's arrangement marked current. The
+ * surface keeps it in one place instead of two: `ChangePlanModal`'s own
+ * `cannotArrange` gate already drew a held line in exactly that state, and it
+ * is now what holds the cards back as well. `recommendPlan` keeps its own
+ * `null` refusal, unchanged.
+ *
  * ✅ **The one thing the brief demands of the data is already true of ours.**
  * *"Cost per credit … must descend monotonically up the ladder"* — his prototype
  * had Starter beating Pro on value and needed a data fix. Ours improves at
@@ -67,22 +94,27 @@ export type LadderPlan = {
   rolloverPercent: number;
 };
 
-/** How many columns the compare grid draws — the brief's `repeat(5, 1fr)`. */
-export const COMPARE_COLUMNS = 5;
-
 /**
  * ⚠ **AN UNKNOWN RUNG AND A RUNG THAT IS NOT ON THE LADDER ARE DIFFERENT FACTS,
- * AND ALL THREE HELPERS BELOW READ THEM AS ONE UNTIL #1747.**
+ * AND THREE HELPERS READ THEM AS ONE UNTIL #1747.**
  *
- * Every one of them starts with `ladder.findIndex((plan) => plan.id ===
+ * ⚠ **IT IS ONE HELPER NOW — `cardTrio` AND `compareWindow` ARE DELETED BY
+ * #1832 (the header's own ⚠, above), AND THIS NOTE IS CORRECTED RATHER THAN
+ * LEFT DESCRIBING THEM.** A paragraph that explains the refusals of two
+ * functions that no longer exist is the shape law 7c is about: the next reader
+ * would go looking for a guard the tree does not hold. What follows is the
+ * finding, in the past tense where it belongs, and the one live refusal.
+ *
+ * Every one of the three started with `ladder.findIndex((plan) => plan.id ===
  * currentId)`, and that answers **-1** for two situations which want opposite
  * answers:
  *
  * · **#391's HIDDEN RUNG** — a real plan, read off `getStatus`, deliberately
  *   absent from the offered ladder because he has not priced it. There is
- *   genuinely nothing above it to sell, so `cardTrio` falls back to the first
- *   three with nothing marked current. **That behaviour is correct and is
- *   unchanged.**
+ *   genuinely nothing above it to sell, so the trio fell back to the first
+ *   three with nothing marked current. **That behaviour was correct; the
+ *   surface answers the same state the same way today** — no card is marked
+ *   current, and the header names the account's own plan from `ownPlanFacts`.
  * · **A RUNG NOBODY HAS READ YET** — `billing.getStatus` has not answered.
  *   Arranging a ladder around it is arranging it around a guess.
  *
@@ -90,13 +122,16 @@ export const COMPARE_COLUMNS = 5;
  * turned the second into the FIRST RUNG rather than into -1 — so a Pro
  * subscriber got the free rung's arrangement, marked current, with the rung
  * above it as the offer. Keying on `status?.planTier ?? null` is the repair, and
- * it only works if these three then DECLINE on `null` instead of inheriting the
- * hidden rung's answer: `cardTrio(ladder, null, …)` returning the bottom three
- * is the same wrong ladder under a different route.
+ * it only worked because the helpers then DECLINED on `null` instead of
+ * inheriting the hidden rung's answer: `cardTrio(ladder, null, …)` returning
+ * the bottom three was the same wrong ladder under a different route.
  *
- * So each takes `PlanTier | null` and answers nothing at all for `null`. The
- * type is what makes it unmissable at a future call site; the `-1` paths below
- * are untouched.
+ * **`recommendPlan` still takes `PlanTier | null` and answers nothing at all
+ * for `null`** — the type is what makes it unmissable at a future call site, and
+ * the `-1` path below is untouched. The two deleted refusals did not become
+ * nothing: the surface's own `cannotArrange` gate draws no cards and no buttons
+ * while the rung is unread, which is one statement of the rule where there were
+ * three, and is where it has to live now that the population is fixed.
  */
 /**
  * The recommendation: the cheapest plan whose monthly credits cover the
@@ -130,71 +165,6 @@ export function recommendPlan(
   );
   /* Nothing on the ladder covers it — the top rung is still the best answer. */
   return fit ?? ladder[ladder.length - 1] ?? null;
-}
-
-/**
- * The three cards: current, recommendation, anchor.
- *
- * §6c: *"The tier above the recommendation is an anchor — a higher number in
- * view makes the target read as moderate."* With no recommendation (the account
- * fits its plan) the three become current plus the two above it, which is the
- * same shape doing the same job without inventing a reason to move.
- */
-export function cardTrio(
-  ladder: LadderPlan[],
-  currentId: PlanTier | null,
-  recommended: LadderPlan | null,
-): LadderPlan[] {
-  /* ⚠ THE ONE PLACE THE TWO FACTS GIVE OPPOSITE ANSWERS, so the order of these
-     two lines is the whole fix: `null` draws NO cards, where the `-1` below
-     draws the bottom three on purpose (#391). Collapsing them is what offered a
-     Pro subscriber the free rung's arrangement. */
-  if (currentId === null) return [];
-  const currentIndex = ladder.findIndex((plan) => plan.id === currentId);
-  if (currentIndex < 0) return ladder.slice(0, 3);
-  const wanted = new Set<number>([currentIndex]);
-  const recommendedIndex = recommended
-    ? ladder.findIndex((plan) => plan.id === recommended.id)
-    : -1;
-  if (recommendedIndex >= 0) {
-    wanted.add(recommendedIndex);
-    if (recommendedIndex + 1 < ladder.length) wanted.add(recommendedIndex + 1);
-  }
-  for (let step = 1; wanted.size < 3 && currentIndex + step < ladder.length; step += 1) {
-    wanted.add(currentIndex + step);
-  }
-  /* Still short at the top of the ladder — fill downwards rather than draw two. */
-  for (let step = 1; wanted.size < 3 && currentIndex - step >= 0; step += 1) {
-    wanted.add(currentIndex - step);
-  }
-  return Array.from(wanted)
-    .sort((a, b) => a - b)
-    .map((index) => ladder[index]);
-}
-
-/**
- * The five columns the compare grid draws — a window on the ladder, centred on
- * the account and shifted to keep the recommendation inside it.
- */
-export function compareWindow(
-  ladder: LadderPlan[],
-  currentId: PlanTier | null,
-  recommended: LadderPlan | null,
-): LadderPlan[] {
-  /* ⚠ Before the short-circuit below, not after it: a ladder of five or fewer
-     rungs returns whole, so a `null` rung would otherwise draw the full
-     comparison centred on nothing. And `Math.max(0, -1)` two lines down is a
-     floor that silently reads an unknown rung as the BOTTOM one. */
-  if (currentId === null) return [];
-  if (ladder.length <= COMPARE_COLUMNS) return ladder;
-  const currentIndex = Math.max(0, ladder.findIndex((plan) => plan.id === currentId));
-  const recommendedIndex = recommended
-    ? ladder.findIndex((plan) => plan.id === recommended.id)
-    : currentIndex;
-  const anchor = Math.max(currentIndex, recommendedIndex + 1);
-  let start = Math.min(currentIndex, anchor - COMPARE_COLUMNS + 1);
-  start = Math.max(0, Math.min(start, ladder.length - COMPARE_COLUMNS));
-  return ladder.slice(start, start + COMPARE_COLUMNS);
 }
 
 /**

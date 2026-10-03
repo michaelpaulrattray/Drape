@@ -156,8 +156,23 @@ const repoRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
   elsewhere**: the rate's remaining home is Add credits, whose two rows stand
   unchanged with their reasons. The budget comes off with the row for the
   reason the note above gives.
+
+  ⚠ **17 → 15 (#1845), AND IT IS THE SENTENCE ABOVE FINISHING ITS OWN JOB.**
+  That note said *"the rate's remaining home is Add credits, whose two rows
+  stand unchanged"* — true of the file and false of the SURFACE. One of those
+  two rows was the rate on `PlanStepUpPane`, which #1836 had just relabelled a
+  plan surface (eyebrow `PLANS`, heading *Choose a plan*), so his #1773 word
+  reached it the same hour and nobody noticed: `AddCreditsModal.tsx` draws
+  three surfaces and the census keys on files. Both rows left by the clean
+  door — the rate sentence and its `up from` half are deleted, and the census's
+  own stale-row arm reported both at budgeted 1, found 0, before this number
+  was touched. **Nothing was routed and nothing is excused elsewhere, and that
+  is measured rather than argued**: after it, `AddCreditsModal.tsx` has no
+  censused site and the reader indicts none in it. The rate's surviving home —
+  the credit PACKS pane — computes it through `rateFor`, a name these rules do
+  not read, so it was never censused either.
 */
-const OCCURRENCES_CEILING = 17;
+const OCCURRENCES_CEILING = 15;
 
 const censusedOccurrences = UNROUTED.reduce((total, row) => total + row.count, 0);
 

@@ -37,12 +37,28 @@
  *
  * ## What the reconciliation changed (BRIEF-RECONCILIATION Q3)
  *
- * The brief's ladder is five rungs at `2.79¢ … 1.87¢`; **ours is the offered
+ * The brief's ladder is five rungs at `2.79¢ … 1.87¢`; ~~**ours is the offered
  * seven** (#391 folded the twelve: four Plus rungs dropped, Ultimate hidden
- * behind the email line below the ladder) at 0.036¢ down to 0.02¢ a credit.
+ * behind the email line below the ladder) at 0.036¢ down to 0.02¢ a credit.~~
  * The population of both modes is derived from `billing.getPlans` in
  * `planLadder.ts` — see its header for the whole reading — and the compare
  * control says `Compare plans` rather than `Compare all 5`.
+ *
+ * ⚠ **THE RUNG COUNT IN THAT SENTENCE IS SPENT — PRICING PHASE 2 (#1832),
+ * 2026-10-03: the self-serve ladder is `free` plus THREE paid rungs
+ * (`SELF_SERVE_PLAN_ORDER`), and the rungs above it are the Enterprise band's
+ * conversation.** It is struck rather than deleted because the derivation
+ * beside it is the half that still holds and is the whole point: both modes
+ * still read `billing.getPlans` rather than a count typed here, which is why
+ * the ladder shortening by four rungs moved no code on this surface.
+ *
+ * ⚠ **IT IS ALSO WHY #1850 EXISTS, AND THAT IS THE LESSON WORTH THE
+ * PARAGRAPH.** A population that derives survives a ruling; a STRING that
+ * described the mechanism does not, and nothing derives a label. *"Back to the
+ * nearest three"* outlived the window it named by a day and was found on the
+ * next PR rather than by a guard. The sweep for its siblings is in #1850's own
+ * body: it is the only CUSTOMER-VISIBLE string on these surfaces that named
+ * the window, and this docblock sentence was the only other survivor.
  *
  * ## Card 390 — his six form corrections, and the one thing they must not do
  *
@@ -89,8 +105,11 @@
  *    with the tag it existed for (#487). `.dp-plan__tab` has one context
  *    again, which is what item 6 was trying to buy.
  */
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { displayBalance, displaySpent, formatCredits } from "@shared/creditDisplay";
+/* #1836 — the one declaration of who may buy a credit pack, read here so §6f
+   and the Add-credits door cannot answer that question differently. */
+import { topupEligibility } from "@shared/creditTopups";
 import { Check, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -110,12 +129,11 @@ import {
   readCycle,
 } from "@/features/settings/planMath";
 import {
-  cardTrio,
-  compareWindow,
   charactersFor,
   charactersPhrase,
   creditsTail,
   exampleSentence,
+  grantsMonthly,
   recommendPlan,
   rolloverSentence,
   type LadderPlan,
@@ -189,6 +207,93 @@ const ONE_FOR_EVERY_PLAN = `${EVERY_PLAN_PERK}, on every plan — the only diffe
  */
 const TRUST_LINE =
   "See the price before you make anything. Credits back if a result doesn't arrive.";
+
+/**
+ * WHAT EVERY PLAN OPENS TODAY — said ONCE under the three cards rather than
+ * three times inside them (#1832, the design's §3 and §8).
+ *
+ * ⚠ **EVERY ITEM IS A ROUTE A SIGNED-IN CUSTOMER CAN OPEN RIGHT NOW, read at
+ * `App.tsx` rather than assumed** — the casting studio (`/app/casting`), boards
+ * (`/app/canvas`), the wardrobe (`/app/garments`) — and the fourth is the Add
+ * credits checkout, live since #1606. The heading is **ON EVERY PLAN** and not
+ * *on every account*, which is the precise difference `topupEligibility`
+ * enforces: credit packs are a plan holder's road, and Free is not a plan.
+ *
+ * #1607's rule, and it is the one most easily lost when copy gets "better":
+ * re-derive every string against present capability before shipping.
+ */
+const OPEN_TODAY =
+  "Casting studio · Boards · Wardrobe · Credit packs whenever you need them";
+
+/**
+ * THE FORWARD-LOOKING HALF — his own brief asked for *"way better copy based on
+ * future development not just what exists today"*, with anything unshipped
+ * marked **coming** (#1774).
+ *
+ * The cinema studio's description is `CLAUDE.md`'s own sentence for it, and
+ * *"we'll say when"* is this product's existing voice for an unshipped thing
+ * (`CastSettingsModal.tsx`: *"Not available yet — we'll say when it lands."*).
+ *
+ * ⚠ **IT NAMES A STUDIO AND TWO GENERATORS, NEVER AN ENGINE.** That is the
+ * disappearing-technology law's third question answered in the copy itself: a
+ * COMING mark on a thing a customer wants is a promise; a COMING mark on a
+ * model name is our homework on their screen.
+ */
+const COMING_LINE =
+  "The cinema studio — write the script, direct the takes, add voice, cut the film — and the image and video generators. We'll say when they land.";
+
+/**
+ * THE ENTERPRISE BAND'S BODY (#1833, his brief: *"anything really high would be
+ * a sale department chat"*).
+ *
+ * `[adapted]`, and the named edit is the whole card: the promise is exactly what
+ * the shipped line already made — *"larger plans are arranged personally"* —
+ * said as a band with an action instead of a quiet sentence with a mailto.
+ * Every claim in it is in the tree: invoices exist (`billing.getInvoices`), and
+ * *arranged directly* is what #391's email line has promised since it shipped.
+ * It names **no price and no allowance**, which is #391's standing rule for
+ * these rungs and the reason the band can carry three of them at once.
+ */
+const ENTERPRISE_BODY =
+  "A pool built around your volume, invoiced, and arranged with us directly. Tell us what you are making and we will price it.";
+
+/**
+ * WHERE *Let's talk* GOES — the address the product already has.
+ *
+ * ⚠ **THE DESIGN SAYS *"the sales address (or the contact road the brief
+ * names)"* AND THERE IS NO SALES ADDRESS IN THE TREE** — `support@klieglabs.com`
+ * is the only address this product uses anywhere (the sign-in page, the frozen-
+ * account road, the free-grant refusal, and #391's own line right here). So the
+ * band keeps it rather than inventing a mailbox nobody reads, which is the
+ * cheapest way to make a *Let's talk* button go nowhere.
+ *
+ * The subject carries the account's plan and balance so the reply does not have
+ * to start by asking. ⚠ **A mailto is composed, so both are
+ * `encodeURIComponent`'d** — a plan name is a catalogue string today and the
+ * balance is a number, but a subject line assembled from account data is a
+ * composition, and `&` in one of them would silently truncate the subject and
+ * invent a parameter.
+ */
+const SALES_EMAIL = "support@klieglabs.com";
+
+/**
+ * WHICH RUNG'S NAME AND LINE THE BAND WEARS.
+ *
+ * ⚠ **A TIER KEY, NOT A NAME, AND THE NAME COMES OFF THE WIRE — card 390's rule
+ * and its guard's own sentence: *"no plan name is a literal at all; the whole
+ * ladder comes off `billing.getPlans`"*.** `Enterprise` typed here would be the
+ * one string on this surface that a rename in `PLAN_TIERS` could strand, which
+ * is exactly the drift that arm exists to catch, and it caught this band's first
+ * draft.
+ *
+ * **The band stands for three rungs** — `business`, `scale` and `enterprise`
+ * (`ARRANGED_DIRECTLY_PLAN_TIERS`) — and wears the top one's name and audience
+ * line because that is the one his brief named the conversation after. So a
+ * rename of that rung renames the band WITH it, heading and blurb together off
+ * one key, which is the behaviour a reader would expect from a door labelled
+ * after a plan.
+ */
+const BAND_TIER = "enterprise";
 
 export function ChangePlanModal({
   onClose,
@@ -384,7 +489,12 @@ export function ChangePlanModal({
     subscriber whose `getStatus` had not answered: the header named their plan
     **"Free"**, the **free card carried `Current plan`**, and `recommendPlan`,
     `cardTrio` and `compareWindow` arranged the whole ladder around the bottom
-    rung.
+    rung. (⚠ The last two are DELETED by #1832 — three rungs are the whole
+    individual ladder, so there was nothing left to window. `recommendPlan`
+    keeps its `null` refusal and the surface's own `cannotArrange` gate keeps
+    the rest; `planLadder.ts`' header carries the reading. The sentence stays in
+    the past tense it is written in, because the defect it records is why this
+    line is `null`.)
 
     ⚠ **IT IS NOT A BEAT, WHICH IS WHY IT IS WORTH THE LINES.** `getPlans` and
     `getStatus` ride ONE batched request, but a tRPC batch reply carries one
@@ -447,12 +557,25 @@ export function ChangePlanModal({
     The ladder, derived from the server's own list. `getPlans.subscriptions`
     omits `free` (it is not a Stripe product), so the free rung is folded back
     in from `tiers` — otherwise an account on Free cannot see where it is.
+
+    ⚠ **IT READS `selfServeOrder`, NOT `planOrder` — PRICING PHASE 2 (#1832).**
+    The surface draws `free` plus the three individual plans; `business`,
+    `scale` and `enterprise` are the Enterprise band's conversation (#1833) and
+    `ultimate` was never offered (#391). The narrowing is the SERVER's — one
+    declaration in `stripeProducts.ts` — because a `["starter","pro","studio"]`
+    typed on this side is a second copy of the ladder, and the day he moves a
+    rung the surface and the catalogue would disagree with a price on screen.
+
+    ⚠ **`planOrder` IS STILL READ, FOR ONE THING ONLY: the DIRECTION of a
+    move** (`rankOf` below). An account he hand-sells Business is not on this
+    ladder, and *Business → Studio* is a downgrade — a fact about the whole
+    ladder, which the drawn subset cannot answer.
   */
   const ladder = useMemo<LadderPlan[]>(() => {
     if (!plans) return [];
     const byId = new Map(plans.subscriptions.map((entry) => [entry.id as string, entry]));
     const rungs: LadderPlan[] = [];
-    for (const id of plans.planOrder) {
+    for (const id of plans.selfServeOrder) {
       const tier = plans.tiers[id as keyof typeof plans.tiers];
       if (!tier) continue;
       const sub = byId.get(id as string);
@@ -476,6 +599,28 @@ export function ChangePlanModal({
   */
   const currentName =
     ladder.find((plan) => plan.id === currentId)?.name ?? status?.planName ?? null;
+  /*
+    THE ACCOUNT'S OWN MONTHLY PRICE — read for ONE thing: whether its credits
+    arrive every period or arrived once (#1832's reason block, through
+    `grantsMonthly`).
+
+    It takes the same two roads `currentName` does, in the same order and for the
+    same reason: the drawn ladder first, then `getStatus`'s own-row facts for an
+    account on a rung this surface does not draw (#391's hidden rung, and every
+    arranged-directly rung from this commit). `null` while nothing has answered —
+    the sentence declines rather than claiming either arrival.
+  */
+  /*
+    THE BAND'S HEADING, off the wire (card 390's no-literal rule). `null` until
+    `getPlans` answers — the band declines rather than naming a rung from a
+    constant, which is the same rule the header and the cards already follow.
+  */
+  const bandName =
+    plans?.tiers[BAND_TIER as keyof typeof plans.tiers]?.name ?? null;
+  const ownPriceInCents =
+    ladder.find((plan) => plan.id === currentId)?.priceInCents ??
+    status?.planPriceInCents ??
+    null;
 
   /*
     #385 — the cycle spend is SUMMED from the ledger, never taken off
@@ -502,14 +647,19 @@ export function ChangePlanModal({
     () => (ladder.length ? recommendPlan(ladder, currentId, projected) : null),
     [ladder, currentId, projected],
   );
-  const trio = useMemo(
-    () => (ladder.length ? cardTrio(ladder, currentId, recommended) : []),
-    [ladder, currentId, recommended],
-  );
-  const window5 = useMemo(
-    () => (ladder.length ? compareWindow(ladder, currentId, recommended) : []),
-    [ladder, currentId, recommended],
-  );
+  /*
+    THE THREE CARDS — the paid rungs of the self-serve ladder, and that is the
+    whole population (#1832, the design's §3 decision 2).
+
+    ⚠ **FREE IS NOT A CARD, AND IT IS DERIVED FROM THE PRICE RATHER THAN NAMED.**
+    *"It is the state you are in, not a plan you buy"* — the reason block at the
+    top of the pane already says so with the balance beside it. `priceInCents >
+    0` is the same test `creditsTail` and `grantsMonthly` already make about the
+    same rung, so a rung's cardness and its own sentence about when credits
+    arrive cannot come apart. Free keeps its COLUMN in the compare table, where
+    a like-for-like read against where the customer is standing is the point.
+  */
+  const cards = useMemo(() => ladder.filter((plan) => plan.priceInCents > 0), [ladder]);
 
   /*
     ⚠ **EVERY PRICE ON THIS SURFACE IS A MONTH'S PRICE, IN BOTH INTERVALS**
@@ -522,7 +672,7 @@ export function ChangePlanModal({
     ⚠ **`interval === "annual"` READS A NULL AS MONTHLY, AND THE REASON THAT IS
     NOT THIS CARD'S DEFECT IS STRUCTURAL RATHER THAN LUCKY (#1763).** Every
     caller of this is inside something the pane does not draw while the status
-    is unread — `trio` and `window5` are empty on a null rung (#1747), the
+    is unread — the cards and the table both decline on a null rung (#1747), the
     footer's `offered` is null with them, and the comparison table now declines
     on a null cycle outright. The same holds for `switchBillingLabel` and for
     the cards' own `billed yearly` line. **A null never reaches a price**; what
@@ -556,6 +706,34 @@ export function ChangePlanModal({
     setConfirming(plan);
   };
 
+  /*
+    THE ENTERPRISE BAND'S ACTION — a mail, carrying what the account already is
+    (#1833).
+
+    ⚠ **IT IS A `<button>` RATHER THAN AN ANCHOR, AND THAT IS THE FOUNDATION'S
+    RULE RATHER THAN A PREFERENCE.** `primitives.tsx`' own header: *"Every
+    interactive affordance is a real <button>"*. The alternative — an `<a>`
+    wearing `dp-btn` — is a second copy of the primitive's look, which the
+    promotion pass's rule 6 exists to refuse. #391's quiet line keeps being a
+    link because it reads as a sentence; this reads as an action.
+
+    ⚠ **NOTHING LEAVES THE APP UNTIL THE CUSTOMER SENDS THE MAIL.** The subject
+    is composed into their own mail client; no request is made, no form is
+    posted, and the band collects nothing — which is the card's own condition
+    (*"never a form that collects card details"*).
+
+    Both pieces are encoded. They are a catalogue name and a number today, and a
+    subject line assembled from account data is still a composition: one `&` in
+    either would truncate the subject and invent a mailto parameter.
+  */
+  const openSalesMail = () => {
+    const parts = [currentName ? `on ${currentName}` : null, status ? `${formatCredits(displayBalance(status.balance))} credits` : null]
+      .filter(Boolean)
+      .join(", ");
+    const subject = parts ? `Enterprise plan — ${parts}` : "Enterprise plan";
+    window.location.href = `mailto:${SALES_EMAIL}?subject=${encodeURIComponent(subject)}`;
+  };
+
   /* A subscriber's OWN tier can still change its billing cycle — without
      this, the toggle argues annual prices while the rung most people are
      deciding about carries no button at all. */
@@ -578,6 +756,39 @@ export function ChangePlanModal({
 
   const currentIndex = ladder.findIndex((plan) => plan.id === currentId);
   /*
+    THE DIRECTION OF A MOVE — read off the PRICE, not off a position in the drawn
+    ladder (#1832).
+
+    ⚠ **IT HAD TO STOP BEING A POSITION, AND THE REASON IS AN ACCOUNT THAT CAN
+    NOW EXIST.** The drawn ladder is `free` plus the three individual plans;
+    `business`, `scale` and `enterprise` are the Enterprise band's conversation
+    (#1833). An account he hand-sells Business is therefore NOT in `ladder`, so
+    the old `ladder.findIndex(...) > currentIndex` answered **-1 < every index**
+    and labelled every card **Upgrade** — including *Upgrade to Studio*, which
+    for a Business account is a drop in allowance and in price at once.
+
+    **The price answers it for every rung, including the ones this surface does
+    not draw**, because `getStatus` serves the account's own price through
+    `ownPlanFacts` precisely so an off-ladder account is not captioned from a
+    list it is absent from (#391, PR #583 finding 1). `PLAN_TIERS`' prices
+    ascend strictly — 0 · 2,700 · 6,800 · 15,900 · 84,000 · 480,000 · 1,500,000
+    · 4,800,000 — so *costs more than I pay now* and *is further up the ladder*
+    are one fact, and the first is also what the two words mean to a customer.
+    The guard suite holds that strictness, so a future price that breaks the
+    equivalence reddens instead of quietly mislabelling a button.
+
+    Both figures are the MONTHLY list price, so the comparison is unaffected by
+    the interval toggle — `priceOf` divides for display and is not read here.
+
+    `null` only while nothing has answered, and the cards are not drawn then
+    (`cannotArrange`). An unrecognised legacy tier value reads as price 0 —
+    `ownPlanFacts`' own answer for it — so every card offers an upgrade, which
+    is the conservative direction and the same one `creditsTail` already takes
+    about that row.
+  */
+  const isUpgrade = (plan: LadderPlan): boolean | null =>
+    ownPriceInCents === null ? null : plan.priceInCents > ownPriceInCents;
+  /*
     ⚠ **THE OFFER FALLS BACK TO THE NEXT RUNG WHEN THERE IS NOTHING TO
     RECOMMEND**, and both modes read the SAME value. An account whose plan
     already covers its burn has no `recommended` — correct, and §6d forbids
@@ -596,9 +807,27 @@ export function ChangePlanModal({
 
     So the offer requires a known rung. `recommended` is already `null` then,
     and the fallback is the half that had to be said out loud.
+
+    ⚠ **AND #1747'S OWN SWEEP MISSED A SECOND WAY INTO THAT EXACT SENTENCE,
+    FOUND BY #1832'S REBUILD AND CLOSED HERE (law 7: fix the class).** The
+    `currentId === null` guard answers the UNREAD rung. It does not answer a
+    rung that is real, read, and simply not on the drawn ladder — #391's hidden
+    `ultimate` today, and every arranged-directly rung from this commit — for
+    which `currentIndex` is ALSO -1 while `currentId` is a perfectly good
+    string. `recommended` is null in that state too (`recommendPlan` refuses on
+    `currentIndex < 0`), so the fallback ran and `ladder[0]` is **Free**: an
+    account on the top rung the product sells would have been shown *"Upgrade to
+    Free"* as its one ink button, with the free card carrying the primary. It
+    was never reachable — #391 records zero rows on the hidden rung and nobody
+    is hand-sold yet — which is exactly the shape #1747 named: a wrong value
+    behind a gate becomes a wrong answer the day the gate moves, and this commit
+    is the day it moves, because the band makes those rungs ordinary.
+
+    So the fallback requires the account to be ON the drawn ladder, which is one
+    condition stating both facts rather than two guards that can come apart.
   */
   const offered =
-    currentId === null
+    currentIndex < 0
       ? null
       : recommended ?? ladder.find((plan, index) => index === currentIndex + 1) ?? null;
   const primaryId = offered?.id ?? null;
@@ -667,6 +896,48 @@ export function ChangePlanModal({
               </p>
             </div>
           </div>
+        ) : currentName && ownPriceInCents !== null ? (
+          /*
+            WHERE YOU ARE, when there is no run-out to warn about — #1832, the
+            design's §3 frame (*"You are on Free."* with the balance beside
+            it).
+
+            ⚠ **IT IS THE SAME SLOT AS THE BURN BLOCK ABOVE, NOT A SECOND ONE,
+            AND THE BURN BLOCK WINS WHERE BOTH COULD SPEAK.** §6a's block is the
+            stronger sentence by a distance — it names the DAY the credits run
+            out and what the change costs — so a surface drawing both would be
+            arguing with itself in two paragraphs. This is the branch for the
+            state the approved frames were actually taken in: the prototype's
+            fixture is on Free, and a free account has no cycle, no burn and no
+            run-out date, so §6a drew NOTHING there and the pane opened on a
+            billing toggle with no reason beside it.
+
+            ⚠ **AND THAT IS EVERY ACCOUNT ON PRODUCTION TODAY** — the design's
+            §1 read it at the rows: six accounts, all free, no subscriber. So
+            the block the brief shows him is the block nobody could see.
+
+            It claims nothing it has not been told: `currentName` is `null` until
+            `getPlans`/`getStatus` answer (the header's own rule), and the
+            balance comes from `status.balance` through the display helper rather
+            than from the plan's allowance — what a customer has left is their
+            own number, not their rung's.
+          */
+          <div className="dp-plan__reason dp-plan__reason--plain">
+            <div>
+              <p className="dp-plan__reasonhead">You are on {currentName}.</p>
+              <p className="dp-plan__reasonbody">
+                {grantsMonthly(ownPriceInCents)
+                  ? "Your credits top up at the start of every billing period."
+                  : "Your free credits arrived once when you signed up. A plan tops you up every month."}
+              </p>
+            </div>
+            {status ? (
+              <div className="dp-plan__reasonstat">
+                <span className="dp-set__minilabel">CREDITS LEFT</span>
+                <p className="dp-plan__credits">{formatCredits(displayBalance(status.balance))}</p>
+              </div>
+            ) : null}
+          </div>
         ) : null}
 
         {/* §6b — the interval control */}
@@ -704,6 +975,17 @@ export function ChangePlanModal({
             while `billing.getStatus` is in flight, and the pane's own held line
             below covers the same state in words. The *Compare plans* button
             stays, because it asserts nothing about this account.
+
+            ⚠ **AND ITS RETURN LABEL NAMES WHERE IT GOES, NOT A MECHANISM —
+            #1850.** It read *"Back to the nearest three"* until Phase 2, which
+            was literal while `compareWindow` showed the five rungs nearest the
+            account and the cards showed the nearest three. #1832 deleted that
+            window (`planLadder.ts`'s own header: *"three rungs are the whole
+            individual ladder, so there is nothing left to window"*), so the
+            label was the last survivor of a mechanism that had gone — and it
+            told a customer their plan cards were a moving selection out of
+            something longer, which is not what the surface does and is the
+            machinery showing through a label.
           */}
           {interval === null ? null : (
             <span className="dp-segmented" role="group" aria-label="Billing interval">
@@ -731,7 +1013,7 @@ export function ChangePlanModal({
             className="dp-plan__modeswitch"
             onClick={() => setCompare((open) => !open)}
           >
-            {compare ? "Back to the nearest three" : "Compare plans"}
+            {compare ? "Back to plans" : "Compare plans"}
           </button>
         </div>
 
@@ -743,14 +1025,13 @@ export function ChangePlanModal({
             than meeting an empty table. */}
         {compare && interval !== null ? (
           <CompareGrid
-            plans={window5}
+            plans={ladder}
             currentId={currentId}
             interval={interval}
             oneCharacterCredits={oneCharacterCredits}
-            currentIndex={currentIndex}
-            ladder={ladder}
             pending={pending}
             onAct={act}
+            isUpgrade={isUpgrade}
             intervalDiffers={intervalDiffers}
             switchBillingLabel={switchBillingLabel}
           />
@@ -783,13 +1064,13 @@ export function ChangePlanModal({
         ) : (
           <>
           <div className="dp-plan__grid">
-            {trio.map((plan) => {
+            {cards.map((plan) => {
               const isCurrent = plan.id === currentId;
               const isRecommended = plan.id === recommended?.id;
               const rollover = rolloverSentence(plan.rolloverPercent);
               const example = exampleSentence(charactersFor(plan.credits, oneCharacterCredits));
               const blurb = blurbFor(plan.id);
-              const planIndex = ladder.findIndex((entry) => entry.id === plan.id);
+              const stepUp = isUpgrade(plan);
               return (
                 <article
                   key={plan.id}
@@ -895,9 +1176,9 @@ export function ChangePlanModal({
                     >
                       {pending === plan.id
                         ? "Working…"
-                        : planIndex > currentIndex
-                          ? "Upgrade"
-                          : "Downgrade"}
+                        : stepUp === false
+                          ? "Downgrade"
+                          : "Upgrade"}
                     </Button>
                   )}
                   {/*
@@ -1001,31 +1282,71 @@ export function ChangePlanModal({
             Compare mode keeps its footnote: a table has no per-column perk row,
             so under the table is the only place the sentence can go.
           */}
+          {/*
+            WHAT EVERY PLAN CARRIES, AND WHAT IS COMING — one block under the
+            three cards (#1832, the design's §3).
+
+            ⚠ **IT IS THE ANSWER TO WHAT MADE THE OLD TABLE READ AS A WALL OF
+            REPEATS, pointed at the cards.** A fact every rung shares has no
+            decision value in a per-rung slot; drawn three times it is noise and
+            drawn once under them it is the floor the comparison stands on. The
+            per-card tick stays exactly where it is on his #425 word — moving it
+            in here would have been tidier and would have undone a ruling.
+          */}
+          <div className="dp-plan__includes">
+            <span className="dp-set__minilabel">ON EVERY PLAN</span>
+            <p className="dp-plan__includesline">{OPEN_TODAY}</p>
+            <p className="dp-plan__includesline">
+              <span className="dp-plan__coming">COMING</span>
+              {COMING_LINE}
+            </p>
+          </div>
+          {/*
+            THE ENTERPRISE BAND — #1833, and it REPLACES #391's email line
+            rather than sitting beside it.
+
+            ⚠ **#391'S RULING IS HONOURED, NOT OVERRULED, AND THE DISTINCTION IS
+            WORTH READING.** His 2026-09-05 word was *"just an email link for
+            now, keep it simple"*, and the line's own comment said: do not grow
+            this into a form, a request table or a greyed-out card — **each of
+            which was declined by name.** This is none of the three. It is still
+            one email link; what changed is his own brief of 2026-10-02 —
+            *"anything really high would be a sale department chat"* — which
+            moves three PRICED rungs into the same conversation the hidden rung
+            was already in, and a band is what carries three of them without
+            publishing a price for any.
+
+            **The one word that matters is "for now".** The band names no price,
+            no allowance and no rung — exactly the #391 rule — and collects
+            nothing. The action is a mailto, which is the simple road he asked
+            for, with the account's own plan and balance in the subject so the
+            reply does not open by asking.
+
+            ⚠ **It is drawn in CARD mode only**, where the frames put it. The
+            compare table has no Enterprise column on purpose (the design's §4:
+            a column of dashes is not a comparison) and its footnote carries the
+            sentence instead — so the promise is in both modes and the ACTION is
+            in the one the frames show it in.
+          */}
+          {bandName ? (
+            <div className="dp-plan__ent">
+              <span className="dp-plan__entbody">
+                <span className="dp-plan__tiername">{bandName}</span>
+                {blurbFor(BAND_TIER) ? (
+                  <span className="dp-plan__blurb">{blurbFor(BAND_TIER)}</span>
+                ) : null}
+                <span className="dp-plan__entnote">{ENTERPRISE_BODY}</span>
+              </span>
+              <span className="dp-set__spacer" />
+              <Button variant="secondary" size="small" onClick={openSalesMail}>
+                Let&apos;s talk
+              </Button>
+            </div>
+          ) : null}
           </>
         )}
 
         <p className="dp-plan__trust">{TRUST_LINE}</p>
-
-        {/*
-          #391 — THE HIDDEN TOP RUNG'S DOOR, and it is deliberately just an
-          email (his ruling, verbatim: "just an email link for now, keep it
-          simple. they request a higher limit and we can send them the link if
-          we approve"). One quiet line, under the ladder in BOTH modes; it
-          names no plan and no price — a rung he has not decided to publish
-          must not be advertised by its own escape hatch. Do NOT grow this
-          into a form, a request table, or a greyed-out card: each was
-          considered on the card and declined by name.
-        */}
-        <p className="dp-plan__request">
-          Need a higher limit?{" "}
-          <a
-            className="dp-plan__request-link"
-            href="mailto:support@klieglabs.com?subject=A%20higher%20plan"
-          >
-            Write to support@klieglabs.com
-          </a>{" "}
-          — larger plans are arranged personally.
-        </p>
 
         {/* §6f — the honest version of "Expand credit limit" */}
         {/*
@@ -1042,18 +1363,49 @@ export function ChangePlanModal({
           The label stays: *Just need more credits* is still exactly what this
           row is for, and is now literally what it does.
         */}
-        <div className="dp-plan__cross">
-          <span className="dp-set__rowtext">
-            <span className="dp-set__label">Just need more credits</span>
-            <span className="dp-set__note">
-              Buy a one-off pack instead — your plan stays exactly as it is.
+        {/*
+          ⚠ **AND IT IS NOT DRAWN TO A FREE ACCOUNT AT ALL — #1836, his word
+          2026-10-03:** *"you shouldnt be able to use add credits if your on the
+          free plan at all , not sure why i could click the button it should be
+          greyed out or only display plans when i click it im in a free
+          account"*. **This is the button.** It is the only control in the
+          product labelled `Add credits`, and a free account pressing it read a
+          surface headed *Add more credits* that offered a plan.
+
+          ⚠ **HIDING IT IS NOT THE SOFT OPTION HERE, IT IS THE TRUE ONE**, and
+          the row's own two sentences are why: *"Buy a one-off pack instead"* —
+          instead of what? The plans are on this very screen, and the ladder
+          above is the only road a free account has. *"your plan stays exactly
+          as it is"* — there is no plan to keep. Both clauses are statements
+          about a subscriber, so on a free account the row is not merely a wrong
+          destination; it is two false sentences and a button that cannot do
+          what it says.
+
+          ⚠ **AND IT IS `may-buy` RATHER THAN `!== "free"`, SO AN UNREAD RUNG
+          DECLINES.** `topupEligibility` is the one declaration of who may buy a
+          pack ({@link shared/creditTopups.ts}), already read by the Add-credits
+          door — a second spelling of the same rule one file over is working law
+          4 at its smallest. Hiding on unread is the same safe direction `Drop to
+          Free` takes below, and the same three-state answer the eight cards
+          before it (#1703 → #1755) were each filed about: a subscriber would
+          otherwise lose this row for the beat their status is in flight, which
+          is the cheap error, where SHOWING it to a free account is the one his
+          word forbids.
+        */}
+        {topupEligibility(status?.planTier) === "may-buy" ? (
+          <div className="dp-plan__cross">
+            <span className="dp-set__rowtext">
+              <span className="dp-set__label">Just need more credits</span>
+              <span className="dp-set__note">
+                Buy a one-off pack instead — your plan stays exactly as it is.
+              </span>
             </span>
-          </span>
-          <span className="dp-set__spacer" />
-          <Button variant="secondary" size="small" onClick={onAddCredits}>
-            Add credits
-          </Button>
-        </div>
+            <span className="dp-set__spacer" />
+            <Button variant="secondary" size="small" onClick={onAddCredits}>
+              Add credits
+            </Button>
+          </div>
+        ) : null}
       </div>
 
       <footer className="dp-plan__foot">
@@ -1147,45 +1499,101 @@ export function ChangePlanModal({
 }
 
 /**
- * §6d — compare mode.
+ * §6d — compare mode, REBUILT TO HIS PHASE 2 BRIEF (#1834).
  *
- * **Six rows, value first and price last**, so the gain is established before
- * the number, and *"every row must differ across plans"*: a row where all plans
- * agree carries no decision value and belongs in the footnote. Ours differ by
- * construction — credits, output, unit price and price all move at every rung —
- * and the two the brief lists that DO NOT move for us are in the footnote:
- * seats (there is no membership) and what every plan carries.
+ * His complaint is the ground, verbatim: *"our compare features needs a way
+ * better design"*. The redesign's answer is not a bigger table — it is
+ * **groups**, and the reason is the finding in the design's §2, which is the
+ * most useful thing in that document:
+ *
+ * ⚠ **FOUR FACTS DIFFER BETWEEN PLANS. THAT IS THE ENTIRE LIST, READ AT THE
+ * CODE.** `planTier` is consulted in exactly three kinds of place — the plan's
+ * own facts (`routes/billing.ts`), staff reporting (`db/admin.ts`), and
+ * `topupEligibility` (`@shared/creditTopups`). **Nowhere in the product does a
+ * plan rung gate a capability**: no per-plan refine cap, no per-plan
+ * concurrency, no per-plan view count, no per-plan feature. So the four are the
+ * allowance, what the allowance makes, what happens to unspent credits, and
+ * whether credit packs may be bought — plus the price.
+ *
+ * ⚠ **WHICH MAKES A TABLE ORGANISED BY WHAT A CUSTOMER MAKES THE TRAP THIS HAD
+ * TO WALK PAST.** It *invites* rows headed *views per cast*, *refines a month*,
+ * *rolls at once* — and every one of them would be inventing a difference. His
+ * own avoid-list on #1607 says the same thing from the other side: no
+ * unlimited, no seat claims, no SLAs, no priority support. **A row exists here
+ * only where the plans differ at the code, and `plansRedesign1832-guard.test.ts`
+ * derives that row set from the constants, so a fifth identical row cannot be
+ * added by hand.**
+ *
+ * **What the groups fix is the thing he was looking at.** Today's table draws
+ * agreement across five columns — a wall of cells that mostly say the same
+ * thing. A fact every column shares is now stated ONCE under its group, and a
+ * group with one honest line in it is also the labelled slot his #425 ruling
+ * asked for: *"eventually i need to make benefits between each plan which will
+ * be a reminder for me."*
+ *
+ * **Value before price**, unchanged from §6d — the gain is established before
+ * the number. **No rate row**, on his word of 2026-10-02 (#1773): the rate
+ * lives on Add credits and nowhere else. **No Enterprise column** — it has no
+ * published price, and a column of dashes is worse than a sentence, so the
+ * footnote carries it and the band (#1833) carries the action.
  */
+type CompareRow = {
+  label: string;
+  mono?: boolean;
+  price?: boolean;
+  read: (plan: LadderPlan) => string;
+};
+
+/**
+ * A group: a heading, the rows that genuinely differ under it, and the one
+ * sentence that is true of every column.
+ *
+ * `rows` may be EMPTY and that is not a degenerate case — it is the point.
+ * *Cinema* and *Help* have nothing that differs by rung, so each is a heading
+ * and a line rather than four identical cells; drawing them as rows is exactly
+ * what made the old table read as repetition.
+ */
+type CompareGroup = {
+  title: string;
+  rows: CompareRow[];
+  /** Said once, under the group. `undefined` for a group with nothing to add. */
+  note?: string;
+  /** Marks the note as unshipped capability — the `COMING` chip (#1774). */
+  coming?: boolean;
+};
+
 function CompareGrid({
   plans,
   currentId,
   interval,
   oneCharacterCredits,
-  currentIndex,
-  ladder,
   pending,
   onAct,
+  isUpgrade,
   intervalDiffers,
   switchBillingLabel,
 }: {
   plans: LadderPlan[];
   /* `null` while the account's own rung is unread — #1747. Every `plan.id ===
      currentId` below is then false, which is the answer wanted: no column is
-     marked current. `window5` is empty in that state, so the grid draws
-     nothing; the type is widened because a prop that cannot be null is a claim
-     this surface can no longer make. */
+     marked current. The pane declines to draw the table at all in that state
+     (`cannotArrange`), so this is the value behind a closed door said
+     correctly rather than a branch anybody reaches. */
   currentId: string | null;
   interval: Interval;
   oneCharacterCredits: number;
-  currentIndex: number;
-  ladder: LadderPlan[];
   pending: string | null;
   onAct: (plan: LadderPlan) => void;
+  /* `null` when the direction cannot be known — the table claims neither
+     Upgrade nor Downgrade then. #1832's own reading: the account may be on a
+     rung this table does not draw. */
+  isUpgrade: (plan: LadderPlan) => boolean | null;
   intervalDiffers: boolean;
   switchBillingLabel: string;
 }) {
-  /* The same one expression the cards read — `Price a month` and `Credits per
-     dollar` are two readings of ONE number and must not be computed twice. */
+  /* The same one expression the cards read — the head price and the `Price a
+     month` row are two readings of ONE number and must not be computed twice
+     (#661). */
   const priceOf = (plan: LadderPlan) => priceAMonth(plan.priceInCents, interval === "annual");
 
   const cellClass = (plan: LadderPlan, extra?: string) =>
@@ -1197,31 +1605,21 @@ function CompareGrid({
       .filter(Boolean)
       .join(" ");
 
-  const rows: { label: string; mono?: boolean; price?: boolean; read: (plan: LadderPlan) => string }[] =
-    [
-      {
-        /*
-          ⚠ **THE LABEL LOST `a month`, AND IT IS THE SAME CORRECTION THE CARDS
-          TOOK (#1607).** The free column's figure is a one-time signup grant,
-          so a row headed *"Credits a month"* stated something false about one
-          of its five columns — and a comparison row cannot carry a per-column
-          qualifier, which is why the word comes OFF the label rather than
-          into the cells. The cards say which it is in their own sentence;
-          this table's job is the like-for-like read.
-        */
-        label: "Credits",
-        mono: true,
-        read: (plan) => formatCredits(displayBalance(plan.credits)),
-      },
-      {
-        /*
-          ⚠ **IT COUNTED FRAMES AT THE LEGACY STUDIO'S PRICE (#1607).** Same
-          repair as the cards': a finished character is Roll + Refine + Sign,
-          derived from the three prices the studio charges, and `frames` was
-          the pipeline's word for a sheet slice.
-        */
-        label: "What that makes",
-        read: (plan) =>
+  const groups: CompareGroup[] = [
+    {
+      title: "What you make",
+      rows: [
+        {
+          /*
+            ⚠ **THE LABEL CARRIES `a month` AND THE CELLS DO NOT QUALIFY
+            THEMSELVES** — the opposite of the `Credits` row below, and the
+            difference is real rather than a style slip. A free account's grant
+            makes about one character ONCE; a plan's allowance makes its figure
+            every month. The qualifier belongs where the figure can be wrong,
+            and here the group's own note says what a finished character IS, so
+            the cells stay numbers and the free column's `—` says nothing false.
+          */
+          label: "Finished characters a month",
           /* `—` keeps its meaning: the divisor is not known yet, or no whole
              character fits. Both are "nothing to state", and neither is 0.
 
@@ -1230,114 +1628,302 @@ function CompareGrid({
              characters` on the free column — a second copy of the card's noun
              rule, which is working law 4 with the shortest drift this
              repository has measured. */
-          charactersPhrase(charactersFor(plan.credits, oneCharacterCredits)) ?? "—",
-      },
+          read: (plan) =>
+            charactersPhrase(charactersFor(plan.credits, oneCharacterCredits)) ?? "—",
+        },
+      ],
       /*
-        ⚠ **THE `Credits per dollar` ROW IS GONE — HIS WORD, 2026-10-02:
-        *"yes i like this"*, on the reading that the rate belongs on Add credits
-        and not on plans.** He pointed at the Free CARD; the table was the other
-        half of the same class, and a free-COLUMN fix would have left the rate
-        standing in six columns of the same table.
-
-        #661's finding is not lost with it — it was that this row and `Price a
-        month` must read one `priceOf`, and the surviving row is the one that
-        reads it. What that card's defect needed is now structural: there is no
-        second number here to contradict the price.
+        ⚠ **BOTH HALVES ARE CAPABILITY CLAIMS AND BOTH WERE READ AT THE CODE.**
+        The composition is `CASTING_V2_ONE_CHARACTER_CREDITS`' own — Roll +
+        Refine + Sign — which is the divisor the cells above divide by, so the
+        sentence and the number cannot come apart. **`five` is
+        `CAST_PACKAGE_VIEWS.length`**, and no plan rung changes it; the guard
+        suite holds the spelled word against that array, so a sixth view
+        reddens this sentence rather than quietly making it false.
       */
-      {
-        label: "Unspent credits",
-        read: (plan) => rolloverSentence(plan.rolloverPercent).text,
-      },
-      {
-        /*
-          ⚠ **THE LABEL DOES NOT MOVE WITH THE TOGGLE** (card 390 item 2, and
-          §6d's row 6 says `Price a month` flatly). A comparison whose unit
-          changes under the customer is not a comparison; the interval changes
-          the RATE and the row goes on measuring the same thing.
-        */
-        label: "Price a month",
-        mono: true,
-        price: true,
-        read: (plan) => formatWholeDollars(priceOf(plan)),
-      },
-    ];
+      note:
+        "A finished character is a roll to find her, a refine to correct her, and a sign that fixes her face. Every signed cast comes with the same five views, on every plan.",
+    },
+    {
+      title: "Credits",
+      rows: [
+        {
+          /*
+            ⚠ **THE QUALIFIER IS IN THE CELL, NOT THE LABEL, AND THAT IS #1607'S
+            FINDING SOLVED RATHER THAN DODGED.** The free column's figure is a
+            ONE-TIME signup grant (`FREE_SIGNUP_GRANT_CREDITS`' own
+            declaration), so a row headed *"Credits a month"* states something
+            false about one of its four columns — which is why #1607 took the
+            words off the label. But a bare number then says nothing about WHEN
+            it arrives, and a like-for-like read is this table's whole job. A
+            per-column qualifier is the honest answer, and it is derived from
+            the same `grantsMonthly(priceInCents)` the cards' own sentence
+            reads, so the two can never disagree.
+          */
+          label: "Credits",
+          mono: true,
+          read: (plan) =>
+            `${formatCredits(displayBalance(plan.credits))}${grantsMonthly(plan.priceInCents) ? " a month" : " to start"}`,
+        },
+        {
+          label: "Unspent credits",
+          read: (plan) => rolloverSentence(plan.rolloverPercent).text,
+        },
+        {
+          /*
+            THE FOURTH DIFFERING FACT (the design's §2), and it is read from the
+            RULE rather than from the price. `topupEligibility` is the one
+            declaration that decides whether a customer may buy a pack, and it
+            is what Add credits' own door asks — so this row cannot drift from
+            the behaviour it describes. Its `unread` answer cannot reach here:
+            the columns are catalogue rungs, never the account's own, so the
+            argument is always a real tier id.
+          */
+          label: "Buy extra credits",
+          read: (plan) =>
+            topupEligibility(plan.id) === "may-buy" ? "Any time, in packs" : "On a plan",
+        },
+      ],
+      /*
+        One pool: there is one `points.balance` and every tool spends it. The
+        never-expire half is #1660's work and is already the shipped sentence on
+        Add credits (*"Purchased credits never expire"*) — said here in the one
+        place a customer is comparing plans, and said about PAID credits only,
+        which is the precise claim #1660 made true.
+      */
+      note:
+        "One pool. Every tool spends the same credits, and credits you have paid for never expire.",
+    },
+    {
+      /*
+        HIS BRIEF'S FORWARD-LOOKING HALF, in the table as on the cards: *"way
+        better copy based on future development not just what exists today"*,
+        with anything unshipped marked **coming**. No rows, because there is
+        nothing to compare yet — a heading and one honest line is the labelled
+        slot for the day there is.
+      */
+      title: "Cinema",
+      rows: [],
+      note: COMING_LINE,
+      coming: true,
+    },
+    {
+      /*
+        ⚠ **IT CLAIMS NO SLA AND NO PRIORITY SUPPORT, WHICH IS #1607'S
+        AVOID-LIST.** The help centre is the same help centre on every plan —
+        the pane's own footer says so — and the second sentence is the band's
+        promise, not a tier of service.
+      */
+      title: "Help",
+      rows: [],
+      note: "The help centre, on every plan. Enterprise is arranged with us directly.",
+    },
+    {
+      title: "Price",
+      rows: [
+        {
+          /*
+            ⚠ **THE LABEL DOES NOT MOVE WITH THE TOGGLE** (card 390 item 2, and
+            §6d's row 6 says `Price a month` flatly). A comparison whose unit
+            changes under the customer is not a comparison; the interval changes
+            the RATE and the row goes on measuring the same thing.
+
+            `Free` rather than `$0`: a price of nothing is a word, and the
+            column's own name already says it.
+          */
+          label: "Price a month",
+          mono: true,
+          price: true,
+          read: (plan) =>
+            plan.priceInCents === 0 ? "Free" : formatWholeDollars(priceOf(plan)),
+        },
+      ],
+    },
+  ];
+
+  /*
+    THE ORDER ON A PHONE: the account's own column first, then the ladder.
+    Derived from the same `plans` the wide table reads, so the two shapes
+    cannot hold different populations — which is the one thing a second layout
+    must never be allowed to do (working law 4).
+  */
+  const phoneOrder = [
+    ...plans.filter((plan) => plan.id === currentId),
+    ...plans.filter((plan) => plan.id !== currentId),
+  ];
+
+  const actionFor = (plan: LadderPlan) => {
+    const stepUp = isUpgrade(plan);
+    if (plan.id === currentId && intervalDiffers) {
+      /* The same offer card mode makes (#664, law 7): the customer's own
+         column is exactly where a billing-cycle switch lives. */
+      return (
+        <Button
+          variant="secondary"
+          size="small"
+          disabled={pending === plan.id}
+          onClick={() => onAct(plan)}
+        >
+          {pending === plan.id ? "Working…" : switchBillingLabel}
+        </Button>
+      );
+    }
+    if (plan.id === currentId) {
+      /* The instance he named (card 425 item 2). This column already says so
+         twice — the tint and `YOU ARE HERE` — so a third statement needs to be
+         the quietest of the three, not a chip with a border in a row of
+         buttons. */
+      return <span className="dp-plan__here">Current</span>;
+    }
+    /*
+      ⚠ **A FREE COLUMN CARRIES NO ACTION, AND THAT IS A DECISION RATHER THAN AN
+      OMISSION.** Free is now a column and not a card (#1832), so this is the
+      only place a *Downgrade to Free* button could appear — and leaving a plan
+      for Free is a SUBSCRIPTION CANCELLATION. It already has a road, in the
+      footer, with its own confirm step and its own sentence about what happens
+      at the renewal date. A quiet secondary button in a table row would be a
+      second way into the one move on this surface that a click cannot take
+      back.
+    */
+    if (plan.priceInCents === 0) return null;
+    return (
+      <Button
+        variant="secondary"
+        size="small"
+        disabled={pending === plan.id}
+        onClick={() => onAct(plan)}
+      >
+        {pending === plan.id ? "Working…" : stepUp === false ? "Downgrade" : "Upgrade"}
+      </Button>
+    );
+  };
+
+  /* The price under the column's name, so a column can be read without
+     scrolling to the Price group — and it is the SAME `priceOf` that group
+     states, never a second arithmetic (#661). A rung whose name is its price
+     says it once. */
+  const headPrice = (plan: LadderPlan) =>
+    plan.priceInCents === 0 ? null : (
+      <span className="dp-plan__cellprice">{formatWholeDollars(priceOf(plan))}/mo</span>
+    );
 
   return (
     <div className="dp-plan__compare">
-      <div className="dp-plan__comparegrid">
-        <span className="dp-plan__cell dp-plan__cell--label" />
-        {plans.map((plan) => (
-          <span key={plan.id} className={cellClass(plan, "dp-plan__cell--head")}>
-            {plan.name}
-            {/*
-              ⚠ **`FITS YOUR USE` IS NOT DRAWN HERE — HIS RULING, #487, reply
-              #115, verbatim and entire:** *"dont show the fits your use tag on
-              the compare table it doesnt look right. everything else looks
-              good"*.
+      {/*
+        ⚠ **TWO SHAPES, ONE DECLARATION — AND THE PHONE ONE IS A DIFFERENT DOM
+        RATHER THAN A RESTYLED ONE, BECAUSE A TRANSPOSITION IS NOT A STYLE.**
+        The design's §4: *"four columns in 390px is not a comparison, it is a
+        row of truncations"*, so a phone gets one block per plan with the rows
+        as label/value pairs. Turning cells from row-major into column-major
+        blocks means cells leaving their rows, which is not something a media
+        query can do to one grid.
 
-              §6d used to say the tag OUTRANKS `YOU ARE HERE` in this cell, and
-              the card proposed relaying the two markers onto separate lines to
-              cure an overlap. He took the shorter answer: the tag comes off the
-              table entirely. It is unchanged on the plan CARDS (`:409`), which
-              is where he has always seen it and where he did not object — this
-              cell was the only place it sat beside a plan name in a five-column
-              grid with nothing between them.
+        **Both shapes read `groups` above**, so the population, the labels and
+        the readings are one declaration and cannot drift; what differs is only
+        the arrangement. The hidden shape is `display: none`, which takes it out
+        of the accessibility tree as well as out of the paint — so a screen
+        reader meets exactly one table, not two.
+      */}
+      <div className="dp-plan__comparewide">
+        <div
+          className="dp-plan__comparegrid"
+          /* The column count is DERIVED from the population. A typed
+             `repeat(4, 1fr)` is the stale figure this program keeps digging out
+             of stylesheets, and the self-serve ladder's length is the server's
+             to change (`SELF_SERVE_PLAN_ORDER`). */
+          style={{ ["--dp-plan-cols" as string]: String(plans.length) }}
+        >
+          <span className="dp-plan__cell dp-plan__cell--label" />
+          {plans.map((plan) => (
+            <span key={plan.id} className={cellClass(plan, "dp-plan__cell--head")}>
+              {plan.id === currentId ? (
+                <span className="dp-plan__youarehere">YOU ARE HERE</span>
+              ) : null}
+              {plan.name}
+              {headPrice(plan)}
+            </span>
+          ))}
 
-              So there is no ordering question left in this cell: the current
-              column says `YOU ARE HERE` and every other column says nothing.
-            */}
-            {plan.id === currentId ? (
-              <span className="dp-plan__youarehere">YOU ARE HERE</span>
-            ) : null}
-          </span>
-        ))}
+          {groups.map((group) => (
+            <Fragment key={group.title}>
+              <span className="dp-plan__grouptitle">{group.title}</span>
+              {group.rows.map((row) => (
+                <ComparisonRow key={row.label} row={row} plans={plans} cellClass={cellClass} />
+              ))}
+              {group.note === undefined ? null : (
+                <p className="dp-plan__groupnote">
+                  {group.coming ? <span className="dp-plan__coming">COMING</span> : null}
+                  {group.note}
+                </p>
+              )}
+            </Fragment>
+          ))}
 
-        {rows.map((row) => (
-          <ComparisonRow key={row.label} row={row} plans={plans} cellClass={cellClass} />
-        ))}
-
-        {/* §6d — "then an action row per column". Every one of them is
-            SECONDARY: the single ink button lives in the footer, because the
-            table is taller than the pane and a primary here sits below the
-            fold. */}
-        <span className="dp-plan__cell dp-plan__cell--label" />
-        {plans.map((plan) => (
-          <span key={plan.id} className={cellClass(plan)}>
-            {plan.id === currentId && intervalDiffers ? (
-              /* The same offer card mode makes (#664, law 7): the customer's
-                 own column is exactly where a billing-cycle switch lives. */
-              <Button
-                variant="secondary"
-                size="small"
-                disabled={pending === plan.id}
-                onClick={() => onAct(plan)}
-              >
-                {pending === plan.id ? "Working…" : switchBillingLabel}
-              </Button>
-            ) : plan.id === currentId ? (
-              /* The instance he named (card 425 item 2). This column already
-                 says so twice — `.dp-plan__cell--current` tints every cell in
-                 it and the head carries `YOU ARE HERE` — so a third statement
-                 needs to be the quietest of the three, not a chip with a border
-                 sitting in a row of buttons. */
-              <span className="dp-plan__here">Current</span>
-            ) : (
-              <Button
-                variant="secondary"
-                size="small"
-                disabled={pending === plan.id}
-                onClick={() => onAct(plan)}
-              >
-                {pending === plan.id
-                  ? "Working…"
-                  : ladder.findIndex((entry) => entry.id === plan.id) > currentIndex
-                    ? "Upgrade"
-                    : "Downgrade"}
-              </Button>
-            )}
-          </span>
-        ))}
+          {/* §6d — "then an action row per column". Every one of them is
+              SECONDARY: the single ink button lives in the footer, because the
+              table is taller than the pane and a primary here sits below the
+              fold. */}
+          <span className="dp-plan__cell dp-plan__cell--label" />
+          {plans.map((plan) => (
+            <span key={plan.id} className={cellClass(plan)}>
+              {actionFor(plan)}
+            </span>
+          ))}
+        </div>
       </div>
+
+      <div className="dp-plan__comparephone">
+        {phoneOrder.map((plan) => (
+          <div
+            key={plan.id}
+            className={[
+              "dp-plan__cmpcard",
+              plan.id === currentId ? "dp-plan__cmpcard--current" : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+          >
+            <div className="dp-plan__cmpcardhead">
+              <span className="dp-plan__tiername">{plan.name}</span>
+              <span className="dp-set__spacer" />
+              {plan.id === currentId ? (
+                <span className="dp-plan__youarehere">YOU ARE HERE</span>
+              ) : (
+                headPrice(plan)
+              )}
+            </div>
+            <dl className="dp-plan__cmppairs">
+              {groups.flatMap((group) =>
+                group.rows.map((row) => (
+                  <div className="dp-plan__cmppair" key={`${group.title}-${row.label}`}>
+                    <dt>{row.label}</dt>
+                    <dd className={row.mono ? "dp-plan__cell--mono" : undefined}>
+                      {row.read(plan)}
+                    </dd>
+                  </div>
+                )),
+              )}
+            </dl>
+            {actionFor(plan)}
+          </div>
+        ))}
+        {/* The group notes collect BELOW the blocks — inside them they would be
+            read four times, which is the repetition the groups exist to end.
+            Each keeps its group's name, so a sentence still says what it is
+            about once it has left its heading. */}
+        <div className="dp-plan__includes">
+          {groups
+            .filter((group) => group.note !== undefined)
+            .map((group) => (
+              <p className="dp-plan__includesline" key={group.title}>
+                <span className="dp-plan__notegroup">{group.title}.</span>{" "}
+                {group.coming ? <span className="dp-plan__coming">COMING</span> : null}
+                {group.note}
+              </p>
+            ))}
+        </div>
+      </div>
+
       <p className="dp-plan__footnote">
         {ONE_FOR_EVERY_PLAN}
         {/*
@@ -1350,6 +1936,24 @@ function CompareGrid({
           the thing the cards state is the same lie a step quieter.
         */}
         {interval === "annual" ? " Annual plans are charged once a year." : ""}
+        {/*
+          ⚠ **AND IT POINTS AT THE RUNGS THAT HAVE NO COLUMN — the design's §4,
+          MINUS ONE CLAUSE THAT WOULD HAVE BEEN FALSE TODAY.** The brief's
+          footnote names the Studio slider's ceiling beside this sentence; the
+          slider is NOT in this commit (#1832's own remaining half — it needs a
+          Stripe price, which is his keystrokes rather than a shift's), so
+          quoting a control a customer cannot find would be the stale-figure
+          class with his approval attached to it. #1607's rule: re-derive every
+          string against present capability before shipping. The slider's clause
+          lands with the slider.
+
+          The plan it names is the top of the drawn ladder, read off the
+          population — not the word "Studio", which would go stale the day he
+          adds a rung above it.
+        */}
+        {plans.length > 0 ? (
+          <> Need more than {plans[plans.length - 1].name}? Enterprise is arranged with us directly.</>
+        ) : null}
       </p>
     </div>
   );

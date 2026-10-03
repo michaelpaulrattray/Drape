@@ -11,6 +11,7 @@ import {
   priceAMonth,
 } from "./planMath";
 
+import { sourceBand } from "../../../../server/testing/sourceBand";
 import { withoutComments } from "../../../../server/testing/withoutComments";
 
 /**
@@ -59,6 +60,24 @@ const MATH = join(CLIENT, "features", "settings", "planMath.ts");
 const read = (path: string) => readFileSync(path, "utf8");
 const code = (text: string) => withoutComments(text);
 
+/**
+ * ⚠ **`AddCreditsModal.tsx` IS THREE SURFACES, AND HIS RATE RULE APPLIES TO
+ * EXACTLY ONE OF THEM — #1845.** `PlanStepUpPane` is what a FREE account opens:
+ * eyebrow `PLANS`, heading *Choose a plan*, a button reading *Upgrade to …*, so
+ * it is a plan surface and his #1773 word forbids a rate on it.
+ * `CreditPacksPane` is a plan holder's Add credits, which is where he put the
+ * rate's one home. **A file-level read cannot tell them apart and therefore
+ * cannot state the rule** — which is not a theory: this suite WAS that reader,
+ * and it passed a credits-per-$1 line standing on the plan pane for the day it
+ * was live.
+ *
+ * The anchors are the function declarations, in source order, so a pane
+ * renamed or removed REFUSES rather than answering an empty string (the band
+ * reader's own negative control).
+ */
+const freePane = () => sourceBand(read(TOPUP), "function PlanStepUpPane", "function CreditPacksPane", "the free plan pane");
+const packsPane = () => sourceBand(read(TOPUP), "function CreditPacksPane", "export function AddCreditsModal", "the credit packs pane");
+
 /** The paid rungs, in ladder order, straight off the product's own table. */
 const PAID = Object.values(PLAN_TIERS).filter((tier) => tier.price > 0);
 
@@ -98,13 +117,50 @@ describe("card 390 — the ladder on screen is the product's, never the mockup's
       The sharper form of the arm above, and the one that survives a rename: the
       component may not contain ANY rung's name, ours included. Every one of the
       twelve reaches the screen through `billing.getPlans` → `planLadder`.
+
+      ⚠ **ONE EXPRESSION IS CUT OUT BEFORE THE SCAN, AND IT IS NOT A RUNG'S
+      NAME — card 1834, 2026-10-03.** The compare table's `Price a month` row
+      answers a price of nothing with the WORD, which is his approved frame 04:
+      `plan.priceInCents === 0 ? "Free" : formatWholeDollars(...)`. That literal
+      is a PRICE, and it coincides with a rung's name only because the rung is
+      named after its price — rename `free` to `Trial` tomorrow and *"Free"* in
+      a price cell is still the right word, which is precisely the case this
+      arm's rule is not about.
+
+      **The cut is one anchored expression rather than a word on an allowlist**,
+      so a `"Free"` anywhere else in the modal — a card heading, a plan
+      identity, a chip — still reddens. The slice is asserted present, so a
+      refactor that moves the expression turns this into a RED to be read rather
+      than a carve-out that quietly covers the whole file.
+
+      ⚠ **And the band's heading went the other way in this same commit**: its
+      first draft typed `Enterprise` and THIS ARM CAUGHT IT. It reads
+      `plans.tiers[BAND_TIER].name` off the wire now. The exemption below is a
+      price word; a rung's name is still a defect, and the proof is that the one
+      found here was fixed in the surface rather than exempted in the guard.
     */
-    const surface = code(read(MODAL));
+    const whole = code(read(MODAL));
+    /* The zero-price reading, anchored on both ends so it cannot grow. */
+    const PRICE_WORD = /plan\.priceInCents === 0 \? "Free" : formatWholeDollars\(priceOf\(plan\)\)/;
+    expect(
+      whole,
+      "the compare table's zero-price reading has moved — re-read it and re-anchor this cut, " +
+        "because an unanchored exemption would cover every `Free` in the file",
+    ).toMatch(PRICE_WORD);
+    const surface = whole.replace(PRICE_WORD, " PRICE_WORD ");
     for (const tier of Object.values(PLAN_TIERS)) {
       expect(surface, `\`${tier.name}\` is hard-coded in the modal`).not.toContain(
         `"${tier.name}"`,
       );
     }
+    /* WORKING LAW 2 — the cut did not blind the reader. The same scan over the
+       surface with a rung's name put back finds it. */
+    expect(
+      Object.values(PLAN_TIERS).some((tier) =>
+        `${surface}<span>"${PLAN_TIERS.free.name}"</span>`.includes(`"${tier.name}"`),
+      ),
+      "the reader can no longer see a hard-coded plan name at all",
+    ).toBe(true);
     expect(surface, "the modal stopped reading the server's plan list").toContain(
       "trpc.billing.getPlans.useQuery()",
     );
@@ -262,20 +318,47 @@ describe("card 390 item 4 — the unit price is inverted, and it still argues fo
       i like this"*. **One home, rather than one unit in two places** — and
       card 403's defect is closed harder by this than it was by symmetry, since
       there is now only one surface that can state the unit at all.
+
+      ⚠ **AND "ONE SURFACE" WAS ONE FILE, WHICH IS NOT THE SAME THING — #1845,
+      and this arm is the reader that passed the defect.** `AddCreditsModal.tsx`
+      draws a free account a PLAN pane (*Choose a plan*, *Upgrade to …*) and a
+      plan holder a PACKS pane, and the rule is about the SURFACE. Read at the
+      file, the rate it was holding Add credits to printing was partly the one
+      standing on the plan pane — so the arm's positive half was being satisfied
+      by the very line his word forbids. It reads per pane now.
     */
     const surface = code(read(MODAL));
     const topup = code(read(TOPUP));
+    const free = code(freePane());
+    const packs = code(packsPane());
 
     /*
       ⚠ **THE POSITIVE HALF IS FIRST BECAUSE THE NEGATIVE HALF IS WORTHLESS
       WITHOUT IT.** An absence arm whose subject has left the product entirely
       passes for the wrong reason — deleting `formatCreditsPerDollar` outright
-      would satisfy every `not.toContain` below. So Add credits is held to
-      printing it before Change plan is held to not.
+      would satisfy every `not.toContain` below. So the pane that KEEPS the rate
+      is held to printing it before any pane is held to not.
     */
-    expect(topup, "Add credits stopped printing credits per dollar — his word puts the rate HERE").toContain(
-      "formatCreditsPerDollar",
-    );
+    expect(
+      packs,
+      "the credit packs pane stopped printing credits per dollar — his word puts the rate HERE",
+    ).toContain("formatCreditsPerDollar(");
+
+    /*
+      ⚠ **AND THE FREE ACCOUNT'S PANE IS A PLAN SURFACE, SO IT CARRIES NO RATE
+      (#1845).** Measured at the real ladder before it went: a free account
+      looking at Starter read `519 credits per $1` under the heading *Choose a
+      plan* (`624` on annual), with no *up from* clause — the free rung has no
+      price for the comparison to beat. Both the call and the printed
+      words are refused: the words because that is what he read on screen, the
+      call because a rate computed and formatted some other way is the same
+      defect wearing different code.
+    */
+    expect(free, "a credits-per-dollar rate is back on the plan pane a free account opens")
+      .not.toContain("formatCreditsPerDollar");
+    expect(free, "the rate's printed words are back on the plan pane").not.toContain("credits per $1");
+    expect(free, "`priceAMonth` is back on the plan pane, which only the retired rate read")
+      .not.toContain("priceAMonth(");
 
     /* Change plan carries no rate, in either shape it had: the card chip and
        the compare row. */
@@ -307,18 +390,27 @@ describe("card 390 item 4 — the unit price is inverted, and it still argues fo
 
     /*
       ⚠ `toContain` IS WEAKER THAN THE CLAIM ON THE SURVIVING SURFACE, AND IT
-      WAS MEASURED BEFORE THIS LINE WAS FIRST WRITTEN. The top-up sentence
-      prints TWO figures — the chosen rung and the one being left — and with
-      only the arms above, a sabotage that put `formatDollars` on the FIRST of
-      them stayed green: the import and the second call kept the token in the
-      file. So the sentence is pinned by its shape rather than by a word
-      appearing somewhere in the file. **#1773 moved the rate's home and did not
-      touch that sentence, so this half is carried over unchanged.**
+      WAS MEASURED BEFORE THIS LINE WAS FIRST WRITTEN. A sabotage that put
+      `formatDollars` on ONE of two printed figures stayed green, because the
+      import and the other call kept the token in the file. So the surviving
+      rate is pinned by its SHAPE rather than by a word appearing somewhere.
+
+      ⚠ **WHAT THE SHAPE IS HAS CHANGED WITH THE SUBJECT — #1845.** It used to
+      be the plan pane's two-figure sentence (*the chosen rung, and the one
+      being left*), and that sentence is gone with his rule. The packs pane's
+      rate has the same two-site property for the same reason: the pack ROWS
+      print it and the SLIDER prints it, off one `rateFor` declaration, so a
+      sabotage that reverts one of the two readers leaves every token in the
+      file. Both call sites are read.
     */
     expect(
-      topup.match(/formatCreditsPerDollar\(/g)?.length ?? 0,
-      "the top-up sentence stopped reading the shared unit on both sides",
+      packs.match(/rateFor\(/g)?.length ?? 0,
+      "a pack-rate reader stopped going through `rateFor` — the pack rows and the slider are both readers",
     ).toBeGreaterThanOrEqual(2);
+    expect(
+      packs.match(/formatCreditsPerDollar\(/g)?.length ?? 0,
+      "the packs pane stopped computing its rate through the shared unit",
+    ).toBeGreaterThanOrEqual(1);
   });
 
   it("⚠ THE TABLE LOST A ROW, NOT ITS NEIGHBOURS (card 1773)", () => {
@@ -331,15 +423,27 @@ describe("card 390 item 4 — the unit price is inverted, and it still argues fo
       neighbour that leaves with it.** He asked for the rate gone, not for a
       thinner comparison.
 
-      The four surviving labels are listed by name rather than counted, because
-      a count would pass a swap and the point is WHICH rows a customer still
-      has to compare plans with.
+      The surviving labels are listed by name rather than counted, because a
+      count would pass a swap and the point is WHICH rows a customer still has
+      to compare plans with.
+
+      ⚠ **THE LIST MOVED WITH HIS PHASE 2 BRIEF AND GREW — card 1834, approved
+      *"frames right numbers right"*, 2026-10-03.** `What that makes` is now
+      `Finished characters a month` (the design's §4 names the row), and the
+      fourth differing fact — whether credit packs may be bought — joins it as
+      `Buy extra credits`, read from `topupEligibility` rather than from a
+      price. **The intent of this arm is untouched and is why it was updated
+      rather than deleted**: a row cut from a literal array takes its neighbour
+      with it, so the rows a customer compares plans with are named here, and
+      the count went UP rather than down. The two absence arms below are
+      unchanged — neither unit of rate comes back.
     */
     const surface = code(read(MODAL));
     for (const label of [
+      "Finished characters a month",
       "Credits",
-      "What that makes",
       "Unspent credits",
+      "Buy extra credits",
       "Price a month",
     ]) {
       expect(surface, `the compare table lost its \`${label}\` row with the rate`).toContain(
@@ -542,9 +646,44 @@ describe("card 390 items 1, 3, 5 and 6 — the form of a card", () => {
       about. The half that survives his ruling is the half that was really the
       rule: no inline style overriding a class.
     */
+    /*
+      ⚠ **THE READING IS NARROWED TO WHAT THE RULE ABOVE ACTUALLY SAYS — card
+      1832, 2026-10-03 — AND THE HOUSE WAS ALREADY DOING THE THING IT BANNED.**
+
+      It was `not.toMatch(/style=\{\{/)`, a blanket on every inline style, and
+      the rule it enforces is *no inline style OVERRIDING A CLASS*. A **CSS
+      CUSTOM PROPERTY overrides nothing** — it is an INPUT to the class, which
+      reads it with `var()`. The compare grid's column count is one:
+      `--dp-plan-cols` is set from the population the surface drew, because the
+      self-serve ladder's length is the server's to change
+      (`SELF_SERVE_PLAN_ORDER`) and a `repeat(4, 1fr)` typed in a stylesheet is
+      the stale figure this program keeps digging out of documents, in the one
+      place no test reads it.
+
+      ⚠ **It is not a new idiom this arm had simply never met** —
+      `pages/CastingSheet.tsx` has shipped `style={{ ["--dp-grid-min" as
+      string]: "252px" }}` for months, and this guard only ever read the plan
+      modal. A blanket here would have made two files disagree about the house
+      style, with the one under a guard losing.
+
+      So: an inline style that sets any property NOT beginning `--` is still the
+      defect item 6 was about, and the positive control below proves this reader
+      can still see one.
+    */
     const surface = code(read(MODAL));
     const css = code(read(join(HERE, "settings.css")));
-    expect(surface, "an inline style is overriding a class again").not.toMatch(/style=\{\{/);
+    const inlineStyles = [...surface.matchAll(/style=\{\{([^}]*)\}\}/g)].map((m) => m[1]);
+    const overriding = inlineStyles.filter(
+      (body) => !/^\s*\[?\s*["']?--/.test(body),
+    );
+    expect(overriding, "an inline style is overriding a class again").toEqual([]);
+    /* WORKING LAW 2 — the narrowed reader must still catch the original defect.
+       Item 6's own specimen, driven through the same two expressions. */
+    const specimen = 'style={{ position: "static", display: "inline-block" }}';
+    const caught = [...specimen.matchAll(/style=\{\{([^}]*)\}\}/g)]
+      .map((m) => m[1])
+      .filter((body) => !/^\s*\[?\s*["']?--/.test(body));
+    expect(caught, "the narrowed reader can no longer see item 6's own defect").toHaveLength(1);
     /* POSITIVE CONTROL — the reader can see this file's classes at all, so the
        absence arms below are readings rather than an empty string passing. */
     expect(surface).toContain("dp-plan__tab");
@@ -678,8 +817,19 @@ describe("card 661 — the rate is computed from the price standing beside it", 
       look twelve times worse than the plan beside it). A count that had simply
       been raised to three would have let a plan rate move into the exception.
     */
+    /*
+      ⚠ **BOTH SURFACES ARE 0 SINCE #1845, AND BOTH ROWS STAY IN THE
+      POPULATION.** The last PLAN rate anywhere in the product was the free
+      pane's, standing under *Choose a plan* against his #1773 rule, and it is
+      gone. So there is no plan rate left to be interval-aware ABOUT — and the
+      honest spelling of that is a held count of zero on each surface rather
+      than a loop with no subjects: a plan rate reappearing on EITHER file reds
+      here as well as in the card-403 arm above. The `priceOf` hop below still
+      runs for `MODAL`, where the PRICE is still read through it, which is why
+      this arm keeps its teeth with a zero on both sides.
+    */
     const TOPUP_RATE_CALLEE = "topupPriceInCents";
-    const wanted: Record<string, number> = { [MODAL]: 0, [TOPUP]: 2 };
+    const wanted: Record<string, number> = { [MODAL]: 0, [TOPUP]: 0 };
     /* Exactly one pack-rate expression is expected, and it is `rateFor`'s —
        the pack rows and the slider both call it, so one declaration serves
        both and a second would be the mirror working law 4 bans. */
