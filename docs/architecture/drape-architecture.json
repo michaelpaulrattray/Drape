@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 78
+      "moduleCount": 79
     },
     {
       "id": "domain:staff",
@@ -6129,6 +6129,12 @@
     {
       "id": "module:shared/crewReplyMirror.ts",
       "path": "shared/crewReplyMirror.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/crewShellDamage.ts",
+      "path": "shared/crewShellDamage.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -13169,6 +13175,10 @@
     {
       "id": "test:server/crewSeatVisibility.test.ts",
       "path": "server/crewSeatVisibility.test.ts"
+    },
+    {
+      "id": "test:server/crewShellDamage.test.ts",
+      "path": "server/crewShellDamage.test.ts"
     },
     {
       "id": "test:server/crewShiftArguments.test.ts",

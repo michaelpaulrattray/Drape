@@ -55,6 +55,16 @@
  *      The schema refuses the row at the parse (`crewBriefing.ts`), so a shift
  *      cannot ship past it; this pass only names them first.
  *
+ * # AND IT REPORTS RECORD FAULTS IT WILL NOT REPAIR
+ *
+ * Those four passes repair the briefing. The blocks below them report things
+ * the RECORD gets wrong and deliberately leave alone, because what each should
+ * become is a judgement about work: a hold that has outlived his desk, a hold
+ * nobody can read, a pipeline row whose PR cannot land or was closed unmerged,
+ * and — newest, #1825 — **a card whose price was eaten by a shell on the way to
+ * GitHub.** Each block states its own reason for not repairing; none of them is
+ * summarised here, because a second list of them would drift from the first.
+ *
  * # ⚠ A FAILED READ IS NEVER A VERDICT
  *
  * If `gh` cannot answer for an issue or a PR, that row is SKIPPED and said out
@@ -89,6 +99,10 @@ import {
   planDeskHoldLabels,
   planUnreadableHolds,
 } from "../shared/crewNextUpHold.js";
+import {
+  type ShellDamageFinding,
+  planShellDamage,
+} from "../shared/crewShellDamage.js";
 import { buildBoard, readCardComments, readNotBuiltCards } from "./lib/cardBuildState.mts";
 import { type GhExec, makeGhTransport } from "./lib/ghQueueTransport.mts";
 import { readOpenPullRequests } from "./lib/cardClaimWarning.mts";
@@ -273,6 +287,37 @@ if (allOpen === null) {
   skipped.push(
     "HOLDS: the open queue could not be read, so no card was checked for a hold that does not say"
     + " whose it is. That is unread, NOT clean.",
+  );
+}
+
+/*
+  ⚠ **A PRICE EATEN BY A SHELL ON THE WAY TO GITHUB (#1825).** `planShellDamage`
+  owns the rule, the measurement and the stated holes; this is its I/O, and it
+  belongs here for the same reason the block above does — the read is the only
+  one that sees the WHOLE open queue, titles and bodies together, so the pass
+  costs no extra call.
+
+  **It belongs in THIS script rather than in a guard** because the damage is in
+  a RECORD and not in the tree: no suite can see what a card title says, and the
+  disease this file's own header names is *"a state written once, at the moment
+  it became true, and never re-read"*. A title mangled by a shell is exactly
+  that, and a shift close is the cadence at which it can be caught at all.
+
+  ⚠ **A READ THAT FAILED IS NEVER REPORTED AS A CLEAN POPULATION** — the same
+  rule as the holds above, and it matters more here, because the honest answer
+  on a healthy board is zero and an unread board also answers zero.
+*/
+const shellDamage: readonly ShellDamageFinding[] = allOpen === null
+  ? []
+  : planShellDamage(allOpen.map((row) => ({
+    issueNumber: Number(row?.number),
+    title: String(row?.title ?? ""),
+    body: String(row?.body ?? ""),
+  })));
+if (allOpen === null) {
+  skipped.push(
+    "SHELL DAMAGE: the open queue could not be read, so no card title or body was checked for a"
+    + " price eaten by a shell. That is unread, NOT clean.",
   );
 }
 
@@ -757,6 +802,46 @@ if (unreadableHolds.length > 0) {
     }
   }
   console.log("  ⚠ A comment does not count — the body is what is read (the founder-ordered clause).");
+}
+
+if (shellDamage.length > 0) {
+  /*
+    ⚠ **REPORTED, NEVER REPAIRED, AND HERE THE REFUSAL IS ABOUT A NUMBER
+    (#1825).** #1690's two prices were recovered from its own body, which had
+    been filed separately and was intact — a different card may have nothing to
+    recover from, and a title rewritten on a guess is a wrong price laundered
+    into a confident one on a board that carries the spend threshold and the
+    approved top-up ladder.
+
+    Exit code 0, read off the rule at the foot of this file rather than chosen
+    afresh: a briefing carrying this is schema-VALID, so a shift can ship past
+    it, and exit 2 is spent only on what it cannot.
+  */
+  const titles = new Map<number, string>(
+    (allOpen ?? []).map((row) => [Number(row?.number), String(row?.title ?? "")]),
+  );
+  console.log("");
+  console.log(
+    `⚠ ${shellDamage.length} card field(s) carry a price that a SHELL ATE on the way to GitHub.`,
+  );
+  console.log("  A `$` is an instruction to a shell, not money: `$0.75` became the shell's own");
+  console.log("  path with the cents still welded on, and `$1` became nothing at all.");
+  console.log("  NOT repaired here — what the number was meant to say is a judgement, and a");
+  console.log("  guessed price is worse than a visibly broken one (#1690 was recoverable only");
+  console.log("  because its body had been filed separately and was intact).");
+  for (const finding of shellDamage) {
+    console.log(`  ! #${finding.issueNumber} ${finding.field} — ${finding.matched}`);
+    /* A TITLE is short, so the whole of it is the most useful context and the
+       excerpt would merely repeat it; a BODY needs the window round the mark. */
+    const context = finding.field === "title"
+      ? (titles.get(finding.issueNumber) ?? finding.excerpt)
+      : finding.excerpt;
+    console.log(`      ${context}`);
+  }
+  console.log("  Repair it, then FILE THE NEXT ONE SAFELY: `--body-file`, single quotes, or the");
+  console.log("  title through `execFileSync` with no shell. That is the half that actually");
+  console.log("  stops it — `$1` through `$9` vanish without a trace, and `$12` becomes `2`,");
+  console.log("  so no reader here or anywhere can find the silent half of this fault.");
 }
 
 if (pipelinePlan.stuck.length > 0) {
