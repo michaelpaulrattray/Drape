@@ -53,7 +53,7 @@ const angles = Object.keys(VIEW_FRAMING_TEMPLATES) as Array<keyof typeof VIEW_FR
   rename cannot leave the table pointing at one file and the digest at another.
 */
 const sourceOf = (angle: keyof typeof VIEW_FRAMING_TEMPLATES) =>
-  path.join(REPO_ROOT, VIEW_FRAMING_TEMPLATES[angle]!.key);
+  path.join(REPO_ROOT, VIEW_FRAMING_TEMPLATES[angle]!.file);
 
 /* Each arm owns its own store rather than clearing a shared one — see the
    module's note on why there is no reset export. */
@@ -75,9 +75,9 @@ describe("the table and the tracked pictures agree", () => {
     expect(createHash("sha256").update(bytes).digest("hex")).toBe(record.sha256);
   });
 
-  it.each(angles)("%s — the storage key is the prefix and the tracked file's own name", (angle) => {
+  it.each(angles)("%s — the tracked path is the prefix and the view's own name", (angle) => {
     const record = VIEW_FRAMING_TEMPLATES[angle]!;
-    expect(record.key).toBe(`${VIEW_FRAMING_TEMPLATE_PREFIX}/${angle}-framing-template.png`);
+    expect(record.file).toBe(`${VIEW_FRAMING_TEMPLATE_PREFIX}/${angle}-framing-template.png`);
     /* And the repository really does carry a file at that key, which is the
        half that makes the key-is-the-path convention a fact rather than a note. */
     expect(existsSync(sourceOf(angle))).toBe(true);
@@ -169,47 +169,47 @@ describe("reading one — and it never throws, because its caller is a paid rend
   const record = VIEW_FRAMING_TEMPLATES[angle]!;
   const realBytes = () => readFileSync(sourceOf(angle));
 
-  it("answers null for an angle with no template, without reading anything", async () => {
-    const readBytes = vi.fn();
-    await expect(readViewFramingTemplate("threeQuarter", { readBytes, cache: freshCache() })).resolves.toBeNull();
-    expect(readBytes).not.toHaveBeenCalled();
+  it("answers null for an angle with no template, without reading anything", () => {
+    const readFile = vi.fn();
+    expect(readViewFramingTemplate("threeQuarter", { readFile, cache: freshCache() })).toBeNull();
+    expect(readFile).not.toHaveBeenCalled();
   });
 
-  it("returns the bytes when the digest matches, asking for the declared key", async () => {
+  it("returns the bytes when the digest matches, asking for the declared file", () => {
     const bytes = realBytes();
-    const readBytes = vi.fn(async () => ({ bytes, contentType: "image/png" }));
-    const template = await readViewFramingTemplate(angle, { readBytes, cache: freshCache() });
+    const readFile = vi.fn(() => bytes);
+    const template = readViewFramingTemplate(angle, { readFile, cache: freshCache() });
     expect(template?.bytes).toBe(bytes);
     expect(template?.contentType).toBe("image/png");
-    expect(readBytes).toHaveBeenCalledWith(record.key);
+    expect(readFile).toHaveBeenCalledWith(record.file);
   });
 
-  it("answers null when the stored bytes are not the ones this build measured", async () => {
+  it("answers null when the stored bytes are not the ones this build measured", () => {
     /*
       ⚠ THE ARM THE DIGEST EXISTS FOR — see this file's header. The read SUCCEEDS
       and returns a perfectly valid PNG; what is wrong is that it is not the
       picture the court measured.
     */
-    const readBytes = vi.fn(async () => ({ bytes: Buffer.from("some other picture"), contentType: "image/png" }));
-    await expect(readViewFramingTemplate(angle, { readBytes, cache: freshCache() })).resolves.toBeNull();
+    const readFile = vi.fn(() => Buffer.from("some other picture"));
+    expect(readViewFramingTemplate(angle, { readFile, cache: freshCache() })).toBeNull();
   });
 
-  it("answers null rather than throwing when the read itself fails", async () => {
-    const readBytes = vi.fn(async () => { throw new Error("R2 said no"); });
-    await expect(readViewFramingTemplate(angle, { readBytes, cache: freshCache() })).resolves.toBeNull();
+  it("answers null rather than throwing when the read itself fails", () => {
+    const readFile = vi.fn(() => { throw new Error("no such file"); });
+    expect(readViewFramingTemplate(angle, { readFile, cache: freshCache() })).toBeNull();
   });
 
-  it("caches a success, so five views of one Sign do not read the object five times", async () => {
+  it("caches a success, so five views of one Sign do not read the file five times", () => {
     const bytes = realBytes();
-    const readBytes = vi.fn(async () => ({ bytes, contentType: "image/png" }));
+    const readFile = vi.fn(() => bytes);
     const cache = freshCache();
-    await readViewFramingTemplate(angle, { readBytes, cache });
-    await readViewFramingTemplate(angle, { readBytes, cache });
-    await readViewFramingTemplate(angle, { readBytes, cache });
-    expect(readBytes).toHaveBeenCalledTimes(1);
+    readViewFramingTemplate(angle, { readFile, cache });
+    readViewFramingTemplate(angle, { readFile, cache });
+    readViewFramingTemplate(angle, { readFile, cache });
+    expect(readFile).toHaveBeenCalledTimes(1);
   });
 
-  it("does NOT cache a failure, so one blip is not a whole process without templates", async () => {
+  it("does NOT cache a failure, so one blip is not a whole process without templates", () => {
     /*
       The asymmetry is deliberate and is in the module's header. A miss cached
       for the life of a process would turn a one-second storage hiccup into a
@@ -217,14 +217,14 @@ describe("reading one — and it never throws, because its caller is a paid rend
     */
     const bytes = realBytes();
     let calls = 0;
-    const readBytes = vi.fn(async () => {
+    const readFile = vi.fn(() => {
       calls += 1;
-      if (calls === 1) throw new Error("R2 said no, once");
-      return { bytes, contentType: "image/png" };
+      if (calls === 1) throw new Error("the file was not there, once");
+      return bytes;
     });
     const cache = freshCache();
-    await expect(readViewFramingTemplate(angle, { readBytes, cache })).resolves.toBeNull();
-    await expect(readViewFramingTemplate(angle, { readBytes, cache })).resolves.not.toBeNull();
-    expect(readBytes).toHaveBeenCalledTimes(2);
+    expect(readViewFramingTemplate(angle, { readFile, cache })).toBeNull();
+    expect(readViewFramingTemplate(angle, { readFile, cache })).not.toBeNull();
+    expect(readFile).toHaveBeenCalledTimes(2);
   });
 });

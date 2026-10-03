@@ -12405,10 +12405,6 @@
       "path": "server/castingV2/packageOrchestrator.test.ts"
     },
     {
-      "id": "test:server/castingV2/packageOrchestratorFramingTemplate.test.ts",
-      "path": "server/castingV2/packageOrchestratorFramingTemplate.test.ts"
-    },
-    {
       "id": "test:server/castingV2/packageOrchestratorPlate.test.ts",
       "path": "server/castingV2/packageOrchestratorPlate.test.ts"
     },
@@ -26608,11 +26604,6 @@
     },
     {
       "from": "module:server/castingV2/packageOrchestrator.ts",
-      "to": "module:server/castingV2/viewFramingTemplate.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/packageOrchestrator.ts",
       "to": "module:server/castingV2/viewThumbnailMint.ts",
       "kind": "imports"
     },
@@ -29329,11 +29320,6 @@
     {
       "from": "module:server/castingV2/viewFramingTemplate.ts",
       "to": "module:server/logging/logger.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/viewFramingTemplate.ts",
-      "to": "module:server/storage.ts",
       "kind": "imports"
     },
     {

@@ -197,6 +197,16 @@ const KEYS_WITHOUT_RANDOMNESS_IN_THE_TEXT: ReadonlyArray<{
       + " `eyeItems` name — anything else is a 404 whatever the bucket holds — so this expression"
       + " never creates an object and has no key to make unguessable.",
   },
+  ...(["closeUp", "frontFull", "backFull"] as const).map((angle) => ({
+    file: "castingV2/viewFramingTemplate.ts",
+    text: `\`\${VIEW_FRAMING_TEMPLATE_PREFIX}/${angle}-framing-template.png\``,
+    because:
+      "nothing writes it — it is the path of a picture TRACKED IN THIS REPOSITORY, read off the"
+      + " deployed tree, and the only thing it addresses is a grey mannequin with no face. There is"
+      + " no customer in it to protect, a deploy-constant asset cannot be minted per request, and a"
+      + " random name would defeat the whole point: the file a reviewer opens in `assets/views/`"
+      + " must be the file the code reads, which is also what the sha256 beside it pins.",
+  })),
 ];
 
 describe("every storage key is minted from cryptographic randomness", () => {
