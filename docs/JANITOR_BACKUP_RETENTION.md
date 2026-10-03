@@ -83,7 +83,7 @@ citation the Janitor's own doctrine already demands.
 - ⚠ **A name the reader cannot read is a file it gets no opinion about.** No
   anchor and no matching blob means kept, whatever its age.
 
-## The two things this rule deliberately does not decide
+## The three things this rule deliberately does not decide
 
 **`output/` (7.0 GB, 8,952 files) is not a backup, and no rule here touches it.**
 Nothing in it was ever a copy of something else: it is primary evidence from paid
@@ -100,6 +100,104 @@ act on.
 §C *before deleting the originals from the bucket* — **the only copies that
 exist.** No commit holds them and no name anchors them, so every entry returns
 KEPT, forever. Deleting them is a founder act.
+
+**⚠ AND THERE IS A THIRD NOW — THE 2026-10-03 WORKTREE SWEEP'S KEEP PILE, WHICH
+IS DECLARED IN THE CODE RATHER THAN LEFT IN A COUNT (#1826, 2026-10-03).** This
+heading read *"The two things"* until today; the third arrived because the first
+one happened to land on this machine as a directory with a name.
+
+`C:\Users\Admin\drape-worktree-keep-2026-10-03` — **1,525,013,842 bytes
+(1.42 GiB) in 451 files across 12 folders**, measured at the artifact rather than
+quoted. It is where the 2026-10-03 worktree sweep moved everything it was about
+to delete, after #1823 found that the removal tool could not see ignored files.
+
+| folder | size | what it is |
+|---|---|---|
+| `output-drape-shift-sign-engine-court-1394` | **1,390.5 MB · 188 files** | the #1394 Sign-engine court — 155 full-resolution renders (1,384.7 MB), 13 eye strips, 20 files of rows and logs. **91% of the whole pile** |
+| ten `output-drape-shift-seat-*` folders | 61.7 MB · 244 files | seat worktrees' own `output/` sets, 27 Sep – 3 Oct |
+| `frames-card-1447` | 2.1 MB · 19 files | a card's frames directory |
+
+**The defect was a number with no names in it.** The run has always printed
+*"N entries under `C:\Users\Admin` did not match a backup name and were not
+classified"* — **78** of them the night this was written — and this directory was
+one of that 78. The instruction *"do not sweep this directory"* lived in three
+consecutive mailbox handoff notes, in no card and in no code, and this program's
+own law is that **a fact that lives only in a message does not exist**. An
+unexplained entry in an anonymous count is indistinguishable from litter to every
+future sweep, which is the one thing a 1.42 GiB pile of primary evidence must not
+be.
+
+⚠ **IT IS NOT GIVEN A BACKUP NAME, AND THAT IS THE POINT.** Making it a candidate
+would hand this rule a verdict over evidence it has no competence over — the
+identical refusal the `output/` paragraph above makes, and **91% of this directory
+IS a court's `output/` set.** Both readers fail on it by construction (gitignored,
+so no blob holds its bytes; a render's name anchors at nothing), so every entry
+would return KEPT — a confident-looking verdict from an instrument nobody measured
+against this population. **So it is refused BEFORE the name test instead of
+classified by it**: `DECLARED_NOT_A_BACKUP` in `scripts/lib/backupRetention.mts`,
+consulted by `partitionByName` before anything else, and a declared name never
+enters the candidate list. Nothing downstream — `classifyBackup`, `itemsToDelete`,
+`--delete-expired` — ever sees it. **That is the difference between unreachable
+and unlikely**, and it is why the guarantee is the shape of the walk rather than a
+disposition that happens to come out right today.
+
+**What the run prints now, and it prints on every run including when the list is
+empty** (`ignoredReadingLine`'s own lesson — silence about a population cannot be
+told apart from an empty one):
+
+```
+  1 declared not-a-backup, named rather than counted (docs/JANITOR_BACKUP_RETENTION.md):
+    OUT OF SCOPE  drape-worktree-keep-2026-10-03 — not a backup — the 2026-10-03 worktree
+                  sweep's keep pile, 1.42 GiB whose 91% is the #1394 court's full-resolution
+                  renders …
+  77 entries under C:\Users\Admin did not match a backup name and were not classified
+```
+
+**Nothing about what may be deleted moved.** Read at the same root in the same
+tree minutes apart: **12 items, 24.4 MB, `redundant 0 · expired 1 · kept 9 ·
+too-recent 2`** before and after, with the unclassified count falling 78 → 77 as
+the one entry became a named line. The only thing that changed is that a reader
+can now see what it is looking at.
+
+⚠ **A LITERAL NAME, NEVER A PREFIX.** A `drape-worktree-keep-` prefix would enrol
+every future sweep's pile as a permanent keep nobody decided on, which is this
+card's own defect one turn later. A second such directory lands in the
+unclassified count instead — `BACKUP_NAME_PATTERNS`'s own stated reasoning about a
+tenth naming style, that it *"shows up as a number rather than as silence"* — and
+that number is the signal it needs its own line and its own reason.
+
+### What is NOT decided here, and by anything
+
+- **Whether the record of a paid, founder-judged court ages out at all is HIS**,
+  exactly as the `output/` paragraph says. This declaration records that the pile
+  is kept and why it sits outside this rule; **it does not claim the bytes are
+  worth keeping forever.** Nothing here authorises deleting any of it, and
+  `--delete-expired` has never been authorised for this class.
+- **The ten seat `output/` folders are a DIFFERENT CLASS and are judged
+  separately.** They are law-6 frames and probe output from merged pull requests,
+  not paid measurements. Folding them into the court's decision is how a
+  half-decision ships under an authorised one's name, so the declared reason names
+  them as separate rather than covering them.
+
+**What a deletion would cost, measured on 2026-10-03 so a future decision starts
+from numbers rather than from a question.** Every frame his *"keep NBP 2k for
+signing views"* verdict was given on has a second copy in production R2: **13 of
+13 strips have a published object of identical byte length, 0 exist only on
+disk**, and all **359** published `crew-eye/` keys answered `200` — a figure the
+deploy rite re-checks on every push (*"eye frames: ok — 359 eye frames present in
+the production bucket"*, receipt `2026-10-03T05-34-06-507Z`). The written record
+is committed in `docs/specs/SIGN_ENGINE_COURT_2026-09-26.md`. ⚠ **The first cut of
+that reading asked only the ten keys the two `sign-engine-court-1394` eye items
+name and reported three strips as existing only on disk; the other three are
+published under a different eye item.** The narrower population gave the alarming
+answer and the wider one is the true one — recorded because the wrong answer is
+the one that would have been filed. So what is unique to this pile is exactly two
+things: **155 full-resolution PNGs (1,384.7 MB)**, reproducible only by paying for
+the court again (~$28 of house money across 101 renders), and **253 KB of raw rows
+and logs**, the only place the rows the committed document does not quote live.
+**In his words: the irreplaceable part is a quarter of a megabyte; the big part is
+the full-size pictures the strips were cut from, and the verdict was given on the
+strips.**
 
 ## It reports — and since #1294 it may delete ONE disposition
 

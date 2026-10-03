@@ -145,6 +145,141 @@ export function isBackupName(name: string): boolean {
   return BACKUP_NAME_PATTERNS.some((re) => re.test(name.replace(/\.zip$/i, "")));
 }
 
+/** One declared keep: the directory's name, and the reason it is outside this rule. */
+export type DeclaredNotABackup = { readonly name: string; readonly why: string };
+
+/**
+ * WHAT LIVES UNDER THE SWEEP ROOT AND IS DELIBERATELY NOT A BACKUP — a NAMED
+ * set, so a permanent keep stops being indistinguishable from litter (#1826).
+ *
+ * ⚠ **THE DEFECT THIS CLOSES IS A NUMBER WITH NO NAMES IN IT.** The run has
+ * always printed *"N entries under C:\Users\Admin did not match a backup name
+ * and were not classified"* — 78 of them when this was written — and
+ * `drape-worktree-keep-2026-10-03` was one of that 78: **1,525,013,842 bytes
+ * (1.42 GiB) in 451 files**, 91% of it the #1394 Sign-engine court's
+ * full-resolution renders, which the 2026-10-03 worktree sweep moved out of the
+ * repository rather than delete. Nothing in the tree said so. The instruction
+ * *"do not sweep this directory"* lived in three consecutive mailbox handoff
+ * notes and in no card and no code, and the program's own law is that a fact
+ * living only in a message does not exist.
+ *
+ * ⚠ **IT IS NOT GIVEN A BACKUP NAME, AND THAT IS THE WHOLE POINT.** Making it a
+ * candidate would hand this rule a verdict over 1.42 GiB of PRIMARY evidence it
+ * has no competence over — the identical refusal this rule's document already
+ * makes about `output/` (*"not a backup, and no rule here touches it"*), and
+ * 91% of this directory IS a court's `output/` set. Both readers fail on it by
+ * construction: it is gitignored so no blob holds its bytes, and a render's name
+ * anchors at nothing, so every entry would return KEPT — a confident verdict
+ * from an instrument that was never measured against this population. **So it is
+ * refused BEFORE the name test rather than classified by it**, which is what
+ * makes it structurally unreachable by `--delete-expired` instead of merely
+ * unlikely to be reached.
+ *
+ * ⚠ **A LITERAL NAME, NEVER A PREFIX, AND THAT IS DELIBERATE.** A
+ * `drape-worktree-keep-` prefix would enrol every future sweep's pile as a
+ * permanent keep nobody decided on — which is the exact defect #1826 was filed
+ * about, one turn of the screw later. A second such directory lands in the
+ * unclassified count instead, which is {@link BACKUP_NAME_PATTERNS}'s own stated
+ * reasoning about a tenth naming style: it *"shows up as a number rather than as
+ * silence"*, and that number is the signal a second pile needs its own line and
+ * its own reason.
+ *
+ * ⚠ **THE VALUE DECISION IS NOT MADE HERE AND IS NOT MADE BY ANYTHING.** Whether
+ * the record of a paid, founder-judged court ages out at all is his, exactly as
+ * `docs/JANITOR_BACKUP_RETENTION.md` says of `output/`. This entry records that
+ * it is kept and why it is outside this rule; it does not say it is worth keeping
+ * forever. The ten seat `output-drape-shift-seat-*` folders inside it (61.7 MB)
+ * are a DIFFERENT class — law-6 frames and probe output from merged pull
+ * requests, not paid measurements — so the reason below names them as separate
+ * rather than covering them, because folding them in is how a half-decision
+ * ships under an authorised one's name.
+ */
+export const DECLARED_NOT_A_BACKUP: readonly DeclaredNotABackup[] = [
+  {
+    name: "drape-worktree-keep-2026-10-03",
+    why:
+      "not a backup — the 2026-10-03 worktree sweep's keep pile, 1.42 GiB whose 91% is the #1394 "
+      + "court's full-resolution renders (primary paid evidence, the output/ class this rule states "
+      + "it has no competence over); the ten seat output/ folders inside it are a separate undecided "
+      + "class. Permanent keep until he decides otherwise (#1826).",
+  },
+];
+
+
+/**
+ * What the walk should do with one name under the sweep root.
+ *
+ * ⚠ **THE ORDER IS THE CONTROL, SO IT LIVES IN A PURE FUNCTION RATHER THAN IN
+ * THE WALK.** {@link treeRefusal}'s header makes the same choice for the same
+ * reason — the caller does the filesystem reads, this decides, so the decision is
+ * drivable. A declared keep is answered FIRST and unconditionally: if some later
+ * hand adds a pattern to {@link BACKUP_NAME_PATTERNS} that happens to match a
+ * declared name, the declaration still wins and the directory still never becomes
+ * a candidate. The list is a PARAMETER for the same reason `treeRefusal` takes
+ * the worktree set: both directions of that precedence are then provable without
+ * editing the production constant.
+ *
+ * `out-of-scope` is printed by name with its reason; `unclassified` is counted.
+ * Neither ever becomes a {@link BackupItem}, so neither can reach a verdict, the
+ * deletion set, or `--delete-expired`.
+ */
+export type NameVerdict =
+  | { readonly kind: "out-of-scope"; readonly why: string }
+  | { readonly kind: "backup" }
+  | { readonly kind: "unclassified" };
+
+export function nameVerdict(
+  name: string,
+  declared: readonly DeclaredNotABackup[],
+): NameVerdict {
+  const bare = name.replace(/\.zip$/i, "");
+  const keep = declared.find((entry) => entry.name === bare);
+  if (keep) return { kind: "out-of-scope", why: keep.why };
+  return isBackupName(name) ? { kind: "backup" } : { kind: "unclassified" };
+}
+
+/** One entry under the sweep root, as the walk read it off the directory. */
+export type RootEntry = { readonly name: string; readonly kind: BackupKind };
+
+/**
+ * THE WHOLE ROOT SPLIT THREE WAYS BY NAME ALONE — and it is a pure function
+ * because the thing it has to PROVE is structural (#1826).
+ *
+ * ⚠ **"A DECLARED KEEP CAN NEVER BE DELETED" IS A PROPERTY OF THIS SPLIT, NOT A
+ * DISPOSITION.** Everything downstream — `classifyBackup`, `itemsToDelete`,
+ * `--delete-expired` — only ever sees what comes back in `backups`, so a name
+ * that cannot appear there cannot reach a verdict at all, let alone an actionable
+ * one. The alternative shape, letting the pile in and relying on it classifying
+ * as `kept`, is a PROMISE: it holds only while two readers keep failing on it the
+ * way they happen to today. This is the difference between unreachable and
+ * unlikely, and the next reader of this rule holds a delete key.
+ *
+ * It takes the entries and the declared list rather than reading the disk or the
+ * constant, for the reason {@link treeRefusal}'s header gives: the caller does
+ * the filesystem reads, this decides, so the decision is drivable — including
+ * the precedence, which cannot be proven against a production constant that
+ * (correctly) has no overlap with the backup patterns today.
+ */
+export function partitionByName(
+  entries: readonly RootEntry[],
+  declared: readonly DeclaredNotABackup[],
+): {
+  readonly backups: readonly RootEntry[];
+  readonly outOfScope: readonly { readonly name: string; readonly why: string }[];
+  readonly unclassified: readonly string[];
+} {
+  const backups: RootEntry[] = [];
+  const outOfScope: { name: string; why: string }[] = [];
+  const unclassified: string[] = [];
+  for (const entry of entries) {
+    const verdict = nameVerdict(entry.name, declared);
+    if (verdict.kind === "out-of-scope") outOfScope.push({ name: entry.name, why: verdict.why });
+    else if (verdict.kind === "unclassified") unclassified.push(entry.name);
+    else backups.push(entry);
+  }
+  return { backups, outOfScope, unclassified };
+}
+
 /**
  * ⚠ THE REFUSAL THAT WOULD HAVE COST THE TREE.
  *
