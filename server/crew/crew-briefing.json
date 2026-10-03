@@ -1,7 +1,7 @@
 {
-  "edition": 632,
-  "updatedAt": "2026-10-03T15:14:00.436Z",
-  "shift": "Two things tonight. The first is small, but it is the kind that quietly costs an engineer a day.\n\nInside the casting studio, the file that measures whether a signed picture is framed correctly was telling anyone who opened it that it had never been connected to anything — in its own words, that it was a placeholder waiting to be wired up. It was connected two days ago. It said the opposite twice over on the same page, once under a heading that made it read as a deliberate decision rather than an old note. Anyone opening that file would either rebuild a part that already works, or stop trusting the part that does. It now says what is true, with the old claim struck through rather than deleted, so both the promise and the promise being kept stay readable.\n\nNothing a customer sees changed, and nothing about how your casts are checked changed.\n\nThe second thing is the weekly review of how the crew itself is working, which came due today. It found two real problems, both about the crew rather than the product.\n\nWhen you added the extra agents that build alongside the night shift, you roughly quadrupled how much gets done in a night. The check that re-reads every shift's own claims afterwards — did that change really merge, did that receipt really exist — only ever runs for the single night-shift agent. It has never run for any of the extra ones. So a night where four agents each shipped work is a night where most of the claims were never checked against anything. The same gap means the alarm for an agent dying without leaving a report cannot fire for them either, which means five weeks of all-clear on that alarm were only ever describing one agent out of five. The question had been parked on another job for later, and that job has since closed, so it was sitting nowhere at all. It is filed properly now.\n\nThe other one you have already felt. When you tell us what to work on next, that decision has to be written in two separate places, and nothing checks that the two agree. That is why four of your Phase 2 cards sat untouched for several hours the other day: your words reached the rulebook and not the page the agents actually read. It has now happened three times. Filed, with a specific check proposed rather than another reminder.\n\nAnd the good news, because a review that only reports faults is not telling you much. The guard built last week works: the mistake it was built to catch went from six times in a week to once. Changes failing their checks are down from roughly one in nine to one in fourteen. And no shift misreported anything this week — I took last night's report and checked every claim in it against the real records, and all of them were true.",
+  "edition": 633,
+  "updatedAt": "2026-10-03T16:50:00.000Z",
+  "shift": "Tonight was the cost test you asked for on Sign — the step that turns a cast into a finished character with five finished pictures.\n\nRight now that costs us about a dollar each time somebody does it, and three quarters of that is the five pictures, rendered one at a time. Your idea was to render all five as one big sheet instead and cut it up, which should cost less than half. The worry was obvious: five pictures cut out of one are going to be smaller, and they might not look like the same person.\n\nI ran it twice on Sifr, and the news is mostly good.\n\nThe sheet came back bigger than I expected. Each of the five cut-out pictures is about four fifths the size of what we deliver today — slightly narrower, and actually taller. It costs 30 cents instead of 75, so it saves about 45 cents every time somebody signs a cast, which is close to half the whole thing. It is also a touch faster, not slower. And the part I was most worried about held up completely: all five panels are unmistakably the same woman, same face, same hair, same tattoos, same outfit, same lighting. That was the thing most likely to break and it did not.\n\nThere is one real problem, and it happened both times. The full-length front view loses her feet — the picture stops at the thigh one time and the knee the other, on a view that is supposed to show her head to toe with room to spare. The full-length BACK view came out perfectly both times, which is what makes me think this is fixable rather than a wall. Our own framing check caught it without me having to point at it.\n\nSo: the idea works, it saves roughly what your finance note hoped, and it needs the feet problem solved before it could ship. Two pictures are below — the whole sheet, and today's front view beside the cut-out one so you can judge the quality and see the missing feet in the same glance. If you are happy, say build it and I will cut the card.\n\nIt cost about 73 cents of our own money. Nothing of yours, and nothing about how your existing casts work has changed — this was a test off to one side.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -126,7 +126,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-03T15:12:11.559Z",
+      "readAt": "2026-10-03T16:37:33.619Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -3467,6 +3467,33 @@
         }
       ],
       "recommendation": "Ignore small days.\n\nIt is the only one of the three that fixes the wrong judgement instead of making a false alarm quieter, and it leaves 'critical' meaning something. None of the three switches the alarm off."
+    },
+    {
+      "id": "sign-cost-1690",
+      "title": "Signing a cast could cost us half what it does — worth building? One fault to fix first",
+      "productImpact": "When somebody signs a cast, we render five finished pictures of them. That costs us about a dollar, and three quarters of it is those five pictures.\n\nYour idea was to render all five as one big sheet and cut it up. I tested it twice tonight on Sifr.\n\nIt works better than I expected. The cut-out pictures are about four fifths the size of what we deliver today — a little narrower, actually taller. It costs 30 cents instead of 75, so it saves about 45 cents every single time somebody signs a cast. It is also slightly faster, not slower. And all five panels are clearly the same woman: same face, hair, tattoos, outfit and lighting. That was the thing most likely to break.\n\nThere is one fault, and it happened both times. The full-length FRONT view loses her feet — cut off at the thigh one run, the knee the other, on a view that is meant to show her head to toe. The full-length BACK view was right both times, which is why I think it is fixable.\n\nThe two pictures on this page are the sheet, and today's front view beside the cut-out one at the same size so you can judge the quality and see the missing feet together.",
+      "workedExample": "Say a customer signs ten casts this month. Today that costs us about ten dollars in rendering. On the sheet road it would be about five and a half.\n\nNothing about the price THEY pay changes here — this is our cost, not their credits. What it buys us is room: a Sign that costs half as much is a Sign we can afford to let people redo when they are not happy with it.\n\nThe catch in plain terms: if we shipped it exactly as it came out tonight, one of the five pictures somebody paid for would be missing their feet. That is not shippable, and it is why this is a question and not a decision I have already made.",
+      "options": [
+        {
+          "key": "build",
+          "label": "Build it — fix the feet first",
+          "consequence": "I cut the card to solve the full-length framing, then build the sheet road behind it. Nothing goes near a customer until the feet are right and you have seen it again."
+        },
+        {
+          "key": "quality",
+          "label": "The cut-out picture is not good enough — drop it",
+          "consequence": "We keep today's five separate pictures and the dollar cost, and I close the card. Your eye on the right-hand picture is the whole test; if it reads as worse, that settles it."
+        },
+        {
+          "key": "more",
+          "label": "Test it on more casts before I decide",
+          "consequence": "I run the same two pictures on two or three more of your casts, about a dollar fifty, and bring them back before anything is built."
+        }
+      ],
+      "recommendation": "MY RECOMMENDATION: build it, feet first. The saving is real and close to half, the speed is slightly better not worse, and the part I expected to fail — keeping it the same person across five panels — did not fail at all. The feet fault is in how we word the request for the sheet, not a limit of the idea, and the back view coming out right both times is the evidence for that.\n\nBut I am not the judge of whether that right-hand picture looks as good as today's. Look at the second image and tell me, because if the answer is no then none of the saving matters.",
+      "state": "open",
+      "filedAt": "2026-10-03T16:50:00.000Z",
+      "issueNumber": 1690
     }
   ],
   "eyeItems": [
@@ -6580,6 +6607,27 @@
           "key": "crew-eye/e2adc517-93aa-40a9-8ac5-7e37097a068e.png",
           "arm": "left today · right described",
           "caption": "Five rows, one garment each: hijab, turban, niqab, chador, kippah. Four pictures from today's studio on the left, four with the written description added on the right. Eight of eight delivered on every arm of all five; nothing refused. Eighty renders on house money, about $1.20; no credits of yours."
+        }
+      ]
+    },
+    {
+      "id": "sign-cost-sheet-1690",
+      "title": "One sheet instead of five pictures — it saves about half, and it loses her feet",
+      "question": "WHAT YOU ARE LOOKING AT — two pictures, and they answer different halves of the question.\n\nThe first is the whole sheet: all five views rendered as ONE picture for 30 cents, instead of five separate ones for 75 cents. Look at whether it is the same woman five times — face, hair, tattoos, the outfit, the lighting. To my eye it is, and that was the thing most likely to go wrong.\n\nThe second is the one that decides it. On the LEFT is the full-length front view the studio delivers today. On the RIGHT is the same view cut out of the sheet. Both are shown at the same height so you are comparing the pictures and not my scaling.\n\nTwo things to judge there. First, the quality — the right-hand one is about four fifths the size of the left, and I want to know whether that reads as worse to you or not at all. Second, the fault: her feet are gone. The view is supposed to run head to toe with a margin top and bottom, and the sheet cut her off at the thigh. It did the same thing on a second run, at the knee. The full-length BACK view came out right both times, which is why I think this is solvable rather than a dead end.\n\nWhat it would save, if it is solved: about 45 cents every time somebody signs a cast, which is close to half of what a Sign costs us. It is also slightly faster.\n\nMy reading is that it is worth building once the feet are fixed. But a saving is never worth a worse picture, and whether that right-hand picture is good enough is yours and not mine.",
+      "state": "open",
+      "filedAt": "2026-10-03T16:50:00.000Z",
+      "issueNumber": 1690,
+      "cardId": "sign-cost-1690",
+      "frames": [
+        {
+          "key": "crew-eye/576f7868-2c44-4899-9e72-690159f3fdef.jpg",
+          "arm": "the whole sheet — one render, 30 cents",
+          "caption": "All five views as one picture: close-up, three-quarter, full front, side profile, full back. Cut into five equal parts, each one about four fifths the size of what we deliver today. The thing to look for is whether it is the same woman five times."
+        },
+        {
+          "key": "crew-eye/cd1d0d5b-8a25-4852-b94a-f15590999e21.jpg",
+          "arm": "left today — right cut from the sheet",
+          "caption": "The same view, same height, so the comparison is fair. LEFT is what we deliver today (75 cents for five). RIGHT is the one cut out of the sheet (30 cents for five). Her feet are missing on the right — that is the fault, and it happened on both runs."
         }
       ]
     }
@@ -9797,7 +9845,7 @@
     259
   ],
   "nextUp": {
-    "readAt": "2026-10-03T15:12:11.559Z",
+    "readAt": "2026-10-03T16:37:33.618Z",
     "items": [
       {
         "issueNumber": 1469,
@@ -9831,7 +9879,11 @@
       {
         "issueNumber": 1690,
         "title": "Research for later: cutting Sign's cost (~$1 today, five NBP 2K views ~$0.75 of it) — one 4K sheet cropped, GPT Image 2.5 views, a cheaper check model, fewer default views; quality and cost per Sign, no build now (his finance guy's note, 2026-10-01)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "YOU - BUILD IT (feet fixed first) / NOT GOOD ENOUGH / MORE CASTS FIRST. Frames on your desk. Recommend: build it."
+        }
       },
       {
         "issueNumber": 1774,
