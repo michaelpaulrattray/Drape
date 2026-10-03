@@ -10685,6 +10685,10 @@
       "path": "client/src/features/billing/creditPacks1606-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/billing/freeAddCredits1836-guard.test.ts",
+      "path": "client/src/features/billing/freeAddCredits1836-guard.test.ts"
+    },
+    {
       "id": "test:client/src/features/billing/monthlyDelta1761-guard.test.ts",
       "path": "client/src/features/billing/monthlyDelta1761-guard.test.ts"
     },
@@ -15862,6 +15866,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/billing/ChangePlanModal.tsx",
+      "to": "module:shared/creditTopups.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/billing/index.ts",
       "to": "module:client/src/features/billing/AddCreditsModal.tsx",
       "kind": "imports"
@@ -18684,6 +18693,11 @@
     {
       "from": "module:client/src/features/settings/sections/BillingSection.tsx",
       "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/BillingSection.tsx",
+      "to": "module:shared/creditTopups.ts",
       "kind": "imports"
     },
     {
