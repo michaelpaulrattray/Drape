@@ -29,10 +29,27 @@
  * re-measured the real population was 35.
  *
  * So nothing here is new behaviour. This is the reader of record; the two
- * suites #1845 touches resolve to it, and **the remaining three copies are a
- * declared remainder with a card of their own — #1848** rather than a silent
- * one. A promotion across five guards is its own pass under the standing
- * orders' §2c, not a passenger on a copy fix.
+ * suites #1845 touches resolve to it, and the remaining three copies were a
+ * declared remainder with a card of their own rather than a silent one,
+ * because a promotion across five guards is its own pass under the standing
+ * orders' §2c and not a passenger on a copy fix.
+ *
+ * ✅ **THAT REMAINDER IS CLOSED — #1848, 2026-10-03.** `burnCycle1739`,
+ * `creditPacks1606` and `workDivisor1758` call this reader directly at all 21
+ * of their call sites, each passing the `label` the private copies could not
+ * carry, and `grep -rn "function band(" client/src` returns nothing. **No
+ * arm's subject or message moved** — the three suites ran green on the same
+ * anchors before and after, which is the whole test of a promotion pass.
+ *
+ * ⚠ **One thing is deliberately NOT promoted, named here rather than left for
+ * a later grep to misread as half a job: `freeAddCredits1836` and
+ * `monthlyDelta1761` each keep a one-line forwarder** (`const band = (source,
+ * from, to) => sourceBand(source, from, to)`), which #1845 wrote so that a
+ * suite it was already editing did not have to move every call site. A
+ * forwarder is a call-site convenience and not a second implementation, so it
+ * is not the thing law 4 is about; what it does cost is the `label`, which
+ * defaults to `band` through it. Those two files were outside #1848's stated
+ * scope.
  *
  * # Deliberately dependency-free, and it THROWS
  *
