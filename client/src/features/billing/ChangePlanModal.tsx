@@ -37,12 +37,28 @@
  *
  * ## What the reconciliation changed (BRIEF-RECONCILIATION Q3)
  *
- * The brief's ladder is five rungs at `2.79¢ … 1.87¢`; **ours is the offered
+ * The brief's ladder is five rungs at `2.79¢ … 1.87¢`; ~~**ours is the offered
  * seven** (#391 folded the twelve: four Plus rungs dropped, Ultimate hidden
- * behind the email line below the ladder) at 0.036¢ down to 0.02¢ a credit.
+ * behind the email line below the ladder) at 0.036¢ down to 0.02¢ a credit.~~
  * The population of both modes is derived from `billing.getPlans` in
  * `planLadder.ts` — see its header for the whole reading — and the compare
  * control says `Compare plans` rather than `Compare all 5`.
+ *
+ * ⚠ **THE RUNG COUNT IN THAT SENTENCE IS SPENT — PRICING PHASE 2 (#1832),
+ * 2026-10-03: the self-serve ladder is `free` plus THREE paid rungs
+ * (`SELF_SERVE_PLAN_ORDER`), and the rungs above it are the Enterprise band's
+ * conversation.** It is struck rather than deleted because the derivation
+ * beside it is the half that still holds and is the whole point: both modes
+ * still read `billing.getPlans` rather than a count typed here, which is why
+ * the ladder shortening by four rungs moved no code on this surface.
+ *
+ * ⚠ **IT IS ALSO WHY #1850 EXISTS, AND THAT IS THE LESSON WORTH THE
+ * PARAGRAPH.** A population that derives survives a ruling; a STRING that
+ * described the mechanism does not, and nothing derives a label. *"Back to the
+ * nearest three"* outlived the window it named by a day and was found on the
+ * next PR rather than by a guard. The sweep for its siblings is in #1850's own
+ * body: it is the only CUSTOMER-VISIBLE string on these surfaces that named
+ * the window, and this docblock sentence was the only other survivor.
  *
  * ## Card 390 — his six form corrections, and the one thing they must not do
  *
@@ -959,6 +975,17 @@ export function ChangePlanModal({
             while `billing.getStatus` is in flight, and the pane's own held line
             below covers the same state in words. The *Compare plans* button
             stays, because it asserts nothing about this account.
+
+            ⚠ **AND ITS RETURN LABEL NAMES WHERE IT GOES, NOT A MECHANISM —
+            #1850.** It read *"Back to the nearest three"* until Phase 2, which
+            was literal while `compareWindow` showed the five rungs nearest the
+            account and the cards showed the nearest three. #1832 deleted that
+            window (`planLadder.ts`'s own header: *"three rungs are the whole
+            individual ladder, so there is nothing left to window"*), so the
+            label was the last survivor of a mechanism that had gone — and it
+            told a customer their plan cards were a moving selection out of
+            something longer, which is not what the surface does and is the
+            machinery showing through a label.
           */}
           {interval === null ? null : (
             <span className="dp-segmented" role="group" aria-label="Billing interval">
@@ -986,7 +1013,7 @@ export function ChangePlanModal({
             className="dp-plan__modeswitch"
             onClick={() => setCompare((open) => !open)}
           >
-            {compare ? "Back to the nearest three" : "Compare plans"}
+            {compare ? "Back to plans" : "Compare plans"}
           </button>
         </div>
 
