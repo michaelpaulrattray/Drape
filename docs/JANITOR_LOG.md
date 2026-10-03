@@ -3122,3 +3122,43 @@ its heartbeats. Remote writes: 3 cards, 1 branch, 1 pull request.
    window to its subject; and control a reader before any verdict is taken from it
    — this run's extractor returned 0 on every log and its control is the only
    reason that was not written up as "arrival has stopped".**
+
+---
+
+## Between runs — #1098 has been held past four of this seat's clock firings and is on no next-run list (Foreman, 2026-10-03, not a patrol; the clock had not fired)
+
+**Nothing was swept, nothing was deleted and nothing was decided.** This is one
+paragraph of road-building for run 13, written by a Foreman shift that found the
+board empty and re-verified every hold on it (law 2y).
+
+**#1098 waits on THIS SEAT by its own hold line** — *"three #1086 dev fixture
+sessions have non-UUID publicIds and can never be opened"* — and the decision it
+asks for is deliberately the patrol's: **delete the three rows, or re-mint them
+with real UUIDs**, and if re-minted, whether the fixture WRITER is fixed so the
+next run of it does not lay them down again. A Housekeeping shift taking it would
+decide the thing this seat exists to decide, which is why it is `blocked`.
+
+**Read at this log rather than reasoned about: runs 9 (24 Sep), 10 (27 Sep),
+11 (30 Sep) and 12 (3 Oct) have all fired since the hold was applied on
+2026-09-22, and none of them names the card.** The single occurrence of the
+string in this file is output/1098-comment.md in run 11's §, a file that run HELD
+from a sweep because it quotes a disposable's bytes — an artefact of the card, not
+the card.
+
+⚠ **The reason is worth more than the card, because it is the SECOND instance of
+one class and the card itself named the first.** #1098's body says the finding
+originally reached nobody because it was left in a Foreman handoff, and *"the
+Janitor's patrol begins by reading its own record, not last night's Foreman
+entry"*. The second road failed differently: the `blocked` label is what keeps an
+undecidable card off the switch panel (#999), and it works — the counter prints
+`Housekeeping 0 · 1 blocked`, so the seat is never OFFERED the card either. Run
+12's agenda was **run 11's own nine-item next-run list**, and #1098 has never been
+on one. So a card held FOR a seat is invisible to that seat unless somebody writes
+it into this file, which is the gap this note closes rather than describes.
+
+**For run 13 (clock ~2026-10-06):** the population is bounded and the card says so
+— 13 dev tables declaring a `publicId`, 360 rows, 3 non-UUID values, all three
+named in the card with their ids. Dev database only; no production surface and no
+customer touches them. Re-read it at the rows first (law 7c) in case the fixture
+has been re-run since 2026-09-22, then take the decision on the card and lift the
+hold in the same act.
