@@ -1,7 +1,7 @@
 {
-  "edition": 634,
-  "updatedAt": "2026-10-03T17:30:00.000Z",
-  "shift": "Tonight I bought the one thing card 1612 still needed: a cast signed under the new picture rule, so you can actually look at it.\n\nBack on 30 September you agreed the checker was too strict — it was throwing away good pictures because it was reading a sentence instead of measuring one. Two things changed. Framing is measured now rather than read. And a picture the checker is unsure about gets delivered to you anyway, charged, marked unchecked, with a free retry, instead of being binned. All of it has been live since 2 October. What nobody could show you was it working, because nobody has signed a cast since 1 October — the day before it shipped.\n\nSo I signed one. A weathered fisherman, five finished pictures, three minutes.\n\nThe new rule earned its keep immediately. Two of the five pictures came back with the checker unhappy, and under the old rule both would have been thrown away and the money given back. Instead you keep them, marked unchecked with a free retry. I looked at both.\n\nOne of the two complaints is right: the three-quarter view has his head turned the wrong way — a mirror of what was asked for. The other is wrong. The checker says the close-up is cropped too tight; the measurement says it is fine, and so does my eye — his chin and beard are fully in frame with room below. That mistake costs you a label on a picture you keep, never the picture itself, which is exactly what our engineers predicted it would cost when they shipped it.\n\nEverything else held. The full-length front shows him head to toe with room above the hair and below the boots — worth saying out loud, because the cost test I ran for you last night lost the feet on that exact view, twice. Same man, same jacket, same weather, in all five.\n\nThe strip is below. If it looks right to you, say so and 1612 closes.\n\nIt cost about a dollar forty of our own money and nothing of yours. I ran it on the test copy of the app rather than your account on purpose: you are on 1,858 credits, signing costs 1,700, and it would have left you 158 — not enough to roll one sheet — in the week you are driving the new pricing.",
+  "edition": 635,
+  "updatedAt": "2026-10-03T19:30:00.000Z",
+  "shift": "Tonight I finished card 1837 — the one where you told me a close-up was a close-up and the studio disagreed with you — and in drawing the picture for it I found that the number we settled on was chosen from less than half the evidence we already had.\n\nThe story so far, in one line: you looked at two pictures of Sifr2 and said both read as close-ups. The studio was calling both of them too loose and marking them unchecked. So the line moved, from 0.3 to 0.7, and that has been live since yesterday morning.\n\nWhat the card still owed you was the picture — your own frames laid out in order with the new line drawn through them, so you can see where it falls. It is below.\n\nHere is the part that was not in the card. To draw that strip honestly I measured every frame in it rather than copying numbers out of our own notes. Measuring them turned up four close-ups of yours that nobody had ever looked at when the line was chosen. We picked the number from six pictures. You own ten.\n\nThree of the four sit comfortably inside the new line. The fourth does not. It is Hingu — the bandaged skull — and under the line we have just set, that picture gets handed to you marked unchecked with a free retry, as though the crop were wrong. To my eye the crop is not wrong: it is a head and the top of the shoulders, which is what a close-up is.\n\nBut my eye is not the one that counts here, and I did not move anything on the strength of it. That is the sixth picture on the strip, with the question under it in plain words. If you say it is a close-up, the line moves out past it the same way it moved last time. If you say it is not, then we finally have a real picture on the far side of the gap instead of an empty space we assumed was empty.\n\nOne honest note about how this happened, because it is the kind of thing worth saying out loud: the numbers for all ten were produced two days ago, by the measurement that set the Portrait line. They were printed and nobody carried them across. Nothing was hidden and nobody skipped a step — a figure was collected and never used.\n\nCost: about forty cents of our own money, none of yours, and nothing in the app changed. The matching fix to our own written records is in review.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -126,7 +126,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-03T16:37:33.619Z",
+      "readAt": "2026-10-03T18:43:46.001Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -270,6 +270,28 @@
     }
   },
   "needsYou": [
+    {
+      "id": "closeup-line-card-1837",
+      "title": "Is this bandaged skull a close-up? One word, and card 1837 closes",
+      "state": "open",
+      "filedAt": "2026-10-03T19:30:00.000Z",
+      "issueNumber": 1837,
+      "productImpact": "You told me a close-up was a close-up and the studio disagreed. The line moved on your word, from 0.3 to 0.7, and it has been live since yesterday morning. That part is done.\n\nWhat I owed you was the picture showing where the new line falls across your own frames. It is in the eye section below.\n\nDrawing it turned up one thing the card did not know. The line was chosen from six of your close-ups. You have ten. Three of the four nobody had looked at sit comfortably inside it. The fourth — Hingu, the bandaged skull — sits just outside, so the studio hands that picture over marked unchecked with a free retry, as though the crop were wrong.\n\nTo my eye the crop is fine: it is a head and the top of the shoulders. But this is your call, not mine, and I deliberately changed nothing.\n\nNothing is at risk either way. The strictest this line can ever do is give you the picture with a free retry beside it.",
+      "workedExample": "Sign a creature today and ask for the close-up. If it comes back framed like Hingu — head and the top of the shoulders — you get the picture, but with Unchecked and a free retry under it, as though something were wrong with it.\n\nSay yes below and that picture arrives clean, with nothing under it.",
+      "options": [
+        {
+          "key": "yes",
+          "label": "Yes — Hingu is a close-up",
+          "consequence": "The line moves out past it, the same way it moved for you last time. That picture, and any framed like it, stop being flagged."
+        },
+        {
+          "key": "no",
+          "label": "No — that is too loose",
+          "consequence": "The line stays exactly where it is at 0.7, and we have learned the gap it sits in is real rather than assumed."
+        }
+      ],
+      "recommendation": "YES. It looks like a close-up to me — a head and the top of the shoulders is what a close-up is. But I would rather be told than guess, which is why I moved nothing and brought you the picture instead."
+    },
     {
       "id": "law9-sign-card-1612",
       "title": "Does this signed cast look right? It is the first one under the new picture rule",
@@ -3524,6 +3546,22 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "closeup-line-1837",
+      "title": "Where the close-up line now sits — seven of your own, in order, and one picture it turns away",
+      "question": "WHAT YOU ARE LOOKING AT — seven pictures you own, lined up by how much picture hangs below the face. Tight crops on the left, loose on the right. The black line is where the studio now draws the boundary: everything left of it is kept as a close-up and nothing is said; everything right of it is handed to you marked unchecked with a free retry.\n\nThe two with a star are the ones you already judged. You said both read as close-ups, and that is why the line moved out to where it is.\n\nTHE ONE THING I WANT YOUR EYE ON is the picture immediately right of the line — Hingu, the bandaged skull. It is a head and the top of the shoulders. The line turns it away.\n\nThat picture is here because it was never looked at when the line was chosen. We set the number from six of your close-ups; you actually have ten. Three of the missing four are well inside the line. This is the fourth, and it is the only one in the whole set that the line and I disagree about.\n\nSO: is Hingu a close-up?\n\nIf YES — the line moves out past it, the same way it moved for you last time, and that picture stops being flagged.\nIf NO — the line stays exactly where it is, and we have learned that the gap it sits in is real rather than assumed.\n\nEither answer is useful and neither is wrong. Nothing here ever throws a picture away — the worst the line can do is hand you the picture with a free retry beside it.\n\nOne word closes the card.",
+      "state": "open",
+      "filedAt": "2026-10-03T19:30:00.000Z",
+      "issueNumber": 1837,
+      "frames": [
+        {
+          "key": "crew-eye/a7c21ba3-9a43-4a0e-8880-ef66a6f4d41d.png",
+          "arm": "your frames, tight crop on the left",
+          "caption": "LEFT OF THE LINE, kept as close-ups: Jericho 0.07, Sifr2 0.42 and Sifr2 0.51 (the two you judged), Pika 0.56. RIGHT OF THE LINE, handed over marked unchecked with a free retry: Hingu 0.83, then Jenny Craig 1.10 and Kai 2.32, which are portraits. Hingu is the question."
+        }
+      ],
+      "cardId": "closeup-line-card-1837"
+    },
     {
       "id": "law9-sign-1612",
       "title": "The first cast signed under the new picture rule — and two of the five are marked unchecked",
@@ -9524,6 +9562,13 @@
       "status": "merged",
       "prNumber": 1857,
       "note": "Comments only. The connection landed two days earlier and the file had not heard."
+    },
+    {
+      "id": "closeup-line-record-1837",
+      "title": "Our own notes about the close-up line said the old number in two places, and called a gap empty that is not (#1837)",
+      "status": "in-review",
+      "prNumber": 1864,
+      "note": "Comments and the capability map only. Nothing a customer sees, and the line itself is untouched."
     }
   ],
   "problems": [
@@ -9888,7 +9933,7 @@
     259
   ],
   "nextUp": {
-    "readAt": "2026-10-03T16:37:33.618Z",
+    "readAt": "2026-10-03T18:43:46.000Z",
     "items": [
       {
         "issueNumber": 1469,
@@ -9912,7 +9957,11 @@
       {
         "issueNumber": 1612,
         "title": "The view checker measures framing and only refuses on identity: geometry from the segmenter for every framing band, and an unsure framing or wardrobe verdict delivers the picture unchecked instead of dropping it — his ruling 2026-09-30",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "YOU — your eye on the first signed cast under the new rule, on your Desk. CLOSE it, or ask for another? Recommend: CLOSE."
+        }
       },
       {
         "issueNumber": 1689,
@@ -9946,7 +9995,11 @@
       {
         "issueNumber": 1837,
         "title": "The close-up line is too tight: both Sifr2 pictures read as close-ups to his eye at 0.51 and 0.42 while the band's line sits at 0.30 — move it by measurement, above 0.51",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "YOUR EYE on the strip. Is Hingu at 0.83 a close-up? YES moves the line above it; NO leaves it at 0.7. Recommend: look, then one word."
+        }
       }
     ]
   }
