@@ -97,6 +97,29 @@ describe("chooseBriefing", () => {
       expect(choice.why).toContain("26139176");
     });
 
+    /* #1867 — THE SENTENCE THAT SENT THREE SHIFTS TO THE WRONG PLACE. This
+       module used to compose the only cause it could think of, and print it as
+       a fact: *"this clone may not hold that commit"*. The real cause was the
+       reader's 1 MiB buffer and the clone held the commit every time. */
+    it("a reader that says WHY has its reason carried verbatim, never replaced", () => {
+      const choice = chooseBriefing(THE_NIGHT, briefing(93, []), () => ({
+        reason: "git's output did not fit the 1048576-byte read buffer (ENOBUFS)",
+      }));
+      expect(choice.kind).toBe("tree");
+      expect(choice.why).toContain("26139176");
+      expect(choice.why).toContain("ENOBUFS");
+      expect(choice.why).toContain("1048576");
+    });
+
+    it("and with NO reason it claims no cause at all — the old sentence is gone from both roads", () => {
+      for (const read of [() => null, () => ({ reason: "git said: fatal: bad object" })]) {
+        const choice = chooseBriefing(THE_NIGHT, briefing(93, []), read);
+        expect(choice.why).toContain("could not be read");
+        expect(choice.why).not.toContain("may not hold");
+        expect(describeSource(choice)).not.toContain("may not hold");
+      }
+    });
+
     it("the deployed bytes do not parse → the tree", () => {
       const choice = chooseBriefing(THE_NIGHT, briefing(93, []), () => "{not json");
       expect(choice.kind).toBe("tree");
