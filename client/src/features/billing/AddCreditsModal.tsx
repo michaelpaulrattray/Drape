@@ -812,8 +812,9 @@ function PlanStepUpPane({ onClose }: { onClose: () => void }) {
             correctly is the one that put the rate on a plan surface.
 
             **What it actually printed, measured at the real ladder rather than
-            remembered**: a free account looking at Starter read `519 credits per $1`,
-            and NO *up from* clause at all — the comparison needed a current
+            remembered**: a free account looking at Starter read `519 credits per $1`
+            on monthly billing — more on annual, where two of the twelve months
+            are free — and NO *up from* clause at all; the comparison needed a current
             price above zero and the free rung has none, so the clause only ever
             drew for a subscriber reading a higher rung, which is a pane this
             card does not touch. Both halves of it went through
