@@ -7,6 +7,18 @@ import { useState } from "react";
 import { displayPrice, formatCredits } from "@shared/creditDisplay";
 import { Minus, Plus } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { cn } from "@/lib/utils";
+/* #1785 — the canvas casting door, his word: "seal". The SAME compiled constant
+   the server's refusal reads (`server/lib/canvasCastDoor.ts`).
+
+   ⚠ This is the CLIENT's backstop and it is deliberately a second guard, not a
+   duplicate: the toolbar's `variations` row is already disabled while the door
+   is shut, so nothing can open this popover today. The server door is built the
+   same way for the same stated reason — a control only at the entrance stops
+   existing the moment somebody builds a second entrance — and the one thing
+   this surface must never do is quote a price for a road that cannot be
+   walked. */
+import { CANVAS_CAST_OPEN, CANVAS_CAST_CLOSED } from "@shared/canvasCastDoor";
 
 const MAX_VARIATIONS = 4; // mirrors server clamp; server re-clamps regardless
 
@@ -61,10 +73,28 @@ export function VariationsPopoverContent({
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-3 pt-3 border-t border-canvas-border">
+      {/* #1785: the reason stands where the price stood. A closed road is never
+          quoted a cost — being told what something costs and then refused is
+          the machinery showing through at the worst possible place. */}
+      {!CANVAS_CAST_OPEN && (
+        <p className="text-canvas-xs text-canvas-ink-faint leading-relaxed pt-3 border-t border-canvas-border">
+          {CANVAS_CAST_CLOSED}
+        </p>
+      )}
+
+      <div
+        className={cn(
+          "flex items-center justify-between gap-3",
+          CANVAS_CAST_OPEN && "pt-3 border-t border-canvas-border",
+        )}
+      >
         {/* Footer total is the primary metric (DS §5.15) */}
         <span className="text-canvas-lg font-medium text-canvas-ink tabular-nums">
-          {plan ? `~${formatCredits(displayPrice(plan.estimatedCreditCost))} credits` : "—"}
+          {!CANVAS_CAST_OPEN
+            ? ""
+            : plan
+              ? `~${formatCredits(displayPrice(plan.estimatedCreditCost))} credits`
+              : "—"}
         </span>
         <div className="flex items-center gap-1.5">
           <button
@@ -76,7 +106,7 @@ export function VariationsPopoverContent({
           </button>
           <button
             type="button"
-            disabled={!plan}
+            disabled={!plan || !CANVAS_CAST_OPEN}
             onClick={() =>
               plan && onGenerate(count, plan.creates.map((c) => c.position))
             }

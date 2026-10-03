@@ -9,6 +9,7 @@
  * add generateViews, fork/recast, refreshStaleViews, refinement, etc. here.
  */
 import { TRPCError } from "@trpc/server";
+import { assertCanvasCastOpen } from "./canvasCastDoor";
 import {
   addBoardItem,
   getBoardItems,
@@ -361,6 +362,13 @@ export interface RunGenerationInput {
 }
 
 export async function executeRunGeneration(input: RunGenerationInput) {
+  /* ⚠ THE CANVAS CASTING DOOR'S STRUCTURAL BACKSTOP (#1785, his word: "seal").
+     Above the rate limiter, the quota and the deduction that follow.
+     The router's mouth gate is a list a future caller can miss; this one stands
+     between ANY caller and the shut-down engine. #1785 is itself the proof the
+     miss happens here — #1654 sealed one road and a second live canvas road on
+     the same dead ids went unnoticed. `server/lib/canvasCastDoor.ts` carries it. */
+  assertCanvasCastOpen();
   const item = await getOwnedBoardItemById(input);
   if (!item || item.deletedAt) throw new TRPCError({ code: "NOT_FOUND", message: "Node not found" });
 
@@ -939,6 +947,13 @@ async function generateCastCandidate(opts: {
   operationId: string;
   stepKey: string;
 }) {
+  /* ⚠ THE CANVAS CASTING DOOR'S STRUCTURAL BACKSTOP (#1785, his word: "seal").
+     The deepest one: this is the function that calls `generateCastingImage`.
+     The router's mouth gate is a list a future caller can miss; this one stands
+     between ANY caller and the shut-down engine. #1785 is itself the proof the
+     miss happens here — #1654 sealed one road and a second live canvas road on
+     the same dead ids went unnoticed. `server/lib/canvasCastDoor.ts` carries it. */
+  assertCanvasCastOpen();
   // §10.3 (Batch C): creation references are cleared from every fork/recast/
   // variation preference set — a persisted legacy referenceImage (or the
   // fork's merge) must never ride into a new cast. The INHERITED brief is
@@ -1029,6 +1044,13 @@ async function generateCastCandidate(opts: {
 }
 
 export async function executeApplyModelEdit(input: ApplyModelEditInput) {
+  /* ⚠ THE CANVAS CASTING DOOR'S STRUCTURAL BACKSTOP (#1785, his word: "seal").
+     Recast-only by its own next statement; the free fork never reaches here.
+     The router's mouth gate is a list a future caller can miss; this one stands
+     between ANY caller and the shut-down engine. #1785 is itself the proof the
+     miss happens here — #1654 sealed one road and a second live canvas road on
+     the same dead ids went unnoticed. `server/lib/canvasCastDoor.ts` carries it. */
+  assertCanvasCastOpen();
   if ((input as { decision: string }).decision !== "update") {
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
@@ -1374,6 +1396,13 @@ export async function executeRunVariations(input: {
   onCharged: (amount: number) => void;
   onRefunded: (amount: number) => void;
 }) {
+  /* ⚠ THE CANVAS CASTING DOOR'S STRUCTURAL BACKSTOP (#1785, his word: "seal").
+     Above `deductCredits` below, so the batch is never charged.
+     The router's mouth gate is a list a future caller can miss; this one stands
+     between ANY caller and the shut-down engine. #1785 is itself the proof the
+     miss happens here — #1654 sealed one road and a second live canvas road on
+     the same dead ids went unnoticed. `server/lib/canvasCastDoor.ts` carries it. */
+  assertCanvasCastOpen();
   const resolved = await resolveModelBackedBoardOperation(input);
   const { item, model, provenance: prov } = resolved;
   if (prov.type === "cast_view") {

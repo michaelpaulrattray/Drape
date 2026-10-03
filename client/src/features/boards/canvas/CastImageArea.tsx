@@ -23,6 +23,12 @@ export interface CastImageAreaProps {
   dimmed?: boolean;
   error?: boolean;
   onRetry?: () => void;
+  /**
+   * Shown in place of Retry when retrying is not on offer at all (#1785 — the
+   * canvas casting door, his word: "seal"). A failed node with no Retry and no
+   * sentence is a dead end; this is the sentence.
+   */
+  closedNote?: string;
 }
 
 export function CastImageArea({
@@ -34,6 +40,7 @@ export function CastImageArea({
   dimmed,
   error,
   onRetry,
+  closedNote,
 }: CastImageAreaProps) {
   return (
     // 3:4 — the exact ratio casting generates (896×1200, measured), so cover
@@ -49,6 +56,12 @@ export function CastImageArea({
           {/* Batch C final correction 1: the money truth rides the node's
               status message (set server-side from the ledger's actual
               outcome) — no unconditional "you weren't charged" claim here */}
+          {/* #1785: no Retry on a road that is closed — the reason instead. */}
+          {!onRetry && closedNote && (
+            <span className="text-canvas-xs mt-2 px-3 text-center text-canvas-ink-faint leading-relaxed">
+              {closedNote}
+            </span>
+          )}
           {onRetry && (
             <button
               type="button"

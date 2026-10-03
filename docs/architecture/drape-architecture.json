@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 79
+      "moduleCount": 80
     },
     {
       "id": "domain:staff",
@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 50
+      "moduleCount": 51
     },
     {
       "id": "domain:wardrobe",
@@ -5161,6 +5161,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/lib/canvasCastDoor.ts",
+      "path": "server/lib/canvasCastDoor.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/lib/publicError.ts",
       "path": "server/lib/publicError.ts",
       "domain": "unassigned",
@@ -5961,6 +5967,12 @@
     {
       "id": "module:shared/candidateFailure.ts",
       "path": "shared/candidateFailure.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/canvasCastDoor.ts",
+      "path": "shared/canvasCastDoor.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -11365,6 +11377,10 @@
       "path": "server/bundleReportWiring.test.ts"
     },
     {
+      "id": "test:server/canvasCastSeal.test.ts",
+      "path": "server/canvasCastSeal.test.ts"
+    },
+    {
       "id": "test:server/capabilityAtlas.test.ts",
       "path": "server/capabilityAtlas.test.ts"
     },
@@ -16218,6 +16234,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/boards/canvas/ForkRecastPopover.tsx",
+      "to": "module:shared/canvasCastDoor.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/boards/canvas/GroupSelectionOverlay.tsx",
       "to": "module:client/src/features/boards/canvas/NodeFloatingToolbar.tsx",
       "kind": "imports"
@@ -16374,6 +16395,11 @@
     },
     {
       "from": "module:client/src/features/boards/canvas/nodes/CastNode.tsx",
+      "to": "module:shared/canvasCastDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/canvas/nodes/CastNode.tsx",
       "to": "module:shared/refundCopy.ts",
       "kind": "imports"
     },
@@ -16520,6 +16546,16 @@
     {
       "from": "module:client/src/features/boards/canvas/VariationsPopover.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/canvas/VariationsPopover.tsx",
+      "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/canvas/VariationsPopover.tsx",
+      "to": "module:shared/canvasCastDoor.ts",
       "kind": "imports"
     },
     {
@@ -31419,6 +31455,11 @@
     },
     {
       "from": "module:server/lib/boardOps.ts",
+      "to": "module:server/lib/canvasCastDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/lib/boardOps.ts",
       "to": "module:server/lib/publicError.ts",
       "kind": "imports"
     },
@@ -31470,6 +31511,11 @@
     {
       "from": "module:server/lib/boardState.ts",
       "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/lib/canvasCastDoor.ts",
+      "to": "module:shared/canvasCastDoor.ts",
       "kind": "imports"
     },
     {
@@ -32370,6 +32416,11 @@
     {
       "from": "module:server/routes/boardOps.ts",
       "to": "module:server/lib/boardState.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/boardOps.ts",
+      "to": "module:server/lib/canvasCastDoor.ts",
       "kind": "imports"
     },
     {
