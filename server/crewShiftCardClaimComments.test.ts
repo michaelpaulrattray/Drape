@@ -45,12 +45,15 @@ import {
   renderCardClaimRefusal,
   renderNoteForeignClaimWarning,
   type CardComment,
+  type CardCommentRead,
 } from "../scripts/lib/cardClaimComments.mts";
 import {
   CREW_CLAIM_LIVE_MS,
+  cardStateSpendsClaim,
   crewCardClaimLine,
   crewCardCommentFact,
   crewCardReleaseLine,
+  type CrewCardReadState,
 } from "../shared/crewCardBuildState";
 import { cardNumbersNamedIn, cardNumberToken } from "../shared/crewShiftState";
 
@@ -86,6 +89,7 @@ describe("the incident, reproduced (#1580)", () => {
   it("refuses the foreman's claim on #1554 and names the seat already on it", () => {
     const verdict = readCardClaim({
       cardRef: "#1554",
+      state: "open",
       comments: [claim("seat1-20260930-155058", SEAT1_CLAIMED_AT)],
       mine: "foreman-20260930-1553",
       now: Date.parse(FOREMAN_CLAIMED_AT),
@@ -109,6 +113,7 @@ describe("the incident, reproduced (#1580)", () => {
   it("says how long ago, so a seat can judge a stale claim at a glance", () => {
     const verdict = readCardClaim({
       cardRef: "#1554",
+      state: "open",
       comments: [claim("seat1-20260930-155058", SEAT1_CLAIMED_AT)],
       mine: "foreman-20260930-1553",
       now: JUST_AFTER,
@@ -132,6 +137,7 @@ describe("whose claim it is", () => {
        once on the same card; its own claim must never refuse it. */
     const verdict = readCardClaim({
       cardRef: "#1554",
+      state: "open",
       comments: [claim("seat2-20260930-173234", SEAT1_CLAIMED_AT)],
       mine: "seat2-20260930-173234",
       now: JUST_AFTER,
@@ -143,6 +149,7 @@ describe("whose claim it is", () => {
   it("compares seat names the one way, so case and padding are not a rival", () => {
     const verdict = readCardClaim({
       cardRef: "#1554",
+      state: "open",
       comments: [{ body: "CLAIMED —  SEAT2-20260930-173234 , 05:54Z", createdAt: SEAT1_CLAIMED_AT }],
       mine: "seat2-20260930-173234",
       now: JUST_AFTER,
@@ -160,6 +167,7 @@ describe("whose claim it is", () => {
     */
     const verdict = readCardClaim({
       cardRef: "#1554",
+      state: "open",
       comments: [{ body: "CLAIMED — , 2026-09-30", createdAt: SEAT1_CLAIMED_AT }],
       mine: "seat2-20260930-173234",
       now: JUST_AFTER,
@@ -174,6 +182,7 @@ describe("what puts a card back on offer", () => {
   it("a RELEASE newer than the claim", () => {
     expect(readCardClaim({
       cardRef: "#1554",
+      state: "open",
       comments: [
         claim("seat1-20260930-155058", SEAT1_CLAIMED_AT),
         { body: "RELEASED — seat1-20260930-155058", createdAt: "2026-09-30T05:55:00Z" },
@@ -187,6 +196,7 @@ describe("what puts a card back on offer", () => {
     const at = new Date(JUST_AFTER - CREW_CLAIM_LIVE_MS - 60_000).toISOString();
     expect(readCardClaim({
       cardRef: "#1554",
+      state: "open",
       comments: [claim("seat1-20260930-155058", at)],
       mine: "foreman-20260930-1553",
       now: JUST_AFTER,
@@ -199,6 +209,7 @@ describe("what puts a card back on offer", () => {
     const at = new Date(JUST_AFTER - CREW_CLAIM_LIVE_MS + 60_000).toISOString();
     expect(readCardClaim({
       cardRef: "#1554",
+      state: "open",
       comments: [claim("seat1-20260930-155058", at)],
       mine: "foreman-20260930-1553",
       now: JUST_AFTER,
@@ -217,6 +228,7 @@ describe("prose about claiming is not a claim", () => {
     */
     expect(readCardClaim({
       cardRef: "#1580",
+      state: "open",
       comments: [
         { body: "Either the batch reader did not consult the board before it CLAIMED — or it read the board early.", createdAt: SEAT1_CLAIMED_AT },
       ],
@@ -228,6 +240,7 @@ describe("prose about claiming is not a claim", () => {
   it("reads a claim the relay bolded, because that is how they are written", () => {
     expect(readCardClaim({
       cardRef: "#1580",
+      state: "open",
       comments: [{ body: `**CLAIMED — seat1-20260930-155058, ${SEAT1_CLAIMED_AT}**`, createdAt: SEAT1_CLAIMED_AT }],
       mine: "seat2-20260930-173234",
       now: JUST_AFTER,
@@ -237,7 +250,7 @@ describe("prose about claiming is not a claim", () => {
 
 describe("an unread board is not a free one", () => {
   it("returns unreadable rather than free when the comments could not be read", () => {
-    const verdict = readCardClaim({ cardRef: "#1554", comments: null, mine: "x", now: JUST_AFTER });
+    const verdict = readCardClaim({ cardRef: "#1554", comments: null, state: "open", mine: "x", now: JUST_AFTER });
     expect(verdict).toEqual({ kind: "unreadable" });
   });
 
@@ -248,7 +261,7 @@ describe("an unread board is not a free one", () => {
       nobody has claimed. It must not stop a night (#504's ruling on the NEXT UP
       read), and it must not pass silently either.
     */
-    const verdict = readCardClaim({ cardRef: "#1554", comments: null, mine: "x", now: JUST_AFTER });
+    const verdict = readCardClaim({ cardRef: "#1554", comments: null, state: "open", mine: "x", now: JUST_AFTER });
     expect(renderCardClaimRefusal("#1554", verdict, JUST_AFTER)).toBeNull();
     const note = renderCardClaimNote("#1554", verdict)!;
     expect(note).toContain("unread one");
@@ -259,7 +272,7 @@ describe("an unread board is not a free one", () => {
     /* There is no number to ask `gh` about, so there is nothing to read — the
        same answer `renderCardClaimWarning` gives, rather than noise dressed as
        diligence. */
-    const verdict = readCardClaim({ cardRef: "his reply about the outfit court", comments: null, mine: "x" });
+    const verdict = readCardClaim({ cardRef: "his reply about the outfit court", comments: null, state: "open", mine: "x" });
     expect(verdict).toEqual({ kind: "free" });
     expect(renderCardClaimNote("his reply", verdict)).toBeNull();
   });
@@ -268,22 +281,92 @@ describe("an unread board is not a free one", () => {
 describe("the reader's transport", () => {
   it("reads a gh --json comments document, and a bare array too", () => {
     const wrapped = fixture({ comments: [claim("seat1", SEAT1_CLAIMED_AT)] });
-    expect(readCardComments(1554, wrapped)).toHaveLength(1);
+    expect(readCardComments(1554, wrapped).comments).toHaveLength(1);
     const bare = fixture([claim("seat1", SEAT1_CLAIMED_AT)]);
-    expect(readCardComments(1554, bare)).toHaveLength(1);
+    expect(readCardComments(1554, bare).comments).toHaveLength(1);
   });
 
-  it("answers null — never an empty list — when the fixture cannot be read", () => {
-    expect(readCardComments(1554, join(tmpdir(), "no-such-file-1580.json"))).toBeNull();
+  it("answers null comments — never an empty list — when the fixture cannot be read", () => {
+    expect(readCardComments(1554, join(tmpdir(), "no-such-file-1580.json")).comments).toBeNull();
     const notJson = fixture(null);
     writeFileSync(notJson, "{ not json", "utf8");
-    expect(readCardComments(1554, notJson)).toBeNull();
+    expect(readCardComments(1554, notJson).comments).toBeNull();
   });
 
-  it("asks gh for the card it was given, and for comments only", () => {
+  it("asks gh for the card it was given, and for the comments AND the state", () => {
     /* Working law 5: the contract is proven on the call that goes out, not on a
-       constant near it. */
-    expect(cardCommentListArgs(1554)).toEqual(["issue", "view", "1554", "--json", "comments"]);
+       constant near it — and #1879's whole claim is that the state rides THIS
+       call rather than a second one, which is a fact about the argv and nowhere
+       else. */
+    expect(cardCommentListArgs(1554)).toEqual(["issue", "view", "1554", "--json", "comments,state"]);
+  });
+
+  it("spends ONE gh call for both facts, which is the card's whole argument", () => {
+    /*
+      ⚠ THE ARM THAT WOULD CATCH THE OBVIOUS WRONG REPAIR. A second `gh issue
+      view … --json state` beside the first would pass every behavioural arm
+      below and quietly double this read against the one GitHub allowance every
+      seat and the crew share — whose burst limit tripped three times in two
+      hours on 2026-09-26. So the argv is asserted to be one list naming both
+      fields, rather than the state being read anywhere at all.
+    */
+    const args = cardCommentListArgs(1554);
+    expect(args.filter((a) => a === "--json")).toHaveLength(1);
+    expect(args.at(-1)).toContain("comments");
+    expect(args.at(-1)).toContain("state");
+  });
+
+  it("carries the card's state out of that same document, in both casings", () => {
+    /* The state is READ, not asked for twice — so the proof is that a document
+       carrying it comes back with it. Both casings, because `gh` answers `open`
+       on one road and `OPEN` on the other, and a reader that knew one spelling
+       would call every card on the other road unknown. */
+    expect(readCardComments(1554, fixture({ comments: [], state: "OPEN" })).state).toBe("open");
+    expect(readCardComments(1554, fixture({ comments: [], state: "open" })).state).toBe("open");
+    expect(readCardComments(1554, fixture({ comments: [], state: "CLOSED" })).state).toBe("closed");
+    expect(readCardComments(1554, fixture({ comments: [], state: "closed" })).state).toBe("closed");
+  });
+
+  it("an unread state is `unknown` and NEVER `closed`, on every road that answers one", () => {
+    /*
+      ⚠ THE ASYMMETRY, AND IT IS THE ONE ARM THIS WHOLE CHANGE RESTS ON (#1879).
+      This card can only ever LOOSEN a guard, and `closed` is the single value
+      that loosens it — so every road that fails to produce a state must produce
+      `unknown`. A state read wrongly as closed spends a live claim and puts a
+      second seat on a card somebody is building, which is the hour and the
+      duplicate diff this family of guards exists to prevent.
+    */
+    /* A bare array is a comment list and carries no state — the fixture road
+       the suite itself writes, and a real shape rather than an invented one. */
+    expect(readCardComments(1554, fixture([claim("seat1", SEAT1_CLAIMED_AT)])).state).toBe("unknown");
+    /* A state nobody has seen, a state of the wrong type, and a missing field. */
+    expect(readCardComments(1554, fixture({ comments: [], state: "MERGED" })).state).toBe("unknown");
+    expect(readCardComments(1554, fixture({ comments: [], state: 42 })).state).toBe("unknown");
+    expect(readCardComments(1554, fixture({ comments: [] })).state).toBe("unknown");
+    /* And the two roads where nothing was read at all. */
+    expect(readCardComments(1554, join(tmpdir(), "no-such-file-1879.json")).state).toBe("unknown");
+    const notJson = fixture(null);
+    writeFileSync(notJson, "{ not json", "utf8");
+    expect(readCardComments(1554, notJson).state).toBe("unknown");
+  });
+
+  it("holds the state parse to the ONE owner, rather than keeping a copy of it", () => {
+    /*
+      ⚠ WORKING LAW 4, ON THE FIELD THIS REPOSITORY HAS ALREADY BEEN BITTEN BY.
+      `state` is the one `gh` field whose VALUE differs between the REST and
+      GraphQL roads, and #1829 wrote that reading down once. A second comparison
+      here — `state === "closed"`, or a `toLowerCase()` of its own — would be
+      that reading copied, and the copy is what drifts. So the module spends
+      `crewCardStateFromJson` for the parse and `cardStateSpendsClaim` for the
+      rule, and holds NEITHER literal of its own.
+    */
+    const source = readFileSync(resolve(__dirname, "../scripts/lib/cardClaimComments.mts"), "utf8");
+    expect(source).toContain("crewCardStateFromJson(");
+    expect(source).toContain("cardStateSpendsClaim(");
+    /* The code, not the prose: the docblocks discuss both words at length. */
+    const code = source.replace(/\/\*[\s\S]*?\*\//g, "");
+    expect(code).not.toContain('=== "closed"');
+    expect(code).not.toContain('=== "open"');
   });
 
   it("bounds the call, so the worst it can cost is a slow start", () => {
@@ -373,6 +456,7 @@ describe("posting this seat's claim", () => {
     });
     const verdict = readCardClaim({
       cardRef: "#1725",
+      state: "open",
       comments: [{ body: sent[0]!.body, createdAt: "2026-10-01T21:14:00Z" }],
       mine: "seat1-20261002-070323",
       now: Date.parse("2026-10-01T21:41:33Z"),
@@ -386,6 +470,7 @@ describe("posting this seat's claim", () => {
     const { sent, post } = recorder();
     const held = readCardClaim({
       cardRef: "#1725",
+      state: "open",
       comments: [{ body: `CLAIMED — ${SEAT}, ${AT}`, createdAt: AT }],
       mine: SEAT,
       now: Date.parse(AT) + 60_000,
@@ -401,6 +486,7 @@ describe("posting this seat's claim", () => {
     const { sent, post } = recorder();
     const stale = readCardClaim({
       cardRef: "#1725",
+      state: "open",
       comments: [{ body: `CLAIMED — ${SEAT}, ${AT}`, createdAt: AT }],
       mine: SEAT,
       now: Date.parse(AT) + CREW_CLAIM_LIVE_MS + 60_000,
@@ -579,14 +665,29 @@ describe("a heartbeat that names another seat's card (#1877)", () => {
     body: crewCardClaimLine("foreman-20261004-0635", "2026-10-03T20:36:19Z"),
     createdAt: "2026-10-03T20:36:18Z",
   }];
-  /** The board as it really stood: #1872 claimed, #1873 a pull request number. */
-  const REAL_BOARD: Record<number, CardComment[] | null> = { 1872: FOREMAN_CLAIM, 1873: [] };
+  /**
+   * The board as it really stood: #1872 claimed, #1873 a pull request number.
+   *
+   * ⚠ **BOTH CARDS ARE `open` HERE, AND THAT IS NOT INCIDENTAL (#1879).** The
+   * collision this block reproduces was a claim on a card somebody really was
+   * building, so every arm below is the POSITIVE control for the loosening —
+   * the probe must still speak when the card is open. The spent case has its
+   * own block at the foot of this file.
+   */
+  const REAL_BOARD: Record<number, CardCommentRead> = {
+    1872: { comments: FOREMAN_CLAIM, state: "open" },
+    1873: { comments: [], state: "open" },
+  };
+  /** A card the board could not be read for at all. */
+  const UNREAD: CardCommentRead = { comments: null, state: "unknown" };
+  /** A card with no comments, read cleanly. */
+  const NO_COMMENTS: CardCommentRead = { comments: [], state: "open" };
 
   function probe(
     note: string | null | undefined,
     own: string | null,
     mine: string | null,
-    board: (card: number) => readonly CardComment[] | null,
+    board: (card: number) => CardCommentRead,
   ) {
     const found = readNoteForeignClaims({
       note, ownCardRef: own, mine, readComments: board, now: AT_THE_HEARTBEAT,
@@ -595,7 +696,7 @@ describe("a heartbeat that names another seat's card (#1877)", () => {
   }
 
   it("speaks on the real collision, and names the seat and the age", () => {
-    const { found, line } = probe(REAL_NOTE, "#1870", "seat1-20261004-062135", (c) => REAL_BOARD[c] ?? null);
+    const { found, line } = probe(REAL_NOTE, "#1870", "seat1-20261004-062135", (c) => REAL_BOARD[c] ?? UNREAD);
     expect(found.claims).toEqual([
       { card: 1872, seat: "foreman-20261004-0635", at: "2026-10-03T20:36:18Z" },
     ]);
@@ -616,7 +717,7 @@ describe("a heartbeat that names another seat's card (#1877)", () => {
       refusal meets it only on a card a row declares — so the honest wording is
       load-bearing here, and the header must not say "hands on".
     */
-    const { line } = probe(REAL_NOTE, "#1870", "seat1-20261004-062135", (c) => REAL_BOARD[c] ?? null);
+    const { line } = probe(REAL_NOTE, "#1870", "seat1-20261004-062135", (c) => REAL_BOARD[c] ?? UNREAD);
     expect(line).toContain("CARRYING ANOTHER SEAT'S LIVE CLAIM");
     expect(line).not.toContain("HAS ITS HANDS ON");
     expect(line).toContain("A LIVE CLAIM IS NOT A LIVE SEAT");
@@ -628,7 +729,7 @@ describe("a heartbeat that names another seat's card (#1877)", () => {
 
   it("is SILENT when the live claim is this seat's own", () => {
     /* A seat re-reading its own card must never be warned off it. */
-    const { found, line } = probe(REAL_NOTE, "#1870", "foreman-20261004-0635", (c) => REAL_BOARD[c] ?? null);
+    const { found, line } = probe(REAL_NOTE, "#1870", "foreman-20261004-0635", (c) => REAL_BOARD[c] ?? UNREAD);
     expect(found.claims).toEqual([]);
     expect(line).toBeNull();
   });
@@ -637,7 +738,7 @@ describe("a heartbeat that names another seat's card (#1877)", () => {
     /* ⚠ THE ARM THE WHOLE DESIGN TURNS ON. 453 of 568 real rows look like this. */
     const { found, line } = probe(
       "filed as #1877, sibling of #1747, his ruling on #1612, PR #1873 merged",
-      "#1870", "seat-x", () => [],
+      "#1870", "seat-x", () => NO_COMMENTS,
     );
     expect(found.claims).toEqual([]);
     expect(found.unreadable).toEqual([]);
@@ -652,7 +753,7 @@ describe("a heartbeat that names another seat's card (#1877)", () => {
     /* Older than CREW_CLAIM_LIVE_MS at the moment asked — so not live, and the
        card is free. Derived from the constant rather than from a typed date. */
     expect(AT_THE_HEARTBEAT - Date.parse("2026-10-02T00:00:00Z")).toBeGreaterThan(CREW_CLAIM_LIVE_MS);
-    const { line } = probe(REAL_NOTE, "#1870", "seat-x", () => stale);
+    const { line } = probe(REAL_NOTE, "#1870", "seat-x", () => ({ comments: stale, state: "open" }));
     expect(line).toBeNull();
   });
 
@@ -662,13 +763,13 @@ describe("a heartbeat that names another seat's card (#1877)", () => {
     const asked: number[] = [];
     probe("#1870 shipped, preflight green", "#1870", "seat-x", (card) => {
       asked.push(card);
-      return [];
+      return NO_COMMENTS;
     });
     expect(asked).toEqual([]);
   });
 
   it("says so when the board could not be read — an unread board is not a clean one", () => {
-    const { found, line } = probe(REAL_NOTE, "#1870", "seat-x", () => null);
+    const { found, line } = probe(REAL_NOTE, "#1870", "seat-x", () => UNREAD);
     expect(found.unreadable).toEqual([1872, 1873]);
     expect(line).toContain("could not read the comments on #1872, #1873");
     expect(line).toContain("gh auth status");
@@ -685,7 +786,7 @@ describe("a heartbeat that names another seat's card (#1877)", () => {
     expect(cardNumbersNamedIn(eight)).toHaveLength(8);
     readNoteForeignClaims({
       note: eight, ownCardRef: "#1870", mine: "seat-x", now: AT_THE_HEARTBEAT,
-      readComments: () => { reads += 1; return []; },
+      readComments: () => { reads += 1; return NO_COMMENTS; },
     });
     expect(reads).toBe(HEARTBEAT_FOREIGN_CLAIM_PROBE_MAX);
   });
@@ -695,7 +796,7 @@ describe("a heartbeat that names another seat's card (#1877)", () => {
       let reads = 0;
       const found = readNoteForeignClaims({
         note, ownCardRef: "#1870", mine: "seat-x",
-        readComments: () => { reads += 1; return []; },
+        readComments: () => { reads += 1; return NO_COMMENTS; },
       });
       expect(reads).toBe(0);
       expect(found.claims).toEqual([]);
@@ -842,5 +943,175 @@ describe("the open-PR warning covers a re-declared card too (#1877)", () => {
     expect(block).toContain("renderCardClaimWarning(reDeclared,");
     expect(block).toContain("console.log(reDeclaredPrWarning)");
     expect(block).not.toContain("refuse(");
+  });
+});
+
+/**
+ * A LIVE CLAIM ON A **CLOSED** CARD IS SPENT (#1879).
+ *
+ * # What was measured, and it was not reasoned about
+ *
+ * On 2026-10-03 at 22:4xZ the foreign-claim probe #1877 had just added spoke
+ * for the first time on the live board, about **#1870** — a card whose work had
+ * merged and which had been CLOSED two hours earlier. The verdict was correct
+ * by the board's own rule and simply not useful: that seat had released the
+ * duplicate it stood off and never released its own finished card, which is the
+ * ordinary end of a card rather than an oversight. **Nothing ages a claim but
+ * the clock** ({@link CREW_CLAIM_LIVE_MS}, twelve hours), a finished seat owes a
+ * {@link crewCardReleaseLine} comment, and no reader can see a merged pull
+ * request as a handback (#1083, #1701).
+ *
+ * # ⚠ THIS CHANGE CAN ONLY EVER LOOSEN A GUARD, SO THE CONTROLS ARE THE WORK
+ *
+ * Every arm that was in this file before #1879 now names `state: "open"`
+ * explicitly, which is the positive control stated sixteen times over: the
+ * refusal and the probe must behave exactly as they always did on a card
+ * somebody may really be building. The arms below are the ones that would
+ * redden if the loosening escaped its one fact:
+ *
+ *   - the same claim on an **open** card still refuses and still warns;
+ *   - the same claim on an **unread** state still refuses and still warns,
+ *     because `unknown` is not `closed`;
+ *   - only `closed` is silent.
+ *
+ * **Both consumers are driven**, and the second meets this case far more often:
+ * the refusal sees only a card a ROW declares, while the probe sees every card
+ * a NOTE cites, and 453 of 568 production rows cite a foreign card.
+ */
+describe("a live claim on a card that has CLOSED (#1879)", () => {
+  /** #1870's real claim, as the card recorded it. */
+  const CLAIM_AT = "2026-10-03T20:36:18Z";
+  /** The moment the probe spoke about it, fifteen minutes later. */
+  const NOW = Date.parse("2026-10-03T20:51:37Z");
+  const RIVAL = "foreman-20261004-0635";
+  const MINE = "seat1-20261004-062135";
+  const RIVAL_CLAIM: CardComment[] = [{
+    body: crewCardClaimLine(RIVAL, "2026-10-03T20:36:19Z"),
+    createdAt: CLAIM_AT,
+  }];
+
+  const verdictOn = (state: CrewCardReadState) => readCardClaim({
+    cardRef: "#1870", comments: RIVAL_CLAIM, state, mine: MINE, now: NOW,
+  });
+
+  /** The note that cited #1870 — row #566's own shape, read off production. */
+  const CITING_NOTE = "#1870 shipped as PR #1873 (preflight green). Now #1872.";
+  const probeOn = (state: CrewCardReadState) => {
+    const found = readNoteForeignClaims({
+      note: CITING_NOTE,
+      /* The row was on a DIFFERENT card, which is the only reason #1870 is
+         probed at all — a row's own declared card is never asked about. */
+      ownCardRef: "#1872",
+      mine: MINE,
+      readComments: (card) => (card === 1870
+        ? { comments: RIVAL_CLAIM, state }
+        : { comments: [], state: "open" }),
+      now: NOW,
+    });
+    return { found, line: renderNoteForeignClaimWarning(found, "#1872", NOW) };
+  };
+
+  it("is still LIVE by the clock — the premise the whole card rests on", () => {
+    /*
+      ⚠ WITHOUT THIS ARM EVERY SILENCE BELOW IS SATISFIED BY A STALE CLAIM, and
+      the block would pass over a reader that never consulted the state at all.
+      Derived from the constant rather than from a typed date.
+    */
+    expect(NOW - Date.parse(CLAIM_AT)).toBeLessThan(CREW_CLAIM_LIVE_MS);
+  });
+
+  it("reads as spent, carrying the seat and the time it was reached by", () => {
+    /* A distinct verdict rather than a fold into `free`: `free` is NOBODY's
+       live claim, and this is somebody's live claim the card's close has spent.
+       This file has already paid for that fold once, on `mine`. */
+    expect(verdictOn("closed")).toEqual({ kind: "spent", seat: RIVAL, at: CLAIM_AT });
+  });
+
+  describe("consumer 1 — the refusal", () => {
+    it("refuses nothing on a closed card, and does not call the board unreadable either", () => {
+      expect(renderCardClaimRefusal("#1870", verdictOn("closed"), NOW)).toBeNull();
+      expect(renderCardClaimNote("#1870", verdictOn("closed"))).toBeNull();
+    });
+
+    it("still refuses the SAME claim on an OPEN card — the positive control", () => {
+      expect(verdictOn("open")).toMatchObject({ kind: "claimed", seat: RIVAL });
+      expect(renderCardClaimRefusal("#1870", verdictOn("open"), NOW)).toContain(RIVAL);
+    });
+
+    it("still refuses when the state could not be read — `unknown` is not `closed`", () => {
+      /* The direction that matters: a `gh` that answered no state must leave
+         this guard exactly as tight as it was before #1879. */
+      expect(verdictOn("unknown")).toMatchObject({ kind: "claimed", seat: RIVAL });
+      expect(renderCardClaimRefusal("#1870", verdictOn("unknown"), NOW)).toContain(RIVAL);
+    });
+  });
+
+  describe("consumer 2 — the heartbeat's foreign-claim probe", () => {
+    it("says nothing about a cited card that has closed", () => {
+      const { found, line } = probeOn("closed");
+      expect(found.claims).toEqual([]);
+      /* And it is not reported as an unread board — the other way this could go
+         wrong is swapping one line of noise for another. */
+      expect(found.unreadable).toEqual([]);
+      expect(line).toBeNull();
+    });
+
+    it("still speaks about the SAME cited card while it is OPEN — the positive control", () => {
+      const { found, line } = probeOn("open");
+      expect(found.claims).toEqual([{ card: 1870, seat: RIVAL, at: CLAIM_AT }]);
+      expect(line).toContain("#1870 — " + RIVAL + ", 15 minutes ago");
+    });
+
+    it("still speaks when the state could not be read — `unknown` is not `closed`", () => {
+      const { found } = probeOn("unknown");
+      expect(found.claims).toEqual([{ card: 1870, seat: RIVAL, at: CLAIM_AT }]);
+    });
+  });
+
+  describe("the writer, which decides out loud rather than by falling through", () => {
+    /*
+      ⚠ A NEW VERDICT KIND ACQUIRES BEHAVIOUR BY FALLING PAST FOUR `if`s IN
+      `postCardClaim`, WHICH IS EXACTLY HOW A DECISION GETS MADE BY NOBODY. So
+      the decision is pinned: a spent claim POSTS, the same as `free`, because a
+      closed card carrying no claim at all has always posted on that road, and
+      three closed-card behaviours out of one would be the drift. Whether a seat
+      should be claiming a CLOSED card at all is a real question and a separate
+      one — it is not narrowed under this card's name.
+    */
+    const AT = "2026-10-03T20:51:37Z";
+    const post = (verdict: ReturnType<typeof verdictOn>) => {
+      const posted: string[] = [];
+      const outcome = postCardClaim({
+        cardRef: "#1870", seat: MINE, verdict, at: AT,
+        post: (_card, body) => { posted.push(body); },
+      });
+      return { outcome, posted };
+    };
+
+    it("posts on a spent claim, exactly as it does on a card nobody has claimed", () => {
+      const spent = post(verdictOn("closed"));
+      const free = post(readCardClaim({
+        cardRef: "#1870", comments: [], state: "closed", mine: MINE, now: NOW,
+      }));
+      expect(spent.outcome.kind).toBe("posted");
+      expect(spent.posted).toEqual([crewCardClaimLine(MINE, AT)]);
+      expect(spent.posted).toEqual(free.posted);
+    });
+
+    it("and still refuses to paper over a LIVE claim on an open card", () => {
+      const { outcome, posted } = post(verdictOn("open"));
+      expect(outcome).toEqual({ kind: "skipped", why: "another seat holds it (" + RIVAL + ")" });
+      expect(posted).toEqual([]);
+    });
+  });
+
+  it("the rule and the three states have ONE owner, in shared", () => {
+    /* Not a copy of `state === "closed"` in two modules: the close asks the
+       same question of the same field (#1829), and the two readings must not be
+       able to disagree about what a closed card means. */
+    expect(cardStateSpendsClaim("closed")).toBe(true);
+    for (const state of ["open", "unknown", "none"] as const) {
+      expect(cardStateSpendsClaim(state), state + " must not spend a claim").toBe(false);
+    }
   });
 });

@@ -471,6 +471,19 @@ export function crewCardHandbackInstruction(seat?: string | null): string {
 export type CrewClosingCardState = "open" | "closed" | "unknown" | "none";
 
 /**
+ * THE THREE A `gh` ANSWER CAN BE — {@link CrewClosingCardState} without `none`.
+ *
+ * ⚠ **`none` IS THE CALLER'S FACT, NOT THE DOCUMENT'S (#1879).** It means *this
+ * row names no card*, which is decided before any read is made and can never
+ * come back from one. Naming the narrower set lets {@link crewCardStateFromJson}
+ * declare what it actually returns, so a caller does not have to carry a branch
+ * no input of its own can produce — and a state added to the union above still
+ * surfaces in both, which is the point of deriving one from the other rather
+ * than writing the three out twice.
+ */
+export type CrewCardReadState = Exclude<CrewClosingCardState, "none">;
+
+/**
  * SHOULD THE CLOSE PRINT {@link crewCardHandbackInstruction}? — #1829.
  *
  * # What was wrong, and it was one condition
@@ -517,6 +530,85 @@ export function closeShouldPrintHandback(input: {
   readonly cardState: CrewClosingCardState;
 }): boolean {
   return !(input.outcome === "shipped" && input.cardState === "closed");
+}
+
+/**
+ * ONE `gh --json state` ANSWER → ONE {@link CrewClosingCardState}, or `unknown`.
+ *
+ * ⚠ **IT SITS BESIDE THE TYPE IT PRODUCES BECAUSE IT HAS TWO READERS NOW
+ * (#1879), AND A SECOND COPY OF IT WOULD BE WORKING LAW 4 ON THE ONE FIELD
+ * BOTH OF THEM TURN ON.** It was `closingCardStateFromJson` in
+ * `scripts/lib/crewClosingCardState.mts` while the close was its only caller;
+ * the claim reader now asks the same question of the same field, and that
+ * module reaches a `gh` TRANSPORT for its default reader — so importing it from
+ * the lean heartbeat path would drag the counts' whole transport onto the road
+ * a seat walks on every check-in. The parse is pure, so it comes here instead
+ * of being retyped there.
+ *
+ * ⚠ **AN ANSWER IT CANNOT PARSE IS `unknown`, NEVER `closed`, AND THE
+ * DIRECTIONS ARE NOT SYMMETRIC** — this is the sentence both callers depend on.
+ * For the close (#1829) a wrong `closed` SILENCES the handback instruction,
+ * which is the defect that card was filed about. For the claim reader (#1879) a
+ * wrong `closed` spends a live claim and lets a second seat onto a card
+ * somebody is building, which is the hour-and-a-duplicate-diff this family of
+ * guards exists to prevent. So only the literal states GitHub spells are
+ * believed, and an empty answer, a moved field or a state no reader has seen is
+ * `unknown`.
+ *
+ * ⚠ **`state` COMES BACK IN TWO CASINGS AND THAT IS NOT A STYLE POINT.** REST
+ * answers `open`, GraphQL answers `OPEN` (`scripts/lib/ghQueueTransport.mts`
+ * says so in its own words: *"that is the one field whose VALUE differs between
+ * the two roads rather than only its name"*). A reader comparing against one
+ * spelling would call every card on the other road `unknown` — so it is
+ * lower-cased before it is judged, and that is the single most load-bearing
+ * line here for a second caller inheriting the reading.
+ */
+export function crewCardStateFromJson(text: string): CrewCardReadState {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return "unknown";
+  }
+  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) return "unknown";
+  const state = (parsed as Record<string, unknown>).state;
+  if (typeof state !== "string") return "unknown";
+  const lowered = state.trim().toLowerCase();
+  if (lowered === "open") return "open";
+  if (lowered === "closed") return "closed";
+  return "unknown";
+}
+
+/**
+ * DOES THE CARD'S OWN STATE SPEND A LIVE CLAIM? — #1879.
+ *
+ * # The reading, and it is the same one {@link closeShouldPrintHandback} makes
+ *
+ * That rule's docblock argues *"a closed card cannot be held"* and uses it to
+ * decide whether a handback is owed. This is the other end of the identical
+ * fact: **a claim on a CLOSED card is not holding a seat off anything**, because
+ * the work it claimed is finished. Nothing ages a claim but the clock
+ * ({@link CREW_CLAIM_LIVE_MS}, twelve hours), a finished seat owes a
+ * {@link crewCardReleaseLine} comment, and a merged pull request is not one —
+ * so the ordinary end of a card leaves a live claim behind it, every time.
+ *
+ * **Measured on the real board, 2026-10-03 22:4xZ:** a heartbeat note citing
+ * #1870 — work merged and the card closed two hours earlier — made the
+ * foreign-claim probe speak. The verdict was correct by the board's own rule
+ * and simply not useful, and that seat had done nothing unusual.
+ *
+ * # ⚠ IT IS THE ONLY STATE THAT SPENDS ONE, AND THE OTHER THREE ARE THE CONTROL
+ *
+ * `open` is a card somebody may really be building. **`unknown` is an
+ * UNREAD state and never a closed one** — the whole asymmetry of this family:
+ * reading a claim as spent when it is not costs an hour of a seat and a
+ * duplicate pull request, while reading it as live when it is spent costs one
+ * ignorable line. `none` is a row that names no card, which has no claim to
+ * spend. So this loosens a guard on exactly one positive fact and on nothing
+ * else.
+ */
+export function cardStateSpendsClaim(state: CrewClosingCardState): boolean {
+  return state === "closed";
 }
 
 /**
