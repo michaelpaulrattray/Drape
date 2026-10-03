@@ -31,6 +31,7 @@ The instruments and their own record pages:
 | gitleaks (the commits a rite push adds) | `scripts/secret-scan.sh <remote tip>` | `deploy-rite.mts`, before the push (#469) | the step's own docblock |
 | actionlint + zizmor | `scripts/workflow-lint.sh` | `gate.yml`, second step | `scripts/workflow-lint.sh` header |
 | semgrep (OSS rulesets) | `pnpm warden:semgrep` | `gate.yml`, before install (run 1) | `docs/WARDEN_SEMGREP.md` |
+| **known vulnerabilities in what ships** | `npx tsx scripts/check-dependency-advisories.mts` | **`gate.yml`, inside `gate-checks`, before the typecheck — W6-B, his *"add the gate step"* 2026-10-03 (#1805)** | `scripts/lib/dependencyAdvisories.mts` header |
 | access-control suites | `npx vitest run server/approvalGate.test.ts server/staffImageBoundary.test.ts server/publicInputStrictness.test.ts server/sessionIssuanceSites.test.ts` | inside `pnpm test` | CLAUDE.md, "Access control" |
 | override resolution (does each override still govern anything?) | `pnpm warden:overrides` | **no, and deliberately not** — see below | `scripts/lib/overrideResolution.mts` header |
 
@@ -41,7 +42,14 @@ only ever say the nine lines are safely written and never that three of them are
 archaeology. **It is free and offline and needs no install** (it reads
 `package.json` and `pnpm-lock.yaml` and nothing else), so it belongs beside
 `pnpm audit --prod` in §A rather than in the gate: both answer a question about
-the dependency floor, and both are this seat's to read. **It exits 0 whatever it
+the dependency floor, and both are this seat's to read. ⚠ **HALF OF THAT
+COMPARISON DIED THE SAME DAY IT WAS WRITTEN — `pnpm audit --prod` IS IN THE GATE
+AS OF 2026-10-03 (#1805, his *"add the gate step"*).** The argument for the
+override reader is untouched and is the one that matters: it exits 0 whatever it
+finds, so it could never be a gate arm. The audit read could, and now is. **The
+clause is kept rather than rewritten because its reasoning is still the test — a
+reading belongs in the gate when it can honestly REFUSE, and beside §A when it
+cannot.** **It exits 0 whatever it
 finds** — a dead override is litter with a hygiene question attached, not a
 fault, and whether one is removed is a separate decision with its own receipt
 (#1815 reasons it out: a *bounded* dead override becomes a live floor the moment
@@ -268,6 +276,16 @@ Unchanged from run 2 and re-read at the workflow files: gitleaks in `gate.yml`,
 the gate**: `pnpm audit --prod` is a reading this seat takes every run from now
 on, beside the six above, and its number goes in the table. Whether it belongs
 in the gate is #858's third line and is not this seat's to decide.
+
+> ⚠ **SUPERSEDED 2026-10-03 — IT IS IN THE GATE NOW (#1805, his word: *"add the
+> gate step"*).** This paragraph was right to send the question to him rather
+> than decide it, and it took three runs and a measured instance (W6-B, §run 6)
+> to get an answer. **What a later Warden run must not do is read this sentence
+> and take the prod reading as its own job alone.** The gate reads `--prod` on
+> every pull request; the seat's per-run reading is therefore worth taking for
+> the scope the gate does NOT cover — **all scopes, i.e. devDependencies** —
+> because a green gate now says nothing whatever about build and test tooling.
+> That half of W6-B is still open and has no pre-merge reader.
 
 **And one control's honest sentence changed — Socket.** Run 2's ledger inherited
 #761's *"it refuses when told to refuse, and we have never seen it told"*. Now
@@ -628,6 +646,13 @@ overrides), #1809 (project law stale on #1659, corrected this shift). **Closed: 
    Dependabot alerts beside it with NO `state` filter, counting by `state` yourself** — §D records
    why: `state=open` returned four when five were open, and the three figures that agreed on four
    agreed because all three were reporting runtime scope.
+   ⚠ **AND THE `--prod` HALF OF THIS ITEM IS NOW THE GATE'S, NOT THE SEAT'S (#1805,
+   2026-10-03).** Every pull request refuses on an unacknowledged prod advisory, so a
+   non-zero `--prod` reading on `main` would mean something went around the gate
+   rather than that the seat caught it first. **What is worth the seat's hand is
+   `pnpm audit` with ALL SCOPES**: devDependencies have no pre-merge reader at all,
+   and the 0 → 4 move this item was written about had a dev-scope fifth row
+   (`fast-uri`, alert 117) that only the all-scopes read ever saw.
 3. **The `secrets.yml` cron of 2026-10-05**, at its log, for the commit count and the zero.
 4. **Whether #1805 drew a ruling.** If he has turned Socket's known-vulnerability alert on, the
    next lockfile PR that adds a package is the proof, exactly as run 4 set it up — and that proof
@@ -640,6 +665,21 @@ overrides), #1809 (project law stale on #1659, corrected this shift). **Closed: 
 recommendation); the Socket dashboard's policy (not this seat's access); a row-level
 reconciliation of the credit ledger (run 5's limit); W5-E's fraud cap (his decision, already
 made); whether the casting writers belong in `audit_logs` (run 2's question, still nobody's card).
+
+> ⚠ **THE FIRST ITEM WAS ANSWERED THE NEXT DAY AND IS BUILT — 2026-10-03, his word
+> on #1805, verbatim: *"add the gate step"*.** `scripts/check-dependency-advisories.mts`
+> runs inside `gate-checks` on every pull request, and the instruments table in §A
+> carries it. **The road this clause describes is the one that worked and is worth
+> keeping as the record**: run 4 declined to propose it, run 6 brought the *evidence*
+> rather than re-proposing the build, and he decided. Three runs, one measured
+> instance, no seat deciding a thing that was his.
+>
+> Two things a run-7 reader should take from it rather than discover: **the gate
+> reads `--prod` only**, so devDependencies still have no pre-merge reader and that
+> half of W6-B is open; and **the identical sentence in runs 3 and 4 is left
+> untouched on purpose** — both correctly deferred to him and both are dated
+> records, and three copies of one correction is the drift this file has been
+> bitten by before. §A's table is where "what stands in the gate" is read.
 
 **Spent: nothing.** No money, no customer credits, no house money, no paid model call, no render,
 no production variable, no flag, no migration. Four read-only disposables against production, all

@@ -230,6 +230,8 @@ describe("the class is keyed on the SHAPE now, because three greps were keyed on
       "THIS FILE — it carries the reader's own positive controls, which are source-shaped strings the reader necessarily matches (#943). It drives nothing directly: every child here goes through runHook or runHookAsync, which are its subjects",
     "server/preflight.test.ts":
       "the same shape as this file's own entry (#1037): its always-run arm carries a FIXTURE deriver module — a source-shaped string holding `execFileSync(\"git\", [\"ls-files\"…` so `populationDerivers` can be proven to key on the CALL — and its one real child (`git ls-files` over the tree) goes through runHook",
+    "server/dependencyAdvisoryGate.test.ts":
+      "the same shape a third time (#1805), and it is the reader's own trap worth naming: it SPAWNS NOTHING AT ALL. It reads `scripts/check-dependency-advisories.mts` as TEXT and asserts on it, so `spawnSync(` arrives as a source-shaped string in a `toContain` and `.status` arrives inside `/run\\.status/` — the regex of the arm proving the checker does NOT consult pnpm's exit code, which is the opposite of driving a child. Both halves of the synchronous clause match on assertions about somebody else's source; the advisory report itself is judged from two captured JSON fixtures, with no process anywhere in the file",
   };
 
   /**

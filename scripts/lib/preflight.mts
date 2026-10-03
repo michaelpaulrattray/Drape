@@ -175,6 +175,27 @@ export const PREFLIGHT_CHECKS: readonly PreflightCheck[] = [
     gateRun: "npx tsx scripts/check-eye-frames.mts",
   },
   {
+    id: "dependency-advisories",
+    label: "Dependency advisories (known vulnerabilities in what ships)",
+    command: ["npx", "tsx", "scripts/check-dependency-advisories.mts"],
+    // ADOPTED rather than excused (#1805), and the reasoning was reversed by
+    // this very arm. The first draft of the gate step meant to EXCUSE it, on the
+    // ground that preflight should stay offline and a flaky network would
+    // manufacture a false red. ⚠ **That ground does not exist**: `eye-frames`
+    // above already does a live HEAD against the production bucket and reads
+    // production's own CSP header, and it is adopted. So the only real question
+    // was cost, and it is ~3 s (measured on this machine, 478 production
+    // dependencies).
+    //
+    // The case for adopting is the same as the eye frames': the repair is an
+    // override bump in `package.json`, and a shift that learns about an advisory
+    // here spends three seconds where the gate spends a ~7-minute round trip.
+    // A registry outage reddens this locally exactly as it reddens the gate —
+    // fail-closed is the whole design, since a reader that passes because it
+    // could not look is what Socket did on #1599.
+    gateRun: "npx tsx scripts/check-dependency-advisories.mts",
+  },
+  {
     id: "typecheck",
     label: "Typecheck (pnpm check)",
     command: ["pnpm", "check"],

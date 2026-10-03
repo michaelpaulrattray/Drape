@@ -13303,6 +13303,10 @@
       "path": "server/deletionDoorSecondReader.test.ts"
     },
     {
+      "id": "test:server/dependencyAdvisoryGate.test.ts",
+      "path": "server/dependencyAdvisoryGate.test.ts"
+    },
+    {
       "id": "test:server/dependencyOverrideBounds.test.ts",
       "path": "server/dependencyOverrideBounds.test.ts"
     },

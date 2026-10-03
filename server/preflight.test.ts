@@ -671,6 +671,10 @@ describe("the check list itself", () => {
          not touch the briefing — the script reads one `git diff` and leaves
          (#1330). */
       "eye-frames",
+      /* Then the advisory read, where `gate.yml` runs it: after the two cheap
+         pull-request checks and BEFORE the typecheck, because the repair is an
+         override bump and a ~3 s red beats an 8-minute one (#1805). */
+      "dependency-advisories",
       "typecheck",
       "architecture",
       "capability",
