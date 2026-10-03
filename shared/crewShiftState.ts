@@ -242,6 +242,239 @@ export function looksLive(
   return now - heartbeat <= CREW_SHIFT_LIVE_HEARTBEAT_MS;
 }
 
+/* ── A DEAD ROW'S ROAD OUT OF ITSELF (#1863) ──────────────────────────────── */
+
+/**
+ * THE LANE A SHIFT ID BELONGS TO — the launcher, with its run stamp dropped.
+ *
+ * `seat1-20261003-174138` and `seat1-20261004-040542` are two sessions of ONE
+ * launcher; `foreman-118` and `foreman-20261004-0320` are two of another. The
+ * stamp is whatever the runner put on the end — eight-and-four or
+ * eight-and-six digits today, a plain counter for the first 94 rows, sometimes
+ * a trailing letter — so the lane is what is LEFT once a trailing
+ * `-<digits>[-<digits>][letter]` comes off.
+ *
+ * ⚠ **IT IS A CONVENTION AND THEREFORE WRONG SOMETIMES, WHICH IS WHY THE
+ * VERDICT BELOW IS BUILT ON THE SAME GROUPING RATHER THAN BESIDE IT.** Both
+ * directions of error come out as SILENCE:
+ *
+ *   - **over-grouping** (two launchers that really do run at once read as one
+ *     lane) puts their overlapping sessions inside the window, and the verdict
+ *     withholds;
+ *   - **under-grouping** (a lane split into singletons — `219`,
+ *     `fable-531-stripe-domain` and `warden` each read as their own lane today)
+ *     leaves no lane-mates to find, and the verdict withholds.
+ *
+ * Silence is exactly what a shift gets today, so a mis-parsed id costs nothing
+ * it was not already paying. Measured on the 562 real rows the day this landed:
+ * 14 lanes — `foreman` 438, `seat1` 76, `fable` 16, `seat2` 13, `janitor` 7,
+ * `retro`/`machinist`/`seat3` 2 each, and six singletons.
+ */
+export function shiftLaneOf(shift: string): string {
+  const trimmed = shift.trim();
+  const lane = trimmed.replace(/-\d{1,8}(-\d{1,6})?[a-z]?$/i, "");
+  /* An id that is NOTHING but a stamp (`-123`) keeps its whole self rather than
+     becoming the empty lane every other such id would also join. */
+  return lane.length > 0 ? lane : trimmed;
+}
+
+/**
+ * HOW MANY COMPLETED LANE-MATES IT TAKES, AND THE NUMBER IS MEASURED (#1863).
+ *
+ * Not a judgement like `CREW_SHIFT_LIVE_HEARTBEAT_MS` above. It was read off
+ * the whole recorded history by driving the verdict over all 561 closed rows,
+ * counting the rows it would have called DEAD using only lane-mates that opened
+ * and closed entirely inside that row's own lifetime — every one of which was
+ * demonstrably alive at the time, so every hit is a false positive:
+ *
+ *   - **floor 1 → 3 hits**, and the extra one is **#360**
+ *     (`foreman-20260925-1649`), which was alive while **#361** ran beside it.
+ *     That is the #1234 incident — two Foreman seats genuinely at once — and it
+ *     is precisely the row a death verdict must never be given about.
+ *   - **floor 2 → 2 hits**, and both were in fact DEAD: **#548**, this card's
+ *     own subject, and **#549**, the power-cut death that was closed on the
+ *     relay's written confirmation. Zero genuine false positives.
+ *   - **floor 3 → 1 hit**, losing #549 — a true verdict — and buying nothing
+ *     the record can show.
+ *
+ * So 2 is the smallest floor that clears the only false positive the history
+ * contains. `server/crewRunSupersession.test.ts` carries all three rows as
+ * fixtures, the living one as the negative control.
+ */
+export const CREW_SHIFT_SUPERSEDING_RUNS_MIN = 2;
+
+/** What the reading needs off a lane-mate — no heartbeat, nothing to write. */
+export type LaneRunForSupersession = {
+  readonly id: number;
+  readonly shift: string;
+  readonly startedAt: Date | string;
+  readonly endedAt: Date | string | null;
+};
+
+export type RunSupersession =
+  | {
+      readonly kind: "superseded";
+      readonly lane: string;
+      readonly by: readonly LaneRunForSupersession[];
+    }
+  | { readonly kind: "unreadable"; readonly lane: string; readonly why: string };
+
+/**
+ * IS THIS OPEN ROW'S PROCESS DEAD? — the one positive answer there is (#1863).
+ *
+ * # The gap this closes, in the words of the four shifts that met it
+ *
+ * A builder seat's row (#548) stopped checking in at 08:07Z and then sat on his
+ * **Working now** table reading as a live shift for **9.5 hours**. Four
+ * consecutive Foreman shifts met it and **all four declined to close it**, each
+ * for the same entirely correct reason: `--id` is for a dead shift's row, and
+ * stamping a LIVE seat's row terminal is #288's measured defect — *"no written
+ * confirmation of that seat's death exists."* The fourth wrote that three
+ * declines in a row was itself the finding: *"either the row is dead and
+ * nothing can say so, or the rule needs a road for exactly this case."*
+ *
+ * **The safe act and the correct act pointed in opposite directions, because
+ * nothing in the product could tell a shift which row it was looking at.**
+ *
+ * # ⚠ IT IS NOT A TIMEOUT, AND THAT IS THE WHOLE DESIGN
+ *
+ * Reading SILENCE as death is the defect, not the fix — `CREW_SHIFT_STALL_MS`
+ * is three hours against a measured max shift of 138 minutes, and a shift that
+ * is merely slow is exactly the row #288 says must not be stamped terminal. So
+ * this reads a **POSITIVE** fact instead: *later sessions of the same launcher
+ * opened AND CLOSED while this row sat silent.* A launcher that was running one
+ * session at a time, repeatedly, through the whole of that silence was not also
+ * running this row.
+ *
+ * # ⚠ THE FIRST DESIGN WAS THE LANE'S WHOLE HISTORY AND IT WAS DEAD ON ARRIVAL
+ *
+ * The natural test — *"this lane has never run two sessions at once"* — was
+ * written, measured, and thrown away, and the measurement is the reason:
+ *
+ *   - `crew-shift-close.mts` stamps `endedAt = UTC_TIMESTAMP()`, so a dead row
+ *     closed hours late carries a lifetime it never had. **Closing #548 on the
+ *     measurement that proved it dead put FIVE overlapping pairs into the
+ *     `seat1` lane** — so the test that produced #548's verdict could never
+ *     have produced it again. An instrument that poisons its own evidence by
+ *     being used is not an instrument.
+ *   - the `foreman` lane carries 5 such pairs across 438 rows, two of them the
+ *     same artifact from row #549, so the biggest lane would have been
+ *     disqualified for good.
+ *
+ * **The window test cannot be poisoned that way**: it reads only sessions that
+ * started AFTER this row went quiet, and an older late-closed row started
+ * before it. Driven on the real rows it answers both recorded deaths correctly
+ * — #548 on the `seat1` lane, #549 on `foreman` — and stays silent on #360,
+ * which was alive.
+ *
+ * # What it will not say
+ *
+ * Nothing at all about a row that `looksLive`: a death verdict printed beside
+ * the refusal an operator is about to meet is the contradiction this file's own
+ * header warns about. The two cannot both hold in practice — two complete
+ * sessions do not fit inside two minutes — so the clause costs no real verdict
+ * and removes the confusing state by construction.
+ *
+ * ⚠ **It answers, it never acts.** The judgement and the close stay with the
+ * shift, which then cites this line; there is no automatic write and no new
+ * authority anywhere. That is the card's own shape, and it is why a reading
+ * that is sometimes silent is an acceptable instrument.
+ */
+export function readRunSupersession(input: {
+  readonly run: {
+    readonly id: number;
+    readonly shift: string;
+    readonly startedAt: Date | string;
+    readonly heartbeatAt: Date | string;
+  };
+  readonly runs: readonly LaneRunForSupersession[];
+  readonly now: number;
+}): RunSupersession {
+  const lane = shiftLaneOf(input.run.shift);
+
+  if (looksLive(input.run, input.now)) {
+    return {
+      kind: "unreadable",
+      lane,
+      why: "it checked in inside the live window, so it is not a dead row to read",
+    };
+  }
+
+  /* Silence runs from the last check-in. A row that never checked in carries
+     `heartbeatAt === startedAt` (see `hasEverCheckedIn`), so the same field is
+     the right one either way. */
+  const silentSince = asMillis(input.run.heartbeatAt);
+  if (!Number.isFinite(silentSince)) {
+    return {
+      kind: "unreadable",
+      lane,
+      why: "its own last check-in does not parse, so there is no window to read",
+    };
+  }
+
+  const inWindow = input.runs
+    .filter((candidate) => {
+      if (candidate.id === input.run.id) return false;
+      if (shiftLaneOf(candidate.shift) !== lane) return false;
+      if (candidate.endedAt === null || candidate.endedAt === undefined) return false;
+      const started = asMillis(candidate.startedAt);
+      const ended = asMillis(candidate.endedAt);
+      if (!Number.isFinite(started) || !Number.isFinite(ended)) return false;
+      return started > silentSince;
+    })
+    .sort((a, b) => asMillis(a.startedAt) - asMillis(b.startedAt));
+
+  if (inWindow.length < CREW_SHIFT_SUPERSEDING_RUNS_MIN) {
+    return {
+      kind: "unreadable",
+      lane,
+      why:
+        `only ${inWindow.length} later \`${lane}\` session${inWindow.length === 1 ? " has" : "s have"}`
+        + ` opened and closed since it went quiet, and the floor is ${CREW_SHIFT_SUPERSEDING_RUNS_MIN}`
+        + " — row #360 was alive while exactly one lane-mate ran beside it",
+    };
+  }
+
+  /* ⚠ The lane must have been running ONE AT A TIME inside the window, and this
+     is the clause that stops a genuinely concurrent launcher reading as a
+     serial one. Measured on the same window the verdict rests on, never on the
+     lane's whole history — see the paragraph above for why. */
+  for (let index = 1; index < inWindow.length; index++) {
+    const previous = inWindow[index - 1]!;
+    const current = inWindow[index]!;
+    if (asMillis(current.startedAt) < asMillis(previous.endedAt!)) {
+      return {
+        kind: "unreadable",
+        lane,
+        why:
+          `${inWindow.length} later \`${lane}\` sessions have closed since it went quiet, but #${previous.id}`
+          + ` and #${current.id} overlapped each other — this lane was running two at once inside the silence,`
+          + " so a completed lane-mate proves nothing about this row",
+      };
+    }
+  }
+
+  return { kind: "superseded", lane, by: inWindow };
+}
+
+/**
+ * THE ONE SENTENCE BOTH READERS PRINT.
+ *
+ * One owner for the same reason the verdict has one: `crew-shift-state.mts` and
+ * the open-run warning inside `crew-shift-start.mts` are the two places a shift
+ * MEETS a stale row, and a shift citing this line on a card is quoting it. Two
+ * wordings would be two citations of one fact.
+ */
+export function describeRunSupersession(verdict: RunSupersession): string {
+  if (verdict.kind === "unreadable") return `supersession: not readable — ${verdict.why}.`;
+  const ids = verdict.by.map((run) => `#${run.id}`).join(", ");
+  return (
+    `⚠ SUPERSEDED — its process is dead. ${verdict.by.length} later sessions in the \`${verdict.lane}\` lane`
+    + ` opened AND closed while this row sat silent (${ids}), none overlapping another, so that launcher was`
+    + " running one session at a time while this row still claimed to be running."
+  );
+}
+
 /**
  * IS ANOTHER OPEN RUN ALREADY ON THIS CARD? (#608)
  *

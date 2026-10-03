@@ -40,15 +40,29 @@
  * here: an operator staring at a refusal must be able to see the same fact that
  * caused it, or the refusal reads as a bug.
  *
+ * ⚠ **AND SINCE #1863, WHETHER THAT ROW'S PROCESS IS DEAD.** The three answers
+ * above all describe the ROW; none of them could tell a shift whether anybody
+ * was still at the other end, so when a builder seat's row went quiet at 08:07Z
+ * and sat on his Working-now table for **9.5 hours**, four consecutive shifts
+ * met it and all four correctly declined to close it — *"no written confirmation
+ * of that seat's death exists."* The fourth line of each open run is now
+ * `readRunSupersession`'s reading: **later sessions of the same launcher that
+ * opened AND CLOSED while this row sat silent**, which is a positive fact about
+ * the rows rather than silence re-read as death. It is a citation, not an
+ * instruction — the close stays the shift's own act.
+ *
  * Then the last few closed runs, newest first, so "what happened last night" is
  * one command rather than a page.
  */
 import {
   CREW_SHIFT_LIVE_HEARTBEAT_MS,
   deriveShiftRunState,
+  describeRunSupersession,
   hasEverCheckedIn,
   looksLive,
+  type RunSupersession,
 } from "../shared/crewShiftState.js";
+import { readRunSupersessions } from "./lib/crewRunSupersession.mts";
 import { openDatabase, resolveDatabaseUrl, worldOf } from "./lib/dbConnection.mts";
 import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
@@ -116,6 +130,22 @@ try {
        FROM \`${TABLE}\` WHERE endedAt IS NULL ORDER BY id DESC`,
   );
 
+  /*
+    ⚠ IS A ROW DEAD? — the question four consecutive shifts could not answer
+    about row #548 while his Working-now table vouched for it for 9.5 hours
+    (#1863). Read beside the states rather than instead of them, and wrapped:
+    a failed lane read must cost this command a LINE and never its answer,
+    because the reason this file exists is that an operator wanting to look
+    reached for a writer instead.
+  */
+  let supersessions = new Map<number, RunSupersession>();
+  let supersessionFailed: string | null = null;
+  try {
+    supersessions = await readRunSupersessions(conn, open, now);
+  } catch (cause) {
+    supersessionFailed = (cause as Error).message;
+  }
+
   console.log("");
   if (open.length === 0) {
     console.log("RUNNING: nothing. His page reads `Nothing running`.");
@@ -142,6 +172,18 @@ try {
           ? `     ⚠ LOOKS LIVE (checked in inside ${CREW_SHIFT_LIVE_HEARTBEAT_MS / 60_000} min)`
             + " — crew-shift-close will REFUSE this row without --force."
           : "     closeable — crew-shift-close would take this row without --force.",
+      );
+      /* `closeable` above answers whether the TOOL would take the row; this
+         answers whether it SHOULD be taken, which is the question that cost
+         four shifts a paragraph each and his page 9.5 hours of a false
+         sentence. A verdict here is a citation: paste the line. */
+      const verdict = supersessions.get(row.id);
+      console.log(
+        `     ${
+          verdict
+            ? describeRunSupersession(verdict)
+            : `supersession: not readable — the lane read failed (${supersessionFailed ?? "no reading taken"})`
+        }`,
       );
     }
   }

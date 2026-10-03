@@ -80,12 +80,15 @@ import {
   CREW_SHIFT_SEATS,
   CREW_SHIFT_WORK_KINDS,
   cardNumberOf,
+  describeRunSupersession,
   findCardCollisions,
   resolveCloseTarget,
   type CrewShiftSeat,
   type CrewShiftWorkKind,
+  type RunSupersession,
 } from "../shared/crewShiftState.js";
 import { crewCardHandbackInstruction } from "../shared/crewCardBuildState.js";
+import { readRunSupersessions } from "./lib/crewRunSupersession.mts";
 import { readOpenPullRequests, renderCardClaimWarning } from "./lib/cardClaimWarning.mts";
 import {
   postCardClaim,
@@ -540,17 +543,57 @@ try {
       later one, which is the failure that matters more.
     */
     const [open] = await conn.query<any[]>(
-      `SELECT id, shift, seat, cardRef, intent, startedAt FROM \`${TABLE}\` WHERE endedAt IS NULL ORDER BY id DESC`,
+      `SELECT id, shift, seat, cardRef, intent, startedAt, heartbeatAt FROM \`${TABLE}\``
+      + ` WHERE endedAt IS NULL ORDER BY id DESC`,
     );
     if (open.length > 0) {
       console.log(`\n⚠ ${open.length} run(s) still open — another seat, or a shift that died without closing:`);
+      /*
+        ⚠ *"IF ONE OF THESE IS A DEAD SHIFT"* WAS A QUESTION WITH NO ROAD TO AN
+        ANSWER, AND IT COST FOUR CONSECUTIVE SHIFTS A PARAGRAPH EACH (#1863).
+
+        This is the surface where a shift MEETS a stale row, and the line below
+        has always told it to close a dead one — while nothing in the product
+        could tell it whether this row was dead. So all four shifts that met row
+        #548 correctly declined, and his Working-now table carried a live-shift
+        sentence over a dead process for 9.5 hours.
+
+        `readRunSupersession` answers it from a POSITIVE fact — later sessions
+        of the same launcher that opened AND closed while the row sat silent —
+        and never from silence, which is the defect rather than the fix.
+
+        It is wrapped because opening a row is this command's JOB: a lane read
+        that fails costs a line of advice, never the shift.
+      */
+      let supersessions = new Map<number, RunSupersession>();
+      let supersessionFailed: string | null = null;
+      try {
+        supersessions = await readRunSupersessions(conn, open, Date.now());
+      } catch (cause) {
+        supersessionFailed = (cause as Error).message;
+      }
       for (const row of open) {
         console.log(
           `   #${row.id} ${row.shift} (${row.seat})${row.cardRef ? ` on ${row.cardRef}` : ""}`
           + ` started ${iso(row.startedAt)} — ${row.intent}`,
         );
+        const verdict = supersessions.get(row.id);
+        console.log(
+          `      ${
+            verdict
+              ? describeRunSupersession(verdict)
+              : `supersession: not readable — the lane read failed (${supersessionFailed ?? "no reading taken"})`
+          }`,
+        );
       }
-      console.log("   If one of these is a dead shift, close it: scripts/crew-shift-close.mts --id <n> --outcome failed\n");
+      console.log(
+        "   A row marked SUPERSEDED is a dead shift's and may be closed, citing that line:"
+        + " scripts/crew-shift-close.mts --id <n> --outcome failed",
+      );
+      console.log(
+        "   One that is NOT readable is not thereby alive — it is a row nothing can settle,"
+        + " and #288 says do not stamp it terminal on a guess.\n",
+      );
     }
 
     /*

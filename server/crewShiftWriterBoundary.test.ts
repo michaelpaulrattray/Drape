@@ -78,8 +78,20 @@ const WRITER_SCRIPTS = [
  * is the opposite one — not *"writes only its own table"* but *"writes
  * nothing"* — and folding it in would have meant weakening the arm that says
  * a writer's reader can see its writes.
+ *
+ * ⚠ **JOINED 2026-10-03 (#1863): `scripts/lib/crewRunSupersession.mts`.** The
+ * dead-row reading is needed by the reader above AND by the open-run warning
+ * inside `crew-shift-start.mts`, so its SELECT lives in one module rather than
+ * in both — and **this list follows the STATEMENTS, not the command name**, as
+ * `crewQueueCount.mts`'s entry above says in as many words. Moving a read out
+ * of the reader script without carrying the pin would have moved it out of the
+ * boundary too: a module imported by a WRITER, holding SQL nothing asserts
+ * about, reached by the one command whose entire value is that it cannot write.
  */
-const READER_SCRIPTS = ["scripts/crew-shift-state.mts"] as const;
+const READER_SCRIPTS = [
+  "scripts/crew-shift-state.mts",
+  "scripts/lib/crewRunSupersession.mts",
+] as const;
 
 /** Kept for the arms that ask about the shift-run road specifically. */
 const OWN_TABLE = "crew_shift_runs";
