@@ -264,3 +264,131 @@ describe("the page reports the timestamp and never a death", () => {
     expect(doctored).toContain("probably died");
   });
 });
+
+/**
+ * THE CLOSE READS THE LAST CHECK-IN AND NEVER WRITES IT (issue #1872).
+ *
+ * `crew-shift-close.mts` used to set `heartbeatAt = UTC_TIMESTAMP()` in the same
+ * UPDATE that stamped `endedAt`, so a closed row's recorded last check-in was
+ * the instant somebody closed it. Measured on production the night it was
+ * removed: **565 of 565 closed rows carried `heartbeatAt == endedAt`, none
+ * differed** — including row #565, whose own shift report records two
+ * heartbeats.
+ *
+ * ⚠ **NOTHING HAD EVER READ IT**, which is why the repair is a deletion rather
+ * than a new column. The census is quoted beside the close's own SELECT; the
+ * write was born in `be709f0f6`, the same commit that gave
+ * `deriveShiftRunState` its *`endedAt` wins over everything* clause, with no
+ * comment and no consumer.
+ *
+ * # ⚠ THE READ AND THE WRITE ARE TWO FACTS AND BOTH ARMS ARE NEEDED
+ *
+ * The lazy repair is to drop the column from the SELECT as well, which would
+ * take `hasEverCheckedIn` and `looksLive` with it — the never-checked-in
+ * detector and #288's refusal. So the arm above pins the SELECT and these pin
+ * the UPDATE, and a change that satisfies one by breaking the other reddens.
+ *
+ * # ⚠ AND THE THIRD ARM IS THE ONLY ONE THAT MAINTAINS ITSELF
+ *
+ * The close's own rule is that *a dry run that reports a different verdict from
+ * the real one is worse than no dry run* — so the dry-run report and the UPDATE
+ * must name the SAME columns. That arm is DERIVED from both artifacts rather
+ * than from a list typed here, so adding a legitimate column to the close
+ * passes it and adding one to only one of the two does not. The literal-list
+ * form was deliberately not written: `crewHeartbeat.test.ts`'s own ⚠ above
+ * records a guard that reddened when #1349 added `cardRef` to a neighbour, and
+ * a guard that fires on its neighbours teaches a shift to edit the guard.
+ */
+describe("the close leaves the row's last check-in alone", () => {
+  const CLOSE = "scripts/crew-shift-close.mts";
+  /* The anchor, and its uniqueness is asserted rather than assumed — a slice
+     taken at the second of two matches reads a statement nobody edited
+     (memory: *guard arm satisfied by a sibling*). */
+  const SET_ANCHOR = "SET endedAt = UTC_TIMESTAMP()";
+
+  /**
+   * The close's UPDATE, as the file actually holds it — comments out, literals
+   * kept. `withoutComments` is the half of the walk that keeps a template
+   * literal's contents; `codeOnly` would empty it and leave nothing to read.
+   */
+  function closeUpdate(source: string): string {
+    const text = code(source);
+    const anchors = text.split(SET_ANCHOR).length - 1;
+    expect(anchors, `the close's SET clause must appear exactly once, found ${anchors}`).toBe(1);
+    const at = text.indexOf(SET_ANCHOR);
+    const start = text.lastIndexOf("UPDATE", at);
+    const end = text.indexOf("`", at);
+    expect(start, "the UPDATE keyword must sit before its SET clause").toBeGreaterThan(-1);
+    expect(end, "the UPDATE's template literal must close").toBeGreaterThan(at);
+    return text.slice(start, end);
+  }
+
+  /** The columns a SET clause assigns — the names on the left of each `=`. */
+  function assignedColumns(update: string): string[] {
+    const setClause = update.slice(update.indexOf("SET ") + 4, update.search(/\bWHERE\b/));
+    return [...setClause.matchAll(/(\w+)\s*=/g)].map((match) => match[1]!).sort();
+  }
+
+  /** The columns the dry-run report tells an operator the close would set. */
+  function reportedColumns(source: string): string[] {
+    const text = code(source);
+    const start = text.indexOf("DRY RUN — nothing written.");
+    const end = text.indexOf("Re-run without --dry-run");
+    expect(start, "the dry-run report must be findable").toBeGreaterThan(-1);
+    expect(end, "the dry-run report must end where it says it does").toBeGreaterThan(start);
+    const block = text.slice(start, end);
+    /* The report is built from string literals, so a line break reaches this
+       reader as the two characters `\` and `n` — not as a newline. */
+    return [...block.matchAll(/\\n {2}(\w+) /g)].map((match) => match[1]!).sort();
+  }
+
+  it("does not write heartbeatAt in the statement that stamps the row terminal", () => {
+    const update = closeUpdate(read(CLOSE));
+    /* Scoped to the UPDATE and not to the file: the file names the column
+       legitimately in both SELECTs and in two `hasEverCheckedIn` calls, so a
+       whole-file negation would be a guard that can never be satisfied. */
+    expect(update).not.toContain("heartbeatAt");
+    /* And it still writes the four it is for — stated positively, so a
+       deletion that went too far is a red rather than a pass. */
+    expect(assignedColumns(update)).toEqual(["endedAt", "outcome", "outcomeNote", "prNumber"]);
+  });
+
+  it("and that reading can say no", () => {
+    /* POSITIVE CONTROL: the write put back, in the shape it had. The arm must
+       fail — otherwise the slice never reached the UPDATE at all, which is the
+       way this kind of arm usually passes for the wrong reason. */
+    const doctored = read(CLOSE).replace(
+      SET_ANCHOR,
+      `${SET_ANCHOR},\n            heartbeatAt = UTC_TIMESTAMP()`,
+    );
+    const update = closeUpdate(doctored);
+    expect(update).toContain("heartbeatAt");
+    expect(assignedColumns(update)).not.toEqual(["endedAt", "outcome", "outcomeNote", "prNumber"]);
+  });
+
+  it("promises exactly the columns it writes, and the list is read from both", () => {
+    const source = read(CLOSE);
+    expect(reportedColumns(source)).toEqual(assignedColumns(closeUpdate(source)));
+    /* A reading that returned two empty lists would satisfy the line above
+       while seeing nothing — the failure mode a derived comparison invites. */
+    expect(reportedColumns(source).length).toBeGreaterThan(0);
+  });
+
+  it("and THAT reading can say no, in both directions", () => {
+    const source = read(CLOSE);
+    /* (a) the report promises a write the UPDATE does not make — #1872's own
+       shape, had the dry-run line been left behind. */
+    const overPromised = source.replace(
+      '+ "\\n  endedAt     now"',
+      '+ "\\n  endedAt     now"\n      + "\\n  heartbeatAt now"',
+    );
+    expect(reportedColumns(overPromised)).not.toEqual(assignedColumns(closeUpdate(overPromised)));
+    /* (b) the UPDATE writes a column the report never mentions — the same
+       drift from the other end. */
+    const underPromised = source.replace(
+      SET_ANCHOR,
+      `${SET_ANCHOR},\n            heartbeatAt = UTC_TIMESTAMP()`,
+    );
+    expect(reportedColumns(underPromised)).not.toEqual(assignedColumns(closeUpdate(underPromised)));
+  });
+});

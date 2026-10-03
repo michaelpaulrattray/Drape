@@ -247,10 +247,29 @@ try {
     success without naming what it closed is how a shift stamps somebody else's
     run and neither of them finds out.
   */
-  /* ⚠ `heartbeatAt` is selected HERE and nowhere later: the UPDATE below sets
-     it to now, which erases the one piece of evidence that the shift never
-     checked in (`hasEverCheckedIn`'s docblock). Read after the write, every
-     run in the table looks disciplined. */
+  /* ⚠ `heartbeatAt` is READ here and NEVER WRITTEN by this script (#1872). It
+     is the row's last check-in, which is what `hasEverCheckedIn` and
+     `looksLive` below are both asking about — so it is selected, judged, and
+     left exactly as the heartbeat left it.
+
+     ⚠ **THIS COMMENT SAID THE OPPOSITE UNTIL 2026-10-03, AND THE REASON IT
+     GAVE WAS THE DEFECT.** It read *"the UPDATE below sets it to now, which
+     erases the one piece of evidence that the shift never checked in"* — and
+     that was an accurate description of a write nothing had ever read. Driven
+     at every reader before it was removed: this script (here, pre-write),
+     `crew-shift-start.mts`'s open-run warning and `crew-shift-state.mts`'s
+     open block (both `endedAt IS NULL`), `readRunSupersession` (its subject is
+     an open row; its lane-mates are read at `startedAt`/`endedAt`), and
+     `CrewWorkingNow.tsx`, which touches the field only inside its OPEN list
+     and only when `deriveShiftRunState` says `stalled` — a verdict that clause
+     can never return for a row carrying `endedAt`. The write was born
+     redundant in `be709f0f6`, the same commit that gave `deriveShiftRunState`
+     its *`endedAt` wins over everything* clause, with no comment and no
+     consumer. What it cost is in #1872: **565 of 565 closed rows carry a last
+     check-in equal to their close**, so the gap between a shift's real last
+     heartbeat and its close — the figure `CREW_SHIFT_LIVE_HEARTBEAT_MS` says
+     it would rather have been measured on — is gone from every row recorded
+     before this change. */
   /* ⚠ #1234 — the no-id read is EVERY open run now, not `LIMIT 1`. The one-row
      read could not tell a single-seat night from two seats overlapping, so the
      decision it fed had no way to refuse. `resolveCloseTarget` owns the choice
@@ -322,7 +341,12 @@ try {
       + `\n  outcomeNote ${arg("note")?.slice(0, 500) ?? "(unchanged — none given)"}`
       + `\n  prNumber    ${prNumber === null ? "(unchanged — none given)" : `#${prNumber}`}`
       + "\n  endedAt     now"
-      + "\n  heartbeatAt now"
+      /* ⚠ `heartbeatAt now` was here and is gone with the write it described
+         (#1872). The arm that keeps these two honest is DERIVED rather than a
+         list: `crewHeartbeat.test.ts` reads the columns out of this report and
+         out of the UPDATE and compares the two sets, because this file's own
+         rule two paragraphs up is that a dry run reporting a different write
+         from the real one is worse than no dry run. */
       + `\n\nThe run has ${checkedIn ? "checked in since it opened" : "NEVER checked in"}`
       + ` and has been open ${Math.round(ranForMs / 60_000)} min.`
       + "\nRe-run without --dry-run to perform it.",
@@ -332,9 +356,13 @@ try {
   }
 
   const [result] = await conn.query<any>(
+    /* ⚠ `heartbeatAt` IS NOT IN THIS SET CLAUSE, AND THAT IS THE WHOLE OF
+       #1872 — see the reader census beside the SELECT above. The column keeps
+       meaning *last check-in* on a closed row exactly as it does on an open
+       one; `endedAt` is what makes a row finished, and `deriveShiftRunState`
+       has said so since the day both were written. */
     `UPDATE \`${TABLE}\`
         SET endedAt = UTC_TIMESTAMP(),
-            heartbeatAt = UTC_TIMESTAMP(),
             outcome = ?,
             outcomeNote = ?,
             prNumber = COALESCE(?, prNumber)
