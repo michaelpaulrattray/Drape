@@ -1,7 +1,7 @@
 {
-  "edition": 636,
-  "updatedAt": "2026-10-03T20:05:00.000Z",
-  "shift": "Tonight was one of our own tools, not the app — and it is the tool that reads your replies.\n\nEvery shift starts and ends by running one command that asks your page what you have said and which of your replies we have already answered. For the last three nights that command has been reading the wrong copy. Instead of your live page it was reading a half-written draft sitting on this machine, and the warning it printed pointed the blame at the wrong thing — so three shifts in a row read the message and went looking in a place where nothing was wrong.\n\nThe cause, in plain terms: your page's file has grown, and the code that reads it had a size limit nobody had raised. It crossed that limit and the read has failed silently ever since. Both of the two tools that do this read had their own private copy of that code, and both were wrong — the card said one of them had already been fixed, and reading the file showed it had not.\n\nWhy it mattered rather than just being untidy: that read is how we know which of your replies we have already dealt with. A half-written draft can say we have seen something we have not. Nothing was actually missed — you have 259 replies and all 259 are answered — but the road to missing one was open.\n\nIt is fixed, there is one copy of that reader now instead of two, and a failed read says what actually went wrong instead of inventing a reason. Proven by running the real command before and after on your live page. While I was in there I measured whether the same size trap sits anywhere else in our machinery: four more places, none of them failing yet and none close, written up with the numbers so nobody has to measure it again.\n\nNothing a customer sees changed tonight. Pricing phase 2 still has nothing a shift can start on its own: Studio's credit slider needs a price created inside Stripe, and Team waits for the shared workspace. Of 42 open jobs, 16 have had nothing happen on them for a week — all of them are either waiting on a rung that has not opened or parked on your word.",
+  "edition": 637,
+  "updatedAt": "2026-10-03T21:05:00.000Z",
+  "shift": "Tonight was our own machinery again, not the app — and both jobs were about the crew keeping an honest record of itself.\n\nThe one I built: when a shift finishes, it stamps its row on your Working-now table as done. It was also overwriting the one piece of information that said when that shift had last checked in, replacing it with the moment it finished. So every finished shift in the whole record claimed it had just checked in a second before it stopped. I read it on your live database: 565 rows out of 565, no exceptions — including the previous shift's own row from three hours earlier, whose written report says it checked in twice.\n\nNothing you were ever shown was wrong, and that is why this was a small job rather than an urgent one. What it cost was something in the future. Last night the crew got a new tool that can tell a shift whether a silent row belongs to a dead shift or a slow one — the thing that cost four shifts in a row a paragraph each, and left a dead shift showing on your page as working for nine and a half hours. That tool has a threshold in it, and the threshold was measured off this history. The evidence it would ever be re-checked against was being thrown away every time a shift closed.\n\nThe repair is two deleted lines, because it turned out nothing anywhere had ever read that information once a row was finished. I checked every reader before changing anything rather than taking the card's word for it. What cannot be repaired is the 565 rows already recorded — that is written down in plain terms beside the threshold, so the next person to ask does not have to rediscover both the problem and the way around it.\n\nThe other job was shipped an hour earlier by a second agent working beside me: six places where we read your job queue could have come back silently empty if the queue ever grew past a size nobody had set. Not failing and not close, now measured and fixed.\n\nOne process note worth telling you, because it is the thing that stops two agents doing one job twice. I picked up that second job, started reading the code, and found the other agent had claimed it three minutes earlier — so I put it down and took mine instead. The claim rule did exactly what it is for, in both directions: its own closing note says it skipped mine for the same reason.\n\nNothing a customer sees changed tonight. Pricing phase 2 still has nothing a shift can start on its own: Studio's credit slider needs a price created inside Stripe by hand before anything on screen can be bought, and Team waits for the shared workspace. Of 39 open jobs, 16 have had nothing happen on them for a week, and every one of those is either waiting on a stage that has not opened or parked on your word.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -126,7 +126,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-03T20:00:21.947Z",
+      "readAt": "2026-10-03T20:59:35.051Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -9576,6 +9576,20 @@
       "status": "merged",
       "prNumber": 1869,
       "note": "Our own machinery. Driven on your live page before and after."
+    },
+    {
+      "id": "gh-read-buffer-1870",
+      "title": "Six places that read your job queue could have come back silently empty as the queue grows (#1870)",
+      "status": "merged",
+      "prNumber": 1873,
+      "note": "Built by the second agent. Measured against the live board, not estimated."
+    },
+    {
+      "id": "closed-row-heartbeat-1872",
+      "title": "Every finished shift in the record claimed it had just checked in — 565 rows out of 565 (#1872)",
+      "status": "merged",
+      "prNumber": 1874,
+      "note": "Our own machinery. Read on your live database before anything was changed."
     }
   ],
   "problems": [
@@ -9940,7 +9954,7 @@
     259
   ],
   "nextUp": {
-    "readAt": "2026-10-03T20:00:21.947Z",
+    "readAt": "2026-10-03T20:59:35.050Z",
     "items": [
       {
         "issueNumber": 1469,
