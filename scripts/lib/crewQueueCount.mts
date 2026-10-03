@@ -80,7 +80,7 @@ import {
   type CardBuildBoard,
 } from "./cardBuildState.mts";
 import { judgementIsBlind, mergedPullRequestArgs, SEARCH_RESULT_CEILING } from "./crewNamingWindow.mts";
-import { makeGhTransport } from "./ghQueueTransport.mts";
+import { type GhExec, ghReadMaxBuffer, makeGhTransport } from "./ghQueueTransport.mts";
 
 /**
  * THE CONNECTION THIS FUNCTION IS HANDED, described by what it USES and
@@ -110,8 +110,14 @@ export type QueueCountConnection = {
  * The default is the real command. Everything else about the four call sites -
  * their arguments, their buffer sizes, their `null`-on-any-doubt handling - is
  * unchanged and stays where it was.
+ *
+ * ⚠ **IT IS AN ALIAS OF `GhExec` AND NOT A SECOND DECLARATION OF IT (#1870).**
+ * The two were written out separately and structurally identically, which is
+ * working law 4 in the one place it is worst — the type whose `options`
+ * parameter two implementations were dropping. Every consumer keeps the name;
+ * what is gone is the chance of the two shapes drifting apart.
  */
-export type QueueGhReader = (args: readonly string[], options?: { readonly maxBuffer?: number }) => string;
+export type QueueGhReader = GhExec;
 
 /**
  * ⚠ A HANG IS NOT A THROW, AND IT IS THE ONE ROAD A CATCH CANNOT RESCUE
@@ -134,12 +140,24 @@ export type QueueGhReader = (args: readonly string[], options?: { readonly maxBu
  */
 export const QUEUE_GH_TIMEOUT_MS = 120_000;
 
+/**
+ * ⚠ **IT HONOURED THE OPTION AND DEFAULTED TO NODE'S 1 MiB WHEN NOBODY PASSED
+ * ONE (#1870).** It was the one of the three implementations that forwarded a
+ * caller's figure, which is why `readBuildBoard`'s two reads work — but the
+ * readings that pass nothing (`countOpen`, the oldest-card read) still sat on
+ * the default, and an exceeded buffer there is a throw into a `catch` that
+ * draws `(–) · not counted yet` on his switch panel. The buffer is now the
+ * declared default and an explicit figure still WINS, so `readCardNamings`'s
+ * larger one is untouched — a default that swallowed the option would have
+ * dropped that reading from 64 MiB silently, which is the half of the repair
+ * worth driving rather than asserting.
+ */
 const RAW_GH: QueueGhReader = (args, options) =>
   execFileSync("gh", [...args], {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
     timeout: QUEUE_GH_TIMEOUT_MS,
-    ...(options?.maxBuffer === undefined ? {} : { maxBuffer: options.maxBuffer }),
+    maxBuffer: ghReadMaxBuffer(options),
   });
 
 /**
