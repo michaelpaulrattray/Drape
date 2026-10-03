@@ -1,7 +1,7 @@
 {
-  "edition": 635,
-  "updatedAt": "2026-10-03T19:30:00.000Z",
-  "shift": "Tonight I finished card 1837 — the one where you told me a close-up was a close-up and the studio disagreed with you — and in drawing the picture for it I found that the number we settled on was chosen from less than half the evidence we already had.\n\nThe story so far, in one line: you looked at two pictures of Sifr2 and said both read as close-ups. The studio was calling both of them too loose and marking them unchecked. So the line moved, from 0.3 to 0.7, and that has been live since yesterday morning.\n\nWhat the card still owed you was the picture — your own frames laid out in order with the new line drawn through them, so you can see where it falls. It is below.\n\nHere is the part that was not in the card. To draw that strip honestly I measured every frame in it rather than copying numbers out of our own notes. Measuring them turned up four close-ups of yours that nobody had ever looked at when the line was chosen. We picked the number from six pictures. You own ten.\n\nThree of the four sit comfortably inside the new line. The fourth does not. It is Hingu — the bandaged skull — and under the line we have just set, that picture gets handed to you marked unchecked with a free retry, as though the crop were wrong. To my eye the crop is not wrong: it is a head and the top of the shoulders, which is what a close-up is.\n\nBut my eye is not the one that counts here, and I did not move anything on the strength of it. That is the sixth picture on the strip, with the question under it in plain words. If you say it is a close-up, the line moves out past it the same way it moved last time. If you say it is not, then we finally have a real picture on the far side of the gap instead of an empty space we assumed was empty.\n\nOne honest note about how this happened, because it is the kind of thing worth saying out loud: the numbers for all ten were produced two days ago, by the measurement that set the Portrait line. They were printed and nobody carried them across. Nothing was hidden and nobody skipped a step — a figure was collected and never used.\n\nCost: about forty cents of our own money, none of yours, and nothing in the app changed. The matching fix to our own written records is in review.",
+  "edition": 636,
+  "updatedAt": "2026-10-03T20:05:00.000Z",
+  "shift": "Tonight was one of our own tools, not the app — and it is the tool that reads your replies.\n\nEvery shift starts and ends by running one command that asks your page what you have said and which of your replies we have already answered. For the last three nights that command has been reading the wrong copy. Instead of your live page it was reading a half-written draft sitting on this machine, and the warning it printed pointed the blame at the wrong thing — so three shifts in a row read the message and went looking in a place where nothing was wrong.\n\nThe cause, in plain terms: your page's file has grown, and the code that reads it had a size limit nobody had raised. It crossed that limit and the read has failed silently ever since. Both of the two tools that do this read had their own private copy of that code, and both were wrong — the card said one of them had already been fixed, and reading the file showed it had not.\n\nWhy it mattered rather than just being untidy: that read is how we know which of your replies we have already dealt with. A half-written draft can say we have seen something we have not. Nothing was actually missed — you have 259 replies and all 259 are answered — but the road to missing one was open.\n\nIt is fixed, there is one copy of that reader now instead of two, and a failed read says what actually went wrong instead of inventing a reason. Proven by running the real command before and after on your live page. While I was in there I measured whether the same size trap sits anywhere else in our machinery: four more places, none of them failing yet and none close, written up with the numbers so nobody has to measure it again.\n\nNothing a customer sees changed tonight. Pricing phase 2 still has nothing a shift can start on its own: Studio's credit slider needs a price created inside Stripe, and Team waits for the shared workspace. Of 42 open jobs, 16 have had nothing happen on them for a week — all of them are either waiting on a rung that has not opened or parked on your word.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -126,7 +126,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-03T18:43:46.001Z",
+      "readAt": "2026-10-03T20:00:21.947Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -9566,9 +9566,16 @@
     {
       "id": "closeup-line-record-1837",
       "title": "Our own notes about the close-up line said the old number in two places, and called a gap empty that is not (#1837)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1864,
-      "note": "Comments and the capability map only. Nothing a customer sees, and the line itself is untouched."
+      "note": "Merged by the relay on its own hand verdict."
+    },
+    {
+      "id": "briefing-read-buffer-1867",
+      "title": "The tool that reads your replies had stopped reading your live page, and blamed the wrong thing (#1867)",
+      "status": "merged",
+      "prNumber": 1869,
+      "note": "Our own machinery. Driven on your live page before and after."
     }
   ],
   "problems": [
@@ -9933,7 +9940,7 @@
     259
   ],
   "nextUp": {
-    "readAt": "2026-10-03T18:43:46.000Z",
+    "readAt": "2026-10-03T20:00:21.947Z",
     "items": [
       {
         "issueNumber": 1469,
