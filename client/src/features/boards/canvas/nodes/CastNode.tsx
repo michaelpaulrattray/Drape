@@ -21,6 +21,11 @@ import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { refundBadgeText } from "@shared/refundCopy";
+/* #1785 — the canvas casting door, his word 2026-10-03: "1758) seal."
+   The SAME compiled constant the server's refusal reads
+   (`server/lib/canvasCastDoor.ts`), so the button a customer sees and the
+   refusal a request meets cannot disagree (working law 4). */
+import { CANVAS_CAST_OPEN, CANVAS_CAST_CLOSED } from "@shared/canvasCastDoor";
 import { Popover, PopoverAnchor } from "@/components/ui/popover";
 import { CanvasPopoverContent } from "../CanvasPopover";
 import { CanvasNodeShell } from "../CanvasNodeShell";
@@ -370,9 +375,25 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
             onClick: () => setPopover((p: NodePopover) => (p === "forkRecast" ? null : "forkRecast")),
           },
           {
+            /* #1785 — the canvas casting door, his word: "seal". Variations is
+               paid end to end (`runVariations.execute`, `count ×
+               CREDIT_COSTS.castingImage`) and the server now refuses it at the
+               mouth, so while the door is shut the row does not open a popover
+               that would quote a price for a road nobody can walk. It stays
+               VISIBLE and disabled with its reason, which is this toolbar's own
+               documented rule (D-2/D-37, its header: "disabled actions stay
+               visible with explanatory tooltips") — a verb that silently
+               vanishes reads as lost work, which is the fear the door's sentence
+               exists to answer. Rerun is NOT sealed here: its popover's Fork
+               half is free and still works, and the Recast half is sealed in
+               `ForkRecastPopover` beside D-43's minted row. */
             id: "variations" as const,
-            label: modelReady ? "Variations" : "Variations — still landing",
-            disabled: !modelReady,
+            label: !CANVAS_CAST_OPEN
+              ? "Variations — unavailable while we rebuild the canvas"
+              : modelReady
+                ? "Variations"
+                : "Variations — still landing",
+            disabled: !CANVAS_CAST_OPEN || !modelReady,
             onClick: () => setPopover((p: NodePopover) => (p === "variations" ? null : "variations")),
           },
           {
@@ -551,7 +572,16 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
         <Handle type="target" position={Position.Left} id="in" style={{ opacity: 0, left: -2 }} isConnectable={false} />
 
         {data.status && !data.pinned && !errored && (
-          <NodeStatusBadge status={data.status} onPrimary={controller.retry} />
+          /* #1785: `controller.retry` spends CREDIT_COSTS.castingImage on an
+             engine Google shut down on 2026-06-25, so while the door is shut the
+             primary action is not offered at all and the hover card carries the
+             reason. The `stale` variant's button is the "Refresh" the card is
+             about; the other variants route through the same `retry`. */
+          <NodeStatusBadge
+            status={data.status}
+            onPrimary={CANVAS_CAST_OPEN ? controller.retry : undefined}
+            closedNote={CANVAS_CAST_OPEN ? undefined : CANVAS_CAST_CLOSED}
+          />
         )}
 
         <div
@@ -614,7 +644,10 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
               progressLabel={controller.progressLabel}
               dimmed={data.status?.type === "stale" && !data.pinned}
               error={errored}
-              onRetry={controller.retry}
+              /* #1785: same road, second entrance — a failed node's Retry is
+                 the same paid `runGeneration` call as the stale node's Refresh. */
+              onRetry={CANVAS_CAST_OPEN ? controller.retry : undefined}
+              closedNote={CANVAS_CAST_OPEN ? undefined : CANVAS_CAST_CLOSED}
             />
           )}
 

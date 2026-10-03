@@ -200,8 +200,20 @@ export const WIRED_DESPITE_SHUTDOWN: readonly AcknowledgedModelDebt[] = [
       "IMAGE_PRO` and whose stateless path walks `IMAGE_FALLBACK`, so EVERY leg of it is a " +
       "shut-down id. `canvas.recast` and `canvas.variations` spend the same constant in the same " +
       "router. The refund path is correct and carries its own truth into the node status, so no " +
-      "credits are lost — what is spent is the customer's wait. Its disposition is #1785's, on " +
-      "#1654's own precedent that sealing a live canvas road is his call and not a shift's. " +
+      "credits are lost — what is spent is the customer's wait. " +
+      "✅ AND THAT ROAD IS NOW SEALED — his word on #1785, 2026-10-03, verbatim and entire: " +
+      "'1758) seal.' All three paid `boardOps` entrances refuse at the MOUTH, before any hold, " +
+      "with a structural backstop inside each pipeline function that reaches the engine, and the " +
+      "canvas no longer draws the action: `shared/canvasCastDoor.ts` carries the one compiled " +
+      "fact both halves read, `server/lib/canvasCastDoor.ts` the refusal, " +
+      "`server/canvasCastSeal.test.ts` the arms. `applyModelEdit.execute` is closed on its " +
+      "RECAST branch only — its `fork` path declares `plannedCredits: 0` and reaches no engine, " +
+      "so a mouth gate there would have closed a free road that works. " +
+      "⚠ WHAT IS STILL OPEN ON THIS ID, WHICH IS WHY THIS ENTRY STAYS: `generation.refreshSlots`, " +
+      "the OTHER live canvas road, left open by #1785 on a STATED difference rather than an " +
+      "oversight — its canvas surface is the bulk-refresh DIALOG naming a cost, closing it is a " +
+      "second product act, and #1654's three options for it are still unanswered. " +
+      "`server/legacySpendSeal.test.ts`'s 'what is deliberately NOT sealed' arm is its record. " +
       "⚠ And this file's own warning applies to the " +
       "reachability question exactly as it applies to the id: 'a shut-down id does not reliably " +
       "fail loudly', so no complaint is not evidence of no traffic.",

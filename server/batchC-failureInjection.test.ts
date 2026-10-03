@@ -43,6 +43,22 @@ const llmScript = vi.hoisted(() => ({
   normalize: '{"edits":[{"leaf":"person.face.jawline","value":"broad angular jaw, squared"}]}',
 }));
 
+/*
+  ⚠ THE CANVAS CASTING DOOR IS HELD OPEN FOR THIS SUITE (#1785, his word:
+  "seal"). This file injects FAILURES into the canvas road — a refund that
+  cannot record, a busy receipt, a second-resolution failure — and that road now
+  sits behind a compiled-shut door. Without this, every arm would meet the
+  door's refusal before reaching the failure it injects, and would pass for the
+  wrong reason: a suite about what happens when money goes wrong, proving only
+  that the money is never reached.
+
+  `server/canvasCastSeal.test.ts` proves the door itself, shut and open.
+*/
+vi.mock("@shared/canvasCastDoor", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  CANVAS_CAST_OPEN: true,
+}));
+
 vi.mock("./db", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./db")>();
   const boardItemReader = vi.fn();

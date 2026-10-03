@@ -200,6 +200,45 @@ describe("card 1832 — the self-serve ladder is three rungs and the SERVER deci
     expect(ladder).toContain("export function recommendPlan(");
   });
 
+  it("⚠ AND NO LABEL STILL DESCRIBES IT — the control names where it goes (#1850)", () => {
+    /*
+      THE ARM ABOVE WAS NOT ENOUGH, AND THIS IS THE CARD THAT PROVED IT. The
+      window's CODE went in #1832 and its COPY did not: the compare control's
+      return label read *"Back to the nearest three"* for a day after there
+      stopped being anything to be nearest to, and it was found by the relay
+      reading PR #1849 rather than by anything here. A population that derives
+      survives a ruling (the surface drew three cards with no code change when
+      the ladder shortened by four rungs); a STRING that described the mechanism
+      does not, because nothing derives a label.
+
+      So the sweep's finding is pinned rather than remembered. Comments are
+      stripped before every match below, so the paragraph you are reading — and
+      the surface's own ⚠ note quoting the dead label — cannot satisfy it.
+    */
+    const modal = code(MODAL);
+    const control = slice(
+      modal,
+      'className="dp-plan__modeswitch"',
+      "</button>",
+      "the compare control",
+    );
+    expect(
+      control,
+      "the compare control's labels moved — one of them may be describing a mechanism again",
+    ).toContain('{compare ? "Back to plans" : "Compare plans"}');
+
+    /* And no customer string anywhere on the surface names the window or a rung
+       count. `window` itself is NOT on this list: the stripped source carries
+       the browser global, so an arm over that word would be red on correct
+       code — which is the shape that gets a guard deleted rather than fixed. */
+    for (const word of ["nearest", "Compare all", "all 5", "all five", "windowed"]) {
+      expect(
+        modal,
+        `the plan surface names the deleted sliding window again: ${word}`,
+      ).not.toContain(word);
+    }
+  });
+
   it("⚠ the direction of a move is read from the PRICE, and the prices make that faithful", () => {
     /*
       An account on an arranged-directly rung is not on the drawn ladder, so a
