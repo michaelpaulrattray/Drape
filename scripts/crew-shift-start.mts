@@ -93,6 +93,8 @@ import { readOpenPullRequests, renderCardClaimWarning } from "./lib/cardClaimWar
 import {
   postCardClaim,
   readCardClaim,
+  readNoteForeignClaims,
+  renderNoteForeignClaimWarning,
   readCardComments,
   renderCardClaimNote,
   renderCardClaimPost,
@@ -399,6 +401,54 @@ try {
         exceptRunId: verdict.run.id,
         mine: reDeclaringSeat,
       });
+      /*
+        ⚠ **AND THE OPEN-PULL-REQUEST WARNING TOO — #1877's CLASS SWEEP FOUND
+        THIS ONE, AND IT IS THE SAME HOLE #1580 CLOSED FOR THE CLAIM READ.**
+
+        `renderCardClaimWarning` (#1083) ran in the START branch and nowhere else,
+        so a batch's SECOND card never met it: the reader that exists precisely
+        because a shift once spent thirty-five minutes rebuilding a feature that
+        had merged seven minutes earlier was silent for every card but the first.
+        Sweeping for the class — a guard that is adequate and reachable only on
+        the road a batch does not take — this was its one other member in this
+        file, and fixing the instance without it would be half a fix (working
+        law 7).
+
+        It WARNS rather than refusing, for the reason its own docblock gives: the
+        pull request may be the seat's own follow-up.
+      */
+      const reDeclaredPrWarning = renderCardClaimWarning(reDeclared, readOpenPullRequests(arg("open-prs")));
+      if (reDeclaredPrWarning !== null) console.log(reDeclaredPrWarning);
+    }
+
+    /*
+      ⚠ **AND WHEN IT DOES *NOT* RE-DECLARE, THE BOARD IS STILL ASKED (#1877).**
+
+      Everything above covers the card a row DECLARES. A seat that moves to the
+      next card of its batch and heartbeats with `--note` alone declares nothing,
+      so on 2026-10-03 the guard that would have refused was never reached: run
+      #566's `cardRef` never left `#1870` while its own note read *"Now #1872"*,
+      the claim it posted by hand met nothing, and two live `CLAIMED —` lines sat
+      on #1872 for nineteen minutes.
+
+      ⚠ **IT WARNS AND IT IS NOT A SECOND REFUSAL.** The candidates come from
+      free prose, and 453 of 568 production rows name a foreign card in their
+      note — so refusing here would stop four heartbeats in five, and a refused
+      heartbeat goes quiet on his Working-now table and reads as a dead shift
+      (#1281). The HEURISTIC picks what to ask; only the board's own `claimed`
+      verdict decides what is said. `readNoteForeignClaims` carries both numbers.
+
+      Before the write, so a seat reads it while standing off is still free.
+    */
+    if (reDeclared === null) {
+      const foreign = readNoteForeignClaims({
+        note: noteMode,
+        ownCardRef: target.cardRef,
+        mine: reDeclaringSeat,
+        readComments: (card) => readCardComments(card, arg("card-comments")),
+      });
+      const foreignWarning = renderNoteForeignClaimWarning(foreign, target.cardRef);
+      if (foreignWarning !== null) console.log(foreignWarning);
     }
 
     if (DRY_RUN) {

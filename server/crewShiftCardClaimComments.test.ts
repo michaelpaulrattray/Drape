@@ -35,15 +35,19 @@ import {
   cardClaimBody,
   cardClaimPostArgs,
   cardCommentListArgs,
+  HEARTBEAT_FOREIGN_CLAIM_PROBE_MAX,
   postCardClaim,
   readCardClaim,
   readCardComments,
+  readNoteForeignClaims,
   renderCardClaimNote,
   renderCardClaimPost,
   renderCardClaimRefusal,
+  renderNoteForeignClaimWarning,
   type CardComment,
 } from "../scripts/lib/cardClaimComments.mts";
 import { CREW_CLAIM_LIVE_MS, crewCardClaimLine, crewCardCommentFact } from "../shared/crewCardBuildState";
+import { cardNumbersNamedIn, cardNumberToken } from "../shared/crewShiftState";
 
 /*
   ⚠ THIS SUITE IS IN #548's POPULATION, THROUGH THE MODULE IT DRIVES. Every arm
@@ -531,5 +535,287 @@ describe("posting this seat's claim", () => {
        failed is a twelve-hour lock held by nobody. */
     const declare = source.indexOf("claimCardOnTheCard({ cardRef: row.cardRef");
     expect(source.lastIndexOf("the insert reported success", declare)).toBeGreaterThan(-1);
+  });
+});
+
+/**
+ * THE HEARTBEAT THAT DECLARES NOTHING (#1877) — the road the two guards above
+ * do not cover, and the one the 2026-10-03 collision walked down.
+ *
+ * # The reading that produced this block
+ *
+ * Everything above was already in the tree on 2026-10-03 and would have refused
+ * the duplicate: driven against the real comments at the real moment,
+ * `readCardClaim` returns `claimed` by `foreman-20261004-0635` and the refusal
+ * reads *"already claimed … 13 minutes ago"*. **The guard was adequate and was
+ * never reached.** `assertCardIsFree` runs on a heartbeat only when `--card`
+ * re-declares; the seat passed `--note` alone, so its row's `cardRef` never left
+ * `#1870` while its own note said *"Now #1872"*, and the claim it posted by hand
+ * met nothing at all.
+ *
+ * # Why these arms are shaped around SILENCE
+ *
+ * The candidates come from free prose, and **453 of 568 production rows name a
+ * foreign card in their note** — so the interesting arms are the ones proving
+ * this says NOTHING in the ordinary case. A warning that fires four heartbeats
+ * in five is ignored by the second day and is then worse than the silence it
+ * replaced; that is the design this card threw away, and these arms are what
+ * stop it coming back.
+ */
+describe("a heartbeat that names another seat's card (#1877)", () => {
+  /** Row #566's own note, read off `crew_shift_runs` on production. */
+  const REAL_NOTE =
+    "#1870 shipped as PR #1873 (preflight green, full suite 970 files/16842 tests, 6 sabotages"
+    + " each red on its own arm). Now #1872: read every heartbeatAt reader - nothing reads a"
+    + " CLOSED rows value, so the close stops rewriting it.";
+  /** The moment the seat's heartbeat landed, as `crew_shift_runs` recorded it. */
+  const AT_THE_HEARTBEAT = Date.parse("2026-10-03T20:51:37Z");
+  const FOREMAN_CLAIM: CardComment[] = [{
+    body: crewCardClaimLine("foreman-20261004-0635", "2026-10-03T20:36:19Z"),
+    createdAt: "2026-10-03T20:36:18Z",
+  }];
+  /** The board as it really stood: #1872 claimed, #1873 a pull request number. */
+  const REAL_BOARD: Record<number, CardComment[] | null> = { 1872: FOREMAN_CLAIM, 1873: [] };
+
+  function probe(
+    note: string | null | undefined,
+    own: string | null,
+    mine: string | null,
+    board: (card: number) => readonly CardComment[] | null,
+  ) {
+    const found = readNoteForeignClaims({
+      note, ownCardRef: own, mine, readComments: board, now: AT_THE_HEARTBEAT,
+    });
+    return { found, line: renderNoteForeignClaimWarning(found, own, AT_THE_HEARTBEAT) };
+  }
+
+  it("speaks on the real collision, and names the seat and the age", () => {
+    const { found, line } = probe(REAL_NOTE, "#1870", "seat1-20261004-062135", (c) => REAL_BOARD[c] ?? null);
+    expect(found.claims).toEqual([
+      { card: 1872, seat: "foreman-20261004-0635", at: "2026-10-03T20:36:18Z" },
+    ]);
+    /* The age is what makes the line actionable: fifteen minutes is somebody at
+       a keyboard, eleven hours is probably a shift that never released. */
+    expect(line).toContain("#1872 — foreman-20261004-0635, 15 minutes ago");
+    /* And it hands back the one command that puts the card under the refusal. */
+    expect(line).toContain("--card '#N'");
+  });
+
+  it("is SILENT when the live claim is this seat's own", () => {
+    /* A seat re-reading its own card must never be warned off it. */
+    const { found, line } = probe(REAL_NOTE, "#1870", "foreman-20261004-0635", (c) => REAL_BOARD[c] ?? null);
+    expect(found.claims).toEqual([]);
+    expect(line).toBeNull();
+  });
+
+  it("is SILENT on the ordinary note that merely CITES cards — the 79.8% case", () => {
+    /* ⚠ THE ARM THE WHOLE DESIGN TURNS ON. 453 of 568 real rows look like this. */
+    const { found, line } = probe(
+      "filed as #1877, sibling of #1747, his ruling on #1612, PR #1873 merged",
+      "#1870", "seat-x", () => [],
+    );
+    expect(found.claims).toEqual([]);
+    expect(found.unreadable).toEqual([]);
+    expect(line).toBeNull();
+  });
+
+  it("is SILENT on a claim that has aged out of the board's window", () => {
+    const stale = [{
+      body: crewCardClaimLine("somebody", "2026-10-02T00:00:00Z"),
+      createdAt: "2026-10-02T00:00:00Z",
+    }];
+    /* Older than CREW_CLAIM_LIVE_MS at the moment asked — so not live, and the
+       card is free. Derived from the constant rather than from a typed date. */
+    expect(AT_THE_HEARTBEAT - Date.parse("2026-10-02T00:00:00Z")).toBeGreaterThan(CREW_CLAIM_LIVE_MS);
+    const { line } = probe(REAL_NOTE, "#1870", "seat-x", () => stale);
+    expect(line).toBeNull();
+  });
+
+  it("never probes the card the row already declares", () => {
+    /* That card is covered by `assertCardIsFree`, and warning about this seat's
+       own declared card would fire on every heartbeat of every shift. */
+    const asked: number[] = [];
+    probe("#1870 shipped, preflight green", "#1870", "seat-x", (card) => {
+      asked.push(card);
+      return [];
+    });
+    expect(asked).toEqual([]);
+  });
+
+  it("says so when the board could not be read — an unread board is not a clean one", () => {
+    const { found, line } = probe(REAL_NOTE, "#1870", "seat-x", () => null);
+    expect(found.unreadable).toEqual([1872, 1873]);
+    expect(line).toContain("could not read the comments on #1872, #1873");
+    expect(line).toContain("gh auth status");
+  });
+
+  it("spends at most the declared budget, however many cards a note names", () => {
+    /*
+      ⚠ GitHub's allowance is ONE account shared by every seat and the crew, and
+      its burst limit tripped three times in two hours on 2026-09-26. Row #2's
+      note names eight cards; a heartbeat must not spend eight reads on prose.
+    */
+    let reads = 0;
+    const eight = "cites #20, #35, #48, #49, #63, #80, #203 and #234";
+    expect(cardNumbersNamedIn(eight)).toHaveLength(8);
+    readNoteForeignClaims({
+      note: eight, ownCardRef: "#1870", mine: "seat-x", now: AT_THE_HEARTBEAT,
+      readComments: () => { reads += 1; return []; },
+    });
+    expect(reads).toBe(HEARTBEAT_FOREIGN_CLAIM_PROBE_MAX);
+  });
+
+  it("asks nothing at all of an empty or absent note", () => {
+    for (const note of [null, undefined, ""]) {
+      let reads = 0;
+      const found = readNoteForeignClaims({
+        note, ownCardRef: "#1870", mine: "seat-x",
+        readComments: () => { reads += 1; return []; },
+      });
+      expect(reads).toBe(0);
+      expect(found.claims).toEqual([]);
+    }
+  });
+});
+
+/**
+ * THE SCANNER IS HELD TO THE ONE OWNER OF THE SPELLING (#1877).
+ *
+ * `cardNumberToken` has been the single expression for "this text names that
+ * card" since #1094, and `cardNumbersNamedIn` is its inverse. Two hand-written
+ * expressions would be working law 4 on the token every card reference in the
+ * product turns on — so the second is DEFINED as a candidate pass confirmed by
+ * the first, and these arms hold them to each other in both directions over the
+ * inputs that would separate two independent regexes.
+ */
+describe("which cards does this text name (#1877)", () => {
+  const CORPUS = [
+    "#1870 shipped as PR #1873. Now #1872.",
+    "cites #20, #35 and #0608",
+    "no cards here at all",
+    "#1 and #12 and #120",
+    /*
+      ⚠ THESE TWO ARE DELIBERATELY SEPARATE STRINGS AND THE SABOTAGE PASS IS WHY.
+      Written as one subject — `"v1#12 is a version, #12 is a card"` — the arm
+      below could not fail: dropping the confirmation entirely still returned
+      `[12]`, because the VALID `#12` later in the same string confirmed the
+      number the invalid `v1#12` had produced. That is the sibling-satisfied arm
+      this repository has been bitten by before, and it cost case 8 of eight.
+    */
+    "v1#12 is a version number, not a card",
+    "#12 is a card",
+    "ends on a card #99",
+    /* `#12x` IS card 12 by the owner's rule — only a following DIGIT separates
+       them — and it is here so that stays a decision rather than an accident. */
+    "#12x is not a card number boundary",
+    "",
+  ];
+
+  it("every number it finds is confirmed by cardNumberToken, over the whole corpus", () => {
+    for (const text of CORPUS) {
+      for (const card of cardNumbersNamedIn(text)) {
+        expect(cardNumberToken(card).test(text), `${card} in ${JSON.stringify(text)}`).toBe(true);
+      }
+    }
+  });
+
+  it("and it misses none that cardNumberToken would confirm", () => {
+    /*
+      The other direction, which is the one a candidate pass can fail silently.
+      Every number in range is asked of the OWNER, and the scanner must have
+      found exactly that set.
+    */
+    for (const text of CORPUS) {
+      const byTheOwner: number[] = [];
+      for (let card = 1; card <= 2000; card += 1) {
+        if (cardNumberToken(card).test(text)) byTheOwner.push(card);
+      }
+      expect(cardNumbersNamedIn(text), JSON.stringify(text)).toEqual(byTheOwner);
+    }
+  });
+
+  it("deduplicates, sorts, and reads a padded reference as its number", () => {
+    expect(cardNumbersNamedIn("#35 then #20 then #35 again")).toEqual([20, 35]);
+    expect(cardNumbersNamedIn("#0608 is #608")).toEqual([608]);
+  });
+});
+
+/**
+ * AND THE HEARTBEAT ACTUALLY RUNS IT — invariant 7 pointed at this very card.
+ *
+ * ⚠ **PR #1874 shipped a docblock as the whole deliverable for half of #1872 and
+ * the suite stayed green when that paragraph was deleted**; a seat found it and
+ * #1876 repaired it. These arms are that lesson applied in advance: a reader
+ * nothing calls is a reader nobody has, and the call site is the deliverable.
+ */
+describe("the script spends the foreign-claim probe on a bare heartbeat (#1877)", () => {
+  const PROBE_SOURCE = readFileSync(resolve(__dirname, "../scripts/crew-shift-start.mts"), "utf8");
+
+  it("calls the probe, and renders it", () => {
+    expect(PROBE_SOURCE).toContain("readNoteForeignClaims({");
+    expect(PROBE_SOURCE).toContain("renderNoteForeignClaimWarning(foreign, target.cardRef)");
+  });
+
+  it("runs it ONLY when the heartbeat declared no card", () => {
+    /* With a `--card` the stronger guard above already covers that card, and
+       probing it twice would spend two reads for one answer. */
+    expect(PROBE_SOURCE).toContain("if (reDeclared === null) {");
+  });
+
+  it("asks about the row's OWN card, so the probe can exclude it", () => {
+    expect(PROBE_SOURCE).toContain("ownCardRef: target.cardRef");
+  });
+
+  it("WARNS and never refuses — a refused heartbeat reads as a dead shift", () => {
+    /*
+      ⚠ #1281's rule, and the card's own reasoning. The arm is sliced to the
+      probe's own block rather than grepping `refuse(` across the file, which
+      would pass on the many legitimate refusals elsewhere (the sibling-satisfied
+      arm this repository has been bitten by): the probe's verdict must reach
+      `console.log` and nothing else.
+    */
+    const at = PROBE_SOURCE.indexOf("const foreignWarning = renderNoteForeignClaimWarning(");
+    expect(at, "the probe's render call could not be found").toBeGreaterThan(-1);
+    const block = PROBE_SOURCE.slice(at, at + 220);
+    expect(block).toContain("console.log(foreignWarning)");
+    expect(block).not.toContain("refuse(");
+  });
+});
+
+/**
+ * THE CLASS SWEEP'S ONE OTHER MEMBER (#1877, working law 7).
+ *
+ * The class: **a guard that is adequate, and reachable only on the road a batch
+ * does not take.** The instance was the claim read on a bare heartbeat. Sweeping
+ * `crew-shift-start.mts` by diffing the calls each of its two branches makes,
+ * the open-pull-request warning (#1083) was its one other member — it ran in the
+ * START branch and nowhere else, so a batch's SECOND card never met the reader
+ * that exists because a shift once spent thirty-five minutes rebuilding a feature
+ * that had merged seven minutes before it began.
+ *
+ * The three other start-only calls were opened and are deliberately NOT members:
+ * `readRunSupersessions` judges stale ROWS and a heartbeat's row is the seat's
+ * own and open; `backgroundWorkAllowed` judges `--kind`, which has no per-card
+ * dimension; `crewCardHandbackInstruction` is instruction text rather than a
+ * control, and printing it on every heartbeat would be noise.
+ */
+describe("the open-PR warning covers a re-declared card too (#1877)", () => {
+  const SWEPT_SOURCE = readFileSync(resolve(__dirname, "../scripts/crew-shift-start.mts"), "utf8");
+
+  it("reads open pull requests on BOTH roads — the start and the re-declaration", () => {
+    /* Two call sites, one reader. One site is #1083's original; the second is
+       this card's sweep. A single site is the hole this arm exists to hold shut. */
+    expect(SWEPT_SOURCE.match(/readOpenPullRequests\(/g) ?? []).toHaveLength(2);
+    expect(SWEPT_SOURCE.match(/renderCardClaimWarning\(/g) ?? []).toHaveLength(2);
+  });
+
+  it("warns on the re-declared card, and never refuses on it", () => {
+    const at = SWEPT_SOURCE.indexOf("const reDeclaredPrWarning = renderCardClaimWarning(");
+    expect(at, "the re-declaration's open-PR warning could not be found").toBeGreaterThan(-1);
+    const block = SWEPT_SOURCE.slice(at, at + 200);
+    /* The card the seat is MOVING to, not the one the row still names. */
+    expect(block).toContain("renderCardClaimWarning(reDeclared,");
+    expect(block).toContain("console.log(reDeclaredPrWarning)");
+    expect(block).not.toContain("refuse(");
   });
 });
