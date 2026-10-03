@@ -835,6 +835,14 @@ function PlanStepUpPane({ onClose }: { onClose: () => void }) {
             packs pane must print it, this pane must not. A file-level read
             cannot tell those two panes apart, which is exactly why it passed
             this defect for the day it was live.
+
+            ⚠ **ONE MEASURED FACT IS KEPT HERE RATHER THAN DELETED WITH ITS
+            SUBJECT, FOR WHOEVER REBUILDS THIS CARD (#1832).** The brief's §7.2
+            draws the unit price BESIDE the figure, right-aligned, and at 436px
+            it does not fit: a 30px tabular figure plus `due today` plus two
+            unit prices ran past the card and clipped on `overflow: hidden`.
+            That is why the line that has just gone sat on its own row. The
+            measurement outlives the line, and it was made in the running app.
           */}
 
           {/* §7.2 — name the DELTA, not the tier. */}
