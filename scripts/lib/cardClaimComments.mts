@@ -590,7 +590,7 @@ export function renderNoteForeignClaimWarning(
     .map((claim) => `   #${claim.card} — ${claim.seat ?? "a seat that did not name itself"},`
       + ` ${agePhrase(claim.at, now)} (${claim.at})`)
     .join("\n");
-  return `\n⚠ THIS NOTE NAMES A CARD ANOTHER SEAT HAS ITS HANDS ON:\n${them}\n`
+  return `\n⚠ THIS NOTE NAMES A CARD CARRYING ANOTHER SEAT'S LIVE CLAIM:\n${them}\n`
     + `\n   This row is on ${ownCardRef ?? "(no card)"}, so nothing refused — the row read and the`
     + "\n   claim read only ever cover the card a row DECLARES (#1580). On 2026-10-03 that gap"
     + "\n   cost a builder seat half a session: two live CLAIMED lines sat on #1872 for nineteen"
@@ -598,5 +598,19 @@ export function renderNoteForeignClaimWarning(
     + "\n\n   If you have MOVED onto one of those cards, stop and stand off it — or re-declare it"
     + "\n   so the refusal can do its job:"
     + "\n     scripts/crew-shift-start.mts --shift <id> --note '…' --card '#N'"
-    + "\n   If you are only CITING it, this line is noise and costs you nothing.";
+    + "\n   If you are only CITING it, this line is noise and costs you nothing."
+    /* ⚠ #1701's SECOND SIGNAL AGAIN, AND THIS READER NEEDS IT MORE THAN THE
+       REFUSAL DOES — found by driving the live board rather than reasoned about.
+       The first live negative control fired on #1870, a card whose work had
+       MERGED two hours earlier: that seat released the DUPLICATE it stood off
+       and never released its own finished card, and no reader can see a merged
+       pull request as a handback. The refusal meets that case only on a card a
+       row declares; this one meets it on every card a note CITES, which is the
+       commoner shape by far. So the header says "live claim" and not "hands on",
+       and what is missing is named rather than implied. */
+    + `\n\n   ⚠ A LIVE CLAIM IS NOT A LIVE SEAT: a finished seat owes a \`${crewCardReleaseLine()}\``
+    + "\n   comment, a merged pull request is not one, and nothing ages a claim but the clock"
+    + `\n   (${Math.round(CREW_CLAIM_LIVE_MS / 3_600_000)} h). If that seat's row is closed and its`
+    + " pull request merged, this is a claim"
+    + "\n   nobody released — worth a RELEASED line on the card rather than a stand-off.";
 }

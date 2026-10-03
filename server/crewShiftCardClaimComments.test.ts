@@ -46,7 +46,12 @@ import {
   renderNoteForeignClaimWarning,
   type CardComment,
 } from "../scripts/lib/cardClaimComments.mts";
-import { CREW_CLAIM_LIVE_MS, crewCardClaimLine, crewCardCommentFact } from "../shared/crewCardBuildState";
+import {
+  CREW_CLAIM_LIVE_MS,
+  crewCardClaimLine,
+  crewCardCommentFact,
+  crewCardReleaseLine,
+} from "../shared/crewCardBuildState";
 import { cardNumbersNamedIn, cardNumberToken } from "../shared/crewShiftState";
 
 /*
@@ -599,6 +604,26 @@ describe("a heartbeat that names another seat's card (#1877)", () => {
     expect(line).toContain("#1872 — foreman-20261004-0635, 15 minutes ago");
     /* And it hands back the one command that puts the card under the refusal. */
     expect(line).toContain("--card '#N'");
+  });
+
+  it("says a live claim is not a live seat, and names what a finished seat owes", () => {
+    /*
+      ⚠ FOUND BY DRIVING THE LIVE BOARD, NOT BY REASONING — the first live
+      negative control fired on #1870, whose work had MERGED two hours earlier:
+      that seat released the DUPLICATE it stood off and never released its own
+      finished card, and no reader can see a merged pull request as a handback
+      (#1701). This probe meets that case on every card a note CITES, where the
+      refusal meets it only on a card a row declares — so the honest wording is
+      load-bearing here, and the header must not say "hands on".
+    */
+    const { line } = probe(REAL_NOTE, "#1870", "seat1-20261004-062135", (c) => REAL_BOARD[c] ?? null);
+    expect(line).toContain("CARRYING ANOTHER SEAT'S LIVE CLAIM");
+    expect(line).not.toContain("HAS ITS HANDS ON");
+    expect(line).toContain("A LIVE CLAIM IS NOT A LIVE SEAT");
+    /* The release line is the BOARD's spelling, never a copy of it. */
+    expect(line).toContain(crewCardReleaseLine());
+    /* And the window is quoted from the constant, so it cannot drift from it. */
+    expect(line).toContain(`(${Math.round(CREW_CLAIM_LIVE_MS / 3_600_000)} h)`);
   });
 
   it("is SILENT when the live claim is this seat's own", () => {
