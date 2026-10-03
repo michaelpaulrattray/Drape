@@ -91,6 +91,9 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { displayBalance, displaySpent, formatCredits } from "@shared/creditDisplay";
+/* #1836 — the one declaration of who may buy a credit pack, read here so §6f
+   and the Add-credits door cannot answer that question differently. */
+import { topupEligibility } from "@shared/creditTopups";
 import { Check, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -1042,18 +1045,49 @@ export function ChangePlanModal({
           The label stays: *Just need more credits* is still exactly what this
           row is for, and is now literally what it does.
         */}
-        <div className="dp-plan__cross">
-          <span className="dp-set__rowtext">
-            <span className="dp-set__label">Just need more credits</span>
-            <span className="dp-set__note">
-              Buy a one-off pack instead — your plan stays exactly as it is.
+        {/*
+          ⚠ **AND IT IS NOT DRAWN TO A FREE ACCOUNT AT ALL — #1836, his word
+          2026-10-03:** *"you shouldnt be able to use add credits if your on the
+          free plan at all , not sure why i could click the button it should be
+          greyed out or only display plans when i click it im in a free
+          account"*. **This is the button.** It is the only control in the
+          product labelled `Add credits`, and a free account pressing it read a
+          surface headed *Add more credits* that offered a plan.
+
+          ⚠ **HIDING IT IS NOT THE SOFT OPTION HERE, IT IS THE TRUE ONE**, and
+          the row's own two sentences are why: *"Buy a one-off pack instead"* —
+          instead of what? The plans are on this very screen, and the ladder
+          above is the only road a free account has. *"your plan stays exactly
+          as it is"* — there is no plan to keep. Both clauses are statements
+          about a subscriber, so on a free account the row is not merely a wrong
+          destination; it is two false sentences and a button that cannot do
+          what it says.
+
+          ⚠ **AND IT IS `may-buy` RATHER THAN `!== "free"`, SO AN UNREAD RUNG
+          DECLINES.** `topupEligibility` is the one declaration of who may buy a
+          pack ({@link shared/creditTopups.ts}), already read by the Add-credits
+          door — a second spelling of the same rule one file over is working law
+          4 at its smallest. Hiding on unread is the same safe direction `Drop to
+          Free` takes below, and the same three-state answer the eight cards
+          before it (#1703 → #1755) were each filed about: a subscriber would
+          otherwise lose this row for the beat their status is in flight, which
+          is the cheap error, where SHOWING it to a free account is the one his
+          word forbids.
+        */}
+        {topupEligibility(status?.planTier) === "may-buy" ? (
+          <div className="dp-plan__cross">
+            <span className="dp-set__rowtext">
+              <span className="dp-set__label">Just need more credits</span>
+              <span className="dp-set__note">
+                Buy a one-off pack instead — your plan stays exactly as it is.
+              </span>
             </span>
-          </span>
-          <span className="dp-set__spacer" />
-          <Button variant="secondary" size="small" onClick={onAddCredits}>
-            Add credits
-          </Button>
-        </div>
+            <span className="dp-set__spacer" />
+            <Button variant="secondary" size="small" onClick={onAddCredits}>
+              Add credits
+            </Button>
+          </div>
+        ) : null}
       </div>
 
       <footer className="dp-plan__foot">

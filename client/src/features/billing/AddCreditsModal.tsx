@@ -654,15 +654,37 @@ function PlanStepUpPane({ onClose }: { onClose: () => void }) {
 
   return (
     <ModalScrim
-      label="Add more credits"
+      /*
+        ⚠ **THIS SURFACE CALLED ITSELF CREDITS WHILE SELLING A PLAN — #1836, his
+        word, 2026-10-03:** *"you shouldnt be able to use add credits if your on
+        the free plan at all , not sure why i could click the button it should be
+        greyed out or only display plans when i click it im in a free account"*.
+
+        He pressed **Add credits** on a free account and read a pane headed
+        *Add more credits* offering him a plan with *$27 due today*. Both roads do
+        lead to buying a plan — the pane is right about WHAT it sells — so the
+        card's own sentence is that the fix is *"in the button's word and its
+        destination, not in the pane"*. The three words below and the foot's
+        button are that word; nothing about what this pane does moves.
+
+        ⚠ **AND THE RENAME IS WHY NO OTHER MOUNT NEEDED ITS OWN REPAIR.** Every
+        entrance to credits — the header chip, the canvas popover, the studio
+        balance, the low-balance toast, §6f on Change plan — opens this one door,
+        so a free account reaching it by ANY road now reads a plan offer under a
+        plan's name. That is the class rather than the instance (law 7). The one
+        remainder is named in the pull request: four entrance WORDS still say
+        *top up* before the door opens, and each sits on a page that does not
+        read `billing.getStatus` today.
+      */
+      label="Choose a plan"
       scrimClassName="dp-topup__scrim"
       cardClassName="dp-topup__card"
       busy={working}
       onDismiss={onClose}
     >
       <div className="dp-topup__pane">
-        <p className="dp-topup__eyebrow">CREDITS</p>
-        <h2 className="dp-topup__title">Add more credits</h2>
+        <p className="dp-topup__eyebrow">PLANS</p>
+        <h2 className="dp-topup__title">Choose a plan</h2>
 
         {/* §7.1 — the reason, from the same four constants as §6a, and all four
             off THIS account's own cycle (#1739): this sentence is about the
@@ -1081,7 +1103,25 @@ function PlanStepUpPane({ onClose }: { onClose: () => void }) {
               : nothingAbove
                 ? NO_HIGHER_PLAN
                 : quoteReady && dueToday !== null
-                  ? `Add credits · ${formatDollars(dueToday)}`
+                  /*
+                    ⚠ **THE BUTTON SAID `Add credits · $27.00` AND IT BUYS A
+                    PLAN — #1836.** This is the word he pressed, and it is the
+                    sharpest form of the lie above: a free account has no pack
+                    to buy here, so every dollar on this button is a
+                    subscription. The shape is `ChangePlanModal`'s own, which is
+                    his §6e example — *"Upgrade to Agency · $122.58"* — minus
+                    the `/ mo`, because `dueToday` is what is charged today
+                    rather than a monthly rate.
+
+                    `selected` cannot be null on this branch (`nothingAbove` is
+                    false above it, so the ladder has a rung), but the compiler
+                    does not know that and a `!` would be a claim; the fallback
+                    keeps the money, which is the part a customer must be able
+                    to trust.
+                  */
+                  ? selected
+                    ? `Upgrade to ${selected.name} · ${formatDollars(dueToday)}`
+                    : `Upgrade · ${formatDollars(dueToday)}`
                   : "Checking the charge…"}
         </Button>
       </div>
@@ -1517,9 +1557,18 @@ export function AddCreditsModal({
   if (eligibility === "needs-a-plan") {
     return <PlanStepUpPane onClose={onClose} />;
   }
+  /*
+    ⚠ **THE UNREAD SHELL CANNOT PROMISE CREDITS EITHER — #1836.** This is the
+    beat before the rung is known, and a FREE account is drawn it exactly as a
+    subscriber is. Headed *Add credits*, it made the promise his word forbids to
+    the very customer who may not buy — just for the beat, and his sentence is
+    *"at all"*. It cannot say *Choose a plan* either, because a plan holder
+    reaching it is about to be shown packs: the only honest title here is the
+    noun both panes share, which is the one the eyebrow already carries.
+  */
   return (
     <ModalScrim
-      label="Add credits"
+      label="Credits"
       scrimClassName="dp-topup__scrim"
       cardClassName="dp-topup__card"
       busy={false}
@@ -1527,7 +1576,7 @@ export function AddCreditsModal({
     >
       <div className="dp-topup__pane">
         <p className="dp-topup__eyebrow">CREDITS</p>
-        <h2 className="dp-topup__title">Add credits</h2>
+        <h2 className="dp-topup__title">Credits</h2>
       </div>
       <div className="dp-topup__foot">
         <span className="dp-set__spacer" />
