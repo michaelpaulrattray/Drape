@@ -36,10 +36,15 @@ import {
   deletionRefusal,
   gitBlobSha,
   hashesOf,
+  type DeclaredNotABackup,
+  DECLARED_NOT_A_BACKUP,
   insertDeletionRows,
   isBackupName,
   itemsToDelete,
   looksBinary,
+  nameVerdict,
+  partitionByName,
+  type RootEntry,
   summarise,
   treeRefusal,
 } from "../scripts/lib/backupRetention.mts";
@@ -190,6 +195,104 @@ describe("⚠ a live worktree is never a backup — both grounds", () => {
       "output",
     ]) expect(isBackupName(no), no).toBe(false);
   });
+});
+
+describe("⚠ a declared keep is OUT OF SCOPE, and that is structural rather than a disposition (#1826)", () => {
+  /*
+    What this block is a control on: 1.42 GiB of the #1394 court's renders sat
+    inside the run's anonymous *"N entries did not match a backup name"* count,
+    with the instruction not to sweep it living in three mailbox handoff notes
+    and nowhere in the tree. The repair names it — and the arms below exist
+    because the tempting alternative, letting the pile in and relying on it
+    classifying as `kept`, is a PROMISE that holds only while two readers keep
+    failing on it the way they happen to today.
+  */
+
+  /** A declared name wearing a REAL backup pattern — the only way precedence is provable. */
+  const COLLIDING: readonly DeclaredNotABackup[] = [
+    { name: "drape-debris-fixture-1826", why: "a fixture, declared out of scope while also matching /^drape-debris-/" },
+  ];
+
+  it("the declaration is well formed — a name, a reason, and no duplicates", () => {
+    expect(DECLARED_NOT_A_BACKUP.length, "an emptied declaration would make every arm below vacuous").toBeGreaterThan(0);
+    for (const entry of DECLARED_NOT_A_BACKUP) {
+      expect(entry.name.trim(), JSON.stringify(entry)).not.toBe("");
+      /* A directory name, never a path — the walk compares against `child.name`. */
+      expect(entry.name, entry.name).not.toMatch(/[\/]/);
+      /* The reason IS the deliverable: an unexplained keep is the state this closed. */
+      expect(entry.why.trim().length, entry.name).toBeGreaterThan(40);
+    }
+    expect(new Set(DECLARED_NOT_A_BACKUP.map((e) => e.name)).size).toBe(DECLARED_NOT_A_BACKUP.length);
+  });
+
+  it("every declared name has its reason in the document the run tells a reader to open", () => {
+    /* The printed line cites `docs/JANITOR_BACKUP_RETENTION.md` by name, so a
+       declaration landing in code with nothing in that file would send a reader
+       to a document that does not mention what they just read. */
+    const doc = readFileSync(path.join(process.cwd(), "docs", "JANITOR_BACKUP_RETENTION.md"), "utf8");
+    for (const entry of DECLARED_NOT_A_BACKUP) expect(doc, entry.name).toContain(entry.name);
+  });
+
+  it("no declared name matches a backup pattern TODAY — so the precedence below is moot, measured rather than assumed", () => {
+    for (const entry of DECLARED_NOT_A_BACKUP) expect(isBackupName(entry.name), entry.name).toBe(false);
+  });
+
+  it("⚠ the declaration is answered FIRST — a name in BOTH sets is out of scope, never a backup", () => {
+    expect(isBackupName("drape-debris-fixture-1826"), "the fixture must really match a backup pattern, or this arm proves nothing")
+      .toBe(true);
+    const verdict = nameVerdict("drape-debris-fixture-1826", COLLIDING);
+    expect(verdict.kind).toBe("out-of-scope");
+    expect(verdict.kind === "out-of-scope" && verdict.why).toContain("declared out of scope");
+    /* NEGATIVE CONTROL: the same name with nothing declared is an ordinary backup. */
+    expect(nameVerdict("drape-debris-fixture-1826", []).kind).toBe("backup");
+  });
+
+  it("all three verdicts are produced — a reader returning one constant could not pass", () => {
+    expect(nameVerdict("drape-worktree-keep-2026-10-03", DECLARED_NOT_A_BACKUP).kind).toBe("out-of-scope");
+    expect(nameVerdict("drape-debris-2026-08-19.zip", DECLARED_NOT_A_BACKUP).kind).toBe("backup");
+    expect(nameVerdict("Drape", DECLARED_NOT_A_BACKUP).kind).toBe("unclassified");
+  });
+
+  it("the `.zip` suffix comes off on the declared road too, exactly as it does for a backup name", () => {
+    /* Without this a zip OF the pile would read unclassified and fall back into
+       the anonymous count this card is about. */
+    expect(nameVerdict("drape-worktree-keep-2026-10-03.zip", DECLARED_NOT_A_BACKUP).kind).toBe("out-of-scope");
+    expect(nameVerdict("drape-worktree-keep-2026-10-03.ZIP", DECLARED_NOT_A_BACKUP).kind).toBe("out-of-scope");
+  });
+
+  it(
+    "⚠ THE ARM THAT MATTERS: a declared name is NEVER in `backups`, so nothing downstream can delete it",
+    () => {
+      const entries: RootEntry[] = [
+        { name: "drape-debris-fixture-1826", kind: "directory" },
+        { name: "drape-debris-fixture-1826.zip", kind: "zip" },
+        { name: "drape-janitor-run6-crew-eye-orphans", kind: "directory" },
+        { name: "drape-untracked-2026-08-19.zip", kind: "zip" },
+        { name: "Drape", kind: "directory" },
+      ];
+      const split = partitionByName(entries, COLLIDING);
+
+      /* Both spellings of the declared name are out, and by name. */
+      expect(split.outOfScope.map((e) => e.name).sort())
+        .toEqual(["drape-debris-fixture-1826", "drape-debris-fixture-1826.zip"]);
+      for (const got of split.backups) expect(got.name, got.name).not.toMatch(/^drape-debris-fixture-1826/);
+
+      /* POSITIVE CONTROL: the real backups DO come back, so an empty `backups`
+         is not what makes the assertion above pass. */
+      expect(split.backups.map((e) => e.name).sort())
+        .toEqual(["drape-janitor-run6-crew-eye-orphans", "drape-untracked-2026-08-19.zip"]);
+      /* And the remainder is still counted rather than lost. */
+      expect(split.unclassified).toEqual(["Drape"]);
+      expect(split.backups.length + split.outOfScope.length + split.unclassified.length).toBe(entries.length);
+
+      /* NEGATIVE CONTROL: with nothing declared, the same population puts the
+         fixture straight onto the candidate road — which is what the
+         declaration is holding back. */
+      const undeclared = partitionByName(entries, []);
+      expect(undeclared.outOfScope).toEqual([]);
+      expect(undeclared.backups.map((e) => e.name)).toContain("drape-debris-fixture-1826");
+    },
+  );
 });
 
 describe("one entry's verdict, limb by limb", () => {

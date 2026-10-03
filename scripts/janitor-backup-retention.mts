@@ -83,14 +83,15 @@ import {
   type BackupEntry,
   type BackupItem,
   type BackupVerdict,
+  DECLARED_NOT_A_BACKUP,
   type TreeFreshness,
   classifyBackup,
   deletionReceiptRow,
   deletionRefusal,
   hashesOf,
   insertDeletionRows,
-  isBackupName,
   itemsToDelete,
+  partitionByName,
   summarise,
   treeRefusal,
 } from "./lib/backupRetention.mts";
@@ -334,22 +335,26 @@ async function main(): Promise<number> {
   const now = new Date();
   const trees = worktreePaths(repo);
 
+  /* ⚠ THE NAME SPLIT HAPPENS FIRST, FOR THE WHOLE ROOT, AND IT IS WHY A
+     DECLARED KEEP IS UNREACHABLE RATHER THAN MERELY UNLIKELY (#1826). Nothing
+     below this line ever sees an out-of-scope or unclassified name, so neither
+     can become a `BackupItem`, get a verdict, or enter the deletion set.
+     `partitionByName` is pure so that property is driven rather than asserted. */
+  const partition = partitionByName(
+    readdirSync(root, { withFileTypes: true })
+      .filter((child) => (child.isFile() && /\.zip$/i.test(child.name)) || child.isDirectory())
+      .map((child) => ({ name: child.name, kind: child.isFile() ? "zip" as const : "directory" as const })),
+    DECLARED_NOT_A_BACKUP,
+  );
+  const outOfScope = partition.outOfScope;
+  const skippedByName = partition.unclassified.length;
+
   const candidates: Array<{ path: string; kind: "zip" | "directory" }> = [];
-  let skippedByName = 0;
   let refusedAsTree = 0;
-  for (const child of readdirSync(root, { withFileTypes: true })) {
-    const full = path.join(root, child.name);
-    if (child.isFile() && /\.zip$/i.test(child.name)) {
-      if (!isBackupName(child.name)) {
-        skippedByName += 1;
-        continue;
-      }
+  for (const named of partition.backups) {
+    const full = path.join(root, named.name);
+    if (named.kind === "zip") {
       candidates.push({ path: full, kind: "zip" });
-      continue;
-    }
-    if (!child.isDirectory()) continue;
-    if (!isBackupName(child.name)) {
-      skippedByName += 1;
       continue;
     }
     /* BOTH grounds, never either — the decision is `treeRefusal`'s so it can be
@@ -361,7 +366,7 @@ async function main(): Promise<number> {
     } catch { /* no .git — an ordinary directory */ }
     const refusal = treeRefusal(full, holdsGit, trees);
     if (refusal) {
-      console.error(`  REFUSED (${refusal})  ${child.name}`);
+      console.error(`  REFUSED (${refusal})  ${named.name}`);
       refusedAsTree += 1;
       continue;
     }
@@ -371,7 +376,8 @@ async function main(): Promise<number> {
   if (candidates.length === 0) {
     throw new Error(
       `no sweep backups found under ${root} — refusing rather than reporting an empty pile. ` +
-        `${skippedByName} names did not match and ${refusedAsTree} directories were refused as trees. ` +
+        `${skippedByName} names did not match, ${outOfScope.length} are declared not-a-backup ` +
+        `and ${refusedAsTree} directories were refused as trees. ` +
         "A wrong --root reads exactly like a cleared pile (disposable-age's founding lesson).",
     );
   }
@@ -416,7 +422,9 @@ async function main(): Promise<number> {
   }
 
   if (json) {
-    console.log(JSON.stringify({ root, repo, floorDays: BACKUP_RETENTION_FLOOR_DAYS, verdicts }, null, 2));
+    /* `outOfScope` rides the JSON too — a machine consumer that cannot see a
+       declared keep is back in the state this closed (#1826). */
+    console.log(JSON.stringify({ root, repo, floorDays: BACKUP_RETENTION_FLOOR_DAYS, verdicts, outOfScope }, null, 2));
     return 0;
   }
 
@@ -443,6 +451,15 @@ async function main(): Promise<number> {
       ` · too-recent ${s.byDisposition["too-recent"]}`,
   );
   console.log(`  a founder act on the reclaimable ones would free ${kb(s.reclaimableBytes)} across ${s.reclaimableItems} items`);
+  /* ⚠ PRINTED BY NAME, AND IT PRINTS ON EVERY RUN INCLUDING WHEN THERE IS
+     NOTHING TO SAY (#1826) — `ignoredReadingLine`'s own stated lesson, which this
+     is the sibling of: *"silence about a population cannot be told apart from an
+     empty one"*. The line below it is a COUNT on purpose; what separates the two
+     is that a declared keep has a reason somebody wrote down and an unclassified
+     entry has none, which is exactly what made 1.42 GiB of court renders
+     indistinguishable from litter for as long as both were one number. */
+  console.log(`  ${outOfScope.length} declared not-a-backup, named rather than counted (docs/JANITOR_BACKUP_RETENTION.md):`);
+  for (const entry of outOfScope) console.log(`    OUT OF SCOPE  ${entry.name} — ${entry.why}`);
   if (skippedByName > 0) console.log(`  ${skippedByName} entries under ${root} did not match a backup name and were not classified`);
   console.log("  output/ is NOT in this reading and no rule here covers it — see the doc's own section on why");
 
