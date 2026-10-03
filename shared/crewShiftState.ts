@@ -132,11 +132,23 @@ export function deriveShiftRunState(run: CrewShiftRunTimes, now: number): CrewSh
  * is the whole tell, and it is the only evidence there is that the standing
  * orders' heartbeat step was skipped.
  *
- * ⚠ **It is readable ONLY before the close write.** `crew-shift-close.mts`
- * sets `heartbeatAt` to now as it stamps the row terminal, which erases the
- * equality — so the close script reads these two fields in the statement that
- * selects the target, before it updates anything. Read afterwards, every run
- * looks like it checked in.
+ * ✅ **IT IS READABLE ON A CLOSED ROW AGAIN — #1872, 2026-10-03.** This
+ * paragraph read *"readable ONLY before the close write"* and described a real
+ * hazard: `crew-shift-close.mts` set `heartbeatAt` to now as it stamped the row
+ * terminal, so afterwards every run looked like it checked in. **The write is
+ * gone** — nothing had ever read a closed row's heartbeat to decide anything
+ * (the census is beside that script's own SELECT), and it was born redundant in
+ * the same commit as `deriveShiftRunState`'s *`endedAt` wins* clause. The close
+ * still reads these two fields in the statement that selects its target, which
+ * is now ordinary care rather than the only road to the answer.
+ *
+ * ⚠ **AND IT IS STILL UNREADABLE ON EVERY ROW CLOSED BEFORE THAT CHANGE.** The
+ * repair cannot reach the record: **565 of 565 rows closed up to 2026-10-03
+ * carry `heartbeatAt == endedAt`**, so this function answers `true` for all of
+ * them whatever their shift actually did. There is no proxy for THIS question —
+ * a row's lifetime cannot distinguish a disciplined shift from a silent one —
+ * so a history read of check-in discipline starts at the first row closed after
+ * that date and says so.
  *
  * A tolerance of one second absorbs the two `UTC_TIMESTAMP()` calls in the
  * insert landing either side of a tick; it is deliberately not larger, because
@@ -193,14 +205,21 @@ export type CrewShiftWorkKind = (typeof CREW_SHIFT_WORK_KINDS)[number];
  * # ⚠ IT IS A JUDGEMENT, NOT A MEASUREMENT, AND THE REASON IS ITSELF A FINDING
  *
  * The honest bar would be measured: the gap between a shift's LAST real
- * check-in and its close, across the runs already recorded. **That gap is not
- * recoverable from any row.** `crew-shift-close.mts` sets
- * `heartbeatAt = UTC_TIMESTAMP()` in the same UPDATE that stamps `endedAt`, so
- * every closed run in `crew_shift_runs` carries a heartbeat equal to its close
- * and the real last check-in is gone. (`hasEverCheckedIn` survives that only
- * because the close reads the two fields BEFORE it writes.) So the number below
- * cannot be measured today, and saying so is better than dressing an invented
- * figure as evidence.
+ * check-in and its close, across the runs already recorded. **That gap was not
+ * recoverable from any row, and from 2026-10-03 it is recorded again (#1872).**
+ * `crew-shift-close.mts` used to set `heartbeatAt = UTC_TIMESTAMP()` in the same
+ * UPDATE that stamped `endedAt`, so every closed run carried a heartbeat equal
+ * to its close and the real last check-in was gone; that write is removed, and
+ * a row closed after that date carries the real gap.
+ *
+ * ⚠ **SO THIS NUMBER IS STILL A JUDGEMENT TODAY, AND IT IS NOW A JUDGEMENT WITH
+ * AN EXPIRY RATHER THAN A PERMANENT ONE.** The rows that could answer it did
+ * not exist when it was set: **565 of 565 rows closed up to 2026-10-03 are
+ * blind** to the question. Re-reading it is a measurement a later seat can
+ * actually take — `endedAt - heartbeatAt` over the rows closed after that
+ * date — and the direction below is what to re-argue it against, not to
+ * replace. Until there are enough of them, saying this is a judgement is still
+ * better than dressing an invented figure as evidence.
  *
  * What CAN be argued is the direction, and it is one-sided:
  *
@@ -300,6 +319,30 @@ export function shiftLaneOf(shift: string): string {
  * So 2 is the smallest floor that clears the only false positive the history
  * contains. `server/crewRunSupersession.test.ts` carries all three rows as
  * fixtures, the living one as the negative control.
+ *
+ * # ⚠ THE MEASUREMENT USED A PROXY, AND RE-TAKING IT MUST USE THE SAME ONE
+ *
+ * Read the clause above carefully: the floor was counted from each row's own
+ * **LIFETIME** (`startedAt` → `endedAt`), while the verdict below opens its
+ * window at the row's last check-in (`heartbeatAt`). **Those are two different
+ * windows, and on every row closed before 2026-10-03 they had to be** — the
+ * close script overwrote `heartbeatAt` with the close instant, so 565 of 565
+ * closed rows record a silence that began when they ended, i.e. none at all.
+ * Read at that field, the whole history returns **0 superseded rows in 565**,
+ * which is the instrument answering a question the record could no longer hold
+ * (#1872; the first pass of #1866's measurement did exactly that).
+ *
+ * The proxy is **conservative in the useful direction** and that is why it was
+ * admissible: a real last check-in is at or after `startedAt`, so the lifetime
+ * window is a SUPERSET of the heartbeat window and admits at least as many
+ * lane-mates — it can over-report a hit, never hide one. A floor chosen against
+ * an over-reporting window is therefore at least high enough.
+ *
+ * **So: a history read spanning rows closed before 2026-10-03 uses the lifetime
+ * proxy and says so. A read over rows closed after it should use `heartbeatAt`,
+ * because the write that destroyed the field is gone and those rows carry the
+ * real answer.** Re-reading this floor on the real field is a measurement a
+ * later seat can take; it was not available when the number was set.
  */
 export const CREW_SHIFT_SUPERSEDING_RUNS_MIN = 2;
 
