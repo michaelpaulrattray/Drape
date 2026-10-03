@@ -791,3 +791,147 @@ seat guard list (grown beside the tool that already ran it), and this command
 doing their job**; what they share is that a paragraph in the orders has no
 reader that can fail. The Retro is that reader, weekly, and that is the argument
 for its clock being kept rather than deferred eight shifts running.
+
+---
+
+## Run 6 — 2026-10-04 00:40–01:3x AEST (Retro, patrol #6, run #558)
+
+**Window:** 2026-09-26 21:40Z (run 5's entry `retro-20260927-0740`) → 2026-10-03 14:40Z.
+**149 mailbox files** — 83 seat-stamped (74 foreman, 3 relay, 3 janitor, 1 warden,
+1 seat1, 1 machinist) and 66 runner notices (64 pass digests, 2 reloaded).
+**0 `runner-close-*`, 0 `runner-escalated-*`.** **209 PRs merged. 255 `gate.yml`
+runs.** ⚠ **The corpus boundary is a floor, not a precision**: entry filenames mix
+UTC and local stamps (see §A.3), so an entry within ±10 h of the boundary could
+fall either side.
+
+**Why the Retro ran today.** Its clock fired **on the day** (`patrol-clocks.mts`:
+last run 2026-09-27, every 7 days) with switch **Process ON**, and it ran as the
+SECOND item of a batch behind **#1612** — his ordered band comes first, and
+#1612's remainder was small (see §F). Of his ten open ordered cards, seven are
+rung-held or parked and #1690 wants a whole shift; **259/259 replies
+acknowledged, none new.** This is the first run in six not preceded by a run of
+skips.
+
+### A. Audit ledger
+
+**The instrument first (working law 2), and it mattered twice.**
+
+1. **Close-stamps, anchored on the LAST `## Runner close-stamp` heading** (run 4's
+   correction, kept): **75 of 83 verified, 0 UNVERIFIED, 8 carrying no stamp at
+   all.** Run 5 measured **1 of 102**. That rise is §B's R16 and most of it is
+   structural rather than a failure.
+2. **One report audited end to end at the artifacts** — `foreman-20261003-2317`,
+   the immediate predecessor. **Every claim true:** PR #1854 `MERGED`, squash
+   `39923c97` (claimed `39923c97`), merged 14:12:30Z; **#1805 CLOSED**; #1855 and
+   #1856 filed and open; briefing **edition 631** in the tree; `main` at
+   `39923c97e`. Nothing to report.
+3. ⚠ **AN INSTRUMENT THIS RUN BUILT WAS WRONG AND WAS DISCARDED BEFORE IT WAS
+   BELIEVED.** To test whether the stamp mis-targets (its selector is
+   `Select-Object -First 1` over the newest seat-prefixed entry), each stamp's
+   recorded `shift launched HH:mm:ss` was compared with its own filename. **11 of
+   40 came back "FAR" — and every one sits at exactly the ±10 h AEST offset.**
+   Read at two artifacts: `foreman-20261003-0522` says *"opened 2026-10-03
+   05:26:34 UTC"* while its stamp reads `launched 15:21:23` (local), and
+   `foreman-20261003-2317`'s stamp reads `launched 23:13:41` (local) 4 minutes
+   from its filename. **So entry filenames mix UTC and local, the comparison is
+   not a mis-target detector, and no mis-targeting is claimed.** Corroborated
+   independently: **no entry in the window carries two stamps.**
+4. **Reopened cards: 0.** GitHub's search returned `total_count: 0`. ⚠ Run 5
+   measured this instrument reporting two **false positives**, so a zero is its
+   safe direction; recorded as consistent rather than as proof.
+5. **QUIET declarations under #360's rule: 0.** The team worked every shift in
+   the window.
+
+### B. Recurrence ledger
+
+| # | Repeat | Occurrences (evidence) | Class | Proposal | Status |
+|---|---|---|---|---|---|
+| **R16** (new) | **The close-stamp — the team's one mechanical honesty check — and the `runner-close-*` "no report" alarm are BOTH focus-lane only. A builder seat ships with neither** | Read at the code: `close-stamp.ps1` has **exactly one call site**, `foreman-runner.ps1:765`, inside the focus-shift path; the seat lane launches up to `MAX_SEATS` seats (`Start-Process`, `:656`) and calls only `is-empty-shift.ps1` (`:816`) and the pass digest (`:750`); **`runner-close-*.md` has one writer, `close-stamp.ps1:49`**, reached only from that site. Measured consequence: row #554 (`seat1-20261003-214401`) merged PR #1852 carrying two cards with nothing re-reading its claims against `gh`. Unstamped entries **1/102 → 8/83** (3 `relay-*`, 1 `seat1-*`, **4 ordinary `foreman-*` with real row numbers #419/#421/#498/#513**) | invariant 7 on the honesty check itself — a control not invoked on the path that now carries much of the work | **Carded: #1859.** ⚠ **It is carded now because the home run 5 gave the question has CLOSED** — run 5 wrote *"a design question for #1281's runner work, where it belongs"*; **#1281 is closed**, the multi-seat runner shipped, the trailer was never built. The card states what it is NOT (seats are forbidden `.agents/` in terms, so "make seats write entries" is the wrong repair) and names the one thing the builder must drive: with five shifts alive in a pass, *"newest entry since launch"* cannot identify whose entry is whose | **Open** — #1859, `seat:retro` |
+| **R17** (new) | **The seat gate's focus has two sources of truth and nothing holds them equal — so a pass silently holds exactly the cards he just ordered** | **#1840** (2026-10-03, this window): his *"phase 2 gets built next"* reached `PROGRAM.md` and **not** the briefing's `program.ladder`, so all four P2 cards he had just ordered were held on a stale `P1`. **#1840's own body names itself the THIRD instance**, citing **#1496** (every rung card held; found by *his question*) and **#1541** (`seatCount 0` from a rungless card on top of the band) | a rule whose only reader is the next shift's memory | **Carded: #1860.** The repair for #1840 was a SENTENCE; run 5's own closing objection applies — *a paragraph in the orders has no reader that can fail*. The existing arm (`seatBatches.test.ts`) pins the briefing **against itself**, not against the rulebook, so the shipped disagreement was green. Both halves are machine-readable today (`PROGRAM.md:155`'s `CURRENT FOCUS: P2`; one `current` key in `program.ladder`). ⚠ The card names the trap: `PROGRAM.md` holds **more than one** `CURRENT FOCUS` line (`:288` is kept history), so a reader that takes the first or last match is wrong, and if no marker reliably picks the live one the builder is told to propose the inverse rather than ship a guess | **Open** — #1860, `seat:retro` |
+| **R13** (run 5) | a closing keyword in a commit message caught at the squash | — | — | ✅ **CLOSED, and verified at the artifact rather than at the card.** #1430 is closed; `.githooks/commit-msg` exists (7,829 bytes) and routes to the single reader `scripts/check-closing-keyword.mts` — no second copy of the pattern. **Measured effect: the `#376` gate step went 6 reds (run 5) → 1.** It also fired on this run's own commit (`closing keyword: none`) | **Closed as a recurrence** |
+| **R15** (run 5) | the orders naming guards `pnpm preflight` already runs | — | — | ✅ **NOT REGROWN — the thing run 5 asked the next run to check.** Read at `prompt.md`: clause **(5) is still retired** (*"Do not maintain it and do not lengthen it… there is no set to count, there is one command"*) and **(7) still teaches the two RULES** rather than listing guards. No hand list has come back | **Closed as a recurrence** |
+| **R14** (run 5) | a receipt composed rather than pasted | **One instance, SELF-DECLARED** — `foreman-20261001-1517`: *"I could not read the manager line off the plan, because the plan does not carry one… I reconstructed the reasoning."* That is the line working: declared, not concealed. Two other grep matches were shifts **finding** stale numbers (the good direction), not writing them | — | The close-ceremony line is **in force** (`prompt.md`, 1 occurrence). ⚠ **Method limit stated: `.agents/` is gitignored, so no suite can ever read a shift entry and a CONCEALED instance is not findable mechanically.** No escalation to a close-ceremony command is proposed on one declared instance | **Watched**, line in force |
+
+**Also read, and NOT findings:**
+
+- **The seat-gate's worst form did not recur.** Over the window's **64 pass
+  digests, 0 handed out nothing** — #1496's and #1541's repairs are holding. What
+  recurred (R17) is the narrower shape no zero-count alarm would see: a pass that
+  hands out plenty while holding the ordered cards.
+- **Gate health improved on both numbers.** **18 failures of 255 (7.1%)** against
+  run 5's 32 of 301 (10.6%); **8 cancelled (3.1%)** against 13 of 301 (4.3%).
+- **The `Unit tests` bucket has no shared cause.** 12 of 18 failures, across **11
+  distinct branches**, only `team/janitor-orphan-dev-stacks-1481` twice — the
+  one-per-branch shape, not a repeat. (Method: the first failed step per failed
+  run, so a run with two failed steps is counted once.)
+- **`Architecture Atlas freshness`: 3 reds on 2 branches** — against #501's own
+  founding baseline of **5 of 60 (8.3%)**, this is **~1%**. Vastly improved by
+  #501 + #606; not a recurrence.
+- **R7 (a shift dies leaving no report): 0 `runner-close-*`, a fifth clear week
+  — ⚠ AND THE READING IS NARROWER THAN IT HAS BEEN WRITTEN.** See R16: the only
+  thing that can write that file is never invoked for a builder seat, so **every
+  "clear week" on this row has measured the FOCUS LANE only.** Not wrong about
+  focus shifts; never evidence about seats. The correction is the point.
+
+**Recurrence rate this period: 2 new repeat classes over 83 seat entries / 209
+PRs** (run 5: 3 over 125 / 199). **Both carded (#1859, #1860)**, two closed
+(R13 verified at its artifact, R15 verified not regrown), one watched (R14),
+three classes looked for and absent (reopens, zero-hand-out passes, a shared
+unit-test cause). **0 laws proposed** — nothing here is the founder's to rule on.
+
+### C. The anti-boredom read
+
+**209 PRs merged, and 208 cite a card number in title or body.** The one that does
+not is **PR #1691**, whose own title says *"on his word"* — the repaint-to-medium
+change he ordered verbatim (*"just do it without a court because i checked the
+rolled casts"*), which is the anti-randomness rule's clause (c). **So: 0 shift or
+seat PRs without a finding that predates them. No boredom finding.**
+⚠ **Method is lighter than run 5's and says so**: citation PRESENCE, not
+"the cited issue was created before the PR".
+
+### D. The items the window's shifts addressed to this seat
+
+- `foreman-20261003-2317` §9 named §5 and §6 of its own entry as Retro material:
+  **a guard that reversed a shift's reasoning** (preflight demanding adopt-or-
+  excuse, and the ground the shift assumed did not exist) and **an inert
+  sabotage** that survived its first pass on an innocent arm. **The first is the
+  good direction and is recorded as such.** The second is its author's own
+  `surviving-sabotage-may-be-inert` memory firing on its author — **second
+  instance in two days** — and it was caught, rewritten and kept in the driver
+  with its history above it. **No card: both were found and fixed inside the
+  shift that made them, which is the behaviour the law asks for.**
+- **#1855** (two untracked disposables failing the script guards, third shift to
+  meet them) is open and is NOT a Retro matter — it is a named small-fix with an
+  owner's instructions on it.
+
+### E. The seat's own work, audited the same way
+
+This run filed two cards (#1859, #1860), closed two recurrences by **verifying
+them at artifacts rather than at their cards** (#1430's hook read at the bytes;
+R15's clauses read in `prompt.md`), and **discarded one instrument of its own
+making** after a control showed its 11 findings were a timezone offset (§A.3).
+**Three of its claims are stated as floors with the method named**: the corpus
+boundary, the gate-step attribution, and the anti-boredom citation read. The one
+thing it did NOT settle is **why 4 ordinary `foreman-*` entries carry no stamp** —
+two roads were tried (double-stamp search; the shift logs, which turn out to hold
+the shift's own piped output and not the runner's host lines) and **neither
+settled it, so #1859 records them as unexplained rather than attributing them.**
+
+### F. The batch's first item, for the record
+
+**#1612** — his ordered band, oldest takeable. The previous shift found two
+sentences in `viewFramingGeometry.ts` that disagreed about whether a production
+road supplies the framing reader and declined to guess between them (law 7b).
+**Settled at the code: the hand-over landed 2026-10-02 (PR #1775) and the file
+said twice that it had not** — once under the heading *"What this file
+deliberately does NOT do"*, where it read as design intent. `signEngine.ts`
+builds the judge with `framingReader: createFalRegionReader(…)` and throws
+without `FAL_KEY`. **PR #1857**, gate green. The card stays **OPEN on his eye**
+(law 9: a real Sign under the new rule, which is #1690's Arm A anyway) and the
+two stale `0.3` comments were left alone as **#1837's live claim**.
+
+### Clocks
+
+Retro: run 1 2026-08-26, run 2 2026-09-05, run 3 2026-09-12, run 4 2026-09-19,
+run 5 2026-09-27, **run 6 2026-10-04** (on its clock, the first on-time run since
+run 4). Next due ~2026-10-11.

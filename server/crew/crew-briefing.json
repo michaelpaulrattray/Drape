@@ -1,7 +1,7 @@
 {
-  "edition": 631,
-  "updatedAt": "2026-10-03T13:59:05.465Z",
-  "shift": "A paid service we rely on to spot known security holes let two of them through into the live product last week, and the only alarm that caught them went off six seconds after the change had already shipped. You read that and said: add the gate step. It is built.\n\nFrom now on, every change runs one more check before it can merge: does anything we ship contain a security hole somebody has already published and named? If it does, the change is refused and the refusal says which hole, what brings it in, which version fixes it, and what to do about it.\n\nThe one thing worth knowing is that it was proved on the real event rather than argued about. I rebuilt the dependency list exactly as it stood on the 30 September change, ran the new check against it, and it refused — naming both high-severity holes and the borrowed code that carried them in. Run against today's product, it passes cleanly over 478 pieces of borrowed code. So it would have caught the one that got through, and it does not stand in the way of ordinary work.\n\nIt also found a fourth hole nobody here had noticed, in the code we use to make PDFs. Already closed by this week's repair, but nothing in our own records had ever mentioned it.\n\nTwo honest costs. If the service that keeps the list of known holes is ever down, every change is refused until it comes back — a security check that waves things through because it could not look is exactly what went wrong here, so that direction is deliberate. And it reads only the code that ships to you, not the tools we build with; those still have no check before a merge, and I have written that in four places rather than let a green tick imply otherwise.\n\nOne other thing, found while tidying rather than looked for. Your own page was still telling you that a question about the casting checker was waiting on your answer. You answered it yesterday, and the fix shipped yesterday — but your answer had gone into a comment while the card's own front page kept asking. That is the second time that shape has cost us; the card now reads true and nothing on it waits on you.",
+  "edition": 632,
+  "updatedAt": "2026-10-03T15:14:00.436Z",
+  "shift": "Two things tonight. The first is small, but it is the kind that quietly costs an engineer a day.\n\nInside the casting studio, the file that measures whether a signed picture is framed correctly was telling anyone who opened it that it had never been connected to anything — in its own words, that it was a placeholder waiting to be wired up. It was connected two days ago. It said the opposite twice over on the same page, once under a heading that made it read as a deliberate decision rather than an old note. Anyone opening that file would either rebuild a part that already works, or stop trusting the part that does. It now says what is true, with the old claim struck through rather than deleted, so both the promise and the promise being kept stay readable.\n\nNothing a customer sees changed, and nothing about how your casts are checked changed.\n\nThe second thing is the weekly review of how the crew itself is working, which came due today. It found two real problems, both about the crew rather than the product.\n\nWhen you added the extra agents that build alongside the night shift, you roughly quadrupled how much gets done in a night. The check that re-reads every shift's own claims afterwards — did that change really merge, did that receipt really exist — only ever runs for the single night-shift agent. It has never run for any of the extra ones. So a night where four agents each shipped work is a night where most of the claims were never checked against anything. The same gap means the alarm for an agent dying without leaving a report cannot fire for them either, which means five weeks of all-clear on that alarm were only ever describing one agent out of five. The question had been parked on another job for later, and that job has since closed, so it was sitting nowhere at all. It is filed properly now.\n\nThe other one you have already felt. When you tell us what to work on next, that decision has to be written in two separate places, and nothing checks that the two agree. That is why four of your Phase 2 cards sat untouched for several hours the other day: your words reached the rulebook and not the page the agents actually read. It has now happened three times. Filed, with a specific check proposed rather than another reminder.\n\nAnd the good news, because a review that only reports faults is not telling you much. The guard built last week works: the mistake it was built to catch went from six times in a week to once. Changes failing their checks are down from roughly one in nine to one in fourteen. And no shift misreported anything this week — I took last night's report and checked every claim in it against the real records, and all of them were true.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -126,7 +126,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-03T13:57:16.218Z",
+      "readAt": "2026-10-03T15:12:11.559Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -3417,7 +3417,7 @@
     {
       "id": "socket-missed-advisories-1805",
       "issueNumber": 1805,
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-10-02T22:50:00.000Z",
       "title": "A security check passed two known holes into the live product — one setting, or one step?",
       "productImpact": "On 30 September one of our own changes pulled in a piece of borrowed code that already had two publicly known security holes in it. Both were rated serious, and both had been published ten hours before we shipped it.\n\nThe paid service we use to catch exactly this passed it. Six seconds after the change went live, a different reader noticed and raised the alarm. The holes sat in the live product until they were patched earlier this week.\n\nNobody was harmed, and the holes are closed. What is still open is that we have no reader of our own that would stop the next one — the thing that caught this only speaks after a change has already shipped.\n\nI checked every fact here myself tonight rather than taking the patrol's word for it: the timings, the severity, and that both holes are in code that reaches customers rather than a developer-only tool. One thing I would want you to know: the check that passed it is one of the checks we require on every single change, so anyone looking would reasonably have believed it was covering this.",
@@ -9423,9 +9423,16 @@
     {
       "id": "advisory-gate-1805",
       "title": "Every change is now checked for known security holes in what we ship — built on your word (#1805)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1854,
       "note": "Held for the relay by hand — it changes the gate every future change runs."
+    },
+    {
+      "id": "framing-header-stale-1612",
+      "title": "The casting studio file that measures framing said twice that a working part of it had never been connected — corrected (#1612)",
+      "status": "merged",
+      "prNumber": 1857,
+      "note": "Comments only. The connection landed two days earlier and the file had not heard."
     }
   ],
   "problems": [
@@ -9790,7 +9797,7 @@
     259
   ],
   "nextUp": {
-    "readAt": "2026-10-03T13:57:16.217Z",
+    "readAt": "2026-10-03T15:12:11.559Z",
     "items": [
       {
         "issueNumber": 1469,
@@ -9829,11 +9836,6 @@
       {
         "issueNumber": 1774,
         "title": "Pricing Phase 2 — the plans redesigned: three individual plans with a credit slider on the top one, Team priced per seat behind a workspace, Enterprise as a sales conversation, no rate chips on plan cards, forward-looking copy marked \"coming\", and a compare table organised by what a customer makes",
-        "urgent": false
-      },
-      {
-        "issueNumber": 1805,
-        "title": "Warden W6-B: Socket passed the PR that put two published high-severity advisories into the production tree, and the only reader that caught them fired six seconds after the merge",
         "urgent": false
       },
       {
