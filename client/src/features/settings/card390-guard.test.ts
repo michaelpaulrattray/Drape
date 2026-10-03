@@ -11,6 +11,7 @@ import {
   priceAMonth,
 } from "./planMath";
 
+import { sourceBand } from "../../../../server/testing/sourceBand";
 import { withoutComments } from "../../../../server/testing/withoutComments";
 
 /**
@@ -58,6 +59,24 @@ const MATH = join(CLIENT, "features", "settings", "planMath.ts");
 
 const read = (path: string) => readFileSync(path, "utf8");
 const code = (text: string) => withoutComments(text);
+
+/**
+ * ⚠ **`AddCreditsModal.tsx` IS THREE SURFACES, AND HIS RATE RULE APPLIES TO
+ * EXACTLY ONE OF THEM — #1845.** `PlanStepUpPane` is what a FREE account opens:
+ * eyebrow `PLANS`, heading *Choose a plan*, a button reading *Upgrade to …*, so
+ * it is a plan surface and his #1773 word forbids a rate on it.
+ * `CreditPacksPane` is a plan holder's Add credits, which is where he put the
+ * rate's one home. **A file-level read cannot tell them apart and therefore
+ * cannot state the rule** — which is not a theory: this suite WAS that reader,
+ * and it passed a credits-per-$1 line standing on the plan pane for the day it
+ * was live.
+ *
+ * The anchors are the function declarations, in source order, so a pane
+ * renamed or removed REFUSES rather than answering an empty string (the band
+ * reader's own negative control).
+ */
+const freePane = () => sourceBand(read(TOPUP), "function PlanStepUpPane", "function CreditPacksPane", "the free plan pane");
+const packsPane = () => sourceBand(read(TOPUP), "function CreditPacksPane", "export function AddCreditsModal", "the credit packs pane");
 
 /** The paid rungs, in ladder order, straight off the product's own table. */
 const PAID = Object.values(PLAN_TIERS).filter((tier) => tier.price > 0);
@@ -262,20 +281,47 @@ describe("card 390 item 4 — the unit price is inverted, and it still argues fo
       i like this"*. **One home, rather than one unit in two places** — and
       card 403's defect is closed harder by this than it was by symmetry, since
       there is now only one surface that can state the unit at all.
+
+      ⚠ **AND "ONE SURFACE" WAS ONE FILE, WHICH IS NOT THE SAME THING — #1845,
+      and this arm is the reader that passed the defect.** `AddCreditsModal.tsx`
+      draws a free account a PLAN pane (*Choose a plan*, *Upgrade to …*) and a
+      plan holder a PACKS pane, and the rule is about the SURFACE. Read at the
+      file, the rate it was holding Add credits to printing was partly the one
+      standing on the plan pane — so the arm's positive half was being satisfied
+      by the very line his word forbids. It reads per pane now.
     */
     const surface = code(read(MODAL));
     const topup = code(read(TOPUP));
+    const free = code(freePane());
+    const packs = code(packsPane());
 
     /*
       ⚠ **THE POSITIVE HALF IS FIRST BECAUSE THE NEGATIVE HALF IS WORTHLESS
       WITHOUT IT.** An absence arm whose subject has left the product entirely
       passes for the wrong reason — deleting `formatCreditsPerDollar` outright
-      would satisfy every `not.toContain` below. So Add credits is held to
-      printing it before Change plan is held to not.
+      would satisfy every `not.toContain` below. So the pane that KEEPS the rate
+      is held to printing it before any pane is held to not.
     */
-    expect(topup, "Add credits stopped printing credits per dollar — his word puts the rate HERE").toContain(
-      "formatCreditsPerDollar",
-    );
+    expect(
+      packs,
+      "the credit packs pane stopped printing credits per dollar — his word puts the rate HERE",
+    ).toContain("formatCreditsPerDollar(");
+
+    /*
+      ⚠ **AND THE FREE ACCOUNT'S PANE IS A PLAN SURFACE, SO IT CARRIES NO RATE
+      (#1845).** Measured at the real ladder before it went: a free account
+      looking at Starter read `519 credits per $1` under the heading *Choose a
+      plan* (`624` on annual), with no *up from* clause — the free rung has no
+      price for the comparison to beat. Both the call and the printed
+      words are refused: the words because that is what he read on screen, the
+      call because a rate computed and formatted some other way is the same
+      defect wearing different code.
+    */
+    expect(free, "a credits-per-dollar rate is back on the plan pane a free account opens")
+      .not.toContain("formatCreditsPerDollar");
+    expect(free, "the rate's printed words are back on the plan pane").not.toContain("credits per $1");
+    expect(free, "`priceAMonth` is back on the plan pane, which only the retired rate read")
+      .not.toContain("priceAMonth(");
 
     /* Change plan carries no rate, in either shape it had: the card chip and
        the compare row. */
@@ -307,18 +353,27 @@ describe("card 390 item 4 — the unit price is inverted, and it still argues fo
 
     /*
       ⚠ `toContain` IS WEAKER THAN THE CLAIM ON THE SURVIVING SURFACE, AND IT
-      WAS MEASURED BEFORE THIS LINE WAS FIRST WRITTEN. The top-up sentence
-      prints TWO figures — the chosen rung and the one being left — and with
-      only the arms above, a sabotage that put `formatDollars` on the FIRST of
-      them stayed green: the import and the second call kept the token in the
-      file. So the sentence is pinned by its shape rather than by a word
-      appearing somewhere in the file. **#1773 moved the rate's home and did not
-      touch that sentence, so this half is carried over unchanged.**
+      WAS MEASURED BEFORE THIS LINE WAS FIRST WRITTEN. A sabotage that put
+      `formatDollars` on ONE of two printed figures stayed green, because the
+      import and the other call kept the token in the file. So the surviving
+      rate is pinned by its SHAPE rather than by a word appearing somewhere.
+
+      ⚠ **WHAT THE SHAPE IS HAS CHANGED WITH THE SUBJECT — #1845.** It used to
+      be the plan pane's two-figure sentence (*the chosen rung, and the one
+      being left*), and that sentence is gone with his rule. The packs pane's
+      rate has the same two-site property for the same reason: the pack ROWS
+      print it and the SLIDER prints it, off one `rateFor` declaration, so a
+      sabotage that reverts one of the two readers leaves every token in the
+      file. Both call sites are read.
     */
     expect(
-      topup.match(/formatCreditsPerDollar\(/g)?.length ?? 0,
-      "the top-up sentence stopped reading the shared unit on both sides",
+      packs.match(/rateFor\(/g)?.length ?? 0,
+      "a pack-rate reader stopped going through `rateFor` — the pack rows and the slider are both readers",
     ).toBeGreaterThanOrEqual(2);
+    expect(
+      packs.match(/formatCreditsPerDollar\(/g)?.length ?? 0,
+      "the packs pane stopped computing its rate through the shared unit",
+    ).toBeGreaterThanOrEqual(1);
   });
 
   it("⚠ THE TABLE LOST A ROW, NOT ITS NEIGHBOURS (card 1773)", () => {
@@ -678,8 +733,19 @@ describe("card 661 — the rate is computed from the price standing beside it", 
       look twelve times worse than the plan beside it). A count that had simply
       been raised to three would have let a plan rate move into the exception.
     */
+    /*
+      ⚠ **BOTH SURFACES ARE 0 SINCE #1845, AND BOTH ROWS STAY IN THE
+      POPULATION.** The last PLAN rate anywhere in the product was the free
+      pane's, standing under *Choose a plan* against his #1773 rule, and it is
+      gone. So there is no plan rate left to be interval-aware ABOUT — and the
+      honest spelling of that is a held count of zero on each surface rather
+      than a loop with no subjects: a plan rate reappearing on EITHER file reds
+      here as well as in the card-403 arm above. The `priceOf` hop below still
+      runs for `MODAL`, where the PRICE is still read through it, which is why
+      this arm keeps its teeth with a zero on both sides.
+    */
     const TOPUP_RATE_CALLEE = "topupPriceInCents";
-    const wanted: Record<string, number> = { [MODAL]: 0, [TOPUP]: 2 };
+    const wanted: Record<string, number> = { [MODAL]: 0, [TOPUP]: 0 };
     /* Exactly one pack-rate expression is expected, and it is `rateFor`'s —
        the pack rows and the slider both call it, so one declaration serves
        both and a second would be the mirror working law 4 bans. */

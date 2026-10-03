@@ -46,12 +46,21 @@
  * only-shrinks idiom, so the next shift finds them from the tree rather than
  * from a pull request nobody re-reads.
  */
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { topupEligibility } from "@shared/creditTopups";
+
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "../../../../server/testing/childProcessTimeout";
+import { readListedSource } from "../../../../server/testing/listedSource";
+import { sourceBand, sourceTail } from "../../../../server/testing/sourceBand";
+
+/* This suite runs `git ls-files` and reads the client tree, so it is in both
+   #548's and #741's populations and declares the class's floor. */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const REPO = join(__dirname, "..", "..", "..", "..");
 const read = (relative: string) => readFileSync(join(REPO, relative), "utf8");
@@ -59,14 +68,20 @@ const read = (relative: string) => readFileSync(join(REPO, relative), "utf8");
 const DOOR = "client/src/features/billing/AddCreditsModal.tsx";
 const PLAN = "client/src/features/billing/ChangePlanModal.tsx";
 
-/** The slice between two markers, so an arm cannot be satisfied by a sibling. */
-function band(source: string, from: string, to: string): string {
-  const start = source.indexOf(from);
-  expect(start, `band start not found: ${from}`).toBeGreaterThan(-1);
-  const end = source.indexOf(to, start + from.length);
-  expect(end, `band end not found: ${to}`).toBeGreaterThan(start);
-  return source.slice(start, end);
-}
+/**
+ * The slice between two markers, so an arm cannot be satisfied by a sibling.
+ *
+ * ⚠ **IT IS THE SHARED READER SINCE #1845** — `server/testing/sourceBand.ts`,
+ * which `card390-guard.test.ts` resolves to as well. This file's own copy was
+ * the fifth under `client/src/features/billing/`, and the sixth was about to be
+ * written for the pane read that card needs; the shared one REFUSES a missing
+ * anchor rather than answering an empty string, which is the property every
+ * negative arm below rests on. The three remaining private copies
+ * (`burnCycle1739`, `creditPacks1606` and `workDivisor1758`) are a declared
+ * remainder with a card of their own — **#1848** — because a promotion across
+ * five guards is its own pass. `monthlyDelta1761` resolves here too, in this same commit.
+ */
+const band = (source: string, from: string, to: string) => sourceBand(source, from, to);
 
 /**
  * ⚠ **COMMENTS OUT BEFORE ANY NEGATIVE ARM, AND THIS IS NOT TIDINESS.**
@@ -105,11 +120,7 @@ function withoutComments(source: string): string {
 }
 
 /** From a marker to the end of the file — for the last block in a module. */
-function tail(source: string, from: string): string {
-  const start = source.indexOf(from);
-  expect(start, `tail start not found: ${from}`).toBeGreaterThan(-1);
-  return source.slice(start);
-}
+const tail = (source: string, from: string) => sourceTail(source, from);
 
 /**
  * THE DECLARED REMAINDER — entrance words that still say *top up* to a free
@@ -144,6 +155,51 @@ const TOP_UP_WORDS_BEFORE_THE_DOOR: ReadonlyArray<{ file: string; text: string; 
     why: "the low-balance toast's action, reached from three generation roads",
   },
 ];
+
+/**
+ * EVERY CLIENT SURFACE THAT DRAWS THE CREDITS PANE'S TITLE, READ OFF THE TREE
+ * (#1845 — the hand list this replaces named the two that existed that hour).
+ *
+ * `sellers` is the subset that also reads the rung, which is the only thing
+ * that can decide whether to offer a purchase. The population is TRACKED files
+ * under `client/src`, so an untracked scratch component cannot redden it, and
+ * each read goes through `readListedSource` because a file a listing named can
+ * be gone by the time it is read (#223).
+ *
+ * Measured the day this landed: 2 drawers, 1 seller — `AddCreditsModal.tsx`
+ * and `settings/sections/SecuritySection.tsx`, the second borrowing the scrim's
+ * classes for its own dialog.
+ */
+function topupTitleDrawers(): { drawers: string[]; sellers: string[] } {
+  const tracked = execFileSync("git", ["ls-files", "client/src"], {
+    cwd: REPO,
+    encoding: "utf8",
+    maxBuffer: 32 * 1024 * 1024,
+  })
+    .split(/\r?\n/)
+    .map((line) => line.trim().replaceAll("\\", "/"))
+    .filter((line) => line.endsWith(".ts") || line.endsWith(".tsx"))
+    /* A guard that asserts the rule is not a surface that breaks it. */
+    .filter((line) => !/\.test\.tsx?$/.test(line));
+
+  if (tracked.length === 0) {
+    throw new Error(
+      "topupTitleDrawers: git ls-files returned no client source. "
+      + "A population of zero is a broken reading, not a clean tree.",
+    );
+  }
+
+  const drawers: string[] = [];
+  const sellers: string[] = [];
+  for (const file of tracked) {
+    const source = readListedSource(join(REPO, file));
+    if (source === null) continue;
+    if (!source.includes("dp-topup__title")) continue;
+    drawers.push(file);
+    if (source.includes("topupEligibility")) sellers.push(file);
+  }
+  return { drawers, sellers };
+}
 
 describe("#1836 · the rule, and it is the one the door already reads", () => {
   it("free cannot buy a pack, a plan holder can, and an unread rung answers neither", () => {
@@ -342,20 +398,35 @@ describe("#1836 · Settings → Billing offers a free account no credits either"
 describe("#1836 · the one door, which is why one rename reached every mount", () => {
   it("no surface outside the door draws a credits-purchase pane", () => {
     /*
-      Derived rather than listed: if a second file ever drew `dp-topup__title`,
-      a free account could reach a credits surface this card never renamed.
-      `SecuritySection` is on the list below and is NOT a credits surface — it
-      borrows the scrim's class for its own dialog.
+      ⚠ **THIS ARM SAID "DERIVED RATHER THAN LISTED" AND THEN LISTED TWO FILES
+      BY HAND — corrected at #1845, which is the card that read it.** The two it
+      named were the two that drew the class the hour it was written, so a THIRD
+      file acquiring `dp-topup__title` — a credits pane this card never renamed,
+      reachable by a free account — would have left it green. A hand list is a
+      census with a timestamp; this reads the tree.
+
+      The rule it holds is unchanged and is the one that matters: a surface may
+      borrow the pane's title class, but only the DOOR may read the rung, so
+      only the door can decide what to sell. `SecuritySection` is the standing
+      example — it borrows the scrim's classes for its own dialog and cannot
+      sell anything.
      */
-    const drawers = [
-      "client/src/features/billing/AddCreditsModal.tsx",
-      "client/src/features/settings/sections/SecuritySection.tsx",
-    ];
-    for (const file of drawers) expect(read(file)).toContain("dp-topup__title");
-    /* And the door is the only one of them that reads the rung, which is the
-       fact that matters: the other cannot sell credits at all. */
-    expect(read("client/src/features/settings/sections/SecuritySection.tsx"))
-      .not.toContain("topupEligibility");
+    const { drawers, sellers } = topupTitleDrawers();
+
+    /* THE FLOOR FIRST — a reader that found nothing answers every question
+       below with "clean", which is working law 2's own failure. */
+    expect(
+      drawers.length,
+      "the walk over client/src found no file drawing `dp-topup__title`, so the arms below prove nothing",
+    ).toBeGreaterThan(0);
+    expect(drawers, "the door itself left the derived population").toContain(DOOR);
+
+    /* THE RULE — exactly one of them reads the rung, and it is the door. */
+    expect(
+      sellers,
+      "a surface outside the door reads the credit rung and draws the credits pane, "
+      + "so a free account can reach a credits surface #1836 never renamed",
+    ).toEqual([DOOR]);
   });
 
   it("every mount of the door is handed a road to the plans", () => {
