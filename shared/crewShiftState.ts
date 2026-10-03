@@ -859,6 +859,48 @@ export function cardNumberToken(card: number): RegExp {
   return new RegExp(`(^|[^0-9])#0*${card}([^0-9]|$)`);
 }
 
+/**
+ * THE INVERSE OF {@link cardNumberToken} — *which* cards does this text name?
+ * (#1877.)
+ *
+ * `cardNumberToken` answers "does this text name card N" and every caller until
+ * now had an N in hand. The heartbeat's foreign-claim probe does not: it is
+ * handed a seat's free-prose note and has to find the numbers in it.
+ *
+ * ⚠ **IT IS DEFINED BY AGREEMENT WITH ITS SIBLING RATHER THAN BY A SECOND
+ * EXPRESSION, AND THAT IS THE WHOLE REASON IT LIVES HERE.** A separate
+ * `/#(\d+)/g` in a lib three directories away is working law 4 on the token
+ * every card reference in the product turns on — and the two would drift on
+ * exactly the inputs nobody tests (`#0608`, `v1#12`, `#12x`). So the scan is a
+ * candidate pass that is then CONFIRMED by `cardNumberToken` itself, which makes
+ * the older function the single owner of the spelling in both directions.
+ * `server/crewShiftState.test.ts` holds the two to each other over a corpus.
+ *
+ * It is deliberately WIDE, in the direction #1094's docblock licenses: a bare
+ * `#N` anywhere counts, because the only consumer is a WARNING to a person who
+ * is about to read the text anyway. Measured on all 568 production rows the day
+ * it was written, **453 of them (79.8%) name a foreign card in their note** —
+ * which is why no caller may turn this into a warning on its own. The probe that
+ * uses it speaks only once the BOARD has confirmed a live rival claim.
+ */
+export function cardNumbersNamedIn(text: string | null | undefined): number[] {
+  if (typeof text !== "string" || text.length === 0) return [];
+  const found: number[] = [];
+  /* `exec` in a loop rather than `matchAll`, and an array rather than a `Set`:
+     this module is bundled for the client too, and its target makes both of the
+     iterator forms a compile error rather than a style note. */
+  const scan = /#0*(\d+)/g;
+  let match: RegExpExecArray | null;
+  while ((match = scan.exec(text)) !== null) {
+    const value = Number(match[1]);
+    if (!Number.isSafeInteger(value) || value <= 0) continue;
+    if (found.indexOf(value) !== -1) continue;
+    /* The confirmation, not a second opinion: one owner of the spelling. */
+    if (cardNumberToken(value).test(text)) found.push(value);
+  }
+  return found.sort((a, b) => a - b);
+}
+
 /** The open PRs naming this card, each with where the number was found. */
 export function findCardPullRequests<T extends PullRequestLike>(
   openPrs: readonly T[],

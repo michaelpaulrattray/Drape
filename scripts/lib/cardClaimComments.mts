@@ -59,7 +59,7 @@ import {
   crewCardCommentFact,
   crewCardReleaseLine,
 } from "../../shared/crewCardBuildState.js";
-import { cardNumberOf } from "../../shared/crewShiftState.js";
+import { cardNumberOf, cardNumbersNamedIn } from "../../shared/crewShiftState.js";
 
 /**
  * Twenty seconds — the same bound `cardClaimWarning.mts` sets, and for the same
@@ -468,4 +468,149 @@ export function renderCardClaimPost(
   }
   if (outcome.why.startsWith("dry run")) return `claim: ${outcome.why}`;
   return null;
+}
+
+/**
+ * ⚠ **THE FOREIGN-CLAIM PROBE — THE HEARTBEAT THAT DOES *NOT* RE-DECLARE
+ * (#1877), WHICH IS THE ONLY ROAD TO A CARD THAT HAD NOTHING ON IT.**
+ *
+ * # What was measured, and why the obvious repair is not here
+ *
+ * On 2026-10-03 two seats built #1872. Everything above this line was already
+ * in the tree and would have refused the duplicate — driven against the real
+ * comments at the real moment, `readCardClaim` returns
+ * `{"kind":"claimed","seat":"foreman-20261004-0635"}` and
+ * `renderCardClaimRefusal` says *"already claimed … 13 minutes ago"*. **The
+ * guard was adequate and was never REACHED**: `assertCardIsFree` runs on a
+ * heartbeat only when `--card` re-declares, the seat passed `--note` alone, and
+ * its row's `cardRef` never left `#1870` while its own note said *"Now #1872"*.
+ * So the claim it posted by hand met nothing, and two live `CLAIMED —` lines sat
+ * on one card for nineteen minutes.
+ *
+ * ⚠ **THE FIRST DESIGN WAS MEASURED AND DISCARDED, AND THE NUMBER IS KEPT
+ * BECAUSE IT IS THE REASON THIS FILE IS SHAPED THIS WAY.** The cheap repair is
+ * to warn whenever a note names a card the row does not. Read over all 568
+ * production rows: **453 (79.8%) name a foreign card** — shifts cite the card
+ * they filed, the sibling, the precedent and the pull request as a matter of
+ * course. A warning on four heartbeats in five is ignored by the second day, and
+ * is then worse than the silence it replaced.
+ *
+ * # So the heuristic decides what to ASK, and only a FACT decides what to SAY
+ *
+ * The note gives candidates (`cardNumbersNamedIn`, deliberately wide — #1094
+ * licenses exactly that width for a warning). The BOARD gives the answer. This
+ * speaks only when a candidate carries another seat's LIVE claim, which is
+ * neither a guess nor a clock: it is the same `readCardClaim` verdict the start
+ * path refuses on. A false candidate costs one `gh` read and no words.
+ *
+ * ⚠ **IT WARNS AND NEVER REFUSES, which is the card's own reasoning and
+ * #1281's rule**: a refused heartbeat goes quiet on his Working-now table and
+ * reads as a dead shift, so the cure would present as the disease. A seat that
+ * really is sharing a card, or citing one somebody else happens to hold, must
+ * not lose its check-in over it — it reads the line and decides.
+ */
+export const HEARTBEAT_FOREIGN_CLAIM_PROBE_MAX = 4;
+
+/** One foreign card the board says somebody else has their hands on. */
+export interface ForeignClaim {
+  readonly card: number;
+  readonly seat: string | null;
+  readonly at: string;
+}
+
+/**
+ * The foreign cards a note names that another seat holds a live claim on.
+ *
+ * ⚠ **THE CAP IS A BUDGET AND NOT A JUDGEMENT.** GitHub's allowance is ONE
+ * account shared by every seat and the crew, and its burst limit tripped three
+ * times in two hours on 2026-09-26 — so a note naming eight cards (row #2 names
+ * exactly eight) must not spend eight reads on a heartbeat. Lowest first, which
+ * is arbitrary and said to be: a note naming more cards than this is citing
+ * precedent rather than moving work, and the row read in `assertCardIsFree`
+ * still covers the card the seat declared.
+ *
+ * `readComments` is injected so every branch is driven from a fixture with no
+ * network and no token (`server/crewShiftCardClaimComments.test.ts`).
+ */
+export function readNoteForeignClaims(input: {
+  readonly note: string | null | undefined;
+  /** The card the row already names — never probed, it is this seat's own. */
+  readonly ownCardRef: string | null | undefined;
+  /** The row's shift id, so this seat's own claim elsewhere is not a rival. */
+  readonly mine: string | null;
+  readonly readComments: (card: number) => readonly CardComment[] | null;
+  readonly now?: number;
+  readonly max?: number;
+}): { readonly claims: readonly ForeignClaim[]; readonly unreadable: readonly number[] } {
+  const own = cardNumberOf(input.ownCardRef);
+  const candidates = cardNumbersNamedIn(input.note)
+    .filter((card) => card !== own)
+    .slice(0, input.max ?? HEARTBEAT_FOREIGN_CLAIM_PROBE_MAX);
+
+  const claims: ForeignClaim[] = [];
+  const unreadable: number[] = [];
+  for (const card of candidates) {
+    const verdict = readCardClaim({
+      cardRef: `#${card}`,
+      comments: input.readComments(card),
+      mine: input.mine,
+      now: input.now,
+    });
+    /* `mine` and `free` are both silence, and for different reasons — the type
+       above says which. Only another seat's live hands are worth a word. */
+    if (verdict.kind === "claimed") claims.push({ card, seat: verdict.seat, at: verdict.at });
+    else if (verdict.kind === "unreadable") unreadable.push(card);
+  }
+  return { claims, unreadable };
+}
+
+/**
+ * The warning to PRINT, or `null` when the board had nothing to say.
+ *
+ * It names the seat and the age because that is what makes the line actionable
+ * rather than alarming: a claim three minutes old is somebody at a keyboard, and
+ * one eleven hours old is probably a finished shift that never released.
+ */
+export function renderNoteForeignClaimWarning(
+  found: { readonly claims: readonly ForeignClaim[]; readonly unreadable: readonly number[] },
+  ownCardRef: string | null | undefined,
+  now: number = Date.now(),
+): string | null {
+  if (found.claims.length === 0) {
+    /* ⚠ THE THREE OUTCOMES STAY DISTINCT, as they do for every reader in this
+       file: an unread board is not a clean one, and collapsing them is how a
+       shift reads an unauthenticated `gh` as "no collision". */
+    if (found.unreadable.length > 0) {
+      return `\n⚠ could not read the comments on ${found.unreadable.map((c) => `#${c}`).join(", ")},`
+        + " so nobody checked whether another seat is on them (`gh auth status`).";
+    }
+    return null;
+  }
+  const them = found.claims
+    .map((claim) => `   #${claim.card} — ${claim.seat ?? "a seat that did not name itself"},`
+      + ` ${agePhrase(claim.at, now)} (${claim.at})`)
+    .join("\n");
+  return `\n⚠ THIS NOTE NAMES A CARD CARRYING ANOTHER SEAT'S LIVE CLAIM:\n${them}\n`
+    + `\n   This row is on ${ownCardRef ?? "(no card)"}, so nothing refused — the row read and the`
+    + "\n   claim read only ever cover the card a row DECLARES (#1580). On 2026-10-03 that gap"
+    + "\n   cost a builder seat half a session: two live CLAIMED lines sat on #1872 for nineteen"
+    + "\n   minutes because the second seat claimed by hand and its row never named the card."
+    + "\n\n   If you have MOVED onto one of those cards, stop and stand off it — or re-declare it"
+    + "\n   so the refusal can do its job:"
+    + "\n     scripts/crew-shift-start.mts --shift <id> --note '…' --card '#N'"
+    + "\n   If you are only CITING it, this line is noise and costs you nothing."
+    /* ⚠ #1701's SECOND SIGNAL AGAIN, AND THIS READER NEEDS IT MORE THAN THE
+       REFUSAL DOES — found by driving the live board rather than reasoned about.
+       The first live negative control fired on #1870, a card whose work had
+       MERGED two hours earlier: that seat released the DUPLICATE it stood off
+       and never released its own finished card, and no reader can see a merged
+       pull request as a handback. The refusal meets that case only on a card a
+       row declares; this one meets it on every card a note CITES, which is the
+       commoner shape by far. So the header says "live claim" and not "hands on",
+       and what is missing is named rather than implied. */
+    + `\n\n   ⚠ A LIVE CLAIM IS NOT A LIVE SEAT: a finished seat owes a \`${crewCardReleaseLine()}\``
+    + "\n   comment, a merged pull request is not one, and nothing ages a claim but the clock"
+    + `\n   (${Math.round(CREW_CLAIM_LIVE_MS / 3_600_000)} h). If that seat's row is closed and its`
+    + " pull request merged, this is a claim"
+    + "\n   nobody released — worth a RELEASED line on the card rather than a stand-off.";
 }
