@@ -1,7 +1,7 @@
 {
-  "edition": 625,
-  "updatedAt": "2026-10-03T02:35:00.000Z",
-  "shift": "The framing-template idea you added to the picture-checker job was built and tested on your own two casts tonight, and the answer is no — so nothing was shipped.\n\nThe idea was yours: give the engine a stored example picture showing where a close-up should be cropped, and tell it plainly that the picture is only a guide. I made the examples — plain grey faceless mannequin forms, nothing a face could be copied from — wired them in, and then put them up against no example at all on Sifr2 and on Pika, five pictures each way.\n\nYour own test for whether it ships was that more pictures land inside the crop we promise. Two out of ten landed inside it with the example, and two out of ten without. No improvement.\n\nThe useful part is underneath that. On Sifr2 every single picture taken with the example was tighter than the typical picture taken without one — the engine is reading it. It is just reading it far too lightly: we need the crop pulled in about three times as much as it managed. On Pika it did nothing good at all, and one Pika picture came back without her grin, which the checker correctly refused as not her.\n\nSo the idea works a little, and a little is not a feature. Two strips are on this page — the same cast side by side, with and without. The Sifr2 pair is the one worth your eye: you can see the crop come in, and you can see it is still not a close-up.\n\nWhat I would do is stop here rather than spend more on this shape of it, and there is a cheaper question sitting next to it that costs nothing: the boundary we judge against might simply be a touch tight. The examples put the typical picture at 0.42 and we draw the line at 0.30. That is a question about your eye, not about templates.",
+  "edition": 626,
+  "updatedAt": "2026-10-03T03:15:00.000Z",
+  "shift": "Housekeeping tonight. Nothing a customer would see — but one thing worth knowing about how we tidy up, because it nearly cost you something.\n\nYour machine was carrying 22 full copies of the Klieg codebase, left behind by crew sessions that had already finished. There is one now, and 6.3 gigabytes are back.\n\nBefore deleting any of them I asked what was inside, with the same check the crew always uses. It said the biggest one was empty. It was not. It held the whole picture court you judged on 28 September — all 155 renders behind your \"keep NBP 2k for signing views\" — 1.4 gigabytes of them, plus the before-and-after frames from a job in September that exist nowhere else. The reason the check lied is dull and matters: it asks Git what is in a folder, and Git does not mention files it has been told to ignore. That folder was one of those.\n\nEverything was moved somewhere safe before a single deletion, and the list of what moved where is written on the job. The fault in the check is now its own job. The uncomfortable part, said plainly: every tidy-up this crew has ever done asked that same question and got that same answer, so I cannot tell you what earlier ones took with them.\n\nTwo smaller things on your desk. The question about the second admin account told you a safeguard had been put in place — it had not; nothing was built, and that sentence is struck out with what is actually true beside it. Your question there is unchanged and still needs your answer. And the picture-checker job now says on its own line what it is waiting for, which is your eye: the framing example did not pass your test, and the cheaper question is whether the close-up boundary is simply a shade tight.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -149,7 +149,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-03T02:13:12.409Z",
+      "readAt": "2026-10-03T03:09:05.531Z",
       "items": [
         {
           "issueNumber": 1787,
@@ -9804,7 +9804,7 @@
     259
   ],
   "nextUp": {
-    "readAt": "2026-10-03T02:13:12.409Z",
+    "readAt": "2026-10-03T03:09:05.531Z",
     "items": [
       {
         "issueNumber": 1469,
@@ -9828,7 +9828,11 @@
       {
         "issueNumber": 1612,
         "title": "The view checker measures framing and only refuses on identity: geometry from the segmenter for every framing band, and an unsure framing or wardrobe verdict delivers the picture unchecked instead of dropping it — his ruling 2026-09-30",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "YOU — the framing example was measured and does not pass your test. Strips are on your page. KEEP the 0.30 close-up bound, or LOOSEN it? Recommend: loosen."
+        }
       },
       {
         "issueNumber": 1689,
