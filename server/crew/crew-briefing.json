@@ -1,7 +1,7 @@
 {
-  "edition": 630,
-  "updatedAt": "2026-10-03T12:38:26.513Z",
-  "shift": "A button on the canvas was charging you 70 credits for a picture that could never arrive. If a cast node had drifted out of sync with the person behind it, the node offered a Refresh — and that Refresh sent the job to an engine Google switched off in June. The money came back on the refund path, so nobody lost credits, but you paid for it in waiting and in a picture that never came. You saw this one and said: seal.\n\nIt is sealed. Not deleted — nothing of yours is touched. Your boards, your casts, your pictures, moving nodes, renaming them, filling one from the library, popping a view out, Duplicate, Download, Delete, and the free Fork that copies a cast all work exactly as they did. What has stopped is the three asks that would have spent credits reaching that dead engine. Each one now says, in one sentence, that making new pictures on the canvas is unavailable while we rebuild it, and that your work is safe. None of them names an engine or a vendor at you.\n\nThe part worth knowing is where the stopping happens. The refusal comes before any charge — not after a charge with a refund behind it, which is the thing that was wrong in the first place. And the canvas no longer OFFERS what it cannot do: the Variations button is greyed with its reason instead of opening a panel that quotes you a price and then refuses, and the Recast row sits sealed beside a Fork that still works and is still free. Being told something costs 560 credits and then being turned down is worse than not being offered it.\n\nOne honest note. The shift that started this last night died when the power cut, mid-build. Its work was not lost — the relay saved it and I picked it up where it stopped, read every line of it against the code rather than trusting the report, and finished the half it had declared and not built.",
+  "edition": 631,
+  "updatedAt": "2026-10-03T13:59:05.465Z",
+  "shift": "A paid service we rely on to spot known security holes let two of them through into the live product last week, and the only alarm that caught them went off six seconds after the change had already shipped. You read that and said: add the gate step. It is built.\n\nFrom now on, every change runs one more check before it can merge: does anything we ship contain a security hole somebody has already published and named? If it does, the change is refused and the refusal says which hole, what brings it in, which version fixes it, and what to do about it.\n\nThe one thing worth knowing is that it was proved on the real event rather than argued about. I rebuilt the dependency list exactly as it stood on the 30 September change, ran the new check against it, and it refused — naming both high-severity holes and the borrowed code that carried them in. Run against today's product, it passes cleanly over 478 pieces of borrowed code. So it would have caught the one that got through, and it does not stand in the way of ordinary work.\n\nIt also found a fourth hole nobody here had noticed, in the code we use to make PDFs. Already closed by this week's repair, but nothing in our own records had ever mentioned it.\n\nTwo honest costs. If the service that keeps the list of known holes is ever down, every change is refused until it comes back — a security check that waves things through because it could not look is exactly what went wrong here, so that direction is deliberate. And it reads only the code that ships to you, not the tools we build with; those still have no check before a merge, and I have written that in four places rather than let a green tick imply otherwise.\n\nOne other thing, found while tidying rather than looked for. Your own page was still telling you that a question about the casting checker was waiting on your answer. You answered it yesterday, and the fix shipped yesterday — but your answer had gone into a comment while the card's own front page kept asking. That is the second time that shape has cost us; the card now reads true and nothing on it waits on you.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -15,7 +15,7 @@
       "steps": [
         {
           "title": "Three plans instead of seven — Starter $27, Pro $68, Studio $159, with Free as the state you are in rather than a card, and an Enterprise band instead of a support address (#1832, #1833)",
-          "state": "waiting"
+          "state": "done"
         },
         {
           "title": "Studio's credit slider at $9 for each extra 5,000 a month — built last, because it needs a price created inside Stripe by hand before anything on screen can be bought (#1832)",
@@ -23,7 +23,7 @@
         },
         {
           "title": "Compare plans organised by what you make, with the cinema row marked coming (#1834)",
-          "state": "waiting"
+          "state": "done"
         },
         {
           "title": "Team priced per seat at $68 a seat, after the shared workspace exists (#1835, #1788)",
@@ -126,7 +126,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-03T12:38:07.600Z",
+      "readAt": "2026-10-03T13:57:16.218Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -9416,16 +9416,23 @@
     {
       "id": "seal-canvas-1785",
       "title": "The canvas Refresh can no longer charge 70 credits for a picture that cannot arrive — sealed on your word (#1785)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1853,
       "note": "Held for the relay by hand — a customer-visible canvas diff."
+    },
+    {
+      "id": "advisory-gate-1805",
+      "title": "Every change is now checked for known security holes in what we ship — built on your word (#1805)",
+      "status": "in-review",
+      "prNumber": 1854,
+      "note": "Held for the relay by hand — it changes the gate every future change runs."
     }
   ],
   "problems": [
     {
       "id": "canvas-refresh-dead-engine-1785",
       "severity": "warning",
-      "state": "open",
+      "state": "resolved",
       "title": "On the canvas, Refresh charges 70 credits for a picture that cannot be made — the engines behind it were shut down in June (#1785)",
       "detail": "A cast on the canvas that has gone out of sync shows a Refresh button. Pressing it takes 70 credits and sends the work to two Google engines Google turned off on 25 June. The refund is correct, so the credits come back; what a customer loses is the wait and the picture.\n\nThis is the fault you already settled once. When the old studio's paid buttons were doing the same thing you said to seal them, and that was done — but the sweep covered the old studio's own part of the code, and the canvas has its own button, in a different place, spending the same price. Our list of known-bad engines named one canvas road and not this one.\n\nWhat needs you: sealing it would take a working canvas feature away, which is a product decision, so it is yours — and it is best answered beside the other canvas road on the same engines rather than separately. The card carries the three options. What is already fixed is the record: the list now names this road, and a check now refuses a file address in it that no longer exists. One of them did not."
     },
@@ -9783,7 +9790,7 @@
     259
   ],
   "nextUp": {
-    "readAt": "2026-10-03T12:38:07.600Z",
+    "readAt": "2026-10-03T13:57:16.217Z",
     "items": [
       {
         "issueNumber": 1469,
@@ -9807,11 +9814,7 @@
       {
         "issueNumber": 1612,
         "title": "The view checker measures framing and only refuses on identity: geometry from the segmenter for every framing band, and an unsure framing or wardrobe verdict delivers the picture unchecked instead of dropping it — his ruling 2026-09-30",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "YOU — the framing example was measured and does not pass your test. Strips are on your page. KEEP the 0.30 close-up bound, or LOOSEN it? Recommend: loosen."
-        }
+        "urgent": false
       },
       {
         "issueNumber": 1689,
@@ -9826,11 +9829,6 @@
       {
         "issueNumber": 1774,
         "title": "Pricing Phase 2 — the plans redesigned: three individual plans with a credit slider on the top one, Team priced per seat behind a workspace, Enterprise as a sales conversation, no rate chips on plan cards, forward-looking copy marked \"coming\", and a compare table organised by what a customer makes",
-        "urgent": false
-      },
-      {
-        "issueNumber": 1785,
-        "title": "The canvas \"Refresh\" button charges 70 credits for a render on two Gemini ids Google shut down in June — #1654's sweep covered the legacy router and not the canvas's own paid road",
         "urgent": false
       },
       {
