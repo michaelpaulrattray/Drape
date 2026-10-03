@@ -85,6 +85,12 @@ type TemplateRecord = {
  * The bucket prefix. `assets/` is where every static object this product serves
  * already lives; `views/` is this card's own corner of it.
  *
+ * ⚠ **THE STORAGE KEY IS ALSO THE REPO PATH, and that is the existing
+ * convention rather than a coincidence**: `assets/ink/arm-left-template.png` is
+ * tracked at that path and served from that key. So the tracked source every
+ * digest below is taken from is simply `key` read from the repository root, and
+ * there is no second string to keep in step with the first.
+ *
  * ⚠ **`ASSETS_BASE_URL` is NOT how this is reached and must not be used here.**
  * It is built from `VITE_ASSETS_BASE_URL`, a CLIENT variable absent from
  * `server/_core/env.ts`'s schema entirely, with a hard-coded DEV bucket
@@ -114,11 +120,6 @@ export const VIEW_FRAMING_TEMPLATES: Readonly<Partial<Record<CastViewAngle, Temp
     sha256: "f362762a8d12b47e389ce4c1fbb3056179b311ccc0ea1ee5f6cbbb52c273887e",
   },
 };
-
-/** The tracked source every digest above is taken from. */
-export function framingTemplateSourcePath(angle: CastViewAngle): string {
-  return `assets/views/${angle}-framing-template.png`;
-}
 
 /**
  * THE SENTENCE THAT MAKES THE PICTURE SAFE TO SEND — his ruling, verbatim:
@@ -159,13 +160,15 @@ export function framingTemplateClause(input: {
  * Cached on SUCCESS only — see the header. Module-level, so it is per process
  * and dies with it; a template changes by a deploy, never under a running
  * server.
+ *
+ * ⚠ **A test passes its OWN map rather than clearing this one.** A
+ * `resetViewFramingTemplateCache()` export would be a symbol with no production
+ * caller — which the uncalled-export sweep lists and `check-cleanup-dispositions`
+ * refuses, correctly: the repository has been bitten enough times by machinery
+ * that exists for its own tests. Injecting the store costs one optional field
+ * and leaves nothing behind.
  */
-const cache = new Map<CastViewAngle, ViewFramingTemplate>();
-
-/** Test seam only — no production caller. */
-export function resetViewFramingTemplateCache(): void {
-  cache.clear();
-}
+const processCache = new Map<CastViewAngle, ViewFramingTemplate>();
 
 /**
  * Read this view's framing template, or answer `null`.
@@ -179,11 +182,14 @@ export async function readViewFramingTemplate(
   angle: CastViewAngle,
   dependencies: {
     readBytes?: (key: string) => Promise<{ bytes: Buffer; contentType: string }>;
+    /** Defaults to the per-process store; a test passes its own for isolation. */
+    cache?: Map<CastViewAngle, ViewFramingTemplate>;
   } = {},
 ): Promise<ViewFramingTemplate | null> {
   const record = VIEW_FRAMING_TEMPLATES[angle];
   if (!record) return null;
 
+  const cache = dependencies.cache ?? processCache;
   const cached = cache.get(angle);
   if (cached) return cached;
 

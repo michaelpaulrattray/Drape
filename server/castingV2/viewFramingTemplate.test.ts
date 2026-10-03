@@ -21,11 +21,11 @@
  * anywhere and no customer-visible symptom but a worse crop.
  */
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 import sharp from "sharp";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../logging/logger", () => {
   const shape = { info: () => {}, warn: () => {}, error: () => {}, debug: () => {} };
@@ -36,19 +36,28 @@ const {
   VIEW_FRAMING_TEMPLATES,
   VIEW_FRAMING_TEMPLATE_PREFIX,
   framingTemplateClause,
-  framingTemplateSourcePath,
   readViewFramingTemplate,
-  resetViewFramingTemplateCache,
 } = await import("./viewFramingTemplate");
+type ViewFramingTemplate = import("./viewFramingTemplate").ViewFramingTemplate;
 const { pronounsForSex } = await import("./castPronouns");
 const { CAST_PACKAGE_VIEWS } = await import("./castViewPackage");
 
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const angles = Object.keys(VIEW_FRAMING_TEMPLATES) as Array<keyof typeof VIEW_FRAMING_TEMPLATES>;
 
-beforeEach(() => {
-  resetViewFramingTemplateCache();
-});
+/*
+  ⚠ **THE TRACKED SOURCE IS THE STORAGE KEY READ FROM THE REPOSITORY ROOT, and
+  that is deliberately not a second string.** `assets/ink/arm-left-template.png`
+  is tracked at that path and served from that key; this follows the same
+  convention, so there is exactly one place the filename is written down and a
+  rename cannot leave the table pointing at one file and the digest at another.
+*/
+const sourceOf = (angle: keyof typeof VIEW_FRAMING_TEMPLATES) =>
+  path.join(REPO_ROOT, VIEW_FRAMING_TEMPLATES[angle]!.key);
+
+/* Each arm owns its own store rather than clearing a shared one — see the
+   module's note on why there is no reset export. */
+const freshCache = () => new Map<string, ViewFramingTemplate>() as never;
 
 describe("the table and the tracked pictures agree", () => {
   it("declares at least one template, so an emptied table cannot pass as 'nothing to check'", () => {
@@ -62,14 +71,16 @@ describe("the table and the tracked pictures agree", () => {
 
   it.each(angles)("%s — the declared sha256 is the tracked file's own digest", (angle) => {
     const record = VIEW_FRAMING_TEMPLATES[angle]!;
-    const bytes = readFileSync(path.join(REPO_ROOT, framingTemplateSourcePath(angle)));
+    const bytes = readFileSync(sourceOf(angle));
     expect(createHash("sha256").update(bytes).digest("hex")).toBe(record.sha256);
   });
 
   it.each(angles)("%s — the storage key is the prefix and the tracked file's own name", (angle) => {
     const record = VIEW_FRAMING_TEMPLATES[angle]!;
     expect(record.key).toBe(`${VIEW_FRAMING_TEMPLATE_PREFIX}/${angle}-framing-template.png`);
-    expect(framingTemplateSourcePath(angle).endsWith(`${angle}-framing-template.png`)).toBe(true);
+    /* And the repository really does carry a file at that key, which is the
+       half that makes the key-is-the-path convention a fact rather than a note. */
+    expect(existsSync(sourceOf(angle))).toBe(true);
   });
 
   it.each(angles)("%s — is 1024x1536, the anchor's own shape", async (angle) => {
@@ -88,7 +99,7 @@ describe("the table and the tracked pictures agree", () => {
       pinned here, beside the digest, and the number is the ANCHOR's rather than
       a taste.
     */
-    const bytes = readFileSync(path.join(REPO_ROOT, framingTemplateSourcePath(angle)));
+    const bytes = readFileSync(sourceOf(angle));
     const meta = await sharp(bytes).metadata();
     expect({ width: meta.width, height: meta.height }).toEqual({ width: 1024, height: 1536 });
   });
@@ -156,18 +167,18 @@ describe("the clause says what the picture is for and what may not be taken from
 describe("reading one — and it never throws, because its caller is a paid render", () => {
   const angle = angles[0]!;
   const record = VIEW_FRAMING_TEMPLATES[angle]!;
-  const realBytes = () => readFileSync(path.join(REPO_ROOT, framingTemplateSourcePath(angle)));
+  const realBytes = () => readFileSync(sourceOf(angle));
 
   it("answers null for an angle with no template, without reading anything", async () => {
     const readBytes = vi.fn();
-    await expect(readViewFramingTemplate("threeQuarter", { readBytes })).resolves.toBeNull();
+    await expect(readViewFramingTemplate("threeQuarter", { readBytes, cache: freshCache() })).resolves.toBeNull();
     expect(readBytes).not.toHaveBeenCalled();
   });
 
   it("returns the bytes when the digest matches, asking for the declared key", async () => {
     const bytes = realBytes();
     const readBytes = vi.fn(async () => ({ bytes, contentType: "image/png" }));
-    const template = await readViewFramingTemplate(angle, { readBytes });
+    const template = await readViewFramingTemplate(angle, { readBytes, cache: freshCache() });
     expect(template?.bytes).toBe(bytes);
     expect(template?.contentType).toBe("image/png");
     expect(readBytes).toHaveBeenCalledWith(record.key);
@@ -180,20 +191,21 @@ describe("reading one — and it never throws, because its caller is a paid rend
       picture the court measured.
     */
     const readBytes = vi.fn(async () => ({ bytes: Buffer.from("some other picture"), contentType: "image/png" }));
-    await expect(readViewFramingTemplate(angle, { readBytes })).resolves.toBeNull();
+    await expect(readViewFramingTemplate(angle, { readBytes, cache: freshCache() })).resolves.toBeNull();
   });
 
   it("answers null rather than throwing when the read itself fails", async () => {
     const readBytes = vi.fn(async () => { throw new Error("R2 said no"); });
-    await expect(readViewFramingTemplate(angle, { readBytes })).resolves.toBeNull();
+    await expect(readViewFramingTemplate(angle, { readBytes, cache: freshCache() })).resolves.toBeNull();
   });
 
   it("caches a success, so five views of one Sign do not read the object five times", async () => {
     const bytes = realBytes();
     const readBytes = vi.fn(async () => ({ bytes, contentType: "image/png" }));
-    await readViewFramingTemplate(angle, { readBytes });
-    await readViewFramingTemplate(angle, { readBytes });
-    await readViewFramingTemplate(angle, { readBytes });
+    const cache = freshCache();
+    await readViewFramingTemplate(angle, { readBytes, cache });
+    await readViewFramingTemplate(angle, { readBytes, cache });
+    await readViewFramingTemplate(angle, { readBytes, cache });
     expect(readBytes).toHaveBeenCalledTimes(1);
   });
 
@@ -210,8 +222,9 @@ describe("reading one — and it never throws, because its caller is a paid rend
       if (calls === 1) throw new Error("R2 said no, once");
       return { bytes, contentType: "image/png" };
     });
-    await expect(readViewFramingTemplate(angle, { readBytes })).resolves.toBeNull();
-    await expect(readViewFramingTemplate(angle, { readBytes })).resolves.not.toBeNull();
+    const cache = freshCache();
+    await expect(readViewFramingTemplate(angle, { readBytes, cache })).resolves.toBeNull();
+    await expect(readViewFramingTemplate(angle, { readBytes, cache })).resolves.not.toBeNull();
     expect(readBytes).toHaveBeenCalledTimes(2);
   });
 });
