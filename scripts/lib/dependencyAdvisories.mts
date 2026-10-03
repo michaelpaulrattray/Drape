@@ -115,6 +115,63 @@ export type ReadResult =
 const asString = (value: unknown): string | null =>
   typeof value === "string" && value.trim() !== "" ? value : null;
 
+/**
+ * THE SENTENCE A READER MEETING AN OUTAGE ON AN UNRELATED PULL REQUEST NEEDS
+ * (#1856, the relay's hand verdict on PR #1854: *"The outage refusal never says
+ * 'registry unreachable' in words; a reader meeting it on an unrelated PR may
+ * not recognise an outage. One sentence would do."*).
+ *
+ * ⚠ **IT SOFTENS NOTHING.** Every refusal that carries this still exits 1, and
+ * the last two lines say why out loud: the card this check was built on is a
+ * case of a security reader that *passed in 7 seconds* and let two published
+ * high-severity holes ship. This is about the words, not the verdict.
+ *
+ * It is ONE constant rather than a sentence written out at each refusal, because
+ * the moment it had three copies they would drift (working law 4) — and the
+ * suite asserts against this export rather than retyping it, for the same
+ * reason.
+ */
+export const OUTAGE_GUIDANCE = [
+  "  ⚠ THIS IS WHAT A REGISTRY OUTAGE LOOKS LIKE from here, and your own change is",
+  "    probably fine — nothing about the diff was judged either way. It passes again",
+  "    as soon as the advisory service answers, so re-run this job.",
+  "    It refuses rather than passing on purpose: a security check that waves a change",
+  "    through because it could not look is exactly what let two published high-severity",
+  "    holes reach the live product on 30 September (#1805).",
+].join("\n");
+
+/**
+ * WHAT THE REPORT SAYS ABOUT ITS OWN FAILURE, when it says anything.
+ *
+ * Measured shape (see `readAuditReport`'s header): `{"error":{"code":…,
+ * "message":…}}`. `code` is worth printing but is not always worth much — a
+ * captive portal's HTML answered with `code: "pnpm"` while the message carried
+ * the whole diagnosis — so the message leads and the code rides beside it only
+ * when it is not the generic one.
+ *
+ * Returns `null` when there is no `error` key at all; returns a sentence rather
+ * than `null` when the key is present but says nothing, because "it answered
+ * with an error" is itself the finding and must never read as "no error".
+ */
+const statedFailure = (body: { error?: unknown }): string | null => {
+  if (!("error" in body)) return null;
+
+  const direct = asString(body.error);
+  if (direct !== null) return direct;
+
+  if (body.error === null || typeof body.error !== "object" || Array.isArray(body.error)) {
+    return "it did not say what went wrong";
+  }
+
+  const shaped = body.error as { code?: unknown; message?: unknown };
+  const message = asString(shaped.message);
+  const code = asString(shaped.code);
+
+  if (message !== null) return code === null || code === "pnpm" ? message : `${code}: ${message}`;
+  if (code !== null) return code;
+  return "it did not say what went wrong";
+};
+
 const pathsOf = (findings: unknown): readonly string[] => {
   if (!Array.isArray(findings)) return [];
   const out: string[] = [];
@@ -134,9 +191,26 @@ const pathsOf = (findings: unknown): readonly string[] => {
  *
  * Every shape this cannot positively recognise is a REFUSAL, because the one
  * outcome a gate step must never have is passing by being unable to look
- * (invariant 7). `pnpm audit` prints a plain-text error and no JSON when the
- * registry is unreachable, so "not JSON" is also how a network failure arrives
- * here — and it fails closed.
+ * (invariant 7).
+ *
+ * ⚠ **HOW AN OUTAGE ACTUALLY ARRIVES WAS DRIVEN, AND IT IS NOT WHAT THIS
+ * DOCBLOCK SAID (#1856).** It read *"`pnpm audit` prints a plain-text error and
+ * no JSON when the registry is unreachable, so "not JSON" is also how a network
+ * failure arrives here"* — reasoned, not measured, and false of this tree.
+ * Driven on pnpm 10.28.2 / Node 24.18.0 against a dead port and a local stand-in
+ * endpoint, **five failure shapes out of five** — `ECONNREFUSED`, a captive
+ * portal's HTML, a 503, a 429 and a 500 — answered with **valid JSON on stdout
+ * carrying an `error` object**, and **stderr was empty in all five**. With
+ * `--json`, `ERR_PNPM_AUDIT_BAD_RESPONSE` is a *field value* inside that object,
+ * never loose prose. So every real outage landed on the `advisories`-is-missing
+ * refusal below, and the reason the report stated about itself was read by
+ * nothing.
+ *
+ * **That reason is read now**, which is the disappearing-technology law's clause
+ * 4 pointed at our own tooling: a signal bought and unread is the cheapest
+ * finding available. The non-JSON branch stays exactly as fail-closed as it was
+ * — a reader must not depend on which shape arrives — it simply is not the one
+ * an outage uses today.
  *
  * An advisory missing its `github_advisory_id` is still COUNTED, keyed by the
  * report's own id. A finding dropped for a gap in its shape is the silence this
@@ -145,7 +219,17 @@ const pathsOf = (findings: unknown): readonly string[] => {
 export const readAuditReport = (stdout: string): ReadResult => {
   const text = stdout.trim();
   if (text === "") {
-    return { ok: false, why: "pnpm audit printed nothing — the advisory database was never read." };
+    /*
+      Not one of the five driven shapes — every one of those printed JSON — but
+      it is the same class and gets the same sentence: a process killed, starved
+      or cut off by a proxy mid-answer is an outage wearing a quieter coat, and
+      withholding the explanation from the refusal most likely to be met on a
+      broken runner would be the very defect this card is about.
+    */
+    return {
+      ok: false,
+      why: `pnpm audit printed nothing — the advisory database was never read.\n${OUTAGE_GUIDANCE}`,
+    };
   }
 
   let parsed: unknown;
@@ -155,10 +239,23 @@ export const readAuditReport = (stdout: string): ReadResult => {
     const firstLine = text.split("\n", 1)[0] ?? "";
     return {
       ok: false,
-      why: `pnpm audit did not answer with JSON (${(error as Error).message}). Its first line was: ${firstLine}`,
+      why:
+        `pnpm audit did not answer with JSON (${(error as Error).message}). Its first line was: ${firstLine}`
+        + `\n${OUTAGE_GUIDANCE}`,
     };
   }
 
+  /*
+    ⚠ THIS REFUSAL AND THE PER-ADVISORY ONE BELOW DELIBERATELY DO NOT CARRY
+    `OUTAGE_GUIDANCE`, and the omission is a decision rather than an oversight.
+    No driven failure produced either shape: an endpoint that is down answers
+    with an `error` object, never with a bare array or a string, and never with
+    an advisory entry that is not an object. Telling a reader "this looks like an
+    outage" over a document an outage cannot produce would point the repair at
+    the wrong place — and a sentence printed over everything stops being
+    information. These two mean exactly what they say: this is not the document
+    we think we are reading. Both still refuse.
+  */
   if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
     return {
       ok: false,
@@ -166,16 +263,46 @@ export const readAuditReport = (stdout: string): ReadResult => {
     };
   }
 
-  const body = parsed as { advisories?: unknown; metadata?: unknown };
+  const body = parsed as { advisories?: unknown; metadata?: unknown; error?: unknown };
+
+  /*
+    ⚠ THE STATED FAILURE IS READ BEFORE ANYTHING ELSE — both because it is the
+    measured shape of every real outage, and because that is the fail-closed
+    ordering. A document carrying an `error` key AND a usable `advisories` object
+    has never been observed; if one ever arrives it must REFUSE rather than be
+    judged on the advisories it happens to list, because a report that announced
+    a failure and then read as a clean verdict is "passing by being unable to
+    look" with extra steps.
+  */
+  const stated = statedFailure(body);
+  if (stated !== null) {
+    return {
+      ok: false,
+      why:
+        `pnpm audit could not read the advisory registry — it answered with an error instead of a report: ${stated}`
+        + `\n${OUTAGE_GUIDANCE}`,
+    };
+  }
+
   /*
     BOTH keys are required before this is called a report, and the reason is the
     null-versus-empty distinction: `advisories: {}` is a real answer meaning
     nothing was found, while a MISSING `advisories` is a different document.
     Treating the second as the first is how a reader comes up empty and calls it
     clean.
+
+    ⚠ This is where all five driven outages used to land, saying nothing about
+    why — the refusal this card was filed on. An outage names itself above now,
+    so what reaches here is a JSON object that is neither a report nor a stated
+    failure. It keeps the sentence anyway: the shape is unknown by definition, so
+    the likeliest cause is still the thing on the other end of the network.
   */
   if (body.advisories === null || typeof body.advisories !== "object" || Array.isArray(body.advisories)) {
-    return { ok: false, why: "pnpm audit's answer carries no `advisories` object — nothing has been checked." };
+    return {
+      ok: false,
+      why: "pnpm audit's answer carries no `advisories` object — nothing has been checked."
+        + `\n${OUTAGE_GUIDANCE}`,
+    };
   }
   if (body.metadata === null || typeof body.metadata !== "object" || Array.isArray(body.metadata)) {
     return { ok: false, why: "pnpm audit's answer carries no `metadata` — nothing has been checked." };
