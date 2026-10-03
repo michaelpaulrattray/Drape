@@ -659,3 +659,122 @@ describe("the seat cut invokes it", () => {
     expect(body).not.toContain("superseded");
   });
 });
+
+/*
+  ⚠ THE PROXY A HISTORY READ MUST USE IS WRITTEN DOWN, AND A DOCBLOCK WITH NO
+  ARM IS A CONTROL WITH NO CALLER (#1872).
+
+  The close no longer overwrites `heartbeatAt` (PR #1874), so rows closed from
+  that card onward carry the real last check-in. **The 565 closed before it do
+  not, and never will** — so a re-measurement of this instrument's floor, its
+  lane parser or its window over history has to fall back to the row's LIFETIME,
+  and #1866's first pass is what happens when it does not: it read `heartbeatAt`
+  and returned 0 superseded rows in 565 where #1863 had measured 2.
+
+  That fact now lives in `CREW_SHIFT_SUPERSEDING_RUNS_MIN`'s docblock, beside
+  the number a re-measurement would be re-taking — which is the one place a
+  shift asking the question will actually look.
+
+  ⚠ **AND IT HAD NO ARM UNTIL THIS ONE.** #1874 shipped the paragraph as its
+  whole deliverable for that half of the card and sabotaged only the close
+  script, so deleting the paragraph left the entire suite GREEN. Prose is the
+  one kind of deliverable this repository has repeatedly lost without noticing.
+  **The design of this arm — and the finding that it was missing — is the work
+  of the builder seat `seat1-20261004-062135`**, which built the same card in
+  parallel on an unpushed branch; its reading was better than #1874's and is
+  folded in here rather than discarded with the branch.
+
+  ⚠ **IT IS KEYED ON THE FACTS, NOT THE WORDING.** Three tokens, each
+  load-bearing: both field names the proxy is built from, and the word carrying
+  its admissibility argument. A rewrite that keeps the facts passes; a deletion
+  reddens. A guard that fires on a rewording is a guard about typography, and it
+  teaches a shift to edit the guard — the warning `crewHeartbeat.test.ts`
+  already carries about #1349.
+*/
+describe("the history proxy is written down where a re-measurement will look (#1872)", () => {
+  const SHARED_SOURCE = readFileSync("shared/crewShiftState.ts", "utf8");
+
+  /** The docblock immediately above the floor — the subject, sliced out. */
+  const floorDocblock = (source: string): string => {
+    const declaration = source.indexOf("export const CREW_SHIFT_SUPERSEDING_RUNS_MIN");
+    expect(declaration, "the floor is not declared here any more").toBeGreaterThan(-1);
+    const opens = source.lastIndexOf("/**", declaration);
+    expect(opens, "the floor carries no docblock at all").toBeGreaterThan(-1);
+    return source.slice(opens, declaration);
+  };
+
+  /* Its own title, which is how the slice proves it is the right docblock
+     rather than a neighbouring one. */
+  const FLOOR_TITLE = "HOW MANY COMPLETED LANE-MATES IT TAKES";
+
+  it("names the lifetime proxy and why it is admissible", () => {
+    const docblock = floorDocblock(SHARED_SOURCE);
+    /* Verify the slice before trusting what it contains — otherwise this reads
+       some other docblock and proves nothing (memory: a guard arm satisfied by
+       a sibling). */
+    expect(docblock).toContain(FLOOR_TITLE);
+
+    /* Case-insensitive: the prose writes SUPERSET in capitals, and a guard that
+       turns on the capitalisation of a word in a sentence is a guard about
+       typography. */
+    const lowered = docblock.toLowerCase();
+    for (const fact of ["startedat", "endedat", "superset"]) {
+      expect(
+        lowered.includes(fact),
+        "The floor's docblock no longer names " + fact + ". A read spanning "
+          + "2026-10-03 must use the row's LIFETIME for every row closed before "
+          + "it — all 565 carry heartbeatAt == endedAt — and this is the only "
+          + "place a shift re-measuring this floor will look. #1866's first pass "
+          + "returned 0 superseded rows in 565 for exactly this reason.",
+      ).toBe(true);
+    }
+  });
+
+  /*
+    POSITIVE CONTROL, ONE PER FACT. The arm above is a presence test over prose,
+    which passes just as well when the slice is wrong or the reader has stopped
+    reading.
+
+    ⚠ **IT GUTS THE TOKEN, NEVER THE SECTION.** Deleting the section by matching
+    its heading makes a reworded heading fail the CONTROL while the real arm
+    stays correctly green — a red manufactured by the control's own anchor
+    rather than by the fact going missing. Each token is removed from the whole
+    source instead: neither of the slice's anchors contains any of the three, so
+    the slice is unaffected and the only thing that changes is the fact under
+    test.
+  */
+  it("and each of those readings can say no", () => {
+    for (const fact of ["startedat", "endedat", "superset"]) {
+      const gutted = SHARED_SOURCE.replace(new RegExp(fact, "gi"), "(removed)");
+      const docblock = floorDocblock(gutted);
+      /* The slice must still be the right one — a control that reddens because
+         it sliced nothing proves nothing about the fact it guards. */
+      expect(docblock).toContain(FLOOR_TITLE);
+      expect(docblock.toLowerCase().includes(fact)).toBe(false);
+    }
+  });
+
+  /*
+    AND THE READER IS NOT BLIND — a docblock that genuinely lacks the facts is
+    refused. Without this, three passing presence tests and three passing
+    deletions are both consistent with a reader that always says yes.
+  */
+  it("a docblock that genuinely lacks the facts is refused", () => {
+    const synthetic = "/**\n * " + FLOOR_TITLE + "\n * Nothing at all about history.\n */\n"
+      + "export const CREW_SHIFT_SUPERSEDING_RUNS_MIN = 2;";
+    const docblock = floorDocblock(synthetic);
+    expect(docblock).toContain(FLOOR_TITLE);
+    for (const fact of ["startedat", "endedat", "superset"]) {
+      expect(docblock.toLowerCase().includes(fact)).toBe(false);
+    }
+  });
+
+  /*
+    ⚠ THE LIMIT, NAMED RATHER THAN CHASED. This is keyed on the FACTS, so prose
+    that still carries all three passes — deleting only the section's heading
+    leaves `startedAt`, `endedAt` and the superset argument in the sentences
+    around it, and that stays green. The seat's own sabotage pass confirmed it.
+    That is the arm behaving as designed: what must survive is the information a
+    shift re-measuring the floor needs, not a particular way of saying it.
+  */
+});
