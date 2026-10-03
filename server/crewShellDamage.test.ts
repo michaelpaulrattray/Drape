@@ -59,6 +59,26 @@ describe("planShellDamage — the positive controls", () => {
     expect(found[0]?.matched).toBe("/c/Users/Admin.00");
   });
 
+  it("finds the Windows spellings of a home path, both slash directions", () => {
+    /*
+      `$HOME` on a Windows road can arrive as either, so both are in the list,
+      and the reported run carries the drive letter: `/Users` is an alternative
+      too, but the engine reaches index 10 (`C:`) before index 11 (`/Users`),
+      so the longer and more useful reading is what a person is shown. Asserted
+      rather than reasoned about — the first draft of this arm predicted the
+      opposite and was wrong.
+    */
+    const forward = planShellDamage([
+      card({ issueNumber: 20, title: "a pack is C:/Users/Admin.50 a unit" }),
+    ]);
+    expect(forward.map((f) => f.matched)).toEqual(["C:/Users/Admin.50"]);
+
+    const back = planShellDamage([
+      card({ issueNumber: 21, title: "a pack is C:\\Users\\Admin.50 a unit" }),
+    ]);
+    expect(back.map((f) => f.matched)).toEqual(["C:\\Users\\Admin.50"]);
+  });
+
   it("finds every mark on one card rather than stopping at the first", () => {
     const found = planShellDamage([
       card({
@@ -150,6 +170,24 @@ describe("planShellDamage — the negative controls, which are this board's real
           "A Sign is about $0.95 today, five views about $0.75 of it.",
         ].join("\n"),
       }),
+    ]);
+    expect(found).toEqual([]);
+  });
+
+  it("does not fire on a word that merely STARTS with a listed path", () => {
+    /* `/home` is on the list; `/homepage.2` is a URL fragment, not an eaten
+       price. The pattern requires a path separator or the number itself next. */
+    const found = planShellDamage([
+      card({ issueNumber: 9, title: "the /homepage.2 redesign", body: "and /usr/binary.5 of it" }),
+    ]);
+    expect(found).toEqual([]);
+  });
+
+  it("does not fire on a thousands separator, which is where `$1,200` leaves a comma", () => {
+    /* `$1,200` eaten leaves `,200` — not a path, and nothing here should
+       hallucinate one out of an intact price either. */
+    const found = planShellDamage([
+      card({ issueNumber: 22, title: "the roll cost $1,200 and the sign $8,500", body: ",200 of it" }),
     ]);
     expect(found).toEqual([]);
   });
