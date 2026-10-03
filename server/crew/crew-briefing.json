@@ -1,7 +1,7 @@
 {
-  "edition": 629,
-  "updatedAt": "2026-10-03T11:20:21.000Z",
-  "shift": "The first of your four Phase 2 cards is built and waiting on a review. Change plan no longer shows seven plans behind a sliding window — it shows three: Starter, Pro and Studio, at $27, $68 and $159. Free stopped being a card, because it is the state you are in rather than a plan you buy, and the top of the pane now says so with your balance beside it. Under the three cards there is one line of what every plan opens today and one marked COMING for the cinema studio and the generators. The quiet \"write to support\" line is gone, replaced by an Enterprise band with a Let's talk button. And Compare plans is grouped the way you asked — What you make, Credits, Cinema, Help, Price — with anything that is true of every plan said once under its heading instead of four identical times across the table. On a phone the table turns on its side: one block per plan, yours first.\n\nOne piece of card one is deliberately not built, and it is worth knowing why. The credit slider on the Studio card needs a price object created inside Stripe at your $9 for each extra 5,000 credits, and creating things inside Stripe is your hand or the relay's, never a shift's. A slider somebody can drag and then cannot buy is worse than no slider, so the card stays open on that half and nothing about it is on screen.\n\nI looked at the result in the running app rather than only at the code — twelve pictures, light and dark, on a computer and on a phone — and that found five layout faults the code alone would not have shown. Four were mine and are fixed. The fifth was already there: on a phone the line at the bottom of the plan window, \"Having a problem? Go to the help centre.\", was wrapping to four lines in a column two words wide while the buttons squeezed in beside it. Your brief is the first thing that has asked what this window looks like on a phone, which is the only reason anyone saw it.",
+  "edition": 630,
+  "updatedAt": "2026-10-03T12:38:26.513Z",
+  "shift": "A button on the canvas was charging you 70 credits for a picture that could never arrive. If a cast node had drifted out of sync with the person behind it, the node offered a Refresh — and that Refresh sent the job to an engine Google switched off in June. The money came back on the refund path, so nobody lost credits, but you paid for it in waiting and in a picture that never came. You saw this one and said: seal.\n\nIt is sealed. Not deleted — nothing of yours is touched. Your boards, your casts, your pictures, moving nodes, renaming them, filling one from the library, popping a view out, Duplicate, Download, Delete, and the free Fork that copies a cast all work exactly as they did. What has stopped is the three asks that would have spent credits reaching that dead engine. Each one now says, in one sentence, that making new pictures on the canvas is unavailable while we rebuild it, and that your work is safe. None of them names an engine or a vendor at you.\n\nThe part worth knowing is where the stopping happens. The refusal comes before any charge — not after a charge with a refund behind it, which is the thing that was wrong in the first place. And the canvas no longer OFFERS what it cannot do: the Variations button is greyed with its reason instead of opening a panel that quotes you a price and then refuses, and the Recast row sits sealed beside a Fork that still works and is still free. Being told something costs 560 credits and then being turned down is worse than not being offered it.\n\nOne honest note. The shift that started this last night died when the power cut, mid-build. Its work was not lost — the relay saved it and I picked it up where it stopped, read every line of it against the code rather than trusting the report, and finished the half it had declared and not built.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -126,7 +126,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-03T11:19:48.283Z",
+      "readAt": "2026-10-03T12:38:07.600Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -9409,9 +9409,16 @@
     {
       "id": "plans-surface-1832",
       "title": "Three plans, the Enterprise band and a grouped Compare plans — the plan surface rebuilt to your Phase 2 brief (#1832, #1833, #1834)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1849,
       "note": "Held for the relay by hand — a money surface and a customer-visible one."
+    },
+    {
+      "id": "seal-canvas-1785",
+      "title": "The canvas Refresh can no longer charge 70 credits for a picture that cannot arrive — sealed on your word (#1785)",
+      "status": "in-review",
+      "prNumber": 1853,
+      "note": "Held for the relay by hand — a customer-visible canvas diff."
     }
   ],
   "problems": [
@@ -9776,7 +9783,7 @@
     259
   ],
   "nextUp": {
-    "readAt": "2026-10-03T11:19:48.282Z",
+    "readAt": "2026-10-03T12:38:07.600Z",
     "items": [
       {
         "issueNumber": 1469,
@@ -9834,16 +9841,6 @@
       {
         "issueNumber": 1832,
         "title": "P2-1 — Three individual plans with the credit slider on Studio ($9 per 5,000 credits): the plan cards and pricing surface rebuilt to the brief",
-        "urgent": false
-      },
-      {
-        "issueNumber": 1833,
-        "title": "P2-2 — Enterprise is a conversation: the Let's talk band replaces the support-email line",
-        "urgent": false
-      },
-      {
-        "issueNumber": 1834,
-        "title": "P2-3 — Compare plans organised by what a customer makes, with the cinema row marked coming",
         "urgent": false
       },
       {
