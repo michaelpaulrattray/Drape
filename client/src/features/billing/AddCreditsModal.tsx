@@ -94,7 +94,6 @@ import {
   formatDollars,
   formatShortDate,
   monthsFree,
-  priceAMonth,
   readBurn,
   readCycle,
 } from "@/features/settings/planMath";
@@ -430,17 +429,18 @@ function PlanStepUpPane({ onClose }: { onClose: () => void }) {
       ? null
       : plans?.tiers[currentId as keyof typeof plans.tiers]?.monthlyCredits ?? null;
   /*
-    ⚠ A FREE PLAN HAS NO RATE TO BE BEATEN, so there is nothing to say "up
-    from" about — seen in the running app on a free account, where the sentence
-    read *"2,778 credits per $1, up from free"*. The old cents-per-credit
-    sentence had the same shape (*"down from free"*) and #403 is the commit
-    that rewrites it, so it is corrected here rather than filed. On a paid plan
-    the comparison is real and the clause is drawn.
+    ⚠ **THE CLAUSE THIS FIGURE WAS NAMED FOR IS GONE, AND THE FIGURE IS NOT —
+    #1845.** It was read by the rate sentence's *"up from"* half (*"2,778
+    credits per $1, up from free"* on a free account, which is what #403
+    corrected), and that whole sentence left this pane with his #1773 rule. The
+    price survives because `currentMonthlyCredits` below tests it: a rung with
+    nothing recurring to CHARGE has nothing recurring to GRANT, and that test is
+    `planLadder`'s own declaration rather than a `currentId === "free"` list.
+
+    So the paragraph is corrected rather than deleted: a reader who finds a
+    figure whose stated purpose has left the file concludes it is dead, and this
+    one is load-bearing on the delta line a customer still reads.
   */
-  /* Named rather than inlined at the clause below: the 'up from' comparison
-     needs BOTH figures, and spelling all three checks inside the JSX made
-     the sentence unreadable and pushed the credit census's extraction past
-     its window. One name says what the condition means. */
   const currentPrice =
     currentId === null
       ? null
@@ -497,9 +497,6 @@ function PlanStepUpPane({ onClose }: { onClose: () => void }) {
     selected && currentMonthlyCredits !== null
       ? selected.credits - currentMonthlyCredits
       : null;
-
-  /* A rate is only comparable against a plan we have actually been told about. */
-  const rateComparable = currentPrice !== null && currentPrice > 0 && currentCredits !== null;
 
   const fullYear = selected ? selected.price * 12 : 0;
   /*
@@ -641,8 +638,11 @@ function PlanStepUpPane({ onClose }: { onClose: () => void }) {
     and keeps its claim: a free account reads what the plan makes a month and is
     told nothing false about what it has now.
 
-    It is `rateComparable`'s reasoning one noun over — *a free plan has no rate
-    to be beaten* — and the same answer: there is nothing to be `up from`.
+    It is the retired rate clause's reasoning one noun over — *a free plan has
+    no rate to be beaten* — and the same answer: there is nothing to be `up
+    from`. (That clause and its `rateComparable` gate left this pane with
+    #1845; this sentence is the surviving half of the pair, and it is named
+    rather than cited so the pointer cannot rot into a dead symbol.)
   */
   const nowCount =
     currentMonthlyCredits === null
@@ -799,58 +799,37 @@ function PlanStepUpPane({ onClose }: { onClose: () => void }) {
           </div>
 
           {/*
-            ⚠ THE UNIT PRICE IS ON ITS OWN LINE, NOT RIGHT-ALIGNED BESIDE THE
-            FIGURE. §7.2 draws it beside; at 436px it does not fit — a 30px
-            tabular figure plus `due today` plus two unit prices ran past the
-            card and clipped on `overflow: hidden`, which is §3 rule 2's failure
-            in a different guise. Seen in the running app before it shipped.
-          */}
-          {/*
-            ⚠ ONE FACT, ONE UNIT, ON BOTH BILLING SURFACES (#403). Change plan
-            argues value as credits per dollar since card 390 item 4; this said
-            the same thing in cents per credit, so a customer opening both in
-            one session met one fact in two units — §6b's own rule about the
-            annual badge, in a different place.
-          */}
-          {/*
-            ⚠ **THE RATE FOLLOWS THE TOGGLE, BECAUSE THE PRICE ABOVE IT DOES**
-            (#661). Turning Annual on changed the charge and left this sentence
-            quoting the monthly rate, so the line UNDERSTATED what was being
-            bought — two of the twelve months are free, which is precisely a
-            better credits-per-dollar rate, and the one line that exists to say
-            so did not say it.
+            ⚠ **THE CREDITS-PER-$1 RATE IS GONE FROM THIS PANE — #1845, AND
+            THE SENTENCE IT REPLACES IS RECORDED HERE RATHER THAN DELETED,
+            BECAUSE THREE CARDS' FINDINGS WERE ATTACHED TO IT.**
 
-            ⚠ **BOTH SIDES MOVE, OR THE COMPARISON LIES THE OTHER WAY.** An
-            annual figure held up against a monthly one would OVERSTATE the
-            gain by the discount, which is the direction that misleads. This
-            reads the ladder at the interval the customer is looking at — a
-            like-for-like rung comparison, not a claim about how they are
-            billed today, which this surface does not know.
+            His word, 2026-10-02 (#1773), verbatim: *"on the free card remove
+            the free CREDITS PER $1 line thats stupid"*, then, on the reading
+            that the rate belongs on Add credits and not on a plan card at all,
+            *"yes i like this"*. #1836 made this pane a PLAN surface — eyebrow
+            `PLANS`, heading *Choose a plan*, a button reading *Upgrade to …* —
+            and left the rate standing on it, so the commit that named the pane
+            correctly is the one that put the rate on a plan surface.
 
-            ⚠ **AND IT DOES REPRODUCE FROM THE YEAR'S CHARGE ABOVE, WHICH IS
-            THE OBVIOUS OBJECTION.** The big figure here is a YEAR (`due
-            today`), while the rate is per month — but credits per dollar is
-            the same number over either period as long as both sides use one:
-            a year's credits over a year's dollars is `credits × 12` over
-            `annualPrice / 100`, which is exactly `credits` over
-            `monthlyEquivalent / 100`. That scale-invariance is why this unit
-            can sit on a yearly confirm step and a monthly plan card and mean
-            the same thing on both.
+            It read `6,250 credits per $1, up from 5,185`, both halves drawn
+            through `formatCreditsPerDollar(priceAMonth(…))`. **Three findings
+            rode that line and none of them is overturned**: #403 (one fact, one
+            unit, on both billing surfaces — closed harder by the rate having
+            ONE home than it ever was by symmetry), #661 (the rate followed the
+            Annual toggle, because the price above it does) and #1755 (`annual
+            === true`, never `annual &&`, since a rate quoted at a guessed
+            interval is the wrong number). What they were protecting now lives
+            entirely on the surface that still states the unit: `rateFor` in
+            `CreditPacksPane` derives it from the top-up ladder, at one
+            interval, with no second unit to drift to.
+
+            ⚠ **THE PACKS PANE KEEPS ITS RATE, AND THAT IS THE WHOLE RULE** —
+            his word moves the unit's HOME; it does not retire the unit. So
+            `card390-guard.test.ts` holds it per PANE rather than per FILE: the
+            packs pane must print it, this pane must not. A file-level read
+            cannot tell those two panes apart, which is exactly why it passed
+            this defect for the day it was live.
           */}
-          {selected ? (
-            <span className="dp-set__value">
-              {/* ⚠ #1755: `annual === true` on both halves. `selected` is null
-                  until the rung is read, so neither is reachable on an unread
-                  status — and a RATE quoted at a guessed interval is still the
-                  wrong number, so the narrowing is written where it is read
-                  rather than inferred from the guard above. */}
-              {formatCreditsPerDollar(priceAMonth(selected.price, annual === true), selected.credits)}{" "}
-              credits per $1
-              {rateComparable
-                ? `, up from ${formatCreditsPerDollar(priceAMonth(currentPrice, annual === true), currentCredits)}`
-                : null}
-            </span>
-          ) : null}
 
           {/* §7.2 — name the DELTA, not the tier. */}
           <div>

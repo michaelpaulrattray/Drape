@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 50
+      "moduleCount": 51
     },
     {
       "id": "domain:wardrobe",
@@ -5769,6 +5769,12 @@
     {
       "id": "module:server/testing/migrationColumns.ts",
       "path": "server/testing/migrationColumns.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/testing/sourceBand.ts",
+      "path": "server/testing/sourceBand.ts",
       "domain": "unassigned",
       "lifecycle": "active"
     },
@@ -14443,6 +14449,10 @@
     {
       "id": "test:server/testing/migrationColumns.test.ts",
       "path": "server/testing/migrationColumns.test.ts"
+    },
+    {
+      "id": "test:server/testing/sourceBand.test.ts",
+      "path": "server/testing/sourceBand.test.ts"
     },
     {
       "id": "test:server/testing/withoutComments.test.ts",
