@@ -1,60 +1,32 @@
 {
-  "edition": 627,
-  "updatedAt": "2026-10-03T07:40:20.906Z",
-  "shift": "Your answers from the terminal this morning are on their cards and the Desk now agrees with them. The second admin account is your engineer's (closed). The security scanner gap gets a gate step and the noisy alarm will ignore small days (both ordered, both buildable). The framing example is stopped; your eye says the 0.42 Sifr2 picture is a close-up, so the close-up line moves once you say whether today's 0.51 picture is one too. Pricing Phase 1 is closed on your drive with the Stripe switch parked until the full app is built, your account sits on Starter so Add credits shows you the packs, and Pricing Phase 2 is the focus with four build cards cut from the approved brief. One card still has a question for you: the canvas Refresh button charges 70 credits for a render on two Google models shut down in June (#1785) — seal it, re-point it, or leave it; the relay recommends seal.",
+  "edition": 628,
+  "updatedAt": "2026-10-03T08:50:00.000Z",
+  "shift": "Phase 2 is now the focus on this page as well as in the crew's rulebook, and that was the whole job tonight. You said this morning that phase 2 gets built next, and the crew cut four build cards from the brief you approved — but not one of them could be started. The ladder on this page still had Phase 1 as the current rung, and that is the field the crew reads to decide what a builder is allowed to pick up, so all four were held. Phase 1 now reads done, Phase 2 is the current rung, and the first card — the three plans with the credit slider — is free for a builder tonight. Nothing a customer sees has changed yet. One card still has a question for you: the canvas Refresh button charges 70 credits for a render on two Google models shut down in June (#1785).",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
-      "state": "none",
-      "title": "No focus is set — P1 is complete and the next rung is yours to name. Until you do, the crew works maintenance only: your background switches, the patrols on their clocks, and a bug a customer can actually hit.",
-      "quote": "after n2 is wrapped up start the pricing/money work then proceed onto n2b and n2c",
-      "quotedAt": "2026-10-01T07:40:00+10:00"
+      "state": "confirmed",
+      "title": "Pricing Phase 2 — the plans redesigned. Three plans instead of seven, with a credit slider on the biggest; Enterprise becomes a conversation rather than a support address; and Compare plans is organised by what you make. The brief you approved is the spec, and four build cards are cut from it.",
+      "quote": "phase 2 gets built next not n2b",
+      "quotedAt": "2026-10-03T17:33:25+10:00"
     },
     "milestone": {
-      "title": "P1 — pricing, phase 1: its building is DONE. The approved prices, plans and free grant are live; the one step left is switching the money over to live mode, which is yours (#1787, #1609)",
+      "title": "P2 — pricing, phase 2: the plan surface rebuilt to the brief you approved. Four cards, one per surface, and every one of them waits for an eye on the frames before it goes live",
       "steps": [
         {
-          "state": "done",
-          "title": "One display helper: every credit number you see is the ledger ÷ 5, prices rounding up and balances rounding down (#1600)"
+          "title": "Three plans instead of seven, with the credit slider on the biggest — Starter $27, Pro $68, Studio $159, and Studio's slider buying more credits a month at $9 per 5,000 (#1832)",
+          "state": "waiting"
         },
         {
-          "state": "done",
-          "title": "The price table, and a sheet now costs the same whether you roll or follow: 320 · Sign 1,700 · Refine 350 · Try again 370, in one place, with one free retry per unchecked view (#1601, #1753)"
+          "title": "Enterprise becomes a conversation: a Let's talk band where the quiet write-to-support line sits today (#1833)",
+          "state": "waiting"
         },
         {
-          "state": "done",
-          "title": "Plan grants and the free grant: the new monthly amounts, 2,700 credits once for free, and every existing free account raised to it (#1602)"
+          "title": "Compare plans organised by what you make, with the cinema row marked coming (#1834)",
+          "state": "waiting"
         },
         {
-          "state": "done",
-          "title": "Free signup with no card and no phone: the grant lands on a verified email or Google sign-in, guarded by quiet limits (#1603)"
-        },
-        {
-          "state": "done",
-          "title": "The renewal fix: a monthly refresh never overwrites credits you bought (#1604)"
-        },
-        {
-          "state": "done",
-          "title": "Checkout on Stripe's own prices: the yearly price you see is the one you are charged (#1605)"
-        },
-        {
-          "state": "done",
-          "title": "Top-up packs for plan holders on your volume ladder: 5,000 = $12 · 10,000 = $22 · 25,000 = $50, plus a slider — the checkout and the credits landing are built and in review; the Add credits screen is next (#1606)"
-        },
-        {
-          "state": "done",
-          "title": "Plan cards in Rinoa's four lines, with Yuna's final pass (#1607)"
-        },
-        {
-          "state": "done",
-          "title": "The retry-settled log line, monitoring only (#1608)"
-        },
-        {
-          "state": "waiting",
-          "title": "Go-live checklist for the relay's and your hand: live Stripe objects, Railway variables, the existing-account raise (#1609)"
-        },
-        {
-          "title": "The completion card and your eight-item test-drive list are on this page — drive it, then name the next rung (#1787)",
+          "title": "Team priced per seat at $68 a seat, after the shared workspace exists (#1835, #1788)",
           "state": "waiting"
         }
       ]
@@ -72,7 +44,12 @@
       },
       {
         "key": "P1",
-        "title": "Pricing, phase 1 — its building is FINISHED and live; the rung stays open on one step that is yours, switching the money to live mode (#1787, #1609)",
+        "title": "Pricing, phase 1 — built, driven and live. Its one remaining step is yours and is parked on your word: switching the money to live mode (#1787, #1609)",
+        "state": "done"
+      },
+      {
+        "key": "P2",
+        "title": "Pricing, phase 2 — the plans redesigned: three plans with a credit slider on the biggest, Enterprise as a conversation, and Compare plans organised by what you make",
         "state": "current"
       },
       {
