@@ -1,7 +1,7 @@
 {
-  "edition": 633,
-  "updatedAt": "2026-10-03T16:50:00.000Z",
-  "shift": "Tonight was the cost test you asked for on Sign — the step that turns a cast into a finished character with five finished pictures.\n\nRight now that costs us about a dollar each time somebody does it, and three quarters of that is the five pictures, rendered one at a time. Your idea was to render all five as one big sheet instead and cut it up, which should cost less than half. The worry was obvious: five pictures cut out of one are going to be smaller, and they might not look like the same person.\n\nI ran it twice on Sifr, and the news is mostly good.\n\nThe sheet came back bigger than I expected. Each of the five cut-out pictures is about four fifths the size of what we deliver today — slightly narrower, and actually taller. It costs 30 cents instead of 75, so it saves about 45 cents every time somebody signs a cast, which is close to half the whole thing. It is also a touch faster, not slower. And the part I was most worried about held up completely: all five panels are unmistakably the same woman, same face, same hair, same tattoos, same outfit, same lighting. That was the thing most likely to break and it did not.\n\nThere is one real problem, and it happened both times. The full-length front view loses her feet — the picture stops at the thigh one time and the knee the other, on a view that is supposed to show her head to toe with room to spare. The full-length BACK view came out perfectly both times, which is what makes me think this is fixable rather than a wall. Our own framing check caught it without me having to point at it.\n\nSo: the idea works, it saves roughly what your finance note hoped, and it needs the feet problem solved before it could ship. Two pictures are below — the whole sheet, and today's front view beside the cut-out one so you can judge the quality and see the missing feet in the same glance. If you are happy, say build it and I will cut the card.\n\nIt cost about 73 cents of our own money. Nothing of yours, and nothing about how your existing casts work has changed — this was a test off to one side.",
+  "edition": 634,
+  "updatedAt": "2026-10-03T17:30:00.000Z",
+  "shift": "Tonight I bought the one thing card 1612 still needed: a cast signed under the new picture rule, so you can actually look at it.\n\nBack on 30 September you agreed the checker was too strict — it was throwing away good pictures because it was reading a sentence instead of measuring one. Two things changed. Framing is measured now rather than read. And a picture the checker is unsure about gets delivered to you anyway, charged, marked unchecked, with a free retry, instead of being binned. All of it has been live since 2 October. What nobody could show you was it working, because nobody has signed a cast since 1 October — the day before it shipped.\n\nSo I signed one. A weathered fisherman, five finished pictures, three minutes.\n\nThe new rule earned its keep immediately. Two of the five pictures came back with the checker unhappy, and under the old rule both would have been thrown away and the money given back. Instead you keep them, marked unchecked with a free retry. I looked at both.\n\nOne of the two complaints is right: the three-quarter view has his head turned the wrong way — a mirror of what was asked for. The other is wrong. The checker says the close-up is cropped too tight; the measurement says it is fine, and so does my eye — his chin and beard are fully in frame with room below. That mistake costs you a label on a picture you keep, never the picture itself, which is exactly what our engineers predicted it would cost when they shipped it.\n\nEverything else held. The full-length front shows him head to toe with room above the hair and below the boots — worth saying out loud, because the cost test I ran for you last night lost the feet on that exact view, twice. Same man, same jacket, same weather, in all five.\n\nThe strip is below. If it looks right to you, say so and 1612 closes.\n\nIt cost about a dollar forty of our own money and nothing of yours. I ran it on the test copy of the app rather than your account on purpose: you are on 1,858 credits, signing costs 1,700, and it would have left you 158 — not enough to roll one sheet — in the week you are driving the new pricing.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -270,6 +270,33 @@
     }
   },
   "needsYou": [
+    {
+      "id": "law9-sign-card-1612",
+      "title": "Does this signed cast look right? It is the first one under the new picture rule",
+      "productImpact": "You ruled on 30 September that our picture checker was too strict and was binning good pictures. The fix went live on 2 October, and until tonight nobody had signed a cast since the day before it shipped — so there was nothing to show you.\n\nI signed one tonight. Five pictures of a weathered fisherman. Two of the five came back with the checker unhappy, and your rule is why you still have them: they arrived marked unchecked with a free retry instead of being thrown away and refunded.\n\nI looked at both. One complaint is fair — the three-quarter view has his head turned the wrong way. One is wrong — the close-up was marked as cropped too tight when it plainly is not. That mistake costs a label on a picture you keep, never a picture.\n\nIt cost about a dollar forty of our money and none of yours. I ran it on the test copy rather than your account, because signing on yours would have left you 158 credits — not enough to roll one sheet.",
+      "workedExample": "The close-up is the one worth ten seconds. Our measurement says there is plenty of room below his chin and passes it. The checker's sentence says the crop cuts off below the mouth with no margin. They disagree, the sentence wins, and the picture gets a label it does not deserve — but you keep the picture. That is the trade your ruling bought, and this is the first time anyone has seen it happen.",
+      "options": [
+        {
+          "key": "close",
+          "label": "They look right — close the card",
+          "consequence": "1612 closes. The rule stands as it is."
+        },
+        {
+          "key": "more",
+          "label": "Show me another one first",
+          "consequence": "I sign a second cast on the test copy and put it beside this one. About a dollar forty."
+        },
+        {
+          "key": "fix",
+          "label": "The wrong label bothers me — fix it",
+          "consequence": "I file the overlap as its own card: stop asking the checker a framing question the measurement already answered. It changes no picture, only labels."
+        }
+      ],
+      "recommendation": "Close it. The rule did exactly what you asked — nothing was thrown away, and the one wrong label costs a word on a picture you still have.",
+      "state": "open",
+      "filedAt": "2026-10-03T17:30:00.000Z",
+      "issueNumber": 1612
+    },
     {
       "id": "second-admin-1806",
       "title": "Is the second admin account yours? One appeared on 28 September",
@@ -3497,6 +3524,22 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "law9-sign-1612",
+      "title": "The first cast signed under the new picture rule — and two of the five are marked unchecked",
+      "question": "This is a whole cast signed under the rule you approved on 30 September, start to finish. Five pictures, one man.\n\nRead the labels under them. Three say delivered. Two say delivered, unchecked, free retry — those are the two the checker was unhappy with, and the whole point of your ruling is that you still get them instead of losing them.\n\nWhat I would like your eye on, in order:\n\n1. Is this the same man in all five? Same face, same jacket, same weather.\n\n2. The full front — he should be head to toe with room above the hair and below the boots. He is, to my eye. This is the view that lost its feet twice in last night's cost test, so it matters that today's road gets it right.\n\n3. The two marked unchecked. The three-quarter has his head turned the wrong way, which is a fair complaint. The close-up was marked for being cropped too tight and I think that is simply wrong — he has room below the chin. If you agree, the rule is still doing its job: you kept the picture, you only got a label you can ignore.\n\nIf the five look right, say so and the card closes.",
+      "state": "open",
+      "filedAt": "2026-10-03T17:30:00.000Z",
+      "issueNumber": 1612,
+      "frames": [
+        {
+          "key": "crew-eye/1910b819-e7d5-4b41-be4f-07d580af13e7.jpg",
+          "caption": "The five views of one cast signed under the new rule, left to right: close-up, three-quarter, full front, side profile, full back. The label under each is what the product did with it — the first two were delivered marked unchecked with a free retry rather than being thrown away, which is the change you approved.",
+          "arm": null
+        }
+      ],
+      "cardId": "law9-sign-card-1612"
+    },
     {
       "id": "framing-template-court-1612-pika",
       "title": "Pika, with and without the example — the one picture the checker threw out",
