@@ -1068,7 +1068,14 @@ describe("the milestone comes from the ladder he declared, not the top of his ba
        rungless card as the positive and negative controls. **The edition is the
        only artifact this gate reads; a focus recorded anywhere else is a focus
        no seat can act on.** The next flip is P2 → N2b, on P2's completion card
-       and his word. */
+       and his word.
+
+       ⚠ **AND THIS ARM HOLDS THE BRIEFING AGAINST ITSELF, WHICH IS WHY #1840
+       SHIPPED GREEN — #1860.** It pins one `current` rung and which one; it
+       cannot see `.agents/foreman/PROGRAM.md`, so a briefing left behind while
+       his word reached the rulebook passes here. The arm that holds the two
+       EQUAL is `server/seatFocusTwoTruths.test.ts`, and the pin above and that
+       arm move together: a flip that changes this line changes both files. */
     expect(focusRungFromLadder(ladder)).toBe("P2");
   });
 

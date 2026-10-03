@@ -14275,6 +14275,10 @@
       "path": "server/seatBatchingJev.test.ts"
     },
     {
+      "id": "test:server/seatFocusTwoTruths.test.ts",
+      "path": "server/seatFocusTwoTruths.test.ts"
+    },
+    {
       "id": "test:server/seatPassDigest.test.ts",
       "path": "server/seatPassDigest.test.ts"
     },
