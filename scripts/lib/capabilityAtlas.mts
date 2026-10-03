@@ -738,12 +738,14 @@ export function declaredSourceNames(): { declarations: Set<string>; modules: Set
   for (const file of files) {
     modules.add(path.basename(file).replace(/\.(tsx?|mts)$/, ""));
     if (path.resolve(file) === subject) continue;
-    let raw: string;
-    try {
-      raw = fs.readFileSync(file, "utf8");
-    } catch {
-      continue;
-    }
+    /* ⚠ `readIfPresent` AND NOT A BARE READ, which `listedSource.test.ts`
+       caught on the first push of this reader. This is a WALKED list, and a file
+       that vanishes between the listing and the read would ENOENT the deploy
+       rite on a clean tree (#223) — so the walk tolerates an absence. The
+       module's FIXED-name reads above must keep throwing, and that difference is
+       each site's own statement about what it is reading. */
+    const raw = readIfPresent(file);
+    if (raw === null) continue;
     /* ⚠ `codeOnly` AND NOT THE RAW BYTES. A declaration is CODE: with comments
        and literal contents in, any name this repository merely WRITES ABOUT read
        as declared — `CASTING_V2_RETRY_PRICE_CREDITS` is in castingCreditCosts.ts
