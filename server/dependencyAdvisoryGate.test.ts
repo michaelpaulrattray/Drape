@@ -35,6 +35,7 @@ import {
   advisoryRefusal,
   AUDIT_ARGUMENTS,
   judgeAdvisories,
+  OUTAGE_GUIDANCE,
   readAuditReport,
 } from "../scripts/lib/dependencyAdvisories.mts";
 
@@ -52,6 +53,25 @@ const read = (relative: string): string => readFileSync(resolve(ROOT, relative),
 */
 const PREPATCH = read("server/__fixtures__/pnpm-audit-prod-dfdcc3a3.json");
 const CLEAN = read("server/__fixtures__/pnpm-audit-prod-clean.json");
+
+/*
+  THE TWO CAPTURED OUTAGES (#1856).
+
+  An outage of the real registry cannot be summoned, so these were DRIVEN rather
+  than written: `pnpm audit --prod --json --registry …` pointed first at a dead
+  port (`127.0.0.1:9`) and then at a local HTTP server standing in for the audit
+  endpoint, on pnpm 10.28.2 / Node 24.18.0, captured whole and unedited. Five
+  shapes were driven in that sitting — ECONNREFUSED, a captive portal's HTML, a
+  503, a 429 and a 500 — and ALL FIVE answered with valid JSON on stdout carrying
+  an `error` object, with stderr at zero bytes. These two are the extremes of
+  that set: a transport failure that never reached an endpoint, and an endpoint
+  that answered badly.
+
+  ⚠ They are the reason this card exists. Every one of the five used to land on
+  the `advisories`-is-missing refusal, which named a key and not a cause.
+*/
+const OUTAGE_ECONNREFUSED = read("server/__fixtures__/pnpm-audit-outage-econnrefused.json");
+const OUTAGE_BAD_RESPONSE = read("server/__fixtures__/pnpm-audit-outage-bad-response.json");
 
 /** The two the card names, and the two whose severity is `high`. */
 const CARD_HIGHS = ["GHSA-6j4f-fj2g-mc7p", "GHSA-qhr7-859c-m2p7"];
@@ -196,10 +216,19 @@ describe("⚠ IT REFUSES RATHER THAN PASSING — the only direction that is dang
     expect(whyOf("   \n  ")).toContain("printed nothing");
   });
 
-  it("⚠ a registry failure — pnpm prints prose, not JSON, and prose must never pass", () => {
+  it("prose instead of JSON must never pass — whatever prints it", () => {
     /*
-      This is how an offline or rate-limited CI runner actually arrives, and it is
-      the shape that would otherwise turn this step into a green no-op.
+      ⚠ THIS ARM'S TITLE AND COMMENT USED TO CLAIM THIS WAS "how an offline or
+      rate-limited CI runner actually arrives". That was reasoned, and #1856 drove
+      it: it is not. Under `--json`, pnpm 10.28.2 puts
+      `ERR_PNPM_AUDIT_BAD_RESPONSE` in a JSON `error` object (see
+      `OUTAGE_BAD_RESPONSE`) and prints no loose prose at all — five failure
+      shapes out of five.
+
+      The ARM is kept exactly as it was, and deliberately: a fail-closed reader
+      must not depend on which shape arrives, and a wrapper, a proxy or the next
+      pnpm could put a line on stdout tomorrow. What changed is only the claim
+      about which road an outage takes.
     */
     const why = whyOf("ERR_PNPM_AUDIT_BAD_RESPONSE  The audit endpoint returned a non-JSON response");
     expect(why).toContain("did not answer with JSON");
@@ -234,6 +263,148 @@ describe("⚠ IT REFUSES RATHER THAN PASSING — the only direction that is dang
   it("the empty-but-real report is NOT refused — the control on all of the above", () => {
     const result = readAuditReport('{"advisories":{},"metadata":{"vulnerabilities":{},"totalDependencies":0}}');
     expect(result.ok).toBe(true);
+  });
+});
+
+describe("⚠ AN OUTAGE SAYS IT IS AN OUTAGE — and still refuses (#1856)", () => {
+  const refusalOf = (text: string): string => {
+    const result = readAuditReport(text);
+    expect(result.ok, `this should not have read as a report: ${text.slice(0, 60)}`).toBe(false);
+    return result.ok ? "" : result.why;
+  };
+
+  /*
+    THE ARM THAT MATTERS MOST, AND IT IS FIRST ON PURPOSE. The card's one
+    instruction was "do not soften the refusal": a security check that waves a
+    change through because it could not look is what #1805 was filed about. So
+    before any arm reads a word of the new sentence, both captured outages are
+    proven to be REFUSALS.
+  */
+  it("both captured outages are REFUSED, not passed", () => {
+    for (const captured of [OUTAGE_ECONNREFUSED, OUTAGE_BAD_RESPONSE]) {
+      expect(readAuditReport(captured).ok).toBe(false);
+    }
+  });
+
+  it("the ECONNREFUSED capture names the registry and quotes pnpm's own reason", () => {
+    const why = refusalOf(OUTAGE_ECONNREFUSED);
+    /* The words the relay asked for, in the refusal's first line. */
+    expect(why).toContain("could not read the advisory registry");
+    /* And the diagnosis the report stated about itself, which used to be dropped. */
+    expect(why).toContain("ECONNREFUSED");
+    expect(why).toContain("/-/npm/v1/security/audits");
+    /* It must NOT read as the key-shaped refusal it used to land on. */
+    expect(why).not.toContain("carries no `advisories` object");
+  });
+
+  it("the bad-response capture carries the endpoint's status, not a key name", () => {
+    const why = refusalOf(OUTAGE_BAD_RESPONSE);
+    expect(why).toContain("could not read the advisory registry");
+    expect(why).toContain("ERR_PNPM_AUDIT_BAD_RESPONSE");
+    expect(why).toContain("responded with 503");
+    expect(why).not.toContain("carries no `advisories` object");
+  });
+
+  /*
+    ⚠ THE SENTENCE'S WORDS ARE READ HERE AND NOWHERE ELSE. Every other arm
+    asserts containment of the `OUTAGE_GUIDANCE` export rather than retyping it
+    (working law 4) — which means every other arm would still pass if the
+    constant were gutted to an empty string. This is the one arm that reads what
+    it actually SAYS, against the three things the card required it to say.
+  */
+  it("the sentence says it is an outage, that the change may be fine, and that it comes back", () => {
+    expect(OUTAGE_GUIDANCE).toContain("REGISTRY OUTAGE");
+    expect(OUTAGE_GUIDANCE).toContain("your own change is");
+    expect(OUTAGE_GUIDANCE).toContain("probably fine");
+    expect(OUTAGE_GUIDANCE).toContain("nothing about the diff was judged");
+    expect(OUTAGE_GUIDANCE).toContain("as soon as the advisory service answers");
+    /* And it says out loud why it refuses anyway, so nobody reads it as a waiver. */
+    expect(OUTAGE_GUIDANCE).toContain("refuses rather than passing on purpose");
+    expect(OUTAGE_GUIDANCE).toContain("#1805");
+  });
+
+  it("every refusal an outage can arrive at carries the sentence", () => {
+    /*
+      The four roads, derived from `readAuditReport`'s own branches rather than
+      from the card: a stated failure, an unrecognised JSON document, prose, and
+      silence. The first is what the five driven shapes use; the other three are
+      the same class on a quieter day.
+    */
+    const outageShaped = [
+      OUTAGE_ECONNREFUSED,
+      OUTAGE_BAD_RESPONSE,
+      '{"metadata":{"vulnerabilities":{},"totalDependencies":1}}',
+      "ERR_PNPM_AUDIT_BAD_RESPONSE  the endpoint returned a non-JSON response",
+      "",
+    ];
+    for (const text of outageShaped) {
+      expect(refusalOf(text), `no outage sentence on: ${text.slice(0, 40)}`).toContain(OUTAGE_GUIDANCE);
+    }
+  });
+
+  it("⚠ NEGATIVE CONTROL — a document an outage cannot produce does NOT claim to be one", () => {
+    /*
+      Without this arm the one above is satisfied by pasting the sentence onto
+      every refusal, which is how a sentence stops being information. A bare
+      array and a non-object advisory entry are "this is not the document we
+      think we are reading", and they must keep saying only that.
+    */
+    for (const text of ['[]', '"ok"', 'null', '{"advisories":{"1240107":"high"},"metadata":{}}']) {
+      expect(refusalOf(text), `wrongly blamed an outage: ${text}`).not.toContain(OUTAGE_GUIDANCE);
+    }
+  });
+
+  it("⚠ an `error` beside a perfectly good `advisories` object still REFUSES", () => {
+    /*
+      The fail-closed ordering, and the only reason `statedFailure` is consulted
+      before the report is read at all. A document that announces a failure and
+      then gets judged on the advisories it happens to list is invariant 7's
+      defect with extra steps — it would report "none blocking" over an answer
+      that said it had failed.
+    */
+    const why = refusalOf(
+      '{"error":{"code":"ERR_PNPM_AUDIT_BAD_RESPONSE","message":"responded with 500"},'
+      + '"advisories":{},"metadata":{"vulnerabilities":{},"totalDependencies":478}}',
+    );
+    expect(why).toContain("could not read the advisory registry");
+    expect(why).toContain("responded with 500");
+  });
+
+  it("a stated failure is read however thinly the report states it", () => {
+    /* A string rather than an object — the shape a different tool version might use. */
+    expect(refusalOf('{"error":"the audit endpoint is unavailable"}')).toContain("the audit endpoint is unavailable");
+    /* A code with no message. */
+    expect(refusalOf('{"error":{"code":"ENOTFOUND"}}')).toContain("ENOTFOUND");
+    /* A message with no code. */
+    expect(refusalOf('{"error":{"message":"socket hang up"}}')).toContain("socket hang up");
+    /*
+      ⚠ AND AN `error` THAT SAYS NOTHING IS STILL AN OUTAGE, never a silence.
+      "it answered with an error" is itself the finding; reading an empty error
+      as no error is how this reader would come up blank and blame a key again.
+    */
+    for (const empty of ['{"error":{}}', '{"error":null}', '{"error":{"code":"","message":""}}']) {
+      const why = refusalOf(empty);
+      expect(why, empty).toContain("could not read the advisory registry");
+      expect(why, empty).toContain("did not say what went wrong");
+    }
+  });
+
+  it("pnpm's generic `code: \"pnpm\"` is dropped, because the message is the whole diagnosis", () => {
+    /*
+      Driven: a captive portal's HTML answered with `code: "pnpm"` and a message
+      carrying the real parse failure. Printing `pnpm: …` in front of it is noise
+      at the top of a refusal somebody is reading in a hurry.
+    */
+    const why = refusalOf('{"error":{"code":"pnpm","message":"Unexpected token \'<\' is not valid JSON"}}');
+    expect(why).toContain("Unexpected token '<' is not valid JSON");
+    expect(why).not.toContain("pnpm: Unexpected token");
+  });
+
+  it("a real report is untouched by any of this — the control on the whole block", () => {
+    /* No `error` key, so nothing above fires and the clean tree still reads and passes. */
+    const result = readAuditReport(CLEAN);
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.report.dependencies).toBe(478);
   });
 });
 

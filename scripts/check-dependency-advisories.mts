@@ -68,6 +68,17 @@ const read = readAuditReport(run.stdout ?? "");
 
 if (!read.ok) {
   console.log(`REFUSED: ${read.why}`);
+  /*
+    ⚠ STDERR IS KEPT AND IS MEASURED EMPTY FOR THE CASE IT WAS WRITTEN FOR
+    (#1856). Driven on pnpm 10.28.2 against a dead port and a local stand-in
+    endpoint, five failure shapes out of five — ECONNREFUSED, a captive portal's
+    HTML, a 503, a 429 and a 500 — printed their whole diagnosis as JSON on
+    STDOUT and left stderr at zero bytes. So this branch is not where an outage
+    explains itself; `readAuditReport` reads the report's own `error` object and
+    the sentence above carries it. The echo stays because it costs nothing and a
+    failure that is not one of those five may yet use it — but nobody should
+    read its silence as "pnpm said nothing".
+  */
   if ((run.stderr ?? "").trim() !== "") {
     console.log(`  pnpm said on stderr: ${(run.stderr ?? "").trim().split("\n").slice(0, 5).join("\n  ")}`);
   }
