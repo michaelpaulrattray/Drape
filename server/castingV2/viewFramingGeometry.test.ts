@@ -172,9 +172,17 @@ describe("measureViewFraming — the close-up band, both directions", () => {
     expect(measured.readings.every((reading) => reading.held === true)).toBe(true);
   });
 
-  it("POSITIVE CONTROL: a neck and shoulders below the face is out of band, and nothing else moves", async () => {
+  it("POSITIVE CONTROL: a portrait-framed picture in the close-up slot is out of band, and nothing else moves", async () => {
     /* The same face, pulled back: 190 rows of picture below a 150-row face is
-       1.27 face-heights, which on his own frames is a neck and shoulders. */
+       1.27 face-heights.
+
+       ⚠ **THIS ARM'S SUBJECT CHANGED WITHOUT ITS NUMBERS CHANGING — #1837.** It
+       read *"a neck and shoulders below the face"*, which was true of 1.27 while
+       the bound was 0.3; his eye then moved the bound to 0.7 and a neck and
+       shoulders (0.48 … 0.56 on his own frames) is IN band. 1.27 now sits inside
+       the sealed Portrait population (1.10 … 3.03), so what this fixture is, is
+       a PORTRAIT delivered where a close-up was asked — which is the case
+       #1837's done-when names, and the reason the fixture needed no new pixels. */
     const { reader } = readerOf({
       ...IN_BAND_CLOSE_UP,
       face: maskOf({ x: 40, y: 60, width: 120, height: 150 }),
@@ -209,6 +217,62 @@ describe("measureViewFraming — the close-up band, both directions", () => {
     const measured = await measureViewFraming({ band, image: FRAME, reader });
     expect(measured.verdict).toBe("outOfBand");
     expect(measured.readings.find((reading) => reading.rule.landmark === "subject")!.held).toBe(false);
+  });
+
+  it("the bound is HIS EYE's number, and moving it means reading his words", () => {
+    /*
+      The sibling of the Portrait's arm below, and it exists because this number
+      moved once already. ⚠ **It is the one bound in this file set by an EYE
+      rather than by a court**: 0.3 was six frames and a Desk reply, and on
+      2026-10-03 he looked at #1612's two Sifr2 close-ups — the example-assisted
+      render at 0.42 and today's road at 0.51 — and called both close-ups while
+      the 0.3 line called both out of band. Law 9 decides which one is wrong.
+    */
+    const rule = castPackageView("closeUp").band.rules
+      .find((candidate) => candidate.must === "roomBelowAtMost");
+    expect(rule, "the close-up band lost its distance rule").toBeDefined();
+    expect(
+      (rule as { inItsOwnHeights: number }).inItsOwnHeights,
+      "his eye moved this bound on 2026-10-03 (#1837), verbatim: \"on Sifr2 Yes it reads"
+      + " as a closeup\" — of a picture measuring 0.51 face-heights of room below the face."
+      + " 0.7 is the geometric middle of the empty band between his highest judged close-up"
+      + " (0.51) and his sealed Portraits' tightest (1.10), the same method that set the"
+      + " Portrait's 3.7 and the old 0.3. Moving it means reading the band in"
+      + " `castViewPackage.ts` and his words on #1612.",
+    ).toBe(0.7);
+  });
+
+  it("his two judged frames read IN band, and a portrait does not", async () => {
+    /*
+      The arm that would have gone red before his ruling, driven at the two
+      numbers he actually looked at rather than at the constant. A fixture whose
+      face is 100 rows high puts `room` in face-heights directly.
+    */
+    const atRoom = async (room: number) => {
+      /* ⚠ `roomBelow` measures the face against the FRAME's lower edge, not
+         against the subject — the first draft of this arm built the room out of
+         the subject's height and every case read `outOfBand` for the wrong
+         reason. Same construction as the Portrait block's `faceWithRoomOf`. */
+      const faceHeight = 50;
+      const bottom = Math.round(HEIGHT - 1 - room * faceHeight);
+      const { reader } = readerOf({
+        face: maskOf({ x: 40, y: bottom - faceHeight + 1, width: 120, height: faceHeight }),
+        /* Cut by the top, which is the band's other rule — a close-up's crown
+           is cropped, and leaving it clear would fail for a second reason and
+           tell us nothing about the distance. */
+        subject: maskOf({ x: 20, y: 0, width: 160, height: HEIGHT }),
+      });
+      return (await measureViewFraming({ band, image: FRAME, reader })).verdict;
+    };
+    /* His two, both of which 0.3 refused. */
+    expect(await atRoom(0.42), "the example-assisted Sifr2 render he called a close-up").toBe("inBand");
+    expect(await atRoom(0.51), "today's Sifr2 render he called a close-up").toBe("inBand");
+    /* The two his ruling admits as a consequence rather than by their own eye. */
+    expect(await atRoom(0.52)).toBe("inBand");
+    expect(await atRoom(0.56)).toBe("inBand");
+    /* And the Portrait population still reads out, which is the done-when's
+       other half — a line that admitted 1.10 would have no close-up band left. */
+    expect(await atRoom(1.10), "the tightest sealed Portrait must not pass as a close-up").toBe("outOfBand");
   });
 
   it("a landmark it cannot find is NOT a failure — it is an unanswered question", async () => {
@@ -348,8 +412,9 @@ describe("measureViewFraming — the portrait band, both directions", () => {
       "the portrait distance bound was measured on 43 production frames on 2026-10-02: his"
       + " sealed Portraits read 1.10 … 3.03 face-heights and his full-length views 4.61 …"
       + " 10.39, and 3.7 is the geometric middle of that empty band — the same method that"
-      + " put the close-up's 0.3 in the middle of 0.20 … 0.48. His eye closes it (law 9);"
-      + " the court is on the band in `castViewPackage.ts`.",
+      + " put the close-up's bound in the empty band below these same Portraits (0.3 at"
+      + " first, 0.7 since his eye moved it on 2026-10-03, #1837). His eye closes it"
+      + " (law 9); the court is on the band in `castViewPackage.ts`.",
     ).toBe(3.7);
   });
 });
