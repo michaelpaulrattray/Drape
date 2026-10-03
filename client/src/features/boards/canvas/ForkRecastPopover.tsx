@@ -8,6 +8,10 @@
  */
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
+/* #1785 — the SAME compiled constant the server's refusal reads
+   (`server/lib/canvasCastDoor.ts`), so the row a customer sees and the refusal
+   a request would meet cannot disagree (working law 4). */
+import { CANVAS_CAST_OPEN } from "@shared/canvasCastDoor";
 import { CostLabel } from "./CostLabel";
 
 interface ForkRecastPopoverContentProps {
@@ -59,6 +63,21 @@ export function ForkRecastPopoverContent({
             disabled
             title="Recast this cast"
             description={`${who} is minted — identity is sealed. Fork instead.`}
+            cost={null}
+          />
+        ) : !CANVAS_CAST_OPEN ? (
+          /* #1785 — the canvas casting door, his word: "seal". Recast is the
+             paid new-person engine, and the server refuses it at the mouth, so
+             the row is sealed HERE rather than left to quote a price for a road
+             that cannot be walked. D-43's minted branch above is the precedent,
+             clause for clause: the row stays visible, disabled, carrying its
+             reason and no cost, and Fork — free, untouched, still working — is
+             the live path beside it. Checked AFTER `isMinted` so a minted cast
+             keeps its own, more durable sentence unchanged. */
+          <ChoiceRow
+            disabled
+            title="Recast this cast"
+            description="Making new pictures on the canvas is unavailable while we rebuild it. Fork instead."
             cost={null}
           />
         ) : (

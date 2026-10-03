@@ -16,6 +16,7 @@ import {
 } from "../db";
 import { getBoardEdges } from "../db/boardEdges";
 import * as boardOps from "../lib/boardOps";
+import { assertCanvasCastOpen } from "../lib/canvasCastDoor";
 import { getSnapshot } from "../lib/boardState";
 import { BOARD_ITEM_KINDS, BOARD_EDGE_RELATIONS } from "../../drizzle/schema";
 import { CANONICAL_VIEW_ANGLES } from "../../shared/boardTypes";
@@ -569,6 +570,14 @@ export const boardOpsRouter = router({
           }
         }
 
+        /* ⚠ THE CANVAS CASTING DOOR (#1785) — ON THE RECAST BRANCH ONLY, AND
+           DELIBERATELY NOT AT THIS HANDLER'S MOUTH. The `decision === "fork"` path
+           above declares `plannedCredits: 0`, copies a Cast through
+           `forkEvidenceAwareCast`, and reaches no engine at all — a mouth gate would
+           close a free road that still works, and a door that eats somebody's saved
+           work is a deletion wearing one. Read at the code 2026-10-03; the only paid,
+           engine-reaching path in this procedure is the one below. */
+        assertCanvasCastOpen();
         return executeCanvasOperation<CanvasRecastResult>({
           userId: ctx.user.id,
           clientRequestId: input.clientRequestId,
@@ -650,6 +659,12 @@ export const boardOpsRouter = router({
         count: z.number().int().min(1).max(boardOps.MAX_VARIATIONS),
       }).strict())
       .mutation(async ({ ctx, input }) => {
+        /* ⚠ THE CANVAS CASTING DOOR (#1785, his word: "seal") — FIRST statement,
+           above ownership and above `executeCanvasOperation`, so the refusal is FREE.
+           This handler declares `plannedCredits: CREDIT_COSTS.castingImage`, and a door
+           placed after the hold would bill and refund, which is the defect rather than
+           the fix. `server/lib/canvasCastDoor.ts` carries the reasoning. */
+        assertCanvasCastOpen();
         await requireBoardOwnership(input.boardId, ctx.user.id);
         await boardOps.requireItemInBoard(input.itemId, input.boardId);
         const { model } = await boardOps.resolveModelBackedBoardOperation({
@@ -771,6 +786,12 @@ export const boardOpsRouter = router({
         modelName: z.string().max(128).optional(),
       }).strict())
       .mutation(async ({ ctx, input }) => {
+        /* ⚠ THE CANVAS CASTING DOOR (#1785, his word: "seal") — FIRST statement,
+           above ownership and above `executeCanvasOperation`, so the refusal is FREE.
+           This handler declares `plannedCredits: CREDIT_COSTS.castingImage`, and a door
+           placed after the hold would bill and refund, which is the defect rather than
+           the fix. `server/lib/canvasCastDoor.ts` carries the reasoning. */
+        assertCanvasCastOpen();
         await requireBoardOwnership(input.boardId, ctx.user.id);
         await boardOps.requireItemInBoard(input.itemId, input.boardId);
         return executeCanvasOperation({

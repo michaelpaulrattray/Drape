@@ -33,6 +33,18 @@ export interface NodeStatusBadgeProps {
   primaryLabel?: string;
   onPrimary?: () => void;
   onSecondary?: () => void;
+  /**
+   * A sentence shown WHERE THE PRIMARY ACTION WOULD BE, when that action is not
+   * on offer at all (#1785 — the canvas casting door, his word: "seal").
+   *
+   * ⚠ It exists so a closed road is a SENTENCE and not an absence. Dropping
+   * `onPrimary` alone already removes the button — and would leave a customer
+   * looking at "Out of sync" with nothing to do and no reason given, which is
+   * the disappearing-technology law failing in its own named way: a refusal
+   * says what was refused and what to do. Extending this component rather than
+   * forking it is this file's own standing instruction.
+   */
+  closedNote?: string;
 }
 
 interface VariantConfig {
@@ -51,7 +63,7 @@ const VARIANT_CONFIG: Record<NodeStatus["type"], VariantConfig> = {
   moderation: { Icon: Shield, title: "Under review", primaryLabel: "Open case", secondaryLabel: "Dismiss" },
 };
 
-export function NodeStatusBadge({ status, primaryLabel, onPrimary, onSecondary }: NodeStatusBadgeProps) {
+export function NodeStatusBadge({ status, primaryLabel, onPrimary, onSecondary, closedNote }: NodeStatusBadgeProps) {
   const { zoom } = useCanvasZoom();
   const config = VARIANT_CONFIG[status.type];
   const { Icon } = config;
@@ -90,6 +102,12 @@ export function NodeStatusBadge({ status, primaryLabel, onPrimary, onSecondary }
           )}
         </div>
         <div className="text-canvas-sm text-canvas-ink-soft leading-relaxed mb-3">{status.message}</div>
+        {/* #1785: the closed road's sentence stands where its button stood. No
+            button, no cost, nothing to press — the hover card is where this
+            node's story is already told, so the reason belongs beside it. */}
+        {!onPrimary && closedNote && (
+          <div className="text-canvas-xs text-canvas-ink-faint leading-relaxed">{closedNote}</div>
+        )}
         <div className="flex gap-1.5">
           {onPrimary && (
             <button
