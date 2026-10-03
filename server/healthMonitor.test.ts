@@ -110,49 +110,155 @@ describe("HealthMonitor — Configuration", () => {
 
 // ============ Check Functions (mocked DB) ============
 
+/**
+ * ⚠ THESE ARMS DRIVE `checkGenerationHealth` AND READ THE ROW IT WRITES, AND
+ * THE TWO THEY REPLACE COULD NOT HAVE FAILED.
+ *
+ * What stood here until #1807 was two cases with **no `expect` between them**.
+ * One carried its own epitaph in a comment — *"due to module caching, the mock
+ * may not apply. This tests the logic path"* — and the other asserted only
+ * that the call did not throw. So the function's entire alert decision was
+ * covered by a green describe that was inert whatever the function did.
+ * Working law 2: an instrument gets a negative control and a positive control
+ * before its verdicts count for anything.
+ *
+ * The mock DOES apply; what was missing is `vi.resetModules()` before the
+ * `doMock`, so the module under test is re-evaluated and its dynamic
+ * `await import(…)` calls resolve to the fakes. `drive()` below is that
+ * ordering, and it RETURNS the audit rows rather than asserting inside itself,
+ * so every arm states its own expectation in its own body.
+ *
+ * Each reading below whose `total24h` exceeds its settled count is a REAL
+ * production row from the 2026-09-29/30 event, not an invented fixture.
+ */
 describe("HealthMonitor — checkGenerationHealth", () => {
-  let checkGenerationHealth: typeof import("./monitoring/healthMonitor").checkGenerationHealth;
-  let _clearCooldowns: typeof import("./monitoring/healthMonitor")._clearCooldowns;
+  type Health = {
+    total24h: number; completed24h: number; failed24h: number;
+    pending: number; processing: number; successRate: number;
+  };
 
-  beforeEach(async () => {
+  /** Drive the real function against a fixed health reading and return the
+   *  audit rows it wrote. Nothing here touches a database. */
+  async function drive(health: Health): Promise<Array<Record<string, unknown>>> {
+    const rows: Array<Record<string, unknown>> = [];
+    vi.resetModules();
+    vi.doMock("./db/adminOverviewQueries", () => ({
+      getGenerationHealth: async () => health,
+    }));
+    vi.doMock("./auditLog", () => ({
+      logAuditEvent: async (event: Record<string, unknown>) => { rows.push(event); },
+    }));
     const mod = await import("./monitoring/healthMonitor");
-    checkGenerationHealth = mod.checkGenerationHealth;
-    _clearCooldowns = mod._clearCooldowns;
-    _clearCooldowns();
-  });
+    mod._clearCooldowns();
+    await mod.checkGenerationHealth();
+    return rows;
+  }
+
+  /** The floor read off the module, so the boundary arm cannot drift from it. */
+  async function readFloor(): Promise<number> {
+    vi.resetModules();
+    const mod = await import("./monitoring/healthMonitor");
+    return mod.RATE_SAMPLE_FLOOR;
+  }
 
   afterEach(() => {
-    _clearCooldowns();
+    vi.doUnmock("./db/adminOverviewQueries");
+    vi.doUnmock("./auditLog");
+    vi.resetModules();
     vi.restoreAllMocks();
   });
 
-  it("should not alert when success rate is above threshold", async () => {
-    vi.doMock("./db/adminOverviewQueries", () => ({
-      getGenerationHealth: vi.fn().mockResolvedValue({
-        total24h: 100, completed24h: 95, failed24h: 5,
-        pending: 0, processing: 0, successRate: 95,
-      }),
-    }));
+  /* ── The positive controls: it still alarms, and still at its own rank ── */
 
-    // Re-import to pick up mocks
-    const { checkGenerationHealth: check } = await import("./monitoring/healthMonitor");
-    await check();
-
-    // No alert row should be written (success rate 95% > 80%)
-    // Note: due to module caching, the mock may not apply. This tests the logic path.
+  it("alerts on a real day below the threshold", async () => {
+    const rows = await drive({
+      total24h: 100, completed24h: 60, failed24h: 40, pending: 0, processing: 0, successRate: 60,
+    });
+    expect(rows).toHaveLength(1);
+    expect(rows[0].severity).toBe("warning");
+    expect(rows[0].action).toBe("system.health_alert");
   });
 
-  it("should skip alert when no generations exist", async () => {
-    // When total24h is 0, should return early without alerting
-    vi.doMock("./db/adminOverviewQueries", () => ({
-      getGenerationHealth: vi.fn().mockResolvedValue({
-        total24h: 0, completed24h: 0, failed24h: 0,
-        pending: 0, processing: 0, successRate: 100,
-      }),
-    }));
+  it("KEEPS ITS RANK — a real day under 50% is still critical (his word: it fires on real days)", async () => {
+    const rows = await drive({
+      total24h: 100, completed24h: 40, failed24h: 60, pending: 0, processing: 0, successRate: 40,
+    });
+    expect(rows).toHaveLength(1);
+    expect(rows[0].severity).toBe("critical");
+  });
 
-    // Should not throw
-    await checkGenerationHealth();
+  it("never alerts on a healthy day, whatever the sample", async () => {
+    const rows = await drive({
+      total24h: 100, completed24h: 95, failed24h: 5, pending: 0, processing: 0, successRate: 95,
+    });
+    expect(rows).toEqual([]);
+  });
+
+  /* ── The negative controls: the two rows #1807 is about ── */
+
+  it("IGNORES SMALL DAYS — production row 983, the first critical ever written, judged on 3 settled", async () => {
+    const rows = await drive({
+      total24h: 5, completed24h: 1, failed24h: 2, pending: 0, processing: 2, successRate: 33,
+    });
+    expect(rows).toEqual([]);
+  });
+
+  it("IGNORES SMALL DAYS — production row 984, the second and last critical, judged on 5 settled", async () => {
+    const rows = await drive({
+      total24h: 10, completed24h: 2, failed24h: 3, pending: 0, processing: 5, successRate: 40,
+    });
+    expect(rows).toEqual([]);
+  });
+
+  it("stays silent when there are no generations at all (the behaviour the floor replaced)", async () => {
+    const rows = await drive({
+      total24h: 0, completed24h: 0, failed24h: 0, pending: 0, processing: 0, successRate: 100,
+    });
+    expect(rows).toEqual([]);
+  });
+
+  /* ── The arm that proves the floor is on the RIGHT NUMBER ──
+     A floor written on `total24h` passes every other arm in this describe and
+     fails only this one. 112 of the 132 real alarm rows carried a `total24h`
+     larger than the sample the rate was computed over; this is one of them. */
+
+  it("floors the RATE'S DENOMINATOR, not total24h — 20 in the window, 5 of them settled", async () => {
+    const rows = await drive({
+      total24h: 20, completed24h: 2, failed24h: 3, pending: 10, processing: 5, successRate: 40,
+    });
+    expect(rows).toEqual([]);
+  });
+
+  /* ── The boundary, both sides, derived from the constant ── */
+
+  it("judges a window holding exactly the floor, and not one below it", async () => {
+    const n = await readFloor();
+
+    const atFloor = await drive({
+      total24h: n, completed24h: n - 6, failed24h: 6, pending: 0, processing: 0, successRate: 40,
+    });
+    expect(atFloor).toHaveLength(1);
+
+    const belowFloor = await drive({
+      total24h: n - 1, completed24h: n - 7, failed24h: 6, pending: 0, processing: 0, successRate: 33,
+    });
+    expect(belowFloor).toEqual([]);
+  });
+
+  /* ── The row explains itself ──
+     The absence of these two fields is why this alarm's own card first
+     described a three-sample critical as a five-sample one. */
+
+  it("writes the settled count and the floor onto the row", async () => {
+    const n = await readFloor();
+    const rows = await drive({
+      total24h: 40, completed24h: 18, failed24h: 12, pending: 6, processing: 4, successRate: 60,
+    });
+    expect(rows).toHaveLength(1);
+    const metadata = rows[0].metadata as Record<string, unknown>;
+    expect(metadata.settled24h).toBe(30);
+    expect(metadata.sampleFloor).toBe(n);
+    expect(metadata.total24h).toBe(40);
   });
 });
 

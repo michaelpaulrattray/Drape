@@ -5,7 +5,9 @@
  * (Until #800 these went to a Slack channel production never had.)
  *
  * Runs every 5 minutes and checks:
- *   1. Generation success rate (24h) — alerts when below threshold
+ *   1. Generation success rate (24h) — alerts when below threshold, and only
+ *      once the window holds `RATE_SAMPLE_FLOOR` settled generations (#1807,
+ *      his "ignore small days")
  *   2. DB connectivity — alerts on high latency / query failure. ⚠ The
  *      DB-DOWN case cannot alert onto a panel a database serves: it stays a
  *      fatal log line, and that limit is stated here rather than shipped
@@ -53,6 +55,58 @@ export const ALERT_COOLDOWN_MS = 15 * 60 * 1000; // 15 minutes
 /** Generation success rate threshold — alert when below this % */
 export const SUCCESS_RATE_THRESHOLD = 80;
 
+/**
+ * ⚠ THE SAMPLE FLOOR — "ignore small days" (his word, 2026-10-03, #1807,
+ * verbatim and entire). Below this many SETTLED generations in the window the
+ * rate is not judged at all.
+ *
+ * # Why the alarm needed one
+ *
+ * The threshold above is a percentage and nothing was asking how many jobs the
+ * percentage was computed over. Measured on production the day this landed:
+ * the audit log held **1,120 rows all time — 980 info, 138 warning, 2
+ * critical**, and *both* criticals were this alarm. Before 2026-09-29 the table
+ * had never carried a critical row at all, which means the only answer the
+ * question "what was critical" has ever had is a rate computed on a handful of
+ * jobs. **A severity level whose only occupant is a false alarm is one a reader
+ * learns to skip**, and that is the cost — not the noise.
+ *
+ * # Why TEN, measured rather than guessed
+ *
+ * Production's own settled success rate is **94.7% lifetime (2,659 of 2,808)**
+ * and 90.1% over the last 30 days, so against that baseline the chance a
+ * HEALTHY window lands below 80% by luck alone is:
+ *
+ *   3 settled -> 15.1%     5 settled -> 2.5%
+ *   10 settled -> 1.3%     15 settled -> 0.7%
+ *
+ * Ten is where the number starts meaning something. It is also the smallest
+ * floor that removes **both** critical rows — they fired on denominators of
+ * **3 and 5** — together with every alarm row computed on fewer than ten
+ * settled jobs (22 of the 132).
+ *
+ * # The price, stated, and the alternative declined
+ *
+ * 15 of the 47 calendar days that have ever carried a generation hold fewer
+ * than ten settled jobs, so about a third of days go unjudged — by
+ * construction the days with nothing to judge. The median day is 16 settled
+ * and is still judged, as are five of the six days in the whole record that
+ * have ever been under 80%.
+ *
+ * **A floor of 20 was declined and it is the tempting one**, because it
+ * silences all 132 rows. It also silences 60% of all days and five of those
+ * six real dips — including 2026-09-29's five failures in fifteen, which
+ * against a 94.7% baseline is a 0.7% event and is exactly the day the alarm
+ * exists for. Fitting the floor to the rows we happen to dislike is not the
+ * same as fixing the judgement.
+ *
+ * ⚠ **What this does NOT fix, said out loud: the 132 rows were one condition
+ * holding for 28 hours and the alarm saying so every cooldown.** Collapsing
+ * repeats to one row per window was option two of the three he was offered and
+ * he did not pick it; it is not folded in here.
+ */
+export const RATE_SAMPLE_FLOOR = 10;
+
 /** Critical audit events threshold — alert when more than this many in 1 hour */
 export const ERROR_SPIKE_THRESHOLD = 10;
 
@@ -91,8 +145,31 @@ export async function checkGenerationHealth(): Promise<void> {
     const { getGenerationHealth } = await import("../db/adminOverviewQueries");
     const health = await getGenerationHealth();
 
-    // Only alert if there are actual generations to evaluate
-    if (health.total24h === 0) return;
+    /*
+      ⚠ THE FLOOR IS ON THE RATE'S OWN DENOMINATOR, NOT ON `total24h`, AND
+      THAT IS DRIVEN RATHER THAN ARGUED. `getGenerationHealth` counts
+      `pending` and `processing` into `total24h` but divides only by
+      `completed + failed`, so the two numbers are different questions.
+      Measured over every alarm row this monitor has ever written: **112 of 132
+      carried a `total24h` larger than the sample the rate was computed on**,
+      and both critical rows are among them — `total24h 5 -> 3 settled` and
+      `total24h 10 -> 5 settled`. A floor on `total24h` would therefore have
+      judged the first critical on three jobs while believing it had five.
+
+      This also subsumes the `total24h === 0` early return it replaces: no
+      generations at all is zero settled, which is below any floor.
+    */
+    const settled24h = health.completed24h + health.failed24h;
+    if (settled24h < RATE_SAMPLE_FLOOR) {
+      /* `debug`, not `info`: this check runs every 5 minutes and the cooldown
+         only starts once something has ALERTED, so an `info` line here would
+         be its own feed of noise on every quiet day — the defect one level
+         down. Production runs at `info`. */
+      log.debug(
+        `[HealthMonitor] Success rate not judged — ${settled24h} settled generations in 24h, floor is ${RATE_SAMPLE_FLOOR}`,
+      );
+      return;
+    }
 
     if (health.successRate < SUCCESS_RATE_THRESHOLD) {
       await recordHealthAlert({
@@ -102,6 +179,13 @@ export async function checkGenerationHealth(): Promise<void> {
         severity: health.successRate < 50 ? "critical" : "warning",
         metadata: {
           successRate: health.successRate,
+          /* The number the rate was actually computed over, and the floor it
+             cleared — on the row, because the row is the only thing a reader
+             has months later, and the absence of these two is why this
+             alarm's own card first described a three-sample critical as a
+             five-sample one. */
+          settled24h,
+          sampleFloor: RATE_SAMPLE_FLOOR,
           total24h: health.total24h,
           completed24h: health.completed24h,
           failed24h: health.failed24h,
