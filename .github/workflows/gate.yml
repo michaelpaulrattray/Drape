@@ -280,6 +280,48 @@ jobs:
           git fetch origin "$BASE"
           npx tsx scripts/check-eye-frames.mts --base-ref "origin/$BASE"
 
+      # ⚠ KNOWN VULNERABILITIES IN WHAT SHIPS — his word, 2026-10-03 (terminal),
+      # verbatim: "add the gate step" (#1805, the Warden's run-6 finding W6-B).
+      #
+      # PR #1599 put two already-published HIGH advisories into the production
+      # dependency tree on 2026-09-30. `Socket Security: Pull Request Alerts` —
+      # one of the seven REQUIRED checks on this branch — passed it in 7 seconds,
+      # and the first reader that spoke was Dependabot, SIX SECONDS AFTER THE
+      # MERGE BUTTON. The holes then sat in the live product for three days
+      # (#1803). The finding was not about Socket: the gate had no reader of its
+      # own, and `pnpm audit` ran nowhere in CI at all.
+      #
+      # He was offered his dashboard setting or a step of our own and chose the
+      # step, because it is the one we can see working and prove is switched on.
+      # He accepted its price in the same sentence: it will sometimes stop a
+      # change over a hole in somebody else's code we cannot fix the same day.
+      #
+      # It is a STEP in this job rather than its own job, and that is a departure
+      # from the card's own wording ("as its own job") made on purpose: a new job
+      # blocks NOTHING until branch protection names it as required, which is a
+      # repository setting no shift may change — and adding one would also strand
+      # every open pull request on a check that has never run on its head. This
+      # job is already required and already read by `pr-merge-in-order.mts`, so
+      # the step blocks from the commit it lands on.
+      #
+      # It runs here, before the expensive checks, for the two steps above's
+      # reason: the repair is an override bump, and learning that at 50 seconds
+      # rather than 8 minutes is the whole point. Needs no secret. The policy —
+      # any unacknowledged advisory blocks, no severity threshold, and the signed
+      # list only shrinks — is argued in the module, with the measured positive
+      # control that proves this would have reddened #1599.
+      #
+      # ⚠ TWO COSTS NAMED RATHER THAN DISCOVERED. It reads the registry's
+      # advisory database, so an endpoint outage REFUSES every pull request until
+      # it comes back — fail-closed is the only honest direction for a security
+      # check (a step that passes because it could not look is invariant 7's
+      # defect, and is precisely what Socket did here), but it is a new way for
+      # the gate to go red on nothing we did. And `--prod` means devDependencies
+      # are NOT read: build and test tooling still has no pre-merge reader at all,
+      # which is the half of W6-B this does not close.
+      - name: Dependency advisories (known vulnerabilities in what ships)
+        run: npx tsx scripts/check-dependency-advisories.mts
+
       - name: Typecheck (pnpm check)
         run: pnpm check
 
