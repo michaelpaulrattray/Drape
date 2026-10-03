@@ -235,10 +235,13 @@ describe("measureViewFraming — the close-up band, both directions", () => {
       (rule as { inItsOwnHeights: number }).inItsOwnHeights,
       "his eye moved this bound on 2026-10-03 (#1837), verbatim: \"on Sifr2 Yes it reads"
       + " as a closeup\" — of a picture measuring 0.51 face-heights of room below the face."
-      + " 0.7 is the geometric middle of the empty band between his highest judged close-up"
+      + " 0.7 is the geometric middle of the band between his highest judged close-up"
       + " (0.51) and his sealed Portraits' tightest (1.10), the same method that set the"
-      + " Portrait's 3.7 and the old 0.3. Moving it means reading the band in"
-      + " `castViewPackage.ts` and his words on #1612.",
+      + " Portrait's 3.7 and the old 0.3. That band was called EMPTY when this number was"
+      + " chosen and is not — asset 384, a delivered close-up on his account, reads 0.826"
+      + " (measured 2026-10-03) and is turned away by this line. It is on the strip for his"
+      + " eye and NOTHING moves until he answers. Moving it means reading the band in"
+      + " `castViewPackage.ts` and his words on #1612 and #1837.",
     ).toBe(0.7);
   });
 

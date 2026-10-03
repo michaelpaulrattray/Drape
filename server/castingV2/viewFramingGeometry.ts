@@ -212,13 +212,21 @@ export type FramingRule =
    * works on a creature with tusks and a cowl.
    *
    * ⚠ **IT HAS TWO CONSUMERS NOW AND THEY ASK IT IN OPPOSITE DIRECTIONS — 2026-10-02.**
-   * The close-up's 0.3 is a TOO-LOOSE bound (any more picture below the face and
+   * The close-up's 0.7 is a TOO-LOOSE bound (any more picture below the face and
    * it has stopped being a close-up); `frontClose`'s 3.7 is the same bound with
    * the same sign doing a different job — any more and a head-and-shoulders
    * Portrait has become a full length. One rule, two numbers, each measured on
    * its own population and each written beside the view that owns it. **Neither
    * is derivable from the other**, which is why the band declares the number
    * rather than this file holding a default.
+   *
+   * ⚠ **THE CLOSE-UP'S NUMBER IS 0.7 AND THIS SENTENCE SAID 0.3 UNTIL 2026-10-03
+   * — the stale half of #1837, kept visible rather than silently swapped.** The
+   * bound moved on HIS EYE (law 9) at two Sifr2 frames measuring 0.42 and 0.51
+   * that the 0.3 line called out of band; the whole record, with his words and
+   * the method, is on the `closeUp` band in `castViewPackage.ts`, which is where
+   * the number is declared and therefore where it is explained. This file states
+   * the SHAPE of the rule and must not grow a second account of the value.
    *
    * Scale-free by construction: both terms are read off the same frame in the
    * same pixels, so re-framing cannot move the ratio on its own.
@@ -306,6 +314,15 @@ export type ViewFramingBand = {
    * (*"Tight front-on crop from forehead to chin with margin of neck skin
    * visible below"*), which is what says it is answering the half it was left
    * rather than guessing at a sentence that is no longer there.
+   *
+   * ⚠ **THE `(at most 0.3)` INSIDE THAT QUOTE IS NOT A STALE NUMBER TO FIX — it
+   * is what the judge SAID on 2026-10-02, when the bound was 0.3.** The bound is
+   * 0.7 since 2026-10-03 (#1837, his eye), so #1611's two frames at 0.48 and
+   * 0.56 are IN BAND today and this paragraph's reading of them is history. It
+   * is annotated rather than rewritten because a dated verbatim quote edited to
+   * agree with a later number is no longer evidence of anything — and this
+   * record's whole value is that it shows what the instrument answered before
+   * the line moved.
    *
    * ⚠ **THE DECLARED SHORTFALL, because an undeclared one is the whole defect
    * class this card is about.** On the six views whose sentences are mixed, the
