@@ -155,6 +155,7 @@ import {
   type ViewConformanceJudge,
   type ViewConformanceVerdict,
 } from "./viewConformance";
+import { framingTemplateClause, readViewFramingTemplate } from "./viewFramingTemplate";
 
 const log = createModuleLogger("castingV2/packageOrchestrator");
 
@@ -271,6 +272,16 @@ export type PackageOrchestratorDependencies = {
    * for thirteen months while every arm here was green.
    */
   capture?: typeof captureRefusedRender;
+  /**
+   * THE STORED FRAMING REFERENCE (#1612 part 3).
+   *
+   * Injected for the reason `capture` is: the production path reads a bucket
+   * object, so an un-injected suite could only ever prove that nothing broke.
+   * The seam also lets an arm drive the FAILING read — which is the half that
+   * matters, because its contract is that a failure costs a slightly worse crop
+   * and never the picture.
+   */
+  readFramingTemplate?: typeof readViewFramingTemplate;
 };
 
 type PackageSlotOutcome =
@@ -773,6 +784,43 @@ export async function renderViewAttempts<T>(
   const store = dependencies.storeImage ?? defaultStoreImage;
   const drop = dependencies.deleteObject ?? storageDelete;
 
+  /*
+    THE STORED FRAMING REFERENCE — #1612 part 3, his addition of 2026-09-30.
+
+    Read ONCE, above the attempt loop, which is a decision rather than a tidy
+    place to put it: a Try again and a second arrival attempt must send the
+    request the first one sent, and a read inside the loop could hand attempt 2
+    a template that attempt 1 did not have (or the reverse) if the bucket
+    hiccuped between them. One read, one answer, every attempt of this slot.
+
+    ⚠ **`null` is an ordinary outcome and not an error** — no template exists
+    for `threeQuarter` or `sideClose` by decision (`viewFramingTemplate.ts`'s
+    header), and every failure mode of the read answers `null` too. Absent, this
+    composes nothing and pushes nothing, so the request is byte-identical to the
+    one this road sent before part 3 — the same inertness the crops' and the
+    plate's lanes are asserted on, and asserted the same way
+    (`packageOrchestratorFramingTemplate.test.ts`).
+
+    ⚠ **AND THE `catch` IS NOT BELT AND BRACES — IT IS THE WHOLE REASON THIS
+    LINE IS SAFE HERE, AND ITS OWN ARM CAUGHT IT.** This read sits ABOVE the
+    attempt loop, which means it sits above the loop's `try`: a throw out of it
+    escapes `renderViewAttempts` altogether and takes the Sign down, AFTER the
+    customer has been charged for the slot and with no refund path out of it.
+    `readViewFramingTemplate` promises never to throw and keeps that promise
+    today — but a promise made in another module is a claim, and the one place
+    it must not be trusted is a paid render. The orchestrator answers its own
+    question instead.
+  */
+  const framingTemplate = await (dependencies.readFramingTemplate ?? readViewFramingTemplate)(angle)
+    .catch((error: unknown) => {
+      log.warn(
+        { operationId: input.operationId, angle, error: error instanceof Error ? error.message : String(error) },
+        "[packageOrchestrator] the framing template reader threw, which it is not supposed to be "
+        + "able to do — rendering this view without it rather than failing a paid slot",
+      );
+      return null;
+    });
+
   let lastReason = "The view could not be generated";
   /*
     EVERY attempt's verdict, not just the last (D-114).
@@ -861,6 +909,28 @@ export async function renderViewAttempts<T>(
       */
       const outfitReferenceOrdinal = outfitReference ? 2 + crops.length : null;
       const viewPronouns = input.pronouns ?? pronounsForSex(null);
+      /*
+        THE FRAMING TEMPLATE RIDES LAST — after the outfit, which rides after the
+        crops, which ride after the anchor (#1612 part 3).
+
+        ⚠ **Its ordinal is DERIVED from the array it is talking about**, for the
+        third time in this block and for the same reason: a Cast with three
+        tattoos and a plate carries her template at reference 6, and #1480 is the
+        worked example of a constant ordinal pointing a paid render at a picture
+        of her elbow. **Read off `references.length` rather than built from a
+        second sum**, which is the one arithmetic in this block that cannot
+        disagree with the array it describes.
+
+        LAST on purpose: it is the least authoritative picture in the request and
+        the only one that is not of this person at all, so the order the prompt
+        reads says so before the sentence does.
+      */
+      if (framingTemplate) {
+        references.push({ bytes: framingTemplate.bytes, contentType: framingTemplate.contentType });
+      }
+      const framingClause = framingTemplate
+        ? framingTemplateClause({ ordinal: references.length, pronouns: viewPronouns })
+        : "";
       const plateClause = outfitReference && outfitReferenceOrdinal !== null
         ? outfitReferenceClause({
             ordinal: outfitReferenceOrdinal,
@@ -927,6 +997,33 @@ export async function renderViewAttempts<T>(
           measured, and `PLATE_VIEW_ASPECT_RATIO`'s docblock carries the three
           readings. Absent a plate this spreads nothing, so the other three
           views send the request they always sent, byte for byte.
+
+          ⚠ **AND #1612 PART 3'S FRAMING TEMPLATE DELIBERATELY DOES NOT JOIN THIS
+          CONDITION — the question was asked, driven, and answered NO.** A
+          template is a second reference on views that have never carried one, so
+          the drag this pin exists for looked reachable on all three of them. It
+          is not: the anchor every view already carries is 1024x1536, which is
+          exactly 2:3, and the templates are cut to the same 1024x1536 for that
+          reason — so there is no second shape in the request to drag toward.
+
+          Driven before this line was left alone, nine renders, three arms on
+          each of the three templated views, dimensions read off the returned
+          PNG's own header rather than off `image.width` (that door does not
+          always populate it — #1278's `rows.json` recorded `null` on all five of
+          its renders):
+
+              anchor only ................. 1696x2528   all three views
+              anchor + template ........... 1696x2528   all three views
+              anchor + template + 2:3 pin . 1696x2528   all three views
+
+          So pinning would change nothing it is reachable for and would widen an
+          axis on a paid render for no measured reason — which
+          `PLATE_VIEW_ASPECT_RATIO`'s own docblock calls *"a behaviour change
+          folded into somebody else's card"*. The receipt is
+          `scripts/_1612-template-shape-disposable.mts` and #1612's record. **A
+          template cut to a different shape would re-open this**, which is why
+          `viewFramingTemplate.test.ts` holds every template's size equal to the
+          anchor's.
         */
         ...(outfitReference ? { aspectRatio: PLATE_VIEW_ASPECT_RATIO } : {}),
         prompt: [
@@ -946,6 +1043,20 @@ export async function renderViewAttempts<T>(
           }),
           cropClause,
           wordsClause,
+          /*
+            THE FRAMING CLAUSE GOES LAST, and its position is the one thing about
+            it that is not obvious (#1612 part 3).
+
+            Every other part of this prompt is about WHO this person is and WHAT
+            she wears — the identity sentence, the reference rule, her own words,
+            the view's directive, the wardrobe, her tattoos, her feature words.
+            This sentence is about the CAMERA, and it ends by saying that the
+            picture it names contributes nothing to any of the above. Read in
+            that order a reader meets the disclaimer with everything it is
+            disclaiming already established, which is the shape the outfit clause
+            was MOVED into place for under #1480 finding D.
+          */
+          framingClause,
         ]
           .filter((part) => part !== "")
           .join("\n"),
