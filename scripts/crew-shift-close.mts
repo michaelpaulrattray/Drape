@@ -101,9 +101,13 @@ import {
   waitingOnHimFinding,
   type ResolvableBriefing,
 } from "../shared/crewCardResolution.js";
-import { crewCardHandbackInstruction } from "../shared/crewCardBuildState.js";
+import {
+  closeShouldPrintHandback,
+  crewCardHandbackInstruction,
+} from "../shared/crewCardBuildState.js";
 import { openDatabase, resolveDatabaseUrl, worldOf } from "./lib/dbConnection.mts";
 import { refreshQueueCountsQuietly } from "./lib/crewQueueCount.mts";
+import { readClosingCardState } from "./lib/crewClosingCardState.mts";
 import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
 const TABLE = "crew_shift_runs";
@@ -343,8 +347,43 @@ try {
      never written: the orders offer *"`RELEASED — <seat>` or the PR"* and no
      reader can see a pull request, so a seat that shipped and closed left a
      claim reading live for twelve hours. A card the shift did not finish is
-     RELEASED here or it idles the next seat. */
-  if (row.outcome !== "shipped") console.log(`\n${crewCardHandbackInstruction(row.shift)}`);
+     RELEASED here or it idles the next seat.
+
+     ⚠ **AND THE CONDITION USED TO BE `row.outcome !== "shipped"`, WHICH IS
+     THE ONE OUTCOME NEARLY EVERY SHIFT USES (#1829).** So the instruction was
+     printed on every road but the common one, and #1701's repair — correct in
+     itself — reached almost nobody. Measured 2026-10-03: run #535 closed
+     `shipped` on #1807 after working that card to a HELD state, and 8 h 38 m
+     later his Security switch still read *"1 being built"* over a card nobody
+     was building.
+
+     **The outcome was never the question.** What decides whether a handback is
+     owed is whether the CARD is still open, because an open card is the only
+     kind a stale claim can hold off a seat — so the state is read here and
+     `closeShouldPrintHandback` asks it that way round.
+
+     ⚠ **IT FAILS TOWARD PRINTING, AND IT CANNOT FAIL THE CLOSE.** `unknown`
+     prints: a `gh` that could not answer is not evidence the card is finished.
+     And the reader swallows every throw and reports its reason, because a close
+     that dies leaves the run row open, which his page renders as a shift still
+     running (#288) — this script's own standing rule, the same one the counts
+     below and the findings further down already run on. */
+  const closingIssue = issueNumberOf(target.cardRef);
+  const closingCardState = readClosingCardState(closingIssue, (line) => console.error(line));
+  if (closeShouldPrintHandback({ outcome: row.outcome, cardState: closingCardState })) {
+    console.log(`\n${crewCardHandbackInstruction(row.shift)}`);
+    if (row.outcome === "shipped" && closingIssue !== null) {
+      /* The sentence that names THIS close's own case, because the instruction
+         above is general and a shift reading it after a `shipped` close has to
+         know why it is being shown at all. */
+      console.log(
+        `\n  #${closingIssue} is still ${closingCardState === "open" ? "OPEN" : "of UNKNOWN state"} after a`
+        + " `shipped` close, so a claim on it may still be holding a seat off for up to"
+        + "\n  twelve hours. Release it, or close the card with its receipt — and if it is"
+        + "\n  correctly HELD on his word, the release line above is the one that frees it.",
+      );
+    }
+  }
 
   /*
     ⚠ REFRESH HIS NUMBERS, NOW THAT THE ROW IS TERMINAL (#618).
@@ -396,7 +435,7 @@ try {
     exit code carries it — the same shape the heartbeat finding below has had
     since #295.
   */
-  const closingIssue = issueNumberOf(target.cardRef);
+  /* Read once, above, where the handback rule needed the same fact. */
   if (closingIssue !== null) {
     const desk = readDeskOrNull();
     if (desk === null) {
