@@ -207,7 +207,19 @@ describe("the junction reading has ONE declaration and both recursive-delete roa
 
   it("routes shift-worktree's junction reads through it, never through existsSync", () => {
     const script = read("scripts/shift-worktree.mts");
-    expect(script).toMatch(/import \{ stillOnDisk \} from "\.\/lib\/riteWorktree\.mts";/);
+    /* ⚠ THE SYMBOL IN THE LIST, NOT THE LIST ITSELF (#1823). This read
+       `import \{ stillOnDisk \}` — the whole import statement, exactly — and went
+       red the day a SECOND disk reading for the same recursive delete joined it
+       (`measureTree`, the byte count beside an ignored path worth keeping). The
+       rule this arm holds is that the CLI IMPORTS the reading rather than growing
+       its own, and the sibling arm above already forbids a local declaration; the
+       import list was never the rule. Still anchored on the specifier, so an
+       import of the name from somewhere else does not satisfy it. */
+    const importLine = script
+      .split(/\r?\n/)
+      .find((line) => /^import \{[^}]*\} from "\.\/lib\/riteWorktree\.mts";$/.test(line));
+    expect(importLine, "shift-worktree.mts no longer imports from ./lib/riteWorktree.mts").toBeDefined();
+    expect(importLine ?? "", "the junction reading is not among the imported names").toMatch(/\bstillOnDisk\b/);
     /* The guard's own argument is the one that matters: an `existsSync` here
        is the exact defect this sweep closed. */
     expect(script).toMatch(/junctionMustBeGone\(stillOnDisk\(plan\.nodeModulesLink\)\)/);

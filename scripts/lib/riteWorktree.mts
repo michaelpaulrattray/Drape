@@ -23,7 +23,7 @@
  * never exits.
  */
 import { execFileSync } from "node:child_process";
-import { lstatSync, mkdtempSync, rmdirSync, rmSync, symlinkSync, unlinkSync } from "node:fs";
+import { lstatSync, mkdtempSync, readdirSync, rmdirSync, rmSync, symlinkSync, unlinkSync, type Dirent } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
@@ -56,6 +56,82 @@ export const stillOnDisk = (p: string): boolean => {
        keep"; this is the same polarity, at the one call that decides it. */
     return (error as NodeJS.ErrnoException)?.code !== "ENOENT";
   }
+};
+
+/** What {@link measureTree} found. `capped` makes both figures a floor. */
+export type TreeMeasure = { bytes: number; files: number; capped: boolean };
+
+/**
+ * ⚠ THE WALK CAP, AND IT IS HERE BECAUSE THIS MEASUREMENT RUNS FOUR LINES ABOVE
+ * A RECURSIVE DELETE. An unbounded walk is its own hazard: a tool that hangs
+ * while being asked whether a directory is worth keeping gets killed and re-run
+ * with `--force`. 50,000 entries is far past anything the named kept set has held
+ * (the 1.357 GB court that filed #1823 was 188 files) and well inside a second.
+ */
+export const MEASURE_ENTRY_CAP = 50_000;
+
+/**
+ * How many bytes in how many files a directory holds — the figure the removal
+ * tool prints beside an ignored path worth keeping (#1823).
+ *
+ * **It lives here and not in `shiftWorktree.mts` for the same reason
+ * `stillOnDisk` does**, and the header above is the whole argument: that module
+ * takes numbers and booleans so both directions of every verdict drive without a
+ * disk. This is the disk half, beside the only other disk reading this delete
+ * makes.
+ *
+ * ⚠ **IT NEVER FOLLOWS A LINK, WHICH IS THIS MODULE'S DOCTRINE AND NOT A
+ * PRECAUTION.** libuv maps a Windows junction to `UV_DIRENT_LINK`, so
+ * `isSymbolicLink()` is true for one and the walk stops at it — a measurement
+ * that descended through the `node_modules` junction would walk the main
+ * checkout's install to answer a question about a seat's `output/` directory.
+ *
+ * ⚠ **AND THE ROOT IS CHECKED THE SAME WAY, WHICH THE FIRST CUT OF THIS DID NOT
+ * DO — the negative control in `server/shiftWorktree.test.ts` caught it on its
+ * first run.** The per-entry test above only ever sees a link found INSIDE a
+ * directory; `readdirSync` on a junction FOLLOWS it, so `measureTree(<the
+ * junction>)` listed the real install and counted it. That is the exact shape of
+ * the scar in this module's header, in a function added to stand beside it.
+ *
+ * A missing path is `0` rather than a throw: a caller asks about a path git has
+ * just named, and the one-in-a-thousand race where it goes between the listing
+ * and the walk must not turn a removal into an error.
+ */
+export const measureTree = (dir: string): TreeMeasure => {
+  let bytes = 0;
+  let files = 0;
+  let seen = 0;
+  /* The root, before anything reads through it. `lstat` and not `stat`, for the
+     reason `stillOnDisk` above gives at length. */
+  let root: ReturnType<typeof lstatSync>;
+  try { root = lstatSync(dir); } catch { return { bytes: 0, files: 0, capped: false }; }
+  if (root.isSymbolicLink() || !root.isDirectory()) {
+    /* A link, or a plain file. A link is never walked; a file is its own size. */
+    return { bytes: root.isSymbolicLink() ? 0 : root.size, files: root.isSymbolicLink() ? 0 : 1, capped: false };
+  }
+  const walk = (at: string): void => {
+    /* `Dirent[]`, spelled out: `ReturnType<typeof readdirSync>` resolves to the
+       Buffer overload and `entry.name` then stops being a string. */
+    let entries: Dirent[];
+    try {
+      entries = readdirSync(at, { withFileTypes: true });
+    } catch {
+      /* Gone, or unreadable. Either way there is nothing to count here, and the
+         figures are a floor whenever that happens — which `capped` says. */
+      return;
+    }
+    for (const entry of entries) {
+      if (seen >= MEASURE_ENTRY_CAP) return;
+      seen += 1;
+      const full = path.join(at, entry.name);
+      if (entry.isSymbolicLink()) continue;
+      if (entry.isDirectory()) { walk(full); continue; }
+      if (!entry.isFile()) continue;
+      try { bytes += lstatSync(full).size; files += 1; } catch { /* vanished mid-walk */ }
+    }
+  };
+  walk(dir);
+  return { bytes, files, capped: seen >= MEASURE_ENTRY_CAP };
 };
 
 /**
