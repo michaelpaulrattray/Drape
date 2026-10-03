@@ -247,10 +247,14 @@ try {
     success without naming what it closed is how a shift stamps somebody else's
     run and neither of them finds out.
   */
-  /* ⚠ `heartbeatAt` is selected HERE and nowhere later: the UPDATE below sets
-     it to now, which erases the one piece of evidence that the shift never
-     checked in (`hasEverCheckedIn`'s docblock). Read after the write, every
-     run in the table looks disciplined. */
+  /* ⚠ `heartbeatAt` is selected HERE because the finding below is snapshotted
+     before any write — and that is now BELT AND BRACES rather than the only
+     road: until #1872 the UPDATE below set this field to now, which erased the
+     one piece of evidence that the shift never checked in, so reading it after
+     the write made every run in the table look disciplined. The close leaves
+     the field alone now, so the row stays readable afterwards too. The order is
+     kept because a snapshot cannot be invalidated by a later edit to the
+     statement, and this is the arm that catches a skipped heartbeat. */
   /* ⚠ #1234 — the no-id read is EVERY open run now, not `LIMIT 1`. The one-row
      read could not tell a single-seat night from two seats overlapping, so the
      decision it fed had no way to refuse. `resolveCloseTarget` owns the choice
@@ -322,7 +326,7 @@ try {
       + `\n  outcomeNote ${arg("note")?.slice(0, 500) ?? "(unchanged — none given)"}`
       + `\n  prNumber    ${prNumber === null ? "(unchanged — none given)" : `#${prNumber}`}`
       + "\n  endedAt     now"
-      + "\n  heartbeatAt now"
+      + "\n  heartbeatAt (unchanged — the row keeps its real last check-in, #1872)"
       + `\n\nThe run has ${checkedIn ? "checked in since it opened" : "NEVER checked in"}`
       + ` and has been open ${Math.round(ranForMs / 60_000)} min.`
       + "\nRe-run without --dry-run to perform it.",
@@ -332,9 +336,14 @@ try {
   }
 
   const [result] = await conn.query<any>(
+    /* ⚠ `heartbeatAt` IS NOT SET HERE ANY MORE (#1872). It was, in this same
+       statement, so every closed row's recorded last check-in was the instant
+       somebody closed it — 563 of 563 rows with `heartbeatAt == endedAt`. The
+       field is read on OPEN rows only (every reader re-read on the card), so
+       nothing depended on the rewrite, and leaving it alone keeps the one piece
+       of evidence that says WHEN a row went silent. */
     `UPDATE \`${TABLE}\`
         SET endedAt = UTC_TIMESTAMP(),
-            heartbeatAt = UTC_TIMESTAMP(),
             outcome = ?,
             outcomeNote = ?,
             prNumber = COALESCE(?, prNumber)

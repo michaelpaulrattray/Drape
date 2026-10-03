@@ -179,10 +179,14 @@ describe("a shift that never checked in is caught at its close", () => {
   it("reads the pre-write timestamps, judges them, and exits 2", () => {
     const source = code(read(CLOSE));
 
-    /* (a) `heartbeatAt` must be SELECTED — the UPDATE below sets it to now, so
-       a reader that looks afterwards sees every run as disciplined. It is
-       asserted on BOTH branches, because the `--id` road is exactly the one a
-       shift uses to close a DEAD run, where the question matters most. */
+    /* (a) `heartbeatAt` must be SELECTED, so the verdict is snapshotted before
+       any write. ⚠ The REASON changed with #1872 and the requirement did not:
+       the UPDATE used to set this field to now, so a reader looking afterwards
+       saw every run as disciplined and the pre-write read was the only road.
+       The close leaves the field alone now, so this is belt and braces — kept
+       because a snapshot cannot be invalidated by a later edit to the
+       statement. It is asserted on BOTH branches, because the `--id` road is
+       exactly the one a shift uses to close a DEAD run. */
     /* ⚠ The pattern tolerates COLUMNS BEING ADDED and refuses `heartbeatAt`
        being dropped, which is the fact it is about. It was the exact column
        list until #1349 added `cardRef` to both reads, and it reddened on a
@@ -236,6 +240,82 @@ describe("a shift that never checked in is caught at its close", () => {
     const finding = source.indexOf("NEVER CHECKED IN");
     expect(stamped).toBeGreaterThan(0);
     expect(finding).toBeGreaterThan(stamped);
+  });
+});
+
+/**
+ * THE CLOSE LEAVES THE LAST CHECK-IN ALONE (#1872).
+ *
+ * It used to set `heartbeatAt = UTC_TIMESTAMP()` in the same UPDATE that
+ * stamped `endedAt`, so a closed row's recorded last check-in was the instant
+ * somebody closed it: **563 of 563 closed rows carried
+ * `heartbeatAt == endedAt`**, and the only evidence of WHEN a row went silent
+ * was destroyed on its way into the record. Nothing was ever given a wrong
+ * answer by it — every reader consults the field on OPEN rows only — so the
+ * whole cost was in the future, on the day somebody re-measures #1863's floor,
+ * its lane parser or its window. #1866's first pass is that day arriving early:
+ * it read `heartbeatAt` and returned 0 superseded rows in 565 where #1863 had
+ * measured 2.
+ *
+ * ⚠ **THE SUBJECT IS SLICED TO THE UPDATE STATEMENT AND NOTHING ELSE.** The
+ * file mentions `heartbeatAt` in two SELECTs, a dry-run line and several
+ * docblocks, so a file-wide "does not contain" would be red for ever and a
+ * file-wide "contains" would be satisfied by any of them. Comments are stripped
+ * first for the same reason: the paragraph above would otherwise satisfy a
+ * reader looking for the word.
+ */
+describe("the close does not overwrite the row's last check-in (#1872)", () => {
+  const CLOSE = "scripts/crew-shift-close.mts";
+
+  /** The terminal UPDATE, as the file holds it — `crewShiftHeartbeatScope`'s shape. */
+  const closeUpdate = (source: string): string => {
+    const at = source.indexOf("SET endedAt = UTC_TIMESTAMP()");
+    expect(at, "the close's terminal UPDATE could not be found at all").toBeGreaterThan(-1);
+    const end = source.indexOf("`", at);
+    expect(end, "the UPDATE's template literal does not end").toBeGreaterThan(at);
+    return source.slice(at, end);
+  };
+
+  it("the terminal UPDATE sets endedAt and NOT heartbeatAt", () => {
+    const update = closeUpdate(code(read(CLOSE)));
+    /* Verify the instrument: the slice must really be the statement, or the
+       absence below is the absence of a subject rather than of a write. */
+    expect(update).toContain("outcome = ?");
+    expect(update).toContain("WHERE id = ? AND endedAt IS NULL");
+    expect(
+      update,
+      "The close is writing `heartbeatAt` again. That erases the one piece of "
+        + "evidence saying when a row went silent, which is what #1863's floor, "
+        + "lane parser and window all rest on — and nothing reads the field on a "
+        + "closed row, so there is nothing to gain by it.",
+    ).not.toContain("heartbeatAt");
+  });
+
+  /*
+    POSITIVE CONTROL. The arm above is an absence, and an absence passes just as
+    well when the slice is empty or the reader has stopped reading. So the write
+    is put BACK into the slice and the reading must flip.
+  */
+  it("and that reading can say no", () => {
+    const doctored = code(read(CLOSE)).replace(
+      "SET endedAt = UTC_TIMESTAMP(),",
+      "SET endedAt = UTC_TIMESTAMP(),\n            heartbeatAt = UTC_TIMESTAMP(),",
+    );
+    expect(closeUpdate(doctored)).toContain("heartbeatAt");
+  });
+
+  /*
+    ⚠ AND THE FIELD IS STILL SELECTED. Dropping the write is only half of it:
+    the finding is snapshotted from the pre-write read, and a shift closing a
+    row that never checked in is what #295 exists to catch. The clause above in
+    this file asserts the SELECTs; this says out loud that the two facts are a
+    PAIR, so a future edit that removes the now-redundant-looking select cannot
+    read as tidying.
+  */
+  it("the pre-write read of the pair survives the write being dropped", () => {
+    const source = code(read(CLOSE));
+    expect(source.match(/SELECT id, shift, seat, [^`]*heartbeatAt, endedAt/g)).toHaveLength(2);
+    expect(source).toMatch(/hasEverCheckedIn\(/);
   });
 });
 
