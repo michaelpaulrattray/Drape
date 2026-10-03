@@ -78,6 +78,28 @@
  * is UNREADABLE and never the convention — printed as such, and folded into the
  * refusal `decideRemoval` already had.
  *
+ * ⚠ **AND SINCE #1823 IT ASKS ABOUT IGNORED FILES, BECAUSE `git status` DOES NOT
+ * LIST THEM AND `output/` IS IGNORED.** The dirty read was `git status
+ * --porcelain` from the day this tool was written, so a worktree holding a
+ * court's entire artifact set was indistinguishable from one holding nothing.
+ * Measured 2026-10-03 on `drape-shift-sign-engine-court-1394`: the sweep was told
+ * `uncommitted 0 file(s)` over **1.357 GB in 188 files** — 155 renders and the
+ * eye strips a founder verdict was given on. Nothing was lost, because the sweep
+ * moved it by hand first; what is honest is that **every worktree removal this
+ * program has performed ran on that verdict**, and nobody knows what the earlier
+ * ones took.
+ *
+ * The reading is one call (`--ignored=matching`, which collapses a wholly-ignored
+ * directory and never descends into the `node_modules` junction), and what it
+ * finds is split by a NAMED set of paths worth keeping — `output/`,
+ * `.calibration/`, `.theme-shots/`, `.playwright-mcp/`. The rest (`node_modules/`,
+ * `.vite`, `dist`, `.env`) is counted and never refused on: a guard that fires on
+ * a build cache is a guard that gets `--force`d by habit. The kept set earns the
+ * same overridable refusal uncommitted work does, with its bytes in the sentence,
+ * and the `ignored` line prints on EVERY run — silence about a population cannot
+ * be told apart from an empty one, which is exactly what the report that lost the
+ * court looked like.
+ *
  * EXIT CODES:
  *     0  done (or, with --dry-run, would be done)
  *     1  refused on the TREE'S STATE — unpushed commits with no merged pull
@@ -100,12 +122,15 @@ import {
   branchForRemoval,
   branchReadFailed,
   branchToCreate,
+  classifyIgnored,
   decideRemoval,
   decideReviewRemoval,
   entryForPath,
+  ignoredReadingLine,
   junctionMustBeGone,
   looksCrlfSmudged,
   parseWorktreeList,
+  parseWorktreeStatus,
   planFor,
   prHeadFetchIntoRefArgs,
   prReadFailed,
@@ -118,14 +143,16 @@ import {
   validatePrNumber,
   validateSlug,
   worktreeListArgs,
+  worktreeStatusArgs,
+  type KeptIgnoredPath,
   type RemovalState,
   type ReviewRemovalVerdict,
   type ShipReading,
   type WorktreePlan,
 } from "./lib/shiftWorktree.mts";
-/* The one reading that authorises a recursive delete on this machine, shared
-   with the rite's own teardown rather than re-declared here (#654, law 7). */
-import { stillOnDisk } from "./lib/riteWorktree.mts";
+/* The two disk readings that stand beside this recursive delete, shared with the
+   rite's own teardown rather than re-declared here (#654 and #1823, law 7). */
+import { measureTree, stillOnDisk } from "./lib/riteWorktree.mts";
 
 function refuse(message: string): never {
   console.error(`shift-worktree: REFUSING — ${message}`);
@@ -437,6 +464,14 @@ const branchRead = branchForRemoval(entry);
  */
 let unpushedCommits = 0;
 let dirtyFiles: string[] = [];
+/* ⚠ THE POPULATION `dirtyFiles` CANNOT SEE (#1823). An UNREGISTERED leftover gets
+   empty lists here for the same reason it gets no branch state — `git status`
+   inside a path whose worktree entry has been pruned cannot run — and that is the
+   one honest hole in this repair: nineteen such shells were the subject of #1796,
+   and litter is what they are. A directory git has let go of is measured by the
+   hand sweep that finds it, not by this tool. */
+let keptIgnored: KeptIgnoredPath[] = [];
+let disposableIgnored: string[] = [];
 
 if (registered) {
   /* ⚠ THE UNPUSHED COUNT IS A SHIFT-WORKTREE QUESTION AND IS NOT PUT TO A REVIEW
@@ -481,12 +516,25 @@ if (registered) {
     }
   }
 
-  const status = git(["status", "--porcelain"], plan.path);
+  /* ⚠ ONE STATUS READ, AND IT NOW ASKS ABOUT IGNORED FILES TOO (#1823). The call
+     this line made for its whole life — `git status --porcelain` — cannot see an
+     ignored path, and `output/` is ignored, so a worktree holding 1.357 GB of a
+     founder-judged court reported `uncommitted 0 file(s)`. The args and the split
+     both live in the library so an arm asserts what is SENT (working law 5) and
+     drives the split rather than a copy of it. */
+  const status = git(worktreeStatusArgs(), plan.path);
   if (status.status !== 0) fail(`git status in the worktree failed: ${status.err.trim()}`);
-  dirtyFiles = status.out
-    .split(/\r?\n/)
-    .map((l) => l.slice(3).trim())
-    .filter((l) => l.length > 0);
+  const read = parseWorktreeStatus(status.out);
+  dirtyFiles = [...read.dirty];
+  const ignored = classifyIgnored(read.ignored);
+  disposableIgnored = [...ignored.disposable];
+  /* ⚠ ONLY THE KEPT SET IS WALKED, AND THAT IS WHERE THE WHOLE COST WOULD BE.
+     `node_modules/` is in `disposableIgnored` and measuring it would walk the main
+     checkout's install — over a gigabyte — to print a number no verdict reads. */
+  keptIgnored = ignored.kept.map((relative) => {
+    const bare = relative.replace(/^"|"$/g, "").replace(/\/+$/, "");
+    return { path: relative, ...measureTree(path.join(plan.path, bare)) };
+  });
 }
 
 /**
@@ -547,6 +595,8 @@ const reviewVerdict: ReviewRemovalVerdict | null =
 const state: RemovalState = {
   unpushedCommits,
   dirtyFiles,
+  keptIgnored,
+  disposableIgnored,
   registered,
   junctionPresent: stillOnDisk(plan.nodeModulesLink),
   ...removalStateFromShipReading(ship),
@@ -568,6 +618,12 @@ if (reviewPr === null) {
   console.log(`  head       ${reviewCheckoutRef(reviewPr)} (detached — a review worktree has no branch)`);
 }
 console.log(`  uncommitted ${state.dirtyFiles.length} file(s)`);
+/* ⚠ BESIDE `uncommitted`, AND ON EVERY RUN — the line the report that lost the
+   #1394 court did not have (#1823). A reader cannot tell silence about a
+   population from an empty one, and `uncommitted 0 file(s)` standing alone was a
+   true number about the wrong population. The sentence has ONE owner in the
+   library so the arms drive what is actually printed. */
+console.log(`  ignored    ${ignoredReadingLine(state)}`);
 /* ⚠ PRINTED ONLY WHEN IT WAS ASKED (#1540) — a `merged  —` line on every clean
    removal would read as "checked, and it never merged", which is the confident
    wrong sentence this card is about wearing different clothes. */

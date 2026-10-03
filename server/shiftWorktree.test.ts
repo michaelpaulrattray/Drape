@@ -27,7 +27,7 @@
  * so every refusal has an arm proving it does NOT fire on the clean case.
  */
 import { spawnSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -45,11 +45,19 @@ import {
   branchForRemoval,
   branchReadFailed,
   branchToCreate,
+  classifyIgnored,
   decideRemoval,
   decideReviewRemoval,
+  describeKeptIgnored,
   entryForPath,
+  humanBytes,
+  ignoredReadingLine,
+  keptIgnoredPrefixFor,
   mergedPrArgs,
   parseWorktreeList,
+  parseWorktreeStatus,
+  worktreeStatusArgs,
+  KEPT_IGNORED_PATHS,
   prHeadFetchArgs,
   prHeadFetchIntoRefArgs,
   prReadFailed,
@@ -70,6 +78,7 @@ import {
   type RemovalState,
   type ShipReading,
 } from "../scripts/lib/shiftWorktree.mts";
+import { measureTree, MEASURE_ENTRY_CAP } from "../scripts/lib/riteWorktree.mts";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 
 /* This suite drives a real child process, so it declares the class's timeout
@@ -89,6 +98,12 @@ const clean: RemovalState = {
   /* No merged pull request was found, so there is nothing past one either
      (#1540, at review). Required for the same reason as the field above. */
   unshippedPastMerge: null,
+  /* ⚠ GIT WAS ASKED ABOUT IGNORED FILES AND FOUND NOTHING (#1823) — required
+     rather than optional for exactly the `mergedPullRequest` reason above, and it
+     is the whole lesson of the card: an EMPTY list and a reading nobody took were
+     indistinguishable, and that is how a tree holding 1.36 GB read as clean. */
+  keptIgnored: [],
+  disposableIgnored: [],
 };
 
 describe("validateSlug — it ends in a recursive delete, so it is checked once here", () => {
@@ -182,6 +197,273 @@ describe("decideRemoval — refusing without becoming a rubber stamp", () => {
     const verdict = decideRemoval({ ...clean, registered: false }, false);
     expect(verdict.proceed).toBe(true);
     if (verdict.proceed) expect(verdict.warnings.join(" ")).toContain("not have this path registered");
+  });
+});
+
+/**
+ * ⚠ **`git status` CANNOT SEE AN IGNORED FILE, AND `output/` IS IGNORED (#1823).**
+ *
+ * The tool read `git status --porcelain` for its whole life and that reading is
+ * what authorises a recursive delete. Measured 2026-10-03: the sweep asked about
+ * `drape-shift-sign-engine-court-1394`, was answered `uncommitted 0 file(s)`, and
+ * the directory held **1.357 GB in 188 files** — 155 renders and the eye strips a
+ * founder verdict was given on. Nothing was lost, because the sweep moved every
+ * byte out by hand first; what is honest is that EVERY worktree removal this
+ * program has performed ran on that verdict.
+ *
+ * ⚠ **THIS GUARD'S FAILURE MODE IS READING CLEAN, SO IT GETS BOTH CONTROLS
+ * (working law 2), AND THE CARD ASKED FOR BOTH BY NAME.** The positive control is
+ * a real file under `output/` in a real temporary worktree; the negative is a
+ * `node_modules` link alone, which must NOT trip it. The arms against a real git
+ * are below — a fixture of what this suite BELIEVES porcelain prints could never
+ * have caught this, because the defect was a belief about what porcelain prints.
+ */
+describe("the ignored population — the fact `dirtyFiles` cannot see (#1823)", () => {
+  it("⚠ THE CALL IS ASSERTED AT THE WIRE, and it carries --ignored (working law 5)", () => {
+    expect(worktreeStatusArgs()).toEqual(["status", "--porcelain", "--ignored=matching"]);
+  });
+
+  it("splits a porcelain status on the FIRST TWO COLUMNS, not on a substring", () => {
+    /* A path may contain `!!`, and the marker lives in the X/Y position only. */
+    const read = parseWorktreeStatus(
+      [" M server/a.ts", "?? scratch.png", "!! output/", "!! node_modules/", "?? weird!!name.txt", ""].join("\n"),
+    );
+    expect(read.dirty).toEqual(["server/a.ts", "scratch.png", "weird!!name.txt"]);
+    expect(read.ignored).toEqual(["output/", "node_modules/"]);
+  });
+
+  it("⚠ THE NAMED SET, NOT A FLAT `ignored files present` — the card's own shape", () => {
+    const { kept, disposable } = classifyIgnored([
+      "node_modules/", ".env", "dist/", "output/", ".vite/", ".theme-shots/",
+    ]);
+    expect(kept).toEqual(["output/", ".theme-shots/"]);
+    /* ⚠ THE NEGATIVE HALF MATTERS AS MUCH: a guard that refuses on a build cache
+       is a guard that gets `--force`d by habit, which is this module's own stated
+       hazard. These four are present on virtually every worktree ever cut. */
+    expect(disposable).toEqual(["node_modules/", ".env", "dist/", ".vite/"]);
+  });
+
+  it("matches a file UNDER a kept prefix, and never a lookalike beside it", () => {
+    expect(keptIgnoredPrefixFor("output/court/frame-01.png")?.prefix).toBe("output/");
+    expect(keptIgnoredPrefixFor("output")?.prefix).toBe("output/");
+    /* `outputs/` and `my-output/` are different directories, on a tool that ends
+       in a recursive delete — the same exact-match doctrine `entryForPath` has. */
+    expect(keptIgnoredPrefixFor("outputs/x.png")).toBeNull();
+    expect(keptIgnoredPrefixFor("server/output/x.png")).toBeNull();
+  });
+
+  it("⚠ A QUOTED PATH IS STILL READ — git quotes a name with a space in it", () => {
+    /* Without the dequote the one directory whose name forced a quote would read
+       as disposable, which is the silent direction this whole card is about. */
+    expect(keptIgnoredPrefixFor('"output/eye strip.png"')?.prefix).toBe("output/");
+  });
+
+  it("⚠ EVERY KEPT PREFIX IS STILL A RULE IN `.gitignore` — a second reader", () => {
+    /* The set is a JUDGEMENT and cannot be derived (no reader tells a court's
+       renders from a build cache by path). What CAN be derived is whether the
+       rules it names still exist: an ignore rule renamed out from under this set
+       would leave it unreachable with nothing going red, which is the shape that
+       let the original defect live. */
+    const gitignore = readFileSync(join(import.meta.dirname, "..", ".gitignore"), "utf8")
+      .split(/\r?\n/)
+      .map((l) => l.trim());
+    expect(KEPT_IGNORED_PATHS.length).toBeGreaterThan(0);
+    for (const { prefix, why } of KEPT_IGNORED_PATHS) {
+      expect(gitignore, `${prefix} is in the kept set but is no longer a .gitignore rule`).toContain(prefix);
+      expect(why.length, `${prefix} carries no reason`).toBeGreaterThan(20);
+    }
+  });
+
+  it("REFUSES the kept set, overridably — and `--force` says what it destroys", () => {
+    const court = [{ path: "output/", bytes: 1_456_822_000, files: 188, capped: false }];
+    const verdict = decideRemoval({ ...clean, keptIgnored: court }, false);
+    expect(verdict.proceed).toBe(false);
+    if (!verdict.proceed) {
+      expect(verdict.reason).toContain("output/");
+      /* The number that makes it a decision rather than a notice. */
+      expect(verdict.reason).toContain("1.36 GB");
+      expect(verdict.reason).toContain("188 files");
+      expect(verdict.overridable).toBe(true);
+    }
+    const forced = decideRemoval({ ...clean, keptIgnored: court }, true);
+    expect(forced.proceed).toBe(true);
+    if (forced.proceed) {
+      expect(forced.warnings.join(" ")).toContain("destroying ignored work worth keeping");
+      expect(forced.warnings.join(" ")).toContain("1.36 GB");
+    }
+  });
+
+  it("⚠ NEVER REFUSES ON A DISPOSABLE — `node_modules` is on every worktree", () => {
+    const verdict = decideRemoval(
+      { ...clean, disposableIgnored: ["node_modules/", ".env", "dist/", ".vite/"] },
+      false,
+    );
+    expect(verdict.proceed, "a build cache refused a removal — this guard would be --force`d away").toBe(true);
+    if (verdict.proceed) expect(verdict.warnings).toEqual([]);
+  });
+
+  it("⚠ COMMITS AND TRACKED WORK OUTRANK ARTIFACTS in the refusal order", () => {
+    /* A refusal naming renders over lost commits would send a shift to copy a
+       directory and then `--force` past the commits. */
+    const verdict = decideRemoval(
+      { ...clean, unpushedCommits: 2, keptIgnored: [{ path: "output/", bytes: 10, files: 1, capped: false }] },
+      false,
+    );
+    expect(verdict.proceed).toBe(false);
+    if (!verdict.proceed) expect(verdict.reason).toContain("on no remote");
+  });
+
+  it("the printed line says how many were LOOKED at, even when there is nothing", () => {
+    /* The report that lost the court had NO ignored line. Silence about a
+       population cannot be told apart from an empty population — #1540's lesson
+       read in the other direction. */
+    expect(ignoredReadingLine({ keptIgnored: [], disposableIgnored: [] })).toContain("ignoring nothing");
+    expect(ignoredReadingLine({ keptIgnored: [], disposableIgnored: ["node_modules/", ".env"] }))
+      .toBe("2 path(s), none worth keeping (node_modules/, .env)");
+    const line = ignoredReadingLine({
+      keptIgnored: [{ path: "output/", bytes: 1_456_822_000, files: 188, capped: false }],
+      disposableIgnored: ["node_modules/"],
+    });
+    expect(line).toContain("WORTH KEEPING");
+    expect(line).toContain("1.36 GB in 188 files");
+    expect(line).toContain("1 disposable (node_modules/)");
+  });
+
+  it("a capped walk reads as a FLOOR, never as a measurement", () => {
+    expect(describeKeptIgnored({ path: "output/", bytes: 2048, files: 2, capped: true }))
+      .toBe("output/ (at least 2.0 kB in at least 2 files)");
+  });
+
+  it("⚠ humanBytes REACHES GB — the unit the 1.357 GB that filed this is read in", () => {
+    /* The four `kb()` helpers already in the tree all stop at kB, which is why
+       this is a fifth declaration and says so in its own docblock. */
+    expect(humanBytes(0)).toBe("0 B");
+    expect(humanBytes(1536)).toBe("1.5 kB");
+    expect(humanBytes(5 * 1024 ** 2)).toBe("5.0 MB");
+    expect(humanBytes(1_456_822_000)).toBe("1.36 GB");
+  });
+});
+
+/**
+ * ⚠ **THE CONTROLS, AGAINST A REAL GIT AND A REAL WORKTREE — the card asked for
+ * both by name, and a fixture could not have caught this defect (#1823).**
+ *
+ * The whole fault was a belief about what `git status --porcelain` prints, so an
+ * arm asserting this suite's belief about that output proves nothing. These build
+ * a repository, add a worktree, put a real file under `output/`, and read git.
+ *
+ *  - POSITIVE: the old call prints NOTHING over that file (the defect,
+ *    reproduced), the new one reports it, and the removal REFUSES with its bytes.
+ *  - NEGATIVE: a `node_modules` link alone does not trip it.
+ */
+describe("the ignored reading, against a real repository (#1823)", () => {
+  function withWorktree(body: (paths: { repo: string; tree: string }) => void): void {
+    const root = toPosix(mkdtempSync(join(tmpdir(), "drape-1823-")));
+    const repo = `${root}/repo`;
+    const tree = `${root}/drape-shift-ignored-1823`;
+    const run = (args: string[], cwd = repo) => {
+      const result = spawnSync("git", args, { cwd, encoding: "utf8" });
+      if (result.error) throw result.error;
+      expect(result.status, `git ${args.join(" ")} — ${result.stderr}`).toBe(0);
+      return (result.stdout ?? "").trim();
+    };
+    try {
+      mkdirSync(repo, { recursive: true });
+      run(["init", "-b", "main"], repo);
+      /* The real repository's own rules, so the arm cannot pass against a
+         `.gitignore` this suite invented. */
+      writeFileSync(
+        join(repo, ".gitignore"),
+        readFileSync(join(import.meta.dirname, "..", ".gitignore"), "utf8"),
+      );
+      run(["add", ".gitignore"]);
+      run(["-c", "user.email=seat@drape.test", "-c", "user.name=Seat", "commit", "-m", "rules"]);
+      run(["worktree", "add", tree, "-b", "team/ignored-1823"]);
+      body({ repo, tree });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }
+
+  const statusIn = (tree: string, args: string[]) => {
+    const result = spawnSync("git", args, { cwd: tree, encoding: "utf8" });
+    expect(result.status, result.stderr).toBe(0);
+    return result.stdout ?? "";
+  };
+
+  it("⚠ POSITIVE CONTROL — a file under `output/` is INVISIBLE to the old call and reported by the new one", () => {
+    withWorktree(({ tree }) => {
+      mkdirSync(join(tree, "output", "court"), { recursive: true });
+      const bytes = Buffer.alloc(4096, 7);
+      writeFileSync(join(tree, "output", "court", "frame-01.png"), bytes);
+      writeFileSync(join(tree, "output", "REPORT.txt"), "the verdict");
+
+      /* THE DEFECT, REPRODUCED: the reading this tool made for its whole life
+         says the worktree is clean while 4 kB of a court sits in it. */
+      expect(
+        statusIn(tree, ["status", "--porcelain"]).trim(),
+        "`git status --porcelain` saw an ignored file — this arm can no longer demonstrate the defect",
+      ).toBe("");
+
+      const read = parseWorktreeStatus(statusIn(tree, worktreeStatusArgs()));
+      expect(read.dirty).toEqual([]);
+      const { kept } = classifyIgnored(read.ignored);
+      expect(kept, "the repaired reading still cannot see output/").toContain("output/");
+
+      /* And the measurement the refusal prints, taken off the real disk. */
+      const measured = measureTree(join(tree, "output"));
+      expect(measured.files).toBe(2);
+      expect(measured.bytes).toBe(4096 + "the verdict".length);
+      expect(measured.capped).toBe(false);
+
+      const verdict = decideRemoval(
+        { ...clean, keptIgnored: [{ path: "output/", ...measured }] },
+        false,
+      );
+      expect(verdict.proceed, "the removal still proceeds over a court's artifacts").toBe(false);
+      if (!verdict.proceed) expect(verdict.reason).toContain("output/ (4.0 kB in 2 files)");
+    });
+  });
+
+  it("⚠ NEGATIVE CONTROL — a node_modules link alone does not trip it", () => {
+    withWorktree(({ repo, tree }) => {
+      /* A junction is what `shift-worktree add` makes on Windows and node's
+         `symlinkSync(…, "junction")` is the same call it uses; the fallback keeps
+         the arm honest on a POSIX runner, where a dir symlink is the equivalent. */
+      mkdirSync(join(repo, "node_modules", "left-pad"), { recursive: true });
+      writeFileSync(join(repo, "node_modules", "left-pad", "index.js"), "module.exports = 0;");
+      try {
+        symlinkSync(join(repo, "node_modules"), join(tree, "node_modules"), "junction");
+      } catch {
+        symlinkSync(join(repo, "node_modules"), join(tree, "node_modules"), "dir");
+      }
+
+      const read = parseWorktreeStatus(statusIn(tree, worktreeStatusArgs()));
+      const { kept, disposable } = classifyIgnored(read.ignored);
+      expect(kept, "a node_modules link read as work worth keeping").toEqual([]);
+      expect(disposable.join(" "), "git stopped reporting the junction at all").toContain("node_modules");
+
+      const verdict = decideRemoval({ ...clean, keptIgnored: [], disposableIgnored: [...disposable] }, false);
+      expect(verdict.proceed, "a node_modules junction refused a removal").toBe(true);
+
+      /* ⚠ AND THE MEASUREMENT MUST NOT WALK THROUGH IT. The scar in this
+         module's own header is a recursive act that followed this link into the
+         main checkout; a byte count that descended it would walk a gigabyte to
+         answer a question about a seat's `output/`. */
+      const measured = measureTree(join(tree, "node_modules"));
+      expect(measured.files, "measureTree followed the junction into the real install").toBe(0);
+      expect(measured.bytes).toBe(0);
+    });
+  });
+
+  it("measureTree returns zero for a path that is not there, rather than throwing", () => {
+    withWorktree(({ tree }) => {
+      expect(measureTree(join(tree, "output"))).toEqual({ bytes: 0, files: 0, capped: false });
+    });
+  });
+
+  it("the walk cap is a real number and the floor wording keys on it", () => {
+    expect(MEASURE_ENTRY_CAP).toBeGreaterThan(1000);
   });
 });
 
@@ -613,6 +895,38 @@ describe("the script's own text — the sequence a reader must be able to trust"
 
   it("refuses an unknown flag rather than ignoring it — a misspelt --dry-run on a remove deletes", () => {
     expect(source).toContain("unknown flag");
+  });
+
+  it("⚠ THE STATUS READ CANNOT GO BACK TO BEING BLIND TO IGNORED FILES (#1823)", () => {
+    /* The args and the split both have one owner in the library, so this holds
+       only that the CLI does not hand-roll the call again — the behaviour itself
+       is driven against a real git above. A bare `["status", "--porcelain"]` here
+       is the exact line that reported `uncommitted 0 file(s)` over 1.357 GB. */
+    expect(source).toContain("git(worktreeStatusArgs(), plan.path)");
+    expect(
+      source,
+      "the CLI is reading `git status --porcelain` without --ignored again (#1823)",
+    ).not.toContain('["status", "--porcelain"]');
+    expect(source).toContain("parseWorktreeStatus(status.out)");
+  });
+
+  it("⚠ ONLY THE KEPT SET IS WALKED — measuring node_modules walks the main install", () => {
+    /* `classifyIgnored` returns both halves; the measurement must be mapped over
+       `ignored.kept` and never over the whole reading. The junction is in the
+       disposable half, and it is over a gigabyte. */
+    expect(source).toContain("ignored.kept.map(");
+    expect(source).not.toContain("read.ignored.map(");
+  });
+
+  it("the ignored line is printed beside `uncommitted`, on every run", () => {
+    const uncommitted = source.indexOf("uncommitted ${state.dirtyFiles.length}");
+    const ignored = source.indexOf("ignoredReadingLine(state)");
+    const verdict = source.indexOf("decideRemoval(state, force)");
+    expect(uncommitted).toBeGreaterThan(-1);
+    expect(ignored).toBeGreaterThan(uncommitted);
+    /* Printed BEFORE the verdict refuses, so a reader sees the bytes whether the
+       removal proceeds or not. */
+    expect(ignored).toBeLessThan(verdict);
   });
 });
 
