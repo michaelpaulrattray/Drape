@@ -100,6 +100,55 @@ export const QUEUE_READER_EXEMPTIONS: ReadonlyArray<{ path: string; because: str
   },
 ];
 
+/**
+ * WHAT A SHIFT MEETING THIS RED IS TO DO — all THREE roads, because until #1882
+ * the message named two and both of them were wrong for the file that actually
+ * reddened it.
+ *
+ * # ⚠ THE RED THIS GUARD USUALLY FIRES ON IS NOT A READER AT ALL
+ *
+ * `main` sat red on this arm for two shifts' leftover probe scripts (#1882), and
+ * the message pointed the reader at `buildBoard` and at `QUEUE_READER_EXEMPTIONS`
+ * — the two repairs for a TRACKED script. For an untracked disposable **both are
+ * wrong**: calling the board from a throwaway probe buys nothing, and an
+ * exemption row naming a file that exists on ONE machine reddens this suite's own
+ * stale-exemption arm on every other tree. The one correct repair, deletion,
+ * appeared nowhere a shift would read it — it lives in the night-shift standing
+ * orders, which are untracked, so no suite can hold them to saying it and no CI
+ * run can either.
+ *
+ * ⚠ **And CI never sees an untracked file**, so this red only ever lands on a
+ * local tree — which is the trap #335 named in its own words: *"a shift cannot use
+ * `pnpm check` as a clean baseline when it is already red, which is how a shift
+ * comes to read its own breakage as noise, or stop running it."*
+ *
+ * # Why the sentence lives HERE and not in a document
+ *
+ * This is the text `expect` prints at the moment somebody needs it, on the path
+ * `pnpm preflight` already walks — so it is read by the shift that met the red
+ * rather than by the shift that went looking. It is held to naming all three
+ * roads by an arm in `server/queueReaderBuildState.test.ts`, which a sentence in
+ * an untracked file can never be.
+ *
+ * **Declined, and named rather than left implicit:** teaching the judgement to
+ * ask git which files are tracked, so it could print only the one road that
+ * applies. It is deliberately a PURE function over `{ path → source }` — that is
+ * what lets the arms plant the negative case a directory walk cannot produce —
+ * and a shift always knows whether the file is its own scratch. Three roads in
+ * one message is the cheaper honest answer.
+ */
+export const QUEUE_READER_FAILURE_GUIDANCE =
+  "these scripts list open issues and consult no build board. THREE repairs, one per kind of file:"
+  + " (1) a script that OFFERS a shift work calls `scripts/lib/cardBuildState.mts`'s `buildBoard`;"
+  + " (2) a TRACKED script that reads the queue for another purpose gets a row in"
+  + " `QUEUE_READER_EXEMPTIONS` saying why it offers nobody a card;"
+  + " (3) an UNTRACKED disposable — `scripts/_<card>-…-disposable.mts`, somebody's leftover probe —"
+  + " is DELETED, and its script and output are pasted on the card named in its filename first,"
+  + " because that is the only place a later reader will look for it (#1882)."
+  + " ⚠ NEVER write an exemption row for an untracked file: the stale-exemption arm below reddens"
+  + " on every tree that does not have it. And CI cannot see an untracked file at all, so a red"
+  + " here that names one is litter on THIS machine and never anybody's change.";
+
 /** One file's verdict. `ok` is "consults the reader, or is exempt for a stated reason". */
 export type QueueReaderVerdict =
   | { path: string; ok: true; why: "consults" | "exempt" }
