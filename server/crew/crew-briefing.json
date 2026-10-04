@@ -9635,6 +9635,13 @@
   ],
   "problems": [
     {
+      "id": "latency-control-jitter-1885",
+      "severity": "warning",
+      "state": "resolved",
+      "title": "A check every pull request has to pass was failing one run in seven, for reasons that had nothing to do with the work it was checking (#1885)",
+      "detail": "One of the checks that runs before anything can be merged asks whether a change on screen appears within a tenth of a second. It was reading a single stopwatch measurement on a shared machine, and a brief hiccup there is ordinary — so it failed work that was perfectly fine. It stopped a pull request yesterday; somebody re-ran it and it passed.\n\nThe card was filed as a one-off. It was not. Run twenty times on an ordinary idle machine it failed three of them, and the check our agents are told to run before they push runs it too, so they have been getting false alarms before the build ever sees their work.\n\nThe number itself was not careless, which is why it lasted: a tenth of a second is the right target for a real button in the studio and we do hold the app to it. The mistake was using it on one measurement. Where we judge the app against that same target we judge it across many measurements, so the odd hiccup cannot fail it — and that version has never misfired.\n\nFIXED and merged: #1885 landed as e2bc0722. The check now asks the question it actually cares about — whether it can still tell a fast change from a slow one — by comparing the two against each other instead of against a stopwatch. It still catches what it exists to catch: it was deliberately broken four different ways and each break was caught by exactly the right test. Twenty further runs of the real check found no false alarms, including one run that hiccuped exactly as before and read it correctly. This row is resolved in the edition that ships with it."
+    },
+    {
       "id": "canvas-refresh-dead-engine-1785",
       "severity": "warning",
       "state": "resolved",
