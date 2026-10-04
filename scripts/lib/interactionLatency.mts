@@ -466,6 +466,24 @@ export function renderTable(rows: readonly ProbeSummary[]): string {
 /* ─────────────────────────────── the controls ───────────────────────────── */
 
 /**
+ * The slow control's timer. **One declaration, because three readers need it**
+ * (working law 4): the page that sets it, the band that judges it, and the
+ * instant control's ceiling, which is derived from it rather than written down
+ * beside it. Changing the fixture's timer moves all three together.
+ */
+export const CONTROL_SLOW_MS = 2000;
+
+/**
+ * How much quicker than the slow control an instant change must read. The
+ * ceiling is `CONTROL_SLOW_MS / CONTROL_INSTANT_RATIO`; the reasoning and the
+ * measurement behind the figure are in the `CONTROL_PAGE` docblock below.
+ */
+export const CONTROL_INSTANT_RATIO = 4;
+
+/** The instant control's pass line — derived, never typed. */
+export const CONTROL_INSTANT_CEILING_MS = CONTROL_SLOW_MS / CONTROL_INSTANT_RATIO;
+
+/**
  * THE INSTRUMENT'S OWN PROOF (working law 2), needing no server and no
  * credits, so it runs in the gate on every pull request.
  *
@@ -473,10 +491,45 @@ export function renderTable(rows: readonly ProbeSummary[]): string {
  * the clock is the negative control: an observer that resolved on ANY
  * mutation would read every button as instant.
  *
- *   #instant  writes the target synchronously            → under 100 ms
- *   #slow     writes it after 2000 ms                     → about 2000 ms
+ *   #instant  writes the target synchronously            → far under the slow one
+ *   #slow     writes it after CONTROL_SLOW_MS              → about that long
  *   #never    writes nothing                              → timeout
  *   (absent)  a find that matches nothing                 → absent
+ *
+ * ⚠ **THE INSTANT CONTROL'S LINE IS DERIVED FROM THE SLOW TIMER, NOT FROM THE
+ * PRODUCT'S BAR — #1885, 2026-10-04, and the number it used to carry was the
+ * right number answering the WRONG QUESTION.** It asserted
+ * `instant.frameMs < 100`, which is `BAR_MS.optimistic` — the CUSTOMER's budget
+ * for a real interaction, and a sound one. But that bar is judged by
+ * `summarise` at **p95 over n samples**, where a loaded runner's tail is
+ * tolerated by construction; the control asserted the same figure on **one
+ * sample**, where it is not. A product budget read at p95 and a pass line read
+ * once are different instruments wearing one number.
+ *
+ * **Measured before the line was moved, on the runner nobody controls** — the
+ * `gate-checks` job of the last 43 gate runs, the reading scraped from each
+ * log: `painted` p50 **11.4 ms**, p90 **14.1 ms**, p95 **18.3 ms**, max
+ * **52.5 ms**. So the body of the distribution sits an order of magnitude under
+ * the old line and the control looked safe. **It is the tail that is not
+ * bounded by anything the sample can see**: the same instrument red at
+ * **101.3 ms** on attempt 1 of run `37172990915` (PR #1884, 03:06Z — a diff
+ * that touched two crew-tooling files and nothing this reader reads), and 3 of
+ * 18 consecutive local runs read **114.6 / 116.4 / 119.1 ms**. Two independent
+ * jitter sources, not one: CI's miss was a delayed CLICK DISPATCH
+ * (`changed at 101.2 ms`), the local ones a delayed PAINT (`changed at 0.3 ms,
+ * painted at 116.4 ms`). **Both leave the reader working perfectly** — in the
+ * CI failure the slow control read `2000.3 / 2013.4 ms` in the same run, so
+ * fast and slow were still 20× apart and told apart correctly.
+ *
+ * **Hence a RELATIVE line, which is the control's own question stated as
+ * arithmetic**: an instant change must read at least four times quicker than
+ * the two-second one. That is 4.2× above the worst reading ever observed here
+ * (119.1 ms) and still 3.8× under the slow band's floor, so a reader that
+ * reported a synchronous change as anywhere near slow reddens exactly as
+ * before. An absolute line "with measured headroom" was the other road and is
+ * declined: 2–3× the observed max lands at 100–150 ms, which is where the line
+ * already was when it failed twice on two different machines — the honest
+ * reading is that this tail has no ceiling the sample can name.
  */
 export const CONTROL_PAGE = `<!doctype html>
 <html><body>
@@ -496,7 +549,7 @@ export const CONTROL_PAGE = `<!doctype html>
       document.getElementById("out").textContent = "instant";
     });
     document.getElementById("slow").addEventListener("click", () => {
-      setTimeout(() => { document.getElementById("out").textContent = "slow"; }, 2000);
+      setTimeout(() => { document.getElementById("out").textContent = "slow"; }, ${CONTROL_SLOW_MS});
     });
     })();
   </script>
@@ -540,10 +593,16 @@ export type ControlVerdict = { readonly control: string; readonly ok: boolean; r
 /**
  * Judge the four control readings. Pure, so the judgement itself has arms.
  *
- * The slow bound is wide on the high side (2000 → 2600) because a headless
- * browser under a loaded CI runner can defer a 2 s timer; it is TIGHT on the
- * low side (1900) because reading a 2 s action as anything quicker is the
- * exact failure the clock is there to provoke.
+ * The slow bound is wide on the high side (+600 ms) because a headless browser
+ * under a loaded CI runner can defer the timer; it is TIGHT on the low side
+ * (-100 ms) because reading a 2 s action as anything quicker is the exact
+ * failure the clock is there to provoke. Both are derived from
+ * `CONTROL_SLOW_MS`, so the fixture's timer and the band it is judged against
+ * cannot drift apart.
+ *
+ * The instant bound is RELATIVE for the reason #1885 measured — see the
+ * `CONTROL_PAGE` docblock. What it still refuses is unchanged: a reading that
+ * is not a change, carries the wrong value, or is anywhere near the slow one.
  */
 export function judgeControls(readings: readonly ClickReading[]): ControlVerdict[] {
   const byName = new Map(readings.map((r) => [r.action, r] as const));
@@ -557,13 +616,20 @@ export function judgeControls(readings: readonly ClickReading[]): ControlVerdict
   const absent = byName.get("absent");
   return [
     {
-      control: "an instant change reads under 100 ms",
-      ok: instant?.kind === "changed" && instant.frameMs < 100 && instant.after === JSON.stringify("instant"),
+      control: `an instant change reads at least ${CONTROL_INSTANT_RATIO}x quicker than the slow one (under ${CONTROL_INSTANT_CEILING_MS} ms)`,
+      ok:
+        instant?.kind === "changed" &&
+        instant.frameMs < CONTROL_INSTANT_CEILING_MS &&
+        instant.after === JSON.stringify("instant"),
       saw: describe(instant),
     },
     {
-      control: "a change 2 s later reads as 2 s (the ticking clock beside it must not count)",
-      ok: slow?.kind === "changed" && slow.mutationMs >= 1900 && slow.mutationMs <= 2600 && slow.after === JSON.stringify("slow"),
+      control: `a change ${CONTROL_SLOW_MS / 1000} s later reads as ${CONTROL_SLOW_MS / 1000} s (the ticking clock beside it must not count)`,
+      ok:
+        slow?.kind === "changed" &&
+        slow.mutationMs >= CONTROL_SLOW_MS - 100 &&
+        slow.mutationMs <= CONTROL_SLOW_MS + 600 &&
+        slow.after === JSON.stringify("slow"),
       saw: describe(slow),
     },
     {
