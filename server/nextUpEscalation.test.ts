@@ -210,8 +210,10 @@ describe("the escalation verdict", () => {
 
     expect(result.last).toMatch(/^NONE: /);
     /* #1094 piece 2 added "or is already being built" to the same sentence — the
-       three skips are one list now, and the reason names all three. */
-    expect(result.last).toContain("blocked, needs a sitting, or is already being built");
+       skips are one list, and the reason names them. #1881 made that list the
+       cut's whole five-wall chain, so the sentence names the walls a shift would
+       actually meet rather than the three this gate used to know about. */
+    expect(result.last).toContain("held, parked, on another rung, or already being built");
     expect(result.status).toBe(1);
   });
 
@@ -675,12 +677,130 @@ describe("a card somebody is already building is not takeable (#1094)", () => {
   it("⚠ consults the ONE shared reader rather than its own grep", () => {
     const source = readFileSync(SCRIPT, "utf8");
     expect(source).toContain('from "./lib/cardBuildState.mts"');
-    expect(source).toContain("board.holdsOffOffer(");
+    /* ⚠ **IT ASKS THE CUT'S OWNER NOW, NOT THE BOARD DIRECTLY (#1881)** — this
+       line read `board.holdsOffOffer(` until 2026-10-04, which was the board wall
+       and ONLY the board wall. The gate called a card takeable that no shift of
+       any model could start: measured that night, it printed *"the next card is
+       #1469, which an Opus shift can take"* over a card on `rung:N2c` against a
+       focus of P2. The board is still the reading it hands over, so both halves
+       are asserted — the owner, and the board going INTO it. */
+    expect(source).toContain('orderedBandHoldFor } from "./lib/seatBatches.mts"');
+    expect(source).toContain("orderedBandHoldFor({ card: { number: item.issueNumber, labels }, focusRung, board })");
     /* ⚠ AND EACH HALF IS INDEPENDENT — the CI red this arm was added beside. A
        gate that asked "did any board fixture arrive" sent the other half to the
        network; both halves must read their own flag. */
     expect(source).toContain('flags.has("--open-prs")');
     expect(source).toContain('flags.has("--comments")');
+  });
+});
+
+/**
+ * #1881 — THE WALLS THIS GATE COULD NOT SEE, AND IT BUYS A FABLE SESSION.
+ *
+ * The walk asked three things — `blocked`, `needs-sitting`, the build board — and
+ * the cut holds an ordered card for FIVE reasons. **Measured 2026-10-04 01:30Z on
+ * his real band: the gate printed *"the next card is #1469, which an Opus shift
+ * can take"* while `#1469` sat on `rung:N2c` against a focus of P2 — a card no
+ * shift of any model could start.** The verdict that night was `NONE` and
+ * happened to be right; the sentence was false, and it is the sentence the runner
+ * logs.
+ *
+ * The ladder arrives as a FILE here (`--briefing`) for this suite's own doctrine:
+ * pinned to the real briefing these arms would move under his next focus flip.
+ */
+describe("the walls a Fable session must not be bought past (#1881)", () => {
+  function ladderFile(name: string, current: string | null): string {
+    const path = join(dir, `${name}-briefing.json`);
+    const ladder = [
+      { key: "P1", title: "pricing one", state: "done" },
+      { key: "P2", title: "pricing two", state: current === "P2" ? "current" : "next" },
+      { key: "N2c", title: "campaigns", state: current === "N2c" ? "current" : "next" },
+    ];
+    writeFileSync(path, JSON.stringify({ program: { ladder } }), "utf8");
+    return path;
+  }
+
+  it("steps PAST a rung-held Fable card and escalates the next one — never answers NONE", () => {
+    /* #586's shape: a wall must SKIP the row, never freeze the band behind it. */
+    const queue = queueFile("rung-skip", [
+      card(1469, ["founder-ordered", "awaiting-fable", "rung:N2c"], "campaigns"),
+      card(1832, ["founder-ordered", "awaiting-fable", "rung:P2"], "the plan cards"),
+    ]);
+    const result = run(
+      "--queue", queue, "--open-prs", queueFile("rung-skip-prs", []), "--comments", queueFile("rung-skip-c", []),
+      "--not-built", queueFile("rung-skip-nb", []),
+      "--briefing", ladderFile("rung-skip", "P2"),
+      "--state", statePath("rung-skip"), "--today", "2026-10-04",
+    );
+    expect(result.last).toMatch(/^ESCALATE #1832 /);
+  });
+
+  it("THE CONTROL BOTH WAYS — the same two cards on the other rung escalate the other card", () => {
+    const queue = queueFile("rung-other", [
+      card(1469, ["founder-ordered", "awaiting-fable", "rung:N2c"], "campaigns"),
+      card(1832, ["founder-ordered", "awaiting-fable", "rung:P2"], "the plan cards"),
+    ]);
+    const result = run(
+      "--queue", queue, "--open-prs", queueFile("rung-other-prs", []), "--comments", queueFile("rung-other-c", []),
+      "--not-built", queueFile("rung-other-nb", []),
+      "--briefing", ladderFile("rung-other", "N2c"),
+      "--state", statePath("rung-other"), "--today", "2026-10-04",
+    );
+    expect(result.last).toMatch(/^ESCALATE #1469 /);
+  });
+
+  it("a PARKED Fable card is stepped past — his own ruling is a wall", () => {
+    const queue = queueFile("parked-skip", [
+      card(1609, ["founder-ordered", "awaiting-fable", "parked"], "the go-live list"),
+      card(534, ["founder-ordered", "awaiting-fable"], "re-imagine"),
+    ]);
+    const result = run(
+      "--queue", queue, "--open-prs", queueFile("parked-skip-prs", []), "--comments", queueFile("parked-skip-c", []),
+      "--not-built", queueFile("parked-skip-nb", []),
+      "--briefing", ladderFile("parked-skip", "P2"),
+      "--state", statePath("parked-skip"), "--today", "2026-10-04",
+    );
+    expect(result.last).toMatch(/^ESCALATE #534 /);
+  });
+
+  it("a RESEARCH proposal is stepped past — it is decided on his Notion desk", () => {
+    const queue = queueFile("research-skip", [
+      card(1552, ["founder-ordered", "awaiting-fable", "research"], "a proposal"),
+      card(534, ["founder-ordered", "awaiting-fable"], "re-imagine"),
+    ]);
+    const result = run(
+      "--queue", queue, "--open-prs", queueFile("research-skip-prs", []), "--comments", queueFile("research-skip-c", []),
+      "--not-built", queueFile("research-skip-nb", []),
+      "--briefing", ladderFile("research-skip", "P2"),
+      "--state", statePath("research-skip"), "--today", "2026-10-04",
+    );
+    expect(result.last).toMatch(/^ESCALATE #534 /);
+  });
+
+  it("⚠ an UNREADABLE ladder holds every rung card — this gate's own fail direction", () => {
+    /* It fails toward NOT escalating, because Fable sessions are expensive — his
+       words. A rungless Fable card is still escalated, so the arm proves the
+       direction rather than a blanket refusal. */
+    const queue = queueFile("no-ladder", [
+      card(1832, ["founder-ordered", "awaiting-fable", "rung:P2"], "the plan cards"),
+    ]);
+    const result = run(
+      "--queue", queue, "--open-prs", queueFile("no-ladder-prs", []), "--comments", queueFile("no-ladder-c", []),
+      "--not-built", queueFile("no-ladder-nb", []),
+      "--briefing", join(dir, "a-briefing-that-is-not-there.json"),
+      "--state", statePath("no-ladder"), "--today", "2026-10-04",
+    );
+    expect(result.last).toMatch(/^NONE: /);
+    expect(result.last).toContain("on another rung");
+
+    const rungless = queueFile("no-ladder-rungless", [card(534, ["founder-ordered", "awaiting-fable"], "re-imagine")]);
+    const second = run(
+      "--queue", rungless, "--open-prs", queueFile("no-ladder2-prs", []), "--comments", queueFile("no-ladder2-c", []),
+      "--not-built", queueFile("no-ladder2-nb", []),
+      "--briefing", join(dir, "a-briefing-that-is-not-there.json"),
+      "--state", statePath("no-ladder2"), "--today", "2026-10-04",
+    );
+    expect(second.last).toMatch(/^ESCALATE #534 /);
   });
 });
 

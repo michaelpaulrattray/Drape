@@ -160,7 +160,9 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { heldStatesFromLabels } from "../shared/crewNextUpHold.js";
+import { CREW_HOLD_LABELS, heldStatesFromLabels } from "../shared/crewNextUpHold.js";
+import { orderedBandHoldFor } from "./lib/seatBatches.mts";
+import { readLadderFocusRung } from "./lib/ladderFocusRung.mts";
 
 import { buildBoard, readCardComments, readNotBuiltCards } from "./lib/cardBuildState.mts";
 import { readOpenPullRequests } from "./lib/cardClaimWarning.mts";
@@ -171,7 +173,7 @@ import { deriveBands, type Row as BandRow } from "./lib/standingExceptions.mts";
 
 type Json = Record<string, any>;
 
-const KNOWN_FLAGS = new Set(["--state", "--queue", "--record", "--today", "--open-prs", "--comments", "--not-built"]);
+const KNOWN_FLAGS = new Set(["--state", "--queue", "--record", "--today", "--open-prs", "--comments", "--not-built", "--briefing"]);
 
 /**
  * The `gh --limit`, stated ONCE and reused as its own floor guard: a limit and
@@ -441,6 +443,9 @@ function toItem(row: Json) {
        #722's review caught — `"undefined"` sorts last, `""` sorts first. */
     createdAt: row.createdAt,
     held: heldStatesFromLabels(labels),
+    /* THE LABELS THEMSELVES (#1881) — `held` above answers only the hold-label
+       family, and three of the cut's five walls are read off other labels. */
+    labels,
   };
 }
 
@@ -543,14 +548,73 @@ if (board.partial) {
   );
 }
 
-const firstTakeable = items.find(
-  (item) => !item.held.includes("blocked")
-    && !item.held.includes("sitting")
-    /* Somebody's hands are on it right now — an Opus shift reading the same
-       board would step over it, so this walk does too. */
-    && !board.holdsOffOffer(item.issueNumber),
-);
-if (firstTakeable === undefined) none(`every one of the ${items.length} ordered or urgent card(s) is blocked, needs a sitting, or is already being built — a Fable shift cannot clear those either`);
+/**
+ * ⚠ **ALL FIVE OF THE CUT'S WALLS, AND THE ONE THIS GATE STEPS OVER ON PURPOSE
+ * — #1881.**
+ *
+ * This walk asked three things: `blocked`, `needs-sitting`, and the build board.
+ * It did not ask about `parked`, `research` or THE MILESTONE GATE — so it called
+ * a card takeable that no shift of any model may start. **Measured 2026-10-04
+ * 01:30Z on his real band: the gate printed *"the next card is #1469, which an
+ * Opus shift can take"* while `#1469` sat on `rung:N2c` against a focus of P2.**
+ * The verdict it reached that night was `NONE` and happened to be right; the
+ * sentence it reached it by was false, and it is the sentence the runner logs.
+ *
+ * **The `fable` hold is the exception, and it is the whole reason this is not a
+ * bare `orderedBandHoldFor(...) === null`.** This gate exists to FIND an
+ * `awaiting-fable` card: a verdict that simply said "held" would stop it
+ * escalating anything, ever.
+ *
+ * ⚠ **AND READING THE LADDER HERE IS NOT THE BRIEFING READ THIS FILE'S HEADER
+ * REFUSES.** That refusal is about the DESK — `needsYou`, which the sweep writes
+ * at shift CLOSE, so it is a shift stale when this runs. `program.ladder` is a
+ * different field with a different clock: it moves only on HIS WORD at a
+ * milestone boundary, and `cut-seat-batches.mts` reads THAT FIELD to decide what
+ * a seat may take. So reading it here makes this gate agree with the cut rather
+ * than with a kinder reading of the same board — and where the file cannot be
+ * read, every rung card is held and the gate escalates nothing, which is this
+ * gate's own documented fail direction (*"it fails toward NOT escalating"*).
+ */
+/* ⚠ **AN INJECTED PATH, for this file's own stated reason**: every impure read
+   here arrives as a file a caller names, because *a seam asserted by a source
+   grep is not asserted*. Without it the ladder arms below would be pinned to
+   whatever rung the real briefing happens to carry tonight, which is a fixture
+   that changes under them on his next focus flip. Defaults to the real briefing,
+   which is what the runner uses. */
+const focusRung = readLadderFocusRung(flags.get("--briefing") ?? undefined).focusRung;
+const wallFor = (item: { issueNumber: number; labels: readonly string[] }) => {
+  /*
+    ⚠ **THE EXCEPTION IS "ASK AS IF THE FABLE LABEL WERE NOT THERE", AND THE TWO
+    SHORTER SHAPES OF IT WERE BOTH WRONG — this suite caught each one.**
+
+    1 · *release the card when the collapsed hold reads `fable`* — but
+    `heldStateFromLabels` is a reader for a CHIP, and `blocked` + `awaiting-fable`
+    collapses to `fable` because the ranking puts `fable` further from takeable.
+    So it released a card that is ALSO blocked, which is exactly the caller
+    `shared/crewNextUpHold.ts` names in its own docblock as the one that would be
+    wrong (PR #544). The arm *does NOT escalate a card that is BOTH blocked and
+    awaiting-fable* is that lesson.
+
+    2 · *release the card when its only holds are Fable ones* — correct about the
+    holds and still wrong, because releasing it SKIPS THE REMAINING WALLS. The
+    hold limb sits third of five, so a Fable card with an open pull request or a
+    live claim was handed back as takeable and #1094 piece 2 was undone. The two
+    arms under *a card somebody is already building is not takeable* are that one.
+
+    Removing the label and asking the whole chain has neither failure: every other
+    wall still answers, in the cut's own order, and the one wall this gate is
+    LOOKING for is the one it cannot trip over.
+  */
+  const labels = item.labels.filter((label) => label !== CREW_HOLD_LABELS.fable);
+  return orderedBandHoldFor({ card: { number: item.issueNumber, labels }, focusRung, board });
+};
+const firstTakeable = items.find((item) => wallFor(item) === null);
+if (firstTakeable === undefined) {
+  none(
+    `every one of the ${items.length} ordered or urgent card(s) is held, parked, on another rung, or already being built`
+    + " — a Fable shift cannot clear those either",
+  );
+}
 if (!firstTakeable.held.includes("fable")) {
   none(`the next card is #${firstTakeable.issueNumber}, which an Opus shift can take — Fable is not needed`);
 }
@@ -575,7 +639,10 @@ const after = items.slice(items.indexOf(firstTakeable) + 1);
 const bundle = after
   /* A bundle naming a card somebody is already building is the same waste one
      card along, and cheaper to exclude than to explain in the brief. */
-  .filter((item) => item.held.length === 0 && !board.holdsOffOffer(item.issueNumber))
+  /* The same five walls (#1881). A bundle row keeps the stricter test: an
+     `awaiting-fable` sibling is excluded here by his own order (one Fable session
+     each), so `item.held.length === 0` stays beside the wall reading. */
+  .filter((item) => item.held.length === 0 && wallFor(item) === null)
   .map((item) => item.issueNumber);
 
 const sessionsToday = state.day === TODAY ? state.countToday : 0;
