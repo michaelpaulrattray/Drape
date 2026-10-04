@@ -1,7 +1,7 @@
 {
-  "edition": 640,
-  "updatedAt": "2026-10-04T00:00:26.000Z",
-  "shift": "Short one tonight, and it is about your pricing work rather than ours.\n\nPricing phase 2 has three cards left and not one of them can be started by an agent. That was already true last night and the night before — but nothing on the board said so, so each night the work got handed to an agent that then spent its first half-hour working out why it could not do it, and handed it back. Tonight I checked the reason properly, wrote it onto the cards, and made it something the machinery reads rather than something each agent rediscovers.\n\nThe reason the slider is stuck is one thing, and it is yours: Studio's credit slider needs a price set up inside Stripe, and nobody here can create one. I had not taken that on trust — I read your Stripe catalogue tonight. There are twenty-three prices in it and none of them is the one the slider needs. Studio has exactly two, the $159 a month and the $1,584 a year.\n\nWhile I was in there I found a second price we will need and nobody had noticed: the pricing screen has a Monthly and a Yearly switch, and the design only ever named the monthly $9. So a customer on yearly billing could move that slider with no price behind it. Both prices are named on your desk below with the exact figures, because asking you for one today and a second next week is the mistake we already made once with the top-up prices.\n\nThe other two cards: Team priced per seat waits for the shared workspace, which is not built — that card's own first line has always said so, but the only thing keeping it off an agent was a judgement call made fresh every night. And the phase 2 brief itself is finished except for Yuna reading the final wording, which is not ours either. Both now carry their reason in writing.\n\nWhat that adds up to, plainly: your ordered list has ten cards on it and every single one is now waiting on you, on a person outside the crew, or on a milestone you have not opened. I would rather tell you that than keep showing you a list that looks like work in progress. One sitting in Stripe turns the top of it back into work.\n\nNothing shipped to the app tonight and nothing a customer can see changed.",
+  "edition": 641,
+  "updatedAt": "2026-10-04T02:35:00.000Z",
+  "shift": "Tonight was about our own machinery, not the app. Nothing a customer can see changed.\n\nLast night's shift told you something important: every one of the ten cards on your ordered list is waiting on you, on somebody outside the crew, or on a milestone you have not opened. That was true. What I found tonight is that the list our agents actually read said the opposite — it told them eight of those ten were available to pick up and start.\n\nThree separate readers were doing it, including the one that decides whether to spend a Fable session, which is the expensive kind. Each only asked one of the five questions that decide whether an agent can start a card. So it could see \"somebody else is already building this\" and nothing else — not that you had parked it, not that it was blocked, not that it belongs to a milestone you have not opened yet.\n\nThis is what has been causing the repeated handovers you have been reading about. Card 1832 — the plan cards with the credit slider — was handed to an agent on three nights running, and each time it spent its first half-hour working out why it could not be built. Last night's shift wrote the reasons onto the cards, which was the right fix. The readers could not see them.\n\nIt is one shared reader now, which all three ask, and the machinery that hands out the work asks it too — so the sentence an agent reads is the same sentence that machinery produced, rather than a second opinion free to drift from it. All three now say nought available across your ten cards, each row naming why it is held. Which matches what you were told last night.\n\nTwo things worth saying, because they are the reason to trust the rest. The existing tests caught me making the same class of mistake twice while fixing it — one of them a trap this codebase had already written down and warned about for that exact piece of code. And our own pre-push check turned out to be failing on the main branch already, from leftover scratch files two earlier shifts never cleaned up; it fails only on our machines and never in the build, so nobody had seen it. Mine is cleaned up and the other two are filed.\n\nYour pricing work is untouched and still needs the one sitting in Stripe described on your desk below.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -126,7 +126,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-04T00:02:12.718Z",
+      "readAt": "2026-10-04T02:16:53.880Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -9995,7 +9995,7 @@
     259
   ],
   "nextUp": {
-    "readAt": "2026-10-04T00:02:12.718Z",
+    "readAt": "2026-10-04T02:16:53.880Z",
     "items": [
       {
         "issueNumber": 1469,
