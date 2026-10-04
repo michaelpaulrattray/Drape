@@ -54,12 +54,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   closeShouldPrintHandback,
+  crewCardStateFromJson,
   type CrewClosingCardState,
 } from "../shared/crewCardBuildState";
 import { CREW_SHIFT_OUTCOMES } from "../shared/crewShiftState";
 import {
   closingCardStateArgs,
-  closingCardStateFromJson,
   readClosingCardState,
 } from "../scripts/lib/crewClosingCardState.mts";
 
@@ -150,10 +150,10 @@ describe("the reading: what `gh` said about the card", () => {
        between the two roads rather than only its name"*. A reader that knew one
        spelling would call every card on the other road unknown, so the close
        would print on every shipped close and a shift would learn to ignore it. */
-    expect(closingCardStateFromJson('{"state":"OPEN"}')).toBe("open");
-    expect(closingCardStateFromJson('{"state":"open"}')).toBe("open");
-    expect(closingCardStateFromJson('{"state":"CLOSED"}')).toBe("closed");
-    expect(closingCardStateFromJson('{"state":"closed"}')).toBe("closed");
+    expect(crewCardStateFromJson('{"state":"OPEN"}')).toBe("open");
+    expect(crewCardStateFromJson('{"state":"open"}')).toBe("open");
+    expect(crewCardStateFromJson('{"state":"CLOSED"}')).toBe("closed");
+    expect(crewCardStateFromJson('{"state":"closed"}')).toBe("closed");
   });
 
   it("every answer it cannot read is `unknown`, and never `closed`", () => {
@@ -170,7 +170,7 @@ describe("the reading: what `gh` said about the card", () => {
       '{"state":"MERGED"}',
     ];
     for (const text of unreadable) {
-      expect(closingCardStateFromJson(text), `${JSON.stringify(text)} must be unknown`).toBe("unknown");
+      expect(crewCardStateFromJson(text), `${JSON.stringify(text)} must be unknown`).toBe("unknown");
     }
   });
 

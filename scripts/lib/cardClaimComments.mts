@@ -55,9 +55,12 @@ import { resolve } from "node:path";
 
 import {
   CREW_CLAIM_LIVE_MS,
+  cardStateSpendsClaim,
   crewCardClaimLine,
   crewCardCommentFact,
   crewCardReleaseLine,
+  crewCardStateFromJson,
+  type CrewCardReadState,
 } from "../../shared/crewCardBuildState.js";
 import { cardNumberOf, cardNumbersNamedIn } from "../../shared/crewShiftState.js";
 
@@ -69,12 +72,21 @@ export const CARD_COMMENT_READ_TIMEOUT_MS = 20_000;
 
 /**
  * THE `gh issue view` CALL, AS AN ARRAY, so a caller with its own reader spends
- * the same field list. `comments` is the whole of it: a claim is a body and a
- * time, and asking for more would be asking for a budget this read does not
- * need.
+ * the same field list.
+ *
+ * ⚠ **`state` RIDES THE SAME CALL (#1879), AND THAT IS THE WHOLE COST OF
+ * KNOWING WHETHER THE CARD IS STILL BEING BUILT.** This list was `comments`
+ * alone, on the stated ground that *"a claim is a body and a time, and asking
+ * for more would be asking for a budget this read does not need"* — true of the
+ * fields, and it left the reader unable to tell a card somebody is building
+ * from one that shipped. A closed card is unarguably not being built, so one
+ * more field in a call already in flight spends **no extra request** against
+ * the one GitHub allowance every seat and the crew share, and buys the
+ * judgement outright. The budget argument therefore still holds and now argues
+ * the other way: a second `gh` call for the state is what it forbids.
  */
 export function cardCommentListArgs(card: number): readonly string[] {
-  return ["issue", "view", String(card), "--json", "comments"];
+  return ["issue", "view", String(card), "--json", "comments,state"];
 }
 
 /** One comment, as `gh issue view --json comments` hands it back. */
@@ -84,43 +96,84 @@ export interface CardComment {
 }
 
 /**
- * The card's comments, from `gh` or from a fixture — `null` when the answer
- * could not be read at all.
+ * One `gh issue view` answer: the card's comments, and whether the card is
+ * still open.
  *
- * ⚠ **THE THREE OUTCOMES STAY DISTINCT**, exactly as they do for the open-PR
- * read beside it: "no comments" and "the read failed" are the same picture to a
- * caller that collapses them, and the second is a board nobody looked at. An
- * absent, unauthenticated, offline or slow `gh` answers `null`, and the caller
- * says so in words rather than reporting a free card.
+ * ⚠ **THE THREE OUTCOMES STAY DISTINCT ON BOTH HALVES, AND THEY FAIL IN
+ * OPPOSITE DIRECTIONS.** `comments: null` is a board NOBODY LOOKED AT and is
+ * never an empty one — the second is a free card and the first is an unread one.
+ * `state: "unknown"` is a state NOBODY READ and is never a closed one: reading
+ * it as closed would spend a live claim and let a second seat onto a card
+ * somebody is building. The two are tracked separately because a `gh` that
+ * answers comments and no state is a real road (a bare-array fixture is exactly
+ * that), and collapsing them would make one unreadable field decide the other.
+ */
+export interface CardCommentRead {
+  readonly comments: readonly CardComment[] | null;
+  /**
+   * ⚠ Typed from the shared vocabulary rather than written out here, so the
+   * three states have one owner and `none` — the caller's fact, not a
+   * document's — is not a branch this road has to carry.
+   */
+  readonly state: CrewCardReadState;
+}
+
+/** The reading a road that answered nothing at all comes back with. */
+const UNREAD_CARD: CardCommentRead = { comments: null, state: "unknown" };
+
+/**
+ * The card's comments and state, from `gh` or from a fixture.
+ *
+ * ⚠ **IT NEVER RETURNS `null` ANY MORE (#1879) — the absent answer is
+ * {@link UNREAD_CARD}, which says the same thing in both fields.** The shape
+ * changed because the state has to travel with the comments or the call has to
+ * be made twice, and a caller holding one of the two would be deciding on half
+ * a reading. An absent, unauthenticated, offline or slow `gh` still refuses
+ * nothing: `comments: null` is the unreadable board the caller already says so
+ * about in words, and `state: "unknown"` spends no claim.
  */
 export function readCardComments(
   card: number,
   fixturePath?: string | null,
   cwd?: string | null,
-): CardComment[] | null {
+): CardCommentRead {
   if (fixturePath) {
     try {
-      const parsed = JSON.parse(readFileSync(resolve(fixturePath), "utf8"));
-      const rows = Array.isArray(parsed) ? parsed : parsed?.comments;
-      return Array.isArray(rows) ? (rows as CardComment[]) : null;
+      return readOneCardDocument(readFileSync(resolve(fixturePath), "utf8"));
     } catch {
-      return null;
+      return UNREAD_CARD;
     }
   }
   try {
     /* `gh` with no shell — it is an .exe, and the shell form emits DEP0190. */
-    const out = execFileSync("gh", [...cardCommentListArgs(card)], {
+    return readOneCardDocument(execFileSync("gh", [...cardCommentListArgs(card)], {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
       timeout: CARD_COMMENT_READ_TIMEOUT_MS,
       ...(cwd ? { cwd } : {}),
-    });
-    const parsed = JSON.parse(out);
-    const rows = Array.isArray(parsed) ? parsed : parsed?.comments;
-    return Array.isArray(rows) ? (rows as CardComment[]) : null;
+    }));
   } catch {
-    return null;
+    return UNREAD_CARD;
   }
+}
+
+/**
+ * ONE DOCUMENT → ONE READING, so the `gh` road and the fixture road cannot
+ * disagree about what a document means.
+ *
+ * ⚠ **A BARE ARRAY IS A COMMENT LIST AND NOTHING ELSE.** The fixture road has
+ * always accepted one (the suite writes them), and an array carries no `state`
+ * — so that road reads `unknown` and spends no claim, which is the correct
+ * answer rather than a gap. The state comes from
+ * {@link crewCardStateFromJson}, the close's own parse, so the two casings `gh`
+ * answers in (`open` on REST, `OPEN` on GraphQL) are handled once in this
+ * repository and not twice.
+ */
+function readOneCardDocument(text: string): CardCommentRead {
+  const parsed = JSON.parse(text);
+  const rows = Array.isArray(parsed) ? parsed : parsed?.comments;
+  if (!Array.isArray(rows)) return UNREAD_CARD;
+  return { comments: rows as CardComment[], state: crewCardStateFromJson(text) };
 }
 
 /** What the board says about this card right now, for this seat. */
@@ -141,6 +194,24 @@ export type CardClaimVerdict =
   | { readonly kind: "mine"; readonly at: string }
   /** The board could not be read. Never a refusal — an unread board is not a clean one. */
   | { readonly kind: "unreadable" }
+  /**
+   * ANOTHER SEAT'S CLAIM IS LIVE AND THE CARD IS **CLOSED**, so it is holding
+   * nobody off anything (#1879).
+   *
+   * ⚠ **IT IS NOT FOLDED INTO `free`, AND THIS FILE'S OWN HISTORY IS THE
+   * ARGUMENT.** `mine` was `free` until a WRITER existed, because both meant
+   * *nothing to refuse* — and the fold had to be undone the day something acted
+   * on the answer. The same two reasons are distinct here: `free` is **nobody's
+   * live claim**, and this is **somebody's live claim that the card's own close
+   * has spent**. Keeping them apart is what lets {@link postCardClaim} decide
+   * out loud rather than inherit a decision from a fall-through, and what lets
+   * an arm assert the REASON a verdict was silent instead of only its silence.
+   *
+   * The seat and the time are carried even though nothing prints them, for the
+   * same reason `mine` carries its time: a verdict that drops the fact it was
+   * reached by cannot be driven.
+   */
+  | { readonly kind: "spent"; readonly seat: string | null; readonly at: string }
   /** Somebody else has their hands on it. */
   | { readonly kind: "claimed"; readonly seat: string | null; readonly at: string };
 
@@ -163,10 +234,33 @@ function sameSeat(a: string | null | undefined, b: string | null | undefined): b
  * — `--same-card`, which the refusal names). A missed claim costs an hour of a
  * seat and a duplicate pull request; a spurious refusal costs a flag. The cheap
  * mistake is the one to make.
+ *
+ * ⚠ **AND A LIVE CLAIM ON A CLOSED CARD IS `spent` (#1879) — THE ONE PLACE THIS
+ * READER IS DELIBERATELY LOOSENED, AND IT IS LOOSENED ON A FACT RATHER THAN ON
+ * A CLOCK.** Nothing ages a claim but {@link CREW_CLAIM_LIVE_MS}, a finished
+ * seat owes a release line, and a merged pull request is not one — so the
+ * ordinary end of a card leaves a live claim standing on it, and both readers
+ * below were speaking about work that had shipped. {@link cardStateSpendsClaim}
+ * is the rule; `state` is the fact, and `unknown` is **not** `closed`, so an
+ * unread state refuses exactly as this reader always did. It is applied to the
+ * rival road alone: this seat's own claim and a stale one were already silent,
+ * and widening either would be answering a question nobody asked.
  */
 export function readCardClaim(input: {
   readonly cardRef: string | null | undefined;
   readonly comments: readonly CardComment[] | null;
+  /**
+   * Whether the card is still open, from the SAME `gh` call the comments came
+   * from ({@link cardCommentListArgs}).
+   *
+   * ⚠ **REQUIRED, AND NOT OPTIONAL-WITH-A-SAFE-DEFAULT, BECAUSE THIS MODULE'S
+   * OWN LESSON IS ABOUT A FACT NOBODY PASSED.** An optional field defaulting to
+   * `"unknown"` would let a caller forget it and get the old behaviour with
+   * nothing saying so — the shape that left **0 of 5 refusals on #1669
+   * invisible** (#1701). A required field cannot be forgotten by anything that
+   * compiles, which is the cheapest guard available here.
+   */
+  readonly state: CrewCardReadState;
   /** This shift's own id, so its own claim is never read as a rival's. */
   readonly mine?: string | null;
   readonly now?: number;
@@ -206,6 +300,12 @@ export function readCardClaim(input: {
      the refusal path ever asked. */
   if (sameSeat(newest.seat, input.mine)) return live ? { kind: "mine", at: newest.at } : { kind: "free" };
   if (!live) return { kind: "free" };
+  /* ⚠ #1879, AND IT SITS HERE RATHER THAN ABOVE THE LIVENESS TEST ON PURPOSE.
+     A STALE claim is already `free` and a closed card cannot make it more so;
+     putting the state test earlier would only let an unreadable state change an
+     answer that was never about the state. The one verdict it may move is a
+     rival's LIVE claim, which is the only one that refuses anybody. */
+  if (cardStateSpendsClaim(input.state)) return { kind: "spent", seat: newest.seat, at: newest.at };
   return { kind: "claimed", seat: newest.seat, at: newest.at };
 }
 
@@ -407,6 +507,16 @@ export function postCardClaim(input: {
        rival's live claim with its own. */
     return { kind: "skipped", why: `another seat holds it (${input.verdict.seat ?? "unnamed"})` };
   }
+  /* ⚠ `spent` IS NOT IN THE LIST ABOVE AND THAT IS A DECISION, NOT AN OMISSION
+     (#1879). A verdict reaching the post road by falling past four `if`s is
+     exactly how a new kind acquires behaviour nobody chose, so: a spent claim
+     posts, the same as `free`, because the card's state is not this writer's
+     question. A closed card carrying NO claim, or a stale one, already posts on
+     the `free` road and always has — so treating a spent claim differently
+     would make three closed-card roads out of one. Whether a seat should be
+     claiming a CLOSED card at all is a real question and a separate one; it
+     is not narrowed here, where it would ship under this card's name. The arm
+     that pins this is in `server/crewShiftCardClaimComments.test.ts`. */
 
   const body = (input.bodyFor ?? cardClaimBody)(seat, input.at);
   /* ⚠ THE SELF-CHECK, against the board's own judge rather than a copy of it. */
@@ -538,7 +648,15 @@ export function readNoteForeignClaims(input: {
   readonly ownCardRef: string | null | undefined;
   /** The row's shift id, so this seat's own claim elsewhere is not a rival. */
   readonly mine: string | null;
-  readonly readComments: (card: number) => readonly CardComment[] | null;
+  /**
+   * ⚠ **IT HANDS BACK THE WHOLE {@link CardCommentRead}, NOT THE COMMENTS
+   * ALONE (#1879).** This probe meets a claim on a FINISHED card far more often
+   * than the refusal does — the refusal only sees a card a row DECLARES, while
+   * this sees every card a note CITES, and 453 of 568 production rows cite one —
+   * so the state is more load-bearing on this road than on the other, and a
+   * seam that could not carry it would have left the commoner consumer blind.
+   */
+  readonly readComments: (card: number) => CardCommentRead;
   readonly now?: number;
   readonly max?: number;
 }): { readonly claims: readonly ForeignClaim[]; readonly unreadable: readonly number[] } {
@@ -550,14 +668,18 @@ export function readNoteForeignClaims(input: {
   const claims: ForeignClaim[] = [];
   const unreadable: number[] = [];
   for (const card of candidates) {
+    const read = input.readComments(card);
     const verdict = readCardClaim({
       cardRef: `#${card}`,
-      comments: input.readComments(card),
+      comments: read.comments,
+      state: read.state,
       mine: input.mine,
       now: input.now,
     });
-    /* `mine` and `free` are both silence, and for different reasons — the type
-       above says which. Only another seat's live hands are worth a word. */
+    /* `mine`, `free` and `spent` are all silence, and for three different
+       reasons — the type above says which. Only another seat's live hands on an
+       OPEN card are worth a word; a claim the card's own close has spent is the
+       case this probe met on its very first live firing (#1879). */
     if (verdict.kind === "claimed") claims.push({ card, seat: verdict.seat, at: verdict.at });
     else if (verdict.kind === "unreadable") unreadable.push(card);
   }

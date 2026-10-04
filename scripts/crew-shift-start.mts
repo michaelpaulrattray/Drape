@@ -241,9 +241,18 @@ function assertCardIsFree(input: {
      same question a line later. Two parses of one ref is how `#0608` and `#608`
      stopped being the same card once already (PR #691's review). */
   const cardNumber = cardNumberOf(input.cardRef);
+  /* ⚠ ONE READ, BOTH FACTS (#1879). The comments and the card's own state ride
+     the same `gh` call, so a claim standing on a CLOSED card can be read as
+     spent without a second request against the one allowance every seat shares.
+     A free-text ref has nothing to ask about, and its unread state refuses
+     nothing — `unknown` is never `closed`. */
+  const read = cardNumber === null
+    ? { comments: null, state: "unknown" as const }
+    : readCardComments(cardNumber, arg("card-comments"));
   const verdict = readCardClaim({
     cardRef: input.cardRef,
-    comments: cardNumber === null ? null : readCardComments(cardNumber, arg("card-comments")),
+    comments: read.comments,
+    state: read.state,
     mine: input.mine,
   });
   const note = renderCardClaimNote(input.cardRef, verdict);

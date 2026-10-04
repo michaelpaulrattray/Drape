@@ -32,15 +32,18 @@
  * are believed, and everything else — an empty answer, a field that moved, a
  * `state` this reader has never seen — is `unknown`.
  *
- * ⚠ **`state` COMES BACK IN TWO CASINGS AND THAT IS NOT A STYLE POINT.** REST
- * answers `open`, GraphQL answers `OPEN` (`scripts/lib/ghQueueTransport.mts`
- * says so in its own words: *"that is the one field whose VALUE differs between
- * the two roads rather than only its name"*). A reader comparing against one
- * spelling would call every card on the other road `unknown`, so the close
- * would print the instruction on every shipped close and a shift would learn to
- * ignore it. It is lower-cased before it is judged.
+ * ⚠ **THE PARSE ITSELF MOVED TO `shared/crewCardBuildState.ts` (#1879), AND THE
+ * REASON IS THAT IT STOPPED HAVING ONE CALLER.** The claim reader now asks the
+ * same question of the same field, and this module reaches a `gh` TRANSPORT for
+ * its default reader — so importing it from there would drag the counts' whole
+ * transport onto the road a seat walks on every heartbeat. Both callers spend
+ * {@link crewCardStateFromJson}, which carries the two-casing reading above and
+ * the `unknown`-is-never-`closed` asymmetry in its own words. There is no copy
+ * of it here, deliberately: the field whose value differs between two `gh`
+ * roads is the last place in this repository that wants a second reader.
  */
 import {
+  crewCardStateFromJson,
   type CrewClosingCardState,
 } from "../../shared/crewCardBuildState.js";
 import { crewGhReader, type QueueGhReader } from "./crewQueueCount.mts";
@@ -48,28 +51,6 @@ import { crewGhReader, type QueueGhReader } from "./crewQueueCount.mts";
 /** What `gh issue view <n> --json state` is asked for, in one place. */
 export function closingCardStateArgs(issueNumber: number): string[] {
   return ["issue", "view", String(issueNumber), "--json", "state"];
-}
-
-/**
- * One `gh` answer → one state, or `unknown`.
- *
- * Exported so the arms drive the PARSE without a network, which is the half of
- * this reading a fake `gh` cannot prove on its own.
- */
-export function closingCardStateFromJson(text: string): CrewClosingCardState {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    return "unknown";
-  }
-  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) return "unknown";
-  const state = (parsed as Record<string, unknown>).state;
-  if (typeof state !== "string") return "unknown";
-  const lowered = state.trim().toLowerCase();
-  if (lowered === "open") return "open";
-  if (lowered === "closed") return "closed";
-  return "unknown";
 }
 
 /**
@@ -86,7 +67,7 @@ export function readClosingCardState(
 ): CrewClosingCardState {
   if (issueNumber === null) return "none";
   try {
-    const state = closingCardStateFromJson(gh(closingCardStateArgs(issueNumber)));
+    const state = crewCardStateFromJson(gh(closingCardStateArgs(issueNumber)));
     if (state === "unknown") {
       report(
         `\n⚠ #${issueNumber}'s state could not be understood from \`gh\`'s answer, so whether a`
