@@ -167,7 +167,7 @@
  * imagined here. `scripts/cut-seat-batches.mts` is the one caller that reads
  * the world.
  */
-import { CREW_HOLD_WORD, heldStateFromLabels } from "../../shared/crewNextUpHold.js";
+import { CREW_HOLD_WORD, heldStateFromLabels, type CrewHeldState } from "../../shared/crewNextUpHold.js";
 import type { ManagerCardRow } from "./managerFactSheet.mts";
 import { sortOrderedBand } from "../../shared/crewOrderedBand.js";
 import { RUNG_LABEL_PREFIX, currentLadderRung } from "../../shared/crewPipelineGroups.js";
@@ -1199,6 +1199,185 @@ const PARKED_LABEL = QUEUE_EXCLUSION_REASONS.find((reason) => reason.key === "pa
 export const ORDERED_BAND_LABEL: string = QUEUE_EXCLUSION_REASONS.find((reason) => reason.key === "ordered")!.queueLabel;
 const ORDERED_LABEL = ORDERED_BAND_LABEL;
 
+/**
+ * Which of the five walls held an ordered-band card, for a caller that needs to know.
+ *
+ * ⚠ **EACH IS NAMED AFTER THE WALL, NEVER AFTER THE LABEL** — `"ruling"` rather
+ * than the parked label, `"proposal"` rather than the research one. A limb name
+ * that reads as a label is a typed label one rename away, and
+ * `server/seatBatches.test.ts`'s own vocabulary arm said so the first time this
+ * type was written: it reddened on `"parked"` in a union that had nothing to do
+ * with the label. The labels themselves come from the shared vocabulary below.
+ */
+export type OrderedBandHoldLimb = "proposal" | "ruling" | "hold" | "board" | "rung";
+
+/** One wall, and the sentence his page and the shift reports both say about it. */
+export type OrderedBandHold = {
+  readonly limb: OrderedBandHoldLimb;
+  readonly why: string;
+  /** Set only on `limb: "hold"` — WHICH hold label answered. See `orderedBandHoldFor`. */
+  readonly state?: CrewHeldState;
+};
+
+/**
+ * MAY A SHIFT START THIS CARD FROM HIS ORDERED BAND? — the ONE owner of that
+ * verdict (#1881).
+ *
+ * Returns the wall that holds it, or `null` when a shift may take it.
+ *
+ * # The defect this ends
+ *
+ * The cut holds a band card for FIVE reasons. Three readers that tell a shift —
+ * or the runner — what the band offers asked only the FOURTH, the build board,
+ * so `blocked`, `parked`, `research` and every rung-held card counted as
+ * available work.
+ *
+ * **Measured 2026-10-04 01:15–01:30Z over his real ten-card band, with the cut's
+ * own chain beside each reader** (`scripts/_1881-reader-sweep-disposable.mts`,
+ * quoted on the card):
+ *
+ * | reader | said | cut |
+ * |---|---|---|
+ * | the digest's `NEXT UP` heading, printed at every launch | `8 ON OFFER` | 0 |
+ * | `queue-standing-exceptions.mts`, the band view PROGRAM.md points shifts at | `8 of the 10 row(s) above are ON OFFER` | 0 |
+ * | `next-up-escalation.mts`, which BUYS A FABLE SESSION | offered 3 the cut holds | 0 |
+ *
+ * All ten were held in writing at the time — four on his own word or his eye,
+ * three by the milestone gate, two on real dependencies, one on a reviewer who
+ * was not here. The standing-exceptions view printed its headline nine lines
+ * above the sentence *"A row carrying `blocked` is not takeable"*: the prose
+ * knew and the arithmetic did not.
+ *
+ * ⚠ **The cost had already been paid three times.** `#1832` was handed to a
+ * shift on three consecutive nights, and each one spent its arrival re-deriving
+ * why it could not be built. That card's repair was to label the CARDS — and
+ * every label was in place when the numbers above were measured, because the
+ * readers could not see them.
+ *
+ * # Why ONE function and not a check in each reader
+ *
+ * Working law 4. Three copies of a five-limb chain is the drift this repository
+ * has been bitten by, and this class has now been swept THREE times for four
+ * other readers — the wake and park gates (#999), his switch panel's counts
+ * (#663, #904) and the claim half of these same two readers (#1094) — each time
+ * leaving the next reader to re-derive it. #999 even wrote *"one derived reading
+ * of takeable for both gates"* and then landed it in PowerShell, where no
+ * TypeScript caller could reach it.
+ *
+ * # The limbs, in the cut's own order, and why the order is kept
+ *
+ * `research` → `parked` → a hold label → the build board → the milestone gate.
+ * A card held by two walls reports the FIRST, so the sentence a shift reads here
+ * is the sentence `cutSeatBatches` records in its own `held` list — which is what
+ * makes the two agree by construction rather than by review.
+ *
+ * ⚠ **`exclusionFor` IS THE WRONG READER FOR THIS LANE AND ANSWERS WITH
+ * CONFIDENCE.** It matches `founder-ordered` FIRST and short-circuits, so it
+ * returns `ordered` for a card that is also `blocked` — correct for the
+ * background panel it governs, and useless here. The ordered band's hold reader
+ * is `heldStateFromLabels`. The probe above asked it anyway, and its POSITIVE
+ * control caught the mistake: a bare ordered card came back "held", which would
+ * have meant a reader hiding work.
+ *
+ * # Two things it deliberately does NOT do
+ *
+ * **It never hides a row.** #1083's rule is that a reader must not silently
+ * withhold work, so every consumer annotates the row with `why` and keeps it
+ * visible — which is also what lets the person reading the count check it.
+ *
+ * **It takes no view on the `fable` hold.** `next-up-escalation.mts` is LOOKING
+ * for an `awaiting-fable` card, so a verdict that simply said "held" would stop
+ * the gate escalating anything, ever. The limb and the state are returned
+ * separately and that gate makes its one documented exception at the call site,
+ * where an arm can drive it.
+ */
+export function orderedBandHoldFor(input: {
+  readonly card: { readonly number: number; readonly labels: readonly string[] };
+  /**
+   * The rung he has opened, from the ladder — `null` when nothing names one.
+   *
+   * ⚠ **`null` HOLDS EVERY RUNG CARD, which is `rungHoldFor`'s own behaviour and
+   * is why no third "unreadable" state exists here.** A caller that cannot read
+   * the ladder therefore agrees with `cutSeatBatches` in the same condition
+   * rather than inventing a kinder answer, and the sentence it hands back says
+   * *nothing names the current focus* — so the row explains itself.
+   */
+  readonly focusRung: string | null;
+  readonly board: SeatBuildBoard;
+}): OrderedBandHold | null {
+  const { card, board, focusRung } = input;
+  /*
+    ⚠ **A PROPOSAL IS NOT WORK, AND THIS LANE IS THE ONE `exclusionFor` NEVER
+    REACHES (#1548).** `seatPopulation` above asks the exclusion vocabulary
+    about every background card, and `research` is its first row — so a
+    proposal that also carried a work label was already held there. This band
+    filters on `founder-ordered` and then asks only about parking, holds and
+    the build board, so a card carrying `research` + `founder-ordered` would
+    have been offered to a seat as tonight's work.
+
+    It should never exist: the relay's scope note on #1548 says an approved
+    proposal is filed WITHOUT this label, as ordinary work opening *"Approved
+    by Michael on the Notion desk"*. That is exactly why the arm is here
+    rather than left to the rule — the two roads into a seat must give one
+    answer about one label, and the road that has no such card today is the
+    road nobody will notice is missing it.
+  */
+  if (card.labels.includes(RESEARCH_LABEL)) {
+    return { limb: "proposal", why: "a research proposal — it is decided on your Notion desk, never built by a seat" };
+  }
+  if (card.labels.includes(PARKED_LABEL)) {
+    return { limb: "ruling", why: "parked on your own ruling" };
+  }
+  const hold = heldStateFromLabels(card.labels);
+  if (hold !== null) {
+    /* His page's own word for the hold, never a second spelling of it. */
+    return { limb: "hold", why: `held — ${CREW_HOLD_WORD[hold]}`, state: hold };
+  }
+  if (board.holdsOffOffer(card.number)) {
+    return { limb: "board", why: board.phraseFor(card.number) ?? "somebody is already on it" };
+  }
+  /*
+    ⚠ **THE MILESTONE GATE DECIDES THE TOP PICK TOO — #1656, AND IT IS THE
+    LAST LIMB ON PURPOSE.** This check ran only over `rest` until now, so the
+    comment above this loop ("the top card a shift could actually start") was
+    true of every hold but the one that holds the most cards in his band. The
+    band sorts by `order:<n>`, then urgent, then oldest, and nothing in that
+    sort knows about a rung — so the oldest ordered card became the `focus`
+    whether or not THE MILESTONE GATE let anybody start it.
+
+    Measured in every seat plan from `seat-plan-20260930-155058.json` to
+    `seat-plan-20261001-104410.json` — seventeen passes — `focusCard` read
+    **#1469 (`rung:N2c`)** while `focusRung` read N2 and then P1. The focus
+    shift was on #1600 and #1608 the whole time. Two costs, and the second is
+    the one that could have bitten: every area hold was computed against
+    #1469's files rather than the real focus card's, so the area rule was
+    measuring a collision nobody could have; and the card the focus shift was
+    ACTUALLY editing had no area protection at all, which is the collision
+    that rule exists to prevent.
+
+    ⚠ **IT SITS AFTER THE BOARD CHECK SO THAT NOTHING IN `rest` MOVES.** The
+    order a `rest` card met these holds was research → parked → held → board
+    (this loop), then rung (the loop below); putting the rung limb last here
+    reproduces that sequence exactly, so no card changes the sentence the
+    digest prints for it. The ONLY behaviour this adds is to the top pick,
+    which is the whole of the card.
+
+    ⚠ **AND IT APPLIES WHEN `focusRung` IS `null` AS WELL, WHICH IS THE SAME
+    DIRECTION AND NOT AN EXTENSION OF IT.** With no milestone named,
+    `rungHoldFor` holds every rung card — so a rung card on top is one no
+    shift could start THEN either, and naming it the focus is the same defect
+    wearing maintenance mode. The fail-closed property that matters is
+    untouched: a rung card still never reaches `offered`, and where holding
+    the whole band leaves no takeable card at all the function returns
+    `focus: null` with nothing offered, which is what it has always done.
+  */
+  const rungHold = rungHoldFor(card.labels, focusRung);
+  if (rungHold !== null) {
+    return { limb: "rung", why: rungHold };
+  }
+  return null;
+}
+
 /** What `orderedBandForSeats` answers. */
 export interface OrderedBandForSeats {
   /**
@@ -1307,77 +1486,19 @@ export function orderedBandForSeats(input: {
     const card = row.card;
     const note = (why: string) => held.push({ number: card.number, title: card.title, why });
     /*
-      ⚠ **A PROPOSAL IS NOT WORK, AND THIS LANE IS THE ONE `exclusionFor` NEVER
-      REACHES (#1548).** `seatPopulation` above asks the exclusion vocabulary
-      about every background card, and `research` is its first row — so a
-      proposal that also carried a work label was already held there. This band
-      filters on `founder-ordered` and then asks only about parking, holds and
-      the build board, so a card carrying `research` + `founder-ordered` would
-      have been offered to a seat as tonight's work.
+      THE FIVE WALLS, ASKED ONCE — `orderedBandHoldFor` above owns them, and the
+      history of each limb now sits in its docblock beside the limb it explains.
 
-      It should never exist: the relay's scope note on #1548 says an approved
-      proposal is filed WITHOUT this label, as ordinary work opening *"Approved
-      by Michael on the Notion desk"*. That is exactly why the arm is here
-      rather than left to the rule — the two roads into a seat must give one
-      answer about one label, and the road that has no such card today is the
-      road nobody will notice is missing it.
+      ⚠ **THIS LOOP IS WHY THE OWNER EXISTS AND NOT THE OTHER WAY ROUND (#1881).**
+      Three readers that tell a shift what this band offers asked only the FOURTH
+      wall, so on the night it was measured the digest and the standing-exceptions
+      view each said `8 ON OFFER` over a band this loop holds entirely. The
+      sentence `note` records here is now the same string those readers print, by
+      construction rather than by review.
     */
-    if (card.labels.includes(RESEARCH_LABEL)) {
-      note("a research proposal — it is decided on your Notion desk, never built by a seat");
-      continue;
-    }
-    if (card.labels.includes(PARKED_LABEL)) {
-      note("parked on your own ruling");
-      continue;
-    }
-    const hold = heldStateFromLabels(card.labels);
-    if (hold !== null) {
-      /* His page's own word for the hold, never a second spelling of it. */
-      note(`held — ${CREW_HOLD_WORD[hold]}`);
-      continue;
-    }
-    if (input.board.holdsOffOffer(card.number)) {
-      note(input.board.phraseFor(card.number) ?? "somebody is already on it");
-      continue;
-    }
-    /*
-      ⚠ **THE MILESTONE GATE DECIDES THE TOP PICK TOO — #1656, AND IT IS THE
-      LAST LIMB ON PURPOSE.** This check ran only over `rest` until now, so the
-      comment above this loop ("the top card a shift could actually start") was
-      true of every hold but the one that holds the most cards in his band. The
-      band sorts by `order:<n>`, then urgent, then oldest, and nothing in that
-      sort knows about a rung — so the oldest ordered card became the `focus`
-      whether or not THE MILESTONE GATE let anybody start it.
-
-      Measured in every seat plan from `seat-plan-20260930-155058.json` to
-      `seat-plan-20261001-104410.json` — seventeen passes — `focusCard` read
-      **#1469 (`rung:N2c`)** while `focusRung` read N2 and then P1. The focus
-      shift was on #1600 and #1608 the whole time. Two costs, and the second is
-      the one that could have bitten: every area hold was computed against
-      #1469's files rather than the real focus card's, so the area rule was
-      measuring a collision nobody could have; and the card the focus shift was
-      ACTUALLY editing had no area protection at all, which is the collision
-      that rule exists to prevent.
-
-      ⚠ **IT SITS AFTER THE BOARD CHECK SO THAT NOTHING IN `rest` MOVES.** The
-      order a `rest` card met these holds was research → parked → held → board
-      (this loop), then rung (the loop below); putting the rung limb last here
-      reproduces that sequence exactly, so no card changes the sentence the
-      digest prints for it. The ONLY behaviour this adds is to the top pick,
-      which is the whole of the card.
-
-      ⚠ **AND IT APPLIES WHEN `focusRung` IS `null` AS WELL, WHICH IS THE SAME
-      DIRECTION AND NOT AN EXTENSION OF IT.** With no milestone named,
-      `rungHoldFor` holds every rung card — so a rung card on top is one no
-      shift could start THEN either, and naming it the focus is the same defect
-      wearing maintenance mode. The fail-closed property that matters is
-      untouched: a rung card still never reaches `offered`, and where holding
-      the whole band leaves no takeable card at all the function returns
-      `focus: null` with nothing offered, which is what it has always done.
-    */
-    const rungHold = rungHoldFor(card.labels, focusRung);
-    if (rungHold !== null) {
-      note(rungHold);
+    const bandHold = orderedBandHoldFor({ card, focusRung, board: input.board });
+    if (bandHold !== null) {
+      note(bandHold.why);
       continue;
     }
     takeable.push(card);

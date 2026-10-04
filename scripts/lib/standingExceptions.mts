@@ -59,6 +59,7 @@ import {
   type CardBuildBoard,
 } from "./cardBuildState.mts";
 import type { CrewCardCommentFact } from "../../shared/crewCardBuildState.js";
+import { orderedBandHoldFor } from "./seatBatches.mts";
 import { isUnreadable, type Unreadable } from "./shiftDigest.mts";
 import {
   findCardPullRequests,
@@ -215,6 +216,7 @@ function rowLines(
   now: Date,
   prs: readonly OpenPullRequest[] | Unreadable,
   board: CardBuildBoard,
+  focusRung: string | null,
 ): { lines: string[]; claimedAny: boolean; offered: number } {
   const lines: string[] = [];
   let claimedAny = false;
@@ -224,7 +226,20 @@ function rowLines(
       (now.getTime() - Date.parse(row.createdAt)) / (24 * 60 * 60 * 1000),
     );
     const phrase = board.phraseFor(row.number);
-    const heldOff = board.holdsOffOffer(row.number);
+    /* ⚠ **ALL FIVE WALLS, THROUGH THE CUT'S OWN OWNER — #1881.** This asked
+       `board.holdsOffOffer` alone until 2026-10-04, which is ONE of the five
+       reasons a card cannot be started — so `blocked`, `parked`, `research` and
+       every rung-held card was counted into `offered`. The footer then printed
+       that number as *how many a shift may take*, nine lines above this file's
+       own sentence *"A row carrying `blocked` is not takeable"*: the prose knew
+       and the arithmetic did not. Measured on his real band that night: this
+       view said `8 of the 10 row(s) above are ON OFFER` and the cut offered 0. */
+    const hold = orderedBandHoldFor({
+      card: { number: row.number, labels: row.labels.map((label) => label.name) },
+      focusRung,
+      board,
+    });
+    const heldOff = hold !== null;
     if (!heldOff) offered += 1;
     lines.push(
       `${String(index + 1).padStart(2)}. #${row.number}  ${row.createdAt.slice(0, 10)}  (${age}d)  ${row.title}`,
@@ -233,7 +248,12 @@ function rowLines(
        and a row silently missing from it is worse than a row with a phrase. The
        two states where somebody's hands are on the work say `NOT ON OFFER`; a
        refusal says its phrase and stays on offer (`buildStateHoldsOffOffer`). */
-    if (phrase !== null) lines.push(`      → ${phrase}${heldOff ? " · NOT ON OFFER" : ""}`);
+    /* The wall first — it is the same string `cutSeatBatches` records — then the
+       phrase when it carries a SECOND fact. Where the wall IS the build board the
+       two are one string and print once; a refusal alone is no wall and keeps its
+       phrase with no suffix, which is #1083's rule and this file's own note above. */
+    if (hold !== null) lines.push(`      → ${hold.why} · NOT ON OFFER`);
+    if (phrase !== null && (hold === null || phrase !== hold.why)) lines.push(`      → ${phrase}`);
     /*
       The other labels are printed rather than filtered to a set we chose,
       because `blocked` is the one that matters most here and naming it in a
@@ -282,8 +302,18 @@ export function renderBands(input: {
   cardComments: readonly CrewCardCommentFact[] | Unreadable;
   /** The cards carrying `not-built` — REQUIRED for the same reason (#1337). */
   notBuiltCards: ReadonlySet<number> | Unreadable;
+  /**
+   * THE RUNG HE HAS OPENED, so THE MILESTONE GATE reaches this view too (#1881)
+   * — REQUIRED for the same reason as the three reads above, which is now a
+   * measured one rather than an argued one: this count printed `8 ON OFFER` over
+   * a band the cut held entirely, and every arm was green.
+   *
+   * `null` is a real answer — nothing names a current milestone — and it holds
+   * every rung card, exactly as `cutSeatBatches` does in that condition.
+   */
+  focusRung: string | null;
 }): string[] {
-  const { ordered, urgent, now, openPullRequests: prs, cardComments, notBuiltCards } = input;
+  const { ordered, urgent, now, openPullRequests: prs, cardComments, notBuiltCards, focusRung } = input;
   /* ONE board for both bands, the same judgement his page draws. */
   const board = buildBoard({
     openPullRequests: prs, comments: cardComments, notBuilt: notBuiltCards, nowMs: now.getTime(),
@@ -313,7 +343,7 @@ export function renderBands(input: {
   if (ordered.length === 0) {
     out.push("  (empty — no open card carries `founder-ordered`.)");
   } else {
-    const cut = rowLines(orderedBandRunningOrder(ordered), "founder-ordered", now, prs, board);
+    const cut = rowLines(orderedBandRunningOrder(ordered), "founder-ordered", now, prs, board, focusRung);
     claimedAny = claimedAny || cut.claimedAny;
     offered += cut.offered;
     out.push(...cut.lines);
@@ -323,7 +353,7 @@ export function renderBands(input: {
   if (urgent.length === 0) {
     out.push("  (empty — no open card carries `urgent`.)");
   } else {
-    const cut = rowLines(oldestFirst(urgent), "urgent", now, prs, board);
+    const cut = rowLines(oldestFirst(urgent), "urgent", now, prs, board, focusRung);
     claimedAny = claimedAny || cut.claimedAny;
     offered += cut.offered;
     out.push(...cut.lines);
@@ -362,7 +392,7 @@ export function renderBands(input: {
   const rowsShown = ordered.length + urgent.length;
   if (rowsShown > 0 && offered < rowsShown) {
     out.push(
-      `⚠ ${offered} of the ${rowsShown} row(s) above are ON OFFER — the rest are already being built`,
+      `⚠ ${offered} of the ${rowsShown} row(s) above are ON OFFER — the rest are held, being built`,
       "  or claimed, and say so on their own line.",
     );
   }
@@ -426,13 +456,20 @@ export function report(input: {
    * failed costs a phrase and never the ranking.
    */
   readNotBuiltCards: () => ReadonlySet<number> | Unreadable;
+  /**
+   * THE RUNG HE HAS OPENED (#1881) — a parameter for the same reason the reads
+   * above are: `readLadderFocusRung` touches the disk, and a wiring asserted by a
+   * source grep is not asserted. It must NEVER refuse: an unreadable ladder holds
+   * every rung card and the row says so, which is the cut's own behaviour.
+   */
+  focusRung: string | null;
   now: Date;
   log: (line: string) => void;
   error: (line: string) => void;
 }): number {
   const {
     readOpenQueue, readOpenPullRequests: readPrs, readCardComments: readComments,
-    readNotBuiltCards: readNotBuilt, now, log, error,
+    readNotBuiltCards: readNotBuilt, now, log, error, focusRung,
   } = input;
   let ordered: readonly Row[];
   let urgent: readonly Row[];
@@ -498,7 +535,7 @@ export function report(input: {
     };
   }
 
-  for (const line of renderBands({ ordered, urgent, now, openPullRequests, cardComments, notBuiltCards })) {
+  for (const line of renderBands({ ordered, urgent, now, openPullRequests, cardComments, notBuiltCards, focusRung })) {
     log(line);
   }
   return 0;

@@ -77,6 +77,7 @@
  * source grep is not asserted (gate review of PR #716, finding 2).
  */
 import { execFileSync } from "node:child_process";
+import { readLadderFocusRung } from "./lib/ladderFocusRung.mts";
 
 import {
   cardCommentsVerdict,
@@ -170,6 +171,10 @@ process.exit(
     readOpenPullRequests: readPullRequests,
     readCardComments: readComments,
     readNotBuiltCards: readNotBuilt,
+    /* THE FIFTH WALL's input (#1881): the rung he has opened, off the same
+       artifact `cut-seat-batches.mts` reads, so this view's count agrees with the
+       cut rather than with a kinder reading of the same band. */
+    focusRung: readLadderFocusRung().focusRung,
     now: new Date(),
     log: (line) => console.log(line),
     error: (line) => console.error(line),

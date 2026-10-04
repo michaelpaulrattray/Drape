@@ -52,9 +52,133 @@ const render = (
   /* And for the refused-card read (#1337): an explicit empty set is "read,
      and no card is refused". */
   notBuiltCards: Parameters<typeof renderBands>[0]["notBuiltCards"] = new Set<number>(),
+  /* Same doctrine for THE MILESTONE GATE (#1881): `null` is a real answer —
+     nothing names a current milestone — and it HOLDS every rung card, which is
+     what the cut does in that condition. An arm about the gate passes a rung.
+
+     ⚠ It is a declared default rather than a library one because
+     `tsconfig.json` excludes every test file: a required field missing from this
+     helper is a type error NOTHING in the gate can see, since vitest does not
+     typecheck. That is how this field would arrive absent and green. */
+  focusRung: Parameters<typeof renderBands>[0]["focusRung"] = null,
 ) => renderBands({
-  ordered, urgent, now: NOW, openPullRequests, cardComments, notBuiltCards,
+  ordered, urgent, now: NOW, openPullRequests, cardComments, notBuiltCards, focusRung,
 }).join("\n");
+
+/**
+ * THE ANNOTATION LINES BELONGING TO ONE BAND ROW (#1881).
+ *
+ * A whole-output `toContain` is satisfied by an identical line under a
+ * NEIGHBOURING row, and these arms put four rows in one fixture on purpose — so
+ * the subject is sliced out and asserted whole, which also pins that a row the
+ * view must NOT annotate has no annotation rather than merely lacking a phrase
+ * somewhere in the report.
+ */
+function bandAnnotations(outText: string, card: number): string[] {
+  const lines = outText.split("\n");
+  const row = lines.findIndex((line) => line.includes(`. #${card}  `));
+  if (row < 0) return [];
+  const out: string[] = [];
+  for (const line of lines.slice(row + 1)) {
+    const text = line.trim();
+    if (!text.startsWith("→")) break;
+    out.push(text);
+  }
+  return out;
+}
+
+describe("⚠ the count is how many a shift may actually START — all five walls (#1881)", () => {
+  /**
+   * Until 2026-10-04 this view asked ONE of the cut's five walls — the build
+   * board — so `blocked`, `parked`, `research` and every rung-held card counted
+   * into `ON OFFER`. Measured that night on his real band: this view printed
+   * `8 of the 10 row(s) above are ON OFFER` and `cutSeatBatches` offered 0, with
+   * all ten held in writing.
+   *
+   * The sharper version was in one output, nine lines apart: the headline said
+   * eight were available, and the footer said *"A row carrying `blocked` is not
+   * takeable"*. The prose knew and the arithmetic did not.
+   */
+  it("a HELD, PARKED or RESEARCH row is not on offer, and says which wall", () => {
+    const out = render(
+      [
+        card({ number: 1832, title: "the plan cards", createdAt: "2026-10-03T00:00:00Z", labels: [{ name: "founder-ordered" }, { name: "blocked" }] }),
+        card({ number: 1609, title: "the go-live list", createdAt: "2026-09-30T00:00:00Z", labels: [{ name: "founder-ordered" }, { name: "parked" }] }),
+        card({ number: 1552, title: "a research proposal", createdAt: "2026-09-29T00:00:00Z", labels: [{ name: "founder-ordered" }, { name: "research" }] }),
+        /* THE POSITIVE CONTROL — a view that holds this one is HIDING WORK, which
+           is worse than the defect and is this file's own stated rule. */
+        card({ number: 1900, title: "a card a shift may start", createdAt: "2026-10-01T00:00:00Z", labels: [{ name: "founder-ordered" }] }),
+      ],
+      [],
+    );
+    expect(out).toContain("1 of the 4 row(s) above are ON OFFER");
+    expect(out).toContain("the rest are held, being built");
+    expect(bandAnnotations(out, 1832)).toEqual(["→ held — Blocked · NOT ON OFFER"]);
+    expect(bandAnnotations(out, 1609)).toEqual(["→ parked on your own ruling · NOT ON OFFER"]);
+    expect(bandAnnotations(out, 1552)).toEqual([
+      "→ a research proposal — it is decided on your Notion desk, never built by a seat · NOT ON OFFER",
+    ]);
+    expect(out).toContain("#1900");
+    expect(bandAnnotations(out, 1900)).toEqual([]);
+  });
+
+  it("THE MILESTONE GATE reaches this view — and the same card is offered on its own rung", () => {
+    const rows = [
+      card({ number: 1689, title: "the refine cost", createdAt: "2026-10-01T00:00:00Z", labels: [{ name: "founder-ordered" }, { name: "rung:N3" }] }),
+      card({ number: 1832, title: "the plan cards", createdAt: "2026-10-03T00:00:00Z", labels: [{ name: "founder-ordered" }, { name: "rung:P2" }] }),
+    ];
+    const onP2 = render(rows, [], [], [], new Set<number>(), "P2");
+    expect(onP2).toContain("1 of the 2 row(s) above are ON OFFER");
+    expect(bandAnnotations(onP2, 1689)).toEqual([
+      "→ on rung N3, and the milestone is P2 — the milestone gate holds it; opens on his word · NOT ON OFFER",
+    ]);
+    expect(bandAnnotations(onP2, 1832)).toEqual([]);
+
+    /* THE CONTROL BOTH WAYS: the rung is the only thing that moves between these
+       two readings, so an arm that only ever held cards would pass on a reader
+       that holds everything. */
+    const onN3 = render(rows, [], [], [], new Set<number>(), "N3");
+    expect(bandAnnotations(onN3, 1832)).toEqual([
+      "→ on rung P2, and the milestone is N3 — the milestone gate holds it; opens on his word · NOT ON OFFER",
+    ]);
+    expect(bandAnnotations(onN3, 1689)).toEqual([]);
+
+    /* No milestone named holds every rung card, which is the cut's own behaviour
+       — and the row says WHY rather than leaving a shrunken count unexplained. */
+    const noRung = render(rows, [], [], [], new Set<number>(), null);
+    expect(noRung).toContain("0 of the 2 row(s) above are ON OFFER");
+    expect(bandAnnotations(noRung, 1689)).toEqual([
+      "→ on a rung, and nothing names the current focus — the milestone gate holds it · NOT ON OFFER",
+    ]);
+  });
+
+  it("a row that is BOTH held and refused keeps both lines — two facts, not one", () => {
+    const out = render(
+      [card({ number: 1832, title: "the plan cards", createdAt: "2026-10-03T00:00:00Z", labels: [{ name: "founder-ordered" }, { name: "blocked" }] })],
+      [],
+      [],
+      [],
+      new Set<number>([1832]),
+    );
+    const lines = bandAnnotations(out, 1832);
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toBe("→ held — Blocked · NOT ON OFFER");
+    expect(lines[1]).toContain("not built");
+  });
+
+  it("⚠ a REFUSAL alone is no wall — it annotates and the row stays ON OFFER", () => {
+    const out = render(
+      [card({ number: 1090, title: "his top card", createdAt: "2026-09-22T00:00:00Z", labels: [{ name: "founder-ordered" }] })],
+      [],
+      [],
+      [],
+      new Set<number>([1090]),
+    );
+    expect(out).toContain("#1090");
+    expect(bandAnnotations(out, 1090).join(" ")).toContain("not built");
+    expect(bandAnnotations(out, 1090).join(" ")).not.toContain("NOT ON OFFER");
+  });
+});
 
 describe("the state the card was filed about: nothing urgent, work he ordered", () => {
   const ordered = [
@@ -181,6 +305,11 @@ describe("the fetch -> render seam, DRIVEN — where the interesting bug lives",
     readOpenPullRequests: Parameters<typeof report>[0]["readOpenPullRequests"] = () => [],
     readCardComments: Parameters<typeof report>[0]["readCardComments"] = () => [],
     readNotBuiltCards: Parameters<typeof report>[0]["readNotBuiltCards"] = () => new Set<number>(),
+    /* THE MILESTONE GATE's input (#1881) — `null` is the real "nothing names a
+       milestone" answer, which holds every rung card. No fixture here carries a
+       rung label, so it changes no arm below; it is DECLARED because the field is
+       required and no test file is typechecked. */
+    focusRung: Parameters<typeof report>[0]["focusRung"] = null,
   ) {
     const out: string[] = [];
     const errs: string[] = [];
@@ -189,6 +318,7 @@ describe("the fetch -> render seam, DRIVEN — where the interesting bug lives",
       readOpenPullRequests,
       readCardComments,
       readNotBuiltCards,
+      focusRung,
       now: NOW,
       log: (l) => out.push(l),
       error: (l) => errs.push(l),
@@ -349,6 +479,7 @@ describe("deriveBands - an empty band is cross-examined against the queue it was
       readOpenPullRequests: () => [],
       readCardComments: () => [],
       readNotBuiltCards: () => new Set<number>(),
+      focusRung: null,
       now: NOW,
       log: (l) => out.push(l),
       error: (l) => errs.push(l),
@@ -482,6 +613,7 @@ describe("is somebody already building it (#1094) — this view offered a card a
       readOpenPullRequests: () => { throw new Error("gh: command not found"); },
       readCardComments: () => [],
       readNotBuiltCards: () => new Set<number>(),
+      focusRung: null,
       now: NOW,
       log: (l) => out.push(l),
       error: (l) => errs.push(l),
@@ -503,6 +635,7 @@ describe("is somebody already building it (#1094) — this view offered a card a
       readOpenPullRequests: () => [pr()],
       readCardComments: () => [],
       readNotBuiltCards: () => new Set<number>(),
+      focusRung: null,
       now: NOW,
       log: (l) => out.push(l),
       error: () => {},
@@ -566,6 +699,7 @@ describe("is somebody already building it (#1094) — this view offered a card a
         readOpenPullRequests: () => [],
         readCardComments: () => { throw new Error("gh: command not found"); },
         readNotBuiltCards: () => new Set<number>(),
+        focusRung: null,
         now: NOW,
         log: (l) => out.push(l),
         error: (l) => errs.push(l),
@@ -585,6 +719,7 @@ describe("is somebody already building it (#1094) — this view offered a card a
         readOpenPullRequests: () => [],
         readCardComments: () => [{ kind: "claim", card: 1090, seat: "seat-desk-9", at }],
         readNotBuiltCards: () => new Set<number>(),
+        focusRung: null,
         now: NOW,
         log: (l) => out.push(l),
         error: () => {},
@@ -605,6 +740,7 @@ describe("is somebody already building it (#1094) — this view offered a card a
         readOpenPullRequests: () => [],
         readCardComments: () => [],
         readNotBuiltCards: () => new Set([1090]),
+        focusRung: null,
         now: NOW,
         log: (l) => out.push(l),
         error: () => {},
@@ -623,6 +759,7 @@ describe("is somebody already building it (#1094) — this view offered a card a
         readOpenPullRequests: () => [],
         readCardComments: () => [],
         readNotBuiltCards: () => { throw new Error("gh: command not found"); },
+        focusRung: null,
         now: NOW,
         log: (l) => out.push(l),
         error: (l) => errs.push(l),

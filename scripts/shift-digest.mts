@@ -29,6 +29,7 @@
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { readLadderFocusRung } from "./lib/ladderFocusRung.mts";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -397,6 +398,10 @@ function main(argv: string[]): number {
       lawSurfaces,
       roots: topLevelDirectories(root),
       nextUp: queue.rows,
+      /* THE MILESTONE GATE's input, off the same artifact the cut reads (#1881).
+         `null` holds every rung card, exactly as the cut does with no milestone
+         named, and the row that is held says so in its own sentence. */
+      focusRung: readLadderFocusRung().focusRung,
       openPullRequests: openPrs,
       cardComments: comments,
       notBuiltCards: refused,

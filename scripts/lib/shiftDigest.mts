@@ -88,6 +88,7 @@ import {
    reader guess. */
 import type { CrewCardCommentFact } from "../../shared/crewCardBuildState.js";
 import { buildBoard, commentsUnreadableLines, type CardBuildBoard } from "./cardBuildState.mts";
+import { orderedBandHoldFor } from "./seatBatches.mts";
 
 /** A heading- or bullet-delimited chunk of a law surface. */
 export type Section = {
@@ -837,6 +838,21 @@ export type DigestInputs = {
   readonly roots: readonly string[];
   readonly nextUp: NextUpRow[] | Unreadable;
   /**
+   * THE RUNG HE HAS OPENED, so a NEXT UP row can say whether THE MILESTONE GATE
+   * holds it (#1881) — read off the ladder by `readLadderFocusRung`, the same
+   * artifact `cut-seat-batches.mts` reads.
+   *
+   * ⚠ **REQUIRED, NOT OPTIONAL, FOR #1094's STATED REASON ONE LIMB OVER.** An
+   * optional field would let a caller ask neither question and render exactly
+   * like a caller that asked and found a clear band — and that is precisely how
+   * this heading came to print `8 ON OFFER` over a band the cut held entirely.
+   *
+   * `null` is a real answer and not a missing one: it means nothing names a
+   * current milestone, and `rungHoldFor` then holds every rung card, which is
+   * what the cut does in the same condition. The row says so in its own words.
+   */
+  readonly focusRung: string | null;
+  /**
    * THE OPEN PULL REQUESTS, so a NEXT UP row can say whether somebody is
    * already building it (#1094, the sweep remainder of #1083).
    *
@@ -987,7 +1003,15 @@ export function buildDigest(inputs: DigestInputs): string {
       notBuilt: inputs.notBuiltCards,
       nowMs: inputs.now.getTime(),
     });
-    const offered = inputs.nextUp.filter((row) => !board.holdsOffOffer(row.number)).length;
+    /* ⚠ **ALL FIVE WALLS, THROUGH THE CUT'S OWN OWNER — #1881.** This line read
+       `!board.holdsOffOffer(row.number)` until 2026-10-04, which is ONE of the
+       five reasons a card cannot be started, so `blocked`, `parked`, `research`
+       and every rung-held card counted as work on offer. Measured that night
+       over his real band: this heading said `8 ON OFFER` and `cutSeatBatches`
+       offered 0, with every one of the ten held in writing. */
+    const holdFor = (row: NextUpRow): ReturnType<typeof orderedBandHoldFor> =>
+      orderedBandHoldFor({ card: { number: row.number, labels: row.labels }, focusRung: inputs.focusRung, board });
+    const offered = inputs.nextUp.filter((row) => holdFor(row) === null).length;
     /* ⚠ THE HEADING SAYS HOW MANY ARE ACTUALLY ON OFFER, because the count is
        the sentence a shift acts on. "6 open ordered cards" over six rows of
        which five are being built is the offer this card exists to end. */
@@ -995,7 +1019,7 @@ export function buildDigest(inputs: DigestInputs): string {
       `NEXT UP: ${inputs.nextUp.length} open \`founder-ordered\` card(s), oldest first`
       + (offered === inputs.nextUp.length
         ? ":"
-        : ` — ${offered} ON OFFER, ${inputs.nextUp.length - offered} already being built or claimed:`),
+        : ` — ${offered} ON OFFER, ${inputs.nextUp.length - offered} held, being built or claimed:`),
     );
     let claimedAny = false;
     for (const row of [...inputs.nextUp].sort((a, b) => a.createdAt.localeCompare(b.createdAt))) {
@@ -1010,8 +1034,18 @@ export function buildDigest(inputs: DigestInputs): string {
          `NOT ON OFFER` says what it means, in the two states where somebody's
          hands are on it. A refusal annotates and stays on offer: its reasoning is
          in `buildStateHoldsOffOffer`. */
-      if (phrase !== null) {
-        out.push(`    → ${phrase}${board.holdsOffOffer(row.number) ? " · NOT ON OFFER" : ""}`);
+      /* ⚠ **THE WALL FIRST, THEN THE PHRASE WHEN IT ADDS A SECOND FACT (#1881).**
+         The hold sentence is the one a shift needs — it is the same string
+         `cutSeatBatches` records in its own `held` list — and when the wall IS the
+         build board the two are one string and print once. A card that is both
+         `blocked` and refused keeps both lines, because they are two facts.
+         A refusal alone is not a wall: it annotates and stays on offer
+         (`buildStateHoldsOffOffer`), which is #1083's rule and is why the suffix
+         keys on the hold rather than on the phrase. */
+      const hold = holdFor(row);
+      if (hold !== null) out.push(`    → ${hold.why} · NOT ON OFFER`);
+      if (phrase !== null && (hold === null || phrase !== hold.why)) {
+        out.push(`    → ${phrase}`);
       }
       if (isUnreadable(prs)) continue;
       /* ⚠ THE WIDE READ STILL RUNS ON EVERY ROW, INCLUDING ONE THE PHRASE ALREADY

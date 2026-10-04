@@ -156,6 +156,28 @@ function realRoots(): string[] {
   );
 }
 
+/**
+ * THE ANNOTATION LINES BELONGING TO ONE NEXT UP ROW (#1881).
+ *
+ * A whole-document `toContain` is satisfied by an identical line under a
+ * NEIGHBOURING row, and #1881's arms put four rows in one fixture on purpose —
+ * so the subject is sliced out and asserted whole, which also pins that a row
+ * the reader must NOT annotate has no annotation rather than merely lacking a
+ * phrase somewhere in the file.
+ */
+function annotationsFor(digest: string, card: number): string[] {
+  const lines = digest.split("\n");
+  const row = lines.findIndex((line) => line.trimStart().startsWith(`#${card}  `));
+  if (row < 0) return [];
+  const out: string[] = [];
+  for (const line of lines.slice(row + 1)) {
+    const text = line.trim();
+    if (!text.startsWith("→")) break;
+    out.push(text);
+  }
+  return out;
+}
+
 function digestInputs(overrides: Partial<DigestInputs> = {}): DigestInputs {
   return {
     now: new Date("2026-09-05T00:00:00Z"),
@@ -173,6 +195,15 @@ function digestInputs(overrides: Partial<DigestInputs> = {}): DigestInputs {
        "read, and nobody has claimed anything", and an arm that wants the UNREAD
        answer passes the `unreadable` shape. */
     cardComments: [],
+    /* Same doctrine again (#1881): `null` is "nothing names a current milestone",
+       which HOLDS every rung card exactly as the cut does in that condition. An
+       arm about THE MILESTONE GATE passes the rung it means.
+
+       ⚠ It is written here rather than defaulted in the library because
+       `tsconfig.json` excludes every test file, so a required field missing from
+       this factory is a type error NOTHING in the gate can see — vitest does not
+       typecheck. That is how this field arrived absent and green. */
+    focusRung: null,
     patrolClocks: "no seat is overdue",
     since: { label: "foreman-20260904-2340.md", iso: "2026-09-04T13:40:00.000Z", notes: [] },
     commits: [],
@@ -576,7 +607,7 @@ describe("buildDigest", () => {
       }),
     );
     expect(digest).toContain("being built — PR #1316 · NOT ON OFFER");
-    expect(digest).toContain("1 ON OFFER, 1 already being built or claimed");
+    expect(digest).toContain("1 ON OFFER, 1 held, being built or claimed");
     /* THE CONTROL: the row nobody is on carries no phrase at all. */
     expect(digest).not.toMatch(/#1240.*NOT ON OFFER/s);
   });
@@ -594,7 +625,95 @@ describe("buildDigest", () => {
     );
     expect(digest).toContain("claimed by seat-desk-9");
     expect(digest).toContain("NOT ON OFFER");
-    expect(digest).toContain("0 ON OFFER, 1 already being built or claimed");
+    expect(digest).toContain("0 ON OFFER, 1 held, being built or claimed");
+  });
+
+  /**
+   * #1881 — THE OTHER FOUR WALLS. The two arms above drive the BUILD BOARD, which
+   * was the only wall this heading ever asked about; these drive the rest.
+   *
+   * Measured on his real band the night this landed: the heading said
+   * `8 ON OFFER` over ten cards `cutSeatBatches` held entirely.
+   *
+   * Each arm reads the annotations OF ITS OWN ROW (`annotationsFor`) rather than
+   * searching the whole digest, because a whole-document `toContain` passes on an
+   * identical line under a NEIGHBOURING row — and with four rows in one fixture
+   * that is not a hypothetical.
+   */
+  it("⚠ a HELD card is not on offer, and the row says which wall — #1881", () => {
+    const digest = buildDigest(
+      digestInputs({
+        nextUp: [
+          { number: 1832, title: "the plan cards", labels: ["founder-ordered", "blocked"], createdAt: "2026-10-03T01:00:00Z" },
+          { number: 1609, title: "the go-live list", labels: ["founder-ordered", "parked"], createdAt: "2026-09-30T01:00:00Z" },
+          { number: 1552, title: "a proposal of his research team", labels: ["founder-ordered", "research"], createdAt: "2026-09-29T01:00:00Z" },
+          /* THE POSITIVE CONTROL, and it is the direction that matters: a reader
+             that holds this one is HIDING WORK, which is worse than the defect
+             (#1083 — a reader never silently withholds). */
+          { number: 1900, title: "a card a shift may actually start", labels: ["founder-ordered"], createdAt: "2026-10-01T01:00:00Z" },
+        ],
+        openPullRequests: [],
+        cardComments: [],
+      }),
+    );
+    expect(digest).toContain("1 ON OFFER, 3 held, being built or claimed");
+    expect(annotationsFor(digest, 1832)).toEqual(["→ held — Blocked · NOT ON OFFER"]);
+    expect(annotationsFor(digest, 1609)).toEqual(["→ parked on your own ruling · NOT ON OFFER"]);
+    expect(annotationsFor(digest, 1552)).toEqual([
+      "→ a research proposal — it is decided on your Notion desk, never built by a seat · NOT ON OFFER",
+    ]);
+    /* The control row is VISIBLE and carries no annotation at all. */
+    expect(digest).toContain("#1900");
+    expect(annotationsFor(digest, 1900)).toEqual([]);
+  });
+
+  it("⚠ THE MILESTONE GATE takes a rung card off offer — and the same card is offered on its own rung", () => {
+    const rows = [
+      { number: 1689, title: "the refine cost", labels: ["founder-ordered", "rung:N3"], createdAt: "2026-10-01T01:00:00Z" },
+      { number: 1832, title: "the plan cards", labels: ["founder-ordered", "rung:P2"], createdAt: "2026-10-03T01:00:00Z" },
+    ];
+    const onP2 = buildDigest(digestInputs({ nextUp: rows, openPullRequests: [], cardComments: [], focusRung: "P2" }));
+    expect(onP2).toContain("1 ON OFFER, 1 held, being built or claimed");
+    expect(annotationsFor(onP2, 1689)).toEqual([
+      "→ on rung N3, and the milestone is P2 — the milestone gate holds it; opens on his word · NOT ON OFFER",
+    ]);
+    expect(annotationsFor(onP2, 1832)).toEqual([]);
+
+    /* THE CONTROL BOTH WAYS — the rung is the only thing that moves between these
+       two readings, so an arm that only ever held cards would pass on a reader
+       that holds everything. */
+    const onN3 = buildDigest(digestInputs({ nextUp: rows, openPullRequests: [], cardComments: [], focusRung: "N3" }));
+    expect(onN3).toContain("1 ON OFFER, 1 held, being built or claimed");
+    expect(annotationsFor(onN3, 1832)).toEqual([
+      "→ on rung P2, and the milestone is N3 — the milestone gate holds it; opens on his word · NOT ON OFFER",
+    ]);
+    expect(annotationsFor(onN3, 1689)).toEqual([]);
+
+    /* No milestone named: the cut holds every rung card, so this must too — and
+       the sentence says WHY, rather than leaving a shrunken count unexplained. */
+    const noRung = buildDigest(digestInputs({ nextUp: rows, openPullRequests: [], cardComments: [], focusRung: null }));
+    expect(noRung).toContain("0 ON OFFER, 2 held, being built or claimed");
+    expect(annotationsFor(noRung, 1689)).toEqual([
+      "→ on a rung, and nothing names the current focus — the milestone gate holds it · NOT ON OFFER",
+    ]);
+  });
+
+  it("⚠ a card that is BOTH held and refused keeps both lines — two facts, not one", () => {
+    const digest = buildDigest(
+      digestInputs({
+        nextUp: [
+          { number: 1832, title: "the plan cards", labels: ["founder-ordered", "blocked"], createdAt: "2026-10-03T01:00:00Z" },
+        ],
+        openPullRequests: [],
+        cardComments: [],
+        notBuiltCards: new Set([1832]),
+      }),
+    );
+    const lines = annotationsFor(digest, 1832);
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toBe("→ held — Blocked · NOT ON OFFER");
+    expect(lines[1]).toContain("not built");
+    expect(digest).toContain("0 ON OFFER, 1 held, being built or claimed");
   });
 
   it("a REFUSAL annotates the row and leaves it ON OFFER — a judgement, not a hold", () => {
