@@ -8,6 +8,7 @@ import { readListedSource } from "./testing/listedSource";
 import {
   BUILD_BOARD_MODULE,
   QUEUE_READER_EXEMPTIONS,
+  QUEUE_READER_FAILURE_GUIDANCE,
   consultsBuildBoard,
   judgeQueueReaders,
   listsIssues,
@@ -111,6 +112,37 @@ describe("the population is DERIVED, and the judgement can fail", () => {
     expect(verdict.staleExemptions).toEqual(["scripts/quiet.mts"]);
   });
 
+  it("⚠ the failure message names all THREE repairs — the untracked one is what #1882 was filed about", () => {
+    /* The red this arm actually fires on is usually NOT a queue reader: `main`
+       sat red for two shifts' leftover probe scripts, and the message named
+       `buildBoard` and an exemption row — the two repairs for a TRACKED file,
+       both WRONG for an untracked one (an exemption naming a file on one machine
+       reddens the stale arm below everywhere else). The only correct repair,
+       deletion with the reading pasted on the card, lived in the night-shift
+       standing orders, which are untracked — so nothing could hold them to
+       saying it. This holds the sentence instead.
+
+       Keyed on the load-bearing WORDS, not the phrasing, so re-wording the
+       guidance is free and DROPPING a road is not. The wiring — one `expect`
+       message in the real-tree arm — is one line and visible in a diff; this
+       arm does not pretend to guard vitest's own printing of it. */
+    const guidance = QUEUE_READER_FAILURE_GUIDANCE;
+
+    expect(guidance, "road 1 — a reader that offers work consults the board")
+      .toContain("buildBoard");
+    expect(guidance, "road 2 — a tracked script that offers nothing gets a reasoned row")
+      .toContain("QUEUE_READER_EXEMPTIONS");
+
+    expect(guidance, "road 3 — the untracked disposable, and that it is DELETED")
+      .toMatch(/UNTRACKED[\s\S]{0,120}DELETED/);
+    expect(guidance, "road 3 — where the deleted probe's reading goes instead")
+      .toMatch(/on the card/i);
+    expect(guidance, "the refusal that stops a shift reaching for road 2 instead of road 3")
+      .toMatch(/NEVER[\s\S]{0,60}exemption[\s\S]{0,40}untracked/i);
+    expect(guidance, "why the red is nobody's change — CI cannot see an untracked file")
+      .toMatch(/CI[\s\S]{0,80}untracked/i);
+  });
+
   it("⚠ PROSE IS NOT A READING — a docblock naming `gh issue list` is not in the population", () => {
     /* The matcher is the ARRAY form on purpose: `scripts/lib/nextUpItems.mts`
        discusses `gh issue list` at length and takes its rows as an argument. A
@@ -152,12 +184,7 @@ describe("the real tree", () => {
     }
 
     const failing = verdicts.filter((row) => !row.ok).map((row) => row.path);
-    expect(
-      failing,
-      "these scripts list open issues and consult no build board — either call"
-      + " `scripts/lib/cardBuildState.mts`'s `buildBoard`, or add a row to"
-      + " `QUEUE_READER_EXEMPTIONS` saying why the script offers nobody a card",
-    ).toEqual([]);
+    expect(failing, QUEUE_READER_FAILURE_GUIDANCE).toEqual([]);
     expect(staleExemptions, "an exemption whose file no longer lists issues — delete the row")
       .toEqual([]);
   });

@@ -16,7 +16,10 @@ import { describe, expect, it } from "vitest";
 import {
   BAR_MS,
   CONTROL_ACTIONS,
+  CONTROL_INSTANT_CEILING_MS,
+  CONTROL_INSTANT_RATIO,
   CONTROL_PAGE,
+  CONTROL_SLOW_MS,
   judgeControls,
   percentile,
   renderTable,
@@ -160,13 +163,87 @@ describe("judgeControls — the instrument's proof can itself fail", () => {
     expect(slow!.saw).toContain("13.0 ms");
   });
 
-  it("fails the slow control when it reads too fast OR too slow, and the instant one over 100 ms", () => {
+  const withInstant = (frameMs: number) =>
+    good.map((r) =>
+      r.kind === "read" && r.action === "instant"
+        ? { ...r, probes: { instant: changed(frameMs, '"before"', '"instant"') } }
+        : r,
+    );
+
+  it("fails the slow control when it reads too fast OR too slow", () => {
     const early = good.map((r) => (r.kind === "read" && r.action === "slow" ? { ...r, probes: { slow: changed(1500, '"before"', '"slow"') } } : r));
     expect(judgeControls(early)[1]!.ok).toBe(false);
     const late = good.map((r) => (r.kind === "read" && r.action === "slow" ? { ...r, probes: { slow: changed(2700, '"before"', '"slow"') } } : r));
     expect(judgeControls(late)[1]!.ok).toBe(false);
-    const laggy = good.map((r) => (r.kind === "read" && r.action === "instant" ? { ...r, probes: { instant: changed(120, '"before"', '"instant"') } } : r));
-    expect(judgeControls(laggy)[0]!.ok).toBe(false);
+  });
+
+  /*
+    #1885 — THE ARM THAT MOVED, AND THE ONE THAT REPLACED IT.
+
+    This `it` used to read `changed(120)` and assert FALSE, which is the old
+    absolute 100 ms line written into the suite. 120 ms is now a PASS and that
+    is the whole repair: the readings below are the ones measured on real
+    machines while the reader was working perfectly — 101.3 ms is the verified
+    CI miss (attempt 1 of run 37172990915, where the slow control read
+    2000.3 ms in the same run), and 119.1 ms is the worst of 3 misses in 20
+    consecutive local runs.
+  */
+  it("⚠ passes the jitter readings that used to redden an unrelated pull request", () => {
+    for (const frameMs of [16, 101.3, 114.5, 119.1, 120]) {
+      const verdict = judgeControls(withInstant(frameMs))[0]!;
+      expect(verdict.ok, `${frameMs} ms must read as instant`).toBe(true);
+    }
+  });
+
+  /*
+    AND IT CAN STILL FAIL — the card's own third requirement. A reader that
+    reports a synchronous change as slow must redden, which is the failure the
+    instant control exists to catch and the thing a looser line could have
+    thrown away.
+  */
+  it("⚠ fails the instant control when the reader reports a fast change as slow", () => {
+    /* Just over the derived ceiling. */
+    expect(judgeControls(withInstant(CONTROL_INSTANT_CEILING_MS + 1))[0]!.ok).toBe(false);
+    /* And the sabotage that matters: every change reported at the slow one's
+       own reading, which is a reader that cannot tell fast from slow at all. */
+    const asSlow = judgeControls(withInstant(2015));
+    expect(asSlow[0]!.ok).toBe(false);
+    expect(asSlow[0]!.saw).toContain("2015.0 ms");
+    /* The other three keep their meaning while it does. */
+    expect(asSlow.slice(1).map((v) => v.ok)).toEqual([true, true, true]);
+  });
+
+  it("⚠ fails the instant control when the change never happened or carried the wrong value", () => {
+    const wrongValue = good.map((r) =>
+      r.kind === "read" && r.action === "instant"
+        ? { ...r, probes: { instant: changed(6, '"before"', '"slow"') } }
+        : r,
+    );
+    expect(judgeControls(wrongValue)[0]!.ok).toBe(false);
+    const neverChanged = good.map((r) =>
+      r.kind === "read" && r.action === "instant" ? { ...r, probes: { instant: timeout(3000) } } : r,
+    );
+    expect(judgeControls(neverChanged)[0]!.ok).toBe(false);
+  });
+
+  it("the instant ceiling is DERIVED from the slow timer and stays clear of its band", () => {
+    /* Working law 4: the figure is never typed twice. A future change to the
+       fixture's timer must move the ceiling with it.
+
+       ⚠ Its limit, driven rather than assumed: this arm catches the two
+       figures DISAGREEING — `CONTROL_SLOW_MS` moved while the ceiling stayed,
+       or the page's timer diverging from the constant, both of which redden
+       it. It does NOT catch a cosmetic hardcode of the same value
+       (`= 500` survives, measured), because nothing is broken while they
+       still agree. The drift that matters is covered; that one is not, and
+       saying so is cheaper than a reader believing otherwise. */
+    expect(CONTROL_INSTANT_CEILING_MS).toBe(CONTROL_SLOW_MS / CONTROL_INSTANT_RATIO);
+    expect(CONTROL_PAGE).toContain(`}, ${CONTROL_SLOW_MS});`);
+    /* Far enough under the slow band's floor that the two can never be
+       confused — the discrimination the control is for. */
+    expect(CONTROL_INSTANT_CEILING_MS).toBeLessThan(CONTROL_SLOW_MS - 100);
+    /* And clear of every jitter reading #1885 measured. */
+    expect(CONTROL_INSTANT_CEILING_MS).toBeGreaterThan(119.1 * 4);
   });
 
   it("fails 'never' when it produced a number, and 'absent' when something was found", () => {
