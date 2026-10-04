@@ -1,7 +1,7 @@
 {
-  "edition": 639,
-  "updatedAt": "2026-10-03T22:49:26.000Z",
-  "shift": "Tonight was our own machinery, not the app — and the most useful thing that happened was a mistake the crew made on itself, which is worth telling you properly.\n\nThe job: when a shift finishes, it stamps its row on your Working-now table as done. It was also overwriting the one piece of information that said when that shift had last checked in, replacing it with the moment it finished. So every finished shift in the whole record claimed it had just checked in a second before it stopped. Read on your live database: 565 rows out of 565, no exceptions — including the previous shift's own row from three hours earlier, whose written report says it checked in twice.\n\nNothing you were ever shown was wrong, and that is why this was a small job and not an urgent one. What it cost was something in the future. Last night the crew got a new tool that can tell a shift whether a silent row belongs to a dead shift or just a slow one — the thing that cost four shifts in a row a paragraph each, and left a dead shift showing on your page as working for nine and a half hours. That tool has a threshold in it, and the threshold was measured off this history. The evidence it would ever be re-checked against was being thrown away every time a shift closed. The repair is two deleted lines, because nothing anywhere had ever read that information once a row was finished. What cannot be repaired is the 565 rows already recorded, and that is written down in plain terms so the next person does not have to rediscover both the problem and the way around it.\n\nNow the mistake from last night, and the previous shift asked me to correct it here, because the way it was written was unfair to the other agent.\n\nA second agent built the same job separately. The first had put its name on it thirteen minutes before. What last night's note said was that the other agent \"simply never looked\" — that is wrong. It did look. It checked the board at the start of its shift, exactly as it is supposed to, and then picked up this second job seventeen minutes later off that same reading, which had gone out of date in between. It spotted the duplication itself, withdrew its own work, and wrote down honestly what had gone wrong.\n\nThat gap is closed tonight, and it is the whole of my shift. The rule that is supposed to stop two agents doing one job only ever guarded the moment an agent STARTS its shift. When an agent already working picked up a second job partway through, nothing checked anything — two \"I am taking this\" notes sat on the same job for nineteen minutes and nothing anywhere objected. Now, every time a working agent writes a progress note, the note is read for the jobs it mentions and the board is asked whether somebody else has their hands on one. It warns rather than blocking, on purpose: blocking a progress note would make a working agent go silent on this page, which is the thing you told us never to let happen.\n\nThe second: the other agent's version was better than mine in one specific way. It noticed that the explanation I had written down — the part that tells a future shift how to re-check that threshold — had nothing testing that it still existed. Delete the paragraph and everything still passed. So I took its work, credited it, and shipped it as a second change tonight: four checks now, and all four of them go red when the explanation goes missing. One of them is exactly the case my own first version slept through.\n\nA duplicated job is waste and I am not dressing it up. But it was only salvaged because I happened to look at the other agent's leftover folder on my way out, which is luck rather than design — and that is in the write-up too.\n\nTwo things about how it got built are worth a sentence each, because both were nearly mistakes.\n\nThe job as written said we had no check at all on this. That was wrong, and I only found out by opening the code instead of trusting the description: the check exists, and I proved it would have caught last night's duplicate by name and with the right wording. What was actually broken is that it could only be reached if an agent remembered to pass one extra word on the command — so it sat there, correct and unused, and nobody had noticed because it had never been asked.\n\nThe obvious fix was to warn whenever a progress note mentions a job the agent is not on. I measured that against every note we have ever recorded before writing it, and it would have fired on four notes out of five — agents mention other jobs constantly, the way anyone cites what they read. A warning that cries wolf four times in five is ignored within a day, so it was thrown away. What shipped instead only ever speaks when the board actually confirms somebody else's live claim.\n\nI also drove it against the real board rather than a test, and that caught something a test never would have: the first run I expected to stay quiet spoke up, about a job that had FINISHED two hours earlier. Nothing in our system ages a claim except the clock, and that agent had tidied up the job it stood off and not the one it completed. The verdict was right and my wording was wrong, so the wording changed — it now says plainly that a live claim is not necessarily a live agent, and what to do about it. The narrower improvement needs a change to something shared, so it is filed on its own rather than smuggled in here.\n\nNothing a customer sees changed, and nothing needed deploying — this tooling runs from each agent's own copy, so it is in force from now. Pricing phase 2 is unchanged and still has nothing a shift can start by itself: Studio's credit slider needs a price created inside Stripe by hand before anything on that screen can be bought, and Team waits for the shared workspace.",
+  "edition": 640,
+  "updatedAt": "2026-10-04T00:00:26.000Z",
+  "shift": "Short one tonight, and it is about your pricing work rather than ours.\n\nPricing phase 2 has three cards left and not one of them can be started by an agent. That was already true last night and the night before — but nothing on the board said so, so each night the work got handed to an agent that then spent its first half-hour working out why it could not do it, and handed it back. Tonight I checked the reason properly, wrote it onto the cards, and made it something the machinery reads rather than something each agent rediscovers.\n\nThe reason the slider is stuck is one thing, and it is yours: Studio's credit slider needs a price set up inside Stripe, and nobody here can create one. I had not taken that on trust — I read your Stripe catalogue tonight. There are twenty-three prices in it and none of them is the one the slider needs. Studio has exactly two, the $159 a month and the $1,584 a year.\n\nWhile I was in there I found a second price we will need and nobody had noticed: the pricing screen has a Monthly and a Yearly switch, and the design only ever named the monthly $9. So a customer on yearly billing could move that slider with no price behind it. Both prices are named on your desk below with the exact figures, because asking you for one today and a second next week is the mistake we already made once with the top-up prices.\n\nThe other two cards: Team priced per seat waits for the shared workspace, which is not built — that card's own first line has always said so, but the only thing keeping it off an agent was a judgement call made fresh every night. And the phase 2 brief itself is finished except for Yuna reading the final wording, which is not ours either. Both now carry their reason in writing.\n\nWhat that adds up to, plainly: your ordered list has ten cards on it and every single one is now waiting on you, on a person outside the crew, or on a milestone you have not opened. I would rather tell you that than keep showing you a list that looks like work in progress. One sitting in Stripe turns the top of it back into work.\n\nNothing shipped to the app tonight and nothing a customer can see changed.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -126,7 +126,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-03T20:59:35.051Z",
+      "readAt": "2026-10-04T00:02:12.718Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -3543,6 +3543,33 @@
       "state": "open",
       "filedAt": "2026-10-03T16:50:00.000Z",
       "issueNumber": 1690
+    },
+    {
+      "id": "studio-slider-price-1832",
+      "title": "One thing to set up in Stripe, and your new pricing screen is finished",
+      "productImpact": "The three new plan cards are live and you have seen them. The only part of the pricing screen still missing is the credit slider on the Studio card — the one that lets somebody buy extra credits a month instead of jumping to a bigger plan.\n\nIt cannot be built until a price for it exists inside Stripe, and that is not something an agent here can create. I read your Stripe catalogue tonight to be sure rather than assuming: twenty-three prices, and nothing that would charge for a slider step.\n\nThere are two to set up, not one. The design gave a monthly figure — $9 for each extra 5,000 credits a month, which you approved. But the pricing screen also has a Yearly switch, and nobody had worked out what the slider does there. If we only set up the monthly one, a customer on yearly billing can drag a slider that has no price behind it.\n\nThe yearly figure is $90, and I did not pick it. It comes out of the same two-months-free arithmetic the rest of your plans use — the same calculation reproduces Studio's real yearly price and Pro's to the exact cent, so $90 is the figure that keeps the slider agreeing with the badge next to it.\n\nOnce they exist, an agent can finish the slider with no further word from you.",
+      "workedExample": "Today a customer on Studio who wants more credits has to look at a plan five times the size, or buy one-off top-up packs at worse value. The slider is the answer to that, and it is the one piece of your approved design still missing.\n\nWhat you would be setting up: two prices on the existing Klieg Studio product, each charged per step with a quantity — exactly the way the three top-up prices already work, so this is a road your Stripe account has walked before.\n\n  $9.00 a month per 5,000 credits, recurring monthly\n  $90.00 a year per 5,000 credits, recurring yearly\n\nThe exact lookup names are on card 1832 so the code asks for the right thing.",
+      "options": [
+        {
+          "key": "both",
+          "label": "Set up both prices",
+          "consequence": "An agent finishes the Studio slider on the next pass, held for the relay's eye before it goes live. Pricing phase 2 then has only Team left, which waits on the shared workspace."
+        },
+        {
+          "key": "monthly",
+          "label": "Just the monthly one",
+          "consequence": "Smaller job for you, but then I need one more word: what should the slider do when a customer switches to Yearly — hide it, grey it out, or keep charging the monthly add-on beside a yearly plan?"
+        },
+        {
+          "key": "later",
+          "label": "Not now",
+          "consequence": "Nothing breaks and nothing is at risk. But phase 2 then has nothing an agent can start, so the nights will go quiet until you open something else."
+        }
+      ],
+      "recommendation": "Set up both. It is one sitting in Stripe and it is the only thing standing between you and a finished pricing screen — and doing the yearly one now avoids asking you back for it next week, which is the mistake we made with the top-up prices.",
+      "state": "open",
+      "filedAt": "2026-10-04T00:00:26.000Z",
+      "issueNumber": 1832
     }
   ],
   "eyeItems": [
@@ -9968,7 +9995,7 @@
     259
   ],
   "nextUp": {
-    "readAt": "2026-10-03T20:59:35.050Z",
+    "readAt": "2026-10-04T00:02:12.718Z",
     "items": [
       {
         "issueNumber": 1469,
@@ -10015,17 +10042,29 @@
       {
         "issueNumber": 1774,
         "title": "Pricing Phase 2 — the plans redesigned: three individual plans with a credit slider on the top one, Team priced per seat behind a workspace, Enterprise as a sales conversation, no rate chips on plan cards, forward-looking copy marked \"coming\", and a compare table organised by what a customer makes",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "Yuna's pass on the final wording, when her team is back. Every other box on this brief is ticked — your eye, the frames, the numbers, the build cards."
+        }
       },
       {
         "issueNumber": 1832,
         "title": "P2-1 — Three individual plans with the credit slider on Studio ($9 per 5,000 credits): the plan cards and pricing surface rebuilt to the brief",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "YOU or the relay — one Stripe test-mode price, $9 a month per 5,000 credits. Measured absent 2026-10-03. Create it and a seat finishes the slider."
+        }
       },
       {
         "issueNumber": 1835,
         "title": "P2-4 — Team priced per seat ($68 a seat), after the workspace (#1788) exists",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "#1788 — the shared workspace. This card's own body says it does not start until that lands, and #1788 is unbuilt and on the roadmap. No question for you here."
+        }
       },
       {
         "issueNumber": 1837,
