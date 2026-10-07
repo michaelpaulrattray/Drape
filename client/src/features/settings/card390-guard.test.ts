@@ -240,7 +240,9 @@ describe("card 390 item 4 — the unit price is inverted, and it still argues fo
     const PROPOSED_LEDGER_GRANTS: Record<string, number> = {
       Starter: 75_000,
       Pro: 190_000,
-      Studio: 440_000,
+      // The rung whose id is `studio`; called Studio when he ruled on this
+      // proposal, renamed Pro Plus on #1900 with its figures untouched.
+      'Pro Plus': 440_000,
       Business: 2_350_000,
       Scale: 13_350_000,
       Enterprise: 41_500_000,
@@ -274,7 +276,7 @@ describe("card 390 item 4 — the unit price is inverted, and it still argues fo
     expect(
       fellAt(proposed),
       "the superseded proposal's ladder no longer falls where the schema's comment says it does",
-    ).toEqual(["Studio", "Scale", "Enterprise"]);
+    ).toEqual(["Pro Plus", "Scale", "Enterprise"]);
 
     expect(
       fellAt([...PAID]),
