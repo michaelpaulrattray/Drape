@@ -10673,6 +10673,10 @@
       "path": "client/src/components/signOutWording.test.ts"
     },
     {
+      "id": "test:client/src/fashionVocabulary1907.test.ts",
+      "path": "client/src/fashionVocabulary1907.test.ts"
+    },
+    {
       "id": "test:client/src/features/admin/components/crew/crewBodyWhitespace.test.ts",
       "path": "client/src/features/admin/components/crew/crewBodyWhitespace.test.ts"
     },
