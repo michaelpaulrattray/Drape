@@ -1,7 +1,7 @@
 {
-  "edition": 649,
-  "updatedAt": "2026-10-07T18:45:00.000Z",
-  "shift": "The one-sheet Sign is built and I rendered a real one tonight — it works, and it has turned up one thing only you can decide.\n\nWhat you asked for on 7 October was that signing a cast renders ONE wide sheet and we cut the five views out of it, instead of rendering five pictures and a wardrobe plate. That is built. I spent 8 cents of house money putting a real sheet through the real engine with one of your own signed faces, and the five views came out clean: one outfit across all five, every camera exactly as your panel lines ask, nobody cut in half, no join lines showing. It took 63 seconds where today's road takes a minute and a half to two minutes, and it cost 8 cents where today's costs about 90.\n\nThe cut is the part I was most careful about. The engine does not draw the five panels at equal widths — on your three test sheets they ranged from 624 to 868 pixels where an equal fifth would be 768. So the cut finds the real dividers rather than slicing into fifths, and I drove it against those same three sheets: it lands within 13 pixels of the panels your eye passed, where cutting blind fifths would be out by as much as 144 — far enough to put a boundary through somebody's face.\n\nNow the thing on your desk, and it is the reason this cannot ship yet. The views that come out of a sheet are a DIFFERENT SHAPE — much taller and narrower than today's. The big viewer handles that fine. The strip of five on a finished cast does not: it puts each picture in a short wide tile and would show only the top 58% of it. Your close-up loses its mouth. Your full front and full back lose their legs and boots. I have put both pictures on your desk — the five views as they really are, and the same five as the strip would show them — with three options and a recommendation.\n\nI stopped there rather than pushing on. What is still owed is 58 test arms covering the refund and recovery rules for signing, which assume five separate renders and now have to be rewritten one at a time to the new road, and one rule I have designed but not yet built: a panel cut from a sheet should be judged once, because asking a second time re-reads the same pixels and buys the same answer twice. The work is on a branch and every decision I made is written down on the card, so the next session picks it up rather than starting again.",
+  "edition": 650,
+  "updatedAt": "2026-10-07T19:50:00.000Z",
+  "shift": "The plan you called Studio is called Pro Plus now, everywhere a customer sees it on our side. That is built and waiting on review, and there is one step left that only you can do.\n\nYou asked for this as its own card so it would not hold up the slider, and you asked two sensible questions first: how many places is the name actually typed, and which of the six surfaces are ours versus Stripe's. The answers turned out to be the whole job.\n\nThe name is typed in exactly ONE place in the entire product. Every screen reads it from there. So the change is one word, and the rest of the work was proving that sentence is true and leaving a test behind so it stays true the next time a plan gets renamed. I opened the app and looked at it in both the light and the dark theme: the plan cards and the compare table say Pro Plus, the word Studio appears nowhere, and the price, the credits, the description and the feature lines are all exactly where they were. $159 a month, $132 billed yearly, 86,000 credits.\n\nThe step that is yours is Stripe. Our code deliberately sends Stripe no product text at all — Stripe's own product carries the name, and that is what gets printed on the checkout page, on the invoice line, and in the emails Stripe sends. So three of the six surfaces you listed still say Studio until the product is renamed in your dashboard. It is one rename on one product, after the change goes live. It is on your desk with the exact step.\n\nTwo small things fell out of it. Your rename is five days younger than the Pricing Phase 2 brief, so the prototype page you are about to judge still had Studio baked into it — a test caught that, and it says Pro Plus now, which means the design you look at will match the product. And two of our own money tests looked Stripe's yearly prices up by the plan's NAME, so renaming it moved a lookup key. Both are built to go red rather than quietly skip, and both moved correctly, but keying money figures on a name you can rename is a trap, so I filed it rather than rebuilding it inside a rename.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -126,7 +126,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-07T18:32:17.340Z",
+      "readAt": "2026-10-07T19:40:58.295Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -270,6 +270,33 @@
     }
   },
   "needsYou": [
+    {
+      "id": "pro-plus-stripe-rename-1900",
+      "title": "Rename the product in Stripe to Pro Plus — three of your six surfaces are Stripe's, not ours",
+      "productImpact": "The plan called Studio is called Pro Plus now on our side: the plan cards, the compare table and the confirm step all say it, and the price, the credits and the features have not moved. I looked at it in both themes.\n\nBut the checkout page Stripe hosts, the line on an invoice, and the subscription emails Stripe sends all read the name out of YOUR Stripe dashboard. We deliberately send Stripe no product text at all, so nothing we can merge will change those three.",
+      "workedExample": "Somebody upgrades after this goes live. Our page says Pro Plus and quotes $159. They click through to pay, and the Stripe page they land on says Klieg Studio. Then the invoice says Klieg Studio, and so does the receipt email.\n\nThe fix is one rename on one product: in Stripe, open the product called Klieg Studio and change its name to Klieg Pro Plus. Nothing else on it moves — not the price, not the lookup keys, not the amounts.",
+      "options": [
+        {
+          "key": "after",
+          "label": "A — rename in Stripe once the change is live",
+          "consequence": "The two sides agree within minutes of each other. This is the smallest window of mismatch."
+        },
+        {
+          "key": "now",
+          "label": "B — rename in Stripe now, before it lands",
+          "consequence": "Stripe would say Pro Plus while the app still says Studio, for as long as the review takes."
+        },
+        {
+          "key": "relay",
+          "label": "C — have the relay do it for you",
+          "consequence": "Same result. You asked the relay to do your Stripe keystrokes once before, on the credit packs."
+        }
+      ],
+      "recommendation": "A. The app half is in review now; rename it in Stripe the moment that lands and the two sides are never far apart. Leave the lookup keys alone exactly as you said — a customer never sees one, and moving them means creating new price objects.",
+      "state": "open",
+      "filedAt": "2026-10-07T19:50:00.000Z",
+      "issueNumber": 1900
+    },
     {
       "id": "sign-sheet-shape-1926",
       "title": "The one-sheet views are a taller shape and the strip cuts them — which of the three?",
@@ -6824,6 +6851,13 @@
       "note": "The record half of tonight's catch. Your decision on the road itself is on the card, not in this change."
     },
     {
+      "id": "pro-plus-rename-1900",
+      "title": "The Studio plan is called Pro Plus (#1900)",
+      "status": "in-review",
+      "prNumber": 1927,
+      "note": "One word of product code; rendered in both themes. Waiting on the relay, then your Stripe rename."
+    },
+    {
       "id": "rate-chip-off-plans-1773",
       "title": "No plan card states a rate per dollar, and neither does the compare table (#1773)",
       "status": "merged",
@@ -10123,7 +10157,7 @@
     263
   ],
   "nextUp": {
-    "readAt": "2026-10-07T18:32:17.339Z",
+    "readAt": "2026-10-07T19:40:58.295Z",
     "items": [
       {
         "issueNumber": 1903,
@@ -10194,7 +10228,11 @@
       {
         "issueNumber": 1900,
         "title": "Rename the Studio plan to Pro Plus everywhere a customer sees it — same price, credits and features, only the name",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "YOU — the app half is built and in review. Stripe still calls the product Studio; that is your dashboard, 3 of your 6 surfaces. Rename it after PR #1927."
+        }
       }
     ]
   }
