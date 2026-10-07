@@ -329,14 +329,54 @@ const verdictSchema = z.object({
  * **The specification is gone from the user message**, so the model has nothing
  * to measure the picture AGAINST and cannot volunteer the verdict that was
  * taken away from it.
+ *
+ * ## ⚠ WHAT THIS PROMPT WAS MEASURED TO DO, through the real reader on his own
+ * ## production frames — because a rewritten judge is a NEW INSTRUMENT and a
+ * ## green unit suite says only what the CODE does with a fixed answer
+ *
+ * Working law 2, and it paid for itself twice in one sitting (#1903's court,
+ * 2026-10-07, ten arms + four probes, house money):
+ *
+ *  - **A BACK VIEW READ `unsure` AND THEREFORE REFUSED — the defect this court
+ *    was run to find, and the change would have shipped with it.** The old
+ *    prompt was handed a specification, so a judge looking at a figure from
+ *    behind knew that was what it was meant to see. Handed nothing, it answered
+ *    *"no facial features are visible to confirm identity"* — and identity is
+ *    still fail-closed on `unsure`, so **every back view of every Sign would
+ *    have been refused and refunded**. No unit arm in this tree could have seen
+ *    it. The any-angle sentence above question 2 is the repair, and it is a
+ *    sentence about what is EXPECTED rather than about the angle, so it asks
+ *    the judge to judge nothing new.
+ *  - **Its control is the one that matters**: a DIFFERENT cast's back view
+ *    still refuses (`unsure`, measured), so the clause did not simply switch
+ *    identity off whenever a face is missing. Three same-cast views across two
+ *    casts — a crop that does not match the anchor, a back view, a full-length
+ *    — all deliver clean; a different person, a blank frame and a garbled frame
+ *    all refuse.
+ *  - ⚠ **THE `people` AXIS HAS A MEASURED BLIND SPOT AND IT IS STATED RATHER
+ *    THAN DISCOVERED LATER.** Two full-length figures in one frame: CAUGHT,
+ *    twice, with the second named in the note. A tight two-FACE diptych:
+ *    MISSED, three of three, *"Only one person is visible"*. So the axis
+ *    answers the realistic shape of this failure — an engine asked for one
+ *    person returning two figures in a scene — and not a head-and-shoulders
+ *    contact sheet. **It fails toward DELIVERING**, which is the safe direction
+ *    under his ruling and the direction this whole card moves in; a stronger
+ *    wording was tried first (*"look over the WHOLE frame, edge to edge"*) and
+ *    did not move it, and three rewordings of one question is exactly what
+ *    #1582 measured breaking correct pictures.
+ *  - **One of the court's own arms was the defect, not the reader** — a
+ *    two-figure fixture whose second figure painted over the first, asked twice
+ *    before anyone LOOKED at it (law 9). The frames are read now before their
+ *    verdicts are.
  */
 const judgeSystemFor = (pronouns: CastPronouns): string => [
   "You inspect photographs for a casting studio before they are delivered to the customer.",
   "You are given two images: IMAGE 1 is the signed reference photograph of the person, and IMAGE 2 is a new photograph that is supposed to be the same person.",
   "You are looking ONLY for catastrophic failures. Judge three things independently. Do not let one influence another.",
   `1. identity — is the person in IMAGE 2 the same individual as in IMAGE 1? Judge bone structure, facial proportions, skin, hair and build, and also the MARKINGS AND MAKEUP ${pronouns.possessive} skin carries: tattoos and ink, piercings, scars, birthmarks and freckling, and the makeup ${pronouns.subject} ${pronouns.plural ? "are" : "is"} wearing. Anything of that kind visible in IMAGE 1 must be present in IMAGE 2 wherever IMAGE 2's frame reaches it — a bare, unmade version of the same face is a FAIL, not a match. Judge only where both frames reach: a marking outside IMAGE 2's crop is not missing. A similar-looking person of the same type is a FAIL.`,
+  "IMAGE 2 may be taken from ANY angle, including from the side or from directly behind, where little or none of the face is visible. That is expected and is NEVER by itself a reason to be unsure about identity: judge from whatever IMAGE 2 does show — hair, build, skin, markings, costume — and answer \"differs\" only when what you can see belongs to somebody else.",
   "2. intact — is IMAGE 2 a real, complete photograph? Answer \"differs\" ONLY if it is blank, a solid or near-solid colour, corrupted, scrambled, or so garbled that it does not read as a photograph of anything at all.",
-  "3. people — does IMAGE 2 show exactly ONE person? Answer \"differs\" ONLY if there is no person in it at all, or if more than one person is present. Reflections, statues, posters, mannequins and background crowds that are clearly not the subject do not count as extra people.",
+  "3. people — how many people are in IMAGE 2? Look over the WHOLE frame, edge to edge, before answering: a second person can be standing beside the subject, behind them, or at either edge. Answer \"matches\" for exactly one, and \"differs\" if there is nobody at all or if more than one person is present. Reflections, statues, posters, mannequins and background crowds that are clearly not the subject do not count as extra people.",
   "Do NOT judge the crop, the camera angle, the pose, the direction the person faces, what is or is not visible, or the clothing. Those are not your business and are never a reason to answer \"differs\".",
   "Answer ONLY with a JSON object of the form",
   '{"identity":{"verdict":"matches","note":"..."},"intact":{"verdict":"matches","note":"..."},"people":{"verdict":"matches","note":"..."}}',

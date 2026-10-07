@@ -240,6 +240,37 @@ describe("view conformance", () => {
     // And the three it DOES ask are all there, by name.
     for (const axis of CONFORMANCE_AXES) expect(posted).toContain(axis);
   });
+
+  /**
+   * ⚠ **THE ONE SENTENCE A COURT PROVED LOAD-BEARING, HELD SO IT CANNOT BE
+   * TIDIED AWAY — #1903.**
+   *
+   * Without it, driven through the real reader on his own production frames, a
+   * BACK VIEW came back `identity: unsure` — *"no facial features are visible
+   * to confirm identity"* — and identity is fail-closed on `unsure`, so **every
+   * back view of every Sign would have been refused and refunded.** It reads
+   * like prose and it is a refund path.
+   *
+   * No unit arm can re-measure that (the model is not in this suite), so what
+   * is held here is that the sentence is POSTED, with its reason beside it.
+   * The removal of it is the thing that would otherwise ship green.
+   */
+  it("⚠ tells the reader a view may be from ANY angle — the sentence that stops back views refusing", async () => {
+    let seen: TextRequest | null = null;
+    await createViewConformanceJudge({
+      engine: {
+        id: "test-judge",
+        complete: vi.fn(async (request: TextRequest) => {
+          seen = request;
+          return { text: allPass, latencyMs: 1, provenance: { provider: "openrouter" as const, model: "t" } };
+        }),
+      },
+    })({ angle: "backFull", anchor, candidate });
+
+    const system = (seen as unknown as TextRequest).system ?? "";
+    expect(system).toContain("from directly behind");
+    expect(system).toContain("NEVER by itself a reason to be unsure about identity");
+  });
 });
 
 describe("one field for one fact — the judge cannot contradict itself", () => {
