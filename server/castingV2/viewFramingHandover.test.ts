@@ -32,15 +32,47 @@
  */
 import { describe, expect, it, vi } from "vitest";
 
-import { CAST_VIEW_ANGLES } from "../../shared/boardTypes";
+import { CAST_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
 import { castPackageView, packageViewExpectation, readerFramingQuestion } from "./castViewPackage";
 import type { Mask } from "./maskedComposite";
 import type { TextEngine, TextRequest } from "../providers/types";
 import { createViewConformanceJudge, foldFramingAxis } from "./viewConformance";
-import type { FramingMeasurement, FramingReader } from "./viewFramingGeometry";
+import type { FramingMeasurement, FramingReader, ViewFramingBand } from "./viewFramingGeometry";
 
 const anchor = { bytes: Buffer.from("anchor"), contentType: "image/png" };
 const candidate = { bytes: Buffer.from("candidate"), contentType: "image/png" };
+
+/*
+  THE THREE BAND SHAPES THE FOLD DISTINGUISHES — #1612, his ruling of
+  2026-10-07 (*"framing is the measurement's call … the checker's opinion
+  shouldn't overrule it"*).
+
+  They are fixtures rather than live bands ON PURPOSE: these arms are about the
+  fold's rule, and a fixture states the shape in one place where a reader can
+  see it. **The live population is asserted separately and derived**, in the
+  `every live band` arm below — because a rule driven only on fixtures is a rule
+  nobody has checked against the product, and this one's whole behaviour turns
+  on which real views declare an overlap.
+*/
+const ONE_RULE: ViewFramingBand["rules"] = [
+  { must: "clearOf", landmark: "subject", edge: "top" },
+];
+/** The `closeUp`/`frontFull`/`backFull` shape: it measures, and a measured clause is still posted. */
+const OVERLAPPING: ViewFramingBand = {
+  rules: ONE_RULE,
+  readerAlsoAsked: "the margin below the face, which is the tail of a sentence whose head is a feature test.",
+  readerRemainder: "whether the head is front-on — an orientation no silhouette answers.",
+};
+/** A band that measures and whose measured sentences left the post in full — branch 3 still governs. */
+const NO_OVERLAP: ViewFramingBand = {
+  rules: ONE_RULE,
+  readerRemainder: "whether the head is front-on — an orientation no silhouette answers.",
+};
+/** The `threeQuarter`/`sideClose` shape: NO rules, so `inBand` means nothing was asked. */
+const NOTHING_MEASURED: ViewFramingBand = {
+  rules: [],
+  readerRemainder: "the whole of this view's framing is still a reading.",
+};
 
 function measurementOf(
   verdict: FramingMeasurement["verdict"],
@@ -72,6 +104,7 @@ describe("the fold — the measurement is the authority, driven at the function"
     const axis = foldFramingAxis({
       measurement: measurementOf("outOfBand", "the subject stays clear of the top of the frame"),
       read: { verdict: "matches", note: "looks like a close-up to me" },
+      band: OVERLAPPING,
     });
     expect(axis.verdict).toBe("differs");
     expect(axis.pass).toBe(false);
@@ -81,10 +114,11 @@ describe("the fold — the measurement is the authority, driven at the function"
     expect(axis.note).not.toContain("looks like a close-up");
   });
 
-  it("inBand lets the reader's own answer govern — it is not an override", () => {
+  it("inBand lets the reader's own answer govern where NO measured clause is still posted", () => {
     const matched = foldFramingAxis({
       measurement: measurementOf("inBand", "the subject reaches the top of the frame"),
       read: { verdict: "matches", note: "front-on, mouth in frame" },
+      band: NO_OVERLAP,
     });
     expect(matched.verdict).toBe("matches");
     expect(matched.pass).toBe(true);
@@ -94,14 +128,99 @@ describe("the fold — the measurement is the authority, driven at the function"
       What is left of the posted question is the half the geometry cannot reach
       — an orientation, a turn, a concealment, a stride, a feature count. A
       three-quarter crop measures perfectly in a close-up's band.
+
+      ⚠ **THIS ARM NOW CARRIES ITS BAND, AND THE BAND IS THE WHOLE POINT.** It
+      used to pass with no band at all, which made it read as *the reader always
+      governs an in-band frame* — and that reading is what his reply #263
+      overturned. On a band whose measured sentences left the post IN FULL the
+      dissent can only be about the remainder, so it is attributable and it
+      still governs. The overlapping case is the next arm.
     */
     const turned = foldFramingAxis({
       measurement: measurementOf("inBand", "the subject reaches the top of the frame"),
       read: { verdict: "differs", note: "the head is turned, not front-on" },
+      band: NO_OVERLAP,
     });
     expect(turned.verdict).toBe("differs");
     expect(turned.pass).toBe(false);
     expect(turned.note).toContain("the head is turned");
+  });
+
+  it("⚠ inBand on an OVERLAPPING band — the measurement is the answer and the reader is recorded, not obeyed", () => {
+    /*
+      HIS RULING, 2026-10-07, reply #263, verbatim and entire: *"They look
+      right. Fix the wrong label — framing is the measurement's call, as I ruled
+      on 30 September; the checker's opinion shouldn't overrule it."*
+
+      THE SPECIMEN, and it is his own: `foreman-20261004-0320` measured a
+      close-up IN BAND at 0.06 face-heights and the axis note came out
+      *"measured in band; The crop is too tight…"* — one string carrying both
+      answers, because the too-tight clause is a measured clause the judge is
+      still posted ({@link ViewFramingBand.readerAlsoAsked}). His eye item:
+      *"marked for being cropped too tight and I think that is simply wrong — he
+      has room below the chin"*.
+    */
+    const tooTight = foldFramingAxis({
+      measurement: measurementOf("inBand", "0.06 of a face's height of picture sits below it"),
+      read: { verdict: "differs", note: "The crop is too tight" },
+      band: OVERLAPPING,
+    });
+    expect(tooTight.verdict).toBe("matches");
+    expect(tooTight.pass).toBe(true);
+
+    /* RECORDED, not discarded — the loss this branch accepts is readable off
+       the row rather than being a population nobody can count. */
+    expect(tooTight.note).toContain("the measurement is the framing answer");
+    expect(tooTight.note).toContain("The crop is too tight");
+    expect(tooTight.note).toContain('the reader said "differs"');
+
+    /* An `unsure` reader is the same case: it cannot overrule the geometry
+       either, and today it would have cost the same wrong mark. */
+    const unsure = foldFramingAxis({
+      measurement: measurementOf("inBand", "0.06 of a face's height of picture sits below it"),
+      read: { verdict: "unsure", note: "I cannot tell how tight this crop is" },
+      band: OVERLAPPING,
+    });
+    expect(unsure.verdict).toBe("matches");
+    expect(unsure.pass).toBe(true);
+    expect(unsure.note).toContain('the reader said "unsure"');
+
+    /*
+      ⚠ CONTROL — A READER THAT AGREES TAKES THE OLD ROAD, BYTE FOR BYTE. The
+      common path's note must not move: if it did, every row in the record would
+      read differently and this branch would be invisible against the noise.
+    */
+    const agreeing = foldFramingAxis({
+      measurement: measurementOf("inBand", "the subject reaches the top of the frame"),
+      read: { verdict: "matches", note: "front-on, mouth in frame" },
+      band: OVERLAPPING,
+    });
+    expect(agreeing.verdict).toBe("matches");
+    expect(agreeing.note).toBe("measured in band; front-on, mouth in frame");
+  });
+
+  it("⚠ CONTROL — a band with NO RULES never takes the measurement's side, because it measured nothing", () => {
+    /*
+      THE TRAP THIS ARM EXISTS FOR, and it is a real one rather than a
+      hypothetical: an EMPTY band folds to `inBand` by design
+      (`measureViewFraming`: *"nothing was asked here, so nothing here
+      failed"*), and two of the five live views — `threeQuarter` and
+      `sideClose` — have no rules at all. A branch written on the verdict alone
+      would have deleted the framing axis on both of them while passing every
+      other arm in this file.
+
+      So the fixture here is the dangerous one: a rule-less band that ALSO
+      declares an overlap. Even then the reader governs, because the clause that
+      decides is *did the geometry answer anything*.
+    */
+    const dissent = foldFramingAxis({
+      measurement: { verdict: "inBand", readings: [], landmarksRead: [], method: "geometry:0 rule(s) over 0 landmark(s)" },
+      read: { verdict: "differs", note: "the face is visible and this is a back view" },
+      band: { ...NOTHING_MEASURED, readerAlsoAsked: "a declaration a rule-less band has no business carrying." },
+    });
+    expect(dissent.verdict).toBe("differs");
+    expect(dissent.pass).toBe(false);
+    expect(dissent.note).toContain("the face is visible");
   });
 
   it("cannotMeasure cannot PASS the axis, and the reader may still fail it", () => {
@@ -115,6 +234,7 @@ describe("the fold — the measurement is the authority, driven at the function"
     const unsure = foldFramingAxis({
       measurement: measurementOf("cannotMeasure", "no face was found"),
       read: { verdict: "matches", note: "fine by me" },
+      band: OVERLAPPING,
     });
     expect(unsure.verdict).toBe("unsure");
     expect(unsure.pass).toBe(false);
@@ -124,6 +244,7 @@ describe("the fold — the measurement is the authority, driven at the function"
     const refused = foldFramingAxis({
       measurement: measurementOf("cannotMeasure", "no face was found"),
       read: { verdict: "differs", note: "this is a full length, not a portrait" },
+      band: OVERLAPPING,
     });
     expect(refused.verdict).toBe("differs");
     expect(refused.note).toContain("this is a full length");
@@ -138,9 +259,67 @@ describe("the fold — the measurement is the authority, driven at the function"
       road out of production.
     */
     for (const verdict of ["matches", "differs", "unsure"] as const) {
-      const axis = foldFramingAxis({ measurement: null, read: { verdict, note: "n" } });
+      /* The band is deliberately the OVERLAPPING one: with no measurement there
+         is nothing for it to privilege, so a branch-4 leak would show here. */
+      const axis = foldFramingAxis({ measurement: null, read: { verdict, note: "n" }, band: OVERLAPPING });
       expect(axis.verdict, verdict).toBe(verdict);
       expect(axis.note, verdict).toBe("n");
+    }
+  });
+
+  it("⚠ DERIVED — which live views take the measurement's side is read off the real bands, not a list here", () => {
+    /*
+      WHY THIS ARM AND NOT A LIST OF VIEW NAMES: the fold's behaviour per view
+      is decided by {@link ViewFramingBand.readerAlsoAsked}, which is a
+      declaration on the live band. A second list of names in this file would be
+      the parallel copy working law 4 is about, and it would drift the first
+      time a view's overlap is paid off.
+
+      So this arm asserts the PARTITION and derives both halves, and what it
+      pins is the property rather than the membership: **a live view takes
+      branch 4 exactly when it both measures something and still shows the
+      reader a measured clause.** It is also the arm that records, in the suite,
+      what the ruling costs — the views listed as `overrides` are the ones where
+      a reader can no longer mark a frame whose geometry held.
+    */
+    const overrides: CastViewAngle[] = [];
+    const readerGoverns: CastViewAngle[] = [];
+    for (const angle of CAST_VIEW_ANGLES) {
+      const band = castPackageView(angle).band;
+      const measurement: FramingMeasurement = {
+        verdict: "inBand",
+        readings: band.rules.map((rule) => ({ rule, held: true, note: "held" })),
+        landmarksRead: [],
+        method: `geometry:${band.rules.length} rule(s)`,
+      };
+      const axis = foldFramingAxis({
+        measurement,
+        read: { verdict: "differs", note: "the reader disagrees" },
+        band,
+      });
+      (axis.pass ? overrides : readerGoverns).push(angle);
+    }
+
+    /* Every live view lands in exactly one half, and neither half is empty —
+       an empty `readerGoverns` would mean the reading had been deleted from the
+       framing axis outright, and an empty `overrides` would mean his ruling
+       changed nothing. */
+    expect([...overrides, ...readerGoverns].sort()).toEqual([...CAST_VIEW_ANGLES].sort());
+    expect(overrides.length).toBeGreaterThan(0);
+    expect(readerGoverns.length).toBeGreaterThan(0);
+
+    /* The property, derived on both sides from the band itself. */
+    for (const angle of overrides) {
+      const band = castPackageView(angle).band;
+      expect(band.rules.length, angle).toBeGreaterThan(0);
+      expect(band.readerAlsoAsked, angle).toBeDefined();
+    }
+    for (const angle of readerGoverns) {
+      const band = castPackageView(angle).band;
+      expect(
+        band.rules.length === 0 || band.readerAlsoAsked === undefined,
+        `${angle} keeps the reader, so it must either measure nothing or post no measured clause`,
+      ).toBe(true);
     }
   });
 });

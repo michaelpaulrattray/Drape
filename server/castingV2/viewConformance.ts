@@ -39,6 +39,7 @@ import {
   measureViewFraming,
   type FramingMeasurement,
   type FramingReader,
+  type ViewFramingBand,
 } from "./viewFramingGeometry";
 
 const log = createModuleLogger("castingV2/viewConformance");
@@ -262,6 +263,80 @@ const judgeSystemFor = (pronouns: CastPronouns): string => [
  *     question is the half the geometry cannot reach: an orientation, a turn, a
  *     concealment, a stride, a feature count. Those are real tests and a pass
  *     is not a pass without them.
+ *  4. ⚠ **`inBand` ON A VIEW WHOSE BAND DECLARES AN OVERLAP → THE MEASUREMENT
+ *     IS THE ANSWER, and the reader is recorded rather than obeyed.** His
+ *     ruling, 2026-10-07, reply #263, verbatim and entire: *"They look right.
+ *     Fix the wrong label — framing is the measurement's call, as I ruled on 30
+ *     September; the checker's opinion shouldn't overrule it."*
+ *
+ * # Why branch 4 exists, and why branch 3 could not simply be deleted
+ *
+ * Branch 3's own reasoning is sound and is still live on two views. What it
+ * assumed is that the posted question, after the hand-over, contains ONLY the
+ * half the geometry cannot reach. That is true where a view's measured
+ * sentences left the post in full, and FALSE on every view whose spec states a
+ * measured test and a reader's test inside one sentence — which this file's own
+ * header has said in writing since the hand-over landed, priced as *"a reader
+ * that over-refuses on framing can still fail the axis after the geometry
+ * passed"* and *"a MARK and never a picture"*.
+ *
+ * ⚠ **It bit twice and he saw it both times.** `foreman-20261004-0320` measured
+ * the close-up IN BAND at 0.06 face-heights with the axis note reading
+ * *"measured in band; The crop is too tight…"* — one string carrying both
+ * answers — and his eye item said *"marked for being cropped too tight and I
+ * think that is simply wrong — he has room below the chin"*. **The verdict and
+ * the note disagreed because they were answering different clauses of one
+ * sentence, and the reader's clause was one the geometry had already settled.**
+ *
+ * # Why the discriminator is the band's own declaration and not "did it measure"
+ *
+ * {@link ViewFramingBand.readerAlsoAsked} is the field that names, per view, a
+ * measured clause the judge is STILL posted and says why it cannot leave. It
+ * already exists, it is already required by a guard exactly when it is true
+ * (`viewFramingBands.test.ts` derives which views owe it from the citations
+ * themselves), and it is **precisely the set of views on which a reader's
+ * dissent cannot be attributed to the remainder.** So the rule reads off a
+ * declaration rather than off a second list of view names — working law 4 — and
+ * a view that later removes its overlap gets branch 3 back with no edit here.
+ *
+ * ⚠ **AND `readings.length > 0` IS LOAD-BEARING, NOT BELT-AND-BRACES.** An
+ * EMPTY band folds to `inBand` by design (`measureViewFraming`'s own fold: *"a
+ * view with no measurable rule at all … nothing was asked here, so nothing here
+ * failed"*), and two of the five live views — `threeQuarter` and `sideClose` —
+ * have no rules at all. A branch 4 written on the verdict alone would silently
+ * delete the framing axis on both of them, which is the opposite of his ruling:
+ * there the measurement answered NOTHING, so it cannot be the answer.
+ *
+ * # ⚠ WHAT THIS COSTS, DECLARED RATHER THAN DISCOVERED
+ *
+ * One verdict word comes back for the whole posted question, so on an
+ * overlapping view a dissent is **unattributable**: it may be about the clause
+ * the geometry settled, or about the view's stated remainder — an orientation,
+ * a pose, a direction, a concealment. His ruling decides the tie in the
+ * measurement's favour, so **the reader can no longer mark a view whose
+ * geometry held, on every view that measures anything.** Driven at the live
+ * bands rather than counted by hand: **of the five views a Sign buys
+ * (`CAST_PACKAGE_VIEWS`) that is three — `closeUp`, `frontFull`, `backFull`;
+ * of the seven declared angles it is five, adding `frontClose` and
+ * `sideFull`.** `threeQuarter` and `sideClose` declare no rules at all, so the
+ * reader remains their whole framing answer and nothing about them moves. A
+ * `backFull` that shows the face, or a `closeUp` that is turned, is now
+ * delivered without the `Unchecked` mark it would have carried.
+ *
+ * **Both errors cost exactly a MARK and never a picture** — part 2 of #1612
+ * means no framing verdict refuses or refunds anything; the view is delivered,
+ * charged, `Unchecked · Try again` at a price of zero either way. So the choice
+ * is between a wrong mark on a correct picture (which he has now seen twice and
+ * ruled on) and a missing mark on a wrong one. **The thing that would end the
+ * trade rather than pick a side is clause-granular sentences in his own words,
+ * which this file's header already names as the resolution and which is HIS
+ * editorial call, not a seat's** — #1582 measured three careful rewordings and
+ * each one broke a correct picture.
+ *
+ * **The loss is instrumented, not merely admitted:** every dissent the geometry
+ * overrides is written into the axis note with the reader's own verdict word and
+ * sentence, so the population of views where this fires is readable off the
+ * rows rather than being a thing nobody can count.
  *
  * ⚠ **`null` is the pre-hand-over behaviour and exists for ONE reason**: a judge
  * constructed with no reader at all, which is every test that does not care
@@ -273,8 +348,20 @@ const judgeSystemFor = (pronouns: CastPronouns): string => [
 export function foldFramingAxis(input: {
   measurement: FramingMeasurement | null;
   read: { verdict: AxisVerdictWord; note?: string };
+  /**
+   * THE VIEW'S OWN BAND — required, because the alternative is a silent road
+   * back to the defect.
+   *
+   * Branch 4 reads {@link ViewFramingBand.readerAlsoAsked} off it. An optional
+   * band omitted by a caller would read as *no overlap declared*, which is
+   * exactly the pre-ruling behaviour this function was changed to stop — the
+   * same argument `signEngine.ts` makes for refusing to build a judge without a
+   * framing reader. A caller that genuinely has no band has no measurement
+   * either, and that is what `measurement: null` is for.
+   */
+  band: ViewFramingBand;
 }): AxisVerdict {
-  const { measurement, read } = input;
+  const { measurement, read, band } = input;
   if (measurement === null) return axisFrom(read);
   const failing = measurement.readings.filter((reading) => reading.held === false);
   const unanswered = measurement.readings.filter((reading) => reading.held === null);
@@ -297,6 +384,34 @@ export function foldFramingAxis(input: {
       pass: false,
       verdict: "unsure",
       note: `the framing could not be measured: ${unanswered.map((reading) => reading.note).join("; ")}`,
+    };
+  }
+  /*
+    BRANCH 4 — his ruling of 2026-10-07. The guard is read in three parts and
+    every one of them has to hold:
+
+      the geometry HELD              `measurement.verdict === "inBand"`, above
+      the geometry ANSWERED something `readings.length > 0` — an empty band
+                                      folds to `inBand` having asked nothing
+      the reader is still shown a
+      clause the geometry settled     `band.readerAlsoAsked !== undefined`
+
+    A reader that AGREES falls through on purpose, so the common path's note is
+    byte-identical to what it was before this change and only a real
+    disagreement reads differently.
+  */
+  if (
+    measurement.readings.length > 0
+    && band.readerAlsoAsked !== undefined
+    && read.verdict !== "matches"
+  ) {
+    return {
+      pass: true,
+      verdict: "matches",
+      note:
+        "measured in band, and the measurement is the framing answer (#1612, his ruling of "
+        + `2026-10-07); the reader said "${read.verdict}" and does not overrule the geometry: `
+        + `${read.note ?? "no note"}`,
     };
   }
   return axisFrom({
@@ -456,9 +571,14 @@ export function createViewConformanceJudge(config: ViewConformanceJudgeConfig): 
        property read inside one is no longer narrowed by the ternary around it.
        A `!` would have said the same thing with nothing holding it true. */
     const framingReader = config.framingReader;
+    /* ONE read of the band, used by the measurement and by the fold that reads
+       its verdict — a second `castPackageView(input.angle).band` beside the
+       first is the parallel copy working law 4 is about, and the two must not
+       be able to disagree about which view's band answered. */
+    const band = castPackageView(input.angle).band;
     const measuring: Promise<FramingMeasurement | null> = framingReader
       ? withinFramingDeadline((signal) => measureViewFraming({
-        band: castPackageView(input.angle).band,
+        band,
         image: input.candidate.bytes,
         reader: framingReader,
         /* #1781 — the bound passing also cancels the reads it started, so the
@@ -603,7 +723,7 @@ export function createViewConformanceJudge(config: ViewConformanceJudgeConfig): 
     const measurement = await measuring;
     const axes: Record<ConformanceAxis, AxisVerdict> = {
       identity: axisFrom(parsed.data.identity),
-      angle: foldFramingAxis({ measurement, read: parsed.data.angle }),
+      angle: foldFramingAxis({ measurement, read: parsed.data.angle, band }),
       wardrobe: axisFrom(parsed.data.wardrobe),
     };
     return {
