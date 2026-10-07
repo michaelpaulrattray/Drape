@@ -1,7 +1,7 @@
 {
-  "edition": 646,
-  "updatedAt": "2026-10-07T13:16:22.000Z",
-  "shift": "Your ruling is built: the checker now only looks for a disaster, and the crop measurement is gone.\n\nIt asks three things about every picture and nothing else - is it her, is the picture a real render, is there exactly one person in it. Nobody judges the crop, the pose, the direction she faces, what is hidden or what she is wearing any more, and the whole measuring apparatus behind the crop is deleted along with the question it answered. That is the half that stops the wrong labels you have been seeing.\n\nWhat is deliberately NOT in it yet: the paid redo at 350 credits, and the removal of the Unchecked label and its free retry. Taking the free retry away before the redo exists would leave somebody who dislikes a picture with nothing at all to press, and every merge goes live straight away. So the redo comes first and the label second. Nothing you can press today has been taken away.\n\nBefore trusting the new checker I ran it over your own delivered pictures, and it was a good thing I did. Back views came back REFUSED. The old checker was told in advance what view it was looking at; the new one is told nothing, so looking at somebody photographed from behind it said it could not see a face to confirm who she was - and an unsure answer about identity takes the picture away and refunds it. Every back view of every Sign would have been thrown out. Nothing in the test suite could have caught that, because the tests feed the checker a fixed answer rather than asking the real one.\n\nFixed with one sentence telling it a picture may be taken from any angle, including from behind, and that this is expected. Then the check that actually matters: a DIFFERENT person's back view still gets refused, so it has not simply stopped caring about identity whenever a face is hidden. After the repair, on your frames: a wrong crop, a back view and a full-length picture all arrive clean, and a different person, a blank frame and a garbled frame are all refused.\n\nOne honest limit, measured rather than hoped. The how-many-people check catches two full-length figures in one frame, twice, naming the second person - and misses a tight two-face side-by-side, three times out of three. So it answers the realistic version of that fault and not the contact-sheet version, and when it misses it DELIVERS the picture rather than taking one away, which is the safe direction. I tried a stronger wording first and it did not help, and rewording these questions over and over is the exact thing that broke correct pictures in September, so it is written down instead of reworded again.\n\nAnd one reading that was about to quietly cost three of your pictures their free retry. The code said no delivered picture carries a failing check. That was true when it was written, and the change from last week had landed that same morning and started writing exactly those rows - three of your views carry one right now. Renaming the checks would have made them invisible. The reader keeps the old names for them.\n\nThe work is open and waiting for a hand review rather than merged, because it touches refunds. Your eye closes the card, and the best thing to look at is a real signed cast once the one-sheet change rides in behind it.",
+  "edition": 647,
+  "updatedAt": "2026-10-07T14:46:04.000Z",
+  "shift": "Your checker ruling is finished, merged, and live on production right now - and the two things the hand review held it on are both fixed.\n\nThe first one mattered. \"Is this picture broken?\" was a question only the AI could answer, so when the AI could not be reached at all, the broken picture was handed to you and charged for. The code opens the picture itself now, before anything is asked. A file that will not open, or a frame that is blank or nearly blank, is refused and the money comes straight back without the AI ever being called.\n\nI set the line for \"blank\" by measuring every picture this product has ever delivered rather than picking a number - 93 of them. The flattest real picture scores 24.6; the most picture-like blank I could build scores 5.8; the line sits at 12, roughly twice as far from each. And the check that catches broken files refused none of those 93, which is the number that actually matters, because a check that is wrong in the refusing direction costs somebody a picture they paid for.\n\nOne thing surprised me and is worth knowing. A half-downloaded picture is not faint or grey - it paints down to where it stopped and is solid black below, and that black against the picture above scores higher than any real photograph. So a \"is it blank\" test does not just miss a broken file, it reads it as the most picture-like thing on the table. That is why there are two checks and not one.\n\nThe second fix is one you would have seen. Every refused view used to say \"This view did not hold the signed likeness\" - so a blank picture and a picture with two people in it both told you it was not her, which is untrue of both. There are three sentences now, one for each thing that can go wrong, and when a picture is both broken and unrecognisable it says it came back damaged, because that is what actually happened. I looked at all three in the real room in both light and dark and at four window widths - nothing is cut off.\n\nAnd one finding nobody asked for, which is the part I would want you to know. Every test that checks the picture-checker was feeding it something that is not a picture at all - thirteen bytes of text in four files, and a single pixel in a fifth. They have all been passing since the day they were written, because nothing ever opened the bytes to look. The moment the code started actually opening them, 30 of those tests went red at once. They share one real picture now.\n\nStill not built, in the order you ruled: the paid redo at 350 credits first, then the Unchecked label and its free retry. Nothing you can press today has been taken away.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -126,7 +126,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-04T02:16:53.880Z",
+      "readAt": "2026-10-07T14:45:29.500Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -9649,7 +9649,7 @@
     {
       "id": "catastrophic-checker-1903",
       "title": "Your ruling: the checker only looks for a disaster now, and the crop measurement is gone (#1903)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1915,
       "note": "Held for a hand review — it touches refunds. A court on your own frames caught back views being refused and that is fixed; the paid redo is the next half."
     }
@@ -10034,8 +10034,18 @@
     263
   ],
   "nextUp": {
-    "readAt": "2026-10-04T02:16:53.880Z",
+    "readAt": "2026-10-07T14:45:29.499Z",
     "items": [
+      {
+        "issueNumber": 1903,
+        "title": "Ditch the framing measurement and the checker's opinions — refuse only catastrophic failures; a paid redo of the whole package, on by default",
+        "urgent": true
+      },
+      {
+        "issueNumber": 1904,
+        "title": "Sign renders one GPT Image 2.5 Sunburst sheet (high, 3840×1648, no outfit plate) cut into the five views — his word closing #1690",
+        "urgent": true
+      },
       {
         "issueNumber": 1469,
         "title": "N2c: Campaigns, the cast library's named collections (All · Unfiled · campaigns · +), Approach A, after N2b — his word 2026-09-29 (noun changed from shoots the same day)",
@@ -10058,25 +10068,12 @@
       {
         "issueNumber": 1612,
         "title": "The view checker measures framing and only refuses on identity: geometry from the segmenter for every framing band, and an unsure framing or wardrobe verdict delivers the picture unchecked instead of dropping it — his ruling 2026-09-30",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "YOU — your eye on the first signed cast under the new rule, on your Desk. CLOSE it, or ask for another? Recommend: CLOSE."
-        }
+        "urgent": false
       },
       {
         "issueNumber": 1689,
         "title": "N3: investigate cutting Refine's cost so its price can come down — count the ~7 Claude checks a Refine makes, court the fewest it can safely keep, report cost per Refine before any price change (his finance guy's note, 2026-10-01)",
         "urgent": false
-      },
-      {
-        "issueNumber": 1690,
-        "title": "Research for later: cutting Sign's cost (~$1 today, five NBP 2K views ~$0.75 of it) — one 4K sheet cropped, GPT Image 2.5 views, a cheaper check model, fewer default views; quality and cost per Sign, no build now (his finance guy's note, 2026-10-01)",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "YOU - BUILD IT (feet fixed first) / NOT GOOD ENOUGH / MORE CASTS FIRST. Frames on your desk. Recommend: build it."
-        }
       },
       {
         "issueNumber": 1774,
@@ -10090,11 +10087,7 @@
       {
         "issueNumber": 1832,
         "title": "P2-1 — Three individual plans with the credit slider on Studio ($9 per 5,000 credits): the plan cards and pricing surface rebuilt to the brief",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "YOU or the relay — one Stripe test-mode price, $9 a month per 5,000 credits. Measured absent 2026-10-03. Create it and a seat finishes the slider."
-        }
+        "urgent": false
       },
       {
         "issueNumber": 1835,
@@ -10106,13 +10099,14 @@
         }
       },
       {
-        "issueNumber": 1837,
-        "title": "The close-up line is too tight: both Sifr2 pictures read as close-ups to his eye at 0.51 and 0.42 while the band's line sits at 0.30 — move it by measurement, above 0.51",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "YOUR EYE on the strip. Is Hingu at 0.83 a close-up? YES moves the line above it; NO leaves it at 0.7. Recommend: look, then one word."
-        }
+        "issueNumber": 1900,
+        "title": "Rename the Studio plan to Pro Plus everywhere a customer sees it — same price, credits and features, only the name",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1908,
+        "title": "Cast it's cost receipt says CREDITS, not CR, with a one-line legend — per-face figure derived from the price",
+        "urgent": false
       }
     ]
   }
