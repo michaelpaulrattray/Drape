@@ -59,7 +59,18 @@ vi.mock("../storage", () => ({
 }));
 
 const receipts = {
-  success: vi.fn(async (_input: unknown) => undefined),
+  success: vi.fn(async (input: unknown) => {
+    /*
+      A RECEIPT THAT WILL NOT WRITE — the relay's own second route into a
+      rejected slice (#1903 finding 2): *"or if a genuinely swept view's
+      `completeDirectOperationSuccess` throws"*. It is awaited OUTSIDE
+      `redoOneView`'s try/catch, so it propagates straight out of the slice.
+    */
+    const { operationId } = input as { operationId: string };
+    if (receiptRefusals.has(operationId)) {
+      throw new Error("the success receipt could not be written");
+    }
+  }),
   /** `failClaimedDirectOperation` always throws — that is its contract. */
   failClaimed: vi.fn(async (input: { error: unknown }) => { throw input.error; }),
 };
@@ -144,6 +155,18 @@ let castStatus: "building" | "ready" = "ready";
 let lockedAngles: ReadonlySet<string> = new Set();
 /** A replayed press: angle -> the receipt the first press settled. */
 let replays: Record<string, unknown> = {};
+/**
+ * WHAT THE COMMIT DOES, PER ANGLE — #1903's review finding 1.
+ *
+ * `null` is the FENCED read (`renderViewAttempts` maps it to
+ * `status: "fenced"`), and `throw` is the road the repair moved the other
+ * three onto. The default stays "land it", so no existing arm moves.
+ */
+let commitBehaviour: Record<string, "null" | "throw"> = {};
+/** Every operation handed to the sweep, in order. */
+const handedOff: string[] = [];
+/** Operation ids whose success receipt refuses to write. */
+let receiptRefusals: ReadonlySet<string> = new Set();
 
 function slots(): CastSlotProjection[] {
   return CAST_PACKAGE_VIEWS.map((angle) => ({
@@ -219,6 +242,10 @@ function dependencies(
       deducts.push({ amount, reference });
       return { success: true };
     }) as PackageRedoServiceDependencies["deduct"],
+    handoffToRecovery: (async (request: { operationId: string }) => {
+      journal.push("handoff");
+      handedOff.push(request.operationId);
+    }) as PackageRedoServiceDependencies["handoffToRecovery"],
     refund: (async (_userId: number, amount: number, _d: string, reference: string) => {
       journal.push("refund");
       refunds.push({ amount, reference });
@@ -231,6 +258,9 @@ function dependencies(
       provenance: Record<string, unknown>;
     }) => {
       journal.push("commit");
+      const behaviour = commitBehaviour[request.angle];
+      if (behaviour === "null") return null;
+      if (behaviour === "throw") throw new Error("the commit transaction was lost");
       committed.push({
         angle: request.angle,
         operationId: request.operationId,
@@ -305,6 +335,9 @@ beforeEach(() => {
   castStatus = "ready";
   lockedAngles = new Set();
   replays = {};
+  commitBehaviour = {};
+  handedOff.length = 0;
+  receiptRefusals = new Set();
   receipts.success.mockClear();
   receipts.failClaimed.mockClear();
   carried.inkAsked.mockClear();
@@ -603,5 +636,159 @@ describe("the same press arriving twice", () => {
     expect(deducts).toEqual([]);
     expect(committed).toEqual([]);
     expect(plateCalls).toBe(0);
+  });
+});
+
+/**
+ * ⚠ THE TWO FINDINGS THE RELAY HELD THIS PULL REQUEST ON (#1903, head
+ * `65141978a`), each driven at the one observable that separates the repair
+ * from the bug.
+ *
+ * **Why these could not be seen by the arms above.** Every arm written before
+ * them drives a commit that LANDS, and the money defect lives entirely in what
+ * happens when it does not — so no number in this file moved, however many
+ * arms there were. That is the same shape as the `periodLine` fixture finding
+ * one card over (#1832): a fixture that only ever exercises the happy road
+ * cannot fail for a defect on the unhappy one.
+ */
+describe("a view whose commit did not land (review finding 1)", () => {
+  it("hands the slice to the sweep and seals NO receipt, so the money is still owed", async () => {
+    /*
+      THE DEFECT, STATED AS MONEY: this exit used to call
+      `completeDirectOperationSuccess` with the slice charged and nothing
+      refunded. On a row that was still `running` that receipt is TERMINAL, so
+      the recovery sweep never looked at the operation again and the customer
+      kept paying 70 display credits for a view that does not exist.
+
+      The fenced read is injected rather than contrived: `commitRetriedViewAsset`
+      returning `null` is exactly what `renderViewAttempts` maps to
+      `status: "fenced"`.
+    */
+    commitBehaviour = { closeUp: "null" };
+
+    const result = await redoCastPackage(dependencies(), input);
+
+    /* THE ONE ASSERTION THE BUG FAILS: no success receipt for that slice. */
+    const sealed = receipts.success.mock.calls.map(
+      ([call]) => (call as { operationId: string }).operationId,
+    );
+    expect(sealed).not.toContain(derivedClientRequestId(PRESS, "closeUp"));
+    /* And the lease went to the sweep instead, named. */
+    expect(handedOff).toEqual([derivedClientRequestId(PRESS, "closeUp")]);
+
+    /* The slice is reported as not arrived, charged, and NOT refunded here —
+       the sweep is what refunds it, so claiming the money is already back
+       would be the other lie available at this exit. */
+    expect(result.failed).toEqual(["closeUp"]);
+    expect(result.committed).not.toContain("closeUp");
+    expect(result.refundRecorded).toBe(false);
+    expect(refunds).toEqual([]);
+
+    /* THE OTHER FOUR ARE UNTOUCHED — a fence on one slot is not a package
+       failure, which is the whole point of per-slice settlement. */
+    expect(result.committed.sort()).toEqual(
+      CAST_PACKAGE_VIEWS.filter((angle) => angle !== "closeUp").sort(),
+    );
+    expect(result.chargedCredits).toBe(PACKAGE_PRICE);
+  });
+
+  it("never reports a fenced slice as delivered", async () => {
+    /* The negative control for the arm above: the bug's receipt said
+       `succeeded`, so a reader could conclude the view was handed over. */
+    /* `sideClose`, and the first draft of this arm said `sideFull` — which is
+       NOT one of the five (`CAST_PACKAGE_VIEWS` is closeUp · threeQuarter ·
+       frontFull · sideClose · backFull), so it drove nothing and asserted
+       against an empty list. The arm caught it; the angle is read off the
+       exported list now rather than typed. */
+    const angle = CAST_PACKAGE_VIEWS[3]!;
+    expect(angle).toBe("sideClose");
+    commitBehaviour = { [angle]: "null" };
+    const result = await redoCastPackage(dependencies(), input);
+    expect(result.committed).not.toContain(angle);
+    expect(result.failed).toContain(angle);
+  });
+});
+
+describe("one view's trouble and the other four (review finding 2)", () => {
+  /*
+    THE DEFECT, STATED AS A SENTENCE: `redoOneView` re-throws when a view goes
+    wrong past its own settlement — on purpose, so the lease reaches the sweep
+    rather than this process sealing a receipt it cannot stand behind. Under
+    `Promise.all` that single rejection rejected the WHOLE press, and the
+    customer was told *"Those views couldn't be asked for again"* while the
+    other four were sitting on the Cast, rendered and charged. The money was
+    right and the sentence was false.
+
+    ⚠ **THE ROUTE IS A REFUSED RECEIPT, AND IT IS NOT THE ROUTE I REACHED FOR
+    FIRST.** The obvious lever looked like a commit that throws — and driving
+    it proved it is no longer a rejection at all: with `commitRetriedViewAsset`
+    reserving `null` for a real fence, a thrown commit lands in the attempt
+    loop's catch, is re-attempted, and then settles through the `failed` exit,
+    which REFUNDS the slice in this process (measured: 350 back, not 0). That
+    is the commit-side half of finding 1 working, and it is strictly better than
+    the sweep. So the arm uses the relay's OTHER named route — a success receipt
+    that will not write — which still propagates straight out of the slice
+    because it is awaited outside the try/catch. The first draft asserted the
+    sweep road and failed; the measurement is recorded here rather than the
+    arm being quietly re-pointed.
+  */
+  it("reports what actually landed instead of failing the whole press", async () => {
+    const angle = "threeQuarter" as const;
+    expect(CAST_PACKAGE_VIEWS).toContain(angle);
+    receiptRefusals = new Set([derivedClientRequestId(PRESS, angle)]);
+
+    /* THE ASSERTION THE BUG FAILS: it rejected, so there was no result. */
+    const result = await redoCastPackage(dependencies(), input);
+
+    expect(result.failed).toEqual([angle]);
+    expect(result.committed.sort()).toEqual(
+      CAST_PACKAGE_VIEWS.filter((candidate) => candidate !== angle).sort(),
+    );
+    /* ⚠ The picture DID land and was committed — only its receipt could not be
+       written. The slice is reported failed because this process cannot say
+       otherwise, and the sweep will find the asset and close it a success
+       without refunding. Reporting it as delivered on a receipt that threw is
+       the opposite mistake and is not available here. */
+    expect(committed.map((entry) => entry.angle).sort())
+      .toEqual([...CAST_PACKAGE_VIEWS].sort());
+    expect(result.chargedCredits).toBe(PACKAGE_PRICE);
+    expect(result.refundedCredits).toBe(0);
+    expect(result.refundRecorded).toBe(false);
+  });
+
+  it("still reports four when the trouble is on a view that wears the plate", async () => {
+    /* The full-length pair WAITS on the plate, so a rejection there arrives by
+       a different schedule into the same `allSettled` — asserted because the
+       two halves of that schedule are not one code path. */
+    const angle = "frontFull" as const;
+    expect(PLATE_ANGLES).toContain(angle);
+    receiptRefusals = new Set([derivedClientRequestId(PRESS, angle)]);
+
+    const result = await redoCastPackage(dependencies(), input);
+    expect(result.failed).toEqual([angle]);
+    expect(result.committed).toHaveLength(CAST_PACKAGE_VIEWS.length - 1);
+    expect(result.refundRecorded).toBe(false);
+  });
+
+  it("a commit that throws is refunded HERE and never reaches the sweep", async () => {
+    /*
+      The measurement from the paragraph above, pinned as its own arm — because
+      it is the commit-side repair's whole customer-facing promise and nothing
+      else in this file asserts it. A lost commit transaction is the reachable
+      road (five concurrent `.for("update")` locks on one `models` row), and
+      what the customer gets is their slice back in the same request.
+    */
+    const angle = "closeUp" as const;
+    commitBehaviour = { [angle]: "throw" };
+
+    const result = await redoCastPackage(dependencies(), input);
+
+    expect(result.failed).toEqual([angle]);
+    expect(result.refundedCredits).toBe(SLICE);
+    expect(result.refundRecorded).toBe(true);
+    expect(refunds).toHaveLength(1);
+    expect(refunds[0]!.amount).toBe(SLICE);
+    /* It settled in this process, so nothing was handed to the sweep. */
+    expect(handedOff).toEqual([]);
   });
 });

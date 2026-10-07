@@ -261,4 +261,61 @@ describe("the retried-view commit's fence", () => {
        the redo must never be mistaken for a spent free Try again. */
     expect(source).toContain('eq(generationOperations.kind, "castingV2.viewRetry")');
   });
+
+  /**
+   * ⚠ `null` MEANS THE FENCE AND NOTHING ELSE — #1903's review finding 1, at
+   * the root rather than at either caller.
+   *
+   * `renderViewAttempts` maps a `null` from this commit to
+   * `status: "fenced"`, and BOTH services read that as *another process owns
+   * this operation's money, so do not refund it*. That is right about a real
+   * fence and catastrophic about anything else — and this function used to
+   * answer `null` four different ways: the fence, a model that is gone, an
+   * insert with no id, and **any error thrown inside the transaction**, the
+   * last three of them while the operation was still `running` and therefore
+   * owned by nobody. The redo sealed those as `succeeded` with nothing
+   * refunded; the Try again sealed them as `failed` with nothing refunded.
+   * Either way the row went terminal, the sweep never looked again, and the
+   * customer had paid for a picture that does not exist.
+   *
+   * ⚠ **It is a TEXT READ and that is the honest floor, for the same reason
+   * the arm above is one**: the statement lives inside `withTransaction`
+   * against a real connection and this repository's CI has no database. What
+   * it pins is the shape of the mistake that was actually made — a blanket
+   * `catch` and a second bare `return null` — never the behaviour. The
+   * behaviour is driven one layer up, in `packageRedoService.test.ts`, where
+   * the commit seam is injected.
+   */
+  it("reserves null for the fence alone, and throws on every other road", () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), "server/db/castingV2ViewRetry.ts"),
+      "utf8",
+    );
+    const anchor = "export async function commitRetriedViewAsset";
+    /* The anchor must be unique, or the slice below is of whichever came
+       first — the sibling-satisfaction trap this repository has paid for. */
+    expect(source.split(anchor)).toHaveLength(2);
+    /* SLICED TO THE FUNCTION'S OWN BRACES, not to the next `export` — the arm
+       above slices to the next export and so carries the NEXT function's
+       docblock. Harmless for its `toContain`s; fatal for the COUNTS below,
+       where prose two functions away could satisfy or break them. */
+    const lines = source.split(/\r?\n/);
+    const start = lines.findIndex((line) => line.startsWith(anchor));
+    expect(start).toBeGreaterThan(-1);
+    const end = lines.findIndex((line, index) => index > start && line === "}");
+    expect(end).toBeGreaterThan(start);
+    const body = lines.slice(start, end + 1).join("\n");
+
+    /* EXACTLY ONE `return null`, and it is the fence's. */
+    expect(body.match(/return null/g) ?? []).toHaveLength(1);
+    expect(body).toContain("if (!operation) return null;");
+
+    /* NO blanket catch. This is the road that lost the money: a thrown
+       transaction — a lock wait or a deadlock on the `models` row, and a redo
+       makes FIVE of those at once — was swallowed into the fence's answer. */
+    expect(body).not.toMatch(/\} catch/);
+
+    /* The other two roads throw, by the name that says they are not fences. */
+    expect(body.match(/throw new RetriedViewCommitError/g) ?? []).toHaveLength(2);
+  });
 });

@@ -96,7 +96,10 @@ import {
 import { commitRetriedViewAsset, readCastViewRenderSource } from "../db/castingV2ViewRetry";
 import { getUserCredits } from "../db/credits";
 import { deductCredits } from "../db/credits";
-import { markGenerationOperationRunning } from "../db/generationOperations";
+import {
+  handoffGenerationOperationToRecovery,
+  markGenerationOperationRunning,
+} from "../db/generationOperations";
 import { createModuleLogger } from "../logging/logger";
 import { storageReadBytes } from "../storage";
 import { castPronouns } from "./castPronouns";
@@ -126,6 +129,17 @@ export type PackageRedoServiceDependencies = PackageOrchestratorDependencies & {
   markRunning?: typeof markGenerationOperationRunning;
   deduct?: typeof deductCredits;
   commitRetried?: typeof commitRetriedViewAsset;
+  /**
+   * HAND THE LEASE TO THE SWEEP — injected so an arm can PROVE it happened.
+   *
+   * #1903's review finding 1 was an exit that sealed a receipt instead of
+   * making this call, and the defect is invisible from the outside: the
+   * returned result is identical either way. Only the operation ROW differs,
+   * and a unit suite has no database. So the seam is the control: an arm drives
+   * the fenced read and asserts this was called with the right operation, which
+   * is the one observable that distinguishes the repair from the bug.
+   */
+  handoffToRecovery?: typeof handoffGenerationOperationToRecovery;
   readSource?: typeof readCastViewRenderSource;
   readAnchorBytes?: typeof storageReadBytes;
   /**
@@ -400,7 +414,26 @@ export async function redoCastPackage(
 
   /* ---- the renders, concurrently, each settling its own slice ---- */
 
-  const outcomes = await Promise.all(claimed.map(({ angle, operationId }) =>
+  /*
+    ⚠ **`allSettled`, NEVER `all` — #1903's REVIEW FINDING 2.**
+
+    `redoOneView` re-throws when a view goes wrong past its render loop, on
+    purpose: the lease goes to the sweep rather than this process sealing a
+    receipt it cannot stand behind. Under `Promise.all` that one rejection
+    became the whole press's rejection, so a customer whose other FOUR views
+    rendered, landed and were charged was told *"Those views couldn't be asked
+    for again"*. **The money was right and the sentence was false** — which is
+    the worse half, because the four pictures are sitting on the Cast while the
+    room says nothing arrived.
+
+    So every slice reports, and a rejected one reports what is actually true of
+    it: nothing landed, its slice was charged, and **this process refunded
+    nothing because the sweep owns it**. That is the same shape the fenced exit
+    returns, for the same reason, and `mergeRedoResults` ANDs `refundRecorded`
+    so one unsettled slice makes the whole receipt say so rather than being
+    averaged away by four that worked.
+  */
+  const settled = await Promise.allSettled(claimed.map(({ angle, operationId }) =>
     redoOneView(dependencies, {
       input,
       read,
@@ -411,6 +444,27 @@ export async function redoCastPackage(
       plate,
       packagePrice: offer.priceCredits,
     })));
+
+  const outcomes = settled.map((slice, index) => {
+    if (slice.status === "fulfilled") return slice.value;
+    /* `claimed` is what was mapped over, in order, so the index IS the angle.
+       Reading the angle off the rejection is impossible — a throw carries no
+       slot — and pairing by index is why this is a `map` over `settled`
+       rather than a filter. */
+    const { angle } = claimed[index]!;
+    log.error(
+      { operationId: claimed[index]!.operationId, castId: input.castId, angle, err: slice.reason },
+      "[packageRedoService] a redone view threw past its own settlement — the sweep owns that slice",
+    );
+    return {
+      castId: input.castId,
+      committed: [],
+      failed: [angle],
+      chargedCredits: CASTING_V2_PACKAGE_REDO_VIEW_PRICE_CREDITS,
+      refundedCredits: 0,
+      refundRecorded: false,
+    } satisfies PackageRedoResult;
+  });
 
   return mergeRedoResults(input.castId, [...replayed, ...outcomes]);
 }
@@ -673,34 +727,61 @@ async function redoOneView(
 
   if (rendered.status === "fenced") {
     /*
-      FENCED: this operation is no longer running, so a sweep owns its money and
-      its bytes were already dropped by the loop. Nothing is refunded here —
-      refunding under a reference the sweep is about to use is how one failure
-      becomes two refunds. The receipt says charged-and-not-refunded because
-      that is the true state of the ledger at this instant.
+      FENCED — AND THIS EXIT SEALS NO RECEIPT, WHICH IS #1903's REVIEW FINDING 1.
+
+      The reading is that this operation is no longer ours: its bytes were
+      dropped by the loop, and nothing is refunded HERE because a refund under
+      a reference the sweep is about to use is how one failure becomes two.
+      Both halves of that are still true. ⚠ **What was wrong was finishing the
+      sentence with `completeDirectOperationSuccess`** — stamping
+      `succeeded`, charged, nothing refunded, on an operation this process had
+      just declared it does not own. On a row that was still `running` that
+      receipt is terminal, so the sweep never looked again and the customer
+      kept paying 70 display for a view that does not exist.
+
+      `commitRetriedViewAsset` now reserves `null` for a real fence (its own
+      header carries the four roads it used to conflate), so this branch is
+      reached only when the row genuinely moved. Either way the answer is the
+      same and it is the one the other four casting services already give:
+      **hand the lease to the sweep and let it read the ledger and the asset
+      rows.** Refine, retry, roll and sign all end an uncertain settlement
+      exactly here; this road and the Try again were the two that did not.
     */
     log.warn(
       { operationId, castId: input.castId, angle },
-      "[packageRedoService] the redone view lost its fence — recovery owns it",
+      "[packageRedoService] the redone view lost its fence — handing the lease to the sweep",
     );
-    const result: PackageRedoResult = {
+    /*
+      It REFUSES unless the row is still `running` — which is the useful half.
+      A row another process already settled throws here and that is correct: it
+      is owned, and its money is already right. A row still `running` has its
+      lease expired to NOW, so the sweep takes it on its next pass rather than
+      after a five-minute lease.
+    */
+    await (dependencies.handoffToRecovery ?? handoffGenerationOperationToRecovery)({
+      userId: input.userId,
+      operationId,
+    })
+      .catch((handoffError: unknown) => {
+        /* The heartbeat is stopped before the write is attempted, so even here
+           the lease lapses on its own and the sweep takes the slice within one
+           lease — the roll road's own sentence about the same call. */
+        log.warn(
+          { operationId, castId: input.castId, angle, err: handoffError },
+          "[packageRedoService] the recovery handoff did not write — the lease lapses on its own",
+        );
+      });
+    return {
       castId: input.castId,
       committed: [],
       failed: [angle],
       chargedCredits: price,
       refundedCredits: 0,
       /* Not a refund that failed to write — a refund this exit deliberately
-         does not attempt. Said as `true` would claim the money is back. */
+         does not attempt, because the sweep is the one that will. Said as
+         `true` would claim the money is already back. */
       refundRecorded: false,
     };
-    await completeDirectOperationSuccess({
-      userId: input.userId,
-      operationId,
-      result,
-      chargedCredits: price,
-      refundedCredits: 0,
-    });
-    return result;
   }
 
   /*

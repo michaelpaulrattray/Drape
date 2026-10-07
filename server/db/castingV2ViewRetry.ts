@@ -256,11 +256,62 @@ export async function readCastViewRenderSource(
 }
 
 /**
+ * THIS COMMIT FAILED, AND IT IS NOT A FENCE.
+ *
+ * The distinction this class exists to carry is the whole of #1903's review
+ * finding 1: a `null` from the commit below means *another process owns this
+ * operation's money*, and anything else going wrong means *nobody does*. The
+ * two have opposite correct answers — leave it alone, versus refund it — and
+ * for as long as they shared one return value the second was answered with the
+ * first's behaviour and a customer paid for a picture that never existed.
+ *
+ * It extends `Error` and nothing more. `renderViewAttempts` classifies a
+ * non-`ProviderError` throw as `unknown`, and `mayStillArrive("unknown")` is
+ * deliberately TRUE (`providers/types.ts`) — so the loop re-attempts and then
+ * fails the slice, which is exactly the handling a lost commit wants. Making
+ * this a `ProviderError` to be tidy would hand it a failure class it has not
+ * got and could change that decision.
+ */
+export class RetriedViewCommitError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "RetriedViewCommitError";
+  }
+}
+
+/**
  * Land a retried view on a LIVE Cast.
  *
- * Returns the new asset's id, or `null` when the fence refused — this Try
- * again is no longer `running`, so a sweep owns its money and these bytes will
- * never be referenced. The caller drops them; it never writes a receipt.
+ * Returns the new asset's id, or `null` when THE FENCE REFUSED — and that is
+ * now the only thing `null` can mean.
+ *
+ * ⚠ **IT MEANT FOUR THINGS UNTIL #1903's REVIEW, AND THREE OF THEM LOST A
+ * CUSTOMER'S MONEY.** `renderViewAttempts` reads `null` as *fenced* — "this
+ * operation is no longer `running`, so a sweep owns its money" — and both
+ * callers then seal a receipt WITHOUT A REFUND on that reading, because a
+ * refund under a reference the sweep is about to use is how one failure
+ * becomes two. That reasoning is right about a real fence and catastrophic
+ * about anything else: this function also answered `null` for a model that is
+ * gone, for an insert that returned no id, and — the reachable one — **for any
+ * error thrown inside the transaction**, in every case while the operation was
+ * still `running` and therefore owned by nobody. The service closed it
+ * `succeeded`, charged, nothing refunded, and because the row was then
+ * terminal the sweep never looked at it again.
+ *
+ * **So the fence keeps `null` and everything else THROWS.** A throw lands in
+ * the attempt loop's catch, which drops the stored bytes and counts an arrival
+ * failure exactly as a failed render does — and the loop's `failed` exit is the
+ * one that refunds. The money follows the picture again.
+ *
+ * ⚠ **The reachable road is the transaction error, and THIS road makes it
+ * likelier than any other.** A redo is FIVE of these transactions at once
+ * (#1903), each taking `.for("update")` on the same `models` row, so a lock
+ * wait or a deadlock here is a designed-in concurrency shape rather than a
+ * freak. `!model` is inert today by construction and stays checked anyway:
+ * `finalCastDeletion.ts` refuses to delete a Cast carrying a `claimed`,
+ * `running` or `recovery_required` operation, transactionally and under a row
+ * lock, so a customer pressing *Delete this cast* mid-redo meets *"This Cast
+ * still has work in progress"* and never reaches here.
  *
  * ⚠ **IT INSERTS, IT NEVER UPDATES.** `slotEvidence` takes the NEWEST filled
  * asset per angle, so a new row supersedes whatever was in the slot — a
@@ -281,78 +332,91 @@ export async function commitRetriedViewAsset(input: {
 }): Promise<number | null> {
   assertPositiveId(input.userId, "userId");
   assertPositiveId(input.modelId, "modelId");
-  try {
-    return await withTransaction(async (tx) => {
-      const [operation] = await tx
-        .select({ id: generationOperations.id })
-        .from(generationOperations)
-        .where(and(
-          eq(generationOperations.id, input.operationId),
-          eq(generationOperations.userId, input.userId),
+  /* NO try/catch. A thrown transaction error is this commit's loudest signal
+     and swallowing it into `null` is what made a lost picture read as a
+     settled one — see the header. The attempt loop above us owns it. */
+  return await withTransaction(async (tx) => {
+    const [operation] = await tx
+      .select({ id: generationOperations.id })
+      .from(generationOperations)
+      .where(and(
+        eq(generationOperations.id, input.operationId),
+        eq(generationOperations.userId, input.userId),
+        /*
+          THE FENCE ADMITS EITHER ROAD THAT MAY REPLACE A VIEW, FROM THE ONE
+          DECLARED SET (#1903).
+
+          ⚠ **It carried the retry kind as a literal, and a second kind
+          arriving beside a hard-coded one fails in the worst direction
+          available here.** A redo's commit would return `null`, which
+          `renderViewAttempts` reads as FENCED — "this process is no longer
+          the authority" — so the service would hand the slice to the sweep,
+          the sweep would find no asset under the operation and refund it,
+          and the picture that actually rendered would be thrown away. The
+          customer would watch five renders happen and get nothing, refunded.
+          The set is read rather than respelled for exactly that reason.
+        */
+        inArray(generationOperations.kind, [...VIEW_REPLACING_OPERATION_KINDS]),
+        eq(generationOperations.status, "running"),
+      ))
+      .limit(1)
+      .for("update");
+    if (!operation) return null;
+
+    const [model] = await tx
+      .select({ id: models.id })
+      .from(models)
+      .where(and(
+        eq(models.id, input.modelId),
+        eq(models.userId, input.userId),
+        eq(models.status, "active"),
+        isNull(models.deletedAt),
+      ))
+      .limit(1)
+      .for("update");
+    if (!model) {
+      /* NOT a fence — the operation is still `running`, so nothing else is
+         coming to settle it. Throwing hands it to the attempt loop, whose
+         failed exit refunds the slice and leaves the picture the customer
+         already had. Inert today: deletion refuses over an unsettled
+         operation (header). */
+      throw new RetriedViewCommitError(
+        "the Cast is no longer live, so a retried view cannot land on it",
+      );
+    }
+
+    const [inserted] = await tx
+      .insert(modelAssets)
+      .values({
+        modelId: input.modelId,
+        viewType: input.angle,
+        // §H.10: signed package views are 2K, whoever asked for them.
+        resolution: "2K",
+        storageUrl: input.storageUrl,
+        storageKey: input.storageKey,
+        pointsCost: input.pointsCost,
+        pinned: false,
+        provenance: {
+          ...input.provenance,
           /*
-            THE FENCE ADMITS EITHER ROAD THAT MAY REPLACE A VIEW, FROM THE ONE
-            DECLARED SET (#1903).
-
-            ⚠ **It carried the retry kind as a literal, and a second kind
-            arriving beside a hard-coded one fails in the worst direction
-            available here.** A redo's commit would return `null`, which
-            `renderViewAttempts` reads as FENCED — "this process is no longer
-            the authority" — so the service would hand the slice to the sweep,
-            the sweep would find no asset under the operation and refund it,
-            and the picture that actually rendered would be thrown away. The
-            customer would watch five renders happen and get nothing, refunded.
-            The set is read rather than respelled for exactly that reason.
+            `display`, never `anchor` — the signed original stays the identity
+            authority, exactly as it does for a Sign's own views.
           */
-          inArray(generationOperations.kind, [...VIEW_REPLACING_OPERATION_KINDS]),
-          eq(generationOperations.status, "running"),
-        ))
-        .limit(1)
-        .for("update");
-      if (!operation) return null;
-
-      const [model] = await tx
-        .select({ id: models.id })
-        .from(models)
-        .where(and(
-          eq(models.id, input.modelId),
-          eq(models.userId, input.userId),
-          eq(models.status, "active"),
-          isNull(models.deletedAt),
-        ))
-        .limit(1)
-        .for("update");
-      if (!model) return null;
-
-      const [inserted] = await tx
-        .insert(modelAssets)
-        .values({
-          modelId: input.modelId,
-          viewType: input.angle,
-          // §H.10: signed package views are 2K, whoever asked for them.
-          resolution: "2K",
-          storageUrl: input.storageUrl,
-          storageKey: input.storageKey,
-          pointsCost: input.pointsCost,
-          pinned: false,
-          provenance: {
-            ...input.provenance,
-            /*
-              `display`, never `anchor` — the signed original stays the identity
-              authority, exactly as it does for a Sign's own views.
-            */
-            ...identityStampFor({
-              role: "display",
-              revisionId: input.identityRevisionId,
-              identityText: input.identityText,
-            }),
-          },
-        })
-        .$returningId();
-      return inserted?.id ?? null;
-    });
-  } catch {
-    return null;
-  }
+          ...identityStampFor({
+            role: "display",
+            revisionId: input.identityRevisionId,
+            identityText: input.identityText,
+          }),
+        },
+      })
+      .$returningId();
+    /* Same reasoning as the model road: an insert that produced no id is this
+       process failing, not another process winning. */
+    if (!inserted?.id) {
+      throw new RetriedViewCommitError("the retried view's asset insert returned no id");
+    }
+    return inserted.id;
+  });
 }
 
 /**
