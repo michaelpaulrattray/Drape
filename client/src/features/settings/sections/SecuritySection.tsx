@@ -62,7 +62,7 @@ export function SecuritySection({
       ? "Google"
       : user?.authProvider === "email"
         ? "Email and password"
-        : "Drape account";
+        : "Klieg account";
 
   const runExport = async () => {
     setExporting(true);
@@ -148,7 +148,7 @@ export function SecuritySection({
         <SettingsCard
           tone="accent"
           label="Delete account"
-          note="Permanent. Your casts, boards and wardrobe go with it."
+          note="Permanent. Your casts, boards and everything you made go with it."
         >
           <Button
             variant="secondary"
@@ -207,8 +207,8 @@ function DeleteAccountDialog({
         <p className="dp-topup__eyebrow">DELETE ACCOUNT</p>
         <h2 className="dp-topup__title">This cannot be undone</h2>
         <p className="dp-topup__reason">
-          Your casts, boards and wardrobe are deleted with the account. Type DELETE to
-          confirm.
+          Your casts, boards and everything you made are deleted with the account. Type
+          DELETE to confirm.
         </p>
         <div style={{ marginTop: "var(--s-7)" }}>
           <Field compact>

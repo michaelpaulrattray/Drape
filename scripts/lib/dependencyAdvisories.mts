@@ -397,6 +397,69 @@ const describeAdvisory = (advisory: Advisory): string => {
 };
 
 /** The refusal a reader has to act on, so it says what to DO and not only what is wrong. */
+/**
+ * WHICH TREE THE READING WAS TAKEN FROM — one line, printed beside every
+ * verdict (#1899).
+ *
+ * ⚠ **IT EXISTS BECAUSE THIS STEP'S TWO HONEST ANSWERS LOOKED LIKE A DEFECT
+ * FOR HALF A DAY, AND THE CARD IT COST WAS FILED IN GOOD FAITH.** On
+ * 2026-10-07 the step read *"none blocking — 477 production dependencies read"*
+ * on CI while the same script refused a CRITICAL `proxy-addr` advisory locally,
+ * apparently on the same commit. The card (#1899) recorded both readings and
+ * explicitly declined to guess a cause, which was the right call. **The relay
+ * found it by reading the run's checkout line**: `HEAD is now at cb005f4 Merge
+ * e4001b13b… into 6f5f33f9f…`, and `6f5f33f9` had pinned `proxy-addr@^2.0.8`
+ * forty seconds earlier. **The gate runs on GitHub's MERGE ref, not the branch
+ * head. Both answers were right, about two different trees.**
+ *
+ * Nothing about the judge was wrong, so nothing about the judge changed. What
+ * was missing is that the output named a dependency COUNT and never named the
+ * tree the count was of — so the one fact that separates the two readings was
+ * the one fact a reader had to go digging in a run log for.
+ *
+ * **The merge parents are what make it readable**: on a pull request the sha
+ * means nothing to anybody, and *"the merge of <your head> into <main>"* is the
+ * whole explanation.
+ *
+ * `null` is an honest answer and says so — a tarball checkout or a tree with no
+ * git has no sha to name, and inventing one would be worse than the silence
+ * this replaces.
+ */
+export type TreeRead = { readonly head: string; readonly parents: readonly string[] };
+
+/**
+ * `git rev-list --parents -n 1 HEAD`'s one line, read: the commit, then its
+ * parents. Pure, so the FORMAT ASSUMPTION — the thing most likely to be wrong —
+ * can be driven against real git output rather than against a belief about it
+ * (`server/dependencyAdvisoryGate.test.ts`).
+ *
+ * Anything that is not a hex sha is dropped rather than trusted, and an empty
+ * result is `null`: a line this cannot read must produce no claim about which
+ * tree was read, never a half one.
+ */
+export const readTreeFromRevList = (stdout: string): TreeRead | null => {
+  const shas = stdout
+    .trim()
+    .split(/\s+/)
+    .filter((sha) => /^[0-9a-f]{7,40}$/.test(sha))
+    .map((sha) => sha.slice(0, 9));
+  if (shas.length === 0) return null;
+  return { head: shas[0], parents: shas.slice(1) };
+};
+
+export const advisoryTreeLine = (tree: TreeRead | null): string => {
+  if (tree === null) {
+    return "  tree read: unknown — no git here, so this reading names no commit.";
+  }
+  if (tree.parents.length < 2) return `  tree read: ${tree.head}`;
+  const [base, head] = tree.parents;
+  return (
+    `  tree read: ${tree.head} — the MERGE of ${head} into ${base}.`
+    + "\n  ⚠ On a pull request that is what CI checks out, NOT your branch head:"
+    + " a reading here can differ from the same reading on your own commit, and both be right (#1899)."
+  );
+};
+
 export const advisoryRefusal = (verdict: Verdict): string => {
   const parts: string[] = [];
 

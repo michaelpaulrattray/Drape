@@ -1,7 +1,7 @@
 {
-  "edition": 643,
-  "updatedAt": "2026-10-07T09:40:00.000Z",
-  "shift": "Your one-word answer is live on the site, and a security hole that was quietly stopping ALL work is fixed.\n\nYou said YES on the bandaged skull. The close-up line moved out past it, and it is live: that picture, and every close-up you own, now arrives without the Unchecked label. It is the second time your eye has moved that line and the first time it clears all ten of your own close-ups. Reviewed by hand and merged this morning.\n\nOn the way to pushing it I ran the pre-flight check and it refused. Not my change: a known, published, CRITICAL security hole in somebody else's code that we ship, sitting in the tree with no decision written about it. The gate you ordered on 3 October was correctly refusing EVERY pull request in the repository because of it, and nobody had filed it. Fixed, merged and live — I read the build back off the server rather than trusting a green tick.\n\nThen the uncomfortable part, and it is on your Problems list. That same check PASSED on the robot what it refuses on my machine — same commit, same files, same script, both reading 477 packages. The hole is gone so nothing is at risk today, but an alarm that can say all-clear when it should not is worse than no alarm, because we would believe it. I do not know why yet and I have not guessed.\n\nYour other two replies are recorded and acted on: the Pro Plus rename is its own card exactly as you asked, so it cannot hold up the slider; and your ruling that the measurement, not the checker's opinion, decides framing is written on its card word for word, with the wrong label named as the fix that follows. That fix is not started.\n\nOne last thing you spotted yourself: you answered the close-up question twice, seventeen minutes apart, because it was on your desk twice. That is the overcrowding you filed this morning, and it is now on that card as a measured example rather than a description.",
+  "edition": 650,
+  "updatedAt": "2026-10-07T19:50:00.000Z",
+  "shift": "The plan you called Studio is called Pro Plus now, everywhere a customer sees it on our side. That is built and waiting on review, and there is one step left that only you can do.\n\nYou asked for this as its own card so it would not hold up the slider, and you asked two sensible questions first: how many places is the name actually typed, and which of the six surfaces are ours versus Stripe's. The answers turned out to be the whole job.\n\nThe name is typed in exactly ONE place in the entire product. Every screen reads it from there. So the change is one word, and the rest of the work was proving that sentence is true and leaving a test behind so it stays true the next time a plan gets renamed. I opened the app and looked at it in both the light and the dark theme: the plan cards and the compare table say Pro Plus, the word Studio appears nowhere, and the price, the credits, the description and the feature lines are all exactly where they were. $159 a month, $132 billed yearly, 86,000 credits.\n\nThe step that is yours is Stripe. Our code deliberately sends Stripe no product text at all — Stripe's own product carries the name, and that is what gets printed on the checkout page, on the invoice line, and in the emails Stripe sends. So three of the six surfaces you listed still say Studio until the product is renamed in your dashboard. It is one rename on one product, after the change goes live. It is on your desk with the exact step.\n\nTwo small things fell out of it. Your rename is five days younger than the Pricing Phase 2 brief, so the prototype page you are about to judge still had Studio baked into it — a test caught that, and it says Pro Plus now, which means the design you look at will match the product. And two of our own money tests looked Stripe's yearly prices up by the plan's NAME, so renaming it moved a lookup key. Both are built to go red rather than quietly skip, and both moved correctly, but keying money figures on a name you can rename is a trap, so I filed it rather than rebuilding it inside a rename.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -126,7 +126,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-04T02:16:53.880Z",
+      "readAt": "2026-10-07T19:40:58.295Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -270,6 +270,87 @@
     }
   },
   "needsYou": [
+    {
+      "id": "pro-plus-stripe-rename-1900",
+      "title": "Rename the product in Stripe to Pro Plus — three of your six surfaces are Stripe's, not ours",
+      "productImpact": "The plan called Studio is called Pro Plus now on our side: the plan cards, the compare table and the confirm step all say it, and the price, the credits and the features have not moved. I looked at it in both themes.\n\nBut the checkout page Stripe hosts, the line on an invoice, and the subscription emails Stripe sends all read the name out of YOUR Stripe dashboard. We deliberately send Stripe no product text at all, so nothing we can merge will change those three.",
+      "workedExample": "Somebody upgrades after this goes live. Our page says Pro Plus and quotes $159. They click through to pay, and the Stripe page they land on says Klieg Studio. Then the invoice says Klieg Studio, and so does the receipt email.\n\nThe fix is one rename on one product: in Stripe, open the product called Klieg Studio and change its name to Klieg Pro Plus. Nothing else on it moves — not the price, not the lookup keys, not the amounts.",
+      "options": [
+        {
+          "key": "after",
+          "label": "A — rename in Stripe once the change is live",
+          "consequence": "The two sides agree within minutes of each other. This is the smallest window of mismatch."
+        },
+        {
+          "key": "now",
+          "label": "B — rename in Stripe now, before it lands",
+          "consequence": "Stripe would say Pro Plus while the app still says Studio, for as long as the review takes."
+        },
+        {
+          "key": "relay",
+          "label": "C — have the relay do it for you",
+          "consequence": "Same result. You asked the relay to do your Stripe keystrokes once before, on the credit packs."
+        }
+      ],
+      "recommendation": "A. The app half is in review now; rename it in Stripe the moment that lands and the two sides are never far apart. Leave the lookup keys alone exactly as you said — a customer never sees one, and moving them means creating new price objects.",
+      "state": "open",
+      "filedAt": "2026-10-07T19:50:00.000Z",
+      "issueNumber": 1900
+    },
+    {
+      "id": "sign-sheet-shape-1926",
+      "title": "The one-sheet views are a taller shape and the strip cuts them — which of the three?",
+      "productImpact": "Signing a cast will soon render one wide sheet and cut your five views out of it. That is built and it works — I rendered a real one tonight for 8 cents, and the five views came out clean with one outfit across all of them.\n\nBut the views are a different shape: much taller and narrower than today's. The strip of five on a finished cast puts each one in a short wide tile, so it would show only the top of each picture. Nothing is wrong with the pictures. It is where they are shown.",
+      "workedExample": "On your own signed cast, the strip would show the top 58% of each view. The close-up would be hair and eyes with no mouth. The full front and the full back would stop at the thighs — no legs, no boots. The big viewer is unaffected and shows the whole picture.\n\nToday's views fill 83% of the same tile, which is why the strip works now and stops working after this change.",
+      "options": [
+        {
+          "key": "shorter",
+          "label": "A — ask for a shorter sheet",
+          "consequence": "The views come back nearer todays shape. Needs another render and your eye again, and only gets the tile to about 75% rather than back to 83%."
+        },
+        {
+          "key": "fit",
+          "label": "B — show the whole picture in the tile",
+          "consequence": "Nothing is cut. A little background sits either side of each view. No new render, and nothing you have already approved changes."
+        },
+        {
+          "key": "tall",
+          "label": "C — make the tiles tall and narrow",
+          "consequence": "Nothing is cut either, and the pictures fill their tiles. The strip of five looks quite different from the one you know."
+        }
+      ],
+      "recommendation": "B. A tall picture is the right shape for a standing figure, and the strip exists for you to pick one — a tile that cuts the face off cannot do that. Background either side costs less than a missing mouth, and it needs no new render.",
+      "state": "open",
+      "filedAt": "2026-10-07T18:45:00.000Z",
+      "issueNumber": 1926
+    },
+    {
+      "id": "redo-price-1925",
+      "title": "Your redo price (350) is lower than your single Try again (370) — leave it, or raise one?",
+      "productImpact": "Asking for ALL FIVE of a cast's views again costs 350 credits. Asking for ONE of them again costs 370. Both numbers are yours, and they now sit side by side in the same room for the first time.\n\nNothing went wrong. On 1 October you set the single Try again to 370, on your finance guy's note that it was needed to keep every worst case profitable for one picture plus its check. On 7 October you set the redo at 350. Neither decision knew about the other, and the redo is only now built.\n\nIn practice: somebody who dislikes one picture pays LESS to replace all five than to replace that one, so almost nobody will press the single one. And we pay for five pictures plus a wardrobe plate at a price worked out to cover one.",
+      "workedExample": "You sign a cast and the invented outfit is not what you wanted, but the close-up of her face is perfect.\n\nPressing Try again on just the outfit view costs 370 and keeps the face you liked. Pressing Ask for all views again costs 350, replaces all five, and gives you a different face-shot too.\n\nSo the cheaper button is the one that throws away the picture you were happy with. That is the whole of it.",
+      "options": [
+        {
+          "key": "leave",
+          "label": "Leave it — a redo is the generous option",
+          "consequence": "Nothing changes. The single Try again becomes the rarely-pressed one, and we lose a little on each redo."
+        },
+        {
+          "key": "raise",
+          "label": "Raise the redo above 370 — say 450",
+          "consequence": "Still one price, still simple, and the single Try again stops being the silly choice. One number, under an hour."
+        },
+        {
+          "key": "drop",
+          "label": "Drop the single Try again below the redo instead",
+          "consequence": "The other way round, if you would rather the cheap option be the small one. Also one number."
+        }
+      ],
+      "recommendation": "Leave it. A redo is the moment somebody is disappointed, and being generous right there buys more than it costs us — the single Try again going quiet is not a problem, because the redo does the same job better.",
+      "state": "open",
+      "filedAt": "2026-10-07T16:50:45.000Z",
+      "issueNumber": 1925
+    },
     {
       "id": "closeup-line-card-1837",
       "title": "Done — your YES is live: none of your close-ups is flagged any more",
@@ -3540,7 +3621,7 @@
         }
       ],
       "recommendation": "MY RECOMMENDATION: build it, feet first. The saving is real and close to half, the speed is slightly better not worse, and the part I expected to fail — keeping it the same person across five panels — did not fail at all. The feet fault is in how we word the request for the sheet, not a limit of the idea, and the back view coming out right both times is the evidence for that.\n\nBut I am not the judge of whether that right-hand picture looks as good as today's. Look at the second image and tell me, because if the answer is no then none of the saving matters.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-10-03T16:50:00.000Z",
       "issueNumber": 1690
     },
@@ -6722,7 +6803,7 @@
       "id": "sign-cost-sheet-1690",
       "title": "One sheet instead of five pictures — it saves about half, and it loses her feet",
       "question": "WHAT YOU ARE LOOKING AT — two pictures, and they answer different halves of the question.\n\nThe first is the whole sheet: all five views rendered as ONE picture for 30 cents, instead of five separate ones for 75 cents. Look at whether it is the same woman five times — face, hair, tattoos, the outfit, the lighting. To my eye it is, and that was the thing most likely to go wrong.\n\nThe second is the one that decides it. On the LEFT is the full-length front view the studio delivers today. On the RIGHT is the same view cut out of the sheet. Both are shown at the same height so you are comparing the pictures and not my scaling.\n\nTwo things to judge there. First, the quality — the right-hand one is about four fifths the size of the left, and I want to know whether that reads as worse to you or not at all. Second, the fault: her feet are gone. The view is supposed to run head to toe with a margin top and bottom, and the sheet cut her off at the thigh. It did the same thing on a second run, at the knee. The full-length BACK view came out right both times, which is why I think this is solvable rather than a dead end.\n\nWhat it would save, if it is solved: about 45 cents every time somebody signs a cast, which is close to half of what a Sign costs us. It is also slightly faster.\n\nMy reading is that it is worth building once the feet are fixed. But a saving is never worth a worse picture, and whether that right-hand picture is good enough is yours and not mine.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-10-03T16:50:00.000Z",
       "issueNumber": 1690,
       "cardId": "sign-cost-1690",
@@ -6738,6 +6819,27 @@
           "caption": "The same view, same height, so the comparison is fair. LEFT is what we deliver today (75 cents for five). RIGHT is the one cut out of the sheet (30 cents for five). Her feet are missing on the right — that is the fault, and it happened on both runs."
         }
       ]
+    },
+    {
+      "id": "sign-sheet-shape-1904",
+      "title": "The one-sheet Sign works — and the five views come out a different shape",
+      "question": "WHAT YOU ARE LOOKING AT — two pictures of the same real sheet I rendered tonight, for 8 cents.\n\nThe FIRST is the five views as they really come out. This is the thing to judge: is it the same woman five times, is it one outfit, is every camera right, is anybody cut off. To my eye all five are whole and the outfit is identical across them, which was the thing most likely to go wrong and is the whole reason for doing it this way.\n\nThe SECOND is the problem, and it is not about the pictures — it is about where they go. The strip of five on a finished cast puts each view in a short wide tile. These pictures are tall and narrow, so the tile shows only the top of each one. Look at the close-up: no mouth. Look at the front and the back: no legs, no boots. That is what you would see on your own cast page today if this shipped as it is.\n\nThe big viewer is fine. It is only the strip.\n\nThree ways out, on card 1926. A: ask the engine for a shorter sheet so the views come back nearer today's shape — needs another render and your eye again, and only gets us part of the way. B: show the whole picture in each tile with a little background either side. C: make the tiles tall and narrow to match.\n\nI recommend B. A tall picture is the right shape for a standing figure, and the strip is there for you to pick one — a tile that cuts the face off cannot do that job. Background either side costs less than a missing mouth. But it changes what you look at every day, so it is yours.",
+      "state": "open",
+      "filedAt": "2026-10-07T18:45:00.000Z",
+      "issueNumber": 1926,
+      "cardId": "sign-sheet-shape-1926",
+      "frames": [
+        {
+          "key": "crew-eye/b5aab00f-def5-4495-b954-af3b3fa64835.jpg",
+          "arm": "the five views, cut from one sheet",
+          "caption": "Close-up, three-quarter, full front, side profile, full back — all cut from ONE picture that cost 8 cents and took 63 seconds. One outfit across all five because they were painted in the same frame. Nobody is cut in half and no join lines show."
+        },
+        {
+          "key": "crew-eye/ce2659b2-e190-4d6a-b0fe-3b5e24a7080a.jpg",
+          "arm": "the same five, as the strip shows them",
+          "caption": "The strip's tiles are short and wide, so each one shows the top 58% of a tall picture. The close-up loses its mouth; the front and back lose their legs and boots. This is the thing to decide — card 1926 has three options and my recommendation."
+        }
+      ]
     }
   ],
   "pipeline": [
@@ -6747,6 +6849,13 @@
       "status": "in-review",
       "prNumber": null,
       "note": "The record half of tonight's catch. Your decision on the road itself is on the card, not in this change."
+    },
+    {
+      "id": "pro-plus-rename-1900",
+      "title": "The Studio plan is called Pro Plus (#1900)",
+      "status": "in-review",
+      "prNumber": 1927,
+      "note": "One word of product code; rendered in both themes. Waiting on the relay, then your Stripe rename."
     },
     {
       "id": "rate-chip-off-plans-1773",
@@ -9645,15 +9754,36 @@
       "status": "merged",
       "prNumber": 1898,
       "note": "Reviewed by hand and merged while this edition was being written; live on the site, build read back at 19s uptime."
+    },
+    {
+      "id": "catastrophic-checker-1903",
+      "title": "Your ruling: the checker only looks for a disaster now, and the crop measurement is gone (#1903)",
+      "status": "merged",
+      "prNumber": 1915,
+      "note": "Held for a hand review — it touches refunds. A court on your own frames caught back views being refused and that is fixed; the paid redo is the next half."
+    },
+    {
+      "id": "package-redo-1903-slice2",
+      "title": "Ask for all views again — the paid redo of a whole signed package, 350 credits (#1903 slice 2)",
+      "status": "in-review",
+      "prNumber": 1924,
+      "note": "Held for a hand review: it charges and refunds."
+    },
+    {
+      "id": "sign-sheet-1904",
+      "title": "Sign renders one Sunburst sheet cut into the five views (#1904)",
+      "status": "building",
+      "prNumber": null,
+      "note": "Built and measured on a real sheet; held on your shape decision (#1926) and 58 test arms."
     }
   ],
   "problems": [
     {
       "id": "advisory-gate-blind-1899",
       "severity": "warning",
-      "state": "open",
+      "state": "resolved",
       "title": "The check that stops known security holes reaching customers passed one on the robot that it refuses on my machine (#1899)",
-      "detail": "Same commit, same files, same script, both reading 477 packages: the robot said \"none blocking\" and my machine named a CRITICAL hole. That hole is now fixed and live, so nothing is at risk today — what is broken is the alarm. An alarm that can say all-clear when it should not is worse than none, because a green tick gets believed. Cause unknown and deliberately not guessed at; both readings are quoted on the card. Found only because the two answers happened to disagree in front of me."
+      "detail": "Same commit, same files, same script, both reading 477 packages: the robot said \"none blocking\" and my machine named a CRITICAL hole. That hole is now fixed and live, so nothing is at risk today — what is broken is the alarm. An alarm that can say all-clear when it should not is worse than none, because a green tick gets believed. Cause unknown and deliberately not guessed at; both readings are quoted on the card. Found only because the two answers happened to disagree in front of me.\n\n✅ RESOLVED — card #1899 is closed, read at GitHub this shift, and the repair is merged (PR #1912): the check now names the tree it read, so the two honest answers stop reading as a defect. Nothing was at risk while it stood, because the hole it had passed was already fixed and live."
     },
     {
       "id": "latency-control-jitter-1885",
@@ -10027,8 +10157,22 @@
     263
   ],
   "nextUp": {
-    "readAt": "2026-10-04T02:16:53.880Z",
+    "readAt": "2026-10-07T19:40:58.295Z",
     "items": [
+      {
+        "issueNumber": 1903,
+        "title": "Ditch the framing measurement and the checker's opinions — refuse only catastrophic failures; a paid redo of the whole package, on by default",
+        "urgent": true
+      },
+      {
+        "issueNumber": 1904,
+        "title": "Sign renders one GPT Image 2.5 Sunburst sheet (high, 3840×1648, no outfit plate) cut into the five views — his word closing #1690",
+        "urgent": true,
+        "held": {
+          "state": "blocked",
+          "because": "YOU — the views come out a taller shape and the strip cuts them. A/B/C on #1926, recommend B. Built and measured otherwise."
+        }
+      },
       {
         "issueNumber": 1469,
         "title": "N2c: Campaigns, the cast library's named collections (All · Unfiled · campaigns · +), Approach A, after N2b — his word 2026-09-29 (noun changed from shoots the same day)",
@@ -10051,25 +10195,12 @@
       {
         "issueNumber": 1612,
         "title": "The view checker measures framing and only refuses on identity: geometry from the segmenter for every framing band, and an unsure framing or wardrobe verdict delivers the picture unchecked instead of dropping it — his ruling 2026-09-30",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "YOU — your eye on the first signed cast under the new rule, on your Desk. CLOSE it, or ask for another? Recommend: CLOSE."
-        }
+        "urgent": false
       },
       {
         "issueNumber": 1689,
         "title": "N3: investigate cutting Refine's cost so its price can come down — count the ~7 Claude checks a Refine makes, court the fewest it can safely keep, report cost per Refine before any price change (his finance guy's note, 2026-10-01)",
         "urgent": false
-      },
-      {
-        "issueNumber": 1690,
-        "title": "Research for later: cutting Sign's cost (~$1 today, five NBP 2K views ~$0.75 of it) — one 4K sheet cropped, GPT Image 2.5 views, a cheaper check model, fewer default views; quality and cost per Sign, no build now (his finance guy's note, 2026-10-01)",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "YOU - BUILD IT (feet fixed first) / NOT GOOD ENOUGH / MORE CASTS FIRST. Frames on your desk. Recommend: build it."
-        }
       },
       {
         "issueNumber": 1774,
@@ -10083,11 +10214,7 @@
       {
         "issueNumber": 1832,
         "title": "P2-1 — Three individual plans with the credit slider on Studio ($9 per 5,000 credits): the plan cards and pricing surface rebuilt to the brief",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "YOU or the relay — one Stripe test-mode price, $9 a month per 5,000 credits. Measured absent 2026-10-03. Create it and a seat finishes the slider."
-        }
+        "urgent": false
       },
       {
         "issueNumber": 1835,
@@ -10099,12 +10226,12 @@
         }
       },
       {
-        "issueNumber": 1837,
-        "title": "The close-up line is too tight: both Sifr2 pictures read as close-ups to his eye at 0.51 and 0.42 while the band's line sits at 0.30 — move it by measurement, above 0.51",
+        "issueNumber": 1900,
+        "title": "Rename the Studio plan to Pro Plus everywhere a customer sees it — same price, credits and features, only the name",
         "urgent": false,
         "held": {
           "state": "blocked",
-          "because": "YOUR EYE on the strip. Is Hingu at 0.83 a close-up? YES moves the line above it; NO leaves it at 0.7. Recommend: look, then one word."
+          "because": "YOU — the app half is built and in review. Stripe still calls the product Studio; that is your dashboard, 3 of your 6 surfaces. Rename it after PR #1927."
         }
       }
     ]

@@ -342,10 +342,20 @@ function wasDeliveredUnjudged(asset: ModelAsset): boolean {
  *   is what they pass.
  * - A view that arrived UNCHECKED was charged and kept. Asking again is free.
  *   (#1220, his *"go with the free try again"*.) Since #1612 part 2 that
- *   covers two roads — nobody looked, and somebody looked and the framing or
+ *   covered two roads — nobody looked, and somebody looked and the framing or
  *   wardrobe did not hold — and it is the SAME offer for both, because what
  *   earns it is the same fact either way: she is holding a picture she paid
  *   for that nothing can vouch for.
+ *
+ *   ⚠ **THE SECOND OF THOSE ROADS IS HISTORY FROM #1903 (2026-10-07) AND IS
+ *   STILL LIVE ON THREE ROWS, WHICH IS THE WHOLE POINT OF SAYING SO HERE.** His
+ *   ruling deleted the framing and wardrobe axes, so no view delivered from now
+ *   on can carry a failing axis — every axis that can fail refuses. But three
+ *   rows written in the hours #1612 part 2 was live DO carry one (assets 383,
+ *   389, 391), and each is owed its free ask; {@link viewDeliveredUnchecked}
+ *   keeps the retired axis names for them. **The free offer itself, and the
+ *   paid whole-package redo that replaces it, are #1903's slice 2** — so this
+ *   function is unchanged by that card and will change with the next one.
  * - The stand-in headshot is the first case wearing a picture: its own view
  *   failed and was refunded, and the anchor is standing in its place. The
  *   refund is what identifies it, not the stand-in flag — a stand-in with

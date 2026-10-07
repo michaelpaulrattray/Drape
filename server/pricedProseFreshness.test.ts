@@ -267,6 +267,22 @@ const PROSE_NOT_A_CURRENT_PRICE: ReadonlyArray<{
   why: string;
 }> = [
   {
+    file: "shared/castingReceipt.ts",
+    credits: 30,
+    quote: "30 credits a face",
+    why:
+      "THE DRAFT THAT MADE THE CARD, quoted as the reason the figure is derived "
+      + "rather than written (#1908). Yuna's wording for this legend read "
+      + "*\"~240 … 30 credits a face\"*, and both numbers were true of the price "
+      + "table before 2026-10-01 and false on the day she wrote them — a Roll is "
+      + "1,600 ledger / 320 display now, so a face is 40. The module's whole "
+      + "subject is that a hand-typed per-face figure goes stale, and the "
+      + "evidence for it is the stale figure. Rewriting it to 40 would delete "
+      + "the argument and leave a paragraph asserting that 40 was once wrong. "
+      + "`server/castingV2/receiptPerFace.test.ts` holds the code to typing no "
+      + "numeral at all, so this quote cannot hide a real one.",
+  },
+  {
     file: "server/casting/aiService.ts",
     credits: 1,
     quote: "1 credit",
@@ -669,6 +685,60 @@ const PROSE_NOT_A_CURRENT_PRICE: ReadonlyArray<{
       + "figure equals a live display one — 350 is both the ink-add price and a "
       + "Refine's display price today, which is the collision that makes it a "
       + "trade rather than a fix.",
+  },
+  /*
+    ⚠ **THREE ROWS FOR ONE MODULE, AND IT JOINED THE POPULATION BY BEING
+    CORRECT — #1905.** `server/testing/creditDisplaySites.ts` is the credit
+    census's own reader. It named no price constant and stated no current
+    figure, so it sat outside this guard entirely while carrying three priced
+    quotations in its header. #1905 widened its JSX reader and wrote the defect
+    into the docblock — *"it read ~1,600 credits where every sibling read
+    ~320"* — and **1,600 and 320 are both current**, so the module opted itself
+    in exactly as the population note above describes, and its three existing
+    figures surfaced in the same run.
+
+    **Not one of the three is a claim about today**, which is why they are
+    declared rather than rewritten: each is a QUOTATION — a deleted Stripe
+    string, a sentence production really printed between two timestamps, and a
+    stored ledger description. The guard's own instruction governs: *do not
+    rewrite a historical figure, that falsifies a record.*
+  */
+  {
+    file: "server/testing/creditDisplaySites.ts",
+    credits: 200000,
+    quote: "200,000 credits/month with 75% rollover",
+    why:
+      "A QUOTATION OF A STRING THAT NO LONGER EXISTS — the `product_data."
+      + "description` `stripeProducts.ts` composed per rung, deleted outright by "
+      + "#1605, and quoted here as what the census's first shrink (122 → 108) "
+      + "removed. It was a plan's monthly DISPLAY credits, never a price, and "
+      + "the sentence is a record of a deletion: rewriting the number would "
+      + "describe a string the commit it reports on did not delete.",
+  },
+  {
+    file: "server/testing/creditDisplaySites.ts",
+    credits: 150,
+    quote: "150 credits were refunded.",
+    why:
+      "A SENTENCE PRODUCTION REALLY PRINTED, with the minute it started — the "
+      + "price table landed at `143e5b30` (2026-10-01 17:34Z) and from then a "
+      + "per-candidate refund of 30 display read this, on a screen whose every "
+      + "other number said 240. It is the measured specimen of the 19 unrouted "
+      + "money sentences that slice fixed, dated on both sides. A record of a "
+      + "defect, not a price.",
+  },
+  {
+    file: "server/testing/creditDisplaySites.ts",
+    credits: 180000,
+    quote: "Monthly credit refresh (180000 credits + 0 rollover)",
+    why:
+      "A STORED `creditTransactions` DESCRIPTION, quoted in LEDGER units on "
+      + "purpose — it is the worked example of that slice's one judgement, that "
+      + "four such rows STAY in ledger because their only live reader is the "
+      + "moderator credit history, which prints them beside the ledger `amount`. "
+      + "The same reasoning is already declared row by row in `UNROUTED` itself. "
+      + "Putting a display figure in this quotation would make the example argue "
+      + "against the decision it exists to explain.",
   },
 ];
 

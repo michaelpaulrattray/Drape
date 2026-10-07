@@ -3,12 +3,19 @@ import { describe, expect, it, vi } from "vitest";
 
 import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
 import type { TextEngine, TextRequest } from "../providers/types";
+import { renderLikeFrame } from "../testing/renderLikeFrame";
 import {
+  BLANK_FRAME_MIN_STDEV,
   boundForJudge,
   JUDGE_FRAME_JPEG_QUALITY,
   JUDGE_FRAME_LONG_EDGE,
+  readFrameIntegrity,
 } from "./judgeFrame";
-import { conformanceProvenance, createViewConformanceJudge } from "./viewConformance";
+import {
+  conformanceProvenance,
+  createViewConformanceJudge,
+  viewConformanceRefuses,
+} from "./viewConformance";
 
 /*
    Real sharp encodes and decodes of multi-megapixel frames inside the vitest
@@ -40,27 +47,25 @@ vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
  * up to 7.82 MB — the opposite of reality, and three arms failed on it.
  *
  * A render is mostly low-frequency light with a little fine grain, and that is
- * what this builds: at the real production geometry it gives 2.37 MB of PNG
- * against 1.34 MB of bounded JPEG (1.8x). Production's own frames measured
- * 4.74–9.74 MB against 1.28–2.48 MB (3.7–3.9x), so this fixture is the same
+ * what this builds. Production's own frames measured 4.74–9.74 MB of PNG
+ * against 1.28–2.48 MB of bounded JPEG (3.7–3.9x), so this fixture is the same
  * direction and a HARDER case than the thing it stands in for. Deterministic —
  * no seed, no run-to-run drift.
+ *
+ * ⚠ **IT IS THE SHARED FIXTURE NOW AND NO LONGER ITS OWN COPY OF THE SAME
+ * ARITHMETIC — #1903's repair, working law 4.** `renderLikeFrame` was written
+ * for five conformance suites that needed a frame which is a PICTURE, and it is
+ * this function with its light periods SCALED to the frame rather than fixed at
+ * 190/260 — which matters, because fixed periods turn a 64x96 frame into almost
+ * flat grey. **Both generators were measured side by side before this delegated
+ * to one of them**, at every size this file asks for: at 1696x2528 the shared
+ * one gives 2.73 MB of PNG against the same 1.41 MB of bounded JPEG where the
+ * local one gave 2.48 / 1.41, and at 1024x1536 and 3392x5056 it is the same
+ * story — the same direction, marginally harder. The old numbers in this
+ * paragraph were *"2.37 MB against 1.34 MB (1.8x)"*; today's pair is 1.9x.
  */
 async function renderLike(width: number, height: number): Promise<Buffer> {
-  const channels = 3;
-  const raw = Buffer.allocUnsafe(width * height * channels);
-  for (let y = 0; y < height; y += 1) {
-    for (let x = 0; x < width; x += 1) {
-      const index = (y * width + x) * channels;
-      const light = 128 + 90 * Math.sin(x / 190) * Math.cos(y / 260);
-      const grain = ((x * 7 + y * 11) % 17) - 8;
-      const clamp = (value: number): number => Math.max(0, Math.min(255, value));
-      raw[index] = clamp(light + grain);
-      raw[index + 1] = clamp(light * 0.86 + grain);
-      raw[index + 2] = clamp(light * 0.72 + grain);
-    }
-  }
-  return sharp(raw, { raw: { width, height, channels } }).png().toBuffer();
+  return renderLikeFrame(width, height);
 }
 
 /**
@@ -84,8 +89,8 @@ function png(bytes: Buffer): { bytes: Buffer; contentType: string } {
 
 const allPass = JSON.stringify({
   identity: { verdict: "matches", note: "same person" },
-  angle: { verdict: "matches", note: "as specified" },
-  wardrobe: { verdict: "matches", note: "grey tee" },
+  intact: { verdict: "matches", note: "a clean render" },
+  people: { verdict: "matches", note: "one person" },
 });
 
 /** Keeps the request the judge actually posted, so the wire can be read. */
@@ -301,8 +306,8 @@ describe("what the judge actually posts — read at the wire (#1408)", () => {
   it("records the frames on a verdict that failed an axis", async () => {
     const { engine } = recordingEngine(JSON.stringify({
       identity: { verdict: "differs", note: "a different person" },
-      angle: { verdict: "matches", note: "as specified" },
-      wardrobe: { verdict: "matches", note: "grey tee" },
+      intact: { verdict: "matches", note: "a clean render" },
+      people: { verdict: "matches", note: "one person" },
     }));
     const verdict = await createViewConformanceJudge({ engine })({
       angle: "frontFull",
@@ -403,5 +408,244 @@ describe("what the judge actually posts — read at the wire (#1408)", () => {
     expect(verdict.method).toBe("forced");
     expect(verdict.frames).toBeUndefined();
     expect(engine.complete).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * ⚠ **EVERY ARM BELOW DRIVES REAL ENCODED BYTES, AND THAT IS THE REQUIREMENT
+ * RATHER THAN A STYLE CHOICE** — the repair owed on PR #1915 asked for exactly
+ * this. A fixture that hands `readFrameIntegrity` a fake answer would prove what
+ * the code does with a verdict, which is the gap this whole gate exists to
+ * close: `intact` used to be answered only by a model, so every arm about it was
+ * silent on whether the detection worked.
+ *
+ * **The production positive control is not in this file and cannot be** — it is
+ * the 93 real delivered frames read in `judgeFrame.ts`'s own docblock (floor
+ * 24.57, strict decode refusing 0 of 93, re-runnable against the live rows). The
+ * arms here are the shapes that reading cannot produce: nobody has ever
+ * delivered a truncated frame, which is the point.
+ */
+describe("a frame that is not a picture is refused without asking a model (#1903 repair)", () => {
+  it("POSITIVE CONTROL — a render-like frame at the production geometry is intact", async () => {
+    const frame = await renderLike(1696, 2528);
+    expect(await readFrameIntegrity(png(frame))).toEqual({ intact: true });
+  }, CONTENDED_TEST_TIMEOUT_MS);
+
+  it("a truncated frame is DAMAGED — and a variance test could never say so", async () => {
+    const whole = await renderLike(1696, 2528);
+    const cut = png(whole.subarray(0, Math.floor(whole.length / 2)));
+
+    const verdict = await readFrameIntegrity(cut);
+    expect(verdict.intact).toBe(false);
+    expect(verdict).toMatchObject({ fault: "damaged" });
+
+    /*
+      ⚠ **THE ARM THAT JUSTIFIES THE SECOND DECODE.** Measured on a real
+      production view cut in half: the picture paints down to the cut and is
+      solid black below, and that black against the picture scores 96.50 — the
+      HIGHEST variance of anything measured, real frames included. So a blank
+      test does not merely miss truncation, it reads it as the most picture-like
+      thing in the set. This holds that fact at the bytes rather than in prose.
+    */
+    const lenient = await sharp(cut.bytes, { failOn: "none" }).stats();
+    const lowest = Math.min(...lenient.channels.slice(0, 3).map((channel) => channel.stdev));
+    expect(lowest).toBeGreaterThan(BLANK_FRAME_MIN_STDEV);
+  }, CONTENDED_TEST_TIMEOUT_MS);
+
+  it("a buffer that is not an image at all is DAMAGED", async () => {
+    const verdict = await readFrameIntegrity(png(Buffer.from("this is not a picture", "utf8")));
+    expect(verdict).toMatchObject({ intact: false, fault: "damaged" });
+  });
+
+  it("a solid-colour frame is BLANK — and it is a perfectly valid PNG, which is why it needs its own arm", async () => {
+    const flat = await sharp({
+      create: { width: 1696, height: 2528, channels: 3, background: { r: 128, g: 128, b: 128 } },
+    }).png().toBuffer();
+
+    /* It decodes cleanly under the strictest setting — the damaged arm cannot see it. */
+    await expect(sharp(flat, { failOn: "warning" }).stats()).resolves.toBeTruthy();
+
+    expect(await readFrameIntegrity(png(flat))).toMatchObject({ intact: false, fault: "blank" });
+  }, CONTENDED_TEST_TIMEOUT_MS);
+
+  it("a near-solid frame is BLANK too — a soft gradient is still a picture of nothing", async () => {
+    const width = 400;
+    const height = 600;
+    const raw = Buffer.allocUnsafe(width * height * 3);
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const index = (y * width + x) * 3;
+        /* 110-130 top to bottom: the most picture-like blank measured, at 5.79. */
+        const value = 110 + Math.round((y / height) * 20);
+        raw[index] = value;
+        raw[index + 1] = value;
+        raw[index + 2] = value;
+      }
+    }
+    const gradient = await sharp(raw, { raw: { width, height, channels: 3 } }).png().toBuffer();
+    expect(await readFrameIntegrity(png(gradient))).toMatchObject({ intact: false, fault: "blank" });
+  });
+
+  it("⚠ NEGATIVE CONTROL — an OPAQUE RGBA frame is intact, because alpha is excluded", async () => {
+    /*
+      The arm that stops this gate refusing the entire product. A fully opaque
+      alpha channel has stdev 0.00, so a reader taking the minimum over ALL
+      channels would score every opaque picture at zero and refund every view.
+      It reddens under a one-character change to the slice.
+    */
+    const frame = await sharp(await renderLike(400, 600)).ensureAlpha().png().toBuffer();
+    const { channels } = await sharp(frame).stats();
+    expect(channels).toHaveLength(4);
+    expect(channels[3]!.stdev).toBe(0);
+
+    expect(await readFrameIntegrity(png(frame))).toEqual({ intact: true });
+  }, CONTENDED_TEST_TIMEOUT_MS);
+
+  it("the threshold keeps a real margin on both sides of the measured gap", () => {
+    /*
+      Derived from the constant rather than restating it, so moving the constant
+      moves the arm — and the two numbers it is held between are the measured
+      ones: the delivered population's floor (24.57) and the most picture-like
+      blank (5.79). A threshold that drifts into either is the defect.
+    */
+    expect(BLANK_FRAME_MIN_STDEV).toBeGreaterThan(5.79 * 1.5);
+    expect(BLANK_FRAME_MIN_STDEV).toBeLessThan(24.57 / 1.5);
+  });
+});
+
+/**
+ * ⚠ **THE GATE IS IN FRONT OF THE MODEL, AND "IN FRONT OF" IS WHAT THESE ARMS
+ * MEASURE.** A reader that ran AFTER the call would be a second opinion rather
+ * than a backstop: the measured failure is a provider REJECTING a broken frame
+ * as non-retryable, which folds to `unjudged` — and D-246 delivers an `unjudged`
+ * view and charges for it. So the engine never being called is the finding, not
+ * an optimisation, and it is asserted at the call count rather than inferred.
+ */
+describe("a broken frame is refused before the judge is asked (#1903 repair)", () => {
+  it("refuses a damaged frame WITHOUT calling the engine at all", async () => {
+    const whole = await renderLike(1696, 2528);
+    const { engine } = recordingEngine();
+
+    const verdict = await createViewConformanceJudge({ engine })({
+      angle: "frontFull",
+      anchor: png(await renderLike(1024, 1536)),
+      candidate: png(whole.subarray(0, Math.floor(whole.length / 2))),
+    });
+
+    expect(engine.complete).not.toHaveBeenCalled();
+    expect(verdict.pass).toBe(false);
+    expect(verdict.method).toBe("intact:damaged");
+  }, CONTENDED_TEST_TIMEOUT_MS);
+
+  it("refuses a blank frame, and the money road reads it as a REFUSAL rather than as unjudged", async () => {
+    const flat = await sharp({
+      create: { width: 1696, height: 2528, channels: 3, background: { r: 200, g: 200, b: 200 } },
+    }).png().toBuffer();
+    const { engine } = recordingEngine();
+
+    const verdict = await createViewConformanceJudge({ engine })({
+      angle: "frontFull",
+      anchor: png(await renderLike(1024, 1536)),
+      candidate: png(flat),
+    });
+
+    expect(engine.complete).not.toHaveBeenCalled();
+    expect(verdict.method).toBe("intact:blank");
+
+    /*
+      ⚠ **THE ARM THE WHOLE REPAIR TURNS ON.** `unjudged` DELIVERS (D-246), so a
+      deterministic refusal that set that flag would refund nothing and hand the
+      customer the blank picture — the defect wearing the repair's clothes.
+    */
+    expect(verdict.unjudged).toBeUndefined();
+    expect(viewConformanceRefuses(verdict)).toBe(true);
+  }, CONTENDED_TEST_TIMEOUT_MS);
+
+  it("names ONLY intact — identity and people neither fail nor claim a verdict nobody gave", async () => {
+    const flat = await sharp({
+      create: { width: 400, height: 600, channels: 3, background: { r: 10, g: 10, b: 10 } },
+    }).png().toBuffer();
+    const { engine } = recordingEngine();
+
+    const verdict = await createViewConformanceJudge({ engine })({
+      angle: "frontFull",
+      anchor: png(await renderLike(400, 600)),
+      candidate: png(flat),
+    });
+
+    /* The refusal sentence and the diagnostic capture's key are both built from
+       the failing axes, so three false axes would confess three faults for one. */
+    expect(verdict.axes.intact.pass).toBe(false);
+    expect(verdict.axes.identity.pass).toBe(true);
+    expect(verdict.axes.people.pass).toBe(true);
+
+    /* `verdict` absent is this type's own spelling for "no judge answered", and
+       none did — asserting it stops a later edit inventing a model's word. */
+    expect(verdict.axes.intact.verdict).toBeUndefined();
+    expect(verdict.axes.identity.verdict).toBeUndefined();
+    expect(verdict.axes.people.verdict).toBeUndefined();
+
+    expect(verdict.axes.intact.note).toContain("near-uniform");
+  }, CONTENDED_TEST_TIMEOUT_MS);
+
+  it("CONTROL — a good frame still reaches the judge, so the gate is not simply off", async () => {
+    const { engine } = recordingEngine();
+
+    const verdict = await createViewConformanceJudge({ engine })({
+      angle: "frontFull",
+      anchor: png(await renderLike(1024, 1536)),
+      candidate: png(await renderLike(1696, 2528)),
+    });
+
+    expect(engine.complete).toHaveBeenCalledTimes(1);
+    expect(verdict.pass).toBe(true);
+    expect(verdict.method).toContain("judge:");
+  }, CONTENDED_TEST_TIMEOUT_MS);
+
+  it("⚠ CONTROL — the ANCHOR is never gated, which is a scope line and not an oversight", async () => {
+    /*
+      A damaged anchor is a different failure with a different owner, and it is
+      already fail-closed by another road (the judge answers `unsure` on identity
+      and identity refuses on `unsure`). Gating it here would refund a customer
+      for a view that is fine. If this arm ever reddens, that decision changed.
+    */
+    const anchorWhole = await renderLike(1024, 1536);
+    const { engine } = recordingEngine();
+
+    await createViewConformanceJudge({ engine })({
+      angle: "frontFull",
+      anchor: png(anchorWhole.subarray(0, Math.floor(anchorWhole.length / 2))),
+      candidate: png(await renderLike(1696, 2528)),
+    });
+
+    expect(engine.complete).toHaveBeenCalledTimes(1);
+  }, CONTENDED_TEST_TIMEOUT_MS);
+});
+
+/**
+ * ⚠ **THE SHARED FIXTURE IS ITSELF ON A MONEY PATH NOW, so it gets an arm.**
+ * `server/testing/renderLikeFrame.ts` is what five conformance suites hand the
+ * judge since this card. If its variance ever drifted under the blank line,
+ * those suites would not fail with a clear message — every view in them would
+ * quietly start refusing, and the reading would be "the gate is broken" rather
+ * than "the fixture went flat".
+ */
+describe("the shared conformance fixture is a picture, with room to spare", () => {
+  it("clears the blank line at every size the suites ask for", async () => {
+    for (const [width, height] of [[64, 96], [96, 64], [400, 600]] as const) {
+      const { channels } = await sharp(await renderLikeFrame(width, height)).stats();
+      const lowest = Math.min(...channels.slice(0, 3).map((channel) => channel.stdev));
+      /* Measured ~60 against a line of 12 and a real production floor of 24.57.
+         Held at 2x the line rather than at the line, so a drift is caught before
+         it is a refusal. */
+      expect(lowest).toBeGreaterThan(BLANK_FRAME_MIN_STDEV * 2);
+      expect(await readFrameIntegrity(png(await renderLikeFrame(width, height))))
+        .toEqual({ intact: true });
+    }
+  }, CONTENDED_TEST_TIMEOUT_MS);
+
+  it("is the same bytes every call — a fixture that wandered could flip a suite overnight", async () => {
+    expect(await renderLikeFrame(64, 96)).toEqual(await renderLikeFrame(64, 96));
+    expect(await renderLikeFrame(64, 96)).not.toEqual(await renderLikeFrame(96, 64));
   });
 });

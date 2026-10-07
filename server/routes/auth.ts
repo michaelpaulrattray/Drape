@@ -19,6 +19,16 @@ export const authRouter = router({
       role: ctx.user.role,
       approved: ctx.user.approved,
       canvasIntroSeen: ctx.user.canvasIntroSeen,
+      /*
+        #1909 — whether the Follow hint has already been shown to this person.
+        A DELIBERATE addition to this boundary, which is what the paragraph
+        above asks for: it is a one-way UI flag about the account and carries
+        nothing about the work, so it sits beside `canvasIntroSeen` rather than
+        widening what a client can learn. `server/auth.me.test.ts` pins the
+        whole projection, so a field cannot join it without this decision being
+        made again.
+      */
+      followHintSeen: ctx.user.followHintSeen,
     };
   }),
   logout: publicProcedure.mutation(({ ctx }) => {

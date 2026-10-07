@@ -42,7 +42,6 @@ import { createOpenRouterTextEngine, DEFAULT_INTERPRETER_MODEL } from "../provid
 import { createFalIdentityEngine } from "../providers/falQueue";
 import { createFalSunburstPlateEngine } from "../providers/falImages";
 import { falAllowanceOf } from "./falBudget";
-import { createFalRegionReader } from "./falRegionReader";
 import { ProviderQueue } from "../providers/providerQueue";
 import type { IdentityEngine } from "../providers/types";
 import { CAST_PACKAGE_VIEWS } from "./castViewPackage";
@@ -160,28 +159,28 @@ export function castingViewConformanceJudge(): ViewConformanceJudge {
       throw new Error("OPENROUTER_API_KEY is required to validate a signed Cast package");
     }
     /*
-      ⚠ **AND THE SEGMENTER IS REQUIRED TOO, ON THE SAME GROUND — #1612's
-      hand-over, and invariant 7 is why it is a throw and not a fallback.**
+      ⚠ **THE SEGMENTER REFUSAL THAT STOOD HERE IS GONE — #1903, AND IT HAD TO
+      GO IN THIS COMMIT OR THE SIGN WOULD NOT CONSTRUCT.**
 
-      Since the hand-over the framing axis is a MEASUREMENT, and
-      `framingReader` is optional on the judge's config for exactly one reason:
-      a test that does not care about framing. A production judge built without
-      one would silently go back to asking a vision model the question his
-      ruling took away from it — *"a control that is not invoked does not
-      exist"*, arriving as an absence rather than an error.
+      It read *"FAL_KEY is required to measure a signed Cast view's framing
+      band"*, and it was right for as long as there was a band: `framingReader`
+      was optional on the judge's config only so a test could skip it, and a
+      production judge built without one would have gone quietly back to asking
+      a vision model the question #1612 took away from it. Invariant 7, which is
+      why it was a throw rather than a fallback.
 
-      It costs nothing in practice and that is checked rather than hoped:
-      `castingViewEngine` above refuses on this same variable before any money
-      moves, so a deployment that can render a view can always measure one. The
-      refusal is here anyway because the alternative is a Sign that charges for
-      five checked views and checked none of their crops.
+      **His ruling removed the question, so the dependency it guarded no longer
+      exists** — the judge reads no geometry at all. Named here rather than
+      deleted silently, because this is the shape law 7's ruling sweep is about:
+      a correct control dying because the road it sat on closed.
+
+      ⚠ **Nothing else loses a refusal.** `castingViewEngine` above still
+      refuses on `FAL_KEY` before any money moves — a deployment that cannot
+      render a view still cannot start one — and the OpenRouter refusal
+      immediately above is untouched, so *"this deployment has no checker at
+      all"* is still caught at the door where refusing is free.
     */
-    const falKey = process.env.FAL_KEY;
-    if (!falKey) {
-      throw new Error("FAL_KEY is required to measure a signed Cast view's framing band");
-    }
     judge = createViewConformanceJudge({
-      framingReader: createFalRegionReader({ apiKey: falKey }),
       engine: createOpenRouterTextEngine({
         apiKey,
         // Vision-capable, and the same slug the interpreter is pinned to — one

@@ -77,6 +77,9 @@ export const users = mysqlTable("users", {
   // Canvas first-run intro (D-9): profile-persisted so it survives devices;
   // dismissed permanently by any board interaction
   canvasIntroSeen: boolean("canvasIntroSeen").default(false).notNull(),
+  // The Follow hint on the sheet (#1909): one line, once per ACCOUNT, so it
+  // follows her across devices the way the canvas intro above does.
+  followHintSeen: boolean("followHintSeen").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -152,7 +155,9 @@ export const FREE_SIGNUP_GRANT_CREDITS = 13500;
 // Slice 1 moved the free grant and left these seven alone, because the
 // approved proposal (rev 21.6) lowered Pro and up while leaving every monthly
 // price where it was, and at those prices credits per dollar FELL at three
-// rungs — Studio below Pro, Scale below Business, Enterprise below Scale. That
+// rungs — `studio` below Pro, Scale below Business, Enterprise below Scale.
+// (That rung was still called Studio when he ruled; it is Pro Plus now, #1900,
+// and its id and its figures are untouched.) That
 // breaks his own bar, quoted in `card390-guard.test.ts`: *"keep the monotonic
 // check: the figure must improve at every rung. If the real ladder breaks
 // that, the ladder is the bug."* So the ladder was put to him as the bug, not
@@ -172,7 +177,7 @@ export const FREE_SIGNUP_GRANT_CREDITS = 13500;
 //   plan         price      ledger       display    cr/$ (ledger, exact)
 //   Starter      $27            70,000     14,000   2592.592593
 //   Pro          $68           180,000     36,000   2647.058824
-//   Studio       $159          430,000     86,000   2704.402516
+//   Pro Plus     $159          430,000     86,000   2704.402516   (id `studio`)
 //   Business     $840        2,350,000    470,000   2797.619048
 //   Scale        $4,800     13,750,000  2,750,000   2864.583333
 //   Enterprise   $15,000    43,500,000  8,700,000   2900.000000
@@ -210,7 +215,18 @@ export const PLAN_TIERS = {
   free: { name: 'Free', monthlyCredits: FREE_SIGNUP_GRANT_CREDITS, price: 0, rolloverPercent: 0 },
   starter: { name: 'Starter', monthlyCredits: 70000, price: 2700, rolloverPercent: 50 },               // $27/mo     — 14,000 display — 2592.59 cr/$
   pro: { name: 'Pro', monthlyCredits: 180000, price: 6800, rolloverPercent: 75 },                      // $68/mo     — 36,000 display — 2647.06 cr/$
-  studio: { name: 'Studio', monthlyCredits: 430000, price: 15900, rolloverPercent: 100 },              // $159/mo    — 86,000 display — 2704.40 cr/$
+  // ⚠ THE RUNG'S ID IS `studio` AND ITS NAME IS **PRO PLUS** — his order,
+  // 2026-10-07 (#1900), verbatim: *"rename the Studio plan to Pro Plus,
+  // everywhere a customer sees it … Keep the same price, credits and
+  // features. Only the name changes. The internal Stripe lookup names can
+  // stay as they are if changing them would break anything."* They would, so
+  // the id, `planBlurbs.studio` and the `klieg_studio_*_v2` lookup keys all
+  // keep the old word — none of them is ever shown. **This `name` is the only
+  // place the plan's name is typed in the whole product**: every surface
+  // derives it (`SUBSCRIPTION_PRODUCTS`, `ownPlanFacts`, then `plan.name` on
+  // the client), which `server/planNameDerivation.test.ts` pins rather than
+  // leaves to a grep.
+  studio: { name: 'Pro Plus', monthlyCredits: 430000, price: 15900, rolloverPercent: 100 },            // $159/mo    — 86,000 display — 2704.40 cr/$
   business: { name: 'Business', monthlyCredits: 2350000, price: 84000, rolloverPercent: 100 },          // $840/mo    — 470,000 display — 2797.62 cr/$
   scale: { name: 'Scale', monthlyCredits: 13750000, price: 480000, rolloverPercent: 100 },              // $4,800/mo  — 2,750,000 display — 2864.58 cr/$
   enterprise: { name: 'Enterprise', monthlyCredits: 43500000, price: 1500000, rolloverPercent: 100 },   // $15,000/mo — 8,700,000 display — 2900.00 cr/$

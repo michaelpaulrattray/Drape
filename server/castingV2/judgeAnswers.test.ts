@@ -40,15 +40,23 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createOpenRouterTextEngine } from "../providers/openrouterText";
 import { ProviderQueue } from "../providers/providerQueue";
 import { ProviderError, type TextEngine, type TextRequest } from "../providers/types";
+import { renderLikeFrame } from "../testing/renderLikeFrame";
 import { createViewConformanceJudge } from "./viewConformance";
 
-const anchor = { bytes: Buffer.from("anchor"), contentType: "image/png" };
-const candidate = { bytes: Buffer.from("candidate"), contentType: "image/png" };
+/*
+  ⚠ **REAL FRAMES SINCE #1903 — these were `Buffer.from("anchor")`, which no
+  decoder will open.** The judge now reads the candidate's own bytes before it
+  posts anything, so a fixture that is not a picture is refused as a broken
+  render and never reaches the engine these arms are about.
+  `server/testing/renderLikeFrame.ts` carries why that was true everywhere.
+*/
+const anchor = { bytes: await renderLikeFrame(64, 96), contentType: "image/png" };
+const candidate = { bytes: await renderLikeFrame(96, 64), contentType: "image/png" };
 
 const verdictJson = JSON.stringify({
   identity: { verdict: "matches", note: "same person" },
-  angle: { verdict: "differs", note: "the shoulders are in frame" },
-  wardrobe: { verdict: "matches", note: "as the reference shows" },
+  intact: { verdict: "differs", note: "the frame came back scrambled" },
+  people: { verdict: "matches", note: "one person" },
 });
 
 /** A provider reply, exactly as OpenRouter shapes one. */
@@ -196,9 +204,9 @@ describe("the conformance judge asks for the room it needs", () => {
     expect(verdict.unjudged ?? false).toBe(false);
     expect(verdict.method).toContain("judge:");
     /* And the verdict is the model's, not a fail-closed stand-in: this frame
-       fails on angle alone, the way his close-up's shoulders would. */
+       fails on ONE catastrophic axis, with the other two intact. */
     expect(verdict.pass).toBe(false);
-    expect(verdict.axes.angle.pass).toBe(false);
+    expect(verdict.axes.intact.pass).toBe(false);
     expect(verdict.axes.identity.pass).toBe(true);
   }, 10_000);
 

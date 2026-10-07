@@ -121,7 +121,8 @@ import { CrewEyeGallery } from "@/features/admin/components/crew/CrewEyeGallery"
 import { CrewNeedsYou } from "@/features/admin/components/crew/CrewNeedsYou";
 import { CrewPipeline } from "@/features/admin/components/crew/CrewPipeline";
 import { CrewSinceYouLooked } from "@/features/admin/components/crew/CrewSinceYouLooked";
-import { cardIsClosed, eyeItemsFor, ladderCardsFor, needsYouFor, nextUpFor, problemsFor, queueReadOf } from "@/features/admin/components/crew/crewTypes";
+import { cardIsClosed, eyeItemsFor,
+  partitionEyeItems, ladderCardsFor, needsYouFor, nextUpFor, problemsFor, queueReadOf } from "@/features/admin/components/crew/crewTypes";
 import { useLastSeen } from "@/features/admin/components/crew/useLastSeen";
 import { CrewProblems } from "@/features/admin/components/crew/CrewProblems";
 import { CrewBackgroundWork } from "@/features/admin/components/crew/CrewBackgroundWork";
@@ -389,7 +390,20 @@ export default function AdminCrew() {
           const nextUp = nextUpFor(live, data.briefing);
           /* And a card GitHub has closed stops asking for his eye (his question, 2026-09-25). */
           const eyeItems = eyeItemsFor(live, data.briefing.eyeItems);
-          const eyes = eyeItems.length;
+          /*
+            ONE QUESTION, ONE CARD (#1895, his word: *"i dont want double up of
+            cards on my desk … its making my desk look overcrowded"*). An eye
+            item whose `cardId` names a card still on his desk draws its frames
+            INSIDE that card; everything else stands on its own in For your
+            eyes, exactly as before. One function answers both halves, so the
+            two sections cannot disagree about what is paired.
+          */
+          const { standalone: standaloneEyeItems, mergedInto: mergedEyeItems } =
+            partitionEyeItems(eyeItems, needsYou);
+          /* ⚠ **THE SECTION MENU'S COUNT IS WHAT THE SECTION DRAWS**, not what
+             the edition holds. Counting merged items here would send him to a
+             section to find frames that are up on a card above it. */
+          const eyes = standaloneEyeItems.length;
           const landed = live.available ? landedSince(live.desk.recent, lastSeenAt) : 0;
           /* A milestone's drive, off the completion card itself (#1646). Empty
              when GitHub has not answered — there is no edition fallback for it
@@ -442,13 +456,14 @@ export default function AdminCrew() {
             <div id="crew-section-needs-you" />
             <CrewNeedsYou
               cards={needsYou}
+              mergedEyeItems={mergedEyeItems}
               replies={data.replies}
               acknowledgedReplyIds={data.briefing.acknowledgedReplyIds}
               sending={replyMutation.isPending}
               onSend={send}
             />
             <CrewEyeGallery
-              items={eyeItems}
+              items={standaloneEyeItems}
               replies={data.replies}
               acknowledgedReplyIds={data.briefing.acknowledgedReplyIds}
               sending={replyMutation.isPending}

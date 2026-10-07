@@ -7,7 +7,7 @@
     {
       "id": "domain:admin",
       "name": "admin",
-      "moduleCount": 62
+      "moduleCount": 63
     },
     {
       "id": "domain:api",
@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 188
+      "moduleCount": 187
     },
     {
       "id": "domain:castingV2",
@@ -62,7 +62,7 @@
     {
       "id": "domain:foundation",
       "name": "foundation",
-      "moduleCount": 28
+      "moduleCount": 29
     },
     {
       "id": "domain:home",
@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 81
+      "moduleCount": 82
     },
     {
       "id": "domain:staff",
@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 52
+      "moduleCount": 53
     },
     {
       "id": "domain:wardrobe",
@@ -393,6 +393,12 @@
     {
       "id": "module:client/src/features/admin/components/crew/CrewCardTitles.tsx",
       "path": "client/src/features/admin/components/crew/CrewCardTitles.tsx",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/admin/components/crew/CrewEyeFrames.tsx",
+      "path": "client/src/features/admin/components/crew/CrewEyeFrames.tsx",
       "domain": "admin",
       "lifecycle": "active"
     },
@@ -2403,6 +2409,12 @@
     {
       "id": "module:client/src/foundation/Eyebrow.tsx",
       "path": "client/src/foundation/Eyebrow.tsx",
+      "domain": "foundation",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/foundation/KliegWordmark.tsx",
+      "path": "client/src/foundation/KliegWordmark.tsx",
       "domain": "foundation",
       "lifecycle": "active"
     },
@@ -4639,12 +4651,6 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:server/castingV2/viewFramingGeometry.ts",
-      "path": "server/castingV2/viewFramingGeometry.ts",
-      "domain": "casting-v2",
-      "lifecycle": "active"
-    },
-    {
       "id": "module:server/castingV2/viewRetryRecovery.ts",
       "path": "server/castingV2/viewRetryRecovery.ts",
       "domain": "casting-v2",
@@ -5785,6 +5791,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/testing/renderLikeFrame.ts",
+      "path": "server/testing/renderLikeFrame.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/testing/sourceBand.ts",
       "path": "server/testing/sourceBand.ts",
       "domain": "unassigned",
@@ -6015,6 +6027,12 @@
     {
       "id": "module:shared/castingRealization.ts",
       "path": "shared/castingRealization.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/castingReceipt.ts",
+      "path": "shared/castingReceipt.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -8611,6 +8629,16 @@
       "file": "server/routes/profile.ts"
     },
     {
+      "id": "route:profile.markFollowHintSeen",
+      "namespace": "profile",
+      "name": "markFollowHintSeen",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "none",
+      "rateLimited": false,
+      "file": "server/routes/profile.ts"
+    },
+    {
       "id": "route:profile.removeAvatar",
       "namespace": "profile",
       "name": "removeAvatar",
@@ -10736,6 +10764,10 @@
       "path": "client/src/components/signOutWording.test.ts"
     },
     {
+      "id": "test:client/src/fashionVocabulary1907.test.ts",
+      "path": "client/src/fashionVocabulary1907.test.ts"
+    },
+    {
       "id": "test:client/src/features/admin/components/crew/crewBodyWhitespace.test.ts",
       "path": "client/src/features/admin/components/crew/crewBodyWhitespace.test.ts"
     },
@@ -10862,6 +10894,10 @@
     {
       "id": "test:client/src/features/castingV2/failureCopy.test.ts",
       "path": "client/src/features/castingV2/failureCopy.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/followHint1909.test.ts",
+      "path": "client/src/features/castingV2/followHint1909.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/frameDecodes.test.ts",
@@ -12188,10 +12224,6 @@
       "path": "server/castingV2/followSlicePrice.test.ts"
     },
     {
-      "id": "test:server/castingV2/framingReadCancellation.test.ts",
-      "path": "server/castingV2/framingReadCancellation.test.ts"
-    },
-    {
       "id": "test:server/castingV2/framingTrimRetirement.test.ts",
       "path": "server/castingV2/framingTrimRetirement.test.ts"
     },
@@ -12576,6 +12608,10 @@
       "path": "server/castingV2/realizedAxes.test.ts"
     },
     {
+      "id": "test:server/castingV2/receiptPerFace.test.ts",
+      "path": "server/castingV2/receiptPerFace.test.ts"
+    },
+    {
       "id": "test:server/castingV2/recipeAssembler.test.ts",
       "path": "server/castingV2/recipeAssembler.test.ts"
     },
@@ -12828,10 +12864,6 @@
       "path": "server/castingV2/sheetPreview.test.ts"
     },
     {
-      "id": "test:server/castingV2/signEngineFramingReader.test.ts",
-      "path": "server/castingV2/signEngineFramingReader.test.ts"
-    },
-    {
       "id": "test:server/castingV2/signFeatureWords.test.ts",
       "path": "server/castingV2/signFeatureWords.test.ts"
     },
@@ -12960,22 +12992,6 @@
       "path": "server/castingV2/viewFeatureWords.test.ts"
     },
     {
-      "id": "test:server/castingV2/viewFramingBands.test.ts",
-      "path": "server/castingV2/viewFramingBands.test.ts"
-    },
-    {
-      "id": "test:server/castingV2/viewFramingDeadline.test.ts",
-      "path": "server/castingV2/viewFramingDeadline.test.ts"
-    },
-    {
-      "id": "test:server/castingV2/viewFramingGeometry.test.ts",
-      "path": "server/castingV2/viewFramingGeometry.test.ts"
-    },
-    {
-      "id": "test:server/castingV2/viewFramingHandover.test.ts",
-      "path": "server/castingV2/viewFramingHandover.test.ts"
-    },
-    {
       "id": "test:server/castingV2/viewOutfitAuthority.test.ts",
       "path": "server/castingV2/viewOutfitAuthority.test.ts"
     },
@@ -13098,6 +13114,10 @@
     {
       "id": "test:server/clientReleaseWiring.test.ts",
       "path": "server/clientReleaseWiring.test.ts"
+    },
+    {
+      "id": "test:server/clientWordmark.test.ts",
+      "path": "server/clientWordmark.test.ts"
     },
     {
       "id": "test:server/closingKeyword.test.ts",
@@ -13754,6 +13774,10 @@
     {
       "id": "test:server/planCreditSlider.test.ts",
       "path": "server/planCreditSlider.test.ts"
+    },
+    {
+      "id": "test:server/planNameDerivation.test.ts",
+      "path": "server/planNameDerivation.test.ts"
     },
     {
       "id": "test:server/plannedCreditsAtClaim.test.ts",
@@ -14931,6 +14955,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/components/BrandLoader.tsx",
+      "to": "module:client/src/foundation/KliegWordmark.tsx",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/components/design-system/Button.tsx",
       "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
@@ -15266,8 +15295,23 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/admin/components/crew/CrewEyeGallery.tsx",
+      "from": "module:client/src/features/admin/components/crew/CrewEyeFrames.tsx",
       "to": "module:client/src/features/admin/components/crew/CrewEyeViewer.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewEyeFrames.tsx",
+      "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewEyeFrames.tsx",
+      "to": "module:client/src/features/admin/components/crew/eyeFrameSrc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewEyeGallery.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewEyeFrames.tsx",
       "kind": "imports"
     },
     {
@@ -15283,11 +15327,6 @@
     {
       "from": "module:client/src/features/admin/components/crew/CrewEyeGallery.tsx",
       "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/components/crew/CrewEyeGallery.tsx",
-      "to": "module:client/src/features/admin/components/crew/eyeFrameSrc.ts",
       "kind": "imports"
     },
     {
@@ -15353,6 +15392,11 @@
     {
       "from": "module:client/src/features/admin/components/crew/CrewNav.tsx",
       "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewNeedsYou.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewEyeFrames.tsx",
       "kind": "imports"
     },
     {
@@ -16083,6 +16127,11 @@
     {
       "from": "module:client/src/features/boards/BoardHeader.tsx",
       "to": "module:client/src/features/profile/ProfileVisual.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/BoardHeader.tsx",
+      "to": "module:client/src/foundation/KliegWordmark.tsx",
       "kind": "imports"
     },
     {
@@ -17753,6 +17802,11 @@
     {
       "from": "module:client/src/features/castingV2/components/ConceptReviewModal.tsx",
       "to": "module:client/src/foundation/useFileDropTarget.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/ConceptReviewModal.tsx",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -20807,6 +20861,11 @@
     },
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/_core/hooks/useAuth.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/components/AppChrome.tsx",
       "kind": "imports"
     },
@@ -21098,6 +21157,11 @@
     {
       "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:shared/briefLength.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:shared/castingReceipt.ts",
       "kind": "imports"
     },
     {
@@ -25222,11 +25286,6 @@
     },
     {
       "from": "module:server/castingV2/castViewPackage.ts",
-      "to": "module:server/castingV2/viewFramingGeometry.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/castViewPackage.ts",
       "to": "module:shared/boardTypes.ts",
       "kind": "imports"
     },
@@ -29082,11 +29141,6 @@
     },
     {
       "from": "module:server/castingV2/signEngine.ts",
-      "to": "module:server/castingV2/falRegionReader.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/signEngine.ts",
       "to": "module:server/castingV2/viewConformance.ts",
       "kind": "imports"
     },
@@ -29447,17 +29501,7 @@
     },
     {
       "from": "module:server/castingV2/viewConformance.ts",
-      "to": "module:server/castingV2/castViewPackage.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/viewConformance.ts",
       "to": "module:server/castingV2/judgeFrame.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/viewConformance.ts",
-      "to": "module:server/castingV2/viewFramingGeometry.ts",
       "kind": "imports"
     },
     {
@@ -29483,16 +29527,6 @@
     {
       "from": "module:server/castingV2/viewFeatureWords.ts",
       "to": "module:shared/bodyAnchorRegions.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/viewFramingGeometry.ts",
-      "to": "module:server/castingV2/maskedComposite.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/viewFramingGeometry.ts",
-      "to": "module:server/castingV2/maskedRefine.ts",
       "kind": "imports"
     },
     {
@@ -35128,6 +35162,11 @@
     {
       "from": "module:shared/castingRealization.ts",
       "to": "module:shared/castingVocabularies.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/castingReceipt.ts",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {

@@ -1,6 +1,6 @@
 import { protectedProcedure, router } from "../_core/trpc";
 import { randomUUID } from "node:crypto";
-import { getUserById, updateUserProfile, getUserStorageInfo, updateUserStorageUsed, markCanvasIntroSeen } from "../db";
+import { getUserById, updateUserProfile, getUserStorageInfo, updateUserStorageUsed, markCanvasIntroSeen, markFollowHintSeen } from "../db";
 import { storagePut, storageDelete, storageReadBytes } from "../storage";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
@@ -56,6 +56,20 @@ export const profileRouter = router({
   // D-9 first-run intro: permanent dismissal (any board interaction fires it)
   markCanvasIntroSeen: protectedProcedure.mutation(async ({ ctx }) => {
     await markCanvasIntroSeen(ctx.user.id);
+    return { success: true };
+  }),
+
+  /**
+   * The Follow hint on the sheet (#1909): permanent dismissal, fired by the
+   * FIRST Keep rather than by the dismissal, so the line can never appear a
+   * second time on a second device.
+   *
+   * ⚠ No input, deliberately — invariant 3 (`userId` comes from `ctx.user.id`,
+   * never from procedure input), and there is nothing else to say: this flag
+   * only ever goes one way.
+   */
+  markFollowHintSeen: protectedProcedure.mutation(async ({ ctx }) => {
+    await markFollowHintSeen(ctx.user.id);
     return { success: true };
   }),
 

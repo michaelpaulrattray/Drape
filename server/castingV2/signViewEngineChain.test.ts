@@ -51,14 +51,23 @@ vi.mock("../db/generations", () => ({
   updateGeneration: vi.fn(async () => ({ success: true })),
 }));
 
+const { renderLikeFrame } = await import("../testing/renderLikeFrame");
+const { CONFORMANCE_AXES } = await import("./viewConformance");
 const { committedPackageAngles, renderViewAttempts } = await import("./packageOrchestrator");
 const { castingOutfitPlateEngine, resetSignEnginesForTests } = await import("./signEngine");
 
-/** A 1x1 PNG, as bytes. */
-const PIXEL = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
-  "base64",
-);
+/**
+ * A frame that is actually a picture.
+ *
+ * ⚠ **THIS WAS A 1x1 PNG UNTIL #1903's REPAIR, and the swap is not cosmetic.**
+ * A 1x1 PNG is a perfectly valid image and a perfectly BLANK one — a single
+ * pixel has no variation at all — so the deterministic `intact` reader refuses
+ * it as a broken render before the judge is ever called, and this arm's view
+ * came back `failed` instead of `landed`. The fixture was standing in for a
+ * delivered photograph while being the one thing a delivered photograph can
+ * never be. `server/testing/renderLikeFrame.ts` carries the class.
+ */
+const PIXEL = await renderLikeFrame();
 
 type Captured = { url: string; body: Record<string, unknown> };
 
@@ -101,14 +110,21 @@ const input = {
 /** Everything but the engine — the one dependency this file refuses to fake. */
 function dependencies() {
   return {
+    /*
+      ⚠ **THE AXES ARE DERIVED, AND THEY WERE STALE UNTIL #1903's REPAIR FOUND
+      THEM — working law 4 in a fixture.** This named `identity`, `angle` and
+      `wardrobe`; #1903 retired the last two, and the arm kept passing because
+      the orchestrator's branch was `!verdict.pass` and short-circuited on a
+      passing verdict before anything read an axis by name. The moment that
+      branch became the refusal rule itself, this threw. A fixture that lists a
+      source of truth always drifts from it, so it lists nothing.
+    */
     judge: (() => async () => ({
       pass: true,
       method: "judge:test",
-      axes: {
-        identity: { pass: true, note: "" },
-        angle: { pass: true, note: "" },
-        wardrobe: { pass: true, note: "" },
-      },
+      axes: Object.fromEntries(
+        CONFORMANCE_AXES.map((axis) => [axis, { pass: true, note: "" }]),
+      ),
     })) as never,
     storeImage: async () => ({ key: "views/chain.png", url: "https://public/views/chain.png" }),
     deleteObject: async () => ({ success: true as const }),

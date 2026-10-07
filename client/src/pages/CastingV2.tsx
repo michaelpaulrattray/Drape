@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { useHistoryState } from "wouter/use-browser-location";
 import { ArrowRight, Plus, Search } from "lucide-react";
 import { displayPrice, formatCredits } from "@shared/creditDisplay";
+import { perFaceDisplayCredits, receiptLegend } from "@shared/castingReceipt";
 import { toast } from "sonner";
 
 import {
@@ -71,6 +72,15 @@ import "@/features/castingV2/castingV2.css";
  */
 
 const ROLL_PRICE_FALLBACK = 0;
+
+/**
+ * The receipt legend's id, so the figures can point a screen reader at the
+ * sentence that explains them (`aria-describedby`). One receipt on this page,
+ * so one id — and it is a constant rather than a literal typed twice, because
+ * the two halves of a describedby pair that disagree fail silently: the
+ * attribute resolves to nothing and nothing in the DOM looks wrong.
+ */
+const RECEIPT_LEGEND_ID = "dpc-hero-receiptsay";
 
 /**
  * ⚠ **THE SEED CHIPS ARE REMOVED (#375, his order 2026-09-01) AND THE SEED LAW
@@ -883,6 +893,25 @@ export default function CastingV2() {
             <div className="dpc-hero__actions">
               <CastSettingsButton idPrefix="dpc-hero" style={style} onStyle={setStyle} />
               <span className="dpc-hero__receiptrule" aria-hidden="true" />
+              {/*
+                THE RECEIPT IS A WRAPPER NOW, BECAUSE IT HAS A LEGEND (#1908,
+                his word 2026-10-07 on Yuna's Desk item *"Cost beside Cast it
+                in plain words"*).
+
+                It is FOCUSABLE on purpose. The legend is the only thing on
+                this row a customer may want and cannot read at a glance, and a
+                reveal that answers to a mouse alone is one a keyboard never
+                gets — so the wrapper takes a tab stop and wears the house ring
+                (`tokens.css`'s blanket `:focus-visible`, which is why no
+                outline is declared here). `aria-describedby` is what makes the
+                sentence arrive for a screen reader at the moment the figures
+                do rather than as a loose line after them.
+              */}
+              <span
+                className="dpc-hero__receipt"
+                tabIndex={0}
+                aria-describedby={RECEIPT_LEGEND_ID}
+              >
               <span className="dp-chrome dpc-hero__receiptvals">
                 {candidatesPerRoll ? `${candidatesPerRoll} CANDIDATES` : null}
                 {price ? (
@@ -901,9 +930,46 @@ export default function CastingV2() {
                       same one.
                     */}
                     <span className="dpc-modal__tilde">~</span>
-                    {formatCredits(displayPrice(price))} CR
+                    {/*
+                      ⚠ **THE WORD IS SPELLED OUT, AND `CR` WAS THE ONE
+                      ABBREVIATION ON THIS PATH THAT NOTHING EXPLAINED.** The
+                      topbar chip and the sheet's dock both say *credits*; this
+                      line said *CR*, in 10.5px mono, beside the only paid
+                      button a customer meets before they have ever spent
+                      anything. The disappearing-technology law's first question
+                      is what they must learn to use this, and a currency
+                      abbreviation is a thing to learn. His own brief for this
+                      line read `4 CR`, so the abbreviation arrived with the
+                      feature — nobody chose it over the word.
+                    */}
+                    {formatCredits(displayPrice(price))} CREDITS
                   </>
                 ) : null}
+              </span>
+              {/*
+                THE LEGEND — what the figure means, in one line, on hover and
+                on focus.
+
+                ⚠ **THE PER-FACE NUMBER IS DERIVED AND THE DRAFT'S WAS NOT.**
+                Yuna's wording read *"30 credits a face"*, which was true of the
+                price table before 2026-10-01 and false on the day it was
+                written. `perFaceDisplayCredits` computes it from the two
+                figures the server already sends, so the sentence cannot go
+                stale the next time he moves a price — and he has moved these
+                two twice in two days.
+
+                It is drawn only when there IS a price, because the promise it
+                carries is about a paid face and the receipt beside it is absent
+                without one. The per-face clause drops out on its own when the
+                count is missing (`shared/castingReceipt.ts`), which is this
+                row's standing rule: a segment the server did not send is
+                absent, never guessed.
+              */}
+              {price ? (
+                <span className="dpc-hero__receiptsay" id={RECEIPT_LEGEND_ID} role="note">
+                  {receiptLegend(perFaceDisplayCredits(price, candidatesPerRoll))}
+                </span>
+              ) : null}
               </span>
             </div>
             </div>

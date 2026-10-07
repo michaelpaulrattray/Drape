@@ -759,3 +759,20 @@ same eye-picks gesture as the contact sheets, never a memory test. Casts
 alone keep first-class names (from Sign); renaming is optional curation
 that propagates. Keeping IS the filing — the competitor's Create-Element
 ceremony has no equivalent here at all.
+
+
+## 9i. Mint recipes copy the LATEST production, never the earlier ones (founder ruling, 2026-10-07)
+
+Standing rule for every engine-facing mint prompt (sheets, plates, states):
+**the template is the studied studio's MATURE practice — Adiliada, their
+third production — and the earlier eras are evidence for why, never
+templates for what.** Concretely: the two-panel sheet (one full body
+"cleanly headless cut at the base of the neck" + one close-up, headless
+ORDERED in the prompt rather than cut in the edit), the one-step
+person-x-outfit mint ("character shown in image 1, wearing the outfit from
+image 2"), and the face never re-rendered. The early seven-panel sheets,
+the heads-then-crop era, and the extra face angles are the tuition the
+crew paid; copying them would re-pay for lessons already bought. (Settled
+after a data check: the 2,149 captured ZEPHYR/Special prompts hold no
+headless order and their template asks for heads — the headless PROMPT is
+the third production's, which is exactly the one we copy.)

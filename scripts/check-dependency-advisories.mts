@@ -24,10 +24,42 @@ import { spawnSync } from "node:child_process";
 import {
   advisoryPass,
   advisoryRefusal,
+  advisoryTreeLine,
   AUDIT_ARGUMENTS,
   judgeAdvisories,
   readAuditReport,
+  readTreeFromRevList,
+  type TreeRead,
 } from "./lib/dependencyAdvisories.mts";
+
+/**
+ * WHICH TREE THIS READING IS OF (#1899) — the sha and, when it is a merge, its
+ * two parents.
+ *
+ * One command answers both: `git rev-list --parents -n 1 HEAD` prints the
+ * commit followed by its parents, so a pull request's merge ref names itself
+ * AND the two commits it joined. `advisoryTreeLine` turns that into the
+ * sentence, and the reason it is owed is in its own docblock.
+ *
+ * ⚠ **IT NEVER FAILS THE CHECK, AND THAT IS THE ONE RULE HERE.** A tree with no
+ * git — a tarball, a vendored copy — has no sha to name, and a security verdict
+ * must not be withheld because a LABEL could not be composed. `null` says so in
+ * as many words. This is the opposite of the file's other refusals on purpose:
+ * those are the check being unable to LOOK, which proves nothing; this is the
+ * check having looked and being unable to say where.
+ */
+function readTree(): TreeRead | null {
+  const shown = spawnSync("git rev-list --parents -n 1 HEAD", {
+    encoding: "utf8",
+    shell: true,
+    maxBuffer: 1024 * 1024,
+  });
+  if (shown.error !== undefined || shown.status !== 0) return null;
+  /* The PARSE lives in the lib so it can be driven against real git output —
+     the format is the assumption most likely to be wrong, and a spawn inside a
+     command script is not reachable from a suite. */
+  return readTreeFromRevList(shown.stdout ?? "");
+}
 
 /*
   ⚠ IT GOES THROUGH A SHELL, AND BOTH HALVES OF THAT WERE DRIVEN RATHER THAN
@@ -88,10 +120,16 @@ if (!read.ok) {
 
 const verdict = judgeAdvisories(read.report);
 
+/* The tree is named beside BOTH verdicts, because a refusal is the reading
+   somebody is most likely to carry to another machine and compare. */
+const tree = readTree();
+
 if (!verdict.ok) {
   console.log(advisoryRefusal(verdict));
+  console.log(advisoryTreeLine(tree));
   process.exit(1);
 }
 
 console.log(advisoryPass(read.report, verdict));
+console.log(advisoryTreeLine(tree));
 process.exit(0);
