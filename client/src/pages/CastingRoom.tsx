@@ -813,6 +813,47 @@ export default function CastingRoom() {
                         before: absent while she builds, absent while the
                         server's door is shut.
                       */}
+                      {/*
+                        ASK FOR ALL HER VIEWS AGAIN (#1903 slice 2) — on the row
+                        of things you do to the WHOLE Cast rather than to one
+                        picture, which is where the other one already is.
+
+                        ⚠ **BEFORE Delete and not after**, because that button
+                        carries its own standing rule two comments down: it is
+                        accent-coloured and LAST *"because it is the last thing
+                        anyone should reach for"*. The first draft of this row
+                        put the redo after it and the frame said so — a reading
+                        no test could have given, and law 6 exactly.
+
+                        ⚠ **THE OFFER DECIDES WHETHER IT IS DRAWN, NOT THIS
+                        COMPONENT.** The server withholds `redo` while she is
+                        building and while anything of hers is in flight, so
+                        there is no second rule here to drift from it — and no
+                        disabled button wearing a verb, which is the shape #1235
+                        took off the tiles.
+                      */}
+                      {askingAll ? (
+                        /* ⚠ NOT `dpc-slot__row`, which is the muted line UNDER
+                           A TILE. Borrowing it put a second element with that
+                           class above the strip, and `viewRetryRow.test.ts`
+                           slices the component from the FIRST one — so his two
+                           Try again sentences were being read out of this header
+                           instead. A guard whose anchor another element can
+                           steal is the shape that memory is about. */
+                        <span className="dpc-room__redo-working" role="status">{PACKAGE_REDO_WORKING}</span>
+                      ) : data.redo ? (
+                        <button
+                          type="button"
+                          className="dpc-room__redo"
+                          onClick={askForAllViewsAgain}
+                        >
+                          {/* The LEDGER price, straight off the wire. The copy
+                              module converts it through the one converter
+                              (#1600) so the routing is visible where it happens;
+                              this file does no arithmetic at all. */}
+                          {packageRedoLabel(data.redo.priceCredits)}
+                        </button>
+                      ) : null}
                       {deleteDoorOpen && data.status !== "building" ? (
                         <button
                           type="button"
@@ -820,44 +861,6 @@ export default function CastingRoom() {
                           onClick={() => setDeleting(true)}
                         >
                           Delete this cast
-                        </button>
-                      ) : null}
-                    </span>
-                    <span className="dpc-rcard__hint">
-                      {/*
-                        ASK FOR ALL HER VIEWS AGAIN (#1903 slice 2) — beside the
-                        count of what she has, because it is a thing you do to
-                        the WHOLE set rather than to one picture. The other
-                        whole-Cast action, Delete, sits on the same line for the
-                        same reason.
-
-                        ⚠ **THE OFFER DECIDES WHETHER IT IS DRAWN, NOT THIS
-                        COMPONENT.** The server withholds `redo` while she is
-                        building and while anything of hers is in flight, so
-                        there is no second rule here to drift from it — and no
-                        disabled button wearing a verb, which is the shape
-                        #1235 took off the tiles.
-                      */}
-                      {askingAll ? (
-                        /* ⚠ NOT `dpc-slot__row`, which is the muted line
-                           UNDER A TILE. Borrowing it put a second element with
-                           that class above the strip, and `viewRetryRow.test.ts`
-                           slices the component from the FIRST one — so his two
-                           Try again sentences were being read out of this
-                           header instead. A guard whose anchor another element
-                           can steal is the shape that memory is about. */
-                        <span role="status">{PACKAGE_REDO_WORKING}</span>
-                      ) : data.redo ? (
-                        <button
-                          type="button"
-                          className="dpc-slot__again"
-                          onClick={askForAllViewsAgain}
-                        >
-                          {/* The LEDGER price, straight off the wire. The copy
-                              module converts it through the one converter
-                              (#1600) so the routing is visible where it
-                              happens; this file does no arithmetic at all. */}
-                          {packageRedoLabel(data.redo.priceCredits)}
                         </button>
                       ) : null}
                     </span>
