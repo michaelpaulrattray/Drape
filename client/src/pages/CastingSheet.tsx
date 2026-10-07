@@ -325,7 +325,44 @@ export default function CastingSheet() {
     && (signedInUser as { followHintSeen?: boolean }).followHintSeen !== true;
   const [followHintShown, setFollowHintShown] = useState(false);
   const [followHintFor, setFollowHintFor] = useState<string | null>(null);
-  const markFollowHintSeen = trpc.profile.markFollowHintSeen.useMutation();
+  /*
+    ⚠ **THE MARK GOES INTO THE CACHE, NOT ONLY INTO THE DATABASE** (#1918).
+
+    `followHintShown` above is the one-shot for THIS mount, and a mount is
+    exactly what a customer leaves behind: she Keeps on one sheet, goes back to
+    the lobby, opens another sheet, and the component is new — `useState(false)`
+    again — while `auth.me`'s CACHED row still says `followHintSeen: false`
+    because the write landed on the server and nothing told the client. She
+    Keeps, and she is taught Follow a second time.
+
+    Driven before this existed, in the running app: hint on the first Keep,
+    leave in-app, come back, Keep — hint again, and the mutation fired TWICE.
+
+    ⚠ **It is only reachable IN-APP, and that is why a reload can never show
+    it**: `page.goto` empties the query cache, so `signedInUser` is `null` and
+    the condition above refuses on its own *"the server has said not yet"*
+    guard. The bug lives precisely where the cache survives and the component
+    does not.
+
+    ⚠ **`cancel()` FIRST, and it is not ceremony.** The window this closes is
+    *"before `auth.me` refetches"* — so a refetch is very often already in
+    flight when the Keep lands, and an un-cancelled one resolves AFTER this
+    write and puts the stale `false` straight back. Cancelling is what stops
+    the fix failing in the exact scenario it exists for.
+
+    On a FAILED write there is deliberately no rollback: the cache carries the
+    optimistic `true` until the next natural `auth.me` read replaces it with
+    the server's answer, which degrades to exactly today's behaviour rather
+    than putting the line back mid-session.
+  */
+  const markFollowHintSeen = trpc.profile.markFollowHintSeen.useMutation({
+    onMutate: async () => {
+      await utils.auth.me.cancel();
+      utils.auth.me.setData(undefined, (previous) =>
+        previous ? { ...previous, followHintSeen: true } : previous,
+      );
+    },
+  });
   /* Balance context for the cost line — the question a price actually raises. */
   const balance = trpc.credits.getBalance.useQuery(undefined, {
     staleTime: 30_000,
