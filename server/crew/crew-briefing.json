@@ -1,7 +1,7 @@
 {
-  "edition": 647,
-  "updatedAt": "2026-10-07T14:46:04.000Z",
-  "shift": "Your checker ruling is finished, merged, and live on production right now - and the two things the hand review held it on are both fixed.\n\nThe first one mattered. \"Is this picture broken?\" was a question only the AI could answer, so when the AI could not be reached at all, the broken picture was handed to you and charged for. The code opens the picture itself now, before anything is asked. A file that will not open, or a frame that is blank or nearly blank, is refused and the money comes straight back without the AI ever being called.\n\nI set the line for \"blank\" by measuring every picture this product has ever delivered rather than picking a number - 93 of them. The flattest real picture scores 24.6; the most picture-like blank I could build scores 5.8; the line sits at 12, roughly twice as far from each. And the check that catches broken files refused none of those 93, which is the number that actually matters, because a check that is wrong in the refusing direction costs somebody a picture they paid for.\n\nOne thing surprised me and is worth knowing. A half-downloaded picture is not faint or grey - it paints down to where it stopped and is solid black below, and that black against the picture above scores higher than any real photograph. So a \"is it blank\" test does not just miss a broken file, it reads it as the most picture-like thing on the table. That is why there are two checks and not one.\n\nThe second fix is one you would have seen. Every refused view used to say \"This view did not hold the signed likeness\" - so a blank picture and a picture with two people in it both told you it was not her, which is untrue of both. There are three sentences now, one for each thing that can go wrong, and when a picture is both broken and unrecognisable it says it came back damaged, because that is what actually happened. I looked at all three in the real room in both light and dark and at four window widths - nothing is cut off.\n\nAnd one finding nobody asked for, which is the part I would want you to know. Every test that checks the picture-checker was feeding it something that is not a picture at all - thirteen bytes of text in four files, and a single pixel in a fifth. They have all been passing since the day they were written, because nothing ever opened the bytes to look. The moment the code started actually opening them, 30 of those tests went red at once. They share one real picture now.\n\nStill not built, in the order you ruled: the paid redo at 350 credits first, then the Unchecked label and its free retry. Nothing you can press today has been taken away.",
+  "edition": 648,
+  "updatedAt": "2026-10-07T16:50:45.000Z",
+  "shift": "The paid redo is built and is waiting for a review before it goes live — the second of the three pieces of your checker ruling.\n\nWhat it gives you: on any finished cast there is now one quiet line beside Download — Ask for all views again, 350 credits. Press it and all five of her views are made again from the face you signed, in one freshly invented outfit, and the new pictures replace the old ones as they arrive. Nothing has to have gone wrong first. That was your own example: you might simply not like the outfit that was invented.\n\nUnder the bonnet your one price is five equal parts, one per view. That is not me second-guessing the number — it is the only way your refund rule can still work, because that rule gives back ONE view. So if four arrive and one does not, you are charged for four and you keep the picture you already had in the fifth slot. A redo can never leave you with an empty frame.\n\nThere is a question for you on your desk and it is only arithmetic on your own two numbers. A redo of all five views costs 350. A single Try again on one view costs 370 — you set that on 1 October, on your finance guy's note that it was needed to keep every worst case profitable for ONE picture. So replacing all five is now cheaper than replacing one, and we pay for five pictures at a price worked out for one. I have shipped your 350 exactly as you said it rather than quietly changing it. Leaving it is my recommendation, and it is a real choice rather than an oversight.\n\nOne thing you will see and should know about: while a redo runs, all five pictures go blank for a minute or two and only the Master stays. That is exactly what one tile already does when you press Try again on it, five times over. If you would rather the old pictures sat there faded until the new ones land, say so and it is its own small job.\n\nI looked at it in the running app in both light and dark before opening the review, and that is what caught the only two things wrong with it. The button had landed AFTER Delete this cast — and delete is meant to be the last thing on that row, because it is the last thing anyone should reach for. And it was drawn louder than everything else on the line, which on a row whose only coloured word is Delete is the wrong way round. Both fixed before the review opened, and no test could have told me either.\n\nStill owed on the card: the Unchecked label and its free retry come off next, now that there is something paid to press instead — that is the order you ruled and it is the right way round. And your eye on a real redo of one of your own casts.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -126,7 +126,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-07T14:45:29.500Z",
+      "readAt": "2026-10-07T16:50:43.117Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -270,6 +270,33 @@
     }
   },
   "needsYou": [
+    {
+      "id": "redo-price-1925",
+      "title": "Your redo price (350) is lower than your single Try again (370) — leave it, or raise one?",
+      "productImpact": "Asking for ALL FIVE of a cast's views again costs 350 credits. Asking for ONE of them again costs 370. Both numbers are yours, and they now sit side by side in the same room for the first time.\n\nNothing went wrong. On 1 October you set the single Try again to 370, on your finance guy's note that it was needed to keep every worst case profitable for one picture plus its check. On 7 October you set the redo at 350. Neither decision knew about the other, and the redo is only now built.\n\nIn practice: somebody who dislikes one picture pays LESS to replace all five than to replace that one, so almost nobody will press the single one. And we pay for five pictures plus a wardrobe plate at a price worked out to cover one.",
+      "workedExample": "You sign a cast and the invented outfit is not what you wanted, but the close-up of her face is perfect.\n\nPressing Try again on just the outfit view costs 370 and keeps the face you liked. Pressing Ask for all views again costs 350, replaces all five, and gives you a different face-shot too.\n\nSo the cheaper button is the one that throws away the picture you were happy with. That is the whole of it.",
+      "options": [
+        {
+          "key": "leave",
+          "label": "Leave it — a redo is the generous option",
+          "consequence": "Nothing changes. The single Try again becomes the rarely-pressed one, and we lose a little on each redo."
+        },
+        {
+          "key": "raise",
+          "label": "Raise the redo above 370 — say 450",
+          "consequence": "Still one price, still simple, and the single Try again stops being the silly choice. One number, under an hour."
+        },
+        {
+          "key": "drop",
+          "label": "Drop the single Try again below the redo instead",
+          "consequence": "The other way round, if you would rather the cheap option be the small one. Also one number."
+        }
+      ],
+      "recommendation": "Leave it. A redo is the moment somebody is disappointed, and being generous right there buys more than it costs us — the single Try again going quiet is not a problem, because the redo does the same job better.",
+      "state": "open",
+      "filedAt": "2026-10-07T16:50:45.000Z",
+      "issueNumber": 1925
+    },
     {
       "id": "closeup-line-card-1837",
       "title": "Done — your YES is live: none of your close-ups is flagged any more",
@@ -9652,6 +9679,13 @@
       "status": "merged",
       "prNumber": 1915,
       "note": "Held for a hand review — it touches refunds. A court on your own frames caught back views being refused and that is fixed; the paid redo is the next half."
+    },
+    {
+      "id": "package-redo-1903-slice2",
+      "title": "Ask for all views again — the paid redo of a whole signed package, 350 credits (#1903 slice 2)",
+      "status": "in-review",
+      "prNumber": 1924,
+      "note": "Held for a hand review: it charges and refunds."
     }
   ],
   "problems": [
@@ -10034,7 +10068,7 @@
     263
   ],
   "nextUp": {
-    "readAt": "2026-10-07T14:45:29.499Z",
+    "readAt": "2026-10-07T16:50:43.117Z",
     "items": [
       {
         "issueNumber": 1903,
@@ -10101,11 +10135,6 @@
       {
         "issueNumber": 1900,
         "title": "Rename the Studio plan to Pro Plus everywhere a customer sees it — same price, credits and features, only the name",
-        "urgent": false
-      },
-      {
-        "issueNumber": 1908,
-        "title": "Cast it's cost receipt says CREDITS, not CR, with a one-line legend — per-face figure derived from the price",
         "urgent": false
       }
     ]
