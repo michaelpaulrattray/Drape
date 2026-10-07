@@ -27,15 +27,26 @@
  *    been perfect — and the frame was deleted on the way out, so nobody could
  *    ever tell which it had been.
  *
- *    ⚠ **AND SINCE #1612 PART 2 THE REJECTION HALF IS NARROWED TO ONE AXIS —
+ *    ⚠ **AND SINCE #1612 PART 2 THE REJECTION HALF WAS NARROWED TO ONE AXIS —
  *    his ruling, 2026-09-30.** *"A view the judge looked at and rejected still
- *    fails and refunds"* is true now only of IDENTITY. A framing or wardrobe
- *    rejection delivers the picture, charged and marked unchecked, with the
- *    free Try again. It is the same founder ruling one step further: the
+ *    fails and refunds"* became true only of IDENTITY; a framing or wardrobe
+ *    rejection delivered the picture, charged and marked unchecked, with the
+ *    free Try again. It was the same founder ruling one step further: the
  *    detector was not merely unreachable sometimes, it was measurably WRONG
- *    about framing — all 8 refusals this product ever made were framing or
+ *    about framing — all 8 refusals this product had ever made were framing or
  *    wardrobe, none was identity, and four of the eight are the four cards
- *    behind #1612. The rule and the rows are on {@link viewConformanceRefuses}.
+ *    behind #1612.
+ *
+ *    ⚠ **AND #1903 WENT THE WHOLE WAY — his ruling, 2026-10-07, verbatim:**
+ *    *"i think we ditch the measure and checker i mean it been nothing but
+ *    problems it should only detect catastropic failure the image engine is
+ *    excellent and following our prompting"*. **The two narrowed axes are
+ *    DELETED rather than demoted**, and the two that replace them are
+ *    catastrophes he approved by name — a broken picture and the wrong number
+ *    of people — so EVERY axis refuses again and the delivering branch below
+ *    has only D-246 left to fire on. The paragraph above is kept because it is
+ *    the measurement his ruling rests on. The rule and the rows are on
+ *    {@link viewConformanceRefuses}.
  * 2. **TWO BUDGETS, BECAUSE "WE DECIDED IT WAS WRONG" AND "IT NEVER CAME" ARE
  *    NOT THE SAME EVENT** (founder, 2026-09-25, on his Sifr cast, #1208).
  *    Asked whether a failed view should keep retrying or offer a button, his
@@ -44,11 +55,12 @@
  *    - A view the judge LOOKED AT AND REJECTED keeps its one regeneration, on
  *      the legacy back-view gate's own reasoning (D-39/D-40): a second attempt
  *      is worth its cost, a third is a slot machine. ⚠ **Since #1612 part 2
- *      that budget is spent on an IDENTITY rejection and nothing else** — a
- *      framing or wardrobe rejection delivers the frame in hand, so there is
- *      nothing to redraw and no picture to throw away in order to redraw it.
- *      A regeneration is now only ever bought to replace a picture of the
- *      wrong person.
+ *      that budget is spent on a CATASTROPHIC rejection and nothing else** —
+ *      anything the judge is still asked is a catastrophe, and anything it is
+ *      no longer asked about (the crop, the pose, the clothing) delivers the
+ *      frame in hand, so there is nothing to redraw and no picture to throw
+ *      away in order to redraw it. A regeneration is only ever bought to
+ *      replace a picture that is catastrophically wrong.
  *    - A view that NEVER ARRIVED — the engine errored, the read timed out, the
  *      connection dropped — is not a slot machine and never was. It is our
  *      failure to deliver something already paid for, and it is retried up to
@@ -151,7 +163,9 @@ import {
 } from "./outfitPlate";
 import {
   conformanceProvenance,
+  unjudgedVerdict,
   viewConformanceRefuses,
+  type ConformanceAxis,
   type ViewConformanceJudge,
   type ViewConformanceVerdict,
 } from "./viewConformance";
@@ -995,16 +1009,15 @@ export async function renderViewAttempts<T>(
         angle,
         anchor: input.anchor,
         candidate: { bytes: image.bytes, contentType: image.contentType },
-        /* The SAME value the prompt above was composed from — one field, read
-           twice, so the generator and the judge cannot be told two outfits. */
-        wardrobeLine: input.wardrobeLine ?? null,
-        /* And the same for her brief, for the same reason: the wardrobe sentence
-           narrows when one is on record, so a judge without it would fail the
-           view for wearing what this prompt just asked for (#1278 part 1). */
-        description: input.description ?? null,
-        /* And the same for whose face it is — #1480 finding A's third site, so the
-           checker is not describing a different person from the one the
-           generator was asked for. */
+        /* ⚠ `wardrobeLine` AND `description` WERE PASSED HERE AND ARE GONE —
+           #1903. They kept the judge and the generator being told ONE outfit,
+           because a judge told a different one failed the view for obeying its
+           instructions. There is no wardrobe axis left to protect, and a judge
+           handed an outfit sentence would start having opinions about the
+           outfit. Both values are still read by the prompt above, unchanged. */
+        /* The same face the generator was asked for — #1480 finding A's third
+           site, so the checker is not describing a different person. This one
+           stays: identity is the axis that survived. */
         pronouns: viewPronouns,
       });
       verdicts.push(verdict);
@@ -1037,49 +1050,47 @@ export async function renderViewAttempts<T>(
           "[packageOrchestrator] the view could not be judged — DELIVERING and recording it, "
           + "rather than charging nothing for a picture that may be perfect (D-246)",
         );
-      } else if (!verdict.pass) {
+      } else if (viewConformanceRefuses(verdict)) {
         const failedAxes = (Object.keys(verdict.axes) as Array<keyof typeof verdict.axes>)
           .filter((axis) => !verdict.axes[axis].pass);
 
-        if (!viewConformanceRefuses(verdict)) {
+        {
           /*
-            ⚠ **THE JUDGE LOOKED, THE FRAMING OR THE WARDROBE DID NOT HOLD, AND
-            THE PICTURE IS STILL HERS — #1612 part 2, his ruling 2026-09-30.**
+            ⚠ **THE "DELIVER IT ANYWAY" BRANCH THAT STOOD HERE IS DELETED, AND
+            IT WAS UNREACHABLE RATHER THAN MERELY UNUSED — the repair owed on
+            PR #1915.**
 
-            `viewConformanceRefuses` carries the whole rule and the rows behind
-            it; what belongs here is what this branch does with it, and the two
-            things it deliberately does NOT do:
+            It was #1612 part 2's: the judge looked, the FRAMING or the WARDROBE
+            did not hold, the picture was still hers, so it was delivered charged
+            and marked `Unchecked · Try again`. **#1903 deleted both of those
+            axes**, so the branch could not be entered: `verdict.pass` is
+            `CONFORMANCE_AXES.every(pass)` and {@link viewConformanceRefuses} is
+            `unjudged !== true && some(!pass)` — the same `axes[axis].pass`
+            fields, read the same way — so under the old `else if
+            (!verdict.pass)`, below an `if (verdict.unjudged)` that had already
+            taken its own road, it was always false. Its log line still said
+            *"framing or wardrobe"*, describing a refusal the product no longer
+            makes.
 
-            1. **It does not regenerate.** The branch below spends the second
-               judged attempt on a refusal, and that is the right place for it:
-               a re-render is a gamble that throws away a picture the customer
-               could have had, and under this rule the first picture is
-               deliverable. Spending ~30–60 s and a second house render to
-               replace a deliverable frame with an unknown one — and dropping
-               the first to do it — is a decision the CUSTOMER now owns, for
-               free, through Try again. **That is the alternative that was
-               declined, and it is named rather than left as an absence.**
-            2. **It does not keep a diagnostic copy.** `captureRefusedRender`
-               below exists because a refused frame is dropped and there is
-               nothing left for his eye (#1492). This frame is not dropped —
-               it is delivered, its bytes are the customer's, and the axes that
-               did not hold are on the row beside them. A capture here would be
-               a second copy of a picture we already kept.
+            **Deleted rather than left standing or turned into an assertion**,
+            because {@link viewConformanceRefuses}'s docblock names exactly this
+            shape as the thing not to have: *"not with a `deliver anyway` branch
+            bolted beside it, which is exactly the two-tier shape his ruling
+            dissolved."* A dead branch beside a live rule is an invitation to
+            add a fourth, non-catastrophic axis and quietly re-grow the two
+            tiers.
 
-            The row says so by construction: `conformanceProvenance` persists
-            the failing axes and `viewDeliveredUnchecked` reads them, which is
-            what turns this slot into `Unchecked · Try again` at a price of
-            zero. The customer never meets an axis name, a verdict word or a
-            percentage — the unchecked copy is the whole surface.
+            ⚠ **AND THE CONDITION ABOVE MOVED FROM `!verdict.pass` TO THE RULE
+            ITSELF, which is the half that is not tidying.** The two were
+            equivalent only because every current axis is a catastrophe; leaving
+            `!verdict.pass` here would have been a SECOND expression of the
+            refusal rule in a second file (working law 4), and the one that
+            takes a paying customer's picture away. Now there is one rule, read
+            where it is declared — and its failure direction is the safe one: a
+            verdict this rule does not call a refusal DELIVERS rather than
+            silently refunding.
           */
-          log.warn(
-            { operationId: input.operationId, angle, attempt, failedAxes, method: verdict.method },
-            "[packageOrchestrator] the view did not hold its framing or its wardrobe — DELIVERING it "
-            + "charged and marked unchecked with a free Try again, rather than taking away a picture "
-            + "that is still the signed likeness (#1612)",
-          );
-        } else {
-          lastReason = REFUSED_VIEW_REASON;
+          lastReason = refusedViewReason(failedAxes);
           /*
             KEEP THE PICTURE THE JUDGE TURNED DOWN — #1492, his own Jingu (2026-09-29).
 
@@ -1347,18 +1358,21 @@ async function judgeUnjudgedOnFailure(
       { angle: input.angle, err: error },
       "[packageOrchestrator] the conformance judge failed — no opinion exists about this view",
     );
-    const axis = { pass: false, note: "the view could not be checked" };
-    return {
-      pass: false,
-      method: "unavailable",
-      unjudged: true,
-      axes: { identity: { ...axis }, angle: { ...axis }, wardrobe: { ...axis } },
-    };
+    /* ⚠ THE AXES WERE SPELLED OUT HERE BY HAND AND ARE DERIVED NOW — #1903.
+       A second list of the axis names in a second file is working law 4, and
+       it was found the hard way: the rename broke this literal. The silent
+       version of the same mistake ships a verdict naming axes nothing reads. */
+    return unjudgedVerdict("unavailable", "the view could not be checked");
   }
 }
 
 /**
- * THE ONE SENTENCE A REFUSED VIEW CONFESSES. No judge text is ever shown.
+ * THE SENTENCE A REFUSED VIEW CONFESSES. No judge text is ever shown.
+ *
+ * ⚠ **THIS BLOCK IS THE RECORD OF HOW IT BECAME ONE SENTENCE AND IS SUPERSEDED
+ * BY THE BLOCK BELOW IT, which put it back to one per catastrophe. It is kept
+ * because its reasoning is right and is what makes the shape legible: a
+ * sentence must be reachable, and a sentence must be true of what happened.**
  *
  * ⚠ **IT USED TO BE A FUNCTION OF FOUR SENTENCES AND THREE OF THEM DIED WITH
  * #1612 PART 2 — law 7's ruling sweep, asked at the closing commit rather than
@@ -1378,7 +1392,72 @@ async function judgeUnjudgedOnFailure(
  * has DELIVERED since D-246, so a sentence confessing it was already dead
  * before tonight.
  */
-const REFUSED_VIEW_REASON = "This view didn't hold the signed likeness";
+/**
+ * ⚠ **AND IT WAS ONE SENTENCE FOR THREE DIFFERENT CATASTROPHES UNTIL THE REPAIR
+ * OWED ON PR #1915 — a customer-visible defect the removal sweep walked past.**
+ *
+ * `REFUSED_VIEW_REASON` was a single string, set for EVERY refusal, and it
+ * reaches the customer verbatim: the room's failed tile reads *"Front failed —
+ * <this>."* followed by what came back, and the health dialog reads *"Retry
+ * needed — <this>."* So the day #1903 gave this judge two more catastrophes, **a blank
+ * frame and a two-person frame both started telling a customer the picture
+ * "didn't hold the signed likeness"**, which is false about both of them. It was
+ * the one string still bolted to the identity-only rule.
+ *
+ * **One sentence per catastrophe, in her words and not the road's.** Nobody
+ * meets an axis name, a verdict word or a number — working law 8, and the
+ * disappearing-technology law's rule that a refusal says what was refused.
+ *
+ * ⚠ **THE RECORD IS EXHAUSTIVE OVER {@link ConformanceAxis} ON PURPOSE.** A
+ * fourth axis added to that set is a compile error here until somebody writes
+ * what it would say to a customer — which is the only mechanism in this file
+ * that could have stopped tonight's defect, so it is built rather than promised.
+ */
+const REFUSED_VIEW_REASONS: Record<ConformanceAxis, string> = {
+  intact: "This view came back damaged",
+  /* His own sentence, unchanged, for the catastrophe it was always about. */
+  identity: "This view didn't hold the signed likeness",
+  /*
+    Covers BOTH halves of that axis honestly, which a count-shaped sentence
+    could not: `people` fails on nobody at all as well as on a crowd, and
+    "didn't come back with your cast alone in it" is true of each.
+  */
+  people: "This view didn't come back with your cast alone in it",
+};
+
+/**
+ * ⚠ **WHICH ONE IS CONFESSED WHEN SEVERAL FAILED, AND IT IS NOT
+ * {@link CONFORMANCE_AXES}' OWN ORDER — that would confess identity first.**
+ *
+ * A damaged frame usually drags identity down with it: nothing can be
+ * recognised in a half-black picture, so the judge answers `differs` or `unsure`
+ * on identity too, and identity-first would tell a customer their picture is not
+ * them when what actually happened is that it did not render. **The most basic
+ * fault is named first**, which is both the true one and the believable one.
+ *
+ * It is a PERMUTATION of the axis set rather than a subset of it, and
+ * `packageOrchestrator.test.ts` derives that check from {@link CONFORMANCE_AXES}
+ * rather than restating this list — an axis added to the judge and forgotten
+ * here would otherwise fall silently to the fallback sentence.
+ */
+const REFUSAL_CONFESSION_ORDER: readonly ConformanceAxis[] = ["intact", "identity", "people"];
+
+/**
+ * ⚠ **THE FALLBACK IS NOT DECORATION — it is what a refusal says when the
+ * reason is one this list does not know.** `method: "forced"` fails every axis
+ * with no axis being the story, and a future road could refuse without naming
+ * one. Confessing a likeness failure there would be a guess about a customer's
+ * picture printed as a fact.
+ */
+const REFUSED_VIEW_FALLBACK = "This view didn't come out right";
+
+/** The one sentence a refused view confesses, chosen from what actually failed. */
+export function refusedViewReason(failedAxes: readonly string[]): string {
+  for (const axis of REFUSAL_CONFESSION_ORDER) {
+    if (failedAxes.includes(axis)) return REFUSED_VIEW_REASONS[axis];
+  }
+  return REFUSED_VIEW_FALLBACK;
+}
 
 async function failView(
   dependencies: PackageOrchestratorDependencies,

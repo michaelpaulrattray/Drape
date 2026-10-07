@@ -27,7 +27,6 @@ import {
   FACE_FROM_REFERENCE,
   castPackageView,
   composePackageViewPrompt,
-  packageViewExpectation,
   wardrobeSpecFor,
 } from "./castViewPackage";
 
@@ -395,30 +394,27 @@ describe("the canonical view package", () => {
   });
 
   /**
-   * THE BOUNDARY (D-92). The judge is handed the spec and only the spec. If it
-   * is ever handed the directive or the code-owned constant, "does this match
-   * what we sold" silently becomes "did the model do as it was told" — the
-   * settled anti-pattern, and a check that passes happily while the picture is
-   * wrong in a way nobody described.
+   * ⚠ **THE D-92 BOUNDARY ARM MOVED — #1903, and the half that stayed is the
+   * half that still has a subject.**
    *
-   * Asserted on distinctive phrases rather than on whole strings, because a
-   * partial leak is the realistic failure: someone reaches for `view.directive`
-   * to "give the judge more context".
+   * It read `packageViewExpectation(angle)` and held the judge's brief free of
+   * the directive, the authority block and the realism line, because a judge
+   * handed those stops asking *"does this match what we sold"* and starts
+   * asking *"did the model do as it was told"*.
+   *
+   * **The judge is now handed no specification at all**, so the boundary is
+   * answered by there being nothing on the other side of it — held at the WIRE
+   * in `viewConformance.test.ts` ("shows the judge both pictures and NO
+   * specification at all"), which is a stronger arm than this one was: it reads
+   * the request the engine receives rather than the helper it was meant to call.
+   *
+   * What is kept here is the CONTROL half, which was never about the judge:
+   * the generator really is told those things, so the absence asserted over
+   * there is an absence from a populated prompt rather than from an empty one.
    */
-  it("never leaks the generation prompt into what the judge is told", () => {
+  it("tells the GENERATOR its directive and its authority block — the control the judge arm leans on", () => {
     for (const angle of CAST_PACKAGE_VIEWS) {
-      const expectation = packageViewExpectation(angle);
-      const judgeText = `${expectation.framing}\n${expectation.wardrobe}`;
       const prompt = composePackageViewPrompt(angle);
-
-      // Nothing the generator is uniquely told may appear in the judge's brief.
-      expect(judgeText).not.toContain("OUTPUT FRAME");
-      expect(judgeText).not.toContain("AUTHORITY:");
-      expect(judgeText).not.toContain("PHOTOREALISTIC ONLY");
-      expect(judgeText).not.toContain(castPackageView(angle).directive);
-
-      // And the generator IS told those things — otherwise the assertions above
-      // would pass on an empty prompt.
       expect(prompt).toContain(castPackageView(angle).directive);
       expect(prompt).toContain("AUTHORITY:");
     }
@@ -453,17 +449,17 @@ describe("the canonical view package", () => {
     // count was — it would catch a second garment sentence smuggled in as a
     // suffix, which `size === 1` could only have caught by accident.
     const contract = full
-      .map((angle) => packageViewExpectation(angle).wardrobe)
+      .map((angle) => wardrobeSpecFor(angle, null))
       .reduce((shortest, next) => (next.length < shortest.length ? next : shortest));
     for (const angle of full) {
-      const wardrobe = packageViewExpectation(angle).wardrobe;
+      const wardrobe = wardrobeSpecFor(angle, null);
       expect(wardrobe.startsWith(contract), `${angle}: one garment contract, appended to at most`).toBe(true);
       const suffix = wardrobe.slice(contract.length);
       // The suffix is the declared rotation clause or nothing — never a garment.
       expect(suffix === "" || suffix.includes("turns the subject away"), `${angle}: ${suffix.slice(0, 60)}`).toBe(true);
     }
     // And the contract itself is genuinely shared rather than one view's quirk.
-    expect(new Set(full.map((angle) => packageViewExpectation(angle).wardrobe.slice(0, contract.length))).size).toBe(1);
+    expect(new Set(full.map((angle) => wardrobeSpecFor(angle, null).slice(0, contract.length))).size).toBe(1);
 
     /*
       The close-up is deliberately different. At that crop the garment is often
@@ -472,8 +468,8 @@ describe("the canonical view package", () => {
       Its own sentence makes "nothing visible" a stated pass and keeps the axis
       pointed at what a close-up CAN show: things added to the face.
     */
-    const closeUp = packageViewExpectation("closeUp").wardrobe;
-    expect(closeUp).not.toBe(packageViewExpectation("frontFull").wardrobe);
+    const closeUp = wardrobeSpecFor("closeUp", null);
+    expect(closeUp).not.toBe(wardrobeSpecFor("frontFull", null));
     expect(closeUp).toContain("passes");
     /*
       ⚠ This read `toContain("earrings")` until #1221, when the sentence stopped
@@ -494,7 +490,7 @@ describe("the canonical view package", () => {
       customer paid for a contradiction we had authored. A colour word here is
       that defect coming back.
     */
-    const wardrobe = packageViewExpectation("frontFull").wardrobe.toLowerCase();
+    const wardrobe = wardrobeSpecFor("frontFull", null).toLowerCase();
     for (const colour of ["mid-grey", "grey", "gray", "off-white", "cream", "black", "white"]) {
       expect(wardrobe).not.toContain(colour);
     }
@@ -1073,7 +1069,7 @@ describe("the roll road's realism block is byte-identical", () => {
  */
 describe("the close-up's addition check is relative to the reference", () => {
   it("bans nothing absolutely", () => {
-    const { wardrobe } = packageViewExpectation("closeUp", null);
+    const wardrobe = wardrobeSpecFor("closeUp", null);
     for (const ban of ["No earrings", "no glasses", "no piercings", "no headphones"]) {
       expect(wardrobe, `the close-up still bans outright: "${ban}"`).not.toContain(ban);
     }
@@ -1084,7 +1080,7 @@ describe("the close-up's addition check is relative to the reference", () => {
        axis that can fail for a real reason is the whole point of the sentence
        (its own docblock). Both directions are asserted — a sentence that only
        said "hers" would have deleted the check. */
-    const { wardrobe } = packageViewExpectation("closeUp", null);
+    const wardrobe = wardrobeSpecFor("closeUp", null);
     expect(wardrobe).toContain("absent from the reference is ");
     expect(wardrobe).toContain("a failure wherever it appears");
     expect(wardrobe).toContain("the reference DOES show is this person's own and must be there");
@@ -1096,7 +1092,7 @@ describe("the close-up's addition check is relative to the reference", () => {
        spec composed twice is how a judge comes to fail a view for wearing what
        the prompt asked for. */
     expect(composePackageViewPrompt("closeUp", null))
-      .toContain(packageViewExpectation("closeUp", null).wardrobe);
+      .toContain(wardrobeSpecFor("closeUp", null, null));
   });
 });
 
@@ -1306,8 +1302,8 @@ describe("#1278 part 1 — a signed view is dressed by the cast's own brief", ()
         reads its own failure as not applicable", one paragraph up, arriving from
         a direction that was not a defect at all. The floor below is unchanged.
       */
-      if (!packageViewExpectation(angle, null, null).wardrobe.startsWith(CAST_PACKAGE_WARDROBE_SPEC)) continue;
-      const described = packageViewExpectation(angle, null, SIFR).wardrobe;
+      if (!wardrobeSpecFor(angle, null, null).startsWith(CAST_PACKAGE_WARDROBE_SPEC)) continue;
+      const described = wardrobeSpecFor(angle, null, SIFR);
       expect(described, angle).toContain("does not show AND the description does not name");
       expect(described, angle).toContain("a failure wherever they appear");
       narrowed += 1;
@@ -1324,15 +1320,15 @@ describe("#1278 part 1 — a signed view is dressed by the cast's own brief", ()
     */
     for (const angle of CAST_VIEW_ANGLES) {
       const prompt = composePackageViewPrompt(angle, null, SIFR);
-      expect(prompt, angle).toContain(packageViewExpectation(angle, null, SIFR).wardrobe);
+      expect(prompt, angle).toContain(wardrobeSpecFor(angle, null, SIFR));
     }
   });
 
   it("the close-up keeps its OWN wardrobe sentence on both roads", () => {
     /* At that crop the garment is barely in frame, which is why it has its own
        sentence at all. Only the shared sentence has a described form. */
-    expect(packageViewExpectation("closeUp", null, SIFR).wardrobe)
-      .toBe(packageViewExpectation("closeUp", null, null).wardrobe);
+    expect(wardrobeSpecFor("closeUp", null, SIFR))
+      .toBe(wardrobeSpecFor("closeUp", null, null));
   });
 
   it("the three full-length views stop being asked an open question about the hem", () => {
@@ -1418,7 +1414,7 @@ describe("a rotated view knows the turn changed which side of her you see (#1579
     expect(rotated).toEqual(["threeQuarter", "sideClose", "sideFull", "backFull"]);
 
     for (const angle of CAST_VIEW_ANGLES) {
-      const wardrobe = packageViewExpectation(angle, null, null).wardrobe;
+      const wardrobe = wardrobeSpecFor(angle, null, null);
       const carries = wardrobe.includes("turns the subject away from the reference's front-on framing");
       expect(carries, `${angle}: the rotation clause belongs to a rotated view and to no other`)
         .toBe(rotated.includes(angle));
@@ -1426,7 +1422,7 @@ describe("a rotated view knows the turn changed which side of her you see (#1579
   });
 
   it("says what the confusion IS, so the judge has something to act on", () => {
-    const profile = packageViewExpectation("sideClose", null, null).wardrobe;
+    const profile = wardrobeSpecFor("sideClose", null, null);
     /* The three halves of the repair, each doing its own work: the two frames do
        not show the same sides; judge SAMENESS rather than which side of the
        frame; and the asymmetric outfit named as the case it is about. */
@@ -1456,7 +1452,7 @@ describe("a rotated view knows the turn changed which side of her you see (#1579
       remove a true one. So the sameness contract is still there, word for word,
       on the rotated view.
     */
-    const profile = packageViewExpectation("sideClose", null, null).wardrobe;
+    const profile = wardrobeSpecFor("sideClose", null, null);
     expect(profile).toContain("the SAME outfit the reference photograph shows");
     expect(profile).toContain("the same garments, in the same colours");
     expect(profile.startsWith(CAST_PACKAGE_WARDROBE_SPEC)).toBe(true);
@@ -1469,7 +1465,7 @@ describe("a rotated view knows the turn changed which side of her you see (#1579
       prompt asked for, which is this file's own stated law. The sentence is true
       of the render as well as of the reading, so one copy serves both.
     */
-    const judge = packageViewExpectation("sideClose", null, null).wardrobe;
+    const judge = wardrobeSpecFor("sideClose", null, null);
     const generator = composePackageViewPrompt("sideClose", null, null);
     expect(generator).toContain(judge);
   });
@@ -1481,10 +1477,10 @@ describe("a rotated view knows the turn changed which side of her you see (#1579
       for today's casts and silently absent for tomorrow's — the road this
       repository has been bitten by before. Both roads, driven.
     */
-    const described = packageViewExpectation("sideClose", null, "a white dress with industrial straps").wardrobe;
-    expect(described).not.toBe(packageViewExpectation("sideClose", null, null).wardrobe);
+    const described = wardrobeSpecFor("sideClose", null, "a white dress with industrial straps");
+    expect(described).not.toBe(wardrobeSpecFor("sideClose", null, null));
     expect(described).toContain("turns the subject away from the reference's front-on framing");
-    expect(packageViewExpectation("frontFull", null, "a white dress with industrial straps").wardrobe)
+    expect(wardrobeSpecFor("frontFull", null, "a white dress with industrial straps"))
       .not.toContain("turns the subject away");
   });
 });

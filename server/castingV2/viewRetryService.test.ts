@@ -146,6 +146,7 @@ import { CAST_PACKAGE_VIEW_PRICE } from "./castViewPackage";
 const TRY_AGAIN_PRICE = CASTING_V2_VIEW_RETRY_PRICE_CREDITS;
 import { castPronouns } from "./castPronouns";
 import { outfitReferenceClause } from "./outfitPlate";
+import { CONFORMANCE_AXES } from "./viewConformance";
 import {
   deliveredOutfitKeysFrom,
   retryCastView,
@@ -293,8 +294,8 @@ function dependencies(
       method: "model",
       axes: {
         identity: { pass: true, note: "" },
-        angle: { pass: true, note: "" },
-        wardrobe: { pass: true, note: "" },
+        intact: { pass: true, note: "" },
+        people: { pass: true, note: "" },
       },
     })) as never,
     storeImage: async () => ({ key: "views/new.png", url: "https://public/views/new.png" }),
@@ -1227,26 +1228,46 @@ describe("a retry's plate is edited from her master too — #1471", () => {
  * this file pays out. Arms that only lived beside the orchestrator would prove
  * the branch and say nothing about the till.
  */
-describe("only identity takes a retried picture away", () => {
-  const rejectingJudge = (axes: Partial<Record<"identity" | "angle" | "wardrobe", boolean>>) =>
+describe("only a catastrophe takes a retried picture away", () => {
+  /*
+    ⚠ **#1903 REPLACED THE AXES THIS FIXTURE NAMED.** It built an `angle` and a
+    `wardrobe` verdict, because those were the two that delivered. They do not
+    exist; the two that replace them are catastrophes and they REFUSE. So the
+    delivering arm below is driven on the road that still delivers — a judge
+    that could not answer at all — which is the retry's half of D-246 and is
+    the only remaining way a Try again arrives unchecked.
+  */
+  const rejectingJudge = (axes: Partial<Record<"identity" | "intact" | "people", boolean>>) =>
     (() => async () => ({
       pass: false,
       method: "judge:test",
       axes: {
         identity: { pass: axes.identity !== false, note: "" },
-        angle: { pass: axes.angle !== false, note: "" },
-        wardrobe: { pass: axes.wardrobe !== false, note: "" },
+        intact: { pass: axes.intact !== false, note: "" },
+        people: { pass: axes.people !== false, note: "" },
       },
     })) as never;
 
-  it("a PAID try again whose framing is turned down now ARRIVES — charged, kept, not refunded", async () => {
+  /** The retry's D-246 road: nobody could look, so the picture is delivered. */
+  const unreachableJudge = (() => async () => ({
+    pass: false,
+    method: "unavailable",
+    unjudged: true,
+    axes: {
+      identity: { pass: false, note: "the view could not be checked" },
+      intact: { pass: false, note: "the view could not be checked" },
+      people: { pass: false, note: "the view could not be checked" },
+    },
+  })) as never;
+
+  it("a PAID try again nobody could judge still ARRIVES — charged, kept, not refunded", async () => {
     const refunded = slot({
       state: "failed-refunded",
       refundedCredits: CAST_PACKAGE_VIEW_PRICE,
       retry: { priceCredits: TRY_AGAIN_PRICE, reason: "refunded" },
     });
     const result = await retryCastView(
-      dependencies([refunded], { judge: rejectingJudge({ angle: false }) }),
+      dependencies([refunded], { judge: unreachableJudge }),
       input,
     );
 
@@ -1280,6 +1301,9 @@ describe("only identity takes a retried picture away", () => {
     still delivered and still free. That is not a loophole: the customer asked
     for a different picture and got one, and it is still a picture nothing can
     vouch for, which is the entire basis of the free offer.
+
+    ⚠ Driven on the unreachable judge since #1903 — `wardrobe` was the axis
+    that used to produce "unchecked again" and it no longer exists.
   */
   it("a FREE try again that comes back unchecked again delivers, and nothing is charged", async () => {
     const free = slot({
@@ -1291,7 +1315,7 @@ describe("only identity takes a retried picture away", () => {
       retry: { priceCredits: 0, reason: "unchecked" },
     });
     const result = await retryCastView(
-      dependencies([free], { judge: rejectingJudge({ wardrobe: false }) }),
+      dependencies([free], { judge: unreachableJudge }),
       input,
     );
 
@@ -1301,6 +1325,30 @@ describe("only identity takes a retried picture away", () => {
     expect(deducts).toHaveLength(0);
     expect(committed).toHaveLength(1);
   });
+
+  /*
+    ⚠ **HIS OTHER TWO CATASTROPHES REACH THIS TILL TOO — #1903.** The retry
+    charges at dispatch and refunds when the view does not arrive, so a new
+    refusal road is a new refund road, and a rule proven only beside the
+    orchestrator would say nothing about what this file pays out.
+  */
+  for (const axis of ["intact", "people"] as const) {
+    it(`a PAID try again refused on ${axis} does not arrive, and the money goes back`, async () => {
+      const refunded = slot({
+        state: "failed-refunded",
+        refundedCredits: CAST_PACKAGE_VIEW_PRICE,
+        retry: { priceCredits: TRY_AGAIN_PRICE, reason: "refunded" },
+      });
+      const result = await retryCastView(
+        dependencies([refunded], { judge: rejectingJudge({ [axis]: false }) }),
+        input,
+      );
+
+      expect(result.outcome).toBe("failed");
+      expect(result.refundedCredits).toBe(TRY_AGAIN_PRICE);
+      expect(refunds).toHaveLength(1);
+    });
+  }
 });
 
 /**
@@ -1386,14 +1434,17 @@ describe("the settled line, one per Try again (#1608)", () => {
     const judge = (() => async () => {
       call += 1;
       const pass = call > 1;
+      /* ⚠ The two non-identity axes were `angle` and `wardrobe` until #1903
+         retired them, and this fixture kept their names: it survived only
+         because the orchestrator short-circuited on `!verdict.pass` before
+         anything read an axis by name. Derived from the product's own set so
+         it cannot drift again (working law 4). */
       return {
         pass,
         method: "judge:test",
-        axes: {
-          identity: { pass, note: "" },
-          angle: { pass: true, note: "" },
-          wardrobe: { pass: true, note: "" },
-        },
+        axes: Object.fromEntries(
+          CONFORMANCE_AXES.map((axis) => [axis, { pass: axis === "identity" ? pass : true, note: "" }]),
+        ),
       };
     }) as never;
 

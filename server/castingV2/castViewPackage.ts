@@ -37,7 +37,6 @@ import {
 import { pronounsForSex, type CastPronouns } from "./castPronouns";
 import { PHOTOREAL_HUMAN_BLOCKS } from "./cohortPhotorealHuman";
 import { HOUSE_PHOTOGRAPH_PARAGRAPHS } from "./houseBlock";
-import type { ViewFramingBand } from "./viewFramingGeometry";
 
 /**
  * THE ONE RULE A VIEW HAS AND A ROLL CANNOT — kept as a VIEW-ONLY line when
@@ -360,12 +359,17 @@ function wardrobeAdditionsClause(
     paragraph and leaving this sentence to name the rule works perfectly — for
     the GENERATOR, which is handed the whole prompt.
 
-    **The judge is not.** `packageViewExpectation` hands `viewConformance` the
-    framing and wardrobe strings and nothing else; its user message is
-    literally `SPECIFICATION for IMAGE 2: / Framing: … / Wardrobe: …`. A
-    wardrobe sentence that defers to *"the add-nothing rule above"* therefore
-    defers, in the judge's prompt, to nothing at all — and the axis it would
-    silently widen is the one that refunds slices.
+    **The judge is not.** ⚠ **AND SINCE #1903 IT IS HANDED LESS THAN THIS
+    PARAGRAPH SAYS, WHICH MAKES THE SAME POINT HARDER RATHER THAN RETIRING IT.**
+    This read *"`packageViewExpectation` hands `viewConformance` the framing and
+    wardrobe strings and nothing else; its user message is literally
+    `SPECIFICATION for IMAGE 2: / Framing: … / Wardrobe: …`"* — that function and
+    that whole specification are DELETED, and the judge is now posted the two
+    pictures and no text about them at all. So a wardrobe sentence that defers to
+    *"the add-nothing rule above"* defers, in the judge's prompt, to nothing
+    whatsoever; the only thing that has changed is that there is no longer a
+    wardrobe axis for it to widen, and the rule survives for the reason it was
+    written: prose written for one reader is not thereby true for another.
 
     So this sentence stays self-contained: its own nouns, its own condition. The
     duplication is real and is the price of one clause having two consumers that
@@ -465,8 +469,11 @@ function describedWardrobeSpec(pronouns: CastPronouns, outfitReferenceOrdinal: n
     below-frame clause already ends *"where it leaves them open any reading in
     keeping with the garments, materials and colours above the crop is correct"*,
     which is precisely what a plate-dressed hem is, so the permissive side is
-    already wide enough to admit one. `packageViewExpectation` therefore passes
-    `null` here and its sentence is byte-identical to today's.
+    already wide enough to admit one. ⚠ **This sentence used to end
+    *"`packageViewExpectation` therefore passes `null` here"*; since #1903 there
+    is no such function and the judge is posted no specification at all**, so the
+    worry it answered — the judge reading a clause about a picture it cannot see
+    — cannot arise through that door any more.
   */
   const belowFrame = outfitReferenceOrdinal === null
     ? "Inside the frame of the reference, the reference is the record. Below its frame the "
@@ -696,60 +703,6 @@ type CastPackageView = {
   label: string;
   spec: CastPackageViewSpec;
   /**
-   * ⚠ **THE SAME FRAMING, STATED AS GEOMETRY — #1612 part 1, his ruling of
-   * 2026-09-30 (*"i agree with you"*).**
-   *
-   * `spec.framing` above is a sentence handed to a vision model, and a model
-   * reading a two-part prose rule answers whichever half is easiest: on one
-   * afternoon the same close-up spec refused a three-eyed cast for not having
-   * two eyes (#1582) and passed a frame with the whole neck and shoulders in it
-   * that the same sentence calls too loose (#1611). This is that band written as
-   * landmark predicates a segmenter can answer the same way every time.
-   *
-   * It sits HERE, beside the sentence it restates, because a view is one thing
-   * and everything about it belongs in one entry — the same reason `belowWaist`,
-   * `rotated` and `concealmentTest` are declared per view rather than derived
-   * from the angle's name.
-   *
-   * ⚠ **IT IS A SECOND STATEMENT OF ONE BAND UNTIL THE SLICE THAT WIRES IT, AND
-   * THAT IS DECLARED RATHER THAN QUIET.** Nothing reads this yet: the judge is
-   * still asked `spec.framing` in prose. The slice that hands the framing axis
-   * to the measurement DELETES that sentence from the judge's post, and one band
-   * is left. Until then the two can disagree, and `viewFramingBands.test.ts`
-   * holds each band against the sentence it restates by naming, for every rule,
-   * the clause it comes from.
-   *
-   * ⚠ **AND THAT SLICE IS NOT A WIRING — MEASURED 2026-10-01, WHEN IT WAS PICKED
-   * UP, AND THE PARAGRAPH ABOVE IS WHY IT LOOKED LIKE ONE.** *"Deletes that
-   * sentence and one band is left"* was only true where the band said everything
-   * the sentence says, and on four views it did not: `closeUp` owed an
-   * ORIENTATION and a feature-PRESENCE test, `frontClose` owed how much of her is
-   * in the picture, `sideFull` and `backFull` each owed which way the body faces.
-   * **Five clauses, and `closeUp` was the one view whose band carried no
-   * `readerRemainder` and therefore read as fully measured.** Each was declared
-   * on its own band as `unrestated` and held there; the hand-over is paid off per
-   * view, and deleting the prose question on a view that still owes one deletes a
-   * stated framing test with no line of code saying so.
-   *
-   * It went unseen because the guard above pairs RULES with clauses in both
-   * directions and **neither direction can see a clause no rule ever cited** —
-   * the one-way blindness this repository keeps paying for.
-   *
-   * ⚠ **ALL FIVE ARE PAID AND NO BAND CARRIES `unrestated` — 2026-10-02.** Four
-   * went to a reader's remainder (#1717) and the fifth, `frontClose`'s *"a
-   * head-and-shoulders portrait"*, is restated by a measured `roomBelowAtMost
-   * face` bound (the court is on that band). **So the precondition is met on
-   * every view and the hand-over is a wiring again** — with one correction the
-   * sentence at the top of this block still needs: on `closeUp` it is a
-   * NARROWING of the judge's framing question rather than a deletion of it, and
-   * on `frontClose` too. A hand-over written as *delete `spec.framing` from the
-   * post* would take four views' stated reader questions with it.
-   *
-   * A view whose framing also asks something geometry does not answer here says
-   * so in `band.readerRemainder`, in its own words.
-   */
-  band: ViewFramingBand;
-  /**
    * The generation directive for this angle.
    *
    * Ported from the legacy per-angle framing craft (`geminiViews.ts`
@@ -872,319 +825,6 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
         + FACE_FROM_REFERENCE,
       wardrobe: CLOSE_UP_WARDROBE,
     },
-    /*
-      THE FOUNDER'S OWN BAND, AS GEOMETRY — and both of his bounds turn out to
-      be ONE quantity, which is what a band is.
-
-        too tight   his words: "the bottom edge of the frame cuts the mouth or
-                    the lower edge of the face, or that lower edge touches the
-                    bottom of the frame with no skin below it" — so there is
-                    SOME room below the face.
-        too loose   his words: "the neck and shoulders are in frame, or the
-                    whole head fits with clear space above the hair" — so there
-                    is not MUCH room below the face, and the subject is cut by
-                    the top.
-
-      *"the answer is the range between them"* is his sentence about the crop,
-      and the two rules on `face` are literally that range: more than a visible
-      margin of picture below the lower edge of the face, and at most a third of
-      a face-height of it.
-
-      ⚠ **THE TOO-LOOSE RULE WAS `absent shoulders` UNTIL IT WAS DRIVEN, AND THE
-      DRIVE IS THE MOST USEFUL THING ON THIS CARD.** It is the spec's own words,
-      it passed every unit arm, and on his six production close-ups
-      `region("shoulders")` answered NOTHING on the three frames that plainly
-      have shoulders and answered SHOULDERS on the two that have none — wrong on
-      five of five and wrong in both directions. See `FRAMING_LANDMARKS` in
-      `viewFramingGeometry.ts` for the table. Room below the face is the same
-      fact with no body part in it, and it is what separates his frames:
-
-          asset  a person reading it         room below the face
-          306    in band                     0.07
-          345    in band (tusks, a cowl)     0.18
-          314    neck and a collar           0.20
-          322    neck and both shoulders     0.48   <- #1611
-          326    neck and a shoulder strap   0.52
-          371    neck and both shoulders     0.56   <- #1611
-
-      0.3 sat in the middle of an empty band between 0.20 and 0.48 — a factor
-      of 2.4 with nothing in it — rather than being fitted to a boundary case.
-      ⚠ It was still a number chosen from six frames on one shift's reading, and
-      **his eye closes it** (law 9): 314 and 326 are the two it separates, and
-      they are the two a person could argue about.
-
-      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-      ⚠ **AND HIS EYE CLOSED IT AGAINST THE NUMBER — 0.3 → 0.7, 2026-10-03
-      (#1837, founder-ordered). THE SENTENCE ABOVE IS KEPT AS THE ORIGIN AND IS
-      NO LONGER THE LAW.**
-
-      He was shown the two Sifr2 close-ups from #1612's template court and
-      judged both. His words, verbatim and entire, in the order he said them:
-
-          *"stop the example, sifr2 right hand pcitrue looks like a closeup
-           to me."*
-          *"on Sifr2 Yes it reads as a closeup."*
-
-      The right-hand picture is the example-assisted render at **0.42** of a
-      face-height of room below the face; the left is today's road at **0.51**.
-      **The 0.3 line called both out of band.** Law 9 — a reading is a pointer
-      to look, never a fact to file, and the frame goes in front of his eyes —
-      so the line is wrong and the eye is not.
-
-      ⚠ **WHAT THAT OVERTURNS IS HIS OWN EARLIER SENTENCE, AND SAYING SO IS THE
-      WHOLE POINT OF THIS PARAGRAPH.** The posted spec above still reads *"TOO
-      LOOSE … the neck and shoulders are in frame"*, and the frames he has now
-      called close-ups are exactly that: asset 322 is *neck and both shoulders*
-      at 0.48 and asset 326 is *neck and a shoulder strap* at 0.52, both inside
-      the new line. **A later reader will meet that sentence, meet this number,
-      and conclude one of them is a mistake.** Neither is: the sentence is what
-      he wrote in the abstract, the number is what he said at the frames, and
-      this product's law is that the frames win. The sentence is not posted to
-      the engine on this view anyway — it is the one entry in
-      `restatedInFull`, so the measurement replaced it rather than joining it.
-
-      **The new line is set by the same method as the other two, not to taste:**
-
-          THE CLOSE-UPS   his own frames, now including his two judgements
-                          0.07 · 0.18 · 0.20 · 0.42 · 0.48 · 0.51 · 0.52 · 0.56
-          THE PORTRAITS   the 11 sealed `frontClose` anchors (#1612's court)
-                          1.10 … 3.03
-
-      **An empty band from 0.56 to 1.10**, and the top of the close-up
-      population that HIS EYE has ruled on is **0.51**. Taken between his
-      highest judged close-up and the lowest portrait: √(0.51 × 1.10) = 0.7490
-      → **0.7**, rounded to the one decimal the other two bounds carry (3.7 from
-      3.74, 0.3 from 0.3098 — each, like this one, landing slightly tight).
-      It clears his 0.51 by a factor of 1.37 and sits under the tightest
-      portrait by 1.57.
-
-      ⚠ **AND THE BAND IS NOT EMPTY — MEASURED 2026-10-03 WHILE DRAWING THE
-      STRIP THIS CARD OWES HIM, AND THE NUMBER ABOVE IS LEFT ALONE UNTIL HIS EYE
-      SAYS OTHERWISE.** The close-up population either bound was ever chosen
-      from is SIX frames. Production has **ten** delivered `closeUp` rows on his
-      account, and the four nobody had read are
-      342 (0.155) · 332 (0.333) · 390 (0.404) · **384 (0.826)**.
-
-          asset 384, Hingu — a bandaged skull, head and the top of the shoulders
-
-      **0.826 sits inside the gap this paragraph calls empty**, so the sentence
-      above was true of the frames it had and false of the product. Under the
-      0.7 line that picture is turned away — one delivered close-up in ten.
-
-      ⚠ **NOTHING IS MOVED ON THAT FINDING, AND THAT IS THE POINT.** A shift
-      re-fitting the line to a frame it just found would be fitting to a boundary
-      case, which is the one thing all three of these bounds are chosen to avoid,
-      and it would be a shift overruling his eye with arithmetic. 384 is on the
-      strip on his Desk with the plain question under it — *is this a close-up?*
-      — and law 9 closes it: if he says yes the line moves above 0.826 by the
-      stated method; if he says no it stays at 0.7 and the band has its first
-      measured frame on the portrait side of the gap. **Either answer is worth
-      more than this paragraph's old confidence.**
-
-      The reproduction arm, so the four new numbers are not a lone reading: all
-      ten previously recorded values — the six close-ups and the four portraits
-      quoted here — came back identical to two decimals through the same reader
-      on the same frames (10/10), and no portrait read below 0.7.
-
-      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-      ⚠ **HE ANSWERED, AND THE ANSWER WAS YES — 0.7 → 0.9, 2026-10-07 (#1837,
-      reply #260 on the eye item `closeup-line-1837`). THE TWO PARAGRAPHS ABOVE
-      ARE KEPT AS THE ORIGIN AND ARE NO LONGER THE LAW.** He was shown the strip
-      with asset 384 immediately right of the line and the plain question under
-      it — *is Hingu a close-up?* — and his word, verbatim and entire, was:
-
-          *"YES"*
-
-      So the line moves above 0.826 **by the stated method and not to taste**,
-      which is the road that paragraph promised:
-
-          THE CLOSE-UPS   his own frames, now including this judgement —
-                          the complete delivered `closeUp` population of ten
-                          0.073 · 0.155 · 0.177 · 0.199 · 0.333 · 0.404
-                          · 0.478 · 0.517 · 0.563 · **0.826**
-          THE PORTRAITS   the 11 sealed `frontClose` anchors (#1612's court)
-                          1.102 … 3.034
-
-      √(0.8260 × 1.1018) = **0.9540** → **0.9**, and under it **0 of his ten
-      delivered close-ups are turned away** (it was one in ten at 0.7) while **0
-      of his eleven portraits are admitted**. Both inputs were re-read at
-      `output/1837-strip/readings.json` rather than taken off the table above —
-      the numbers here are that artifact's, to three decimals, and the table
-      above quotes the same frames to two.
-
-      ⚠ **THIS IS THE FIRST TIME THE ROUNDING RULE'S TWO READINGS DISAGREE, SO
-      THE CHOICE IS ARGUED HERE RATHER THAN ASSUMED.** The convention above is
-      *"rounded to the one decimal the other two bounds carry … each, like this
-      one, landing slightly tight"* — and all three precedents were cases where
-      rounding DOWN and rounding to NEAREST give the same answer (3.7416 → 3.7,
-      0.3098 → 0.3, 0.7490 → 0.7). 0.9540 is the first that splits them: down is
-      **0.9**, nearest is **1.0**. Three things settle it on 0.9, and none of
-      them is the arithmetic:
-
-        1. **The stated convention is the tight one** — *landing slightly tight*
-           is what the other three did, and 1.0 would be the first to land loose.
-        2. **The asymmetry it buys is the safe one.** 0.9 clears his judged frame
-           by 1.09× and sits under the tightest portrait by **1.22×**; 1.0 clears
-           his frame by 1.21× and the portrait by only **1.10×**. The cost of
-           sitting near the close-up edge is a wrong `Unchecked` mark with a free
-           Try again — part 2's own answer, never a lost picture. The cost of
-           sitting near the portrait edge is a genuinely portrait-framed picture
-           passing with NO flag at all, which is the one thing this band is for.
-        3. **It is the card's own done-when.** *"A portrait-framed picture
-           delivered where a close-up was asked still reads out"* is the clause
-           0.9 holds more of.
-
-      ⚠ **AND THE GAP IS NEARLY CLOSED, WHICH IS THE REAL LIMIT AND IS DECLARED
-      RATHER THAN LEFT TO BE DISCOVERED.** This method needs an EMPTY band with
-      room in it, and his ruling has spent most of what was left:
-
-          0.20 → 0.48   a factor of 2.40   (where 0.3 was fitted)
-          0.52 → 1.10   a factor of 2.13   (where 0.7 was fitted)
-          0.83 → 1.10   a factor of **1.33**  ← where 0.9 is fitted, today
-
-      **One more measured frame inside that interval and the geometric middle is
-      no longer in a gap — it is fitted to a boundary case, which is the one
-      thing all three of these bounds exist to avoid.** When that happens the
-      answer is NOT a tighter decimal: it is his eye on the two frames either
-      side, because at 1.33× the close-up population and the portrait population
-      have very nearly met and no arithmetic can say where one ends. A shift
-      that finds such a frame puts it on the strip and moves nothing, exactly as
-      the paragraph above did.
-
-      ⚠ **THE CONSERVATIVE INPUT IS DELIBERATE AND IS NAMED.** 0.52 and 0.56
-      (assets 326 and 371) also fall inside the new line, and he has NOT judged
-      those two — they are admitted as a consequence of his ruling rather than
-      by a reading of their own, because any line above 0.51 admits them and a
-      line between 0.51 and 0.52 would be fitted to a boundary case, which is
-      the thing all three of these numbers are chosen to avoid. Using 0.51
-      rather than 0.56 as the band's lower edge is the tighter of the two
-      honest choices.
-
-      ⚠ **AND #1611 IS ANSWERED BY THIS, NOT BY A SEPARATE FIX.** Its specimen
-      is asset 322 at 0.48 — *"a too-loose close-up passed 50/50"* — and under
-      the new line that picture is simply IN BAND, which is his eye's verdict on
-      its siblings. Nothing about the coin it measured changes; what changes is
-      that the question it was asking no longer has two answers.
-
-      **His eye closes this one too**, and the strip of close-ups and portraits
-      in order with the line drawn goes to his Desk as an eye item.
-
-      The headroom test reads the whole silhouette rather than the hair: a
-      headwrap, a horn, a branch or a bald crown all decide "is there clear
-      space above this person" and only one of them is a hairline. Pika's
-      dreadlocks and Kai's cowl are both in the record.
-
-      Left and right are deliberately unconstrained — his ruling lets hair run
-      off both edges, and a rule he did not state is not added here.
-    */
-    band: {
-      rules: [
-        { must: "clearOf", landmark: "face", edge: "bottom" },
-        { must: "roomBelowAtMost", landmark: "face", inItsOwnHeights: 0.9 },
-        { must: "cutBy", landmark: "subject", edge: "top" },
-      ],
-      /*
-        ⚠ **THE TOO-LOOSE PAIR LEAVES THE JUDGE'S POST — the hand-over, #1612,
-        and this is the ONE view where his *"the prose framing spec stops being
-        sent"* is literally achievable.** The pair is `roomBelowAtMost face 0.9`
-        and `cutBy subject top`, which between them restate every TEST in these
-        two sentences:
-
-          *"the neck and shoulders are in frame"*  → 0.9 of a face-height of
-          room below the face, measured — on his own frames and then on HIS EYE,
-          which moved this number TWICE: from 0.3 on 2026-10-03 and from 0.7 on
-          2026-10-07 (#1837, the block above).
-          *"the whole head fits with clear space above the hair"*  → the subject
-          is CUT BY the top edge, which is the same fact with no hairline in it.
-
-        ⚠ **AND `restate` IS NOW THE GENEROUS WORD FOR THE FIRST OF THOSE TWO,
-        WHICH IS STATED HERE RATHER THAN LEFT FOR SOMEBODY TO DISCOVER.** At 0.3
-        the measurement agreed with his sentence; at 0.9 it is WIDER than the
-        sentence — wider still than 0.7 was — because he looked at three frames
-        with a neck and shoulders in them (and, at 0.826, the top of the
-        shoulders on a bandaged skull) and called every one of them a close-up.
-        So this entry no longer removes a
-        sentence the rule merely re-says — it removes a sentence the rule
-        **supersedes**, on his eye. That is the right outcome and the only one
-        law 9 allows, and it is why the posted spec must keep losing this
-        sentence: posting it while measuring 0.9 would hold a paid view to two
-        standards that disagree.
-
-        **The first half of the first sentence is a PERMISSION and needs no
-        test**: *"The top of the head may be cropped and hair may run off the
-        left and right edges"* grants what `cutBy subject top` requires, and the
-        band leaves left and right unconstrained on purpose (his ruling lets
-        hair run off both edges, and a rule he did not state is not added here).
-        *"That is a portrait, not a close-up."* is the pair's own gloss and would
-        dangle without them, so it goes with them.
-
-        ⚠ **AND `TOO TIGHT` DELIBERATELY STAYS WITH THE READER, which is the one
-        judgement in this list worth arguing with.** `clearOf face bottom`
-        restates its second half (*"that lower edge touches the bottom of the
-        frame with no skin below it"*) and does NOT restate its first: *"the
-        bottom edge of the frame cuts the mouth"* names a FEATURE, and inferring
-        the mouth's position from the face region's lower edge is anatomy — which
-        is #1582's whole specimen (a rule stated in human anatomy refuses a being
-        built differently). So the too-tight sentence is posted as it always was
-        and the measurement answers it too; the cost of that overlap is a wrong
-        `unchecked` mark at worst, never a lost picture (part 2).
-      */
-      restatedInFull: [
-        "The top of the head may be cropped and hair may run off the left and right edges — "
-        + "but TOO LOOSE, and it fails: the neck and shoulders are in frame, or the whole "
-        + "head fits with clear space above the hair. That is a portrait, not a close-up.",
-      ],
-      readerAlsoAsked:
-        "the margin below the face. `clearOf face bottom` measures it, and its clause — \"with "
-        + "a margin of skin visible BELOW that lower edge\" — is the tail of a sentence whose "
-        + "head is the feature test (\"The mouth, every eye the reference shows … are entirely "
-        + "inside the frame\"), so removing it would leave a sentence he never wrote. The "
-        + "too-tight sentence stays posted for the same reason and on a stronger one: \"the "
-        + "bottom edge of the frame cuts the mouth\" is a feature, and inferring a mouth from "
-        + "the face region's lower edge is the anatomy #1582 was filed about.",
-      /*
-        ⚠ **THE TWO CLAUSES OF HIS OWN SPEC THAT NO RULE ABOVE RESTATES — DECLARED
-        AS DEBT BY #1675 AND DISCHARGED HERE AS A READER'S QUESTION (#1612, the
-        hand-over's debt, 2026-10-01).** This is the view the types called FULLY
-        MEASURED: it carried no `readerRemainder`, which read as *nothing is left
-        over*, where what was true is *the rules left nothing over* — a different
-        sentence about a smaller thing.
-
-        Neither clause is a crop, which is why a silhouette cannot reach either:
-        one is an ORIENTATION and one is a feature PRESENCE test. Discharged by
-        road 2 of the three {@link ViewFramingBand.unrestated} names — they are a
-        reader's question forever rather than a rule nobody has written yet — and
-        the reason is different for each, which is why both are quoted rather than
-        summarised:
-
-          *"front-on crop of the face"* is a direction the face is turned. Every
-          landmark in this vocabulary is a silhouette or a region, and a
-          three-quarter crop produces exactly the same `face` mask in exactly the
-          same place as a front-on one. Measuring it would need the reference's
-          own face scan, not a box.
-
-          *"The mouth, every eye the reference shows"* is a COUNT, so #1582
-          governs it: a count refuses a being that does not have the feature, and
-          that is the specimen this whole card was filed about.
-          {@link FACE_FROM_REFERENCE} is the sentence that keeps the reader's
-          version of it reference-relative, and a count belongs with the
-          reference's own face scan if it belongs anywhere.
-
-        ⚠ **SO THE HAND-OVER ON THIS VIEW IS NOT A DELETION OF THE PROSE QUESTION
-        — IT IS A NARROWING OF IT.** The judge keeps the two halves named above
-        and stops being asked the three the rules now answer. A hand-over written
-        as *delete `spec.framing` from the post* would take both of these with it.
-      */
-      readerRemainder:
-        "whether this is a \"front-on crop of the face\" rather than a turned one — an "
-        + "orientation, and one no silhouette can answer because a three-quarter crop puts "
-        + "the same face in the same place — and whether \"The mouth, every eye the "
-        + "reference shows\" are inside the frame, which is a feature COUNT and belongs with "
-        + "the reference's own face scan (#1582: a count refuses a being that does not have "
-        + "the feature).",
-    },
     directive:
       "BEAUTY CLOSE-UP OF THE FACE, STRAIGHT ON. The face fills the frame. Crop the TOP of "
       + "the frame across the forehead — anywhere between the eyebrows and the hairline — so "
@@ -1235,115 +875,6 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
       count belongs with the reference's own face scan if it belongs anywhere.
       It stays with the reader, named below.
     */
-    band: {
-      rules: [
-        { must: "clearOf", landmark: "subject", edge: "top" },
-        /*
-          ⚠ **HOW MUCH OF HER IS IN THE PICTURE — #1675's sharpest debt and the
-          LAST of its five, PAID BY MEASUREMENT on 2026-10-02 (#1612, the
-          `frontClose` bound court).**
-
-          The rule above and the remainder below said nothing about distance:
-          `clearOf subject top` is satisfied by a full-length body with room over
-          its hair, so **a whole-body frame delivered into the Portrait slot
-          measured in band.** The hand-over leaves the measurement as the framing
-          axis's whole answer, so it would have shipped that hole.
-
-          Road 2 — declaring it a reader's question forever — would have been a
-          LIE about this one, which is why it was the only debt left standing.
-          The other four were an orientation, a stride, a concealment and a
-          feature count: things no box can answer. This one is a box.
-
-          # The court, because the NUMBER is the whole of it (law 9)
-
-          0.3 above took six of his frames and a Desk reply. This took **43
-          production frames, his account, all time, through the real segmenter**
-          (`fal-ai/sam-3/image` for the face, BiRefNet for the silhouette; 86
-          calls, ~$0.86 of house money, `_1612-portrait-bound-disposable.mts`).
-          Two populations, both of them real delivered pictures:
-
-              THE PORTRAITS    the 11 `frontClose` rows      1.10 … 3.03
-              THE FULL LENGTH  the 11 `frontFull` rows       4.61 … 10.39
-
-          **An empty band from 3.03 to 4.61 with nothing in it**, and 3.7 is its
-          geometric middle (√(3.03 × 4.61) = 3.74) — the same method that put 0.3
-          in the middle of 0.20 … 0.48, so the two bounds are chosen the same way
-          rather than each to taste. It clears the loosest portrait by a factor of
-          1.22 and sits under the tightest full length by 1.25.
-
-          **It is a measurement and not a draw**: asset 295 read ten times
-          returned 1.5058 ten times, to four decimal places.
-
-          ⚠ **THE IN-BAND POPULATION IS THE SEALED ANCHORS, AND THAT IS A PROXY —
-          WRITTEN HERE RATHER THAN LEFT TO BE ASSUMED.** All 11 carry an `anchor/`
-          key and no conformance record at all: `activateSignedCast` seals this
-          slot from the Master and nothing ever judges it, so **no `frontClose`
-          RENDER exists on production to measure.** The Master is framed chest-up
-          and square to camera, which is what the Portrait directive asks for, so
-          it is the right proxy for the DISTANCE — but a render's spread around it
-          is unmeasured, and that is what a later court would widen.
-
-          ⚠ **AND THE READING THAT LOOKS LIKE A DEFECT IS NOT ONE: 4 of those 11
-          anchors read `clearOf subject top` FALSE**, and at the frames the
-          segmenter is right on all four — Pika's spiked crown, Sifr2's and Yimi's
-          buns and Hingu's crystal crown each run off the top edge. A Master is a
-          roll frame and was never rendered against *"the whole hair silhouette
-          inside the frame"*; a Try again on this slot is. The rule stands.
-
-          ⚠ **THE BACK VIEWS HAVE NO FACE, so this rule has NO ANSWER on them** —
-          11 of 11 `backFull` frames returned no face region, which folds to
-          `cannotMeasure` rather than to a pass. That is why the out-of-band
-          population above is `frontFull` alone, and it is reported rather than
-          averaged into a range it cannot be in.
-        */
-        { must: "roomBelowAtMost", landmark: "face", inItsOwnHeights: 3.7 },
-      ],
-      readerRemainder:
-        "whether every eye the reference shows is visible, and whether the subject is square "
-        + "to the camera — a feature count and an orientation, neither of which this file's "
-        + "landmarks can answer without the reference's own face scan.",
-      /*
-        ⚠ **NOTHING LEAVES THIS VIEW'S POST, AND THE WHOLE SPEC IS ONE SENTENCE
-        — which is why {@link ViewFramingBand.readerAlsoAsked} is filled in
-        rather than this band carrying an empty `restatedInFull`.**
-
-        *"a head-and-shoulders portrait, square to the camera, every eye the
-        reference shows visible, the whole hair silhouette inside the frame with
-        headroom above it."* Both rules cite a clause of it and both of the
-        remaining clauses are the reader's, so there is no sentence boundary to
-        cut at. Removing the two measured clauses would compose *"square to the
-        camera, every eye the reference shows visible"* — a sentence he never
-        wrote, posted as the standard a paid Portrait is held to.
-      */
-      readerAlsoAsked:
-        "both of its measured clauses. \"a head-and-shoulders portrait\" (the 3.7 bound) and "
-        + "\"the whole hair silhouette inside the frame with headroom above it\" (clearOf "
-        + "subject top) are two of the four clauses of a single sentence, and the other two — "
-        + "an orientation and a feature count — are the reader's. There is no sentence "
-        + "boundary here, so removing them would recompose his sentence.",
-      /*
-        ⚠ **`unrestated` IS GONE FROM THIS BAND AND THE RECORD OF WHY IS HERE —
-        the debt list only ever shrinks, and this is the commit that empties it
-        across every view.**
-
-        It read `["a head-and-shoulders portrait"]`, declared by #1675 and left
-        standing by #1717 because it was the one clause of the five a rule could
-        honestly restate. The rule above restates it, `viewFramingBands.test.ts`
-        cites it, and that suite's `OWED_AT_THE_HAND_OVER` keeps the clause on the
-        record so a later edit cannot quietly drop the rule and the memory of it
-        together.
-
-        ⚠ **AND THIS WAS NEVER CEREMONIAL DEBT ON A DEAD ENTRY — measured
-        2026-10-01, because the tempting reading is that it is.** This angle is
-        not in `CAST_PACKAGE_VIEWS`, so no new Sign renders it, and the obvious
-        conclusion is that no judge ever reads this spec. It is false:
-        `castProjection` builds a historical Cast's slots from the promise it
-        BOUGHT (see the anchor comment at the top of that read), every era that
-        bought a `frontClose` has one, and `castSlotRetryOffer` offers a Try again
-        on it — which reaches `viewRetryService`, `castPackageView(angle)` and
-        this sentence. A customer can still have this view judged today.
-      */
-    },
     directive:
       "FRONT-FACING HEAD AND SHOULDERS PORTRAIT. Square to camera, head straight with no tilt, "
       + "the eyes this person has looking directly into the lens. The entire hair silhouette is "
@@ -1401,32 +932,6 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
         + FACE_FROM_REFERENCE,
       wardrobe: WARDROBE,
     },
-    /*
-      ⚠ **NO MEASURABLE RULE, AND THE REASON IS WORTH MORE THAN THE RULE WOULD
-      HAVE BEEN.** The obvious one to write here is the headroom its two
-      neighbours have — *"the entire hair silhouette stays inside the frame"* —
-      and that sentence is in this view's DIRECTIVE, not in its spec. The
-      directive is what the generator was asked for; the spec is the standard a
-      delivered picture is held to, and a measurement that quietly promoted a
-      generator instruction into a standard would be refusing pictures for a
-      rule nobody wrote down. The band restates the SPEC or it restates nothing.
-
-      What the spec does state is a TURN and an eye count, and both stay with
-      the reader below. The turn is geometry in principle — where the nose sits
-      against the face's own width answers *"which way is this head turned"*
-      without estimating a degree — but it needs a landmark model rather than a
-      silhouette, and #1414 is a warning about answering a direction question
-      cheaply.
-    */
-    band: {
-      rules: [],
-      readerRemainder:
-        "the whole of it: which way the head is turned, that it is neither square to the camera "
-        + "nor a full profile, and that every eye the reference shows is still visible. A "
-        + "direction needs a landmark read and an eye count needs the reference's own face scan "
-        + "(#1582); neither is a silhouette question. The mirror-image failure #1492 measured "
-        + "stays with the reader with them.",
-    },
     directive:
       "RIGHT-FACING THREE-QUARTER PORTRAIT. Head and shoulders only. The subject's nose points "
       + "diagonally toward the RIGHT EDGE OF THE OUTPUT FRAME at a 45-degree turn; the eyes this "
@@ -1444,29 +949,6 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
         "the whole body from the top of the hair to the feet, standing square to the camera, "
         + "arms relaxed at the sides, nothing cropped at the top or bottom of the frame",
       wardrobe: WARDROBE,
-    },
-    /*
-      *"nothing cropped at the top or bottom of the frame"* — the whole
-      silhouette clear of both ends, which is the plainest geometry in the table
-      and the one the reader was worst at: `backFull` is the most-refused view
-      on production, 3 of 13, and none of the four cards this measurement came
-      from had looked at it.
-
-      *"standing square to the camera, arms relaxed at the sides"* is a pose
-      rather than a crop; it stays with the reader, named below.
-    */
-    band: {
-      rules: [
-        { must: "clearOf", landmark: "subject", edge: "top" },
-        { must: "clearOf", landmark: "subject", edge: "bottom" },
-      ],
-      readerRemainder: "the pose — square to the camera, arms relaxed at the sides.",
-      readerAlsoAsked:
-        "the whole crop. Both rules cite \"nothing cropped at the top or bottom of the frame\", "
-        + "which is the last clause of this view's single sentence, and the clause before it "
-        + "says the same fact twice — \"from the top of the hair to the feet\". Cutting both "
-        + "out leaves \"the whole body standing square to the camera, arms relaxed at the "
-        + "sides\", which is a sentence written by a shift and not by him.",
     },
     directive:
       "FULL BODY FRONT VIEW. The subject stands square to camera, head to feet entirely inside the "
@@ -1599,27 +1081,6 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
         + "rather than reading as the edge of the face, that is a three-quarter turn and it FAILS.",
       wardrobe: WARDROBE,
     },
-    /*
-      ⚠ **THE ONE VIEW WITH NO MEASURABLE RULE AT ALL, and that is the honest
-      answer rather than a gap.** Every word of this spec is about CONCEALMENT —
-      one eye showing, the far eye hidden behind the nose and the brow — which is
-      a question about what is NOT in the picture, and a silhouette cannot answer
-      it. Its `concealmentTest` flag above already says why this view is unlike
-      its neighbours.
-
-      An empty rule list folds to `inBand`, which is correct: nothing was asked
-      here, so nothing here failed, and the remainder below is what a reader is
-      still answering. A band that invented a rule to avoid being empty would be
-      the tidy answer #1582's court already refused twice.
-    */
-    band: {
-      rules: [],
-      readerRemainder:
-        "the whole of it: a true side profile is judged by what is CONCEALED — one eye showing, "
-        + "the far eye hidden behind the nose and the brow — and concealment is not a silhouette "
-        + "question. A rule here would also have to be stated in the reference's own eye count "
-        + "(#1582), which lives with the face scan and not with these landmarks.",
-    },
     directive:
       "STRICT RIGHT-FACING SIDE PROFILE PORTRAIT. Head and shoulders only. The subject's nose points "
       + "toward the RIGHT EDGE OF THE OUTPUT FRAME; show one eye and a true 90-degree profile, never a "
@@ -1652,45 +1113,6 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
         + "the walk genuinely in motion rather than a standing pose",
       wardrobe: WARDROBE,
     },
-    /*
-      Retired from the profile and given its band anyway, on the same
-      sibling-consistency ground its `belowWaist` and `rotated` comments state:
-      a historical entry that behaves differently from its live siblings is the
-      trap the day somebody un-retires it. *"head to feet inside the frame"* is
-      the same two rules as the two full-lengths; the STRIDE is a pose and stays
-      with the reader.
-    */
-    band: {
-      rules: [
-        { must: "clearOf", landmark: "subject", edge: "top" },
-        { must: "clearOf", landmark: "subject", edge: "bottom" },
-      ],
-      /*
-        ⚠ The SIDE — declared as debt by #1675 and discharged here as a reader's
-        question (#1612, the hand-over's debt, 2026-10-01). Two `clearOf subject`
-        rules hold a body inside the frame and say nothing about which way it
-        faces, and the remainder below named only the stride — so a front-on
-        full-length walk measured in band here.
-
-        Road 2 of the three, for the same reason the stride beside it already
-        takes it: no landmark in this vocabulary distinguishes a body in profile
-        from a body square to camera. Both halves of this view's framing that
-        geometry cannot reach now sit in one sentence.
-
-        Retired from the profile (this angle is not in `CAST_PACKAGE_VIEWS`), so
-        no new Sign renders it — but a Try again on a historical Cast that BOUGHT
-        one reaches the judge through `castProjection`'s promise road, so the
-        remainder is live rather than ceremonial.
-      */
-      readerRemainder:
-        "that the walk is genuinely in motion rather than a standing pose, and that the body "
-        + "is \"seen from the side\" rather than square to camera — a stride and an "
-        + "orientation, neither of which two `clearOf subject` rules can tell apart.",
-      readerAlsoAsked:
-        "the crop. Both rules cite \"head to feet inside the frame\", which sits between the "
-        + "orientation clause and the stride clause inside this view's single sentence — so it "
-        + "has a comma on each side and no sentence boundary anywhere.",
-    },
     directive:
       "STRICT RIGHT-FACING FULL BODY SIDE PROFILE, WALKING. The subject's nose and toes point toward "
       + "the RIGHT EDGE OF THE OUTPUT FRAME; the torso stays in true profile and the stride is mid-walk. "
@@ -1714,48 +1136,6 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
       framing:
         "the whole body seen from directly behind, head to feet inside the frame, face not visible",
       wardrobe: WARDROBE,
-    },
-    /*
-      *"head to feet inside the frame"*, measured — this is the most-refused
-      view on production (3 of 13, all time) and the plainest geometry in the
-      table.
-
-      *"face not visible"* is a concealment test like `sideClose`'s and is left
-      with the reader for the same reason. It is deliberately NOT written as
-      `{ must: "absent", landmark: "face" }`: a segmenter asked where a face is
-      on a picture of somebody's back is being asked the open question D-213 was
-      written about, and an empty answer from it would be indistinguishable from
-      a failed one.
-    */
-    band: {
-      rules: [
-        { must: "clearOf", landmark: "subject", edge: "top" },
-        { must: "clearOf", landmark: "subject", edge: "bottom" },
-      ],
-      /*
-        ⚠ THE DIRECTION — declared as debt by #1675 and discharged here as a
-        reader's question (#1612, the hand-over's debt, 2026-10-01), on the
-        most-refused view on production (3 of 13, all time).
-
-        *"face not visible"* was already the remainder and it is NOT this clause:
-        a cast photographed from the side with her face turned away shows no face
-        and is not seen from behind. So the two are kept as two. The two
-        `clearOf subject` rules cannot tell a back from a front, and no landmark in
-        this vocabulary can — road 2, for the same reason the concealment test
-        beside it takes it.
-      */
-      readerRemainder:
-        "that the face is not visible — a concealment test, and one a segmenter asked "
-        + "\"where is the face\" on a picture of a back cannot answer honestly; and that the "
-        + "body is \"seen from directly behind\" rather than turned away at some other angle, "
-        + "which is a direction and not a crop.",
-      readerAlsoAsked:
-        "the crop. This view's whole framing spec is one sentence of three clauses — a "
-        + "direction, \"head to feet inside the frame\" (what both rules cite), and a "
-        + "concealment — so the measured clause is the middle one of three and removing it "
-        + "would compose \"the whole body seen from directly behind, face not visible\". That "
-        + "reads well, which is exactly what makes it tempting: it is still a sentence nobody "
-        + "wrote, standing as the standard on the most-refused view on production.",
     },
     directive:
       "FULL BODY FROM BEHIND, walking away from camera. Head to feet entirely inside the frame. "
@@ -1863,9 +1243,12 @@ export function castPackageLabel(
  * Two things must exist before any such clause rides five paid views: the
  * how-does-the-code-know-a-fact-is-not-shown answer (designed once, with the
  * does-it-extend and is-it-paired kind-properties — fable-872 §2), and a
- * CONTROL on `packageViewExpectation`, which is assembled from the view spec
- * alone and today has no opinion about a clause at all (invariant 7 —
- * fable-871 §3).
+ * CONTROL proving the judge has no opinion about such a clause (invariant 7 —
+ * fable-871 §3). ⚠ **That second one named `packageViewExpectation` until
+ * #1903 deleted it. The obligation does not retire with the function — it gets
+ * easier**: the judge is now posted the two pictures and no text, so the
+ * control is an absence read at the wire rather than an assertion about what a
+ * specification left out.
  */
 /**
  * The wardrobe sentence this slot is composed from and judged against.
@@ -2034,8 +1417,12 @@ function sideClauseFor(angle: CastViewAngle, pronouns: CastPronouns): string {
  * reference already shows. It still has to invent — a chest-up photograph
  * cannot establish a hem — but it now invents in her outfit's direction instead
  * of against it, which is the difference between a guess and a contradiction.
- * The judge is untouched by this: `packageViewExpectation` is assembled from
- * `spec` alone and never reads a directive, so nothing here can fail a view.
+ * The judge is untouched by this, and since #1903 by construction rather than
+ * by assembly: it is posted the two pictures and no text about the outfit at
+ * all, so nothing written here can fail a view. ⚠ **This clause used to rest on
+ * `packageViewExpectation` being built from `spec` alone; that function is
+ * deleted, and the guarantee it gave is now the absence of the whole
+ * specification.**
  */
 export function belowWaistFor(
   angle: CastViewAngle,
@@ -2288,89 +1675,3 @@ export function composePackageViewPrompt(
   ].join("\n");
 }
 
-/**
- * THE FRAMING QUESTION THE READER IS STILL ASKED — the view's own spec with
- * every sentence the rules restate in full taken out of it (#1612, the
- * hand-over).
- *
- * # What it guarantees, and it is the only thing worth guaranteeing here
- *
- * **The result is a subsequence of his own sentences, verbatim.** Each
- * {@link ViewFramingBand.restatedInFull} entry is removed as a literal
- * substring and nothing is rewritten, re-ordered or re-punctuated, so no road
- * through this function can change the standard a delivered picture is held to.
- * The alternative — cutting his sentences at their commas so every measured
- * clause could go — composes text he never wrote, and #1582 measured three
- * careful rewordings of one framing spec each breaking a correct picture. That
- * is the road this function deliberately does not take; `restatedInFull`'s
- * docblock carries the reasoning and each band's `readerAlsoAsked` carries what
- * it costs that view.
- *
- * ⚠ **A view with no entries returns its spec unchanged, and that is a correct
- * answer rather than a missing feature** — six of the seven views state a
- * measured test and a reader's test inside one sentence, so there is nothing to
- * remove without recomposing. What changes for them is not this string: it is
- * that the measurement is now the AUTHORITY on the framing axis
- * (`viewConformance.ts`), so the reader can no longer pass a frame the geometry
- * failed.
- *
- * ⚠ **AND IT REFUSES RATHER THAN RETURNING A SHORT STRING.** An entry that is
- * not in the spec means the spec was reworded and the band was not re-read, and
- * a silent no-op there would post the measured sentence to the judge again
- * while every guard about the band stayed green. `viewFramingBands.test.ts`
- * holds the same fact at build time; this is the same fact at run time, on the
- * money path, where it costs a Sign rather than a red.
- */
-export function readerFramingQuestion(angle: CastViewAngle): string {
-  const view = VIEWS[angle];
-  let question = view.spec.framing;
-  for (const sentence of view.band.restatedInFull ?? []) {
-    if (!question.includes(sentence)) {
-      throw new Error(
-        `${angle}'s band says the rules restate "${sentence.slice(0, 48)}…" in full, and its `
-        + "spec no longer contains that sentence — re-read the band beside the spec",
-      );
-    }
-    question = question.replace(sentence, "");
-  }
-  /* The entries end at sentence boundaries, so removing one leaves the single
-     space that followed it beside the space that preceded it. Collapsing runs
-     of whitespace is the whole repair, and it cannot reach inside a sentence. */
-  return question.replace(/\s{2,}/g, " ").trim();
-}
-
-/**
- * What the judge is told this slot should be — the spec, in customer words,
- * and nothing else.
- *
- * Deliberately assembled from `spec` alone. If this function ever reaches for
- * `directive` or a constant block, view conformance silently becomes prompt
- * compliance and the check stops being worth running.
- *
- * ⚠ **ITS `framing` IS THE READER'S QUESTION SINCE #1612's HAND-OVER, NOT THE
- * WHOLE SPEC.** This function answers *"what is the judge told"*, and the judge
- * is no longer told the sentences the measurement answers in full. The whole
- * spec is still where it always was — `castPackageView(angle).spec.framing` —
- * and that is what the band's guards, the record and any future court read.
- */
-export function packageViewExpectation(
-  angle: CastViewAngle,
-  wardrobeLine: string | null = null,
-  description: string | null = null,
-): CastPackageViewSpec {
-  /*
-    The SAME answer the generator was given, through the same function. Two
-    call sites composing the sentence separately is how a judge comes to fail a
-    view for wearing what the prompt asked for.
-
-    ⚠ #1278 part 1 takes `description` for exactly that reason and for no other.
-    The generator's wardrobe sentence narrows when a brief is on record, so a
-    judge that did not know about the brief would keep failing the graphic on her
-    chest that the prompt just told the engine to paint — the same defect this
-    function's own comment describes, arriving through a new door.
-  */
-  return {
-    framing: readerFramingQuestion(angle),
-    wardrobe: wardrobeSpecFor(angle, wardrobeLine, viewDescriptionOf(description)),
-  };
-}

@@ -1,13 +1,15 @@
 import { describe, expect, it } from "vitest";
+import { renderLikeFrame } from "../testing/renderLikeFrame";
 
 import { pronounsForSex } from "./castPronouns";
 import {
   belowWaistFor,
   composePackageViewPrompt,
-  packageViewExpectation,
   wardrobeSpecFor,
 } from "./castViewPackage";
 import { outfitReferenceClause } from "./outfitPlate";
+import { createViewConformanceJudge } from "./viewConformance";
+import type { TextRequest } from "../providers/types";
 import { CAST_VIEW_ANGLES } from "@shared/boardTypes";
 
 /**
@@ -184,26 +186,60 @@ describe("#1480 — the no-plate road is untouched", () => {
     expect(belowWaistFor("frontFull", null, BRIEF, 2)).toBe("");
   });
 
-  it("leaves the JUDGE's expectation exactly as it was — it never sees the plate", () => {
+  it("⚠ never lets the plate reach the JUDGE — now because the judge is told no outfit at all (#1903)", async () => {
     /*
-      ⚠ **THE ARM THAT STOPS THIS CARD BECOMING A REFUND BUG.**
-      `viewConformance` posts `SPECIFICATION for IMAGE 2: / Framing: … /
-      Wardrobe: …` and two images — the anchor and the candidate. It is never
-      handed the plate, so a spec naming "reference 2" would point it at a
-      picture it cannot see, and its own below-frame clause already ends *"any
-      reading in keeping with the garments, materials and colours above the crop
-      is correct"*, which is exactly what a plate-dressed hem is.
+      ⚠ **THE ARM THAT STOPS THIS CARD BECOMING A REFUND BUG, RE-AIMED RATHER
+      THAN DELETED — law 7's ruling sweep: when a rule closes a path, what was
+      bolted to it?**
 
-      So `packageViewExpectation` passes no ordinal and its sentence is
-      byte-identical to today's. A future edit that threads the ordinal into the
-      judge reddens here.
+      It used to read `packageViewExpectation(angle, null, BRIEF)` and hold its
+      wardrobe sentence byte-identical, because `viewConformance` posted
+      `SPECIFICATION for IMAGE 2: / Framing: … / Wardrobe: …` and a spec naming
+      "reference 2" would have pointed the judge at a picture it cannot see.
+
+      **#1903 removed the wardrobe axis and the whole specification with it**,
+      so that function no longer exists and the worry is answered by
+      construction. The worry is still worth an arm, and this is the honest
+      version of it: driven at the WIRE, with a brief that names an outfit, the
+      reader must be handed neither the outfit nor any plate ordinal. A future
+      edit that threads either one back into the judge reddens here.
     */
-    for (const angle of CAST_VIEW_ANGLES) {
-      const expectation = packageViewExpectation(angle, null, BRIEF);
-      expect(expectation.wardrobe, angle).toBe(wardrobeSpecFor(angle, null, BRIEF));
-      expect(expectation.wardrobe, angle).not.toContain("reference 2");
-      expect(expectation.framing, angle).not.toContain("reference 2");
-    }
+    let seen: TextRequest | null = null;
+    await createViewConformanceJudge({
+      engine: {
+        id: "test-judge",
+        complete: async (request: TextRequest) => {
+          seen = request;
+          return {
+            text: JSON.stringify({
+              identity: { verdict: "matches", note: "" },
+              intact: { verdict: "matches", note: "" },
+              people: { verdict: "matches", note: "" },
+            }),
+            latencyMs: 1,
+            provenance: { provider: "openrouter" as const, model: "t" },
+          };
+        },
+      },
+    })({
+      angle: "frontFull",
+      /* Real frames since #1903 — the judge opens the candidate's bytes before
+         it posts anything, so a non-image fixture is refused as a broken render
+         and this arm's engine is never called. */
+      anchor: { bytes: await renderLikeFrame(64, 96), contentType: "image/png" },
+      candidate: { bytes: await renderLikeFrame(96, 64), contentType: "image/png" },
+    });
+
+    const request = seen as unknown as TextRequest;
+    const posted = `${request.system ?? ""} ${request.user ?? ""}`;
+    expect(posted).not.toContain("reference 2");
+    /* A distinctive run of words from the brief's own outfit, so this cannot
+       pass by the brief happening to share no vocabulary with the prompt. */
+    expect(posted).not.toContain("qipao");
+    expect(posted).not.toContain("WARDROBE");
+    /* CONTROL — the same words DO reach the generator, so the arm above is a
+       statement about the judge and not about the fixture being empty. */
+    expect(composePackageViewPrompt("frontFull", null, BRIEF)).toContain("qipao");
   });
 });
 
