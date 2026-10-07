@@ -1,24 +1,24 @@
 {
-  "edition": 652,
-  "updatedAt": "2026-10-07T22:46:23.000Z",
-  "shift": "The paid redo of a cast's views — the 350-credit *Ask for all views again* — had two faults the hand review caught, and both are fixed. One of them was taking money for nothing, so it is worth saying plainly what it was.\n\nWhen a redone view failed at the very last step, as it was being filed against the cast, the code assumed another part of the system had already taken charge and would sort the money out. Sometimes that was true. But there were three other ways that final step could fail, and all three looked **identical** to it — while in fact nothing had taken charge at all. So the view was written down as finished, the 70 credits for it stayed spent, and you had paid for a picture that does not exist. Nothing would ever have come back for it, because the job was marked done.\n\nTracing it found the cause one layer below, in a piece of code that the single-view **Try again** button shares. So that button had exactly the same fault, by exactly the same route — and it is fixed in the same change rather than left for a card. A lost filing now puts the money back in the same breath instead of hoping.\n\nThe second fault was a sentence rather than money. If one of the five views went wrong, you were told that *none* of them could be made — while the other four had in fact been made, landed on the cast, and been charged for. Each view reports for itself now.\n\nI also closed one of your cards that had quietly finished. **The Portrait framing measurement (#1612)** was built, and then your own later ruling — *ditch the framing measurement and the checker's opinions* — deleted it. A note saying so was added to the card hours earlier, but the card was left open and still marked as your ordered work, so it kept rising to the top of the list as the next thing to build, and it was offered to the crew again tonight. Two shifts have now looked at it and correctly walked away. It is closed with the receipt, which is what stops a third.\n\nNothing was spent tonight — no credits, no renders, no changes to the live service beyond this page.\n\n**One thing is yours, and it is smaller than it looks.** The redo cannot go live until you answer, because at 350 credits it earns us about 63 cents and costs us about 90 — so every press loses money. The fix is already built and waiting on a single answer from you about picture shapes (#1926); once that lands, the redo pays for itself at the price you set and nothing needs re-pricing. My recommendation is to answer that one and let this follow it.",
+  "edition": 653,
+  "updatedAt": "2026-10-08T00:05:00.000Z",
+  "shift": "Two things you decided last night are done, your pricing work has reached its finish line, and while I was writing this you and the relay settled two more in your terminal — so this page is written against what is true at midnight, not at half past eleven.\n\n**The Stripe rename is finished.** You chose A, our side had already been live since 7:53pm, and on your *\"yes rename it\"* the relay renamed the product in your dashboard: Klieg Studio is now Klieg Pro Plus, read back afterwards, with the description, all four prices and the internal lookup names untouched. Both sides of that name now agree, so nothing about it is waiting on anybody.\n\n**The picture-shape question is answered.** You picked option 1 — two sheets rendered side by side instead of one — so the shape nothing could proceed without is settled, and the build of it lives on its own card. What that unlocks, in order: the one-sheet Sign, then the paid redo of a cast's views, then the small tidy-up after it.\n\n**Your answer on the redo is in and it is held.** You said hold it until the Sign work lands, so it is held — the work itself is finished, reviewed, and green; it simply will not be switched on until the thing that makes it pay for itself is there. Your 350 stays exactly as you set it.\n\n**And pricing phase 2 is built and live.** Your plans page offers three plans instead of seven, the biggest one has the credit dial at $9 for each extra 5,000 a month, the four enormous rungs are gone in favour of one Enterprise card that offers a conversation, and Compare plans is organised by what you make. I read all of that back off the live site rather than off the merge notes. Its fourth card — Team priced per seat — cannot start until a shared workspace exists, which is a feature you have never asked for, so it is the only one left open and it is named on the completion card.\n\n**So there is a short test drive on your desk, and one word needed: what the crew builds next.** My recommendation is N2b — personality and voice born at Sign — because it is your own stated order and it makes your casts better rather than your pages better. Until you name it, the crew runs maintenance only.\n\nNothing was spent this shift: no credits, no renders, no change to the live service beyond this page.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
-      "state": "confirmed",
-      "title": "Pricing Phase 2 — the plans redesigned. Three plans instead of seven, with a credit slider on the biggest; Enterprise becomes a conversation rather than a support address; and Compare plans is organised by what you make. The brief you approved is the spec, and four build cards are cut from it.",
-      "quote": "phase 2 gets built next not n2b",
-      "quotedAt": "2026-10-03T17:33:25+10:00"
+      "state": "none",
+      "title": "No focus is set — Phase 2's building is done and the next rung is yours to name. Its completion card and a short test drive are below (#1933). Until you name the next one, the crew works maintenance only: your background switches, the patrols on their clocks, and a bug a customer can actually hit.",
+      "quote": "after n2 is wrapped up start the pricing/money work then proceed onto n2b and n2c",
+      "quotedAt": "2026-10-01T07:40:00+10:00"
     },
     "milestone": {
-      "title": "P2 — pricing, phase 2: the plan surface rebuilt to the brief you approved. Four cards, one per surface, and every one of them waits for an eye on the frames before it goes live",
+      "title": "P2 — pricing, phase 2: built and live. Three plans instead of seven, the credit dial on the biggest, Enterprise as a conversation, and Compare plans organised by what you make. Its completion card and your test drive are on your desk (#1933); its fourth card waits on a workspace you have never ordered",
       "steps": [
         {
-          "title": "Three plans instead of seven — Starter $27, Pro $68, Studio $159, with Free as the state you are in rather than a card, and an Enterprise band instead of a support address (#1832, #1833)",
+          "title": "Three plans instead of seven — Starter $27, Pro $68, Pro Plus $159, with Free as the state you are in rather than a card, and an Enterprise band instead of a support address (#1832, #1833)",
           "state": "done"
         },
         {
-          "title": "Studio's credit slider at $9 for each extra 5,000 a month — live (#1832)",
+          "title": "Pro Plus's credit dial at $9 for each extra 5,000 a month — live (#1832)",
           "state": "done"
         },
         {
@@ -26,8 +26,12 @@
           "state": "done"
         },
         {
-          "title": "Team priced per seat at $68 a seat, after the shared workspace exists (#1835, #1788)",
+          "title": "The completion card and your test drive — five things worth a few minutes, and one word on the next rung (#1933)",
           "state": "waiting"
+        },
+        {
+          "title": "Team priced per seat at $68 a seat — cannot start until a shared workspace exists, which you have never ordered (#1835, #1788)",
+          "state": "blocked"
         }
       ]
     },
@@ -126,8 +130,14 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-07T22:43:37.486Z",
+      "readAt": "2026-10-07T23:51:53.603Z",
       "items": [
+        {
+          "issueNumber": 1933,
+          "title": "P2 is built and live — pricing phase 2's completion card and your test-drive list (three plans, a dial on the top one, and one word needed on what comes next)",
+          "kind": "rung",
+          "rung": "P2"
+        },
         {
           "issueNumber": 1242,
           "title": "N2b — Personality and voice are born at Sign, as editable text: two drafted lines on the cast's page, badged Drafted for you, free to edit (founder-ordered 2026-09-25)",
@@ -272,82 +282,61 @@
   "needsYou": [
     {
       "id": "pro-plus-stripe-rename-1900",
-      "title": "Rename the product in Stripe to Pro Plus — three of your six surfaces are Stripe's, not ours",
-      "productImpact": "The plan called Studio is called Pro Plus now on our side: the plan cards, the compare table and the confirm step all say it, and the price, the credits and the features have not moved. I looked at it in both themes.\n\nBut the checkout page Stripe hosts, the line on an invoice, and the subscription emails Stripe sends all read the name out of YOUR Stripe dashboard. We deliberately send Stripe no product text at all, so nothing we can merge will change those three.",
-      "workedExample": "Somebody upgrades after this goes live. Our page says Pro Plus and quotes $159. They click through to pay, and the Stripe page they land on says Klieg Studio. Then the invoice says Klieg Studio, and so does the receipt email.\n\nThe fix is one rename on one product: in Stripe, open the product called Klieg Studio and change its name to Klieg Pro Plus. Nothing else on it moves — not the price, not the lookup keys, not the amounts.",
-      "options": [
-        {
-          "key": "after",
-          "label": "A — rename in Stripe once the change is live",
-          "consequence": "The two sides agree within minutes of each other. This is the smallest window of mismatch."
-        },
-        {
-          "key": "now",
-          "label": "B — rename in Stripe now, before it lands",
-          "consequence": "Stripe would say Pro Plus while the app still says Studio, for as long as the review takes."
-        },
-        {
-          "key": "relay",
-          "label": "C — have the relay do it for you",
-          "consequence": "Same result. You asked the relay to do your Stripe keystrokes once before, on the credit packs."
-        }
-      ],
-      "recommendation": "A. The app half is in review now; rename it in Stripe the moment that lands and the two sides are never far apart. Leave the lookup keys alone exactly as you said — a customer never sees one, and moving them means creating new price objects.",
-      "state": "open",
+      "title": "Done — the plan is called Pro Plus on both sides now, ours and Stripe's",
+      "productImpact": "You chose A: rename it in Stripe once our side was live. Our side went live at 7:53pm, and on your word in the terminal — \"yes rename it\" — the relay renamed the product in your dashboard. Klieg Studio is Klieg Pro Plus, read back after the change.\n\nNothing else on it moved: not the description, not any of the four prices, and not the internal lookup names you said could stay.\n\nSo the checkout page, the invoice and Stripe's emails all say Pro Plus now, the same as our plan cards, our dial and our compare table. There is nothing left on this.",
+      "workedExample": "Somebody upgrades today. Our page says Pro Plus and quotes $159, the Stripe page they pay on says Klieg Pro Plus, and so do the invoice and the receipt email. The mismatch is gone.",
+      "options": [],
+      "recommendation": "",
+      "state": "done",
       "filedAt": "2026-10-07T19:50:00.000Z",
       "issueNumber": 1900
     },
     {
-      "id": "sign-sheet-shape-1926",
-      "title": "The one-sheet views are a taller shape and the strip cuts them — which of the three?",
-      "productImpact": "Signing a cast will soon render one wide sheet and cut your five views out of it. That is built and it works — I rendered a real one tonight for 8 cents, and the five views came out clean with one outfit across all of them.\n\nBut the views are a different shape: much taller and narrower than today's. The strip of five on a finished cast puts each one in a short wide tile, so it would show only the top of each picture. Nothing is wrong with the pictures. It is where they are shown.",
-      "workedExample": "On your own signed cast, the strip would show the top 58% of each view. The close-up would be hair and eyes with no mouth. The full front and the full back would stop at the thighs — no legs, no boots. The big viewer is unaffected and shows the whole picture.\n\nToday's views fill 83% of the same tile, which is why the strip works now and stops working after this change.",
+      "id": "p2-complete-1933",
+      "title": "Pricing phase 2 is built and live — drive it, then name the next rung",
+      "productImpact": "Your plans page used to offer seven rungs, four of them at prices nobody would pick off a page. It now offers three — Starter $27, Pro $68, Pro Plus $159 — with Free shown as the state you are in rather than a card you could buy, and the biggest plan carries the credit dial: $9 for each extra 5,000 credits a month, in the same steps as the dial on Add credits.\n\nThe four enormous rungs are gone from the page. In their place is one Enterprise card that says who it is for and offers a conversation. No plan card shows a credits-per-dollar rate any more. Compare plans is organised by what you make, with the cinema row marked coming.\n\nI read every one of those back off the live site this morning rather than off the merge notes.\n\nThe fourth card — Team priced per seat at $68 a seat — cannot start until a shared workspace exists, because an account is one login today. That workspace is a feature of its own and you have never asked for it, so it is the only Phase 2 card still open.",
+      "workedExample": "Five things worth a few minutes:\n\n1. Open Change plan — three cards and Free. Do the prices and the credit numbers read right?\n2. Drag the dial on Pro Plus — price and credits should move together in 5,000 steps at $9 a step, and the confirm step should quote the same numbers.\n3. Look at the Enterprise card — does it sound like us, and would you answer it?\n4. Open Compare plans — is it readable, and is coming clear enough that nothing reads as a promise?\n5. Check Pro Plus reads right everywhere. Anything still saying Studio on our side is a bug; I found none, but your eye is the one that counts.",
       "options": [
         {
-          "key": "shorter",
-          "label": "A — ask for a shorter sheet",
-          "consequence": "The views come back nearer todays shape. Needs another render and your eye again, and only gets the tile to about 75% rather than back to 83%."
+          "key": "n2b",
+          "label": "N2b — personality and voice born at Sign, as editable text",
+          "consequence": "Your own stated order, designed and carded. The next thing that makes a cast better rather than a page better."
         },
         {
-          "key": "fit",
-          "label": "B — show the whole picture in the tile",
-          "consequence": "Nothing is cut. A little background sits either side of each view. No new render, and nothing you have already approved changes."
+          "key": "n2c",
+          "label": "N2c — Campaigns, the cast library's named collections",
+          "consequence": "Comes after N2b by your own order. Designed and carded too."
         },
         {
-          "key": "tall",
-          "label": "C — make the tiles tall and narrow",
-          "consequence": "Nothing is cut either, and the pictures fill their tiles. The strip of five looks quite different from the one you know."
+          "key": "workspace",
+          "label": "The shared workspace — several people, one pool of credits, one bill",
+          "consequence": "A bigger feature. Building it is what lets Team per seat exist and closes Phase 2's last card. You have never asked for it."
         }
       ],
-      "recommendation": "B. A tall picture is the right shape for a standing figure, and the strip exists for you to pick one — a tile that cuts the face off cannot do that. Background either side costs less than a missing mouth, and it needs no new render.",
+      "recommendation": "N2b. It is your own stated order, it is designed and carded, and it is the next thing that makes your casts better rather than your pages better. Nothing starts until you say — until then the crew runs maintenance only.",
       "state": "open",
+      "filedAt": "2026-10-07T23:58:00.000Z",
+      "issueNumber": 1933
+    },
+    {
+      "id": "sign-sheet-shape-1926",
+      "title": "Answered — you picked option 1: two sheets rendered side by side",
+      "productImpact": "Your word, in the terminal: \"yes option 1 cooks well done\". So a Sign renders TWO sheets at the same time rather than one — a body sheet for the full front and back, and a head sheet for the close-up, the three-quarter and the profile — each drawn from the master, and cut into the five views.\n\nThat settles the shape question nothing could get past. The build of it lives on its own card, and what it unlocks in order is: the Sign work itself, then the paid redo of all five views, then the small tidy-up after that.\n\nThe three options this card originally offered are moot — you rejected the simple one on sight (\"looks terrible\") and the relay tested two more on your ask before you picked this one.",
+      "workedExample": "You sign a cast. Two sheets render side by side, the five views are cut from them, and each one arrives in the shape the strip expects — nobody loses a mouth and nobody loses their boots.",
+      "options": [],
+      "recommendation": "",
+      "state": "done",
       "filedAt": "2026-10-07T18:45:00.000Z",
       "issueNumber": 1926
     },
     {
       "id": "redo-price-1925",
-      "title": "The redo loses money on every press until #1904 lands — hold it, or ship it at a loss?",
-      "productImpact": "Asking for all five of a cast's views again costs 350 credits, which you set. What that card did not know is what a redo COSTS us: about 90 cents in engine time, against about 63 cents it earns. So every press loses roughly 25 to 30 cents.\n\nThe thing that fixes it is already built and waiting on you — #1904, the one-sheet Sign, which renders one wide sheet instead of five separate pictures and drops the cost of these exact five views to a fraction of today's. It is finished and held on one question of yours: #1926, which of three shapes the strip should use.\n\nSo this is not really a pricing decision any more. Your 350 is fine and I am not asking you to move it.",
-      "workedExample": "Somebody dislikes the outfit their cast was given and presses Ask for all views again. They are charged 350 credits, they get five new pictures in one fresh outfit, and we are about 27 cents worse off than before they pressed. Nobody is on a paid plan yet, so today that is pennies — but it is a habit worth not starting.",
-      "options": [
-        {
-          "key": "hold",
-          "label": "Hold the redo until #1904 lands",
-          "consequence": "Your 350 stays exactly as set, nothing ever ships at a loss, nothing is re-priced. Unblocked by one answer you already owe on #1926."
-        },
-        {
-          "key": "ship",
-          "label": "Ship it now at 350 and accept the loss",
-          "consequence": "Live tonight. Loses ~25-30 cents a press until #1904 lands, which is pennies today because nobody is on a paid plan yet."
-        },
-        {
-          "key": "temporary",
-          "label": "Ship now at a higher price, drop it to 350 later",
-          "consequence": "Live tonight and profitable, but it is the only option that moves a price twice, and a price coming down is noticed less kindly than you would hope."
-        }
-      ],
-      "recommendation": "Hold it for #1904, by answering #1926. It costs you nothing, keeps the price you set, and the redo is otherwise finished and reviewed — it just switches on a few days later, already paying for itself.",
-      "state": "open",
+      "title": "Answered — the redo is held until the one-sheet Sign lands, and your 350 never moves",
+      "productImpact": "You said: hold the redo until #1904 lands. So it is held, and nothing is re-priced.\n\nThe work itself is finished — it was reviewed, two faults were found and fixed, and the gate is green. It just will not be switched on until the Sign work is there to make it pay for itself at the price you set.\n\nThe shape question that was holding the Sign work is now answered too, so what is left in front of this is a build rather than a decision of yours.",
+      "workedExample": "Nobody can press Ask for all views again yet, and that is deliberate. The moment the one-sheet Sign lands, the button appears at 350 credits and earns more than it costs.",
+      "options": [],
+      "recommendation": "",
+      "state": "done",
       "filedAt": "2026-10-07T16:50:45.000Z",
       "issueNumber": 1925
     },
@@ -6824,7 +6813,7 @@
       "id": "sign-sheet-shape-1904",
       "title": "The one-sheet Sign works — and the five views come out a different shape",
       "question": "WHAT YOU ARE LOOKING AT — two pictures of the same real sheet I rendered tonight, for 8 cents.\n\nThe FIRST is the five views as they really come out. This is the thing to judge: is it the same woman five times, is it one outfit, is every camera right, is anybody cut off. To my eye all five are whole and the outfit is identical across them, which was the thing most likely to go wrong and is the whole reason for doing it this way.\n\nThe SECOND is the problem, and it is not about the pictures — it is about where they go. The strip of five on a finished cast puts each view in a short wide tile. These pictures are tall and narrow, so the tile shows only the top of each one. Look at the close-up: no mouth. Look at the front and the back: no legs, no boots. That is what you would see on your own cast page today if this shipped as it is.\n\nThe big viewer is fine. It is only the strip.\n\nThree ways out, on card 1926. A: ask the engine for a shorter sheet so the views come back nearer today's shape — needs another render and your eye again, and only gets us part of the way. B: show the whole picture in each tile with a little background either side. C: make the tiles tall and narrow to match.\n\nI recommend B. A tall picture is the right shape for a standing figure, and the strip is there for you to pick one — a tile that cuts the face off cannot do that job. Background either side costs less than a missing mouth. But it changes what you look at every day, so it is yours.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-10-07T18:45:00.000Z",
       "issueNumber": 1926,
       "cardId": "sign-sheet-shape-1926",
@@ -6862,7 +6851,7 @@
       "title": "The Studio plan is called Pro Plus (#1900)",
       "status": "merged",
       "prNumber": 1927,
-      "note": "One word of product code; rendered in both themes. Waiting on the relay, then your Stripe rename."
+      "note": "Live since 7:53pm, and the Stripe product is renamed too on your word — both sides say Pro Plus."
     },
     {
       "id": "rate-chip-off-plans-1773",
@@ -9774,7 +9763,7 @@
       "title": "Ask for all views again — the paid redo of a whole signed package, 350 credits (#1903 slice 2)",
       "status": "in-review",
       "prNumber": 1924,
-      "note": "The review's two findings are repaired and main is merged in — the gate is green and it is ready for the hand review again. It does not merge until you answer the price question on #1925: a redo earns ~$0.63 and costs us ~$0.90 until #1904 lands."
+      "note": "Finished and green — held on your word: hold the redo until the one-sheet Sign (#1904) lands. Your 350 does not move."
     },
     {
       "id": "sign-sheet-1904",
@@ -10161,10 +10150,12 @@
     260,
     261,
     262,
-    263
+    263,
+    264,
+    265
   ],
   "nextUp": {
-    "readAt": "2026-10-07T22:43:37.486Z",
+    "readAt": "2026-10-07T23:51:53.602Z",
     "items": [
       {
         "issueNumber": 1903,
@@ -10220,15 +10211,6 @@
         "held": {
           "state": "blocked",
           "because": "#1788 — the shared workspace. This card's own body says it does not start until that lands, and #1788 is unbuilt and on the roadmap. No question for you here."
-        }
-      },
-      {
-        "issueNumber": 1900,
-        "title": "Rename the Studio plan to Pro Plus everywhere a customer sees it — same price, credits and features, only the name",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "YOU — it is LIVE: our side says Pro Plus. Stripe still says Studio, and that is your dashboard: 3 of your 6 surfaces. Rename the product now."
         }
       }
     ]
