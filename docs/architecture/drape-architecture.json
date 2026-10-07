@@ -17691,6 +17691,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/components/ConceptReviewModal.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/components/ConceptUploadCard.tsx",
       "to": "module:client/src/features/castingV2/components/ConceptReviewModal.tsx",
       "kind": "imports"

@@ -754,11 +754,30 @@ describe("Cast it goes through the page's ONE roll flow", () => {
     expect(CONCEPT_REVIEW_CAST).toBe("Cast it");
     expect(CONCEPT_REVIEW_CAST).not.toMatch(/\d/);
     expect(review).toContain("dpc-modal__cost");
-    expect(review).toContain("{priceCredits} credits");
+    /*
+      ⚠ **AND IT IS THE DISPLAY SCALE, WHICH IS #1905.** This arm read
+      `"{priceCredits} credits"` from the day it was written, so it PINNED the
+      defect: `priceCredits` is the LEDGER number (`rollPriceCredits`, 8 × 200 =
+      1,600) and the dialog printed it bare, telling her **~1,600 credits** for
+      the roll the hero three inches away priced at **~320** and the account was
+      charged 320 for. Every sibling cost line in the product — `SignConfirm`,
+      `RefinePanel`, `InkAddPanel` — goes through the one helper, and now so
+      does this one.
+    */
+    expect(review).toContain("{formatCredits(displayPrice(priceCredits))} credits");
+    /* The raw ledger spelling, pinned ABSENT so the defect cannot come back. */
+    expect(review).not.toMatch(/\{\s*priceCredits\s*\}\s*credits/);
     /* The tilde, shared with every other cost line in the product. */
     expect(review).toContain("dpc-modal__tilde");
     /* Server-derived, never a constant on this side (D-15). */
     expect(review).not.toMatch(/priceCredits\s*=\s*\d/);
+    /*
+      ⚠ The PROP still carries the ledger number, and deliberately: the
+      conversion belongs at the print, beside the word the customer reads, which
+      is where all three siblings do it. A page converting on the way in would
+      leave one `priceCredits` in the tree meaning display credits while every
+      other one means ledger — the mirror this repository has been bitten by.
+    */
     const page = withoutProse(await readFile(PAGE, "utf8"));
     expect(page).toContain("priceCredits={price}");
     /* And nothing about a number inside the button itself. */

@@ -224,6 +224,66 @@ describe("the positive controls — each rule reddens, and says where", () => {
     expect(sites[0]?.line).toBe(2);
   });
 
+  it("⚠ #1905's ARM — the SAME sentence inside a FRAGMENT reddens, and it did not", () => {
+    /*
+      THE HOLE THIS CLOSES, at the real shape: `ConceptReviewModal.tsx:414` read
+      `<>…{priceCredits} credits</>` and printed the raw LEDGER number — **~1,600
+      credits** for the roll the hero three inches away priced at **~320**, which
+      is also what the account was charged. The census that exists to enumerate
+      exactly this reported **0 sites beyond the list** for as long as the defect
+      shipped, because `surroundingText` read `ts.isJsxElement` alone: a fragment
+      is `ts.isJsxFragment`, so the window came back EMPTY and `saysCredits("")`
+      was false.
+
+      ⚠ **This arm fails on the reader as it stood** — drop `ts.isJsxFragment`
+      from `surroundingText` and it reports zero sites, while the element arm
+      above stays green. The two shapes are one sentence to a customer, and only
+      one of them was one sentence to the reader.
+    */
+    const fragment = [
+      "export const F = ({ priceCredits }: { priceCredits: number }) => (",
+      "  <>",
+      '    <span className="tilde">~</span> {priceCredits} credits',
+      "  </>",
+      ");",
+      "",
+    ].join("\n");
+    const sites = creditSitesIn("client/src/features/castingV2/components/Fixture.tsx", fragment);
+    expect(sites).toHaveLength(1);
+    expect(sites[0]?.rule).toBe("beside-the-word");
+    expect(sites[0]?.line).toBe(3);
+    expect(sites[0]?.expression).toBe("priceCredits");
+
+    /* And routed through the helper, the same fragment is clean — the widening
+       finds the defect, not the shape. */
+    const routed = fragment.replace("{priceCredits}", "{formatCredits(displayPrice(priceCredits))}");
+    expect(creditSitesIn("client/src/features/castingV2/components/Fixture.tsx", routed)).toEqual([]);
+  });
+
+  it("⚠ #1905's NEGATIVE control — a fragment that says credits does NOT indict what is not a number", () => {
+    /*
+      The widening is what `sentenceAround`'s docblock records as built, driven
+      and THROWN AWAY when it was tried over a whole element: it indicted
+      `working`, `onClose`, `option.id` and an inline arrow function. Limb A's
+      name check is what keeps this one honest, so it is driven rather than
+      asserted: the same fragment, saying "credits" in its own text, with three
+      values no vocabulary would call a credit amount.
+    */
+    const sites = creditSitesIn(
+      "client/src/features/billing/Fixture.tsx",
+      [
+        "export const F = ({ label, onClose, option }: { label: string; onClose: () => void; option: { id: string } }) => (",
+        "  <>",
+        "    {label} credits {option.id} <button onClick={onClose}>x</button>",
+        "    {() => onClose()}",
+        "  </>",
+        ");",
+        "",
+      ].join("\n"),
+    );
+    expect(sites).toEqual([]);
+  });
+
   it("⚠ THE RELAY'S ARM — a bare `cost` handed to toLocaleString with NO word beside it reddens", () => {
     /* The hole that shipped on PR #1649 and was found from outside, reproduced
        at the real shape: `ViewTabs.tsx`'s GhostSlot/FailedSlot face label. Rule
