@@ -234,6 +234,7 @@ function aCustomer(): User {
     failedLoginAttempts: 0,
     lockedUntil: null,
     canvasIntroSeen: true,
+    followHintSeen: true,
     createdAt: now,
     updatedAt: now,
     lastSignedIn: now,

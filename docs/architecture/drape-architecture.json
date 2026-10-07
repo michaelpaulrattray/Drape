@@ -7,7 +7,7 @@
     {
       "id": "domain:admin",
       "name": "admin",
-      "moduleCount": 62
+      "moduleCount": 63
     },
     {
       "id": "domain:api",
@@ -393,6 +393,12 @@
     {
       "id": "module:client/src/features/admin/components/crew/CrewCardTitles.tsx",
       "path": "client/src/features/admin/components/crew/CrewCardTitles.tsx",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/admin/components/crew/CrewEyeFrames.tsx",
+      "path": "client/src/features/admin/components/crew/CrewEyeFrames.tsx",
       "domain": "admin",
       "lifecycle": "active"
     },
@@ -8589,6 +8595,16 @@
       "file": "server/routes/profile.ts"
     },
     {
+      "id": "route:profile.markFollowHintSeen",
+      "namespace": "profile",
+      "name": "markFollowHintSeen",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "none",
+      "rateLimited": false,
+      "file": "server/routes/profile.ts"
+    },
+    {
       "id": "route:profile.removeAvatar",
       "namespace": "profile",
       "name": "removeAvatar",
@@ -10667,6 +10683,10 @@
       "path": "client/src/components/signOutWording.test.ts"
     },
     {
+      "id": "test:client/src/fashionVocabulary1907.test.ts",
+      "path": "client/src/fashionVocabulary1907.test.ts"
+    },
+    {
       "id": "test:client/src/features/admin/components/crew/crewBodyWhitespace.test.ts",
       "path": "client/src/features/admin/components/crew/crewBodyWhitespace.test.ts"
     },
@@ -10793,6 +10813,10 @@
     {
       "id": "test:client/src/features/castingV2/failureCopy.test.ts",
       "path": "client/src/features/castingV2/failureCopy.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/followHint1909.test.ts",
+      "path": "client/src/features/castingV2/followHint1909.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/frameDecodes.test.ts",
@@ -15185,8 +15209,23 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/admin/components/crew/CrewEyeGallery.tsx",
+      "from": "module:client/src/features/admin/components/crew/CrewEyeFrames.tsx",
       "to": "module:client/src/features/admin/components/crew/CrewEyeViewer.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewEyeFrames.tsx",
+      "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewEyeFrames.tsx",
+      "to": "module:client/src/features/admin/components/crew/eyeFrameSrc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewEyeGallery.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewEyeFrames.tsx",
       "kind": "imports"
     },
     {
@@ -15202,11 +15241,6 @@
     {
       "from": "module:client/src/features/admin/components/crew/CrewEyeGallery.tsx",
       "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/components/crew/CrewEyeGallery.tsx",
-      "to": "module:client/src/features/admin/components/crew/eyeFrameSrc.ts",
       "kind": "imports"
     },
     {
@@ -15272,6 +15306,11 @@
     {
       "from": "module:client/src/features/admin/components/crew/CrewNav.tsx",
       "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewNeedsYou.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewEyeFrames.tsx",
       "kind": "imports"
     },
     {
@@ -17667,6 +17706,11 @@
     {
       "from": "module:client/src/features/castingV2/components/ConceptReviewModal.tsx",
       "to": "module:client/src/foundation/useFileDropTarget.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/ConceptReviewModal.tsx",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -20712,6 +20756,11 @@
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
       "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/_core/hooks/useAuth.ts",
       "kind": "imports"
     },
     {

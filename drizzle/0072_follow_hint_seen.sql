@@ -1,0 +1,58 @@
+-- TEACHING FOLLOW — one additive column (#1909, his word 2026-10-07:
+-- "1,2,3 seeing as these are small make cards for these").
+--
+-- ============================================================================
+-- WHAT A CUSTOMER LOSES WITHOUT IT
+-- ============================================================================
+--
+-- On the sheet, Follow sits beside Keep and says nothing about what it does.
+-- It is an immediate paid roll of eight in that face's family — `follow` in
+-- `server/routes/castingV2.ts` is "a fresh eight conditioned on the parent" —
+-- and nothing on the screen says so, so most customers Keep and never learn
+-- the control exists. Yuna's desk item, his order, card #1909.
+--
+-- The hint is one line under the tile she just kept, with one Got it. It must
+-- appear ONCE and never again, which is a fact about the person and not about
+-- the sheet, the roll or the browser.
+--
+-- ============================================================================
+-- WHY A COLUMN ON `users`, AND WHY NOT localStorage
+-- ============================================================================
+--
+-- The card's own words: "Prefer the server (a per-user flag, so it follows
+-- them across devices) over localStorage." `localStorage` is per browser, so
+-- the same person meets the hint again on a phone, in a second profile, and
+-- after clearing site data — which is the hint failing in the one direction a
+-- teaching line must not fail.
+--
+-- This is the shape `canvasIntroSeen` already has one column above, down to
+-- its own comment: a one-way boolean on `users`, read through `auth.me`'s
+-- positive projection, written by one protected mutation. Working law 4 is
+-- satisfied by COPYING the shape rather than by inventing a hints table: there
+-- are two of these now, and a table is the answer at the point where a third
+-- would otherwise mean a third column, not before.
+--
+-- ============================================================================
+-- NOT NULL DEFAULT false — AND WHAT THAT MEANS FOR THE ROWS THAT EXIST
+-- ============================================================================
+--
+-- MySQL backfills every existing row with `false` as part of this statement,
+-- and `false` is the truthful value for all of them: nobody has been shown
+-- this hint, because it does not exist yet. So every account alive today —
+-- including the founder's — gets the line on their next Keep, which is the
+-- intent. There is no window in which the new code reads a row whose column is
+-- absent or NULL: the deploy rite applies this BEFORE the new code takes
+-- traffic (#322, #508), and `ALTER TABLE … ADD COLUMN` is one of the three
+-- shapes `scripts/lib/ceremonyAutoApply.mts` positively recognises, so no
+-- ceremony reaches the founder.
+--
+-- ⚠ `migration-before-code` also asks about the INSERT side: a new column on a
+-- written table has to be in every INSERT, or be defaulted. `users` is written
+-- by the two auth routes and the owner bootstrap, none of which names this
+-- column — and none of them has to, because the default is in the DDL and in
+-- the Drizzle declaration alike. Checked at those three call sites rather than
+-- assumed.
+--
+-- PURELY ADDITIVE. One column. No row is rewritten, no index moves, no
+-- existing column changes.
+ALTER TABLE `users` ADD COLUMN `followHintSeen` boolean NOT NULL DEFAULT false;

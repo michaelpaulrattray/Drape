@@ -31,21 +31,37 @@
  * were run together with an em dash; at 790px a long consequence wraps under
  * the label and the dash is left orphaned at the end of the first line.
  */
+import { CrewEyeFrames } from "./CrewEyeFrames";
 import { CrewReplyBox } from "./CrewReplyBox";
 import { CrewReplyThread } from "./CrewReplyThread";
 import { crewCardNeedsHim } from "../../../../../../shared/crewCardState";
 import { staffDateTime } from "@/foundation/staffDate";
 import { TableHead } from "@/foundation";
-import type { CrewNeedsYouCard, CrewReplyView } from "./crewTypes";
+import type { CrewEyeItem, CrewNeedsYouCard, CrewReplyView } from "./crewTypes";
 
 export function CrewNeedsYou({
   cards,
+  mergedEyeItems,
   replies,
   acknowledgedReplyIds,
   sending,
   onSend,
 }: {
   cards: readonly CrewNeedsYouCard[];
+  /**
+   * THE EYE ITEMS THAT BELONG INSIDE THESE CARDS, by card id (#1895).
+   *
+   * One question used to reach him as two cards with two reply boxes, and he
+   * answered #1837 twice seventeen minutes apart. The frames now sit under the
+   * question that asks about them, and **the item's own prose is not repeated**
+   * — the card carries the DECISION, the item carries WHAT TO LOOK AT, which
+   * is his own split.
+   *
+   * Keyed by card id and built by `partitionEyeItems`, which is also what the
+   * gallery reads to decide what is left — one declaration, so the two sections
+   * cannot disagree about what is paired (working law 4).
+   */
+  mergedEyeItems: ReadonlyMap<string, readonly CrewEyeItem[]>;
   replies: readonly CrewReplyView[];
   acknowledgedReplyIds: readonly number[];
   sending: boolean;
@@ -127,9 +143,47 @@ export function CrewNeedsYou({
               </ul>
             )}
 
+            {/*
+              WHAT TO LOOK AT, UNDER THE QUESTION THAT ASKS ABOUT IT (#1895).
+
+              ⚠ **THE ITEM'S OWN PROSE IS DELIBERATELY NOT HERE.** The second
+              card used to re-ask the same question in different words — #1837's
+              frames said *"SO: is Hingu a close-up?"* while its decision card
+              said *"Is this bandaged skull a close-up? One word…"* — and that
+              is exactly what made two answers look like two questions. The
+              item's TITLE stays as the strip's label, because a card can carry
+              more than one strip and *which picture am I looking at* is a
+              different fact from *what am I deciding*.
+
+              It sits after the recommendation and the options, and before the
+              reply box, so the order is still: what it means → what you could
+              do → what it looks like → your answer.
+            */}
+            {(mergedEyeItems.get(card.id) ?? []).map((item) => (
+              <div className="dp-crew__gap" key={item.id}>
+                <span className="dp-crew__subhead">{item.title}</span>
+                <CrewEyeFrames frames={item.frames} />
+              </div>
+            ))}
+
             <div className="dp-crew__rule dp-crew__rule--tight">
+              {/*
+                ⚠ **ONE THREAD, OVER THE CARD'S ID AND EVERY MERGED ITEM'S.**
+                Replies he already filed against an item's id are HIS WORDS and
+                are not dropped by a layout change — they render here, in time
+                order beside the card's own. That is also the answer to the
+                question #1895 asked and did not want left open: when a card
+                reply and an item reply on one question disagree, both are
+                visible as one conversation rather than silently resolved by
+                whichever list a reader happened to open. Going forward it
+                cannot arise — there is one box.
+              */}
               <CrewReplyThread
-                replies={replies.filter((reply) => reply.cardId === card.id)}
+                replies={replies.filter(
+                  (reply) =>
+                    reply.cardId === card.id
+                    || (mergedEyeItems.get(card.id) ?? []).some((item) => item.id === reply.cardId),
+                )}
                 acknowledgedReplyIds={acknowledgedReplyIds}
               />
               <CrewReplyBox

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
+import { displayPrice, formatCredits } from "@shared/creditDisplay";
+
 import {
   CONCEPT_DROP_CHOOSE,
   CONCEPT_DROP_LINE,
@@ -112,7 +114,13 @@ export function ConceptReviewModal({
    * open with nothing said.
    */
   notAPicture: boolean;
-  /** Server-derived, passed down — never a constant on this side (D-15). */
+  /**
+   * Server-derived, passed down — never a constant on this side (D-15).
+   *
+   * ⚠ **LEDGER UNITS, like every other `priceCredits` prop in the tree.** The
+   * display scale is applied where it is PRINTED, through
+   * `shared/creditDisplay`; reading this number as a display figure is #1905.
+   */
   priceCredits: number;
   /** Files arrived here rather than at the card. The card judges and reads them. */
   onFiles: (files: FileList | null) => void;
@@ -411,7 +419,22 @@ export function ConceptReviewModal({
           <span className="dpc-modal__cost">
             {description !== null ? (
               <>
-                <span className="dpc-modal__tilde">~</span> {priceCredits} credits
+                {/*
+                  ⚠ **THROUGH THE HELPER, LIKE EVERY OTHER PRICE LINE — AND IT
+                  WAS NOT, WHICH IS #1905.** `priceCredits` is the LEDGER number
+                  the entrance charges (its own prop docblock says so, and D-15
+                  is why it is server-derived rather than a constant here), so
+                  printed bare it read **~1,600 credits** for a roll the hero
+                  three inches away called **~320** and the account was charged
+                  320 for. The display scale is `shared/creditDisplay`'s and
+                  nothing else's: `displayPrice` rounds a price UP, and
+                  `formatCredits` is what gives the thousands separator.
+                  `SignConfirm`, `RefinePanel` and `InkAddPanel` all print their
+                  own `priceCredits` exactly this way — this line was the one
+                  that did not.
+                */}
+                <span className="dpc-modal__tilde">~</span>{" "}
+                {formatCredits(displayPrice(priceCredits))} credits
               </>
             ) : null}
           </span>

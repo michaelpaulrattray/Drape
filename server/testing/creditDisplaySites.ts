@@ -704,6 +704,25 @@ function textOf(node: ts.Node, sourceFile: ts.SourceFile): string {
 /**
  * The literal text around an interpolation — a template's own chunks, or the
  * JSX text beside an expression child.
+ *
+ * ⚠ **A FRAGMENT IS A HOST, AND READING ONLY `JsxElement` IS WHAT LET #1905 SHIP.**
+ * `<>…{priceCredits} credits</>` and `<span>…{priceCredits} credits</span>` are
+ * the same sentence to a customer and were not the same sentence to this
+ * reader: a fragment is `ts.isJsxFragment`, never `ts.isJsxElement`, so the
+ * window came back EMPTY, `saysCredits("")` was false, and rule 2 could not see
+ * a raw ledger number printed beside the word "credits" in the concept-upload
+ * review dialog. It read **~1,600 credits** where every sibling price line read
+ * **~320** — the whole of #1905, and the census that is supposed to enumerate
+ * exactly this reported **0 sites beyond the list** the entire time.
+ *
+ * ⚠ **The fix is the HOST, not the window.** The tempting widening — walk up to
+ * the nearest JSX ancestor with text — is the one `sentenceAround`'s docblock
+ * records as built, driven and thrown away: over a whole element it indicted
+ * `working`, `onClose`, `option.id` and an inline arrow function. This changes
+ * only which node counts as *the thing my siblings belong to*, so the window is
+ * still ONE host's own immediate `JsxText` children and the name check still
+ * guards limb A. Measured over the real tree: 0 new sites beyond the census
+ * before, **1** after — the #1905 site itself, and nothing else.
  */
 function surroundingText(node: ts.Node, sourceFile: ts.SourceFile): string {
   const parent = node.parent;
@@ -713,7 +732,7 @@ function surroundingText(node: ts.Node, sourceFile: ts.SourceFile): string {
   }
   if (parent && ts.isJsxExpression(parent) && parent.parent) {
     const host = parent.parent;
-    if (ts.isJsxElement(host)) {
+    if (ts.isJsxElement(host) || ts.isJsxFragment(host)) {
       return host.children
         .filter((child) => ts.isJsxText(child))
         .map((child) => child.getText(sourceFile))
