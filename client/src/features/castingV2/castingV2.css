@@ -164,6 +164,82 @@
 }
 
 /*
+  THE RECEIPT AND ITS LEGEND (#1908) — one anchor, so the sentence can be
+  positioned against the figures it explains and revealed by them.
+
+  `flex: none` and no padding: this wrapper replaces the values span in the
+  row's own flex layout and must take exactly the width it did, or it moves a
+  judged hero (card 1114, "the 8 candidates and 160 cr across to the right").
+*/
+.dpc-hero__receipt {
+  position: relative;
+  flex: none;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+/*
+  THE LEGEND — ABSENT UNTIL ASKED FOR, AND IT OPENS UPWARD.
+
+  ⚠ **UPWARD IS NOT A TASTE DECISION.** `.dpc-hero` carries `overflow:
+  hidden` and this row is the LAST thing in its copy column, so a line hung
+  below the receipt is clipped by the card — the exact trap `.dpc-hero__air`'s
+  own comment is about, where the live layout looks right and every screenshot
+  is broken. Opening into the card cannot be clipped by it.
+
+  `display: none` rather than `opacity: 0`, so it reserves no space and the
+  receipt's own width is unchanged at rest — a hidden-but-laid-out sentence
+  would have shortened the hairline beside it by its whole width and left a gap
+  nobody could explain. No transition for the same reason: there is nothing to
+  fade from.
+
+  `white-space: nowrap` with a measure that cannot exceed the copy column
+  (`max-width: 100%` against the wrapper is useless here — the wrapper is as
+  narrow as the figures — so it is anchored to the right edge and allowed to
+  reach left across the hairline, which is decoration and has nothing to lose).
+*/
+.dpc-hero__receiptsay {
+  display: none;
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 7px);
+  z-index: 2;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--raised);
+  font: 400 11.5px/1.35 var(--font-sans);
+  letter-spacing: 0;
+  color: var(--meta);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/*
+  Hover for a pointer, `:focus-visible` for a keyboard. The wrapper takes the
+  tab stop, so the ring and the sentence arrive together.
+*/
+.dpc-hero__receipt:hover .dpc-hero__receiptsay,
+.dpc-hero__receipt:focus-visible .dpc-hero__receiptsay {
+  display: block;
+}
+
+/*
+  A narrow column cannot hold the sentence on one line beside nothing, and an
+  ellipsised hint is worse than none: the figures stay, the legend stands down.
+  The screen-reader road is untouched — the element is still in the DOM and
+  still the target of `aria-describedby`, so what is lost here is the visual
+  reveal alone.
+*/
+@media (max-width: 460px) {
+  .dpc-hero__receipt:hover .dpc-hero__receiptsay,
+  .dpc-hero__receipt:focus-visible .dpc-hero__receiptsay {
+    display: none;
+  }
+}
+
+/*
   ⚠ ONE OF FIVE DECLARATIONS OF THE HOUSE HAIRLINE — see
   `docs/specs/PROMOTION_PASS_SECTION_10.md` §3 before writing a sixth.
 

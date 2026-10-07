@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 80
+      "moduleCount": 81
     },
     {
       "id": "domain:staff",
@@ -6033,6 +6033,12 @@
     {
       "id": "module:shared/castingRealization.ts",
       "path": "shared/castingRealization.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/castingReceipt.ts",
+      "path": "shared/castingReceipt.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -12581,6 +12587,10 @@
     {
       "id": "test:server/castingV2/realizedAxes.test.ts",
       "path": "server/castingV2/realizedAxes.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/receiptPerFace.test.ts",
+      "path": "server/castingV2/receiptPerFace.test.ts"
     },
     {
       "id": "test:server/castingV2/recipeAssembler.test.ts",
@@ -21112,6 +21122,11 @@
     {
       "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:shared/briefLength.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:shared/castingReceipt.ts",
       "kind": "imports"
     },
     {
@@ -35172,6 +35187,11 @@
     {
       "from": "module:shared/castingRealization.ts",
       "to": "module:shared/castingVocabularies.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/castingReceipt.ts",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
