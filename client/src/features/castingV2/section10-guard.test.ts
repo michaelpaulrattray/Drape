@@ -26,7 +26,10 @@ import { withoutComments } from "../../../../server/testing/withoutComments";
  *   · the two `min-height`s under the carousel survive, or the preview resizes
  *     as you step through it;
  *   · the stage flexes and is never given a fixed or `vh` height;
- *   · the receipt line's three values are DERIVED, never typed;
+ *   · the receipt line's values are DERIVED, never typed — and since #1908 its
+ *     legend's per-face figure is too, and the line says CREDITS rather than CR
+ *     (⚠ it read "three values" here until then, and the duration left this line
+ *     on his word in card 1090: there are TWO);
  *   · the modal's action is not inside a scrolling region;
  *   · `followHeld` still suppresses the imagination half — the one behaviour
  *     his brief could not know about (#177 Row A).
@@ -235,6 +238,111 @@ describe("the receipt line is derived, never typed (§2d)", () => {
     expect(page).toContain("price ?");
     expect(page).not.toMatch(/candidatesPerRoll\s*\?\?\s*\d/);
     expect(page).not.toMatch(/rollPriceCredits\s*\?\?\s*\d/);
+  });
+
+  it("⚠ says CREDITS, and `CR` may not come back (card 1908)", async () => {
+    /*
+      His word 2026-10-07 on Yuna's Desk item *"Cost beside Cast it in plain
+      words"*. `CR` was the one abbreviation on the path to a customer's first
+      paid press, in 10.5px mono, while the topbar chip and the sheet's dock
+      both said *credits* — the disappearing-technology law's first question is
+      what somebody must LEARN to use this, and a currency abbreviation is a
+      thing to learn. His own brief for this line read `4 CR`, so the
+      abbreviation arrived with the feature; nobody ever chose it over the word.
+
+      The ban is on the RENDERED markup, not the file: the docblocks above the
+      line quote `4 CR` and `160 cr` as the history that settled it, and losing
+      that is losing the reason.
+    */
+    const page = await read(PAGE);
+    const at = page.indexOf('<span className="dp-chrome dpc-hero__receiptvals">');
+    expect(at, "the receipt values must exist to be read").toBeGreaterThan(-1);
+    const block = code(page.slice(at, page.indexOf("</div>", at)));
+    expect(block, "the receipt must exist to be read").toContain("formatCredits(");
+    expect(block, "the word is spelled out on the receipt").toContain("CREDITS");
+    expect(block, "`CR` is the abbreviation this card removed").not.toMatch(/\bCR\b/);
+  });
+
+  it("the matcher would see `CR` coming back", async () => {
+    /*
+      THE POSITIVE CONTROL, and it has to be careful: `\bCR\b` must fire on the
+      old line and NOT on the new one, where `CR` is the first two letters of
+      the word. A case-insensitive form, or one without the trailing boundary,
+      passes this arm by indicting the fix — which is the shape
+      `server/testing/creditDisplaySites.ts` already records for its own `\bCR\b`.
+    */
+    expect(/\bCR\b/.test("{formatCredits(displayPrice(price))} CR")).toBe(true);
+    expect(/\bCR\b/.test("{formatCredits(displayPrice(price))} CREDITS")).toBe(false);
+  });
+
+  it("⚠ the legend's per-face figure comes from the shared helper, never from the page (card 1908)", async () => {
+    /*
+      The figure cannot be typed here and cannot be computed here either: a
+      second division beside the receipt is working law 4, and the division has
+      an order that matters (`shared/castingReceipt.ts` carries the argument,
+      `server/castingV2/receiptPerFace.test.ts` drives it against the real Roll
+      and Follow totals). So the page's whole contribution is to hand the helper
+      the two figures the server sent.
+    */
+    const page = code(await read(PAGE));
+    expect(page).toContain("receiptLegend(perFaceDisplayCredits(price, candidatesPerRoll))");
+    expect(page).toContain('from "@shared/castingReceipt"');
+    /* No scale arithmetic and no per-face division on this page. */
+    expect(page).not.toMatch(/price\s*\/\s*\w/);
+    expect(page).not.toMatch(/candidatesPerRoll\s*\)?\s*(?:\?\?|\|\|)\s*\d/);
+  });
+
+  it("the legend is reachable by a keyboard, not by a mouse alone", async () => {
+    /*
+      A reveal that answers only to `:hover` is one a keyboard user never gets,
+      and the legend is the only thing on this row that is not readable at a
+      glance. The wrapper takes the tab stop and the stylesheet answers
+      `:focus-visible` beside `:hover`; the ring itself is the house blanket in
+      `tokens.css`, which is why none is declared here.
+    */
+    const page = code(await read(PAGE));
+    /*
+      ⚠ **SLICED, BECAUSE A WHOLE-FILE `toContain` WAS SATISFIED BY A SIBLING
+      AND THE SABOTAGE PROVED IT.** `tabIndex={0}` appears twice on this page —
+      here and on the sheet-history row — so deleting it from the receipt left
+      the arm green. The anchor is the full `className="dpc-hero__receipt"`
+      INCLUDING its closing quote, which is what keeps it off
+      `…__receiptvals`, `…__receiptsay` and `…__receiptrule`; its uniqueness is
+      asserted rather than assumed, because a slice taken from the wrong
+      element reads exactly like a passing one.
+    */
+    const anchor = 'className="dpc-hero__receipt"';
+    expect(page.split(anchor).length - 1, "the receipt wrapper must be the only match").toBe(1);
+    const tag = page.slice(page.indexOf(anchor), page.indexOf(">", page.indexOf(anchor)));
+    expect(tag, "the receipt itself takes the tab stop").toContain("tabIndex={0}");
+    expect(tag).toContain("aria-describedby={RECEIPT_LEGEND_ID}");
+
+    const sayAnchor = 'className="dpc-hero__receiptsay"';
+    expect(page.split(sayAnchor).length - 1, "one legend, one match").toBe(1);
+    const say = page.slice(page.indexOf(sayAnchor), page.indexOf(">", page.indexOf(sayAnchor)));
+    expect(say, "the description the figures point at must be this sentence").toContain(
+      "id={RECEIPT_LEGEND_ID}",
+    );
+
+    const css = await read(CSS);
+    const at = css.indexOf(".dpc-hero__receiptsay {");
+    expect(at, "the legend's own rule must exist to be read").toBeGreaterThan(-1);
+    const rule = css.slice(at, css.indexOf("}", at));
+    /* Absent rather than laid out: a hidden-but-sized sentence would shorten
+       the hairline beside it by its whole width and leave an unexplained gap. */
+    expect(rule).toContain("display: none");
+    expect(rule).not.toContain("opacity");
+    /*
+      ⚠ UPWARD. `.dpc-hero` carries `overflow: hidden` and this row is the last
+      thing in its copy column, so a line hung BELOW the receipt is clipped by
+      the card — live fine, every screenshot broken, which is the trap
+      `.dpc-hero__air`'s own comment is about.
+    */
+    expect(rule).toContain("bottom: calc(100% + 7px)");
+    expect(rule).not.toMatch(/\btop:/);
+
+    const reveal = css.slice(css.indexOf(".dpc-hero__receipt:hover .dpc-hero__receiptsay"));
+    expect(reveal.slice(0, 200)).toContain(":focus-visible");
   });
 
   it("the duration constant is a measurement carrying its date", async () => {
