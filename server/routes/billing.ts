@@ -35,6 +35,14 @@ import {
   topupLedgerCredits,
   topupPriceInCents,
 } from "@shared/creditTopups";
+import { planCreditSliderLedgerCredits } from "@shared/planCreditSlider";
+import {
+  monthlyLedgerCreditsFor,
+  PLAN_CREDIT_SLIDER_MAX_UNITS,
+  planCreditSliderSpec,
+  planCreditSliderUnitsAllowed,
+} from "../stripe/planCreditSlider";
+import type { PlanTier } from "../../drizzle/schema";
 import {
   SUBSCRIPTION_PRODUCTS,
   SubscriptionPlan,
@@ -143,6 +151,27 @@ export const billingRouter = router({
         this is a narrower view of one list and not a rival to it.
       */
       selfServeOrder: SELF_SERVE_PLAN_ORDER,
+      /*
+        THE CREDIT SLIDER'S SPEC — which drawn card carries the dial, how far
+        it goes, and what one step is worth and costs (#1832, the design's §5;
+        his word on the $9: *"frames right numbers right"*).
+
+        ⚠ **SERVED FOR `selfServeOrder`'S OWN REASON, AND MORE SHARPLY.** Both
+        facts it carries are derived from `PLAN_TIERS` — the rung is the
+        dearest paid rung of the drawn ladder, the ceiling is the rung the
+        slider replaces — and `PLAN_TIERS` is schema that does not belong in
+        the bundle. A client that decided for itself which card was "the
+        biggest one" would be a second copy of the ladder on the surface where
+        a disagreement is a price in front of a customer.
+
+        ⚠ **AND THE RENAME IS WHY `planId` IS AN ID.** His word, 2026-10-07:
+        *"rename the Studio plan to Pro Plus, everywhere a customer sees it"*
+        (#1900). Nothing in this block is a plan's NAME, so the copy change
+        moves one table and the dial stays where it is.
+
+        `maxUnits: 0` means there is no slider and the surface draws none.
+      */
+      creditSlider: planCreditSliderSpec(),
       /*
         WHAT ONE FINISHED CHARACTER COSTS — the divisor behind every plan
         card's worked example (#1607, P1-8). A ledger number, like every
@@ -262,8 +291,48 @@ export const billingRouter = router({
       // the API accepts (invariant 5).
       plan: z.enum(PURCHASABLE_PLANS),
       interval: z.enum(["monthly", "annual"]).optional().default("monthly"),
+      /*
+        THE CREDIT SLIDER'S POSITION (#1832) — whole steps, 0 for a plain plan.
+
+        ⚠ **THE SCHEMA'S BOUND IS THE LADDER'S OWN CEILING, and a bound is not
+        optional on this input** — `quantity` is what decides the charge, so an
+        unbounded step count is an unbounded charge composed from a request
+        body (invariant 4's reason, and `TOPUP_MAX_UNITS`' own note). The
+        schema holds the widest bound any rung sells; the PER-RUNG refusal is
+        below, because a dial on a rung that has none is a different wrong
+        answer and deserves its own sentence.
+
+        Absent means 0, which is what every bundle older than this commit
+        sends — the field is additive and removing one is the contract
+        invariant 4 now carries.
+      */
+      creditUnits: z
+        .number()
+        .int()
+        .min(0)
+        .max(PLAN_CREDIT_SLIDER_MAX_UNITS)
+        .optional()
+        .default(0),
     }).strict())
     .mutation(async ({ ctx, input }) => {
+      /* ⚠ THE PER-RUNG REFUSAL, BEFORE ANY STRIPE CALL. `resolvePlanCreditsPriceId`
+         refuses this too — an input schema is not the only caller a money
+         helper can ever have — but its refusal speaks the catalogue's
+         "this one is on us" sentence, which is false here: the request asked
+         for something this product does not sell, and saying so plainly is
+         the refusal clause of the disappearing-technology law (what was
+         refused, and what to do). */
+      const unitsAllowed = planCreditSliderUnitsAllowed(input.plan);
+      if (input.creditUnits > unitsAllowed) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            unitsAllowed === 0
+              ? "That plan comes with a fixed amount of credits. Nothing was charged — pick the top plan if you want to add more."
+              : "That is more extra credits than this plan offers. Nothing was charged — move the slider down, or write to us for a bigger pool.",
+        });
+      }
+
       // Check if account is frozen (blocks purchases)
       const user = await getUserById(ctx.user.id);
       if (!user) {
@@ -327,12 +396,14 @@ export const billingRouter = router({
         `${baseUrl}/app?billing=success`,
         `${baseUrl}/app?billing=canceled`,
         ctx.user.id,
-        input.interval
+        input.interval,
+        input.creditUnits,
       ).catch((error: unknown) => {
         throw billingRefusalFor(error, "checkout", {
           userId: ctx.user.id,
           plan: input.plan,
           interval: input.interval,
+          creditUnits: input.creditUnits,
         });
       });
 
@@ -345,6 +416,11 @@ export const billingRouter = router({
         metadata: {
           plan: input.plan,
           interval: input.interval,
+          /* The dial's position, in the audit row with everything else the
+             checkout was minted for (#1832). Ledger credits beside it, like
+             every other credit figure in this log. */
+          creditUnits: input.creditUnits,
+          creditUnitsLedgerCredits: planCreditSliderLedgerCredits(input.creditUnits),
           stage: "checkout_initiated",
         },
         req: ctx.req,
@@ -566,6 +642,58 @@ export const billingRouter = router({
     return { success: true, message: "Subscription reactivated." };
   }),
 
+  /**
+   * WHERE THE CREDIT SLIDER ALREADY SITS, for an account that has one (#1832).
+   *
+   * ⚠ **IT IS ITS OWN PROCEDURE RATHER THAN A FIELD ON `getStatus`, AND THE
+   * REASON IS LATENCY ON A HOT PATH.** The dial's position lives on Stripe —
+   * it is the add-on subscription item's own quantity, which is the artifact
+   * that bills — so reading it costs a Stripe round trip. `getStatus` is
+   * fetched by every signed-in surface on load; this is fetched by one modal,
+   * for one rung, by a client that has already read the spec and the account's
+   * own tier and concluded there is a dial to place.
+   *
+   * ⚠ **AND IT IS NOT MIRRORED INTO A COLUMN** (working law 4, on credits). A
+   * cached step count that drifted from the subscription would be an allowance
+   * that disagrees with the invoice, and the renewal grant reads the same
+   * artifact for the same reason.
+   *
+   * **`units: null` means UNREAD, never 0** — #1703's family rule, which this
+   * card's own done-when names: the surface draws no thumb position until it
+   * knows one, rather than putting the dial at the bottom and inviting a
+   * customer to "confirm" a downgrade they never asked for.
+   */
+  getPlanCreditUnits: protectedProcedure.query(async ({ ctx }) => {
+    const subscription = await getSubscriptionByUserId(ctx.user.id);
+    if (!subscription?.stripeSubscriptionId) {
+      /* No subscription is a real answer and it is ZERO rather than unread:
+         there is no dial to place because there is nothing bought yet, and a
+         fresh checkout starts the slider where the customer puts it. */
+      return { units: 0 as number | null };
+    }
+
+    /* A rung with no dial cannot carry steps, so the Stripe read is skipped
+       entirely — the same narrowing the grant road makes. */
+    if (planCreditSliderUnitsAllowed(subscription.planTier) === 0) {
+      return { units: 0 as number | null };
+    }
+
+    const billingState = await readSubscriptionBillingState(
+      subscription.stripeSubscriptionId,
+    );
+    if (!billingState) {
+      /* Unread, and said so. The surface declines to place the thumb rather
+         than claiming the bottom of the dial. */
+      return { units: null as number | null };
+    }
+    return {
+      units: Math.min(
+        billingState.currentCreditUnits,
+        planCreditSliderUnitsAllowed(billingState.currentPlan),
+      ) as number | null,
+    };
+  }),
+
   // Preview a plan change — the same quote `changePlan` acts on (#664), so
   // the figure a surface prints and the figure the button charges cannot be
   // two computations.
@@ -574,6 +702,13 @@ export const billingRouter = router({
       newPlan: z.enum(PURCHASABLE_PLANS),
       // Absent = keep the interval the customer is billed on today.
       interval: z.enum(["monthly", "annual"]).optional(),
+      /* The dial being bought (#1832). ⚠ ABSENT MEANS KEEP THE DIAL WHERE IT
+         IS — never 0, for `interval`'s own reason one line up: an older bundle
+         that omits it must not be able to hand back somebody's extra credits,
+         and a cycle change is not a request to move the slider. Bounded for
+         `createSubscriptionCheckout`'s reason; the quote clamps it to the
+         TARGET rung, so a move off the slider's rung drops the steps. */
+      creditUnits: z.number().int().min(0).max(PLAN_CREDIT_SLIDER_MAX_UNITS).optional(),
     }).strict())
     .query(async ({ ctx, input }) => {
       const subscription = await getSubscriptionByUserId(ctx.user.id);
@@ -596,11 +731,21 @@ export const billingRouter = router({
         });
       }
 
-      const quote = quotePlanChange(billingState, input.newPlan, input.interval);
+      const quote = quotePlanChange(
+        billingState,
+        input.newPlan,
+        input.interval,
+        undefined,
+        input.creditUnits,
+      );
 
       return {
         currentPlan: billingState.currentPlan,
         newPlan: input.newPlan,
+        /* The dial on each side of the change, so the confirm step can say
+           what is happening to it in the customer's own words (#1832). */
+        currentCreditUnits: quote.currentCreditUnits,
+        targetCreditUnits: quote.targetCreditUnits,
         isUpgrade: quote.isUpgrade,
         proratedAmount: quote.proratedAmount,
         immediateCharge: quote.immediateCharge,
@@ -707,6 +852,12 @@ export const billingRouter = router({
       // must not be able to move somebody's interval, and the server reads
       // the current one off the Stripe price itself.
       interval: z.enum(["monthly", "annual"]).optional(),
+      /* The dial being bought (#1832) — ⚠ ABSENT MEANS KEEP IT WHERE IT IS,
+         for `interval`'s own reason: an older bundle that omits it must not
+         hand back credits the customer is paying for. `previewPlanChange`
+         carries the same field and the same bound, because the figure this
+         charges is the figure that preview printed. */
+      creditUnits: z.number().int().min(0).max(PLAN_CREDIT_SLIDER_MAX_UNITS).optional(),
       // Additive for deploy skew: current clients send one id per deliberate
       // click; an older bundle may omit it until the new client is live.
       //
@@ -752,9 +903,23 @@ export const billingRouter = router({
         });
       }
 
-      const quote = quotePlanChange(billingState, input.newPlan, input.interval);
+      const quote = quotePlanChange(
+        billingState,
+        input.newPlan,
+        input.interval,
+        undefined,
+        input.creditUnits,
+      );
 
-      if (input.newPlan === billingState.currentPlan && quote.kind === "same-interval") {
+      /* ⚠ THE "NOTHING TO DO" REFUSAL NOW HAS A THIRD LIMB, and without it a
+         customer who moved only the slider would be told they are already on
+         this plan — which they are, and the dial is the thing they changed
+         (#1832). All three have to agree before there is nothing to do. */
+      if (
+        input.newPlan === billingState.currentPlan
+        && quote.kind === "same-interval"
+        && quote.targetCreditUnits === quote.currentCreditUnits
+      ) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "You are already on this plan and billing cycle.",
@@ -769,6 +934,12 @@ export const billingRouter = router({
         ctx.user.id,
         quote.targetInterval,
         billingState.subscriptionItemId,
+        /* The dial comes from the QUOTE, not from the input — the quote is
+           what clamped it to the target rung and what the customer was shown
+           (#1832). Passing the raw input here would let the charge and the
+           confirm step be two arithmetics, which is the defect this whole
+           quote-then-act shape exists to prevent. */
+        { targetCreditUnits: quote.targetCreditUnits, creditItemId: billingState.creditItemId },
       ).catch((error: unknown) => {
         /* The ONLY throw this function has: a price the catalogue cannot
            supply, rethrown there rather than folded into `success: false`
@@ -1003,6 +1174,14 @@ export const billingRouter = router({
           newPlan: input.newPlan,
           previousInterval: quote.currentInterval,
           newInterval: quote.targetInterval,
+          /* The dial on each side (#1832) — steps, with the ledger credits
+             they are worth, because a step count alone is not a figure anybody
+             reading this log can act on. */
+          previousCreditUnits: quote.currentCreditUnits,
+          newCreditUnits: quote.targetCreditUnits,
+          creditUnitsLedgerDelta:
+            planCreditSliderLedgerCredits(quote.targetCreditUnits)
+            - planCreditSliderLedgerCredits(quote.currentCreditUnits),
           changeKind: quote.kind,
           isUpgrade: quote.isUpgrade,
           creditAdjustment,
@@ -1017,8 +1196,45 @@ export const billingRouter = router({
       });
 
       const planName = SUBSCRIPTION_PRODUCTS[input.newPlan]?.name ?? input.newPlan;
+      /*
+        ⚠ **A DIAL-ONLY MOVE IS NEITHER AN UPGRADE NOR A DOWNGRADE OF THE PLAN,
+        AND WITHOUT THIS BRANCH IT READ AS A DOWNGRADE (#1832).**
+
+        `quote.isUpgrade` compares the two RUNGS' prices, which is right for
+        the button's label and right for the direction of a tier move. On the
+        slider's rung a customer can change only the dial — same plan, same
+        cycle, more credits and more money — and `isUpgrade` is then `false`,
+        so the sentence below would have told somebody who just bought 50,000
+        extra credits a month that they had been *downgraded* and that their
+        unused time was coming back as billing credit. Both halves false.
+
+        So the dial gets its own sentence, in the customer's own units (credits
+        a month, which is the figure on the card they moved), and the plan's
+        two sentences are untouched for every change that moves a rung.
+      */
+      const sliderLedgerDelta =
+        planCreditSliderLedgerCredits(quote.targetCreditUnits)
+        - planCreditSliderLedgerCredits(quote.currentCreditUnits);
+      const dialOnly =
+        input.newPlan === currentPlan
+        && quote.kind === "same-interval"
+        && sliderLedgerDelta !== 0;
+      /* The whole allowance the dial now buys, said once rather than three
+         times — a delta ("+50,000") is arithmetic the customer has to do
+         against a figure they cannot see from here. */
+      const dialAllowance = formatCredits(
+        displayBalance(
+          monthlyLedgerCreditsFor(input.newPlan as PlanTier, quote.targetCreditUnits),
+        ),
+      );
       const message =
-        quote.kind === "interval-switch"
+        dialOnly
+          ? sliderLedgerDelta > 0
+            ? creditSettlement === "pending"
+              ? `${planName} now comes with ${dialAllowance} credits a month. The extra credits for the rest of this month land as soon as the payment settles.`
+              : `${planName} now comes with ${dialAllowance} credits a month, and the extra credits for the rest of this month are already on your balance.`
+            : `${planName} now comes with ${dialAllowance} credits a month. Unused time on the credits you dropped comes back as billing credit.`
+          : quote.kind === "interval-switch"
           ? quote.targetInterval === "annual"
             ? `You are on ${planName}, billed yearly — the new billing year starts today, and the full year of credits lands as soon as the payment settles, replacing what was left of your old cycle's allowance.`
             : `You are on ${planName}, billed monthly — the new billing month starts today, and unused time from your year comes off future bills automatically.`

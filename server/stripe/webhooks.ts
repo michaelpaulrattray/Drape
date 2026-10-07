@@ -14,9 +14,15 @@ import {
   cancelSubscription,
   voidInvoice,
   retrieveLiveSubscription,
+  subscriptionItemsOf,
+  readSubscriptionBillingState,
   REFUND_METADATA_USER_KEY,
   REFUND_METADATA_CHANGE_REQUEST_KEY,
 } from "./stripeService";
+import {
+  monthlyLedgerCreditsFor,
+  planCreditSliderUnitsAllowed,
+} from "./planCreditSlider";
 import { 
   updateUserSubscription, 
   getUserByStripeCustomerId, 
@@ -720,7 +726,13 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
   // decision 5) — this column is a CACHE of the Stripe artifact, refreshed
   // every time Stripe tells us the subscription changed. Anything that is not
   // a month or a year is cached as unknown rather than guessed monthly.
-  const stripeInterval = (live as any).items?.data?.[0]?.price?.recurring?.interval;
+  //
+  // ⚠ THE PLAN'S ITEM, NOT `data[0]` — #1832's law-7 sweep. The credit slider
+  // puts a second item on the subscription, and this column is what every
+  // surface reads to decide whether to say "billed yearly": caching the
+  // ADD-ON's interval would make the two items' agreement load-bearing rather
+  // than incidental.
+  const stripeInterval = subscriptionItemsOf(live).base?.price?.recurring?.interval;
   const billingInterval =
     stripeInterval === "year" || stripeInterval === "month" ? stripeInterval : null;
 
@@ -1057,7 +1069,47 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<W
       ? (balance: number) => balance
       : (balance: number) => calculateRolloverCredits(balance, planTier as PlanTier);
 
-  const grantCredits = getMonthlyCredits(planTier as PlanTier) * grantMonths;
+  /* ⚠ THE CREDIT SLIDER'S STEPS ARE PART OF THE ALLOWANCE, AND THEY ARE READ
+     OFF THE SUBSCRIPTION RATHER THAN CACHED (#1832).
+
+     The dial is a second line on the subscription priced per step, so a
+     customer on the slider's rung pays for `base + steps × 5,000` a month and
+     must be granted it. Three things about WHERE the figure comes from:
+
+      · **the add-on item's own quantity** is the artifact that bills, so it is
+        the artifact the grant reads (`readSubscriptionBillingState`, which is
+        the same reader the plan-change quote uses). A column on our side
+        would be a mirror of a number Stripe owns, and the drift would be an
+        allowance that disagrees with the invoice (working law 4, on credits).
+      · **only for the rung that HAS a dial.** `planCreditSliderUnitsAllowed`
+        answers 0 for every other rung, so no renewal on Starter, Pro or a
+        hand-sold rung makes this read at all and their road is untouched.
+      · **a read that FAILS refuses the event.** A subscription we cannot read
+        on the rung that can carry steps is a paid period whose size is
+        unknown, and granting the base would silently short a customer who
+        paid for more — the same silent-zero-grant failure the #664 review
+        named one branch up. Stripe redelivers; the failure is visible. */
+  let sliderLedgerCredits = 0;
+  if (planCreditSliderUnitsAllowed(planTier) > 0) {
+    const billingState = await readSubscriptionBillingState(subscriptionId);
+    if (!billingState) {
+      log.error(
+        `[Webhook] Invoice ${invoice.id} is on a rung that can carry credit steps and its subscription ${subscriptionId} could not be read — refusing rather than grant an allowance that may be short`,
+      );
+      return {
+        success: false,
+        message: `Could not read subscription ${subscriptionId} to size the credit grant — refusing so Stripe redelivers`,
+      };
+    }
+    const monthly = monthlyLedgerCreditsFor(planTier as PlanTier, billingState.currentCreditUnits);
+    sliderLedgerCredits = monthly - getMonthlyCredits(planTier as PlanTier);
+    log.info(
+      `[Webhook] Invoice ${invoice.id}: ${billingState.currentCreditUnits} credit step(s) on the subscription add ${sliderLedgerCredits} to each month's allowance for user ${userId}`,
+    );
+  }
+
+  const grantCredits =
+    (getMonthlyCredits(planTier as PlanTier) + sliderLedgerCredits) * grantMonths;
 
   // Refresh credits
   const result = await refreshMonthlyCredits(

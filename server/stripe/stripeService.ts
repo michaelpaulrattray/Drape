@@ -16,11 +16,18 @@ import {
 } from "@shared/annualBilling";
 import { wholeDisplayLedger } from "@shared/creditDisplay";
 import {
+  isPlanCreditsLookupKey,
+  resolvePlanCreditsPriceId,
   resolvePriceId,
   resolveTopupPriceId,
   StripePriceUnavailableError,
 } from "./stripePriceCatalogue";
 import { TOPUP_CHECKOUT_KIND, topupLedgerCredits } from "@shared/creditTopups";
+import {
+  planCreditSliderLedgerCredits,
+  planCreditSliderPriceInCents,
+} from "@shared/planCreditSlider";
+import { planCreditSliderUnitsAllowed } from "./planCreditSlider";
 import { environmentMetadata } from "./environmentTag";
 import { subscriptionPeriodSec } from "./subscriptionPeriods";
 import { PLAN_TIERS, PlanTier } from "../../drizzle/schema";
@@ -76,7 +83,13 @@ export async function createSubscriptionCheckoutSession(
   successUrl: string,
   cancelUrl: string,
   userId: number,
-  interval: "monthly" | "annual" = "monthly"
+  interval: "monthly" | "annual" = "monthly",
+  /**
+   * The credit slider's position (#1832) — 0 for a plain plan, which is every
+   * rung but the one carrying the dial. A count the rung does not sell is
+   * refused by `resolvePlanCreditsPriceId` before any session is minted.
+   */
+  creditUnits: number = 0,
 ): Promise<string> {
   // ⚠ THE PRICE IS STRIPE'S OBJECT, NOT A NUMBER COMPOSED HERE (#1605
   // bullet 1). This builder used to send an inline `price_data` carrying a
@@ -100,18 +113,47 @@ export async function createSubscriptionCheckoutSession(
   //     a boot refusal crash-loops the service. The error names the key.
   const priceId = await resolvePriceId(stripe, plan, interval);
 
+  /* ⚠ THE DIAL IS A SECOND LINE ON THE SAME SUBSCRIPTION, PRICED PER STEP
+     (#1832, the design's §5: *"a base price plus a metered line item with a
+     quantity"*). It is resolved from the catalogue by its own lookup key for
+     the reason the base price is — no amount reaches the wire, and a key the
+     catalogue cannot supply refuses here with nothing charged.
+
+     `creditUnits === 0` sends ONE line and nothing else changes, which is what
+     keeps every rung without a dial on exactly the road it was on. */
+  const lineItems: { price: string; quantity: number }[] = [{ price: priceId, quantity: 1 }];
+  if (creditUnits > 0) {
+    lineItems.push({
+      price: await resolvePlanCreditsPriceId(stripe, plan, interval, creditUnits),
+      quantity: creditUnits,
+    });
+  }
+
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
     mode: "subscription",
     payment_method_types: ["card"],
-    line_items: [
-      {
-        price: priceId,
-        quantity: 1,
-      },
-    ],
+    line_items: lineItems,
     success_url: successUrl,
     cancel_url: cancelUrl,
+    /*
+      ⚠ **THE DIAL'S POSITION IS DELIBERATELY NOT IN THE METADATA, AND AN
+      EXISTING GUARD IS WHAT SETTLED IT (#1832).** A `creditUnits` key was
+      written here first, for the audit trail;
+      `server/stripe/checkoutProductText.test.ts`'s broad arm — *no string
+      anywhere in the outgoing session says the word credit* — went red on it.
+
+      Read at the arm's own reason, the indictment is not quite the one it
+      states (metadata is not text Stripe prints on the checkout page), **and
+      the field was wrong anyway for a better reason**: the add-on LINE ITEM
+      carries the quantity, which is the artifact that bills and the artifact
+      every reader here already consults — the grant, the quote and
+      `getPlanCreditUnits` all read `subscriptionItemsOf`. A second copy on the
+      metadata would be a mirror of a number Stripe owns (working law 4) with
+      no reader and nothing to keep it true. Our own record of the intent is
+      the audit row `createSubscriptionCheckout` writes, steps and ledger
+      credits both.
+    */
     metadata: {
       userId: userId.toString(),
       plan,
@@ -129,7 +171,10 @@ export async function createSubscriptionCheckoutSession(
     },
   });
 
-  log.info(`[Stripe] Created ${interval} subscription checkout session ${session.id} for plan ${plan}`);
+  log.info(
+    `[Stripe] Created ${interval} subscription checkout session ${session.id} for plan ${plan}`
+    + (creditUnits > 0 ? ` with ${creditUnits} credit step(s)` : ""),
+  );
   return session.url!;
 }
 
@@ -232,7 +277,14 @@ export async function getSubscriptionDetails(subscriptionId: string): Promise<{
     // subscriptionPeriods.ts; the sub-level read was taking its fallback.
     const { startSec, endSec } = subscriptionPeriodSec(subscription);
 
-    const stripeInterval = (subscription as any).items?.data?.[0]?.price?.recurring?.interval;
+    /* ⚠ The PLAN's item, not `data[0]` — #1832's law-7 sweep. Both items of
+       one subscription are re-priced together by `updateSubscriptionPlan`, so
+       they agree on the interval today; reading the add-on for the answer
+       would make that agreement load-bearing instead of incidental, and a
+       quantity or price edited in the Stripe dashboard alone would then cache
+       a cycle this product never sold. */
+    const stripeInterval =
+      subscriptionItemsOf(subscription).base?.price?.recurring?.interval;
 
     return {
       status: subscription.status,
@@ -408,7 +460,61 @@ export type SubscriptionBillingState = {
   /** Unix seconds, straight off the subscription. */
   periodStartSec: number;
   periodEndSec: number;
+  /**
+   * The credit slider's position, read off the add-on item's own quantity
+   * (#1832). 0 when the subscription carries no add-on line, which is every
+   * subscription on a rung with no slider and every plain plan.
+   */
+  currentCreditUnits: number;
+  /**
+   * The add-on subscription item, when there is one — what `updateSubscriptionPlan`
+   * re-prices or deletes. `null` means the line has to be ADDED.
+   */
+  creditItemId: string | null;
 };
+
+/**
+ * THE BASE ITEM AND THE ADD-ON ITEM, TOLD APART BY THEIR LOOKUP KEYS (#1832).
+ *
+ * ⚠ **THIS EXISTS BECAUSE `items.data[0]` STOPS BEING THE PLAN THE MOMENT A
+ * SUBSCRIPTION HAS TWO LINES, AND STRIPE DOES NOT PROMISE THE ORDER.** Every
+ * read in this file took `[0]` — the interval, the item id a plan change
+ * re-prices, the plan's own period. With a credit add-on on the subscription
+ * that index can be the add-on, and then: the interval is read off the right
+ * price by luck, the plan change would re-price the ADD-ON to the new plan's
+ * price, and a customer's $9 line would become their whole bill. So the split
+ * is deliberate and it is one function.
+ *
+ * The test is {@link isPlanCreditsLookupKey}, which is derived from the key
+ * composer rather than a substring — see its own note. A subscription with no
+ * add-on answers `{ base: data[0], addon: null }`, which is every subscription
+ * that exists today (production holds none at all; dev holds one).
+ *
+ * ⚠ **AN ITEM WHOSE PRICE HAS NO LOOKUP KEY IS TREATED AS THE BASE**, and that
+ * is the conservative direction rather than an oversight: every price this
+ * product charges on now comes from the catalogue by key (#1605), but a
+ * subscription created before that — or one a hand-sold link produced — has an
+ * ad-hoc price with `lookup_key: null`, and reading it as the base is what
+ * keeps its plan change working. The add-on is only ever recognised
+ * POSITIVELY.
+ */
+export function subscriptionItemsOf(subscription: unknown): {
+  base: { id: string; price?: any; quantity?: number } | null;
+  addon: { id: string; price?: any; quantity?: number } | null;
+} {
+  const items: any[] = (subscription as any)?.items?.data ?? [];
+  let base: any = null;
+  let addon: any = null;
+  for (const item of items) {
+    if (!item?.id) continue;
+    if (isPlanCreditsLookupKey(item.price?.lookup_key)) {
+      if (addon === null) addon = item;
+      continue;
+    }
+    if (base === null) base = item;
+  }
+  return { base, addon };
+}
 
 export async function readSubscriptionBillingState(
   subscriptionId: string,
@@ -416,7 +522,9 @@ export async function readSubscriptionBillingState(
   try {
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
 
-    const item = (subscription as any).items?.data?.[0];
+    /* ⚠ The PLAN's item, not `data[0]` — see `subscriptionItemsOf`. Reading
+       the add-on here would quote and re-price the wrong line. */
+    const { base: item, addon } = subscriptionItemsOf(subscription);
     if (!item?.id) {
       log.error(`[Stripe] Subscription ${subscriptionId} has no subscription item`);
       return null;
@@ -440,12 +548,20 @@ export async function readSubscriptionBillingState(
 
     const { startSec, endSec } = subscriptionPeriodSec(subscription);
 
+    /* The dial's position is the add-on line's own quantity — the artifact
+       that bills, never a number cached on our side. A line with no readable
+       quantity reads as 0, which under-grants rather than over-grants; the
+       grant road logs the disagreement rather than inventing a figure. */
+    const addonQuantity = typeof addon?.quantity === "number" ? addon.quantity : 0;
+
     return {
       subscriptionItemId: item.id,
       currentPlan,
       currentInterval,
       periodStartSec: startSec,
       periodEndSec: endSec,
+      currentCreditUnits: Math.max(0, Math.trunc(addonQuantity)),
+      creditItemId: addon?.id ?? null,
     };
   } catch (error) {
     log.error({ err: error }, `[Stripe] Failed to read billing state for ${subscriptionId}:`);
@@ -487,9 +603,21 @@ export type PlanChangeQuote = {
   proratedAmount: number;
   immediateCharge: number;
   creditBalance: number;
-  /** Per PERIOD at its own interval — a year's price on the annual leg. */
+  /**
+   * Per PERIOD at its own interval — a year's price on the annual leg.
+   *
+   * ⚠ **THE DIAL'S STEPS ARE IN BOTH FIGURES (#1832).** A plan change on the
+   * slider's rung can move the plan, the cycle, the dial, or any two of them,
+   * and the customer is quoted one number: what today's action nets. A
+   * `newPlanPrice` that left the add-on out would under-state an upgrade of
+   * the dial by $9 a step and the confirm step would disagree with the
+   * invoice — which is this surface's one unforgivable defect.
+   */
   newPlanPrice: number;
   currentPlanPrice: number;
+  /** The dial's position today, and the one being bought (#1832). */
+  currentCreditUnits: number;
+  targetCreditUnits: number;
   daysRemaining: number;
   totalDays: number;
   /**
@@ -518,6 +646,18 @@ export function quotePlanChange(
   newPlan: SubscriptionPlan,
   requestedInterval?: BillingIntervalChoice,
   nowSec: number = Math.floor(Date.now() / 1000),
+  /**
+   * The dial being bought (#1832). Absent means *the dial the rung allows,
+   * where the customer already has it* — which is what makes an interval
+   * switch or a cycle change carry the slider through rather than silently
+   * resetting it to zero and handing back an allowance nobody asked to lose.
+   *
+   * ⚠ **IT IS CLAMPED TO THE TARGET RUNG, NOT THE CURRENT ONE.** Moving from
+   * the slider's rung DOWN to Pro has no dial to carry, so the steps are
+   * dropped and their money and credits unwind with the rest of the change —
+   * which is the same mirror rule the plan's own allowance already follows.
+   */
+  requestedCreditUnits?: number,
 ): PlanChangeQuote {
   // Absent means KEEP the interval the customer is on. This is also the fix
   // for the sibling defect the #664 read found: the old update path minted
@@ -534,14 +674,30 @@ export function quotePlanChange(
     Math.max(0, Math.ceil((state.periodEndSec - nowSec) / DAY)),
   );
 
-  const currentPlanPrice = periodPriceInCents(
-    SUBSCRIPTION_PRODUCTS[state.currentPlan].priceInCents,
-    state.currentInterval,
+  /* THE DIAL, ON EACH SIDE OF THE CHANGE (#1832). The target is clamped to
+     what the TARGET rung sells, so a move off the slider's rung drops the
+     steps rather than carrying a line the new rung has no price for. */
+  const currentCreditUnits = Math.min(
+    state.currentCreditUnits,
+    planCreditSliderUnitsAllowed(state.currentPlan),
   );
-  const newPlanPrice = periodPriceInCents(
-    SUBSCRIPTION_PRODUCTS[newPlan].priceInCents,
-    targetInterval,
+  const targetCreditUnits = Math.max(
+    0,
+    Math.min(
+      Math.trunc(requestedCreditUnits ?? state.currentCreditUnits),
+      planCreditSliderUnitsAllowed(newPlan),
+    ),
   );
+
+  const currentPlanPrice =
+    periodPriceInCents(
+      SUBSCRIPTION_PRODUCTS[state.currentPlan].priceInCents,
+      state.currentInterval,
+    )
+    + planCreditSliderPriceInCents(currentCreditUnits, state.currentInterval);
+  const newPlanPrice =
+    periodPriceInCents(SUBSCRIPTION_PRODUCTS[newPlan].priceInCents, targetInterval)
+    + planCreditSliderPriceInCents(targetCreditUnits, targetInterval);
 
   const unusedValue = Math.floor((currentPlanPrice * daysRemaining) / totalDays);
   const proratedAmount =
@@ -549,6 +705,11 @@ export function quotePlanChange(
       ? Math.floor((newPlanPrice * daysRemaining) / totalDays) - unusedValue
       : newPlanPrice - unusedValue;
 
+  /* ⚠ THE DIRECTION IS STILL THE PLAN'S, NOT THE BILL'S. A dial moved up on
+     the same rung is neither an Upgrade nor a Downgrade of the PLAN, and the
+     label on the button is about the rung — the same reason an interval switch
+     on one tier is neither. What the dial changes is the FIGURE, which is in
+     `proratedAmount` above and in the confirm step's sentence. */
   const isUpgrade =
     SUBSCRIPTION_PRODUCTS[newPlan].priceInCents >
     SUBSCRIPTION_PRODUCTS[state.currentPlan].priceInCents;
@@ -562,6 +723,13 @@ export function quotePlanChange(
           daysRemaining,
           totalDays,
           cycleMonths,
+          /* The dial's steps ride the same mirror rule as the plan's own
+             allowance — paid for today on the way up, handed back with the
+             money on the way down (#1832). */
+          {
+            currentExtraMonthlyCredits: planCreditSliderLedgerCredits(currentCreditUnits),
+            targetExtraMonthlyCredits: planCreditSliderLedgerCredits(targetCreditUnits),
+          },
         )
       : 0;
 
@@ -574,7 +742,15 @@ export function quotePlanChange(
     kind === "interval-switch"
       ? wholeDisplayLedger(
           Math.floor(
-            PLAN_TIERS[state.currentPlan as PlanTier].monthlyCredits *
+            /* ⚠ The DIAL'S steps are in the unwind too (#1832), because the
+               old period's grant included them: Stripe credits back the same
+               fraction of the whole old line — plan AND add-on — so an unwind
+               that only knew the plan would leave the slider's share of the
+               allowance on the balance with its money already returned. That
+               is the credit-minting loop the #664 review found, one line item
+               over. */
+            (PLAN_TIERS[state.currentPlan as PlanTier].monthlyCredits
+              + planCreditSliderLedgerCredits(currentCreditUnits)) *
               cycleMonths *
               (daysRemaining / totalDays),
           ),
@@ -591,6 +767,8 @@ export function quotePlanChange(
     creditBalance: Math.max(-proratedAmount, 0),
     newPlanPrice,
     currentPlanPrice,
+    currentCreditUnits,
+    targetCreditUnits,
     daysRemaining,
     totalDays,
     creditAdjustment,
@@ -614,6 +792,17 @@ export async function updateSubscriptionPlan(
   userId: number,
   targetInterval: BillingIntervalChoice,
   subscriptionItemId?: string,
+  /**
+   * THE DIAL, AND THE ITEM IT LIVES ON (#1832) — both come from the quote the
+   * caller already read, so this function makes no second decision about what
+   * the customer is buying.
+   *
+   * `targetCreditUnits` 0 with a `creditItemId` present DELETES the line;
+   * non-zero with no item ADDS one; non-zero with an item re-prices it at the
+   * target interval and sets the quantity. Omitted means *leave the items
+   * alone*, which is every caller that predates the slider.
+   */
+  credits?: { targetCreditUnits: number; creditItemId: string | null },
 ): Promise<{
   success: boolean;
   /** What Stripe actually invoiced for the change, when it can be read. */
@@ -631,7 +820,11 @@ export async function updateSubscriptionPlan(
     let itemId = subscriptionItemId;
     if (!itemId) {
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-      itemId = (subscription as any).items?.data?.[0]?.id;
+      /* ⚠ The PLAN's item, never `data[0]` — with a credit add-on on the
+         subscription that index can be the $9 line, and re-pricing it to the
+         new plan's price would make a customer's add-on their whole bill
+         (`subscriptionItemsOf`, #1832). */
+      itemId = subscriptionItemsOf(subscription).base?.id;
       if (!itemId) {
         return { success: false, error: "No subscription items found" };
       }
@@ -651,19 +844,49 @@ export async function updateSubscriptionPlan(
     // made silently a second time — it would name the key and stop.
     const priceId = await resolvePriceId(stripe, newPlan, targetInterval);
 
+    /* ⚠ THE DIAL'S LINE MOVES IN THE SAME `subscriptions.update` AS THE PLAN'S
+       (#1832), and that is a correctness requirement rather than tidiness: two
+       updates would be two prorations and two invoices for one action the
+       customer was quoted ONE figure for, with the second able to fail after
+       the first was charged.
+
+       An interval switch re-prices the add-on too — its monthly and yearly
+       prices are different Stripe objects, and leaving the old one on an
+       annual subscription would bill $9 a month beside a yearly plan. */
+    const items: Record<string, unknown>[] = [{ id: itemId, price: priceId }];
+    if (credits) {
+      if (credits.targetCreditUnits > 0) {
+        const creditPriceId = await resolvePlanCreditsPriceId(
+          stripe,
+          newPlan,
+          targetInterval,
+          credits.targetCreditUnits,
+        );
+        items.push(
+          credits.creditItemId === null
+            ? { price: creditPriceId, quantity: credits.targetCreditUnits }
+            : { id: credits.creditItemId, price: creditPriceId, quantity: credits.targetCreditUnits },
+        );
+      } else if (credits.creditItemId !== null) {
+        /* The dial is back at zero, or the new rung has no dial — the line is
+           REMOVED rather than left at quantity 0, because a zero-quantity item
+           is still a line on the invoice and still a price the subscription
+           carries. */
+        items.push({ id: credits.creditItemId, deleted: true });
+      }
+    }
+
     const updated = await stripe.subscriptions.update(subscriptionId, {
-      items: [
-        {
-          id: itemId,
-          price: priceId,
-        },
-      ],
+      items: items as any,
       proration_behavior: "always_invoice",
       metadata: {
         userId: userId.toString(),
         plan: newPlan,
         // Parity with checkout metadata; the READ side never trusts this —
-        // the interval is read off the price (readSubscriptionBillingState).
+        // the interval is read off the price (readSubscriptionBillingState),
+        // and the dial off the add-on item's own quantity. ⚠ The dial is
+        // therefore NOT stamped here either; the checkout builder's note
+        // carries why, and `changePlan`'s audit row is our record of it.
         interval: targetInterval,
         ...environmentMetadata(),
       },
@@ -691,7 +914,9 @@ export async function updateSubscriptionPlan(
     }
 
     log.info(
-      `[Stripe] Updated subscription ${subscriptionId} to ${newPlan} (${targetInterval}), invoiced immediately`,
+      `[Stripe] Updated subscription ${subscriptionId} to ${newPlan} (${targetInterval})`
+      + (credits ? ` with ${credits.targetCreditUnits} credit step(s)` : "")
+      + ", invoiced immediately",
     );
     return { success: true, invoicedAmount, invoiceId, invoiceStatus };
   } catch (error) {
@@ -866,9 +1091,23 @@ export function calculateCreditAdjustment(
   daysRemaining: number,
   totalDays: number,
   monthsInCycle: number = 1,
+  /**
+   * The credit slider's steps, as a MONTH'S ledger credits on each side
+   * (#1832) — the dial's share of the allowance difference, which rides the
+   * same mirror rule as the plan's own.
+   *
+   * ⚠ **AN OPTIONS OBJECT RATHER THAN TWO MORE POSITIONALS**, because a sixth
+   * and seventh number on a function whose first five are already two plans
+   * and three counts is a call site nobody can read — and this one decides
+   * credits. Defaulting both to 0 keeps every existing caller and its arms
+   * exactly as they were.
+   */
+  extra: { currentExtraMonthlyCredits?: number; targetExtraMonthlyCredits?: number } = {},
 ): number {
-  const currentCredits = PLAN_TIERS[currentPlan].monthlyCredits;
-  const newCredits = PLAN_TIERS[newPlan].monthlyCredits;
+  const currentCredits =
+    PLAN_TIERS[currentPlan].monthlyCredits + (extra.currentExtraMonthlyCredits ?? 0);
+  const newCredits =
+    PLAN_TIERS[newPlan].monthlyCredits + (extra.targetExtraMonthlyCredits ?? 0);
 
   const deltaForCycle = (newCredits - currentCredits) * monthsInCycle;
   const fraction = daysRemaining / totalDays;
