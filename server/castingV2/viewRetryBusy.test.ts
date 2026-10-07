@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
@@ -207,5 +209,56 @@ describe("the running-retry filter", () => {
       expect(params).not.toContain(terminal);
     }
     expect([...RUNNING_VIEW_RETRY_STATUSES]).toEqual(["claimed", "running"]);
+  });
+});
+
+/**
+ * THE COMMIT'S OWN FENCE — and this is a FLOOR, said so rather than implied.
+ *
+ * `commitRetriedViewAsset` admits an operation only if it is `running` AND its
+ * kind may replace a view. That predicate decides whether a rendered picture
+ * LANDS or is read as fenced — and a fenced redo slice is thrown away and
+ * refunded while the bytes it rendered are dropped, so the customer watches
+ * five renders happen and gets nothing back but their money.
+ *
+ * ⚠ **It cannot be driven here.** The statement lives inside `withTransaction`
+ * against a real connection, and this repository's CI has no database — so an
+ * arm pretending to drive it would be the hollow kind. What CAN be checked is
+ * that the predicate reads the DECLARED SET rather than a literal, which is the
+ * mistake that was actually made: the fence carried `castingV2.viewRetry` as a
+ * string, and a second kind arriving beside it fails silently in the worst
+ * available direction.
+ *
+ * A text read is weaker than a drive and this is the honest floor, not
+ * coverage. The real driver is `castingV2ViewRetry`'s integration suite when
+ * one exists.
+ */
+describe("the retried-view commit's fence", () => {
+  it("reads the declared kind set, never a single kind as a literal", () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), "server/db/castingV2ViewRetry.ts"),
+      "utf8",
+    );
+    /* SLICED to the commit, because this module's other statements legitimately
+       name the Try again kind on their own (the free-ask filter keys on it, and
+       must keep doing so — a redo is never free). A whole-file read would be
+       satisfied, or broken, by a neighbour. */
+    const start = source.indexOf("export async function commitRetriedViewAsset");
+    /* To the NEXT top-level declaration, not to the first `\n}` — which was the
+       first draft and it stopped at the input OBJECT's closing brace, four
+       lines in, so the slice held the signature and none of the statement. A
+       slice that is too short fails loudly here; one that is too long is the
+       quieter half of the same mistake and is what the negative arm below is
+       for. */
+    const next = source.indexOf("\nexport ", start + 1);
+    const commit = source.slice(start, next === -1 ? undefined : next);
+    expect(start).toBeGreaterThan(-1);
+    expect(commit).toContain("await tx");
+    expect(commit).toContain("inArray(generationOperations.kind, [...VIEW_REPLACING_OPERATION_KINDS])");
+    expect(commit).not.toContain('eq(generationOperations.kind, "castingV2.viewRetry")');
+    /* And the free-ask filter's own literal is still there, one function away —
+       the negative control for the slice above, and a rule in its own right:
+       the redo must never be mistaken for a spent free Try again. */
+    expect(source).toContain('eq(generationOperations.kind, "castingV2.viewRetry")');
   });
 });
