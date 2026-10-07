@@ -51,12 +51,17 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it, vi } from "vitest";
 
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 import { readListedSource } from "./testing/listedSource";
-import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
 
-/* Declared once per FILE, never on an arm, so an arm written beside it
-   tomorrow inherits it (#741's derived-population shape). */
-vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
+/* This suite asks git itself the population question (`ls-files client`), so it
+   spawns a real process and must not sit inside vitest's 5s default under a
+   parallel run. Declared once per FILE, never on an arm, so an arm written
+   beside it tomorrow inherits it (#741's derived-population shape). It also
+   reads every tracked client file, which is the CONTENDED class — the two
+   constants are the same 30s today, and the child-process one is named here
+   because that is the population this suite is derived into. */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
