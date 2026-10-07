@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import sharp from "sharp";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ProviderError } from "../providers/types";
 /* The REAL composition the failed-slot row is stored with — #1492's seam arm
@@ -133,8 +134,65 @@ const captured: Array<{
 const waitedMs: number[] = [];
 let refundRecords = true;
 
+/**
+ * THE SHEET EVERY SIGN NOW RENDERS, as a synthetic frame (#1904).
+ *
+ * ⚠ **A REAL IMAGE, not a `Buffer.from("view")` stand-in, and it has to be**:
+ * the orchestrator cuts the bytes it is handed with `sharp`, so a sheet that is
+ * not an image fails the cut and every arm below would read as a dead Sign.
+ * Five panels of DIFFERENT widths with white dividers between them, so the cut
+ * exercises its detector rather than falling back to fifths.
+ */
+async function syntheticSheetBytes(): Promise<Buffer> {
+  const width = 500;
+  const height = 40;
+  const widths = [120, 80, 104, 90, 90];
+  const raw = Buffer.alloc(width * height, 0);
+  let x = 0;
+  widths.forEach((panelWidth, index) => {
+    for (let y = 0; y < height; y += 1) {
+      raw.fill(40 + index * 20, y * width + x, y * width + x + panelWidth);
+    }
+    x += panelWidth;
+    if (index < widths.length - 1) {
+      for (let y = 0; y < height; y += 1) raw.fill(255, y * width + x, y * width + x + 4);
+      x += 4;
+    }
+  });
+  return sharp(raw, { raw: { width, height, channels: 1 } }).png().toBuffer();
+}
+
+let sheetPng: Buffer | null = null;
+
+/**
+ * The default sheet engine — one call per Sign, recorded so an arm can count it.
+ *
+ * ⚠ **The count is the point of recording it.** Five views used to mean five
+ * engine calls; they now mean ONE, and an arm that could not see the difference
+ * would pass just as happily if every view quietly rendered its own sheet at
+ * `$0.07` a piece.
+ */
+const sheetCalls: { prompt: string; references: number }[] = [];
+
+function defaultSheetEngine() {
+  return {
+    id: "test-sheet",
+    editWithReferences: vi.fn(async (request: { prompt: string; references: unknown[] }) => {
+      sheetCalls.push({ prompt: request.prompt, references: request.references.length });
+      return {
+        bytes: sheetPng as Buffer,
+        contentType: "image/png",
+        latencyMs: 61_000,
+        provenance: { provider: "fal" as const, model: "sunburst-sheet", providerRef: "sheet-ref" },
+      };
+    }),
+    generateView: vi.fn(),
+  };
+}
+
 function deps(overrides: Record<string, unknown> = {}) {
   return {
+    signSheetEngine: defaultSheetEngine,
     identityEngine: () => ({
       id: "test-identity",
       editWithReferences: vi.fn(),
@@ -209,7 +267,12 @@ const input = {
   anchor: { bytes: Buffer.from("anchor"), contentType: "image/png" },
 };
 
+beforeAll(async () => {
+  sheetPng = await syntheticSheetBytes();
+});
+
 beforeEach(() => {
+  sheetCalls.length = 0;
   refunds.length = 0;
   committed.length = 0;
   failures.length = 0;

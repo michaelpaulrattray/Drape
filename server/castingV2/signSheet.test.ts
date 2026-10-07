@@ -430,7 +430,13 @@ describe("rendering the sheet", () => {
             referenceTypes: request.references.map((reference) => reference.contentType),
             resolution: request.resolution,
           });
-          return { bytes, contentType: "image/png", latencyMs: 61_000, estimatedCostUsd: null };
+          return {
+            bytes,
+            contentType: "image/png",
+            latencyMs: 61_000,
+            estimatedCostUsd: null,
+            provenance: { provider: "fal", model: "openai/gpt-image-2.5/sunburst/edit" },
+          };
         },
       },
       anchor: await anchorPng(),
@@ -445,6 +451,25 @@ describe("rendering the sheet", () => {
     expect(sent[0].prompt).toContain("A CHARACTER SHEET");
     expect(Object.keys(sheet.panels)).toEqual([...SIGN_SHEET_PANEL_ORDER]);
     expect(sheet.latencyMs).toBe(61_000);
+    /* The stamp every panel's asset row carries — the only honest record of a
+       delivered view's real size, since `resolution` says `2K` either way. */
+    expect(sheet.provenance.model).toBe("openai/gpt-image-2.5/sunburst/edit");
+  });
+
+  it("REFUSES a sheet with no provenance rather than guessing which engine painted", async () => {
+    /*
+      ⚠ Five permanent asset rows are about to record an engine. A fallback
+      would write a plausible wrong one onto all five, and nothing downstream
+      could ever disagree — `resolution` says `2K` for a 1696x2528 Nano Banana
+      Pro view and for a ~768x1648 Sunburst panel alike, by design.
+    */
+    const { bytes } = await drawSyntheticSheet();
+    await expect(
+      renderSignSheet({
+        engine: { async editWithReferences() { return { bytes, contentType: "image/png" }; } },
+        anchor: await anchorPng(),
+      }),
+    ).rejects.toThrow(/no provenance to stamp/);
   });
 
   it("PROPAGATES a fault instead of swallowing it — the opposite of the outfit plate", async () => {

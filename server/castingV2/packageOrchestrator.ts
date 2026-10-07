@@ -131,6 +131,7 @@ import {
   ProviderError,
   mayStillArrive,
   type IdentityEngine,
+  type ImageResult,
   type ReferenceImage,
 } from "../providers/types";
 import { CAST_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
@@ -150,17 +151,33 @@ import {
   composeViewFeatureWordsClause,
   type CarriedFeatureWords,
 } from "./viewFeatureWords";
-import { castingOutfitPlateEngine, castingViewConformanceJudge, castingViewEngine } from "./signEngine";
+import { castingSignSheetEngine, castingViewConformanceJudge, castingViewEngine } from "./signEngine";
+/*
+  ⚠ **THE PLATE'S IMPORTS SHRANK RATHER THAN VANISHED (#1904), AND THE
+  DIFFERENCE IS THE WHOLE SWEEP.** A Sign no longer renders a plate, so
+  `PLATE_ANGLES`, `plateSideFor`, `renderOutfitPlate`, `OutfitPlate` and
+  `castingOutfitPlateEngine` leave this file — and the three that remain are
+  each still reached on a LIVE road, through the dependency bag this file
+  declares and the request the Try again composes:
+    `outfitReferenceClause`  — a retried view's outfit sentence (#1474)
+    `PLATE_VIEW_ASPECT_RATIO` — the pin that stops a plate-dressed view
+                                coming back a different shape from its siblings
+    `OutfitReference` / `OutfitPlateEngine` — the types the retry road passes
+  Dropping all five because "the Sign stopped using the plate" would be the
+  path-three death this repository has paid for four times: a correct change
+  taking a control with it.
+*/
 import {
-  PLATE_ANGLES,
   PLATE_VIEW_ASPECT_RATIO,
   outfitReferenceClause,
-  plateSideFor,
-  renderOutfitPlate,
-  type OutfitPlate,
   type OutfitPlateEngine,
   type OutfitReference,
 } from "./outfitPlate";
+import {
+  renderSignSheet,
+  type RenderedSignSheet,
+  type SignSheetEngine,
+} from "./signSheet";
 import {
   conformanceProvenance,
   unjudgedVerdict,
@@ -275,6 +292,14 @@ export type PackageOrchestratorDependencies = {
    * both and prove nothing about the split.
    */
   outfitPlateEngine?: () => OutfitPlateEngine;
+  /**
+   * THE SHEET'S ENGINE (#1904) — the one a Sign now renders with.
+   *
+   * Its sibling above is kept: nothing in `buildCastPackage` reaches the plate
+   * any more, but the dependency bag is shared with the Try again road, which
+   * does (#1474).
+   */
+  signSheetEngine?: () => SignSheetEngine;
   /**
    * THE REFUSED FRAME'S KEEPER (#1492).
    *
@@ -415,7 +440,63 @@ export type BuildPackageInput = {
    * by position.
    */
   outfitReference?: OutfitReference | null;
+  /**
+   * THE SHEET THIS PACKAGE IS BEING CUT FROM — in flight (#1904).
+   *
+   * **His word, 2026-10-07, closing #1690:** *"and then we go with the sunburst
+   * 2.5 max quality for the sign sheet"*. When it is set, every view's picture
+   * is a panel cut from this one frame and no view calls an image engine at
+   * all; when it is absent, each view composes and renders its own request
+   * exactly as it always has.
+   *
+   * ⚠ **A PROMISE RATHER THAN A SHEET, and that is a money decision rather than
+   * a style one.** `buildCastPackage` cannot await it before dispatching the
+   * views: a sheet that never arrived would then leave five audit rows open and
+   * 8,500 credits taken with **not one view attempted**, and an unattempted
+   * view is the one failure mode this road has no refund path for. Carried in
+   * flight, a dead sheet is an ordinary generation failure five times over and
+   * every slice refunds itself.
+   *
+   * ⚠ **The Try again leaves this unset and must keep doing so.**
+   * `viewRetryService.ts` renders ONE view against its delivered sibling, and
+   * handing it a sheet would have it pay for five panels to keep one.
+   */
+  signSheet?: Promise<RenderedSignSheet>;
 };
+
+/**
+ * ONE PANEL OUT OF THE SHEET, shaped like anything else a view can land.
+ *
+ * ⚠ **The provenance is the sheet's, not a constant**, which is what keeps the
+ * asset rows honest about a delivered view's real size — see
+ * {@link RenderedSignSheet.provenance}. Latency and cost are the SHEET's and are
+ * deliberately attributed in full to each of the five rather than divided:
+ * dividing would invent a per-view figure nobody measured, and a reader summing
+ * five rows would then read one sheet as five renders either way. The sheet's
+ * own log line is where the single true reading lives.
+ */
+async function signSheetPanelFor(
+  sheet: Promise<RenderedSignSheet>,
+  angle: CastViewAngle,
+): Promise<ImageResult> {
+  const settled = await sheet;
+  const panel = settled.panels[angle];
+  if (!panel) {
+    /*
+      A view the sheet has no panel for cannot be delivered, and it must not be
+      delivered as somebody else's panel. It reaches the attempt loop's catch as
+      an ordinary failure, so the slice refunds — see the fork's own comment.
+    */
+    throw new Error(`the Sign sheet carries no panel for the ${angle} view`);
+  }
+  return {
+    bytes: panel.bytes,
+    contentType: panel.contentType,
+    provenance: settled.provenance,
+    latencyMs: settled.latencyMs,
+    ...(settled.estimatedCostUsd === null ? {} : { estimatedCostUsd: settled.estimatedCostUsd }),
+  };
+}
 
 async function defaultStoreImage(input: {
   operationId: string;
@@ -485,87 +566,61 @@ export async function buildCastPackage(
   );
 
   /*
-    THE PLATE STARTS NOW AND NOTHING WAITS FOR IT EXCEPT THE TWO VIEWS THAT
-    NEED IT (#1278 path E, his design).
+    ONE SHEET, AND EVERY VIEW IS A PANEL OF IT — his word, 2026-10-07 (terminal),
+    closing #1690: *"and then we go with the sunburst 2.5 max quality for the
+    sign sheet"*, after *"sunburst sheets nail it"* and *"gpt image 2.5 had the
+    best results and we can also drop the outfit plate if using gpt image 2.5 as
+    it can come up with the outfit just as good . only reason for the outfit
+    plate was because NBP sucks at outfit creativity"*.
 
-    His own first line is the schedule: *"Close-ups / head-shoulder views start
-    immediately in parallel on Nano Banana Pro 2K (master + brief). No plate
-    wait."* So this promise is created and DELIBERATELY NOT AWAITED here — the
-    three views that do not wear the plate are dispatched in the same tick they
-    always were, and a customer's close-up is not one second later than it was
-    yesterday. What the plate costs in wait is paid only by the full-length
-    pair, and only up to the point their own render would have started.
+    ⚠ **THE OUTFIT PLATE IS RETIRED ON THIS ROAD, AND IT IS RETIRED RATHER THAN
+    DISABLED.** Path E's plate existed for one measured defect — five views
+    rendered independently from a chest-up anchor invented five different hems
+    and five different shoes (*"the hem and shoes differ every take"*, #1278).
+    One frame holding all five panels does not have that defect to mitigate: the
+    outfit is the same outfit because it is the same photograph. Keeping a plate
+    beside the sheet would be paying `~$0.145` and ~70 s to settle a question
+    the sheet cannot ask. **`outfitPlate.ts` is untouched and still live on the
+    Try again road** (#1474, where a retried view copies its delivered sibling),
+    so nothing is deleted here — what changes is which roads reach it.
+
+    ⚠ **NOTHING WAITS AND NOTHING IS CAUGHT, which is the opposite of the plate
+    on both counts.** The plate's promise was deliberately un-awaited so three
+    views could start without it, and deliberately `.catch`-ed so a dead plate
+    could never fail a Sign. Here every view needs the sheet, so there is nothing
+    to run beside it; and a dead sheet IS a dead package, so swallowing the fault
+    would hand five slots an empty picture to charge for. The rejection travels
+    to all five views, each fails as *never arrived*, each slice refunds, nothing
+    committed refunds the base, and the Cast activates and confesses — the
+    existing total-loss road, reached without a line of new money code.
+
+    ⚠ **The engine is built INSIDE the promise for the plate's own reason.**
+    `castingSignSheetEngine()` throws on a missing `FAL_KEY` — the door's own
+    refusal, and the right one — and built eagerly in the argument list that
+    throw would be SYNCHRONOUS here, after five audit rows exist and 8,500
+    credits are gone, with nothing to refund it.
   */
-  const plate = Promise.resolve()
-    .then(() => renderOutfitPlate({
-      /*
-        ⚠ **THE ENGINE IS BUILT INSIDE THE PROMISE, NOT IN THE ARGUMENT LIST.**
-        `castingOutfitPlateEngine()` THROWS on a missing `FAL_KEY` — the door's
-        own refusal, and the right one — and built eagerly here that throw is
-        SYNCHRONOUS inside `buildCastPackage`, before a single view has been
-        dispatched. Five audit rows would already exist, 8,500 credits would
-        already be taken, and nothing would have refused or refunded any of it.
-        Wrapped, the same throw lands in the catch below and the Sign renders
-        master-only, which is what a missing plate is supposed to cost.
-      */
-      engine: (dependencies.outfitPlateEngine ?? castingOutfitPlateEngine)(),
-      /* #1471, his ruling: the plate EDITS the master. The same anchor the five
-         views render from, so the plate cannot come to be of a different
-         picture than the views it dresses. */
-      anchor: input.anchor,
-      wardrobeLine: input.wardrobeLine ?? null,
-      description: input.description ?? null,
-      operationId: input.operationId,
-    }))
-    .catch((error: unknown) => {
-    /*
-      ⚠ **THE PLATE MAY NEVER TAKE THE SIGN DOWN WITH IT, AND THIS IS THE ONLY
-      PLACE THAT CAN GUARANTEE IT.** `renderOutfitPlate` already answers `null`
-      for every fault it can name — but it re-throws a CANCELLATION on purpose,
-      and a rejected promise here would reject the `Promise.all` below, so the
-      two full-length views would never be attempted at all: their audit rows
-      already exist, their credits are already taken, and nothing would have
-      refused or refunded them. They would sit non-terminal until the recovery
-      sweep. **A view that is never attempted is the one failure mode this road
-      has no refund path for**, so the catch is not decoration — it is the arm
-      between an aborted plate and two paid slots in limbo.
-    */
-      log.warn(
-        { operationId: input.operationId, err: error instanceof Error ? error.message : String(error) },
-        "[packageOrchestrator] the wardrobe plate threw — the full-length views render from the master alone",
-      );
-      return null as OutfitPlate | null;
-    });
+  const sheet = Promise.resolve().then(() => renderSignSheet({
+    engine: (dependencies.signSheetEngine ?? castingSignSheetEngine)(),
+    anchor: input.anchor,
+    wardrobeLine: input.wardrobeLine ?? null,
+    description: input.description ?? null,
+    ...(input.pronouns ? { pronouns: input.pronouns } : {}),
+    inkCrops: input.inkCrops ?? [],
+    featureWords: input.featureWords ?? [],
+    operationId: input.operationId,
+  }));
 
   const outcomes = await Promise.all(
-    promised.map(({ angle, auditId }) => {
-      const waitsForPlate = (PLATE_ANGLES as readonly CastViewAngle[]).includes(angle);
-      if (!waitsForPlate) return buildOneView(dependencies, input, angle, auditId);
-      /*
-        His third line: *"When the plate lands: frontFull and backFull on NBP 2K
-        at full Sign size, references = master + plate panel (+ brief), in
-        parallel."* And his fourth: a plate that does not land leaves these two
-        rendering master-only, which is `settled` being `null` — the input is
-        then the one every view composed before path E, field for field.
-      */
-      const side = plateSideFor(angle as (typeof PLATE_ANGLES)[number]);
-      return plate.then((settled) =>
-        buildOneView(
-          dependencies,
-          settled === null
-            ? input
-            : {
-                ...input,
-                /* A plate panel is cut FOR this view, so the picture faces the
-                   way the view does — which is why `side` answers both
-                   questions here and answers only one on the retry road. */
-                outfitReference: { image: settled[side], side, kind: "plate" },
-              },
-          angle,
-          auditId,
-        ),
-      );
-    }),
+    /*
+      Every view takes the same input and the same sheet. ⚠ The per-angle fork
+      that stood here — `PLATE_ANGLES.includes(angle)`, two views waiting on a
+      panel and three not — is gone with the plate: there is no longer a view
+      that renders differently from its neighbours, which is the whole point of
+      a sheet.
+    */
+    promised.map(({ angle, auditId }) =>
+      buildOneView(dependencies, { ...input, signSheet: sheet }, angle, auditId)),
   );
 
   const committed = outcomes
@@ -824,178 +879,37 @@ export async function renderViewAttempts<T>(
     let stored: { key: string; url: string } | null = null;
     try {
       /*
-        THE TATTOOS SHE REALLY HAS RIDE BESIDE THE ANCHOR, INTO EVERY VIEW — his
-        ruling, and the ordinal the clause quotes is derived from the array it is
-        quoting about rather than assumed, so a sentence can never point at a
-        slot the request does not hold.
+        WHERE THE PICTURE COMES FROM — one of two roads, and the fork is a FIELD
+        rather than a flag (#1904).
 
-        ⚠ **THE ANCHOR IS REFERENCE 1 AND THE CROPS START AT 2, AND THAT IS NOT
-        A NEW FACT** — it is what the arithmetic has always evaluated to. A
-        plate lane sat between them until #1158 slice 4f (*"It retires with
-        N2"*), reading `2 + plates.length`; its source table never held a row in
-        either world and `MANNEQUIN_ROAD_DEFERRED` refused every design at its
-        first door regardless, so `plates.length` was 0 on every signed Cast
-        this product has ever rendered. The composed prompt is byte-identical
-        across that deletion, which is asserted at the wire rather than argued
-        here — `packageOrchestrator.test.ts`, "the crops start at reference 2".
+        His word, 2026-10-07, closing #1690: *"and then we go with the sunburst
+        2.5 max quality for the sign sheet"*. A Sign renders ONE landscape sheet
+        and every view is a panel cut from it, so the five pictures agree on the
+        outfit by construction rather than by five independent readings of one
+        brief — which is the hem-and-shoes complaint path E's plate was built to
+        answer, dissolved instead of mitigated.
+
+        ⚠ **THE SHEET IS AWAITED HERE, INSIDE THE ATTEMPT LOOP, AND NOT BEFORE
+        THE VIEWS ARE DISPATCHED.** Awaiting it in `buildCastPackage` would read
+        more simply and would reach the one failure mode this road has no refund
+        path for: a sheet that never arrived would leave five audit rows open,
+        8,500 credits taken and **not one view ever attempted**. Awaited here, a
+        dead sheet is an ordinary generation failure five times over — each slice
+        refunds through `failView`, nothing committed refunds the base too, and
+        the Cast still activates and confesses in place. This file's header names
+        that hazard in as many words, and the plate's `.catch` beside it exists
+        for the same reason.
+
+        ⚠ **AND IT IS ONE PROMISE, SO FIVE AWAITS ARE ONE RENDER.** A settled
+        rejection re-throws instantly, so a dead sheet costs the arrival budget's
+        waiting and never a second call. A view's own three attempts therefore
+        cannot buy a second sheet, which is deliberate: the ask that regenerates
+        a sheet is his paid whole-package redo (#1903), not a slot quietly asking
+        again at the house's expense.
       */
-      const crops = input.inkCrops ?? [];
-      const references: ReferenceImage[] = [
-        input.anchor,
-        ...crops.map((crop) => ({ bytes: crop.bytes, contentType: crop.contentType })),
-      ];
-      const cropClause = inkViewCropClause({
-        crops,
-        firstOrdinal: 2,
-        pronouns: input.pronouns ?? pronounsForSex(null),
-      });
-      /*
-        THE WARDROBE PLATE'S PANEL RIDES LAST (#1278 path E).
-
-        ⚠ **Its ordinal is DERIVED from the array it is talking about**, exactly
-        as the crops' clause derives theirs, and for the same reason one line
-        up: a Cast with three tattoos has her plate at reference 5, and a
-        sentence carrying a constant would point every such view at a picture of
-        her elbow and call it the outfit.
-
-        Absent — every view but the two full-length ones, and both of those on a
-        Sign whose plate did not land — this pushes nothing and composes the
-        empty string, so the request is byte-identical to the one this road sent
-        before path E. That inertness is asserted rather than described
-        (`packageOrchestrator.test.ts`).
-      */
-      const outfitReference = input.outfitReference ?? null;
-      if (outfitReference) references.push(outfitReference.image);
-      /*
-        ⚠ **ONE ORDINAL, TWO READERS — #1480.** It was computed inline for the
-        clause alone; the composed prompt now has to NAME the outfit's reference
-        in three more places, and two authors of this number would point a Cast
-        with three tattoos at a picture of her elbow and call it the outfit.
-        Named once, passed to both.
-      */
-      const outfitReferenceOrdinal = outfitReference ? 2 + crops.length : null;
-      const viewPronouns = input.pronouns ?? pronounsForSex(null);
-      const plateClause = outfitReference && outfitReferenceOrdinal !== null
-        ? outfitReferenceClause({
-            ordinal: outfitReferenceOrdinal,
-            /* ⚠ **Read off the reference, never defaulted.** This was
-               `input.outfitPlateSide ?? "front"` while the side and the image
-               were two optional fields that had to agree: a caller that set one
-               and forgot the other got a clause claiming the picture faced the
-               front. Harmless while every reference WAS the front panel of a
-               front view; a 50/50 lie about which side to copy the moment a
-               retry's reference became the opposite view (#1474). They are one
-               object now, so there is nothing left to default. */
-            side: outfitReference.side,
-            kind: outfitReference.kind,
-            pronouns: viewPronouns,
-          })
-        : "";
-      /*
-        THE WORDS FOR WHAT THE ANCHOR CANNOT SHOW ride in the same place the
-        crops' clause does, so there is one shape for "things that travel
-        beside the anchor" rather than two. Both are appended rather than
-        substituted: a Cast with neither sends the composer's own output, byte
-        for byte, which is the inertness both lanes are asserted on.
-      */
-      const composedWords = composeViewFeatureWordsClause(input.featureWords ?? []);
-      const wordsClause = composedWords.clause;
-      /*
-        ⚠ **AND WHAT THE CHARACTER CAP PUSHED OUT IS SAID OUT LOUD** (survey
-        finding opus-1231 §1, ordered fable-1607 ruling 1).
-
-        This line read `…(…).clause` and threw `dropped` away — while the
-        producer's own docblock said, in as many words, why it hands it back:
-        *"a cap that silently truncates reads, from the outside, exactly like a
-        feature that was never there."* The report existed and its only consumer
-        discarded the half that explains. That is arm-at-the-producer's exact
-        silhouette, on the road where a customer pays for frames she keeps.
-
-        The COUNT cap already logs its declines at the Sign
-        (`[signService] the features this Cast's views carry as words`); this is
-        the other cap, said the same way and with the same discipline:
-        **SLOTS ONLY, never the words**, because the words are the customer's own
-        and this log is not a place they belong.
-
-        It fires per view rather than once per package, deliberately: the clause
-        is composed here, and a log that claimed to describe a package from
-        outside the loop would be describing a composition it did not watch. The
-        drop is deterministic across the six, so the repetition is honest noise
-        rather than six different facts.
-      */
-      if (composedWords.dropped.length > 0) {
-        log.warn(
-          {
-            operationId: input.operationId,
-            angle,
-            droppedSlots: composedWords.dropped.map((feature) => feature.slot),
-            keptCount: (input.featureWords ?? []).length - composedWords.dropped.length,
-          },
-          "[packageOrchestrator] the view clause hit its character cap — these features "
-          + "were dropped from the words this view carries",
-        );
-      }
-      const image = await engine.generateView({
-        /*
-          THE PLATE MOVES THE DELIVERED PICTURE'S SHAPE UNLESS IT IS PINNED —
-          measured, and `PLATE_VIEW_ASPECT_RATIO`'s docblock carries the three
-          readings. Absent a plate this spreads nothing, so the other three
-          views send the request they always sent, byte for byte.
-        */
-        ...(outfitReference ? { aspectRatio: PLATE_VIEW_ASPECT_RATIO } : {}),
-        prompt: [
-          /*
-            ⚠ **THE OUTFIT CLAUSE IS NO LONGER APPENDED AFTER THE HOUSE BLOCK —
-            #1480 finding D.** It used to sit after `AUTHORITY_LINE`, the
-            paragraph that says what beats what, so the one sentence naming the
-            outfit's real authority was outside the ordering that decides
-            authority. The composer places it with WARDROBE now, and is handed
-            the ORDINAL as well, so the three sentences that still told the
-            engine to work the hem out from the description stop doing so.
-          */
-          composePackageViewPrompt(angle, input.wardrobeLine ?? null, input.description ?? null, {
-            pronouns: viewPronouns,
-            outfitReferenceOrdinal,
-            outfitClause: plateClause,
-          }),
-          cropClause,
-          wordsClause,
-        ]
-          .filter((part) => part !== "")
-          .join("\n"),
-        references,
-        /*
-          §H.10: signed package views are the `2K` TIER.
-
-          ⚠ **AND IT IS A TIER, NOT A PIXEL COUNT — WHICH MATTERS NOW THAT THE
-          ENGINE UNDER IT HAS CHANGED (#1459).** It never was a measurement:
-          Nano Banana Pro answered `2K` with 1696x2528, and this road now
-          renders on Sunburst's edit door, which answers 2352x3504. What the
-          word has always named is the SIGNED-VIEW tier — the one the anchor's
-          `1K` is not — and `refineService.ts` says the same thing from the
-          other side: *"1K: a candidate's own resolution. The 2K tier belongs
-          to signed views."*
-
-          So the `model_assets.resolution` enum keeps saying `2K` and the row
-          stays honest, because the two readers below (`committedPackageAngles`,
-          `unsettledPackageAngles`) are asking a ROLE question — *is this a
-          full view rather than the 1K anchor?* — and the tier is what answers
-          it. **Adding a value for the new size would put two labels on one
-          role across a live table whose existing rows cannot be relabelled
-          without a row rewrite, and a reader that missed the second label
-          would read a paid, landed view as never arrived.** That is a money
-          hazard for no gain.
-
-          What carries the honest SIZE instead is the row's own provenance: the
-          engine that painted is stamped on every asset
-          (`provenance.engine`), so a Sunburst row and a Nano Banana Pro row
-          are already told apart by the record rather than by memory.
-          `server/castingV2/signViewEngineChain.test.ts` pins both halves, the
-          hazard included.
-        */
-        resolution: "2K",
-        viewAngle: angle,
-      });
+      const image = input.signSheet
+        ? await signSheetPanelFor(input.signSheet, angle)
+        : await composeAndGenerateOneView(input, angle, engine);
 
       // Bytes land in OUR storage before anything references them; a provider
       // URL is never persisted and never projected (§E, §J).
@@ -1017,8 +931,16 @@ export async function renderViewAttempts<T>(
            outfit. Both values are still read by the prompt above, unchanged. */
         /* The same face the generator was asked for — #1480 finding A's third
            site, so the checker is not describing a different person. This one
-           stays: identity is the axis that survived. */
-        pronouns: viewPronouns,
+           stays: identity is the axis that survived.
+
+           ⚠ **Read from the input rather than from the composition (#1904).**
+           This was `viewPronouns`, a local the composition declared — which
+           moved into `composeAndGenerateOneView` with it. The DERIVATION is
+           copied, not the variable, and it has to be the same one: a judge given
+           different pronouns from the generator is #1480 finding A exactly, and
+           on the sheet road there is no per-view composition to borrow from at
+           all. One expression, pinned by an arm. */
+        pronouns: input.pronouns ?? pronounsForSex(null),
       });
       verdicts.push(verdict);
       // A picture came back and the judge answered about it: this attempt
@@ -1254,6 +1176,207 @@ export async function renderViewAttempts<T>(
   }
 
   return { status: "failed", reason: lastReason, verdicts, tally: { attempts: attemptsRun, arrivalFailures, judgedAttempts } };
+}
+
+/**
+ * COMPOSE AND RENDER ONE VIEW — the request this road has always sent, moved out
+ * of the attempt loop unchanged so the sheet road can stand beside it (#1904).
+ *
+ * ⚠ **IT IS A MOVE AND NOT A REWRITE.** Every clause, every ordinal and every
+ * comment below arrived here verbatim from inside `renderViewAttempts`'s `try`,
+ * dedented and otherwise untouched; the parameters are named so that not one
+ * `input.` reference had to change. The single content change is the last
+ * statement, which returns the engine's promise instead of assigning a local.
+ *
+ * ⚠ **It was MOVED rather than wrapped in an `if`, and that choice is the
+ * honest one rather than the small one.** Leaving it in place would compose a
+ * prompt and discard it on the sheet road — dead work, and worse, the
+ * character-cap warning below would announce features dropped from a clause
+ * nobody sent. On the sheet road the cast's tattoos and feature words ride the
+ * SHEET, once, where they belong: they are facts about the person and the sheet
+ * paints all five panels in one frame.
+ *
+ * **Still the only road for a Try again**, which renders one view against its
+ * delivered sibling and has no sheet (`viewRetryService.ts`).
+ */
+async function composeAndGenerateOneView(
+  input: BuildPackageInput,
+  angle: CastViewAngle,
+  engine: IdentityEngine,
+): Promise<ImageResult> {
+  /*
+    THE TATTOOS SHE REALLY HAS RIDE BESIDE THE ANCHOR, INTO EVERY VIEW — his
+    ruling, and the ordinal the clause quotes is derived from the array it is
+    quoting about rather than assumed, so a sentence can never point at a
+    slot the request does not hold.
+
+    ⚠ **THE ANCHOR IS REFERENCE 1 AND THE CROPS START AT 2, AND THAT IS NOT
+    A NEW FACT** — it is what the arithmetic has always evaluated to. A
+    plate lane sat between them until #1158 slice 4f (*"It retires with
+    N2"*), reading `2 + plates.length`; its source table never held a row in
+    either world and `MANNEQUIN_ROAD_DEFERRED` refused every design at its
+    first door regardless, so `plates.length` was 0 on every signed Cast
+    this product has ever rendered. The composed prompt is byte-identical
+    across that deletion, which is asserted at the wire rather than argued
+    here — `packageOrchestrator.test.ts`, "the crops start at reference 2".
+  */
+  const crops = input.inkCrops ?? [];
+  const references: ReferenceImage[] = [
+    input.anchor,
+    ...crops.map((crop) => ({ bytes: crop.bytes, contentType: crop.contentType })),
+  ];
+  const cropClause = inkViewCropClause({
+    crops,
+    firstOrdinal: 2,
+    pronouns: input.pronouns ?? pronounsForSex(null),
+  });
+  /*
+    THE WARDROBE PLATE'S PANEL RIDES LAST (#1278 path E).
+
+    ⚠ **Its ordinal is DERIVED from the array it is talking about**, exactly
+    as the crops' clause derives theirs, and for the same reason one line
+    up: a Cast with three tattoos has her plate at reference 5, and a
+    sentence carrying a constant would point every such view at a picture of
+    her elbow and call it the outfit.
+
+    Absent — every view but the two full-length ones, and both of those on a
+    Sign whose plate did not land — this pushes nothing and composes the
+    empty string, so the request is byte-identical to the one this road sent
+    before path E. That inertness is asserted rather than described
+    (`packageOrchestrator.test.ts`).
+  */
+  const outfitReference = input.outfitReference ?? null;
+  if (outfitReference) references.push(outfitReference.image);
+  /*
+    ⚠ **ONE ORDINAL, TWO READERS — #1480.** It was computed inline for the
+    clause alone; the composed prompt now has to NAME the outfit's reference
+    in three more places, and two authors of this number would point a Cast
+    with three tattoos at a picture of her elbow and call it the outfit.
+    Named once, passed to both.
+  */
+  const outfitReferenceOrdinal = outfitReference ? 2 + crops.length : null;
+  const viewPronouns = input.pronouns ?? pronounsForSex(null);
+  const plateClause = outfitReference && outfitReferenceOrdinal !== null
+    ? outfitReferenceClause({
+        ordinal: outfitReferenceOrdinal,
+        /* ⚠ **Read off the reference, never defaulted.** This was
+           `input.outfitPlateSide ?? "front"` while the side and the image
+           were two optional fields that had to agree: a caller that set one
+           and forgot the other got a clause claiming the picture faced the
+           front. Harmless while every reference WAS the front panel of a
+           front view; a 50/50 lie about which side to copy the moment a
+           retry's reference became the opposite view (#1474). They are one
+           object now, so there is nothing left to default. */
+        side: outfitReference.side,
+        kind: outfitReference.kind,
+        pronouns: viewPronouns,
+      })
+    : "";
+  /*
+    THE WORDS FOR WHAT THE ANCHOR CANNOT SHOW ride in the same place the
+    crops' clause does, so there is one shape for "things that travel
+    beside the anchor" rather than two. Both are appended rather than
+    substituted: a Cast with neither sends the composer's own output, byte
+    for byte, which is the inertness both lanes are asserted on.
+  */
+  const composedWords = composeViewFeatureWordsClause(input.featureWords ?? []);
+  const wordsClause = composedWords.clause;
+  /*
+    ⚠ **AND WHAT THE CHARACTER CAP PUSHED OUT IS SAID OUT LOUD** (survey
+    finding opus-1231 §1, ordered fable-1607 ruling 1).
+
+    This line read `…(…).clause` and threw `dropped` away — while the
+    producer's own docblock said, in as many words, why it hands it back:
+    *"a cap that silently truncates reads, from the outside, exactly like a
+    feature that was never there."* The report existed and its only consumer
+    discarded the half that explains. That is arm-at-the-producer's exact
+    silhouette, on the road where a customer pays for frames she keeps.
+
+    The COUNT cap already logs its declines at the Sign
+    (`[signService] the features this Cast's views carry as words`); this is
+    the other cap, said the same way and with the same discipline:
+    **SLOTS ONLY, never the words**, because the words are the customer's own
+    and this log is not a place they belong.
+
+    It fires per view rather than once per package, deliberately: the clause
+    is composed here, and a log that claimed to describe a package from
+    outside the loop would be describing a composition it did not watch. The
+    drop is deterministic across the six, so the repetition is honest noise
+    rather than six different facts.
+  */
+  if (composedWords.dropped.length > 0) {
+    log.warn(
+      {
+        operationId: input.operationId,
+        angle,
+        droppedSlots: composedWords.dropped.map((feature) => feature.slot),
+        keptCount: (input.featureWords ?? []).length - composedWords.dropped.length,
+      },
+      "[packageOrchestrator] the view clause hit its character cap — these features "
+      + "were dropped from the words this view carries",
+    );
+  }
+  return engine.generateView({
+    /*
+      THE PLATE MOVES THE DELIVERED PICTURE'S SHAPE UNLESS IT IS PINNED —
+      measured, and `PLATE_VIEW_ASPECT_RATIO`'s docblock carries the three
+      readings. Absent a plate this spreads nothing, so the other three
+      views send the request they always sent, byte for byte.
+    */
+    ...(outfitReference ? { aspectRatio: PLATE_VIEW_ASPECT_RATIO } : {}),
+    prompt: [
+      /*
+        ⚠ **THE OUTFIT CLAUSE IS NO LONGER APPENDED AFTER THE HOUSE BLOCK —
+        #1480 finding D.** It used to sit after `AUTHORITY_LINE`, the
+        paragraph that says what beats what, so the one sentence naming the
+        outfit's real authority was outside the ordering that decides
+        authority. The composer places it with WARDROBE now, and is handed
+        the ORDINAL as well, so the three sentences that still told the
+        engine to work the hem out from the description stop doing so.
+      */
+      composePackageViewPrompt(angle, input.wardrobeLine ?? null, input.description ?? null, {
+        pronouns: viewPronouns,
+        outfitReferenceOrdinal,
+        outfitClause: plateClause,
+      }),
+      cropClause,
+      wordsClause,
+    ]
+      .filter((part) => part !== "")
+      .join("\n"),
+    references,
+    /*
+      §H.10: signed package views are the `2K` TIER.
+
+      ⚠ **AND IT IS A TIER, NOT A PIXEL COUNT — WHICH MATTERS NOW THAT THE
+      ENGINE UNDER IT HAS CHANGED (#1459).** It never was a measurement:
+      Nano Banana Pro answered `2K` with 1696x2528, and this road now
+      renders on Sunburst's edit door, which answers 2352x3504. What the
+      word has always named is the SIGNED-VIEW tier — the one the anchor's
+      `1K` is not — and `refineService.ts` says the same thing from the
+      other side: *"1K: a candidate's own resolution. The 2K tier belongs
+      to signed views."*
+
+      So the `model_assets.resolution` enum keeps saying `2K` and the row
+      stays honest, because the two readers below (`committedPackageAngles`,
+      `unsettledPackageAngles`) are asking a ROLE question — *is this a
+      full view rather than the 1K anchor?* — and the tier is what answers
+      it. **Adding a value for the new size would put two labels on one
+      role across a live table whose existing rows cannot be relabelled
+      without a row rewrite, and a reader that missed the second label
+      would read a paid, landed view as never arrived.** That is a money
+      hazard for no gain.
+
+      What carries the honest SIZE instead is the row's own provenance: the
+      engine that painted is stamped on every asset
+      (`provenance.engine`), so a Sunburst row and a Nano Banana Pro row
+      are already told apart by the record rather than by memory.
+      `server/castingV2/signViewEngineChain.test.ts` pins both halves, the
+      hazard included.
+    */
+    resolution: "2K",
+    viewAngle: angle,
+  });
 }
 
 /**

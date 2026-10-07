@@ -56,13 +56,15 @@
 import sharp from "sharp";
 
 import type { CastViewAngle } from "../../shared/boardTypes";
-import type { ReferenceImage } from "../providers/types";
+import type { ImageResult, ReferenceImage } from "../providers/types";
 /* `capitalize` rather than a local one: `castPronouns` already exports it for
    exactly this job ("He came from this sheet."), and a second copy of a
    one-line string helper beside the module that owns it is working law 4 in
    miniature. */
 import { capitalize, pronounsForSex, type CastPronouns } from "./castPronouns";
 import { CAST_PACKAGE_VIEWS, viewDescriptionOf } from "./castViewPackage";
+import { inkViewCropClause, type CarriedInkCrop } from "./inkViewReferences";
+import { composeViewFeatureWordsClause, type CarriedFeatureWords } from "./viewFeatureWords";
 import { createModuleLogger } from "../logging/logger";
 
 const log = createModuleLogger("castingV2/signSheet");
@@ -439,10 +441,42 @@ export function composeSignSheetPrompt(input: {
   description?: string | null;
   pronouns?: CastPronouns;
   panelOrder?: readonly CastViewAngle[];
+  /**
+   * HER TATTOOS AND THE FEATURES NO PHOTOGRAPH SHOWS — carried, not dropped.
+   *
+   * ⚠ **His judged prompt has neither clause, and shipping without them would
+   * have been a capability REGRESSION dressed as fidelity to his text.** Every
+   * view this product renders today carries them: a cast's delivered ink crops
+   * ride beside the anchor and are named by position, and the features she was
+   * cast with that the master cannot show ride as words. His court sheet was
+   * one cast with neither, so the question never arose there.
+   *
+   * They belong on the SHEET and not on a panel, and that is the better place
+   * rather than the convenient one: both are facts about the PERSON, true of
+   * all five cameras, and the sheet paints all five in one frame. Said once
+   * here, they cannot disagree across the panels the way five independent
+   * renders could.
+   */
+  inkCrops?: readonly CarriedInkCrop[];
+  featureWords?: readonly CarriedFeatureWords[];
 }): string {
   const pronouns = input.pronouns ?? pronounsForSex(null);
   const panelOrder = input.panelOrder ?? SIGN_SHEET_PANEL_ORDER;
   const brief = viewDescriptionOf(input.description);
+  /*
+    THE ORDINAL IS DERIVED FROM THE LIST IT IS TALKING ABOUT, exactly as the
+    view road derives it — the anchor is reference 1 and the crops start at 2.
+    A sentence carrying a constant would point a cast with three tattoos at a
+    picture of her elbow and call it the outfit; this road has one fewer
+    reference than a view's (no plate panel), so a copied constant would have
+    been wrong here in a different way.
+  */
+  const inkClause = inkViewCropClause({
+    crops: input.inkCrops ?? [],
+    firstOrdinal: 2,
+    pronouns,
+  });
+  const words = composeViewFeatureWordsClause(input.featureWords ?? []);
   /*
     THE OUTFIT, FROM WHICHEVER RECORD EXISTS.
 
@@ -495,6 +529,12 @@ export function composeSignSheetPrompt(input: {
     + `flush edge to edge at identical widths, so the sheet cuts cleanly into `
     + `${spelled(panelOrder.length)} equal parts. Every panel is pure photography, clean of `
     + "lettering, borders and graphics.",
+    /*
+      APPENDED, so a cast with neither sends his judged text byte for byte —
+      the same inertness discipline the view road's two lanes are asserted on.
+    */
+    ...(inkClause === "" ? [] : ["", inkClause]),
+    ...(words.clause === "" ? [] : ["", words.clause]),
   ].join("\n");
 }
 
@@ -530,6 +570,16 @@ function spelled(count: number): string {
   return ["zero", "one", "two", "three", "four", "five", "six", "seven"][count] ?? String(count);
 }
 
+/**
+ * WHO PAINTED — derived from `ImageResult` rather than restated.
+ *
+ * `ProviderProvenance` is deliberately not exported from `providers/types.ts`,
+ * and widening that contract to name a type here would be the wrong repair: an
+ * indexed access says *whatever an image result carries*, so this cannot drift
+ * from it (working law 4).
+ */
+type SheetProvenance = ImageResult["provenance"];
+
 /** The one method of the engine this module uses — narrow, so a test double is three lines. */
 export type SignSheetEngine = {
   editWithReferences(request: {
@@ -542,12 +592,27 @@ export type SignSheetEngine = {
     contentType: string;
     latencyMs?: number;
     estimatedCostUsd?: number | null;
+    provenance?: SheetProvenance;
   }>;
 };
 
 export type RenderedSignSheet = SignSheetCut & {
   readonly latencyMs: number;
   readonly estimatedCostUsd: number | null;
+  /**
+   * WHICH ENGINE PAINTED, carried from the sheet to all five asset rows.
+   *
+   * ⚠ **This is the only honest record of a delivered view's SIZE, and that is
+   * not a new idea — it is the rule `packageOrchestrator`'s `resolution: "2K"`
+   * note already states.** The `model_assets.resolution` enum keeps saying `2K`
+   * because that column answers a ROLE question (*is this a full view rather
+   * than the 1K anchor?*) and relabelling live rows is a row rewrite on a money
+   * table. So what tells a 1696x2528 Nano Banana Pro view apart from a ~768x1648
+   * Sunburst panel is `provenance.engine` — and a sheet whose provenance never
+   * reached its panels would make all five rows claim the view engine of
+   * whichever road happened to be live.
+   */
+  readonly provenance: SheetProvenance;
 };
 
 /**
@@ -576,22 +641,57 @@ export async function renderSignSheet(input: {
   description?: string | null;
   pronouns?: CastPronouns;
   panelOrder?: readonly CastViewAngle[];
+  inkCrops?: readonly CarriedInkCrop[];
+  featureWords?: readonly CarriedFeatureWords[];
   operationId?: number | string | null;
   signal?: AbortSignal;
 }): Promise<RenderedSignSheet> {
   const started = Date.now();
   const panelOrder = input.panelOrder ?? SIGN_SHEET_PANEL_ORDER;
+  const crops = input.inkCrops ?? [];
+  const words = composeViewFeatureWordsClause(input.featureWords ?? []);
+  if (words.dropped.length > 0) {
+    /*
+      ⚠ **THE CAP'S DECLINES ARE SAID OUT LOUD, ONCE.** The view road logs this
+      per view and its own comment explains why — *"a cap that silently
+      truncates reads, from the outside, exactly like a feature that was never
+      there."* On this road there is ONE composition for all five panels, so the
+      line fires once and is a fact about the package rather than repeated five
+      times. **SLOTS ONLY, never the words**: the words are the customer's own
+      and a log is not where they belong.
+    */
+    log.warn(
+      {
+        operationId: input.operationId ?? null,
+        droppedSlots: words.dropped.map((feature) => feature.slot),
+        keptCount: (input.featureWords ?? []).length - words.dropped.length,
+      },
+      "[signSheet] the sheet's feature clause hit its character cap — these features were "
+      + "dropped from the words the sheet carries",
+    );
+  }
   const image = await input.engine.editWithReferences({
     prompt: composeSignSheetPrompt({
       wardrobeLine: input.wardrobeLine ?? null,
       description: input.description ?? null,
       ...(input.pronouns ? { pronouns: input.pronouns } : {}),
       panelOrder,
+      inkCrops: crops,
+      featureWords: input.featureWords ?? [],
     }),
-    /* ONE reference, which is his card's own word. Her delivered ink crops are
-       NOT sent: they are named BY POSITION in a view's own clause, and a sheet
-       is not a view — the tattoos ride the view, where they are judged. */
-    references: [await sheetReferenceFromMaster(input.anchor)],
+    /*
+      HER MASTER FIRST, THEN THE TATTOOS SHE REALLY HAS — the same order and the
+      same ordinals the view road sends, because the prompt's clause names them
+      by POSITION and a list that disagreed with the sentence would point a paid
+      panel at the wrong picture. His card's *"One reference: her signed
+      master"* is the sentence for a cast with no ink, which is every cast in
+      production (`casting_ink_delivery_crops`: 0 rows, all time) — it is not an
+      instruction to drop a cast's tattoos on the floor.
+    */
+    references: [
+      await sheetReferenceFromMaster(input.anchor),
+      ...crops.map((crop) => ({ bytes: crop.bytes, contentType: crop.contentType })),
+    ],
     resolution: "2K",
     ...(input.signal ? { signal: input.signal } : {}),
   });
@@ -625,5 +725,18 @@ export async function renderSignSheet(input: {
     ...cut,
     latencyMs: image.latencyMs ?? Date.now() - started,
     estimatedCostUsd: image.estimatedCostUsd ?? null,
+    /*
+      ⚠ **A SHEET WITH NO PROVENANCE IS A REFUSAL, NOT A DEFAULT.** Five asset
+      rows are about to record which engine painted them, and that stamp is the
+      only thing in the product that tells a 1696x2528 Nano Banana Pro view
+      apart from a ~768x1648 Sunburst panel (the `resolution` column says `2K`
+      for both, by design). A fallback here would write a plausible wrong engine
+      onto five permanent rows, which is worse than a Sign that fails and
+      refunds.
+    */
+    provenance: (() => {
+      if (!image.provenance) throw new Error("the Sign sheet came back with no provenance to stamp on its panels");
+      return image.provenance;
+    })(),
   };
 }
