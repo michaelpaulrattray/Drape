@@ -469,8 +469,8 @@ describe("#1600 slice 2 — a helper NESTED in the indicted expression is routed
 describe("#1600 slice 2 — `CR` is the product's own word for credits", () => {
   /*
     ⚠ FOUND BY LOOKING AT THE RUNNING APP, WHICH IS THE ONLY THING THAT COULD
-    HAVE FOUND IT. The casting entrance's receipt line is `` {price} CR `` —
-    the price of the button beside it. Rule 1 cannot reach it, because `price`
+    HAVE FOUND IT. The casting entrance's receipt line WAS `` {price} CR `` —
+    the price of the button beside it, until #1908 spelled the word out. Rule 1 cannot reach it, because `price`
     is deliberately out of the strict vocabulary (`PLAN_TIERS.price` is cents),
     and rule 2's text test was `/credit/i` while the word on screen is two
     letters. So the routing slice rendered a balance of 3,688 beside a roll

@@ -34,6 +34,9 @@ const SHEET = "client/src/pages/CastingSheet.tsx";
 const TILE = "client/src/features/castingV2/components/CandidateTile.tsx";
 const CSS = "client/src/features/castingV2/castingV2.css";
 const AUTH = "server/routes/auth.ts";
+/* The hook that READS the cache #1918's fix writes — its arms resolve the cache
+   key off this file rather than restating it, so a key change cannot pass. */
+const AUTH_HOOK = "client/src/_core/hooks/useAuth.ts";
 const PROFILE = "server/routes/profile.ts";
 const SCHEMA = "drizzle/schema.ts";
 const MIGRATION = "drizzle/0072_follow_hint_seen.sql";
@@ -180,5 +183,103 @@ describe("what it says and how it looks", () => {
     const hint = tile.slice(tile.indexOf('className="dpc-card__hint"'));
     expect(hint.slice(0, 120)).toContain('role="status"');
     expect(hint.slice(0, 120)).not.toContain('role="alert"');
+  });
+});
+
+/**
+ * #1918 — AND THE MARK GOES INTO THE CACHE, NOT ONLY INTO THE DATABASE.
+ *
+ * Found by the relay reviewing PR #1917, which built everything above. The
+ * write landed on the server and nothing told the client, so `auth.me`'s
+ * CACHED row still said `followHintSeen: false`; `followHintShown` is this
+ * mount's one-shot, and a mount is exactly what a customer leaves behind.
+ * Keep on one sheet, back to the lobby, open another sheet — new component,
+ * stale cache — Keep, and she is taught Follow a second time.
+ *
+ * # DRIVEN BEFORE AND AFTER, in the running app, because source cannot say it
+ *
+ * There is no DOM in `pnpm test` (this file's own header says so), so these
+ * arms hold the WIRING and the PR carries the drive. What the drive measured,
+ * on the real sheet with the two mutations answered at the wire so nothing
+ * reached the database:
+ *
+ *   before — first Keep: hint shown · after the in-app remount: hint shown
+ *            AGAIN, and the mutation fired TWICE
+ *   after  — first Keep: hint shown · after the in-app remount: no hint, on a
+ *            second and a third Keep, and the mutation fired ONCE
+ *
+ * ⚠ **ONE READING IS WORTH MORE THAN THE FIX AND IS WHY THE FIRST ATTEMPT TO
+ * REPRODUCE IT FAILED: A FULL PAGE RELOAD IS IMMUNE.** `page.goto` empties the
+ * query cache, so `signedInUser` is `null` and the condition above refuses on
+ * its own *"the server has said not yet"* guard. The bug lives precisely where
+ * the cache SURVIVES and the component does not — in-app navigation. A driver
+ * that reloads between the two Keeps reports a clean product.
+ */
+/* The card number is spelled without its hash in this title on purpose:
+   `token-guard.test.ts` reads `#1918` as a hex literal (every issue from #100
+   up is valid hex) and strips comments but not strings. Its own message says
+   so; this is the suite obeying it rather than carving itself out. */
+describe("card 1918 · the hint cannot come back on a remount inside the refetch window", () => {
+  it("⚠ the mutation writes the flag into auth.me's cache, under the same key useAuth reads", () => {
+    /*
+      `useAuth` is `trpc.auth.me.useQuery(undefined, …)`, so `undefined` is the
+      key — the same shape `logout` already uses one file over
+      (`utils.auth.me.setData(undefined, null)`). A different key would write a
+      cache entry nothing reads, and every arm here would still pass.
+    */
+    const sheet = source(SHEET);
+    const hook = sheet.slice(
+      sheet.indexOf("const markFollowHintSeen ="),
+      sheet.indexOf("const balance ="),
+    );
+    expect(hook).toContain("utils.auth.me.setData(undefined,");
+    expect(hook).toContain("followHintSeen: true");
+    /* The updater is a FUNCTION of the previous row, not a replacement object:
+       `auth.me` carries the whole signed-in user, and writing a bare
+       `{ followHintSeen: true }` would drop every other field the chrome reads. */
+    expect(hook).toMatch(/\(previous\)\s*=>\s*\n?\s*previous\s*\?\s*\{\s*\.\.\.previous,/);
+    expect(source(AUTH_HOOK)).toContain("trpc.auth.me.useQuery(undefined");
+  });
+
+  it("⚠ it CANCELS the in-flight refetch first, or the fix fails in its own scenario", () => {
+    /*
+      The window being closed is "before `auth.me` refetches", so a refetch is
+      very often already in flight when the Keep lands — `new QueryClient()`
+      takes the default `staleTime: 0`, which refetches on every mount. An
+      un-cancelled one resolves AFTER this write and puts the stale `false`
+      straight back, and the hint returns on the very next Keep.
+
+      This is the shape memory calls `invalidate-cancels-inflight-refetch`,
+      read from the other end: there a refetch was cancelled and the fix
+      silently did nothing; here one is NOT cancelled and the fix silently
+      undoes itself.
+    */
+    const sheet = source(SHEET);
+    const hook = sheet.slice(
+      sheet.indexOf("const markFollowHintSeen ="),
+      sheet.indexOf("const balance ="),
+    );
+    expect(hook).toContain("onMutate:");
+    const cancelAt = hook.indexOf("utils.auth.me.cancel()");
+    const setAt = hook.indexOf("utils.auth.me.setData(");
+    expect(cancelAt, "the cancel is missing entirely").toBeGreaterThan(-1);
+    expect(
+      cancelAt < setAt,
+      "the cancel must come BEFORE the write, and be awaited — a cancel after the"
+      + " setData lets the in-flight response land on top of it",
+    ).toBe(true);
+    expect(hook).toContain("await utils.auth.me.cancel()");
+  });
+
+  it("⚠ the local one-shot STAYS — it is the within-mount half and is not replaced", () => {
+    /*
+      Two Keeps in the same mount, back to back, must not open the line twice
+      while the mutation is still in flight. The cache write closes the ACROSS
+      mount case; `followHintShown` closes the within-mount one. Deleting
+      either leaves half a fix, and the deleted half has no failing test.
+    */
+    const sheet = source(SHEET);
+    expect(sheet).toContain("const [followHintShown, setFollowHintShown] = useState(false);");
+    expect(sheet).toContain("if (kept && followHintAllowed && !followHintShown)");
   });
 });

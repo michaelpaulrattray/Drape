@@ -172,7 +172,7 @@ const SCALE_LITERALS = new Set([5, 50]);
  *
  * ⚠ **`CR` IS THE PRODUCT'S OWN ABBREVIATION AND THE RULE COULD NOT SEE IT —
  * FOUND BY LOOKING AT THE RUNNING APP, NOT BY READING (#1600 slice 2).** The
- * casting entrance's receipt line is `` {price} CR ``, and it is the price of
+ * casting entrance's receipt line WAS `` {price} CR ``, and it was the price of
  * the button beside it. Rule 1 cannot reach it (`price` is deliberately out of
  * the strict vocabulary, because `PLAN_TIERS.price` is cents) and rule 2 could
  * not either, because its text test was `/credit/i` and the word on screen is
@@ -182,10 +182,27 @@ const SCALE_LITERALS = new Set([5, 50]);
  * only thing that was ever going to find it.
  *
  * `\bCR\b` is case-SENSITIVE on purpose and anchored on word boundaries.
- * Measured over the guard's own population before it was chosen: it reaches
+ * Measured over the guard's own population before it was chosen: it reached
  * **exactly one site**, the one above. It does NOT match inside `CREDITS PER
  * $1` (the `\b` fails against the following `E`), and a case-insensitive form
  * would have started matching ordinary prose containing "cr".
+ *
+ * ⚠ **AND THAT ONE SITE IS GONE — #1908, 2026-10-07, so this branch now
+ * reaches ZERO and the tense above is history.** His word, on Yuna's Desk
+ * item *"Cost beside Cast it in plain words"*: the receipt spells out
+ * `CREDITS`, because `CR` was the one abbreviation on the path to a
+ * customer's first paid press and nothing on that path explained it.
+ *
+ * **The branch STAYS, and it is not dead machinery.** It was added because
+ * nothing could see the product's own abbreviation; the repair that removed
+ * its subject does not remove the abbreviation from the product's vocabulary,
+ * and `CR` coming back on any credit figure is exactly what this branch is now
+ * the only reader of. Its arms were always FIXTURES rather than tree readings
+ * (`server/creditDisplayGuard.test.ts`, *"#1600 slice 2"*), so they are
+ * unaffected by the site going — which is why removing the line left this
+ * guard green and why this paragraph exists rather than a surprise later.
+ * `CR` on the receipt specifically is refused by
+ * `client/src/features/castingV2/section10-guard.test.ts`.
  */
 function saysCredits(text: string): boolean {
   return /credit/i.test(text) || /\bCR\b/.test(text);
