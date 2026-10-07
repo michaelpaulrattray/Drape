@@ -13703,6 +13703,10 @@
       "path": "server/planChangeQuote.test.ts"
     },
     {
+      "id": "test:server/planNameDerivation.test.ts",
+      "path": "server/planNameDerivation.test.ts"
+    },
+    {
       "id": "test:server/plannedCreditsAtClaim.test.ts",
       "path": "server/plannedCreditsAtClaim.test.ts"
     },

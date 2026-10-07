@@ -64,7 +64,12 @@ describe("the arithmetic itself", () => {
     const STRIPE_YEARLY_UNIT_AMOUNTS: Record<string, number> = {
       Starter: 26_900,
       Pro: 67_700,
-      Studio: 158_400,
+      // ⚠ KEYED ON THE PLAN'S DISPLAY NAME, which his #1900 rename therefore
+      // MOVES — `studio` is called Pro Plus now and its $159 is untouched.
+      // The `=== undefined` arm below is what made this announce itself
+      // instead of reading a stale rung as unpriced; the class (a money guard
+      // keyed on a name a founder can rename) is filed separately.
+      'Pro Plus': 158_400,
       Business: 836_600,
       Scale: 4_780_800,
       Enterprise: 14_940_000,
@@ -100,7 +105,12 @@ describe("the arithmetic itself", () => {
     const STRIPE_YEARLY_UNIT_AMOUNTS: Record<string, number> = {
       Starter: 26_900,
       Pro: 67_700,
-      Studio: 158_400,
+      // ⚠ KEYED ON THE PLAN'S DISPLAY NAME, which his #1900 rename therefore
+      // MOVES — `studio` is called Pro Plus now and its $159 is untouched.
+      // The `=== undefined` arm below is what made this announce itself
+      // instead of reading a stale rung as unpriced; the class (a money guard
+      // keyed on a name a founder can rename) is filed separately.
+      'Pro Plus': 158_400,
       Business: 836_600,
       Scale: 4_780_800,
       Enterprise: 14_940_000,
@@ -115,7 +125,7 @@ describe("the arithmetic itself", () => {
     expect(
       disagreed,
       "the superseded cent rounding no longer disagrees with Stripe where it was measured to",
-    ).toEqual(["Starter", "Pro", "Studio", "Business"]);
+    ).toEqual(["Starter", "Pro", "Pro Plus", "Business"]);
   });
 
   it("the badge derives from the rate — two months free at 0.83", () => {
