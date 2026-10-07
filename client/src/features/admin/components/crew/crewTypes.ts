@@ -518,3 +518,62 @@ export function problemsFor(live: CrewLiveView, problems: readonly CrewProblem[]
 export function nextUpFor(live: CrewLiveView, briefing: CrewBriefingView): CrewNextUpSource {
   return live.available ? live.desk.nextUp : briefing.nextUp;
 }
+
+/**
+ * ONE QUESTION, ONE CARD — which eye items belong INSIDE a Needs-you card, and
+ * which still stand on their own (#1895, his word 2026-10-07: *"i dont want
+ * double up of cards on my desk … its making my desk look overcrowded"*).
+ *
+ * # What was wrong, and what it cost
+ *
+ * One question reached him as TWO cards — the decision with its own reply box,
+ * and the frames with ANOTHER — and he answered **#1837 twice, seventeen
+ * minutes apart** (replies #260 and #262, both *YES*). The two write-ups asked
+ * the same thing in different words, so from his side there was no way to tell
+ * that answering one had settled the other.
+ *
+ * ⚠ **AND THE LUCK IS THE WORSE HALF: HE AGREED WITH HIMSELF.** Nothing in the
+ * record said which reply wins when the two disagree, and nothing would have
+ * flagged it — a shift reading `crew-read-replies` sees two rows and no warning
+ * that they are one question. **The merge answers it rather than leaving it to
+ * the first time it happens**: there is one box per question from here, so a
+ * disagreement cannot be created; and the replies already filed against BOTH
+ * ids render in ONE thread in time order, so a historical pair is visible as a
+ * pair rather than silently resolved by whichever list a reader opened.
+ *
+ * # The rule, derived from `cardId` and from nothing else
+ *
+ * An eye item is MERGED when its `cardId` names a Needs-you card that is still
+ * on his desk. Everything else — no `cardId`, or a card that is done — stays in
+ * For your eyes exactly as it was.
+ *
+ * ⚠ **NO SECOND LIST (working law 4).** Both halves are this one function read
+ * two ways, so a section cannot disagree with the other about what is paired:
+ * the gallery draws `standalone`, each card draws `mergedInto.get(card.id)`.
+ * The briefing schema already REFUSES an eye item whose `cardId` names no
+ * needs-you card, and refuses an open item on an answered card (#133), so the
+ * pairing is validated before it is ever drawn.
+ */
+export function partitionEyeItems(
+  items: readonly CrewEyeItem[],
+  cards: readonly CrewNeedsYouCard[],
+): { standalone: CrewEyeItem[]; mergedInto: Map<string, CrewEyeItem[]> } {
+  /* The cards this page is actually DRAWING — the same `crewCardNeedsHim`
+     filter `CrewNeedsYou` applies, because an item merged into a card that is
+     not rendered would vanish, and a vanishing is what #354 called "the
+     vanishing the design forbids". */
+  const drawn = new Set(cards.filter((card) => crewCardNeedsHim(card.state)).map((card) => card.id));
+  const standalone: CrewEyeItem[] = [];
+  const mergedInto = new Map<string, CrewEyeItem[]>();
+  for (const item of items) {
+    const host = item.cardId ?? null;
+    if (host === null || !drawn.has(host)) {
+      standalone.push(item);
+      continue;
+    }
+    const beside = mergedInto.get(host);
+    if (beside) beside.push(item);
+    else mergedInto.set(host, [item]);
+  }
+  return { standalone, mergedInto };
+}

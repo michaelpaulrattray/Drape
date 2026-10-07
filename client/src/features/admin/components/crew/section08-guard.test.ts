@@ -157,8 +157,77 @@ describe("§1 — a paragraph's order does not move", () => {
   });
 
   it("the eye item leads with the question, not with the pictures", () => {
+    /* ⚠ The anchor followed the grid out of this file (#1895) — the frame
+       strip is `CrewEyeFrames` now, shared with the Needs-you card. The CLAIM
+       is untouched: the question is still rendered before the pictures, and
+       `item.frames` is still where the pictures start. Matching the old
+       `item.frames.map` would have made this an arm about which file holds a
+       `.map`. */
     const body = code(read(path.join(HERE, "CrewEyeGallery.tsx")));
-    expect(body.indexOf("item.question")).toBeLessThan(body.indexOf("item.frames.map"));
+    const question = body.indexOf("item.question");
+    const frames = body.indexOf("frames={item.frames}");
+    expect(question, "the gallery stopped leading with the question").toBeGreaterThan(-1);
+    expect(frames, "the gallery no longer renders the item's frames at all").toBeGreaterThan(-1);
+    expect(question).toBeLessThan(frames);
+  });
+
+  /**
+   * ONE QUESTION, ONE CARD (#1895) — his word, 2026-10-07: *"i dont want double
+   * up of cards on my desk … its making my desk look overcrowded"*.
+   *
+   * He answered #1837 **twice, seventeen minutes apart**, because the decision
+   * and its frames were two cards with two reply boxes asking the same thing in
+   * different words. These arms hold the three properties that make that
+   * impossible, each of which a later edit could undo without anything else
+   * noticing.
+   */
+  it("⚠ a paired eye item's frames render INSIDE the card, after the options", () => {
+    /*
+      ⚠ **THIS ARM ASSERTS THE STRIP IS FED, NOT THAT IT IS MENTIONED — and the
+      first shape of it did the weaker thing and SURVIVED ITS OWN SABOTAGE.**
+      Replacing `mergedEyeItems.get(card.id)` with `[]` leaves `<CrewEyeFrames`
+      in the source inside a branch that can never run, so an `indexOf` on the
+      component's name stayed green over a card that draws no frames at all —
+      the guard satisfied by a dead sibling. The pin is the whole expression
+      from the data to the render.
+    */
+    const body = code(read(path.join(HERE, "CrewNeedsYou.tsx")));
+    const options = body.indexOf("card.options");
+    const fed = body.indexOf("mergedEyeItems.get(card.id)");
+    expect(fed, "the card's frames no longer come from the merged items").toBeGreaterThan(-1);
+    expect(
+      body.slice(fed),
+      "the merged items are read but never rendered as a frame strip",
+    ).toContain("<CrewEyeFrames");
+    /* The order his design asks for: what it means → what you could do → what
+       it looks like → your answer. */
+    expect(fed).toBeGreaterThan(options);
+    expect(fed).toBeLessThan(body.indexOf("<CrewReplyBox"));
+  });
+
+  it("⚠ ONE REPLY BOX PER QUESTION — the card's, and the merged item carries none", () => {
+    const card = code(read(path.join(HERE, "CrewNeedsYou.tsx")));
+    const strip = code(read(path.join(HERE, "CrewEyeFrames.tsx")));
+    /* Exactly one box on the card… */
+    expect(card.split("<CrewReplyBox").length - 1).toBe(1);
+    /* …and NONE inside the strip, which is what a second box would be: the
+       shared component is drawn on the card as well as in the gallery, so a
+       box added to it would put two under one question again — the exact
+       defect, rebuilt one component deeper. */
+    expect(strip).not.toContain("CrewReplyBox");
+    expect(strip).not.toContain("CrewReplyThread");
+  });
+
+  it("⚠ the merged thread reads the ITEM's replies too — his words are not dropped", () => {
+    /* He has already answered on item ids (#260 on `closeup-line-1837`). A
+       merge that filtered on the card's id alone would hide them. */
+    const body = code(read(path.join(HERE, "CrewNeedsYou.tsx")));
+    const thread = body.slice(body.indexOf("<CrewReplyThread"), body.indexOf("<CrewReplyBox"));
+    expect(thread).toContain("reply.cardId === card.id");
+    expect(
+      thread,
+      "the thread filters on the card's id alone, so replies he filed on the frames vanish",
+    ).toContain("item.id === reply.cardId");
   });
 
   /**

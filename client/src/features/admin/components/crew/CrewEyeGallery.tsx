@@ -39,13 +39,11 @@
  * undecided — true of every tile on this surface by construction, the same way
  * `NeedsHuman`'s cards are dashed one surface over.
  */
-import { useState } from "react";
 import { crewCardNeedsHim } from "../../../../../../shared/crewCardState";
-import { CrewEyeViewer } from "./CrewEyeViewer";
+import { CrewEyeFrames } from "./CrewEyeFrames";
 import { CrewReplyBox } from "./CrewReplyBox";
 import { CrewReplyThread } from "./CrewReplyThread";
 import { staffDateTime } from "@/foundation/staffDate";
-import { eyeFrameSrc } from "./eyeFrameSrc";
 import { TableHead } from "@/foundation";
 import type { CrewEyeItem, CrewReplyView } from "./crewTypes";
 
@@ -62,18 +60,12 @@ export function CrewEyeGallery({
   sending: boolean;
   onSend: (input: { cardId: string | null; body: string }) => Promise<unknown>;
 }) {
-  /* Which frame is under his eye: (item id, frame index), or null. Keyed by
-     item so the viewer's arrows page WITHIN one judgement — a court's arms
-     are compared against each other, never against another item's. */
-  const [viewing, setViewing] = useState<{ itemId: string; index: number } | null>(null);
-
   /* ⚠ `crewCardNeedsHim` (#354, review of PR #648 finding 4). Deriving the
      schema's enum from `CREW_CARD_STATES` made `waiting` writable here, and
      the history block was deleted in #438 — so a `waiting` eye item rendered
      NOWHERE, silently. That is "the vanishing the design forbids", in this
      feature's own words, created by the fix for its own class. */
   const open = items.filter((item) => crewCardNeedsHim(item.state));
-  const viewedItem = viewing ? items.find((item) => item.id === viewing.itemId) : undefined;
 
   /* Nothing OPEN means nothing to judge: an empty gallery frame would be
      furniture, and the judged ones are in the history block now. */
@@ -99,31 +91,7 @@ export function CrewEyeGallery({
             {/* The question leads — what he is judging, not just the picture. */}
             <p className="dp-crew__body dp-crew__gap">{item.question}</p>
 
-            <div className="dp-crew__frames">
-              {item.frames.map((frame, frameIndex) => (
-                <figure key={frame.key}>
-                  {/* The thumbnail is the overview; the click opens the
-                      judging surface (#75's viewer ask, his verbatim). */}
-                  <button
-                    type="button"
-                    onClick={() => setViewing({ itemId: item.id, index: frameIndex })}
-                    aria-label={`View full size: ${frame.caption}`}
-                    className="dp-crew__frame"
-                  >
-                    <img
-                      src={eyeFrameSrc(frame.key)}
-                      alt={frame.caption}
-                      loading="lazy"
-                      className="dp-crew__frameimg"
-                    />
-                  </button>
-                  <figcaption className="dp-crew__caption">
-                    {frame.arm && <span className="dp-crew__arm">{frame.arm}</span>}
-                    {frame.caption}
-                  </figcaption>
-                </figure>
-              ))}
-            </div>
+            <CrewEyeFrames frames={item.frames} />
 
             <div className="dp-crew__rule dp-crew__rule--tight">
               <CrewReplyThread
@@ -140,15 +108,6 @@ export function CrewEyeGallery({
           </article>
         ))}
       </div>
-
-      {viewing && viewedItem && (
-        <CrewEyeViewer
-          frames={viewedItem.frames}
-          index={Math.min(viewing.index, viewedItem.frames.length - 1)}
-          onNavigate={(index) => setViewing({ itemId: viewedItem.id, index })}
-          onClose={() => setViewing(null)}
-        />
-      )}
     </section>
   );
 }

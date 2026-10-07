@@ -20,6 +20,7 @@ import {
   stepsWithLiveState,
   eyeItemsFor,
   needsYouFor,
+  partitionEyeItems,
   milestoneCountLine,
   milestoneProgress,
   heldCount,
@@ -656,5 +657,105 @@ describe("NEXT UP carries the build phrase the other lists carry (#1345)", () =>
     expect(rows[0]!.build).toBe("being built — PR #1336");
     expect(rows[0]!.hold?.word).toBe(CREW_HOLD_WORD.blocked);
     expect(rows[0]!.hold?.because).toBe("rides #1234");
+  });
+});
+
+/**
+ * ONE QUESTION, ONE CARD — `partitionEyeItems` (#1895).
+ *
+ * His word, 2026-10-07: *"i dont want double up of cards on my desk … its
+ * making my desk look overcrowded"*, with two screenshots of #1837. **He
+ * answered that one-word question twice, seventeen minutes apart** (replies
+ * #260 on the eye item, #262 on the decision card, both *YES*) — the two
+ * write-ups asked the same thing in different words, so from his side there was
+ * nothing to say that answering one had settled the other.
+ *
+ * This is the pure half of the repair, and every arm below is a state the page
+ * really reaches. Both sections read this ONE function, so the gallery cannot
+ * draw an item a card is also drawing.
+ */
+describe("one question, one card — which eye items merge (#1895)", () => {
+  const item = (id: string, cardId: string | null) =>
+    ({ id, cardId, frames: [], state: "open" }) as unknown as Parameters<
+      typeof partitionEyeItems
+    >[0][number];
+  const card = (id: string, state: string) =>
+    ({ id, state }) as unknown as Parameters<typeof partitionEyeItems>[1][number];
+
+  it("an item whose card is still on the desk merges into it, and leaves the gallery", () => {
+    const { standalone, mergedInto } = partitionEyeItems(
+      [item("frames-1837", "card-1837")],
+      [card("card-1837", "open")],
+    );
+    expect(standalone, "the gallery would still draw it — two cards again").toEqual([]);
+    expect(mergedInto.get("card-1837")?.map((i) => i.id)).toEqual(["frames-1837"]);
+  });
+
+  it("an item with NO card stands on its own, exactly as before", () => {
+    const { standalone, mergedInto } = partitionEyeItems(
+      [item("loose", null)],
+      [card("card-1837", "open")],
+    );
+    expect(standalone.map((i) => i.id)).toEqual(["loose"]);
+    expect(mergedInto.size).toBe(0);
+  });
+
+  it("⚠ an item whose card is DONE stands on its own — a merge into a card nobody draws is a vanishing", () => {
+    /*
+      The failure #354 named in this feature's own words — *"the vanishing the
+      design forbids"* — created by a fix for its own class. `CrewNeedsYou`
+      renders `crewCardNeedsHim` cards only, so pairing against the raw list
+      would hide the frames entirely.
+    */
+    for (const dead of ["done", "answered"]) {
+      const { standalone, mergedInto } = partitionEyeItems(
+        [item("frames", "card")],
+        [card("card", dead)],
+      );
+      expect(standalone.map((i) => i.id), `${dead}: the frames vanished`).toEqual(["frames"]);
+      expect(mergedInto.size).toBe(0);
+    }
+    /* And a `waiting` card IS still his, so its frames go with it (#354). */
+    expect(
+      partitionEyeItems([item("frames", "card")], [card("card", "waiting")]).standalone,
+    ).toEqual([]);
+  });
+
+  it("an item naming a card this page is not drawing at all stands on its own", () => {
+    /* The schema refuses an unpaired `cardId` (#133), so this is the LIVE
+       narrowing rather than a malformed edition: `needsYouFor` subtracts cards
+       GitHub has closed since the edition shipped (#1193), and the frames must
+       survive that. */
+    const { standalone } = partitionEyeItems([item("frames", "card-gone")], []);
+    expect(standalone.map((i) => i.id)).toEqual(["frames"]);
+  });
+
+  it("several items on one card all merge into it, in their own order", () => {
+    /* Real shape: `sheet-shape-1278` carries three. */
+    const { standalone, mergedInto } = partitionEyeItems(
+      [item("a", "card"), item("loose", null), item("b", "card")],
+      [card("card", "open")],
+    );
+    expect(mergedInto.get("card")?.map((i) => i.id)).toEqual(["a", "b"]);
+    expect(standalone.map((i) => i.id)).toEqual(["loose"]);
+  });
+
+  it("⚠ nothing is lost: every item is in exactly one of the two halves", () => {
+    /* The property that matters more than any single case — the two sections
+       between them draw the whole list, and draw nothing twice. */
+    const items = [
+      item("a", "card"),
+      item("b", null),
+      item("c", "card-done"),
+      item("d", "card"),
+      item("e", "card-missing"),
+    ];
+    const { standalone, mergedInto } = partitionEyeItems(items, [
+      card("card", "open"),
+      card("card-done", "done"),
+    ]);
+    const drawn = [...standalone.map((i) => i.id), ...[...mergedInto.values()].flat().map((i) => i.id)];
+    expect(drawn.sort()).toEqual(["a", "b", "c", "d", "e"]);
+    expect(new Set(drawn).size, "an item is drawn twice").toBe(items.length);
   });
 });
