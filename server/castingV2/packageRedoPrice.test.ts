@@ -23,7 +23,6 @@ import {
 import { LEDGER_PER_DISPLAY_CREDIT, displayPrice, displayRefund } from "../../shared/creditDisplay";
 import { castPackageRedoOffer } from "./castProjection";
 import {
-  CASTING_V2_PACKAGE_REDO_DISPLAY_CREDITS,
   CASTING_V2_PACKAGE_REDO_PRICE_CREDITS,
   CAST_PACKAGE_VIEWS,
 } from "./castViewPackage";
@@ -45,9 +44,6 @@ describe("his price for a redo", () => {
     */
     expect(displayPrice(CASTING_V2_PACKAGE_REDO_PRICE_CREDITS))
       .toBe(HIS_PRICE_IN_DISPLAY_CREDITS);
-    /* The convenience export and the conversion are the same answer — a second
-       number on his page is the thing law 4 exists about. */
-    expect(CASTING_V2_PACKAGE_REDO_DISPLAY_CREDITS).toBe(HIS_PRICE_IN_DISPLAY_CREDITS);
   });
 
   it("is the per-view slice times the views the cohort promises", () => {

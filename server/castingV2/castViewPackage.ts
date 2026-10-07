@@ -29,7 +29,6 @@ import {
   VIEW_ANGLE_LABELS,
   type CastViewAngle,
 } from "../../shared/boardTypes";
-import { displayPrice } from "../../shared/creditDisplay";
 import {
   CASTING_V2_PACKAGE_REDO_VIEW_PRICE_CREDITS,
   CASTING_V2_REFINE_PRICE_CREDITS,
@@ -216,10 +215,16 @@ export const CASTING_V2_SIGN_PRICE_CREDITS =
 export const CASTING_V2_PACKAGE_REDO_PRICE_CREDITS =
   CASTING_V2_PACKAGE_REDO_VIEW_PRICE_CREDITS * CAST_PACKAGE_VIEWS.length;
 
-/** His figure, said once, so the pin and the docblock cannot drift apart. */
-export const CASTING_V2_PACKAGE_REDO_DISPLAY_CREDITS = displayPrice(
-  CASTING_V2_PACKAGE_REDO_PRICE_CREDITS,
-);
+/*
+  ⚠ **THERE IS NO `CASTING_V2_PACKAGE_REDO_DISPLAY_CREDITS`, AND ONE WAS
+  WRITTEN FIRST.** The tempting shape is "his figure, said once" — an export
+  holding 350 so the pin and this docblock cannot drift apart. It landed on the
+  uncalled-export reading list the same minute: its only caller was the suite
+  that pins the price, and **an export whose callers are all test files has no
+  production importer.** It would have bought nothing either, because the pin
+  asserts `displayPrice(…) === 350` directly and that is the arm which catches a
+  reprice. Same lesson as `renderLikeFrame`'s deleted wrapper, one seam over.
+*/
 
 /**
  * WHAT ONE FINISHED CHARACTER COSTS — the plan card's worked example, derived

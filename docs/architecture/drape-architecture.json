@@ -10207,14 +10207,6 @@
       "file": "server/castingV2/castViewPackage.ts"
     },
     {
-      "id": "cost:server/castingV2/castViewPackage.ts:CASTING_V2_PACKAGE_REDO_DISPLAY_CREDITS",
-      "name": "CASTING_V2_PACKAGE_REDO_DISPLAY_CREDITS",
-      "constant": "CASTING_V2_PACKAGE_REDO_DISPLAY_CREDITS",
-      "credits": null,
-      "derivedFrom": "displayPrice( CASTING_V2_PACKAGE_REDO_PRICE_CREDITS, )",
-      "file": "server/castingV2/castViewPackage.ts"
-    },
-    {
       "id": "cost:server/castingV2/castViewPackage.ts:CASTING_V2_PACKAGE_REDO_PRICE_CREDITS",
       "name": "CASTING_V2_PACKAGE_REDO_PRICE_CREDITS",
       "constant": "CASTING_V2_PACKAGE_REDO_PRICE_CREDITS",
@@ -25248,11 +25240,6 @@
     {
       "from": "module:server/castingV2/castViewPackage.ts",
       "to": "module:shared/boardTypes.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/castViewPackage.ts",
-      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
