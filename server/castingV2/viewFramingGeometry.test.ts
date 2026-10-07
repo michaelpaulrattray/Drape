@@ -176,13 +176,19 @@ describe("measureViewFraming — the close-up band, both directions", () => {
     /* The same face, pulled back: 190 rows of picture below a 150-row face is
        1.27 face-heights.
 
-       ⚠ **THIS ARM'S SUBJECT CHANGED WITHOUT ITS NUMBERS CHANGING — #1837.** It
-       read *"a neck and shoulders below the face"*, which was true of 1.27 while
-       the bound was 0.3; his eye then moved the bound to 0.7 and a neck and
-       shoulders (0.48 … 0.56 on his own frames) is IN band. 1.27 now sits inside
-       the sealed Portrait population (1.10 … 3.03), so what this fixture is, is
-       a PORTRAIT delivered where a close-up was asked — which is the case
-       #1837's done-when names, and the reason the fixture needed no new pixels. */
+       ⚠ **THIS ARM'S SUBJECT CHANGED WITHOUT ITS NUMBERS CHANGING — #1837, and
+       it has now survived BOTH of his moves on the same pixels.** It read *"a
+       neck and shoulders below the face"*, which was true of 1.27 while the bound
+       was 0.3; his eye moved the bound to 0.7 (a neck and shoulders, 0.48 … 0.56
+       on his own frames, is IN band) and then to 0.9 (asset 384 at 0.826, the top
+       of the shoulders on a bandaged skull, also IN band). 1.27 sits inside the
+       sealed Portrait population (1.102 … 3.034) through all three, so what this
+       fixture is, is a PORTRAIT delivered where a close-up was asked — which is
+       the case #1837's done-when names, and the reason the fixture needed no new
+       pixels either time. ⚠ **Its margin is the one thing to watch**: 1.27 clears
+       0.9 by 1.41× where it cleared 0.7 by 1.81×, and the real gap between his
+       two populations is down to 1.33×. A third move would want a fixture pulled
+       further back rather than this one stretched thinner. */
     const { reader } = readerOf({
       ...IN_BAND_CLOSE_UP,
       face: maskOf({ x: 40, y: 60, width: 120, height: 150 }),
@@ -222,27 +228,34 @@ describe("measureViewFraming — the close-up band, both directions", () => {
   it("the bound is HIS EYE's number, and moving it means reading his words", () => {
     /*
       The sibling of the Portrait's arm below, and it exists because this number
-      moved once already. ⚠ **It is the one bound in this file set by an EYE
-      rather than by a court**: 0.3 was six frames and a Desk reply, and on
+      has now moved TWICE. ⚠ **It is the one bound in this file set by an EYE
+      rather than by a court**: 0.3 was six frames and a Desk reply; on
       2026-10-03 he looked at #1612's two Sifr2 close-ups — the example-assisted
       render at 0.42 and today's road at 0.51 — and called both close-ups while
-      the 0.3 line called both out of band. Law 9 decides which one is wrong.
+      the 0.3 line called both out of band; and on 2026-10-07 he looked at the
+      strip that reading owed him and called asset 384 at 0.826 a close-up too.
+      Law 9 decides which one is wrong, every time.
     */
     const rule = castPackageView("closeUp").band.rules
       .find((candidate) => candidate.must === "roomBelowAtMost");
     expect(rule, "the close-up band lost its distance rule").toBeDefined();
     expect(
       (rule as { inItsOwnHeights: number }).inItsOwnHeights,
-      "his eye moved this bound on 2026-10-03 (#1837), verbatim: \"on Sifr2 Yes it reads"
-      + " as a closeup\" — of a picture measuring 0.51 face-heights of room below the face."
-      + " 0.7 is the geometric middle of the band between his highest judged close-up"
-      + " (0.51) and his sealed Portraits' tightest (1.10), the same method that set the"
-      + " Portrait's 3.7 and the old 0.3. That band was called EMPTY when this number was"
-      + " chosen and is not — asset 384, a delivered close-up on his account, reads 0.826"
-      + " (measured 2026-10-03) and is turned away by this line. It is on the strip for his"
-      + " eye and NOTHING moves until he answers. Moving it means reading the band in"
-      + " `castViewPackage.ts` and his words on #1612 and #1837.",
-    ).toBe(0.7);
+      "his eye moved this bound TWICE and 0.9 is the second: on 2026-10-07 (#1837, reply"
+      + " #260) he was asked of asset 384 — a bandaged skull at 0.826, which the 0.7 line"
+      + " turned away — \"is Hingu a close-up?\", and answered \"YES\". 0.9 is the geometric"
+      + " middle of the band between that frame and his sealed Portraits' tightest (1.1018),"
+      + " rounded TIGHT: sqrt(0.8260 x 1.1018) = 0.9540, and this is the first of the three"
+      + " bounds where rounding down and rounding to nearest disagree (0.9 vs 1.0). 0.9 is"
+      + " chosen because the convention is the tight one, because it keeps 1.22x from the"
+      + " portraits where 1.0 keeps 1.10x, and because a picture near the close-up edge"
+      + " costs a wrong Unchecked mark while one near the portrait edge costs a portrait"
+      + " passing unflagged. Under it 0 of his 10 delivered close-ups are turned away and 0"
+      + " of his 11 portraits are admitted. THE GAP IS NOW 1.33x: one more measured frame"
+      + " inside it and this method has no room left — the next move is his eye, not a third"
+      + " decimal. Moving it means reading the band in `castViewPackage.ts` and his words on"
+      + " #1612 and #1837.",
+    ).toBe(0.9);
   });
 
   it("his two judged frames read IN band, and a portrait does not", async () => {
@@ -270,6 +283,12 @@ describe("measureViewFraming — the close-up band, both directions", () => {
     /* His two, both of which 0.3 refused. */
     expect(await atRoom(0.42), "the example-assisted Sifr2 render he called a close-up").toBe("inBand");
     expect(await atRoom(0.51), "today's Sifr2 render he called a close-up").toBe("inBand");
+    /* ⚠ **HIS THIRD, AND THE ONE 0.7 REFUSED** — asset 384, the bandaged skull on
+       the strip #1837 owed him, measured 0.826 through the real segmenter. He was
+       asked the plain question and answered "YES" (reply #260, 2026-10-07), which
+       is what moved this bound off 0.7. An edit that puts the bound back below
+       0.826 reddens HERE, on his own frame, rather than only on the constant. */
+    expect(await atRoom(0.826), "asset 384, the frame his YES admitted").toBe("inBand");
     /* The two his ruling admits as a consequence rather than by their own eye. */
     expect(await atRoom(0.52)).toBe("inBand");
     expect(await atRoom(0.56)).toBe("inBand");
@@ -416,7 +435,8 @@ describe("measureViewFraming — the portrait band, both directions", () => {
       + " sealed Portraits read 1.10 … 3.03 face-heights and his full-length views 4.61 …"
       + " 10.39, and 3.7 is the geometric middle of that empty band — the same method that"
       + " put the close-up's bound in the empty band below these same Portraits (0.3 at"
-      + " first, 0.7 since his eye moved it on 2026-10-03, #1837). His eye closes it"
+      + " first, then 0.7 and now 0.9 as his eye moved it twice — 2026-10-03 and"
+      + " 2026-10-07, #1837; that band's remaining room is a factor of 1.33). His eye closes it"
       + " (law 9); the court is on the band in `castViewPackage.ts`.",
     ).toBe(3.7);
   });
