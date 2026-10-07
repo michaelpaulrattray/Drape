@@ -169,6 +169,24 @@ export async function markCanvasIntroSeen(userId: number): Promise<{ success: bo
   return { success: true };
 }
 
+/**
+ * The Follow hint (#1909): one-way flag, the same shape as the canvas intro
+ * above and for the same reason — the line is shown ONCE PER PERSON, so it
+ * cannot live in a browser.
+ *
+ * ⚠ It is written on the FIRST KEEP, before she has done anything with the
+ * hint, so a customer who never looks at it still never sees it twice. The
+ * alternative — writing it on dismissal — leaves the hint on every device for
+ * anyone who scrolls past it, which is the failure the server flag exists to
+ * prevent.
+ */
+export async function markFollowHintSeen(userId: number): Promise<{ success: boolean }> {
+  const db = await getDb();
+  if (!db) return { success: false };
+  await db.update(users).set({ followHintSeen: true }).where(eq(users.id, userId));
+  return { success: true };
+}
+
 export async function updateUserProfile(
   userId: number,
   data: ProfileUpdateData

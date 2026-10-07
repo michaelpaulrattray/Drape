@@ -26,6 +26,7 @@ export {
   updateUserStorageUsed,
   updateUserProfile,
   markCanvasIntroSeen,
+  markFollowHintSeen,
 } from "./users";
 
 // Credits

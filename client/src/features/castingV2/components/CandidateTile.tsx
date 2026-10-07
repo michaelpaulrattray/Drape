@@ -56,6 +56,8 @@ export function CandidateTile({
   onRetry,
   retryPriceCredits,
   retrying,
+  followHint,
+  onDismissFollowHint,
 }: {
   candidate: TileCandidate;
   /**
@@ -186,6 +188,24 @@ export function CandidateTile({
    * tile back onto its failed face with the toast that says why.
    */
   retrying?: boolean;
+  /**
+   * TEACH FOLLOW, ONCE, UNDER THE TILE SHE JUST KEPT (#1909 — his word
+   * 2026-10-07, Yuna's option B).
+   *
+   * Follow sits beside Keep and says nothing about what it does, so most
+   * customers Keep and never learn it is there. The sheet owns *whether* —
+   * once per ACCOUNT, on a one-way `users.followHintSeen` flag — and the tile
+   * owns *what it looks like*, because it has to sit under this tile's own
+   * action row and no other.
+   *
+   * ⚠ **NO PRICE IN IT** (his 2026-08-03 ruling: prices stay off immediate-fire
+   * actions, and D-15's quote lives once in the dock). ⚠ **And no accent**: the
+   * Kept ring is the acknowledgement of the click that opened this, and a
+   * coloured card under it would compete with the thing it is explaining.
+   */
+  followHint?: boolean;
+  /** Got it — the hint's third dismissal; the other two are the sheet's. */
+  onDismissFollowHint?: () => void;
 }) {
   // Declared before any early return — a hook after a conditional return is a
   // hook that sometimes does not run.
@@ -443,6 +463,34 @@ export function CandidateTile({
           <X size={11} strokeWidth={2.2} aria-hidden="true" />
         </Button>
       </div>
+
+      {/*
+        THE FOLLOW HINT (#1909). One line and one Got it, under the row that
+        holds the button it is about — not a modal, not a tour, not a pointer
+        drawn over the picture.
+
+        `role="status"` rather than `alert`: it arrives because she did
+        something good, and a screen reader should hear it when it finishes the
+        sentence it is on rather than be interrupted. It is announced at all
+        because it appears without being asked for.
+
+        The copy says what Follow DOES in the customer's words — eight more in
+        this face's family — and checked against the code on the day it was
+        built, as the card asks: `follow` is *"a fresh eight conditioned on the
+        parent"* (`server/routes/castingV2.ts`). No price: the dock's line
+        carries it once, and his 2026-08-03 ruling keeps prices off
+        immediate-fire actions.
+      */}
+      {followHint ? (
+        <div className="dpc-card__hint" role="status">
+          <p className="dpc-card__hinttext">
+            Kept. To see more like them, press Follow — it rolls eight in their family.
+          </p>
+          <Button variant="quiet" size="small" onClick={onDismissFollowHint}>
+            Got it
+          </Button>
+        </div>
+      ) : null}
 
     </div>
   );

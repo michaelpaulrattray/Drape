@@ -77,6 +77,9 @@ export const users = mysqlTable("users", {
   // Canvas first-run intro (D-9): profile-persisted so it survives devices;
   // dismissed permanently by any board interaction
   canvasIntroSeen: boolean("canvasIntroSeen").default(false).notNull(),
+  // The Follow hint on the sheet (#1909): one line, once per ACCOUNT, so it
+  // follows her across devices the way the canvas intro above does.
+  followHintSeen: boolean("followHintSeen").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),

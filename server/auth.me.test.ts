@@ -11,6 +11,7 @@ const AUTH_ME_KEYS = [
   "role",
   "approved",
   "canvasIntroSeen",
+  "followHintSeen",
 ] as const;
 
 function createContext(user: User | null): TrpcContext {
@@ -61,6 +62,7 @@ function fullUserRow(): User {
     failedLoginAttempts: 4,
     lockedUntil: now,
     canvasIntroSeen: true,
+    followHintSeen: true,
     createdAt: now,
     updatedAt: now,
     lastSignedIn: now,
@@ -79,6 +81,7 @@ describe("auth.me projection", () => {
       role: "moderator",
       approved: true,
       canvasIntroSeen: true,
+      followHintSeen: true,
     });
     expect(Object.keys(result ?? {})).toEqual(AUTH_ME_KEYS);
     expect(JSON.stringify(result)).not.toContain("server-only");
