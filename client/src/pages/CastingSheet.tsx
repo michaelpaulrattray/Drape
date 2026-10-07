@@ -13,6 +13,7 @@ import {
   Skeleton,
 } from "@/foundation";
 import { AppChrome } from "@/components/AppChrome";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { BriefEcho } from "@/features/castingV2/components/BriefEcho";
 import { BriefField } from "@/features/castingV2/components/BriefField";
 import { trpc } from "@/lib/trpc";
@@ -287,6 +288,44 @@ export default function CastingSheet() {
   */
   const [retrying, setRetrying] = useState<Record<string, number>>({});
   const retryInFlight = Object.keys(retrying).length > 0;
+  /*
+    TEACHING FOLLOW, ONCE (#1909 — his word 2026-10-07, Yuna's option B).
+
+    Follow sits beside Keep and says nothing about itself. It is an immediate
+    paid roll of eight in that face's family (`follow` is *"a fresh eight
+    conditioned on the parent"*, read at `server/routes/castingV2.ts`), and
+    without a line most customers Keep and never learn the control is there.
+
+    ⚠ **ONCE PER ACCOUNT, AND THE FLAG IS THE SERVER'S** — the card's own
+    preference, and it is the right one: `localStorage` is per browser, so the
+    same person meets the hint again on a phone, in a second profile, and after
+    clearing site data. `followHintSeen` is a one-way column on `users`, read
+    through `auth.me`'s positive projection, written by one mutation. The
+    canvas first-run intro is the same shape one feature over.
+
+    ⚠ **The mutation fires on the KEEP, not on the dismissal.** A customer who
+    scrolls past the line without pressing Got it has still been shown it, and
+    writing on dismissal would put it back in front of them on every other
+    device. `shown` below is the local half, so the line can leave this screen
+    without waiting for a round trip.
+  */
+  /* `auth.me` is already in flight for the chrome, so this is the same cached
+     query rather than a second request. */
+  const { user: signedInUser } = useAuth();
+  /*
+    ⚠ **IT IS "THE SERVER HAS SAID NOT YET", NOT "THE SERVER HAS NOT SAID"** —
+    and the difference is the whole bug this condition avoids. `user` is `null`
+    while `auth.me` is in flight, so reading the flag off it directly makes
+    `followHintSeen` read FALSE for that window, and a customer who has already
+    dismissed the hint and clicks Keep before the query lands meets it again.
+    The flag is only trusted once there is a user to have read it from.
+  */
+  const followHintAllowed =
+    signedInUser !== null
+    && (signedInUser as { followHintSeen?: boolean }).followHintSeen !== true;
+  const [followHintShown, setFollowHintShown] = useState(false);
+  const [followHintFor, setFollowHintFor] = useState<string | null>(null);
+  const markFollowHintSeen = trpc.profile.markFollowHintSeen.useMutation();
   /* Balance context for the cost line — the question a price actually raises. */
   const balance = trpc.credits.getBalance.useQuery(undefined, {
     staleTime: 30_000,
@@ -672,6 +711,23 @@ export default function CastingSheet() {
     // the round trip.
     setOptimisticKept(candidateId, kept);
     /*
+      THE FOLLOW HINT, ON THE FIRST KEEP (#1909).
+
+      ⚠ `kept` has to be true: un-keeping is a Keep button press too, and
+      teaching Follow on the click that REMOVES a ring would be the hint
+      arriving at the one moment it means nothing.
+
+      It opens on the tile she just kept, and the mark goes to the server in
+      the same breath — see the state block for why that is the keep and not
+      the dismissal. `followHintShown` makes this a one-shot inside the session
+      as well, so a second Keep before `auth.me` refetches cannot open it twice.
+    */
+    if (kept && followHintAllowed && !followHintShown) {
+      setFollowHintShown(true);
+      setFollowHintFor(candidateId);
+      markFollowHintSeen.mutate();
+    }
+    /*
       No success toast (D-110). The ring appears on the click, the face moves
       into or out of the tray, and the kept count changes — three in-place
       acknowledgements of one action, all of them on the thing the user just
@@ -818,6 +874,18 @@ export default function CastingSheet() {
       for that long would be a second bug wearing the first one's clothes.
     */
     if (!latch.tryAcquire(activeRollId)) return;
+
+    /*
+      TWO OF THE HINT'S THREE DISMISSALS (#1909): pressing Follow, and the next
+      roll. Both are this one line, because both arrive here — a Follow IS a
+      roll, and "Roll again" is the other. The card asks for all three; Got it
+      is the tile's own.
+
+      It is placed after the latch so a click the latch refuses leaves the line
+      where it was: a press that bought nothing should not also take away the
+      sentence explaining the press.
+    */
+    setFollowHintFor(null);
 
     /*
       The whole chrome goes optimistic here, not only the tiles.
@@ -2984,6 +3052,14 @@ export default function CastingSheet() {
                   }
                   onDiscard={() => onDiscard(candidate.candidateId)}
                   onFollow={() => dispatchRoll("follow", candidate.candidateId)}
+                  /*
+                    THE FOLLOW HINT (#1909) — drawn under THIS tile's action row
+                    and only on the one tile she just kept. Its third dismissal,
+                    Got it, is the tile's own; the other two live in
+                    `dispatchRoll`.
+                  */
+                  followHint={followHintFor === candidate.candidateId}
+                  onDismissFollowHint={() => setFollowHintFor(null)}
                   onOpenCast={(castId) => navigate(`/app/casting/cast/${castId}`)}
                   onRetry={retryOffered ? () => onRetry(candidate.candidateId) : undefined}
                   retryPriceCredits={retryPrice}

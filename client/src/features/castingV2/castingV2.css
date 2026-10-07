@@ -693,6 +693,38 @@
   gap: 8px;
 }
 
+/*
+  THE FOLLOW HINT (#1909) — one line under the action row of the tile she just
+  kept, with one Got it.
+
+  ⚠ **A RAISED SURFACE AND NO ACCENT**, which is the card's own instruction and
+  the reason is on the screen: the Kept ring is the acknowledgement of the click
+  that opened this, and a coloured card an inch under it would compete with the
+  thing it is explaining. `--raised` is the card-on-surface token both themes
+  already declare, so this needs no colour of its own in either.
+
+  No animation: it appears on a click the customer made, under the control it
+  names, and a thing that slides in asks to be watched rather than read.
+*/
+.dpc-card__hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  background: var(--raised);
+  border: 1px solid var(--borderSoft);
+  border-radius: 8px;
+}
+
+.dpc-card__hinttext {
+  flex: 1;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--metaStrong);
+}
+
 /* An unsigned-sheet card opens on its body; the discard button sits beside. */
 
 /*

@@ -8595,6 +8595,16 @@
       "file": "server/routes/profile.ts"
     },
     {
+      "id": "route:profile.markFollowHintSeen",
+      "namespace": "profile",
+      "name": "markFollowHintSeen",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "none",
+      "rateLimited": false,
+      "file": "server/routes/profile.ts"
+    },
+    {
       "id": "route:profile.removeAvatar",
       "namespace": "profile",
       "name": "removeAvatar",
@@ -10799,6 +10809,10 @@
     {
       "id": "test:client/src/features/castingV2/failureCopy.test.ts",
       "path": "client/src/features/castingV2/failureCopy.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/followHint1909.test.ts",
+      "path": "client/src/features/castingV2/followHint1909.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/frameDecodes.test.ts",
@@ -20733,6 +20747,11 @@
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
       "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/_core/hooks/useAuth.ts",
       "kind": "imports"
     },
     {
