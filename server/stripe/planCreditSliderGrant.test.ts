@@ -84,12 +84,13 @@ vi.mock("./stripeService", async () => {
      `PLAN_TIERS[rung].monthlyCredits + steps` and a fixture base would make
      the arm about this file's own arithmetic. */
   const { PLAN_TIERS } = await import("../../drizzle/schema");
+  const allowanceOf = PLAN_TIERS as Record<string, { monthlyCredits: number }>;
   return {
     constructWebhookEvent: vi.fn(),
     mapStripeStatus: vi.fn().mockReturnValue("active"),
     mapPlanToTier: vi.fn().mockReturnValue("studio"),
     calculateRolloverCredits: vi.fn().mockReturnValue(0),
-    getMonthlyCredits: vi.fn((tier: string) => PLAN_TIERS[tier].monthlyCredits),
+    getMonthlyCredits: vi.fn((tier: string) => allowanceOf[tier].monthlyCredits),
     cancelSubscription: vi.fn().mockResolvedValue(true),
     voidInvoice: vi.fn().mockResolvedValue(true),
     retrieveLiveSubscription: vi.fn(),
