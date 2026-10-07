@@ -1,7 +1,7 @@
 {
-  "edition": 648,
-  "updatedAt": "2026-10-07T16:50:45.000Z",
-  "shift": "The paid redo is built and is waiting for a review before it goes live — the second of the three pieces of your checker ruling.\n\nWhat it gives you: on any finished cast there is now one quiet line beside Download — Ask for all views again, 350 credits. Press it and all five of her views are made again from the face you signed, in one freshly invented outfit, and the new pictures replace the old ones as they arrive. Nothing has to have gone wrong first. That was your own example: you might simply not like the outfit that was invented.\n\nUnder the bonnet your one price is five equal parts, one per view. That is not me second-guessing the number — it is the only way your refund rule can still work, because that rule gives back ONE view. So if four arrive and one does not, you are charged for four and you keep the picture you already had in the fifth slot. A redo can never leave you with an empty frame.\n\nThere is a question for you on your desk and it is only arithmetic on your own two numbers. A redo of all five views costs 350. A single Try again on one view costs 370 — you set that on 1 October, on your finance guy's note that it was needed to keep every worst case profitable for ONE picture. So replacing all five is now cheaper than replacing one, and we pay for five pictures at a price worked out for one. I have shipped your 350 exactly as you said it rather than quietly changing it. Leaving it is my recommendation, and it is a real choice rather than an oversight.\n\nOne thing you will see and should know about: while a redo runs, all five pictures go blank for a minute or two and only the Master stays. That is exactly what one tile already does when you press Try again on it, five times over. If you would rather the old pictures sat there faded until the new ones land, say so and it is its own small job.\n\nI looked at it in the running app in both light and dark before opening the review, and that is what caught the only two things wrong with it. The button had landed AFTER Delete this cast — and delete is meant to be the last thing on that row, because it is the last thing anyone should reach for. And it was drawn louder than everything else on the line, which on a row whose only coloured word is Delete is the wrong way round. Both fixed before the review opened, and no test could have told me either.\n\nStill owed on the card: the Unchecked label and its free retry come off next, now that there is something paid to press instead — that is the order you ruled and it is the right way round. And your eye on a real redo of one of your own casts.",
+  "edition": 649,
+  "updatedAt": "2026-10-07T18:45:00.000Z",
+  "shift": "The one-sheet Sign is built and I rendered a real one tonight — it works, and it has turned up one thing only you can decide.\n\nWhat you asked for on 7 October was that signing a cast renders ONE wide sheet and we cut the five views out of it, instead of rendering five pictures and a wardrobe plate. That is built. I spent 8 cents of house money putting a real sheet through the real engine with one of your own signed faces, and the five views came out clean: one outfit across all five, every camera exactly as your panel lines ask, nobody cut in half, no join lines showing. It took 63 seconds where today's road takes a minute and a half to two minutes, and it cost 8 cents where today's costs about 90.\n\nThe cut is the part I was most careful about. The engine does not draw the five panels at equal widths — on your three test sheets they ranged from 624 to 868 pixels where an equal fifth would be 768. So the cut finds the real dividers rather than slicing into fifths, and I drove it against those same three sheets: it lands within 13 pixels of the panels your eye passed, where cutting blind fifths would be out by as much as 144 — far enough to put a boundary through somebody's face.\n\nNow the thing on your desk, and it is the reason this cannot ship yet. The views that come out of a sheet are a DIFFERENT SHAPE — much taller and narrower than today's. The big viewer handles that fine. The strip of five on a finished cast does not: it puts each picture in a short wide tile and would show only the top 58% of it. Your close-up loses its mouth. Your full front and full back lose their legs and boots. I have put both pictures on your desk — the five views as they really are, and the same five as the strip would show them — with three options and a recommendation.\n\nI stopped there rather than pushing on. What is still owed is 58 test arms covering the refund and recovery rules for signing, which assume five separate renders and now have to be rewritten one at a time to the new road, and one rule I have designed but not yet built: a panel cut from a sheet should be judged once, because asking a second time re-reads the same pixels and buys the same answer twice. The work is on a branch and every decision I made is written down on the card, so the next session picks it up rather than starting again.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -126,7 +126,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-07T16:50:43.117Z",
+      "readAt": "2026-10-07T18:32:17.340Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -270,6 +270,33 @@
     }
   },
   "needsYou": [
+    {
+      "id": "sign-sheet-shape-1926",
+      "title": "The one-sheet views are a taller shape and the strip cuts them — which of the three?",
+      "productImpact": "Signing a cast will soon render one wide sheet and cut your five views out of it. That is built and it works — I rendered a real one tonight for 8 cents, and the five views came out clean with one outfit across all of them.\n\nBut the views are a different shape: much taller and narrower than today's. The strip of five on a finished cast puts each one in a short wide tile, so it would show only the top of each picture. Nothing is wrong with the pictures. It is where they are shown.",
+      "workedExample": "On your own signed cast, the strip would show the top 58% of each view. The close-up would be hair and eyes with no mouth. The full front and the full back would stop at the thighs — no legs, no boots. The big viewer is unaffected and shows the whole picture.\n\nToday's views fill 83% of the same tile, which is why the strip works now and stops working after this change.",
+      "options": [
+        {
+          "key": "shorter",
+          "label": "A — ask for a shorter sheet",
+          "consequence": "The views come back nearer todays shape. Needs another render and your eye again, and only gets the tile to about 75% rather than back to 83%."
+        },
+        {
+          "key": "fit",
+          "label": "B — show the whole picture in the tile",
+          "consequence": "Nothing is cut. A little background sits either side of each view. No new render, and nothing you have already approved changes."
+        },
+        {
+          "key": "tall",
+          "label": "C — make the tiles tall and narrow",
+          "consequence": "Nothing is cut either, and the pictures fill their tiles. The strip of five looks quite different from the one you know."
+        }
+      ],
+      "recommendation": "B. A tall picture is the right shape for a standing figure, and the strip exists for you to pick one — a tile that cuts the face off cannot do that. Background either side costs less than a missing mouth, and it needs no new render.",
+      "state": "open",
+      "filedAt": "2026-10-07T18:45:00.000Z",
+      "issueNumber": 1926
+    },
     {
       "id": "redo-price-1925",
       "title": "Your redo price (350) is lower than your single Try again (370) — leave it, or raise one?",
@@ -3567,7 +3594,7 @@
         }
       ],
       "recommendation": "MY RECOMMENDATION: build it, feet first. The saving is real and close to half, the speed is slightly better not worse, and the part I expected to fail — keeping it the same person across five panels — did not fail at all. The feet fault is in how we word the request for the sheet, not a limit of the idea, and the back view coming out right both times is the evidence for that.\n\nBut I am not the judge of whether that right-hand picture looks as good as today's. Look at the second image and tell me, because if the answer is no then none of the saving matters.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-10-03T16:50:00.000Z",
       "issueNumber": 1690
     },
@@ -6749,7 +6776,7 @@
       "id": "sign-cost-sheet-1690",
       "title": "One sheet instead of five pictures — it saves about half, and it loses her feet",
       "question": "WHAT YOU ARE LOOKING AT — two pictures, and they answer different halves of the question.\n\nThe first is the whole sheet: all five views rendered as ONE picture for 30 cents, instead of five separate ones for 75 cents. Look at whether it is the same woman five times — face, hair, tattoos, the outfit, the lighting. To my eye it is, and that was the thing most likely to go wrong.\n\nThe second is the one that decides it. On the LEFT is the full-length front view the studio delivers today. On the RIGHT is the same view cut out of the sheet. Both are shown at the same height so you are comparing the pictures and not my scaling.\n\nTwo things to judge there. First, the quality — the right-hand one is about four fifths the size of the left, and I want to know whether that reads as worse to you or not at all. Second, the fault: her feet are gone. The view is supposed to run head to toe with a margin top and bottom, and the sheet cut her off at the thigh. It did the same thing on a second run, at the knee. The full-length BACK view came out right both times, which is why I think this is solvable rather than a dead end.\n\nWhat it would save, if it is solved: about 45 cents every time somebody signs a cast, which is close to half of what a Sign costs us. It is also slightly faster.\n\nMy reading is that it is worth building once the feet are fixed. But a saving is never worth a worse picture, and whether that right-hand picture is good enough is yours and not mine.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-10-03T16:50:00.000Z",
       "issueNumber": 1690,
       "cardId": "sign-cost-1690",
@@ -6763,6 +6790,27 @@
           "key": "crew-eye/cd1d0d5b-8a25-4852-b94a-f15590999e21.jpg",
           "arm": "left today — right cut from the sheet",
           "caption": "The same view, same height, so the comparison is fair. LEFT is what we deliver today (75 cents for five). RIGHT is the one cut out of the sheet (30 cents for five). Her feet are missing on the right — that is the fault, and it happened on both runs."
+        }
+      ]
+    },
+    {
+      "id": "sign-sheet-shape-1904",
+      "title": "The one-sheet Sign works — and the five views come out a different shape",
+      "question": "WHAT YOU ARE LOOKING AT — two pictures of the same real sheet I rendered tonight, for 8 cents.\n\nThe FIRST is the five views as they really come out. This is the thing to judge: is it the same woman five times, is it one outfit, is every camera right, is anybody cut off. To my eye all five are whole and the outfit is identical across them, which was the thing most likely to go wrong and is the whole reason for doing it this way.\n\nThe SECOND is the problem, and it is not about the pictures — it is about where they go. The strip of five on a finished cast puts each view in a short wide tile. These pictures are tall and narrow, so the tile shows only the top of each one. Look at the close-up: no mouth. Look at the front and the back: no legs, no boots. That is what you would see on your own cast page today if this shipped as it is.\n\nThe big viewer is fine. It is only the strip.\n\nThree ways out, on card 1926. A: ask the engine for a shorter sheet so the views come back nearer today's shape — needs another render and your eye again, and only gets us part of the way. B: show the whole picture in each tile with a little background either side. C: make the tiles tall and narrow to match.\n\nI recommend B. A tall picture is the right shape for a standing figure, and the strip is there for you to pick one — a tile that cuts the face off cannot do that job. Background either side costs less than a missing mouth. But it changes what you look at every day, so it is yours.",
+      "state": "open",
+      "filedAt": "2026-10-07T18:45:00.000Z",
+      "issueNumber": 1926,
+      "cardId": "sign-sheet-shape-1926",
+      "frames": [
+        {
+          "key": "crew-eye/b5aab00f-def5-4495-b954-af3b3fa64835.jpg",
+          "arm": "the five views, cut from one sheet",
+          "caption": "Close-up, three-quarter, full front, side profile, full back — all cut from ONE picture that cost 8 cents and took 63 seconds. One outfit across all five because they were painted in the same frame. Nobody is cut in half and no join lines show."
+        },
+        {
+          "key": "crew-eye/ce2659b2-e190-4d6a-b0fe-3b5e24a7080a.jpg",
+          "arm": "the same five, as the strip shows them",
+          "caption": "The strip's tiles are short and wide, so each one shows the top 58% of a tall picture. The close-up loses its mouth; the front and back lose their legs and boots. This is the thing to decide — card 1926 has three options and my recommendation."
         }
       ]
     }
@@ -9686,6 +9734,13 @@
       "status": "in-review",
       "prNumber": 1924,
       "note": "Held for a hand review: it charges and refunds."
+    },
+    {
+      "id": "sign-sheet-1904",
+      "title": "Sign renders one Sunburst sheet cut into the five views (#1904)",
+      "status": "building",
+      "prNumber": null,
+      "note": "Built and measured on a real sheet; held on your shape decision (#1926) and 58 test arms."
     }
   ],
   "problems": [
@@ -10068,7 +10123,7 @@
     263
   ],
   "nextUp": {
-    "readAt": "2026-10-07T16:50:43.117Z",
+    "readAt": "2026-10-07T18:32:17.339Z",
     "items": [
       {
         "issueNumber": 1903,
@@ -10078,7 +10133,11 @@
       {
         "issueNumber": 1904,
         "title": "Sign renders one GPT Image 2.5 Sunburst sheet (high, 3840×1648, no outfit plate) cut into the five views — his word closing #1690",
-        "urgent": true
+        "urgent": true,
+        "held": {
+          "state": "blocked",
+          "because": "YOU — the views come out a taller shape and the strip cuts them. A/B/C on #1926, recommend B. Built and measured otherwise."
+        }
       },
       {
         "issueNumber": 1469,
