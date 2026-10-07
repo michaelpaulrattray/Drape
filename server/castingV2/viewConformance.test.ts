@@ -1,5 +1,7 @@
+import sharp from "sharp";
 import { describe, expect, it, vi } from "vitest";
 
+import { renderLikeImage } from "../testing/renderLikeFrame";
 import { ProviderError, type TextEngine, type TextRequest } from "../providers/types";
 import { CAST_PACKAGE_VIEWS } from "./castViewPackage";
 import {
@@ -24,8 +26,26 @@ import {
  * understood nothing.
  */
 
-const anchor = { bytes: Buffer.from("anchor"), contentType: "image/png" };
-const candidate = { bytes: Buffer.from("candidate"), contentType: "image/png" };
+/*
+  ⚠ **THESE WERE `Buffer.from("anchor")` AND `Buffer.from("candidate")` UNTIL
+  #1903's REPAIR, AND THE SUBSTITUTION IS THE FINDING RATHER THAN A TIDY-UP.**
+
+  Thirteen bytes of ASCII that no decoder will open. Every arm in this file
+  passed on them for as long as the file has existed, because the only thing
+  that ever looked at the bytes was a vision model behind a stub — **so a suite
+  whose whole subject is "the checker refuses what it should" was itself
+  judging something that was not an image.** The deterministic `intact` reader
+  opened them on its first run and turned 23 arms in this file red at once.
+
+  Working law 3 is the lesson and it is worth more than the fix: *a backstop
+  needs a test the model cannot rescue.* `server/testing/renderLikeFrame.ts`
+  carries the shared frame and the rest of the story.
+*/
+/* Two SIZES, so the arm that reads which image was posted first can tell them
+   apart at the wire: the frames are bounded and re-encoded on the way out, so
+   bytes cannot be compared and dimensions are what survives. */
+const anchor = await renderLikeImage(64, 96);
+const candidate = await renderLikeImage(96, 64);
 
 function engineReturning(text: string, extra: Partial<{ truncated: boolean }> = {}): TextEngine {
   return {
@@ -199,7 +219,15 @@ describe("view conformance", () => {
     const request = seen as unknown as TextRequest;
     // Two images, anchor first: the system prompt names them in that order.
     expect(request.images).toHaveLength(2);
-    expect(request.images?.[0]?.bytes.toString()).toBe("anchor");
+    /*
+      ⚠ **ORDER IS READ AT THE PIXELS NOW, AND IT HAS TO BE.** This was
+      `bytes.toString()).toBe("anchor")` — which only worked because the fixture
+      was not an image: `boundForJudge` fails open, so undecodable bytes came
+      back untouched and the ASCII survived to the wire. A real frame is bounded
+      and re-encoded as JPEG, so the only thing that survives is its shape.
+    */
+    const postedAnchor = await sharp(request.images![0]!.bytes).metadata();
+    expect([postedAnchor.width, postedAnchor.height]).toEqual([64, 96]);
     /*
       ⚠ THE ABSENCE IS THE ASSERTION — #1903. This arm used to require
       "SPECIFICATION" in the user turn; a judge handed a framing sentence and a
@@ -298,10 +326,8 @@ describe("one field for one fact — the judge cannot contradict itself", () => 
     }),
   });
 
-  const images = {
-    anchor: { bytes: Buffer.from("a"), contentType: "image/png" },
-    candidate: { bytes: Buffer.from("b"), contentType: "image/png" },
-  };
+  /* Real frames, for the reason the pair at the top of this file carries. */
+  const images = { anchor, candidate };
 
   it("takes the verdict as the answer, whatever the note argues", async () => {
     const judge = createViewConformanceJudge({
@@ -466,7 +492,18 @@ describe("the judge's identity axis reads her markings", () => {
     expect(system).toContain("bone structure, facial proportions, skin, hair and build");
     expect(system).toContain("A similar-looking person of the same type is a FAIL");
     /* And it is the IDENTITY axis that gained them, not some other line. */
-    const identityLine = system.split(" 2. angle")[0];
+    const identityLine = system.split(" 2. intact")[0];
+    /*
+      ⚠ **THE SPLIT HAS TO ACTUALLY CUT, AND THIS ARM SPENT A DAY PROVING
+      NOTHING BECAUSE IT DID NOT.** It split on `" 2. angle"` — a heading #1903
+      deleted — so `split` returned the WHOLE prompt as element 0 and the
+      `toContain` below was satisfied by question 1 wherever it sat. A slice that
+      silently becomes the whole subject is this repository's own
+      `guard-arm-satisfied-by-a-sibling`, and the cheap cure is to assert the
+      cut rather than the slice's contents alone.
+    */
+    expect(identityLine.length).toBeLessThan(system.length);
+    expect(identityLine).not.toContain("how many people are in IMAGE 2");
     expect(identityLine).toContain("tattoos and ink");
   });
 });

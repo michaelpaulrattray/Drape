@@ -146,6 +146,7 @@ import { CAST_PACKAGE_VIEW_PRICE } from "./castViewPackage";
 const TRY_AGAIN_PRICE = CASTING_V2_VIEW_RETRY_PRICE_CREDITS;
 import { castPronouns } from "./castPronouns";
 import { outfitReferenceClause } from "./outfitPlate";
+import { CONFORMANCE_AXES } from "./viewConformance";
 import {
   deliveredOutfitKeysFrom,
   retryCastView,
@@ -1433,14 +1434,17 @@ describe("the settled line, one per Try again (#1608)", () => {
     const judge = (() => async () => {
       call += 1;
       const pass = call > 1;
+      /* ⚠ The two non-identity axes were `angle` and `wardrobe` until #1903
+         retired them, and this fixture kept their names: it survived only
+         because the orchestrator short-circuited on `!verdict.pass` before
+         anything read an axis by name. Derived from the product's own set so
+         it cannot drift again (working law 4). */
       return {
         pass,
         method: "judge:test",
-        axes: {
-          identity: { pass, note: "" },
-          angle: { pass: true, note: "" },
-          wardrobe: { pass: true, note: "" },
-        },
+        axes: Object.fromEntries(
+          CONFORMANCE_AXES.map((axis) => [axis, { pass: axis === "identity" ? pass : true, note: "" }]),
+        ),
       };
     }) as never;
 

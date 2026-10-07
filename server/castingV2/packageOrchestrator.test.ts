@@ -4,7 +4,13 @@ import { ProviderError } from "../providers/types";
 /* The REAL composition the failed-slot row is stored with — #1492's seam arm
    below drives the writer's own function rather than a copy of it. */
 import { slotFailureStatus } from "./slotFailureRecord";
-import { unjudgedVerdict, viewDeliveredUnchecked, type ViewConformanceVerdict } from "./viewConformance";
+import {
+  CONFORMANCE_AXES,
+  unjudgedVerdict,
+  viewConformanceRefuses,
+  viewDeliveredUnchecked,
+  type ViewConformanceVerdict,
+} from "./viewConformance";
 import { pronounsForSex } from "./castPronouns";
 import { MAX_CLAUSE_CHARACTERS } from "./viewFeatureWords";
 
@@ -62,6 +68,7 @@ const {
   packagePromotionChargeReference,
   packageSlotChargeReference,
   promisedPackageAngles,
+  refusedViewReason,
   unsettledPackageAngles,
   VIEW_ARRIVAL_ATTEMPTS,
   VIEW_JUDGED_ATTEMPTS,
@@ -1591,6 +1598,98 @@ describe("only a catastrophe takes a picture away", () => {
     ]);
     const marker = failures.find((entry) => entry.angle === "sideClose");
     expect((marker?.failure as { reason: string }).reason).toBe("This view didn't hold the signed likeness");
+  });
+
+  /**
+   * ⚠ **THE CUSTOMER READS THIS SENTENCE, AND IT WAS WRONG FOR TWO OF THE THREE
+   * CATASTROPHES — the repair owed on PR #1915.**
+   *
+   * One string was set for every refusal. So the day #1903 gave this judge two
+   * more catastrophes, a blank frame and a two-person frame both told a paying
+   * customer their picture *"didn't hold the signed likeness"* — in the room's
+   * failed tile and in the health dialog, verbatim, beside the refund. The arm
+   * above is now the CONTROL for the one axis that sentence was always true of.
+   */
+  const reasonFor = async (
+    axes: Partial<Record<"identity" | "intact" | "people", "differs" | "unsure">>,
+  ): Promise<string> => {
+    await buildCastPackage(deps({ judge: rejecting("sideClose", axes) }), input);
+    const marker = failures.find((entry) => entry.angle === "sideClose");
+    return (marker?.failure as { reason: string }).reason;
+  };
+
+  it("⚠ a DAMAGED frame says so, and never that it wasn't her", async () => {
+    const reason = await reasonFor({ intact: "differs" });
+    expect(reason).toBe("This view came back damaged");
+    expect(reason).not.toContain("likeness");
+  });
+
+  it("⚠ a frame with the wrong PEOPLE in it says so, and never that it wasn't her", async () => {
+    const reason = await reasonFor({ people: "differs" });
+    expect(reason).toBe("This view didn't come back with your cast alone in it");
+    expect(reason).not.toContain("likeness");
+  });
+
+  it("⚠ a BROKEN frame that also fails identity confesses the breakage — the commonest compound failure", async () => {
+    /*
+      The order is the judgement, and this is the arm that holds it. Nothing can
+      be recognised in a half-black picture, so a damaged frame drags identity
+      down with it; identity-first would tell a customer their picture is not
+      them when what actually happened is that it did not render.
+    */
+    expect(await reasonFor({ intact: "differs", identity: "differs" }))
+      .toBe("This view came back damaged");
+  });
+
+  it("⚠ CONTROL — every catastrophe has its own sentence, derived from the axis set and not from a list here", () => {
+    /*
+      Working law 4: the arm must break when an axis is ADDED to the judge and
+      its copy is forgotten, so the population comes from `CONFORMANCE_AXES`
+      rather than from three literals typed beside it. A missing axis would fall
+      through to the fallback, which is a true sentence about the wrong thing.
+    */
+    const sentences = CONFORMANCE_AXES.map((axis) => refusedViewReason([axis]));
+    expect(new Set(sentences).size).toBe(CONFORMANCE_AXES.length);
+    expect(sentences).not.toContain("This view didn't come out right");
+    for (const sentence of sentences) {
+      /* Her words, not the road's — no axis name, no verdict word, no number. */
+      expect(sentence).toMatch(/^This view /);
+      expect(sentence.toLowerCase()).not.toMatch(/identity|intact|people|axis|verdict|judge/);
+    }
+  });
+
+  it("⚠ CONTROL — a refusal naming no axis the product knows still says something true", () => {
+    /* `method: "forced"` fails every axis with no axis being the story. */
+    expect(refusedViewReason([])).toBe("This view didn't come out right");
+    expect(refusedViewReason(["angle", "wardrobe"])).toBe("This view didn't come out right");
+  });
+
+  it("⚠ CONTROL — `!pass` and `refuses` are the same answer, which is what let the deliver-anyway branch go", () => {
+    /*
+      The orchestrator's branch was `!verdict.pass` with a `!viewConformanceRefuses`
+      arm inside it that could never be entered; it is now the rule itself. This
+      holds the equivalence that made the deletion safe, over every axis and every
+      verdict word, so a fourth axis that separates the two reddens HERE — where
+      the reason is written down — rather than silently refusing a customer's view.
+    */
+    for (const axis of CONFORMANCE_AXES) {
+      for (const word of ["matches", "differs", "unsure"] as const) {
+        const axes = Object.fromEntries(
+          CONFORMANCE_AXES.map((name) => [
+            name,
+            name === axis
+              ? { pass: !(word === "differs" || (word === "unsure" && name === "identity")), verdict: word, note: "" }
+              : { pass: true, verdict: "matches" as const, note: "" },
+          ]),
+        ) as ViewConformanceVerdict["axes"];
+        const verdict = {
+          pass: Object.values(axes).every((entry) => entry.pass),
+          method: "judge:test",
+          axes,
+        } as ViewConformanceVerdict;
+        expect(viewConformanceRefuses(verdict)).toBe(!verdict.pass);
+      }
+    }
   });
 
   it("⚠ refuses on an UNSURE identity too — fail-closed is the whole of §I on this axis", async () => {

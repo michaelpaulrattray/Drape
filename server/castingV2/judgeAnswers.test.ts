@@ -40,10 +40,18 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createOpenRouterTextEngine } from "../providers/openrouterText";
 import { ProviderQueue } from "../providers/providerQueue";
 import { ProviderError, type TextEngine, type TextRequest } from "../providers/types";
+import { renderLikeImage } from "../testing/renderLikeFrame";
 import { createViewConformanceJudge } from "./viewConformance";
 
-const anchor = { bytes: Buffer.from("anchor"), contentType: "image/png" };
-const candidate = { bytes: Buffer.from("candidate"), contentType: "image/png" };
+/*
+  ⚠ **REAL FRAMES SINCE #1903 — these were `Buffer.from("anchor")`, which no
+  decoder will open.** The judge now reads the candidate's own bytes before it
+  posts anything, so a fixture that is not a picture is refused as a broken
+  render and never reaches the engine these arms are about.
+  `server/testing/renderLikeFrame.ts` carries why that was true everywhere.
+*/
+const anchor = await renderLikeImage(64, 96);
+const candidate = await renderLikeImage(96, 64);
 
 const verdictJson = JSON.stringify({
   identity: { verdict: "matches", note: "same person" },

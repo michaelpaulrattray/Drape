@@ -359,12 +359,17 @@ function wardrobeAdditionsClause(
     paragraph and leaving this sentence to name the rule works perfectly — for
     the GENERATOR, which is handed the whole prompt.
 
-    **The judge is not.** `packageViewExpectation` hands `viewConformance` the
-    framing and wardrobe strings and nothing else; its user message is
-    literally `SPECIFICATION for IMAGE 2: / Framing: … / Wardrobe: …`. A
-    wardrobe sentence that defers to *"the add-nothing rule above"* therefore
-    defers, in the judge's prompt, to nothing at all — and the axis it would
-    silently widen is the one that refunds slices.
+    **The judge is not.** ⚠ **AND SINCE #1903 IT IS HANDED LESS THAN THIS
+    PARAGRAPH SAYS, WHICH MAKES THE SAME POINT HARDER RATHER THAN RETIRING IT.**
+    This read *"`packageViewExpectation` hands `viewConformance` the framing and
+    wardrobe strings and nothing else; its user message is literally
+    `SPECIFICATION for IMAGE 2: / Framing: … / Wardrobe: …`"* — that function and
+    that whole specification are DELETED, and the judge is now posted the two
+    pictures and no text about them at all. So a wardrobe sentence that defers to
+    *"the add-nothing rule above"* defers, in the judge's prompt, to nothing
+    whatsoever; the only thing that has changed is that there is no longer a
+    wardrobe axis for it to widen, and the rule survives for the reason it was
+    written: prose written for one reader is not thereby true for another.
 
     So this sentence stays self-contained: its own nouns, its own condition. The
     duplication is real and is the price of one clause having two consumers that
@@ -464,8 +469,11 @@ function describedWardrobeSpec(pronouns: CastPronouns, outfitReferenceOrdinal: n
     below-frame clause already ends *"where it leaves them open any reading in
     keeping with the garments, materials and colours above the crop is correct"*,
     which is precisely what a plate-dressed hem is, so the permissive side is
-    already wide enough to admit one. `packageViewExpectation` therefore passes
-    `null` here and its sentence is byte-identical to today's.
+    already wide enough to admit one. ⚠ **This sentence used to end
+    *"`packageViewExpectation` therefore passes `null` here"*; since #1903 there
+    is no such function and the judge is posted no specification at all**, so the
+    worry it answered — the judge reading a clause about a picture it cannot see
+    — cannot arise through that door any more.
   */
   const belowFrame = outfitReferenceOrdinal === null
     ? "Inside the frame of the reference, the reference is the record. Below its frame the "
@@ -1235,9 +1243,12 @@ export function castPackageLabel(
  * Two things must exist before any such clause rides five paid views: the
  * how-does-the-code-know-a-fact-is-not-shown answer (designed once, with the
  * does-it-extend and is-it-paired kind-properties — fable-872 §2), and a
- * CONTROL on `packageViewExpectation`, which is assembled from the view spec
- * alone and today has no opinion about a clause at all (invariant 7 —
- * fable-871 §3).
+ * CONTROL proving the judge has no opinion about such a clause (invariant 7 —
+ * fable-871 §3). ⚠ **That second one named `packageViewExpectation` until
+ * #1903 deleted it. The obligation does not retire with the function — it gets
+ * easier**: the judge is now posted the two pictures and no text, so the
+ * control is an absence read at the wire rather than an assertion about what a
+ * specification left out.
  */
 /**
  * The wardrobe sentence this slot is composed from and judged against.
@@ -1406,8 +1417,12 @@ function sideClauseFor(angle: CastViewAngle, pronouns: CastPronouns): string {
  * reference already shows. It still has to invent — a chest-up photograph
  * cannot establish a hem — but it now invents in her outfit's direction instead
  * of against it, which is the difference between a guess and a contradiction.
- * The judge is untouched by this: `packageViewExpectation` is assembled from
- * `spec` alone and never reads a directive, so nothing here can fail a view.
+ * The judge is untouched by this, and since #1903 by construction rather than
+ * by assembly: it is posted the two pictures and no text about the outfit at
+ * all, so nothing written here can fail a view. ⚠ **This clause used to rest on
+ * `packageViewExpectation` being built from `spec` alone; that function is
+ * deleted, and the guarantee it gave is now the absence of the whole
+ * specification.**
  */
 export function belowWaistFor(
   angle: CastViewAngle,

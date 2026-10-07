@@ -62,7 +62,7 @@ import type { CastViewAngle } from "../../shared/boardTypes";
 import { createModuleLogger } from "../logging/logger";
 import { ProviderError, type ReferenceImage, type TextEngine } from "../providers/types";
 import { pronounsForSex, type CastPronouns } from "./castPronouns";
-import { boundForJudge, type JudgedFrame } from "./judgeFrame";
+import { boundForJudge, readFrameIntegrity, type JudgedFrame } from "./judgeFrame";
 
 const log = createModuleLogger("castingV2/viewConformance");
 
@@ -75,7 +75,7 @@ const log = createModuleLogger("castingV2/viewConformance");
  * is why one axis answers both.
  */
 export const CONFORMANCE_AXES = ["identity", "intact", "people"] as const;
-type ConformanceAxis = (typeof CONFORMANCE_AXES)[number];
+export type ConformanceAxis = (typeof CONFORMANCE_AXES)[number];
 
 /**
  * ⚠ **THE AXIS NAMES A LANDED ROW MAY STILL CARRY — AND THIS IS A MEASURED
@@ -479,11 +479,63 @@ export function createViewConformanceJudge(config: ViewConformanceJudgeConfig): 
       `packageOrchestrator` stores the provider's own bytes before it calls this
       and delivers those.
     */
-    const [anchor, candidate] = await Promise.all([
+    const [anchor, candidate, integrity] = await Promise.all([
       boundForJudge(input.anchor),
       boundForJudge(input.candidate),
+      /*
+        ⚠ **THE ONE CATASTROPHE THAT IS NOT LEFT TO A MODEL — the repair owed on
+        PR #1915, and working law 3 is the rule it answers:** *a backstop needs a
+        test the model cannot rescue.* Until this line, `intact` and `people`
+        were both answered ONLY by the vision call below, so a frame the judge
+        could not be asked about at all — a provider rejecting the image as
+        non-retryable is the measured shape — fell through to `unjudged`, and
+        D-246 DELIVERS an `unjudged` view and CHARGES for it. **Catastrophe 2
+        reached a paying customer by the one road built to protect a view nobody
+        could look at.**
+
+        `people` stays model-only and says so on its own band: there is no cheap
+        deterministic count of people in a photograph, and inventing one would be
+        the approximation the fidelity law forbids. `identity` likewise.
+      */
+      readFrameIntegrity(input.candidate),
     ]);
     const frames: readonly JudgedFrame[] = [anchor.record, candidate.record];
+
+    if (!integrity.intact) {
+      /*
+        ⚠ **IT REFUSES RATHER THAN GOING `unjudged`, AND THAT DISTINCTION IS THE
+        WHOLE POINT OF THE ARM.** `unjudged` means *nobody formed an opinion*, and
+        {@link viewConformanceRefuses} answers it first and DELIVERS (D-246). An
+        opinion was formed here — by a decoder rather than by a model, which is
+        the stronger of the two witnesses, not the weaker — so this is an ordinary
+        refusal and takes the ordinary refund road.
+
+        **`identity` and `people` pass, and that is not a claim about the
+        picture.** {@link axisFrom}'s own rule is that `pass` means *this axis
+        does not take the picture away*, and neither of them is why this one went:
+        a reader who sees all three false would be told three things failed when
+        one did, and the diagnostic capture's key would name three axes for one
+        fault. Their `verdict` word is ABSENT, which is already this type's
+        spelling for *no judge answered* — and no judge did; the model was never
+        called, which is also the ~$0.01 and the 20-35 s this arm saves on a frame
+        that was never deliverable.
+      */
+      log.warn(
+        { angle: input.angle, fault: integrity.fault, size: candidate.record.size },
+        "[viewConformance] the frame is not a complete picture — refusing it without asking the judge",
+      );
+      const notAsked = "not asked — the frame was refused before the judge was called";
+      return {
+        pass: false,
+        method: `intact:${integrity.fault}`,
+        axes: {
+          identity: { pass: true, note: notAsked },
+          intact: { pass: false, note: integrity.note },
+          people: { pass: true, note: notAsked },
+        },
+        frames,
+      };
+    }
 
     let text: string;
     try {
