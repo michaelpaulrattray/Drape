@@ -57,6 +57,10 @@ describe("R7-7D D4D2 recovery, feature fences, and privacy contract", () => {
       ["castingV2.refine", "not_applicable"],
       ["castingV2.retry", "not_applicable"],
       ["castingV2.viewRetry", "not_applicable"],
+      /* The paid redo (#1903): post-Sign and NOT blind — it renders through
+         `carriedInkCrops` and `carriedFeatureWords`, the Sign’s own two
+         readers, so her accepted tattoos ride into every view it replaces. */
+      ["castingV2.packageRedo", "not_applicable"],
     ]);
     expect(FEATURE_BLIND_OPERATION_MESSAGE).toContain("tattoo evidence");
     expect(FEATURE_BLIND_OPERATION_MESSAGE).toContain("unavailable");

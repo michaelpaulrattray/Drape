@@ -134,7 +134,7 @@ export type PackageRedoServiceDependencies = PackageOrchestratorDependencies & {
    * Narrower than `typeof getUserCredits` on purpose: that function returns the
    * whole credits row — nineteen columns including the plan tier and the Stripe
    * customer id — and a seam typed as the row forces every arm that wants to
-   * say *this customer has 349 credits* to build a plan, two dates and a
+   * say *this customer is one credit short* to build a plan, two dates and a
    * subscription. The entrance reads one number, so the seam asks for one
    * number, and `getUserCredits` satisfies it structurally.
    */
@@ -271,8 +271,9 @@ export async function redoCastPackage(
     nothing else can be spending against this Cast, because the five slot locks
     are ours by then.
 
-    **The number quoted is the whole price**, not a slice: a customer told "you
-    need 70 credits" for a 350-credit button would top up and be refused again.
+    **The number quoted is the whole price**, not a slice: a customer quoted one
+    view’s slice against a whole-package button would top up by a fifth of what
+    they need and be refused again.
   */
   const balance = await (dependencies.readBalance ?? getUserCredits)(input.userId);
   if (!balance || balance.balance < offer.priceCredits) {
@@ -453,8 +454,8 @@ async function redoOneView(
     operationId: string;
     plate: Promise<OutfitPlate | null>;
     /** The WHOLE package price, for the one sentence that must quote it: a
-     *  customer told "you need 70 credits" for a 350-credit button would top up
-     *  and be refused again. */
+     *  customer quoted one view’s slice against a whole-package button would top
+     *  up by a fifth of what they need and be refused again. */
     packagePrice: number;
   },
 ): Promise<PackageRedoResult> {
