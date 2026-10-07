@@ -27,7 +27,17 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+
+/* ⚠ THIS SUITE SPAWNS SINCE #1899: the tree-line arms drive REAL git in this
+   repository rather than a fixture of what git is believed to print, because
+   the format is the assumption most likely to be wrong. So it declares the
+   class's timeout rather than racing vitest's 5 s default under a parallel
+   run (#548) — and `childProcessTestTimeouts` is what noticed it joined the
+   population, which is the guard doing exactly its job. */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 import {
   type Acknowledgement,
