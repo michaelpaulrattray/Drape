@@ -189,6 +189,18 @@ describe("#796 site 2 — changePlan's local record after Stripe has accepted th
       creditUnwind: 0,
       isUpgrade: true,
       proratedAmount: 0,
+      /* ⚠ THE DIAL, AT THE BOTTOM AND UNMOVED (#1832) — and these two are
+         present because leaving them off is what FOUND a real defect rather
+         than merely reddening this suite. `as ReturnType<…>` satisfies the
+         compiler on a partial object, so the omission reached the request
+         path, where `planCreditSliderLedgerCredits` refused `undefined` —
+         from inside the audit block, which runs AFTER Stripe has accepted and
+         invoiced the change. That is this very file's own #796 class: a throw
+         past the point of no return hands the customer an error for a change
+         that happened. The arithmetic moved ahead of the Stripe call; these
+         fields make the double honest about what a quote is. */
+      currentCreditUnits: 0,
+      targetCreditUnits: 0,
     } as ReturnType<typeof quotePlanChange>);
     vi.mocked(updateSubscriptionPlan).mockResolvedValue({
       success: true,
@@ -296,6 +308,18 @@ describe("#1605 bullet 1 — a price the catalogue cannot supply, as the custome
       creditUnwind: 0,
       isUpgrade: true,
       proratedAmount: 0,
+      /* ⚠ THE DIAL, AT THE BOTTOM AND UNMOVED (#1832) — and these two are
+         present because leaving them off is what FOUND a real defect rather
+         than merely reddening this suite. `as ReturnType<…>` satisfies the
+         compiler on a partial object, so the omission reached the request
+         path, where `planCreditSliderLedgerCredits` refused `undefined` —
+         from inside the audit block, which runs AFTER Stripe has accepted and
+         invoiced the change. That is this very file's own #796 class: a throw
+         past the point of no return hands the customer an error for a change
+         that happened. The arithmetic moved ahead of the Stripe call; these
+         fields make the double honest about what a quote is. */
+      currentCreditUnits: 0,
+      targetCreditUnits: 0,
     } as ReturnType<typeof quotePlanChange>);
     vi.mocked(updateSubscriptionPlan).mockRejectedValue(refusal());
 
@@ -322,5 +346,93 @@ describe("#1605 bullet 1 — a price the catalogue cannot supply, as the custome
 
     expect(error).not.toBeInstanceOf(SpokenError);
     expect((error as Error).message).toBe("card_declined");
+  });
+});
+
+/**
+ * #1832 — THE CREDIT SLIDER'S ARITHMETIC CANNOT THROW PAST THE POINT OF NO
+ * RETURN.
+ *
+ * This file's own #796 class, one feature later. `planCreditSliderLedgerCredits`
+ * REFUSES anything that is not a whole number of steps — correct for a money
+ * helper — and the audit row and the confirmation sentence that read it both
+ * run AFTER `updateSubscriptionPlan` has succeeded. Computed down there, a
+ * refusal means Stripe has already changed the plan and invoiced for it while
+ * the customer is handed an error for a change that happened.
+ *
+ * ⚠ **IT WAS A LIVE DEFECT, FOUND BY THIS SUITE AND NOT BY THE COMPILER.** The
+ * quote is typed to carry both step counts, so the expression looked safe; the
+ * doubles above are cast with `as ReturnType<…>`, which satisfies the compiler
+ * on a partial object, and the omission walked straight into the request path.
+ * That is a fair model of the real exposure rather than a fixture artefact —
+ * the type is a claim about `quotePlanChange`, and nothing one statement past
+ * a charge should rest on a claim.
+ *
+ * The arm drives the bad shape ON PURPOSE and asserts WHERE the refusal lands:
+ * before Stripe is touched. Its positive control is the same call with the
+ * fields present, which must reach Stripe and succeed.
+ */
+describe("#1832 — a quote missing its step counts refuses BEFORE Stripe is touched", () => {
+  const quoteWithout = (extra: Record<string, unknown>) =>
+    ({
+      kind: "same-interval",
+      currentPlan: "starter",
+      currentInterval: "monthly",
+      targetInterval: "monthly",
+      creditAdjustment: 0,
+      creditUnwind: 0,
+      isUpgrade: true,
+      proratedAmount: 0,
+      ...extra,
+    }) as ReturnType<typeof quotePlanChange>;
+
+  beforeEach(() => {
+    vi.mocked(getUserById).mockResolvedValue({ ...USER, frozenAt: null } as never);
+    vi.mocked(getSubscriptionByUserId).mockResolvedValue({
+      stripeCustomerId: "cus_known",
+      stripeSubscriptionId: "sub_1",
+      planTier: "starter",
+    } as Awaited<ReturnType<typeof getSubscriptionByUserId>>);
+    vi.mocked(readSubscriptionBillingState).mockResolvedValue({
+      currentPlan: "starter",
+      subscriptionItemId: "si_1",
+      currentInterval: "monthly",
+      periodStartSec: 1_700_000_000,
+      periodEndSec: 1_702_592_000,
+      currentCreditUnits: 0,
+      creditItemId: null,
+    } as Awaited<ReturnType<typeof readSubscriptionBillingState>>);
+    vi.mocked(updateUserSubscription).mockResolvedValue({ success: true } as never);
+    vi.mocked(updateSubscriptionPlan).mockResolvedValue({
+      success: true,
+      invoiceId: "in_1",
+      invoiceStatus: "paid",
+      invoicedAmount: 0,
+    } as Awaited<ReturnType<typeof updateSubscriptionPlan>>);
+  });
+
+  it("⚠ NOTHING REACHES STRIPE — the refusal is ahead of the charge, not behind it", async () => {
+    vi.mocked(quotePlanChange).mockReturnValue(quoteWithout({}));
+
+    const error = await caller()
+      .changePlan({ newPlan: "pro" })
+      .then(() => null, (e: unknown) => e);
+
+    expect(error, "the bad shape was accepted — the arm is asserting nothing").not.toBeNull();
+    expect(
+      updateSubscriptionPlan,
+      "Stripe was called and THEN the arithmetic threw — the customer is charged and told it failed",
+    ).not.toHaveBeenCalled();
+  });
+
+  it("POSITIVE CONTROL — the same call with the step counts present reaches Stripe and succeeds", async () => {
+    vi.mocked(quotePlanChange).mockReturnValue(
+      quoteWithout({ currentCreditUnits: 0, targetCreditUnits: 0 }),
+    );
+
+    const result = await caller().changePlan({ newPlan: "pro" });
+
+    expect(result.success).toBe(true);
+    expect(updateSubscriptionPlan).toHaveBeenCalledTimes(1);
   });
 });

@@ -911,6 +911,30 @@ export const billingRouter = router({
         input.creditUnits,
       );
 
+      /*
+        ⚠ **THE DIAL'S LEDGER FIGURES ARE COMPUTED HERE, BEFORE THE POINT OF NO
+        RETURN, AND THAT POSITION IS THE WHOLE CARE (#1832).**
+        `planCreditSliderLedgerCredits` REFUSES a value that is not a whole
+        number of steps — correct for a money helper — and the audit row and the
+        confirmation sentence that read it both run AFTER `updateSubscriptionPlan`
+        has succeeded. A throw down there is the #796 class exactly: Stripe has
+        already changed the plan and invoiced for it, and the customer is handed
+        an error for a change that happened.
+
+        The quote is TYPED to carry both fields, so this should be unreachable —
+        and `server/routes/billingRequestPathVerdicts.test.ts` found it anyway,
+        because a test double cast with `as ReturnType<…>` satisfies the
+        compiler while omitting them. That is a fair model of the real exposure:
+        the type is a claim about `quotePlanChange`, and this code's safety
+        should not rest on it one statement past the charge.
+
+        So the arithmetic happens where a refusal costs nothing — nothing has
+        been attempted yet — and what crosses into the post-charge block is two
+        plain numbers.
+      */
+      const currentSliderLedger = planCreditSliderLedgerCredits(quote.currentCreditUnits);
+      const targetSliderLedger = planCreditSliderLedgerCredits(quote.targetCreditUnits);
+
       /* ⚠ THE "NOTHING TO DO" REFUSAL NOW HAS A THIRD LIMB, and without it a
          customer who moved only the slider would be told they are already on
          this plan — which they are, and the dial is the thing they changed
@@ -1179,9 +1203,7 @@ export const billingRouter = router({
              reading this log can act on. */
           previousCreditUnits: quote.currentCreditUnits,
           newCreditUnits: quote.targetCreditUnits,
-          creditUnitsLedgerDelta:
-            planCreditSliderLedgerCredits(quote.targetCreditUnits)
-            - planCreditSliderLedgerCredits(quote.currentCreditUnits),
+          creditUnitsLedgerDelta: targetSliderLedger - currentSliderLedger,
           changeKind: quote.kind,
           isUpgrade: quote.isUpgrade,
           creditAdjustment,
@@ -1212,9 +1234,7 @@ export const billingRouter = router({
         a month, which is the figure on the card they moved), and the plan's
         two sentences are untouched for every change that moves a rung.
       */
-      const sliderLedgerDelta =
-        planCreditSliderLedgerCredits(quote.targetCreditUnits)
-        - planCreditSliderLedgerCredits(quote.currentCreditUnits);
+      const sliderLedgerDelta = targetSliderLedger - currentSliderLedger;
       const dialOnly =
         input.newPlan === currentPlan
         && quote.kind === "same-interval"
