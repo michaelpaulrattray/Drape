@@ -240,7 +240,7 @@ describe("the receipt line is derived, never typed (§2d)", () => {
     expect(page).not.toMatch(/rollPriceCredits\s*\?\?\s*\d/);
   });
 
-  it("⚠ says CREDITS, and `CR` may not come back (#1908)", async () => {
+  it("⚠ says CREDITS, and `CR` may not come back (card 1908)", async () => {
     /*
       His word 2026-10-07 on Yuna's Desk item *"Cost beside Cast it in plain
       words"*. `CR` was the one abbreviation on the path to a customer's first
@@ -275,7 +275,7 @@ describe("the receipt line is derived, never typed (§2d)", () => {
     expect(/\bCR\b/.test("{formatCredits(displayPrice(price))} CREDITS")).toBe(false);
   });
 
-  it("⚠ the legend's per-face figure comes from the shared helper, never from the page (#1908)", async () => {
+  it("⚠ the legend's per-face figure comes from the shared helper, never from the page (card 1908)", async () => {
     /*
       The figure cannot be typed here and cannot be computed here either: a
       second division beside the receipt is working law 4, and the division has

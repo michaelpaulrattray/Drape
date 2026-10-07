@@ -267,6 +267,22 @@ const PROSE_NOT_A_CURRENT_PRICE: ReadonlyArray<{
   why: string;
 }> = [
   {
+    file: "shared/castingReceipt.ts",
+    credits: 30,
+    quote: "30 credits a face",
+    why:
+      "THE DRAFT THAT MADE THE CARD, quoted as the reason the figure is derived "
+      + "rather than written (#1908). Yuna's wording for this legend read "
+      + "*\"~240 … 30 credits a face\"*, and both numbers were true of the price "
+      + "table before 2026-10-01 and false on the day she wrote them — a Roll is "
+      + "1,600 ledger / 320 display now, so a face is 40. The module's whole "
+      + "subject is that a hand-typed per-face figure goes stale, and the "
+      + "evidence for it is the stale figure. Rewriting it to 40 would delete "
+      + "the argument and leave a paragraph asserting that 40 was once wrong. "
+      + "`server/castingV2/receiptPerFace.test.ts` holds the code to typing no "
+      + "numeral at all, so this quote cannot hide a real one.",
+  },
+  {
     file: "server/casting/aiService.ts",
     credits: 1,
     quote: "1 credit",

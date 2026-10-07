@@ -32,8 +32,9 @@
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
 import { readListedSource } from "../testing/listedSource";
 import { withoutComments } from "../testing/withoutComments";
 import {
@@ -47,6 +48,12 @@ import {
   perFaceDisplayCredits,
   receiptLegend,
 } from "../../shared/castingReceipt";
+
+/* Two arms read source off the real tree, which puts this suite in the
+   contended class: under the parallel run vitest's 5s default is not enough on
+   a loaded machine. File level, never per arm — a number typed onto one `it`
+   is not inherited by its neighbour (#741). */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
