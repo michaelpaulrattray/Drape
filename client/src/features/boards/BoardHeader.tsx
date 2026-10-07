@@ -11,6 +11,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useLocation } from 'wouter';
 import { ArrowLeft, Check, Pencil } from 'lucide-react';
 import { ProfileAvatar } from '@/features/profile/ProfileVisual';
+import { KliegWordmark } from '@/foundation/KliegWordmark';
 import { BOARD_NAME_MAX_LENGTH } from "@shared/inputLimits";
 import { displayBalance, formatCredits } from "@shared/creditDisplay";
 
@@ -150,7 +151,13 @@ export function BoardHeader({
 
       {isSaving && <span className="text-canvas-sm text-canvas-ink-faint font-medium">Saving...</span>}
 
-      <img src="/drape-logo.svg" alt="drape" style={{ height: 16, opacity: 0.3 }} />
+      {/* #1916: the mark is Klieg's, and it is drawn in the DOM rather than
+          fetched as an SVG image — an `<img>`-loaded SVG cannot reach the
+          page's webfonts, which is why the retired `/drape-logo.svg` rendered
+          in whatever face the machine happened to have. Watermark cut:
+          reduced opacity, no glow (KliegWordmark's header carries the
+          locked rules it is cut from). */}
+      <KliegWordmark fontSize={15} opacity={0.3} />
 
       {/* D-45(2): profile popover — balance line + Top up. The balance lives
           behind the avatar, not on the chrome (no permanent number on the

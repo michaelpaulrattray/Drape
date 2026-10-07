@@ -62,7 +62,7 @@ export function SecuritySection({
       ? "Google"
       : user?.authProvider === "email"
         ? "Email and password"
-        : "Drape account";
+        : "Klieg account";
 
   const runExport = async () => {
     setExporting(true);

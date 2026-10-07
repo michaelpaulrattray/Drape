@@ -62,7 +62,7 @@
     {
       "id": "domain:foundation",
       "name": "foundation",
-      "moduleCount": 28
+      "moduleCount": 29
     },
     {
       "id": "domain:home",
@@ -2409,6 +2409,12 @@
     {
       "id": "module:client/src/foundation/Eyebrow.tsx",
       "path": "client/src/foundation/Eyebrow.tsx",
+      "domain": "foundation",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/foundation/KliegWordmark.tsx",
+      "path": "client/src/foundation/KliegWordmark.tsx",
       "domain": "foundation",
       "lifecycle": "active"
     },
@@ -13055,6 +13061,10 @@
       "path": "server/clientReleaseWiring.test.ts"
     },
     {
+      "id": "test:server/clientWordmark.test.ts",
+      "path": "server/clientWordmark.test.ts"
+    },
+    {
       "id": "test:server/closingKeyword.test.ts",
       "path": "server/closingKeyword.test.ts"
     },
@@ -14874,6 +14884,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/components/BrandLoader.tsx",
+      "to": "module:client/src/foundation/KliegWordmark.tsx",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/components/design-system/Button.tsx",
       "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
@@ -16036,6 +16051,11 @@
     {
       "from": "module:client/src/features/boards/BoardHeader.tsx",
       "to": "module:client/src/features/profile/ProfileVisual.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/BoardHeader.tsx",
+      "to": "module:client/src/foundation/KliegWordmark.tsx",
       "kind": "imports"
     },
     {
