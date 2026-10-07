@@ -1,7 +1,7 @@
 {
-  "edition": 642,
-  "updatedAt": "2026-10-04T04:30:00.000Z",
-  "shift": "Tonight was our own machinery again. Nothing a customer can see changed, and your pricing work is untouched.\n\nOne of the checks that has to pass before any work can be merged was failing for reasons that had nothing to do with the work it was checking. It stopped a pull request yesterday, somebody re-ran it, and it passed — which is the kind of fault that wastes a shift's time without ever looking like a fault.\n\nWhat the previous shift's card did not know is how often it happens. I ran the check twenty times on an ordinary idle machine and it failed three of them. So this was not a one-off on a busy build server: it is roughly one in seven, and the check our agents are told to run before they push runs it too. They have been getting false alarms before the build ever sees their work.\n\nIt is worth saying why this sat there so long, because the number behind it was not careless. The check was asking whether a change on screen appears within a tenth of a second. That is the right target for a real button in the studio, and we hold the app to it. The mistake was using it on a single stopwatch reading on a shared machine, where a brief hiccup is ordinary. Where we judge the app against that same tenth of a second, we judge it across many readings, so the odd hiccup cannot fail it — and that version has never misfired.\n\nSo the check now asks the question it actually cares about, which is whether it can still tell a fast change from a slow one. It compares the two against each other instead of against a stopwatch. The thing it exists to catch still fails it: I deliberately broke it four different ways and each break was caught by exactly the right test. Then I ran the real check twenty more times — no false alarms, and one of those runs hiccuped exactly as before and read it correctly.\n\nOne more thing came out of it, and I have filed it rather than built it. The card I fixed tonight had been filed without a work label, and in that state a card is invisible — it does not appear under any of your background switches, and it is not on your ordered list either. No agent could have been offered it. I only found it by sorting all forty-one open cards by hand. The card I have filed asks for the shift's own checklist to name a card in that state rather than guess a label for it.\n\nYour board is otherwise where last night left it: all ten cards on your ordered list are waiting on you, on Yuna's pass on the pricing wording, on a shared-workspace feature nobody has built yet, or on your eye on two strips already sitting on this page.",
+  "edition": 643,
+  "updatedAt": "2026-10-07T09:40:00.000Z",
+  "shift": "Your one-word answer is built, and a security hole that was quietly stopping ALL work is fixed and live.\n\nYou said YES on the bandaged skull. So the close-up line moved out past it — that picture, and every close-up you own, now arrives without the Unchecked label. It is the second time your eye has moved that line and the first time it clears all ten of your own close-ups. It is written, tested and waiting on a review because it touches a charging path; I do not merge those myself.\n\nOn the way to pushing it I ran the pre-flight check and it refused. Not my change: a known, published, CRITICAL security hole in somebody else's code that we ship, sitting in the tree with no decision written about it. The gate you ordered on 3 October was correctly refusing EVERY pull request in the repository because of it. Nobody had filed it. Fixed, merged, and live on the site — I read the build back off the server rather than trusting a green tick.\n\nThen the uncomfortable part. That same check PASSED on the robot what it refuses on my machine — same commit, same files, same script, both reading 477 packages. The hole is gone so nothing is at risk today, but an alarm that can say all-clear when it should not is worse than no alarm, because we would believe it. I do not know why yet and I have not guessed. It is on your Problems list.\n\nYour other two replies are recorded and acted on: the Pro Plus rename is its own card exactly as you asked, so it cannot hold up the slider; and your ruling that the measurement, not the checker's opinion, decides framing is written on its card word for word, with the wrong label named as the thing to fix.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -272,11 +272,11 @@
   "needsYou": [
     {
       "id": "closeup-line-card-1837",
-      "title": "Is this bandaged skull a close-up? One word, and card 1837 closes",
-      "state": "open",
+      "title": "Answered — your YES moved the close-up line, and it is in review",
+      "state": "answered",
       "filedAt": "2026-10-03T19:30:00.000Z",
       "issueNumber": 1837,
-      "productImpact": "You told me a close-up was a close-up and the studio disagreed. The line moved on your word, from 0.3 to 0.7, and it has been live since yesterday morning. That part is done.\n\nWhat I owed you was the picture showing where the new line falls across your own frames. It is in the eye section below.\n\nDrawing it turned up one thing the card did not know. The line was chosen from six of your close-ups. You have ten. Three of the four nobody had looked at sit comfortably inside it. The fourth — Hingu, the bandaged skull — sits just outside, so the studio hands that picture over marked unchecked with a free retry, as though the crop were wrong.\n\nTo my eye the crop is fine: it is a head and the top of the shoulders. But this is your call, not mine, and I deliberately changed nothing.\n\nNothing is at risk either way. The strictest this line can ever do is give you the picture with a free retry beside it.",
+      "productImpact": "You said YES: the bandaged skull is a close-up. So the line moved out past it, and all ten of the close-ups you own now arrive without the Unchecked label — it turned one of them away before. Nothing is needed from you; it is waiting on a review because it touches a charging path.",
       "workedExample": "Sign a creature today and ask for the close-up. If it comes back framed like Hingu — head and the top of the shoulders — you get the picture, but with Unchecked and a free retry under it, as though something were wrong with it.\n\nSay yes below and that picture arrives clean, with nothing under it.",
       "options": [
         {
@@ -294,8 +294,8 @@
     },
     {
       "id": "law9-sign-card-1612",
-      "title": "Does this signed cast look right? It is the first one under the new picture rule",
-      "productImpact": "You ruled on 30 September that our picture checker was too strict and was binning good pictures. The fix went live on 2 October, and until tonight nobody had signed a cast since the day before it shipped — so there was nothing to show you.\n\nI signed one tonight. Five pictures of a weathered fisherman. Two of the five came back with the checker unhappy, and your rule is why you still have them: they arrived marked unchecked with a free retry instead of being thrown away and refunded.\n\nI looked at both. One complaint is fair — the three-quarter view has his head turned the wrong way. One is wrong — the close-up was marked as cropped too tight when it plainly is not. That mistake costs a label on a picture you keep, never a picture.\n\nIt cost about a dollar forty of our money and none of yours. I ran it on the test copy rather than your account, because signing on yours would have left you 158 credits — not enough to roll one sheet.",
+      "title": "Answered — the five views passed your eye, and the wrong label is now a named fix",
+      "productImpact": "You said they look right, and that the measurement should decide framing rather than the checker’s opinion. Both are written on the card word for word. The wrong Unchecked label on the close-up is the fix that follows, and it is not started.",
       "workedExample": "The close-up is the one worth ten seconds. Our measurement says there is plenty of room below his chin and passes it. The checker's sentence says the crop cuts off below the mouth with no margin. They disagree, the sentence wins, and the picture gets a label it does not deserve — but you keep the picture. That is the trade your ruling bought, and this is the first time anyone has seen it happen.",
       "options": [
         {
@@ -315,7 +315,7 @@
         }
       ],
       "recommendation": "Close it. The rule did exactly what you asked — nothing was thrown away, and the one wrong label costs a word on a picture you still have.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-10-03T17:30:00.000Z",
       "issueNumber": 1612
     },
@@ -3546,8 +3546,8 @@
     },
     {
       "id": "studio-slider-price-1832",
-      "title": "One thing to set up in Stripe, and your new pricing screen is finished",
-      "productImpact": "The three new plan cards are live and you have seen them. The only part of the pricing screen still missing is the credit slider on the Studio card — the one that lets somebody buy extra credits a month instead of jumping to a bigger plan.\n\nIt cannot be built until a price for it exists inside Stripe, and that is not something an agent here can create. I read your Stripe catalogue tonight to be sure rather than assuming: twenty-three prices, and nothing that would charge for a slider step.\n\nThere are two to set up, not one. The design gave a monthly figure — $9 for each extra 5,000 credits a month, which you approved. But the pricing screen also has a Yearly switch, and nobody had worked out what the slider does there. If we only set up the monthly one, a customer on yearly billing can drag a slider that has no price behind it.\n\nThe yearly figure is $90, and I did not pick it. It comes out of the same two-months-free arithmetic the rest of your plans use — the same calculation reproduces Studio's real yearly price and Pro's to the exact cent, so $90 is the figure that keeps the slider agreeing with the badge next to it.\n\nOnce they exist, an agent can finish the slider with no further word from you.",
+      "title": "Answered — you are setting up both prices, and the rename is its own card",
+      "productImpact": "You said set up both and that you would run the command. So the slider is waiting only on your keystrokes now, not on a decision. Your Pro Plus rename is filed separately, as you asked, so it cannot hold the slider up.",
       "workedExample": "Today a customer on Studio who wants more credits has to look at a plan five times the size, or buy one-off top-up packs at worse value. The slider is the answer to that, and it is the one piece of your approved design still missing.\n\nWhat you would be setting up: two prices on the existing Klieg Studio product, each charged per step with a quantity — exactly the way the three top-up prices already work, so this is a road your Stripe account has walked before.\n\n  $9.00 a month per 5,000 credits, recurring monthly\n  $90.00 a year per 5,000 credits, recurring yearly\n\nThe exact lookup names are on card 1832 so the code asks for the right thing.",
       "options": [
         {
@@ -3567,7 +3567,7 @@
         }
       ],
       "recommendation": "Set up both. It is one sitting in Stripe and it is the only thing standing between you and a finished pricing screen — and doing the yearly one now avoids asking you back for it next week, which is the mistake we made with the top-up prices.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-10-04T00:00:26.000Z",
       "issueNumber": 1832
     }
@@ -3577,7 +3577,7 @@
       "id": "closeup-line-1837",
       "title": "Where the close-up line now sits — seven of your own, in order, and one picture it turns away",
       "question": "WHAT YOU ARE LOOKING AT — seven pictures you own, lined up by how much picture hangs below the face. Tight crops on the left, loose on the right. The black line is where the studio now draws the boundary: everything left of it is kept as a close-up and nothing is said; everything right of it is handed to you marked unchecked with a free retry.\n\nThe two with a star are the ones you already judged. You said both read as close-ups, and that is why the line moved out to where it is.\n\nTHE ONE THING I WANT YOUR EYE ON is the picture immediately right of the line — Hingu, the bandaged skull. It is a head and the top of the shoulders. The line turns it away.\n\nThat picture is here because it was never looked at when the line was chosen. We set the number from six of your close-ups; you actually have ten. Three of the missing four are well inside the line. This is the fourth, and it is the only one in the whole set that the line and I disagree about.\n\nSO: is Hingu a close-up?\n\nIf YES — the line moves out past it, the same way it moved for you last time, and that picture stops being flagged.\nIf NO — the line stays exactly where it is, and we have learned that the gap it sits in is real rather than assumed.\n\nEither answer is useful and neither is wrong. Nothing here ever throws a picture away — the worst the line can do is hand you the picture with a free retry beside it.\n\nOne word closes the card.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-10-03T19:30:00.000Z",
       "issueNumber": 1837,
       "frames": [
@@ -3593,7 +3593,7 @@
       "id": "law9-sign-1612",
       "title": "The first cast signed under the new picture rule — and two of the five are marked unchecked",
       "question": "This is a whole cast signed under the rule you approved on 30 September, start to finish. Five pictures, one man.\n\nRead the labels under them. Three say delivered. Two say delivered, unchecked, free retry — those are the two the checker was unhappy with, and the whole point of your ruling is that you still get them instead of losing them.\n\nWhat I would like your eye on, in order:\n\n1. Is this the same man in all five? Same face, same jacket, same weather.\n\n2. The full front — he should be head to toe with room above the hair and below the boots. He is, to my eye. This is the view that lost its feet twice in last night's cost test, so it matters that today's road gets it right.\n\n3. The two marked unchecked. The three-quarter has his head turned the wrong way, which is a fair complaint. The close-up was marked for being cropped too tight and I think that is simply wrong — he has room below the chin. If you agree, the rule is still doing its job: you kept the picture, you only got a label you can ignore.\n\nIf the five look right, say so and the card closes.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-10-03T17:30:00.000Z",
       "issueNumber": 1612,
       "frames": [
@@ -9631,9 +9631,30 @@
       "status": "merged",
       "prNumber": 1878,
       "note": "Our own machinery. The noisy design was measured against every note on record and thrown away."
+    },
+    {
+      "id": "advisory-proxy-addr-1894",
+      "title": "A published CRITICAL security hole in code we ship was blocking every pull request, and nobody had filed it (#1894)",
+      "status": "merged",
+      "prNumber": 1897,
+      "note": "Live on the site, build read back off the server at 11 seconds uptime rather than trusting a 200."
+    },
+    {
+      "id": "closeup-line-yes-1837",
+      "title": "Your YES moved the close-up line, so none of your own close-ups is flagged any more (#1837)",
+      "status": "in-review",
+      "prNumber": 1898,
+      "note": "Held for review on purpose — it touches a charging path, so a shift does not merge it."
     }
   ],
   "problems": [
+    {
+      "id": "advisory-gate-blind-1899",
+      "severity": "warning",
+      "state": "open",
+      "title": "The check that stops known security holes reaching customers passed one on the robot that it refuses on my machine (#1899)",
+      "detail": "Same commit, same files, same script, both reading 477 packages: the robot said \"none blocking\" and my machine named a CRITICAL hole. That hole is now fixed and live, so nothing is at risk today — what is broken is the alarm. An alarm that can say all-clear when it should not is worse than none, because a green tick gets believed. Cause unknown and deliberately not guessed at; both readings are quoted on the card. Found only because the two answers happened to disagree in front of me."
+    },
     {
       "id": "latency-control-jitter-1885",
       "severity": "warning",
@@ -9999,7 +10020,11 @@
     256,
     257,
     258,
-    259
+    259,
+    260,
+    261,
+    262,
+    263
   ],
   "nextUp": {
     "readAt": "2026-10-04T02:16:53.880Z",
