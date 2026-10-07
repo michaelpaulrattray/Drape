@@ -1242,7 +1242,7 @@ export const billingRouter = router({
       /* The whole allowance the dial now buys, said once rather than three
          times — a delta ("+50,000") is arithmetic the customer has to do
          against a figure they cannot see from here. */
-      const dialAllowance = formatCredits(
+      const dialMonthlyFigure = formatCredits(
         displayBalance(
           monthlyLedgerCreditsFor(input.newPlan as PlanTier, quote.targetCreditUnits),
         ),
@@ -1251,9 +1251,9 @@ export const billingRouter = router({
         dialOnly
           ? sliderLedgerDelta > 0
             ? creditSettlement === "pending"
-              ? `${planName} now comes with ${dialAllowance} credits a month. The extra credits for the rest of this month land as soon as the payment settles.`
-              : `${planName} now comes with ${dialAllowance} credits a month, and the extra credits for the rest of this month are already on your balance.`
-            : `${planName} now comes with ${dialAllowance} credits a month. Unused time on the credits you dropped comes back as billing credit.`
+              ? `${planName} now comes with ${dialMonthlyFigure} credits a month. The extra credits for the rest of this month land as soon as the payment settles.`
+              : `${planName} now comes with ${dialMonthlyFigure} credits a month, and the extra credits for the rest of this month are already on your balance.`
+            : `${planName} now comes with ${dialMonthlyFigure} credits a month. Unused time on the credits you dropped comes back as billing credit.`
           : quote.kind === "interval-switch"
           ? quote.targetInterval === "annual"
             ? `You are on ${planName}, billed yearly — the new billing year starts today, and the full year of credits lands as soon as the payment settles, replacing what was left of your old cycle's allowance.`

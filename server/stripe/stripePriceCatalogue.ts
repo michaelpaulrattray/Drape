@@ -98,6 +98,29 @@ export const PRICE_LOOKUP_KEY_VERSION = "v2";
 export const PRICE_UNAVAILABLE_SENTENCE =
   "We could not price that plan just now, so nothing was changed and nothing was charged. This one is on us — please try again shortly.";
 
+/**
+ * The middle segment of the slider add-on's two lookup keys, which his own hand
+ * created (#1832): `klieg_<plan>_⟨this⟩_<interval>_v2`.
+ *
+ * ⚠ **IT IS A CONSTANT RATHER THAN A WORD IN THE TEMPLATE, AND THAT IS A
+ * FALSE-INDICTMENT REPAIR WITH A PRECEDENT TWO FUNCTIONS DOWN.**
+ * `server/creditDisplayGuard.test.ts`'s rule 2 indicts a name from its
+ * vocabulary (`price`, here `PRICE_LOOKUP_KEY_VERSION`) standing inside text
+ * that says *credits* — and in the template it did, so the composed key read as
+ * a ledger figure reaching a customer. It is nothing of the sort: the value is
+ * the string `v2`, and the whole expression is a catalogue key that never
+ * leaves the server.
+ *
+ * `resolveTopupPriceId`'s refusal sentence took the same repair for the same
+ * stated reason — *"a false indictment is how a guard gets deleted instead of
+ * fixed, so the sentence is written out of its reach"* — and the census is not
+ * the answer here, because that list only shrinks and holds places a customer
+ * really reads a ledger number. **The word is load-bearing and cannot move: it
+ * is in the key he created.** So it moves one line up, where it says exactly
+ * what it did before and the guard can tell the difference.
+ */
+const ADD_ON_KEY_SEGMENT = "credits";
+
 /** ⚠ The product says `annual`; the catalogue says `yearly`. See the docblock. */
 const KEY_INTERVAL: Record<BillingIntervalChoice, "monthly" | "yearly"> = {
   monthly: "monthly",
@@ -235,7 +258,7 @@ export function planCreditsPriceLookupKey(
   plan: SubscriptionPlan,
   interval: BillingIntervalChoice,
 ): string {
-  return `klieg_${plan}_credits_${KEY_INTERVAL[interval]}_${PRICE_LOOKUP_KEY_VERSION}`;
+  return `klieg_${plan}_${ADD_ON_KEY_SEGMENT}_${KEY_INTERVAL[interval]}_${PRICE_LOOKUP_KEY_VERSION}`;
 }
 
 /**

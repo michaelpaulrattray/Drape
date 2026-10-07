@@ -2284,12 +2284,12 @@ function describeChange(
     && quote.targetCreditUnits !== undefined
     && quote.targetCreditUnits !== quote.currentCreditUnits;
   if (dialMoved && dialAllowanceLedger !== null) {
-    const allowance = formatCredits(displayBalance(dialAllowanceLedger));
+    const monthlyFigure = formatCredits(displayBalance(dialAllowanceLedger));
     if ((quote.targetCreditUnits ?? 0) > (quote.currentCreditUnits ?? 0)) {
       return (
         `About ${formatDollars(quote.immediateCharge)} is due today — the extra credits for the ` +
         `${quote.daysRemaining} ${quote.daysRemaining === 1 ? "day" : "days"} left in this cycle. ` +
-        `${plan.name} then comes with ${allowance} credits a month` +
+        `${plan.name} then comes with ${monthlyFigure} credits a month` +
         (quote.creditAdjustment > 0
           ? `, and ${formatCredits(displayBalance(quote.creditAdjustment))} credits land on your balance the moment it goes through.`
           : ".")
@@ -2298,7 +2298,7 @@ function describeChange(
     return (
       `Nothing to pay today — about ${formatDollars(quote.creditBalance)} of unused time on the ` +
       `credits you dropped becomes credit toward your future bills, and the unused credits go ` +
-      `back with it. ${plan.name} comes with ${allowance} credits a month from now.`
+      `back with it. ${plan.name} comes with ${monthlyFigure} credits a month from now.`
     );
   }
   if (quote.kind === "interval-switch") {
