@@ -1,7 +1,7 @@
 {
-  "edition": 650,
-  "updatedAt": "2026-10-07T19:50:00.000Z",
-  "shift": "The plan you called Studio is called Pro Plus now, everywhere a customer sees it on our side. That is built and waiting on review, and there is one step left that only you can do.\n\nYou asked for this as its own card so it would not hold up the slider, and you asked two sensible questions first: how many places is the name actually typed, and which of the six surfaces are ours versus Stripe's. The answers turned out to be the whole job.\n\nThe name is typed in exactly ONE place in the entire product. Every screen reads it from there. So the change is one word, and the rest of the work was proving that sentence is true and leaving a test behind so it stays true the next time a plan gets renamed. I opened the app and looked at it in both the light and the dark theme: the plan cards and the compare table say Pro Plus, the word Studio appears nowhere, and the price, the credits, the description and the feature lines are all exactly where they were. $159 a month, $132 billed yearly, 86,000 credits.\n\nThe step that is yours is Stripe. Our code deliberately sends Stripe no product text at all — Stripe's own product carries the name, and that is what gets printed on the checkout page, on the invoice line, and in the emails Stripe sends. So three of the six surfaces you listed still say Studio until the product is renamed in your dashboard. It is one rename on one product, after the change goes live. It is on your desk with the exact step.\n\nTwo small things fell out of it. Your rename is five days younger than the Pricing Phase 2 brief, so the prototype page you are about to judge still had Studio baked into it — a test caught that, and it says Pro Plus now, which means the design you look at will match the product. And two of our own money tests looked Stripe's yearly prices up by the plan's NAME, so renaming it moved a lookup key. Both are built to go red rather than quietly skip, and both moved correctly, but keying money figures on a name you can rename is a trap, so I filed it rather than rebuilding it inside a rename.",
+  "edition": 651,
+  "updatedAt": "2026-10-07T21:10:00.000Z",
+  "shift": "The credit dial on your top plan is finished and waiting on its hand review. The review had caught one real fault in it, and tonight that fault is fixed.\n\nHere is the fault in plain terms. When a renewal payment came in, we worked out how many extra credits to hand over by looking at where the dial sits right now — not at what the bill had actually charged. Those are usually the same thing. They are not always. If someone pays while the dial is at the bottom and then slides it up before our server has finished dealing with the payment, we would have given them a whole extra month of credits that no bill ever charged for. That gap is not seconds: Stripe can take up to three days to re-send a payment message. And because this plan lets you keep your balance when it renews, nothing would ever have taken those credits back. The mistake runs the other way too — slide the dial down after paying and you would have got the plan's basic credits only, having paid for more.\n\nIt reads the bill itself now. The bill is the thing that charged, so the bill is what we pay out against, and we no longer ask the dial at all when the bill can answer.\n\nOne thing in the review's own instructions would have left half the fault sitting there, and I want to be straight with you that I did it differently. The instruction said to fall back on reading the dial whenever the bill carries no credit line. But a bill for someone at the bottom of the dial carries no credit line — that is exactly what the bottom of the dial looks like — so falling back there is the very case that was broken. So instead: no credit line, on a bill we could otherwise read in full, now means no extra credits at all. Only a bill we genuinely cannot read falls back to the dial, and if that fails too we refuse the message and let Stripe send it again rather than guess at someone's money. That departure is written out in full on the work for the reviewer to accept or reject — it is a two-character change either way.\n\nI broke the fix six different ways on purpose to check the tests would actually notice. Every one of them did, including one that restores the review's literal wording and fails on precisely the case above.\n\nThe same mistake exists one step over: we still work out the plan's own monthly credits from our own records rather than from the bill. I wrote that up as its own job rather than quietly bolting it onto a money change that is already under review. Nobody can hit it today — there are no paying subscribers yet.\n\nNothing merged tonight. This is a money change and those wait for a hand review, as you asked. Nothing needs you.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -18,8 +18,8 @@
           "state": "done"
         },
         {
-          "title": "Studio's credit slider at $9 for each extra 5,000 a month — built last, because it needs a price created inside Stripe by hand before anything on screen can be bought (#1832)",
-          "state": "waiting"
+          "title": "Studio's credit slider at $9 for each extra 5,000 a month — built, and waiting on its hand review (#1832)",
+          "state": "in-progress"
         },
         {
           "title": "Compare plans organised by what you make, with the cinema row marked coming (#1834)",
@@ -126,7 +126,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-07T19:40:58.295Z",
+      "readAt": "2026-10-07T21:05:24.364Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -6844,6 +6844,13 @@
   ],
   "pipeline": [
     {
+      "id": "slider-grant-invoice-1832",
+      "title": "The renewal credit grant reads the bill that was paid, not where the dial sits now (#1832)",
+      "status": "in-review",
+      "prNumber": 1910,
+      "note": "The hand review's one finding, repaired, with the branches brought back together in the same push."
+    },
+    {
       "id": "dead-engine-record-1785",
       "title": "Our list of known-bad engines names the canvas's second road, and a file address in it can no longer rot (#1785)",
       "status": "in-review",
@@ -6853,7 +6860,7 @@
     {
       "id": "pro-plus-rename-1900",
       "title": "The Studio plan is called Pro Plus (#1900)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1927,
       "note": "One word of product code; rendered in both themes. Waiting on the relay, then your Stripe rename."
     },
@@ -10157,7 +10164,7 @@
     263
   ],
   "nextUp": {
-    "readAt": "2026-10-07T19:40:58.295Z",
+    "readAt": "2026-10-07T21:05:24.364Z",
     "items": [
       {
         "issueNumber": 1903,
@@ -10231,7 +10238,7 @@
         "urgent": false,
         "held": {
           "state": "blocked",
-          "because": "YOU — the app half is built and in review. Stripe still calls the product Studio; that is your dashboard, 3 of your 6 surfaces. Rename it after PR #1927."
+          "because": "YOU — it is LIVE: our side says Pro Plus. Stripe still says Studio, and that is your dashboard: 3 of your 6 surfaces. Rename the product now."
         }
       }
     ]
