@@ -811,6 +811,20 @@
   font-variant-numeric: tabular-nums;
   color: var(--ink);
 }
+/* THE CREDIT SLIDER'S ROW (#1832) — the dial between the credits figure above
+   it and the characters line below it, which is the order the design's §3
+   draws and the order the three moving figures read in.
+
+   ⚠ **IT HAS ITS OWN ROW RATHER THAN SITTING INLINE**, and it carries a little
+   air above and below: the range input's thumb is 14px against the block's
+   5px gap, so without it the thumb's own shadowless circle crowded the
+   sentence under it. Only ONE card in the three has this row, so nothing here
+   may change the block's height for the other two — which is why it is
+   `padding` on the dial rather than a gap on `.dp-plan__block`. */
+.dp-plan__dial {
+  display: block;
+  padding: 3px 0 1px;
+}
 .dp-plan__rollover { font: 400 11px/1.5 var(--font-sans); color: var(--metaStrong); }
 .dp-plan__rollover--loss { color: var(--accentInk); }
 
@@ -1323,59 +1337,6 @@
   background: var(--raised);
 }
 
-/*
-  The range input is styled rather than replaced, so the keyboard and
-  the screen reader get the real control and we only change how it
-  looks. `appearance: none` on the track plus an explicit thumb in both
-  vendor spellings is the whole of it; `accent-color` alone would leave
-  the browser's blue on Chromium, which is the one colour this system
-  does not have.
-*/
-.dp-topup__range {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 18px;
-  margin: 0;
-  background: transparent;
-  cursor: pointer;
-}
-.dp-topup__range::-webkit-slider-runnable-track {
-  height: 2px;
-  border-radius: 1px;
-  background: var(--rule);
-}
-.dp-topup__range::-moz-range-track {
-  height: 2px;
-  border-radius: 1px;
-  background: var(--rule);
-}
-.dp-topup__range::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 14px;
-  height: 14px;
-  margin-top: -6px;
-  border: 0;
-  border-radius: 50%;
-  background: var(--ink);
-}
-.dp-topup__range::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
-  border: 0;
-  border-radius: 50%;
-  background: var(--ink);
-}
-/*
-  NO FOCUS RULE HERE, AND THAT IS DELIBERATE RATHER THAN AN OMISSION.
-  `tokens.css`'s root rule gives every focusable thing an accent outline, and
-  its text-entry carve-out names `[type="range"]` among the types that KEEP it
-  — a range is a control, not a text box. A reset here would be an outline
-  reset in a stylesheet `anchoredPanel.test.ts` reads, written to replace a
-  ring the system already draws correctly.
-*/
-
 .dp-topup__sliderline {
   display: flex;
   align-items: baseline;
@@ -1399,3 +1360,65 @@
 .dp-plan__card [class*="__pill"],
 .dp-topup__card [class*="__badge"],
 .dp-topup__card [class*="__pill"] { white-space: nowrap; }
+/*
+  The range input is styled rather than replaced, so the keyboard and
+  the screen reader get the real control and we only change how it
+  looks. `appearance: none` on the track plus an explicit thumb in both
+  vendor spellings is the whole of it; `accent-color` alone would leave
+  the browser's blue on Chromium, which is the one colour this system
+  does not have.
+
+  ⚠ **IT WAS `.dp-topup__range` AND IT IS NEUTRAL NOW, BECAUSE IT HAS A
+  SECOND REAL CONSUMER (#1832).** The plan credit slider is a range input in
+  this same system, and the promotion pass's rule is explicit about this shape:
+  two or more real consumers promotes, **rename on the way in, never after**. A
+  `.dp-plan__dialinput` carrying these same eight rules would be the copy that
+  drifts — one of the two would learn about a token change and the other would
+  not, which is working law 4 pointed at a stylesheet. The CONTAINERS stay
+  feature-named (`.dp-topup__slider`, `.dp-plan__dial`) because the layout
+  around the two genuinely differs; only the control's own look is one fact.
+*/
+.dp-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 18px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.dp-range::-webkit-slider-runnable-track {
+  height: 2px;
+  border-radius: 1px;
+  background: var(--rule);
+}
+.dp-range::-moz-range-track {
+  height: 2px;
+  border-radius: 1px;
+  background: var(--rule);
+}
+.dp-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -6px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ink);
+}
+.dp-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ink);
+}
+/*
+  NO FOCUS RULE HERE, AND THAT IS DELIBERATE RATHER THAN AN OMISSION.
+  `tokens.css`'s root rule gives every focusable thing an accent outline, and
+  its text-entry carve-out names `[type="range"]` among the types that KEEP it
+  — a range is a control, not a text box. A reset here would be an outline
+  reset in a stylesheet `anchoredPanel.test.ts` reads, written to replace a
+  ring the system already draws correctly.
+*/

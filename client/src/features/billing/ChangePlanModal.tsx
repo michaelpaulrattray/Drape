@@ -120,6 +120,7 @@ import { ConfirmDialog } from "@/foundation";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import "@/features/settings/settings.css";
 import {
+  creditStepsPriceAMonth,
   formatDollars,
   formatShortDate,
   formatWholeDollars,
@@ -128,6 +129,7 @@ import {
   readBurn,
   readCycle,
 } from "@/features/settings/planMath";
+import { planCreditSliderLedgerCredits } from "@shared/planCreditSlider";
 import {
   charactersFor,
   charactersPhrase,
@@ -318,10 +320,75 @@ export function ChangePlanModal({
      is charged (card 390 item 2), and since #664 the charge is immediate, so
      no plan change fires without its figure being read first. */
   const [confirming, setConfirming] = useState<LadderPlan | null>(null);
+  /*
+    THE CREDIT SLIDER'S THUMB (#1832) — `null` until the customer moves it, so
+    the dial opens where their account already sits rather than where a
+    constant put it. The same `null` idiom the interval toggle above uses, and
+    for the same reason: a default that pre-decides a money question is a lie
+    for the beat before the account's own facts arrive.
+  */
+  const [sliderChoice, setSliderChoice] = useState<number | null>(null);
 
   const { data: plans } = trpc.billing.getPlans.useQuery();
   const { data: status, refetch: refetchStatus } = trpc.billing.getStatus.useQuery();
   const utils = trpc.useUtils();
+
+  /*
+    THE SLIDER'S SPEC, OFF THE WIRE — which card carries the dial and how far
+    it goes (#1832). `null` while the catalogue is unread; `maxUnits === 0`
+    means this product has no dial and nothing draws one.
+
+    ⚠ **NOT A CONSTANT ON THIS SIDE.** Both facts are derived from `PLAN_TIERS`
+    on the server (`server/stripe/planCreditSlider.ts`) for `selfServeOrder`'s
+    own reason — a client that decided for itself which card was "the biggest
+    one" would be a second copy of the ladder on the surface where a
+    disagreement is a price in front of a customer.
+  */
+  const sliderSpec = plans?.creditSlider ?? null;
+  const sliderOffered = (sliderSpec?.maxUnits ?? 0) > 0;
+
+  /*
+    WHERE THE DIAL ALREADY SITS — read off the subscription, because that is
+    what bills (#1832). `undefined` while in flight; `units: null` is the
+    server saying it could not read the subscription, which is NOT zero.
+
+    Its own procedure rather than a field on `getStatus`, because the read
+    costs a Stripe round trip and `getStatus` is fetched by every signed-in
+    surface — the server's note on `getPlanCreditUnits` carries why, including
+    that a rung with no dial skips the Stripe call entirely.
+  */
+  const { data: sliderPosition } = trpc.billing.getPlanCreditUnits.useQuery(undefined, {
+    enabled: sliderOffered,
+  });
+
+  /*
+    THE DIAL'S POSITION, IN ONE EXPRESSION — the customer's own drag if they
+    have made one, otherwise where their account sits (#1832).
+
+    ⚠ **`null` MEANS UNREAD AND THE DIAL DECLINES TO DRAW** (#1703's family,
+    and this card's own done-when: *no 0, no default pressed*). Three states
+    collapse onto two here on purpose: untouched-and-unread declines, and
+    untouched-and-read opens at the account's real position — which for an
+    account with no subscription is 0, because a fresh checkout genuinely
+    starts at the bottom and the server says so rather than this line
+    assuming it.
+
+    ⚠ **Declared HERE, above the plan-change quote, because the quote reads
+    it** — the dial being bought is part of what the customer is quoted, so
+    these three cannot sit further down beside the cards that draw them.
+  */
+  const sliderUnits: number | null =
+    sliderChoice ?? (sliderPosition === undefined ? null : sliderPosition.units);
+
+  /* The dial is on ONE card, named by the server, and only once its position
+     is known — so it never flashes at the bottom and then jumps. */
+  const sliderOn = (plan: LadderPlan): boolean =>
+    sliderOffered && sliderSpec !== null && plan.id === sliderSpec.planId && sliderUnits !== null;
+
+  /* What the dial adds to that card, at the position it is at. 0 everywhere
+     else, so every expression below reads one function and no card needs to
+     know whether it is the one with the slider. */
+  const sliderStepsOn = (plan: LadderPlan): number => (sliderOn(plan) ? (sliderUnits ?? 0) : 0);
 
   const billedInterval: Interval | null =
     status?.billingInterval === "year"
@@ -380,6 +447,11 @@ export function ChangePlanModal({
       setConfirming(null);
       void refetchStatus();
       void utils.credits.getBalance.invalidate();
+      /* The dial's position is now a different fact at Stripe (#1832) — and
+         `sliderChoice` is dropped with it, so a re-open reads the account
+         rather than remembering a drag that has already been bought. */
+      setSliderChoice(null);
+      void utils.billing.getPlanCreditUnits.invalidate();
       onClose();
     },
     onError: (error) => {
@@ -432,6 +504,15 @@ export function ChangePlanModal({
     {
       newPlan: (confirming?.id ?? null) as never,
       interval: interval === "annual" ? "annual" : "monthly",
+      /* ⚠ THE DIAL BEING BOUGHT, AND IT IS SENT AS A REAL NUMBER OR NOT AT
+         ALL (#1832). The server reads an absent `creditUnits` as *keep the
+         dial where it is*, which is what makes a plain interval switch leave
+         it alone; sending 0 for an unread dial would quote handing back
+         credits the customer is paying for. `sliderOn` is false while the
+         position is unread, so `sliderStepsOn` would answer 0 — hence the
+         explicit `undefined` rather than leaning on it. */
+      creditUnits:
+        confirming !== null && sliderOn(confirming) ? sliderStepsOn(confirming) : undefined,
     },
     {
       /* ⚠ `interval !== null` is implied today — `confirming` is set by a press
@@ -661,6 +742,28 @@ export function ChangePlanModal({
   */
   const cards = useMemo(() => ladder.filter((plan) => plan.priceInCents > 0), [ladder]);
 
+  const creditsWithSlider = (plan: LadderPlan): number =>
+    plan.credits + planCreditSliderLedgerCredits(sliderStepsOn(plan));
+
+  /*
+    THE TOP OF THE DIAL, for the compare table's footnote clause (#1832) — the
+    dial's rung at every step, in ledger credits, `null` when there is no dial.
+
+    ⚠ **IT DOES NOT DEPEND ON THE THUMB'S POSITION.** The footnote states what
+    the plan CAN reach, which is a fact about the ladder; reading it off
+    `sliderUnits` would make a sentence in one view move when somebody dragged
+    a control in another.
+  */
+  const sliderCeilingCredits: number | null =
+    !sliderOffered || sliderSpec === null
+      ? null
+      : (() => {
+          const rung = ladder.find((plan) => plan.id === sliderSpec.planId);
+          return rung === undefined
+            ? null
+            : rung.credits + planCreditSliderLedgerCredits(sliderSpec.maxUnits);
+        })();
+
   /*
     ⚠ **EVERY PRICE ON THIS SURFACE IS A MONTH'S PRICE, IN BOTH INTERVALS**
     (card 390 item 2). The annual toggle used to swap `$159 / month` for
@@ -677,8 +780,26 @@ export function ChangePlanModal({
     on a null cycle outright. The same holds for `switchBillingLabel` and for
     the cards' own `billed yearly` line. **A null never reaches a price**; what
     it would mean if one ever did is written here rather than discovered.
+
+    ⚠ **AND THE CREDIT SLIDER'S STEPS ARE IN IT (#1832).** The dial moves the
+    price at the top of its card — the design's §3: *"What moves when the thumb
+    moves: the price at the top, the credits figure directly above the slider,
+    and the 'about N finished characters' line directly below it."* The steps
+    go through `creditStepsPriceAMonth`, which lives in `planMath` beside this
+    one rather than as a second annual expression on this surface (card 390's
+    arm forbids one here); its own docblock carries why it cannot route through
+    `monthlyEquivalent`, and the reason is a measured dollar rather than a
+    taste. `sliderStepsOn` answers 0 for every other card, so the two other
+    cards' prices are the expression they always were.
+
+    ⚠ **THE COMPARE TABLE'S `priceOf` IS DELIBERATELY NOT THIS ONE.** Its
+    `Price a month` row is the PLAN's price, like-for-like across four columns;
+    a column whose figure moved under a dial on another view is not a
+    comparison. The slider's reach into that view is the footnote's clause.
   */
-  const priceOf = (plan: LadderPlan) => priceAMonth(plan.priceInCents, interval === "annual");
+  const priceOf = (plan: LadderPlan) =>
+    priceAMonth(plan.priceInCents, interval === "annual")
+    + creditStepsPriceAMonth(sliderStepsOn(plan), interval === "annual");
 
   /*
     ⚠ **THE INTERVAL RIDES THE MUTATION** — the whole card (#664). A press on
@@ -698,9 +819,25 @@ export function ChangePlanModal({
        from an unread status — a yearly subscriber billed monthly by accident is
        the one mistake on this surface that cannot be taken back with a click. */
     if (interval === null) return;
+    /* ⚠ #1832: and the DIAL beside them, for the same reason again. The card
+       with the slider draws no button until its position is known (`sliderOn`
+       gates the dial, and `cannotArrange` already gates the cards), so this is
+       the value behind a closed door said correctly rather than a branch
+       anybody reaches — and a checkout minted at the bottom of a dial the
+       customer had set higher is a purchase they did not ask for. */
+    if (sliderOffered && sliderSpec !== null && plan.id === sliderSpec.planId && sliderUnits === null) {
+      return;
+    }
     if (!hasSubscription) {
       setPending(plan.id);
-      checkout.mutate({ plan: plan.id as never, interval });
+      checkout.mutate({
+        plan: plan.id as never,
+        interval,
+        /* The dial's steps, 0 on every card but its own (#1832). The server
+           refuses a count the rung does not sell, and refuses it again at the
+           price resolver. */
+        creditUnits: sliderStepsOn(plan),
+      });
       return;
     }
     setConfirming(plan);
@@ -1034,6 +1171,7 @@ export function ChangePlanModal({
             isUpgrade={isUpgrade}
             intervalDiffers={intervalDiffers}
             switchBillingLabel={switchBillingLabel}
+            sliderCeilingCredits={sliderCeilingCredits}
           />
         ) : cannotArrange ? (
           /*
@@ -1068,9 +1206,33 @@ export function ChangePlanModal({
               const isCurrent = plan.id === currentId;
               const isRecommended = plan.id === recommended?.id;
               const rollover = rolloverSentence(plan.rolloverPercent);
-              const example = exampleSentence(charactersFor(plan.credits, oneCharacterCredits));
+              /* ⚠ THE DIAL IS IN BOTH FIGURES (#1832). `creditsWithSlider`
+                 answers the plan's own credits on every card but the one with
+                 the slider, so the other two are the expressions they were. */
+              const planCredits = creditsWithSlider(plan);
+              const example = exampleSentence(charactersFor(planCredits, oneCharacterCredits));
               const blurb = blurbFor(plan.id);
               const stepUp = isUpgrade(plan);
+              const hasDial = sliderOn(plan);
+              /*
+                ⚠ **HAS THE DIAL ACTUALLY MOVED — because the card a customer
+                is ALREADY ON draws no button, and a dial with no button is a
+                control that does nothing (#1832).**
+
+                The three branches below were *switch the cycle* / *Current* /
+                *Upgrade or Downgrade*, and the slider adds a fourth thing a
+                customer can change on the plan they already hold. Without
+                this, somebody on the slider's rung could drag the thumb,
+                watch the price and the credits move, and find no way to buy
+                it — the machinery showing through at the one place on this
+                surface that costs money.
+
+                It compares against the SERVED position, not against zero: the
+                question is *is this different from what you are paying for*,
+                and `sliderPosition.units` is the subscription's own quantity.
+                While that is unread `hasDial` is already false.
+              */
+              const dialMoved = hasDial && sliderUnits !== (sliderPosition?.units ?? null);
               return (
                 <article
                   key={plan.id}
@@ -1144,6 +1306,36 @@ export function ChangePlanModal({
                     >
                       {pending === plan.id ? "Working…" : switchBillingLabel}
                     </Button>
+                  ) : isCurrent && dialMoved ? (
+                    /*
+                      THE DIAL'S OWN ACTION ON THE PLAN THE CUSTOMER ALREADY
+                      HOLDS (#1832). Without it the slider is a control that
+                      does nothing: this card draws `Current` and no button,
+                      so somebody on the dial's rung could drag the thumb,
+                      watch the price and the credits move, and find no way to
+                      buy it — the machinery showing through at the one place
+                      on this surface that costs money.
+
+                      ⚠ **IT SITS BELOW THE CYCLE'S BRANCH, AND THE ORDER IS
+                      THE PRECEDENCE.** When the cycle AND the dial have both
+                      moved, one press changes both — `updateSubscriptionPlan`
+                      moves the two subscription items in one update, one
+                      proration, one invoice — and the confirm step's figure is
+                      the quote for all of it. So the bigger change names the
+                      button, and the branch order says so without a nested
+                      conditional inside the label.
+
+                      ⚠ **THE LABEL SAYS `monthly`** so it cannot be read as
+                      the one-off Add credits road, which sits in this same
+                      pane's footer and sells packs rather than an allowance.
+                    */
+                    <Button
+                      variant="secondary"
+                      disabled={pending === plan.id}
+                      onClick={() => act(plan)}
+                    >
+                      {pending === plan.id ? "Working…" : "Update monthly credits"}
+                    </Button>
                   ) : isCurrent ? (
                     /*
                       ⚠ **`Current`, NOT `ON THIS ONE`, AND IT IS NO LONGER A
@@ -1214,10 +1406,61 @@ export function ChangePlanModal({
                     */}
                     <span className="dp-plan__credits">
                       <span className="dp-plan__creditsfigure">
-                        {formatCredits(displayBalance(plan.credits))}
+                        {formatCredits(displayBalance(planCredits))}
                       </span>{" "}
                       {creditsTail(plan.priceInCents)}
                     </span>
+                    {/*
+                      THE CREDIT SLIDER (#1832, his approved brief #1774 §5 —
+                      *"3 individual plans the biggest one has a slider for
+                      credits"*, at his $9 for each extra 5,000 a month).
+
+                      ⚠ **IT SITS BELOW THE ACTION, INSIDE THE CREDITS BLOCK,
+                      AND THAT POSITION WAS DECIDED BY LOOKING** (the design's
+                      §3, working law 6 on the prototype): put above the
+                      action, it pushed this card's button out of line with
+                      the other two, and the grid is `auto-fill` rather than a
+                      flex row precisely so the three read like-for-like.
+
+                      ⚠ **IT IS A REAL `<input type="range">`.** The native
+                      control is the one a keyboard, a screen reader and a
+                      touch drag all already know, and this surface has no
+                      business re-implementing one — Add credits' slider is
+                      the same element, which is the design's answer to *what
+                      must the customer learn*: they have met this control
+                      before, at the same step, with the same readout shape.
+
+                      ⚠ **NO STEP COUNT IS ON SCREEN.** The thumb's value is a
+                      number of 5,000-credit steps, which is the machinery's
+                      unit; what is drawn is the credits figure above it and
+                      the characters line below it, both already there and
+                      both already the customer's own words. A `34 steps`
+                      readout would be the disappearing-technology law's
+                      clause 6 — a number they have no basis to act on.
+                    */}
+                    {hasDial ? (
+                      <span className="dp-plan__dial">
+                        <input
+                          /* The system's one range style, promoted out of
+                             Add credits when this became its second real
+                             consumer — see the stylesheet's own note. */
+                          className="dp-range"
+                          type="range"
+                          min={0}
+                          max={sliderSpec?.maxUnits ?? 0}
+                          step={1}
+                          value={sliderUnits ?? 0}
+                          onChange={(event) =>
+                            setSliderChoice(Number(event.currentTarget.value))
+                          }
+                          aria-label="Extra credits a month"
+                          /* What the thumb MEANS, for a screen reader: the
+                             allowance, not the step count — the same figure
+                             the sighted customer reads above it. */
+                          aria-valuetext={`${formatCredits(displayBalance(planCredits))} credits a month`}
+                        />
+                      </span>
+                    ) : null}
                     {/*
                       LINE 4 — the worked example (#1607). It replaced *"About
                       N casting frames."*, which named the pipeline's unit for a
@@ -1460,7 +1703,14 @@ export function ChangePlanModal({
               ? `${confirming.name} — billed yearly`
               : `${confirming.name} — billed monthly`
           }
-          body={describeChange(confirming, changeQuote.data)}
+          body={describeChange(
+            confirming,
+            changeQuote.data,
+            /* The allowance the dial is being moved TO — the card's own figure,
+               so the sentence and the card cannot disagree (#1832). `null`
+               when this plan has no dial, which turns the branch off. */
+            sliderOn(confirming) ? creditsWithSlider(confirming) : null,
+          )}
           confirmLabel={
             changeQuote.data.immediateCharge > 0
               ? `Confirm · about ${formatDollars(changeQuote.data.immediateCharge)}`
@@ -1476,6 +1726,12 @@ export function ChangePlanModal({
             changePlan.mutate({
               newPlan: confirming.id as never,
               interval,
+              /* ⚠ THE SAME EXPRESSION THE QUOTE WAS TAKEN WITH (#1832) — and
+                 the server clamps and re-quotes it rather than trusting it,
+                 so the figure confirmed and the figure charged are one
+                 arithmetic. `undefined` is *keep the dial where it is*, which
+                 is what a plain cycle switch sends. */
+              creditUnits: sliderOn(confirming) ? sliderStepsOn(confirming) : undefined,
               clientRequestId: crypto.randomUUID(),
             });
           }}
@@ -1572,6 +1828,7 @@ function CompareGrid({
   isUpgrade,
   intervalDiffers,
   switchBillingLabel,
+  sliderCeilingCredits,
 }: {
   plans: LadderPlan[];
   /* `null` while the account's own rung is unread — #1747. Every `plan.id ===
@@ -1590,6 +1847,10 @@ function CompareGrid({
   isUpgrade: (plan: LadderPlan) => boolean | null;
   intervalDiffers: boolean;
   switchBillingLabel: string;
+  /* The credit slider's ceiling, for the footnote's own clause (#1832) —
+     `null` when there is no dial, and the clause is then absent rather than
+     quoting a control nobody can find. */
+  sliderCeilingCredits: number | null;
 }) {
   /* The same one expression the cards read — the head price and the `Price a
      month` row are two readings of ONE number and must not be computed twice
@@ -1938,19 +2199,35 @@ function CompareGrid({
         {interval === "annual" ? " Annual plans are charged once a year." : ""}
         {/*
           ⚠ **AND IT POINTS AT THE RUNGS THAT HAVE NO COLUMN — the design's §4,
-          MINUS ONE CLAUSE THAT WOULD HAVE BEEN FALSE TODAY.** The brief's
-          footnote names the Studio slider's ceiling beside this sentence; the
-          slider is NOT in this commit (#1832's own remaining half — it needs a
-          Stripe price, which is his keystrokes rather than a shift's), so
-          quoting a control a customer cannot find would be the stale-figure
-          class with his approval attached to it. #1607's rule: re-derive every
-          string against present capability before shipping. The slider's clause
-          lands with the slider.
+          AND THE SLIDER'S CLAUSE HAS LANDED WITH THE SLIDER (#1832).**
+
+          This block carried a note saying the brief's clause about the dial's
+          ceiling was deliberately HELD BACK, because quoting a control nobody
+          could find would be the stale-figure class with his approval attached
+          to it (#1607's rule: re-derive every string against present
+          capability before shipping). The dial exists now, so the sentence is
+          owed and is here — and `plansRedesign1832-guard`'s arm that held the
+          absence is the arm that now holds the presence.
+
+          ⚠ **THE CEILING IS A DERIVED CREDITS FIGURE, NEVER A TYPED ONE.** It
+          is the top of the dial on the card next door — base plus every step —
+          computed from the served spec, so a price move or a rung added above
+          moves it without anybody editing a sentence. `null` means there is no
+          dial and the clause is simply absent.
 
           The plan it names is the top of the drawn ladder, read off the
           population — not the word "Studio", which would go stale the day he
-          adds a rung above it.
+          adds a rung above it, and which his own rename makes a live question
+          this week (#1900).
         */}
+        {plans.length > 0 && sliderCeilingCredits !== null ? (
+          <>
+            {" "}
+            {plans[plans.length - 1].name} goes up to{" "}
+            {formatCredits(displayBalance(sliderCeilingCredits))} credits a month on its own
+            slider.
+          </>
+        ) : null}
         {plans.length > 0 ? (
           <> Need more than {plans[plans.length - 1].name}? Enterprise is arranged with us directly.</>
         ) : null}
@@ -1977,8 +2254,53 @@ function describeChange(
     newPlanPrice: number;
     daysRemaining: number;
     creditAdjustment: number;
+    /* The dial on each side of the change (#1832) — served by
+       `previewPlanChange`, which clamps both to the target rung. */
+    currentCreditUnits?: number;
+    targetCreditUnits?: number;
   },
+  /**
+   * WHAT THE DIAL'S MOVE BUYS, when the dial is the only thing moving (#1832)
+   * — the whole monthly allowance at the new position, in ledger credits.
+   *
+   * ⚠ **THIS BRANCH EXISTS BECAUSE `isUpgrade` IS ABOUT THE RUNG AND THE DIAL
+   * BROKE IT — and the sentence it would have reached was wrong in both
+   * halves.** A customer on the dial's rung dragging the thumb UP changes
+   * neither plan nor cycle, so `quote.isUpgrade` is `false` and the
+   * same-interval fall-through below would have told them *"Nothing to pay
+   * today. Unused time on your current plan comes back as billing credit"* —
+   * while Stripe invoiced them for the extra steps and added credits rather
+   * than returning any. The server's own confirmation toast had the mirror
+   * image of this defect, fixed in the same commit.
+   *
+   * `null` means the dial is not what changed, and every sentence below is the
+   * one it always was.
+   */
+  dialAllowanceLedger: number | null,
 ): string {
+  const dialMoved =
+    quote.kind === "same-interval"
+    && quote.currentCreditUnits !== undefined
+    && quote.targetCreditUnits !== undefined
+    && quote.targetCreditUnits !== quote.currentCreditUnits;
+  if (dialMoved && dialAllowanceLedger !== null) {
+    const monthlyFigure = formatCredits(displayBalance(dialAllowanceLedger));
+    if ((quote.targetCreditUnits ?? 0) > (quote.currentCreditUnits ?? 0)) {
+      return (
+        `About ${formatDollars(quote.immediateCharge)} is due today — the extra credits for the ` +
+        `${quote.daysRemaining} ${quote.daysRemaining === 1 ? "day" : "days"} left in this cycle. ` +
+        `${plan.name} then comes with ${monthlyFigure} credits a month` +
+        (quote.creditAdjustment > 0
+          ? `, and ${formatCredits(displayBalance(quote.creditAdjustment))} credits land on your balance the moment it goes through.`
+          : ".")
+      );
+    }
+    return (
+      `Nothing to pay today — about ${formatDollars(quote.creditBalance)} of unused time on the ` +
+      `credits you dropped becomes credit toward your future bills, and the unused credits go ` +
+      `back with it. ${plan.name} comes with ${monthlyFigure} credits a month from now.`
+    );
+  }
   if (quote.kind === "interval-switch") {
     if (quote.targetInterval === "annual") {
       return (

@@ -607,28 +607,49 @@ describe("the brief's new copy claims only what the tree holds (#1607's rule)", 
     );
   });
 
-  it("⚠ the slider's clause is NOT in the footnote, because the slider is not in this commit", () => {
+  it("⚠ the slider's clause IS in the footnote now, and its figure is derived", () => {
     /*
-      THE DECLARED SHORTCUT, and the fidelity law requires it be said out loud:
-      **#1832's Studio credit slider does not ship here.** It needs a recurring
-      Stripe price at the brief's $9 a step, and creating a Stripe object is his
-      hand or the relay's, never a shift's — so a slider a customer could move
-      and not buy would be the machinery showing through at the worst possible
-      place. The card stays open on that half.
+      ⚠ **THIS ARM USED TO HOLD THE OPPOSITE AND ITS OWN MESSAGE SAID WHAT TO
+      DO WHEN THE DAY CAME: *"or the slider shipped and this arm is the thing
+      that is now stale: delete it with the clause, do not weaken it."*** The
+      day is this commit. The dial ships, so the sentence it declared owed is
+      owed, and the arm is re-aimed rather than deleted — the figure it names is
+      the one thing about that sentence that can silently go wrong.
 
-      The brief's compare footnote quotes the slider's ceiling. Quoting a control
-      a customer cannot find is the stale-figure class with his approval attached
-      to it, so the clause lands with the slider — and this arm is what reminds
-      whoever builds it that the sentence is owed.
+      What it held before, kept because it is the reason the clause was late:
+      the slider needed a recurring Stripe price at his $9 a step, creating a
+      Stripe object is his hand or the relay's, and quoting a control a
+      customer cannot find is the stale-figure class with his approval attached
+      to it (#1607's rule). He created both prices himself on 2026-10-07
+      (*"Set up both. I'll run the command"*), and this seat re-read the
+      catalogue before building rather than inheriting that comment.
+
+      **The claim now: the clause exists, and no credits figure in it is
+      typed.** A hard-coded `466,000` would be exactly the stale figure the
+      absence was protecting against — it is `displayBalance` over the served
+      spec, so a price move or a rung added above the dial moves the sentence.
     */
     const modal = code(MODAL);
+    const footnote = modal.slice(modal.indexOf("dp-plan__footnote"));
     expect(
-      modal,
-      "the footnote quotes the slider's ceiling while the slider is unbuilt — or the" +
-        " slider shipped and this arm is the thing that is now stale: delete it with the" +
-        " clause, do not weaken it",
-    ).not.toMatch(/credit slider goes to/);
-    /* The half of that sentence that IS true today still points at the band. */
+      footnote,
+      "the footnote lost the slider's clause — the dial is on the cards and the table says nothing about it",
+    ).toMatch(/goes up to\{" "\}/);
+    /* The figure is DERIVED: the clause reads the ceiling through the display
+       helper, and `sliderCeilingCredits` is composed from the served spec. */
+    expect(
+      footnote,
+      "the slider's ceiling is printed without the display helper",
+    ).toMatch(/formatCredits\(displayBalance\(sliderCeilingCredits\)\)/);
+    /* And the ceiling itself is not a literal anywhere on the surface. The
+       top of today's dial is 466,000 display / 2,330,000 ledger; either one
+       typed here is the defect this arm exists for. */
+    for (const literal of ["466,000", "466000", "2,330,000", "2330000"]) {
+      expect(modal, `the slider's ceiling is typed as ${literal} instead of derived`).not.toContain(
+        literal,
+      );
+    }
+    /* The half of that sentence that was always true still points at the band. */
     expect(modal, "the footnote stopped pointing at the rungs with no column").toContain(
       "Enterprise is arranged with us directly",
     );

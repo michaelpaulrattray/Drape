@@ -1418,7 +1418,7 @@ function CreditPacksPane({
           <input
             id="dp-topup-amount"
             type="range"
-            className="dp-topup__range"
+            className="dp-range"
             min={1}
             max={TOPUP_MAX_UNITS}
             step={1}

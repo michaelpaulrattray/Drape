@@ -68,6 +68,8 @@ import {
   topupBracketFor,
   topupBracketPackSize,
 } from "@shared/creditTopups";
+import { planCreditSliderPriceInCents } from "@shared/planCreditSlider";
+import { planCreditSliderUnitsAllowed } from "./planCreditSlider";
 
 /** The catalogue generation these keys belong to. Bumping it is a founder-side
  *  act in Stripe FIRST — the keys must exist before the code asks for them. */
@@ -95,6 +97,29 @@ export const PRICE_LOOKUP_KEY_VERSION = "v2";
  */
 export const PRICE_UNAVAILABLE_SENTENCE =
   "We could not price that plan just now, so nothing was changed and nothing was charged. This one is on us — please try again shortly.";
+
+/**
+ * The middle segment of the slider add-on's two lookup keys, which his own hand
+ * created (#1832): `klieg_<plan>_⟨this⟩_<interval>_v2`.
+ *
+ * ⚠ **IT IS A CONSTANT RATHER THAN A WORD IN THE TEMPLATE, AND THAT IS A
+ * FALSE-INDICTMENT REPAIR WITH A PRECEDENT TWO FUNCTIONS DOWN.**
+ * `server/creditDisplayGuard.test.ts`'s rule 2 indicts a name from its
+ * vocabulary (`price`, here `PRICE_LOOKUP_KEY_VERSION`) standing inside text
+ * that says *credits* — and in the template it did, so the composed key read as
+ * a ledger figure reaching a customer. It is nothing of the sort: the value is
+ * the string `v2`, and the whole expression is a catalogue key that never
+ * leaves the server.
+ *
+ * `resolveTopupPriceId`'s refusal sentence took the same repair for the same
+ * stated reason — *"a false indictment is how a guard gets deleted instead of
+ * fixed, so the sentence is written out of its reach"* — and the census is not
+ * the answer here, because that list only shrinks and holds places a customer
+ * really reads a ledger number. **The word is load-bearing and cannot move: it
+ * is in the key he created.** So it moves one line up, where it says exactly
+ * what it did before and the guard can tell the difference.
+ */
+const ADD_ON_KEY_SEGMENT = "credits";
 
 /** ⚠ The product says `annual`; the catalogue says `yearly`. See the docblock. */
 const KEY_INTERVAL: Record<BillingIntervalChoice, "monthly" | "yearly"> = {
@@ -201,6 +226,148 @@ export async function resolvePriceId(
     throw new StripePriceUnavailableError(
       lookupKey,
       `names price ${price.id} at ${price.unit_amount} cents, which is not the ${expected} cents this product shows for ${plan} ${interval}`,
+    );
+  }
+
+  return price.id;
+}
+
+/**
+ * THE LOOKUP KEY FOR THE PLAN CREDIT SLIDER'S ADD-ON (#1832).
+ *
+ * `klieg_<plan>_credits_<interval>_v2` — the two keys his own hand created on
+ * 2026-10-07 (`klieg_studio_credits_monthly_v2` at 900¢ and
+ * `klieg_studio_credits_yearly_v2` at 9000¢, both on the product that carries
+ * `klieg_studio_monthly_v2`), composed from the rung id rather than typed for
+ * `priceLookupKey`'s reason one function up.
+ *
+ * ⚠ **IT KEYS ON THE RUNG ID, WHICH IS THE HALF HIS RENAME LEAVES ALONE.** His
+ * word, 2026-10-07: *"rename the Studio plan to Pro Plus, everywhere a customer
+ * sees it … The internal Stripe lookup names can stay as they are if changing
+ * them would break anything"* (#1900). Composing from the NAME would have
+ * turned a copy change into a catalogue migration; the rung id is the
+ * product's own slug and it does not move.
+ *
+ * ⚠ **AND IT IS A DIFFERENT KEY FROM THE PLAN'S, NOT A SUFFIX ON IT** —
+ * `klieg_studio_credits_monthly_v2` sits beside `klieg_studio_monthly_v2`
+ * rather than replacing it, because the subscription carries BOTH as two items
+ * and the base must stay findable by its own key (`subscriptionItemsOf`, which
+ * is what tells the base item from the add-on).
+ */
+export function planCreditsPriceLookupKey(
+  plan: SubscriptionPlan,
+  interval: BillingIntervalChoice,
+): string {
+  return `klieg_${plan}_${ADD_ON_KEY_SEGMENT}_${KEY_INTERVAL[interval]}_${PRICE_LOOKUP_KEY_VERSION}`;
+}
+
+/**
+ * Is this lookup key the slider's add-on rather than a plan's base price?
+ *
+ * ⚠ **THE PREDICATE IS DERIVED FROM THE COMPOSER, NOT A SUBSTRING GUESS.** A
+ * `key.includes("_credits_")` would be a second statement of the key's shape,
+ * and the drift this repository has paid for is exactly that — so the test is
+ * *does any rung compose this key at either interval*, asked of the function
+ * that composes them. The population is the rungs the product sells, which is
+ * the same list the plan resolver parses against.
+ */
+export function isPlanCreditsLookupKey(key: string | null | undefined): boolean {
+  if (!key) return false;
+  for (const plan of Object.keys(SUBSCRIPTION_PRODUCTS) as SubscriptionPlan[]) {
+    if (
+      key === planCreditsPriceLookupKey(plan, "monthly")
+      || key === planCreditsPriceLookupKey(plan, "annual")
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * The price id for the slider's add-on at an interval, read from Stripe's
+ * catalogue.
+ *
+ * The same four refusals as the plan road — absent, ambiguous, the wrong
+ * recurrence, or an amount this product's own screens do not show — with the
+ * top-up road's two differences, because this price is also sold per unit:
+ *
+ * ⚠ **THE AMOUNT IS PER UNIT, NOT PER ORDER.** `unit_amount` is compared
+ * against one step's price at this interval, because the line's total is that
+ * amount times the `quantity` the subscription item carries. Comparing it
+ * against a whole order would pass only for a one-step dial.
+ *
+ * ⚠ **AND IT MUST RECUR, unlike a pack.** A slider position is part of a
+ * subscription: a one-off price under this key would be a customer paying once
+ * for an allowance that arrives every month, which is the mirror of the defect
+ * `resolveTopupPriceId`'s inverted check guards.
+ *
+ * ⚠ **THE UNIT COUNT IS REFUSED HERE TOO, past the rung's own ceiling.** The
+ * input schemas bound it, and an input schema is not the only caller a money
+ * helper can ever have (`topupBracketFor`'s reasoning). `units === 0` never
+ * reaches this function — a plain plan sends no add-on line at all — so a zero
+ * here is a caller that has not asked itself whether it needs the add-on, and
+ * it refuses rather than resolving a price for nothing.
+ */
+export async function resolvePlanCreditsPriceId(
+  client: Pick<Stripe, "prices">,
+  plan: SubscriptionPlan,
+  interval: BillingIntervalChoice,
+  units: number,
+): Promise<string> {
+  const lookupKey = planCreditsPriceLookupKey(plan, interval);
+
+  const allowed = planCreditSliderUnitsAllowed(plan);
+  if (allowed === 0) {
+    throw new StripePriceUnavailableError(
+      lookupKey,
+      `names a credit slider, and ${plan} carries none`,
+    );
+  }
+  if (!Number.isInteger(units) || units < 1 || units > allowed) {
+    throw new StripePriceUnavailableError(
+      lookupKey,
+      `was asked for ${String(units)} step(s), which is not between 1 and the ${allowed} this product sells`,
+    );
+  }
+
+  const page = await client.prices.list({
+    lookup_keys: [lookupKey],
+    active: true,
+    limit: 2,
+  });
+
+  /* Asked by key and filtered by key, for `resolvePriceId`'s reason: a price
+     whose own `lookup_key` is null is not the answer to a question about one. */
+  const matches = page.data.filter((price) => price.lookup_key === lookupKey);
+
+  if (matches.length === 0) {
+    throw new StripePriceUnavailableError(
+      lookupKey,
+      "names no active price in Stripe's catalogue",
+    );
+  }
+  if (matches.length > 1) {
+    throw new StripePriceUnavailableError(
+      lookupKey,
+      `is claimed by ${matches.length} active prices (${matches.map((p) => p.id).join(", ")})`,
+    );
+  }
+
+  const price = matches[0];
+  const wantedInterval = stripeIntervalOf(interval);
+  if (price.recurring?.interval !== wantedInterval) {
+    throw new StripePriceUnavailableError(
+      lookupKey,
+      `names price ${price.id}, which recurs ${price.recurring?.interval ?? "not at all"} and not per ${wantedInterval}`,
+    );
+  }
+
+  const expected = planCreditSliderPriceInCents(1, interval);
+  if (price.unit_amount !== expected) {
+    throw new StripePriceUnavailableError(
+      lookupKey,
+      `names price ${price.id} at ${price.unit_amount} cents a step, which is not the ${expected} cents this product shows for one ${interval} step`,
     );
   }
 
