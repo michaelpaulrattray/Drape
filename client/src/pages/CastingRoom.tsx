@@ -853,9 +853,11 @@ export default function CastingRoom() {
                           className="dpc-slot__again"
                           onClick={askForAllViewsAgain}
                         >
-                          {/* The price comes off the wire and through the one
-                              converter (#1600); this file does no arithmetic. */}
-                          {packageRedoLabel(formatCredits(displayPrice(data.redo.priceCredits)))}
+                          {/* The LEDGER price, straight off the wire. The copy
+                              module converts it through the one converter
+                              (#1600) so the routing is visible where it
+                              happens; this file does no arithmetic at all. */}
+                          {packageRedoLabel(data.redo.priceCredits)}
                         </button>
                       ) : null}
                     </span>

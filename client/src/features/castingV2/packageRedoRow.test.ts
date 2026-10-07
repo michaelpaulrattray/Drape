@@ -38,7 +38,9 @@ describe("the redo button", () => {
   });
 
   it("carries the price, spelled `credits` and never `CR`", () => {
-    const label = packageRedoLabel("350");
+    /* 1,750 LEDGER is his 350 display. Handed the ledger number because that
+       is what the wire carries, and the conversion is this module’s job. */
+    const label = packageRedoLabel(1750);
     expect(label).toBe(`Ask for all views again ${PACKAGE_REDO_SEPARATOR} 350 credits`);
     expect(label).toContain("credits");
     /* #1908's rule: an abbreviation is the product's shorthand. Asserted on a
@@ -53,7 +55,7 @@ describe("the redo button", () => {
       because the working line is on that path too — a loader is named in the
       law by example.
     */
-    const copy = [PACKAGE_REDO_LINK, packageRedoLabel("350"), PACKAGE_REDO_WORKING]
+    const copy = [PACKAGE_REDO_LINK, packageRedoLabel(1750), PACKAGE_REDO_WORKING]
       .join(" ")
       .toLowerCase();
     for (const machine of [
@@ -83,18 +85,51 @@ describe("the room draws it through this module", () => {
     expect(ROOM).not.toContain(`"${PACKAGE_REDO_LINK}"`);
   });
 
-  it("puts the LEDGER price through the one converter, and does no arithmetic", () => {
+  it("hands over the LEDGER price and does no arithmetic of its own", () => {
     /*
       `shared/creditDisplay.ts` is the only thing in this product allowed to
-      turn a ledger number into a display one (#1600). A button interpolating
-      `priceCredits` raw would print 1,750 where his price is 350 — five times
-      the number, on the one surface that is a promise about money.
+      turn a ledger number into a display one (#1600), and the conversion lives
+      in `packageRedoLabel` — so what the ROOM must not do is touch the number
+      at all. A component interpolating `priceCredits` raw would print 1,750
+      where his price is 350: five times the figure, on the one surface that is
+      a promise about money.
     */
     const call = ROOM.match(/packageRedoLabel\([^\n]*\)/)?.[0] ?? "";
-    expect(call).toContain("formatCredits(");
-    expect(call).toContain("displayPrice(");
-    expect(call).toContain("data.redo.priceCredits");
-    /* No division, no multiplication, no literal five anywhere in the call. */
-    expect(call).not.toMatch(/[/*]|\b5\b/);
+    expect(call).toBe("packageRedoLabel(data.redo.priceCredits)");
+    /* And it is handed over exactly ONCE. Counted on the CALL rather than on
+       the field name, which also appears in the hook's own docblock — a count
+       over prose is a guard that reddens when somebody explains the code. */
+    expect(ROOM.match(/packageRedoLabel\(/g)).toHaveLength(1);
+  });
+
+  it("converts through the one converter, where a census reader can see it", () => {
+    /*
+      ⚠ THE SHAPE THIS ARM EXISTS FOR, because the first draft failed it. A
+      `packageRedoLabel(formattedDisplayCredits: string)` signature left the
+      conversion in the component and this module holding a number it could not
+      vouch for — and `server/creditDisplayGuard.test.ts` flagged it on its
+      first run as a credit figure beside the word *credits* that nothing
+      visibly routed. Both shapes obey #1600; only one is legible to the reader
+      whose job is to check that it is obeyed.
+    */
+    const source = fs.readFileSync(
+      path.join(process.cwd(), "client/src/features/castingV2/packageRedoRow.ts"),
+      "utf8",
+    );
+    /*
+      ⚠ SLICED TO THE RETURN, NOT READ OVER THE WHOLE FILE — which is the arm's
+      own second lesson and it cost a red: the negative half below was written
+      against `source` and the docblock three lines up says *"`displayPrice` and
+      not `displayBalance`"*, so the guard failed on its own explanation. A
+      whole-file read is satisfied, or broken, by prose.
+    */
+    const body = source.match(/export function packageRedoLabel[\s\S]*?\n}/)?.[0] ?? "";
+    const returned = body.split("\n").filter((line) => line.includes("return `")).join("\n");
+    expect(returned).toContain("formatCredits(displayPrice(priceCredits))");
+    /* `displayPrice` rounds UP, so a customer is never quoted less than the
+       till will take; `displayBalance` and `displayRefund` round DOWN and are
+       the wrong readers for a price. */
+    expect(returned).not.toContain("displayBalance");
+    expect(returned).not.toContain("displayRefund");
   });
 });

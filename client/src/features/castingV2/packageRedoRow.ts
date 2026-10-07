@@ -22,6 +22,7 @@
  *    plate, not the word *package*, not *redo* — the customer's noun is the one
  *    the strip already uses, which is **views**.
  */
+import { displayPrice, formatCredits } from "@shared/creditDisplay";
 
 /**
  * The press, and the PRICE RIDES ON IT — his standing rule, prices on paid
@@ -40,20 +41,32 @@ export const PACKAGE_REDO_LINK = "Ask for all views again";
 export const PACKAGE_REDO_SEPARATOR = "·";
 
 /**
- * The whole label, as one string.
+ * The whole label, as one string, from the LEDGER price on the wire.
  *
  * `credits` is spelled out rather than abbreviated to `CR` — #1908's rule, and
  * the same reasoning: an abbreviation is the product's shorthand, not the
  * customer's word.
  *
- * It takes the DISPLAY figure already formatted, never a ledger number and
- * never a raw integer: `shared/creditDisplay.ts` is the only thing in this
- * product allowed to turn one into the other (#1600), and a component that did
- * its own division is how a button comes to quote a price the till does not
- * charge.
+ * ⚠ **IT TAKES THE LEDGER NUMBER AND CONVERTS HERE, AND THE FIRST DRAFT TOOK
+ * AN ALREADY-FORMATTED STRING.** Both satisfy #1600's rule that
+ * `shared/creditDisplay.ts` is the only thing allowed to turn one into the
+ * other — but a `formattedDisplayCredits: string` parameter puts the
+ * conversion in the component and leaves this function holding a number it
+ * cannot vouch for, and **`creditDisplayGuard.test.ts` said so the first time
+ * it ran**: its census reader sees a credit figure beside the word *credits*
+ * and cannot tell, from here, that anything routed it. Taking the ledger value
+ * makes the routing visible at the only place it happens.
+ *
+ * `displayPrice` and not `displayBalance`: a price rounds UP, so a customer is
+ * never quoted less than the till will take.
  */
-export function packageRedoLabel(formattedDisplayCredits: string): string {
-  return `${PACKAGE_REDO_LINK} ${PACKAGE_REDO_SEPARATOR} ${formattedDisplayCredits} credits`;
+export function packageRedoLabel(priceCredits: number): string {
+  /* INLINE, not via a local named `credits`: `creditDisplayGuard.test.ts`
+     reads the expression that sits beside the word, and a variable—however
+     honestly assigned one line above—is a figure it cannot see routed. The
+     reader is right to refuse it; a census that trusted a good name would not
+     be a census. */
+  return `${PACKAGE_REDO_LINK} ${PACKAGE_REDO_SEPARATOR} ${formatCredits(displayPrice(priceCredits))} credits`;
 }
 
 /**

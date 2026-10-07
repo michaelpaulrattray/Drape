@@ -17935,6 +17935,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/packageRedoRow.ts",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/pictureBytes.ts",
       "to": "module:shared/pictureFormats.ts",
       "kind": "imports"
