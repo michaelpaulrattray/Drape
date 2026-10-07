@@ -21,7 +21,6 @@ import { describe, expect, it, vi } from "vitest";
 
 import { CAST_VIEW_ANGLES } from "../../shared/boardTypes";
 import type { TextEngine, TextRequest } from "../providers/types";
-import { packageViewExpectation } from "./castViewPackage";
 import { createViewConformanceJudge } from "./viewConformance";
 
 /**
@@ -60,52 +59,34 @@ function judgeThatRecords() {
   return { judge: createViewConformanceJudge({ engine }), seen };
 }
 
-describe("#1278 — the judge is handed the brief, at the wire", () => {
-  it("⚠ CONTROL — the described and undescribed expectations are different sentences", () => {
-    /* Without this the arms below could pass against a judge that ignores the
-       description entirely: if both sentences were the same, "contains the
-       described one" would be true of the undescribed wire too. */
-    expect(DESCRIBED_ANGLES.length).toBeGreaterThan(0);
-    for (const angle of DESCRIBED_ANGLES) {
-      expect(packageViewExpectation(angle, null, SIFR).wardrobe, angle)
-        .not.toBe(packageViewExpectation(angle, null, null).wardrobe);
-    }
-  });
-
-  it("⚠ a described view's judge reads the DESCRIBED expectation — every angle", async () => {
-    /*
-      THE ARM THE SABOTAGE CAUGHT MISSING: the judge given `null` where the road
-      passes the brief. It is the request the engine actually receives that is
-      read, not the helper the judge is meant to call.
-    */
-    for (const angle of CAST_VIEW_ANGLES) {
-      const { judge, seen } = judgeThatRecords();
-      await judge({ angle, anchor, candidate, description: SIFR });
-      expect(seen, angle).toHaveLength(1);
-      const user = seen[0]!.user;
-      expect(user, angle).toContain(packageViewExpectation(angle, null, SIFR).wardrobe);
-      expect(user, angle).toContain(packageViewExpectation(angle, null, SIFR).framing);
-    }
-  });
-
-  it("⚠ and NEVER the undescribed one beside it — the sentence that ordered his plain dress", async () => {
-    /* Except the close-up, where the two are one sentence by design. */
-    for (const angle of DESCRIBED_ANGLES) {
-      const { judge, seen } = judgeThatRecords();
-      await judge({ angle, anchor, candidate, description: SIFR });
-      const undescribed = packageViewExpectation(angle, null, null).wardrobe;
-      expect(seen[0]!.user, angle).not.toContain(undescribed);
-    }
-  });
-
-  it("a cast with no brief on record is judged exactly as before — the undescribed expectation", async () => {
-    for (const angle of CAST_VIEW_ANGLES) {
-      const { judge, seen } = judgeThatRecords();
-      await judge({ angle, anchor, candidate });
-      expect(seen[0]!.user, angle).toContain(packageViewExpectation(angle, null, null).wardrobe);
-    }
-  });
-});
+/**
+ * ⚠ **THE JUDGE HALF OF THIS SUITE IS GONE — #1903, his ruling of 2026-10-07,
+ * and this note is the sweep rather than a deletion done quietly.**
+ *
+ * Four arms stood here and all four proved the same thing: that the judge's
+ * posted expectation narrows on the cast's brief, so that a judge handed
+ * `null` while the generator dressed the view on the brief could not refuse a
+ * view for wearing exactly what the prompt asked for.
+ *
+ * **There is no wardrobe axis any more, and the judge is posted no
+ * specification at all** — so the defect those arms guarded has no road left,
+ * and `packageViewExpectation`, the function every one of them read, no longer
+ * exists. Keeping them green would have meant keeping the apparatus they test.
+ *
+ * What replaces them, so this is a move and not a loss:
+ *
+ *  - that the judge is handed **no outfit sentence and no plate ordinal**, with
+ *    a control proving the same words DO reach the generator —
+ *    `viewOutfitAuthority.test.ts`, driven at the wire;
+ *  - that the judge is posted **no specification of any kind** —
+ *    `viewConformance.test.ts`, two arms, system turn and user turn.
+ *
+ * ⚠ **The GENERATOR half of #1278 part 1 is untouched by his ruling** — the
+ * prompt still narrows on her brief, and `wardrobeViews.test.ts` holds it.
+ *
+ * The retry road's owner clause below is unrelated to any of this and stands
+ * exactly as it was.
+ */
 
 /* ------------------------------------------------------------------ the read */
 

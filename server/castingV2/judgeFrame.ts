@@ -228,3 +228,134 @@ export async function boundForJudge(image: ReferenceImage): Promise<BoundJudgeFr
     return { image, record: { size: "unreadable", bounded: false } };
   }
 }
+
+/* --------------------------------------------------------------------------
+   IS THE FRAME ITSELF BROKEN? — a reading that needs no model (#1903 repair)
+   -------------------------------------------------------------------------- */
+
+/**
+ * ⚠ **WHY A SECOND, STRICTER DECODE LIVES BESIDE A BOUNDER THAT FAILS OPEN.**
+ *
+ * Read the two together or this file reads as contradicting itself.
+ * {@link boundForJudge} fails OPEN by design — a resizer that refused would turn
+ * a readable frame into an `unavailable` verdict, which is the defect it exists
+ * to remove. **This asks a different question**: not *can I shrink it* but *is
+ * this a picture at all*, and the honest answer to that one is allowed to be no.
+ * They decode the same bytes under opposite settings on purpose, which is why
+ * neither inherits the other's blind spot.
+ *
+ * ## The hole it closes, named rather than reasoned about
+ *
+ * Catastrophe 2 of his three — *the picture came out broken* — was answered
+ * **only** by the vision judge. So a frame the judge could not be asked about at
+ * all fell through to `unjudged`, and D-246 DELIVERS an `unjudged` view and
+ * CHARGES for it. A blank or truncated render therefore reached a paying
+ * customer by the one road designed to protect a view nobody could look at.
+ * Working law 3 is the rule it breaks: *a backstop needs a test the model cannot
+ * rescue* — and here the model was the whole backstop.
+ */
+export type FrameIntegrity =
+  | { intact: true }
+  /** `damaged` — the bytes are not a whole picture. `blank` — they are a picture of nothing. */
+  | { intact: false; fault: "damaged" | "blank"; note: string };
+
+/**
+ * ⚠ **THE LINE UNDER WHICH A FRAME IS A PICTURE OF NOTHING — MEASURED ON THE
+ * WHOLE DELIVERED POPULATION, NOT CHOSEN.**
+ *
+ * Read 2026-10-07 against production: every landed view this product has ever
+ * handed a customer that still has bytes — **93 frames** (8 more had been swept
+ * from storage) — scored by its LOWEST per-channel standard deviation.
+ *
+ * | frame | lowest per-channel stdev |
+ * |---|---|
+ * | the real population's FLOOR (asset 302, a `frontFull`) | **24.57** |
+ * | the next four real frames | 26.94 · 27.35 · 28.35 · 29.24 |
+ * | a soft 110-130 gradient — the most picture-like blank | **5.79** |
+ * | a flat field with one 80x80 patch on it | 3.40 |
+ * | solid grey, solid black | **0.00** |
+ *
+ * **12 sits almost exactly halfway between the two in ratio** — 2.1x above the
+ * most picture-like blank and 2.0x under the lowest real view — so it is a gap
+ * rather than a boundary, and nothing has to be right about the edge.
+ *
+ * ⚠ **ALPHA IS EXCLUDED AND THAT IS LOAD-BEARING, NOT TIDYING.** A fully opaque
+ * RGBA frame has an alpha channel of stdev 0.00, so a reader taking the minimum
+ * over ALL channels would score every opaque picture at zero and refuse the
+ * entire product. Only the first three are read.
+ */
+export const BLANK_FRAME_MIN_STDEV = 12;
+
+/**
+ * Is this frame a real, complete picture? Answered from the bytes alone.
+ *
+ * ⚠ **TWO ARMS, AND THE MEASUREMENT SAYS NEITHER WOULD DO ON ITS OWN** — which
+ * is the only reason there are two. Driven on real production frames the day it
+ * was written:
+ *
+ *  - **A TRUNCATED FRAME IS NOT QUIET, IT IS LOUD.** A real view cut to half its
+ *    bytes paints down to the cut and is solid black below — and that black
+ *    against the picture above scores **96.50**, the HIGHEST reading of anything
+ *    measured, real frames included. A variance test does not merely miss it; it
+ *    reads it as the most picture-like thing in the set. Only the strict decode
+ *    sees it (`vipspng: libpng read error`), at every cut tried — 50%, 20%, 5%,
+ *    2%.
+ *  - **A BLANK FRAME IS PERFECTLY WELL-FORMED.** Solid grey is a valid PNG and
+ *    every decoder in the world accepts it. Only the variance test sees it.
+ *
+ * **Its positive control is the arm that matters**, and it is the whole
+ * population rather than a fixture: `failOn: "truncated"` refused **0 of 93**
+ * real delivered frames, and the lowest-variance real frame cleared the line by
+ * 2x. A gate on a money path that is wrong in the refusing direction costs a
+ * customer a picture they paid for, so that number is the one to re-read if this
+ * ever moves.
+ *
+ * ⚠ **IT ANSWERS ABOUT THE CANDIDATE'S OWN BYTES — the ones the customer would
+ * be handed — never the bounded copy the judge is posted.** The bound is made
+ * with `failOn: "none"` precisely so it cannot refuse, so asking it this
+ * question would be asking the one reader built not to answer it.
+ *
+ * ⚠ **AND IT NEVER RUNS ON THE ANCHOR, which is a scope line rather than an
+ * oversight.** A damaged anchor is a different failure with a different owner,
+ * and it is already fail-closed by a different road: the judge handed an
+ * unreadable reference answers `unsure` on identity, and identity refuses on
+ * `unsure`. Widening this to the anchor would refund a customer for a view that
+ * is fine.
+ */
+export async function readFrameIntegrity(image: ReferenceImage): Promise<FrameIntegrity> {
+  let channels: { stdev: number }[];
+  try {
+    /*
+      `truncated` and not `warning`: the stricter setting refuses on metadata
+      complaints a perfectly good photograph can carry, and this reader's
+      refusals cost a customer money. Measured either way on the 93 — both
+      refused 0 — and the looser of two settings that measure the same is the
+      one to take on a money path.
+    */
+    ({ channels } = await sharp(image.bytes, { failOn: "truncated" }).stats());
+  } catch (error) {
+    return {
+      intact: false,
+      fault: "damaged",
+      note: `the frame could not be decoded: ${String((error as Error).message).split("\n")[0].slice(0, 120)}`,
+    };
+  }
+
+  /* No channels at all is not a picture either, and a `Math.min` of nothing is
+     `Infinity` — which would pass. Answered rather than left to the spread. */
+  const read = channels.slice(0, 3);
+  if (read.length === 0) {
+    return { intact: false, fault: "damaged", note: "the frame decoded to no colour channels at all" };
+  }
+
+  const lowest = Math.min(...read.map((channel) => channel.stdev));
+  if (lowest < BLANK_FRAME_MIN_STDEV) {
+    return {
+      intact: false,
+      fault: "blank",
+      note: `the frame is near-uniform — lowest channel variation ${lowest.toFixed(2)}, under ${BLANK_FRAME_MIN_STDEV}`,
+    };
+  }
+
+  return { intact: true };
+}

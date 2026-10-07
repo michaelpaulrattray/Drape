@@ -608,8 +608,16 @@ function directiveFor(fixture: Fixture, angle: CastViewAngle): string {
 }
 
 /**
- * ⚠ THE AXES ARE `identityPass` / `anglePass` / `wardrobePass` AND THE SUFFIX IS
+ * ⚠ THE AXES ARE `identityPass` / `intactPass` / `peoplePass` AND THE SUFFIX IS
  * LOAD-BEARING.
+ *
+ * ⚠ **THEY WERE `anglePass` / `wardrobePass` UNTIL #1903 (2026-10-07)**, when
+ * his ruling deleted the framing and wardrobe axes and replaced them with two
+ * catastrophes: is the picture intact, and is there exactly one person in it.
+ * **Every column below therefore reports a different question than the one a
+ * reader of an older run will remember**, which is why they are renamed rather
+ * than reused — a table headed `wardrobe` over an intactness rate is the
+ * quietest kind of wrong.
  *
  * The first shape of this type called them `identity` / `angle` / `wardrobe`,
  * and every row in this court spreads a verdict beside its own `angle` — the
@@ -624,8 +632,8 @@ type Verdict = {
   method: string;
   unjudged: boolean;
   identityPass: boolean;
-  anglePass: boolean;
-  wardrobePass: boolean;
+  intactPass: boolean;
+  peoplePass: boolean;
   notes: Record<string, string>;
 };
 
@@ -657,8 +665,7 @@ async function judgeOne(
       angle: input.angle,
       anchor: input.anchor,
       candidate: input.candidate,
-      wardrobeLine: input.wardrobeLine,
-      description: input.brief,
+      /* #1903 — the judge takes no outfit and no brief; both axes are gone. */
     });
   } catch (error) {
     const why = error instanceof Error ? error.message : String(error);
@@ -667,9 +674,9 @@ async function judgeOne(
       method: "threw",
       unjudged: true,
       identityPass: false,
-      anglePass: false,
-      wardrobePass: false,
-      notes: { identity: why, angle: why, wardrobe: why },
+      intactPass: false,
+      peoplePass: false,
+      notes: { identity: why, intact: why, people: why },
     };
   }
   return {
@@ -677,12 +684,12 @@ async function judgeOne(
     method: verdict.method,
     unjudged: verdict.unjudged === true,
     identityPass: verdict.axes.identity.pass,
-    anglePass: verdict.axes.angle.pass,
-    wardrobePass: verdict.axes.wardrobe.pass,
+    intactPass: verdict.axes.intact.pass,
+    peoplePass: verdict.axes.people.pass,
     notes: {
       identity: verdict.axes.identity.note ?? "",
-      angle: verdict.axes.angle.note ?? "",
-      wardrobe: verdict.axes.wardrobe.note ?? "",
+      intact: verdict.axes.intact.note ?? "",
+      people: verdict.axes.people.note ?? "",
     },
   };
 }
@@ -2021,7 +2028,7 @@ async function phaseReport(): Promise<void> {
 
   console.log("\n## MAIN - per arm\n");
   console.log(
-    "| arm | renders | identity | angle | wardrobe | all three | unjudged | mean s | p95 s | MB |"
+    "| arm | renders | identity | intact | people | all three | unjudged | mean s | p95 s | MB |"
     + " pixels | $/picture | $/Sign of 5 | s/Sign (3 at a time) |",
   );
   console.log("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|");
@@ -2042,8 +2049,8 @@ async function phaseReport(): Promise<void> {
     console.log(
       `| ${ARM_LABEL[arm]} | ${mine.length}`
       + ` | ${rate(judged.filter((row) => row.identityPass === true).length, judged.length)}`
-      + ` | ${rate(judged.filter((row) => row.anglePass === true).length, judged.length)}`
-      + ` | ${rate(judged.filter((row) => row.wardrobePass === true).length, judged.length)}`
+      + ` | ${rate(judged.filter((row) => row.intactPass === true).length, judged.length)}`
+      + ` | ${rate(judged.filter((row) => row.peoplePass === true).length, judged.length)}`
       + ` | ${rate(judged.filter((row) => row.pass === true).length, judged.length)}`
       + ` | ${mine.filter((row) => row.unjudged === true).length}`
       + ` | ${mean(seconds).toFixed(1)} | ${p95(seconds).toFixed(1)}`
@@ -2071,7 +2078,7 @@ async function phaseReport(): Promise<void> {
   if (outfit.length > 0) {
     console.log("\n## THE OUTFIT COURT (#1451) — per arm\n");
     console.log(
-      "| arm | renders | refusals | identity | angle (front/back only) | wardrobe | mean s | p95 s |"
+      "| arm | renders | refusals | identity | intact | people | mean s | p95 s |"
       + " MB | pixels | $/picture | $ total |",
     );
     console.log("|---|---|---|---|---|---|---|---|---|---|---|---|");
@@ -2092,8 +2099,8 @@ async function phaseReport(): Promise<void> {
       console.log(
         `| ${ARM_LABEL[arm]} | ${mine.length} | ${failed.length}`
         + ` | ${rate(judged.filter((row) => row.identityPass === true).length, judged.length)}`
-        + ` | ${rate(anglePopulation.filter((row) => row.anglePass === true).length, anglePopulation.length)}`
-        + ` | ${rate(judged.filter((row) => row.wardrobePass === true).length, judged.length)}`
+        + ` | ${rate(anglePopulation.filter((row) => row.intactPass === true).length, anglePopulation.length)}`
+        + ` | ${rate(judged.filter((row) => row.peoplePass === true).length, judged.length)}`
         + ` | ${mean(seconds).toFixed(1)} | ${p95(seconds).toFixed(1)}`
         + ` | ${mean(megabytes).toFixed(1)} | ${mine.length === 0 ? "-" : String(mine[0]!.pixels)}`
         + ` | $${perPicture.toFixed(2)} | $${(perPicture * mine.length).toFixed(2)} |`,
@@ -2143,7 +2150,7 @@ async function phaseReport(): Promise<void> {
   const chain = rows.filter((row) => row.phase === "chain");
   if (chain.length > 0) {
     console.log("\n## THE DEGRADATION CHAIN - judged against the ORIGINAL anchor at every step\n");
-    console.log("| anchor | tier | step | identity | angle | wardrobe | s | MB | pixels |");
+    console.log("| anchor | tier | step | identity | intact | people | s | MB | pixels |");
     console.log("|---|---|---|---|---|---|---|---|---|");
     for (const row of chain) {
       if (row.failed !== undefined) {
@@ -2153,8 +2160,8 @@ async function phaseReport(): Promise<void> {
       console.log(
         `| ${row.anchor} | ${row.tier} | ${row.step}`
         + ` | ${row.identityPass === true ? "pass" : "FAIL"}`
-        + ` | ${row.anglePass === true ? "pass" : "FAIL"}`
-        + ` | ${row.wardrobePass === true ? "pass" : "FAIL"}`
+        + ` | ${row.intactPass === true ? "pass" : "FAIL"}`
+        + ` | ${row.peoplePass === true ? "pass" : "FAIL"}`
         + ` | ${(Number(row.ms) / 1000).toFixed(1)} | ${(Number(row.bytes) / 1_048_576).toFixed(1)} | ${row.pixels} |`,
       );
     }
@@ -2165,14 +2172,14 @@ async function phaseReport(): Promise<void> {
   if (sheets.length > 0 || cuts.length > 0) {
     console.log("\n## THE SHEET ARM (#1278 part 2)\n");
     for (const row of sheets) console.log(`- ${JSON.stringify(row)}`);
-    console.log("\n| anchor | tier | column | judged against | identity | angle | wardrobe | pixels |");
+    console.log("\n| anchor | tier | column | judged against | identity | intact | people | pixels |");
     console.log("|---|---|---|---|---|---|---|---|");
     for (const row of cuts) {
       console.log(
         `| ${row.anchor} | ${row.tier} | ${row.column} | ${row.judgedAgainst}`
         + ` | ${row.identityPass === true ? "pass" : "FAIL"}`
-        + ` | ${row.anglePass === true ? "pass" : "FAIL"}`
-        + ` | ${row.wardrobePass === true ? "pass" : "FAIL"}`
+        + ` | ${row.intactPass === true ? "pass" : "FAIL"}`
+        + ` | ${row.peoplePass === true ? "pass" : "FAIL"}`
         + ` | ${row.pixels} |`,
       );
     }
@@ -2199,7 +2206,7 @@ async function phaseReport(): Promise<void> {
       "\n## THE SAME FRAMES, RE-JUDGED AT A SIZE THE JUDGE CAN READ"
       + " (1,568px longest edge, identical for every arm)\n",
     );
-    console.log("| arm | frames | identity | angle | wardrobe | all three | unjudged |");
+    console.log("| arm | frames | identity | intact | people | all three | unjudged |");
     console.log("|---|---|---|---|---|---|---|");
     for (const arm of ALL_ARMS) {
       const mine = rejudged.filter((row) => row.arm === arm);
@@ -2208,8 +2215,8 @@ async function phaseReport(): Promise<void> {
       console.log(
         `| ${ARM_LABEL[arm]} | ${mine.length}`
         + ` | ${rate(judged.filter((row) => row.identityPass === true).length, judged.length)}`
-        + ` | ${rate(judged.filter((row) => row.anglePass === true).length, judged.length)}`
-        + ` | ${rate(judged.filter((row) => row.wardrobePass === true).length, judged.length)}`
+        + ` | ${rate(judged.filter((row) => row.intactPass === true).length, judged.length)}`
+        + ` | ${rate(judged.filter((row) => row.peoplePass === true).length, judged.length)}`
         + ` | ${rate(judged.filter((row) => row.pass === true).length, judged.length)}`
         + ` | ${mine.filter((row) => row.unjudged === true).length} |`,
       );
