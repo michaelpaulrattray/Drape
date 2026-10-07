@@ -212,7 +212,7 @@ export type FramingRule =
    * works on a creature with tusks and a cowl.
    *
    * ⚠ **IT HAS TWO CONSUMERS NOW AND THEY ASK IT IN OPPOSITE DIRECTIONS — 2026-10-02.**
-   * The close-up's 0.7 is a TOO-LOOSE bound (any more picture below the face and
+   * The close-up's 0.9 is a TOO-LOOSE bound (any more picture below the face and
    * it has stopped being a close-up); `frontClose`'s 3.7 is the same bound with
    * the same sign doing a different job — any more and a head-and-shoulders
    * Portrait has become a full length. One rule, two numbers, each measured on
@@ -220,13 +220,22 @@ export type FramingRule =
    * is derivable from the other**, which is why the band declares the number
    * rather than this file holding a default.
    *
-   * ⚠ **THE CLOSE-UP'S NUMBER IS 0.7 AND THIS SENTENCE SAID 0.3 UNTIL 2026-10-03
-   * — the stale half of #1837, kept visible rather than silently swapped.** The
-   * bound moved on HIS EYE (law 9) at two Sifr2 frames measuring 0.42 and 0.51
-   * that the 0.3 line called out of band; the whole record, with his words and
-   * the method, is on the `closeUp` band in `castViewPackage.ts`, which is where
-   * the number is declared and therefore where it is explained. This file states
-   * the SHAPE of the rule and must not grow a second account of the value.
+   * ⚠ **THE CLOSE-UP'S NUMBER IS 0.9, AND IT HAS NOW MOVED TWICE ON HIS EYE —
+   * 0.3 until 2026-10-03, 0.7 until 2026-10-07 (#1837). Each stale value is
+   * swapped here in the same act that moves the band, never silently left.** The
+   * bound moves on HIS EYE (law 9) and on nothing else: first at two Sifr2
+   * frames measuring 0.42 and 0.51 that the 0.3 line called out of band, then at
+   * asset 384 — a bandaged skull, head and the top of the shoulders, measuring
+   * 0.826 — which the 0.7 line turned away and which he called a close-up in one
+   * word. The whole record, with his words, the method and the arithmetic, is on
+   * the `closeUp` band in `castViewPackage.ts`, which is where the number is
+   * declared and therefore where it is explained. This file states the SHAPE of
+   * the rule and must not grow a second account of the value.
+   *
+   * ⚠ **AND THE GAP THAT METHOD FITS INTO IS DOWN TO A FACTOR OF 1.33** (0.826
+   * to 1.102 on his own frames). One more measured frame in there and the
+   * geometric middle stops being in a gap at all; the band says what happens
+   * then, and it is his eye rather than a third decimal.
    *
    * Scale-free by construction: both terms are read off the same frame in the
    * same pixels, so re-framing cannot move the ratio on its own.
@@ -316,9 +325,10 @@ export type ViewFramingBand = {
    * rather than guessing at a sentence that is no longer there.
    *
    * ⚠ **THE `(at most 0.3)` INSIDE THAT QUOTE IS NOT A STALE NUMBER TO FIX — it
-   * is what the judge SAID on 2026-10-02, when the bound was 0.3.** The bound is
-   * 0.7 since 2026-10-03 (#1837, his eye), so #1611's two frames at 0.48 and
-   * 0.56 are IN BAND today and this paragraph's reading of them is history. It
+   * is what the judge SAID on 2026-10-02, when the bound was 0.3.** The bound
+   * went to 0.7 on 2026-10-03 and to **0.9** on 2026-10-07 (#1837, his eye both
+   * times), so #1611's two frames at 0.48 and 0.56 are IN BAND today — they were
+   * already in band at 0.7 — and this paragraph's reading of them is history. It
    * is annotated rather than rewritten because a dated verbatim quote edited to
    * agree with a later number is no longer evidence of anything — and this
    * record's whole value is that it shows what the instrument answered before
