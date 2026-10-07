@@ -46,7 +46,10 @@ vi.mock("../db/connection", () => ({
 }));
 
 import { generationOperations } from "../../drizzle/schema";
-import { castViewRetrySubjectHash } from "../casting/operationContract";
+import {
+  castViewRetrySubjectHash,
+  VIEW_REPLACING_OPERATION_KINDS,
+} from "../casting/operationContract";
 import {
   listRunningViewRetryAngles,
   runningViewRetryFilter,
@@ -163,15 +166,29 @@ describe("the running-retry filter", () => {
     return { sql, params };
   };
 
-  it("scopes the owner, the Cast and the kind, and excludes a deleted subject", () => {
+  it("scopes the owner, the Cast and BOTH view-replacing kinds, and excludes a deleted subject", () => {
     const { sql, params } = rendered();
     expect(sql).toContain("`generation_operations`.`userId` = ?");
     expect(sql).toContain("`generation_operations`.`modelId` = ?");
-    expect(sql).toContain("`generation_operations`.`kind` = ?");
     expect(sql).toContain("`generation_operations`.`subjectDeletedAt` is null");
-    // The kind is asserted as a VALUE: a predicate comparing to the wrong
+    /*
+      ⚠ **THE KIND PREDICATE WIDENED FROM ONE VALUE TO A SET AND THIS ARM IS
+      WHAT SAID SO (#1903 slice 2).** It read `kind` = ? and the whole paid redo
+      road would have been invisible to this reader: five views rendering, every
+      slot reading ready, a Try again button over each, and a press charging
+      against a slot already being replaced — #1235's double charge arriving by
+      a new door. The arm went red on the widening, which is the arm working.
+
+      DERIVED from the declared set, never two literals: a third road added to
+      `VIEW_REPLACING_OPERATION_KINDS` is asserted here with no edit, which is
+      the only way this arm can stay ahead of the filter it guards.
+    */
+    expect(sql).toContain("`generation_operations`.`kind` in (?, ?)");
+    // The kinds are asserted as VALUES: a predicate comparing to the wrong
     // string excludes nothing and every arm above stays green about it.
-    expect(params).toContain("castingV2.viewRetry");
+    for (const kind of VIEW_REPLACING_OPERATION_KINDS) expect(params).toContain(kind);
+    expect([...VIEW_REPLACING_OPERATION_KINDS])
+      .toEqual(["castingV2.viewRetry", "castingV2.packageRedo"]);
     expect(params).toContain(MODEL_ID);
   });
 

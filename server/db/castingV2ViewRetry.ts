@@ -36,7 +36,11 @@ import {
 } from "../../drizzle/schema";
 import { CAST_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
 import { identityStampFor } from "../casting/identity/anchorSelector";
-import { castViewRetrySubjectHash } from "../casting/operationContract";
+import {
+  castViewRetrySubjectHash,
+  castViewSubjectHash,
+  VIEW_REPLACING_OPERATION_KINDS,
+} from "../casting/operationContract";
 import { getDb, withTransaction } from "./connection";
 
 /** A positive integer id, or a throw — the same assertion `castingV2Sign` makes
@@ -285,7 +289,21 @@ export async function commitRetriedViewAsset(input: {
         .where(and(
           eq(generationOperations.id, input.operationId),
           eq(generationOperations.userId, input.userId),
-          eq(generationOperations.kind, "castingV2.viewRetry"),
+          /*
+            THE FENCE ADMITS EITHER ROAD THAT MAY REPLACE A VIEW, FROM THE ONE
+            DECLARED SET (#1903).
+
+            ⚠ **It carried the retry kind as a literal, and a second kind
+            arriving beside a hard-coded one fails in the worst direction
+            available here.** A redo's commit would return `null`, which
+            `renderViewAttempts` reads as FENCED — "this process is no longer
+            the authority" — so the service would hand the slice to the sweep,
+            the sweep would find no asset under the operation and refund it,
+            and the picture that actually rendered would be thrown away. The
+            customer would watch five renders happen and get nothing, refunded.
+            The set is read rather than respelled for exactly that reason.
+          */
+          inArray(generationOperations.kind, [...VIEW_REPLACING_OPERATION_KINDS]),
           eq(generationOperations.status, "running"),
         ))
         .limit(1)
@@ -389,7 +407,18 @@ export function runningViewRetryFilter(input: { userId: number; modelId: number 
   return and(
     eq(generationOperations.userId, input.userId),
     eq(generationOperations.modelId, input.modelId),
-    eq(generationOperations.kind, "castingV2.viewRetry"),
+    /*
+      EITHER ROAD THAT MAY BE REPLACING THIS VIEW RIGHT NOW (#1903) — one
+      declared set, the same one the commit fence reads.
+
+      A redo renders all five views, so while one is in flight every slot IS
+      being made. Left on the retry kind alone this read answered "nothing is
+      running" through the whole redo: the room would draw five ready tiles
+      with a Try again under each, over five renders in flight, and a press
+      would charge against a slot already being replaced — #1235's double
+      charge arriving by a new door.
+    */
+    inArray(generationOperations.kind, [...VIEW_REPLACING_OPERATION_KINDS]),
     inArray(generationOperations.status, [...RUNNING_VIEW_RETRY_STATUSES]),
     isNull(generationOperations.subjectDeletedAt),
   );
@@ -421,11 +450,23 @@ export async function listRunningViewRetryAngles(input: {
     .where(runningViewRetryFilter({ userId: input.userId, modelId: input.modelId }));
   if (rows.length === 0) return [];
   const running = new Set(rows.map((row) => row.payloadHash));
-  return CAST_VIEW_ANGLES.filter((angle) => running.has(castViewRetrySubjectHash({
-    modelId: input.modelId,
-    castId: input.castId,
-    angle,
-  })));
+  /*
+    ONE HASH PER (ROAD, ANGLE), because the kind is mixed into the hash.
+
+    The filter above admits both kinds, so matching on the retry's hash alone
+    would widen the query and narrow the answer in the same breath — a redo's
+    rows would come back and then match nothing. The candidate hashes are
+    DERIVED from the same declared set the filter uses, so a third road added
+    to that set is seen here with no edit.
+  */
+  return CAST_VIEW_ANGLES.filter((angle) => VIEW_REPLACING_OPERATION_KINDS.some((kind) =>
+    running.has(castViewSubjectHash({
+      kind,
+      modelId: input.modelId,
+      castId: input.castId,
+      angle,
+    }),
+  )));
 }
 
 /**

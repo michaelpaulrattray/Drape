@@ -19,7 +19,10 @@ import type { Model, ModelAsset } from "../../drizzle/schema";
 import { CAST_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
 import { storagePublicUrl } from "../storage";
 import type { CastLineage } from "../db/castingV2Sign";
-import { CASTING_V2_VIEW_RETRY_PRICE_CREDITS } from "../casting/castingCreditCosts";
+import {
+  CASTING_V2_PACKAGE_REDO_VIEW_PRICE_CREDITS,
+  CASTING_V2_VIEW_RETRY_PRICE_CREDITS,
+} from "../casting/castingCreditCosts";
 import { CAST_PACKAGE_VIEWS, castPackageLabel } from "./castViewPackage";
 import { castPronouns, type CastPronouns } from "./castPronouns";
 import { viewDeliveredUnchecked } from "./viewConformance";
@@ -155,6 +158,74 @@ export type CastSlotRetry = {
   reason: "unchecked" | "refunded";
 };
 
+/**
+ * ASKING FOR ALL HER VIEWS AGAIN — the package-level offer (#1903).
+ *
+ * One field, and it is the price, because this offer has no roads to tell
+ * apart: a redo needs no fault to be found first (his ruling: *"incase they
+ * didnt like the outfit that was invented or whatever"*), so there is no
+ * reason word and no free branch. `null` is the whole of "not now".
+ *
+ * ⚠ **THE PRICE IS ON THIS ONE, UNLIKE THE SLOT'S.** His 2026-09-26 ruling took
+ * the number off the Try again row — *"No credit count in the row"* — because
+ * that row sits under a picture as a muted line and had become louder than the
+ * broken tile beside it. This is a button the customer presses on purpose, and
+ * his older standing rule applies to it instead: **prices on paid buttons.**
+ * The two are not in tension; they are a caption and a button.
+ */
+export type CastPackageRedo = {
+  /** Ledger credits for the whole package. The client converts for display. */
+  priceCredits: number;
+};
+
+/**
+ * MAY ALL HER VIEWS BE ASKED FOR AGAIN, AND WHAT WOULD IT COST?
+ *
+ * Pure, and read by BOTH the room and the entrance that spends — the Try again
+ * road's rule applied one level up: *"a second opinion is how a customer comes
+ * to press a free button and be charged."* Here the failure would be louder,
+ * because the number is printed on the button.
+ *
+ * Two refusals and nothing else:
+ *
+ * - **She is still being made.** A redo of views that are still arriving would
+ *   charge for a second render of pictures nobody has seen once.
+ * - **Something of hers is already in flight.** Server truth per slot (#1235),
+ *   from this same projection — so the button disappears for the same reason,
+ *   at the same moment, that the entrance refuses.
+ *
+ * ⚠ **A FAILED OR UNCHECKED SLOT IS NOT A REFUSAL HERE, and that is the
+ * difference from {@link castSlotRetryOffer}.** That function asks *may this
+ * view be asked for again*, which is a question about a remedy and is therefore
+ * about state. This asks *may the customer buy the whole package again*, which
+ * is a question about taste. A Cast with one refunded slot may be redone; a
+ * Cast with five may be redone; the money is the same either way, which is
+ * exactly what makes the offer simple.
+ */
+export function castPackageRedoOffer(
+  cast: {
+    status: SignedCastProjection["status"];
+    slots: readonly Pick<CastSlotProjection, "retrying">[];
+  },
+  /**
+   * ONE VIEW'S SLICE, not the package total — and this is a money control
+   * rather than a style of argument.
+   *
+   * A package is a historical record: `castProjection` renders the slots this
+   * Cast actually owns, and two of them own a retired `walk`. Quoting today's
+   * five-view total would print 350 credits on a six-view Cast's button and
+   * then charge 420 at the till, which is the exact disagreement
+   * {@link castSlotRetryOffer}'s own docblock exists to prevent — louder here,
+   * because this number is printed where the customer can read it.
+   */
+  viewPriceCredits: number,
+): CastPackageRedo | null {
+  if (cast.status !== "ready") return null;
+  if (cast.slots.length === 0) return null;
+  if (cast.slots.some((slot) => slot.retrying === true)) return null;
+  return { priceCredits: cast.slots.length * viewPriceCredits };
+}
+
 export type CastCapability = "full" | "calibrated" | "unsupported";
 
 export type SignedCastProjection = {
@@ -166,6 +237,14 @@ export type SignedCastProjection = {
   anchorUrl: string | null;
   slots: CastSlotProjection[];
   identityLocked: true;
+  /**
+   * ASK FOR ALL HER VIEWS AGAIN — the offer, or `null` when not now (#1903).
+   *
+   * Derived by {@link castPackageRedoOffer} from the slots immediately above,
+   * so the button the room draws and the spend the entrance authorizes are one
+   * reading. It carries the price because the price goes on the button.
+   */
+  redo: CastPackageRedo | null;
   /**
    * A room-level sentence, or null. Today it carries exactly one event — the
    * total loss — because that is the only fact about a Cast that the strip
@@ -756,6 +835,15 @@ export function projectSignedCast(input: {
     anchorUrl: anchor?.storageUrl ?? null,
     slots,
     identityLocked: true,
+    /*
+      ASK FOR ALL HER VIEWS AGAIN (#1903) — derived from the slots just built,
+      never from a second reading of the Cast. The entrance asks the same
+      function the same question at the moment the money would move.
+    */
+    redo: castPackageRedoOffer(
+      { status: building ? "building" : "ready", slots },
+      CASTING_V2_PACKAGE_REDO_VIEW_PRICE_CREDITS,
+    ),
     /*
       Derived from the slots themselves rather than stored on the Cast, for the
       same reason everything else here is: a finished room is rendered from its

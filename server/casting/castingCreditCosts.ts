@@ -338,6 +338,58 @@ export const CASTING_V2_REFINE_PRICE_CREDITS = 1750;
 export const CASTING_V2_VIEW_RETRY_PRICE_CREDITS = 1850;
 
 /**
+ * A REDO OF THE WHOLE PACKAGE — one view's refundable slice (#1903, his word
+ * 2026-10-07).
+ *
+ * **His ruling, verbatim:** *"maybe we should allow retry by default incase
+ * they didnt like the outfit that was invented or whatever but it costs per
+ * retry and regens all views not just one"*, and his price for it, asked and
+ * answered the same sitting: ***"350"*** display credits.
+ *
+ * **350 × 5 = 1,750 ledger = 350 display**, and the TOTAL is derived from the
+ * view list rather than typed — `CASTING_V2_PACKAGE_REDO_PRICE_CREDITS` in
+ * `castViewPackage.ts`, beside the Sign's own derivation, for the same reason
+ * the Sign's is there: a profile that promises five views must not be able to
+ * quote a price for six.
+ *
+ * ⚠ **WHY THIS IS A SLICE AND NOT ONE NUMBER, WHEN HE NAMED ONE NUMBER.** The
+ * card prices a redo as a single figure and says nothing about what happens
+ * when one of the five views does not arrive — but it also says *"The refund
+ * rule for a catastrophic refusal is unchanged"*, and that rule refunds **one
+ * view**. A single indivisible charge cannot honour it: a redo whose back view
+ * is refused would either refund nothing (charging for a picture never
+ * delivered) or refund everything (handing back four views' worth of work the
+ * customer kept). So the redo takes the SIGN's money pattern, because the redo
+ * is literally the Sign's package build run again — and the Sign's own
+ * docblock already states the property that makes it work: *"Both parts divide
+ * by 5 exactly, which is the whole reason the spec chose them: a refund a
+ * customer can read has to be a whole display number too."* 350 ledger is
+ * **70 display**, a whole number, so a refunded slice is a figure a customer
+ * can read.
+ *
+ * ⚠ **THE DECLARED COST OF THAT CHOICE, named here rather than discovered
+ * later: in a partial failure the package is briefly MIXED** — four views in
+ * the new outfit beside one in the old — which is the one thing a redo exists
+ * to avoid. The alternative, all-or-nothing, spends house money on renders
+ * nobody receives and hands the customer nothing new for a charge they would
+ * then have to watch come back. Per-slice is the lesser of the two and it is
+ * the one every other multi-output road here already takes.
+ *
+ * ⚠ **NOT THE PAID *TRY AGAIN*, AND #1903's OWN BODY SAID IT WAS.** The card
+ * reads *"That matches Refine and the pricing table's Try again"*: the Refine
+ * half holds (`CASTING_V2_REFINE_PRICE_CREDITS` is 1,750 = 350 display), and
+ * the Try again half is two prices old — `CASTING_V2_VIEW_RETRY_PRICE_CREDITS`
+ * went to 1,850 = **370** display on 2026-10-01 (#1601 item 1, his finance
+ * guy's note: *"needed to keep every worst case profitable"*). **His number is
+ * 350 and that is what ships**; the sentence it was justified with is not.
+ *
+ * **A redo is never free, and that is his word too** — *"it costs credits every
+ * time (no free first one)"*, the card's own clause. There is no zero branch
+ * here, unlike the Try again above, and nothing reads this price against zero.
+ */
+export const CASTING_V2_PACKAGE_REDO_VIEW_PRICE_CREDITS = 350;
+
+/**
  * Sign (§H.4/H.10, founder-decided 2026-07-30; repriced 2026-10-01 under his
  * approved pricing, #1601 item 1): one price, one operation, **decomposed** —
  * because a failed view has to refund its exact slice under the same charge

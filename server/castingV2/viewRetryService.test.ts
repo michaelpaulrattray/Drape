@@ -224,7 +224,11 @@ function dependencies(
       A hand-assembled typecheck is not the typecheck.
     */
     readSlots: async () => ({
-      modelId: 7, slots, deliveredOutfitKeys, freeRetrySpentAngles: [],
+      /* `ready` on every fixture in this file: a Try again is only ever
+         offered on a terminal package, and `castSlotRetryOffer` refuses any
+         slot that is not. The field arrived with the redo (#1903), which reads
+         it to refuse a Cast still being made. */
+      modelId: 7, status: "ready" as const, slots, deliveredOutfitKeys, freeRetrySpentAngles: [],
     }),
     readOutfitBytes: async (key: string) => {
       outfitReads.push(key);
@@ -457,6 +461,7 @@ describe("try again on one view — what moves, and in what order", () => {
         readSlots: async () => ({
           modelId: 7,
           slots: [spent],
+          status: "ready" as const,
           deliveredOutfitKeys,
           freeRetrySpentAngles: [input.angle],
         }),
@@ -491,6 +496,7 @@ describe("try again on one view — what moves, and in what order", () => {
         readSlots: async () => ({
           modelId: 7,
           slots: [spent],
+          status: "ready" as const,
           deliveredOutfitKeys,
           freeRetrySpentAngles: [input.angle],
         }),
@@ -536,6 +542,7 @@ describe("try again on one view — what moves, and in what order", () => {
         readSlots: async () => ({
           modelId: 7,
           slots: [free],
+          status: "ready" as const,
           deliveredOutfitKeys,
           /* A different angle entirely — her close-up, not the back she asked for. */
           freeRetrySpentAngles: ["closeUp"],

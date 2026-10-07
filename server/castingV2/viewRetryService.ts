@@ -123,6 +123,18 @@ export type CastSlotsRead = {
   modelId: number;
   slots: ReturnType<typeof projectSignedCast>["slots"];
   /**
+   * `building` while a package is still streaming in, `ready` once it is
+   * terminal — the projection's own word, carried out rather than re-derived
+   * (#1903).
+   *
+   * Read by the redo entrance, which refuses a Cast whose first package has not
+   * finished: a redo of views that are still arriving would charge for a second
+   * render of pictures the customer has not been shown once. The Try again road
+   * does not consult it, because `castSlotRetryOffer` already refuses every slot
+   * that is not `ready`.
+   */
+  status: ReturnType<typeof projectSignedCast>["status"];
+  /**
    * THE VIEWS WHOSE ONE FREE TRY AGAIN IS ALREADY SPENT (#1601 item 4).
    *
    * Carried out of the read rather than re-queried at the till, for the reason
@@ -231,8 +243,15 @@ export function deliveredOutfitKeysFrom(
  * thing the customer is looking at. Deriving it any other way is the parallel
  * copy working law 4 forbids, on a surface where the copy's drift is a wrong
  * price.
+ *
+ * ⚠ **EXPORTED FOR THE REDO (#1903), AND THAT IS THE WHOLE REASON IT IS NOT
+ * COPIED.** A redo spends money against the same five slots this read
+ * describes, so the two roads have to agree about what is already in flight,
+ * what each slot holds and which full-length view would dress a render. A
+ * second `readCastSlots` next door would be working law 4's parallel copy on
+ * the one surface where its drift is a wrong charge.
  */
-async function readCastSlots(userId: number, castPublicId: string): Promise<CastSlotsRead | null> {
+export async function readCastSlots(userId: number, castPublicId: string): Promise<CastSlotsRead | null> {
   const model = await getOwnedCastByPublicId(userId, castPublicId);
   if (!model) return null;
   const [assets, lineage, promisedAngles, retryingAngles, freeRetrySpentAngles] = await Promise.all([
@@ -254,6 +273,7 @@ async function readCastSlots(userId: number, castPublicId: string): Promise<Cast
   return {
     modelId: model.id,
     slots: projection.slots,
+    status: projection.status,
     freeRetrySpentAngles,
     /* #1474 — derived from the assets this function already read, never from a
        second query. */

@@ -60,6 +60,27 @@ const ALLOWED: Array<{ match: string; because: string }> = [
     because:
       "A REFUSED Try again — not enough credits, or a slot filled by a sweep or another tab between the button being drawn and pressed. The tile is unchanged and a refusal has no surface of its own. The server's own sentence carries the price when the balance is short; this is only the fallback when it has none.",
   },
+  // ---- CastingRoom.tsx (the paid redo of a whole package — #1903 slice 2)
+  {
+    match: "of the views didn't arrive.",
+    because:
+      "A paid redo (issue 1903, slice 2) where some views did not arrive. The strip shows the new pictures and leaves the OLD picture in a failed slot — which is the right behaviour and is exactly why it cannot explain itself: a slot that kept its old view looks identical to one nobody asked about, so the surface cannot say that a view was missed or that its slice came back. It also carries the money, which the room never shows. The all-arrived case has NO toast on purpose: the new pictures are the notice.",
+  },
+  {
+    match: "None of the views arrived this time.",
+    because:
+      "The total-loss branch of the same press — every view failed, so the strip looks exactly as it did before the button was pressed and nothing on it says the 350 credits went back. The one case where the surface shows literally no change at all.",
+  },
+  {
+    match: '"Some views didn\'t arrive — and the refund couldn\'t be recorded. Support can restore it."',
+    because:
+      "The truthful third branch of a redo's money (the refund law since D-64): a refund we owed could not be written, so the owner remains charged. It is never reported as 'you weren't charged', and it names support because that is the only road out of it.",
+  },
+  {
+    match: "readableFailure(error, \"Those views couldn't be asked for again.\")",
+    because:
+      "A REFUSED redo — not enough credits, a Cast that started making something between the button being drawn and pressed, or a slot locked in that window. The strip is unchanged and a refusal has no surface of its own. The server's own sentence carries the whole price when the balance is short; this is only the fallback when it has none.",
+  },
   {
     match: '"Discarded — undo is only available on the latest roll"',
     because:

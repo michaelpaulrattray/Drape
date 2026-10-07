@@ -38,7 +38,14 @@ vi.mock("../db/generationOperations", async (importOriginal) => ({
     finalizers.claimedFailure(input)),
 }));
 
-import { recoverCastingV2ViewRetryOperation } from "./viewRetryRecovery";
+import {
+  PACKAGE_REDO_RECOVERY_WORDING,
+  RECOVERED_VIEW_RETRY_FREE_SENTENCE,
+  RECOVERED_VIEW_RETRY_SENTENCE,
+  recoverCastingV2PackageRedoOperation,
+  recoverCastingV2ViewRetryOperation,
+  VIEW_RETRY_RECOVERY_WORDING,
+} from "./viewRetryRecovery";
 
 const refunds: Array<{ amount: number; reference: string }> = [];
 let landed = false;
@@ -130,5 +137,76 @@ describe("a swept try again", () => {
     expect(outcome.type).toBe("free_failure");
     expect(finalizers.claimedFailure).toHaveBeenCalledTimes(1);
     expect(finalizers.failure).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * THE SAME ADJUDICATOR, THE REDO'S WORDS (#1903 slice 2).
+ *
+ * A redo is five operations, each replacing one view, so its fork variable is
+ * this one exactly — *did a picture land under THIS operation?* It therefore
+ * REUSES the arms above rather than cloning two hundred lines of refund
+ * arithmetic whose drift would be a customer refunded twice or not at all.
+ *
+ * What these arms own is the one thing that is NOT shared: the sentence. And
+ * the first of them is the control that matters — if the wording did not
+ * actually reach the receipt, every arm here would pass by agreeing with the
+ * default.
+ */
+describe("a swept redo slice", () => {
+  it("gives the slice back with the REDO's sentence, not the Try again's", async () => {
+    ledger = [{ referenceId: CHARGE_REFERENCE, type: "generation", amount: -350 }];
+    landed = false;
+
+    const outcome = await recoverCastingV2PackageRedoOperation(operation, dependencies());
+
+    expect(outcome).toEqual({ type: "paid_failure", chargedCredits: 350, refundedCredits: 350 });
+    expect(refunds).toEqual([{ amount: 350, reference: CHARGE_REFERENCE }]);
+    /* The refund ROW says which road it came from, for whoever reads the
+       ledger later. */
+    expect(finalizers.failure).toHaveBeenCalledWith(expect.objectContaining({
+      publicMessage: PACKAGE_REDO_RECOVERY_WORDING.paidSentence,
+    }));
+    /* THE NEGATIVE HALF: it must not be the Try again's sentence. Without
+       this, a wording that never reached the receipt would pass the arm above
+       by defaulting. */
+    expect(finalizers.failure).not.toHaveBeenCalledWith(expect.objectContaining({
+      publicMessage: RECOVERED_VIEW_RETRY_SENTENCE,
+    }));
+  });
+
+  it("closes a slice that never charged free, in the redo's words", async () => {
+    ledger = [];
+    const outcome = await recoverCastingV2PackageRedoOperation(operation, dependencies());
+    expect(outcome.type).toBe("free_failure");
+    expect(refunds).toEqual([]);
+    expect(finalizers.failure).toHaveBeenCalledWith(expect.objectContaining({
+      publicMessage: PACKAGE_REDO_RECOVERY_WORDING.freeSentence,
+    }));
+  });
+
+  it("keeps the slice when a picture landed under it", async () => {
+    ledger = [{ referenceId: CHARGE_REFERENCE, type: "generation", amount: -350 }];
+    landed = true;
+    const outcome = await recoverCastingV2PackageRedoOperation(operation, dependencies());
+    expect(outcome).toEqual({ type: "durable_success", chargedCredits: 350 });
+    expect(refunds).toEqual([]);
+  });
+
+  it("leaves the Try again road's own sentences exactly where they were", async () => {
+    /*
+      ⚠ THE REGRESSION ARM FOR THE PARAMETERISATION. The wording became an
+      option with a default, and a default read from the wrong constant would
+      silently re-word a live road that has already settled real operations.
+    */
+    expect(VIEW_RETRY_RECOVERY_WORDING.paidSentence).toBe(RECOVERED_VIEW_RETRY_SENTENCE);
+    expect(VIEW_RETRY_RECOVERY_WORDING.freeSentence).toBe(RECOVERED_VIEW_RETRY_FREE_SENTENCE);
+
+    ledger = [{ referenceId: CHARGE_REFERENCE, type: "generation", amount: -1850 }];
+    landed = false;
+    await recoverCastingV2ViewRetryOperation(operation, dependencies());
+    expect(finalizers.failure).toHaveBeenCalledWith(expect.objectContaining({
+      publicMessage: RECOVERED_VIEW_RETRY_SENTENCE,
+    }));
   });
 });

@@ -55,6 +55,14 @@ export const OPERATION_REPLAY_FAMILY_BY_KIND: Readonly<
   // it re-rendered is read from the roll projection, never re-derived.
   "castingV2.retry": null,
   "castingV2.viewRetry": null,
+  /*
+    Replay is by operation key returning this slice's own receipt — and the
+    five keys of one press are DERIVED from it (`derivedClientRequestId`), so a
+    double press replays the same five rather than taking any state-derived
+    route. A Mint/Refresh route would re-drive package work against views the
+    customer is already holding.
+  */
+  "castingV2.packageRedo": null,
 };
 
 export type ReplayKindResolution =
