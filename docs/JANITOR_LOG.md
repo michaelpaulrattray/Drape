@@ -3162,3 +3162,157 @@ named in the card with their ids. Dev database only; no production surface and n
 customer touches them. Re-read it at the rows first (law 7c) in case the fixture
 has been re-run since 2026-09-22, then take the decision on the card and lift the
 hold in the same act.
+
+---
+
+## Between runs — four of run 12's nine items answered without a patrol; THE CLOCK IS LEFT FIRED ON PURPOSE (Foreman, 2026-10-07, not a patrol)
+
+**This is deliberately NOT a `## Run` heading, so `patrol-clocks.mts` still reads
+the Janitor as overdue and run 13 still happens.** The reason is run 12's own
+words about its biggest untaken item — *"70 files needs the second reader with its
+positive controls driven first, a manifest with bytes and sha1 per row, an archive
+verified by name AND size out of its own central directory, and a re-read after …
+it is a unit of work rather than the tail of one. **Do not take it in the last
+twenty minutes of a shift.**"* **That is still true and it was still not taken.**
+Writing `## Run 13` over a bounded sweep would have reset a three-day clock while
+leaving the seat's main brief undone for three more days, which is the sentence
+this heading exists to avoid.
+
+Written by `foreman-20261007-2120`, whose own unit was #1612 (PR #1901, held). The
+litter below was done in the gate's wait — *the wait is work time* — and every act
+traces to **run 12's own numbered next-run list**, items 2, 3, 4 and 6.
+
+| run 12's item | outcome tonight |
+|---|---|
+| **2 — the four `1389-strip-*.png`** | ⚠ **SWEPT. Floor expired by 94.7 h**, archived, re-read gone |
+| **3 — backup retention, 1 expired item** | ✅ **DISCHARGED — `expired 0` now.** The item it names is gone; nothing is owed |
+| **4 — the four `drape-atlas-merge-*` TEMP trees** | ✅ **DISCHARGED — 0 such trees.** Reader controlled before the zero was believed |
+| **6 — read for PORTLESS dev servers** | ✅ **0, and the zero is controlled both ways.** 12 live `node.exe`, none matching |
+| **1 — the 70-file disposable sweep** | ⚠ **NOT TAKEN. Run 13's first item and the whole reason this is not a run** |
+| **the shift-worktree population** | **READ: 15 besides the main tree. NOT swept — see §D** |
+
+### A · The four `1389-strip-*.png` — item 2, and the floor was read in UTC on both sides
+
+Run 12 held these with an instruction worth obeying literally: *"sweepable after
+`2026-10-03 11:54Z` and not one hour before — the floor is an INSTANT, not a date:
+read the mtime in UTC and compare in UTC."*
+
+```
+now (UTC)                            2026-10-07T10:35:45Z
+all four, mtime (UTC)                2026-09-26T11:54:47Z
+floor (mtime + 7 days)               2026-10-03T11:54Z
+past the floor by                    94.7 h
+```
+
+**Citations re-verified rather than inherited** (law 7c — run 12's *"nothing cites
+them"* is a report): `git grep -l` over the tree and `grep -rl` over
+`docs/ scripts/ .agents/` for each of the four names returned **0 and 0**, and
+**the reader was controlled** — the same reader on the string `1389` returns
+`client/src/foundation/SmallCopyImage.tsx`, `client/src/pages/CastingV2.tsx` and
+this log, so a zero from it is a reading and not a blind spot. #1389 is CLOSED.
+
+**Archived, verified out of the zip's own central directory by name AND size
+before a byte was deleted**, which is this seat's own method:
+
+```
+1389-strip-compare-4x.png            174172 bytes  sha1 3f2595f640d095b13e17c58043ff6b48559a69f8
+1389-strip-fullsize-light-today.png  477084 bytes  sha1 f42ada18b5431945c6a212fe4ddf85460079e88f
+1389-strip-small-dark.png            466083 bytes  sha1 05f95fd8bbae0a6cedbd9e8f7e3cdadbd11c126c
+1389-strip-small-light.png           468126 bytes  sha1 6633f46bad124baf15904b7f426d31a5da76fa53
+→ output/janitor-between-run12-13/1389-strip-frames.zip  1,545,292 bytes
+  all four entries present in the central directory at their exact byte lengths
+```
+
+Originals removed, **re-read after: `0 — gone`**. ⚠ **The archive is under
+`output/`, which is gitignored and is itself the `output/` remainder class (#8) —
+so the restore road is this paragraph plus that zip, and if the zip is swept the
+bytes are gone.** Nothing cites them and the card is closed, so that is an
+acceptable end state; it is written down rather than assumed.
+
+### B · Items 3 and 4 are both DISCHARGED, and both were read with a control first
+
+**Item 3 — backup retention.** Run 12 read *"1 expired item,
+`drape-janitor-run9-disposables-2026-09-24.zip`, 72.7 kB"* and did not act,
+because his #1294 precondition (`main` at `origin/main`'s tip and clean) was not
+met. **It is moot now:** `janitor-backup-retention.mts` reads
+**`1 items, 13.4 MB · redundant 0 · expired 0 · kept 1 · too-recent 0`**, and *"a
+founder act on the reclaimable ones would free 0.0 kB across 0 items"*. The one
+remaining backup is correctly KEPT — 31 of 31 entries not recoverable elsewhere.
+**Run 13 should not go looking for that zip; it is gone and nothing is owed.**
+
+**Item 4 — the four `drape-atlas-merge-*` trees in `%TEMP%`,** whose floor expired
+today. **There are none.** ⚠ **The zero was controlled before it was written
+down**, because a `%TEMP%` reader that silently sees nothing is indistinguishable
+from a clean `%TEMP%`: the same reader finds **198 entries** under
+`C:\Users\Admin\AppData\Local\Temp` and finds `gitleaks-8.30.0-windows`, the cache
+the previous shift left there and which the deploy rite needs. So the reader is
+working and the trees are genuinely gone.
+
+### C · Item 6 — portless dev servers, and the reader has both controls
+
+Run 12's §A is the reason this is read by command line and not by port: *"`pnpm
+dev` auto-increments its port when one is busy, and a `tsx watch` whose server
+failed to bind stays alive watching for changes while holding no socket … a port
+scan is not a dev-server check."*
+
+```
+Win32_Process, CommandLine matching  tsx.*watch|cross-env  or  node.exe + Drape|drape-shift|drape-review
+  → 0 matches
+POSITIVE CONTROL  same reader, pattern 'node|powershell'   → 16 matches
+NEGATIVE CONTROL  same reader, 'zzz-no-such-process-zzz'   →  0 matches
+live node.exe processes on the machine                     → 12
+netstat on :300x                                           →  0
+protected set printed as proof it was looked for: no foreman-runner node process
+  was present (the only match was this shift's own powershell, pid 10644)
+```
+
+**So: no orphan dev servers, and unlike the two readings run 12 overturned, this
+zero comes from a reader that has been shown able to answer non-zero.**
+
+### D · The shift-worktree population — READ at 15, deliberately NOT swept
+
+```
+C:/Users/Admin/Drape                               622ec79be [main]
+C:/Users/Admin/drape-shift-1612-precedence         d9018bebb [team/1612-precedence]           ← mine, removed at close
+C:/Users/Admin/drape-shift-seat-1-20261007-205933  be07149ad [team/studio-credit-slider-1832] ← ⚠ A LIVE SEAT
+  + 14 more from closed seat passes of 2026-10-03 and 2026-10-04
+```
+
+⚠ **Not swept, and the reason is not timidity.** Three facts argue for a dedicated
+unit: **#1882 says one of them may hold unpushed work**, so each needs the removal
+tool's per-branch pull-request read rather than a loop; **a seat is LIVE in that
+list right now** (`#1832`, run row #580, checking in); and every one of these holds
+a junction into the main tree's own `node_modules`, where this seat's own header
+records that one wrong deletion form *"empties the MAIN tree's dependency
+install, the one every other worktree, the dev server and the founder's own
+session are using."* **Fourteen removals beside a live seat, in a gate's wait, is
+the shape that produces that.**
+
+### E · Anti-boredom check
+
+Four items from run 12's own next-run list, nothing invented, **no card filed from
+this note** and no code changed. **Spend: nothing.** Deletions: four untracked PNG
+files, archived and hashed first. **Nothing inside the repository's tracked tree
+was touched**, and no manifest was needed because no tracked file was removed.
+
+**For run 13 (the clock is ALREADY FIRED — take it as a patrol, not as a tail):**
+
+1. ⚠ **ITEM 1 IS STILL THE BIGGEST UNTAKEN THING AND IT IS NOW TWO RUNS OLD** —
+   the disposable sweep, 70 sweepable and 3 chain rows at run 12's count.
+   **Re-count it first**; three code-bearing days have passed and a stale
+   population is how a sweep deletes the wrong row. The subset the Foreman shift
+   of 2026-10-07 09:52Z named is inside it: **eight untracked disposables naming
+   the retired `personaLine` token redden `candidateDispositionRetired.test.ts`
+   on every local tree and are invisible to CI**, so a shift cannot use
+   `pnpm test` on the main tree as a clean baseline until they go. That is the
+   sharpest argument for taking it, and it is a NEW one since run 12.
+2. **The 15 shift worktrees — §D.** Per branch, through
+   `shift-worktree remove`, never a loop; re-read the live-seat list first.
+3. **Items 2, 3, 4 and 6 are closed by §A–§C above — do not re-open them.** Item
+   3 in particular: the expired zip run 12 named no longer exists.
+4. **Item 5 (#1796, #1797), 8 (the knip types set) and 9 are untouched** by this
+   note and carry forward exactly as run 12 wrote them.
+5. **#1098 still waits on this seat** and is still on no run's agenda — the
+   *Between runs* note of 2026-10-03 above is its only pointer, which is the
+   gap that note was written to close. It has now been held past **five** of
+   this seat's clock firings.

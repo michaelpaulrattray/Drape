@@ -1,7 +1,7 @@
 {
-  "edition": 643,
-  "updatedAt": "2026-10-07T09:40:00.000Z",
-  "shift": "Your one-word answer is live on the site, and a security hole that was quietly stopping ALL work is fixed.\n\nYou said YES on the bandaged skull. The close-up line moved out past it, and it is live: that picture, and every close-up you own, now arrives without the Unchecked label. It is the second time your eye has moved that line and the first time it clears all ten of your own close-ups. Reviewed by hand and merged this morning.\n\nOn the way to pushing it I ran the pre-flight check and it refused. Not my change: a known, published, CRITICAL security hole in somebody else's code that we ship, sitting in the tree with no decision written about it. The gate you ordered on 3 October was correctly refusing EVERY pull request in the repository because of it, and nobody had filed it. Fixed, merged and live — I read the build back off the server rather than trusting a green tick.\n\nThen the uncomfortable part, and it is on your Problems list. That same check PASSED on the robot what it refuses on my machine — same commit, same files, same script, both reading 477 packages. The hole is gone so nothing is at risk today, but an alarm that can say all-clear when it should not is worse than no alarm, because we would believe it. I do not know why yet and I have not guessed.\n\nYour other two replies are recorded and acted on: the Pro Plus rename is its own card exactly as you asked, so it cannot hold up the slider; and your ruling that the measurement, not the checker's opinion, decides framing is written on its card word for word, with the wrong label named as the fix that follows. That fix is not started.\n\nOne last thing you spotted yourself: you answered the close-up question twice, seventeen minutes apart, because it was on your desk twice. That is the overcrowding you filed this morning, and it is now on that card as a measured example rather than a description.",
+  "edition": 644,
+  "updatedAt": "2026-10-07T10:45:00.000Z",
+  "shift": "Your framing ruling is built and waiting for a hand review, and the overdue tidy-up seat got four of its nine jobs done for free.\n\nYou told me this morning that framing is the measurement's call and the checker's opinion should not overrule it. That is built. The wrong label you saw - a close-up marked Unchecked when it had plenty of room below the chin - cannot happen that way again: where we have actually measured the crop, the picture-reader's opinion about the crop is written down and ignored.\n\nIt is NOT merged. It is the kind of change where, if I have read your sentence slightly differently from how you meant it, it goes live on the site the moment it merges - so it sits for a hand review rather than going out on a green tick.\n\nOne thing in it is worth your eye and I have not hidden it. Your ruling settles a tie, and a tie has two sides. Most of your view descriptions ask for the crop AND something else in the same sentence - \"the whole body seen from directly behind, head to feet inside the frame, face not visible\" is a direction, a crop and a concealment all at once. The reader gives one answer to the whole sentence, so nobody can tell which half it was answering. Telling it to lose to the measurement fixes your wrong label, and it also means a back view that shows the face now arrives unmarked. Both cost a label and never a picture. The thing that would end that trade instead of choosing a side is splitting your sentences so each asks one thing - and that is your wording, not mine, so it is filed and not done.\n\nWhile that waited on the robot I took the tidy-up seat's overdue list. Four of its nine jobs turned out to be already done or safely doable: four leftover screenshots swept, two items that were waiting on me discharged, and no stray dev servers running. I did NOT take its biggest job - deleting 70 leftover scratch files - because deletion is the one thing a safety net cannot give back, and I left the seat's clock showing overdue on purpose so it still gets a proper turn rather than being quietly marked done.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -9645,6 +9645,13 @@
       "status": "merged",
       "prNumber": 1898,
       "note": "Reviewed by hand and merged while this edition was being written; live on the site, build read back at 19s uptime."
+    },
+    {
+      "id": "framing-precedence-1612",
+      "title": "The measurement decides the crop, and the picture-reader can no longer overrule it (#1612)",
+      "status": "in-review",
+      "prNumber": 1901,
+      "note": "Held for a hand review rather than merged on the gate - the declared trade is in the PR body and on card #1902."
     }
   ],
   "problems": [
