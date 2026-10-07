@@ -22,10 +22,18 @@ import {
 } from "../casting/castingCreditCosts";
 import { LEDGER_PER_DISPLAY_CREDIT, displayPrice, displayRefund } from "../../shared/creditDisplay";
 import { castPackageRedoOffer } from "./castProjection";
-import {
-  CASTING_V2_PACKAGE_REDO_PRICE_CREDITS,
-  CAST_PACKAGE_VIEWS,
-} from "./castViewPackage";
+import { CAST_PACKAGE_VIEWS } from "./castViewPackage";
+
+/**
+ * THE PACKAGE TOTAL, COMPOSED HERE AND DECLARED NOWHERE IN PRODUCTION.
+ *
+ * `castViewPackage.ts` carries the reasoning: nothing in the product reads a
+ * package total, because `castPackageRedoOffer` prices the slots a Cast
+ * actually owns. So this suite composes the figure it is pinning rather than
+ * importing a constant that would exist only to be pinned.
+ */
+const PACKAGE_PRICE =
+  CASTING_V2_PACKAGE_REDO_VIEW_PRICE_CREDITS * CAST_PACKAGE_VIEWS.length;
 
 /** HIS NUMBER, typed once in this file and nowhere else in the product. */
 const HIS_PRICE_IN_DISPLAY_CREDITS = 350;
@@ -42,12 +50,12 @@ describe("his price for a redo", () => {
       declared, because that is where somebody adding a sixth view will be
       looking.
     */
-    expect(displayPrice(CASTING_V2_PACKAGE_REDO_PRICE_CREDITS))
+    expect(displayPrice(PACKAGE_PRICE))
       .toBe(HIS_PRICE_IN_DISPLAY_CREDITS);
   });
 
   it("is the per-view slice times the views the cohort promises", () => {
-    expect(CASTING_V2_PACKAGE_REDO_PRICE_CREDITS)
+    expect(PACKAGE_PRICE)
       .toBe(CASTING_V2_PACKAGE_REDO_VIEW_PRICE_CREDITS * CAST_PACKAGE_VIEWS.length);
     /* The negative control for the arm above: a total typed as a literal would
        satisfy the pin and stop tracking the list. Five is today's length, said
@@ -90,7 +98,7 @@ describe("his price for a redo", () => {
       either moves, this arm reddens and the reading is re-taken instead of
       being remembered wrongly.
     */
-    expect(displayPrice(CASTING_V2_PACKAGE_REDO_PRICE_CREDITS))
+    expect(displayPrice(PACKAGE_PRICE))
       .toBeLessThan(displayPrice(CASTING_V2_VIEW_RETRY_PRICE_CREDITS));
   });
 });
@@ -106,7 +114,7 @@ const readyCast = (count: number, overrides: { retrying?: number } = {}) => ({
 describe("who may be offered a redo", () => {
   it("offers one on a finished Cast, priced from HER slots", () => {
     const offer = castPackageRedoOffer(readyCast(5), CASTING_V2_PACKAGE_REDO_VIEW_PRICE_CREDITS);
-    expect(offer).toEqual({ priceCredits: CASTING_V2_PACKAGE_REDO_PRICE_CREDITS });
+    expect(offer).toEqual({ priceCredits: PACKAGE_PRICE });
     expect(displayPrice(offer!.priceCredits)).toBe(HIS_PRICE_IN_DISPLAY_CREDITS);
   });
 
@@ -121,7 +129,7 @@ describe("who may be offered a redo", () => {
     */
     const offer = castPackageRedoOffer(readyCast(6), CASTING_V2_PACKAGE_REDO_VIEW_PRICE_CREDITS);
     expect(offer?.priceCredits).toBe(CASTING_V2_PACKAGE_REDO_VIEW_PRICE_CREDITS * 6);
-    expect(offer?.priceCredits).not.toBe(CASTING_V2_PACKAGE_REDO_PRICE_CREDITS);
+    expect(offer?.priceCredits).not.toBe(PACKAGE_PRICE);
   });
 
   it("offers nothing while she is still being made", () => {
@@ -172,6 +180,6 @@ describe("who may be offered a redo", () => {
       ],
     };
     expect(castPackageRedoOffer(mixed, CASTING_V2_PACKAGE_REDO_VIEW_PRICE_CREDITS))
-      .toEqual({ priceCredits: CASTING_V2_PACKAGE_REDO_PRICE_CREDITS });
+      .toEqual({ priceCredits: PACKAGE_PRICE });
   });
 });

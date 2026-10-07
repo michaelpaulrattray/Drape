@@ -346,11 +346,13 @@ export const CASTING_V2_VIEW_RETRY_PRICE_CREDITS = 1850;
  * retry and regens all views not just one"*, and his price for it, asked and
  * answered the same sitting: ***"350"*** display credits.
  *
- * **350 × 5 = 1,750 ledger = 350 display**, and the TOTAL is derived from the
- * view list rather than typed — `CASTING_V2_PACKAGE_REDO_PRICE_CREDITS` in
- * `castViewPackage.ts`, beside the Sign's own derivation, for the same reason
- * the Sign's is there: a profile that promises five views must not be able to
- * quote a price for six.
+ * **350 × 5 = 1,750 ledger = 350 display** — and ⚠ **NO PACKAGE TOTAL IS
+ * DECLARED ANYWHERE IN THE PRODUCT.** `castPackageRedoOffer` multiplies this
+ * slice by the slots a Cast ACTUALLY owns, so a constant for today's five would
+ * be a second answer to a question the offer already answers, and the wrong one
+ * on the two live Casts that own a retired `walk`.
+ * `castViewPackage.ts` carries the whole reasoning beside the Sign's own total,
+ * including where his 350 is pinned instead.
  *
  * ⚠ **WHY THIS IS A SLICE AND NOT ONE NUMBER, WHEN HE NAMED ONE NUMBER.** The
  * card prices a redo as a single figure and says nothing about what happens

@@ -10207,14 +10207,6 @@
       "file": "server/castingV2/castViewPackage.ts"
     },
     {
-      "id": "cost:server/castingV2/castViewPackage.ts:CASTING_V2_PACKAGE_REDO_PRICE_CREDITS",
-      "name": "CASTING_V2_PACKAGE_REDO_PRICE_CREDITS",
-      "constant": "CASTING_V2_PACKAGE_REDO_PRICE_CREDITS",
-      "credits": 1750,
-      "derivedFrom": "CASTING_V2_PACKAGE_REDO_VIEW_PRICE_CREDITS * CAST_PACKAGE_VIEWS.length",
-      "file": "server/castingV2/castViewPackage.ts"
-    },
-    {
       "id": "cost:server/castingV2/castViewPackage.ts:CASTING_V2_SIGN_PRICE_CREDITS",
       "name": "CASTING_V2_SIGN_PRICE_CREDITS",
       "constant": "CASTING_V2_SIGN_PRICE_CREDITS",

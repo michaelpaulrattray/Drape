@@ -185,45 +185,34 @@ export const CASTING_V2_SIGN_PROMOTION_PRICE = CASTING_V2_SIGN_COSTS.promotion;
 export const CASTING_V2_SIGN_PRICE_CREDITS =
   CASTING_V2_SIGN_COSTS.promotion + CAST_PACKAGE_VIEW_PRICE * CAST_PACKAGE_VIEWS.length;
 
-/**
- * WHAT A REDO OF THE WHOLE PACKAGE COSTS — 350 × 5 = **1,750 ledger = 350
- * display**, his number (#1903, 2026-10-07: *"350"*).
- *
- * Derived from the view list's own length and sitting beside the Sign's
- * derivation for the same reason that one is here: a redo renders exactly the
- * views the cohort promises, so a profile that promises five must not be able
- * to quote a price for six. The client is served this number and carries no
- * literal (D-15); the per-view slice it is built from, and the whole argument
- * for there being a slice at all, live on
- * {@link CASTING_V2_PACKAGE_REDO_VIEW_PRICE_CREDITS}.
- *
- * ⚠ **HIS 350 IS A COINCIDENCE OF THE VIEW COUNT AND IS PINNED BY A TEST
- * RATHER THAN BY THIS ARITHMETIC.** Five views at 350 happen to come to his
- * figure; six would come to 420 display, and nothing in this expression would
- * notice — the product would simply start charging a price he never set.
- * `server/castingV2/packageRedoPrice.test.ts` holds `displayPrice(…) === 350`
- * and names him, so adding a view fails the gate with a question for him on
- * it instead of shipping a silent reprice.
- *
- * **Why a test and not an import-time throw**, which is the shape this file's
- * neighbour `CAST_VIEW_ANGLE_PATTERN` uses: that one guards a validator that
- * would otherwise accept *more than it says*, which is unsafe to discover
- * later. This guards an arithmetic disagreement with a founder decision — the
- * gate stops it before a deploy, and a boot refusal would turn a reviewable
- * mistake into an outage on every surface that quotes a price.
- */
-export const CASTING_V2_PACKAGE_REDO_PRICE_CREDITS =
-  CASTING_V2_PACKAGE_REDO_VIEW_PRICE_CREDITS * CAST_PACKAGE_VIEWS.length;
-
 /*
-  ⚠ **THERE IS NO `CASTING_V2_PACKAGE_REDO_DISPLAY_CREDITS`, AND ONE WAS
-  WRITTEN FIRST.** The tempting shape is "his figure, said once" — an export
-  holding 350 so the pin and this docblock cannot drift apart. It landed on the
-  uncalled-export reading list the same minute: its only caller was the suite
-  that pins the price, and **an export whose callers are all test files has no
-  production importer.** It would have bought nothing either, because the pin
-  asserts `displayPrice(…) === 350` directly and that is the arm which catches a
-  reprice. Same lesson as `renderLikeFrame`'s deleted wrapper, one seam over.
+  ⚠ **A REDO HAS NO PACKAGE TOTAL HERE, AND TWO WERE WRITTEN BEFORE THAT WAS
+  TRUE — the reasoning is kept because the shape is tempting twice over**
+  (#1903 slice 2).
+
+  The obvious thing, beside `CASTING_V2_SIGN_PRICE_CREDITS` above, is a
+  a constant deriving 1,750 from the slice and the view list, plus a display
+  twin holding his 350. Both landed on the
+  uncalled-export reading list, and the sweep was right both times: **nothing
+  in production reads a package total, because the offer prices HER slots.**
+  `castPackageRedoOffer` multiplies the slice by the slots a Cast actually owns
+  — which is the thing that must happen, since two live Casts own a retired
+  `walk` and quoting today's five-view figure on a six-view Cast would print one
+  number on the button and charge another at the till. A total declared here
+  would be a SECOND answer to a question the offer already answers, on a money
+  surface, which is working law 4 exactly.
+
+  **Where his 350 is held instead:** `server/castingV2/packageRedoPrice.test.ts`
+  asserts `displayPrice(slice × CAST_PACKAGE_VIEWS.length) === 350` and names
+  him, because his figure is a COINCIDENCE OF THE VIEW COUNT rather than a
+  constant — six views would come to 420 display and no expression anywhere
+  would notice, so the product would simply start charging a price he never set.
+  A test and not an import-time throw (the shape this file's neighbour
+  `CAST_VIEW_ANGLE_PATTERN` uses): that one guards a validator that would accept
+  *more than it says*, which is unsafe to discover later, while this guards an
+  arithmetic disagreement with a founder decision — the gate stops it before a
+  deploy, and a boot refusal would turn a reviewable mistake into an outage on
+  every surface that quotes a price.
 */
 
 /**

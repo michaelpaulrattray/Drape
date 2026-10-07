@@ -105,11 +105,7 @@ import { TRPCError } from "@trpc/server";
 import { CASTING_V2_PACKAGE_REDO_VIEW_PRICE_CREDITS } from "../casting/castingCreditCosts";
 import { derivedClientRequestId } from "../casting/operationContract";
 import { renderLikeFrame } from "../testing/renderLikeFrame";
-import {
-  CASTING_V2_PACKAGE_REDO_PRICE_CREDITS,
-  CAST_PACKAGE_VIEWS,
-  castPackageView,
-} from "./castViewPackage";
+import { CAST_PACKAGE_VIEWS, castPackageView } from "./castViewPackage";
 import { PLATE_ANGLES } from "./outfitPlate";
 import {
   PACKAGE_REDO_BUSY_MESSAGE,
@@ -121,6 +117,9 @@ import {
 import type { CastSlotProjection } from "./castProjection";
 
 const SLICE = CASTING_V2_PACKAGE_REDO_VIEW_PRICE_CREDITS;
+/* The whole press, composed rather than imported — no package total is
+   declared in production, because the offer prices HER slots. */
+const PACKAGE_PRICE = SLICE * CAST_PACKAGE_VIEWS.length;
 const PRESS = "11111111-1111-4111-8111-111111111111";
 
 const journal: string[] = [];
@@ -317,7 +316,7 @@ describe("a redo that lands", () => {
 
     expect(result.committed.sort()).toEqual([...CAST_PACKAGE_VIEWS].sort());
     expect(result.failed).toEqual([]);
-    expect(result.chargedCredits).toBe(CASTING_V2_PACKAGE_REDO_PRICE_CREDITS);
+    expect(result.chargedCredits).toBe(PACKAGE_PRICE);
     expect(result.refundedCredits).toBe(0);
     expect(result.refundRecorded).toBe(true);
 
@@ -325,7 +324,7 @@ describe("a redo that lands", () => {
     expect(deducts).toHaveLength(CAST_PACKAGE_VIEWS.length);
     for (const deduct of deducts) expect(deduct.amount).toBe(SLICE);
     expect(deducts.reduce((sum, d) => sum + d.amount, 0))
-      .toBe(CASTING_V2_PACKAGE_REDO_PRICE_CREDITS);
+      .toBe(PACKAGE_PRICE);
     expect(refunds).toEqual([]);
     /* Each slice is charged under ITS OWN operation's reference, which is what
        lets one view refund without touching the other four. */
@@ -437,7 +436,7 @@ describe("the outfit", () => {
     const result = await redoCastPackage(dependencies(), input);
     expect(result.committed.sort()).toEqual([...CAST_PACKAGE_VIEWS].sort());
     expect(result.failed).toEqual([]);
-    expect(result.chargedCredits).toBe(CASTING_V2_PACKAGE_REDO_PRICE_CREDITS);
+    expect(result.chargedCredits).toBe(PACKAGE_PRICE);
     expect(refunds).toEqual([]);
   });
 });
@@ -455,7 +454,7 @@ describe("a redo that partly fails", () => {
     expect(result.failed).toEqual(["backFull"]);
     expect(result.committed).toHaveLength(CAST_PACKAGE_VIEWS.length - 1);
     expect(result.committed).not.toContain("backFull");
-    expect(result.chargedCredits).toBe(CASTING_V2_PACKAGE_REDO_PRICE_CREDITS);
+    expect(result.chargedCredits).toBe(PACKAGE_PRICE);
     expect(result.refundedCredits).toBe(SLICE);
     expect(result.refundRecorded).toBe(true);
 
@@ -536,7 +535,7 @@ describe("the free refusals, all of them before any claim", () => {
       and be refused again. 69 display credits is one short of the price.
       Asserted on the SENTENCE because the sentence is the whole repair.
     */
-    balance = CASTING_V2_PACKAGE_REDO_PRICE_CREDITS - 1;
+    balance = PACKAGE_PRICE - 1;
     await expect(redoCastPackage(dependencies(), input)).rejects.toThrow("350 credits");
     expectNothingSpent();
   });
@@ -600,7 +599,7 @@ describe("the same press arriving twice", () => {
 
     const result = await redoCastPackage(dependencies(), input);
     expect(result.committed.sort()).toEqual([...CAST_PACKAGE_VIEWS].sort());
-    expect(result.chargedCredits).toBe(CASTING_V2_PACKAGE_REDO_PRICE_CREDITS);
+    expect(result.chargedCredits).toBe(PACKAGE_PRICE);
     expect(deducts).toEqual([]);
     expect(committed).toEqual([]);
     expect(plateCalls).toBe(0);
