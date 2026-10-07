@@ -24,6 +24,7 @@
  * would be red on an aeroplane. The live reading is the gate step's job, which is
  * exactly where it belongs.
  */
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -37,6 +38,8 @@ import {
   judgeAdvisories,
   OUTAGE_GUIDANCE,
   readAuditReport,
+  readTreeFromRevList,
+  advisoryTreeLine,
 } from "../scripts/lib/dependencyAdvisories.mts";
 
 const ROOT = resolve(import.meta.dirname, "..");
@@ -521,5 +524,92 @@ describe("⚠ THE CALL SITE — a reader with no caller does not exist (invarian
     const checker = read("scripts/check-dependency-advisories.mts");
     expect(checker).toContain("run.error !== undefined");
     expect(checker).not.toMatch(/run\.status/);
+  });
+});
+
+/**
+ * WHICH TREE THE READING WAS OF — #1899.
+ *
+ * On 2026-10-07 this step read *"none blocking — 477 production dependencies
+ * read"* on CI while the same script refused a CRITICAL `proxy-addr` advisory
+ * locally, apparently on the same commit. **Both answers were right, about two
+ * different trees**: the gate runs on GitHub's MERGE ref, and the merge's other
+ * parent (#1896) had pinned `proxy-addr@^2.0.8` forty seconds earlier.
+ *
+ * ⚠ **NOTHING ABOUT THE JUDGE WAS WRONG, SO NOTHING ABOUT THE JUDGE CHANGED,
+ * and these arms deliberately assert no verdict.** What was missing is that the
+ * output named a dependency COUNT and never named the tree the count was of —
+ * so the one fact separating the two readings was the one fact a reader had to
+ * dig out of a run log. These arms hold the line that says it.
+ */
+describe("the reading names the tree it was taken from (#1899)", () => {
+  it("⚠ parses what git ACTUALLY prints — driven, not assumed", () => {
+    /*
+      The format is the assumption most likely to be wrong, and it is the whole
+      reason the parse is a pure function in the lib rather than four lines
+      inside a command script no suite can reach. This drives REAL git in this
+      repository: `rev-list --parents -n 1 HEAD` prints the commit then its
+      parents, on one line.
+    */
+    const stdout = execFileSync("git", ["rev-list", "--parents", "-n", "1", "HEAD"], {
+      encoding: "utf8",
+      cwd: ROOT,
+    });
+    const tree = readTreeFromRevList(stdout);
+    expect(tree, "git's own output parsed to nothing").not.toBeNull();
+    expect(tree?.head).toMatch(/^[0-9a-f]{9}$/);
+    /* And the head really is this tree's HEAD, not some other sha on the line. */
+    const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8", cwd: ROOT }).trim();
+    expect(head.startsWith(tree!.head)).toBe(true);
+  });
+
+  it("⚠ A REAL MERGE COMMIT reads as a merge — the case the whole card is about", () => {
+    /*
+      A non-merge HEAD proves only half of it. This finds a real merge in this
+      repository's own history and drives the same parse over it, so the two
+      shapes are both read from git rather than one of them from a fixture.
+    */
+    const merge = execFileSync("git", ["rev-list", "--merges", "-n", "1", "HEAD"], {
+      encoding: "utf8",
+      cwd: ROOT,
+    }).trim();
+    expect(merge, "this repository has no merge commit to drive the merge case with").not.toBe("");
+    const tree = readTreeFromRevList(
+      execFileSync("git", ["rev-list", "--parents", "-n", "1", merge], {
+        encoding: "utf8",
+        cwd: ROOT,
+      }),
+    );
+    expect(tree?.parents.length).toBeGreaterThanOrEqual(2);
+    const line = advisoryTreeLine(tree);
+    expect(line).toContain("the MERGE of");
+    /* The sentence that would have saved #1899 half a day. */
+    expect(line).toMatch(/NOT your branch head/);
+    expect(line).toContain("#1899");
+  });
+
+  it("a plain commit says its sha and claims nothing about a merge", () => {
+    const line = advisoryTreeLine({ head: "e4001b13b", parents: ["6f5f33f9f"] });
+    expect(line).toBe("  tree read: e4001b13b");
+    expect(line).not.toContain("MERGE");
+  });
+
+  it("⚠ no git is an honest NULL, and it does not withhold the verdict", () => {
+    /*
+      The one rule about this line: a security verdict must never be held back
+      because a LABEL could not be composed. A tarball checkout has no sha to
+      name, and inventing one would be worse than the silence it replaces.
+    */
+    expect(readTreeFromRevList("")).toBeNull();
+    expect(readTreeFromRevList("fatal: not a git repository")).toBeNull();
+    expect(advisoryTreeLine(null)).toContain("unknown");
+    /* And the script prints it OUTSIDE the two exit paths' own composers, so a
+       missing tree cannot change an exit code. */
+    const checker = read("scripts/check-dependency-advisories.mts");
+    expect(checker).toContain("console.log(advisoryTreeLine(tree));");
+    expect(
+      checker.match(/console\.log\(advisoryTreeLine\(tree\)\);/g)?.length,
+      "only one verdict names its tree — a refusal is the reading most likely to be compared",
+    ).toBe(2);
   });
 });
