@@ -570,6 +570,47 @@ export async function readSubscriptionBillingState(
 }
 
 /**
+ * THE ADD-ON'S PRICE ID AT AN INTERVAL, FOR IDENTIFYING AN INVOICE LINE —
+ * `null` when the catalogue cannot answer (#1832 repair).
+ *
+ * The renewal grant has to decide whether a line on a paid invoice IS the
+ * credit dial's add-on, and the dialect production speaks carries a price
+ * **id** on its lines and no lookup key (`invoiceLines.ts`'s own reading of
+ * the SDK types). So the comparison is id-to-id, and this is where the id
+ * comes from, with the client kept private exactly as every other road here
+ * keeps it.
+ *
+ * ⚠ **IT ASKS FOR ONE STEP, AND ONE STEP IS NOT A GUESS ABOUT THE CUSTOMER.**
+ * A price id does not vary with the quantity billed against it — the dial's
+ * position is the subscription item's `quantity`, never a different price —
+ * so any sellable unit count resolves the same id, and `1` is simply the
+ * count every rung with a dial is guaranteed to allow.
+ * `resolvePlanCreditsPriceId` refuses `0`, which is why the argument is not
+ * the honest-looking zero.
+ *
+ * ⚠ **AND IT RETURNS `null` RATHER THAN THROWING.** The caller is a webhook
+ * deciding how much to grant; an unresolvable price means *this reading is
+ * unavailable*, which is a fall-back-to-the-other-road fact and not an
+ * invoice failure. Letting the throw out would turn a catalogue hiccup into a
+ * refused payment event.
+ */
+export async function planCreditsAddonPriceId(
+  plan: SubscriptionPlan,
+  interval: BillingIntervalChoice,
+): Promise<string | null> {
+  if (planCreditSliderUnitsAllowed(plan) === 0) return null;
+  try {
+    return await resolvePlanCreditsPriceId(stripe, plan, interval, 1);
+  } catch (error) {
+    log.error(
+      { err: error },
+      `[Stripe] Could not resolve the credit add-on price for ${plan}/${interval} — an invoice line cannot be identified by id`,
+    );
+    return null;
+  }
+}
+
+/**
  * WHAT A PLAN CHANGE DOES TODAY, QUOTED BEFORE IT IS DONE (#664).
  *
  * Two shapes, and Stripe's own documented behaviour decides which one runs

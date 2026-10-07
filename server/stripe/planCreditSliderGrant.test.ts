@@ -75,7 +75,8 @@ vi.mock("../db", () => ({
   appendChangeRequestReviewNote: vi.fn().mockResolvedValue(true),
 }));
 
-const { readSubscriptionBillingState } = vi.hoisted(() => ({
+const { readSubscriptionBillingState, planCreditsAddonPriceId } = vi.hoisted(() => ({
+  planCreditsAddonPriceId: vi.fn(),
   readSubscriptionBillingState: vi.fn(),
 }));
 
@@ -96,6 +97,7 @@ vi.mock("./stripeService", async () => {
     retrieveLiveSubscription: vi.fn(),
     subscriptionItemsOf: vi.fn(() => ({ base: null, addon: null })),
     readSubscriptionBillingState,
+    planCreditsAddonPriceId,
     REFUND_METADATA_USER_KEY: "userId",
     REFUND_METADATA_CHANGE_REQUEST_KEY: "changeRequestId",
   };
@@ -106,6 +108,7 @@ import { constructWebhookEvent } from "./stripeService";
 import { PLAN_TIERS, type PlanTier } from "../../drizzle/schema";
 import { planCreditSliderLedgerCredits } from "@shared/planCreditSlider";
 import { PLAN_CREDIT_SLIDER_MAX_UNITS, PLAN_CREDIT_SLIDER_PLAN } from "./planCreditSlider";
+import { planCreditsPriceLookupKey, priceLookupKey } from "./stripePriceCatalogue";
 
 const PLAN = (() => {
   if (PLAN_CREDIT_SLIDER_PLAN === null) {
@@ -168,10 +171,60 @@ function subscriptionAt(steps: number, plan: PlanTier = PLAN) {
   });
 }
 
+
+/* ── THE INVOICE THAT WAS PAID, as production's dialect delivers it ─────────
+   The `periodLine` above carries NO price identity at all, which is what
+   makes every arm written before this repair exercise the FALLBACK road (a
+   line that cannot be identified → read the subscription). That is worth
+   having and is now named as such, but it cannot test the repair, because the
+   repair is about reading the invoice. These lines carry what clover really
+   sends: a price **id** under `pricing.price_details.price`, no lookup key,
+   and the quantity that bills. */
+const BASE_PRICE_ID = "price_base_rung_monthly";
+const ADDON_PRICE_ID = "price_addon_credits_monthly";
+
+const cloverLine = (days: number, priceId: string, quantity: number | null) => ({
+  parent: { type: "subscription_item_details", subscription_item_details: { proration: false } },
+  period: { start: T, end: T + days * DAY_S },
+  pricing: { type: "price_details", price_details: { price: priceId, product: "prod_1" } },
+  ...(quantity === null ? {} : { quantity }),
+});
+
+/** A pre-Basil line, whose price object carries its key inline. */
+const classicLine = (days: number, lookupKey: string, quantity: number) => ({
+  proration: false,
+  price: { id: "price_whatever", lookup_key: lookupKey, recurring: { interval: "month" } },
+  period: { start: T, end: T + days * DAY_S },
+  quantity,
+});
+
+/**
+ * A renewal whose own lines say what was billed. `steps === null` is the
+ * invoice of a customer billed at the bottom of the dial — there is NO add-on
+ * line, because the item is deleted off the subscription rather than zeroed.
+ */
+const billedRenewal = (days: number, steps: number | null) => ({
+  id: `in_${eventSeq + 1}`,
+  customer: "cus_1",
+  billing_reason: "subscription_cycle",
+  parent: { subscription_details: { subscription: "sub_1" } },
+  lines: {
+    data:
+      steps === null
+        ? [cloverLine(days, BASE_PRICE_ID, 1)]
+        : [cloverLine(days, BASE_PRICE_ID, 1), cloverLine(days, ADDON_PRICE_ID, steps)],
+  },
+  metadata: { env: "local" },
+});
+
+const expectedFor = (steps: number, months = 1) =>
+  (PLAN_TIERS[PLAN].monthlyCredits + planCreditSliderLedgerCredits(steps)) * months;
+
 beforeEach(() => {
   vi.clearAllMocks();
   refreshMonthlyCredits.mockResolvedValue({ success: true, newBalance: 1 });
   planTierOnRecord.value = PLAN;
+  planCreditsAddonPriceId.mockResolvedValue(ADDON_PRICE_ID);
 });
 
 describe("1 · the grant is base + the dial's steps", () => {
@@ -269,5 +322,179 @@ describe("3 · a read that fails REFUSES rather than granting a short allowance"
     expect(grantedCredits()).toBe(
       PLAN_TIERS[PLAN].monthlyCredits + planCreditSliderLedgerCredits(3),
     );
+  });
+});
+
+/* ───────────────────────────────────────────────────────────────────────────
+   4 · THE GRANT IS SIZED BY THE INVOICE THAT WAS PAID, NOT BY THE DIAL AS IT
+   STANDS NOW — the relay's finding on PR #1910.
+
+   The first three sections mock `readSubscriptionBillingState` and feed an
+   invoice carrying no price identity, so they prove the arithmetic and the
+   fallback and CANNOT see this defect: the figure they assert comes from the
+   very read the defect is about. These arms set the invoice and the
+   subscription to DIFFERENT numbers, which is the only shape that can tell
+   the two artifacts apart.
+
+   The money at stake, from the finding: a checkout at 0 steps whose customer
+   raises the dial to the ceiling before the webhook is processed — Stripe's
+   redelivery window is up to ~3 days — gets a whole extra month of the
+   ceiling that no invoice ever charged, and this rung keeps its balance at
+   renewal, so nothing claws it back.
+   ─────────────────────────────────────────────────────────────────────────── */
+describe("4 · the invoice is the artifact, and it disagrees with the dial", () => {
+  it("⚠ the invoice's add-on line WINS over a live subscription that says otherwise", async () => {
+    subscriptionAt(PLAN_CREDIT_SLIDER_MAX_UNITS); // the dial, moved after paying
+    const result = await deliver(billedRenewal(30, 5)); // the invoice billed five
+    expect(result.success).toBe(true);
+    expect(grantedCredits(), "the grant followed the dial instead of the bill").toBe(
+      expectedFor(5),
+    );
+  });
+
+  it("⚠ AND IT NEVER ASKS: no subscription round trip when the invoice can be read", async () => {
+    subscriptionAt(PLAN_CREDIT_SLIDER_MAX_UNITS);
+    await deliver(billedRenewal(30, 5));
+    expect(
+      readSubscriptionBillingState,
+      "the live read still happened, so the stale figure is still reachable",
+    ).not.toHaveBeenCalled();
+  });
+
+  it("⚠ THE FINDING'S OWN FIRST EXAMPLE: billed at 0 steps, dial since raised to the top", async () => {
+    /*
+      The over-grant, and the reason an ABSENT add-on line must read as ZERO
+      rather than as "ask the subscription". A 0-step invoice has no add-on
+      line BY DESIGN — the item is deleted off the subscription, not set to
+      zero — so a fallback here would leave this exact case as broken as it
+      was before the repair.
+    */
+    subscriptionAt(PLAN_CREDIT_SLIDER_MAX_UNITS);
+    const result = await deliver(billedRenewal(30, null));
+    expect(result.success).toBe(true);
+    expect(grantedCredits(), "a whole month of the ceiling was granted unbilled").toBe(
+      PLAN_TIERS[PLAN].monthlyCredits,
+    );
+    expect(readSubscriptionBillingState).not.toHaveBeenCalled();
+  });
+
+  it("the UNDER-grant mirror: billed at 40 steps, dial since dropped to the bottom", async () => {
+    subscriptionAt(0);
+    await deliver(billedRenewal(30, 40));
+    expect(grantedCredits()).toBe(expectedFor(40));
+  });
+
+  it("⚠ a YEAR bought off the invoice multiplies the whole allowance", async () => {
+    /* The annual leg of the same defect: eleven months of the add-on ride on
+       getting the multiplication on the right side of the addition, and the
+       steps now come off the invoice. */
+    subscriptionAt(0);
+    await deliver(billedRenewal(365, 20));
+    expect(grantedCredits()).toBe(expectedFor(20, 12));
+  });
+
+  it("a quantity past the ceiling on the INVOICE is clamped too", async () => {
+    subscriptionAt(0);
+    await deliver(billedRenewal(30, PLAN_CREDIT_SLIDER_MAX_UNITS + 1_000));
+    expect(grantedCredits()).toBe(expectedFor(PLAN_CREDIT_SLIDER_MAX_UNITS));
+  });
+});
+
+describe("5 · how the add-on line is identified, in both dialects", () => {
+  it("⚠ a pre-Basil line is identified by its INLINE lookup key, with no price lookup at all", async () => {
+    const key = planCreditsPriceLookupKey(PLAN as never, "monthly");
+    subscriptionAt(0);
+    await deliver({
+      id: `in_${eventSeq + 1}`,
+      customer: "cus_1",
+      billing_reason: "subscription_cycle",
+      parent: { subscription_details: { subscription: "sub_1" } },
+      lines: {
+        data: [
+          {
+            proration: false,
+            price: {
+              id: "price_base",
+              lookup_key: priceLookupKey(PLAN as never, "monthly"),
+              recurring: { interval: "month" },
+            },
+            period: { start: T, end: T + 30 * DAY_S },
+            quantity: 1,
+          },
+          classicLine(30, key, 11),
+        ],
+      },
+      metadata: { env: "local" },
+    });
+    expect(grantedCredits()).toBe(expectedFor(11));
+    expect(
+      planCreditsAddonPriceId,
+      "a key was right there on the line and Stripe's catalogue was asked anyway",
+    ).not.toHaveBeenCalled();
+  });
+
+  it("a clover line is identified by price id, and the catalogue is asked ONCE", async () => {
+    subscriptionAt(0);
+    await deliver(billedRenewal(30, 7));
+    expect(grantedCredits()).toBe(expectedFor(7));
+    expect(planCreditsAddonPriceId).toHaveBeenCalledTimes(1);
+  });
+
+  it("the annual invoice asks the catalogue for the ANNUAL price", async () => {
+    /* The wrong interval here would compare a year's line against a month's
+       price id, fail to identify it, and silently fall back to the live read. */
+    subscriptionAt(0);
+    await deliver(billedRenewal(365, 3));
+    expect(planCreditsAddonPriceId.mock.calls[0][1]).toBe("annual");
+  });
+});
+
+describe("6 · an UNKNOWN falls back to the dial, and only an unknown", () => {
+  it("a line carrying no price identity at all falls back to the subscription", async () => {
+    /* `periodLine` is that line — which is why every arm above section 4
+       takes this road. Named here so the fallback has coverage of its own. */
+    subscriptionAt(9);
+    await deliver(renewal(30));
+    expect(readSubscriptionBillingState).toHaveBeenCalledTimes(1);
+    expect(grantedCredits()).toBe(expectedFor(9));
+  });
+
+  it("⚠ a catalogue that cannot answer is an UNKNOWN, never a zero", async () => {
+    /* If the add-on's price id cannot be resolved, a clover line cannot be
+       classified — so the absence of an identified add-on proves nothing and
+       the live read must stand in. Reading 0 here would short every customer
+       on the dial whenever Stripe's price list hiccuped. */
+    planCreditsAddonPriceId.mockResolvedValue(null);
+    subscriptionAt(12);
+    await deliver(billedRenewal(30, 12));
+    expect(readSubscriptionBillingState).toHaveBeenCalledTimes(1);
+    expect(grantedCredits()).toBe(expectedFor(12));
+  });
+
+  it("⚠ an add-on line with NO readable quantity is an unknown, never a zero", async () => {
+    /* The line IS the add-on and is identified as such; what is missing is the
+       figure. Absent LINE means zero; absent QUANTITY means unknown, and
+       conflating the two would short a paying customer. */
+    subscriptionAt(6);
+    await deliver({
+      id: `in_${eventSeq + 1}`,
+      customer: "cus_1",
+      billing_reason: "subscription_cycle",
+      parent: { subscription_details: { subscription: "sub_1" } },
+      lines: {
+        data: [cloverLine(30, BASE_PRICE_ID, 1), cloverLine(30, ADDON_PRICE_ID, null)],
+      },
+      metadata: { env: "local" },
+    });
+    expect(readSubscriptionBillingState).toHaveBeenCalledTimes(1);
+    expect(grantedCredits()).toBe(expectedFor(6));
+  });
+
+  it("⚠ an unknown whose subscription ALSO cannot be read still refuses", async () => {
+    readSubscriptionBillingState.mockResolvedValue(null);
+    const result = await deliver(renewal(30));
+    expect(result.success).toBe(false);
+    expect(result.message).toMatch(/could not read subscription/i);
+    expect(refreshMonthlyCredits).not.toHaveBeenCalled();
   });
 });
