@@ -1,7 +1,7 @@
 import sharp from "sharp";
 import { describe, expect, it, vi } from "vitest";
 
-import { renderLikeImage } from "../testing/renderLikeFrame";
+import { renderLikeFrame } from "../testing/renderLikeFrame";
 import { ProviderError, type TextEngine, type TextRequest } from "../providers/types";
 import { CAST_PACKAGE_VIEWS } from "./castViewPackage";
 import {
@@ -44,8 +44,8 @@ import {
 /* Two SIZES, so the arm that reads which image was posted first can tell them
    apart at the wire: the frames are bounded and re-encoded on the way out, so
    bytes cannot be compared and dimensions are what survives. */
-const anchor = await renderLikeImage(64, 96);
-const candidate = await renderLikeImage(96, 64);
+const anchor = { bytes: await renderLikeFrame(64, 96), contentType: "image/png" };
+const candidate = { bytes: await renderLikeFrame(96, 64), contentType: "image/png" };
 
 function engineReturning(text: string, extra: Partial<{ truncated: boolean }> = {}): TextEngine {
   return {

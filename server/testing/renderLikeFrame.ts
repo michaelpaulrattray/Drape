@@ -68,10 +68,19 @@ export async function renderLikeFrame(width = 64, height = 96): Promise<Buffer> 
   return png;
 }
 
-/** The same frame as a `ReferenceImage`-shaped literal, which is how suites want it. */
-export async function renderLikeImage(
-  width?: number,
-  height?: number,
-): Promise<{ bytes: Buffer; contentType: string }> {
-  return { bytes: await renderLikeFrame(width, height), contentType: "image/png" };
-}
+/*
+  ⚠ **THERE IS NO `renderLikeImage` CONVENIENCE WRAPPER, AND THE REASON IS
+  MEASURED RATHER THAN TASTE — including the half that turned out wrong.**
+
+  One was written, and it landed on the uncalled-export reading list the same
+  minute: an export whose only callers are test files has no production importer.
+  It was removed on the reasoning that this would avoid a disposition row
+  entirely — **and that reasoning was wrong, which is why it is written down
+  rather than quietly dropped.** The wrapper had been `renderLikeFrame`'s only
+  in-module caller, so deleting it simply moved the listing one name along.
+
+  What the removal is actually worth is the thing it did buy: ONE export needing
+  ONE row, instead of two exports needing two, for a module whose whole surface
+  is a fixture. Callers spell the two-field literal themselves, which is three
+  words and reads plainly at the call site.
+*/

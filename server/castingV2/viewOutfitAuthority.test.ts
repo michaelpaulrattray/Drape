@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { renderLikeImage } from "../testing/renderLikeFrame";
+import { renderLikeFrame } from "../testing/renderLikeFrame";
 
 import { pronounsForSex } from "./castPronouns";
 import {
@@ -226,8 +226,8 @@ describe("#1480 — the no-plate road is untouched", () => {
       /* Real frames since #1903 — the judge opens the candidate's bytes before
          it posts anything, so a non-image fixture is refused as a broken render
          and this arm's engine is never called. */
-      anchor: await renderLikeImage(64, 96),
-      candidate: await renderLikeImage(96, 64),
+      anchor: { bytes: await renderLikeFrame(64, 96), contentType: "image/png" },
+      candidate: { bytes: await renderLikeFrame(96, 64), contentType: "image/png" },
     });
 
     const request = seen as unknown as TextRequest;

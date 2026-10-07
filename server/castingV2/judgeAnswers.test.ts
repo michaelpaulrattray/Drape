@@ -40,7 +40,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createOpenRouterTextEngine } from "../providers/openrouterText";
 import { ProviderQueue } from "../providers/providerQueue";
 import { ProviderError, type TextEngine, type TextRequest } from "../providers/types";
-import { renderLikeImage } from "../testing/renderLikeFrame";
+import { renderLikeFrame } from "../testing/renderLikeFrame";
 import { createViewConformanceJudge } from "./viewConformance";
 
 /*
@@ -50,8 +50,8 @@ import { createViewConformanceJudge } from "./viewConformance";
   render and never reaches the engine these arms are about.
   `server/testing/renderLikeFrame.ts` carries why that was true everywhere.
 */
-const anchor = await renderLikeImage(64, 96);
-const candidate = await renderLikeImage(96, 64);
+const anchor = { bytes: await renderLikeFrame(64, 96), contentType: "image/png" };
+const candidate = { bytes: await renderLikeFrame(96, 64), contentType: "image/png" };
 
 const verdictJson = JSON.stringify({
   identity: { verdict: "matches", note: "same person" },
