@@ -1,7 +1,7 @@
 {
   "edition": 643,
   "updatedAt": "2026-10-07T09:40:00.000Z",
-  "shift": "Your one-word answer is built, and a security hole that was quietly stopping ALL work is fixed and live.\n\nYou said YES on the bandaged skull. So the close-up line moved out past it — that picture, and every close-up you own, now arrives without the Unchecked label. It is the second time your eye has moved that line and the first time it clears all ten of your own close-ups. It is written, tested and waiting on a review because it touches a charging path; I do not merge those myself.\n\nOn the way to pushing it I ran the pre-flight check and it refused. Not my change: a known, published, CRITICAL security hole in somebody else's code that we ship, sitting in the tree with no decision written about it. The gate you ordered on 3 October was correctly refusing EVERY pull request in the repository because of it. Nobody had filed it. Fixed, merged, and live on the site — I read the build back off the server rather than trusting a green tick.\n\nThen the uncomfortable part. That same check PASSED on the robot what it refuses on my machine — same commit, same files, same script, both reading 477 packages. The hole is gone so nothing is at risk today, but an alarm that can say all-clear when it should not is worse than no alarm, because we would believe it. I do not know why yet and I have not guessed. It is on your Problems list.\n\nYour other two replies are recorded and acted on: the Pro Plus rename is its own card exactly as you asked, so it cannot hold up the slider; and your ruling that the measurement, not the checker's opinion, decides framing is written on its card word for word, with the wrong label named as the thing to fix.",
+  "shift": "Your one-word answer is live on the site, and a security hole that was quietly stopping ALL work is fixed.\n\nYou said YES on the bandaged skull. The close-up line moved out past it, and it is live: that picture, and every close-up you own, now arrives without the Unchecked label. It is the second time your eye has moved that line and the first time it clears all ten of your own close-ups. Reviewed by hand and merged this morning.\n\nOn the way to pushing it I ran the pre-flight check and it refused. Not my change: a known, published, CRITICAL security hole in somebody else's code that we ship, sitting in the tree with no decision written about it. The gate you ordered on 3 October was correctly refusing EVERY pull request in the repository because of it, and nobody had filed it. Fixed, merged and live — I read the build back off the server rather than trusting a green tick.\n\nThen the uncomfortable part, and it is on your Problems list. That same check PASSED on the robot what it refuses on my machine — same commit, same files, same script, both reading 477 packages. The hole is gone so nothing is at risk today, but an alarm that can say all-clear when it should not is worse than no alarm, because we would believe it. I do not know why yet and I have not guessed.\n\nYour other two replies are recorded and acted on: the Pro Plus rename is its own card exactly as you asked, so it cannot hold up the slider; and your ruling that the measurement, not the checker's opinion, decides framing is written on its card word for word, with the wrong label named as the fix that follows. That fix is not started.\n\nOne last thing you spotted yourself: you answered the close-up question twice, seventeen minutes apart, because it was on your desk twice. That is the overcrowding you filed this morning, and it is now on that card as a measured example rather than a description.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -272,11 +272,11 @@
   "needsYou": [
     {
       "id": "closeup-line-card-1837",
-      "title": "Answered — your YES moved the close-up line, and it is in review",
-      "state": "answered",
+      "title": "Done — your YES is live: none of your close-ups is flagged any more",
+      "state": "done",
       "filedAt": "2026-10-03T19:30:00.000Z",
       "issueNumber": 1837,
-      "productImpact": "You said YES: the bandaged skull is a close-up. So the line moved out past it, and all ten of the close-ups you own now arrive without the Unchecked label — it turned one of them away before. Nothing is needed from you; it is waiting on a review because it touches a charging path.",
+      "productImpact": "You said YES: the bandaged skull is a close-up. The line moved out past it and it is LIVE on the site. All ten of the close-ups you own now arrive without the Unchecked label — it turned one of them away before. Nothing is needed from you.",
       "workedExample": "Sign a creature today and ask for the close-up. If it comes back framed like Hingu — head and the top of the shoulders — you get the picture, but with Unchecked and a free retry under it, as though something were wrong with it.\n\nSay yes below and that picture arrives clean, with nothing under it.",
       "options": [
         {
@@ -3577,7 +3577,7 @@
       "id": "closeup-line-1837",
       "title": "Where the close-up line now sits — seven of your own, in order, and one picture it turns away",
       "question": "WHAT YOU ARE LOOKING AT — seven pictures you own, lined up by how much picture hangs below the face. Tight crops on the left, loose on the right. The black line is where the studio now draws the boundary: everything left of it is kept as a close-up and nothing is said; everything right of it is handed to you marked unchecked with a free retry.\n\nThe two with a star are the ones you already judged. You said both read as close-ups, and that is why the line moved out to where it is.\n\nTHE ONE THING I WANT YOUR EYE ON is the picture immediately right of the line — Hingu, the bandaged skull. It is a head and the top of the shoulders. The line turns it away.\n\nThat picture is here because it was never looked at when the line was chosen. We set the number from six of your close-ups; you actually have ten. Three of the missing four are well inside the line. This is the fourth, and it is the only one in the whole set that the line and I disagree about.\n\nSO: is Hingu a close-up?\n\nIf YES — the line moves out past it, the same way it moved for you last time, and that picture stops being flagged.\nIf NO — the line stays exactly where it is, and we have learned that the gap it sits in is real rather than assumed.\n\nEither answer is useful and neither is wrong. Nothing here ever throws a picture away — the worst the line can do is hand you the picture with a free retry beside it.\n\nOne word closes the card.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-10-03T19:30:00.000Z",
       "issueNumber": 1837,
       "frames": [
@@ -9642,9 +9642,9 @@
     {
       "id": "closeup-line-yes-1837",
       "title": "Your YES moved the close-up line, so none of your own close-ups is flagged any more (#1837)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1898,
-      "note": "Held for review on purpose — it touches a charging path, so a shift does not merge it."
+      "note": "Reviewed by hand and merged while this edition was being written; live on the site, build read back at 19s uptime."
     }
   ],
   "problems": [
