@@ -76,7 +76,14 @@ describe("ChangePlanModal", () => {
 
   it("a subscriber's change is confirmed against the server's own quote before it charges", () => {
     expect(source).toMatch(/previewPlanChange\.useQuery\(\s*\{[^}]*\binterval\b/s);
-    expect(source).toContain("describeChange(confirming, changeQuote.data)");
+    /* ⚠ **THE CLOSING PAREN CAME OFF THIS ANCHOR WITH #1832 AND THE CLAIM IS
+       UNCHANGED.** `describeChange` grew a third argument — the credit
+       slider's new allowance, so a dial-only move gets a sentence that is
+       true of it — and the two things this arm is about are still both here:
+       the plan being confirmed, and the SERVER'S OWN QUOTE as the source of
+       every figure in the sentence. Matching to the paren would have made
+       this arm a test of the argument count. */
+    expect(source).toMatch(/describeChange\(\s*confirming,\s*changeQuote\.data\b/);
     /* The subscriber leg of act() opens the confirm step rather than firing
        the mutation — the mutate lives behind onConfirm. */
     expect(source).toMatch(/setConfirming\(plan\)/);

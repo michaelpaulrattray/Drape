@@ -19,6 +19,17 @@
  * still carry it there), fallback last — so the fallback is what it was
  * always meant to be: the shape for an object with no period at all, not the
  * everyday road.
+ *
+ * ⚠ **AND IT IS THE FIRST ITEM WITH A PERIOD ON IT, NOT ITEM ZERO — #1832's
+ * law-7 sweep.** The credit slider puts a SECOND item on a subscription, so
+ * `data[0]` stopped being "the one item there is". Stripe bills every item of
+ * one subscription on one cycle, so reading the add-on's period would almost
+ * certainly give the same answer — **and "almost certainly" is not a thing to
+ * build a renewal date on**, so the loop asks each item in turn and takes the
+ * first that actually states a period rather than ranking them. That also
+ * fixes the reachable half of the same defect, which has nothing to do with
+ * the slider: an item with no period at `data[0]` used to send this straight
+ * past a later item that had one, into the fabricated-month fallback.
  */
 export function subscriptionPeriodSec(subscription: unknown): {
   startSec: number;
@@ -29,7 +40,11 @@ export function subscriptionPeriodSec(subscription: unknown): {
     current_period_start?: number;
     current_period_end?: number;
   } | null;
-  const item = sub?.items?.data?.[0];
+  const item = (sub?.items?.data ?? []).find(
+    (candidate) =>
+      typeof candidate?.current_period_start === "number"
+      || typeof candidate?.current_period_end === "number",
+  );
   const nowSec = Math.floor(Date.now() / 1000);
   const startSec = item?.current_period_start ?? sub?.current_period_start ?? nowSec;
   const endSec =

@@ -14,9 +14,16 @@ import {
   cancelSubscription,
   voidInvoice,
   retrieveLiveSubscription,
+  subscriptionItemsOf,
+  readSubscriptionBillingState,
+  planCreditsAddonPriceId,
   REFUND_METADATA_USER_KEY,
   REFUND_METADATA_CHANGE_REQUEST_KEY,
 } from "./stripeService";
+import {
+  monthlyLedgerCreditsFor,
+  planCreditSliderUnitsAllowed,
+} from "./planCreditSlider";
 import { 
   updateUserSubscription, 
   getUserByStripeCustomerId, 
@@ -32,9 +39,11 @@ import {
   appendChangeRequestReviewNote,
 } from "../db";
 import { SubscriptionPlan } from "./stripeProducts";
+import { isPlanCreditsLookupKey } from "./stripePriceCatalogue";
+import type { BillingIntervalChoice } from "@shared/annualBilling";
 import { PlanTier, stripeWebhookEvents } from "../../drizzle/schema";
 import { subscriptionPeriodSec } from "./subscriptionPeriods";
-import { invoiceSubscriptionId, periodBought } from "./invoiceLines";
+import { invoiceSubscriptionId, nonProrationSubscriptionLines, periodBought } from "./invoiceLines";
 import {
   applyPlanChangeSettlement,
   voidPlanChangeSettlement,
@@ -720,7 +729,13 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
   // decision 5) — this column is a CACHE of the Stripe artifact, refreshed
   // every time Stripe tells us the subscription changed. Anything that is not
   // a month or a year is cached as unknown rather than guessed monthly.
-  const stripeInterval = (live as any).items?.data?.[0]?.price?.recurring?.interval;
+  //
+  // ⚠ THE PLAN'S ITEM, NOT `data[0]` — #1832's law-7 sweep. The credit slider
+  // puts a second item on the subscription, and this column is what every
+  // surface reads to decide whether to say "billed yearly": caching the
+  // ADD-ON's interval would make the two items' agreement load-bearing rather
+  // than incidental.
+  const stripeInterval = subscriptionItemsOf(live).base?.price?.recurring?.interval;
   const billingInterval =
     stripeInterval === "year" || stripeInterval === "month" ? stripeInterval : null;
 
@@ -1057,7 +1072,124 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<W
       ? (balance: number) => balance
       : (balance: number) => calculateRolloverCredits(balance, planTier as PlanTier);
 
-  const grantCredits = getMonthlyCredits(planTier as PlanTier) * grantMonths;
+  /* ⚠ THE CREDIT SLIDER'S STEPS ARE PART OF THE ALLOWANCE, AND THEY ARE READ
+     OFF THE INVOICE THAT WAS PAID — NOT OFF THE SUBSCRIPTION AS IT STANDS NOW
+     (#1832, and the second clause is the relay's finding on PR #1910).
+
+     The dial is a second line on the subscription priced per step, so a
+     customer on the slider's rung pays for `base + steps × 5,000` a month and
+     must be granted it. The question this block answers is WHICH steps.
+
+     ⚠ **THE LIVE SUBSCRIPTION IS THE WRONG ARTIFACT, AND THE WINDOW IS DAYS
+     WIDE.** `readSubscriptionBillingState` answers *where the dial is at the
+     moment this webhook runs*; the invoice is *what was billed*. Anything that
+     moves the dial between the payment and the webhook mis-sizes the grant,
+     and Stripe's redelivery window is up to ~3 days:
+
+      · **over-grant, credits nobody invoiced.** A checkout or a late-paid
+        renewal at 0 steps; the customer raises the dial to its ceiling before
+        the event is processed. The dial-up settlement correctly bills the
+        prorated share, and then the PERIOD grant reads the ceiling and adds a
+        whole further month of it. This rung keeps its balance at renewal, so
+        nothing ever claws it back.
+      · **under-grant, the mirror.** The dial is lowered after paying for
+        steps; the period grants the base alone.
+
+     So the quantity comes off the invoice's own non-proration add-on line.
+     Three things about how that line is FOUND, because getting the identity
+     wrong is the same defect wearing a different hat:
+
+      · **by lookup key where the dialect carries one, by price id where it
+        does not.** Production speaks `2026-01-28.clover`, whose lines carry a
+        price id and no key at all (`invoiceLines.ts`, read at the SDK types) —
+        so a key-only match would identify nothing on the payloads this
+        product actually receives.
+      · **NO add-on line among lines we could all identify means ZERO steps,
+        and that is a reading rather than a fallback.** It is the first case
+        above: a 0-step invoice has no add-on line BY DESIGN, because the item
+        is deleted and not zeroed off the subscription. Falling through to the
+        live read here would leave the over-grant exactly as it was.
+      · **a line we cannot identify at all is the only unknown**, and only
+        then does the live read stand in — today's road, with today's refusal
+        under it. A paid period whose size cannot be established is not
+        granted on a guess; Stripe redelivers and the failure is visible. */
+  let sliderLedgerCredits = 0;
+  if (planCreditSliderUnitsAllowed(planTier) > 0) {
+    const plan = planTier as PlanTier;
+    const interval: BillingIntervalChoice = grantMonths === 12 ? "annual" : "monthly";
+    const lines = nonProrationSubscriptionLines(invoice);
+
+    /* Resolved once, and only when a line actually needs the id road. */
+    let addonPriceId: string | null | undefined;
+    const addonPriceIdOnce = async () => {
+      if (addonPriceId === undefined) {
+        addonPriceId = await planCreditsAddonPriceId(plan as SubscriptionPlan, interval);
+      }
+      return addonPriceId;
+    };
+
+    let unitsOnInvoice: number | null = null;
+    let everyLineIdentified = lines.length > 0;
+    for (const line of lines) {
+      let isAddon: boolean | null = null;
+      if (line.lookupKey !== null) {
+        isAddon = isPlanCreditsLookupKey(line.lookupKey);
+      } else if (line.priceId !== null) {
+        const expected = await addonPriceIdOnce();
+        isAddon = expected === null ? null : line.priceId === expected;
+      }
+      if (isAddon === null) {
+        everyLineIdentified = false;
+        continue;
+      }
+      if (!isAddon) continue;
+      /* The add-on's line, found. A quantity we cannot read on it is an
+         unknown and never a zero — zero is what an ABSENT line means. */
+      if (line.quantity === null) {
+        everyLineIdentified = false;
+        continue;
+      }
+      unitsOnInvoice = line.quantity;
+      break;
+    }
+
+    let units: number;
+    if (unitsOnInvoice !== null) {
+      units = unitsOnInvoice;
+      log.info(
+        `[Webhook] Invoice ${invoice.id}: its own add-on line bills ${units} credit step(s) for user ${userId}`,
+      );
+    } else if (everyLineIdentified) {
+      units = 0;
+      log.info(
+        `[Webhook] Invoice ${invoice.id}: every billed line identified and none is the credit add-on — 0 step(s) for user ${userId}`,
+      );
+    } else {
+      const billingState = await readSubscriptionBillingState(subscriptionId);
+      if (!billingState) {
+        log.error(
+          `[Webhook] Invoice ${invoice.id} is on a rung that can carry credit steps, its own lines could not all be identified, and its subscription ${subscriptionId} could not be read — refusing rather than grant an allowance that may be short`,
+        );
+        return {
+          success: false,
+          message: `Could not read subscription ${subscriptionId} to size the credit grant — refusing so Stripe redelivers`,
+        };
+      }
+      units = billingState.currentCreditUnits;
+      log.warn(
+        `[Webhook] Invoice ${invoice.id}: a billed line could not be identified, so the grant falls back to the subscription as it stands now — ${units} credit step(s) for user ${userId}, which may differ from what was billed`,
+      );
+    }
+
+    const monthly = monthlyLedgerCreditsFor(plan, units);
+    sliderLedgerCredits = monthly - getMonthlyCredits(plan);
+    log.info(
+      `[Webhook] Invoice ${invoice.id}: ${units} credit step(s) add ${sliderLedgerCredits} to each month's allowance for user ${userId}`,
+    );
+  }
+
+  const grantCredits =
+    (getMonthlyCredits(planTier as PlanTier) + sliderLedgerCredits) * grantMonths;
 
   // Refresh credits
   const result = await refreshMonthlyCredits(

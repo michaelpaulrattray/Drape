@@ -32,6 +32,14 @@ function monthlyState(overrides: Partial<SubscriptionBillingState> = {}): Subscr
     currentInterval: "monthly",
     periodStartSec: T0,
     periodEndSec: T0 + 30 * DAY,
+    /* ⚠ THE DIAL AT THE BOTTOM AND NO ADD-ON LINE (#1832) — which is the
+       state of every subscription that exists today, and is what keeps every
+       arm below about the PLAN's own proration rather than about the slider.
+       The slider's own quote arms are in
+       `server/stripe/planCreditSliderWire.test.ts`; an `overrides` here can
+       raise the dial, which is how a future arm in this file would. */
+    currentCreditUnits: 0,
+    creditItemId: null,
     ...overrides,
   };
 }
@@ -43,6 +51,14 @@ function annualState(overrides: Partial<SubscriptionBillingState> = {}): Subscri
     currentInterval: "annual",
     periodStartSec: T0,
     periodEndSec: T0 + 365 * DAY,
+    /* ⚠ THE DIAL AT THE BOTTOM AND NO ADD-ON LINE (#1832) — which is the
+       state of every subscription that exists today, and is what keeps every
+       arm below about the PLAN's own proration rather than about the slider.
+       The slider's own quote arms are in
+       `server/stripe/planCreditSliderWire.test.ts`; an `overrides` here can
+       raise the dial, which is how a future arm in this file would. */
+    currentCreditUnits: 0,
+    creditItemId: null,
     ...overrides,
   };
 }
