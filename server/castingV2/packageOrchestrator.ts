@@ -27,15 +27,26 @@
  *    been perfect — and the frame was deleted on the way out, so nobody could
  *    ever tell which it had been.
  *
- *    ⚠ **AND SINCE #1612 PART 2 THE REJECTION HALF IS NARROWED TO ONE AXIS —
+ *    ⚠ **AND SINCE #1612 PART 2 THE REJECTION HALF WAS NARROWED TO ONE AXIS —
  *    his ruling, 2026-09-30.** *"A view the judge looked at and rejected still
- *    fails and refunds"* is true now only of IDENTITY. A framing or wardrobe
- *    rejection delivers the picture, charged and marked unchecked, with the
- *    free Try again. It is the same founder ruling one step further: the
+ *    fails and refunds"* became true only of IDENTITY; a framing or wardrobe
+ *    rejection delivered the picture, charged and marked unchecked, with the
+ *    free Try again. It was the same founder ruling one step further: the
  *    detector was not merely unreachable sometimes, it was measurably WRONG
- *    about framing — all 8 refusals this product ever made were framing or
+ *    about framing — all 8 refusals this product had ever made were framing or
  *    wardrobe, none was identity, and four of the eight are the four cards
- *    behind #1612. The rule and the rows are on {@link viewConformanceRefuses}.
+ *    behind #1612.
+ *
+ *    ⚠ **AND #1903 WENT THE WHOLE WAY — his ruling, 2026-10-07, verbatim:**
+ *    *"i think we ditch the measure and checker i mean it been nothing but
+ *    problems it should only detect catastropic failure the image engine is
+ *    excellent and following our prompting"*. **The two narrowed axes are
+ *    DELETED rather than demoted**, and the two that replace them are
+ *    catastrophes he approved by name — a broken picture and the wrong number
+ *    of people — so EVERY axis refuses again and the delivering branch below
+ *    has only D-246 left to fire on. The paragraph above is kept because it is
+ *    the measurement his ruling rests on. The rule and the rows are on
+ *    {@link viewConformanceRefuses}.
  * 2. **TWO BUDGETS, BECAUSE "WE DECIDED IT WAS WRONG" AND "IT NEVER CAME" ARE
  *    NOT THE SAME EVENT** (founder, 2026-09-25, on his Sifr cast, #1208).
  *    Asked whether a failed view should keep retrying or offer a button, his
@@ -44,11 +55,12 @@
  *    - A view the judge LOOKED AT AND REJECTED keeps its one regeneration, on
  *      the legacy back-view gate's own reasoning (D-39/D-40): a second attempt
  *      is worth its cost, a third is a slot machine. ⚠ **Since #1612 part 2
- *      that budget is spent on an IDENTITY rejection and nothing else** — a
- *      framing or wardrobe rejection delivers the frame in hand, so there is
- *      nothing to redraw and no picture to throw away in order to redraw it.
- *      A regeneration is now only ever bought to replace a picture of the
- *      wrong person.
+ *      that budget is spent on a CATASTROPHIC rejection and nothing else** —
+ *      anything the judge is still asked is a catastrophe, and anything it is
+ *      no longer asked about (the crop, the pose, the clothing) delivers the
+ *      frame in hand, so there is nothing to redraw and no picture to throw
+ *      away in order to redraw it. A regeneration is only ever bought to
+ *      replace a picture that is catastrophically wrong.
  *    - A view that NEVER ARRIVED — the engine errored, the read timed out, the
  *      connection dropped — is not a slot machine and never was. It is our
  *      failure to deliver something already paid for, and it is retried up to
@@ -151,6 +163,7 @@ import {
 } from "./outfitPlate";
 import {
   conformanceProvenance,
+  unjudgedVerdict,
   viewConformanceRefuses,
   type ViewConformanceJudge,
   type ViewConformanceVerdict,
@@ -995,16 +1008,15 @@ export async function renderViewAttempts<T>(
         angle,
         anchor: input.anchor,
         candidate: { bytes: image.bytes, contentType: image.contentType },
-        /* The SAME value the prompt above was composed from — one field, read
-           twice, so the generator and the judge cannot be told two outfits. */
-        wardrobeLine: input.wardrobeLine ?? null,
-        /* And the same for her brief, for the same reason: the wardrobe sentence
-           narrows when one is on record, so a judge without it would fail the
-           view for wearing what this prompt just asked for (#1278 part 1). */
-        description: input.description ?? null,
-        /* And the same for whose face it is — #1480 finding A's third site, so the
-           checker is not describing a different person from the one the
-           generator was asked for. */
+        /* ⚠ `wardrobeLine` AND `description` WERE PASSED HERE AND ARE GONE —
+           #1903. They kept the judge and the generator being told ONE outfit,
+           because a judge told a different one failed the view for obeying its
+           instructions. There is no wardrobe axis left to protect, and a judge
+           handed an outfit sentence would start having opinions about the
+           outfit. Both values are still read by the prompt above, unchanged. */
+        /* The same face the generator was asked for — #1480 finding A's third
+           site, so the checker is not describing a different person. This one
+           stays: identity is the axis that survived. */
         pronouns: viewPronouns,
       });
       verdicts.push(verdict);
@@ -1347,13 +1359,11 @@ async function judgeUnjudgedOnFailure(
       { angle: input.angle, err: error },
       "[packageOrchestrator] the conformance judge failed — no opinion exists about this view",
     );
-    const axis = { pass: false, note: "the view could not be checked" };
-    return {
-      pass: false,
-      method: "unavailable",
-      unjudged: true,
-      axes: { identity: { ...axis }, angle: { ...axis }, wardrobe: { ...axis } },
-    };
+    /* ⚠ THE AXES WERE SPELLED OUT HERE BY HAND AND ARE DERIVED NOW — #1903.
+       A second list of the axis names in a second file is working law 4, and
+       it was found the hard way: the rename broke this literal. The silent
+       version of the same mistake ships a verdict naming axes nothing reads. */
+    return unjudgedVerdict("unavailable", "the view could not be checked");
   }
 }
 

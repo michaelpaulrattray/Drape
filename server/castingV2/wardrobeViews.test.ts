@@ -4,22 +4,29 @@ import {
   CAST_PACKAGE_WARDROBE_SPEC,
   castPackageWardrobeSpec,
   composePackageViewPrompt,
-  packageViewExpectation,
   wardrobeSpecFor,
 } from "./castViewPackage";
 import { pronounsForSex, type CastPronouns } from "./castPronouns";
 import { castWardrobeLine } from "./wardrobeLine";
 
 /**
- * THE FIVE VIEWS AND THEIR JUDGE READ ONE ANSWER (design §3.3, item 6).
+ * THE FIVE VIEWS READ ONE ANSWER (design §3.3, item 6).
  *
- * The Cast's outfit is decided once at Sign and stored on its own record. What
- * these arms hold is the property that costs money when it breaks: **the
- * sentence the view was GENERATED from and the sentence it is JUDGED against
- * are the same sentence**. A judge told a different outfit than the prompt
- * asked for fails a view for obeying its instructions — five views, the wardrobe
- * axis, refunded slices, which is how the crew-neck chest design already cost
- * the customer money.
+ * The Cast's outfit is decided once at Sign and stored on its own record, and
+ * every view's prompt composes its WARDROBE line from that one answer rather
+ * than writing its own.
+ *
+ * ⚠ **THIS HEADER SAID "AND THEIR JUDGE" UNTIL #1903, AND THE SECOND HALF OF
+ * ITS REASON IS HISTORY.** It read: *the sentence the view was GENERATED from
+ * and the sentence it is JUDGED against are the same sentence* — because a
+ * judge told a different outfit than the prompt asked for fails a view for
+ * obeying its instructions, which is how the crew-neck chest design once cost
+ * the customer money. His ruling removed the wardrobe axis, so **the judge is
+ * told no outfit at all** and that failure has no road left; the arm that used
+ * to hold the pair is now driven at the judge's wire in
+ * `viewOutfitAuthority.test.ts`, as an ABSENCE.
+ *
+ * The generator half is untouched and is what these arms hold.
  */
 describe("the package's wardrobe sentence", () => {
   const LINE = "dark canvas work jacket, straight jeans, plain boots";
@@ -49,7 +56,7 @@ describe("the package's wardrobe sentence", () => {
         impossible; it cannot slip past this.
       */
       for (const angle of FULL_VIEWS) {
-        const wardrobe = packageViewExpectation(angle).wardrobe;
+        const wardrobe = wardrobeSpecFor(angle, null);
         expect(wardrobe.startsWith(CAST_PACKAGE_WARDROBE_SPEC), angle).toBe(true);
         const suffix = wardrobe.slice(CAST_PACKAGE_WARDROBE_SPEC.length);
         expect(suffix === "" || suffix.includes("turns the subject away"), `${angle}: ${suffix.slice(0, 60)}`)
@@ -68,14 +75,24 @@ describe("the package's wardrobe sentence", () => {
   describe("with a line", () => {
     it("⚠ the generator and the judge are given the SAME sentence", () => {
       /*
-        One function, two callers. This is the arm the whole slice exists for:
-        `composePackageViewPrompt` and `packageViewExpectation` derive their
-        wardrobe sentence from one place, so they cannot come to describe two
-        outfits.
+        ⚠ **ONE FUNCTION, ONE CALLER NOW — #1903, and the arm is kept rather
+        than deleted because what it guards has narrowed, not gone.**
+
+        It read "one function, TWO callers" and held the generator's sentence
+        equal to the JUDGE's, because a judge told a different outfit than the
+        prompt asked for fails a view for obeying its instructions. His ruling
+        removed the wardrobe axis, so the judge is told no outfit at all and the
+        two can no longer disagree — the coupling is answered by there being
+        nothing on the other end of it (driven at the wire in
+        `viewOutfitAuthority.test.ts`).
+
+        What survives is the half that still costs money: the prompt's WARDROBE
+        line is `wardrobeSpecFor`'s answer and not a second composition beside
+        it.
       */
       for (const angle of CAST_PACKAGE_VIEWS) {
-        const expectation = packageViewExpectation(angle, LINE);
-        expect(composePackageViewPrompt(angle, LINE)).toContain(`WARDROBE: ${expectation.wardrobe}`);
+        expect(composePackageViewPrompt(angle, LINE))
+          .toContain(`WARDROBE: ${wardrobeSpecFor(angle, LINE)}`);
       }
     });
 
@@ -125,14 +142,14 @@ describe("the package's wardrobe sentence", () => {
         collar IS visible it matches the reference's neckline* — so it is
         already correct on every path, including a Basics Cast with no collar.
       */
-      const closeUp = packageViewExpectation("closeUp", LINE).wardrobe;
-      expect(closeUp).toBe(packageViewExpectation("closeUp").wardrobe);
+      const closeUp = wardrobeSpecFor("closeUp", LINE);
+      expect(closeUp).toBe(wardrobeSpecFor("closeUp", null));
       expect(closeUp).not.toContain(LINE);
     });
 
     it("CONTROL — a different line really produces a different expectation", () => {
-      expect(packageViewExpectation("frontFull", LINE).wardrobe)
-        .not.toBe(packageViewExpectation("frontFull", "a plain white tee and dark jeans").wardrobe);
+      expect(wardrobeSpecFor("frontFull", LINE))
+        .not.toBe(wardrobeSpecFor("frontFull", "a plain white tee and dark jeans"));
     });
   });
 });

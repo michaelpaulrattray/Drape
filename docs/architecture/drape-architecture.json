@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 188
+      "moduleCount": 187
     },
     {
       "id": "domain:castingV2",
@@ -4641,12 +4641,6 @@
     {
       "id": "module:server/castingV2/viewFeatureWords.ts",
       "path": "server/castingV2/viewFeatureWords.ts",
-      "domain": "casting-v2",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:server/castingV2/viewFramingGeometry.ts",
-      "path": "server/castingV2/viewFramingGeometry.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -12125,10 +12119,6 @@
       "path": "server/castingV2/followSlicePrice.test.ts"
     },
     {
-      "id": "test:server/castingV2/framingReadCancellation.test.ts",
-      "path": "server/castingV2/framingReadCancellation.test.ts"
-    },
-    {
       "id": "test:server/castingV2/framingTrimRetirement.test.ts",
       "path": "server/castingV2/framingTrimRetirement.test.ts"
     },
@@ -12765,10 +12755,6 @@
       "path": "server/castingV2/sheetPreview.test.ts"
     },
     {
-      "id": "test:server/castingV2/signEngineFramingReader.test.ts",
-      "path": "server/castingV2/signEngineFramingReader.test.ts"
-    },
-    {
       "id": "test:server/castingV2/signFeatureWords.test.ts",
       "path": "server/castingV2/signFeatureWords.test.ts"
     },
@@ -12895,22 +12881,6 @@
     {
       "id": "test:server/castingV2/viewFeatureWords.test.ts",
       "path": "server/castingV2/viewFeatureWords.test.ts"
-    },
-    {
-      "id": "test:server/castingV2/viewFramingBands.test.ts",
-      "path": "server/castingV2/viewFramingBands.test.ts"
-    },
-    {
-      "id": "test:server/castingV2/viewFramingDeadline.test.ts",
-      "path": "server/castingV2/viewFramingDeadline.test.ts"
-    },
-    {
-      "id": "test:server/castingV2/viewFramingGeometry.test.ts",
-      "path": "server/castingV2/viewFramingGeometry.test.ts"
-    },
-    {
-      "id": "test:server/castingV2/viewFramingHandover.test.ts",
-      "path": "server/castingV2/viewFramingHandover.test.ts"
     },
     {
       "id": "test:server/castingV2/viewOutfitAuthority.test.ts",
@@ -25152,11 +25122,6 @@
     },
     {
       "from": "module:server/castingV2/castViewPackage.ts",
-      "to": "module:server/castingV2/viewFramingGeometry.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/castViewPackage.ts",
       "to": "module:shared/boardTypes.ts",
       "kind": "imports"
     },
@@ -29012,11 +28977,6 @@
     },
     {
       "from": "module:server/castingV2/signEngine.ts",
-      "to": "module:server/castingV2/falRegionReader.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/signEngine.ts",
       "to": "module:server/castingV2/viewConformance.ts",
       "kind": "imports"
     },
@@ -29377,17 +29337,7 @@
     },
     {
       "from": "module:server/castingV2/viewConformance.ts",
-      "to": "module:server/castingV2/castViewPackage.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/viewConformance.ts",
       "to": "module:server/castingV2/judgeFrame.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/viewConformance.ts",
-      "to": "module:server/castingV2/viewFramingGeometry.ts",
       "kind": "imports"
     },
     {
@@ -29413,16 +29363,6 @@
     {
       "from": "module:server/castingV2/viewFeatureWords.ts",
       "to": "module:shared/bodyAnchorRegions.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/viewFramingGeometry.ts",
-      "to": "module:server/castingV2/maskedComposite.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/viewFramingGeometry.ts",
-      "to": "module:server/castingV2/maskedRefine.ts",
       "kind": "imports"
     },
     {

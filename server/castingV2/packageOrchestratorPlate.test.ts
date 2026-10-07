@@ -69,8 +69,8 @@ const pass: ViewConformanceVerdict = {
   method: "judge:test",
   axes: {
     identity: { pass: true, note: "same person" },
-    angle: { pass: true, note: "as specified" },
-    wardrobe: { pass: true, note: "as specified" },
+    intact: { pass: true, note: "a clean render" },
+    people: { pass: true, note: "one person" },
   },
 };
 

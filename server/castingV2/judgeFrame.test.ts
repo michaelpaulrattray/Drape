@@ -84,8 +84,8 @@ function png(bytes: Buffer): { bytes: Buffer; contentType: string } {
 
 const allPass = JSON.stringify({
   identity: { verdict: "matches", note: "same person" },
-  angle: { verdict: "matches", note: "as specified" },
-  wardrobe: { verdict: "matches", note: "grey tee" },
+  intact: { verdict: "matches", note: "a clean render" },
+  people: { verdict: "matches", note: "one person" },
 });
 
 /** Keeps the request the judge actually posted, so the wire can be read. */
@@ -301,8 +301,8 @@ describe("what the judge actually posts — read at the wire (#1408)", () => {
   it("records the frames on a verdict that failed an axis", async () => {
     const { engine } = recordingEngine(JSON.stringify({
       identity: { verdict: "differs", note: "a different person" },
-      angle: { verdict: "matches", note: "as specified" },
-      wardrobe: { verdict: "matches", note: "grey tee" },
+      intact: { verdict: "matches", note: "a clean render" },
+      people: { verdict: "matches", note: "one person" },
     }));
     const verdict = await createViewConformanceJudge({ engine })({
       angle: "frontFull",

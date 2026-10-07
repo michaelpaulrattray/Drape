@@ -323,8 +323,23 @@ describe("what a tile offers, and what it costs", () => {
  * drift at the till in the same direction and nothing would disagree with
  * itself.
  */
-describe("a delivered view the judge turned down on framing or wardrobe", () => {
-  /** Delivered, judged, and one axis did not hold (#1612 part 2). */
+/**
+ * ⚠ **THESE ARMS DESCRIBE HISTORY NOW, AND THEY ARE WORTH MORE FOR IT — #1903,
+ * his ruling of 2026-10-07.**
+ *
+ * The framing and wardrobe axes are DELETED, so no view delivered from here on
+ * can reach this state: every axis the judge still has is a catastrophe and
+ * refuses. But the rows below are not fixtures of a dead road — **three real
+ * production rows carry exactly this shape** (assets 383, 389 and 391, written
+ * in the hours #1612 part 2 was live), and each is a view somebody paid for
+ * that is owed a free Try again.
+ *
+ * So this describe is the MONEY side of the retired-axis reading: it holds the
+ * price those three rows are offered, through the same function the entrance
+ * authorizes with. The axis names in it are deliberately the retired ones.
+ */
+describe("a delivered view whose row carries a RETIRED failing axis (history, and three live rows)", () => {
+  /** Delivered, judged, and one axis did not hold (#1612 part 2, retired by #1903). */
   const deliveredUnchecked = (viewType: string, failing: "angle" | "wardrobe") =>
     asset({
       viewType: viewType as ModelAsset["viewType"],
@@ -362,7 +377,7 @@ describe("a delivered view the judge turned down on framing or wardrobe", () => 
     expect(slots.get("closeUp")?.retry).toEqual({ priceCredits: 0, reason: "unchecked" });
   });
 
-  it("⚠ CONTROL — a view whose three axes all passed still offers nothing", () => {
+  it("⚠ CONTROL — a view whose retired axes all passed still offers nothing", () => {
     const slots = slotsOf([
       anchor(),
       asset({
