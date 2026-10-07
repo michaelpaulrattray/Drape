@@ -1,7 +1,7 @@
 {
-  "edition": 651,
-  "updatedAt": "2026-10-07T21:17:00.000Z",
-  "shift": "The credit dial on your top plan is live. That is the last piece of the pricing design you approved, and it went in tonight after a fault in it was found and fixed.\n\nHere is the fault in plain terms. When a renewal payment came in, we worked out how many extra credits to hand over by looking at where the dial sits right now — not at what the bill had actually charged. Those are usually the same thing. They are not always. If someone paid while the dial was at the bottom and then slid it up before our server had finished dealing with the payment, we would have given them a whole extra month of credits that no bill ever charged for. That gap is not seconds: Stripe can take up to three days to re-send a payment message. And because this plan lets you keep your balance when it renews, nothing would ever have taken those credits back. The mistake ran the other way too — slide the dial down after paying and you would have got the plan's basic credits only, having paid for more.\n\nIt reads the bill itself now. The bill is the thing that charged, so the bill is what we pay out against, and we no longer ask the dial at all when the bill can answer.\n\nOne thing in the review's own instructions would have left half the fault sitting there, and I want to be straight with you that I did it differently. The instruction said to fall back on reading the dial whenever the bill carries no credit line. But a bill for someone at the bottom of the dial carries no credit line — that is exactly what the bottom of the dial looks like — so falling back there is the very case that was broken. So instead: no credit line, on a bill we could otherwise read in full, now means no extra credits at all. Only a bill we genuinely cannot read falls back to the dial, and if that fails too we refuse the message and let Stripe send it again rather than guess at someone's money. I set that out in full for the reviewer rather than slipping it through, and the review accepted it.\n\nI broke the fix six different ways on purpose to check the tests would actually notice. Every one of them did, including one that restores the review's literal wording and fails on precisely the case above.\n\nIt passed its hand review and is merged and live — I read the live site back and it is serving the new build, not the old one. So a customer on your top plan can now buy extra credits by the month on a dial instead of being pushed at a plan five times the size.\n\nThe same mistake exists one step over: we still work out the plan's own monthly credits from our own records rather than from the bill. I wrote that up as its own job rather than quietly bolting it onto a money change that was already under review. Nobody can hit it today — there are no paying subscribers yet.\n\nNothing needs you.",
+  "edition": 652,
+  "updatedAt": "2026-10-07T22:46:23.000Z",
+  "shift": "The paid redo of a cast's views — the 350-credit *Ask for all views again* — had two faults the hand review caught, and both are fixed. One of them was taking money for nothing, so it is worth saying plainly what it was.\n\nWhen a redone view failed at the very last step, as it was being filed against the cast, the code assumed another part of the system had already taken charge and would sort the money out. Sometimes that was true. But there were three other ways that final step could fail, and all three looked **identical** to it — while in fact nothing had taken charge at all. So the view was written down as finished, the 70 credits for it stayed spent, and you had paid for a picture that does not exist. Nothing would ever have come back for it, because the job was marked done.\n\nTracing it found the cause one layer below, in a piece of code that the single-view **Try again** button shares. So that button had exactly the same fault, by exactly the same route — and it is fixed in the same change rather than left for a card. A lost filing now puts the money back in the same breath instead of hoping.\n\nThe second fault was a sentence rather than money. If one of the five views went wrong, you were told that *none* of them could be made — while the other four had in fact been made, landed on the cast, and been charged for. Each view reports for itself now.\n\nI also closed one of your cards that had quietly finished. **The Portrait framing measurement (#1612)** was built, and then your own later ruling — *ditch the framing measurement and the checker's opinions* — deleted it. A note saying so was added to the card hours earlier, but the card was left open and still marked as your ordered work, so it kept rising to the top of the list as the next thing to build, and it was offered to the crew again tonight. Two shifts have now looked at it and correctly walked away. It is closed with the receipt, which is what stops a third.\n\nNothing was spent tonight — no credits, no renders, no changes to the live service beyond this page.\n\n**One thing is yours, and it is smaller than it looks.** The redo cannot go live until you answer, because at 350 credits it earns us about 63 cents and costs us about 90 — so every press loses money. The fix is already built and waiting on a single answer from you about picture shapes (#1926); once that lands, the redo pays for itself at the price you set and nothing needs re-pricing. My recommendation is to answer that one and let this follow it.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -126,7 +126,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-07T21:05:24.364Z",
+      "readAt": "2026-10-07T22:43:37.486Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -326,27 +326,27 @@
     },
     {
       "id": "redo-price-1925",
-      "title": "Your redo price (350) is lower than your single Try again (370) — leave it, or raise one?",
-      "productImpact": "Asking for ALL FIVE of a cast's views again costs 350 credits. Asking for ONE of them again costs 370. Both numbers are yours, and they now sit side by side in the same room for the first time.\n\nNothing went wrong. On 1 October you set the single Try again to 370, on your finance guy's note that it was needed to keep every worst case profitable for one picture plus its check. On 7 October you set the redo at 350. Neither decision knew about the other, and the redo is only now built.\n\nIn practice: somebody who dislikes one picture pays LESS to replace all five than to replace that one, so almost nobody will press the single one. And we pay for five pictures plus a wardrobe plate at a price worked out to cover one.",
-      "workedExample": "You sign a cast and the invented outfit is not what you wanted, but the close-up of her face is perfect.\n\nPressing Try again on just the outfit view costs 370 and keeps the face you liked. Pressing Ask for all views again costs 350, replaces all five, and gives you a different face-shot too.\n\nSo the cheaper button is the one that throws away the picture you were happy with. That is the whole of it.",
+      "title": "The redo loses money on every press until #1904 lands — hold it, or ship it at a loss?",
+      "productImpact": "Asking for all five of a cast's views again costs 350 credits, which you set. What that card did not know is what a redo COSTS us: about 90 cents in engine time, against about 63 cents it earns. So every press loses roughly 25 to 30 cents.\n\nThe thing that fixes it is already built and waiting on you — #1904, the one-sheet Sign, which renders one wide sheet instead of five separate pictures and drops the cost of these exact five views to a fraction of today's. It is finished and held on one question of yours: #1926, which of three shapes the strip should use.\n\nSo this is not really a pricing decision any more. Your 350 is fine and I am not asking you to move it.",
+      "workedExample": "Somebody dislikes the outfit their cast was given and presses Ask for all views again. They are charged 350 credits, they get five new pictures in one fresh outfit, and we are about 27 cents worse off than before they pressed. Nobody is on a paid plan yet, so today that is pennies — but it is a habit worth not starting.",
       "options": [
         {
-          "key": "leave",
-          "label": "Leave it — a redo is the generous option",
-          "consequence": "Nothing changes. The single Try again becomes the rarely-pressed one, and we lose a little on each redo."
+          "key": "hold",
+          "label": "Hold the redo until #1904 lands",
+          "consequence": "Your 350 stays exactly as set, nothing ever ships at a loss, nothing is re-priced. Unblocked by one answer you already owe on #1926."
         },
         {
-          "key": "raise",
-          "label": "Raise the redo above 370 — say 450",
-          "consequence": "Still one price, still simple, and the single Try again stops being the silly choice. One number, under an hour."
+          "key": "ship",
+          "label": "Ship it now at 350 and accept the loss",
+          "consequence": "Live tonight. Loses ~25-30 cents a press until #1904 lands, which is pennies today because nobody is on a paid plan yet."
         },
         {
-          "key": "drop",
-          "label": "Drop the single Try again below the redo instead",
-          "consequence": "The other way round, if you would rather the cheap option be the small one. Also one number."
+          "key": "temporary",
+          "label": "Ship now at a higher price, drop it to 350 later",
+          "consequence": "Live tonight and profitable, but it is the only option that moves a price twice, and a price coming down is noticed less kindly than you would hope."
         }
       ],
-      "recommendation": "Leave it. A redo is the moment somebody is disappointed, and being generous right there buys more than it costs us — the single Try again going quiet is not a problem, because the redo does the same job better.",
+      "recommendation": "Hold it for #1904, by answering #1926. It costs you nothing, keeps the price you set, and the redo is otherwise finished and reviewed — it just switches on a few days later, already paying for itself.",
       "state": "open",
       "filedAt": "2026-10-07T16:50:45.000Z",
       "issueNumber": 1925
@@ -396,7 +396,7 @@
         }
       ],
       "recommendation": "Close it. The rule did exactly what you asked — nothing was thrown away, and the one wrong label costs a word on a picture you still have.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-10-03T17:30:00.000Z",
       "issueNumber": 1612
     },
@@ -3648,7 +3648,7 @@
         }
       ],
       "recommendation": "Set up both. It is one sitting in Stripe and it is the only thing standing between you and a finished pricing screen — and doing the yearly one now avoids asking you back for it next week, which is the mistake we made with the top-up prices.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-10-04T00:00:26.000Z",
       "issueNumber": 1832
     }
@@ -3674,7 +3674,7 @@
       "id": "law9-sign-1612",
       "title": "The first cast signed under the new picture rule — and two of the five are marked unchecked",
       "question": "This is a whole cast signed under the rule you approved on 30 September, start to finish. Five pictures, one man.\n\nRead the labels under them. Three say delivered. Two say delivered, unchecked, free retry — those are the two the checker was unhappy with, and the whole point of your ruling is that you still get them instead of losing them.\n\nWhat I would like your eye on, in order:\n\n1. Is this the same man in all five? Same face, same jacket, same weather.\n\n2. The full front — he should be head to toe with room above the hair and below the boots. He is, to my eye. This is the view that lost its feet twice in last night's cost test, so it matters that today's road gets it right.\n\n3. The two marked unchecked. The three-quarter has his head turned the wrong way, which is a fair complaint. The close-up was marked for being cropped too tight and I think that is simply wrong — he has room below the chin. If you agree, the rule is still doing its job: you kept the picture, you only got a label you can ignore.\n\nIf the five look right, say so and the card closes.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-10-03T17:30:00.000Z",
       "issueNumber": 1612,
       "frames": [
@@ -3705,7 +3705,7 @@
       "id": "framing-template-court-1612-sifr2",
       "title": "Sifr2, with and without the framing example — did the crop come in enough?",
       "question": "This is the pair that decides it, and it is a straight before and after on the same cast.\n\nOn the LEFT is what the studio sends today for a close-up. On the RIGHT is the same thing with a stored example picture attached showing where to crop, plus a sentence telling the engine the example is a guide and nothing else.\n\nWhat to look for: the right-hand picture IS tighter. Less chest, less shoulder, the face bigger in the frame. That is the idea working.\n\nAnd then look at how much neck and collarbone is still there. A close-up is supposed to stop just under the chin. It has come in and it has not come in far enough — which is exactly what the numbers say: the typical picture moved from 0.51 of a face-height of room below the chin to 0.42, where we need 0.30.\n\nThis cast is the one that produced your original complaint about close-ups coming back as portraits, so it is the fairest possible test. My recommendation is on the job: stop here, and consider instead whether 0.30 is simply a shade tight.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-10-03T02:35:00.000Z",
       "issueNumber": 1612,
       "frames": [
@@ -3720,7 +3720,7 @@
       "id": "portrait-band-1612",
       "title": "Where a Portrait stops being a Portrait — six of your own, in order",
       "question": "WHAT YOU ARE LOOKING AT — six pictures you already own, put in order of how much picture sits below the face. The number under each is the whole measurement: 1.10 means about one face's worth of chest below the chin, 7.72 means head to toe. The black line is where the studio now draws the boundary between a Portrait and a full-length picture.\n\nWHY IT MATTERS. Until tonight the Portrait slot had one test — is the whole head inside the frame — and a head-to-toe picture passes that easily. So a full-length picture delivered where you asked for a Portrait would have gone through unnoticed. Now the distance is measured, so it would not.\n\nTHE ONE THING WORTH YOUR EYE is the pair either side of the line: Hingu at 3.03, which we keep and say nothing about, and Jenny Craig at 4.61, which we would hand over marked unchecked with a free Try again beside it. Everything further out is obvious in both directions. The line sits in a wide empty gap — across every picture you own there is nothing at all between 3.03 and 4.61.\n\nIf you would rather it sat tighter — so Hingu's also got a free Try again — say so and it is one number. Nothing here throws a picture away: the strictest this can ever do is hand you the picture and offer another go.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-10-02T11:00:00.000Z",
       "issueNumber": 1612,
       "frames": [
@@ -9774,7 +9774,7 @@
       "title": "Ask for all views again — the paid redo of a whole signed package, 350 credits (#1903 slice 2)",
       "status": "in-review",
       "prNumber": 1924,
-      "note": "Held for a hand review: it charges and refunds."
+      "note": "The review's two findings are repaired and main is merged in — the gate is green and it is ready for the hand review again. It does not merge until you answer the price question on #1925: a redo earns ~$0.63 and costs us ~$0.90 until #1904 lands."
     },
     {
       "id": "sign-sheet-1904",
@@ -10164,7 +10164,7 @@
     263
   ],
   "nextUp": {
-    "readAt": "2026-10-07T21:05:24.364Z",
+    "readAt": "2026-10-07T22:43:37.486Z",
     "items": [
       {
         "issueNumber": 1903,
@@ -10200,11 +10200,6 @@
         }
       },
       {
-        "issueNumber": 1612,
-        "title": "The view checker measures framing and only refuses on identity: geometry from the segmenter for every framing band, and an unsure framing or wardrobe verdict delivers the picture unchecked instead of dropping it — his ruling 2026-09-30",
-        "urgent": false
-      },
-      {
         "issueNumber": 1689,
         "title": "N3: investigate cutting Refine's cost so its price can come down — count the ~7 Claude checks a Refine makes, court the fewest it can safely keep, report cost per Refine before any price change (his finance guy's note, 2026-10-01)",
         "urgent": false
@@ -10217,11 +10212,6 @@
           "state": "blocked",
           "because": "Yuna's pass on the final wording, when her team is back. Every other box on this brief is ticked — your eye, the frames, the numbers, the build cards."
         }
-      },
-      {
-        "issueNumber": 1832,
-        "title": "P2-1 — Three individual plans with the credit slider on Studio ($9 per 5,000 credits): the plan cards and pricing surface rebuilt to the brief",
-        "urgent": false
       },
       {
         "issueNumber": 1835,
