@@ -3288,7 +3288,35 @@ install, the one every other worktree, the dev server and the founder's own
 session are using."* **Fourteen removals beside a live seat, in a gate's wait, is
 the shape that produces that.**
 
-### E · Anti-boredom check
+
+### E · ⚠ CORRECTION TO §C, WRITTEN TWENTY MINUTES AFTER IT — a dev server appeared on :3000 at 10:51Z, and it is NOT an orphan
+
+§C's *"no orphan dev servers"* was true **at 2026-10-07T10:35Z** and had stopped
+being the whole truth by the time this shift closed. Read at the process rather
+than inferred:
+
+```
+netstat :300x at 10:35Z   → 0 listening
+netstat :300x at 11:0xZ   → pid 37292 LISTENING on 0.0.0.0:3000 and [::]:3000
+pid 37292  node.exe  started 2026-10-07 20:51:15 local = 10:51:15Z
+  cmdline: … tsx … C:/Users/Admin/Drape/server/_core/index.ts
+```
+
+**It postdates this shift's own reading by 16 minutes and its rite by 31
+seconds, it names the MAIN tree, and this shift started no dev server** — so it
+is somebody else's live work (the founder's own session, or the seat that was
+live on #1832 at the time, whose worktree is a different path). **It was NOT
+killed and must not be**: the main tree is the founder's session's tree, and
+killing a dev server he is using is the one outcome worse than leaving a stray
+one running.
+
+⚠ **The reason this paragraph exists at all is the reading habit, not the
+process.** §C is a timestamped measurement and a reader three days from now
+would take it as *the machine is clean* — which is how a patrol comes to report
+zero while something is running, exactly the failure run 12's own §A was written
+about. **A dev-server reading is only ever true at its instant.** Run 13 takes
+its own reading and treats §C as history.
+### F · Anti-boredom check
 
 Four items from run 12's own next-run list, nothing invented, **no card filed from
 this note** and no code changed. **Spend: nothing.** Deletions: four untracked PNG
@@ -3308,7 +3336,8 @@ was touched**, and no manifest was needed because no tracked file was removed.
    sharpest argument for taking it, and it is a NEW one since run 12.
 2. **The 15 shift worktrees — §D.** Per branch, through
    `shift-worktree remove`, never a loop; re-read the live-seat list first.
-3. **Items 2, 3, 4 and 6 are closed by §A–§C above — do not re-open them.** Item
+3. **Items 2, 3, 4 and 6 are closed by §A–§C above — do not re-open them, and
+   read §E before trusting §C: a dev-server zero is true only at its instant.** Item
    3 in particular: the expired zip run 12 named no longer exists.
 4. **Item 5 (#1796, #1797), 8 (the knip types set) and 9 are untouched** by this
    note and carry forward exactly as run 12 wrote them.
