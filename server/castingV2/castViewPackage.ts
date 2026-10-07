@@ -987,6 +987,72 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
       quoted here — came back identical to two decimals through the same reader
       on the same frames (10/10), and no portrait read below 0.7.
 
+      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+      ⚠ **HE ANSWERED, AND THE ANSWER WAS YES — 0.7 → 0.9, 2026-10-07 (#1837,
+      reply #260 on the eye item `closeup-line-1837`). THE TWO PARAGRAPHS ABOVE
+      ARE KEPT AS THE ORIGIN AND ARE NO LONGER THE LAW.** He was shown the strip
+      with asset 384 immediately right of the line and the plain question under
+      it — *is Hingu a close-up?* — and his word, verbatim and entire, was:
+
+          *"YES"*
+
+      So the line moves above 0.826 **by the stated method and not to taste**,
+      which is the road that paragraph promised:
+
+          THE CLOSE-UPS   his own frames, now including this judgement —
+                          the complete delivered `closeUp` population of ten
+                          0.073 · 0.155 · 0.177 · 0.199 · 0.333 · 0.404
+                          · 0.478 · 0.517 · 0.563 · **0.826**
+          THE PORTRAITS   the 11 sealed `frontClose` anchors (#1612's court)
+                          1.102 … 3.034
+
+      √(0.8260 × 1.1018) = **0.9540** → **0.9**, and under it **0 of his ten
+      delivered close-ups are turned away** (it was one in ten at 0.7) while **0
+      of his eleven portraits are admitted**. Both inputs were re-read at
+      `output/1837-strip/readings.json` rather than taken off the table above —
+      the numbers here are that artifact's, to three decimals, and the table
+      above quotes the same frames to two.
+
+      ⚠ **THIS IS THE FIRST TIME THE ROUNDING RULE'S TWO READINGS DISAGREE, SO
+      THE CHOICE IS ARGUED HERE RATHER THAN ASSUMED.** The convention above is
+      *"rounded to the one decimal the other two bounds carry … each, like this
+      one, landing slightly tight"* — and all three precedents were cases where
+      rounding DOWN and rounding to NEAREST give the same answer (3.7416 → 3.7,
+      0.3098 → 0.3, 0.7490 → 0.7). 0.9540 is the first that splits them: down is
+      **0.9**, nearest is **1.0**. Three things settle it on 0.9, and none of
+      them is the arithmetic:
+
+        1. **The stated convention is the tight one** — *landing slightly tight*
+           is what the other three did, and 1.0 would be the first to land loose.
+        2. **The asymmetry it buys is the safe one.** 0.9 clears his judged frame
+           by 1.09× and sits under the tightest portrait by **1.22×**; 1.0 clears
+           his frame by 1.21× and the portrait by only **1.10×**. The cost of
+           sitting near the close-up edge is a wrong `Unchecked` mark with a free
+           Try again — part 2's own answer, never a lost picture. The cost of
+           sitting near the portrait edge is a genuinely portrait-framed picture
+           passing with NO flag at all, which is the one thing this band is for.
+        3. **It is the card's own done-when.** *"A portrait-framed picture
+           delivered where a close-up was asked still reads out"* is the clause
+           0.9 holds more of.
+
+      ⚠ **AND THE GAP IS NEARLY CLOSED, WHICH IS THE REAL LIMIT AND IS DECLARED
+      RATHER THAN LEFT TO BE DISCOVERED.** This method needs an EMPTY band with
+      room in it, and his ruling has spent most of what was left:
+
+          0.20 → 0.48   a factor of 2.40   (where 0.3 was fitted)
+          0.52 → 1.10   a factor of 2.13   (where 0.7 was fitted)
+          0.83 → 1.10   a factor of **1.33**  ← where 0.9 is fitted, today
+
+      **One more measured frame inside that interval and the geometric middle is
+      no longer in a gap — it is fitted to a boundary case, which is the one
+      thing all three of these bounds exist to avoid.** When that happens the
+      answer is NOT a tighter decimal: it is his eye on the two frames either
+      side, because at 1.33× the close-up population and the portrait population
+      have very nearly met and no arithmetic can say where one ends. A shift
+      that finds such a frame puts it on the strip and moves nothing, exactly as
+      the paragraph above did.
+
       ⚠ **THE CONSERVATIVE INPUT IS DELIBERATE AND IS NAMED.** 0.52 and 0.56
       (assets 326 and 371) also fall inside the new line, and he has NOT judged
       those two — they are admitted as a consequence of his ruling rather than
@@ -1016,32 +1082,34 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
     band: {
       rules: [
         { must: "clearOf", landmark: "face", edge: "bottom" },
-        { must: "roomBelowAtMost", landmark: "face", inItsOwnHeights: 0.7 },
+        { must: "roomBelowAtMost", landmark: "face", inItsOwnHeights: 0.9 },
         { must: "cutBy", landmark: "subject", edge: "top" },
       ],
       /*
         ⚠ **THE TOO-LOOSE PAIR LEAVES THE JUDGE'S POST — the hand-over, #1612,
         and this is the ONE view where his *"the prose framing spec stops being
-        sent"* is literally achievable.** The pair is `roomBelowAtMost face 0.7`
+        sent"* is literally achievable.** The pair is `roomBelowAtMost face 0.9`
         and `cutBy subject top`, which between them restate every TEST in these
         two sentences:
 
-          *"the neck and shoulders are in frame"*  → 0.7 of a face-height of
+          *"the neck and shoulders are in frame"*  → 0.9 of a face-height of
           room below the face, measured — on his own frames and then on HIS EYE,
-          which moved this number from 0.3 on 2026-10-03 (#1837, the block
-          above).
+          which moved this number TWICE: from 0.3 on 2026-10-03 and from 0.7 on
+          2026-10-07 (#1837, the block above).
           *"the whole head fits with clear space above the hair"*  → the subject
           is CUT BY the top edge, which is the same fact with no hairline in it.
 
         ⚠ **AND `restate` IS NOW THE GENEROUS WORD FOR THE FIRST OF THOSE TWO,
         WHICH IS STATED HERE RATHER THAN LEFT FOR SOMEBODY TO DISCOVER.** At 0.3
-        the measurement agreed with his sentence; at 0.7 it is WIDER than the
-        sentence, because he looked at two frames with a neck and shoulders in
-        them and called both close-ups. So this entry no longer removes a
+        the measurement agreed with his sentence; at 0.9 it is WIDER than the
+        sentence — wider still than 0.7 was — because he looked at three frames
+        with a neck and shoulders in them (and, at 0.826, the top of the
+        shoulders on a bandaged skull) and called every one of them a close-up.
+        So this entry no longer removes a
         sentence the rule merely re-says — it removes a sentence the rule
         **supersedes**, on his eye. That is the right outcome and the only one
         law 9 allows, and it is why the posted spec must keep losing this
-        sentence: posting it while measuring 0.7 would hold a paid view to two
+        sentence: posting it while measuring 0.9 would hold a paid view to two
         standards that disagree.
 
         **The first half of the first sentence is a PERMISSION and needs no
