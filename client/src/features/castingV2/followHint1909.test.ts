@@ -215,7 +215,11 @@ describe("what it says and how it looks", () => {
  * the cache SURVIVES and the component does not — in-app navigation. A driver
  * that reloads between the two Keeps reports a clean product.
  */
-describe("#1918 · the hint cannot come back on a remount inside the refetch window", () => {
+/* The card number is spelled without its hash in this title on purpose:
+   `token-guard.test.ts` reads `#1918` as a hex literal (every issue from #100
+   up is valid hex) and strips comments but not strings. Its own message says
+   so; this is the suite obeying it rather than carving itself out. */
+describe("card 1918 · the hint cannot come back on a remount inside the refetch window", () => {
   it("⚠ the mutation writes the flag into auth.me's cache, under the same key useAuth reads", () => {
     /*
       `useAuth` is `trpc.auth.me.useQuery(undefined, …)`, so `undefined` is the
