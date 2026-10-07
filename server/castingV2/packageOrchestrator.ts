@@ -1398,8 +1398,8 @@ async function judgeUnjudgedOnFailure(
  *
  * `REFUSED_VIEW_REASON` was a single string, set for EVERY refusal, and it
  * reaches the customer verbatim: the room's failed tile reads *"Front failed —
- * <this>. Refunded 340 credits."* and the health dialog reads *"Retry needed —
- * <this>."* So the day #1903 gave this judge two more catastrophes, **a blank
+ * <this>."* followed by what came back, and the health dialog reads *"Retry
+ * needed — <this>."* So the day #1903 gave this judge two more catastrophes, **a blank
  * frame and a two-person frame both started telling a customer the picture
  * "didn't hold the signed likeness"**, which is false about both of them. It was
  * the one string still bolted to the identity-only rule.
