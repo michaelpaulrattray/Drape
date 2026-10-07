@@ -1,7 +1,7 @@
 {
-  "edition": 644,
-  "updatedAt": "2026-10-07T10:45:00.000Z",
-  "shift": "Your framing ruling is built and waiting for a hand review, and the overdue tidy-up seat got four of its nine jobs done for free.\n\nYou told me this morning that framing is the measurement's call and the checker's opinion should not overrule it. That is built. The wrong label you saw - a close-up marked Unchecked when it had plenty of room below the chin - cannot happen that way again: where we have actually measured the crop, the picture-reader's opinion about the crop is written down and ignored.\n\nIt is NOT merged. It is the kind of change where, if I have read your sentence slightly differently from how you meant it, it goes live on the site the moment it merges - so it sits for a hand review rather than going out on a green tick.\n\nOne thing in it is worth your eye and I have not hidden it. Your ruling settles a tie, and a tie has two sides. Most of your view descriptions ask for the crop AND something else in the same sentence - \"the whole body seen from directly behind, head to feet inside the frame, face not visible\" is a direction, a crop and a concealment all at once. The reader gives one answer to the whole sentence, so nobody can tell which half it was answering. Telling it to lose to the measurement fixes your wrong label, and it also means a back view that shows the face now arrives unmarked. Both cost a label and never a picture. The thing that would end that trade instead of choosing a side is splitting your sentences so each asks one thing - and that is your wording, not mine, so it is filed and not done.\n\nWhile that waited on the robot I took the tidy-up seat's overdue list. Four of its nine jobs turned out to be already done or safely doable: four leftover screenshots swept, two items that were waiting on me discharged, and no stray dev servers running. I did NOT take its biggest job - deleting 70 leftover scratch files - because deletion is the one thing a safety net cannot give back, and I left the seat's clock showing overdue on purpose so it still gets a proper turn rather than being quietly marked done.",
+  "edition": 645,
+  "updatedAt": "2026-10-07T11:10:00.000Z",
+  "shift": "Correction to what I told you twenty minutes ago: your newer ruling overtook the work, and my last update was already out of date when it shipped.\n\nEdition 644 told you the framing fix was built and waiting for a review. That was true when I wrote it and not when you read it. Your ruling to ditch the measurement and the checker altogether - keep only catastrophic failures, add a paid redo - came through while I was finishing up, so the pull request was closed unmerged before my own update reached your page. The fix is gone, and it should be: you removed the question it answered rather than answering it.\n\nThis is my mistake, not a surprise. I checked the robot's result on that pull request and then stopped looking at it while I did other work. Your ruling and a reviewer's hold both landed on it in those minutes and I saw neither until the closing check refused to believe me.\n\nTwo things worth keeping out of it. The reviewer was right about something I had written down but not tested: I described the side-effect of your ruling honestly in the write-up, and I did not actually test the case it affected. Describing a cost is not measuring it, and that is on me. And the work did leave one useful thing behind - I measured which of your views actually have a crop measurement to remove, which the person who removes it will need. That is on the new card.\n\nNothing is broken and nothing shipped that shouldn't have. No money moved at any point - a framing mark never cost anyone a picture or a credit.\n\nSeparately, and unaffected: the overdue tidy-up list got four of its nine jobs done - four leftover screenshots swept and two items that were waiting on me discharged, with no stray dev servers running. I left its biggest job alone, deleting 70 scratch files, because deletion is the one thing a safety net cannot give back.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -9645,13 +9645,6 @@
       "status": "merged",
       "prNumber": 1898,
       "note": "Reviewed by hand and merged while this edition was being written; live on the site, build read back at 19s uptime."
-    },
-    {
-      "id": "framing-precedence-1612",
-      "title": "The measurement decides the crop, and the picture-reader can no longer overrule it (#1612)",
-      "status": "in-review",
-      "prNumber": 1901,
-      "note": "Held for a hand review rather than merged on the gate - the declared trade is in the PR body and on card #1902."
     }
   ],
   "problems": [
