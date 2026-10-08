@@ -18,7 +18,7 @@
  * The source half (names, the `cr` abbreviation) and the stored-description
  * templates are in `creditDisplayGuard.test.ts`.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { creditRowText } from "@/features/moderator/creditRowText";
 import { buildReconciliationCsv } from "@/features/moderator/reconciliation-csv";
@@ -27,7 +27,13 @@ import { reconciliationView } from "@/features/moderator/reconciliationView";
 import { computeDiscrepancy, type DiscrepancyInputs } from "./db/discrepancyQueries";
 import { creditHistoryCsv, generationHistoryCsv } from "./routes/moderatorExports";
 import { buildSummary } from "./routes/moderatorReconciliation";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 import { unlabelledLedgerFigures } from "./testing/creditDisplaySites";
+
+/* The census module this reads from spawns `git` (its source walk), so the
+   suite is in the child-process population by import even though the reader it
+   uses here is pure — the class's timeout, declared rather than argued. */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const ZERO: DiscrepancyInputs = {
   grossDeductions: 0,

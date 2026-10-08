@@ -4,7 +4,7 @@
  * Lifted out of `ReconciliationSubTab.tsx` for the reason `creditRowText.ts`
  * was: the question is about strings, rendering is outside `pnpm test`, and a
  * pure function can be driven with sentinel figures and read by the census's
- * rendered-text reader (`reconciliationView.test.ts`).
+ * rendered-text reader (`server/moderatorRoadLedger.test.ts`).
  *
  * # Why the pane says "ledger" instead of converting
  *

@@ -5,7 +5,7 @@
  * rendering is outside `pnpm test` (a node environment), and the question this
  * card asks — does any ledger figure on this row reach a moderator unlabelled?
  * — is a question about these strings, not about the markup around them.
- * `creditRowText.test.ts` feeds it sentinel ledger figures and reads every
+ * `server/moderatorRoadLedger.test.ts` feeds it sentinel ledger figures and reads every
  * string it returns with the census's rendered-text reader.
  *
  * #2010 put the cells and facts on the customer's scale. What it left was the
