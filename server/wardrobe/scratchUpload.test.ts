@@ -168,26 +168,26 @@ const REPO_ROOT = new URL("../../", import.meta.url).pathname.replace(/^\/([A-Za
  * a key that a ROW holds, so a cleanup can always reach it.
  */
 const RECORDED_DIRECT_WRITES: ReadonlyArray<{ file: string; calls: number; why: string }> = [
-  {
-    file: "server/routes/wardrobe.ts",
-    calls: 1,
-    why:
-      "`garments.upload` — the only wardrobe write whose key is persisted:"
-      + " `createGarment({ originalImageKey: fileKey })` two statements later,"
-      + " so the object is reachable from the garment row that owns it",
-  },
+  /*
+    `server/routes/wardrobe.ts` LEFT THIS LIST WITH #2021. Its one direct write
+    was `garments.upload`'s photograph, persisted on the garment row one
+    statement after the put — so a request that died in between left an object
+    nothing named. It now goes through `putWardrobeScratchUpload` and hands the
+    receipt to `createGarment`, which discharges it inside the insert's own
+    transaction. The count of 0 is what this arm now holds that file to.
+  */
   {
     file: "server/wardrobe/utils.ts",
     calls: 1,
     why:
-      "`uploadBase64ToS3` — the digitize and refine results, each returned to a"
-      + " caller that writes the URL onto a garment row (`isolatedImageUrl`) or a"
-      + " session's history before the request ends; they are deliverables, not"
-      + " scratch. ⚠ ONE OF ITS CALLERS IS CONDITIONAL and is NOT fixed by this"
-      + " card: `vto.generate` pushes its result onto `wardrobeSessions.history`"
-      + " ONLY when the request carries a `sessionId`, so a VTO with none writes"
-      + " an object nothing names — the same class, on a road `assertWardrobeTryOnOpen`"
-      + " closes today (#1537), filed rather than widened into this diff",
+      "`uploadBase64ToS3` — the digitize flat-lay alone, returned to"
+      + " `garments.upload`/`garments.import`, which write it onto the garment row"
+      + " as `isolatedImageUrl`. The try-on results that used to share it were"
+      + " recorded on a session's history ONLY when the request carried one, and"
+      + " moved to `uploadTryOnResult` (#1980), which registers first; its callers"
+      + " are pinned in `tryOnResultReceipt.test.ts`. ⚠ The flat-lay's own window"
+      + " is named, not closed: if `analyzeGarmentMetadata` throws after the upload,"
+      + " the catch marks the garment failed and records the key nowhere",
   },
   {
     file: "server/wardrobe/scratchUpload.ts",

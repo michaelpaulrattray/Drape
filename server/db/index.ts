@@ -216,6 +216,7 @@ export {
   getSessionById,
   getUserSessions,
   updateSession,
+  appendSessionResult,
   deleteSession,
   getLatestUserSession,
   getRecentUserSessions,

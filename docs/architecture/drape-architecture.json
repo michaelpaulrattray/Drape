@@ -15140,6 +15140,10 @@
       "path": "server/wardrobe/scratchUpload.test.ts"
     },
     {
+      "id": "test:server/wardrobe/tryOnResultReceipt.test.ts",
+      "path": "server/wardrobe/tryOnResultReceipt.test.ts"
+    },
+    {
       "id": "test:server/wardrobe/vtoSession.test.ts",
       "path": "server/wardrobe/vtoSession.test.ts"
     },
@@ -35665,11 +35669,6 @@
     },
     {
       "from": "module:server/routes/wardrobe.ts",
-      "to": "module:server/storage.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/wardrobe.ts",
       "to": "module:server/wardrobe/creditCosts.ts",
       "kind": "imports"
     },
@@ -36451,6 +36450,11 @@
     {
       "from": "module:server/wardrobe/utils.ts",
       "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/utils.ts",
+      "to": "module:server/wardrobe/scratchUpload.ts",
       "kind": "imports"
     },
     {

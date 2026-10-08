@@ -515,6 +515,9 @@ describe("an erasure removes the wardrobe's pictures, and only this account's (#
       "server/wardrobe/vtoGeneration.ts",
       "server/wardrobe/outfitDecomposition.ts",
       "server/routes/wardrobe.ts",
+      /* #1980 — the try-on results' key is spelled here now (`uploadTryOnResult`),
+         not in the three pipelines that call it. */
+      "server/wardrobe/utils.ts",
     ].map((module) => withoutComments(read(module))).join("\n");
     const prefixes = [...writers.matchAll(/`(wardrobe\/\$\{[^}]+\}\/|\$\{[^}]+\}-wardrobe\/)/g)]
       .map((match) => match[1]!.replace(/\$\{[^}]+\}/, "<id>"));
