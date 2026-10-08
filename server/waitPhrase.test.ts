@@ -54,6 +54,10 @@ import { accountLockedMessage } from "./_core/trpc";
 import { checkRateLimit, rateLimitError } from "./security/rateLimit";
 import { readListedSource } from "./testing/listedSource";
 import { withoutComments } from "./testing/withoutComments";
+import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
+
+/* #741 — the sweep below walks server/, shared/ and client/src/. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 const MIN = 60_000;
 
