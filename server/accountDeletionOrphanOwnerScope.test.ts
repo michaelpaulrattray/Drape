@@ -154,6 +154,19 @@ let orphanAnswer: number[] = [];
 let candidateRows: Array<Record<string, unknown>> = [];
 /** Orphan ids that DO still have a candidate row — for any owner. */
 let existingCandidateIds: number[] = [];
+/**
+ * Whether HER OWN orphan-plate road finds anything.
+ *
+ * That road (`listAccountOrphanInkPlatesIn`) asks on her `userId` for plates
+ * whose DESIGN row is gone, so what it returns is hers and is rightly swept.
+ * It is switched off in the arms that assert the manifest is EMPTY, so those
+ * arms are about the candidate-child stores and nothing else — otherwise a
+ * legitimately-collected plate key sits in the manifest and the assertion has
+ * to be weakened to a prefix match that could pass for the wrong reason.
+ */
+let orphanPlatesPresent = true;
+/** Her orphan-plate read, by the shape only it has: a LEFT JOIN tested for null. */
+const ORPHAN_PLATE_READ = /from `casting_ink_plates`[\s\S]*`casting_ink_designs`[\s\S]*is null/i;
 
 /**
  * The columns a `select` asks for, in order, read off the statement.
@@ -219,6 +232,7 @@ function answerFor(sql: string): unknown {
   if (/^select distinct `candidateId`/.test(sql)) {
     return orphanAnswer.map((id) => [id]);
   }
+  if (!orphanPlatesPresent && ORPHAN_PLATE_READ.test(sql)) return [];
   if (OWNER_BLIND_BY_DESIGN.test(sql)) return existingCandidateIds.map((id) => [id]);
   if (/from `casting_candidates`/.test(sql)) {
     return candidateRows.map((row) => project(row, sql));
@@ -251,9 +265,15 @@ const pool = {
 const { purgeAccountCastingIn } = await import("./castingV2/accountCastingPurge");
 
 
-async function runPurge(): Promise<void> {
+async function runPurge(): Promise<Awaited<ReturnType<typeof purgeAccountCastingIn>>> {
   const db = drizzle(pool as never, { mode: "default" } as never);
-  await purgeAccountCastingIn(db as never, USER_ID);
+  /*
+    The RESULT is returned now, not discarded — PR #1974's arms are partly
+    about the storage-cleanup manifest, and a key that reaches it queues
+    another customer's picture for destruction without any statement touching
+    their rows. A suite reading only the statements cannot see that.
+  */
+  return purgeAccountCastingIn(db as never, USER_ID);
 }
 
 /**
@@ -291,6 +311,7 @@ beforeEach(() => {
   orphanAnswer = [];
   candidateRows = [];
   existingCandidateIds = [];
+  orphanPlatesPresent = true;
 });
 
 describe("the real purge never reaches an orphan id without its owner (#1959)", () => {
@@ -431,6 +452,172 @@ describe("the real purge never reaches an orphan id without its owner (#1959)", 
       childStatements.filter((statement) => /`userId` = \?/.test(statement.sql)).map((s) => s.sql),
       "the proven half gained an owner clause; a mis-owned row under her own candidate"
         + " would now outlive the account with its object still up",
+    ).toEqual([]);
+  });
+});
+
+/* ------------------------------------------- what an erasure may not take */
+
+/** An orphan id with NO candidate row anywhere — a genuinely dropped parent. */
+const DROPPED_ID = 91;
+
+/**
+ * HIS RULING OF 2026-10-08, DRIVEN — the repair owed on PR #1974.
+ *
+ * The owner-scoping proven above is correct and was not enough. An orphan id
+ * pointing at a candidate that STILL EXISTS and belongs to somebody else made
+ * the purge delete her mis-stamped child row under THEIR cast — safely, by
+ * owner, and still destroying their work. Where that row was the candidate's
+ * `selectedVariantId`, their chosen face went with it and the log line said
+ * nothing had been touched.
+ *
+ * His word on the relay's ruling, verbatim and entire: *"i agree with you"*.
+ * A child row under a live candidate is work made on that customer's cast, so
+ * *"a customer's cast is their work"* (founder, 2026-07-25) makes it theirs.
+ */
+describe("a child row under another customer's live candidate survives the erasure (#1974)", () => {
+  it("⚠ no statement reaches it at all — not scoped by owner, REACHED NOT AT ALL", async () => {
+    /*
+      The whole account is this case: her one stray child row per store points
+      at candidate 77, which still has a row and is not hers. Before this
+      repair every child store's collector and delete carried 77 with her
+      owner beside it, which took the row and queued its object.
+    */
+    orphanAnswer = [ORPHAN_ID];
+    existingCandidateIds = [ORPHAN_ID];
+    orphanPlatesPresent = false;
+
+    const result = await runPurge();
+
+    expect(
+      statementsCarryingTheOrphanId().map((statement) => statement.sql),
+      "a statement still reaches another customer's cast — owner-scoped is not enough here,"
+        + " because the row it removes is THEIR work",
+    ).toEqual([]);
+    expect(
+      result.storageItems.map((item) => item.storageKey),
+      "another customer's picture was queued for destruction by this erasure",
+    ).toEqual([]);
+  });
+
+  it("⚠ their candidate's selected face is never nulled", async () => {
+    /*
+      The sharpest single harm, and the reason the ruling went this way rather
+      than keeping the owner-scoped delete: `deleteVariantRowsIn` nulls
+      `castingCandidates.selectedVariantId` before deleting, so if the
+      mis-owned row was the variant they chose as their face, their candidate
+      was left pointing at a variant that no longer existed.
+    */
+    orphanAnswer = [ORPHAN_ID];
+    existingCandidateIds = [ORPHAN_ID];
+
+    await runPurge();
+
+    expect(
+      sent.filter((statement) =>
+        /^update `casting_candidates`/.test(statement.sql)
+        && statement.params.includes(ORPHAN_ID)).map((statement) => statement.sql),
+      "another customer's selected face was reset by someone else's erasure",
+    ).toEqual([]);
+  });
+
+  it("the warning says the rows were LEFT, and names the cost", async () => {
+    /*
+      The log line used to read *"only this account's rows are swept; the
+      candidate and its owner's rows are untouched"* — which was false in the
+      one direction that mattered: her row under their candidate WAS swept,
+      and it is their work. A log that describes the opposite of what happened
+      is worse than none, because it stops anybody looking.
+
+      It is also the only road by which the mis-stamp gets fixed at its
+      source, so the message has to say the rows are still there.
+    */
+    orphanAnswer = [ORPHAN_ID];
+    existingCandidateIds = [ORPHAN_ID];
+
+    await runPurge();
+
+    const misowned = logged.filter((entry) => "misownedCandidates" in entry.fields);
+    expect(misowned.length, "the mis-owned finding stopped being reported").toBe(1);
+    expect(misowned[0]?.message, "the log still claims the rows were swept").toContain(
+      "LEFT IN PLACE",
+    );
+    expect(
+      misowned[0]?.message,
+      "the log does not say the rows outlive the account, which is what it costs",
+    ).toContain("outlive the deleted account");
+  });
+
+  it("⚠ her orphan-PLATE road asks that the design is GONE, not merely unhandled", async () => {
+    /*
+      THE SAME CLASS ONE HOP DOWN, found by sweeping it rather than by the
+      finding (working law 7). A plate has no `candidateId`: its only path to a
+      candidate is its design row. `listAccountOrphanInkPlatesIn` asked for
+      *her plates minus the ones the candidate pass handled* — a larger set
+      than its own docblock describes — so the moment the candidate pass
+      stopped handling still-present orphan ids, a plate of hers hanging off a
+      design under ANOTHER customer's live candidate fell out of the handled
+      list and into this road, and was deleted with its object. The row his
+      ruling spared at the candidate depth was taken one level lower.
+
+      Read at the statement, because that is where the contract is
+      (invariant 5): the question has to be *is the design row gone*, which is
+      a LEFT JOIN tested for null — not an exclusion list.
+    */
+    orphanAnswer = [ORPHAN_ID];
+    existingCandidateIds = [ORPHAN_ID];
+
+    await runPurge();
+
+    const plateReads = sent.filter((statement) =>
+      /^select[\s\S]*from `casting_ink_plates`/.test(statement.sql)
+      && statement.params.includes(USER_ID));
+    expect(plateReads.length, "her orphan-plate road was never asked — this arm reads nothing")
+      .toBe(1);
+    expect(
+      plateReads[0]!.sql,
+      "the orphan-plate road still takes every unhandled plate of hers, including one whose"
+        + " design hangs off another customer's live cast",
+    ).toMatch(/left join `casting_ink_designs`/i);
+    expect(
+      plateReads[0]!.sql,
+      "the read does not require the design row to be ABSENT, so a plate reachable through"
+        + " its design is swept by the road meant for unreachable ones",
+    ).toMatch(/`casting_ink_designs`\.`id` is null/i);
+  });
+
+  it("⚠ a dropped orphan BESIDE it is still swept — the control that matters", async () => {
+    /*
+      The three arms above all pass if the repair simply stopped sweeping
+      orphans, which would re-open #1948 L1 and leave a customer's own face at
+      a permanently public URL forever. So both kinds arrive together: 91 has
+      no candidate row (hers to take), 77 has one that is not hers (theirs to
+      keep), and exactly one of them may appear in a statement.
+    */
+    orphanAnswer = [DROPPED_ID, ORPHAN_ID];
+    existingCandidateIds = [ORPHAN_ID];
+
+    await runPurge();
+
+    const carryingDropped = sent.filter((statement) =>
+      statement.params.includes(DROPPED_ID)
+      && /^\s*(delete|update|select)/i.test(statement.sql)
+      && !OWNER_BLIND_BY_DESIGN.test(statement.sql));
+    expect(
+      carryingDropped.length,
+      "the dropped orphan stopped being swept — #1948 L1 is re-opened and her own picture"
+        + " stays at a permanently public URL forever",
+    ).toBeGreaterThan(8);
+    expect(
+      carryingDropped.filter((statement) =>
+        !(/`userId` = \?/.test(statement.sql) && statement.params.includes(USER_ID)))
+        .map((statement) => statement.sql),
+      "the dropped half lost its owner clause — two accounts' rows can point at the same"
+        + " dead candidate, so the id still proves nothing",
+    ).toEqual([]);
+    expect(
+      statementsCarryingTheOrphanId().map((statement) => statement.sql),
+      "the still-present id travelled along with the dropped one",
     ).toEqual([]);
   });
 });

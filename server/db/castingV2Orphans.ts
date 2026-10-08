@@ -122,21 +122,35 @@ export async function listAccountOrphanCandidateIdsIn(
  * Which of these candidate ids still have a `castingCandidates` row — for ANY
  * owner, which is the whole point of the read (#1959).
  *
- * ⚠ **IT DECIDES NOTHING ABOUT WHAT IS DELETED, AND THAT IS DELIBERATE.**
- * #1959 proposed gating the orphan set on `NOT EXISTS`, so that only an id
- * with no candidate row anywhere counted as orphaned. That closes the
- * cross-account erasure — but it also abandons the row it was reading: a
- * child row carrying the deleting account's `userId` while pointing at
- * ANOTHER customer's live candidate would then be in no set at all, and would
- * outlive the account as litter with its object still up. The deletion is
- * made safe instead by putting the owner in the statement
- * (`castingV2PurgeScope`), which removes exactly her row and nothing else.
+ * ⚠ **IT DECIDES WHAT IS DELETED, AND THIS DOCBLOCK SAID THE OPPOSITE UNTIL
+ * PR #1974 — the reversal is his, 2026-10-08, verbatim and entire: *"i agree
+ * with you"*.** What stood here is kept below, because its reasoning is why
+ * the first shape was chosen and is the thing his ruling overturns rather
+ * than a mistake:
  *
- * So the existence check earns its place in the DIAGNOSIS, where the two
- * cases are genuinely different bugs and the log could not tell them apart:
- * a candidate dropped without its children, or a child row carrying an owner
- * that is not its candidate's. The second is the worse of the two and was
- * being reported as the first.
+ * > *"IT DECIDES NOTHING ABOUT WHAT IS DELETED, AND THAT IS DELIBERATE. #1959
+ * > proposed gating the orphan set on `NOT EXISTS` … That closes the
+ * > cross-account erasure — but it also abandons the row it was reading: a
+ * > child row carrying the deleting account's `userId` while pointing at
+ * > ANOTHER customer's live candidate would then be in no set at all, and
+ * > would outlive the account as litter with its object still up. The deletion
+ * > is made safe instead by putting the owner in the statement."*
+ *
+ * **Both halves of that were true; the conclusion weighed them wrongly.**
+ * Owner-scoping does remove exactly her row and nothing else — and her row,
+ * when it sits under somebody else's LIVE candidate, is a refinement, segment,
+ * scan or attachment made ON THAT PERSON'S CAST. *"A customer's cast is their
+ * work"* (founder, 2026-07-25) makes it theirs whatever `userId` it was
+ * mis-stamped with, and it can be the candidate's own `selectedVariantId` —
+ * so the safe delete was still breaking a stranger's cast. **Litter that
+ * outlives an account is the cheaper of the two costs**, and it is logged
+ * loudly so the mis-stamp gets fixed at its source.
+ *
+ * So the answer now does two jobs, and the caller
+ * (`castingV2/accountCastingPurge.ts`) is where both are spelled out: ids with
+ * NO row are swept owner-scoped; ids WITH one are skipped and warned about.
+ * The second job is still the diagnosis this read was added for — the two
+ * cases are genuinely different bugs and one warning used to stand for both.
  */
 export async function listExistingCandidateIdsIn(
   tx: TransactionHandle,

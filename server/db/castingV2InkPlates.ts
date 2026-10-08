@@ -56,7 +56,7 @@
  * both of which now build their fixture row with a raw INSERT, because the
  * helper that used to build it is gone.
  */
-import { and, eq, inArray, notInArray } from "drizzle-orm";
+import { and, eq, inArray, isNull, notInArray } from "drizzle-orm";
 
 import {
   castingCandidates,
@@ -195,6 +195,18 @@ export async function deleteInkPlateRowsIn(
  * nobody ever learns about, which is the objection the purge's own header
  * raised against orphan sweeping and is answered by the log line, not by
  * leaving the picture up.
+ *
+ * ⚠ **AND THE DESIGN BEING GONE IS ASKED IN THE STATEMENT, NOT ASSUMED FROM
+ * THE EXCLUSION LIST — PR #1974's repair, his ruling of 2026-10-08.** This
+ * read used to be *her plates, minus the ones the candidate pass handled*,
+ * which is a larger set than its own first paragraph describes. Once the
+ * account purge stopped sweeping orphan ids that point at another customer's
+ * LIVE candidate, a plate of hers hanging off a design under THAT candidate
+ * fell out of the handled list and straight into this one — so the row his
+ * ruling spared at the candidate depth was taken here instead, one hop down,
+ * with its object. The `LEFT JOIN … IS NULL` asks the question this function
+ * actually means: is the design row gone? A plate whose design still exists
+ * is reachable through it and is not this road's business, whoever owns it.
  */
 export async function listAccountOrphanInkPlatesIn(
   tx: TransactionHandle,
@@ -202,13 +214,15 @@ export async function listAccountOrphanInkPlatesIn(
   handledPlateIds: readonly number[],
 ): Promise<Array<{ id: number; storageKey: string }>> {
   const owned = eq(castingInkPlates.userId, userId);
+  const designGone = isNull(castingInkDesigns.id);
   return tx
     .select({ id: castingInkPlates.id, storageKey: castingInkPlates.storageKey })
     .from(castingInkPlates)
+    .leftJoin(castingInkDesigns, eq(castingInkDesigns.id, castingInkPlates.designId))
     .where(
       handledPlateIds.length > 0
-        ? and(owned, notInArray(castingInkPlates.id, [...handledPlateIds]))
-        : owned,
+        ? and(owned, designGone, notInArray(castingInkPlates.id, [...handledPlateIds]))
+        : and(owned, designGone),
     );
 }
 
