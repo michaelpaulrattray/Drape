@@ -132,7 +132,9 @@ function stateAt(overrides: Partial<SubscriptionBillingState> = {}): Subscriptio
     periodEndSec: NOW_SEC + 20 * DAY,
     currentCreditUnits: 0,
     creditItemId: null,
-    cancelAtPeriodEnd: false,
+    endsAtSec: null,
+    status: "active",
+    collectionPaused: false,
     ...overrides,
   };
 }

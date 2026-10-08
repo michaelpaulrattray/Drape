@@ -38,6 +38,35 @@ export const AUTH_ME_QUERY_OPTIONS = {
   refetchOnWindowFocus: false,
 } as const;
 
+/**
+ * WHEN A WAIT STOPS BEING A BLINK AND STARTS BEING SOMETHING TO SAY — #2018.
+ *
+ * Since #1997 a check that could not finish is retried with no count limit
+ * and the hook stays `loading`, which is right: it never signs a customer
+ * out. But the pages that guard themselves draw nothing while loading, so a
+ * sustained outage read as a dead blank page. After this many failed
+ * attempts in a row — with react-query's backoff (1s, 2s, 4s …) that is a
+ * few seconds of trying, never an ordinary load and never a single blink —
+ * the hook also says `reconnecting`, and those pages show a calm line while
+ * the retries carry on underneath. The first success clears it.
+ *
+ * Only reached while still `loading`: a refused session settles at once
+ * (no retry), so it can never show this and still redirects immediately; and
+ * a signed-in page whose BACKGROUND re-check is failing keeps its data, so it
+ * is never swapped for the notice (`failureCount` alone would do exactly that).
+ */
+export const AUTH_ME_RECONNECTING_AFTER_FAILURES = 3;
+
+export function isSessionCheckReconnecting(result: {
+  isLoading: boolean;
+  failureCount: number;
+}): boolean {
+  return (
+    result.isLoading &&
+    result.failureCount >= AUTH_ME_RECONNECTING_AFTER_FAILURES
+  );
+}
+
 type UseAuthOptions = {
   redirectOnUnauthenticated?: boolean;
   redirectPath?: string;
@@ -77,6 +106,7 @@ export function useAuth(options?: UseAuthOptions) {
     return {
       user: meQuery.data ?? null,
       loading: meQuery.isLoading || logoutMutation.isPending,
+      reconnecting: isSessionCheckReconnecting(meQuery),
       error: meQuery.error ?? logoutMutation.error ?? null,
       isAuthenticated: Boolean(meQuery.data),
     };
@@ -84,6 +114,7 @@ export function useAuth(options?: UseAuthOptions) {
     meQuery.data,
     meQuery.error,
     meQuery.isLoading,
+    meQuery.failureCount,
     logoutMutation.error,
     logoutMutation.isPending,
   ]);

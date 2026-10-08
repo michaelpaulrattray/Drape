@@ -17,7 +17,7 @@
     {
       "id": "domain:billing",
       "name": "billing",
-      "moduleCount": 15
+      "moduleCount": 16
     },
     {
       "id": "domain:boards",
@@ -42,7 +42,7 @@
     {
       "id": "domain:client-shared",
       "name": "client-shared",
-      "moduleCount": 9
+      "moduleCount": 10
     },
     {
       "id": "domain:data",
@@ -195,6 +195,12 @@
     {
       "id": "module:client/src/components/PageTransition.tsx",
       "path": "client/src/components/PageTransition.tsx",
+      "domain": "client-shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/components/ReconnectingNotice.tsx",
+      "path": "client/src/components/ReconnectingNotice.tsx",
       "domain": "client-shared",
       "lifecycle": "active"
     },
@@ -645,6 +651,12 @@
     {
       "id": "module:client/src/features/billing/index.ts",
       "path": "client/src/features/billing/index.ts",
+      "domain": "billing",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/billing/spentShareSentence.ts",
+      "path": "client/src/features/billing/spentShareSentence.ts",
       "domain": "billing",
       "lifecycle": "active"
     },
@@ -10908,6 +10920,10 @@
       "path": "client/src/features/billing/monthlyDelta1761-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/billing/planChangeRefusal1987-guard.test.ts",
+      "path": "client/src/features/billing/planChangeRefusal1987-guard.test.ts"
+    },
+    {
       "id": "test:client/src/features/billing/plansRedesign1832-guard.test.ts",
       "path": "client/src/features/billing/plansRedesign1832-guard.test.ts"
     },
@@ -14512,6 +14528,10 @@
       "path": "server/routes/modelCreatePayload.test.ts"
     },
     {
+      "id": "test:server/routes/planChangeSpentShareAndStates.test.ts",
+      "path": "server/routes/planChangeSpentShareAndStates.test.ts"
+    },
+    {
       "id": "test:server/routes/referenceDelivery.test.ts",
       "path": "server/routes/referenceDelivery.test.ts"
     },
@@ -14710,6 +14730,10 @@
     {
       "id": "test:server/stripe/planChangeSettlement.test.ts",
       "path": "server/stripe/planChangeSettlement.test.ts"
+    },
+    {
+      "id": "test:server/stripe/planChangeSpentShareAndStates.test.ts",
+      "path": "server/stripe/planChangeSpentShareAndStates.test.ts"
     },
     {
       "id": "test:server/stripe/planCreditSliderGrant.test.ts",
@@ -15177,6 +15201,11 @@
     {
       "from": "module:client/src/components/ErrorBoundary.tsx",
       "to": "module:client/src/monitoring/errorReporter.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/components/ReconnectingNotice.tsx",
+      "to": "module:client/src/foundation/KliegWordmark.tsx",
       "kind": "imports"
     },
     {
@@ -16221,6 +16250,11 @@
     },
     {
       "from": "module:client/src/features/billing/ChangePlanModal.tsx",
+      "to": "module:client/src/features/billing/spentShareSentence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/ChangePlanModal.tsx",
       "to": "module:client/src/features/billing/useCycleSpend.ts",
       "kind": "imports"
     },
@@ -16291,6 +16325,11 @@
     },
     {
       "from": "module:client/src/features/billing/LowBalanceWarning.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/spentShareSentence.ts",
       "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
@@ -21116,6 +21155,11 @@
     },
     {
       "from": "module:client/src/pages/AppLobby.tsx",
+      "to": "module:client/src/components/ReconnectingNotice.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AppLobby.tsx",
       "to": "module:client/src/const.ts",
       "kind": "imports"
     },
@@ -21507,6 +21551,11 @@
     {
       "from": "module:client/src/pages/DrapeStudio.tsx",
       "to": "module:client/src/_core/hooks/useAuth.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/DrapeStudio.tsx",
+      "to": "module:client/src/components/ReconnectingNotice.tsx",
       "kind": "imports"
     },
     {

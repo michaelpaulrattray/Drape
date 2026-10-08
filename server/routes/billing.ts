@@ -77,6 +77,82 @@ const log = createModuleLogger("routes/billing");
 import { TRPCError } from "@trpc/server";
 
 /**
+ * WHY A PLAN CHANGE CANNOT GO AHEAD, IN HER OWN WORDS — OR `null` (#1987).
+ *
+ * ⚠ **ONE FUNCTION, TWO READERS, AND THAT IS THE REPAIR FOR ITS SECOND
+ * FINDING.** `changePlan` refuses with this sentence and `previewPlanChange`
+ * serves it, so the confirm step shows the refusal BEFORE she presses
+ * anything, in exactly the words the press would have met. Until #1987 the
+ * preview drew a "starts on 7 Nov" sentence for a decrease the confirm then
+ * refused — the confirm step promising a change the server would not make.
+ *
+ * **The states, decided one by one** (#1987 finding 3 — none of them was
+ * gated on either road before):
+ *
+ *  · `active` with collection running — the only state a change is for.
+ *  · `past_due` / `unpaid` — a payment has failed and an invoice is open.
+ *    An upgrade would raise a second invoice on a card that is already
+ *    declining, and a scheduled decrease would be written onto a plan Stripe
+ *    may cancel at the end of its retries. Refused; the one thing to do is the
+ *    card, and the Billing tab's button for it is "Update card".
+ *  · `paused`, or `active` with `pause_collection` set — the portal's pause.
+ *    Invoices are not collected, so an upgrade's credits would land against
+ *    an invoice nobody pays. Refused until she resumes.
+ *  · `trialing` — the product sells no trials today, so this is unreachable;
+ *    it is refused because an upgrade during a trial is invoiced at nothing
+ *    while its prorated credits are granted in full, which is a mint.
+ *  · `incomplete`, `incomplete_expired`, `canceled`, and anything Stripe adds
+ *    later — not a running plan. Refused; the default arm is the refusal, so
+ *    a new status cannot reach the money roads by being unnamed.
+ *
+ * ⚠ **AND A DECREASE IS ALSO REFUSED WHILE THE PLAN IS SET TO END** — #1936's
+ * repair 2, moved here unchanged except that "set to end" now reads both of
+ * Stripe's shapes (`endsAtSec`, finding 1). It stays scoped to the DEFERRED
+ * road, as #1936 scoped it: an instant change on a cancelling plan is a
+ * pre-existing road that card did not re-rule, and neither does this one.
+ */
+function planChangeRefusal(
+  state: {
+    status: string;
+    collectionPaused: boolean;
+    endsAtSec: number | null;
+  },
+  quote: { deferred: boolean },
+): string | null {
+  if (state.status === "active" && state.collectionPaused) {
+    return "Your plan is paused, so it can't be changed right now. Resume it first, then you can change it.";
+  }
+  switch (state.status) {
+    case "active":
+      break;
+    case "past_due":
+    case "unpaid":
+      return "Your last payment didn't go through, so your plan can't be changed until it does. Update your card under Billing, then try again.";
+    case "paused":
+      return "Your plan is paused, so it can't be changed right now. Resume it first, then you can change it.";
+    case "trialing":
+      return "Your plan is still in its trial, so it can't be changed until the trial ends.";
+    default:
+      return "Your plan isn't active right now, so it can't be changed.";
+  }
+  if (quote.deferred && state.endsAtSec !== null) {
+    return `Your plan is set to end on ${formatCustomerShortDate(new Date(state.endsAtSec * 1000))}, so this change has nothing to take effect at. Resume your plan first, then you can change it.`;
+  }
+  return null;
+}
+
+/**
+ * What is left of the PLAN's part of her balance, for the quote (#1965). A
+ * missing credit row answers 0 — the reading under which nothing can be
+ * taken back, so the switch's unused share is paid for rather than given
+ * away; it is the same direction the settlement floor takes on a null row.
+ */
+async function planAllowanceLeftFor(userId: number): Promise<number> {
+  const row = await getUserCredits(userId);
+  return row ? planAllowanceRemaining(row) : 0;
+}
+
+/**
  * THE CUSTOMER'S SENTENCE FOR A PRICE THE CATALOGUE CANNOT SUPPLY (#1605
  * bullet 1) — one translator, both money paths.
  *
@@ -743,9 +819,17 @@ export const billingRouter = router({
         input.interval,
         undefined,
         input.creditUnits,
+        /* The same read `changePlan` takes (#1965), so "due today" here and
+           the charge there are one arithmetic. */
+        await planAllowanceLeftFor(ctx.user.id),
       );
 
       return {
+        /* ⚠ **THE REFUSAL THE CONFIRM WOULD MEET, SERVED BEFORE IT (#1987).**
+           `null` when the change can go ahead. The confirm step shows this
+           sentence in place of the change's own, so she never presses a
+           button whose only answer is no. */
+        refusal: planChangeRefusal(billingState, quote),
         currentPlan: billingState.currentPlan,
         newPlan: input.newPlan,
         /* The dial on each side of the change, so the confirm step can say
@@ -762,6 +846,11 @@ export const billingRouter = router({
         totalDays: quote.totalDays,
         creditAdjustment: quote.creditAdjustment,
         creditUnwind: quote.creditUnwind,
+        spentShareCharge: quote.spentShareCharge,
+        /* The credits that charge pays for (#1965 repair) — the confirm step
+           says "Includes N credits you've already used", and N must be THIS
+           quote's figure, never a second calculation on the client. */
+        spentShareCredits: quote.spentShareCredits,
         kind: quote.kind,
         currentInterval: quote.currentInterval,
         targetInterval: quote.targetInterval,
@@ -1026,6 +1115,11 @@ export const billingRouter = router({
         input.interval,
         undefined,
         input.creditUnits,
+        /* ⚠ What is left of the allowance decides how much of an interval
+           switch's unused share can be taken back and how much is paid for
+           (#1965). Read before the charge, from the same helper the preview
+           reads it through. */
+        await planAllowanceLeftFor(ctx.user.id),
       );
 
       /*
@@ -1065,6 +1159,15 @@ export const billingRouter = router({
           code: "BAD_REQUEST",
           message: "You are already on this plan and billing cycle.",
         });
+      }
+
+      /* ⚠ **A STATE THAT CANNOT TAKE A CHANGE IS REFUSED BEFORE EITHER ROAD
+         (#1987)** — the instant one and the deferred one alike, and before
+         anything is attempted. The sentence is the one the preview already
+         showed her; see `planChangeRefusal` for each state and why. */
+      const refusal = planChangeRefusal(billingState, quote);
+      if (refusal) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: refusal });
       }
 
       /*
@@ -1121,18 +1224,18 @@ export const billingRouter = router({
           says what is in the way, in her own words, and leaves both facts
           where she put them.
 
-          It reads `cancelAtPeriodEnd` off the billing state, which is the same
+          It reads `endsAtSec` off the billing state, which is the same
           `subscriptions.retrieve` the period and the dial come from — not our
           `subscriptions` row, which a webhook writes late and which a change
           made in Stripe's own portal would leave stale in exactly the
           direction that lets this through.
+
+          ⚠ **THE REFUSAL ITSELF NOW LIVES IN `planChangeRefusal` AND RAN
+          ABOVE, BEFORE EITHER ROAD (#1987).** It moved so the preview could
+          serve the same sentence before the press, and it reads both of
+          Stripe's ending shapes — `cancel_at_period_end` AND a `cancel_at`
+          date, the second of which this branch could not see.
         */
-        if (billingState.cancelAtPeriodEnd) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: `Your plan is set to end on ${formatCustomerShortDate(new Date(billingState.periodEndSec * 1000))}, so this change has nothing to take effect at. Resume your plan first, then you can change it.`,
-          });
-        }
 
         const scheduled = await scheduleSubscriptionChange(
           stripe,
@@ -1220,6 +1323,9 @@ export const billingRouter = router({
            confirm step be two arithmetics, which is the defect this whole
            quote-then-act shape exists to prevent. */
         { targetCreditUnits: quote.targetCreditUnits, creditItemId: billingState.creditItemId },
+        /* The spent share of an interval switch, charged on the same invoice
+           (#1965) — from the quote, for the same reason the dial is. */
+        quote.spentShareCharge,
       ).catch((error: unknown) => {
         /* The ONLY throw this function has: a price the catalogue cannot
            supply, rethrown there rather than folded into `success: false`
@@ -1464,6 +1570,10 @@ export const billingRouter = router({
           isUpgrade: quote.isUpgrade,
           creditAdjustment,
           creditsReturned: creditsToReturn,
+          /* The part of the switch's unused share that was already spent, and
+             what was charged for it instead of taken back (#1965). */
+          spentShareCredits: quote.spentShareCredits,
+          spentShareCharge: quote.spentShareCharge,
           creditSettlement,
           localRecord: localRecord.success ? "written" : "deferred-to-webhook",
           settlementInvoiceId: result.invoiceId ?? null,

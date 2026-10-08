@@ -22,6 +22,7 @@ import {
   choiceOfStripeInterval,
 } from "../shared/annualBilling";
 import { PLAN_TIERS, type PlanTier } from "../drizzle/schema";
+import { sourceBand } from "./testing/sourceBand";
 
 const REPO = process.cwd();
 const read = (...parts: string[]) => readFileSync(join(REPO, ...parts), "utf8");
@@ -210,7 +211,23 @@ describe("one declaration — the mirror stays collapsed (working law 4)", () =>
        is the stronger evidence — this arm is here so that a re-added inline
        price reddens the suite that OWNS the arithmetic too. */
     const service = code(read("server", "stripe", "stripeService.ts"));
-    expect(service, "an inline price_data came back to checkout").not.toContain("price_data");
+    /* ⚠ **THE `price_data` HALF READS THE TWO CHECKOUT BUILDERS, NOT THE FILE
+       (#1965).** It read the whole module, and the module now holds ONE
+       deliberate inline price that is not a checkout amount at all: the spent
+       share of an interval switch, charged on the switch's own invoice through
+       `add_invoice_items` (`updateSubscriptionPlan`). That figure is a
+       proration — computed by definition, the way Stripe's own proration lines
+       are — and no catalogue price can carry it. Its wire is pinned by
+       `server/stripe/planChangeSpentShareAndStates.test.ts`. The checkout
+       builders this arm is about are sliced out, so a `price_data` coming back
+       to EITHER of them still reddens here, which is the arm's whole subject. */
+    const checkoutBuilders = sourceBand(
+      service,
+      "export async function createSubscriptionCheckoutSession(",
+      "export async function createCustomerPortalSession(",
+      "the two checkout builders",
+    );
+    expect(checkoutBuilders, "an inline price_data came back to checkout").not.toContain("price_data");
     expect(service, "an ad-hoc price mint came back").not.toContain("prices.create");
   });
 
