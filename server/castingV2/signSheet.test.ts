@@ -296,11 +296,23 @@ async function drawSyntheticSheet(): Promise<{ bytes: Buffer; widths: number[] }
  * being asked for *"panels of exactly equal width"* and is delivering them, so
  * on this shape the equal cut and the true cut are the same cut.
  *
- * ⚠ **The consequence is NOT a code change here but a log one, and it is filed
- * rather than fixed in this suite**: `renderSignSheet` warns whenever any
- * boundary came from a fallback, calling it *"the only alarm there is"* — and
- * on the head sheet it will now fire on every single Sign. An alarm that always
- * cries cannot report the one case it exists for. See #1904.
+ * ⚠ **The consequence was a log one, filed rather than fixed in this suite —
+ * and it IS FIXED NOW (#1967, his *"3) go with your rec"* on #1904).**
+ * `renderSignSheet` used to warn whenever any boundary came from a fallback,
+ * calling it *"the only alarm there is"*, so on the head sheet it fired on
+ * every single Sign and an alarm that always cries cannot report the one case
+ * it exists for.
+ *
+ * ⚠ **AND THE FIX FOUND THAT THE PREMISE OF THE PARAGRAPH ABOVE IS INCOMPLETE,
+ * WHICH IS WORTH MORE THAN THE FIX.** *"No divider bright enough to read"* is
+ * true and reads as *no seam*; the head sheet HAS a seam and it is **dark** —
+ * a hairline trough sitting at exactly 1280 and 2560, 1 and 2 px wide, 89.0
+ * and 58.5 greylevels below its neighbourhood. So the fallback is right for a
+ * reason about THIS picture, where the argument above borrowed one from the
+ * serial render, which is a different picture. The arms are in
+ * `signSheetCutWarning.test.ts`, which also pins what #1967 deliberately did
+ * NOT fix: a figure across a boundary makes the bright search claim a false
+ * divider at the figure's own edge, so it never falls back and nothing warns.
  */
 describe("⚠ the two sheet shapes his #1926 ruling ships", () => {
   type TwoSheet = {
