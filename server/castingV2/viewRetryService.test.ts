@@ -161,6 +161,8 @@ const journal: string[] = [];
 const deducts: Array<{ amount: number; reference: string }> = [];
 const refunds: Array<{ amount: number; reference: string }> = [];
 const committed: Array<{ angle: string; pointsCost: number; provenance: Record<string, unknown> }> = [];
+/** The fenced exit's handoffs (#2073) — the one write that exit may make. */
+const handoffs: Array<{ userId: number; operationId: string }> = [];
 let chargeSucceeds = true;
 let refundRecords = true;
 /**
@@ -327,6 +329,10 @@ function dependencies(
     storeImage: async () => ({ key: "views/new.png", url: "https://public/views/new.png" }),
     deleteObject: async () => ({ success: true as const }),
     wait: async () => undefined,
+    handoffToRecovery: (async (request: { userId: number; operationId: string }) => {
+      journal.push("handoff");
+      handoffs.push({ userId: request.userId, operationId: request.operationId });
+    }) as ViewRetryServiceDependencies["handoffToRecovery"],
     ...overrides,
   };
 }
@@ -343,6 +349,7 @@ beforeEach(() => {
   deducts.length = 0;
   refunds.length = 0;
   committed.length = 0;
+  handoffs.length = 0;
   enginePrompts.length = 0;
   chargeSucceeds = true;
   refundRecords = true;
@@ -679,6 +686,39 @@ describe("try again on one view — what moves, and in what order", () => {
     */
     expect(refunds).toHaveLength(0);
     expect(deducts).toHaveLength(1);
+    /*
+      ⚠ AND NO RECEIPT IS SEALED HERE — THE LEASE IS HANDED OVER (#2073).
+      The fence now refuses while the sweep is mid-adjudication with the row
+      still `running`; a failure receipt from this exit would land first with
+      `refundedCredits: 0` over the refund the sweep is recording, and the
+      sweep's own seal would then find nothing `running` to correct. The
+      handoff is the positive control: this exit still does its one write.
+    */
+    expect(receipts.failure).not.toHaveBeenCalled();
+    expect(receipts.success).not.toHaveBeenCalled();
+    expect(handoffs).toEqual([{ userId: input.userId, operationId: OPERATION_ID }]);
+    expect(journal.at(-1)).toBe("handoff");
+  });
+
+  it("a handoff the sweep has already overtaken still answers the customer the same way", async () => {
+    /* The row was sealed before this exit ran, so the handoff (which needs
+       `running`) refuses. That is logged, never thrown at her: she reads the
+       same sentence, and still nothing is refunded or sealed from here. */
+    const deps = dependencies([slot()], {
+      commitRetried: (async () => null) as ViewRetryServiceDependencies["commitRetried"],
+      handoffToRecovery: (async () => {
+        throw new Error("Only the owned running operation can enter recovery");
+      }) as ViewRetryServiceDependencies["handoffToRecovery"],
+    });
+    await expect(retryCastView(deps, input)).rejects.toThrow(/settled while it rendered/);
+    expect(refunds).toHaveLength(0);
+    expect(receipts.failure).not.toHaveBeenCalled();
+  });
+
+  it("CONTROL: a view that lands seals its receipt and never hands off", async () => {
+    await retryCastView(dependencies([slot()]), input);
+    expect(receipts.success).toHaveBeenCalledTimes(1);
+    expect(handoffs).toHaveLength(0);
   });
 
   it("a refund that does not record is never reported as 'you weren't charged'", async () => {

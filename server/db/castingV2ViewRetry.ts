@@ -378,6 +378,37 @@ export async function commitRetriedViewAsset(input: {
         */
         inArray(generationOperations.kind, [...VIEW_REPLACING_OPERATION_KINDS]),
         eq(generationOperations.status, "running"),
+        /*
+          ⚠ **AND THE SWEEP HAS NOT TAKEN IT (#2073).** `running` alone was not
+          a fence against the sweep, because the sweep does not move a row out
+          of `running` until it SEALS — and it seals after it has read *did a
+          picture land* and recorded its refund. A Try again whose lease lapsed
+          (its heartbeat latches on its first failure and never renews) was
+          claimed, read as *nothing landed* — true, nothing had YET — refunded,
+          and only then sealed; a commit in between was admitted, because the
+          row was still `running`. **She kept the view AND the 50 credits.**
+
+          The claim is the one write the sweep makes before it reads anything
+          (`claimRecoveryAttempt` stamps `recoveryAttemptedAt`, and nothing on
+          the live road ever writes it), so this clause turns the claim INTO the
+          fence, with no migration and no second status. The row lock does the
+          rest in both orders: a commit already holding this `FOR UPDATE` makes
+          the claim's UPDATE wait until the picture is committed, so the sweep's
+          read then sees it; a claim that got there first is read here as the
+          latest committed version (a locking read), so the commit is refused.
+          Either way no refund can be written for a view that landed.
+
+          ⚠ **Refusal here means the sweep owns the money, which is exactly what
+          `null` has always meant.** The Try again's fenced exit hands the lease
+          over and writes no receipt; the redo's slot already did. A sweep that
+          throws after claiming leaves the row `running` and stamped, so the
+          live process is refused from then on and the next pass settles it —
+          the direction that fails closed. It holds for a redo's slot too, which
+          is its own operation; a PRESS is never this clause's subject (its
+          slots land under their own ids), so its deferred pass, which also
+          stamps it, cannot refuse them.
+        */
+        isNull(generationOperations.recoveryAttemptedAt),
       ))
       .limit(1)
       .for("update");
@@ -415,8 +446,11 @@ export async function commitRetriedViewAsset(input: {
       used — one failure becoming two, which is the whole reason the two
       meanings were separated in the header above.
 
-      The Try again road passes no `pressOperationId` and is untouched: its
-      money row IS its fence, which is why it was immune to this.
+      The Try again road passes no `pressOperationId`: its money row is its own
+      operation, fenced above. ⚠ This line said that made it *immune*, and it
+      was not — `running` was no fence against a sweep that had claimed the row
+      and not yet sealed it (#2073), which is what the claim clause above
+      closes.
     */
     if (input.pressOperationId !== undefined) {
       const [press] = await tx
