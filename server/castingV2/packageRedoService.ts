@@ -92,6 +92,7 @@ import {
   castViewRetryClaimPayload,
   castViewSlotOperationLockKey,
   derivedClientRequestId,
+  modelOperationLockKey,
   operationChargeReference,
 } from "../casting/operationContract";
 import {
@@ -233,7 +234,7 @@ export async function redoCastPackage(
     The button carried a price; this is the server asking the SAME function the
     same question at the moment the money would move — `castPackageRedoOffer`,
     over the projection the room is shown. A second reading in this file is how
-    a customer comes to press a 650-credit button and be charged something else.
+    a customer comes to press a priced button and be charged something else.
 
     The offer answers WHETHER and HOW MUCH; the sentences below answer WHY, read
     off the same two facts the offer walked. Both refusals are free and before
@@ -316,11 +317,12 @@ export async function redoCastPackage(
     siblings delivered. The press row is the money, the slot rows are the
     pictures, and the sweep can tell them apart by kind.
 
-    It takes NO lock, which is forced rather than chosen:
-    `generation_operation_locks` is unique on `operationId`, so one operation
-    holds one key — the five slot locks need five operations, and a sixth key
-    for the press would be one nothing else ever takes. Mutual exclusion is the
-    slots'; the press is the till.
+    It holds the CAST-LEVEL lock (`model:<id>`) while the five slots hold their
+    own per-slot keys. One operation holds exactly one key —
+    `generation_operation_locks` is unique on `operationId` — which is why the
+    five slot locks need five operations, and why the press could not simply
+    take them all. What its own key buys is a second press refusing HERE,
+    before a slot is taken or a credit moves.
 
     A SECOND PRESS OF THE SAME BUTTON replays here, before any slot is claimed
     and before any money moves, and is handed back what the first press bought.
@@ -334,6 +336,21 @@ export async function redoCastPackage(
     modelId: read.modelId,
     payload: { castId: input.castId, angles },
     plannedCredits: offer.priceCredits,
+    /*
+      ⚠ **THE CAST-LEVEL LOCK, AND THIS ROW HELD NONE UNTIL `operationLockWire`
+      ASKED FOR ONE.** The rule it enforces is that an operation binding a
+      `modelId` holds a lock, and the press binds one because the sweep needs it
+      to ask whether any view landed.
+
+      The design note this replaces argued a cast-level key would NOT collide
+      with the per-slot keys and was therefore the wrong choice — true, and it
+      was an argument against using `model:` INSTEAD of the slot keys. Held
+      BESIDE them it buys something real: a second press on the same Cast now
+      refuses at this claim, before a slot is taken or a credit moves, rather
+      than halfway through claiming five locks.
+    */
+    lockKey: modelOperationLockKey(read.modelId),
+    lockBusyMessage: PACKAGE_REDO_BUSY_MESSAGE,
   });
   if (press.type === "replay") return press.result as PackageRedoResult;
   const pressOperationId = press.operationId;
@@ -404,7 +421,7 @@ export async function redoCastPackage(
     (`server/db/generationOperations.ts`), so a press left `claimed` cannot be
     sealed: its receipt would affect no rows, fall into
     `markRecoveryAfterReceiptFailure`, and park a perfectly good redo for
-    support review with the customer's 650 credits in an unsettled state.
+    support review with the customer's credits in an unsettled state.
     Every slot row below already makes this transition; the press needs it for
     the same reason and one step earlier, because it is the row that is about
     to be charged.

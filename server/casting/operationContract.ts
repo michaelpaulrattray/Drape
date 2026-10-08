@@ -109,11 +109,13 @@ export const GENERATION_OPERATION_KINDS = [
     So the press is its own row: `plannedCredits` 3,250, one charge, and the
     only operation the recovery sweep can refund.
 
-    ⚠ **AND IT TAKES NO LOCK, WHICH IS FORCED RATHER THAN CHOSEN.**
+    ⚠ **IT HOLDS THE CAST-LEVEL LOCK, AND THE SLOTS HOLD THEIR OWN.**
     `generation_operation_locks` has a unique index on `operationId`, so one
-    operation holds exactly one lock key - the five slot locks therefore need
-    five operations, and a sixth lock for the press would be a key nothing else
-    ever takes. The mutual exclusion is the slots'; the press is the money.
+    operation holds exactly one lock key — which is why the five slot locks
+    need five operations and the press could not simply take them all. Its own
+    `model:<id>` key is what makes a second press on one Cast refuse at the
+    claim, before a slot is taken or a credit moves, and it is what
+    `operationLockWire` requires of any operation binding a `modelId`.
 
     It is NOT in {@link VIEW_REPLACING_OPERATION_KINDS}: it commits no picture,
     and widening the commit fence to a row that never lands bytes is the
