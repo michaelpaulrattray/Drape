@@ -94,7 +94,7 @@ describe("the ask box says what it can do, and it is one sentence", () => {
     move any sentence out of the arm's sight — the shape of the sabotage the
     arm above was widened to catch, one indirection further out.
   */
-  it("the price is on the Refine button, and the sentence carries none (#1952)", async () => {
+  it("the price is on the Refine button, and the sentence carries none (card 1952)", async () => {
     /*
       #1952 item 1, his *"yes"* 2026-10-08: every paid button shows its price.
       The note's old `· N credits each` suffix (`refinePriceClause`, #1727)
