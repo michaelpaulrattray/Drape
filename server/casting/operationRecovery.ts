@@ -1253,6 +1253,26 @@ async function settleStaleGenerationOperation(
       });
       return "recovery_required";
     }
+    /*
+      ⚠ **THE COMPILER IS THIS BRANCH'S GUARD AGAINST FALLING THROUGH, and
+      falling through is the dangerous direction (#1903 review finding, the
+      sweep side of B1).**
+
+      Below these kind branches the function continues into the GENERIC
+      stale-operation handling — the ledger comparison and the standard
+      finalizers — and the comment at that boundary says every path past it
+      assumes a `claimed` or `running` operation, which is true of every row
+      arriving here. So an outcome this branch forgets to name would not be
+      refused: it would be settled by machinery that never asked this road's
+      question.
+
+      `assertNever` makes that a TYPE ERROR rather than a test nobody wrote.
+      When `ViewRetryRecoveryOutcome` grows a variant, `tsc` names this line
+      and its two siblings; the throw is only the backstop. It is the one
+      instrument that cannot be green while the hazard is open, which is why
+      it is here instead of a text read of the source.
+    */
+    return assertNever(recovered);
   }
   if (operation.kind === "castingV2.packageRedo") {
     /*
@@ -1313,6 +1333,26 @@ async function settleStaleGenerationOperation(
       });
       return "recovery_required";
     }
+    /*
+      ⚠ **THE COMPILER IS THIS BRANCH'S GUARD AGAINST FALLING THROUGH, and
+      falling through is the dangerous direction (#1903 review finding, the
+      sweep side of B1).**
+
+      Below these kind branches the function continues into the GENERIC
+      stale-operation handling — the ledger comparison and the standard
+      finalizers — and the comment at that boundary says every path past it
+      assumes a `claimed` or `running` operation, which is true of every row
+      arriving here. So an outcome this branch forgets to name would not be
+      refused: it would be settled by machinery that never asked this road's
+      question.
+
+      `assertNever` makes that a TYPE ERROR rather than a test nobody wrote.
+      When `ViewRetryRecoveryOutcome` grows a variant, `tsc` names this line
+      and its two siblings; the throw is only the backstop. It is the one
+      instrument that cannot be green while the hazard is open, which is why
+      it is here instead of a text read of the source.
+    */
+    return assertNever(recovered);
   }
   if (operation.kind === "castingV2.packageRedoPress") {
     /*
@@ -1363,6 +1403,26 @@ async function settleStaleGenerationOperation(
       });
       return "recovery_required";
     }
+    /*
+      ⚠ **THE COMPILER IS THIS BRANCH'S GUARD AGAINST FALLING THROUGH, and
+      falling through is the dangerous direction (#1903 review finding, the
+      sweep side of B1).**
+
+      Below these kind branches the function continues into the GENERIC
+      stale-operation handling — the ledger comparison and the standard
+      finalizers — and the comment at that boundary says every path past it
+      assumes a `claimed` or `running` operation, which is true of every row
+      arriving here. So an outcome this branch forgets to name would not be
+      refused: it would be settled by machinery that never asked this road's
+      question.
+
+      `assertNever` makes that a TYPE ERROR rather than a test nobody wrote.
+      When `ViewRetryRecoveryOutcome` grows a variant, `tsc` names this line
+      and its two siblings; the throw is only the backstop. It is the one
+      instrument that cannot be green while the hazard is open, which is why
+      it is here instead of a text read of the source.
+    */
+    return assertNever(recovered);
   }
   if (operation.kind === "castingV2.sign") {
     const recovered = await recoverCastingV2SignOperation({
