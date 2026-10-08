@@ -113,41 +113,41 @@ export const ACCOUNT_DELETION_DISPOSITIONS = {
   /* ---- the account itself and its money ---- */
   /* `users` itself has no `userId` column and is therefore not in this map —
      it IS the account, and it is deleted last. */
-  credits: "deleted",
-  creditTransactions: "deleted",
+  "credits.userId": "deleted",
+  "creditTransactions.userId": "deleted",
 
   /* ---- the legacy studio ---- */
-  models: "deleted",
-  generations: "deleted",
-  generationOperations: "deleted",
-  castingEvidenceIngestions: "deleted",
-  castingEvidenceCandidates: "deleted",
-  castingEvidenceCandidateFeatureTargets: "deleted",
-  modelReferencePlates: "deleted",
-  modelEvidenceCrops: "deleted",
-  modelIdentityFeatureIntents: "deleted",
-  modelIdentityFeatureProjectionEvidence: "deleted",
+  "models.userId": "deleted",
+  "generations.userId": "deleted",
+  "generationOperations.userId": "deleted",
+  "castingEvidenceIngestions.userId": "deleted",
+  "castingEvidenceCandidates.userId": "deleted",
+  "castingEvidenceCandidateFeatureTargets.userId": "deleted",
+  "modelReferencePlates.userId": "deleted",
+  "modelEvidenceCrops.userId": "deleted",
+  "modelIdentityFeatureIntents.userId": "deleted",
+  "modelIdentityFeatureProjectionEvidence.userId": "deleted",
 
   /* ---- boards and wardrobe ---- */
-  boards: "deleted",
-  wardrobeGarments: "deleted",
-  wardrobeOutfits: "deleted",
-  wardrobeSessions: "deleted",
-  wardrobeLooks: "deleted",
+  "boards.userId": "deleted",
+  "wardrobeGarments.userId": "deleted",
+  "wardrobeOutfits.userId": "deleted",
+  "wardrobeSessions.userId": "deleted",
+  "wardrobeLooks.userId": "deleted",
 
   /* ---- the casting studio (`purgeAccountCastingIn`) ---- */
-  castingSessions: "deleted",
-  castingRolls: "deleted",
-  castingCandidates: "deleted",
-  castingCandidateVariants: "deleted",
-  castingSegments: "deleted",
-  castingReferenceLibrary: "deleted",
-  castingFaceScans: "deleted",
-  castingInkDesigns: "deleted",
-  castingInkPlates: "deleted",
-  castingReferenceCrops: "deleted",
-  castingReferenceAttachments: "deleted",
-  castingInkDeliveryCrops: "deleted",
+  "castingSessions.userId": "deleted",
+  "castingRolls.userId": "deleted",
+  "castingCandidates.userId": "deleted",
+  "castingCandidateVariants.userId": "deleted",
+  "castingSegments.userId": "deleted",
+  "castingReferenceLibrary.userId": "deleted",
+  "castingFaceScans.userId": "deleted",
+  "castingInkDesigns.userId": "deleted",
+  "castingInkPlates.userId": "deleted",
+  "castingReferenceCrops.userId": "deleted",
+  "castingReferenceAttachments.userId": "deleted",
+  "castingInkDeliveryCrops.userId": "deleted",
 
   /* ---- her own words, at her own request ---- */
   /*
@@ -157,7 +157,7 @@ export const ACCOUNT_DELETION_DISPOSITIONS = {
     words they are, and nothing in the product reads a bug report for money or
     for a legal obligation. So they go with her.
   */
-  bugReports: "deleted",
+  "bugReports.userId": "deleted",
 
   /* ---- a quiet limit with nothing to remember ---- */
   /*
@@ -165,14 +165,14 @@ export const ACCOUNT_DELETION_DISPOSITIONS = {
     keyed on the account id, so a new account starts at zero whether these
     rows survive or not — deleting them loses no control at all.
   */
-  faceScanDailyUsage: "deleted",
+  "faceScanDailyUsage.userId": "deleted",
 
   /* ---- anonymised ---- */
   /*
     Compliance keeps the trail and drops the person: `userId` goes null and the
     row records that its user was deleted. Pre-dates #1935 and is unchanged.
   */
-  auditLogs: "anonymised",
+  "auditLogs.userId": "anonymised",
 
   /* ---- exempt, each for its own stated reason ---- */
   /*
@@ -183,18 +183,110 @@ export const ACCOUNT_DELETION_DISPOSITIONS = {
     deleting it on request turns delete-and-register into a credit farm. The
     row holds a device key and an IP and no content of hers.
   */
-  freeGrantClaims: "exempt: the free-grant fraud guard, which delete-and-re-register would defeat — the schema's own column comment rules it",
+  "freeGrantClaims.userId": "exempt: the free-grant fraud guard, which delete-and-re-register would defeat — the schema's own column comment rules it",
   /*
     A money record mirroring a settled Stripe invoice, one per plan change,
     whose own status comment says *"Never deleted"*. Credits owed or handed
     back beside real money moving; the accounting outlives the account.
   */
-  planChangeSettlements: "exempt: the Stripe-invoice settlement ledger — a money record that outlives the account, and its own column comment says never deleted",
+  "planChangeSettlements.userId": "exempt: the Stripe-invoice settlement ledger — a money record that outlives the account, and its own column comment says never deleted",
   /*
     The manifest this very deletion writes. Deleting the account's batches
     would delete the instruction to go and remove its objects.
   */
-  storageCleanupBatches: "exempt: the deletion's own storage-cleanup manifest — the instruction that removes its objects",
+  "storageCleanupBatches.userId": "exempt: the deletion's own storage-cleanup manifest — the instruction that removes its objects",
+
+  /* ======================================================================
+     ⚠ THE COLUMNS THAT NAME A USER WITHOUT BEING CALLED `userId` — #1948 M2.
+
+     The fourteen below were invisible until this card. The guard's reader
+     matched `userId` and only `userId`, so a column holding a user id under
+     any other name was **neither deleted nor exempted, and could not be seen
+     to be missing** — the exact silence #1935 was filed about, one level
+     down. Seven were named on the card; the census found seven more.
+
+     Three shapes, and they want different answers:
+
+     1. **A pointer at the DELETING account, sitting on somebody ELSE's row.**
+        It dangles when the account goes, and it may carry her details beside
+        it. Anonymised.
+     2. **A pointer at the deleting account on a row this function already
+        deletes.** Nothing to do — the row goes.
+     3. **A STAFF actor's id on a record about someone else.** It is the
+        record's own content, like an audit row's actor, and the account it
+        names is a staff account rather than the customer erasing herself.
+        Exempt, each with the reason it is exempt FOR.
+     ====================================================================== */
+
+  /* ---- shape 1: a pointer at her, on a row that survives ---- */
+  /*
+    THE ONE THE CARD LEADS ON, and it is not only a dangling id. A referral
+    row belongs to the REFERRER, who is not deleting anything — so it survives
+    — and it carries `referredEmail` and `referredIp`: the erasing customer's
+    own email address and IP, on a row that stays. `moderatorQueries.ts` draws
+    both on the staff referrals surface, so after she asked to be erased a
+    moderator could still read her email there.
+
+    Anonymised rather than deleted, for the reason the audit log is: the
+    referrer's record of credits they earned (`creditsAwarded`,
+    `referrerCredited`) is money and is not the deleting account's to take.
+    The person is removed and the accounting stays. Nulling `referredUserId`
+    is safe against `uq_referrals_referred_user` — MySQL does not count NULLs
+    toward a unique key, which the schema's own comment on that index says.
+  */
+  "referrals.referredUserId": "anonymised",
+  /*
+    Provenance on OTHER people's rows: "this account was referred by the one
+    going away". Read by nothing — `git grep referredByUserId` finds one
+    write in `db/referrals.ts` and no reader at all — so nulling it loses no
+    behaviour and removes a pointer at a person who asked to be gone.
+  */
+  "users.referredByUserId": "anonymised",
+
+  /* ---- shape 2: already covered by a statement above ---- */
+  /*
+    Both sides of the change-request `or()` in step 2 — a request she filed
+    and a request filed ABOUT her go together, which is why that statement
+    was written with two predicates rather than one.
+  */
+  "referrals.referrerUserId": "deleted",
+  "changeRequests.submittedById": "deleted",
+  "changeRequests.targetUserId": "deleted",
+  /*
+    Reached through the change requests it hangs off, in step 1, before they
+    go. ⚠ Its own `uploadedById` is NOT the scope — an attachment she uploaded
+    to somebody else's surviving request is a file of hers on a row that
+    stays, and `collectAccountOwnedStorageItemsIn` reads it by `uploadedById`
+    so the OBJECT goes either way. The row's pointer is the remainder, and it
+    is the staff change-request trail's own content.
+  */
+  "changeRequestAttachments.uploadedById": "exempt: the file's bytes are collected and deleted by uploader; the row belongs to the change request it hangs off, which may be somebody else's",
+
+  /* ---- shape 3: a staff actor on somebody else's record ---- */
+  /*
+    ⚠ ALL SIX NAME A STAFF ACCOUNT, NOT THE CUSTOMER. A customer erasing
+    herself never appears in any of them, so none of these is a leftover of
+    HER data; what they would be is a dangling id if a STAFF member deleted
+    their own account. That is a different question with a different answer
+    — the record of who acted is the point of the record — and it is the same
+    answer the audit log gives, one step less aggressively: the trail stays.
+  */
+  "changeRequests.reviewedById": "exempt: the staff reviewer on a moderation record — who decided is the record's content, and the deleting customer is never this id",
+  "users.suspendedBy": "exempt: the staff account that suspended someone else — a moderation fact on that person's row, not the deleting customer's data",
+  "blockedIps.blockedBy": "exempt: the staff account that blocked an address — an abuse control's own trail, and the row is not the deleting customer's",
+  "announcements.createdBy": "exempt: the staff author of a banner every customer sees — product content, not an account's data",
+  "inviteCodes.createdBy": "exempt: the staff issuer of a beta code — the code outlives its issuer and is redeemed by other people",
+  /*
+    THE THREE CREW-DESK TABLES. They hold the FOUNDER's own words, switches
+    and taps on `/admin/crew`, keyed by his account. They are a staff surface
+    end to end: no customer writes them, and the account that could make these
+    ids dangle is the one account this product is built around. Deleting his
+    replies because he deleted his account is not erasure of a customer's
+    data, it is destruction of the program's record.
+  */
+  "crewReplies.authorUserId": "exempt: the founder's own replies on the Crew desk — a staff surface no customer writes, and the record of his rulings",
+  "crewWorkSwitches.changedByUserId": "exempt: who last moved a background-work switch — the Crew desk's own audit column, staff only",
+  "crewCardIntents.markedByUserId": "exempt: who marked a card not relevant — the Crew desk's own audit column, staff only",
 } as const satisfies Record<string, `deleted` | `anonymised` | `exempt: ${string}`>;
 
 /**
@@ -212,6 +304,12 @@ function zeroDeletionCounts() {
     changeRequestAttachments: 0,
     changeRequests: 0,
     referrals: 0,
+    /* Rows somebody else owns that named her, with the person removed and the
+       money record kept (#1948 M2) — counted apart from the rows deleted,
+       because "erased" and "anonymised" are different answers and a single
+       number would hide which one an account got. */
+    referralsAnonymized: 0,
+    referredByCleared: 0,
     boardEdges: 0,
     boardItemVersions: 0,
     boardItems: 0,
@@ -294,8 +392,46 @@ export function isAccountDiagnosticKey(userId: number, storageKey: string): bool
   return DIAGNOSTIC_OWNED_PREFIXES.some((prefix) => storageKey.startsWith(`${prefix}/${userId}/`));
 }
 
-/** Account erasure owns all rows selected by user id. This collector uses the
- * same exact-origin law as Cast deletion and includes model-less VTO attempts. */
+/**
+ * Account erasure owns all rows selected by user id. This collector uses the
+ * same exact-origin law as Cast deletion and includes model-less VTO attempts.
+ *
+ * ⚠ **EVERY READ HERE WHOSE ROWS THIS TRANSACTION THEN DELETES IS A LOCKING
+ * READ (#1948 L2), AND THE RACE IT CLOSES IS A LEFTOVER OBJECT RATHER THAN A
+ * WRONG DELETE.**
+ *
+ * These were plain `SELECT`s. Inside a REPEATABLE READ transaction a plain
+ * read sees the snapshot taken when the transaction began, while the `DELETE`
+ * statements act on the latest rows — so the two halves of this deletion were
+ * answering about two different moments. A render still finishing during an
+ * erasure (a casting roll writing `generations.resultUrl`, a VTO writing a
+ * wardrobe row) could commit its key AFTER the read: **the row is deleted and
+ * its key never enters the manifest**, which leaves the object at a
+ * permanently public URL with its last pointer gone. `server/storage.ts` is
+ * explicit that served URLs are not presigned and never expire, so an object
+ * no manifest names is up for good.
+ *
+ * `.for("update")` reads the latest committed version and holds those rows, so
+ * a writer racing the erasure either lands before the read and is collected,
+ * or blocks until this transaction commits and then updates nothing. The
+ * sibling purge takes the same instrument for the same class of reason
+ * (`server/casting/castLineagePurge.ts`, its serialization point).
+ *
+ * **Two reads deliberately do NOT lock, and each has its own reason.** The
+ * kept-for-diagnosis read at the end joins `storageCleanupItems` to
+ * `storageCleanupBatches`, which this deletion does not delete — it is the
+ * manifest machinery itself, exempt by `ACCOUNT_DELETION_DISPOSITIONS`, and
+ * locking it would hold rows the cleanup worker is walking. And the nine
+ * casting child readers are shared with the retention sweep, so they keep
+ * their plain reads; the candidate row they all hang off is locked instead, in
+ * `listAccountCandidatesIn`.
+ *
+ * ⚠ **THE RESIDUAL IS NAMED RATHER THAN CLAIMED CLOSED**: this closes the
+ * UPDATE race and narrows the INSERT one to what InnoDB's gap locks cover. The
+ * complete answer is to refuse deletion while the account has a running
+ * operation — a customer-visible refusal, so a product decision rather than a
+ * repair, and not taken here.
+ */
 export async function collectAccountOwnedStorageItemsIn(
   tx: TransactionHandle,
   userId: number,
@@ -310,7 +446,8 @@ export async function collectAccountOwnedStorageItemsIn(
     })
     .from(users)
     .where(eq(users.id, userId))
-    .limit(1);
+    .limit(1)
+    .for("update");
   if (userRows[0]) {
     addOwnedAccountKey(publicKeys, currentPublicUrl, { storageKey: userRows[0].avatarKey });
     addOwnedAccountKey(publicKeys, currentPublicUrl, { storageKey: userRows[0].bannerKey });
@@ -319,13 +456,15 @@ export async function collectAccountOwnedStorageItemsIn(
   const userModels = await tx
     .select({ id: models.id })
     .from(models)
-    .where(eq(models.userId, userId));
+    .where(eq(models.userId, userId))
+    .for("update");
   if (userModels.length > 0) {
     const modelIds = userModels.map((m: { id: number }) => m.id);
     const assets = await tx
       .select({ storageKey: modelAssets.storageKey, storageUrl: modelAssets.storageUrl })
       .from(modelAssets)
-      .where(inArray(modelAssets.modelId, modelIds));
+      .where(inArray(modelAssets.modelId, modelIds))
+      .for("update");
     for (const asset of assets) addOwnedAccountKey(publicKeys, currentPublicUrl, {
       storageKey: asset.storageKey,
       url: asset.storageUrl,
@@ -340,7 +479,8 @@ export async function collectAccountOwnedStorageItemsIn(
         eq(castingEvidenceIngestions.userId, userId),
         inArray(castingEvidenceIngestions.modelId, modelIds),
       )
-      : eq(castingEvidenceIngestions.userId, userId));
+      : eq(castingEvidenceIngestions.userId, userId))
+    .for("update");
   const candidateAttempts = await tx
     .select({
       attempt: castingEvidenceCandidateAttempts,
@@ -357,7 +497,8 @@ export async function collectAccountOwnedStorageItemsIn(
         eq(castingEvidenceCandidates.userId, userId),
         inArray(castingEvidenceCandidates.modelId, modelIds),
       )
-      : eq(castingEvidenceCandidates.userId, userId));
+      : eq(castingEvidenceCandidates.userId, userId))
+    .for("update");
   const referencePlates = await tx
     .select()
     .from(modelReferencePlates)
@@ -366,7 +507,8 @@ export async function collectAccountOwnedStorageItemsIn(
         eq(modelReferencePlates.userId, userId),
         inArray(modelReferencePlates.modelId, modelIds),
       )
-      : eq(modelReferencePlates.userId, userId));
+      : eq(modelReferencePlates.userId, userId))
+    .for("update");
   const evidenceCrops = await tx
     .select()
     .from(modelEvidenceCrops)
@@ -375,7 +517,8 @@ export async function collectAccountOwnedStorageItemsIn(
         eq(modelEvidenceCrops.userId, userId),
         inArray(modelEvidenceCrops.modelId, modelIds),
       )
-      : eq(modelEvidenceCrops.userId, userId));
+      : eq(modelEvidenceCrops.userId, userId))
+    .for("update");
   for (const receipt of evidenceIngestions) {
     if (receipt.userId !== userId) {
       throw new Error("Evidence receipt ownership disagrees with the deleting account");
@@ -434,30 +577,34 @@ export async function collectAccountOwnedStorageItemsIn(
   }
 
   const attempts = await tx.select({ resultUrl: generations.resultUrl })
-    .from(generations).where(eq(generations.userId, userId));
+    .from(generations).where(eq(generations.userId, userId)).for("update");
   for (const attempt of attempts) addOwnedAccountKey(publicKeys, currentPublicUrl, { url: attempt.resultUrl });
 
   const attachments = await tx
     .select({ fileKey: changeRequestAttachments.fileKey, url: changeRequestAttachments.url })
     .from(changeRequestAttachments)
-    .where(eq(changeRequestAttachments.uploadedById, userId));
+    .where(eq(changeRequestAttachments.uploadedById, userId))
+    .for("update");
   for (const attachment of attachments) addOwnedAccountKey(publicKeys, currentPublicUrl, {
     storageKey: attachment.fileKey,
     url: attachment.url,
   });
 
-  const garments = await tx.select().from(wardrobeGarments).where(eq(wardrobeGarments.userId, userId));
+  const garments = await tx.select().from(wardrobeGarments)
+    .where(eq(wardrobeGarments.userId, userId)).for("update");
   for (const garment of garments) {
     addOwnedAccountKey(publicKeys, currentPublicUrl, { storageKey: garment.originalImageKey });
     addOwnedAccountKey(publicKeys, currentPublicUrl, { storageKey: garment.isolatedImageKey });
     addOwnedAccountKey(publicKeys, currentPublicUrl, { storageKey: garment.sourceImageKey });
   }
-  const outfits = await tx.select().from(wardrobeOutfits).where(eq(wardrobeOutfits.userId, userId));
+  const outfits = await tx.select().from(wardrobeOutfits)
+    .where(eq(wardrobeOutfits.userId, userId)).for("update");
   for (const outfit of outfits) addOwnedAccountKey(publicKeys, currentPublicUrl, {
     storageKey: outfit.resultThumbKey,
     url: outfit.resultThumbUrl,
   });
-  const sessions = await tx.select().from(wardrobeSessions).where(eq(wardrobeSessions.userId, userId));
+  const sessions = await tx.select().from(wardrobeSessions)
+    .where(eq(wardrobeSessions.userId, userId)).for("update");
   for (const session of sessions) {
     // A session's modelImageUrl is a reference input and may be shared. Only
     // generated history is deletion authority when no explicit key exists.
@@ -466,14 +613,17 @@ export async function collectAccountOwnedStorageItemsIn(
       for (const url of history) addOwnedAccountKey(publicKeys, currentPublicUrl, { url });
     }
   }
-  const looks = await tx.select().from(wardrobeLooks).where(eq(wardrobeLooks.userId, userId));
+  const looks = await tx.select().from(wardrobeLooks)
+    .where(eq(wardrobeLooks.userId, userId)).for("update");
   for (const look of looks) addOwnedAccountKey(publicKeys, currentPublicUrl, { url: look.imageUrl });
 
-  const userBoards = await tx.select().from(boards).where(eq(boards.userId, userId));
+  const userBoards = await tx.select().from(boards)
+    .where(eq(boards.userId, userId)).for("update");
   for (const board of userBoards) addOwnedAccountKey(publicKeys, currentPublicUrl, { storageKey: board.thumbnailKey });
   if (userBoards.length > 0) {
     const boardIds = userBoards.map((board) => board.id);
-    const items = await tx.select().from(boardItems).where(inArray(boardItems.boardId, boardIds));
+    const items = await tx.select().from(boardItems)
+      .where(inArray(boardItems.boardId, boardIds)).for("update");
     for (const item of items) addOwnedAccountKey(publicKeys, currentPublicUrl, { storageKey: item.imageKey });
     // URL-only Canvas references/history can be shared inputs. The dry-run
     // orphan audit counts them, but they are not automatic delete authority.
@@ -638,6 +788,50 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
         .delete(referrals)
         .where(eq(referrals.referrerUserId, userId));
       counts.referrals = (refResult as any)[0]?.affectedRows ?? 0;
+
+      /*
+        Step 3b: THE REFERRAL ROWS SOMEBODY ELSE OWNS THAT NAME HER (#1948 M2).
+
+        The statement above deletes the rows where she was the REFERRER. A row
+        where she was the one REFERRED belongs to the person who invited her,
+        who is not deleting anything — so it survives, and it carries her
+        `referredEmail` and her `referredIp`. `moderatorQueries.ts` draws both
+        on the staff referrals surface, so after she asked to be erased a
+        moderator could still read her email address there.
+
+        ⚠ **ANONYMISED RATHER THAN DELETED, and the reason is the audit log's.**
+        The row is the referrer's record of credits they earned
+        (`creditsAwarded`, `referrerCredited`) beside real money. That is not
+        hers to take with her. So the person goes and the accounting stays —
+        which is the same trade `auditLogs` makes two hundred lines below.
+
+        Nulling `referredUserId` is safe against `uq_referrals_referred_user`:
+        MySQL does not count NULLs toward a unique key, which is the schema's
+        own stated reason for pending email invites being allowed to share the
+        null. And `completeReferral`'s lookup is an `eq` on this column, which
+        no null can satisfy.
+      */
+      const refereeResult = await tx
+        .update(referrals)
+        .set({ referredUserId: null, referredEmail: null, referredIp: null })
+        .where(eq(referrals.referredUserId, userId));
+      counts.referralsAnonymized = (refereeResult as any)[0]?.affectedRows ?? 0;
+
+      /*
+        Step 3c: AND THE PROVENANCE POINTER ON OTHER PEOPLE'S ACCOUNTS.
+
+        `users.referredByUserId` records "this account was referred by that
+        one". On every account she invited it points at her, and it would
+        still point at her id after the row she lives in is gone. Nothing in
+        the product reads the column — one write in `db/referrals.ts` and no
+        reader — so nulling it loses no behaviour and removes a pointer at a
+        person who asked to be gone.
+      */
+      const referredByResult = await tx
+        .update(users)
+        .set({ referredByUserId: null })
+        .where(eq(users.referredByUserId, userId));
+      counts.referredByCleared = (referredByResult as any)[0]?.affectedRows ?? 0;
 
       // Step 4: Delete the user's complete Canvas tree. Explicit board/item
       // keys entered the manifest only because these source rows disappear in

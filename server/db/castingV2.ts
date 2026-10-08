@@ -1789,6 +1789,38 @@ export async function deleteCandidateRowsIn(
  *
  * Selects {@link CANDIDATE_OBJECT_COLUMNS}, so a key column added to a
  * candidate reaches this reader without anybody remembering it exists.
+ *
+ * ⚠ **IT IS A LOCKING READ, AND THAT IS THE DIFFERENCE BETWEEN A KEY READ AND
+ * A KEY READ THAT IS TRUE WHEN IT COMMITS (#1948 L2).**
+ *
+ * A plain `SELECT` inside a REPEATABLE READ transaction reads the snapshot
+ * taken when the transaction began, while the `DELETE` that follows acts on
+ * the latest rows. So a roll still rendering during an account deletion could
+ * commit an `imageKey` AFTER this read: the candidate row is deleted — the
+ * delete sees it — and **its key never reaches the manifest**, which leaves a
+ * customer's face at a permanently public URL with the last pointer to it gone
+ * (`server/storage.ts`: served URLs are not presigned and never expire). The
+ * object would then be unreachable by every cleanup path there is.
+ *
+ * `.for("update")` reads the latest committed version and holds the rows, so a
+ * writer racing the deletion either lands before this line and is seen, or
+ * blocks until the transaction commits and then updates nothing. The sibling
+ * purge takes the same instrument on the sheet row for the same class of
+ * reason (`server/casting/castLineagePurge.ts`, the serialization point).
+ *
+ * ⚠ **ITS RESIDUAL IS NAMED RATHER THAN CLAIMED CLOSED.** A row INSERTED after
+ * this read is a different question from a row UPDATED after it — InnoDB's
+ * gap locks on this `userId` range make the common case hold, but the honest
+ * statement is that this closes the UPDATE race and narrows the INSERT one.
+ * The complete answer is to refuse deletion while the account has a running
+ * operation, and that is a customer-visible refusal nobody has asked for
+ * (#1948 names it as the alternative); it is a product decision, not a repair.
+ *
+ * The nine `listPurgeable*In` child readers are deliberately NOT given this
+ * treatment: they are shared with the retention sweep, and widening a lock
+ * held by a background sweep over somebody else's rows is a different change
+ * with a different risk. The child objects are reached through the candidate
+ * this read now holds.
  */
 export async function listAccountCandidatesIn(
   tx: TransactionHandle,
@@ -1798,7 +1830,8 @@ export async function listAccountCandidatesIn(
   return tx
     .select(CANDIDATE_OBJECT_COLUMNS)
     .from(castingCandidates)
-    .where(eq(castingCandidates.userId, userId));
+    .where(eq(castingCandidates.userId, userId))
+    .for("update");
 }
 
 /** Every candidate row of this account, including signed and kept ones. */
