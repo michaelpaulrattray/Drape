@@ -46,3 +46,20 @@
  * WORKSPACE are different nouns, and `BRAND_NAME` was standing in for both.
  */
 export const PRODUCT_NAME = "Klieg";
+
+/**
+ * THE NAME OF A FILE A CUSTOMER DOWNLOADS — `klieg-<stem>` — #1992.
+ *
+ * A download's filename is READ, not persisted: it lands in a Downloads folder
+ * and sits there with the product's name on it, and nothing in the product
+ * ever reads it back. So it is this file's business and not an identifier's.
+ * Five of them said `drape-…` after both brand sweeps (#1934/#1944 client,
+ * #1955 server), because those sweeps read JSX prose and a template literal
+ * handed to `a.download` is not prose. Lower-cased because a filename is not a
+ * sentence; the stem is the caller's and is passed through untouched.
+ * `client/src/foundation/downloadFilenameBrand.test.ts` reads the class — every
+ * `.download =` and every call to a helper that forwards to one.
+ */
+export function productFilename(stem: string): string {
+  return `${PRODUCT_NAME.toLowerCase()}-${stem}`;
+}

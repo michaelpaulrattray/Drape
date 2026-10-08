@@ -11238,6 +11238,10 @@
       "path": "client/src/foundation/canonicalWording.test.ts"
     },
     {
+      "id": "test:client/src/foundation/downloadFilenameBrand.test.ts",
+      "path": "client/src/foundation/downloadFilenameBrand.test.ts"
+    },
+    {
       "id": "test:client/src/foundation/focusRing.test.ts",
       "path": "client/src/foundation/focusRing.test.ts"
     },
@@ -16437,6 +16441,11 @@
     },
     {
       "from": "module:client/src/features/boards/BoardPage.tsx",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/BoardPage.tsx",
       "to": "module:shared/clientRequestId.ts",
       "kind": "imports"
     },
@@ -16463,6 +16472,11 @@
     {
       "from": "module:client/src/features/boards/canvas/CanvasImageViewer.tsx",
       "to": "module:client/src/features/boards/canvas/ImageFallback.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/canvas/CanvasImageViewer.tsx",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
@@ -16717,6 +16731,11 @@
     },
     {
       "from": "module:client/src/features/boards/canvas/nodes/CastNode.tsx",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/canvas/nodes/CastNode.tsx",
       "to": "module:shared/canvasCastDoor.ts",
       "kind": "imports"
     },
@@ -16888,6 +16907,11 @@
     {
       "from": "module:client/src/features/boards/components/NodeContextMenu.tsx",
       "to": "module:client/src/features/boards/canvas/imageActions.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/components/NodeContextMenu.tsx",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
@@ -18741,6 +18765,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/moderator/reconciliation-csv.ts",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/moderator/ReconciliationSubTab.tsx",
       "to": "module:client/src/features/moderator/figures.ts",
       "kind": "imports"
@@ -18898,6 +18927,11 @@
     {
       "from": "module:client/src/features/profile/index.ts",
       "to": "module:client/src/features/profile/ProfileVisual.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/profile/ProfileVisual.tsx",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
@@ -19523,6 +19557,11 @@
     {
       "from": "module:client/src/features/studio/components/ImageActionBar.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/studio/components/ImageActionBar.tsx",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
