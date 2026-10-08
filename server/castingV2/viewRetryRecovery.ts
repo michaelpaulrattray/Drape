@@ -129,9 +129,27 @@ export const VIEW_RETRY_RECOVERY_WORDING: ViewReplacementWording = {
  * about her back view, not handed a sentence about a package four fifths of
  * which arrived.
  */
+/*
+  ⚠ **"Your credits were returned." AND NOT "Your credits are back." — #1940's
+  one vocabulary, inherited when `main` merged forward on 2026-10-09.**
+
+  Both of this road's sentences were written on this branch before #1940
+  landed, in a spelling that card explicitly retired; its guard
+  (`moneyWording1940.test.ts`) names this file and reddened on the merge, which
+  is that guard doing exactly what it is for on the first sentences it could
+  not have seen.
+
+  ⚠ **AND THE SLOT'S `paidSentence` BELOW IS NOW UNREACHABLE BY
+  CONSTRUCTION.** Under the flat price a slot row never carries a charge, so
+  the sweep either parks it (a charge it cannot explain) or closes it free.
+  It is kept rather than deleted because the three sentences are one type for
+  both roads, and the press's own `paidSentence` IS reachable — a total loss.
+  Named here so the next reader does not take its presence as evidence that a
+  slot can still be refunded.
+*/
 export const PACKAGE_REDO_RECOVERY_WORDING: ViewReplacementWording = {
   refundDescription: "That view didn't arrive when you asked for all the views again",
-  paidSentence: "That view didn't arrive when you asked for all the views again. Your credits are back.",
+  paidSentence: "That view didn't arrive when you asked for all the views again. Your credits were returned.",
   freeSentence: "That view didn't arrive when you asked for all the views again. You were not charged.",
 };
 
@@ -182,7 +200,7 @@ export async function recoverCastingV2PackageRedoOperation(
  */
 export const PACKAGE_REDO_PRESS_RECOVERY_WORDING: ViewReplacementWording = {
   refundDescription: "No views arrived when you asked for all of them again",
-  paidSentence: "None of the views arrived when you asked for them again. Your credits are back.",
+  paidSentence: "None of the views arrived when you asked for them again. Your credits were returned.",
   freeSentence: "None of the views arrived when you asked for them again. You were not charged.",
 };
 
