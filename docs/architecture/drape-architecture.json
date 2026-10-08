@@ -13672,6 +13672,10 @@
       "path": "server/db/castingV2ReferenceLibrary.test.ts"
     },
     {
+      "id": "test:server/db/castingV2SignSlotReplay.test.ts",
+      "path": "server/db/castingV2SignSlotReplay.test.ts"
+    },
+    {
       "id": "test:server/db/creditTransactionByRef.test.ts",
       "path": "server/db/creditTransactionByRef.test.ts"
     },
