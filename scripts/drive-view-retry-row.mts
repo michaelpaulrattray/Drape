@@ -5,9 +5,16 @@
  * nothing else … Under an unchecked view: 'Unchecked · Try again' … Under the
  * view that never arrived: 'Refunded · Try again'."*
  *
- * The room needs three states side by side to be judged — a good view, an
- * unchecked one and one that never arrived — and a signed Cast in the dev
- * database has none of the last two.
+ * ⚠ **HIS SECOND RULING LEFT ONE OF THOSE TWO ROWS — #1903 slice 3, 2026-10-07.**
+ * The check that produced *"Unchecked"* is retired and so is the free ask under
+ * it, so a view that ARRIVED carries no row at all and the remedy is the paid
+ * whole-set button. **His shape ruling above is untouched and is still what this
+ * driver photographs**: one muted line, one word, one link, no credit count.
+ *
+ * So the three states it puts side by side are now a good view, a view nobody
+ * could judge — which must look EXACTLY like a good one — and one that never
+ * arrived, which is the only row left. A signed Cast in the dev database has
+ * none of the last two.
  *
  * ⚠ **SO THE STATES ARE INJECTED AT THE WIRE, ON THE `castingV2.getCast`
  * RESPONSE, AND NOTHING IS WRITTEN TO A ROW.** That is the builder-seat rule of
@@ -161,14 +168,22 @@ await page.evaluateOnNewDocument((failedNote: string) => {
 
   const dress = (slots: Slot[]): Slot[] => slots.map((slot, index) => {
     if (index === 1) {
-      /* Delivered, charged, kept, and nobody looked at it (D-246). Free. */
+      /*
+        Delivered, charged, kept, and nobody looked at it (D-246) — and since
+        #1903 slice 3 it says SO NOTHING. It carried `unjudged: true` and
+        `retry: { priceCredits: 0, reason: "unchecked" }` until that ruling;
+        both are off the wire, and a payload still carrying them would be
+        dressing a slot in fields the server can no longer send.
+
+        It is kept in the walk rather than dropped, because "this one looks
+        exactly like a good view" is the thing slice 3 actually changed, and an
+        absence is only evidence when something was asked to appear.
+      */
       return {
         ...slot,
         state: "ready",
         note: null,
         refundedCredits: null,
-        unjudged: true,
-        retry: { priceCredits: 0, reason: "unchecked" },
       };
     }
     if (index === 2) {
@@ -332,13 +347,35 @@ for (const theme of ["light", "dark"] as const) {
   dressedSlots = rows.length;
   untouchedSlots = bare.length;
 
-  /* His two sentences, read off the screen rather than off the source. */
+  /* His sentence, read off the screen rather than off the source. */
   const said = rows.map((tile) => tile.line);
-  if (!said.includes("Unchecked · Try again")) {
-    throw new Error(`no unchecked row on screen — saw ${JSON.stringify(said)}`);
-  }
   if (!said.includes("Refunded · Try again")) {
     throw new Error(`no refunded row on screen — saw ${JSON.stringify(said)}`);
+  }
+  /*
+    ⚠ AND THE ROW HIS LATER RULING RETIRED MUST BE NOWHERE — #1903 slice 3.
+    This read `if (!said.includes("Unchecked · Try again")) throw` until that
+    ruling, and the repair is the same reading inverted.
+
+    ⚠ **IT IS A COUNT AND NOT A STRING SEARCH, AND THAT WAS DRIVEN RATHER THAN
+    REASONED.** The first repair looked for the word "Unchecked" on screen and
+    SURVIVED ITS OWN SABOTAGE: re-inject `reason: "unchecked"` and the client's
+    word map — which no longer has that key — renders nothing, so the row comes
+    back as a bare separator and a link with no word in it. The page grows a row
+    the customer can press and the word never appears, so a reader looking for
+    the word sees a clean screen. The COUNT sees it.
+
+    One row is the whole of the new rule: the fixture dresses exactly two tiles,
+    one delivered-and-unjudged and one refunded, and only the second may speak.
+  */
+  if (rows.length !== 1) {
+    throw new Error(
+      `expected exactly ONE row (the refunded view) and saw ${rows.length} — `
+      + `${JSON.stringify(rows.map((tile) => ({ label: tile.label, row: tile.row })))}`,
+    );
+  }
+  if (said.some((line) => line !== null && line.includes("Unchecked"))) {
+    throw new Error(`the retired Unchecked word is back on screen — saw ${JSON.stringify(said)}`);
   }
   /* Nothing anywhere says a price, and no tile wears the old pill or caption. */
   for (const tile of reading) {
