@@ -33,7 +33,10 @@ export function spentShareSentence(quote: {
  *
  * - **nothing spent** (`spentShareCharge` 0) — the sentence as it always read;
  * - **all spent** (nothing left to take back, `creditUnwind` 0) — nothing
- *   comes off, and it says why;
+ *   comes off, and it says why. ⚠ Its first wording was *"its unused time is
+ *   paid for rather than coming off that"*, which the relay read as hard going
+ *   on PR #2053; this is its plainer sentence, which says the same thing.
+ *   Nothing in #1952's approved wording covers this road;
  * - **part spent** — the rest comes off, except the quote's
  *   `spentShareCredits`, which are paid for instead.
  *
@@ -51,8 +54,8 @@ export function yearlySwitchOffsetSentence(
   }
   if (!quote.creditUnwind || quote.creditUnwind <= 0) {
     return (
-      `You've already used this cycle's credits, so its unused time is paid for ` +
-      `rather than coming off that. About ${dueToday} is due today.`
+      `You've already used this cycle's credits, so nothing comes off for the ` +
+      `time left. About ${dueToday} is due today.`
     );
   }
   return (

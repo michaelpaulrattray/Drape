@@ -121,7 +121,7 @@ describe("#2023 — the yearly confirm says what really comes off, in every case
   it("⚠ all spent: it no longer says anything comes off — the unused time is paid for", () => {
     const line = yearlySwitchOffsetSentence({ spentShareCharge: 2_700, spentShareCredits: share, creditUnwind: 0 }, due);
     expect(line).toBe(
-      `You've already used this cycle's credits, so its unused time is paid for rather than coming off that. About ${due} is due today.`,
+      `You've already used this cycle's credits, so nothing comes off for the time left. About ${due} is due today.`,
     );
     expect(line).not.toMatch(/comes off that/);
   });

@@ -1165,23 +1165,61 @@ export async function updateSubscriptionPlan(
        ⚠ **UNDER ITS OWN PRODUCT, NOT THE PLAN'S (#2023).** The plan's product
        put the plan's name on her invoice twice; {@link SPENT_SHARE_PRODUCT}'s
        name is the line's own words. The product is READ here, by its fixed
-       id, rather than trusted to exist: a product missing or archived in this
-       mode's catalogue, or a currency this read cannot state, REFUSES here,
-       before the pending-schedule release and before the update — charging
-       the switch without the line is the exact mint this exists to close, and
-       falling back to the plan's product would bring the doubled name back
-       silently. */
+       id, rather than trusted to exist.
+
+       ⚠ **AND A PRODUCT THIS CATALOGUE DOES NOT HOLD IS A DEGRADED INVOICE,
+       NEVER A REFUSED UPGRADE — the relay's finding on PR #2053, and it is
+       the clause that matters most here.** The first shape of this change
+       REFUSED the whole switch when the product was missing or archived, so
+       until the ceremony had been run against whichever Stripe account the
+       running service uses, **every monthly → yearly switch out of a month
+       with credits used would have been refused** — on production today, and
+       again after the live-key switch if one line of #1609's checklist were
+       skimmed. That trades a cosmetic defect (the plan's name twice) for a
+       customer who cannot upgrade, which is the wrong side of the
+       disappearing-technology law. So the fallback is the pre-#2023 road: the
+       line is built under the PLAN's product, `log.error` says so loudly, and
+       the customer's switch goes through.
+
+       ⚠ **WHAT STILL REFUSES IS EXACTLY WHAT REFUSED BEFORE #2023** — no
+       product readable at all (the line needs one; `price_data` cannot be
+       stated without it) or a currency this read cannot state. Charging the
+       switch without the line is the mint #1965 exists to close, so a line
+       that genuinely cannot be built still stops before the pending-schedule
+       release and before the update. */
     let spentShareLine: Record<string, unknown> | null = null;
     if (spentShareCharge !== undefined && spentShareCharge > 0) {
       let productId: string | null = null;
       try {
         const product = await stripe.products.retrieve(SPENT_SHARE_PRODUCT.id);
         productId = product?.active ? product.id : null;
+        if (!productId) {
+          log.error(
+            { product: SPENT_SHARE_PRODUCT.id },
+            "[Stripe] The spent-share product is archived in this mode's catalogue",
+          );
+        }
       } catch (productErr) {
         log.error(
           { err: productErr, product: SPENT_SHARE_PRODUCT.id },
           "[Stripe] The spent-share product could not be read",
         );
+      }
+      const planProduct = subscriptionItemsOf(subscription).base?.price?.product;
+      /* The degraded road. `log.error` rather than a warning on purpose: this
+         is a real catalogue gap that somebody must close by running
+         `scripts/ceremony-spent-share-product-2023.mts` against this mode, and
+         it is silent to the customer by design — all she sees is the plan's
+         name on a line that is not the plan. */
+      if (!productId) {
+        productId =
+          typeof planProduct === "string" ? planProduct : (planProduct?.id ?? null);
+        if (productId) {
+          log.error(
+            { subscriptionId, product: SPENT_SHARE_PRODUCT.id, fallbackProduct: productId },
+            "[Stripe] Billing the spent-share line under the PLAN's product — run scripts/ceremony-spent-share-product-2023.mts for this mode; her invoice will read the plan's name twice until it is run",
+          );
+        }
       }
       const currency =
         (subscription as any).currency
@@ -1190,7 +1228,7 @@ export async function updateSubscriptionPlan(
       if (!productId || !currency) {
         log.error(
           { subscriptionId, productId, currency },
-          "[Stripe] Refusing a switch whose spent-share line cannot be built — the spent-share product or the currency is unreadable",
+          "[Stripe] Refusing a switch whose spent-share line cannot be built — no product and no fallback, or the currency is unreadable",
         );
         return {
           success: false,
