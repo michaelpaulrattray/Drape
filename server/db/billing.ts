@@ -21,6 +21,7 @@ import {
   purchasedCreditsRemaining,
   type CreditWriteResult,
 } from "./credits";
+import { netAppliedPlanChangeSettlementsSince } from "./planChangeSettlements";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("db/billing");
 
@@ -142,6 +143,36 @@ export async function getUserByStripeCustomerId(
  * road that has no purchased credits on it is unchanged, arithmetically and
  * not merely in intent, which is why every existing arm in
  * `server/creditRefreshRace.test.ts` still reads the same numbers.
+ *
+ * ⚠ AND A PLAN-CHANGE MOVE SETTLED INSIDE THE PERIOD BEING GRANTED CROSSES
+ * THE BOUNDARY WHOLE, EXACTLY LIKE A PURCHASED CREDIT (#1937, `carriedWhole`).
+ *
+ * It is the same defect as #1604's one source over, and the repair is
+ * deliberately the same shape. A plan-change settlement is not a purchase, so
+ * it lands in the plan's part of the balance and the rollover percentage is
+ * applied to it. That is correct for a change made inside the period being
+ * CLOSED. It is wrong for one made inside the period being GRANTED — the
+ * late-webhook window, where Stripe has already advanced the subscription, so
+ * the proration bought days of the NEW period and a quarter of it is handed
+ * back on Pro (half on Starter) before the customer has had those days.
+ *
+ *     balance = purchased + max(0, grant + rollover(planPart − carried) + carried)
+ *
+ * ⚠ **THE TWO FLOORS ARE NOT DECORATION AND THEY ARE ON DIFFERENT THINGS.**
+ * The rollover base is clamped at zero because a GRANT larger than the
+ * allowance still on the row (a customer who spent down after upgrading)
+ * would otherwise hand a negative balance to a percentage. The outer clamp is
+ * on the plan's part ALONE, with `purchased` added outside it, because an
+ * UNWIND bigger than the new grant must never reach into credits the customer
+ * bought — #1604's law, held here by construction rather than by the caller
+ * remembering it.
+ *
+ * ⚠ **EVERY EXISTING CALLER IS ARITHMETICALLY UNCHANGED, not merely unchanged
+ * in intent.** `carriedWhole` defaults to 0, and with it zero the expression
+ * is `purchased + max(0, grant + rollover(planPart))`, whose two terms are
+ * both non-negative — so the clamp cannot bite and this is the old sum. That
+ * is the property that lets this land on a money path without re-deriving
+ * every arm in `creditRefreshRace.test.ts`.
  */
 export async function refreshMonthlyCredits(
   userId: number,
@@ -151,6 +182,20 @@ export async function refreshMonthlyCredits(
   /** Ledger line override — the annual grant says it is a year's allowance
    *  rather than calling 12 months a "monthly refresh" (#664). */
   description?: string,
+  /**
+   * When the period this grant is FOR began (#1937) — the caller's invoice
+   * says, and `null` means it could not. Plan-change moves settled on or
+   * after it are netted out of the rollover base and added back whole; `null`
+   * takes the old road and rolls them, which is every call this product made
+   * before this card.
+   *
+   * ⚠ It is a DATE and not the net itself, so the read happens INSIDE the
+   * compare-and-set loop, off the same attempt as the balance it has to agree
+   * with. A net read once by the caller and a balance re-read by a retry are
+   * two moments: a settlement landing between them makes the CAS miss, the
+   * loop re-read the balance, and then subtract a stale net from a fresh one.
+   */
+  periodStartForSettlements: Date | null = null,
 ): Promise<CreditWriteResult> {
   const db = await getDb();
   if (!db) {
@@ -169,8 +214,20 @@ export async function refreshMonthlyCredits(
       // Both halves come off the one row the UPDATE below is conditioned on.
       const purchasedKept = purchasedCreditsRemaining(userCredits);
       const planAllowance = planAllowanceRemaining(userCredits);
-      const rolloverCredits = Math.max(0, Math.floor(computeRollover(planAllowance)));
-      const newBalance = monthlyCredits + rolloverCredits + purchasedKept;
+      // The part of the plan's allowance the percentage actually governs:
+      // anything settled for the period being GRANTED is not last period's
+      // leftover and does not roll (#1937). Read on this attempt, beside the
+      // balance the write below is conditioned on.
+      const carried =
+        periodStartForSettlements === null
+          ? 0
+          : await netAppliedPlanChangeSettlementsSince(userId, periodStartForSettlements);
+      const rolloverBase = Math.max(0, planAllowance - carried);
+      const rolloverCredits = Math.max(0, Math.floor(computeRollover(rolloverBase)));
+      // Purchased credits are added OUTSIDE the clamp: an unwind bigger than
+      // the new grant empties the plan's part and stops there (#1604).
+      const newBalance =
+        purchasedKept + Math.max(0, monthlyCredits + rolloverCredits + carried);
 
       const written = await withTransaction(async (tx) => {
         const updateResult = await tx

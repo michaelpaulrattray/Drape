@@ -14248,6 +14248,10 @@
       "path": "server/refinePanelDoors.test.ts"
     },
     {
+      "id": "test:server/renewalSettlementNetting.test.ts",
+      "path": "server/renewalSettlementNetting.test.ts"
+    },
+    {
       "id": "test:server/replyHosts.test.ts",
       "path": "server/replyHosts.test.ts"
     },
@@ -29936,6 +29940,11 @@
     {
       "from": "module:server/db/billing.ts",
       "to": "module:server/db/credits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/billing.ts",
+      "to": "module:server/db/planChangeSettlements.ts",
       "kind": "imports"
     },
     {

@@ -10,7 +10,7 @@
  * The status column exists so a row that will never apply (a final payment
  * failure) says so instead of reading as queued work forever.
  */
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, gte, inArray } from "drizzle-orm";
 import { planChangeSettlements, type PlanChangeSettlement } from "../../drizzle/schema";
 import { getDb } from "./connection";
 import { createModuleLogger } from "../logging/logger";
@@ -135,6 +135,81 @@ export async function resolvePlanChangeSettlement(
  * reader rule): an empty list here means "nothing to close", and a database
  * that cannot be read must not say that.
  */
+/**
+ * The SIGNED net of every plan-change credit move of theirs that was APPLIED
+ * on or after `since` — a grant counts `+credits`, an unwind `−credits`
+ * (#1937).
+ *
+ * # WHAT IT IS FOR
+ *
+ * A renewal grant SETs the balance absolutely:
+ *
+ *     balance = grant + rollover(planAllowance) + purchasedRemaining
+ *
+ * A plan-change settlement is not a purchase, so it lands in `planAllowance`
+ * — and the rollover percentage is then applied to it. That is right for a
+ * change made inside the period being CLOSED (its proration bought days of
+ * that period, and unspent allowance rolls at the plan's rate), and wrong for
+ * one made inside the period being GRANTED, which is what the late-webhook
+ * window produces: Stripe has already advanced the subscription, so the
+ * change's proration buys days of the NEW period, and the renewal then hands
+ * back a quarter of credits the customer paid for days they have not had yet.
+ *
+ * So the caller passes the invoice's own period start, and what comes back is
+ * netted out of the rollover base and added whole — exactly the treatment
+ * purchased credits already get, for the same reason.
+ *
+ * ⚠ **`since` IS THE INVOICE'S PERIOD START, NEVER `lastRefreshAt`, AND THE
+ * DIFFERENCE IS THE WHOLE DISCRIMINATOR.** Both timestamps are to hand and
+ * only one of them separates the two cases. `lastRefreshAt` would put every
+ * ordinary mid-period plan change in the window — a customer who upgrades on
+ * day 10 of a normally-processed cycle would carry that proration whole into
+ * the next period instead of rolling it, which is an over-grant on the
+ * commonest road in the product. The invoice's period start is later than any
+ * change belonging to the closing period and earlier than any change made in
+ * the window this card is about.
+ *
+ * ⚠ **`applied` ONLY.** A `pending` row has not moved the balance, and a
+ * `void` row never will; netting either out would subtract a number that is
+ * not there. `resolvedAt` is the moment the move actually landed, which is
+ * why it rather than `createdAt` is the column compared.
+ *
+ * Throws on an unreadable database rather than answering `0` (#791's reader
+ * rule, and it bites harder here than usual): `0` is a perfectly ordinary
+ * answer meaning *no plan change in the window*, so a failed read would be
+ * indistinguishable from the common case and would silently restore the very
+ * arithmetic this exists to replace.
+ */
+export async function netAppliedPlanChangeSettlementsSince(
+  userId: number,
+  since: Date,
+): Promise<number> {
+  const db = await getDb();
+  if (!db) {
+    log.error("[Settlement] Cannot read applied settlements: database not available");
+    throw new Error("Database not available");
+  }
+  const rows = await db
+    .select({
+      direction: planChangeSettlements.direction,
+      credits: planChangeSettlements.credits,
+    })
+    .from(planChangeSettlements)
+    .where(
+      and(
+        eq(planChangeSettlements.userId, userId),
+        eq(planChangeSettlements.status, "applied"),
+        gte(planChangeSettlements.resolvedAt, since),
+      ),
+    );
+  let net = 0;
+  for (const row of rows) {
+    const credits = Number.isFinite(row.credits) ? Math.floor(row.credits) : 0;
+    net += row.direction === "unwind" ? -credits : credits;
+  }
+  return net;
+}
+
 export async function getVoidPlanChangeSettlementInvoiceIdsForUser(
   userId: number,
 ): Promise<string[]> {
