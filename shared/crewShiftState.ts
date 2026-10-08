@@ -346,13 +346,113 @@ export function shiftLaneOf(shift: string): string {
  */
 export const CREW_SHIFT_SUPERSEDING_RUNS_MIN = 2;
 
-/** What the reading needs off a lane-mate — no heartbeat, nothing to write. */
+/** What the reading needs off a lane-mate — nothing it could write with. */
 export type LaneRunForSupersession = {
   readonly id: number;
   readonly shift: string;
   readonly startedAt: Date | string;
   readonly endedAt: Date | string | null;
+  /**
+   * Its last check-in, which is where its TRUSTWORTHY life ends — see
+   * {@link laneRunLastProofOfLife}. Optional because a caller that cannot
+   * supply it gets exactly the reading this file had before #2079.
+   */
+  readonly heartbeatAt?: Date | string | null;
 };
+
+/**
+ * WHEN A LANE-MATE WAS LAST KNOWN TO BE ALIVE — and it is NOT `endedAt` (#2079).
+ *
+ * # The defect, in the words of the two shifts that met it
+ *
+ * Row **#607** sat on his Working-now table reading as a live shift for **ten
+ * hours**, and two consecutive shifts each read the verdict below, correctly
+ * declined to stamp it, and left it. The line they were given was:
+ *
+ * > *3 later `seat1` sessions have closed since it went quiet, but #612 and
+ * > #615 overlapped each other — this lane was running two at once inside the
+ * > silence, so a completed lane-mate proves nothing about this row.*
+ *
+ * **They did not overlap.** Read at the rows:
+ *
+ *   * **#612** last proved it was alive at **15:36:19** and was stamped closed
+ *     at **17:20:26 — 104 minutes later**, by a different shift. (Its own log
+ *     ends *"You've hit your session limit"*; it was dead the whole time.)
+ *   * **#615** opened at **16:24:33** — forty-eight minutes AFTER #612 went
+ *     quiet, and fifty-six minutes BEFORE #612's close stamp.
+ *
+ * So the pair overlaps by the close STAMP and not by any life. The lane was
+ * running one at a time throughout, which is exactly what the verdict needed.
+ *
+ * # ⚠ THE FIELD IT WAS READING IS ONE THIS FILE ALREADY CALLS POISONED
+ *
+ * `readRunSupersession`'s own header rejected the lane's whole history as a
+ * test for precisely this reason — *"`crew-shift-close.mts` stamps
+ * `endedAt = UTC_TIMESTAMP()`, so a dead row closed hours late carries a
+ * lifetime it never had"* — and it protected the window's START bound against
+ * that artifact. **The overlap clause then read the same poisoned field.** One
+ * half of the reading was defended and the other was not, which is why the
+ * instrument could be blinded by a late close three rows away.
+ *
+ * # What this returns, and the one case it refuses to sharpen
+ *
+ * A session's trustworthy life ends at its **last check-in**: the heartbeat is
+ * written by the shift itself, so it is a positive proof of life, where
+ * `endedAt` is a stamp anybody may apply at any later hour.
+ *
+ * ⚠ **A lane-mate that NEVER checked in falls back to `endedAt`, which is the
+ * reading as it was.** A row with no check-in carries `heartbeatAt ===
+ * startedAt`, so reading it literally would collapse its life to a single
+ * instant and it could never overlap anything — and a silent shift that really
+ * did run beside this row for forty minutes is exactly the concurrency the
+ * clause exists to see. No information is no licence to sharpen.
+ *
+ * # ⚠ IT CANNOT MOVE A VERDICT ABOUT AN OLD ROW, BY CONSTRUCTION
+ *
+ * Until 2026-10-03 the close overwrote `heartbeatAt` with the close instant, so
+ * **565 of the 616 closed rows carry `heartbeatAt === endedAt`** and the two
+ * readings are the same number on every one of them. Only the 51 rows closed
+ * since can differ at all.
+ *
+ * # The measurement, because this change can only ever ADD death verdicts
+ *
+ * Shorter lifetimes mean fewer overlaps mean more rows called dead, which is
+ * #288's dangerous direction. So the floor's own false-positive hunt was
+ * re-taken over all **619** recorded rows under both readings, by this file's
+ * own standard — *a death verdict resting on lane-mates that opened AND closed
+ * while the subject was demonstrably alive is wrong by construction*:
+ *
+ *   * **today's reading: 2 hits.** #548 and #549 — the two recorded TRUE
+ *     deaths this header already names.
+ *   * **this reading: the same 2 hits, and no others.** The repair adds no
+ *     false positive anywhere in the history.
+ *   * **#360, the one row the record proves was ALIVE, stays withheld** under
+ *     both — it had one lane-mate and the floor is two.
+ *   * **no death verdict is lost**: 0 rows go from superseded to unreadable.
+ *   * and #607, the subject, moves from *not readable* to **superseded by
+ *     #610, #612 and #615** — which is what the card asked for.
+ */
+export function laneRunLastProofOfLife(run: LaneRunForSupersession): number {
+  const ended = run.endedAt === null || run.endedAt === undefined ? NaN : asMillis(run.endedAt);
+
+  if (run.heartbeatAt === null || run.heartbeatAt === undefined) return ended;
+  const heartbeat = asMillis(run.heartbeatAt);
+  if (!Number.isFinite(heartbeat)) return ended;
+  /*
+    No check-in is no information — see the ⚠ above.
+
+    ⚠ **AND THIS LINE IS ALSO WHY THERE IS NO `Math.max(startedAt, …)` BELOW,
+    which the sabotage pass is what established.** A `Math.max` guard was
+    written here against a row whose heartbeat predates its own start, it
+    survived deletion with the suite entirely green, and the reason is that it
+    could never fire: `hasEverCheckedIn` is false unless the heartbeat is more
+    than a second AFTER the start, so anything reaching the return is already
+    ordered. A guard no fixture can ask about is either an uncovered line or a
+    dead one, and this one was dead.
+  */
+  if (!hasEverCheckedIn({ startedAt: run.startedAt, heartbeatAt: run.heartbeatAt })) return ended;
+  return heartbeat;
+}
 
 export type RunSupersession =
   | {
@@ -481,18 +581,25 @@ export function readRunSupersession(input: {
   /* ⚠ The lane must have been running ONE AT A TIME inside the window, and this
      is the clause that stops a genuinely concurrent launcher reading as a
      serial one. Measured on the same window the verdict rests on, never on the
-     lane's whole history — see the paragraph above for why. */
+     lane's whole history — see the paragraph above for why.
+
+     ⚠ **AND THE END OF A LANE-MATE'S LIFE IS ITS LAST CHECK-IN, NOT ITS CLOSE
+     STAMP (#2079)** — `laneRunLastProofOfLife`, whose header carries the
+     measurement. Reading `endedAt` here made a row closed 104 minutes after it
+     died "overlap" the session that started 48 minutes into that silence, and
+     a single late close three rows away blinded this verdict for ten hours. */
   for (let index = 1; index < inWindow.length; index++) {
     const previous = inWindow[index - 1]!;
     const current = inWindow[index]!;
-    if (asMillis(current.startedAt) < asMillis(previous.endedAt!)) {
+    if (asMillis(current.startedAt) < laneRunLastProofOfLife(previous)) {
       return {
         kind: "unreadable",
         lane,
         why:
           `${inWindow.length} later \`${lane}\` sessions have closed since it went quiet, but #${previous.id}`
-          + ` and #${current.id} overlapped each other — this lane was running two at once inside the silence,`
-          + " so a completed lane-mate proves nothing about this row",
+          + ` and #${current.id} were both alive at once — #${current.id} opened while #${previous.id} was`
+          + " still checking in, so this lane was running two at once inside the silence and a completed"
+          + " lane-mate proves nothing about this row",
       };
     }
   }
