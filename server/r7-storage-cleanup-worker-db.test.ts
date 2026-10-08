@@ -443,9 +443,14 @@ describeWithDatabase("R7-5D leased storage cleanup (disposable DB)", () => {
       expect(Number(row.n), `${table} should be erased`).toBe(0);
     }
     const cleanupItems = await cleanupDb.getStorageCleanupItemsForBatch(result.cleanupBatchId!);
+    /*
+      #2056: the board's `thumbnailKey` and the item's `imageKey` above are
+      NOT here. No server writer has ever stored a key in either column, so a
+      value on a row was typed by a customer and may name another customer's
+      picture — the erasure skips and logs it (`skipUnownedBoardKey`). The
+      rows themselves are still erased (the board tables in the list above).
+    */
     expect(cleanupItems.map((item) => item.storageKey).sort()).toEqual([
-      "boards/item.png",
-      "boards/thumb.png",
       "garments/original.png",
       "looks/saved.png",
       "models/account-anchor.png",
