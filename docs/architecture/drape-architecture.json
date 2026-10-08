@@ -117,7 +117,7 @@
     {
       "id": "domain:settings",
       "name": "settings",
-      "moduleCount": 16
+      "moduleCount": 17
     },
     {
       "id": "domain:shared",
@@ -2001,6 +2001,12 @@
     {
       "id": "module:client/src/features/settings/sections/UsageSection.tsx",
       "path": "client/src/features/settings/sections/UsageSection.tsx",
+      "domain": "settings",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/settings/sections/exportAccountData.ts",
+      "path": "client/src/features/settings/sections/exportAccountData.ts",
       "domain": "settings",
       "lifecycle": "active"
     },
@@ -11138,6 +11144,10 @@
       "path": "client/src/features/settings/card425-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/settings/exportAccountData.test.ts",
+      "path": "client/src/features/settings/exportAccountData.test.ts"
+    },
+    {
       "id": "test:client/src/features/settings/planBlurbs.test.ts",
       "path": "client/src/features/settings/planBlurbs.test.ts"
     },
@@ -18982,6 +18992,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/settings/sections/exportAccountData.ts",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/settings/sections/MembersSection.tsx",
       "to": "module:client/src/features/profile/ProfileVisual.tsx",
       "kind": "imports"
@@ -19049,6 +19064,11 @@
     {
       "from": "module:client/src/features/settings/sections/SecuritySection.tsx",
       "to": "module:client/src/features/settings/parts.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/SecuritySection.tsx",
+      "to": "module:client/src/features/settings/sections/exportAccountData.ts",
       "kind": "imports"
     },
     {
