@@ -360,7 +360,9 @@ describe("3 · the plan change moves both items in ONE update", () => {
     periodEndSec: 1_702_592_000,
     currentCreditUnits: 0,
     creditItemId: null,
-    cancelAtPeriodEnd: false,
+    endsAtSec: null,
+    status: "active",
+    collectionPaused: false,
     ...over,
   });
 
@@ -460,7 +462,9 @@ describe("4 · the quote prices the dial, in money and in credits", () => {
     periodEndSec: 1_700_000_000 + 30 * 86_400,
     currentCreditUnits: 0,
     creditItemId: null,
-    cancelAtPeriodEnd: false,
+    endsAtSec: null,
+    status: "active",
+    collectionPaused: false,
     ...over,
   });
   const atStart = 1_700_000_000;

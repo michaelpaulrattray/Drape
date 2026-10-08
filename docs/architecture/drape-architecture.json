@@ -10892,6 +10892,10 @@
       "path": "client/src/features/billing/monthlyDelta1761-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/billing/planChangeRefusal1987-guard.test.ts",
+      "path": "client/src/features/billing/planChangeRefusal1987-guard.test.ts"
+    },
+    {
       "id": "test:client/src/features/billing/plansRedesign1832-guard.test.ts",
       "path": "client/src/features/billing/plansRedesign1832-guard.test.ts"
     },
@@ -14484,6 +14488,10 @@
       "path": "server/routes/modelCreatePayload.test.ts"
     },
     {
+      "id": "test:server/routes/planChangeSpentShareAndStates.test.ts",
+      "path": "server/routes/planChangeSpentShareAndStates.test.ts"
+    },
+    {
       "id": "test:server/routes/referenceDelivery.test.ts",
       "path": "server/routes/referenceDelivery.test.ts"
     },
@@ -14678,6 +14686,10 @@
     {
       "id": "test:server/stripe/planChangeSettlement.test.ts",
       "path": "server/stripe/planChangeSettlement.test.ts"
+    },
+    {
+      "id": "test:server/stripe/planChangeSpentShareAndStates.test.ts",
+      "path": "server/stripe/planChangeSpentShareAndStates.test.ts"
     },
     {
       "id": "test:server/stripe/planCreditSliderGrant.test.ts",

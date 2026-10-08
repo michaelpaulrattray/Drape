@@ -125,6 +125,8 @@ function quoteIs(deferred: boolean) {
     totalDays: 30,
     creditAdjustment: deferred ? 0 : 90_000,
     creditUnwind: 0,
+    spentShareCredits: 0,
+    spentShareCharge: 0,
     deferred,
     effectiveAtSec: PERIOD_END_SEC,
   });
@@ -150,7 +152,9 @@ beforeEach(() => {
     periodEndSec: PERIOD_END_SEC,
     currentCreditUnits: 0,
     creditItemId: null,
-    cancelAtPeriodEnd: false,
+    endsAtSec: null,
+    status: "active",
+    collectionPaused: false,
   } as Awaited<ReturnType<typeof readSubscriptionBillingState>>);
   vi.mocked(scheduleSubscriptionChange).mockResolvedValue({
     success: true,
@@ -315,7 +319,11 @@ describe("⚠ a decrease on a plan that is ALREADY SET TO END is refused, not sc
       periodEndSec: PERIOD_END_SEC,
       currentCreditUnits: 0,
       creditItemId: null,
-      cancelAtPeriodEnd: true,
+      /* Set to end by the flag — Stripe stamps `cancel_at` at the period end
+         beside it, and `endsAtSec` is that date (#1987). */
+      endsAtSec: PERIOD_END_SEC,
+      status: "active",
+      collectionPaused: false,
     } as Awaited<ReturnType<typeof readSubscriptionBillingState>>);
   });
 
@@ -356,7 +364,9 @@ describe("⚠ a decrease on a plan that is ALREADY SET TO END is refused, not sc
       periodEndSec: PERIOD_END_SEC,
       currentCreditUnits: 0,
       creditItemId: null,
-      cancelAtPeriodEnd: false,
+      endsAtSec: null,
+      status: "active",
+      collectionPaused: false,
     } as Awaited<ReturnType<typeof readSubscriptionBillingState>>);
 
     const result = await caller().changePlan({ newPlan: "pro" });

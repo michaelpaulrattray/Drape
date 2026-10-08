@@ -1712,9 +1712,13 @@ export function ChangePlanModal({
             sliderOn(confirming) ? creditsWithSlider(confirming) : null,
           )}
           confirmLabel={
-            changeQuote.data.immediateCharge > 0
-              ? `Confirm · about ${formatDollars(changeQuote.data.immediateCharge)}`
-              : "Confirm change"
+            /* ⚠ A refused change offers no Confirm (#1987): a button whose only
+               answer is no is the machinery showing. It closes the dialog. */
+            changeQuote.data.refusal
+              ? "Got it"
+              : changeQuote.data.immediateCharge > 0
+                ? `Confirm · about ${formatDollars(changeQuote.data.immediateCharge)}`
+                : "Confirm change"
           }
           busyLabel="Changing…"
           busy={changePlan.isPending}
@@ -1722,6 +1726,10 @@ export function ChangePlanModal({
           tone="primary"
           onConfirm={() => {
             if (!confirming) return;
+            if (changeQuote.data?.refusal) {
+              setConfirming(null);
+              return;
+            }
             setPending(confirming.id);
             changePlan.mutate({
               newPlan: confirming.id as never,
@@ -2281,6 +2289,9 @@ function describeChange(
        cannot disagree about it either. */
     deferred?: boolean;
     effectiveAtSec?: number;
+    /* Why this change cannot go ahead, in the server's own sentence — or
+       null (#1987). The same words the press would be refused with. */
+    refusal?: string | null;
   },
   /**
    * WHAT THE DIAL'S MOVE BUYS, when the dial is the only thing moving (#1832)
@@ -2301,6 +2312,18 @@ function describeChange(
    */
   dialAllowanceLedger: number | null,
 ): string {
+  /*
+    ⚠ **A CHANGE THE SERVER WILL REFUSE SAYS SO HERE, BEFORE THE PRESS (#1987).**
+    Until this branch the confirm step told a customer whose plan was set to end
+    that her downgrade "starts on 7 Nov" — and the press then met a refusal. The
+    sentence is the server's (`planChangeRefusal`), never composed here, so the
+    two cannot say different things. It sits above every other branch because
+    nothing below it is true of a change that is not going to happen.
+  */
+  if (quote.refusal) {
+    return quote.refusal;
+  }
+
   /*
     ⚠ **A DECREASE DOES NOT HAPPEN TODAY, AND THIS IS THE ONLY SENTENCE IT EVER
     GETS (#1936).** His option 1: a decrease takes effect at the next renewal,
