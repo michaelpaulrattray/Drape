@@ -848,9 +848,170 @@ describe("one question, one card — which eye items merge (#1895)", () => {
       afterHisAnswers.standalone.filter((item) => pairedIds.has(item.id)).map((item) => item.id),
       "these frames came back as their own question",
     ).toEqual([]);
-    expect(afterHisAnswers.answered.map((item) => item.id).sort())
-      .toEqual([...pairedIds].sort());
-    /* And the unpaired ones are untouched by any of this. */
-    expect(afterHisAnswers.standalone.length).toBe(briefing.eyeItems.length - paired.length);
+    /*
+      ⚠ **THIS WAS AN EQUALITY AND IS NOW A CONTAINMENT, BECAUSE #1950 WIDENED
+      WHAT `answered` MEANS — and the arm failing was the measurement.**
+
+      It read `expect(answered.map(id).sort()).toEqual([...pairedIds].sort())`
+      and `expect(standalone.length).toBe(eyeItems.length - paired.length)`,
+      both true when `answered` meant only *paired, but its host is not drawn*.
+      It now also holds an item whose OWN state no longer needs him, which is
+      what stopped the section menu counting things the gallery drops.
+
+      Run against this very file the day it changed: of **127** eye items,
+      **87** were standalone under the old rule and **0** of those were ones
+      the gallery would draw. The equality is therefore the wrong shape — it
+      would pin a number about the current edition's contents — and the
+      property that actually matters is the two below.
+    */
+    for (const id of pairedIds) {
+      expect(
+        afterHisAnswers.answered.some((item) => item.id === id),
+        `${id} is paired with a card he answered and is not accounted for as answered`,
+      ).toBe(true);
+    }
+    /* And every item left standing alone is one the gallery will actually
+       draw — the whole of #1950, asked of the real file. */
+    expect(
+      afterHisAnswers.standalone.filter((item) => !crewCardNeedsHim(item.state)).map((i) => i.id),
+      "an item the gallery filters out is still in `standalone`, so the section menu"
+        + " would count a picture nobody is shown",
+    ).toEqual([]);
+    /* Nothing is lost, still, over the real file. */
+    expect(
+      afterHisAnswers.standalone.length
+      + afterHisAnswers.answered.length
+      + [...afterHisAnswers.mergedInto.values()].flat().length,
+    ).toBe(briefing.eyeItems.length);
+  });
+});
+
+/**
+ * THE SECTION MENU'S COUNT IS WHAT THE SECTIONS DRAW — #1950.
+ *
+ * The menu put `needsYou.length + standaloneEyeItems.length` beside **Needs
+ * you**, and neither list was filtered by state — while `CrewNeedsYou` draws
+ * `cards.filter(crewCardNeedsHim)` and `CrewEyeGallery` draws
+ * `items.filter(crewCardNeedsHim)` and returns `null` outright when that
+ * leaves nothing. **Both halves were wrong in the same direction**: the menu
+ * told him things were waiting over a section that was shorter, or empty.
+ *
+ * ⚠ **AND THE COMMENT DIRECTLY ABOVE THE COUNT SAID THE OPPOSITE** —
+ * *"THE SECTION MENU'S COUNT IS WHAT THE SECTION DRAWS"* — which is the part
+ * worth keeping in mind, because a confident sentence is what stops anybody
+ * looking. It was a claim, not a fact (working law 1).
+ *
+ * ⚠ **THESE ARMS ASSERT THE EQUALITY, NOT THE IMPLEMENTATION.** Pinning
+ * `drawnCardCount` to a number would pass the day somebody counts the wrong
+ * list again with the same arithmetic. What is asserted is that the figure the
+ * menu renders equals the figure the two sections render, computed the way the
+ * sections compute it — so the two can never disagree without this going red.
+ */
+describe("the Needs-you count equals what the two sections draw (#1950)", () => {
+  const item = (id: string, cardId: string | null, state: string) =>
+    ({ id, cardId, frames: [], state }) as unknown as Parameters<
+      typeof partitionEyeItems
+    >[0][number];
+  const card = (id: string, state: string) =>
+    ({ id, state }) as unknown as Parameters<typeof partitionEyeItems>[1][number];
+
+  /** What the menu renders, read exactly as `AdminCrew.tsx` reads it. */
+  function menuCount(
+    cards: Parameters<typeof partitionEyeItems>[1],
+    items: Parameters<typeof partitionEyeItems>[0],
+    edition: Parameters<typeof partitionEyeItems>[2],
+  ): number {
+    const { standalone, drawnCardCount } = partitionEyeItems(items, cards, edition);
+    return drawnCardCount + standalone.length;
+  }
+
+  /** What the two sections render, read exactly as each component reads it. */
+  function sectionsDraw(
+    cards: Parameters<typeof partitionEyeItems>[1],
+    items: Parameters<typeof partitionEyeItems>[0],
+    edition: Parameters<typeof partitionEyeItems>[2],
+  ): number {
+    const { standalone } = partitionEyeItems(items, cards, edition);
+    const drawnCards = cards.filter((entry) => crewCardNeedsHim(entry.state));
+    const drawnEyes = standalone.filter((entry) => crewCardNeedsHim(entry.state));
+    return drawnCards.length + drawnEyes.length;
+  }
+
+  it("⚠ answered and done rows in BOTH lists are counted by neither", () => {
+    /*
+      The fixture the card asks for. Two cards and two loose eye items still
+      need him; two of each do not. Before this card the menu said SIX.
+    */
+    const cards = [
+      card("open-card", "open"),
+      card("waiting-card", "waiting"),
+      card("answered-card", "answered"),
+      card("done-card", "done"),
+    ];
+    const items = [
+      item("loose-open", null, "open"),
+      item("loose-waiting", null, "waiting"),
+      item("loose-answered", null, "answered"),
+      item("loose-done", null, "done"),
+    ];
+
+    expect(sectionsDraw(cards, items, cards), "the fixture's own arithmetic").toBe(4);
+    expect(
+      menuCount(cards, items, cards),
+      "the menu counts a card or a picture the sections do not draw",
+    ).toBe(4);
+  });
+
+  it("the two agree when everything is open, so the arm is not passing by refusing", () => {
+    const cards = [card("a", "open"), card("b", "waiting")];
+    const items = [item("x", null, "open"), item("y", null, "open")];
+    expect(menuCount(cards, items, cards)).toBe(4);
+    expect(sectionsDraw(cards, items, cards)).toBe(4);
+  });
+
+  it("the two agree when everything is answered — the section is empty and says zero", () => {
+    const cards = [card("a", "answered"), card("b", "done")];
+    const items = [item("x", null, "answered"), item("y", null, "done")];
+    /* The gallery returns null outright at zero, so the menu must too. */
+    expect(menuCount(cards, items, cards)).toBe(0);
+    expect(sectionsDraw(cards, items, cards)).toBe(0);
+  });
+
+  it("a merged item is counted ONCE, on its card, and never again in the gallery", () => {
+    /*
+      The property #1895 shipped, now also held of the number: frames drawn
+      inside a card must not add to the count, or the menu sends him looking
+      for a section that holds them already.
+    */
+    const cards = [card("host", "open")];
+    const items = [item("frames", "host", "open")];
+    expect(menuCount(cards, items, cards), "the merged frames were counted twice").toBe(1);
+    expect(sectionsDraw(cards, items, cards)).toBe(1);
+  });
+
+  it("⚠ the real deployed edition: the menu and the sections agree", () => {
+    /*
+      Working law 1 — the fixtures above are a claim about the rule, and this
+      is the artifact. The fallback path is the one driven here: when GitHub
+      has not answered, the page draws the edition's own lists, and that is a
+      state the page really reaches.
+    */
+    const briefing = JSON.parse(
+      readFileSync(
+        path.resolve(__dirname, "../../../../../../server/crew/crew-briefing.json"),
+        "utf8",
+      ),
+    ) as {
+      needsYou: Parameters<typeof partitionEyeItems>[1];
+      eyeItems: Parameters<typeof partitionEyeItems>[0];
+    };
+    const cards = briefing.needsYou;
+    const items = briefing.eyeItems;
+    expect(cards.length, "the edition carries no needs-you rows to judge").toBeGreaterThan(5);
+    expect(items.length, "the edition carries no eye items to judge").toBeGreaterThan(5);
+    expect(
+      menuCount(cards, items, cards),
+      "on the real edition the menu still disagrees with its own sections",
+    ).toBe(sectionsDraw(cards, items, cards));
   });
 });

@@ -590,6 +590,15 @@ export function partitionEyeItems(
   standalone: CrewEyeItem[];
   mergedInto: Map<string, CrewEyeItem[]>;
   answered: CrewEyeItem[];
+  /**
+   * How many NEEDS-YOU CARDS the page will draw — `drawn.size`, which this
+   * function already computes (#1950).
+   *
+   * It is returned rather than recomputed by the caller because the section
+   * menu's count has to be the number of things the sections render, and the
+   * only honest way to get that is to read it off the thing that decided.
+   */
+  drawnCardCount: number;
 } {
   /* The cards this page is actually DRAWING — the same `crewCardNeedsHim`
      filter `CrewNeedsYou` applies, because an item merged into a card that is
@@ -603,6 +612,25 @@ export function partitionEyeItems(
   const answered: CrewEyeItem[] = [];
   const mergedInto = new Map<string, CrewEyeItem[]>();
   for (const item of items) {
+    /*
+      ⚠ **AN ITEM'S OWN STATE IS ASKED BEFORE ITS HOST IS (#1950).**
+
+      This test was absent, so an item that no longer needed him went to
+      `standalone` whenever it had no drawn host — and `CrewEyeGallery`
+      filtered it out at render. The bucket therefore held things the gallery
+      never drew, which is how the section menu's count came to exceed the
+      section: it counted `standalone.length`.
+
+      Asking here makes the three buckets mean what their names say. An item
+      in `answered` or `done` with no card at all is ANSWERED — it was never
+      standing on its own in any sense the page uses — and *nothing is lost*
+      still holds as a provable property, because it lands in the bucket this
+      function already returns for exactly that.
+    */
+    if (!crewCardNeedsHim(item.state)) {
+      answered.push(item);
+      continue;
+    }
     const host = item.cardId ?? null;
     if (host === null || !written.has(host)) {
       standalone.push(item);
@@ -616,5 +644,5 @@ export function partitionEyeItems(
     if (beside) beside.push(item);
     else mergedInto.set(host, [item]);
   }
-  return { standalone, mergedInto, answered };
+  return { standalone, mergedInto, answered, drawnCardCount: drawn.size };
 }
