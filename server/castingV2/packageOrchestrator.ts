@@ -130,6 +130,7 @@ import { mintViewThumbnail } from "./viewThumbnailMint";
 import {
   ProviderError,
   mayStillArrive,
+  providerAlreadyBilled,
   type IdentityEngine,
   type ImageResult,
   type ReferenceImage,
@@ -179,7 +180,9 @@ import {
   type SignSheetEngine,
   type SignSheetKind,
 } from "./signSheet";
+import { ARRIVAL_ATTEMPTS, arrivalBackoffMs, waitMs } from "./arrivalRetry";
 import {
+  SignSheetUnavailableError,
   settleSignSheet,
   settledPanelFor,
   type SettledSignSheet,
@@ -205,8 +208,16 @@ const PACKAGE_KEY_PREFIX = "casting-v2/casts";
  * fails named-and-refunded. It is the number the customer is owed a true
  * sentence about, so nothing may restate it as a word — see
  * {@link VIEW_ARRIVAL_ATTEMPTS} usage at the only place that counts.
+ *
+ * ⚠ **THE NUMBER ITSELF MOVED TO `arrivalRetry.ts` WITH #1966** and this name
+ * is kept because it is what this road's arms express themselves in. The SHEET
+ * road now asks the same question — it did not until that card, so a transport
+ * fault on a sheet lost two or three views where the same fault on a single
+ * view was re-asked twice more — and two copies of one budget is the mirror
+ * working law 4 is about. That module's header carries why this derivation is
+ * safe where {@link SHEET_MAX_RENDERS}'s refusal to derive is also right.
  */
-export const VIEW_ARRIVAL_ATTEMPTS = 3;
+export const VIEW_ARRIVAL_ATTEMPTS = ARRIVAL_ATTEMPTS;
 
 /**
  * Generations that reached a VERDICT. Unchanged, and deliberately so: one
@@ -224,22 +235,6 @@ export const VIEW_JUDGED_ATTEMPTS = 2;
  * above. A bound that cannot disagree with its budgets also cannot spin.
  */
 const VIEW_MAX_ATTEMPTS = VIEW_ARRIVAL_ATTEMPTS + VIEW_JUDGED_ATTEMPTS;
-
-/**
- * The spacing between one arrival failure and the next attempt.
- *
- * Short on purpose. The adapter has already exhausted its own transport
- * retries by the time a `ProviderError` reaches this loop, so this is the
- * outer, slower breath — long enough for a provider blip or a rate-limit
- * window to pass, negligible against a 2K render (measured in tens of
- * seconds). The package's operation holds a renewing heartbeat while this
- * runs, so the added wait cannot hand a live Sign to the recovery sweep.
- *
- * Indexed by how many arrival failures have happened, so the second wait is
- * longer than the first; the list is read with its last value repeated rather
- * than indexed off the end.
- */
-const VIEW_ARRIVAL_BACKOFF_MS: readonly number[] = [1_500, 4_000];
 
 /**
  * The per-view refund reference.
@@ -687,6 +682,11 @@ export async function buildCastPackage(
         userId: input.userId,
         operationId: input.operationId,
         ...(dependencies.capture ? { capture: dependencies.capture } : {}),
+        /* #1966 — the sheet's own arrival retries are spaced, and a suite
+           proves the spacing by recording the milliseconds rather than
+           sleeping. The same injection the per-view loop takes, handed to the
+           only place that can re-ask for a SHEET. */
+        ...(dependencies.wait ? { wait: dependencies.wait } : {}),
       })),
     ]),
   ) as Record<SignSheetKind, Promise<SettledSignSheet>>;
@@ -950,9 +950,7 @@ export async function renderViewAttempts<T>(
      derived from the two above, because a `break` can leave the loop without
      either of them moving. */
   let attemptsRun = 0;
-  const wait = dependencies.wait ?? ((ms: number) => new Promise<void>((resolve) => {
-    setTimeout(resolve, ms).unref?.();
-  }));
+  const wait = dependencies.wait ?? waitMs;
 
   for (let attempt = 1; attempt <= VIEW_MAX_ATTEMPTS; attempt += 1) {
     attemptsRun = attempt;
@@ -1309,18 +1307,45 @@ export async function renderViewAttempts<T>(
         contract's own terms and are unreachable here; `segment_store` is held
         and `providers/types.ts` says why.
       */
+      /*
+        ⚠ **A SETTLED SHEET THAT DID NOT ARRIVE IS TERMINAL HERE — #1966, and
+        before that card it was not.** One promise per sheet means a settled
+        rejection re-throws the same error instantly to every view awaiting it,
+        so this loop's three attempts were spent WAITING on an answer that
+        could never change. The sheet now asks three times itself, spaced, in
+        `settleSignSheet`; repeating it here would spend one budget twice and
+        put ~5 s of silence in front of a refund the customer is already owed.
+
+        It is tested before `mayStillArrive` rather than mapped into a failure
+        class, because the fact is about OUR settled promise and not about the
+        transport — `settledPanelFor` raises it and its own docblock says why.
+      */
+      if (error instanceof SignSheetUnavailableError) break;
       if (!mayStillArrive(failureClass)) break;
+      /*
+        ⚠ **THE SECOND INSTANCE OF THE CLASS THE RELAY FOUND ON THE SHEET
+        ROAD (PR #1982), swept here in the same commit.**
+
+        Four of fal's faults are raised AFTER the job reports `COMPLETED` — no
+        image in the payload, a malformed data URI, a failed download, a non-ok
+        result fetch — and their classes (`unknown`, `transport`, and whatever
+        a status maps to) are retryable, because retryable is the right answer
+        for a job that never ran. This one ran and was billed: re-asking
+        renders a NEW frame rather than re-fetching the one we bought, and it
+        fails the same way, so the budget buys up to three frames to learn one
+        answer.
+
+        The slice refunds either way — what the customer stops doing is waiting
+        through 5.5 s of spaced retries for a refund they are already owed.
+      */
+      if (providerAlreadyBilled(error)) break;
       /*
         The view never arrived. Keep trying, spaced — this is our failure to
         deliver something already paid for, not a draw against a judgement.
       */
       arrivalFailures += 1;
       if (arrivalFailures >= VIEW_ARRIVAL_ATTEMPTS) break;
-      await wait(
-        VIEW_ARRIVAL_BACKOFF_MS[
-          Math.min(arrivalFailures - 1, VIEW_ARRIVAL_BACKOFF_MS.length - 1)
-        ] ?? 0,
-      );
+      await wait(arrivalBackoffMs(arrivalFailures));
     }
   }
 
