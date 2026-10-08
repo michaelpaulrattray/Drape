@@ -480,4 +480,61 @@ describe("the retried-view commit's fence", () => {
     expect(pressFence).toContain("eq(generationOperations.id, input.pressOperationId)");
     expect(pressFence).not.toContain("recoveryAttemptedAt");
   });
+  /**
+   * ⚠ **ONE OPERATION LANDS ONE PICTURE — #2065.**
+   *
+   * A commit whose transaction committed and whose acknowledgement was lost
+   * reaches here a second time (the sheet road retries a throw on purpose).
+   * The replay must be answered by the row already there, keyed on the TYPED
+   * operation id, and only after both fences — a claimed operation is still
+   * refused before any replay is honoured.
+   *
+   * A TEXT READ, the same floor as its neighbours: CI has no database. The
+   * behaviour — first commit, replay, a race of three, the redo road, two
+   * different operations on one angle — is driven against MySQL by
+   * `scripts/_2065-commit-replay-disposable.mts`, whose tally is on the PR.
+   */
+  it("answers a replay of the same operation with its existing row, after the fences", () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), "server/db/castingV2ViewRetry.ts"),
+      "utf8",
+    );
+    const anchor = "export async function commitRetriedViewAsset";
+    expect(source.split(anchor)).toHaveLength(2);
+    const lines = source.split(/\r?\n/);
+    const start = lines.findIndex((line) => line.startsWith(anchor));
+    const end = lines.findIndex((line, index) => index > start && line === "}");
+    const body = lines.slice(start, end + 1).join("\n");
+
+    const replayRead = body.indexOf("const sameAngle = await tx");
+    const replayAnswer = body.indexOf("if (already) {");
+    const insert = body.indexOf(".insert(modelAssets)");
+    expect(replayRead, "the replay read is gone from the commit").toBeGreaterThan(-1);
+    /* Order: both fences and the Cast's lock, then the replay read, then the
+       insert. A replay answered before the fences would land a picture on an
+       operation the sweep has already claimed. */
+    expect(body.indexOf("if (!operation) return null;")).toBeLessThan(replayRead);
+    expect(body.indexOf("if (!press) return null;")).toBeLessThan(replayRead);
+    expect(body.indexOf("if (!model) {")).toBeLessThan(replayRead);
+    expect(replayRead).toBeLessThan(replayAnswer);
+    expect(replayAnswer).toBeLessThan(insert);
+
+    /* Sliced to the read and its answer, so the insert below cannot satisfy it. */
+    const replay = body.slice(replayRead, insert);
+    expect(replay).toContain('.for("update")');
+    expect(replay).toContain("eq(modelAssets.viewType, input.angle)");
+    expect(replay).toContain("provenance?.retryOperationId === input.operationId");
+    expect(replay).toContain("return already.id;");
+    /* It never inserts, and it touches only its own operation's row. */
+    expect(replay).not.toContain(".insert(");
+    expect(replay).toContain("eq(modelAssets.id, already.id)");
+
+    /* And the key the read depends on is written by the commit from the typed
+       input, AFTER the caller's bag, so no bag can omit or override it. */
+    const written = body.slice(insert);
+    const bag = written.indexOf("...input.provenance,");
+    const stamp = written.indexOf("retryOperationId: input.operationId,");
+    expect(bag).toBeGreaterThan(-1);
+    expect(stamp).toBeGreaterThan(bag);
+  });
 });

@@ -324,6 +324,11 @@ export class RetriedViewCommitError extends Error {
  * asset per angle, so a new row supersedes whatever was in the slot — a
  * failure marker, or a delivered view nobody judged. The old row stays as the
  * record of what happened, which is the repo's settled selection law.
+ *
+ * ⚠ **The one exception is its OWN row (#2065)**: a second commit for the same
+ * operation — a replay after a lost acknowledgement — never inserts again. It
+ * moves that operation's existing row onto the replay's live bytes and returns
+ * its id. Another operation's row is never touched.
  */
 export async function commitRetriedViewAsset(input: {
   userId: number;
@@ -488,6 +493,74 @@ export async function commitRetriedViewAsset(input: {
       );
     }
 
+    /*
+      ⚠ **ONE OPERATION LANDS ONE PICTURE, AND A REPLAY IS ANSWERED BY THE ROW
+      ALREADY THERE (#2065).**
+
+      The shape this closes: a write whose durability is reported by a channel
+      that can fail AFTER the write succeeded. This transaction commits, the
+      acknowledgement is lost on the wire, the helper throws while the row
+      exists — and `renderViewAttempts` reads the throw as "nothing landed".
+      On the sheet road (a redo's slot) a throw is retried on purpose, because
+      re-storing a settled panel costs no engine call, so the next attempt
+      arrived here and inserted a SECOND asset for one operation.
+
+      **The key is the typed `input.operationId`**, read back through the same
+      `retryOperationId` stamp `retriedViewLanded` reads, and that stamp is
+      now written by THIS statement from the typed input (below) rather than
+      trusted from the caller's bag. No migration: the operation row's
+      `FOR UPDATE` above already serialises every commit for one operation,
+      and the `models` lock serialises every commit for one Cast, so this
+      locking read sees whatever an earlier attempt committed.
+
+      ⚠ **IT REPOINTS RATHER THAN NO-OPS, and the reason is in the loop, not
+      here.** The attempt that lost its acknowledgement then ran the loop's
+      catch, which DROPS that attempt's stored bytes
+      (`packageOrchestrator.ts`, `if (stored) await drop(stored.key)`). So the
+      row already here points at an object that has just been deleted, and
+      answering its id unchanged would deliver a broken picture. The replay's
+      bytes are live and are the same settled panel, so the row is moved onto
+      them and its id is returned — one row, live bytes, delivered.
+
+      It runs AFTER both fences on purpose: a replay of an operation the sweep
+      has since claimed is refused as a fence, and the sweep's own landed read
+      finds this row and charges for it.
+
+      ⚠ **Two different operations on one angle still both land** — a newer
+      Try again superseding an older view is behaviour the room relies on
+      (`slotEvidence` takes the newest filled asset per angle), and the key is
+      the operation, never the angle alone.
+    */
+    const sameAngle = await tx
+      .select({
+        id: modelAssets.id,
+        storageKey: modelAssets.storageKey,
+        provenance: modelAssets.provenance,
+      })
+      .from(modelAssets)
+      .where(and(
+        eq(modelAssets.modelId, input.modelId),
+        eq(modelAssets.viewType, input.angle),
+      ))
+      .orderBy(modelAssets.id)
+      .for("update");
+    const already = sameAngle.find((row) => {
+      const provenance = row.provenance as { retryOperationId?: unknown } | null;
+      return provenance?.retryOperationId === input.operationId;
+    });
+    if (already) {
+      if (already.storageKey !== input.storageKey) {
+        await tx
+          .update(modelAssets)
+          .set({ storageKey: input.storageKey, storageUrl: input.storageUrl })
+          .where(and(
+            eq(modelAssets.id, already.id),
+            eq(modelAssets.modelId, input.modelId),
+          ));
+      }
+      return already.id;
+    }
+
     const [inserted] = await tx
       .insert(modelAssets)
       .values({
@@ -510,6 +583,14 @@ export async function commitRetriedViewAsset(input: {
             revisionId: input.identityRevisionId,
             identityText: input.identityText,
           }),
+          /*
+            THE REPLAY KEY, written from the TYPED input and last, so no bag a
+            caller composes can omit or misspell it (#2065). Both callers
+            already wrote this same value; it is the read above that now
+            depends on it, and a fence-shaped read must not be keyed on a
+            free-form field.
+          */
+          retryOperationId: input.operationId,
         },
       })
       .$returningId();
