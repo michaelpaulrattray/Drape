@@ -1,5 +1,5 @@
 import { createModuleLogger } from "../logging/logger";
-import { ProviderError, type ProviderFailureClass } from "./types";
+import { ProviderError, isRetryable, type ProviderFailureClass } from "./types";
 import { throughCensus } from "../castingV2/callCensus";
 import { assertEngineNotBanned } from "./bannedEngines";
 
@@ -114,11 +114,12 @@ async function cancelFalUrl(
  * CANCEL, AND SAY WHETHER THE FRAME WAS ALREADY BOUGHT (#2038).
  *
  * Every exit from the poll loop that walks away from a submitted job goes
- * through here — the abort, the refused status check, the deadline. Walking
- * away without cancelling leaves the job running on fal, where it renders and
- * bills; and the refused status check classifies `transport` / `rate_limit`,
- * so `withRetry` then submitted a SECOND job beside it. One flaky poll, two
- * frames.
+ * through here — the abort, a status check answered with a non-transient
+ * refusal (404, 405…), the deadline. Walking away without cancelling leaves the
+ * job running on fal, where it renders and bills, and a retryable exit then has
+ * `withRetry` submit a SECOND job beside it. (A transient 5xx/429 on the status
+ * poll no longer exits at all — #2044 keeps polling the same job, because
+ * whether this cancel stops a job already IN_PROGRESS is unverified.)
  *
  * The answer is the fact the caller's error carries: `true` when fal answered
  * 400 ALREADY_COMPLETED, meaning the frame finished before we asked and is
@@ -272,6 +273,10 @@ async function runFalImageJobUncounted(input: {
 
   const deadline = startedAt + timeoutMs;
   let startedRunningAt: number | undefined;
+  /* The wait before the next poll. It grows only while the status endpoint is
+     answering 429 and goes back to the interval on any other answer. */
+  let pollWaitMs = pollIntervalMs;
+  let statusBlipLogged = false;
 
   while (Date.now() < deadline) {
     if (signal?.aborted) {
@@ -279,25 +284,57 @@ async function runFalImageJobUncounted(input: {
       throw new ProviderError("capability", "cancelled", { providerRef: requestId, completed });
     }
 
-    await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+    await new Promise((resolve) =>
+      setTimeout(resolve, Math.max(0, Math.min(pollWaitMs, deadline - Date.now()))),
+    );
 
     const status = await fetch(statusUrl, { headers }).catch(() => null);
     // A blip while polling is not a failed job — the work is still queued.
-    if (!status) continue;
+    if (!status) {
+      pollWaitMs = pollIntervalMs;
+      continue;
+    }
 
     if (!status.ok) {
       const text = await status.text().catch(() => "");
-      /* #2038: we are walking away from a job fal still holds, and this class
-         is retryable — so cancel it first, or `withRetry` submits a second job
-         while the first renders and bills. If the cancel says the job already
+      const failure = classifyFalHttp(status.status, text);
+      /* #2044: A 5xx OR A 429 ON THE STATUS POLL IS THE STATUS ENDPOINT'S
+         PROBLEM, NOT THE JOB'S — the same as the dropped connection above, so
+         keep polling. #2038 cancelled here and let `withRetry` submit a fresh
+         job, and that is two frames whenever fal's cancel does not stop a job
+         already IN_PROGRESS — unverified, and this transport's own history
+         doubts it (PR #1982: "a job already IN_PROGRESS may still bill").
+         Polling on costs nothing: the job we already paid to submit is the one
+         we wait for, and if the endpoint never recovers the deadline below
+         still cancels. "Transient" is DERIVED from the retry policy's own set
+         (`isRetryable`), never a second list of status codes beside it. A 429
+         backs off — doubling, capped at eight intervals (12s at the engines'
+         1.5s default) — so we are not the reason it keeps saying 429.
+         Anything else (404, 405, 401…) is an answer about the job or our
+         request, and it cancels and throws. */
+      if (isRetryable(failure)) {
+        // Once per job, not once per poll: a five-minute 503 storm is one line.
+        if (!statusBlipLogged) log.warn(
+          { endpoint, requestId, status: status.status },
+          "[fal] status check answered non-ok — still polling the same job",
+        );
+        statusBlipLogged = true;
+        pollWaitMs = failure === "rate_limit"
+          ? Math.min(pollWaitMs * 2, pollIntervalMs * 8)
+          : pollIntervalMs;
+        continue;
+      }
+      /* #2038: we are walking away from a job fal still holds — cancel it
+         first, or it runs on and bills. If the cancel says the job already
          finished, that frame is bought and the flag stops every re-ask. */
       const completed = await cancelOutstanding(apiKey, cancelUrl, requestId, "status check failed");
-      throw new ProviderError(classifyFalHttp(status.status, text), "fal.ai status check failed", {
+      throw new ProviderError(failure, `fal.ai status check failed (${status.status})`, {
         status: status.status,
         providerRef: requestId,
         completed,
       });
     }
+    pollWaitMs = pollIntervalMs;
 
     const state = (await status.json()) as { status?: string };
     if (state.status === "IN_PROGRESS" && startedRunningAt === undefined) {
