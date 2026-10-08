@@ -53,13 +53,23 @@
  *
  * Then the last few closed runs, newest first, so "what happened last night" is
  * one command rather than a page.
+ *
+ * ⚠ **AND A CLOSED RUN'S MINUTES ARE ITS PROVABLE LIFE, NOT ITS STAMP SPAN
+ * (#2086).** This printed `endedAt - startedAt` and called it a shift's length;
+ * `endedAt` is a stamp any later shift may apply at any hour, so #613 read as
+ * **303 minutes for a 19-minute life** and #607 as 693 for 15. The figure is
+ * now `startedAt` to the last check-in, and a row stamped closed more than a
+ * minute after that check-in says so on its own line rather than quietly
+ * carrying a lifetime it never had.
  */
 import {
   CREW_SHIFT_LIVE_HEARTBEAT_MS,
+  CREW_SHIFT_STALL_MS,
   deriveShiftRunState,
   describeRunSupersession,
   describeShiftAge,
   hasEverCheckedIn,
+  laneRunLastProofOfLife,
   looksLive,
   type RunSupersession,
 } from "../shared/crewShiftState.js";
@@ -187,18 +197,68 @@ try {
   }
 
   const [closed] = await conn.query<any[]>(
-    `SELECT id, shift, seat, outcome, outcomeNote, prNumber, startedAt, endedAt
+    `SELECT id, shift, seat, outcome, outcomeNote, prNumber, startedAt, heartbeatAt, endedAt
        FROM \`${TABLE}\` WHERE endedAt IS NOT NULL ORDER BY id DESC LIMIT ${LIMIT}`,
   );
   console.log(`\nLAST ${closed.length} CLOSED:`);
   for (const row of closed) {
-    const minutes = Math.round(
-      (new Date(row.endedAt).getTime() - new Date(row.startedAt).getTime()) / 60_000,
-    );
+    /*
+      ⚠ THE FIGURE IS THE ROW'S PROVABLE LIFE, NOT ITS STAMP SPAN (#2086).
+      `endedAt - startedAt` was printed here as "a shift's length", and
+      `endedAt` is a stamp any later shift may apply at any hour — so row #613
+      printed **303 min for a 19-minute life** and #607 printed 693 for 15.
+      Over production's 54 honestly stamped rows the two readings run median 57
+      against 35 and max 693 against 128.
+
+      The lifetime comes from `shared/crewShiftState.ts` and not from a second
+      implementation here, for the same reason the three verdicts above do: the
+      seat cut and his page read that one owner. A row that never checked in
+      falls back to the close stamp, so every row closed before #1872 prints
+      exactly what it printed before and nothing else is said about it.
+    */
+    const started = new Date(row.startedAt).getTime();
+    const lifeEnd = laneRunLastProofOfLife({
+      id: Number(row.id),
+      shift: String(row.shift),
+      startedAt: row.startedAt,
+      endedAt: row.endedAt,
+      heartbeatAt: row.heartbeatAt ?? null,
+    });
+    const minutes = Math.round((lifeEnd - started) / 60_000);
+    const lateCloseMs = new Date(row.endedAt).getTime() - lifeEnd;
     console.log(
       `  #${row.id} ${row.shift} (${row.seat}) — ${row.outcome}`
-      + `${row.prNumber ? ` · PR #${row.prNumber}` : ""} · ${minutes} min · ended ${ago(row.endedAt, now)}`,
+      + `${row.prNumber ? ` · PR #${row.prNumber}` : ""} · ${minutes} min alive · ended ${ago(row.endedAt, now)}`,
     );
+    /*
+      ⚠ THE BAR IS HALF THE STALL WINDOW AND IT IS DERIVED, NOT INVENTED — and
+      the first shape of this line had NO bar, which was the mistake
+      `CREW_SHIFT_STALL_MS`'s own header is about. Driven against production's
+      eight newest rows: every one of the eight printed the warning, because an
+      ORDINARY close sits minutes after the last check-in (the deploy rite and
+      the mailbox entry come after the *edition written* heartbeat) — median 17
+      min over the 54 honest rows. A ⚠ on eight of eight is one he learns to
+      scroll past, and then the first one he believes is the false one.
+
+      Half the window is the same bar `crew-shift-close.mts` already uses for
+      the sibling question, so the family has ONE number rather than two, and it
+      reads as a sentence: a gap this long is a gap during which the row had
+      already passed the early warning and was starting to look dead. Driven on
+      the same eight rows it fires on exactly two — #613 (284 min) and #612
+      (104 min), the two genuine late stamps in that list — and is silent on the
+      six ordinary closes.
+
+      Nothing is hidden by the quiet direction: the minutes printed above are
+      the provable life either way. This line only ever answers *why* that
+      figure disagrees with the close stamp beside it.
+    */
+    if (lateCloseMs > CREW_SHIFT_STALL_MS / 2) {
+      const stampSpan = Math.round((new Date(row.endedAt).getTime() - started) / 60_000);
+      console.log(
+        `     ⚠ stamped closed ${Math.round(lateCloseMs / 60_000)} min after its last check-in — the`
+        + ` ${minutes} min above is its PROVABLE life, not ${stampSpan} min of stamp span.`,
+      );
+    }
     if (row.outcomeNote) console.log(`     ${row.outcomeNote}`);
   }
 
