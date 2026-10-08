@@ -153,6 +153,100 @@ export const SIGN_SHEET_PANEL_LINES: Readonly<
 export const SIGN_SHEET_PANEL_ORDER: readonly CastViewAngle[] = CAST_PACKAGE_VIEWS;
 
 /**
+ * THE TWO SHEETS A SIGN RENDERS, AND WHY THERE ARE TWO.
+ *
+ * **His word, 2026-10-08 (terminal), ruling #1926:** *"yes option 1 cooks well
+ * done"* — the Sign renders **two** Sunburst sheets **in parallel**, not one.
+ *
+ * ⚠ **THE REASON IS THE STRIP, AND IT IS ARITHMETIC RATHER THAN TASTE.** One
+ * sheet of five panels at 3840x1648 makes a panel 768x1648 — an aspect of
+ * **0.466** against the strip tile's `aspect-ratio: 4 / 5` (0.8) with
+ * `object-fit: cover`, so a tile showed the top **58%** of a paid view: the
+ * close-up lost its mouth and both full-length views lost their legs
+ * (`castingV2.css:1813`). Splitting the panels by what they frame lets each
+ * sheet take the shape its pictures want — heads land ~1276x1648 (0.774) and
+ * bodies ~1750x2336 (0.749), which the same tile shows at **96.8%** and
+ * **93.6%**. Today's Nano Banana Pro view is 1696x2528 (0.671) and shows at
+ * 83.9%, so this is better than the road it replaces rather than merely less
+ * bad than one sheet. ⚠ **No client change is owed, and that is a measured
+ * claim, not a hope** — `signSheetStripFit.test.ts` recomputes all four of
+ * those percentages from the CSS rule itself.
+ *
+ * ⚠ **BOTH SHEETS TAKE THE MASTER AS THEIR ONLY REFERENCE, AND THE OUTFIT AS
+ * WORDS.** The tempting shape is to render the body sheet first and hand it to
+ * the head sheet as a second reference showing the outfit — and the relay's
+ * tested `prompt-head.txt` does exactly that. ⚠ **It cannot ship, because his
+ * ruling says IN PARALLEL**: a head sheet that references the body sheet must
+ * wait for it, which serialises the two and doubles the wall time he measured
+ * (~70 s for both together). So the head sheet carries the same outfit
+ * paragraph the body sheet does, which is the arm his parallel test actually
+ * ran — his card says so in the same breath as the prompts.
+ *
+ * ⚠ **THE PANEL LISTS ARE DERIVED FROM {@link CAST_PACKAGE_VIEWS}, NEVER
+ * RESTATED** (working law 4). Only the SPLIT is declared below; each sheet's
+ * order is the package's own order, filtered — so a reordering of the package
+ * reorders both sheets with it, and the cut and the prompt still read one list.
+ * A sixth view added to the package and not named here REFUSES at
+ * {@link signSheetPlan} rather than silently rendering four panels and filing
+ * five.
+ */
+const BODY_SHEET_ANGLES: ReadonlySet<CastViewAngle> = new Set<CastViewAngle>([
+  "frontFull",
+  "backFull",
+]);
+
+export type SignSheetKind = "head" | "body";
+
+export const SIGN_SHEET_KINDS: readonly SignSheetKind[] = ["head", "body"];
+
+/**
+ * THE PIXELS EACH SHEET IS ASKED FOR — his two numbers, measured on the frames
+ * his eye passed (#1904, 2026-10-07T23:43:31Z).
+ *
+ * ⚠ **A sheet's size is a property of the SHEET KIND, not of a request**, which
+ * is why it lives here and reaches the provider through the engine factory. The
+ * alternative — an `imageSize` on every identity request — would let a body
+ * sheet be asked for at head pixels by a caller that simply forgot, and the
+ * panel aspect is the whole point of the split.
+ */
+export const SIGN_SHEET_SIZES: Readonly<Record<SignSheetKind, { width: number; height: number }>> = {
+  head: { width: 3840, height: 1648 },
+  body: { width: 3504, height: 2336 },
+};
+
+/** Which sheet a view is cut from — the one place that answers it. */
+export function signSheetKindFor(angle: CastViewAngle): SignSheetKind {
+  return BODY_SHEET_ANGLES.has(angle) ? "body" : "head";
+}
+
+export type SignSheetPlan = {
+  readonly kind: SignSheetKind;
+  readonly panelOrder: readonly CastViewAngle[];
+  readonly size: { width: number; height: number };
+};
+
+/**
+ * THE TWO SHEETS TO RENDER, each with the panels it carries in the package's
+ * own order — and it REFUSES an empty one.
+ *
+ * An empty panel list would mean a sheet asked for with nothing to paint: the
+ * prompt would promise zero panels, the engine would return something, and the
+ * cut would file it. That is a startup-shaped failure, so it is raised before
+ * any money moves rather than discovered in a delivered package.
+ */
+export function signSheetPlan(
+  panelOrder: readonly CastViewAngle[] = SIGN_SHEET_PANEL_ORDER,
+): readonly SignSheetPlan[] {
+  return SIGN_SHEET_KINDS.map((kind) => {
+    const panels = panelOrder.filter((angle) => signSheetKindFor(angle) === kind);
+    if (panels.length === 0) {
+      throw new Error(`the ${kind} sheet would be rendered with no panels on it`);
+    }
+    return { kind, panelOrder: panels, size: SIGN_SHEET_SIZES[kind] };
+  });
+}
+
+/**
  * HOW FAR FROM ITS FIFTH A DIVIDER IS LOOKED FOR — his card's ±6%, of the
  * SHEET'S WIDTH.
  *
@@ -183,7 +277,7 @@ const DIVIDER_BAND_TOLERANCE = 12;
  * errors is wildly asymmetric: a missed divider falls back to the fifth, and a
  * false one cuts a panel at a bright patch of backdrop.
  */
-const DIVIDER_MIN_CONTRAST = 25;
+export const DIVIDER_MIN_CONTRAST = 25;
 
 /**
  * HOW FAR OUTSIDE A BAND ITS BACKGROUND IS SAMPLED.

@@ -43,6 +43,7 @@ import { CAST_PACKAGE_VIEWS } from "./castViewPackage";
 import {
   composeSignSheetPrompt,
   cutSignSheet,
+  DIVIDER_MIN_CONTRAST,
   DIVIDER_SEARCH_FRACTION,
   findSheetPanelGeometry,
   renderSignSheet,
@@ -50,6 +51,7 @@ import {
   sheetReferenceFromMaster,
   SIGN_SHEET_PANEL_LINES,
   SIGN_SHEET_PANEL_ORDER,
+  signSheetPlan,
 } from "./signSheet";
 
 type CourtSheet = {
@@ -264,6 +266,202 @@ async function drawSyntheticSheet(): Promise<{ bytes: Buffer; widths: number[] }
   const bytes = await sharp(raw, { raw: { width, height, channels: 1 } }).png().toBuffer();
   return { bytes, widths };
 }
+
+/**
+ * ⚠ **THE TWO SHAPES HIS RULING ACTUALLY SHIPS — and the detector had never
+ * met either of them.**
+ *
+ * Every constant above was measured on FIVE-panel 21:9 sheets. #1926 renders a
+ * **2-panel 3504x2336** body sheet and a **3-panel 3840x1648** head sheet: wider
+ * figures, fewer boundaries, a different search window. A detector tuned on one
+ * population and trusted on another is working law 2 exactly, and the cost of
+ * being wrong here is the one defect nothing downstream can see.
+ *
+ * The population is the relay's own tested renders — the sheets his eye judged
+ * when he ruled option 1 — carried as their column profiles in
+ * `__fixtures__/signSheet.twoSheetColumnMeans.json` for the court fixture's
+ * reason (the PNGs are 31 MB under a gitignored `output/`).
+ *
+ * ⚠ **WHAT THESE ARMS FOUND, AND IT CHANGES THE ROAD RATHER THAN CONFIRMING
+ * IT: the body sheet carries a real divider and the PARALLEL HEAD SHEET DOES
+ * NOT.** On the head sheet the brightest column anywhere in either search
+ * window lifts only ~16 greylevels above its local median, against a floor of
+ * {@link DIVIDER_MIN_CONTRAST} = 25 — so the detector correctly reports *no
+ * divider* and falls back to equal thirds, on every head sheet, forever.
+ *
+ * That fallback is **right here, and it is right for a readable reason rather
+ * than by luck**: the serial head sheet below is an independent sample of the
+ * same prompt and camera set whose seams ARE bright, and they sit at 1280.5 and
+ * 2560.5 — within **2 px** of the equal thirds the fallback chose. Sunburst is
+ * being asked for *"panels of exactly equal width"* and is delivering them, so
+ * on this shape the equal cut and the true cut are the same cut.
+ *
+ * ⚠ **The consequence is NOT a code change here but a log one, and it is filed
+ * rather than fixed in this suite**: `renderSignSheet` warns whenever any
+ * boundary came from a fallback, calling it *"the only alarm there is"* — and
+ * on the head sheet it will now fire on every single Sign. An alarm that always
+ * cries cannot report the one case it exists for. See #1904.
+ */
+describe("⚠ the two sheet shapes his #1926 ruling ships", () => {
+  type TwoSheet = {
+    kind: "head" | "body";
+    render: "parallel" | "serial";
+    panels: number;
+    width: number;
+    height: number;
+    columnMeans: number[];
+  };
+
+  const TWO = JSON.parse(
+    readFileSync("server/castingV2/__fixtures__/signSheet.twoSheetColumnMeans.json", "utf8"),
+  ) as { provenance: Record<string, string>; sheets: TwoSheet[] };
+
+  const sheetFor = (kind: "head" | "body", render: "parallel" | "serial"): TwoSheet => {
+    const found = TWO.sheets.find((s) => s.kind === kind && s.render === render);
+    if (!found) throw new Error(`no ${render} ${kind} sheet in the fixture`);
+    return found;
+  };
+
+  const geometryOf = (sheet: TwoSheet) =>
+    findSheetPanelGeometry(Float64Array.from(sheet.columnMeans), sheet.width, sheet.panels);
+
+  it("the fixture is the relay's own tested renders and says which one ships", () => {
+    expect(TWO.provenance.ruling).toContain("#1926");
+    expect(TWO.provenance.render).toContain("parallel` is the shape that ships");
+    expect(TWO.sheets.map((s) => `${s.kind}/${s.render}`).sort()).toEqual([
+      "body/parallel",
+      "head/parallel",
+      "head/serial",
+    ]);
+  });
+
+  it("the plan derives both sheets from the package's own list, in its order", () => {
+    const plan = signSheetPlan();
+    expect(plan.map((sheet) => sheet.kind)).toEqual(["head", "body"]);
+    /*
+      ⚠ **HIS TWO LISTS, PINNED LITERALLY — and the union arm below cannot do
+      this job.** Moving a view from one sheet to the other leaves the union
+      exactly equal to the package, so every derived check still passes while a
+      full-length figure is rendered at head pixels. The split is a quotation
+      from his #1926 ruling, so it is asserted as one.
+    */
+    expect(plan.find((s) => s.kind === "head")?.panelOrder).toEqual([
+      "closeUp",
+      "threeQuarter",
+      "sideClose",
+    ]);
+    expect(plan.find((s) => s.kind === "body")?.panelOrder).toEqual(["frontFull", "backFull"]);
+    /* ⚠ The union is the guarantee, not the two lists: every view the package
+       promises is painted exactly once, so a sixth view cannot be silently
+       dropped off both sheets or quietly painted on both. */
+    const painted = plan.flatMap((sheet) => sheet.panelOrder);
+    expect([...painted].sort()).toEqual([...CAST_PACKAGE_VIEWS].sort());
+    expect(painted).toHaveLength(CAST_PACKAGE_VIEWS.length);
+    /* Each sheet keeps the package's own order, which is what lets the prompt
+       and the cut read one list (working law 4). */
+    for (const sheet of plan) {
+      expect(sheet.panelOrder).toEqual(
+        CAST_PACKAGE_VIEWS.filter((angle) => sheet.panelOrder.includes(angle)),
+      );
+    }
+    expect(plan.find((s) => s.kind === "head")?.size).toEqual({ width: 3840, height: 1648 });
+    expect(plan.find((s) => s.kind === "body")?.size).toEqual({ width: 3504, height: 2336 });
+  });
+
+  it("the BODY sheet's divider is real and the detector reads it", () => {
+    const sheet = sheetFor("body", "parallel");
+    const geometry = geometryOf(sheet);
+
+    expect(geometry.boundaries).toHaveLength(1);
+    const [boundary] = geometry.boundaries;
+    expect(boundary!.source).toBe("divider");
+    /* Measured 53.6 — twice the floor, so this is not a marginal read. */
+    expect(boundary!.band!.contrast).toBeGreaterThan(DIVIDER_MIN_CONTRAST);
+    /* And it lands where the engine was asked to put it. */
+    const centre = (boundary!.leftEnd + boundary!.rightStart) / 2;
+    expect(Math.abs(centre - sheet.width / 2)).toBeLessThanOrEqual(PANEL_TOLERANCE_PX);
+    expect(geometry.panels.map((p) => p.width)).toEqual([1749, 1749]);
+  });
+
+  it("⚠ the PARALLEL HEAD sheet has NO divider bright enough to read — measured, not assumed", () => {
+    const sheet = sheetFor("head", "parallel");
+    const geometry = geometryOf(sheet);
+
+    expect(geometry.boundaries).toHaveLength(2);
+    /* Both fall back. This is the finding, pinned so it cannot change unnoticed. */
+    expect(geometry.boundaries.map((b) => b.source)).toEqual(["fifth", "fifth"]);
+    expect(geometry.boundaries.every((b) => b.band === null)).toBe(true);
+
+    /* WHY it falls back, read off the profile rather than inferred from the
+       verdict: the brightest column in each window is barely above its
+       neighbours, where a real divider stands 50+ clear. */
+    const means = Float64Array.from(sheet.columnMeans);
+    const half = Math.round(sheet.width * DIVIDER_SEARCH_FRACTION);
+    for (const nominal of [sheet.width / 3, (sheet.width * 2) / 3]) {
+      const from = Math.max(0, Math.round(nominal) - half);
+      const to = Math.min(sheet.width - 1, Math.round(nominal) + half);
+      const window = Array.from(means.slice(from, to + 1));
+      const peak = Math.max(...window);
+      const median = [...window].sort((a, b) => a - b)[Math.floor(window.length / 2)]!;
+      expect(peak - median).toBeLessThan(DIVIDER_MIN_CONTRAST);
+    }
+  });
+
+  it("⚠ and the fallback is nevertheless the RIGHT cut — proven against an independent sample", () => {
+    /*
+      The control that makes the arm above safe rather than alarming. The serial
+      head sheet is the same prompt and the same five cameras with seams that
+      ARE bright, so its DETECTED boundaries say where a head sheet's true seams
+      lie. If equal thirds agreed with them, equal thirds is the true cut on
+      this shape — and it does, to 2 px.
+    */
+    const serial = sheetFor("head", "serial");
+    const serialGeometry = geometryOf(serial);
+    expect(serialGeometry.boundaries.map((b) => b.source)).toEqual(["divider", "divider"]);
+
+    const parallel = sheetFor("head", "parallel");
+    const parallelGeometry = geometryOf(parallel);
+    expect(parallel.width).toBe(serial.width);
+
+    serialGeometry.boundaries.forEach((trueSeam, index) => {
+      const trueCentre = (trueSeam.leftEnd + trueSeam.rightStart) / 2;
+      const fellBack = parallelGeometry.boundaries[index]!;
+      const fallbackCentre = (fellBack.leftEnd + fellBack.rightStart) / 2;
+      expect(Math.abs(fallbackCentre - trueCentre)).toBeLessThanOrEqual(2);
+    });
+  });
+
+  it("⚠ every panel of both shipped shapes shows in the strip, which is the whole reason there are two", () => {
+    /*
+      The arithmetic #1926 was decided on, recomputed from the CSS rather than
+      quoted: `.dpc-sheetcard__frame` is `aspect-ratio: 4 / 5` with
+      `object-fit: cover`, so a tile shows (panelAspect / 0.8) of a panel's
+      height. One five-panel sheet gave 0.466 and therefore 58% — the close-up
+      lost its mouth. Today's Nano Banana Pro view is 1696x2528 and shows 84%.
+      Both shipped shapes beat it.
+    */
+    const TILE_ASPECT = 4 / 5;
+    const TODAYS_NBP_VIEW = 1696 / 2528;
+    const todayShows = TODAYS_NBP_VIEW / TILE_ASPECT;
+
+    for (const render of ["body", "head"] as const) {
+      const sheet = sheetFor(render, "parallel");
+      const geometry = geometryOf(sheet);
+      for (const panel of geometry.panels) {
+        const shows = panel.width / sheet.height / TILE_ASPECT;
+        expect(shows).toBeLessThanOrEqual(1);
+        expect(shows).toBeGreaterThan(todayShows);
+        expect(shows).toBeGreaterThan(0.92);
+      }
+    }
+
+    /* The control: the single five-panel sheet this ruling replaced does NOT
+       clear that bar — without it the arm above would pass on the shape his
+       ruling threw out. */
+    const oneSheetPanel = (3840 / 5) / 1648;
+    expect(oneSheetPanel / TILE_ASPECT).toBeLessThan(0.6);
+  });
+});
 
 describe("cutting the bytes that arrived", () => {
   it("reads a column mean over the whole height, which is what makes a 4px line beat a face", async () => {
