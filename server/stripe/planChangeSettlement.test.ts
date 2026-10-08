@@ -348,8 +348,20 @@ describe("changePlan — the grant hangs on the invoice, not on the Stripe updat
    * *"loud, never silent"* rather than removed, so it is live code on a money
    * path and it floored at the TOTAL balance exactly as the webhook road did.
    *
-   * It is driven as a DOWNGRADE, because the arm above is an upgrade and an
-   * upgrade never reaches the unwind branch at all.
+   * ⚠ **IT WAS DRIVEN AS A PLAIN DOWNGRADE UNTIL #1936 CLOSED THAT ROAD, AND
+   * THE RE-POINTING IS THAT CARD'S LAW-7 SWEEP REACHING THIS FILE.** His
+   * option 1 defers every change that hands money back, so `changePlan` on a
+   * downgrade now returns before `updateSubscriptionPlan` is ever called —
+   * these two arms stopped exercising the unwind branch at all and started
+   * failing on the schedule road instead. **The CONTROL is not dead and that
+   * was checked before the fixture moved**: the unwind branch is still
+   * reachable through `creditUnwind`, which every interval switch carries, and
+   * **monthly → annual** is charged rather than refunded, so it stays instant.
+   * That is the fixture now — same floor, same two numbers, a road that exists.
+   *
+   * The downgrade's own absence is covered where it belongs, by
+   * `server/routes/deferredPlanChangeRoute.test.ts`, which asserts that
+   * `deductCredits` is not reached at all on that road.
    */
   it("the legacy immediate unwind floors at the PLAN'S part too — both sites, one rule", async () => {
     db.getSubscriptionByUserId.mockResolvedValue({
@@ -372,21 +384,22 @@ describe("changePlan — the grant hangs on the invoice, not on the Stripe updat
     });
     subscriptionsUpdate.mockResolvedValue({ latest_invoice: null });
     /* 25,000 bought with 2,000 of the allowance left — the card's own number.
-       Whatever this downgrade's mirror works out to, it may not reach past
-       2,000, because everything above that is the customer's money. */
+       Whatever this switch's unwind works out to, it may not reach past 2,000,
+       because everything above that is the customer's money. */
     db.getUserCredits.mockResolvedValue({ balance: 27_000, purchasedBalance: 25_000 });
 
-    const result = await caller().changePlan({ newPlan: "starter" });
+    const result = await caller().changePlan({ newPlan: "pro", interval: "annual" });
 
     expect(result.creditSettlement).toBe("applied");
     expect(db.deductCredits).toHaveBeenCalledTimes(1);
     expect(db.deductCredits.mock.calls[0][1]).toBe(2000);
   });
 
-  it("and deducts the full mirror on that road when nothing was bought", async () => {
+  it("and deducts the full unwind on that road when nothing was bought", async () => {
     /* The positive control for the site above: a floor stuck at the plan's part
        of a purchased-only balance would be 0 here and would silently stop every
-       legitimate downgrade unwind on this road. */
+       legitimate unwind on this road. Same interval switch as the arm above —
+       see its docblock for why this is no longer a downgrade (#1936). */
     db.getSubscriptionByUserId.mockResolvedValue({
       stripeSubscriptionId: "sub_1",
       stripeCustomerId: "cus_1",
@@ -408,7 +421,7 @@ describe("changePlan — the grant hangs on the invoice, not on the Stripe updat
     subscriptionsUpdate.mockResolvedValue({ latest_invoice: null });
     db.getUserCredits.mockResolvedValue({ balance: 100_000, purchasedBalance: 0 });
 
-    await caller().changePlan({ newPlan: "starter" });
+    await caller().changePlan({ newPlan: "pro", interval: "annual" });
 
     expect(db.deductCredits).toHaveBeenCalledTimes(1);
     /* ⚠ Asserted as STRICTLY MORE THAN the 2,000 the arm above deducted, rather

@@ -21,7 +21,13 @@ import {
   getInvoiceStatus,
   getCustomerInvoices,
   getAllCustomerInvoices,
+  stripe,
 } from "../stripe/stripeService";
+import {
+  releaseScheduleBeforeWrite,
+  scheduleSubscriptionChange,
+} from "../stripe/subscriptionSchedule";
+import { formatCustomerShortDate } from "@shared/customerDate";
 import {
   queuePlanChangeSettlement,
   applyPlanChangeSettlement,
@@ -759,6 +765,17 @@ export const billingRouter = router({
         kind: quote.kind,
         currentInterval: quote.currentInterval,
         targetInterval: quote.targetInterval,
+        /* ⚠ **WHETHER THIS HAPPENS TODAY, AND WHEN IF NOT (#1936).** The
+           confirm step draws its whole sentence from this quote, and without
+           these two fields it would tell a customer that money is coming back
+           and the plan is changing now — the sentences that stood here before
+           his option 1 — while the server scheduled it for the boundary and
+           moved nothing. The preview and the charge read ONE
+           `quotePlanChange`, which is what keeps them from being two
+           arithmetics; these are that same discipline applied to the one fact
+           that is not a figure. */
+        deferred: quote.deferred,
+        effectiveAtSec: quote.effectiveAtSec,
       };
     }),
 
@@ -840,6 +857,106 @@ export const billingRouter = router({
       currentPeriodStart: details.currentPeriodStart,
       currentPeriodEnd: details.currentPeriodEnd,
       billingInterval: details.billingInterval,
+      /* ⚠ **THE SCHEDULED CHANGE, PROJECTED FIELD BY FIELD (#1936, invariant
+         8).** Without it a deferred downgrade is invisible: she is told it
+         happens on 7 Nov and then every screen goes on showing the plan she
+         is leaving, with nothing coming.
+
+         `scheduleId` is deliberately NOT projected. The undo takes no id from
+         the client — it reads the schedule off her own subscription, the way
+         every other procedure here takes the subscription from `ctx.user.id`
+         (invariant 3) — so sending it would be a Stripe object id on the wire
+         that nothing needs. */
+      pendingChange: details.pendingChange
+        ? {
+            effectiveAt: details.pendingChange.effectiveAt,
+            plan: details.pendingChange.plan,
+            interval: details.pendingChange.interval,
+            creditUnits: details.pendingChange.creditUnits,
+            planName:
+              SUBSCRIPTION_PRODUCTS[details.pendingChange.plan]?.name
+              ?? details.pendingChange.plan,
+            /* ⚠ **THE ALLOWANCE THE SCHEDULED POSITION BUYS, COMPUTED BY THE
+               ONE HELPER THAT OWNS IT.** A dial move on the same rung changes
+               no plan NAME, so the only honest thing the Billing tab can say
+               about it is the credits a month she will have — and
+               `monthlyLedgerCreditsFor` is server-side, so a client composing
+               that figure from a step count would be a second arithmetic on a
+               money surface. */
+            monthlyCredits: monthlyLedgerCreditsFor(
+              details.pendingChange.plan as PlanTier,
+              details.pendingChange.creditUnits,
+            ),
+          }
+        : null,
+    };
+  }),
+
+  /**
+   * UNDO A SCHEDULED CHANGE — "actually, keep me where I am" (#1936).
+   *
+   * ⚠ **THIS IS NOT A CONVENIENCE AND IT SHIPS IN THE SAME COMMIT AS THE
+   * DEFERRAL ON PURPOSE.** Once a decrease waits for the period boundary,
+   * there is a state a customer can get into that did not exist before: she
+   * has asked to drop to Pro on 7 November and has changed her mind on the
+   * 3rd. Without this she is stranded — the only road back would be to ask
+   * for an INCREASE she does not want, and pay a proration for it.
+   *
+   * ⚠ **IT TAKES NO INPUT, AND THAT IS THE ACCESS CONTROL.** The schedule is
+   * read off the subscription belonging to `ctx.user.id` (invariant 3), so
+   * there is no id on the wire that could name somebody else's schedule, and
+   * no ownership check to get wrong. `releaseScheduleBeforeWrite` is the same
+   * helper the three write paths use — one expression of "release", not a
+   * second one here.
+   */
+  cancelScheduledChange: protectedProcedure.mutation(async ({ ctx }) => {
+    const subscription = await getSubscriptionByUserId(ctx.user.id);
+
+    if (!subscription?.stripeSubscriptionId) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "No active subscription found.",
+      });
+    }
+
+    const released = await releaseScheduleBeforeWrite(
+      stripe,
+      subscription.stripeSubscriptionId,
+    );
+
+    if (released.outcome === "failed") {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          "We could not cancel that scheduled change. Nothing has changed — please try again.",
+      });
+    }
+
+    /* ⚠ NOTHING TO RELEASE IS A SUCCESS, NOT A REFUSAL. Two clicks, or a
+       click after the boundary has already passed, must not hand a customer
+       an error for a state that is exactly what she asked for — she is
+       staying on her plan either way. The audit row records which it was, so
+       support can still tell them apart. */
+    await logAuditEvent({
+      userId: ctx.user.id,
+      action: AUDIT_ACTIONS.SUBSCRIPTION_UPDATED,
+      resourceType: "subscription",
+      resourceId: subscription.stripeSubscriptionId,
+      metadata: {
+        scheduledChangeCancelled: true,
+        outcome: released.outcome,
+        planTier: subscription.planTier,
+      },
+      severity: "warning",
+      req: ctx.req,
+    });
+
+    return {
+      success: true,
+      message:
+        released.outcome === "released"
+          ? "That change is cancelled — you stay on your current plan."
+          : "You are staying on your current plan.",
     };
   }),
 
@@ -948,6 +1065,145 @@ export const billingRouter = router({
           code: "BAD_REQUEST",
           message: "You are already on this plan and billing cycle.",
         });
+      }
+
+      /*
+        ⚠ **A DECREASE DOES NOT HAPPEN TODAY — IT IS SCHEDULED FOR THE PERIOD
+        BOUNDARY (#1936), AND THIS BRANCH IS WHERE THE CREDIT-MINTING LOOP IS
+        CLOSED.**
+
+        His ruling, verbatim: *"1 for the slider fix"* — option 1 of three: a
+        DECREASE takes effect at the next renewal, with no refund and no credit
+        take-back; an INCREASE stays instant.
+
+        The loop it closes: `always_invoice` returned the unused share of the
+        period as money to the customer's Stripe balance, while the credit
+        take-back floored at what was LEFT of the allowance (his own *"spent
+        credits are spent"*). Raise the dial, spend the credits, lower it for
+        the money, raise again out of that balance — up to 380,000 display
+        credits a round trip on the top rung, ×12 on an annual cycle, with no
+        rate limit on this procedure. Both halves were individually right.
+
+        ⚠ **IT RETURNS BEFORE `updateSubscriptionPlan` AND THAT POSITION IS THE
+        WHOLE OF IT.** Everything below this line is the instant road: the
+        Stripe price write, the settlement record, the local tier write, the
+        audit row. A deferred change must reach NONE of them — the plan she is
+        on has not changed, so writing `planTier` now would hand her the lower
+        allowance at the next renewal AND take the higher one away today,
+        which is worse than the defect.
+
+        ⚠ **AND THERE IS NO CREDIT SETTLEMENT HERE ON PURPOSE.** Nothing moves,
+        in either direction, so there is nothing to record against an invoice
+        — and there is no invoice: `from_subscription` raises no prorations.
+        `creditSettlement: "none"` is the literal truth rather than a default.
+      */
+      if (quote.deferred) {
+        /*
+          ⚠ **A DECREASE IS REFUSED WHILE THE PLAN IS ALREADY SET TO END, AND
+          WITHOUT THIS REFUSAL THE DEFERRAL UNDOES THE CANCELLATION (#1936
+          repair 2).**
+
+          `scheduleSubscriptionChange` mints a two-phase schedule — the period
+          in progress, then a target phase that STARTS at the renewal and runs
+          one billing period, with `end_behavior: "release"`. On a subscription
+          carrying `cancel_at_period_end`, that second phase CONTINUES the
+          subscription past the date it was meant to end, and the customer is
+          charged at the renewal she had cancelled. She asked for less and got
+          another period.
+
+          ⚠ **The two repairs that are not taken, so neither is re-opened
+          cheaply.** Scheduling the decrease and keeping the cancellation means
+          minting a phase and then cancelling into it, which is a Stripe
+          interaction this module has NOT driven (see its header's own note on
+          what is reasoned from documentation) — and the phase would be billed
+          for a period nobody wants. Cancelling the cancellation to let the
+          change through decides something she never asked for. So the product
+          says what is in the way, in her own words, and leaves both facts
+          where she put them.
+
+          It reads `cancelAtPeriodEnd` off the billing state, which is the same
+          `subscriptions.retrieve` the period and the dial come from — not our
+          `subscriptions` row, which a webhook writes late and which a change
+          made in Stripe's own portal would leave stale in exactly the
+          direction that lets this through.
+        */
+        if (billingState.cancelAtPeriodEnd) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Your plan is set to end on ${formatCustomerShortDate(new Date(billingState.periodEndSec * 1000))}, so this change has nothing to take effect at. Resume your plan first, then you can change it.`,
+          });
+        }
+
+        const scheduled = await scheduleSubscriptionChange(
+          stripe,
+          subscription.stripeSubscriptionId,
+          ctx.user.id,
+          {
+            plan: input.newPlan,
+            interval: quote.targetInterval,
+            creditUnits: quote.targetCreditUnits,
+          },
+        ).catch((error: unknown) => {
+          /* The catalogue's own refusal, rethrown the way the instant road
+             rethrows it — nothing was attempted. */
+          throw billingRefusalFor(error, "scheduled plan change", {
+            userId: ctx.user.id,
+            plan: input.newPlan,
+            interval: quote.targetInterval,
+          });
+        });
+
+        if (!scheduled.success) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message:
+              "We could not schedule that change, so nothing was changed. Your plan is exactly as it was — please try again.",
+          });
+        }
+
+        await logAuditEvent({
+          userId: ctx.user.id,
+          action: AUDIT_ACTIONS.SUBSCRIPTION_UPDATED,
+          resourceType: "subscription",
+          resourceId: subscription.stripeSubscriptionId,
+          metadata: {
+            scheduled: true,
+            effectiveAt: scheduled.effectiveAt.toISOString(),
+            scheduleId: scheduled.scheduleId,
+            previousPlan: billingState.currentPlan,
+            newPlan: input.newPlan,
+            previousInterval: quote.currentInterval,
+            newInterval: quote.targetInterval,
+            previousCreditUnits: quote.currentCreditUnits,
+            newCreditUnits: quote.targetCreditUnits,
+            creditUnitsLedgerDelta: targetSliderLedger - currentSliderLedger,
+            changeKind: quote.kind,
+            /* Said explicitly rather than left to be inferred from absence:
+               this is the row support reads when a customer asks why no
+               refund arrived. */
+            proratedAmount: 0,
+            creditAdjustment: 0,
+            creditsReturned: 0,
+            creditSettlement: "none",
+          },
+          severity: "warning",
+          req: ctx.req,
+        });
+
+        const targetName = SUBSCRIPTION_PRODUCTS[input.newPlan]?.name ?? input.newPlan;
+        return {
+          success: true as const,
+          /* Her own terms, and it says all three things that matter: what
+             happens, when, and that nothing is being taken from her today. */
+          message: `${targetName} starts on ${formatCustomerShortDate(scheduled.effectiveAt)}. Nothing is charged today, and your plan and credits stay as they are until then.`,
+          proratedAmount: 0,
+          creditAdjustment: 0,
+          creditSettlement: "none" as const,
+          targetInterval: quote.targetInterval,
+          changeKind: quote.kind,
+          deferred: true as const,
+          effectiveAt: scheduled.effectiveAt,
+        };
       }
 
       // Update the subscription in Stripe — at the interval being bought,
@@ -1247,22 +1503,43 @@ export const billingRouter = router({
           monthlyLedgerCreditsFor(input.newPlan as PlanTier, quote.targetCreditUnits),
         ),
       );
+      /*
+        ⚠ **THREE SENTENCES HERE PROMISED MONEY BACK AND #1936 MADE ALL THREE
+        FALSE — this is that card's law-7 sweep on its own file, and the class
+        is "copy that promises a refund on a decrease".**
+
+        Each of them — the dial-down, the switch to monthly, and the plain
+        downgrade — said some version of *"unused time comes back as billing
+        credit"*. That was TRUE while `always_invoice` returned the unused
+        share in the same act, and it is the exact behaviour his option 1
+        removes. Every one of those three changes now returns from the
+        deferred branch far above, so these arms are reachable only when
+        `proratedAmount >= 0` — where **no money comes back at all** — and the
+        refund clause is false in every case that can still get here.
+
+        ⚠ **THEY ARE REACHABLE, WHICH IS WHY THEY ARE REWRITTEN RATHER THAN
+        DELETED.** `daysRemaining` is 0 at the instant the period ends, so a
+        decrease asked for in that moment quotes 0 and takes the instant road.
+        Nothing is owed either way, and these sentences now say only what
+        happened. The upgrade arms are untouched: money is charged on those
+        and the credits really do land.
+      */
       const message =
         dialOnly
           ? sliderLedgerDelta > 0
             ? creditSettlement === "pending"
               ? `${planName} now comes with ${dialMonthlyFigure} credits a month. The extra credits for the rest of this month land as soon as the payment settles.`
               : `${planName} now comes with ${dialMonthlyFigure} credits a month, and the extra credits for the rest of this month are already on your balance.`
-            : `${planName} now comes with ${dialMonthlyFigure} credits a month. Unused time on the credits you dropped comes back as billing credit.`
+            : `${planName} now comes with ${dialMonthlyFigure} credits a month.`
           : quote.kind === "interval-switch"
           ? quote.targetInterval === "annual"
             ? `You are on ${planName}, billed yearly — the new billing year starts today, and the full year of credits lands as soon as the payment settles, replacing what was left of your old cycle's allowance.`
-            : `You are on ${planName}, billed monthly — the new billing month starts today, and unused time from your year comes off future bills automatically.`
+            : `You are on ${planName}, billed monthly — the new billing month starts today.`
           : quote.isUpgrade
             ? creditSettlement === "pending"
               ? `Upgraded to ${planName}! Your ${formatCredits(displayBalance(creditAdjustment))} bonus credits land as soon as the payment settles.`
               : `Upgraded to ${planName}! ${formatCredits(displayBalance(creditAdjustment))} bonus credits added.`
-            : `Downgraded to ${planName}. Unused time on the old price comes back as billing credit, and its unused credits go with it.`;
+            : `You are on ${planName}.`;
 
       return {
         success: true,
@@ -1272,6 +1549,11 @@ export const billingRouter = router({
         creditSettlement,
         targetInterval: quote.targetInterval,
         changeKind: quote.kind,
+        /* The instant road carries the same two fields as the deferred one, so
+           a caller reads one shape and never has to ask which branch it got
+           (the client's `onSuccess` is one handler for both). */
+        deferred: false as const,
+        effectiveAt: null,
       };
     }),
 });
