@@ -29,7 +29,7 @@ import {
   finalizeGenerationOperationFailure,
   finalizeGenerationOperationSuccess,
 } from "../db/generationOperations";
-import { pressViewLanded, retriedViewLanded } from "../db/castingV2ViewRetry";
+import { pressViewLanded, retriedViewLanded, viewReplacementInFlight } from "../db/castingV2ViewRetry";
 import { getDb } from "../db/connection";
 import { createModuleLogger } from "../logging/logger";
 
@@ -40,6 +40,21 @@ export type ViewRetryRecoveryOutcome =
   | { type: "paid_failure"; chargedCredits: number; refundedCredits: number }
   /** Terminal, and the user was never charged — so nothing is owed back. */
   | { type: "free_failure"; reason: string }
+  /**
+   * NOT SETTLED, AND NOT A FAILURE — the row is left exactly as it was found
+   * (#1903 review finding, the sweep side of B1).
+   *
+   * ⚠ **IT IS NOT `recovery_required`, AND THE DIFFERENCE IS THE WHOLE POINT.**
+   * `recovery_required` means *a human must look*, and the sweep never returns
+   * to one. This means *ask again in a few minutes*: the work is still
+   * happening, the sweep simply arrived before it could be judged. Parking a
+   * healthy press for support would turn a transient heartbeat failure into a
+   * support ticket per redo.
+   *
+   * Nothing is written on this road — no refund, no receipt, no status change —
+   * so it is safe to return it from anywhere above the money.
+   */
+  | { type: "deferred"; reason: string }
   | { type: "recovery_required"; reason: string; chargedCredits: number; refundedCredits: number };
 
 /**
@@ -83,6 +98,26 @@ export type ViewRetryRecoveryDependencies = {
    * justifies refusing to refund.
    */
   chargeIsExpected?: boolean;
+  /**
+   * CAN A PICTURE STILL ARRIVE UNDER THIS OPERATION? — asked BEFORE the ledger
+   * is acted on, and the sweep side of #1903's review finding B1.
+   *
+   * ⚠ **ABSENT MEANS "DO NOT ASK", WHICH IS EVERY ROAD'S BEHAVIOUR BEFORE
+   * THIS EXISTED.** Only a road that can tell the difference supplies it: the
+   * flat-priced press can, because its pictures land under rows it does not
+   * own. The Try again cannot — the row that would have to be fenced is the
+   * one being adjudicated, which needs the Sign's fenced-status machinery
+   * rather than a reader (named on the card this repair filed, not closed
+   * here).
+   *
+   * `true` leaves the operation untouched for the next sweep pass. It is not a
+   * refusal and not a failure: the lease lapsed, the work did not.
+   */
+  stillArriving?: (input: {
+    userId: number;
+    modelId: number;
+    operationId: string;
+  }) => Promise<boolean>;
 };
 
 /**
@@ -146,11 +181,32 @@ export const VIEW_RETRY_RECOVERY_WORDING: ViewReplacementWording = {
   both roads, and the press's own `paidSentence` IS reachable — a total loss.
   Named here so the next reader does not take its presence as evidence that a
   slot can still be refunded.
+
+  ⚠ **THE SLOT SAYS NOTHING ABOUT MONEY, AND THAT IS THE #1903 REVIEW'S
+  FINDING RATHER THAN A STYLE CHOICE.** `freeSentence` read *"You were not
+  charged."* — true of the slot ROW, which settles at 0/0, and false of what
+  the customer did: she paid 3,250 for the press. It is the same class this PR
+  fixed on the partial-failure toast, one road further in, and the repair is
+  the same one: remove the money claim rather than reword it. **The division
+  is now clean — a slot speaks about a picture, the press row speaks about the
+  money** — and it holds for both of the slot's terminal sentences.
+
+  ⚠ **AND IT IS A LATENT LIE RATHER THAN A LIVE ONE — read at the code before
+  it was changed, because that decides whether this is a customer bug or
+  housekeeping.** The ONLY customer-facing reader of a generation operation's
+  `publicMessage` is `castingV2Variants.ts`'s settled-failure read, which
+  INNER JOINs `castingCandidateVariants` on `operationId`; a redo slot creates
+  no variant, so it can never be selected. Every other reader of these rows is
+  internal — the deletion guard, the recovery sweep, this module. **Nobody has
+  been told this.** Said as a FLOOR: one derived read of today's readers, not a
+  proof that no future surface will show a slot's receipt — which is exactly
+  why the sentence is made honest now rather than left for that surface to
+  find.
 */
 export const PACKAGE_REDO_RECOVERY_WORDING: ViewReplacementWording = {
   refundDescription: "That view didn't arrive when you asked for all the views again",
   paidSentence: "That view didn't arrive when you asked for all the views again. Your credits were returned.",
-  freeSentence: "That view didn't arrive when you asked for all the views again. You were not charged.",
+  freeSentence: "That view didn't arrive when you asked for all the views again.",
 };
 
 export async function recoverCastingV2ViewRetryOperation(
@@ -260,6 +316,17 @@ export async function recoverCastingV2PackageRedoPressOperation(
       modelId: input.modelId,
       pressOperationId: input.operationId,
     })),
+    /*
+      ⚠ **THE ONE ROAD THAT CAN ANSWER IT, SO THE ONLY ONE THAT ASKS (#1903
+      review finding, the sweep side of B1).** A press's pictures land under
+      rows it does not own, so "is anything still coming" is a question about
+      OTHER operations — which is exactly why it can be asked at all, and
+      exactly why the Try again cannot ask it about itself.
+    */
+    stillArriving: options.stillArriving ?? (async (input) => viewReplacementInFlight({
+      userId: input.userId,
+      modelId: input.modelId,
+    })),
   });
 }
 
@@ -351,6 +418,48 @@ async function adjudicate(
       chargedCredits: charged,
       refundedCredits: alreadyRefunded,
     };
+  }
+
+  /*
+    ⚠ **NOTHING IS SETTLED WHILE A PICTURE CAN STILL ARRIVE (#1903 review
+    finding, the sweep side of B1) — and this is checked BEFORE the landed
+    read, not after it.**
+
+    The read below is a plain, unlocked select. On the flat-price road that
+    made the whole adjudication a check-then-write race: the press's lease
+    lapses while its slots are alive, the sweep sees nothing committed YET,
+    records the refund, and seals the press failed — and the slots, which fence
+    on the press being `running` and so were admitted all along, commit
+    afterwards. The customer keeps the new views AND the 3,250. A slot
+    transaction holding the press row lock with an uncommitted asset is
+    invisible to this read by ordinary isolation, so it needs no timing luck.
+
+    ⚠ **IT GUARDS BOTH DIRECTIONS, which is why it sits above the fork rather
+    than beside the refund.** Sealing the press SUCCEEDED early is the mirror
+    harm and is not hypothetical: a success also moves the press out of
+    `running`, so every slot still rendering would then be fenced out and its
+    picture thrown away — the customer rightly charged, and short the views she
+    paid for.
+
+    ⚠ **DEFERRING IS NOT PARKING.** The row is left exactly as found and the
+    next sweep pass asks again (`claimRecoveryAttempt` has already stamped
+    `recoveryAttemptedAt`, so that is ~5 minutes away). It converges in every
+    case: if the process is alive it settles the press itself; if it is dead
+    the slots' own leases lapse, their own recovery makes them terminal, and
+    the pass after that settles the press here.
+  */
+  if (options.stillArriving) {
+    const arriving = await options.stillArriving({
+      userId: operation.userId,
+      modelId: operation.modelId,
+      operationId: operation.id,
+    });
+    if (arriving) {
+      return {
+        type: "deferred",
+        reason: "a view of this Cast can still arrive — nothing is settled yet",
+      };
+    }
   }
 
   const landed = await (options.landed ?? retriedViewLanded)({
@@ -462,6 +571,10 @@ async function seal(
 ): Promise<ViewRetryRecoveryOutcome> {
   // The sweep writes its own recovery_required receipt for this case.
   if (outcome.type === "recovery_required") return outcome;
+  /* Nothing is sealed, because nothing was decided: the row is left running
+     for the next pass (#1903 review finding). Returning before the finalizers
+     is the whole of it — there is no receipt to write for "ask me later". */
+  if (outcome.type === "deferred") return outcome;
 
   const finalizeSuccess = options.finalizeSuccess ?? finalizeGenerationOperationSuccess;
   const finalizeFailure = options.finalizeFailure ?? finalizeGenerationOperationFailure;

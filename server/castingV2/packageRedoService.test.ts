@@ -543,7 +543,22 @@ describe("a redo that lands", () => {
     expect(press, "the press was never marked running — its receipt cannot write").toBeDefined();
     expect(press?.heartbeat).toBe(true);
     expect(press?.plannedCredits).toBe(PACKAGE_PRICE);
-    /* It holds no lock, so it must not claim to require one. */
+    /*
+      ⚠ **IT HOLDS THE CAST-LEVEL LOCK AND DOES NOT RE-PROVE IT HERE — and the
+      comment this replaces said it held none (#1903 review, stale prose).**
+      The press takes `model:<id>` at its CLAIM, which is what makes a second
+      press refuse before a slot is taken or a credit moves. What it does not
+      do is pass `requiredLockKey` at the transition, so `markRunning` is
+      called with none — which is what this line asserts, and the assertion was
+      right all along while the sentence above it had gone false.
+
+      ⚠ **The asymmetry with the slots is stated rather than quietly fixed:**
+      each slot DOES re-prove its own key here (`requiredLockKey`, the
+      `slotLockKey`), because its render begins on the next statement. The
+      press's claim and this transition are adjacent, with only the slot claims
+      between them. Changing that is a new control on a money path, not a
+      prose repair, so this records the shape instead of altering it.
+    */
     expect(press?.lockKey).toBeNull();
     /* And it happens BEFORE the deduct: the row has to be settleable before it
        is the row that was charged. */

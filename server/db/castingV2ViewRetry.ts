@@ -672,6 +672,76 @@ export async function pressViewLanded(input: {
 }
 
 /**
+ * CAN A PICTURE STILL LAND ON THIS CAST? — the question the sweep has to ask
+ * BEFORE it decides a flat-priced press owes a refund (#1903 review finding,
+ * the sweep side of B1).
+ *
+ * {@link pressViewLanded} asks *has* a picture landed. That reading is taken
+ * with a plain, unlocked select, and on its own it is a check-then-write race
+ * one whole adjudication wide:
+ *
+ * - the press's lease lapses while its slots are alive (`startOperationHeartbeat`
+ *   latches on its FIRST failure and never renews again, so this needs a
+ *   transient error rather than a dead process);
+ * - the sweep reads landed = false, because nothing has committed YET;
+ * - it records the refund and only then seals the press failed;
+ * - a slot commits inside that window — legitimately, because the press is
+ *   still `running` and so the fence in {@link commitRetriedViewAsset} admits
+ *   it — and **she keeps the new view as well as the 3,250.**
+ *
+ * ⚠ **IT NEEDS NO TIMING LUCK.** A slot transaction that already holds the
+ * press row lock with an uncommitted asset is invisible to the sweep's read by
+ * ordinary isolation, so "nothing landed" can be true of the snapshot and false
+ * of the world at the same instant.
+ *
+ * ⚠ **WHAT MAKES THIS ANSWER SUFFICIENT IS THE SLOT'S OWN FENCE, not this
+ * read.** A commit requires ITS OWN operation to be `running`
+ * ({@link commitRetriedViewAsset}, first statement, `FOR UPDATE`), so a slot
+ * that is terminal can never land a picture again — and a slot that is NOT
+ * terminal holds its row lock through its whole commit, which is why a
+ * terminal status in a committed snapshot proves no commit is in flight. So
+ * "no view-replacing operation is open on this Cast" is exactly "nothing more
+ * can arrive", and the sweep may read the ledger and settle.
+ *
+ * ⚠ **IT IS DERIVED FROM {@link runningViewRetryFilter}, AND THAT FILTER IS A
+ * SUPERSET OF THIS PRESS'S OWN SLOTS — deliberately, and stated because
+ * deriving from a set that answers a DIFFERENT question is a silent behaviour
+ * change.** The filter admits both view-replacing kinds, so a Try again
+ * elsewhere on the same Cast also reads as "something can still arrive". That
+ * is wrong about whose picture it is and right about the only thing this
+ * caller does with the answer: it defers a settlement for one sweep pass. The
+ * narrower reading — derive the five slot `clientRequestId`s from the press's
+ * own — is exact and fails OPEN if the derivation or the payload shape ever
+ * moves, which on this road means refunding a press that delivered. A gate on
+ * a money path takes the reading that fails closed.
+ *
+ * It excludes `recovery_required` and a deleted subject for the same reason
+ * the filter does, and both are right for this question too: neither can
+ * commit a picture ever again.
+ *
+ * ⚠ **A DATABASE THAT CANNOT ANSWER REPORTS `true`** — the opposite direction
+ * from {@link pressViewLanded}'s `false`, and the opposite is correct here.
+ * Unknown must mean "do not settle yet"; a press deferred costs one sweep pass
+ * and settles itself on the next, while a press refunded on a silence costs a
+ * customer's credits and a delivered view at once.
+ */
+export async function viewReplacementInFlight(input: {
+  userId: number;
+  modelId: number;
+}): Promise<boolean> {
+  assertPositiveId(input.userId, "userId");
+  assertPositiveId(input.modelId, "modelId");
+  const db = await getDb();
+  if (!db) return true;
+  const rows = await db
+    .select({ id: generationOperations.id })
+    .from(generationOperations)
+    .where(runningViewRetryFilter({ userId: input.userId, modelId: input.modelId }))
+    .limit(1);
+  return rows.length > 0;
+}
+
+/**
  * THE ONE FREE TRY AGAIN, SPENT OR NOT — read at the operation rows (#1601 item 4).
  *
  * His rule, from the card: an unchecked view's first Try again is free, **once**;

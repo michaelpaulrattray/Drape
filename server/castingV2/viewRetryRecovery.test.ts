@@ -29,12 +29,39 @@ let ledger: Array<{ referenceId: string; type: string; amount: number }> = [];
  * default reader could be deleted with all sixteen arms green.
  */
 let assets: Array<{ provenance: Record<string, unknown> }> = [];
+/**
+ * THE CAST'S STILL-OPEN VIEW-REPLACING OPERATIONS, for the arms that drive the
+ * production `viewReplacementInFlight` reader rather than injecting an answer
+ * (#1903 review finding, the sweep side of B1).
+ *
+ * ⚠ **IT IS A THIRD CHAIN, AND FOR THE REASON THE SECOND ONE EXISTS.** The
+ * ledger read is `select().from().where()` awaited; `pressViewLanded` is
+ * `select().from().innerJoin().where()`; this one is
+ * `select().from().where().limit(1)`. The mock below tells them apart by SHAPE,
+ * which is faithful to drizzle — `.where()` really does return something both
+ * awaitable and `.limit()`-able — and it is what lets these arms exercise the
+ * DEFAULT reader. Injecting `stillArriving` instead would leave the default
+ * deletable with every arm green, which is the exact failure the `assets`
+ * fixture above was written to stop.
+ */
+let openOperations: Array<{ id: string }> = [];
 
 vi.mock("../db/connection", () => ({
   getDb: async () => ({
     select: () => ({
       from: () => ({
-        where: async () => ledger,
+        /*
+          AWAITED IT IS THE LEDGER; `.limit()`-ed IT IS THE OPEN OPERATIONS.
+          Two readers, two chain shapes, one faithful builder — see
+          `openOperations` above.
+        */
+        where: () => {
+          const builder = Promise.resolve(ledger) as Promise<unknown> & {
+            limit: (count: number) => Promise<unknown>;
+          };
+          builder.limit = async () => openOperations;
+          return builder;
+        },
         innerJoin: () => ({ where: async () => assets }),
       }),
     }),
@@ -90,6 +117,7 @@ const operation = {
 beforeEach(() => {
   ledger = [];
   assets = [];
+  openOperations = [];
   refunds.length = 0;
   landed = false;
   finalizers.success.mockClear();
@@ -188,6 +216,47 @@ describe("a swept try again", () => {
  * under ANY of them*. The production reader is `pressViewLanded`; these arms
  * inject the answer, because what is under test is the DECISION.
  */
+describe("the roads that do NOT ask whether anything can still arrive", () => {
+  /*
+    ⚠ **THE NEGATIVE CONTROL ON #1903's SWEEP-SIDE GATE, and it is the arm that
+    keeps the gate from being widened by accident.**
+
+    The deferral belongs to a road whose pictures land under rows it does not
+    own. The Try again's picture lands under the very row being adjudicated, so
+    "can anything still arrive" is "am I still running" — which is always true
+    at sweep time, and a Try again that asked it would defer for ever and never
+    refund anybody. The redo SLOT is the same shape, and carries no credits
+    besides.
+
+    These two arms drive the production entry points with the Cast's operations
+    OPEN. They must settle anyway.
+  */
+  const TRY_AGAIN_PRICE = 50;
+
+  it("a swept Try again refunds even with a view-replacing operation open on the Cast", async () => {
+    ledger = [{ referenceId: CHARGE_REFERENCE, type: "generation", amount: -TRY_AGAIN_PRICE }];
+    openOperations = [{ id: "something open on this Cast" }];
+
+    const outcome = await recoverCastingV2ViewRetryOperation(operation, dependencies());
+
+    expect(outcome, "a Try again was deferred — it can never un-defer itself").toEqual({
+      type: "paid_failure",
+      chargedCredits: TRY_AGAIN_PRICE,
+      refundedCredits: TRY_AGAIN_PRICE,
+    });
+  });
+
+  it("a swept redo SLICE settles free with an operation open on the Cast", async () => {
+    /* A slot carries no credits under the flat price, so there is no refund to
+       get wrong — and nothing to defer for. */
+    openOperations = [{ id: "a sibling slot, still running" }];
+
+    const outcome = await recoverCastingV2PackageRedoOperation(operation, dependencies());
+
+    expect(outcome.type, "a redo slice was deferred").toBe("free_failure");
+  });
+});
+
 describe("the press of a redo, swept", () => {
   const PRESS_PRICE = 3250;
 
@@ -356,6 +425,106 @@ describe("the press of a redo, swept", () => {
     });
     expect(kept.type).toBe("durable_success");
     expect(asked, "the press asked about something other than itself").toEqual([operation.id]);
+  });
+
+  /* --------------------------------------------------------------------- *
+   * THE SWEEP SIDE OF B1 — nothing is settled while a picture can arrive.
+   * (#1903 review finding, head 6fe19c191.)
+   *
+   * The money fault these close: the press's lease lapses while its slots are
+   * alive, the sweep reads "nothing landed" because nothing has committed YET,
+   * refunds 3,250 and seals the press failed — and the slots, which fence on
+   * the press being `running` and so were admitted all along, commit
+   * afterwards. She keeps the new views AND the credits.
+   *
+   * ⚠ These arms drive the PRODUCTION reader through `openOperations`. The
+   * interleave the relay asked for — a slot commit between the landed read and
+   * the seal — is driven against a real database in
+   * `scripts/_1924-press-defer-disposable.mts`, because the thing it proves is
+   * a `WHERE status = 'running'` racing an uncommitted transaction, and
+   * `vitest.setup.ts` strips `DATABASE_URL`.
+   * --------------------------------------------------------------------- */
+
+  it("(h) DEFERS while a view of this Cast can still arrive — no refund, no receipt", async () => {
+    ledger = [{ referenceId: CHARGE_REFERENCE, type: "generation", amount: -PRESS_PRICE }];
+    /* Nothing has committed yet — which is exactly the state that used to
+       read as "nothing was delivered" and buy a refund. */
+    assets = [];
+    openOperations = [{ id: "a slot of this press, still running" }];
+
+    const outcome = await recoverCastingV2PackageRedoPressOperation(operation, dependencies());
+
+    expect(outcome.type).toBe("deferred");
+    expect(refunds, "the press was refunded while its views were still being made").toEqual([]);
+    expect(finalizers.failure, "a deferred press must not be sealed").not.toHaveBeenCalled();
+    expect(finalizers.success).not.toHaveBeenCalled();
+    expect(finalizers.claimedFailure).not.toHaveBeenCalled();
+  });
+
+  it("(i) asks whether anything can still arrive BEFORE it reads whether anything landed", async () => {
+    /*
+      ⚠ **THE ORDER IS THE WHOLE REPAIR, so it is asserted rather than
+      described.** Asking after the landed read puts the question on the wrong
+      side of the race: the read would already have been taken against a world
+      that was still changing, and a later "nothing is arriving" would be true
+      of a moment the verdict was not formed in.
+    */
+    ledger = [{ referenceId: CHARGE_REFERENCE, type: "generation", amount: -PRESS_PRICE }];
+    const order: string[] = [];
+
+    await recoverCastingV2PackageRedoPressOperation(operation, {
+      ...dependencies(),
+      stillArriving: (async () => {
+        order.push("stillArriving");
+        return false;
+      }) as never,
+      landed: (async () => {
+        order.push("landed");
+        return false;
+      }) as never,
+    });
+
+    expect(order).toEqual(["stillArriving", "landed"]);
+  });
+
+  it("(j) settles normally once every view-replacing operation is terminal", async () => {
+    /*
+      The other half of (h), and the arm that stops the gate from being a
+      permanent hold: with nothing open, nothing more can commit — a terminal
+      slot can never pass `commitRetriedViewAsset`'s own `running` fence — so
+      the landed read is stable and his rule applies.
+    */
+    ledger = [{ referenceId: CHARGE_REFERENCE, type: "generation", amount: -PRESS_PRICE }];
+    assets = [];
+    openOperations = [];
+
+    const outcome = await recoverCastingV2PackageRedoPressOperation(operation, dependencies());
+
+    expect(outcome).toEqual({
+      type: "paid_failure",
+      chargedCredits: PRESS_PRICE,
+      refundedCredits: PRESS_PRICE,
+    });
+    expect(refunds).toEqual([{ amount: PRESS_PRICE, reference: CHARGE_REFERENCE }]);
+  });
+
+  it("(k) does not seal a press SUCCEEDED early either — the gate guards both directions", async () => {
+    /*
+      ⚠ **THE MIRROR HARM, and it is not hypothetical.** A success also moves
+      the press out of `running`, so every slot still rendering would then be
+      fenced out and its picture thrown away: the customer rightly charged, and
+      short the views she paid for. That is why the gate sits above the fork
+      rather than beside the refund.
+    */
+    ledger = [{ referenceId: CHARGE_REFERENCE, type: "generation", amount: -PRESS_PRICE }];
+    assets = [{ provenance: { pressOperationId: OPERATION_ID } }];
+    openOperations = [{ id: "a sibling slot, still rendering" }];
+
+    const outcome = await recoverCastingV2PackageRedoPressOperation(operation, dependencies());
+
+    expect(outcome.type).toBe("deferred");
+    expect(finalizers.success, "a press was sealed while a sibling view was still coming")
+      .not.toHaveBeenCalled();
   });
 });
 

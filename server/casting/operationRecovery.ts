@@ -1218,6 +1218,30 @@ async function settleStaleGenerationOperation(
     });
     if (recovered.type === "durable_success") return "durable_success";
     if (recovered.type === "paid_failure") return "paid_failure";
+    if (recovered.type === "deferred") {
+      /*
+        ⚠ **LEFT EXACTLY AS FOUND, AND `"skipped"` RATHER THAN A FALL-THROUGH
+        (#1903 review finding, the sweep side of B1).**
+
+        A view can still arrive, so nothing has been decided and nothing is
+        written. Returning here is load-bearing: below this if-chain the
+        function continues into the GENERIC stale-operation handling — the
+        ledger comparison and the standard finalizers — which would seal a row
+        this adjudicator deliberately declined to judge. The comment at that
+        boundary says every path past it assumes a `claimed` or `running`
+        operation, which is true of this one, so only an explicit return keeps
+        it out.
+
+        `claimRecoveryAttempt` has already stamped `recoveryAttemptedAt`, so
+        the next attempt is ~5 minutes away rather than on the next 60-second
+        pass.
+      */
+      log.info(
+        { operationId: operation.id, reason: recovered.reason },
+        "[OperationRecovery] deferred — a view of this Cast can still arrive",
+      );
+      return "skipped";
+    }
     if (recovered.type === "free_failure") return "free_failure";
     if (recovered.type === "recovery_required") {
       await markGenerationOperationRecoveryRequired({
@@ -1233,10 +1257,19 @@ async function settleStaleGenerationOperation(
   if (operation.kind === "castingV2.packageRedo") {
     /*
       ONE VIEW OF A REDO (#1903). Five of these exist per press and each is
-      settled on its own: the adjudicator reads the ledger and the Cast's asset
-      rows, so a slice that landed a picture keeps its 350 and one that landed
-      nothing gets it back. **The Try again's adjudicator with the redo's
-      words** — the question is identical and only the sentence differs.
+      settled on its own question — did a picture land under THIS slot — which
+      decides the sentence the customer reads and nothing about the money.
+
+      ⚠ **A SLOT CARRIES NO CREDITS UNDER HIS FLAT PRICE, so there is no slice
+      to refund here.** This comment described the retired per-view price and
+      its per-slice refund (`350`, "gets it back") for one commit after the flat
+      price landed; the code it describes had already stopped doing that. The
+      3,250 is on the press row and is settled by the branch below; a slot found
+      carrying a charge is PARKED rather than refunded, because it is money this
+      road cannot explain.
+
+      **The Try again's adjudicator with the redo's words** — the question is
+      identical and only the sentence differs.
     */
     const recovered = await recoverCastingV2PackageRedoOperation({
       ...operation,
@@ -1245,6 +1278,30 @@ async function settleStaleGenerationOperation(
     });
     if (recovered.type === "durable_success") return "durable_success";
     if (recovered.type === "paid_failure") return "paid_failure";
+    if (recovered.type === "deferred") {
+      /*
+        ⚠ **LEFT EXACTLY AS FOUND, AND `"skipped"` RATHER THAN A FALL-THROUGH
+        (#1903 review finding, the sweep side of B1).**
+
+        A view can still arrive, so nothing has been decided and nothing is
+        written. Returning here is load-bearing: below this if-chain the
+        function continues into the GENERIC stale-operation handling — the
+        ledger comparison and the standard finalizers — which would seal a row
+        this adjudicator deliberately declined to judge. The comment at that
+        boundary says every path past it assumes a `claimed` or `running`
+        operation, which is true of this one, so only an explicit return keeps
+        it out.
+
+        `claimRecoveryAttempt` has already stamped `recoveryAttemptedAt`, so
+        the next attempt is ~5 minutes away rather than on the next 60-second
+        pass.
+      */
+      log.info(
+        { operationId: operation.id, reason: recovered.reason },
+        "[OperationRecovery] deferred — a view of this Cast can still arrive",
+      );
+      return "skipped";
+    }
     if (recovered.type === "free_failure") return "free_failure";
     if (recovered.type === "recovery_required") {
       await markGenerationOperationRecoveryRequired({
@@ -1271,6 +1328,30 @@ async function settleStaleGenerationOperation(
     });
     if (recovered.type === "durable_success") return "durable_success";
     if (recovered.type === "paid_failure") return "paid_failure";
+    if (recovered.type === "deferred") {
+      /*
+        ⚠ **LEFT EXACTLY AS FOUND, AND `"skipped"` RATHER THAN A FALL-THROUGH
+        (#1903 review finding, the sweep side of B1).**
+
+        A view can still arrive, so nothing has been decided and nothing is
+        written. Returning here is load-bearing: below this if-chain the
+        function continues into the GENERIC stale-operation handling — the
+        ledger comparison and the standard finalizers — which would seal a row
+        this adjudicator deliberately declined to judge. The comment at that
+        boundary says every path past it assumes a `claimed` or `running`
+        operation, which is true of this one, so only an explicit return keeps
+        it out.
+
+        `claimRecoveryAttempt` has already stamped `recoveryAttemptedAt`, so
+        the next attempt is ~5 minutes away rather than on the next 60-second
+        pass.
+      */
+      log.info(
+        { operationId: operation.id, reason: recovered.reason },
+        "[OperationRecovery] deferred — a view of this Cast can still arrive",
+      );
+      return "skipped";
+    }
     if (recovered.type === "free_failure") return "free_failure";
     if (recovered.type === "recovery_required") {
       await markGenerationOperationRecoveryRequired({
