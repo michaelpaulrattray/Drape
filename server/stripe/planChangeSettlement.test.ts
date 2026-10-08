@@ -122,6 +122,8 @@ const DAY = 86_400;
 /** A monthly `starter` subscription, 20 of 30 days remaining. */
 function armStripeSubscription() {
   subscriptionsRetrieve.mockResolvedValue({
+    /* A running plan — the only state `changePlan` lets change (#1987). */
+    status: "active",
     metadata: { plan: "starter" },
     items: {
       data: [
@@ -370,12 +372,17 @@ describe("changePlan — the grant hangs on the invoice, not on the Stripe updat
       planTier: "pro",
     });
     subscriptionsRetrieve.mockResolvedValue({
+      /* Running, and stating its product and currency — a switch whose spent
+         share is charged back (#1965) builds that line off them, and refuses
+         without them. */
+      status: "active",
+      currency: "usd",
       metadata: { plan: "pro" },
       items: {
         data: [
           {
             id: "si_1",
-            price: { recurring: { interval: "month" } },
+            price: { product: "prod_pro", recurring: { interval: "month" } },
             current_period_start: NOW_SEC - 10 * DAY,
             current_period_end: NOW_SEC + 20 * DAY,
           },
@@ -406,12 +413,17 @@ describe("changePlan — the grant hangs on the invoice, not on the Stripe updat
       planTier: "pro",
     });
     subscriptionsRetrieve.mockResolvedValue({
+      /* Running, and stating its product and currency — a switch whose spent
+         share is charged back (#1965) builds that line off them, and refuses
+         without them. */
+      status: "active",
+      currency: "usd",
       metadata: { plan: "pro" },
       items: {
         data: [
           {
             id: "si_1",
-            price: { recurring: { interval: "month" } },
+            price: { product: "prod_pro", recurring: { interval: "month" } },
             current_period_start: NOW_SEC - 10 * DAY,
             current_period_end: NOW_SEC + 20 * DAY,
           },

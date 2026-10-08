@@ -107,6 +107,7 @@
  */
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { displayBalance, displaySpent, formatCredits } from "@shared/creditDisplay";
+import { spentShareSentence } from "./spentShareSentence";
 /* #1836 — the one declaration of who may buy a credit pack, read here so §6f
    and the Add-credits door cannot answer that question differently. */
 import { topupEligibility } from "@shared/creditTopups";
@@ -1712,16 +1713,26 @@ export function ChangePlanModal({
             sliderOn(confirming) ? creditsWithSlider(confirming) : null,
           )}
           confirmLabel={
-            changeQuote.data.immediateCharge > 0
-              ? `Confirm · about ${formatDollars(changeQuote.data.immediateCharge)}`
-              : "Confirm change"
+            /* ⚠ A refused change offers no Confirm (#1987): a button whose only
+               answer is no is the machinery showing. It closes the dialog. */
+            changeQuote.data.refusal
+              ? "Got it"
+              : changeQuote.data.immediateCharge > 0
+                ? `Confirm · about ${formatDollars(changeQuote.data.immediateCharge)}`
+                : "Confirm change"
           }
           busyLabel="Changing…"
           busy={changePlan.isPending}
-          cancelLabel="Not now"
+          /* One button when refused (#1987 repair): "Not now" and "Got it"
+             would both just close it. */
+          cancelLabel={changeQuote.data.refusal ? null : "Not now"}
           tone="primary"
           onConfirm={() => {
             if (!confirming) return;
+            if (changeQuote.data?.refusal) {
+              setConfirming(null);
+              return;
+            }
             setPending(confirming.id);
             changePlan.mutate({
               newPlan: confirming.id as never,
@@ -2281,6 +2292,14 @@ function describeChange(
        cannot disagree about it either. */
     deferred?: boolean;
     effectiveAtSec?: number;
+    /* Why this change cannot go ahead, in the server's own sentence — or
+       null (#1987). The same words the press would be refused with. */
+    refusal?: string | null;
+    /* The spent share of an interval switch (#1965): what is charged back
+       and the credits it pays for, both from the server's own quote. */
+    spentShareCharge?: number;
+    spentShareCredits?: number;
+    currentInterval?: "monthly" | "annual";
   },
   /**
    * WHAT THE DIAL'S MOVE BUYS, when the dial is the only thing moving (#1832)
@@ -2301,6 +2320,18 @@ function describeChange(
    */
   dialAllowanceLedger: number | null,
 ): string {
+  /*
+    ⚠ **A CHANGE THE SERVER WILL REFUSE SAYS SO HERE, BEFORE THE PRESS (#1987).**
+    Until this branch the confirm step told a customer whose plan was set to end
+    that her downgrade "starts on 7 Nov" — and the press then met a refusal. The
+    sentence is the server's (`planChangeRefusal`), never composed here, so the
+    two cannot say different things. It sits above every other branch because
+    nothing below it is true of a change that is not going to happen.
+  */
+  if (quote.refusal) {
+    return quote.refusal;
+  }
+
   /*
     ⚠ **A DECREASE DOES NOT HAPPEN TODAY, AND THIS IS THE ONLY SENTENCE IT EVER
     GETS (#1936).** His option 1: a decrease takes effect at the next renewal,
@@ -2355,7 +2386,9 @@ function describeChange(
       return (
         `${plan.name} costs ${formatDollars(quote.newPlanPrice)} for the year. ` +
         `The unused part of your current cycle comes off that, so about ` +
-        `${formatDollars(quote.immediateCharge)} is due today. Your new billing year ` +
+        `${formatDollars(quote.immediateCharge)} is due today.` +
+        spentShareSentence(quote) +
+        ` Your new billing year ` +
         `starts now, and the full year of credits lands as soon as the payment settles, ` +
         `replacing what was left of this cycle's allowance.`
       );
@@ -2367,7 +2400,7 @@ function describeChange(
     return (
       `${plan.name} moves to ${formatDollars(quote.newPlanPrice)} a month, starting today. ` +
       (quote.immediateCharge > 0
-        ? `About ${formatDollars(quote.immediateCharge)} is due today. This month's allowance takes the place of what was left of your year's.`
+        ? `About ${formatDollars(quote.immediateCharge)} is due today.${spentShareSentence(quote)} This month's allowance takes the place of what was left of your year's.`
         : `Nothing to pay today. This month's allowance takes the place of what was left of your year's.`)
     );
   }
