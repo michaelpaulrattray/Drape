@@ -20,6 +20,13 @@ and, on the relay's reading of it: *"yes i like this"*.
 **Prototype:** `docs/specs/pricing-phase2-plans/prototype.html`
 **Frames:** the eleven PNGs beside it, both themes, desktop and phone.
 
+⚠ **THE PROTOTYPE AND THE FRAMES ARE A DATED MOCKUP, NOT THE SHIPPED COPY,
+AND THEY ARE LEFT EXACTLY AS HE SAW THEM.** They still carry the Credits note's
+cut clause (*… and credits you have paid for never expire*, #1939) and will not
+be corrected: editing a mockup he approved rewrites the record of what he
+approved. **The copy that ships is the table in §8 below and the component
+itself** — read those, never the prototype, before quoting a sentence as live.
+
 ---
 
 ## 0 · What he has to decide, in four lines
@@ -391,7 +398,7 @@ ruling of his, so it was not done.
 | `Let's talk` | his own word for it |
 | `A finished character is a roll to find her, a refine to correct her, and a sign that fixes her face.` | the exact composition of `CASTING_V2_ONE_CHARACTER_CREDITS` |
 | `Every signed cast comes with the same five views, on every plan.` | `CAST_PACKAGE_VIEWS.length` is 5 and no plan changes it |
-| `One pool. Every tool spends the same credits, and credits you have paid for never expire.` | one `points.balance`; #1660 made the never-expire half true |
+| `One pool. Every tool spends the same credits.` | one `points.balance`. ⚠ **THE SECOND CLAUSE WAS CUT (#1939) AND THIS ROW IS WHY IT SHIPPED.** It read *… and credits you have paid for never expire*, and the reason beside it — *#1660 made the never-expire half true* — is true of **purchased** credits only (`refreshMonthlyCredits` adds `purchasedCreditsRemaining(row)` back whole). On the plan compare table a customer paying for a plan has paid for their plan credits too, and `PLAN_TIERS.starter.rolloverPercent` is 50 and `pro` is 75 — so the note contradicted the *Unspent credits* row two lines up in the same table. **The derivation was checked and the SURFACE it was being derived for was not.** `plansRedesign1832-guard.test.ts` now holds the property rather than the string: while any drawn rung forfeits part of its allowance, no group note in this table may claim credits do not expire. |
 | `The help centre, on every plan. Enterprise is arranged with us directly.` | claims no SLA and no priority — #1607's avoid-list |
 | Team's three lines | they describe the workspace, which is why Team waits for it |
 
