@@ -113,13 +113,23 @@ const dischargesItsOwnManifest = (source: string) =>
  *
  * Driven both ways below, on the broken shape and the fixed one, because an
  * absence test whose reader never returns false passes over anything at all.
+ *
+ * ⚠ **THE STRIP READS BOTH SPELLINGS OF THE MINT CALL, AND IT READ ONE
+ * UNTIL #1961.** It was `(?:dependencies\.)?manifest\(` — the attach road's
+ * name — and the wardrobe's two writers call theirs `registerManifest(`, which
+ * is a capital M away from matching. So the id they hand to their OWN manifest
+ * call survived the strip and answered this question for them: a keeper named
+ * that way passed while handing the receipt nowhere, which is
+ * `referenceAttachService.ts`'s exact defect reading as fixed. Widened with the
+ * module's arrival rather than after its next instance, and driven on the new
+ * spelling both ways below.
  */
 const handsTheReceiptOn = (source: string): boolean => {
   /* Everything the manifest call itself consumes, removed — including the
      declaration that feeds it. What is left is the hand-off, or nothing. */
   const withoutMint = source
     .replace(/const\s+cleanupBatchId\s*=[^;]*;/g, "")
-    .replace(/(?:dependencies\.)?manifest\s*\(\s*\{[\s\S]*?\}\s*\)/g, "")
+    .replace(/(?:\w+\.)?(?:registerManifest|manifest)\s*\(\s*\{[\s\S]*?\}\s*\)/g, "")
     .replace(/createStorageCleanupManifestIn\s*\([\s\S]*?\)\s*;/g, "");
   return /cleanupBatchId/.test(withoutMint);
 };
@@ -257,6 +267,26 @@ const KEEPERS: Readonly<Record<string, string>> = {
     shapes are keepers; only the second is common.
   */
   "server/casting/evidence/evidenceFork.ts": "the copies a fork is about to make, released by its own commit",
+  /*
+    #1961, THE RELAY'S FINDING ON PR #1979 — and it is the FORK's shape rather
+    than the attach road's, one feature over.
+
+    A garment imported out of a decomposed photograph used to be handed the
+    SCRATCH keys the detector had been given: `originalImageUrl` and
+    `sourceImageUrl` straight off `quickDetect` and `decompose.analyze`, both
+    registered for the worker, so the row was five minutes from pointing at
+    nothing. It now COPIES each chosen picture into an object the garment owns —
+    `storageCopyExact`, and `castLineagePurge.ts` wrote the sentence for it:
+    *"Sign COPIES the chosen image to a new Cast-owned object … so deleting the
+    Cast destroys the copy"*.
+
+    So it registers the DESTINATION before it copies, exactly as the fork does,
+    and hands the receipt to `createGarment`, which deletes the batch in the
+    same transaction as the insert. `createGarment`'s second parameter is
+    REQUIRED for that reason: an optional receipt is one a caller can forget,
+    and forgetting it is the defect.
+  */
+  "server/wardrobe/garmentAdoption.ts": "the garment's own copy of a picture its owner chose, released by the row that files it",
 };
 
 /**
@@ -323,6 +353,40 @@ const COLLECTORS: Readonly<Record<string, string>> = {
      for the design to go, so the manifest is the delete rather than a hold over
      bytes about to be claimed — there is no row left to carry a receipt. */
   "server/db/castingV2InkDesignRemoval.ts": "a design its owner removed, and the plates drawn from it",
+  /*
+    THE ELEVENTH, #1961, AND IT IS THE HAIR CUTTER'S TWIN: a collector that
+    registers its bytes BEFORE they exist, which is the shape that usually means
+    keeper.
+
+    The difference is what the bytes are FOR. A wardrobe scratch upload is a
+    customer's photograph put to a public key so a detector can read it back —
+    an ask-scoped artifact with no row to carry a receipt, written by four
+    routes that recorded the key nowhere at all until this card. There is
+    nothing to discharge it TO, and that is the design rather than an omission:
+    the register-before-write is what makes the object reachable, and the sweep
+    is what the whole card is for.
+
+    ⚠ IT RETURNS ITS BATCH ID TO ITS CALLER, which is the keeper's shape and is
+    why this entry says so out loud. The id is a RECEIPT ONLY IF A ROW TAKES IT,
+    and no row does: the routes read `url` and drop the rest.
+
+    ⚠ **THE CLAUSE THAT USED TO CLOSE THIS ENTRY WAS TESTED BY THE VERY NEXT
+    COMMIT AND IT HELD, WHICH IS WHY IT IS KEPT RATHER THAN STRUCK.** It read
+    *"if a wardrobe row ever starts holding one of these keys —
+    `wardrobe.garments.import` is the road — this moves to KEEPERS"*, and the
+    relay's finding on PR #1979 was that `import` was ALREADY writing these URLs
+    onto a garment row, five minutes from the sweep.
+
+    **It did not move, and the reason is the repair.** `import` no longer holds
+    one of these keys: `garmentAdoption.ts` COPIES the chosen picture into an
+    object the garment owns (`storageCopyExact`, Sign's own shape) and the row
+    takes THAT key. So this module's bytes really are collected once the request
+    is over — the entry below is true of the tree as it stands — and the new
+    module is the keeper, one table down. **A row holding a copy is not a row
+    holding the key**, and the two answers to this table are different because
+    of it.
+  */
+  "server/wardrobe/scratchUpload.ts": "a photograph uploaded only so a detector could read it, collected once the request is over",
 };
 
 /**
@@ -471,6 +535,28 @@ describe("the manifest receipt, swept across every caller", () => {
       await dependencies.record({ userId: u, storageKey: k, cleanupBatchId });
     `;
     expect(handsTheReceiptOn(isFixed)).toBe(true);
+
+    /*
+      ⚠ AND THE SECOND SPELLING, which this reader could not see until #1961.
+      The wardrobe's writers name their dependency `registerManifest`, so the
+      broken shape below — mint, hand it to the manifest, hand it nowhere else —
+      read as HANDED ON for three days' worth of a held pull request, on the
+      strength of the mint call the strip was written to remove.
+    */
+    const wasBrokenRegister = `
+      const cleanupBatchId = randomUUID();
+      await deps.registerManifest({ id: cleanupBatchId, userId: u, storageKey: k });
+      await deps.copy({ sourceKey: s, destinationKey: k });
+    `;
+    expect(handsTheReceiptOn(wasBrokenRegister)).toBe(false);
+    /* And handed on: returned to the caller that files the row. */
+    const isFixedRegister = `
+      const cleanupBatchId = randomUUID();
+      await deps.registerManifest({ id: cleanupBatchId, userId: u, storageKey: k });
+      const copied = await deps.copy({ sourceKey: s, destinationKey: k });
+      return { url: copied.url, key: copied.key, cleanupBatchId };
+    `;
+    expect(handsTheReceiptOn(isFixedRegister)).toBe(true);
   });
 
   it("no COLLECTOR discharges anything — the negative control", () => {

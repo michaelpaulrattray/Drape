@@ -974,9 +974,17 @@ export default function CastingRoom() {
                           224): *"Too heavy — the good tiles have become louder
                           than the broken one… one muted line under the name,
                           nothing else."* So the row is two lines everywhere:
-                          the name, then `Unchecked · Try again` or `Refunded ·
-                          Try again`. A good view carries nothing, as it always
-                          did.
+                          the name, then `Refunded · Try again`. A good view
+                          carries nothing, as it always did.
+
+                          ⚠ **AND SINCE #1903 SLICE 3 THERE IS ONLY ONE ROW.**
+                          This read *"`Unchecked · Try again` or `Refunded · Try
+                          again`"*; his 2026-10-07 ruling retired the check that
+                          produced *"Unchecked"* and the free ask under it, so a
+                          DELIVERED view now carries no row at all whatever the
+                          judge managed to say about it. The remedy for one she
+                          does not like is the paid whole-package redo on the
+                          room, not a per-view apology.
 
                           **It supersedes two things he had ruled before, and
                           both deliberately.** The caption that used to sit here

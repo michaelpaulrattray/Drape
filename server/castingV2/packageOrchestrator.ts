@@ -914,6 +914,30 @@ export interface ViewAttemptTally {
   readonly judgedAttempts: number;
 }
 
+/**
+ * ⚠ **THE LANDING CANNOT TELL WHETHER ITS PICTURE LANDED (#2080).**
+ *
+ * Thrown by a landing whose commit threw AND whose follow-up question — "did
+ * this operation's row land anyway?" — could not be answered either. Both
+ * readings are then possible: the row committed and only its acknowledgement
+ * was lost, or nothing was written at all.
+ *
+ * The attempt loop's catch passes it straight out, **without dropping the
+ * stored bytes**, because dropping them is the one move that is wrong under
+ * the first reading (a delivered row pointing at a deleted object), and its
+ * `failed` exit would refund a view the customer may be holding. Out past the
+ * loop the operation is still `running`, so the recovery sweep settles it
+ * from the asset rows — the same question, asked later by a process that does
+ * not share this one's broken connection. Under the second reading the cost
+ * is one orphaned object in the bucket, which is the cheap direction.
+ */
+export class ViewLandingUndecidedError extends Error {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = "ViewLandingUndecidedError";
+  }
+}
+
 type ViewLanding<T> = (landed: {
   stored: { key: string; url: string };
   verdict: ViewConformanceVerdict;
@@ -1365,6 +1389,10 @@ export async function renderViewAttempts<T>(
 
       return { status: "landed", value, verdicts, tally: { attempts: attemptsRun, arrivalFailures, judgedAttempts } };
     } catch (error) {
+      /* Before the drop, and that order is the whole point: the landing could
+         not say whether its row points at these bytes (#2080). The sweep
+         decides; the bytes stay until it has. */
+      if (error instanceof ViewLandingUndecidedError) throw error;
       if (stored) await drop(stored.key).catch(() => undefined);
       const failureClass = error instanceof ProviderError ? error.failureClass : "unknown";
       lastReason = "The view could not be generated";

@@ -723,6 +723,16 @@ export const STORAGE_CLEANUP_BATCH_KINDS = [
     policy nobody would want guessed at.
   */
   "casting_diagnostic_cleanup",
+  /*
+    Wardrobe SCRATCH uploads (#1961, migration 0074). A customer's photograph
+    put to a public key so a detector can read it, with no row anywhere that
+    names it — the orphan-at-birth this value exists to end. Its own value for
+    the reason the two above got theirs: this retention is "the request is
+    over", which is nothing like a candidate's lifecycle or a diagnostic
+    frame's, and one enum value covering two policies makes the worker's
+    batches ambiguous.
+  */
+  "wardrobe_scratch_cleanup",
 ] as const;
 export type StorageCleanupBatchKind = typeof STORAGE_CLEANUP_BATCH_KINDS[number];
 

@@ -60,8 +60,8 @@ import { deductCredits } from "../db/credits";
 import {
   commitRetriedViewAsset,
   listRunningViewRetryAngles,
-  listSpentFreeViewRetryAngles,
   readCastViewRenderSource,
+  retriedViewLanded,
 } from "../db/castingV2ViewRetry";
 import {
   getCastLineage,
@@ -81,6 +81,7 @@ import { CASTING_V2_VIEW_RETRY_PRICE_CREDITS } from "../casting/castingCreditCos
 import { castPackageView } from "./castViewPackage";
 import {
   renderViewAttempts,
+  ViewLandingUndecidedError,
   type PackageOrchestratorDependencies,
   type ViewAttemptTally,
 } from "./packageOrchestrator";
@@ -105,6 +106,10 @@ export type ViewRetryServiceDependencies = PackageOrchestratorDependencies & {
   markRunning?: typeof markGenerationOperationRunning;
   deduct?: typeof deductCredits;
   commitRetried?: typeof commitRetriedViewAsset;
+  /** Asked only when the commit THREW (#2080): did this operation's row land
+   *  anyway? Injected so an arm can make the commit lose its acknowledgement
+   *  and see the answer the database gives. */
+  retriedLanded?: typeof retriedViewLanded;
   /** The fenced exit's one write (#2073) — injected so an arm can see it is
    *  called and that no receipt is sealed beside it. */
   handoffToRecovery?: typeof handoffGenerationOperationToRecovery;
@@ -140,17 +145,12 @@ export type CastSlotsRead = {
    * that is not `ready`.
    */
   status: ReturnType<typeof projectSignedCast>["status"];
-  /**
-   * THE VIEWS WHOSE ONE FREE TRY AGAIN IS ALREADY SPENT (#1601 item 4).
-   *
-   * Carried out of the read rather than re-queried at the till, for the reason
-   * this whole type exists: the offer the room was shown and the offer the money
-   * moves against have to come from ONE reading. The entrance re-asks
-   * `castSlotRetryOffer` — it does not trust the client's price — and this is the
-   * third fact that answer needs, so it travels with the slots that are the
-   * other two.
-   */
-  freeRetrySpentAngles: readonly CastViewAngle[];
+  /*
+    ⚠ **A SPENT-FREE-ASK LIST STOOD HERE AND IS RETIRED — #1903 slice 3.** It
+    was the third fact `castSlotRetryOffer` needed while a view's first Try
+    again was free (#1601 item 4). The free ask is gone, so the offer now needs
+    two facts and this read carries two.
+  */
   /**
    * THE STORAGE KEY OF EACH DELIVERED FULL-LENGTH VIEW THAT HAS ONE (#1474).
    *
@@ -260,7 +260,7 @@ export function deliveredOutfitKeysFrom(
 export async function readCastSlots(userId: number, castPublicId: string): Promise<CastSlotsRead | null> {
   const model = await getOwnedCastByPublicId(userId, castPublicId);
   if (!model) return null;
-  const [assets, lineage, promisedAngles, retryingAngles, freeRetrySpentAngles] = await Promise.all([
+  const [assets, lineage, promisedAngles, retryingAngles] = await Promise.all([
     listCastAssets(userId, model.id),
     getCastLineage(userId, model),
     listCastPromisedAngles(userId, model.id),
@@ -268,19 +268,14 @@ export async function readCastSlots(userId: number, castPublicId: string): Promi
        the same statement, which is what makes a slot's Try again disappear and
        this entrance refuse for the same reason at the same moment. */
     listRunningViewRetryAngles({ userId, modelId: model.id, castId: castPublicId }),
-    /* WHOSE FREE ASK IS ALREADY SPENT (#1601 item 4). Read here and not at the
-       till for the same reason the line above is: one reading behind the button
-       and the charge. */
-    listSpentFreeViewRetryAngles({ userId, modelId: model.id, castId: castPublicId }),
   ]);
   const projection = projectSignedCast({
-    model, assets, lineage, promisedAngles, retryingAngles, freeRetrySpentAngles,
+    model, assets, lineage, promisedAngles, retryingAngles,
   });
   return {
     modelId: model.id,
     slots: projection.slots,
     status: projection.status,
-    freeRetrySpentAngles,
     /* #1474 — derived from the assets this function already read, never from a
        second query. */
     deliveredOutfitKeys: deliveredOutfitKeysFrom(assets),
@@ -482,13 +477,7 @@ export async function retryCastView(
     been filled — by a sweep, by another tab — offers nothing, and the answer
     is a free refusal rather than a second picture nobody asked for.
   */
-  const offer = castSlotRetryOffer(
-    slot,
-    CASTING_V2_VIEW_RETRY_PRICE_CREDITS,
-    /* THE THIRD FACT, from the SAME read the slot came out of (#1601 item 4) —
-       never a second query here, which would be a reading the room never had. */
-    read.freeRetrySpentAngles.includes(input.angle),
-  );
+  const offer = castSlotRetryOffer(slot, CASTING_V2_VIEW_RETRY_PRICE_CREDITS);
   if (!offer) {
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
@@ -580,12 +569,20 @@ export async function retryCastView(
       WHAT THIS TRY AGAIN COSTS, WRITTEN WHERE THE ROW IS BORN (#1767) — and on
       THIS road it is not housekeeping, it is the defect itself.
 
-      `plannedCredits = 0` is how the product recognises a FREE Try again
+      `plannedCredits = 0` WAS how the product recognised a FREE Try again
       (`spentFreeViewRetryFilter`). Until this line the column was written one
       statement below, so a PAID retry whose `markRunning` threw settled as
       `failed` carrying the schema default — indistinguishable from the free ask
       the customer had not used. She then found her one free Try again on that
       view already spent and was asked to pay 370 credits for it.
+
+      ⚠ **THAT READER IS DELETED — #1903 slice 3 — AND THE LINE STAYS WHERE IT
+      IS.** Every Try again is paid now, so nothing reads a zero on this kind
+      and no row can be mistaken for a spent free ask. The reason the figure
+      belongs at the CLAIM rather than one statement down outlives the defect
+      that found it: the recovery sweep refunds an unsettled row's planned
+      credits, and a row that dies in the gap carrying the default is a refund
+      that never happens.
 
       The figure is the same `price` the running transition writes, read off the
       offer forty-five lines above; nothing here chooses a number.
@@ -657,7 +654,7 @@ export async function retryCastView(
   const drop = dependencies.deleteObject ?? storageDelete;
   const commit = dependencies.commitRetried ?? commitRetriedViewAsset;
 
-  let rendered: Awaited<ReturnType<typeof renderViewAttempts<{ assetId: number; url: string }>>>;
+  let rendered: Awaited<ReturnType<typeof renderViewAttempts<{ url: string }>>>;
   /* HOISTED for the settled line (#1608), not for the render. `outfitReference`
      is computed inside the try below and the settle point sits after the catch,
      so the one fact the line needs about the wardrobe — was a fresh plate minted
@@ -770,7 +767,7 @@ export async function retryCastView(
          real type, which is working law 4's shape and is exactly why a third
          conformance field could be added to one writer and missed here. */
       async (landed) => {
-        const assetId = await commit({
+        const commitInput = {
           userId: input.userId,
           operationId,
           modelId: read.modelId,
@@ -788,8 +785,66 @@ export async function retryCastView(
             ...landed.provenance,
             ...conformanceProvenance(landed.verdict),
           },
-        });
-        return assetId === null ? null : { assetId, url: landed.stored.url };
+        };
+        /*
+          ⚠ **A COMMIT THAT THROWS MAY STILL HAVE COMMITTED (#2080).**
+
+          The transaction can commit and its acknowledgement be lost on the
+          wire, so the throw arrives while the row exists. On this road a
+          throw after the frame was bought is terminal (#1994 — no replay, so
+          #2065's idempotent commit is never reached), and the loop's catch
+          then DROPPED the stored bytes and its `failed` exit REFUNDED: the
+          customer got her 50 credits back AND a tile pointing at a deleted
+          object, because `slotEvidence` shows the newest filled asset.
+
+          So the throw is not believed until the database is asked. The
+          question is `retriedViewLanded` — the sweep's own question, keyed on
+          the `retryOperationId` the commit stamps from the typed operation id
+          — asked once, with no engine call: **never another frame (#1994).**
+
+          - It landed → delivered. Returned as a landing, so the loop keeps
+            the bytes and the charge stands. The row can only be THIS
+            attempt's: on this road a commit throw is terminal, so no earlier
+            attempt of this operation ever reached the commit.
+          - It did not → the original throw, unchanged, and everything behaves
+            as it did before this card (drop, refund).
+          - The question itself fails → {@link ViewLandingUndecidedError}: the
+            loop passes it out WITHOUT dropping the bytes, the operation stays
+            `running`, and the sweep — which asks the same question of the
+            same rows — settles the money.
+
+          The value carries no asset id because nothing reads one, and the
+          landed-anyway answer does not have it.
+        */
+        let assetId: number | null;
+        try {
+          assetId = await commit(commitInput);
+        } catch (commitError) {
+          let didLand: boolean;
+          try {
+            didLand = await (dependencies.retriedLanded ?? retriedViewLanded)({
+              userId: input.userId,
+              modelId: read.modelId,
+              operationId,
+            });
+          } catch (readError) {
+            log.error(
+              { operationId, castId: input.castId, angle: input.angle, err: commitError, readErr: readError },
+              "[viewRetryService] the commit threw and whether it landed cannot be read — the sweep decides",
+            );
+            throw new ViewLandingUndecidedError(
+              "the retried view's commit threw and whether it landed could not be read",
+              { cause: commitError },
+            );
+          }
+          if (!didLand) throw commitError;
+          log.warn(
+            { operationId, castId: input.castId, angle: input.angle, err: commitError },
+            "[viewRetryService] the commit threw but its row LANDED — a lost acknowledgement, delivering",
+          );
+          return { url: landed.stored.url };
+        }
+        return assetId === null ? null : { url: landed.stored.url };
       },
     );
   } catch (error) {

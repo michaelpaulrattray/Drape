@@ -152,7 +152,7 @@
     {
       "id": "domain:wardrobe",
       "name": "wardrobe",
-      "moduleCount": 37
+      "moduleCount": 39
     }
   ],
   "modules": [
@@ -5983,6 +5983,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/wardrobe/garmentAdoption.ts",
+      "path": "server/wardrobe/garmentAdoption.ts",
+      "domain": "wardrobe",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/wardrobe/garmentAnalysis.ts",
       "path": "server/wardrobe/garmentAnalysis.ts",
       "domain": "wardrobe",
@@ -6033,6 +6039,12 @@
     {
       "id": "module:server/wardrobe/qualityCheck.ts",
       "path": "server/wardrobe/qualityCheck.ts",
+      "domain": "wardrobe",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/wardrobe/scratchUpload.ts",
+      "path": "server/wardrobe/scratchUpload.ts",
       "domain": "wardrobe",
       "lifecycle": "active"
     },
@@ -13292,8 +13304,8 @@
       "path": "server/castingV2/viewRetryBusy.test.ts"
     },
     {
-      "id": "test:server/castingV2/viewRetryFreeOnce.test.ts",
-      "path": "server/castingV2/viewRetryFreeOnce.test.ts"
+      "id": "test:server/castingV2/viewRetryNoFreeAsk.test.ts",
+      "path": "server/castingV2/viewRetryNoFreeAsk.test.ts"
     },
     {
       "id": "test:server/castingV2/viewRetryOffer.test.ts",
@@ -13670,6 +13682,10 @@
     {
       "id": "test:server/db/castingV2ReferenceLibrary.test.ts",
       "path": "server/db/castingV2ReferenceLibrary.test.ts"
+    },
+    {
+      "id": "test:server/db/castingV2SignSlotReplay.test.ts",
+      "path": "server/db/castingV2SignSlotReplay.test.ts"
     },
     {
       "id": "test:server/db/creditTransactionByRef.test.ts",
@@ -15112,8 +15128,16 @@
       "path": "server/wardrobe.test.ts"
     },
     {
+      "id": "test:server/wardrobe/garmentAdoption.test.ts",
+      "path": "server/wardrobe/garmentAdoption.test.ts"
+    },
+    {
       "id": "test:server/wardrobe/outfitDecomposition.test.ts",
       "path": "server/wardrobe/outfitDecomposition.test.ts"
+    },
+    {
+      "id": "test:server/wardrobe/scratchUpload.test.ts",
+      "path": "server/wardrobe/scratchUpload.test.ts"
     },
     {
       "id": "test:server/wardrobe/vtoSession.test.ts",
@@ -26076,11 +26100,6 @@
     },
     {
       "from": "module:server/castingV2/castProjection.ts",
-      "to": "module:server/castingV2/viewConformance.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/castProjection.ts",
       "to": "module:server/db/castingV2Sign.ts",
       "kind": "imports"
     },
@@ -32600,6 +32619,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/db/wardrobe.ts",
+      "to": "module:server/db/storageCleanup.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/health.ts",
       "to": "module:server/_core/env.ts",
       "kind": "imports"
@@ -35656,6 +35680,11 @@
     },
     {
       "from": "module:server/routes/wardrobe.ts",
+      "to": "module:server/wardrobe/garmentAdoption.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/wardrobe.ts",
       "to": "module:server/wardrobe/garmentAnalysis.ts",
       "kind": "imports"
     },
@@ -35697,6 +35726,11 @@
     {
       "from": "module:server/routes/wardrobe.ts",
       "to": "module:server/wardrobe/qualityCheck.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/wardrobe.ts",
+      "to": "module:server/wardrobe/scratchUpload.ts",
       "kind": "imports"
     },
     {
@@ -36195,6 +36229,31 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/wardrobe/garmentAdoption.ts",
+      "to": "module:server/casting/deletionAudit.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/garmentAdoption.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/garmentAdoption.ts",
+      "to": "module:server/db/storageCleanup.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/garmentAdoption.ts",
+      "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/garmentAdoption.ts",
+      "to": "module:server/wardrobe/scratchUpload.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/wardrobe/garmentAnalysis.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
@@ -36311,12 +36370,12 @@
     },
     {
       "from": "module:server/wardrobe/outfitDecomposition.ts",
-      "to": "module:server/storage.ts",
+      "to": "module:server/wardrobe/garmentDetection.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/wardrobe/outfitDecomposition.ts",
-      "to": "module:server/wardrobe/garmentDetection.ts",
+      "to": "module:server/wardrobe/scratchUpload.ts",
       "kind": "imports"
     },
     {
@@ -36337,6 +36396,21 @@
     {
       "from": "module:server/wardrobe/qualityCheck.ts",
       "to": "module:shared/modelRegistry.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/scratchUpload.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/scratchUpload.ts",
+      "to": "module:server/db/storageCleanup.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/scratchUpload.ts",
+      "to": "module:server/storage.ts",
       "kind": "imports"
     },
     {

@@ -160,27 +160,36 @@ describe("what a tile offers, and what it costs", () => {
     expect(CASTING_V2_VIEW_RETRY_PRICE_CREDITS).not.toBe(CAST_PACKAGE_VIEW_PRICE);
   });
 
-  it("a view nobody checked was charged and kept, so asking again is FREE — and it says why", () => {
+  /**
+   * ⚠ **THIS ARM SAID *"asking again is FREE"* UNTIL #1903 SLICE 3, AND IT IS
+   * THE SAME FIXTURE ASSERTING THE OPPOSITE — his ruling of 2026-10-07.**
+   *
+   * A view nobody could judge is still DELIVERED and still CHARGED: D-246 is
+   * untouched, because charging nothing for a picture that may be perfect is
+   * the worse answer. What has gone is the apology — the `Unchecked` word and
+   * the free ask under it. His remedy for a view she does not like is the paid
+   * whole-package redo, which re-makes every view together.
+   *
+   * **Kept as an arm rather than deleted, because the fixture is the thing most
+   * likely to come back by accident**: a later reader that resurrects the
+   * delivered-unchecked reading would turn a paid surface free again, and only
+   * an arm standing on this exact row would notice.
+   */
+  it("a view nobody could check is DELIVERED and offers NOTHING — no label, no free ask", () => {
     const slots = slotsOf([anchor(), unjudged("closeUp")]);
     const slot = slots.get("closeUp");
     expect(slot?.state).toBe("ready");
-    expect(slot?.unjudged).toBe(true);
-    expect(slot?.retry).toEqual({ priceCredits: 0, reason: "unchecked" });
-    /*
-      The word is not decoration: a free link under one tile and not the others,
-      with nothing said, is a control nobody has a basis for pressing. It used to
-      be a SENTENCE here (`UNJUDGED_SLOT_NOTE`, *"We didn't get to check this
-      one"*) and it is one word on the row since his ruling of 2026-09-26 — so
-      the note is null and the reason carries the fact.
-    */
+    /* The picture is hers and it is on the tile — the delivery half of D-246. */
+    expect(slot?.url).toBeTruthy();
+    /* And the tile says nothing about it: no caption, no word, no link. */
     expect(slot?.note).toBeNull();
+    expect(slot?.retry).toBeUndefined();
   });
 
   it("a view that arrived and WAS checked offers nothing at all", () => {
     const slots = slotsOf([anchor(), asset()]);
     const slot = slots.get("frontFull");
     expect(slot?.state).toBe("ready");
-    expect(slot?.unjudged).toBeUndefined();
     expect(slot?.retry).toBeUndefined();
     expect(slot?.note).toBeNull();
   });
@@ -230,14 +239,24 @@ describe("what a tile offers, and what it costs", () => {
   });
 
   it("NOTHING is offered while the package is still building — the Sign still owns every slot", () => {
-    const building = slotsOf([anchor(), unjudged("closeUp")], { status: "provisioning" });
+    const building = slotsOf([anchor(), asset(), failed("backFull")], { status: "provisioning" });
     expect([...building.values()].every((slot) => slot.retry === undefined)).toBe(true);
     /*
       The positive control that keeps the arm above from passing for the wrong
       reason: the SAME rows, terminal, do offer.
+
+      ⚠ **IT USED AN UNJUDGED SLOT UNTIL #1903 SLICE 3, AND THAT SLOT NOW OFFERS
+      NOTHING WHATEVER THE STATUS** — so the control would have passed for
+      exactly the wrong reason, agreeing with the arm above while proving
+      nothing. A REFUNDED slot is the shape that still has something to ask for,
+      and it is what makes `building` the fact under test rather than the
+      fixture.
     */
-    const terminal = slotsOf([anchor(), unjudged("closeUp")]);
-    expect(terminal.get("closeUp")?.retry).toEqual({ priceCredits: 0, reason: "unchecked" });
+    const terminal = slotsOf([anchor(), asset(), failed("backFull")]);
+    expect(terminal.get("backFull")?.retry).toEqual({
+      priceCredits: CASTING_V2_VIEW_RETRY_PRICE_CREDITS,
+      reason: "refunded",
+    });
   });
 
   it("the rule is a pure reading of the slot, and it refuses every other state", () => {
@@ -261,10 +280,20 @@ describe("what a tile offers, and what it costs", () => {
       { state: "failed-refunded", refundedCredits: null },
       price,
     )).toEqual({ priceCredits: price, reason: "refunded" });
+    /* ⚠ A DELIVERED VIEW IS NOW ONE OF THE REFUSED STATES — #1903 slice 3. This
+       line read `.toEqual({ priceCredits: 0, reason: "unchecked" })` and the
+       `unjudged` field it keyed on is off the wire entirely. A `ready` slot that
+       is not a refunded stand-in has nothing to ask for at any price. */
     expect(castSlotRetryOffer(
-      { state: "ready", unjudged: true, refundedCredits: null },
+      { state: "ready", refundedCredits: null },
       price,
-    )).toEqual({ priceCredits: 0, reason: "unchecked" });
+    )).toBeNull();
+    /* And the one `ready` shape that DOES still offer, so the line above is
+       about delivery and not about `ready` being refused wholesale. */
+    expect(castSlotRetryOffer(
+      { state: "ready", standIn: true, refundedCredits: 200 },
+      price,
+    )).toEqual({ priceCredits: price, reason: "refunded" });
   });
 
   /*
@@ -280,10 +309,12 @@ describe("what a tile offers, and what it costs", () => {
   it("every offer carries a reason, and every reason is one the row has a word for", () => {
     const shapes: Array<[string, ReturnType<typeof slotsOf>]> = [
       ["failed", slotsOf([anchor(), asset(), failed("backFull")])],
+      /* Still in the population after #1903 slice 3, and now as a shape that
+         must produce NO offer — which the floor below is what protects. */
       ["unjudged", slotsOf([anchor(), unjudged("closeUp")])],
       ["stand-in refunded", slotsOf([anchor(), failed("frontClose")])],
       ["all good", slotsOf([anchor(), asset()])],
-      ["building", slotsOf([anchor(), unjudged("closeUp")], { status: "provisioning" })],
+      ["building", slotsOf([anchor(), asset(), failed("backFull")], { status: "provisioning" })],
     ];
     let offers = 0;
     for (const [name, slots] of shapes) {
@@ -296,8 +327,35 @@ describe("what a tile offers, and what it costs", () => {
         ).toBeTruthy();
       }
     }
-    /* The floor, so a reader that found no offer at all cannot pass silently. */
+    /* The floor, so a reader that found no offer at all cannot pass silently.
+       Deliberately a floor and not an equality: the number is a property of how
+       many slots these fixtures happen to leave unfilled, not of his ruling, and
+       an equality here would redden on a fixture edit that changed nothing real. */
     expect(offers).toBeGreaterThanOrEqual(3);
+  });
+
+  /**
+   * ⚠ **AND THE SHAPE THAT MUST CONTRIBUTE NOTHING, ASSERTED BY NAME — #1903
+   * slice 3.**
+   *
+   * The arm above walks every shape and holds each offer to having a word. It
+   * is satisfied by an `unjudged` slot that offers nothing AND by one that
+   * offers `unchecked` with a word restored beside it — so on its own it cannot
+   * see the free ask coming back. This is the half that can: a delivered view,
+   * judged or unjudgeable, contributes no offer at all.
+   */
+  it("a DELIVERED view contributes no offer to that population, however it was judged", () => {
+    const shapes = [
+      ["nobody looked", slotsOf([anchor(), unjudged("closeUp")])],
+      ["judged clean", slotsOf([anchor(), asset()])],
+    ] as const;
+    for (const [name, slots] of shapes) {
+      for (const slot of slots.values()) {
+        if (slot.state !== "ready" || slot.standIn === true) continue;
+        expect(slot.retry, `${name}/${slot.angle}: a delivered view is offering something`)
+          .toBeUndefined();
+      }
+    }
   });
 
   it("the row has no word the server cannot ask for — the map is not wider than the union", () => {
@@ -306,7 +364,7 @@ describe("what a tile offers, and what it costs", () => {
       the client's map with no reason producing it is a sentence nobody can ever
       read, and it would make the arm above pass forever.
     */
-    expect(Object.keys(VIEW_RETRY_WORDS).sort()).toEqual(["refunded", "unchecked"]);
+    expect(Object.keys(VIEW_RETRY_WORDS).sort()).toEqual(["refunded"]);
   });
 });
 
@@ -331,12 +389,21 @@ describe("what a tile offers, and what it costs", () => {
  * can reach this state: every axis the judge still has is a catastrophe and
  * refuses. But the rows below are not fixtures of a dead road — **three real
  * production rows carry exactly this shape** (assets 383, 389 and 391, written
- * in the hours #1612 part 2 was live), and each is a view somebody paid for
- * that is owed a free Try again.
+ * in the hours #1612 part 2 was live).
  *
- * So this describe is the MONEY side of the retired-axis reading: it holds the
- * price those three rows are offered, through the same function the entrance
- * authorizes with. The axis names in it are deliberately the retired ones.
+ * ⚠ **AND WHAT THEY HOLD IS NOW THE OPPOSITE ANSWER — SLICE 3 TOOK THE FREE
+ * ASK AWAY, AND THESE THREE ROWS ARE EXACTLY WHO IT WAS TAKEN FROM.** This
+ * header used to end *"each is a view somebody paid for that is owed a free Try
+ * again"*, and the arms held the price at 0. They now hold that the same rows
+ * are offered NOTHING.
+ *
+ * **That is a money change, so it was measured before it was made, not after**
+ * (`scripts/_1903-unchecked-population-disposable.mts`, production, read-only):
+ * six rows in the whole product read unchecked — 317, 322 and 324 under
+ * `unavailable` and these three — and **every one of them belongs to user 1.**
+ * The only other account that has ever cast is the team's design agent. So the
+ * withdrawal reaches no paying stranger, and the arms below are the record of
+ * what it does reach.
  */
 describe("a delivered view whose row carries a RETIRED failing axis (history, and three live rows)", () => {
   /** Delivered, judged, and one axis did not hold (#1612 part 2, retired by #1903). */
@@ -359,22 +426,24 @@ describe("a delivered view whose row carries a RETIRED failing axis (history, an
       },
     });
 
-  it("was charged and kept, so asking again is FREE and says the same word", () => {
+  it("was charged and kept, and is now offered NOTHING — the free ask is retired", () => {
     const slots = slotsOf([anchor(), deliveredUnchecked("closeUp", "angle")]);
     const slot = slots.get("closeUp");
+    /* She keeps the picture. That half never changed and is not being retired:
+       the view was delivered and charged, and it is still on her tile. */
     expect(slot?.state).toBe("ready");
-    expect(slot?.unjudged).toBe(true);
-    expect(slot?.retry).toEqual({ priceCredits: 0, reason: "unchecked" });
-    /* One word, and it is the word that already existed. A customer never meets
-       an axis name, a verdict word or a percentage — the whole surface of this
-       change is copy the product already shipped. */
+    expect(slot?.url).toBeTruthy();
+    /* What changed: no word, no link, no price. */
     expect(slot?.note).toBeNull();
-    expect(VIEW_RETRY_WORDS.unchecked).toBe("Unchecked");
+    expect(slot?.retry).toBeUndefined();
+    /* And the word itself is off the row's map, so a reader cannot put the
+       label back without this arm and the map's own guard both objecting. */
+    expect(Object.keys(VIEW_RETRY_WORDS)).not.toContain("unchecked");
   });
 
   it("reads the same whether the axis said differs or unsure", () => {
     const slots = slotsOf([anchor(), deliveredUnchecked("closeUp", "wardrobe")]);
-    expect(slots.get("closeUp")?.retry).toEqual({ priceCredits: 0, reason: "unchecked" });
+    expect(slots.get("closeUp")?.retry).toBeUndefined();
   });
 
   it("⚠ CONTROL — a view whose retired axes all passed still offers nothing", () => {
@@ -394,7 +463,6 @@ describe("a delivered view whose row carries a RETIRED failing axis (history, an
       }),
     ]);
     const slot = slots.get("frontFull");
-    expect(slot?.unjudged).toBeUndefined();
     expect(slot?.retry).toBeUndefined();
   });
 
@@ -416,7 +484,6 @@ describe("a delivered view whose row carries a RETIRED failing axis (history, an
     ]);
     const slot = slots.get("frontFull");
     expect(slot?.state).toBe("ready");
-    expect(slot?.unjudged).toBeUndefined();
     expect(slot?.retry).toBeUndefined();
   });
 });

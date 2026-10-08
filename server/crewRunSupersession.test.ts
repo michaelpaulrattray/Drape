@@ -37,6 +37,7 @@ import {
   CREW_SHIFT_SUPERSEDING_RUNS_MIN,
   describeCardCollision,
   describeRunSupersession,
+  laneRunLastProofOfLife,
   findCardCollisions,
   readRunSupersession,
   shiftLaneOf,
@@ -48,12 +49,34 @@ import type { ScriptConnection } from "../scripts/lib/dbConnection.mts";
 
 /* ── THE REAL ROWS ─────────────────────────────────────────────────────────── */
 
-/** A lane-mate as the table holds it. */
+/**
+ * A lane-mate as the table holds it.
+ *
+ * ⚠ **No `heartbeatAt`, deliberately** — these fixtures therefore read exactly
+ * as they did before #2079 (`laneRunLastProofOfLife` falls back to `endedAt`
+ * when the field is absent), which is what makes every arm below a control on
+ * the repair having changed nothing it was not aimed at.
+ */
 const run = (id: number, shift: string, started: string, ended: string | null): LaneRunForSupersession => ({
   id,
   shift,
   startedAt: new Date(started),
   endedAt: ended === null ? null : new Date(ended),
+});
+
+/** The same, with the last check-in the table now really carries (#2079). */
+const runWithLife = (
+  id: number,
+  shift: string,
+  started: string,
+  lastCheckIn: string,
+  ended: string,
+): LaneRunForSupersession => ({
+  id,
+  shift,
+  startedAt: new Date(started),
+  heartbeatAt: new Date(lastCheckIn),
+  endedAt: new Date(ended),
 });
 
 /**
@@ -151,6 +174,51 @@ describe("the lane a shift id belongs to", () => {
 
 /* ── THE VERDICT ───────────────────────────────────────────────────────────── */
 
+/* ── WHERE A LANE-MATE'S LIFE ENDS (#2079) ─────────────────────────────────── */
+
+describe("when a lane-mate was last known to be alive", () => {
+  const LATE_CLOSE = runWithLife(
+    612,
+    "seat1-20261009-005826",
+    "2026-10-08T15:14:13Z",
+    "2026-10-08T15:36:19Z",
+    "2026-10-08T17:20:26Z",
+  );
+
+  it("is its last check-in, not the stamp a later shift applied", () => {
+    expect(laneRunLastProofOfLife(LATE_CLOSE)).toBe(Date.parse("2026-10-08T15:36:19Z"));
+    /* The gap between the two is the whole defect: 1h 44m 07s. */
+    expect(Date.parse("2026-10-08T17:20:26Z") - laneRunLastProofOfLife(LATE_CLOSE)).toBe(6_247_000);
+  });
+
+  it("falls back to the close stamp when the field is absent — the pre-#2079 reading", () => {
+    expect(laneRunLastProofOfLife(run(612, LATE_CLOSE.shift, "2026-10-08T15:14:13Z", "2026-10-08T17:20:26Z")))
+      .toBe(Date.parse("2026-10-08T17:20:26Z"));
+    expect(laneRunLastProofOfLife({ ...LATE_CLOSE, heartbeatAt: null }))
+      .toBe(Date.parse("2026-10-08T17:20:26Z"));
+  });
+
+  it("falls back when the check-in does not parse", () => {
+    expect(laneRunLastProofOfLife({ ...LATE_CLOSE, heartbeatAt: "not a date" }))
+      .toBe(Date.parse("2026-10-08T17:20:26Z"));
+  });
+
+  /* A row that never checked in carries heartbeat === start, which is no
+     information — see the function's own ⚠. It must NOT collapse to an instant,
+     or a silent shift that really did run beside this row would vanish. */
+  it("falls back for a row that never checked in rather than collapsing its life", () => {
+    expect(laneRunLastProofOfLife({ ...LATE_CLOSE, heartbeatAt: LATE_CLOSE.startedAt }))
+      .toBe(Date.parse("2026-10-08T17:20:26Z"));
+  });
+
+  /* Every row closed before 2026-10-03 carries heartbeatAt === endedAt, so the
+     two readings are the same number on 565 of the 616 closed rows. */
+  it("is the same number as the close stamp on every pre-2026-10-03 row, by construction", () => {
+    expect(laneRunLastProofOfLife({ ...LATE_CLOSE, heartbeatAt: LATE_CLOSE.endedAt }))
+      .toBe(Date.parse("2026-10-08T17:20:26Z"));
+  });
+});
+
 describe("is this open row's process dead", () => {
   /*
     THE ARM THIS FILE EXISTS FOR. Row #548, at the hour the fourth shift looked
@@ -247,6 +315,113 @@ describe("is this open row's process dead", () => {
     expect(verdict.why).toContain("#900");
     expect(verdict.why).toContain("#901");
     expect(verdict.why).toContain("two at once");
+  });
+
+  /*
+    ⚠ ROW #607 — THE SAME BLINDNESS ONE FIELD OVER, AND THE ARM THIS REPAIR
+    EXISTS FOR (#2079).
+
+    Ten hours on his Working-now table, two shifts each reading the withheld
+    verdict and correctly declining. Every row and timestamp below is real.
+    #612's own log ends *"You've hit your session limit"*: it died at 15:36 and
+    a later shift stamped it closed at 17:20, 104 minutes after its last
+    breath. #615 then opened at 16:24 — forty-eight minutes INTO that silence.
+
+    The pair overlaps by the close STAMP and by nothing else, and the lane was
+    serial throughout.
+  */
+  const ROW_607 = {
+    id: 607,
+    shift: "seat1-20261008-195540",
+    startedAt: new Date("2026-10-08T10:10:19Z"),
+    heartbeatAt: new Date("2026-10-08T10:25:44Z"),
+  };
+  /** The hour the second shift met it and left it — ~21:15Z. */
+  const WHEN_607_WAS_MET = Date.parse("2026-10-08T21:15:00Z");
+  const SEAT1_LANE_607: LaneRunForSupersession[] = [
+    runWithLife(610, "seat1-20261008-221627", "2026-10-08T12:33:27Z", "2026-10-08T14:41:24Z", "2026-10-08T14:47:20Z"),
+    runWithLife(612, "seat1-20261009-005826", "2026-10-08T15:14:13Z", "2026-10-08T15:36:19Z", "2026-10-08T17:20:26Z"),
+    runWithLife(615, "seat1-20261009-015956", "2026-10-08T16:24:33Z", "2026-10-08T16:44:26Z", "2026-10-08T17:18:28Z"),
+  ];
+
+  it("row #607 is SUPERSEDED — a late close stamp is not a life", () => {
+    const verdict = readRunSupersession({
+      run: ROW_607,
+      runs: SEAT1_LANE_607,
+      now: WHEN_607_WAS_MET,
+    });
+    expect(verdict.kind).toBe("superseded");
+    if (verdict.kind !== "superseded") throw new Error("unreachable");
+    expect(verdict.lane).toBe("seat1");
+    expect(verdict.by.map((lane) => lane.id)).toEqual([610, 612, 615]);
+  });
+
+  /*
+    ⚠ THE NEGATIVE CONTROL, AND IT IS THE ONE THAT MAKES THE ARM ABOVE SAY
+    SOMETHING. The identical three rows with `heartbeatAt === endedAt` — the
+    shape EVERY row closed before 2026-10-03 carries, because the close
+    overwrote the field — reproduce the exact sentence the two shifts were
+    given. So the repair is the new field doing the work, not a rewrite of the
+    clause, and it provably cannot move a verdict about an old row.
+  */
+  it("the same three rows, read at the close stamp, reproduce the blindness exactly", () => {
+    const asTheCloseStampedThem = SEAT1_LANE_607.map((lane) => ({
+      ...lane,
+      heartbeatAt: lane.endedAt,
+    }));
+    const verdict = readRunSupersession({
+      run: ROW_607,
+      runs: asTheCloseStampedThem,
+      now: WHEN_607_WAS_MET,
+    });
+    expect(verdict.kind).toBe("unreadable");
+    if (verdict.kind !== "unreadable") throw new Error("unreachable");
+    expect(verdict.why).toContain("#612");
+    expect(verdict.why).toContain("#615");
+    expect(verdict.why).toContain("two at once");
+  });
+
+  /*
+    ⚠ A LANE THAT REALLY DID RUN TWO AT ONCE IS STILL WITHHELD — the thing the
+    repair must not break. #615's opening moved back to 15:30Z, while #612 was
+    still checking in at 15:36Z: now they are both alive at once by their own
+    heartbeats, and the inference is unsound exactly as the clause intends.
+  */
+  it("a successor that opened while its predecessor was still checking in still proves nothing", () => {
+    const genuinelyConcurrent = SEAT1_LANE_607.map((lane) =>
+      lane.id === 615 ? { ...lane, startedAt: new Date("2026-10-08T15:30:00Z") } : lane,
+    );
+    const verdict = readRunSupersession({
+      run: ROW_607,
+      runs: genuinelyConcurrent,
+      now: WHEN_607_WAS_MET,
+    });
+    expect(verdict.kind).toBe("unreadable");
+    if (verdict.kind !== "unreadable") throw new Error("unreachable");
+    expect(verdict.why).toContain("#612");
+    expect(verdict.why).toContain("#615");
+  });
+
+  /*
+    ⚠ AND A LANE-MATE THAT NEVER CHECKED IN IS NOT SHARPENED. It carries
+    `heartbeatAt === startedAt`, so reading the field literally would collapse
+    its life to one instant and it could never overlap anything — while a
+    silent shift that really did run beside this row for two hours is precisely
+    the concurrency this clause exists to see. No information is no licence, so
+    it falls back to the close stamp and the verdict is withheld.
+  */
+  it("a lane-mate that never checked in falls back to its close stamp", () => {
+    const silentPredecessor = SEAT1_LANE_607.map((lane) =>
+      lane.id === 612 ? { ...lane, heartbeatAt: lane.startedAt } : lane,
+    );
+    const verdict = readRunSupersession({
+      run: ROW_607,
+      runs: silentPredecessor,
+      now: WHEN_607_WAS_MET,
+    });
+    expect(verdict.kind).toBe("unreadable");
+    if (verdict.kind !== "unreadable") throw new Error("unreachable");
+    expect(verdict.why).toContain("#612");
   });
 
   /* A lane-mate still RUNNING is not a completed session and is not counted. */
@@ -420,6 +595,45 @@ describe("the row read the reader and the start warning share", () => {
     expect(asked[0]!.sql).toMatch(/endedAt IS NOT NULL/);
     expect(asked[0]!.sql).toMatch(/startedAt > \?/);
     expect(asked[0]!.values).toEqual([new Date(ROW_548.heartbeatAt)]);
+    /* ⚠ AND IT ASKS FOR THE LANE-MATE'S LAST CHECK-IN (#2079). A reader that
+       stops selecting this column does not fail — it silently returns to
+       reading the close stamp, which is the ten-hour blindness. The column
+       being ASKED FOR is held by the text; the value being CARRIED THROUGH is
+       held by the arm below, which flips a verdict on it. */
+    expect(asked[0]!.sql).toMatch(/heartbeatAt/);
+  });
+
+  /*
+    ⚠ THE MAPPING IS DRIVEN, NOT ASSERTED. The three real `seat1` rows behind
+    #607 come back from the query carrying their honest last check-ins, and the
+    verdict flips from the sentence two shifts were given to SUPERSEDED. Delete
+    `heartbeatAt` from the row mapping in `crewRunSupersession.mts` and this
+    arm reddens, which is the only thing that proves the column reaches the
+    verdict rather than merely appearing in the SQL.
+  */
+  it("row #607's honest check-ins reach the verdict through the query", async () => {
+    const ROW_607_OPEN = {
+      id: 607,
+      shift: "seat1-20261008-195540",
+      startedAt: new Date("2026-10-08T10:10:19Z"),
+      heartbeatAt: new Date("2026-10-08T10:25:44Z"),
+    };
+    const lane = [
+      { id: 610, shift: "seat1-20261008-221627", startedAt: new Date("2026-10-08T12:33:27Z"), heartbeatAt: new Date("2026-10-08T14:41:24Z"), endedAt: new Date("2026-10-08T14:47:20Z") },
+      { id: 612, shift: "seat1-20261009-005826", startedAt: new Date("2026-10-08T15:14:13Z"), heartbeatAt: new Date("2026-10-08T15:36:19Z"), endedAt: new Date("2026-10-08T17:20:26Z") },
+      { id: 615, shift: "seat1-20261009-015956", startedAt: new Date("2026-10-08T16:24:33Z"), heartbeatAt: new Date("2026-10-08T16:44:26Z"), endedAt: new Date("2026-10-08T17:18:28Z") },
+    ];
+    const { conn } = stub(lane);
+    const verdicts = await readRunSupersessions(conn, [ROW_607_OPEN], Date.parse("2026-10-08T21:15:00Z"));
+    const verdict = verdicts.get(607)!;
+    expect(verdict.kind).toBe("superseded");
+    expect(describeRunSupersession(verdict)).toContain("SUPERSEDED");
+
+    /* The same rows with the field absent — the pre-#2079 wire — go back to
+       the blindness, so the flip is the column and nothing else. */
+    const { conn: withoutLife } = stub(lane.map(({ heartbeatAt, ...rest }) => rest));
+    const old = await readRunSupersessions(withoutLife, [ROW_607_OPEN], Date.parse("2026-10-08T21:15:00Z"));
+    expect(old.get(607)?.kind).toBe("unreadable");
   });
 
   /* Another lane's completed sessions reach this function and are dropped by

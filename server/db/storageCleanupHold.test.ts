@@ -175,7 +175,62 @@ const BORN_HELD_WRITERS = [
   "castingV2/referenceAttachService.ts",
   "castingV2/referenceMint.ts",
   "castingV2/refusalLoopCapture.ts",
+  /*
+    ⚠ TWO WARDROBE WRITERS ARRIVED WITH #1961, AND THE FIRST OF THEM REDDENED
+    THIS ARM FOR FIVE AND A HALF HOURS BEFORE ANYBODY READ IT.
+
+    `scratchUpload.ts` landed on PR #1979 at 07:00Z, this arm went red at
+    07:08Z, and the pull request then sat `BLOCKED` while its review finding was
+    repaired twice — the finding was read and the GATE was not. Recorded here
+    because it is the derived population doing precisely its job: a new
+    register-before-the-bytes writer could not arrive unnoticed, and it did not.
+
+    `scratchUpload.ts` registers a customer's photograph before it stores it;
+    `garmentAdoption.ts` registers the garment's own copy before it copies it.
+    Both carry a synthetic operation id, so both must hold, and both take their
+    hold from the enumerated exception below rather than from the writer's
+    grace — see that arm for why the two are different questions.
+  */
+  "wardrobe/garmentAdoption.ts",
+  "wardrobe/scratchUpload.ts",
 ];
+
+/**
+ * ⚠ THE WRITERS WHOSE HOLD IS A DIFFERENT QUESTION, each pinned to its OWN
+ * NAMED CONSTANT rather than excused into hand arithmetic.
+ *
+ * The shared grace (`storageCleanupManifestHeldUntil`) answers *how long may a
+ * writer keep its claim while it writes* — it IS the in-flight generation
+ * lease, and a writer that consumes it is a latency finding. Two roads hold for
+ * something else entirely, and borrowing the grace for those is the
+ * wrong-question derivation working law 4 does NOT ask for:
+ *
+ * - the refusal-loop capture, where the hold IS the retention window;
+ * - the wardrobe's scratch uploads (#1961), where the hold is the CUSTOMER'S
+ *   WORKING WINDOW. It was the shared grace, five minutes, and the relay found
+ *   the consequence on PR #1979: the wardrobe workspace renders an uploaded
+ *   model photo, so the sweep took the picture off the screen mid-session.
+ *
+ * The exception is in BOTH directions below: an entry that goes back to the
+ * shared grace is a stale excuse and reddens.
+ */
+const OWN_HOLD: Record<string, { heldUntil: string; constant: string; declaredIn: string }> = {
+  "castingV2/refusalLoopCapture.ts": {
+    heldUntil: "input.heldUntil",
+    constant: "REFUSAL_LOOP_RETENTION_MS",
+    declaredIn: "castingV2/refusalLoopCapture.ts",
+  },
+  "wardrobe/scratchUpload.ts": {
+    heldUntil: "wardrobeScratchHeldUntil()",
+    constant: "WARDROBE_SCRATCH_HOLD_MS",
+    declaredIn: "wardrobe/scratchUpload.ts",
+  },
+  "wardrobe/garmentAdoption.ts": {
+    heldUntil: "wardrobeScratchHeldUntil()",
+    constant: "WARDROBE_SCRATCH_HOLD_MS",
+    declaredIn: "wardrobe/scratchUpload.ts",
+  },
+};
 
 describe("the grace is derived, not invented", () => {
   it("is the operation lease itself — one constant, one meaning", () => {
@@ -295,7 +350,7 @@ describe("the discharge accepts a held manifest, and only an untouched one", () 
 
     const byFile = new Map(sites.map((site) => [site.file, site.heldUntil!]));
     for (const [file, held] of byFile) {
-      if (file === "castingV2/refusalLoopCapture.ts") continue;
+      if (OWN_HOLD[file] !== undefined) continue;
       expect(held, `${file} invents its own hold instead of deriving it`)
         .toBe("storageCleanupManifestHeldUntil()");
     }
@@ -311,6 +366,24 @@ describe("the discharge accepts a held manifest, and only an untouched one", () 
     expect(byFile.get("castingV2/refusalLoopCapture.ts")).toBe("input.heldUntil");
     const capture = await source("../castingV2/refusalLoopCapture.ts");
     expect(capture).toContain("new Date(now.getTime() + REFUSAL_LOOP_RETENTION_MS)");
+
+    /* Each exception names its own constant, and the constant is a named
+       declaration rather than hand arithmetic at the site — the whole point of
+       this arm. Checked for every entry, so a third exception cannot be added
+       as a bare `new Date(Date.now() + 86_400_000)`. */
+    for (const [file, expected] of Object.entries(OWN_HOLD)) {
+      expect(byFile.get(file), `${file} no longer carries its own hold`).toBe(expected.heldUntil);
+      const declaringSource = await source(`../${expected.declaredIn}`);
+      expect(declaringSource, `${expected.declaredIn} does not declare ${expected.constant}`)
+        .toMatch(new RegExp("export const " + expected.constant + String.raw`\s*=`));
+    }
+
+    /* And the OTHER direction, so the list cannot rot into a mirror: an entry
+       whose writer has gone back to the shared grace is a stale excuse. */
+    expect(
+      Object.keys(OWN_HOLD).filter((file) => byFile.get(file) === "storageCleanupManifestHeldUntil()"),
+      "an enumerated own-hold writer now derives the shared grace — delete its line",
+    ).toEqual([]);
   });
 
   /*
@@ -354,6 +427,13 @@ describe("the discharge accepts a held manifest, and only an untouched one", () 
       "db/castingV2InkDesigns.ts",
       "db/castingV2ReferenceAttachments.ts",
       "db/castingV2ReferenceLibrary.ts",
+      /* The sixth, #1961: `createGarment` discharges the receipt for each
+         picture a garment now owns, in the same transaction as the insert. It
+         is the wardrobe's first entry in this population and it arrived with
+         its own driven proof against a real database — the three things this
+         predicate is FOR (owner scope, untouched batch, all-or-nothing with the
+         row) are not provable against a fake handle. */
+      "db/wardrobe.ts",
     ]);
   });
 });

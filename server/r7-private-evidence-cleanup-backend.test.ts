@@ -206,6 +206,24 @@ describe("R7-7C5A private evidence cleanup backend", () => {
       "server/db/inkAddCancellation.ts",
       "server/db/inkAddCandidates.ts",
       "server/db/inkAddRecovery.ts",
+      // The wardrobe's scratch uploads (#1961) register the key BEFORE the
+      // bytes and name `public_r2` for it. It is the THIRD caller here whose
+      // artifact was never ours: a photograph a customer handed us so a
+      // detector could read it, written to a permanently public key by four
+      // routes that recorded it nowhere — the sharpest form of the defect this
+      // pin exists for, and the one it could not see until the write came
+      // through a manifest at all. Like the hair cutter, it means its bytes to
+      // be COLLECTED rather than kept: nothing discharges these manifests.
+      // And the garment's own copy of a picture its owner chose (#1961, the
+      // relay's finding on PR #1979). Same bucket and the same
+      // register-before-the-bytes shape as the scratch upload below — but it
+      // is the first wardrobe caller that means its bytes to be KEPT: the
+      // garment row discharges this receipt inside the insert's transaction,
+      // so the manifest exists only for the window in which the copy could
+      // fail. `public_r2`, named explicitly, because a garment's picture is
+      // served to its owner from the public bucket.
+      "server/wardrobe/garmentAdoption.ts",
+      "server/wardrobe/scratchUpload.ts",
     ]);
     for (const file of callers) {
       const source = sources.find((candidate) => candidate.file === file)!.source;

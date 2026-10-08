@@ -88,8 +88,14 @@ export async function readRunSupersessions(
     unobservable: nothing could ever tell the two apart. The verdict owns the
     lane question; this owns the TIME bound and nothing else.
   */
+  /* ⚠ `heartbeatAt` RIDES ALONG BECAUSE THAT IS WHERE A LANE-MATE'S LIFE ENDS
+     (#2079). The overlap clause used to read `endedAt`, which is a stamp any
+     later shift may apply — row #612 was closed 104 minutes after its last
+     breath, "overlapped" #615, and blinded the verdict about #607 for ten
+     hours. A reader that does not SELECT this column gets the old answer
+     silently, which is why it is asked for here and not derived. */
   const [rows] = await conn.query<any[]>(
-    `SELECT id, shift, startedAt, endedAt
+    `SELECT id, shift, startedAt, heartbeatAt, endedAt
        FROM \`${TABLE}\`
       WHERE endedAt IS NOT NULL AND startedAt > ?
       ORDER BY startedAt ASC`,
@@ -100,6 +106,7 @@ export async function readRunSupersessions(
     id: Number(row.id),
     shift: String(row.shift),
     startedAt: row.startedAt,
+    heartbeatAt: row.heartbeatAt ?? null,
     endedAt: row.endedAt,
   }));
 
