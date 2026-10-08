@@ -360,7 +360,7 @@ describe("R7-7B3 Canvas package readers", () => {
       readMode: "snapshot",
     })).rejects.toMatchObject({
       code: "PRECONDITION_FAILED",
-      message: "This cast has no canonical imagery yet",
+      message: "This cast has no headshot yet, so it can't go on the canvas.",
     });
     expect(fillEmptyCastNodeWithVersionIn).not.toHaveBeenCalled();
     expect(getModelAssets).not.toHaveBeenCalled();

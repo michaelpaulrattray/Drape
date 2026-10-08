@@ -673,7 +673,7 @@ export async function executeFillFromLibrary(input: {
     r6Selection: "fill_front_close",
   });
   if (!headshot?.storageUrl) {
-    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This cast has no canonical imagery yet" });
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This cast has no headshot yet, so it can't go on the canvas." });
   }
 
   // Batch B: draft is the STATUS read-model, never "not minted" — an

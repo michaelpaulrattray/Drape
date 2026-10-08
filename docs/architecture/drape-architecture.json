@@ -11228,6 +11228,10 @@
       "path": "client/src/foundation/anchoredPanel.test.ts"
     },
     {
+      "id": "test:client/src/foundation/canonicalWording.test.ts",
+      "path": "client/src/foundation/canonicalWording.test.ts"
+    },
+    {
       "id": "test:client/src/foundation/focusRing.test.ts",
       "path": "client/src/foundation/focusRing.test.ts"
     },
