@@ -94,7 +94,11 @@ import {
   derivedClientRequestId,
   operationChargeReference,
 } from "../casting/operationContract";
-import { commitRetriedViewAsset, readCastViewRenderSource } from "../db/castingV2ViewRetry";
+import {
+  commitRetriedViewAsset,
+  pressViewLanded,
+  readCastViewRenderSource,
+} from "../db/castingV2ViewRetry";
 import { getUserCredits } from "../db/credits";
 import { deductCredits } from "../db/credits";
 import {
@@ -142,6 +146,12 @@ export type PackageRedoServiceDependencies = PackageOrchestratorDependencies & {
    */
   handoffToRecovery?: typeof handoffGenerationOperationToRecovery;
   readSource?: typeof readCastViewRenderSource;
+  /**
+   * DID ANY VIEW OF THIS PRESS LAND — asked of the ROWS before the only refund
+   * this road can make, so a total loss is a fact rather than this process's
+   * belief (the security review's third finding on PR #1924).
+   */
+  pressLanded?: typeof pressViewLanded;
   readAnchorBytes?: typeof storageReadBytes;
   /**
    * THE BALANCE, AND ONLY THE BALANCE.
@@ -385,7 +395,48 @@ export async function redoCastPackage(
     throw error;
   }
 
-  /* ---- the one charge ---- */
+  /* ---- the press goes running, THEN the one charge ---- */
+
+  /*
+    ⚠ **A CLAIMED ROW CANNOT BE SETTLED, AND THIS WAS MISSING UNTIL THE
+    SECURITY REVIEW ON PR #1924 ASKED FOR IT.**
+    `finalizeGenerationOperationSuccess` updates `WHERE status = 'running'`
+    (`server/db/generationOperations.ts`), so a press left `claimed` cannot be
+    sealed: its receipt would affect no rows, fall into
+    `markRecoveryAfterReceiptFailure`, and park a perfectly good redo for
+    support review with the customer's 650 credits in an unsettled state.
+    Every slot row below already makes this transition; the press needs it for
+    the same reason and one step earlier, because it is the row that is about
+    to be charged.
+
+    It carries no `requiredLockKey` — the press holds no lock by design (the
+    lock table is unique on the operation id, so the five slot locks need five
+    operations). The HEARTBEAT is the point: a press lives as long as both
+    sheets take, which is minutes, and a lease that lapsed under it would hand
+    a live redo to the sweep.
+  */
+  try {
+    await (dependencies.markRunning ?? markGenerationOperationRunning)({
+      userId: input.userId,
+      operationId: pressOperationId,
+      plannedCredits: offer.priceCredits,
+      phase: "generating",
+      heartbeat: true,
+    });
+  } catch (error) {
+    /* Nothing is charged yet, so every row unwinds free. */
+    log.warn(
+      { operationId: pressOperationId, castId: input.castId, err: error },
+      "[packageRedoService] the press never started — nothing charged",
+    );
+    for (const { operationId } of claimed) {
+      await failClaimedDirectOperation({ userId: input.userId, operationId, error })
+        .catch(() => undefined);
+    }
+    await failClaimedDirectOperation({ userId: input.userId, operationId: pressOperationId, error })
+      .catch(() => undefined);
+    throw error;
+  }
 
   const chargeReference = operationChargeReference(pressOperationId);
   const charge = await (dependencies.deduct ?? deductCredits)(
@@ -559,9 +610,56 @@ export async function redoCastPackage(
     because the recovery sweep has to reach the SAME answer from the rows alone
     and #1968's Sign will ask it too.
   */
+  /*
+    ⚠ **AND BEFORE IT REFUNDS, IT ASKS THE ROWS** — the security review's
+    third finding on PR #1924, and it is working law 1 on a money path: a
+    report is a claim, the asset rows are the fact.
+
+    `committed` is what THIS PROCESS believes. A slot that committed its
+    picture and then threw past its own settlement — a receipt that would not
+    write is the measured route — is counted `failed` here, correctly, because
+    this process cannot say otherwise. If that happened to every slot, the
+    belief would be "nothing arrived" while five new pictures sat on the Cast,
+    and the refund would hand back a redo the customer received.
+
+    So the total-loss branch is confirmed against `pressViewLanded`, the same
+    reader the sweep uses, before any credit moves. It is asked ONLY on the
+    zero-delivered road, which is rare: a delivered redo pays for no extra
+    read.
+  */
+  let delivered = committed.length;
+  if (delivered === 0) {
+    try {
+      const anythingLanded = await (dependencies.pressLanded ?? pressViewLanded)({
+        userId: input.userId,
+        modelId: read.modelId,
+        pressOperationId,
+      });
+      if (anythingLanded) {
+        delivered = 1;
+        log.warn(
+          { operationId: pressOperationId, castId: input.castId },
+          "[packageRedoService] no slot reported a delivery but a picture is on the Cast — the charge stands",
+        );
+      }
+    } catch (error) {
+      /*
+        The read failed. ⚠ REFUND ANYWAY, which is the direction this road
+        has to fail in: the customer is owed their credits unless a picture
+        exists, and a refund that is written twice is caught by the ledger's
+        own reference (the sweep READS a refund it finds rather than
+        re-issuing it), while a refund never written is money kept for nothing.
+      */
+      log.error(
+        { operationId: pressOperationId, castId: input.castId, err: error },
+        "[packageRedoService] could not confirm the delivery before refunding — refunding on this process's own reading",
+      );
+    }
+  }
+
   const owed = flatPressRefundOwed({
     chargedCredits: offer.priceCredits,
-    delivered: committed.length,
+    delivered,
   });
   let refundedCredits = 0;
   let refundRecorded = true;

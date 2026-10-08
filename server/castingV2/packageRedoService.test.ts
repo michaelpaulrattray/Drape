@@ -175,6 +175,13 @@ let pressReplay: unknown = null;
  * three onto. The default stays "land it", so no existing arm moves.
  */
 let commitBehaviour: Record<string, "null" | "throw"> = {};
+/** Every `markGenerationOperationRunning` the service asked for, in order. */
+const running: Array<{
+  operationId: string;
+  plannedCredits: number;
+  heartbeat: boolean;
+  lockKey: string | null;
+}> = [];
 /** Every operation handed to the sweep, in order. */
 const handedOff: string[] = [];
 /** Operation ids whose success receipt refuses to write. */
@@ -284,8 +291,19 @@ function dependencies(
          so an arm can tie a commit back to the angle it belongs to. */
       return { type: "execute" as const, operationId: request.clientRequestId };
     }) as PackageRedoServiceDependencies["begin"],
-    markRunning: (async (request: { operationId: string }) => {
+    markRunning: (async (request: {
+      operationId: string;
+      plannedCredits: number;
+      heartbeat?: boolean;
+      requiredLockKey?: string;
+    }) => {
       journal.push("running");
+      running.push({
+        operationId: request.operationId,
+        plannedCredits: request.plannedCredits,
+        heartbeat: request.heartbeat === true,
+        lockKey: request.requiredLockKey ?? null,
+      });
       return { operationId: request.operationId, chargeReferenceId: `op:${request.operationId}:charge` };
     }) as PackageRedoServiceDependencies["markRunning"],
     deduct: (async (
@@ -415,6 +433,7 @@ beforeEach(() => {
   lockedAngles = new Set();
   pressReplay = null;
   commitBehaviour = {};
+  running.length = 0;
   handedOff.length = 0;
   receiptRefusals = new Set();
   receipts.success.mockClear();
@@ -477,6 +496,33 @@ describe("a redo that lands", () => {
     expect(press[0]?.plannedCredits).toBe(PACKAGE_PRICE);
     expect(slotRows).toHaveLength(CAST_PACKAGE_VIEWS.length);
     for (const row of slotRows) expect(row.plannedCredits).toBe(0);
+  });
+
+  it("⚠ marks the PRESS running, with a heartbeat, before the money moves", async () => {
+    /*
+      ⚠ **A CLAIMED ROW CANNOT BE SETTLED.** `finalizeGenerationOperationSuccess`
+      updates `WHERE status = 'running'`, so a press left `claimed` cannot be
+      sealed: the receipt affects no rows, falls into
+      `markRecoveryAfterReceiptFailure`, and parks a perfectly good redo for
+      support review with the customer's credits unsettled. Found by the
+      security review on PR #1924, and invisible to every other arm in this file
+      because they mock the receipt rather than the row it needs.
+
+      The HEARTBEAT is asserted too: a press lives as long as both sheets take,
+      and a lease that lapsed under it would hand a live redo to the sweep.
+    */
+    await redoCastPackage(dependencies(), input);
+
+    const press = running.find((row) => row.operationId === PRESS);
+    expect(press, "the press was never marked running — its receipt cannot write").toBeDefined();
+    expect(press?.heartbeat).toBe(true);
+    expect(press?.plannedCredits).toBe(PACKAGE_PRICE);
+    /* It holds no lock, so it must not claim to require one. */
+    expect(press?.lockKey).toBeNull();
+    /* And it happens BEFORE the deduct: the row has to be settleable before it
+       is the row that was charged. */
+    expect(running[0]?.operationId).toBe(PRESS);
+    expect(journal.indexOf("running")).toBeLessThan(journal.indexOf("deduct"));
   });
 
   it("claims the press and EVERY view before it charges anything", async () => {
@@ -621,6 +667,51 @@ describe("a redo that partly fails", () => {
     expect(refunds[0]?.amount).toBe(PACKAGE_PRICE);
     /* Under the press's own charge reference, so a repeat is harmless. */
     expect(refunds[0]?.reference).toBe(`op:${PRESS}:charge`);
+  });
+
+  it("⚠ does NOT refund when the ROWS say a picture landed, whatever this process believed", async () => {
+    /*
+      THE SECURITY REVIEW'S THIRD FINDING ON PR #1924, and it is working law 1
+      on a money path: `committed` is what this process BELIEVES, and the asset
+      rows are the fact.
+
+      A slot that committed its picture and then threw past its own settlement
+      — a receipt that will not write is the measured route — is counted failed
+      here, correctly, because this process cannot say otherwise. If that
+      happened to every slot the belief would be "nothing arrived" while new
+      pictures sat on the Cast, and the refund would hand back a redo the
+      customer received. So the total-loss branch is confirmed against the same
+      reader the sweep uses before any credit moves.
+    */
+    receiptRefusals = new Set(CAST_PACKAGE_VIEWS.map((angle) => derivedClientRequestId(PRESS, angle)));
+
+    const result = await redoCastPackage(
+      dependencies({ pressLanded: (async () => true) as never }),
+      input,
+    );
+
+    expect(result.committed, "this process saw no delivery — which is the premise").toEqual([]);
+    expect(result.refundedCredits, "a redo the customer received was refunded").toBe(0);
+    expect(refunds).toEqual([]);
+    /* The pictures really are there, which is what the reader is agreeing with. */
+    expect(committed.map((entry) => entry.angle).sort()).toEqual([...CAST_PACKAGE_VIEWS].sort());
+  });
+
+  it("THE CONTROL: it DOES refund when the rows agree nothing landed", async () => {
+    /*
+      Without this, a confirmation that always answered "something landed"
+      would satisfy the arm above and quietly end the only refund this road
+      has.
+    */
+    receiptRefusals = new Set(CAST_PACKAGE_VIEWS.map((angle) => derivedClientRequestId(PRESS, angle)));
+
+    const result = await redoCastPackage(
+      dependencies({ pressLanded: (async () => false) as never }),
+      input,
+    );
+
+    expect(result.refundedCredits).toBe(PACKAGE_PRICE);
+    expect(refunds).toHaveLength(1);
   });
 
   it("renders nothing and charges nothing when the one deduct refuses", async () => {
