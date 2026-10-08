@@ -2047,7 +2047,7 @@ export const castingV2Router = router({
       if (model.status === "provisioning") {
         throw new TRPCError({
           code: "CONFLICT",
-          message: "She's still building — you can delete her once her package finishes.",
+          message: "This Cast is still building — you can delete it once the package finishes.",
         });
       }
       return runFinalCastDeletionCeremony({

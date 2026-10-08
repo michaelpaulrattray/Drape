@@ -186,13 +186,13 @@ export type PackageRedoResult = {
 
 /** One sentence, three reasons it can be said, and none of them has charged. */
 export const PACKAGE_REDO_NOT_READY_MESSAGE =
-  "This Cast is still being made. You can ask for all her views again once she's finished. Nothing was charged.";
+  "This Cast is still being made. You can ask for all the views again once it's done. Nothing was charged.";
 export const PACKAGE_REDO_BUSY_MESSAGE =
-  "Some of her views are already being made. Wait for those to finish, then ask again. Nothing was charged.";
+  "Some of these views are already being made. Wait for those to finish, then ask again. Nothing was charged.";
 export const PACKAGE_REDO_UNAVAILABLE_MESSAGE =
   "This Cast can't be asked for new views right now. Nothing was charged.";
 export const PACKAGE_REDO_FACE_MISSING_MESSAGE =
-  "This Cast's signed face isn't available right now, so her views can't be rebuilt. Nothing was charged.";
+  "This Cast's signed face isn't available right now, so the views can't be rebuilt. Nothing was charged.";
 
 /*
   ⚠ **NO PRICE IS RE-EXPORTED FROM THIS FILE, AND THE FIRST DRAFT DID.**
@@ -293,7 +293,7 @@ export async function redoCastPackage(
   if (!balance || balance.balance < offer.priceCredits) {
     throw new TRPCError({
       code: "BAD_REQUEST",
-      message: `Not enough credits. Asking for all her views again costs ${formatCredits(displayPrice(offer.priceCredits))} credits.`,
+      message: `Not enough credits. Asking for all the views again costs ${formatCredits(displayPrice(offer.priceCredits))} credits.`,
     });
   }
 
@@ -577,7 +577,7 @@ async function redoOneView(
       error: new TRPCError({
         code: "BAD_REQUEST",
         message: charge.error
-          || `Not enough credits. Asking for all her views again costs ${formatCredits(displayPrice(context.packagePrice))} credits.`,
+          || `Not enough credits. Asking for all the views again costs ${formatCredits(displayPrice(context.packagePrice))} credits.`,
       }),
     }).catch(() => undefined);
     return freeFailure();

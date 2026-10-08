@@ -111,9 +111,9 @@ export const VIEW_RETRY_RECOVERY_WORDING: ViewReplacementWording = {
  * which arrived.
  */
 export const PACKAGE_REDO_RECOVERY_WORDING: ViewReplacementWording = {
-  refundDescription: "That view didn't arrive when you asked for all her views again",
-  paidSentence: "That view didn't arrive when you asked for all her views again. Your credits are back.",
-  freeSentence: "That view didn't arrive when you asked for all her views again. You were not charged.",
+  refundDescription: "That view didn't arrive when you asked for all the views again",
+  paidSentence: "That view didn't arrive when you asked for all the views again. Your credits are back.",
+  freeSentence: "That view didn't arrive when you asked for all the views again. You were not charged.",
 };
 
 export async function recoverCastingV2ViewRetryOperation(
