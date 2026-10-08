@@ -200,8 +200,10 @@ export {
 
 // Wardrobe
 export {
+  GARMENT_BATCH_CHUNK,
   createGarment,
   getGarmentById,
+  getOwnedGarmentsByIds,
   getUserGarments,
   getUserGarmentsBySlot,
   updateGarment,
