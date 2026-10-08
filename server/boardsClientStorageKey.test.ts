@@ -567,3 +567,67 @@ describe("a board item's picture address is never deletion authority on its own 
     expect(frozen).toBeLessThan(executor.indexOf("await collectCanvasCleanupKeysIn("));
   });
 });
+
+/*
+  #2064 — a saved look's `imageUrl` and a session's `history` are typed by the
+  browser (`looks.save`, `sessions.update`), so on the Cast deletion they are
+  deletion authority only under THIS account's wardrobe prefixes, and they are
+  added only AFTER the Cast's own keys are frozen for the canvas check.
+*/
+const { collectCastWardrobeKeys } = await import("./casting/finalCastDeletion");
+
+describe("a wardrobe address linked to a Cast is never deletion authority on its own (#2064)", () => {
+  const OTHERS_WARDROBE_KEY = `wardrobe/${OTHER}/vto-results/1700000000000-theirs.png`;
+  const OWN_UPLOAD_KEY = `${ME}-wardrobe/originals/1700000000000-own.png`;
+  const OWN_CAST_ASSET_URL = `${PUBLIC}/casting-v2/candidates/11111111-2222-4333-8444-555555555555.png`;
+
+  function collect(sessions: Array<{ modelImageUrl: unknown; history: unknown }>, looks: Array<{ imageUrl: unknown }>) {
+    const storageKeys = new Set<string>();
+    collectCastWardrobeKeys({
+      storageKeys,
+      currentPublicUrl: PUBLIC,
+      userId: ME,
+      assetUrls: [OWN_CAST_ASSET_URL],
+      sessions,
+      looks,
+    });
+    return [...storageKeys].sort();
+  }
+
+  it("❌ another account's picture on a look and in a session's history linked to this Cast is NOT in the manifest", () => {
+    const keys = collect(
+      [{ modelImageUrl: `${PUBLIC}/${OTHERS_CAST_KEY}`, history: [`${PUBLIC}/${OTHERS_CAST_KEY}`, `${PUBLIC}/${OTHERS_WARDROBE_KEY}`] }],
+      [{ imageUrl: `${PUBLIC}/${OTHERS_CAST_KEY}` }, { imageUrl: `${PUBLIC}/${OTHERS_WARDROBE_KEY}` }],
+    );
+    expect(keys).toEqual([]);
+  });
+
+  it("✅ this account's own wardrobe look and history pictures, and the Cast's own model picture, still are", () => {
+    const keys = collect(
+      [{ modelImageUrl: OWN_CAST_ASSET_URL, history: JSON.stringify([`${PUBLIC}/${OWN_WARDROBE_KEY}`]) }],
+      [{ imageUrl: `${PUBLIC}/${OWN_UPLOAD_KEY}` }, { imageUrl: "https://elsewhere.example/not-ours.png" }],
+    );
+    expect(keys).toEqual([
+      OWN_UPLOAD_KEY,
+      "casting-v2/candidates/11111111-2222-4333-8444-555555555555.png",
+      OWN_WARDROBE_KEY,
+    ].sort());
+  });
+
+  it("❌ static: the executor freezes the Cast's own keys BEFORE any wardrobe address, and hands no look or history to the unchecked collector", () => {
+    // The executor is driven only by `r7-final-cast-deletion-db.test.ts`,
+    // which needs a disposable database and skips without one.
+    const code = withoutComments(readFileSync(join(serverRoot, "casting/finalCastDeletion.ts"), "utf8"));
+    const unchecked = [...code.matchAll(/collectManifestKey\([^;]*?(?:look\.imageUrl|\.history|entry)[^;]*?\)/g)].map((m) => m[0]);
+    expect(unchecked).toEqual([]);
+    const executor = code.slice(code.indexOf("export async function executeFinalCastDeletion"));
+    const frozen = executor.indexOf("const castOwnedKeys");
+    const wardrobe = executor.indexOf("collectCastWardrobeKeys(");
+    expect(frozen, "the frozen set was not found — the arm is blind").toBeGreaterThan(0);
+    expect(wardrobe, "the wardrobe collector was not found — the arm is blind").toBeGreaterThan(0);
+    expect(frozen).toBeLessThan(wardrobe);
+    // One copy of the prefix rule: the deletion reuses the erasure's.
+    expect(code).toContain("wardrobeOwnedKeyPrefixes(");
+    expect(code).not.toMatch(/-wardrobe\//);
+  });
+});

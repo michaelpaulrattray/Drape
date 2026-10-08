@@ -1,7 +1,7 @@
 {
-  "edition": 660,
-  "updatedAt": "2026-10-08T13:05:00.000Z",
-  "shift": "Foreman — foreman-20261008-2234",
+  "edition": 661,
+  "updatedAt": "2026-10-08T17:27:05.927Z",
+  "shift": "Foreman — foreman-20261009-015956",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -126,7 +126,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-08T13:29:03.774Z",
+      "readAt": "2026-10-08T17:26:26.224Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -6869,10 +6869,10 @@
     },
     {
       "id": "package-redo-1903-slice2",
-      "title": "Ask for all views again — the paid redo of a whole signed package, 350 credits (#1903 slice 2)",
-      "status": "blocked",
+      "title": "Ask for all views again — the paid redo of a whole signed package, 650 credits (#1903 slice 2)",
+      "status": "in-review",
       "prNumber": 1924,
-      "note": "Stuck, and it needs a person: the branch has drifted from main so it cannot be merged or re-checked. Not re-merged tonight on purpose — doing that would make the review's own findings read as answered when they are not. Its remaining work is the new Sign price you set (#1968), not a repair."
+      "note": "Repaired and waiting on the reviewer. Two money faults were found in it and are closed: a redo could have been refunded and still handed over its new pictures, and the rule deciding that refund was written out twice in two places."
     },
     {
       "id": "pro-plus-rename-1900",
@@ -9823,7 +9823,7 @@
     },
     {
       "id": "sheet-arrived-not-rebought-1966",
-      "status": "in-review",
+      "status": "merged",
       "title": "A Sign sheet that arrived but could not be used is no longer paid for three more times (#1966)",
       "note": "Repaired and green, waiting on the relay. House money only; nothing a customer was charged.",
       "prNumber": 1982
@@ -10238,7 +10238,7 @@
     271
   ],
   "nextUp": {
-    "readAt": "2026-10-08T13:29:03.774Z",
+    "readAt": "2026-10-08T17:26:26.223Z",
     "items": [
       {
         "issueNumber": 1903,
@@ -10286,11 +10286,6 @@
           "state": "blocked",
           "because": "#1788 — the shared workspace. This card's own body says it does not start until that lands, and #1788 is unbuilt and on the roadmap. No question for you here."
         }
-      },
-      {
-        "issueNumber": 1940,
-        "title": "In-app money wording: \"credits returned\" everywhere, \"Cancel plan\" instead of \"Drop to Free\", and Billing says when a cancelled plan ends",
-        "urgent": false
       },
       {
         "issueNumber": 1941,
