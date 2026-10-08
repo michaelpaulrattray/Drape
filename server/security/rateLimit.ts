@@ -5,6 +5,8 @@
  * Uses a sliding window algorithm with automatic cleanup.
  */
 
+import { waitPhrase } from "@shared/waitPhrase";
+
 interface RateLimitEntry {
   count: number;
   windowStart: number;
@@ -287,12 +289,9 @@ export const RATE_LIMITS = {
  * Create a rate limit error message
  */
 export function rateLimitError(resetIn: number): string {
-  const seconds = Math.ceil(resetIn / 1000);
-  if (seconds < 60) {
-    return `Too many requests. Please try again in ${seconds} seconds.`;
-  }
-  const minutes = Math.ceil(seconds / 60);
-  return `Too many requests. Please try again in ${minutes} minute${minutes > 1 ? 's' : ''}.`;
+  // Seconds under a minute, minutes from there — and never "1 seconds" or
+  // "0 seconds", which this said until #1993. The clause is shared.
+  return `Too many requests. Please try again ${waitPhrase(resetIn, "second")}.`;
 }
 
 
