@@ -1,7 +1,7 @@
 {
-  "edition": 658,
-  "updatedAt": "2026-10-08T09:24:55.842Z",
-  "shift": "Foreman — foreman-20261008-0755",
+  "edition": 659,
+  "updatedAt": "2026-10-08T11:50:00.000Z",
+  "shift": "Foreman — foreman-20261008-2158",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -126,7 +126,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-08T09:24:00.620Z",
+      "readAt": "2026-10-08T11:45:02.060Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -9813,6 +9813,20 @@
       "title": "The plan features nobody delivers come off the wire, and the Follow cost note reads the measured figure (#1953)",
       "note": "Merged 06:29Z, squash 54cf50b3 — relay's verdict. Sabotage 10/10 red.",
       "prNumber": 1970
+    },
+    {
+      "id": "export-refusal-reaches-her-1962",
+      "status": "in-review",
+      "title": "Ask to download your data twice and the app now says why it refused, instead of nothing (#1962)",
+      "note": "Repaired and green, waiting on the relay. The frames caught a second fault in our own wording and that is fixed too.",
+      "prNumber": 1981
+    },
+    {
+      "id": "sheet-arrived-not-rebought-1966",
+      "status": "in-review",
+      "title": "A Sign sheet that arrived but could not be used is no longer paid for three more times (#1966)",
+      "note": "Repaired and green, waiting on the relay. House money only; nothing a customer was charged.",
+      "prNumber": 1982
     }
   ],
   "problems": [
@@ -9927,6 +9941,20 @@
       "state": "resolved",
       "title": "Add credits told a paying subscriber they were about to start a new subscription, for the moment before it knew they already had one (#1749)",
       "detail": "Open Add credits and the line under the big number reads “Charged today, then on the same date each period.” That sentence is true of somebody buying a plan for the first time. It is not true of somebody who already pays you every month — their charge is worked out pro rata against the time left in the cycle they are already in, which is what the line says once the screen knows who they are.\n\nThe screen asks for your plan details and has to draw something before the answer arrives. Everything else on it already waits politely: the price shows a dash, the button holds. This one sentence did not — it said the confident thing.\n\nTwo things are fixed. The sentence now says nothing at all until the screen knows, which is the honest amount to say about a fact nobody has. And the “Pay yearly instead and 2 of the twelve months are free” offer in the same paragraph was being shown to people ALREADY paying yearly, for the same reason — it now waits too, and still appears for the people it is for.\n\nThe repair went wider than the sentence, deliberately. The same yes-or-no about whether you have a subscription is read in twelve places across the two money screens, and the sharpest of them decides whether pressing a plan button CHANGES your plan or BUYS you a second one. That one could not actually be reached today — last night's fix happens to stop it — but it was right for the wrong reason, which is the kind of thing that comes back when something above it moves.\n\nReviewed by hand, merged on pull request #1756, and live on production tonight — checked at the build that is actually serving, not at the merge."
+    },
+    {
+      "id": "data-export-breaks-for-big-accounts-1989",
+      "severity": "warning",
+      "state": "open",
+      "title": "Asking for a copy of your own data fails if you have more than about seventy casts (#1989)",
+      "detail": "Settings, Security, Export your data. On an account with a lot of casts nothing comes back and the person is told the export could not be made — and then they cannot try again for five minutes, because the failed attempt used up their one go. Measured on a test account with 77 casts: it fails every time. Under seventy or so it works.\n\nThis matters more than most bugs because a copy of your own data is something a customer has a legal right to ask for, and the people most likely to ask are the ones with the most work on the account. Nobody has hit it in the real product that we know of. The cause is known and written on the card; it is a day's work at most, not a redesign."
+    },
+    {
+      "id": "db-hiccup-signs-you-out-1990",
+      "severity": "warning",
+      "state": "open",
+      "title": "A slow moment on the database can sign a customer out mid-session (#1990)",
+      "detail": "If the database is briefly too busy to answer, the next thing the person clicks is treated as though they were never signed in — and the app then sends them to the sign-in page, in the middle of whatever they were doing. Seen twice while testing something else, both times straight after the export above overloaded the database.\n\nThe product cannot currently tell 'this person is not signed in' apart from 'we could not check whether they are signed in'. The second should be an error we own up to, not a silent sign-out. Known cause, written on the card."
     }
   ],
   "acknowledgedReplyIds": [
@@ -10203,7 +10231,7 @@
     271
   ],
   "nextUp": {
-    "readAt": "2026-10-08T09:24:00.619Z",
+    "readAt": "2026-10-08T11:45:02.060Z",
     "items": [
       {
         "issueNumber": 1903,
@@ -10288,8 +10316,22 @@
         "urgent": false
       },
       {
+        "issueNumber": 1973,
+        "title": "Four more plan feature lines promise things nobody delivers - but they sit only on the hand-sold Enterprise band, so it is your call",
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "his desk card `enterprise-band-promises-1973` is open"
+        }
+      },
+      {
         "issueNumber": 1977,
         "title": "Held PRs with a repair owed are picked before any new card — the seat picker and the board enforce it (his word 2026-10-08)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1988,
+        "title": "A finished test drive stays on his Crew page for two days after he answers every step (his report 2026-10-08)",
         "urgent": false
       }
     ]
