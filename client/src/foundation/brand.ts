@@ -1,12 +1,37 @@
+import { PRODUCT_NAME } from "@shared/brand";
+
 /**
- * Product name shown in V2 chrome.
+ * Product name shown in V2 chrome — the VALUE now lives in `shared/brand.ts`.
  *
- * Founder ruling (plan §O-2, 2026-07-30): V2 ships as Klieg. The public
- * rebrand — domain, Google OAuth redirect URI, Resend sending domain,
- * Stripe-facing copy — is a founder-executed workstream (M5b) that gates
- * widening scope beyond the founder, not this constant.
+ * ⚠ **It moved there in #1955 and nothing about this file's contract changed.**
+ * The server needed the product's name — the identity PDF a customer downloads
+ * spelled it out in eight string literals — and a second constant for the same
+ * word is the drift working law 4 names and that `server/db/referrals.ts` has
+ * already recorded the cost of. The founder ruling that governs the value moved
+ * with it, so it is read where the value is.
+ *
+ * ⚠ **THE SHARED DECLARATION IS `PRODUCT_NAME`; THIS BINDING IS WHY THE RENAME
+ * DID NOT TOUCH NINE CALL SITES.** It could not be called `BRAND_NAME` there:
+ * `server/casting/geminiPrompts.ts` has a dead `BRAND_NAME` of its own that
+ * #29 holds and nobody may delete yet, and a name declared under both
+ * `server/` and `shared/` goes silent in the un-wiring differ (its own arm
+ * says so). The reason is on the shared constant.
+ *
+ * ⚠ **AND IT IS A `const` RATHER THAN AN `export … from`, WHICH IS NOT STYLE —
+ * A RE-EXPORT IS NOT A DECLARATION.** Written as `export { PRODUCT_NAME as
+ * BRAND_NAME } from "@shared/brand"` it typechecked, built and shipped the same
+ * bytes, and turned `pnpm check:dispositions` RED: with no `BRAND_NAME`
+ * DECLARED here, the cleanup door's reader attributed this file's importers to
+ * the SERVER twin and called a dead constant `rewired (2)`. That attribution is
+ * #274's whole repair — keying a row on (file, symbol) rather than on the name
+ * — and it needs a declaration on this side to attribute to. Same shape as
+ * `CLAUDE.md`'s *an import is not a call site*, one hop over.
+ *
+ * `WORKSPACE_NAME` and `WORKSPACE_ROLE_LABEL` below stay here: they are chrome
+ * and have no server reader, and #381's whole point was that the workspace is a
+ * different noun from the product.
  */
-export const BRAND_NAME = "Klieg";
+export const BRAND_NAME = PRODUCT_NAME;
 
 /**
  * THE WORKSPACE NAME — a different noun from the product name, and the reason

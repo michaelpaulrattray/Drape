@@ -1,3 +1,4 @@
+import { PRODUCT_NAME } from "@shared/brand";
 import { createModuleLogger } from "./logging/logger";
 const log = createModuleLogger("klaviyo");
 
@@ -290,7 +291,9 @@ export async function sendAccountFrozenEmail(params: {
       day: "numeric",
     }),
     support_url: params.supportUrl || FROZEN_ACCOUNT_SUPPORT_URL,
-    app_name: "Drape",
+    /* #1955: a Klaviyo flow template renders this into the email the customer
+       reads, so it is copy rather than metadata and it said "Drape". */
+    app_name: PRODUCT_NAME,
   });
 }
 
