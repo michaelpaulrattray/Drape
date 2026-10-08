@@ -28,6 +28,7 @@ import { creditsReturnedText } from "../../shared/refundCopy";
 import { deductCredits, addCredits, normalizeCreditReferenceId } from "../db";
 import type { CreditToolKind } from "../db/credits";
 import { TRPCError } from "@trpc/server";
+import { SpokenError, spokenError } from "../_core/spokenError";
 import { publicErrorMessage } from "../lib/publicError";
 import { getDb } from "../db/connection";
 import { users } from "../../drizzle/schema";
@@ -221,10 +222,27 @@ export async function withAtomicCredits<T>(
     // (provider/DB/SDK) never does — it was logged in full above. The
     // truthful refund outcome is ALWAYS appended.
     const baseMessage = publicErrorMessage(error, "The operation failed.");
+    /*
+      SPOKEN (#2058): the client never reads an unmarked INTERNAL_SERVER_ERROR
+      aloud (`client/src/lib/failureSentence.ts`), so without the marker she
+      saw the surface's fallback and lost the refund truth below — including
+      the reference support needs when the refund did not record.
+
+      ⚠ ONLY TWO OF THE THREE SHAPES ARE MARKED, ON PURPOSE.
+      - An authored refusal that was ALREADY spoken keeps its marker: the
+        rebuild used to drop it, which is the same defect one hop later.
+      - A non-tRPC failure leaves with words this catch chose: the fixed
+        fallback, or a `PublicError`'s sanitized sentence — never raw text.
+      - An UNMARKED inner TRPCError is NOT promoted. tRPC copies a cause's
+        message when a throw site gives none, so its text is not known to be
+        written for her; marking it could read provider text aloud.
+    */
+    const sentence = `${baseMessage} ${refundTruth(outcome)}`;
     if (error instanceof TRPCError) {
-      throw new TRPCError({ code: error.code, message: `${baseMessage} ${refundTruth(outcome)}` });
+      if (error instanceof SpokenError) throw spokenError({ code: error.code, message: sentence });
+      throw new TRPCError({ code: error.code, message: sentence });
     }
-    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: `${baseMessage} ${refundTruth(outcome)}` });
+    throw spokenError({ code: "INTERNAL_SERVER_ERROR", message: sentence });
   }
 }
 
