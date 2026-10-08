@@ -15449,6 +15449,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/admin/ChangeRequestList.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/admin/components/crew/CrewBackgroundWork.tsx",
       "to": "module:client/src/features/admin/components/crew/crewAgo.ts",
       "kind": "imports"
@@ -18724,6 +18729,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/moderator/ChangeRequestModal.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
       "to": "module:client/src/features/moderator/figures.ts",
       "kind": "imports"
@@ -18761,6 +18771,11 @@
     {
       "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -18914,6 +18929,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/moderator/MyRequestsTab.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/moderator/reconciliation-csv.ts",
       "to": "module:shared/brand.ts",
       "kind": "imports"
@@ -19006,6 +19026,11 @@
     {
       "from": "module:client/src/features/moderator/UserInvestigationWidgets.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/UserInvestigationWidgets.tsx",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -21761,6 +21786,11 @@
     {
       "from": "module:client/src/pages/ModeratorDashboard.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/ModeratorDashboard.tsx",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -32184,6 +32214,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/lib/adminActions/changeRequestActions.ts",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/lib/adminActions/index.ts",
       "to": "module:server/lib/adminActions/changeRequestActions.ts",
       "kind": "imports"
@@ -34806,6 +34841,11 @@
     {
       "from": "module:server/routes/moderator.ts",
       "to": "module:server/stripe/stripeService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/moderator.ts",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {

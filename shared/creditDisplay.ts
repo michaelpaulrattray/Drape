@@ -63,8 +63,13 @@
  * admin Add/Deduct credits road is no longer one of them (#1986)**: an admin
  * adjusting a balance is answering a customer who reads display credits, so the
  * figure typed, the toast, and the panel's balance are all on the display
- * scale. The moderator change-request road and the moderator transaction views
- * are still on the ledger scale and are filed as #1986's sweep sibling, #2010.
+ * scale. ⚠ **Nor, since #2010, the moderator change-request road and the
+ * moderator credit views**: a moderator types display credits, the request
+ * STORES LEDGER (the unit `change_requests.creditAmount` has always carried, so
+ * no stored row is reinterpreted), and every staff screen that shows a request
+ * or a transaction reads the customer's figure first with the ledger beside it
+ * (`staffCreditFact`). What still reads the books in ledger is the audit and
+ * immutable logs and the staff CSV exports, which are the books.
  */
 
 /**
@@ -239,11 +244,42 @@ export function ledgerForDisplay(display: number): number {
 }
 
 /**
- * The most one admin Add or Deduct may move, in DISPLAY credits (#1986).
+ * A SIGNED ledger movement — one row of a credit history — on the customer's
+ * scale (#2010, the moderator's Credits tab).
+ *
+ * The sign picks the rounding, for the reasons at the top of this file: a
+ * credit IN is a grant and rounds down like a balance; a credit OUT is a charge
+ * and its size rounds up like a price, so a row never reads as taking less
+ * than it took. Zero is zero.
+ */
+export function displayMovement(ledger: number): DisplayCredits {
+  const value = finiteLedger(ledger, "displayMovement");
+  if (value >= 0) return displayBalance(value);
+  return -displayPrice(-value) as DisplayCredits;
+}
+
+/**
+ * How a staff surface states a credit figure: the customer's number first,
+ * the ledger it was computed from beside it (#2010).
+ *
+ * Staff answer customers, who read display credits, so that figure leads; the
+ * ledger stays on the line because it is what the audit log, the immutable log
+ * and the CSV exports carry, and a moderator reconciling a request against
+ * them must be able to see the same number. The caller chooses the rounding by
+ * choosing which function produced `display` — this only writes the sentence.
+ */
+export function staffCreditFact(display: DisplayCredits, ledger: number): string {
+  return `${formatCredits(display)} credits · ${finiteLedger(ledger, "staffCreditFact").toLocaleString()} ledger`;
+}
+
+/**
+ * The most one admin Add or Deduct may move, in DISPLAY credits (#1986) — and,
+ * since #2010, the most one moderator credit request may ask for.
  *
  * It was `100000` LEDGER until #1986 — one fifth of that on screen — so the cap and
  * the figure typed were both on a scale nobody in the panel could see. Read by
- * `server/routes/admin/users.ts` (the authority) and by `CreditModal`.
+ * `server/routes/admin/users.ts` (the authority) and by `CreditModal`; and by
+ * `server/routes/moderator.ts` (the authority) and `ChangeRequestModal` (#2010).
  *
  * It lives in this module rather than beside the reason cap in
  * `shared/inputLimits.ts` because it bounds a MONEY authority, and this file is
