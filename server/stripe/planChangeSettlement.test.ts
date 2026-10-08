@@ -560,6 +560,46 @@ describe("the webhook settles what changePlan recorded", () => {
     expect(db.resolvePlanChangeSettlement).toHaveBeenCalledWith("in_change", "applied");
   });
 
+  /**
+   * ⚠ **THE SWITCH INVOICE'S REAL SHAPE (#2069).** This arm used to feed a
+   * single year line with `proration: false` and no unused-time credit — a
+   * shape Stripe never sent on this road, which is why the suite stayed green
+   * while every real monthly → yearly switch granted nothing. Below is the
+   * invoice Stripe sends since `updateSubscriptionPlan` asks for
+   * `billing_cycle_anchor: "now"` on a switch, transcribed from the test-mode
+   * drive (`2026-01-28.clover` dialect: the proration flag under `parent`,
+   * the price as an id): the old month's unused time as a NEGATIVE proration
+   * line, and the year as an ordinary period line.
+   */
+  const switchLines = (yearIsProration: boolean) => ({
+    data: [
+      {
+        amount: -2700,
+        description: "Unused time on Klieg Starter after 08 Oct 2026",
+        quantity: 1,
+        period: { start: NOW_SEC, end: NOW_SEC + 31 * DAY },
+        pricing: { price_details: { price: "price_starter_monthly" } },
+        parent: {
+          type: "subscription_item_details",
+          subscription_item_details: { proration: true, subscription_item: "si_1" },
+        },
+      },
+      {
+        amount: 26900,
+        description: yearIsProration
+          ? "Remaining time on Klieg Starter after 08 Oct 2026"
+          : "1 × Klieg Starter (at $269.00 / year)",
+        quantity: 1,
+        period: { start: NOW_SEC, end: NOW_SEC + 365 * DAY },
+        pricing: { price_details: { price: "price_starter_yearly" } },
+        parent: {
+          type: "subscription_item_details",
+          subscription_item_details: { proration: yearIsProration, subscription_item: "si_1" },
+        },
+      },
+    ],
+  });
+
   it("an interval switch settles WHOLE: the unwind lands, then the same invoice's period grant", async () => {
     db.getPlanChangeSettlementByInvoice.mockResolvedValue({
       ...grantRow,
@@ -572,27 +612,52 @@ describe("the webhook settles what changePlan recorded", () => {
     const result = await deliverEvent("invoice.payment_succeeded", {
       id: "in_change",
       customer: "cus_1",
-      subscription: "sub_1",
+      parent: { subscription_details: { subscription: "sub_1" } },
       billing_reason: "subscription_update",
-      lines: {
-        data: [
-          {
-            price: { recurring: { interval: "year" } },
-            proration: false,
-            period: { start: NOW_SEC, end: NOW_SEC + 365 * DAY },
-          },
-        ],
-      },
+      lines: switchLines(false),
     });
 
     expect(result.success).toBe(true);
     expect(db.deductCredits).toHaveBeenCalledTimes(1);
     expect(db.deductCredits.mock.calls[0].slice(0, 3)).toEqual([7, 3000, "subscription"]);
     expect(db.refreshMonthlyCredits).toHaveBeenCalledTimes(1);
+    /* The YEAR, granted once, on the invoice's own reference — and the
+       negative unused-time line is not read as a period of its own. */
+    expect(db.refreshMonthlyCredits.mock.calls[0][0]).toBe(7);
+    expect(db.refreshMonthlyCredits.mock.calls[0][1]).toBe(PLAN_TIERS.pro.monthlyCredits * 12);
+    expect(db.refreshMonthlyCredits.mock.calls[0][3]).toBe("stripe-invoice:in_change");
     /* Deterministic order: the unwind before the grant. */
     expect(db.deductCredits.mock.invocationCallOrder[0]).toBeLessThan(
       db.refreshMonthlyCredits.mock.invocationCallOrder[0],
     );
+  });
+
+  /**
+   * The shape the anchor exists to avoid, pinned so nobody mistakes the reader
+   * for the fix: WITHOUT `billing_cycle_anchor: "now"` Stripe bills the year as
+   * a PRORATION line, and the grant does not read proration lines — so the
+   * repair for #2069 lives on the request (`annualPlanChange.test.ts`), and
+   * `periodBought` keeps one rule for every road. The unwind still lands.
+   */
+  it("the pre-#2069 switch shape — the year as a proration line — grants no period", async () => {
+    db.getPlanChangeSettlementByInvoice.mockResolvedValue({
+      ...grantRow,
+      direction: "unwind" as const,
+      credits: 3000,
+    });
+    db.getUserCredits.mockResolvedValue({ balance: 10_000 });
+
+    const result = await deliverEvent("invoice.payment_succeeded", {
+      id: "in_change",
+      customer: "cus_1",
+      parent: { subscription_details: { subscription: "sub_1" } },
+      billing_reason: "subscription_update",
+      lines: switchLines(true),
+    });
+
+    expect(result.success).toBe(true);
+    expect(db.deductCredits).toHaveBeenCalledTimes(1);
+    expect(db.refreshMonthlyCredits).not.toHaveBeenCalled();
   });
 
   it("the unwind floors at the LIVE balance at application time — spent credits are spent", async () => {

@@ -209,13 +209,13 @@ describeWithDatabase("R7-5C atomic final Cast deletion (disposable DB)", () => {
     await connection.execute(
       `INSERT INTO wardrobe_sessions (userId, modelId, modelImageUrl, history, tattooMapData)
        VALUES (?, ?, ?, JSON_ARRAY(?), JSON_OBJECT('map', ?))`,
-      [userId, modelId, sharedMetadataUrl, `${R2}/models/${userId}/wardrobe-history.png`, sharedMetadataUrl],
+      [userId, modelId, sharedMetadataUrl, `${R2}/wardrobe/${userId}/vto-results/wardrobe-history.png`, sharedMetadataUrl],
     );
     const session = await row("SELECT id FROM wardrobe_sessions WHERE modelId = ?", [modelId]);
     await connection.execute(
       `INSERT INTO wardrobe_looks (userId, sessionId, modelId, imageUrl, name)
        VALUES (?, ?, ?, ?, 'Saved look')`,
-      [userId, session.id, modelId, `${R2}/models/${userId}/look.png`],
+      [userId, session.id, modelId, `${R2}/wardrobe/${userId}/vto-results/look.png`],
     );
     await connection.execute(
       "INSERT INTO bug_reports (userId, description, modelId) VALUES (?, 'A sufficiently detailed report', ?)",
@@ -389,8 +389,8 @@ describeWithDatabase("R7-5C atomic final Cast deletion (disposable DB)", () => {
       `models/${userId}/head.png`,
       `models/${userId}/back.png`,
       `models/${userId}/attempt.png`,
-      `models/${userId}/wardrobe-history.png`,
-      `models/${userId}/look.png`,
+      `wardrobe/${userId}/vto-results/wardrobe-history.png`,
+      `wardrobe/${userId}/vto-results/look.png`,
     ]));
     expect(await count("point_transactions", "userId = ?", [userId])).toBe(0);
 

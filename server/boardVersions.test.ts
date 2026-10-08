@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { appRouter } from "./routers";
+import { updateBoardItem } from "./db";
 import { TRPCError } from "@trpc/server";
 import type { TrpcContext } from "./_core/context";
 
@@ -63,10 +64,12 @@ describe.skipIf(!dbAvailable)("board item versions", () => {
       boardId,
       type: "model",
       label: "Test Model",
-      imageUrl: "https://example.com/original.jpg",
       positionX: 0,
       positionY: 0,
     });
+    // #2062: the routes no longer take a picture address from the client;
+    // the server writer sets it, scoped to the owner.
+    await updateBoardItem({ userId, itemId, data: { imageUrl: "https://example.com/original.jpg" } });
     return { caller, boardId, itemId };
   }
 
@@ -212,9 +215,10 @@ describe.skipIf(!dbAvailable)("board item versions", () => {
       });
 
       // Update the item to a new image
-      await caller.boards.updateItem({
+      await updateBoardItem({
+        userId: 510,
         itemId,
-        imageUrl: "https://example.com/new-current.jpg",
+        data: { imageUrl: "https://example.com/new-current.jpg" },
       });
 
       // Revert to the old version

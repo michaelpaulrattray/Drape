@@ -59,7 +59,6 @@ describe('Board Casting Integration', () => {
         boardId: 42,
         type: 'model',
         label: 'Test Model',
-        imageUrl: 'https://storage.example.com/headshot.jpg',
         sourceModelId: modelId,
         positionX: 100,
         positionY: 100,
@@ -73,6 +72,18 @@ describe('Board Casting Integration', () => {
       expect(data.type).toBe('model');
       expect(data.sourceModelId).toBe(modelId);
       expect((data.metadata as Record<string, unknown>).viewType).toBe('frontClose');
+    });
+
+    it('takes no picture address from the caller (#2062) — a server writer places the picture', () => {
+      // A Cast's picture reaches its node through the server (`boardOps`'s
+      // fill and landing), never through this route; an address here was a
+      // road for another customer's picture into a Cast's deletion manifest.
+      const schema = addItemSchema();
+      expect(schema.safeParse({
+        boardId: 42, type: 'model', imageUrl: 'https://storage.example.com/headshot.jpg',
+      }).success).toBe(false);
+      // Positive control: the deploy-skew null is still accepted.
+      expect(schema.safeParse({ boardId: 42, type: 'model', imageUrl: null }).success).toBe(true);
     });
 
     it('should apply the schema defaults the caller relies on', () => {

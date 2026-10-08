@@ -1097,6 +1097,12 @@ export function quotePlanChange(
  * Verified at the docs: only `always_invoice` bills the change immediately,
  * and switching to a price with a different `recurring.interval` resets the
  * billing cycle anchor to now, which invoices the new period at once.
+ *
+ * ⚠ **"Invoices the new period at once" was true of the money and false of the
+ * line's shape (#2069)** — the implicit reset bills the period as a PRORATION
+ * line, which the webhook's grant cannot see. An interval switch therefore
+ * asks for `billing_cycle_anchor: "now"` explicitly; see the note at the
+ * update call.
  */
 export async function updateSubscriptionPlan(
   subscriptionId: string,
@@ -1314,9 +1320,38 @@ export async function updateSubscriptionPlan(
       }
     }
 
+    /* ⚠ **AN INTERVAL SWITCH ASKS FOR THE NEW PERIOD AS A WHOLE LINE, BY NAME
+       (#2069).** Stripe resets the cycle on an interval change by itself, but
+       left to do so it bills the new year as a PRORATION line — *"Remaining
+       time on Klieg Starter after 08 Oct 2026"*, `proration: true`, 365 days —
+       and the webhook grants credits only off a non-proration line
+       (`periodBought`), so every monthly → yearly switch paid for a year and
+       was granted nothing for it. Asking for `billing_cycle_anchor: "now"`
+       makes Stripe bill the same year as an ordinary period line (*"1 × Klieg
+       Starter (at $269.00 / year)"*, `proration: false`) beside the same
+       unused-time credit. **Driven in test mode, not assumed: the same switch
+       with and without the anchor invoiced the same `amount_due` to the cent
+       (24,200 on Starter; 166,800 on the dial's rung with three steps, where
+       the add-on's year becomes a readable non-proration line too).**
+
+       ⚠ **ONLY ON A SWITCH, AND THE SWITCH IS READ OFF THE SUBSCRIPTION
+       ITSELF.** On a same-interval change the anchor would restart the cycle
+       and bill a whole fresh period — a tier upgrade charged a month instead of
+       its prorated share. The current interval is the base item's price, read
+       through the same `choiceOfStripeInterval` the quote's
+       `readSubscriptionBillingState` uses, off the retrieve this function
+       already made. An interval it cannot read sends no anchor, which is the
+       road as it stood before #2069 — and `changePlan` cannot reach here with
+       one, because the quote refuses an unreadable interval first. */
+    const currentInterval = choiceOfStripeInterval(
+      subscriptionItemsOf(subscription).base?.price?.recurring?.interval,
+    );
+    const intervalSwitch = currentInterval !== null && currentInterval !== targetInterval;
+
     const updated = await stripe.subscriptions.update(subscriptionId, {
       items: items as any,
       ...(spentShareLine ? { add_invoice_items: [spentShareLine as any] } : {}),
+      ...(intervalSwitch ? { billing_cycle_anchor: "now" as const } : {}),
       proration_behavior: "always_invoice",
       metadata: {
         userId: userId.toString(),

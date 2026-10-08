@@ -62,16 +62,23 @@ const serverRoot = import.meta.dirname;
 
 /** What `db/accountDeletion`'s logger was asked to warn about. */
 const erasureWarnings = vi.hoisted(() => [] as unknown[][]);
+/** What `casting/finalCastDeletion`'s logger was asked to warn about (#2062). */
+const castDeletionWarnings = vi.hoisted(() => [] as unknown[][]);
 vi.mock("./logging/logger", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./logging/logger")>();
   return {
     ...actual,
     createModuleLogger: (module: string) => {
       const child = actual.createModuleLogger(module);
-      if (module !== "db/accountDeletion") return child;
+      const sink = module === "db/accountDeletion"
+        ? erasureWarnings
+        : module === "casting/finalCastDeletion"
+          ? castDeletionWarnings
+          : null;
+      if (!sink) return child;
       return new Proxy(child, {
         get(target, property, receiver) {
-          if (property === "warn") return (...args: unknown[]) => { erasureWarnings.push(args); };
+          if (property === "warn") return (...args: unknown[]) => { sink.push(args); };
           return Reflect.get(target, property, receiver);
         },
       });
@@ -111,7 +118,7 @@ vi.mock("./db", async (importOriginal) => {
 const { appRouter } = await import("./routers");
 const { collectAccountOwnedStorageItemsIn } = await import("./db/accountDeletion");
 const { collectCanvasCleanupKeysIn } = await import("./casting/finalCastDeletion");
-const { boards, boardItems, wardrobeGarments } = await import("../drizzle/schema");
+const { boards, boardItems, boardItemVersions, models, modelAssets, wardrobeGarments } = await import("../drizzle/schema");
 type TransactionHandle = import("./db/connection").TransactionHandle;
 
 function callerFor(userId: number) {
@@ -210,6 +217,7 @@ const ATTACKS: Array<[string, () => Promise<unknown>]> = [
 
 beforeEach(() => {
   erasureWarnings.length = 0;
+  castDeletionWarnings.length = 0;
   writes.boardUpdates.length = 0;
   writes.itemInserts.length = 0;
   writes.itemUpdates.length = 0;
@@ -345,6 +353,8 @@ describe("a board key already on a row is never deletion authority (#2056, erasu
     const ownUrlKey = `models/${ME}/head.png`;
     const storageKeys = new Set<string>();
     await collectCanvasCleanupKeysIn({
+      // #2062: the URL counts because it is one of this Cast's own pictures.
+      castOwnedKeys: new Set([ownUrlKey]),
       tx: fakeTx(new Map<unknown, unknown[]>([
         [boardItems, [{
           id: 7,
@@ -368,7 +378,7 @@ describe("a board key already on a row is never deletion authority (#2056, erasu
     // and skips without one — so this reads the code for the same sentence
     // the driven arm above proves on `collectCanvasCleanupKeysIn`.
     const code = withoutComments(readFileSync(join(serverRoot, "casting/finalCastDeletion.ts"), "utf8"));
-    const reads = [...code.matchAll(/collectManifestKey\([^)]*item\.image(?:Url|Key)[^)]*\)/g)].map((m) => m[0]);
+    const reads = [...code.matchAll(/collectCastCanvasKey\([^)]*item\.image(?:Url|Key)[^)]*\)/g)].map((m) => m[0]);
     expect(reads, "the canvas reads were not found — the arm is blind").toHaveLength(2);
     for (const read of reads) expect(read).not.toContain("imageKey");
   });
@@ -420,5 +430,204 @@ describe("a board key already on a row is never deletion authority (#2056, erasu
     expect(found).toEqual([
       "casting/finalCastDeletion.ts thumbnailKey: newest?.imageKey ?? null",
     ]);
+  });
+});
+
+/*
+  THE URL HALF (#2062) — a board item's `imageUrl` is not the client's to name,
+  and an address already on a row is deletion authority only when it is one of
+  the Cast's own pictures.
+
+  The attack: put ANOTHER account's cast picture address (public) on an item
+  linked to your own Cast, then delete the Cast. Before #2062 the address
+  became a key in YOUR Cast's deletion manifest. Both halves are driven here:
+  the REAL router for the input, and the REAL collectors — Cast deletion's
+  `collectCanvasCleanupKeysIn` and the account erasure's
+  `collectAccountOwnedStorageItemsIn` — for the manifests.
+*/
+describe("a board item's picture address is never deletion authority on its own (#2062)", () => {
+  const modelId = 501;
+  /** This Cast's own picture, as its writer stores it (`uploadRawCandidate`). */
+  const OWN_CAST_KEY = "casting/1700000000000-0b7d4c1e-2f3a-4b5c-9d8e-7f6a5b4c3d2e.png";
+  const OWN_CAST_URL = `${PUBLIC}/${OWN_CAST_KEY}`;
+  const OTHERS_CAST_URL = `${PUBLIC}/${OTHERS_CAST_KEY}`;
+
+  const URL_ATTACKS: Array<[string, () => Promise<unknown>]> = [
+    ["boards.addItem", () =>
+      callerFor(ME).boards.addItem({ boardId: BOARD_ID, type: "model", sourceModelId: modelId, imageUrl: OTHERS_CAST_URL } as never)],
+    ["boards.addItems", () =>
+      callerFor(ME).boards.addItems({
+        boardId: BOARD_ID,
+        items: [{ type: "model", sourceModelId: modelId, imageUrl: OTHERS_CAST_URL }],
+      } as never)],
+    ["boards.updateItem", () =>
+      callerFor(ME).boards.updateItem({ itemId: 5, imageUrl: OTHERS_CAST_URL } as never)],
+  ];
+
+  for (const [name, attack] of URL_ATTACKS) {
+    it(`❌ ${name}: another account's picture address is refused and nothing is written`, async () => {
+      await expect(attack()).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      expect(writes.itemInserts).toEqual([]);
+      expect(writes.itemUpdates).toEqual([]);
+    });
+  }
+
+  it("✅ a bundle that still sends imageUrl as null is accepted, and the null is dropped rather than written", async () => {
+    const me = callerFor(ME);
+    await me.boards.addItem({ boardId: BOARD_ID, type: "note", imageUrl: null });
+    await me.boards.addItems({ boardId: BOARD_ID, items: [{ type: "note", imageUrl: null }] });
+    await me.boards.updateItem({ itemId: 5, label: "l", imageUrl: null });
+    expect(writes.itemInserts).toHaveLength(2);
+    expect(writes.itemUpdates.map((write) => write.data)).toEqual([{ label: "l" }]);
+    expect(everyWrittenField()).not.toContain("imageUrl");
+  });
+
+  async function castManifest(rows: Map<unknown, unknown[]>, castOwnedKeys: string[]): Promise<string[]> {
+    const storageKeys = new Set<string>(castOwnedKeys);
+    await collectCanvasCleanupKeysIn({
+      tx: fakeTx(rows),
+      modelId,
+      assetUrls: [OWN_CAST_URL],
+      storageKeys,
+      castOwnedKeys: new Set(castOwnedKeys),
+      currentPublicUrl: PUBLIC,
+    });
+    return [...storageKeys].sort();
+  }
+
+  it("❌ Cast deletion: another account's picture on an item and a version linked to this Cast is NOT in the manifest", async () => {
+    const keys = await castManifest(new Map<unknown, unknown[]>([
+      [boardItems, [{ id: 7, sourceModelId: modelId, imageUrl: OTHERS_CAST_URL, imageKey: null, metadata: {} }]],
+      [boardItemVersions, [{ itemId: 7, imageUrl: OTHERS_CAST_URL }]],
+    ]), [OWN_CAST_KEY]);
+    expect(keys).not.toContain(OTHERS_CAST_KEY);
+    expect(keys).toEqual([OWN_CAST_KEY]);
+  });
+
+  it("✅ Cast deletion: this Cast's own picture on its canvas item and version is still in the manifest", async () => {
+    // Positive control for the arm above: the SAME read, the same rows'
+    // shape — only the address differs — and the key IS collected. Started
+    // from an empty manifest so the canvas read itself is what puts it there.
+    const storageKeys = new Set<string>();
+    await collectCanvasCleanupKeysIn({
+      tx: fakeTx(new Map<unknown, unknown[]>([
+        [boardItems, [{ id: 7, sourceModelId: modelId, imageUrl: OWN_CAST_URL, imageKey: null, metadata: {} }]],
+        [boardItemVersions, [{ itemId: 7, imageUrl: OWN_CAST_URL }]],
+      ])),
+      modelId,
+      assetUrls: [OWN_CAST_URL],
+      storageKeys,
+      castOwnedKeys: new Set([OWN_CAST_KEY]),
+      currentPublicUrl: PUBLIC,
+    });
+    expect([...storageKeys]).toEqual([OWN_CAST_KEY]);
+    expect(castDeletionWarnings).toEqual([]);
+  });
+
+  it("✅ the skip is logged with where it was — Cast, item, column — and never the key; another origin stays silent", async () => {
+    await castManifest(new Map<unknown, unknown[]>([
+      [boardItems, [
+        { id: 7, sourceModelId: modelId, imageUrl: OTHERS_CAST_URL, imageKey: null, metadata: {} },
+        { id: 8, sourceModelId: modelId, imageUrl: "https://elsewhere.example/x.png", imageKey: null, metadata: {} },
+      ]],
+      [boardItemVersions, [{ itemId: 7, imageUrl: OTHERS_CAST_URL }]],
+    ]), [OWN_CAST_KEY]);
+    expect(castDeletionWarnings.map(([fields]) => fields)).toEqual([
+      { modelId, itemId: 7, column: "board_items.imageUrl" },
+      { modelId, itemId: 7, column: "board_item_versions.imageUrl" },
+    ]);
+    expect(JSON.stringify(castDeletionWarnings)).not.toContain(OTHERS_CAST_KEY);
+  });
+
+  it("❌ account erasure: another account's picture address on this account's board item is NOT in the manifest; its own Cast's picture is", async () => {
+    const items = await collectAccountOwnedStorageItemsIn(fakeTx(new Map<unknown, unknown[]>([
+      [models, [{ id: modelId }]],
+      [modelAssets, [{ storageKey: OWN_CAST_KEY, storageUrl: OWN_CAST_URL }]],
+      [boards, [{ id: BOARD_ID, userId: ME, thumbnailKey: null, thumbnailUrl: OTHERS_CAST_URL }]],
+      [boardItems, [{ id: 7, boardId: BOARD_ID, imageKey: null, imageUrl: OTHERS_CAST_URL, sourceModelId: modelId }]],
+      [boardItemVersions, [{ itemId: 7, imageUrl: OTHERS_CAST_URL }]],
+    ])), ME, PUBLIC);
+    const keys = items.map((item) => item.storageKey);
+    expect(keys).not.toContain(OTHERS_CAST_KEY);
+    expect(keys).toEqual([OWN_CAST_KEY]);
+  });
+
+  it("❌ static: neither canvas pass hands a board address to the unchecked collector, and the Cast's own keys are frozen before the canvas is read", () => {
+    // The second pass (`deleteCanvasDependenciesIn`, inside the deletion) is
+    // driven only by `r7-final-cast-deletion-db.test.ts`, which needs a
+    // disposable database and skips without one — so this reads the code.
+    const code = withoutComments(readFileSync(join(serverRoot, "casting/finalCastDeletion.ts"), "utf8"));
+    const unchecked = [...code.matchAll(/collectManifestKey\([^;]*?(?:item|version)\.imageUrl[^;]*?\)/g)].map((m) => m[0]);
+    expect(unchecked).toEqual([]);
+    const checked = [...code.matchAll(/collectCastCanvasKey\([^)]*(?:item|version)\.imageUrl/g)];
+    expect(checked, "the canvas reads were not found — the arm is blind").toHaveLength(4);
+    const executor = code.slice(code.indexOf("export async function executeFinalCastDeletion"));
+    const frozen = executor.indexOf("const castOwnedKeys");
+    expect(frozen, "the frozen set was not found — the arm is blind").toBeGreaterThan(0);
+    expect(frozen).toBeLessThan(executor.indexOf("await collectCanvasCleanupKeysIn("));
+  });
+});
+
+/*
+  #2064 — a saved look's `imageUrl` and a session's `history` are typed by the
+  browser (`looks.save`, `sessions.update`), so on the Cast deletion they are
+  deletion authority only under THIS account's wardrobe prefixes, and they are
+  added only AFTER the Cast's own keys are frozen for the canvas check.
+*/
+const { collectCastWardrobeKeys } = await import("./casting/finalCastDeletion");
+
+describe("a wardrobe address linked to a Cast is never deletion authority on its own (#2064)", () => {
+  const OTHERS_WARDROBE_KEY = `wardrobe/${OTHER}/vto-results/1700000000000-theirs.png`;
+  const OWN_UPLOAD_KEY = `${ME}-wardrobe/originals/1700000000000-own.png`;
+  const OWN_CAST_ASSET_URL = `${PUBLIC}/casting-v2/candidates/11111111-2222-4333-8444-555555555555.png`;
+
+  function collect(sessions: Array<{ modelImageUrl: unknown; history: unknown }>, looks: Array<{ imageUrl: unknown }>) {
+    const storageKeys = new Set<string>();
+    collectCastWardrobeKeys({
+      storageKeys,
+      currentPublicUrl: PUBLIC,
+      userId: ME,
+      assetUrls: [OWN_CAST_ASSET_URL],
+      sessions,
+      looks,
+    });
+    return [...storageKeys].sort();
+  }
+
+  it("❌ another account's picture on a look and in a session's history linked to this Cast is NOT in the manifest", () => {
+    const keys = collect(
+      [{ modelImageUrl: `${PUBLIC}/${OTHERS_CAST_KEY}`, history: [`${PUBLIC}/${OTHERS_CAST_KEY}`, `${PUBLIC}/${OTHERS_WARDROBE_KEY}`] }],
+      [{ imageUrl: `${PUBLIC}/${OTHERS_CAST_KEY}` }, { imageUrl: `${PUBLIC}/${OTHERS_WARDROBE_KEY}` }],
+    );
+    expect(keys).toEqual([]);
+  });
+
+  it("✅ this account's own wardrobe look and history pictures, and the Cast's own model picture, still are", () => {
+    const keys = collect(
+      [{ modelImageUrl: OWN_CAST_ASSET_URL, history: JSON.stringify([`${PUBLIC}/${OWN_WARDROBE_KEY}`]) }],
+      [{ imageUrl: `${PUBLIC}/${OWN_UPLOAD_KEY}` }, { imageUrl: "https://elsewhere.example/not-ours.png" }],
+    );
+    expect(keys).toEqual([
+      OWN_UPLOAD_KEY,
+      "casting-v2/candidates/11111111-2222-4333-8444-555555555555.png",
+      OWN_WARDROBE_KEY,
+    ].sort());
+  });
+
+  it("❌ static: the executor freezes the Cast's own keys BEFORE any wardrobe address, and hands no look or history to the unchecked collector", () => {
+    // The executor is driven only by `r7-final-cast-deletion-db.test.ts`,
+    // which needs a disposable database and skips without one.
+    const code = withoutComments(readFileSync(join(serverRoot, "casting/finalCastDeletion.ts"), "utf8"));
+    const unchecked = [...code.matchAll(/collectManifestKey\([^;]*?(?:look\.imageUrl|\.history|entry)[^;]*?\)/g)].map((m) => m[0]);
+    expect(unchecked).toEqual([]);
+    const executor = code.slice(code.indexOf("export async function executeFinalCastDeletion"));
+    const frozen = executor.indexOf("const castOwnedKeys");
+    const wardrobe = executor.indexOf("collectCastWardrobeKeys(");
+    expect(frozen, "the frozen set was not found — the arm is blind").toBeGreaterThan(0);
+    expect(wardrobe, "the wardrobe collector was not found — the arm is blind").toBeGreaterThan(0);
+    expect(frozen).toBeLessThan(wardrobe);
+    // One copy of the prefix rule: the deletion reuses the erasure's.
+    expect(code).toContain("wardrobeOwnedKeyPrefixes(");
+    expect(code).not.toMatch(/-wardrobe\//);
   });
 });

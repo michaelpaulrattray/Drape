@@ -13979,6 +13979,10 @@
       "path": "server/nextUpEscalation.test.ts"
     },
     {
+      "id": "test:server/openSessionCardsBounded.test.ts",
+      "path": "server/openSessionCardsBounded.test.ts"
+    },
+    {
       "id": "test:server/openrouterBalance.test.ts",
       "path": "server/openrouterBalance.test.ts"
     },
@@ -23988,6 +23992,11 @@
     {
       "from": "module:server/casting/finalCastDeletion.ts",
       "to": "module:server/casting/modelAvailability.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/finalCastDeletion.ts",
+      "to": "module:server/db/accountDeletion.ts",
       "kind": "imports"
     },
     {

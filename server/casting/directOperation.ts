@@ -199,17 +199,19 @@ export async function beginDirectOperation(input: {
         for free on a later pass, up to about six minutes after a press that
         charged nothing.
 
-        `failClaimedDirectOperation` is the house instrument for exactly this
-        and it is forty lines below: it writes the terminal failure receipt,
-        falls back to `recovery_required` if that write itself fails, and then
-        throws the error we hand it. **It is called HERE rather than in the
-        callers' unwind because only this function knows both facts the repair
-        needs** — the id the claim just minted, which `beginDirectOperation`
+        `refuseClaimedBeforeStart` is the house instrument for exactly this and
+        it is forty lines below: it writes the terminal failure receipt, falls
+        back to `recovery_required` if that write itself fails, and then throws
+        the error we hand it. It shares every line of that with the exported
+        `failClaimedDirectOperation` and differs in one thing — it sends no
+        terminal product event, because nothing started (#1943 item 2). **It is
+        called HERE rather than in the callers' unwind because only this function
+        knows both facts the repair needs** — the id the claim just minted, which `beginDirectOperation`
         never returns on this road, and WHICH refusal this is: `resource_busy`
         from the claim switch above is somebody else's live row and must not be
         touched, and both surface to a caller as the same `CONFLICT`.
       */
-      return failClaimedDirectOperation({
+      return refuseClaimedBeforeStart({
         userId: input.userId,
         operationId: claim.operationId,
         error: new TRPCError({
@@ -239,11 +241,11 @@ export async function beginDirectOperation(input: {
         which sentence it may trust.
       */
       /* Fails our own claimed row first — #1932, and the comment on the
-         `lockKey` branch above carries the whole reason. `SpokenError` extends
-         `TRPCError`, so `failClaimedDirectOperation` re-throws this very
-         instance and her sentence keeps its marker rather than being replaced
-         by the staff one. */
-      return failClaimedDirectOperation({
+         `lockKey` branch above carries the whole reason, including why this is
+         the silent road (#1943 item 2). `SpokenError` extends `TRPCError`, so
+         `refuseClaimedBeforeStart` re-throws this very instance and her sentence
+         keeps its marker rather than being replaced by the staff one. */
+      return refuseClaimedBeforeStart({
         userId: input.userId,
         operationId: claim.operationId,
         error: spokenError({
@@ -269,6 +271,50 @@ export async function failClaimedDirectOperation(input: {
   operationId: string;
   error: unknown;
 }): Promise<never> {
+  return settleClaimedFailure(input, { terminalEvent: true });
+}
+
+/*
+  A PRESS REFUSED BEFORE IT STARTED IS NOT A FAILED GENERATION (#1943 item 2).
+
+  The receipt is identical — the row must still be settled, or `renderViewAttempts`
+  reads a non-terminal row owned by nobody as `fenced` and the slot says "being
+  made" until the sweep clears it (#1932, the comment on the `lockKey` branch
+  above carries the whole reason). What differs is the product EVENT, and the
+  difference is not cosmetic:
+
+  - `generation started` is emitted at the BOTTOM of `beginDirectOperation`,
+    after the locks, because that is the moment the customer's action began. A
+    lock-refused press never reaches it.
+  - So the terminal event this road used to send had **no start before it**, and
+    the action name was `UNNAMED_ACTION` — `rememberAction` is on the same line
+    as the start event. The stream read "a generation failed, we do not know
+    which kind", for a press that rendered nothing and charged nothing.
+
+  The file already answers this question five times and these two branches were
+  the only dissenters: every refusal in the claim switch above — `in_progress`,
+  `resource_busy`, `payload_conflict`, `recovery_required`, `deleted_subject` —
+  throws without an event. A refused press is a refusal, and the stream stays
+  balanced: every `generation failed` has a `generation started` before it.
+
+  Deliberately NOT exported. Every other caller of `failClaimedDirectOperation`
+  is past the gate, so its operation DID start and its terminal event is owed;
+  a flag on the exported function would be an invitation to send nothing on a
+  road that had.
+*/
+async function refuseClaimedBeforeStart(input: {
+  userId: number;
+  operationId: string;
+  error: unknown;
+}): Promise<never> {
+  return settleClaimedFailure(input, { terminalEvent: false });
+}
+
+async function settleClaimedFailure(input: {
+  userId: number;
+  operationId: string;
+  error: unknown;
+}, options: { terminalEvent: boolean }): Promise<never> {
   const error = input.error instanceof TRPCError
     ? input.error
     : new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The operation could not start." });
@@ -309,13 +355,19 @@ export async function failClaimedDirectOperation(input: {
     would read as unknown. `error.message` is deliberately NOT sent — it is the
     one property on this path that can quote a provider quoting her brief, and
     the catalogue's header names it as the specimen.
+
+    ⚠ **`options.terminalEvent` is false ONLY for a press refused before it
+    started** — `refuseClaimedBeforeStart`, whose block above carries the reason.
+    The receipt is written either way; the event is not.
   */
-  captureProductEvent("generation failed", input.userId, {
-    action: takeAction(input.operationId),
-    errorCode: productErrorCode(error.code),
-    creditsCharged: 0,
-    creditsRefunded: 0,
-  });
+  if (options.terminalEvent) {
+    captureProductEvent("generation failed", input.userId, {
+      action: takeAction(input.operationId),
+      errorCode: productErrorCode(error.code),
+      creditsCharged: 0,
+      creditsRefunded: 0,
+    });
+  }
   throw error;
 }
 
