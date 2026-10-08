@@ -3,13 +3,15 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
-import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 import { readListedSource } from "./testing/listedSource";
 import { codeOnly, withoutComments } from "./testing/withoutComments";
 
-/* This suite reads every module the Atlas lists (the direct-balance guard at the
-   foot of the file), so it carries the class floor rather than the 5 s default. */
-vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
+/* This suite reads every module the Atlas lists (the direct-balance guard) and,
+   since #1906, spawns `git ls-files` for the Stripe-write guard, so it is in the
+   child-process population (#548) — whose floor equals the contended one (30 s),
+   so the class it already carried for the walk is still met. */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 /**
  * WHAT THE GATE CALLS A MONEY DIFF, AND WHY IT IS TWO READINGS (card #958).
