@@ -769,7 +769,7 @@ describe("brief 06 §4 — the facts grid survives a 64-character value", () => 
      a two-figure credit fact read `+187,3 / 30 ledger` in a 168px column.
      Read on the DECLARATIONS, not the docblock, which names the old rule on
      purpose so the reversal is not re-made. */
-  it("fact values never break-all — a space is always tried first (#2043)", () => {
+  it("fact values never break-all — a space is always tried first", () => { /* #2043 */
     const at = FOUNDATION_CSS.indexOf(".dp-table__factvalue {");
     expect(at, "the fact-value rule is GONE").toBeGreaterThan(0);
     const rule = FOUNDATION_CSS.slice(at, FOUNDATION_CSS.indexOf("}", at) + 1);
