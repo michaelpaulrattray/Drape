@@ -33,6 +33,9 @@ const { pricesCreate, pricesList, subscriptionsUpdate, subscriptionsRetrieve, in
 vi.mock("stripe", () => ({
   default: class StripeDouble {
     prices = { create: pricesCreate, list: pricesList };
+    /* The spent-share line's own catalogue product (#2023), read before a
+       switch that carries one — present and active, as the ceremony leaves it. */
+    products = { retrieve: vi.fn(async (id: string) => ({ id, active: true })) };
     subscriptions = { retrieve: subscriptionsRetrieve, update: subscriptionsUpdate };
     invoices = { retrieve: invoicesRetrieve, voidInvoice: invoicesVoid };
     customers = { retrieve: vi.fn(), create: vi.fn() };

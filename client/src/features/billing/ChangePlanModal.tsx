@@ -107,7 +107,7 @@
  */
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { displayBalance, displaySpent, formatCredits } from "@shared/creditDisplay";
-import { spentShareSentence } from "./spentShareSentence";
+import { spentShareSentence, yearlySwitchOffsetSentence } from "./spentShareSentence";
 /* #1836 — the one declaration of who may buy a credit pack, read here so §6f
    and the Add-credits door cannot answer that question differently. */
 import { topupEligibility } from "@shared/creditTopups";
@@ -2339,6 +2339,9 @@ function describeChange(
        and the credits it pays for, both from the server's own quote. */
     spentShareCharge?: number;
     spentShareCredits?: number;
+    /* What is still taken back of the old cycle's share — 0 when every
+       credit of it is already used (#2023). */
+    creditUnwind?: number;
     currentInterval?: "monthly" | "annual";
   },
   /**
@@ -2425,9 +2428,9 @@ function describeChange(
     if (quote.targetInterval === "annual") {
       return (
         `${plan.name} costs ${formatDollars(quote.newPlanPrice)} for the year. ` +
-        `The unused part of your current cycle comes off that, so about ` +
-        `${formatDollars(quote.immediateCharge)} is due today.` +
-        spentShareSentence(quote) +
+        /* What comes off, and what is paid for instead when her credits are
+           already used (#2023) — chosen by the quote, in one place. */
+        yearlySwitchOffsetSentence(quote, formatDollars(quote.immediateCharge)) +
         ` Your new billing year ` +
         `starts now, and the full year of credits lands as soon as the payment settles, ` +
         `replacing what was left of this cycle's allowance.`

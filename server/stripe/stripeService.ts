@@ -6,7 +6,7 @@
 
 import Stripe from "stripe";
 import { ENV } from "../_core/env";
-import { SUBSCRIPTION_PRODUCTS, SubscriptionPlan } from "./stripeProducts";
+import { SPENT_SHARE_PRODUCT, SUBSCRIPTION_PRODUCTS, SubscriptionPlan } from "./stripeProducts";
 import {
   periodPriceInCents,
   stripeIntervalOf,
@@ -1160,15 +1160,29 @@ export async function updateSubscriptionPlan(
        under `always_invoice` is the switch's own invoice — so the customer is
        charged ONE figure for one action, and the line cannot land without the
        switch or the switch without the line. Its price is inline
-       (`price_data`), under the plan's own product, so no catalogue object is
-       minted. A product or currency this read cannot state REFUSES here,
-       before the pending-schedule release and before the update: charging the
-       switch without the line is the exact mint this exists to close. */
+       (`price_data`), so no price object is minted per switch.
+
+       ⚠ **UNDER ITS OWN PRODUCT, NOT THE PLAN'S (#2023).** The plan's product
+       put the plan's name on her invoice twice; {@link SPENT_SHARE_PRODUCT}'s
+       name is the line's own words. The product is READ here, by its fixed
+       id, rather than trusted to exist: a product missing or archived in this
+       mode's catalogue, or a currency this read cannot state, REFUSES here,
+       before the pending-schedule release and before the update — charging
+       the switch without the line is the exact mint this exists to close, and
+       falling back to the plan's product would bring the doubled name back
+       silently. */
     let spentShareLine: Record<string, unknown> | null = null;
     if (spentShareCharge !== undefined && spentShareCharge > 0) {
-      const baseProduct = subscriptionItemsOf(subscription).base?.price?.product;
-      const productId =
-        typeof baseProduct === "string" ? baseProduct : (baseProduct?.id ?? null);
+      let productId: string | null = null;
+      try {
+        const product = await stripe.products.retrieve(SPENT_SHARE_PRODUCT.id);
+        productId = product?.active ? product.id : null;
+      } catch (productErr) {
+        log.error(
+          { err: productErr, product: SPENT_SHARE_PRODUCT.id },
+          "[Stripe] The spent-share product could not be read",
+        );
+      }
       const currency =
         (subscription as any).currency
         ?? subscriptionItemsOf(subscription).base?.price?.currency
@@ -1176,7 +1190,7 @@ export async function updateSubscriptionPlan(
       if (!productId || !currency) {
         log.error(
           { subscriptionId, productId, currency },
-          "[Stripe] Refusing a switch whose spent-share line cannot be built — the plan's product or currency is unreadable",
+          "[Stripe] Refusing a switch whose spent-share line cannot be built — the spent-share product or the currency is unreadable",
         );
         return {
           success: false,
