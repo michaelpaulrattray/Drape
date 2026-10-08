@@ -471,7 +471,24 @@ describe("a closed row's printed minutes are its life, not its close stamp", () 
 
   it("a late close is named on its own line rather than passing as a lifetime", () => {
     const block = closedBlock(read(READER));
-    expect(block).toMatch(/stamped closed \$\{lateCloseMinutes\} min after its last check-in/);
+    expect(block).toMatch(/stamped closed \$\{[^}]+\} min after its last check-in/);
+  });
+
+  it("⚠ and that line sits behind a DERIVED bar, not an invented one or none at all", () => {
+    /*
+      The first shape of it had no bar and fired on eight of production's eight
+      newest rows, because an ordinary close sits minutes after the *edition
+      written* heartbeat — the deploy rite and the mailbox entry come after it.
+      A ⚠ on eight of eight is the alarm `CREW_SHIFT_STALL_MS`'s own header is
+      about: one he learns to scroll past, and then the first one he believes is
+      the false one.
+
+      So the arm is on the CONSTANT and not on a number: half the stall window
+      is the same bar the close script already uses for the sibling question, and
+      a literal here would be a second number free to drift from it (working
+      law 4).
+    */
+    expect(closedBlock(read(READER))).toMatch(/>\s*CREW_SHIFT_STALL_MS \/ 2/);
   });
 
   it("and that reading can say no", () => {
