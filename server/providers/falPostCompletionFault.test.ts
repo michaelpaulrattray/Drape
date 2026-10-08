@@ -172,12 +172,12 @@ describe("#1966 — THE CONTROL: a job that never ran is not marked as bought", 
     expect(providerAlreadyBilled(fault)).toBe(false);
   });
 
-  it("a status check the provider refuses", async () => {
+  it("a status check the provider refuses outright (404 — not a blip, #2044)", async () => {
     const fault = await faultFrom({
-      status: () => new Response("boom", { status: 503 }),
+      status: () => new Response("no such request", { status: 404 }),
     });
-    expect(fault.message).toBe("fal.ai status check failed");
-    expect(fault.failureClass).toBe("transport");
+    expect(fault.message).toBe("fal.ai status check failed (404)");
+    expect(fault.failureClass).toBe("unknown");
     expect(providerAlreadyBilled(fault)).toBe(false);
   });
 });
@@ -296,11 +296,15 @@ describe("#2032 — the engine's own retry never re-buys a frame fal already fin
   count SUBMITS and CANCELS at the wire rather than reading the error alone.
 */
 function jobWire(script: {
-  status: () => Response;
+  /** Called with the 1-based number of this status poll, across every job. */
+  status: (poll: number) => Response;
   cancel: () => Response;
-}): { submits: () => number; cancels: () => number } {
+  /** The result fetch; absent means a result request is a wiring error. */
+  result?: () => Response;
+}): { submits: () => number; cancels: () => number; polls: () => number } {
   let submits = 0;
   let cancels = 0;
+  let polls = 0;
   vi.stubGlobal(
     "fetch",
     vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
@@ -313,11 +317,15 @@ function jobWire(script: {
         cancels += 1;
         return script.cancel();
       }
-      if (address.includes("/status")) return script.status();
+      if (address.includes("/status")) {
+        polls += 1;
+        return script.status(polls);
+      }
+      if (script.result) return script.result();
       throw new Error(`#2038 arm: unexpected request to ${address}`);
     }),
   );
-  return { submits: () => submits, cancels: () => cancels };
+  return { submits: () => submits, cancels: () => cancels, polls: () => polls };
 }
 
 const ALREADY_COMPLETED = () =>
@@ -344,23 +352,107 @@ async function faultOf(call: () => Promise<unknown>): Promise<ProviderError> {
   return fault as ProviderError;
 }
 
-describe("#2038 — a refused status check cancels the job it walks away from", () => {
-  it("the cancel answers ALREADY_COMPLETED: the frame is bought, ONE submit, ONE cancel", async () => {
-    const wire = jobWire({ status: STATUS_503, cancel: ALREADY_COMPLETED });
+const STATUS_404 = () => new Response("no such request", { status: 404 });
+const STATUS_429 = () => new Response("slow down", { status: 429 });
+const COMPLETED = () => new Response(JSON.stringify({ status: "COMPLETED" }), { status: 200 });
+const A_PICTURE = () => new Response(
+  JSON.stringify({ images: [{ url: `data:image/png;base64,${PIXEL.toString("base64")}`, content_type: "image/png" }] }),
+  { status: 200 },
+);
+
+/** The transport alone — no engine, so no `withRetry` around it. */
+function transportJob(timeoutMs: number, pollIntervalMs = 1) {
+  return runFalImageJob({
+    apiKey: "test-key",
+    endpoint: "openai/gpt-image-2.5/sunburst/edit",
+    body: { prompt: "p" },
+    timeoutMs,
+    pollIntervalMs,
+  });
+}
+
+/*
+  #2044 — A 5xx OR 429 ON THE STATUS POLL IS THE STATUS ENDPOINT'S PROBLEM, NOT
+  THE JOB'S. #2038 cancelled the job there and let `withRetry` submit a fresh
+  one; whether fal's cancel stops a job already IN_PROGRESS is unverified, so
+  that could be two frames. The transport now keeps polling the SAME job. These
+  arms count submits and cancels at the wire, through the real engine.
+*/
+describe("#2044 — a transient status answer keeps polling the same job", () => {
+  it("a 503, then COMPLETED: ONE submit, ZERO cancels, and a picture", async () => {
+    const wire = jobWire({
+      status: (poll) => (poll === 1 ? STATUS_503() : COMPLETED()),
+      cancel: CANCELLED,
+      result: A_PICTURE,
+    });
+    const picture = await sheetEngine();
+    expect(picture, "a 503 on the status poll lost the picture").toBeTruthy();
+    expect(wire.submits(), "a blip on the status endpoint bought a second frame").toBe(1);
+    expect(wire.cancels(), "a blip on the status endpoint cancelled a live job").toBe(0);
+    expect(wire.polls()).toBe(2);
+  });
+
+  it("a 429, then COMPLETED: ONE submit, ZERO cancels, and a picture", async () => {
+    const wire = jobWire({
+      status: (poll) => (poll <= 2 ? STATUS_429() : COMPLETED()),
+      cancel: CANCELLED,
+      result: A_PICTURE,
+    });
+    await sheetEngine();
+    expect(wire.submits()).toBe(1);
+    expect(wire.cancels()).toBe(0);
+    expect(wire.polls()).toBe(3);
+  });
+
+  it("a 503 until the deadline: ONE submit and ONE cancel — the deadline's", async () => {
+    const wire = jobWire({ status: STATUS_503, cancel: CANCELLED });
+    const fault = await faultOf(() => transportJob(25));
+    expect(fault.failureClass).toBe("timeout");
+    expect(fault.message).toBe("fal.ai did not complete within the deadline");
+    expect(wire.submits()).toBe(1);
+    expect(wire.cancels(), "the deadline walked away without cancelling").toBe(1);
+    expect(wire.polls(), "the transport stopped polling on the first 503").toBeGreaterThan(1);
+  });
+
+  it("a 429 backs off — doubling, capped at eight intervals — and a 503 does not", async () => {
+    /* The waits the transport ASKS for, read off `setTimeout` itself, so the
+       arm is a fact about the code and not about how busy the machine is. */
+    const waitsFor = async (status: (poll: number) => Response) => {
+      jobWire({ status, cancel: CANCELLED, result: A_PICTURE });
+      const timer = vi.spyOn(globalThis, "setTimeout");
+      try {
+        await transportJob(60_000, 10);
+        return timer.mock.calls.map(([, ms]) => ms);
+      } finally {
+        timer.mockRestore();
+      }
+    };
+    // Six 429s, then COMPLETED: 10, then 20 40 80 80 80 80.
+    const after429 = await waitsFor((poll) => (poll <= 6 ? STATUS_429() : COMPLETED()));
+    expect(after429).toEqual([10, 20, 40, 80, 80, 80, 80]);
+    // THE CONTROL — three 503s, then COMPLETED: no backoff.
+    const after503 = await waitsFor((poll) => (poll <= 3 ? STATUS_503() : COMPLETED()));
+    expect(after503).toEqual([10, 10, 10, 10]);
+  });
+});
+
+describe("#2038/#2044 — a status answer that is NOT a blip cancels the job it walks away from", () => {
+  it("a 404, cancel answers ALREADY_COMPLETED: the frame is bought, ONE submit, ONE cancel", async () => {
+    const wire = jobWire({ status: STATUS_404, cancel: ALREADY_COMPLETED });
     const fault = await faultOf(() => sheetEngine());
-    expect(fault.message).toBe("fal.ai status check failed");
-    expect(fault.failureClass).toBe("transport");
+    expect(fault.message).toBe("fal.ai status check failed (404)");
+    expect(fault.failureClass).toBe("unknown");
     expect(providerAlreadyBilled(fault), "a job fal says finished read as unbought").toBe(true);
     expect(wire.cancels(), "the abandoned job was not cancelled").toBe(1);
     expect(wire.submits(), "a finished frame was bought again").toBe(1);
   });
 
-  it("THE CONTROL — the cancel stops the job: not bought, every attempt cancelled, retried to the budget", async () => {
-    const wire = jobWire({ status: STATUS_503, cancel: CANCELLED });
+  it("a 404, the cancel stops the job: a cancel and a throw, and no second submit", async () => {
+    const wire = jobWire({ status: STATUS_404, cancel: CANCELLED });
     const fault = await faultOf(() => sheetEngine());
     expect(providerAlreadyBilled(fault)).toBe(false);
-    expect(wire.submits(), "a stopped job stopped being retried").toBe(3);
-    expect(wire.cancels(), "an attempt walked away without cancelling — that job bills").toBe(3);
+    expect(wire.submits(), "a refused status answer was re-submitted").toBe(1);
+    expect(wire.cancels(), "the abandoned job was not cancelled — it bills").toBe(1);
   });
 
   it("a cancel that never answers does not mask the status fault", async () => {
@@ -374,12 +466,12 @@ describe("#2038 — a refused status check cancels the job it walks away from", 
           return new Response(JSON.stringify({ request_id: `abandon-${submits}` }), { status: 200 });
         }
         if (init?.method === "PUT") throw new TypeError("fetch failed");
-        return STATUS_503();
+        return STATUS_404();
       }),
     );
     const fault = await faultOf(() => sheetEngine());
-    expect(fault.message).toBe("fal.ai status check failed");
-    expect(fault.failureClass).toBe("transport");
+    expect(fault.message).toBe("fal.ai status check failed (404)");
+    expect(fault.failureClass).toBe("unknown");
     expect(providerAlreadyBilled(fault)).toBe(false);
   });
 });
