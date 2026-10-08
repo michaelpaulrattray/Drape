@@ -97,6 +97,10 @@ import {
   type SignSheetKind,
 } from "./signSheet";
 import { SHEET_MAX_RENDERS } from "./signSheetCoordinator";
+import path from "node:path";
+
+import { refundOutcomeText } from "../../shared/refundCopy";
+import { readListedSource } from "../testing/listedSource";
 
 const pass: ViewConformanceVerdict = {
   pass: true,
@@ -2459,5 +2463,82 @@ describe("⚠ the free re-render is OURS, and its limits", () => {
     for (const angle of CAST_PACKAGE_VIEWS) {
       expect(refused.filter((seen) => seen === angle), angle).toHaveLength(SHEET_MAX_RENDERS);
     }
+  });
+});
+
+/**
+ * ⚠ **THE WHOLE LINE THE CUSTOMER READS, COMPOSED THROUGH THE REAL HELPERS —
+ * and it is the arm that would have caught the defect this card nearly shipped.**
+ *
+ * Yuna's sentences are complete sentences ending in *"so we didn't keep it"*,
+ * and `ViewTabs`'s failed slot composes `${label} failed — ${reason}.
+ * ${money}`. Shipped with their own full stop they read *"…we didn't keep
+ * it.."* on the one surface a Sign's refusal actually lands on — a punctuation
+ * bug nobody would find by reading either file alone, because the sentence is
+ * right in `packageOrchestrator` and the composition is right in `ViewTabs`.
+ *
+ * So the LINE is the subject here, not the sentence: the reason this road
+ * raises is pushed through the money helper every surface shares, and the
+ * composed result is read for the two things a reader cannot see from one side
+ * — no doubled stop, and no term of art. **It is a mechanizable design law and
+ * therefore an assertion rather than review memory** (the UI milestone
+ * contract's own rule).
+ *
+ * ⚠ **The `.` is `ViewTabs`'s and is quoted from it rather than invented**, so
+ * an arm that passed while the real surface composed something else is not what
+ * this is. If that expression changes, this arm's own comment is the pointer to
+ * change with it.
+ */
+describe("⚠ the refusal line a customer reads, end to end", () => {
+  const compose = (reason: string) =>
+    /* `client/src/features/casting/components/ImageViewer/ViewTabs.tsx`'s
+       `FailedSlot`: `${label} failed — ${failure.reason}. ${refundOutcomeText(failure)}` */
+    `Front failed — ${reason}. ${refundOutcomeText({ refunded: VIEW_PRICE })}`;
+
+  it("reads as one sentence, with no doubled stop and no term of art", () => {
+    for (const axis of CONFORMANCE_AXES) {
+      const line = compose(refusedViewReason([axis], "Sifr"));
+      expect(line, axis).not.toContain("..");
+      /* The pipeline's own words, each one checked by name: an axis name, a
+         verdict word, and the term his ruling removed. */
+      expect(line.toLowerCase(), axis).not.toContain("likeness");
+      expect(line.toLowerCase(), axis).not.toMatch(/identity|intact|people|axis|verdict|judge/);
+      /* It says what happened, what we did, and what came back — in that order. */
+      expect(line, axis).toContain("so we didn't keep it.");
+      expect(line, axis).toContain("credits refunded — you weren't charged.");
+    }
+  });
+
+  it("⚠ CONTROL — the arm reddens on a sentence carrying its own stop", () => {
+    /*
+      Without this the arm above could pass on a reader that never looked at the
+      join. The failing shape is the exact one a well-meaning edit produces:
+      Yuna's sentence pasted in with the full stop she wrote.
+    */
+    expect(compose("This view came out broken, so we didn't keep it.")).toContain("..");
+  });
+
+  it("⚠ DERIVES its join from the real surface, so a quoted composition cannot rot", () => {
+    /*
+      ⚠ **THE ARM ABOVE QUOTES `ViewTabs`, AND A QUOTE IS A MIRROR (working law
+      4).** If that component stops putting a full stop after the reason, the
+      arm above goes on passing while the real line changes shape — which is
+      the drift this repository has paid for repeatedly. So the join is READ
+      out of the component rather than trusted: the expression must still put
+      a `.` between the reason and the money, because that is the whole reason
+      these sentences ship without one.
+    */
+    const source = readListedSource(path.join(
+      process.cwd(),
+      "client/src/features/casting/components/ImageViewer/ViewTabs.tsx",
+    ));
+    expect(source, "the surface this arm derives from is gone — re-point it").not.toBeNull();
+    expect(source!).toContain("${label} failed — ${failure.reason}. ${refundOutcomeText(failure)}");
+  });
+  it("names the Cast in the line, or calls it this character", () => {
+    expect(compose(refusedViewReason(["identity"], "Sifr")))
+      .toBe("Front failed — This view didn't clearly look like Sifr, so we didn't keep it. "
+        + `${refundOutcomeText({ refunded: VIEW_PRICE })}`);
+    expect(compose(refusedViewReason(["identity"]))).toContain("this character");
   });
 });
