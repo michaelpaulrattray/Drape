@@ -12092,6 +12092,10 @@
       "path": "server/casting/pdfService.test.ts"
     },
     {
+      "id": "test:server/casting/pressKindNotViewReplacing.test.ts",
+      "path": "server/casting/pressKindNotViewReplacing.test.ts"
+    },
+    {
       "id": "test:server/casting/promptParser.gold.test.ts",
       "path": "server/casting/promptParser.gold.test.ts"
     },
