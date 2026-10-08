@@ -422,14 +422,28 @@ export interface InFlightRender {
 }
 
 /**
- * One filter, read by both forms below, so the locking read and the courtesy
- * read can never disagree about what counts as in flight (working law 4).
+ * ONE DEFINITION of in flight, read by both forms below, so the locking read
+ * and the courtesy read can never disagree about what counts (working law 4).
+ *
+ * ⚠ **WHAT THEY NO LONGER SHARE IS THE PREDICATE, AND THAT IS DELIBERATE
+ * (PR #1960 review).** The courtesy read tests the status in SQL, because it
+ * takes no locks and a status-leading index with `LIMIT 1` is the fastest way
+ * to answer it. The locking read tests it HERE, in code, because under
+ * `FOR UPDATE` the index the optimizer picks decides what gets locked — and a
+ * status predicate bought a status-leading range that locked every account's
+ * in-flight rows. `RENDER_IN_FLIGHT_STATUSES` is the one fact; where it is
+ * applied is a property of locking, not of meaning.
  */
 function renderInFlightWhere(userId: number) {
   return and(
     eq(generationOperations.userId, userId),
     inArray(generationOperations.status, [...RENDER_IN_FLIGHT_STATUSES]),
   );
+}
+
+/** The same test, applied to a row rather than to a column. */
+function rowIsRenderInFlight(row: { status: string }): boolean {
+  return (RENDER_IN_FLIGHT_STATUSES as readonly string[]).includes(row.status);
 }
 
 function firstInFlight(
@@ -468,12 +482,45 @@ export async function findRenderInFlightForUser(userId: number): Promise<InFligh
  * The same question asked as a LOCKING read, inside a transaction.
  *
  * `.for("update")` is the whole point: it reads the latest committed version
- * rather than the transaction's snapshot, and it holds the index range for
- * this account for as long as the caller's transaction lives. So a claim
- * racing an erasure either committed before this read and is seen, or blocks
- * behind it. A plain `SELECT` here would answer about the moment the
- * transaction began, which is the class `collectAccountOwnedStorageItemsIn`
- * was already bitten by (#1948 L2).
+ * rather than the transaction's snapshot, and the range it locks is held for
+ * as long as the caller's transaction lives. So a claim racing an erasure
+ * either committed before this read and is seen, or blocks behind it. A plain
+ * `SELECT` here would answer about the moment the transaction began, which is
+ * the class `collectAccountOwnedStorageItemsIn` was already bitten by
+ * (#1948 L2).
+ *
+ * ⚠ **IT LOCKS BY OWNER ALONE, AND THE STATUS TEST IS IN CODE. ITS DOCBLOCK
+ * CLAIMED — WRONGLY — THAT IT HELD ‘THE INDEX RANGE FOR THIS ACCOUNT’, AND
+ * THE OPTIMIZER DID NOT TAKE THAT RANGE (PR #1960 review).** With
+ * `status IN (…)` in the WHERE, `EXPLAIN` on the real schema took
+ * `idx_generation_ops_status_lease` — a STATUS-leading range — and under
+ * `FOR UPDATE` in REPEATABLE READ, InnoDB next-key-locks every index record it
+ * scans. When the deleting account had no in-flight render, which is the
+ * common case, `LIMIT 1` never stopped early and EVERY customer's `claimed`
+ * and `running` rows stayed locked until the erasure committed — the longest
+ * transaction in the product. Other customers' heartbeats, lease renewals and
+ * settles all block on it.
+ *
+ * Measured on the real schema, both shapes, rather than reasoned about:
+ *
+ *     userId + status IN, LIMIT 1   type=range  key=idx_generation_ops_status_lease
+ *     userId alone, no limit        type=ref    key=uq_generation_ops_user_request
+ *
+ * ⚠ **The second reading is the one that had to be taken rather than assumed,
+ * because owner-only has its OWN risk: no status predicate means less
+ * selectivity, and a FULL SCAN would lock strictly more than the defect did.**
+ * It was measured against the worst case available — an account owning half
+ * the table — and the plan is a user-leading `ref`, not a scan. Both candidate
+ * keys the optimizer considers there are user-leading, so either choice is an
+ * owner-scoped range.
+ *
+ * ⚠ **AND `LIMIT 1` HAD TO GO WITH THE PREDICATE, WHICH IS THE EASY HALF TO
+ * GET WRONG**: with no status test in SQL, `LIMIT 1` would return whichever
+ * row the index reached first and answer `null` for an account whose in-flight
+ * render is not it. The statement returns the account's operations and the
+ * status test is applied here. Measured at the busiest dev account: 248 rows
+ * of three columns, once, inside a transaction that is already purging every
+ * table the account touches.
  */
 export async function findRenderInFlightForUserIn(
   tx: TransactionHandle,
@@ -487,10 +534,12 @@ export async function findRenderInFlightForUserIn(
       status: generationOperations.status,
     })
     .from(generationOperations)
-    .where(renderInFlightWhere(userId))
-    .limit(1)
+    /* OWNER ONLY — see the docblock. A status predicate here is not a tidy-up,
+       it is the defect: it buys a status-leading index and locks every
+       account's in-flight renders. */
+    .where(eq(generationOperations.userId, userId))
     .for("update");
-  return firstInFlight(rows);
+  return firstInFlight(rows.filter(rowIsRenderInFlight));
 }
 
 export async function listActivePublicGenerationOperations(input: {

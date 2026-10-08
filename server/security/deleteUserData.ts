@@ -90,7 +90,12 @@ export async function deleteUserData(
 
     The control is the LOCKING read inside `deleteUserAccount`'s transaction,
     which is race-free; this one is a plain check-then-act read and a claim can
-    land in the microsecond after it. It is here anyway because the next
+    land in the window after it. ⚠ That window is not a microsecond, which is
+    what this comment used to call it (PR #1960 review): it spans the Stripe
+    cancel round trip below and the start of the transaction, so it is network
+    time. The outcome is unchanged — the locking read is what stops the leak —
+    but a reader sizing the race deserves the real number. It is here anyway
+    because the next
     statement cancels a paying customer's Stripe subscription immediately and
     irreversibly. Refusing only at the transaction would leave somebody who
     asked to be erased with their account intact and their plan gone — a money

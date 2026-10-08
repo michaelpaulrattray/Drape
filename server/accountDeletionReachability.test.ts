@@ -78,6 +78,29 @@ const selected: string[] = [];
  */
 let inFlightRows: unknown[] = [];
 
+/** One read of one table, as the double saw it being built. */
+type ReadShape = { table: string; stages: string[]; where: unknown };
+/** Every read this run issued, in order. */
+const reads: ReadShape[] = [];
+
+/**
+ * Every COLUMN a drizzle condition names, in order — the house shape for
+ * asking about an outgoing statement (invariant 5;
+ * `server/purchasedCreditsGrantWire.test.ts` is the precedent). It descends
+ * into arrays because `inArray` holds its values in one.
+ */
+function conditionColumns(node: unknown, out: string[] = []): string[] {
+  if (Array.isArray(node)) {
+    for (const child of node) conditionColumns(child, out);
+    return out;
+  }
+  if (!node || typeof node !== "object") return out;
+  const chunk = node as { queryChunks?: unknown; name?: unknown };
+  if (Array.isArray(chunk.queryChunks)) return conditionColumns(chunk.queryChunks, out);
+  if (typeof chunk.name === "string") out.push(chunk.name);
+  return out;
+}
+
 /**
  * ⚠ **THE IN-FLIGHT READ IS RECOGNISED BY BEING FIRST, NOT BY ITS FIELDS.**
  *
@@ -127,21 +150,32 @@ function tableNameOf(value: unknown): string {
 function selectChain(fields: Record<string, unknown> | undefined) {
   let rows: unknown[] = [synthRow(fields)];
   const chain: Record<string, unknown> = {};
-  const passthrough = (...args: unknown[]) => {
+  /* What THIS read named, so an arm can ask about the statement rather than
+     about a constant near it (invariant 5). Filled as the chain is walked. */
+  const seen: ReadShape = { table: "<unknown>", stages: [], where: null };
+  const passthrough = (stage: string) => (...args: unknown[]) => {
+    seen.stages.push(stage);
+    if (stage === "where" && args[0] !== undefined) seen.where = args[0];
     const first = args[0];
     if (first !== undefined) {
       /* `from(table)` is the only stage that names one, and it is where the
          answer is decided — before the table is recorded, so "first" means
          first as this run saw it. */
-      if (isFirstOperationsRead(first)) rows = inFlightRows;
-      else if (READS_EMPTY.has(tableNameOf(first))) rows = [];
-      const name = tableNameOf(first);
-      if (name !== "<unknown>") selected.push(name);
+      if (stage === "from") {
+        if (isFirstOperationsRead(first)) rows = inFlightRows;
+        else if (READS_EMPTY.has(tableNameOf(first))) rows = [];
+        const name = tableNameOf(first);
+        if (name !== "<unknown>") {
+          selected.push(name);
+          seen.table = name;
+          reads.push(seen);
+        }
+      }
     }
     return chain;
   };
   for (const stage of ["from", "where", "limit", "orderBy", "for", "innerJoin", "leftJoin", "groupBy"]) {
-    chain[stage] = passthrough;
+    chain[stage] = passthrough(stage);
   }
   chain.then = (resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) =>
     Promise.resolve(rows).then(resolve, reject);
@@ -178,6 +212,7 @@ beforeEach(() => {
   inserted.length = 0;
   selected.length = 0;
   inFlightRows = [];
+  reads.length = 0;
   process.env.R2_PUBLIC_URL ??= "https://pub-test.r2.dev";
 });
 
@@ -315,6 +350,76 @@ describe("account erasure refuses while a render is still being executed (#1954)
     ).toBe("generation_operations");
   });
 
+  it("⚠ THE LOCKING READ NAMES THE OWNER AND NOTHING ELSE — read at the statement", async () => {
+    /*
+      ⚠ THIS ARM EXISTS BECAUSE THE SHIPPED SHAPE LOCKED EVERY CUSTOMER’S
+      IN-FLIGHT RENDERS (PR #1960 review). With `status IN (…)` in the WHERE,
+      EXPLAIN on the real schema took `idx_generation_ops_status_lease` — a
+      STATUS-leading range — and under FOR UPDATE, InnoDB next-key-locks every
+      record it scans. The deleting account usually has no in-flight render, so
+      LIMIT 1 never stopped early and every other account's heartbeat, lease
+      renewal and settle blocked for the whole erasure — the longest
+      transaction in the product.
+
+      The repair is to lock by OWNER alone and test the status in code, so
+      this arm asks the statement what it named. A later tidy-up that puts the
+      status back reddens here.
+    */
+    await deleteUserAccount(4242);
+
+    const locking = reads.find((read) => read.table === "generation_operations");
+    expect(locking, "the locking read never happened — the arm is inert").toBeDefined();
+    expect(locking!.stages).toContain("for");
+    expect(
+      conditionColumns(locking!.where),
+      "the locking read names a column besides the owner — a status predicate"
+        + " here buys a status-leading index and locks every account",
+    ).toEqual(["userId"]);
+    /* ⚠ And LIMIT had to go WITH the predicate: with no status test in SQL,
+       `LIMIT 1` would answer about whichever row the index reached first and
+       miss an in-flight render that is not it. */
+    expect(
+      locking!.stages,
+      "a LIMIT on an owner-only locking read answers about the wrong row",
+    ).not.toContain("limit");
+  });
+
+  it("⚠ a FINISHED operation of hers does not refuse — the code-side status test", async () => {
+    /*
+      The control the repair above cannot do without. Moving the status out of
+      the WHERE means the statement returns the account’s operations, so a
+      reader that forgot to filter would refuse every erasure of an account
+      that has ever rendered anything — which is every account. Two terminal
+      statuses, so it is not passing on one spelling.
+    */
+    for (const status of ["succeeded", "failed"]) {
+      deleted.length = 0;
+      reads.length = 0;
+      inFlightRows = [{ id: `op-${status}`, kind: "castingV2.roll", status }];
+
+      const result = await deleteUserAccount(4242);
+
+      expect(result.refusal, `a ${status} operation refused the erasure`).toBeUndefined();
+      expect(result.success, `a ${status} operation blocked the erasure`).toBe(true);
+      expect(deleted.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("⚠ and it still refuses on an in-flight row that is NOT the first one back", async () => {
+    /* The statement no longer narrows to in-flight rows, so the one that
+       matters can arrive behind any number of finished ones. */
+    inFlightRows = [
+      { id: "op-old-1", kind: "castingV2.roll", status: "succeeded" },
+      { id: "op-old-2", kind: "castingV2.roll", status: "failed" },
+      RUNNING,
+    ];
+
+    const result = await deleteUserAccount(4242);
+
+    expect(result.refusal).toBe("render_in_flight");
+    expect(result.refusedOnOperationId).toBe(RUNNING.id);
+    expect(deleted).toEqual([]);
+  });
   it("step 9b still reads the same table for its leases, and deletes them", async () => {
     await deleteUserAccount(4242);
     expect(
