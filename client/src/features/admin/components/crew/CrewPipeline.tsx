@@ -15,6 +15,7 @@
 import { cn } from "@/lib/utils";
 import { SectionHead, SectionShell } from "./CrewShell";
 import { ago } from "./crewAgo";
+import { crewRepairsOwed, crewRepairsOwedLabel } from "./crewRepairsOwed";
 import { pipelineNotDone } from "./crewTypes";
 import type { CrewLivePullRequest, CrewLiveView, CrewPipelineItem, CrewQueueRead } from "./crewTypes";
 import { QueueReadStamp } from "./QueueReadStamp";
@@ -97,10 +98,21 @@ export function CrewPipeline({
   const liveRows = live.available ? live.desk.pullRequests : null;
   const snapshotRows = pipelineNotDone(snapshot);
   const count = liveRows ? liveRows.length : snapshotRows.length;
+  const owed = crewRepairsOwed(liveRows ?? []);
+  const owedLabel = crewRepairsOwedLabel(owed);
   return (
     <SectionShell embedded={embedded} first={first} testId="crew-pipeline">
       <SectionHead embedded={embedded} eyebrow="In flight">
         {count > 0 && <span className="dp-crew__meta">{count} open</span>}
+        {/* ⚠ Only when something IS owed (#1977). A row reading *0 need a repair*
+            on a clean board is a number nobody can act on, which is the thing his
+            ruling on the problems list was about. */}
+        {owedLabel !== null && (
+          <span className="dp-crew__meta dp-crew__meta--wants" data-testid="crew-repairs-owed">
+            {owedLabel}
+            {owed.oldest !== null && <> · oldest flagged {ago(owed.oldest, now)}</>}
+          </span>
+        )}
         {/* The shared card stamps its reading once, on its own head. */}
         {!embedded && <QueueReadStamp read={queueRead} now={now} />}
       </SectionHead>

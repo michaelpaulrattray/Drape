@@ -86,6 +86,14 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { readOpenPullRequests } from "./lib/cardClaimWarning.mts";
+import {
+  oldestRepairAgeHours,
+  repairsOwedFrom,
+  repairsOwedWord,
+  REPAIRS_OWED_LIST_ARGS,
+  type RepairPullRequestRow,
+  type RepairsOwedReading,
+} from "./lib/repairsOwed.mts";
 import { GH_READ_MAX_BUFFER } from "./lib/ghQueueTransport.mts";
 import { buildBoard, readCardComments, readNotBuiltCards } from "./lib/cardBuildState.mts";
 import {
@@ -141,6 +149,11 @@ const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
     "shift-runs",
     "comments",
     "not-built",
+    /* #1977 — the held pull requests, and whose comment counts as the relay's.
+       Both take a fixture so the suite drives the real cut without touching
+       GitHub; in production neither is passed and both are read live. */
+    "repairs",
+    "repairs-owner",
     "atlas",
     "briefing",
     /* #1658 — the manager's fact sheet, and the pass it must belong to. */
@@ -549,6 +562,68 @@ if (board.partial) {
   refuse(`the board was not fully read, so a card somebody is on could read as free: ${board.unreadable.join("; ")}`);
 }
 
+/*
+  THE REPAIRS OWED, AHEAD OF EVERY CARD — #1977, his word 2026-10-08 (terminal),
+  verbatim: *"yes shouldnt the manager be on top of this when delegating the work
+  to the crew"*.
+
+  ⚠ **ITS OWN READ, AND NOT A FIELD ADDED TO THE BOARD'S.** `OPEN_PR_LIST_ARGS`
+  asks for a 100-row page; `commits` and `comments` are both connections, so
+  adding them there multiplies the query past GitHub's node ceiling and the
+  BOARD read — which seven callers depend on — would start failing outright.
+  Measured on the live repository: 100 and 50 are refused, 30 is answered.
+
+  ⚠ **AND A WORLD THAT ANSWERS BADLY NEVER REFUSES THE PASS, which is the
+  opposite of the board above and is deliberate.** An unreadable board hides a
+  card somebody is building, so
+  a pass that cannot read it must cut nothing. An unreadable repairs list costs
+  the pass only the ordering this card adds: the seats are cut exactly as they
+  were before #1977, and the reason is printed on the SEATS line and recorded in
+  the plan. Refusing instead would mean one slow `gh` call could stop the whole
+  night, which is a worse trade than a pass that takes new cards for one round.
+
+  ⚠ **A `--repairs` FIXTURE THAT DOES NOT EXIST IS THE ONE EXCEPTION AND IT IS
+  NOT AN OVERSIGHT.** `readJsonFile` refuses and exits, before the `catch` here
+  can see it — a caller that named a file has made a MISTAKE, and a cut that
+  quietly read it as *no repairs owed* would be the silence this card exists to
+  end. The live road has no such caller and is fully covered by the `catch`.
+  Both directions are driven in `server/repairsOwed.test.ts`.
+*/
+const repairs: RepairsOwedReading | { readonly unreadable: string } = (() => {
+  const fixture = ARGS.value("repairs");
+  try {
+    const rows: RepairPullRequestRow[] = fixture
+      ? readJsonFile<RepairPullRequestRow[]>(fixture, "the repairs fixture")
+      : JSON.parse(execFileSync("gh", [...REPAIRS_OWED_LIST_ARGS], {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+        timeout: GH_READ_TIMEOUT_MS,
+        maxBuffer: GH_READ_MAX_BUFFER,
+      }));
+    if (!Array.isArray(rows)) return { unreadable: "the open pull requests did not come back as a list" };
+    /* The repository's owner, read from the record rather than a constant, the
+       way `pr-merge-in-order.mts` reads it — the relay posts as that account and
+       a transfer of the repository must be felt here too. */
+    const ownerLogin: string = ARGS.value("repairs-owner") ?? (() => {
+      const out = execFileSync("gh", ["api", "repos/:owner/:repo", "--jq", ".owner.login"], {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+        timeout: GH_READ_TIMEOUT_MS,
+        maxBuffer: GH_READ_MAX_BUFFER,
+      });
+      return out.trim();
+    })();
+    if (ownerLogin === "") return { unreadable: "the repository owner could not be read, so no comment can be the relay's" };
+    return repairsOwedFrom(rows, ownerLogin);
+  } catch (error) {
+    return { unreadable: `the held pull requests could not be read (${error instanceof Error ? error.message : String(error)})` };
+  }
+})();
+const repairsReading: RepairsOwedReading = "unreadable" in repairs
+  ? { repairs: [], partial: false, undatable: [] }
+  : repairs;
+const repairsUnreadable: string | null = "unreadable" in repairs ? repairs.unreadable : null;
+
 const world = await readWorld();
 const switches = world.switches;
 
@@ -844,6 +919,44 @@ const out = {
     rows: managerRows.size,
     managerVsJev,
   },
+  /*
+    ⚠ **THE FIRST WORK OF THE PASS, ABOVE `batches` BECAUSE IT IS ABOVE THEM IN
+    THE ORDER — #1977.** His delegation order, from the standing orders: repairs
+    owed on held pull requests, then his founder-ordered cards and bugs a
+    customer can hit, then the current rung, then everything else. A seat takes a
+    repair before it takes any card in its batch.
+
+    ⚠ **A REPAIR IS A BRANCH, NOT A CARD, so it is not folded into `batches`.**
+    A batch names cards to claim and branch from `origin/main`; a repair is a
+    push to a pull request's existing branch, answered under the seat's own
+    header (`**Repair pushed — <shift id>**`, never a relay header). Making one
+    look like the other in the plan would hand a seat a card number for work that
+    has no card.
+
+    ⚠ **AND THE LAST HOP IS DECLARED RATHER THAN IMPLIED (the fidelity law's
+    stated shortcut).** The runner that turns this plan into a seat's prompt is
+    `.agents/foreman/foreman-runner.ps1`, which is UNTRACKED and outside any pull
+    request — so this commit cannot wire the hand-over itself. What it does is
+    make the fact machine-readable and impossible to miss: in the plan, on the
+    `SEATS` line the runner logs, and on his board. The runner reading it is the
+    relay's to land, and #1977 says so on the card.
+  */
+  repairsOwed: {
+    count: repairsReading.repairs.length,
+    oldestAgeHours: (() => {
+      const hours = oldestRepairAgeHours(repairsReading, nowMs);
+      return hours === null ? null : Number(hours.toFixed(2));
+    })(),
+    /* Oldest first — `repairsOwedFrom` owns the order and the reason. */
+    items: repairsReading.repairs,
+    /* The page came back full, so a repair may be unseen (#1977). */
+    partial: repairsReading.partial,
+    /* Open pull requests with no commits: they cannot be dated, so they are
+       named rather than dropped. */
+    undatable: repairsReading.undatable,
+    /* Why there is no reading at all, when there is none. Never refuses the pass. */
+    unreadable: repairsUnreadable,
+  },
   batches: plan.batches,
   skipped: [...background.skipped, ...ordered.held, ...plan.held, ...sittingOn],
   /*
@@ -905,11 +1018,38 @@ if (!ARGS.flag("quiet")) {
     : managerState === "usable"
       ? ` | manager ${managerRows.size} rows`
       : ` | manager ${managerState}${managerNote === null ? "" : ` (${managerNote.slice(0, 90)})`} — read as before`;
+  /* ⚠ **THE REPAIRS OWED, ON THE LINE THE RUNNER LOGS (#1977)** — the same
+     argument the milestone and manager words above were added under, and one
+     step stronger: this is the only place a pass that handed out new cards while
+     nine repairs sat owed would have said so. It carries the AGE as well as the
+     count, because the count was already visible on his board and five hours was
+     the fact he complained about. */
+  const repairWord = repairsUnreadable === null
+    ? repairsOwedWord(repairsReading, nowMs)
+    : ` | repairs unread (${repairsUnreadable.slice(0, 90)}) — cards offered as before`;
   console.log(
     plan.seatCount === 0
-      ? `SEATS 0 | nothing on offer${rungWord}${managerWord}${jevWord}`
-      : `SEATS ${plan.seatCount} | cards ${plan.cardCount} | areas ${areas || "none named"}${rungWord}${managerWord}${jevWord}`,
+      ? `SEATS 0 | nothing on offer${repairWord}${rungWord}${managerWord}${jevWord}`
+      : `SEATS ${plan.seatCount} | cards ${plan.cardCount} | areas ${areas || "none named"}${repairWord}${rungWord}${managerWord}${jevWord}`,
   );
+  /* ⚠ **AND THE REPAIRS THEMSELVES, ONE LINE EACH, OLDEST FIRST.** A count on
+     the verdict line tells the runner there is work; these tell a person WHICH
+     pull request, which is what a seat picking up a repair actually needs. They
+     are printed even when `SEATS 0`, because a pass that offers no cards is
+     exactly the pass whose repairs would otherwise go unmentioned. */
+  for (const repair of repairsReading.repairs) {
+    const hours = (nowMs - Date.parse(repair.heldSince)) / 3_600_000;
+    console.log(
+      `REPAIR OWED | PR #${repair.pullRequest} | held ${Number.isFinite(hours) ? hours.toFixed(1) : "?"}h`
+      + ` | ${repair.headRefName || "no branch read"} | ${repair.title}`,
+    );
+  }
+  if (repairsReading.undatable.length > 0) {
+    console.log(
+      `REPAIRS | ${repairsReading.undatable.length} open pull request(s) list no commits and could not be`
+      + ` judged: ${repairsReading.undatable.map((n) => `#${n}`).join(", ")}`,
+    );
+  }
   /* ⚠ The missing-label candidates, on the line the runner logs rather than only
      in the plan JSON — the same argument the milestone and manager words above
      were added under (#1541, #1658). It holds nothing. */

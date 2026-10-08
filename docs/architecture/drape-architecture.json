@@ -7,7 +7,7 @@
     {
       "id": "domain:admin",
       "name": "admin",
-      "moduleCount": 63
+      "moduleCount": 64
     },
     {
       "id": "domain:api",
@@ -513,6 +513,12 @@
     {
       "id": "module:client/src/features/admin/components/crew/crewAgo.ts",
       "path": "client/src/features/admin/components/crew/crewAgo.ts",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/admin/components/crew/crewRepairsOwed.ts",
+      "path": "client/src/features/admin/components/crew/crewRepairsOwed.ts",
       "domain": "admin",
       "lifecycle": "active"
     },
@@ -10808,6 +10814,10 @@
       "path": "client/src/features/admin/components/crew/crewBodyWhitespace.test.ts"
     },
     {
+      "id": "test:client/src/features/admin/components/crew/crewRepairsOwed.test.ts",
+      "path": "client/src/features/admin/components/crew/crewRepairsOwed.test.ts"
+    },
+    {
       "id": "test:client/src/features/admin/components/crew/crewTypes.test.ts",
       "path": "client/src/features/admin/components/crew/crewTypes.test.ts"
     },
@@ -12928,6 +12938,10 @@
       "path": "server/castingV2/signSheet.test.ts"
     },
     {
+      "id": "test:server/castingV2/signSheetCutWarning.test.ts",
+      "path": "server/castingV2/signSheetCutWarning.test.ts"
+    },
+    {
       "id": "test:server/castingV2/signViewEngineChain.test.ts",
       "path": "server/castingV2/signViewEngineChain.test.ts"
     },
@@ -14300,6 +14314,10 @@
       "path": "server/refinePanelDoors.test.ts"
     },
     {
+      "id": "test:server/repairsOwed.test.ts",
+      "path": "server/repairsOwed.test.ts"
+    },
+    {
       "id": "test:server/replyHosts.test.ts",
       "path": "server/replyHosts.test.ts"
     },
@@ -15525,6 +15543,11 @@
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewPipeline.tsx",
+      "to": "module:client/src/features/admin/components/crew/crewRepairsOwed.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewPipeline.tsx",
       "to": "module:client/src/features/admin/components/crew/CrewShell.tsx",
       "kind": "imports"
     },
@@ -15601,6 +15624,11 @@
     {
       "from": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
       "to": "module:shared/crewQueueTitles.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/crewRepairsOwed.ts",
+      "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
       "kind": "imports"
     },
     {
@@ -30110,6 +30138,11 @@
     },
     {
       "from": "module:server/db/accountDeletion.ts",
+      "to": "module:server/db/generationOperations.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/accountDeletion.ts",
       "to": "module:server/db/storageCleanup.ts",
       "kind": "imports"
     },
@@ -34810,12 +34843,22 @@
     },
     {
       "from": "module:server/security/deleteUserData.ts",
+      "to": "module:server/_core/spokenError.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/security/deleteUserData.ts",
       "to": "module:server/auditLog.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/security/deleteUserData.ts",
       "to": "module:server/db/accountDeletion.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/security/deleteUserData.ts",
+      "to": "module:server/db/generationOperations.ts",
       "kind": "imports"
     },
     {
