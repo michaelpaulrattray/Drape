@@ -323,9 +323,12 @@ async function drawSyntheticSheet(): Promise<{ bytes: Buffer; widths: number[] }
  * and 58.5 greylevels below its neighbourhood. So the fallback is right for a
  * reason about THIS picture, where the argument above borrowed one from the
  * serial render, which is a different picture. The arms are in
- * `signSheetCutWarning.test.ts`, which also pins what #1967 deliberately did
- * NOT fix: a figure across a boundary makes the bright search claim a false
- * divider at the figure's own edge, so it never falls back and nothing warns.
+ * `signSheetCutWarning.test.ts`, which also carries what #1967 deliberately did
+ * NOT fix and #1976 then did: a figure across a boundary made the bright search
+ * claim a false divider at the figure's own edge, because the band's contrast
+ * was the AVERAGE of its two sides. It is the weaker side now, so the figure
+ * falls back and the alarm hears it, and every real boundary here is pinned
+ * where it was.
  */
 describe("⚠ the two sheet shapes his #1926 ruling ships", () => {
   type TwoSheet = {
@@ -400,7 +403,8 @@ describe("⚠ the two sheet shapes his #1926 ruling ships", () => {
     expect(geometry.boundaries).toHaveLength(1);
     const [boundary] = geometry.boundaries;
     expect(boundary!.source).toBe("divider");
-    /* Measured 53.6 — twice the floor, so this is not a marginal read. */
+    /* Measured 52.4 on its weaker side (53.6 averaged) — twice the floor, so
+       this is not a marginal read. */
     expect(boundary!.band!.contrast).toBeGreaterThan(DIVIDER_MIN_CONTRAST);
     /* And it lands where the engine was asked to put it. */
     const centre = (boundary!.leftEnd + boundary!.rightStart) / 2;
