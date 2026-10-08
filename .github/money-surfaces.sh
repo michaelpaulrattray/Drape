@@ -520,7 +520,70 @@
 # later module there (a receipt renderer, a dunning note) is its own
 # judgement rather than something this entry decides in advance.
 #
-MONEY_PATHS='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/routes/admin/changeRequests\.ts$|^server/db/(billing|credits|admin|accountDeletion)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^server/lib/adminActions/(approvalExecution|approvalStateBlocker|changeRequestActions)\.ts$|^server/casting/atomicCredits\.ts$|^server/casting/(castingCreditCosts|packagePricing)\.ts$|^server/casting/evidence/evidenceCandidateContract\.ts$|^server/wardrobe/creditCosts\.ts$|^server/billing/renewalReminder\.ts$|^server/castingV2/(castViewPackage|packageOrchestrator|packageRedoService)\.ts$|^client/src/features/casting/(constants|castingPrices)\.ts$|^shared/(const|creditDisplay|annualBilling|creditTopups|planCreditSlider|changeRequestApproval|changeRequestLabels)\.ts$|^scripts/ceremony-topup-prices-1606\.mts$|^scripts/ceremony-spent-share-product-2023\.mts$|^drizzle/'
+# ⚠ AND WHERE A PRICE IS *DECIDED BY A BRANCH* WAS MISSING FROM BOTH HALVES
+# UNTIL 2026-10-09 (#2068). It is the ninth position in the sentence above, and
+# it is #1622's refund-by-a-branch with the price in place of the refund:
+# `castViewPackage.ts` is here because it DECLARES what a view costs, and the
+# two modules that decide whether a customer PAYS it were not. A Try again on an
+# unchecked view is free once, then a purchase, and that is decided in two
+# places, each added by name on one sentence:
+#
+#   server/db/castingV2ViewRetry.ts   `spentFreeViewRetryFilter` is the fact
+#     *has this view already had its free ask* — loosen one clause and the free
+#     ask renews itself forever; tighten one and a customer pays for her first.
+#   server/castingV2/castProjection.ts  `castSlotRetryOffer` turns that fact into
+#     the price the button shows AND the price the till charges (one reading, by
+#     design), so a change to its branches is a repricing.
+#
+# THE LIVE INSTANCE: PR #2067 (card #1943) rewrote the free/paid predicate —
+# `-    ne(generationOperations.status, CLAIMED_OPERATION_STATUS),` became
+# `+    isNotNull(generationOperations.heartbeatAt),` — and neither half fired.
+# Its `needs-fable` label was applied by hand.
+#
+# ROAD: never covered. `git log -S "castingV2ViewRetry" -- .github/` and
+# `git log -S "castProjection" -- .github/` return nothing before this entry.
+#
+# MEASURED BEFORE AND AFTER, on the two windows #1662 established (merged PRs
+# into `main`, newest first, read 2026-10-09; each PR's squash commit diffed
+# against its parent, both halves applied exactly as the gate applies them):
+#
+#     60 newest  (#2072…#1951),   before  27 of 60    after  28 of 60
+#     200 newest (#2072…#1667),   before  65 of 200   after  67 of 200
+#
+# ⚠ THE READER WAS CHECKED BEFORE ITS NUMBERS WERE BELIEVED (law 2). Its BEFORE
+# verdict agrees with the `founder-review` label the gate actually applied on
+# 60 of 60 PRs in the first window, and the specimen moves (positive control).
+# The PRs that move are EXACTLY two, and both are the argument rather than a
+# cost: #2067, the specimen above, and #1779 — *"fix(money): an operation's
+# price is written where its row is born"* (card #1767) — which touched only
+# `castingV2ViewRetry.ts` among money files and MERGED CARRYING NO LABELS AT
+# ALL. A PR whose own title says *money* was not read as money, the same shape
+# as #1388 under #1719. The four other PRs in the 200 that touch either file
+# were already labelled by a neighbour. #958's rejected-at-17-of-60 judgement is
+# not touched: one PR in sixty is not the bulk widening it declined.
+#
+# ⚠ THESE WINDOWS ARE NOT CONTINUOUS WITH THE EARLIER ENTRIES' and must not be
+# read as a trend — the same limit #1662 and #1719 recorded. That the 60-window
+# base rate is now 27 is the builder seats' money-heavy week, not this entry.
+#
+# ⚠ THE LAW-7 SWEEP, with its reader named. The class is *a module that decides
+# by a branch whether a customer pays a price, outside the list*. Reader: every
+# non-test module under `server/` and `shared/` that answers a price of zero on
+# one branch and a price on another (`priceCredits:\s*0`, and the `? 0 :` /
+# `isFree` / `FREE_` shapes), hand-read. It returns `castProjection.ts` alone;
+# the `FREE_` hits are refine-subject vocabulary and a face-scan rate cap,
+# neither of which prices anything.
+#
+# ONE NEIGHBOUR IS DELIBERATELY NOT ADDED: `server/castingV2/viewRetryService.ts`,
+# the one road that spends on a Try again. It ASKS `castSlotRetryOffer` and
+# charges what it is told; it is already on #1622's stated adjudicator remainder
+# in `server/moneySurfaceClassifier.test.ts`, and lines naming `deductCredits` /
+# `recordRefund` there are seen by the symbol half. Adding it is #1622's bulk
+# question, which was measured and declined.
+#
+# NAMED FILES, NEVER DIRECTORIES — `server/db/` and `server/castingV2/` stay off.
+#
+MONEY_PATHS='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/routes/admin/changeRequests\.ts$|^server/db/(billing|credits|admin|accountDeletion|castingV2ViewRetry)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^server/lib/adminActions/(approvalExecution|approvalStateBlocker|changeRequestActions)\.ts$|^server/casting/atomicCredits\.ts$|^server/casting/(castingCreditCosts|packagePricing)\.ts$|^server/casting/evidence/evidenceCandidateContract\.ts$|^server/wardrobe/creditCosts\.ts$|^server/billing/renewalReminder\.ts$|^server/castingV2/(castViewPackage|packageOrchestrator|packageRedoService|castProjection)\.ts$|^client/src/features/casting/(constants|castingPrices)\.ts$|^shared/(const|creditDisplay|annualBilling|creditTopups|planCreditSlider|changeRequestApproval|changeRequestLabels)\.ts$|^scripts/ceremony-topup-prices-1606\.mts$|^scripts/ceremony-spent-share-product-2023\.mts$|^drizzle/'
 
 # ── 2 · SYMBOLS — where money is DECIDED ────────────────────────────────────
 #
