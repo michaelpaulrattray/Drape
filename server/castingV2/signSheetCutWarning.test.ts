@@ -55,14 +55,14 @@ import { readFileSync } from "node:fs";
 import sharp from "sharp";
 import { describe, expect, it, vi } from "vitest";
 
-import type { CastViewAngle } from "../../shared/castPackage";
+import type { CastViewAngle } from "../../shared/boardTypes";
+import type { ReferenceImage } from "../providers/types";
 import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
 import {
   DARK_SEAM_MIN_DEPTH,
   findDarkSeamAt,
   findSheetPanelGeometry,
   renderSignSheet,
-  type ReferenceImage,
 } from "./signSheet";
 
 vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
