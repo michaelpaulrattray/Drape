@@ -77,7 +77,7 @@
     {
       "id": "domain:moderator",
       "name": "moderator",
-      "moduleCount": 21
+      "moduleCount": 23
     },
     {
       "id": "domain:operations",
@@ -1819,6 +1819,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/features/moderator/creditRowText.ts",
+      "path": "client/src/features/moderator/creditRowText.ts",
+      "domain": "moderator",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/features/moderator/figures.ts",
       "path": "client/src/features/moderator/figures.ts",
       "domain": "moderator",
@@ -1857,6 +1863,12 @@
     {
       "id": "module:client/src/features/moderator/reconciliation-csv.ts",
       "path": "client/src/features/moderator/reconciliation-csv.ts",
+      "domain": "moderator",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/moderator/reconciliationView.ts",
+      "path": "client/src/features/moderator/reconciliationView.ts",
       "domain": "moderator",
       "lifecycle": "active"
     },
@@ -13890,6 +13902,10 @@
       "path": "server/moderatorReconciliation.test.ts"
     },
     {
+      "id": "test:server/moderatorRoadLedger.test.ts",
+      "path": "server/moderatorRoadLedger.test.ts"
+    },
+    {
       "id": "test:server/moduleResolution.test.ts",
       "path": "server/moduleResolution.test.ts"
     },
@@ -18744,8 +18760,18 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
+      "from": "module:client/src/features/moderator/creditRowText.ts",
       "to": "module:client/src/features/moderator/figures.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/creditRowText.ts",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
+      "to": "module:client/src/features/moderator/creditRowText.ts",
       "kind": "imports"
     },
     {
@@ -18829,6 +18855,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/moderator/FlaggedReferralsTab.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
       "to": "module:client/src/features/moderator/staffCsvExport.ts",
       "kind": "imports"
@@ -18856,6 +18887,11 @@
     {
       "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -18950,12 +18986,12 @@
     },
     {
       "from": "module:client/src/features/moderator/ReconciliationSubTab.tsx",
-      "to": "module:client/src/features/moderator/figures.ts",
+      "to": "module:client/src/features/moderator/reconciliation-csv.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/moderator/ReconciliationSubTab.tsx",
-      "to": "module:client/src/features/moderator/reconciliation-csv.ts",
+      "to": "module:client/src/features/moderator/reconciliationView.ts",
       "kind": "imports"
     },
     {
@@ -18966,6 +19002,21 @@
     {
       "from": "module:client/src/features/moderator/ReconciliationSubTab.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/reconciliationView.ts",
+      "to": "module:client/src/features/moderator/figures.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/reconciliationView.ts",
+      "to": "module:client/src/features/moderator/reconciliation-csv.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/reconciliationView.ts",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -34906,6 +34957,11 @@
     {
       "from": "module:server/routes/moderatorExports.ts",
       "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/moderatorExports.ts",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {

@@ -28,6 +28,8 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+import { staffLedgerProse } from "../shared/creditDisplay";
+
 const db = {
   getUserById: vi.fn(),
   getUserCredits: vi.fn(),
@@ -402,4 +404,24 @@ describe("cr_stripeRefund", () => {
     await expect(runCr("cr_stripeRefund", PURCHASE)).resolves.toBeDefined();
     expectSettled();
   });
+});
+
+// ── #2027: the description these write, as a moderator reads it ────────────
+
+describe("#2027 — a change request's stored description keeps the reason as typed", () => {
+  /*
+    `staffLedgerProse` restates the figures the PRODUCT composed into a
+    description and leaves a person's reason alone, recognising it by the
+    prefix these executors write. Driven through the real executors so a
+    reworded prefix reddens here rather than silently converting a reason
+    whose scale nobody can know.
+  */
+  for (const action of ["cr_addCredits", "cr_refundCredits"] as const) {
+    it(`${action} — "100 credits" in the reason survives the reading untouched`, async () => {
+      await runCr(action, { creditAmount: 25, creditReason: "as promised, 100 credits" });
+      const description = db.addCredits.mock.calls[0][3] as string;
+      expect(description).toContain("as promised, 100 credits");
+      expect(staffLedgerProse(description)).toBe(description);
+    });
+  }
 });
