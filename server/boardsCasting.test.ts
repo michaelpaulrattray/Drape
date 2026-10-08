@@ -18,7 +18,7 @@
  * WHAT SURVIVES AND WHAT DOES NOT, decided by asking what still has a subject:
  *
  *  - The PAYLOAD arms do. The board-item contract is alive and is
- *    `boards.addItem`'s input schema (`server/routes/boards.ts:185`), so they
+ *    `boards.addItem`'s input schema (`addItem` in `server/routes/boards.ts`), so they
  *    now parse through the REAL schema off the running router rather than
  *    asserting the shape of a literal — the technique `wardrobe.test.ts` uses.
  *    That is worth more than the originals: the schema has bounds the literals

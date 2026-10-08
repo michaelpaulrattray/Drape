@@ -69,6 +69,41 @@ const boardItemTypeSchema = z.enum([
   "model", "garment", "vto_result", "reference", "iteration", "note", "frame",
 ]);
 
+/**
+ * A board's storage KEY is never the client's to name (#2056).
+ *
+ * `boards.thumbnailKey` and `board_items.imageKey` are read by the account
+ * erasure (`collectAccountOwnedStorageItemsIn`) as EXPLICIT keys — deletion
+ * authority with no further proof of ownership. Until this guard the four
+ * board writers took either column straight from the client as
+ * `z.string().max(256)`, so a customer could type ANOTHER customer's key
+ * (a cast's picture key is readable off its public URL) onto her own board,
+ * delete her account, and put the other customer's picture in the deletion
+ * manifest.
+ *
+ * Nothing legitimate sends one, read at the callers 2026-10-09: the client's
+ * three `imageKey: null` lines in `BoardPage.tsx` are OPTIMISTIC cache rows,
+ * never request fields; no `boards.addItem`/`addItems`/`updateItem`/`update`
+ * call site in `client/src` sends either key; and no server path writes
+ * `board_items.imageKey` at all (`boardOps` writes `imageUrl` only).
+ *
+ * So the field is accepted only as `null` or absent — kept in the schema
+ * rather than removed so `updateItem`'s `.strict()` never refuses a bundle
+ * that still names it (the removal contract) — and a string is a BAD_REQUEST.
+ * The accepted `null` is then DROPPED rather than written
+ * (`withoutClientStorageKeys`): these routes never write a key column, so a
+ * key on a board row can only come from a server writer.
+ */
+const clientStorageKeySchema = z.null().optional();
+
+function withoutClientStorageKeys<T extends object>(
+  data: T,
+): Omit<T, "imageKey" | "thumbnailKey"> {
+  const { imageKey: _imageKey, thumbnailKey: _thumbnailKey, ...rest } =
+    data as T & { imageKey?: unknown; thumbnailKey?: unknown };
+  return rest;
+}
+
 // ── Router ───────────────────────────────────────────────────────────────
 
 export const boardsRouter = router({
@@ -126,14 +161,14 @@ export const boardsRouter = router({
       description: z.string().max(1000).optional(),
       status: z.enum(["active", "archived"]).optional(),
       thumbnailUrl: z.string().url().nullable().optional(),
-      thumbnailKey: z.string().max(256).optional(),
+      thumbnailKey: clientStorageKeySchema,
     }))
     .mutation(async ({ ctx, input }) => {
       await requireBoardOwnership(input.boardId, ctx.user.id);
       const { boardId, ...data } = input;
       // Filter out undefined values
       const cleanData = Object.fromEntries(
-        Object.entries(data).filter(([_, v]) => v !== undefined)
+        Object.entries(withoutClientStorageKeys(data)).filter(([_, v]) => v !== undefined)
       );
       if (Object.keys(cleanData).length > 0) {
         await updateBoard(boardId, cleanData);
@@ -188,7 +223,7 @@ export const boardsRouter = router({
       type: boardItemTypeSchema,
       label: z.string().max(256).optional(),
       imageUrl: z.string().optional(),
-      imageKey: z.string().max(256).optional(),
+      imageKey: clientStorageKeySchema,
       positionX: z.number().int().default(0),
       positionY: z.number().int().default(0),
       width: z.number().int().min(50).max(2000).default(280),
@@ -205,7 +240,7 @@ export const boardsRouter = router({
       await requireBoardOwnership(input.boardId, ctx.user.id);
       // Stamp the canvas `kind` alongside the legacy type (foundations Decision 1)
       const kind = input.type === "note" ? "note" : input.type === "frame" ? "frame" : "image";
-      const itemId = await addBoardItem({ ...input, kind });
+      const itemId = await addBoardItem({ ...withoutClientStorageKeys(input), kind });
       return { id: itemId };
     }),
 
@@ -217,7 +252,7 @@ export const boardsRouter = router({
         type: boardItemTypeSchema,
         label: z.string().max(256).optional(),
         imageUrl: z.string().optional(),
-        imageKey: z.string().max(256).optional(),
+        imageKey: clientStorageKeySchema,
         positionX: z.number().int().default(0),
         positionY: z.number().int().default(0),
         width: z.number().int().min(50).max(2000).default(280),
@@ -234,7 +269,7 @@ export const boardsRouter = router({
     .mutation(async ({ ctx, input }) => {
       await requireBoardOwnership(input.boardId, ctx.user.id);
       const itemsWithBoard = input.items.map((item) => ({
-        ...item,
+        ...withoutClientStorageKeys(item),
         boardId: input.boardId,
       }));
       const ids = await addBoardItems(itemsWithBoard);
@@ -274,7 +309,7 @@ export const boardsRouter = router({
       itemId: z.number().int().positive(),
       label: z.string().max(256).optional(),
       imageUrl: z.string().optional(),
-      imageKey: z.string().max(256).optional(),
+      imageKey: clientStorageKeySchema,
       positionX: z.number().int().optional(),
       positionY: z.number().int().optional(),
       width: z.number().int().min(50).max(2000).optional(),
@@ -285,7 +320,7 @@ export const boardsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { itemId, ...data } = input;
       const cleanData = Object.fromEntries(
-        Object.entries(data).filter(([_, v]) => v !== undefined)
+        Object.entries(withoutClientStorageKeys(data)).filter(([_, v]) => v !== undefined)
       );
       await updateBoardItem({
         userId: ctx.user.id,
