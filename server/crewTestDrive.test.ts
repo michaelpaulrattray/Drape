@@ -30,6 +30,7 @@ import {
   testDriveCardId,
   testDriveFromBody,
   testDriveOpenSteps,
+  testDrivesStillDrawn,
 } from "../shared/crewTestDrive";
 
 /**
@@ -268,5 +269,62 @@ describe("the number on his section menu", () => {
       { cardId: testDriveCardId(1644), body: "Test drive step 1 — did not match", createdAt: new Date("2026-10-01T03:00:00Z") },
     ]);
     expect(answers.get(1)?.verdict).toBe("did-not-match");
+  });
+});
+
+describe("a finished drive leaves his page (#1988)", () => {
+  /* His report, 2026-10-08: "i finished the test drive but its still showing on
+     my desk" — P2's drive (#1933), five of five Matched, card closed. */
+  const drive = (issueNumber: number, steps: number, cardClosed: boolean) => ({
+    issueNumber,
+    cardClosed,
+    steps: Array.from({ length: steps }, (_unused, index) => ({
+      n: index + 1,
+      text: `step ${index + 1}`,
+      proves: [] as number[],
+    })),
+  });
+  const answer = (issueNumber: number, step: number, word = "matched") => ({
+    cardId: testDriveCardId(issueNumber),
+    body: `Test drive step ${step} — ${word}`,
+    createdAt: "2026-10-08T09:00:00Z",
+  });
+  const allFive = [1, 2, 3, 4, 5].map((step) => answer(1933, step));
+  const numbers = (drives: ReadonlyArray<{ issueNumber: number }>) => drives.map((d) => d.issueNumber);
+
+  it("a CLOSED card with every step answered draws no drive", () => {
+    expect(testDrivesStillDrawn([drive(1933, 5, true)], allFive)).toEqual([]);
+  });
+
+  it("a `did not match` is an answer — the step has his word on it", () => {
+    const replies = [...allFive.slice(0, 4), answer(1933, 5, "did not match")];
+    expect(testDrivesStillDrawn([drive(1933, 5, true)], replies)).toEqual([]);
+  });
+
+  it("CONTROL — an OPEN card with every step answered still draws: closing it is his", () => {
+    expect(numbers(testDrivesStillDrawn([drive(1933, 5, false)], allFive))).toEqual([1933]);
+  });
+
+  it("CONTROL — a CLOSED card with one step unanswered still draws: there is something left to do", () => {
+    expect(numbers(testDrivesStillDrawn([drive(1933, 5, true)], allFive.slice(0, 4)))).toEqual([1933]);
+  });
+
+  it("CONTROL — answers on ANOTHER card do not finish this one", () => {
+    const elsewhere = [1, 2, 3, 4, 5].map((step) => answer(1644, step));
+    expect(numbers(testDrivesStillDrawn([drive(1933, 5, true)], elsewhere))).toEqual([1933]);
+  });
+
+  it("drops only the finished drive and keeps the rest in their order", () => {
+    const drives = [drive(1990, 3, false), drive(1933, 5, true), drive(1644, 7, true)];
+    expect(numbers(testDrivesStillDrawn(drives, allFive))).toEqual([1990, 1644]);
+  });
+
+  it("the page's menu count and its section read the SAME filtered list", async () => {
+    const { readFileSync } = await import("node:fs");
+    const page = readFileSync(new URL("../client/src/pages/AdminCrew.tsx", import.meta.url), "utf8");
+    /* The one assignment the section menu and <CrewTestDrive drives={testDrives}> share. */
+    expect(page).toMatch(/const testDrives = testDrivesStillDrawn\(\s*live\.available \? live\.desk\.testDrives : \[\],\s*data\.replies,?\s*\);/);
+    expect(page).toMatch(/testDriveOpenSteps\(testDrives, data\.replies\)/);
+    expect(page).toMatch(/drives=\{testDrives\}/);
   });
 });
