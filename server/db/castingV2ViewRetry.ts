@@ -24,7 +24,7 @@
  * Sign's to cover both would have relaxed a live money path to serve a new
  * one.
  */
-import { and, eq, inArray, isNull, ne } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 
 import {
   castingCandidateVariants,
@@ -460,19 +460,6 @@ export async function retriedViewLanded(input: {
 }
 
 /**
- * The status a claim is written at, before anything about it is known.
- *
- * This is `generation_operations.status`'s own schema DEFAULT, spelled here
- * because drizzle does not expose a column's default as a value. It is therefore
- * a second spelling of one fact (working law 4) and it is held to the first:
- * `viewRetryFreeOnce.test.ts` reads the default out of the drizzle column config
- * and reddens if the two part company. Without that arm, renaming the status
- * would leave this module quietly admitting every claimed row — which is the
- * direction that hands out free renders.
- */
-const CLAIMED_OPERATION_STATUS = "claimed";
-
-/**
  * THE ONE FREE TRY AGAIN, SPENT OR NOT — read at the operation rows (#1601 item 4).
  *
  * His rule, from the card: an unchecked view's first Try again is free, **once**;
@@ -501,23 +488,44 @@ const CLAIMED_OPERATION_STATUS = "claimed";
  * question — `inkAddAcceptance` and `inkAddCancellation` both filter the same
  * column for the same reason.
  *
- * ⚠ **`status <> 'claimed'` IS KEPT, AND ITS REASON CHANGED UNDER IT (#1767) —
- * RE-READ BEFORE TOUCHING IT.** It was written because `plannedCredits`
+ * ⚠ **IT ASKS WHETHER THE ROW EVER REACHED `running`, AND IT USED TO ASK
+ * `status <> 'claimed'` — THE SECOND IS A WEAKER QUESTION AND #1943 IS WHAT IT
+ * COST.** The product answer has never changed and is the one below: **a claim
+ * that never reached `running` dispatched no render, so the customer has had
+ * nothing and keeps their free ask.** `status <> 'claimed'` was a true reading
+ * of that only while a refused claim STAYED at `claimed`, and two roads now
+ * settle one terminally without it ever running — each of which burned her one
+ * free Try again for a picture that was never asked for:
+ *
+ * - **a busy slot lock.** #1932 made `beginDirectOperation` fail its own row the
+ *   moment the lock is refused, so a free Try again pressed while that view is
+ *   already rendering (a redo, a second tab) became a terminal `failed` row at
+ *   once. Before #1932 the recovery sweep did the same thing about six minutes
+ *   later, so the defect predates it and was only made prompt by it.
+ * - **a `markRunning` that throws.** The entrance settles through
+ *   `completeDirectOperationFailure`, whose finalizer requires `running`, so the
+ *   row lands at `recovery_required` — also not `claimed`, also never run.
+ *
+ * `heartbeatAt` is the marker because it is written in the SAME statement that
+ * writes `status = 'running'` (`markGenerationOperationRunning`), and the only
+ * two writers after that — the heartbeat renewal and the recovery handoff — both
+ * require `running` already. Nothing ever sets it back to NULL, and no terminal
+ * finalizer clears it, so a non-null `heartbeatAt` is a durable *"this one ran"*
+ * that survives whatever status the row ends at.
+ *
+ * It SUBSUMES the claimed exclusion rather than sitting beside it — a `claimed`
+ * row has no heartbeat by construction — so the old clause is gone instead of
+ * kept as a comforting duplicate. It also stops being a second spelling of a
+ * schema default: the discriminator is now a COLUMN the compiler resolves, not
+ * the string `"claimed"` written in two files.
+ *
+ * ⚠ The #1767 reason this clause ORIGINALLY carried is discharged and is kept
+ * here because its half-life matters: it was written because `plannedCredits`
  * defaulted to 0 at the claim and was written one statement later, so a row
  * still at `claimed` read 0 whatever it was going to cost and every PAID Try
  * again would have consumed the free one for its angle during the milliseconds
- * between the two statements. **That reason is now discharged**: the entrance
- * passes the price INTO the claim, so a paid retry's row says 370 from the
- * moment it exists.
- *
- * The arm stays, on the other reason the paragraph above always carried and
- * which no change to the claim path can discharge: **a claim that never reached
- * `running` dispatched no render, so the customer has had nothing and keeps
- * their free ask.** A FREE retry's claim truthfully carries 0 from birth now,
- * so without this filter a free ask that was claimed and then died would read
- * as spent — the filter is what stops that, and it is a product answer rather
- * than a timing one. Removing it would hand that customer's free Try again to a
- * row that rendered nothing. `viewRetryFreeOnce.test.ts` has an arm naming it.
+ * between the two statements. The entrance passes the price INTO the claim now,
+ * so a paid retry's row says 370 from the moment it exists.
  *
  * ✅ **THE LIMIT THIS PARAGRAPH USED TO STATE IS CLOSED (#1767).** It read: *a
  * PAID retry whose `markRunning` throws is settled as a failure with
@@ -546,7 +554,7 @@ export function spentFreeViewRetryFilter(input: { userId: number; modelId: numbe
     eq(generationOperations.modelId, input.modelId),
     eq(generationOperations.kind, "castingV2.viewRetry"),
     eq(generationOperations.plannedCredits, 0),
-    ne(generationOperations.status, CLAIMED_OPERATION_STATUS),
+    isNotNull(generationOperations.heartbeatAt),
     isNull(generationOperations.subjectDeletedAt),
   );
 }
