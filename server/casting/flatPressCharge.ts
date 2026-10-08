@@ -32,6 +32,12 @@
  * The opposite reading — refund unless EVERY view arrived — was considered and
  * is not his: it would hand back a whole redo for one refused panel while the
  * customer keeps the other four new pictures.
+ *
+ * ⚠ **ONE EXPORT, AND A SECOND ONE WAS WRITTEN AND DELETED THE SAME HOUR.**
+ * A `flatPressKeepsItsCharge(anythingDelivered)` alias read well in the sweep
+ * and called nothing: `check-cleanup-dispositions` named it `unread` and was
+ * right to. A module about not having two implementations of one rule is the
+ * last place to keep an unused second spelling of it.
  */
 
 /**
@@ -47,15 +53,4 @@ export function flatPressRefundOwed(input: {
 }): number {
   if (input.chargedCredits <= 0) return 0;
   return input.delivered > 0 ? 0 : input.chargedCredits;
-}
-
-/**
- * The same rule, as the question the recovery sweep actually asks.
- *
- * The sweep holds a press row and a reader that says whether ANY of its units
- * landed; it never counts them. Written as its own export so a reader of the
- * sweep meets the rule by name rather than inferring it from a boolean.
- */
-export function flatPressKeepsItsCharge(anythingDelivered: boolean): boolean {
-  return anythingDelivered;
 }
