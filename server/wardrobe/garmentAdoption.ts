@@ -63,7 +63,10 @@
  * this road cannot run until wardrobe reopens. That is the point — the relay's
  * words: *"That plants the break for the day wardrobe reopens."*
  */
-import { randomUUID } from "crypto";
+/* `node:crypto`, not `crypto` — `server/storage-key-generation.test.ts`
+   requires the prefixed specifier of every file that interpolates a uuid into a
+   storage key, so the randomness a public key rests on names its own source. */
+import { randomUUID } from "node:crypto";
 
 import { classifyStorageReference } from "../casting/deletionAudit";
 import { createStorageCleanupManifestIn } from "../db/storageCleanup";
