@@ -1017,13 +1017,24 @@ function PlanStepUpPane({ onClose }: { onClose: () => void }) {
           its other two gates.
         */}
         <p className="dp-topup__renewal">
-          {hasSubscription === true && preview?.kind === "interval-switch"
+          {/* ⚠ **A DEFERRED CHANGE OWNS THIS LINE OUTRIGHT (#1936), AND IT HAD
+                 TO, BECAUSE THE SENTENCE BELOW IT WAS THE FALSE ONE.** Dropping
+                 a yearly subscriber to monthly hands money back, so it is now
+                 scheduled for the period boundary — and the arm under this one
+                 told her *"unused time from your year comes off future bills
+                 automatically"*, which was true of the instant road and is true
+                 of nothing today. Saying the date here is also the only way she
+                 learns that the switch is not immediate, since every figure on
+                 this surface is 0 on a deferred change. */}
+          {hasSubscription === true && preview?.deferred && preview?.effectiveAtSec
+            ? `Nothing is charged today — this starts on ${formatShortDate(new Date(preview.effectiveAtSec * 1000))}, and you keep your current plan and credits until then.`
+            : hasSubscription === true && preview?.kind === "interval-switch"
             /* ⚠ #1755: `annual === true`. `hasSubscription === true` already
                means the status answered, so this cannot be the unread state --
                the spelling is the file's, not a second gate. */
             ? annual === true
               ? "Billed for the whole year today — your new billing year starts now, and the year's credits land with the payment."
-              : "Billed monthly from today — unused time from your year comes off future bills automatically."
+              : "Billed monthly from today. This month's allowance takes the place of what was left of your year's."
             : hasSubscription === false
               ? "Charged today, then on the same date each period."
               : chargeCycle && alignsToPreview(preview)
@@ -1468,11 +1479,17 @@ function CreditPacksPane({
           itself, so a price edit that makes this row a lie goes red rather than
           shipping.
         */}
+        {/*
+          #1940 B28 — his word 2026-10-08, *"on 1 and 2 go with your
+          reccomendations"*, and recommendation 2 was to **drop "cost less
+          each"**: the row now says what a plan does rather than arguing price,
+          which #1952 also forbids (*"no 'cheaper' claims in customer copy"*).
+        */}
         <div className="dp-plan__cross">
           <span className="dp-set__rowtext">
-            <span className="dp-set__label">A bigger plan gives more for the money</span>
+            <span className="dp-set__label">Need credits every month?</span>
             <span className="dp-set__note">
-              Credits on a plan arrive every month and cost less each.
+              A plan adds credits each month.
             </span>
           </span>
           <span className="dp-set__spacer" />

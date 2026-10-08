@@ -13,6 +13,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { REFERRAL_REWARD_CREDITS } from "../../drizzle/schema";
 import { PRODUCT_NAME } from "@shared/brand";
+import { waitPhrase } from "@shared/waitPhrase";
 import { REFERRAL_CODE_FORMAT_MESSAGE } from "../../shared/referralCodeFormat";
 import { checkRateLimit, getClientIp } from "../security/rateLimit";
 import { isDisposableEmail } from "../security/disposableEmails";
@@ -88,7 +89,7 @@ export const referralRouter = router({
       if (!rateCheck.allowed) {
         throw new TRPCError({
           code: "TOO_MANY_REQUESTS",
-          message: `Invite limit reached. Try again in ${Math.ceil(rateCheck.resetIn / 60000)} minutes.`,
+          message: `Invite limit reached. Try again ${waitPhrase(rateCheck.resetIn)}.`,
         });
       }
 
@@ -155,7 +156,7 @@ export const referralRouter = router({
       if (!rateCheck.allowed) {
         throw new TRPCError({
           code: "TOO_MANY_REQUESTS",
-          message: `Too many attempts. Try again in ${Math.ceil(rateCheck.resetIn / 60000)} minutes.`,
+          message: `Too many attempts. Try again ${waitPhrase(rateCheck.resetIn)}.`,
         });
       }
 
@@ -203,7 +204,7 @@ export const referralRouter = router({
       if (!rateCheck.allowed) {
         throw new TRPCError({
           code: "TOO_MANY_REQUESTS",
-          message: `Too many attempts. Try again in ${Math.ceil(rateCheck.resetIn / 60000)} minutes.`,
+          message: `Too many attempts. Try again ${waitPhrase(rateCheck.resetIn)}.`,
         });
       }
 

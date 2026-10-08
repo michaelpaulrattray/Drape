@@ -176,6 +176,10 @@ describe("#796 site 2 — changePlan's local record after Stripe has accepted th
     vi.mocked(readSubscriptionBillingState).mockResolvedValue({
       currentPlan: "starter",
       subscriptionItemId: "si_1",
+      /* A running plan (#1987) — every arm here is about a road past the gate. */
+      status: "active",
+      collectionPaused: false,
+      endsAtSec: null,
     } as Awaited<ReturnType<typeof readSubscriptionBillingState>>);
     // An interval-neutral change with no credit movement: the credit road is
     // not what this arm measures, and keeping it out of the way makes the
@@ -298,6 +302,10 @@ describe("#1605 bullet 1 — a price the catalogue cannot supply, as the custome
     vi.mocked(readSubscriptionBillingState).mockResolvedValue({
       currentPlan: "starter",
       subscriptionItemId: "si_1",
+      /* A running plan (#1987) — every arm here is about a road past the gate. */
+      status: "active",
+      collectionPaused: false,
+      endsAtSec: null,
     } as Awaited<ReturnType<typeof readSubscriptionBillingState>>);
     vi.mocked(quotePlanChange).mockReturnValue({
       kind: "same-interval",
@@ -396,6 +404,10 @@ describe("#1832 — a quote missing its step counts refuses BEFORE Stripe is tou
     vi.mocked(readSubscriptionBillingState).mockResolvedValue({
       currentPlan: "starter",
       subscriptionItemId: "si_1",
+      /* A running plan (#1987) — every arm here is about a road past the gate. */
+      status: "active",
+      collectionPaused: false,
+      endsAtSec: null,
       currentInterval: "monthly",
       periodStartSec: 1_700_000_000,
       periodEndSec: 1_702_592_000,

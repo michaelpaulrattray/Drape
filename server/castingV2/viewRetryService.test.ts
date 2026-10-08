@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ProviderError } from "../providers/types";
+
 /**
  * TRY AGAIN — the money sequence for ONE view asked for again (#1208 slice 2,
  * #1220 slice 2).
@@ -161,8 +163,17 @@ const refunds: Array<{ amount: number; reference: string }> = [];
 const committed: Array<{ angle: string; pointsCost: number; provenance: Record<string, unknown> }> = [];
 let chargeSucceeds = true;
 let refundRecords = true;
-/** What the engine does on each attempt, oldest first; the last value repeats. */
-let engineAnswers: Array<"ok" | "throw"> = ["ok"];
+/**
+ * What the engine does on each attempt, oldest first; the last value repeats.
+ *
+ * ⚠ **`bought` AND `unreachable` ARE THE #1966 PAIR, and they differ only
+ * in whether the provider FINISHED.** `bought` is the shape `falTransport.ts`
+ * raises after a job reports `COMPLETED` — the frame exists, we were billed for
+ * it, and asking again renders a NEW one. `unreachable` is the same class with
+ * the job never run. The arrival loop must tell them apart, and the two arms
+ * below are what say it does.
+ */
+let engineAnswers: Array<"ok" | "throw" | "bought" | "unreachable"> = ["ok"];
 let engineCalls = 0;
 const enginePrompts: string[] = [];
 /**
@@ -282,6 +293,17 @@ function dependencies(
         enginePrompts.push(request.prompt);
         journal.push("render");
         if (answer === "throw") throw new Error("engine down");
+        /* The transport's own error objects, built the way `falTransport.ts`
+           builds them (#1966). */
+        if (answer === "bought") {
+          throw new ProviderError("transport", "could not download fal.ai result", {
+            providerRef: "req-bought",
+            completed: true,
+          });
+        }
+        if (answer === "unreachable") {
+          throw new ProviderError("transport", "fal.ai unreachable");
+        }
         return {
           bytes: Buffer.from("view"),
           contentType: "image/png",
@@ -386,6 +408,42 @@ describe("try again on one view — what moves, and in what order", () => {
     /* The sweep's fork variable, written with the picture in one statement. */
     expect(committed[0]?.provenance.retryOperationId).toBe(OPERATION_ID);
     expect(committed[0]?.pointsCost).toBe(TRY_AGAIN_PRICE);
+  });
+
+  /*
+    ⚠ **THE PER-VIEW HALF OF #1966's MONEY FINDING (the relay, on PR
+    #1982).** The sheet road's arrival loop stopped re-buying a frame the
+    provider had already finished; this is the OTHER arrival loop —
+    `renderViewAttempts`, which a Try again and a redo render on, and it had the
+    identical defect. Four of fal's faults are raised after the job reports
+    `COMPLETED` and every one of their classes is retryable, so a frame already
+    paid for bought up to two more.
+
+    Her money is the same either way — this slice refunds whether the loop gave
+    up once or three times. What changes is what the HOUSE spends, and what she
+    stops doing is waiting through spaced retries for a refund she is already
+    owed.
+  */
+  it("asks ONCE for a frame the provider already finished, and still refunds the slice", async () => {
+    engineAnswers = ["bought"];
+    const result = await retryCastView(dependencies([slot()]), input);
+
+    expect(engineCalls, "a frame that was already bought was re-bought").toBe(1);
+    expect(result.outcome).toBe("failed");
+    /* Her money is untouched by the change: the slice comes back exactly as it
+       does for any view that did not arrive. */
+    expect(result.refundedCredits).toBe(TRY_AGAIN_PRICE);
+    expect(refunds).toHaveLength(1);
+  });
+
+  it("THE CONTROL: the same class with the job never run is still asked more than once", async () => {
+    engineAnswers = ["unreachable"];
+    await retryCastView(dependencies([slot()]), input);
+
+    expect(
+      engineCalls,
+      "a job that never ran stopped being re-asked — it is still owed its attempts",
+    ).toBeGreaterThan(1);
   });
 
   it("a REFUNDED view that fails again gives the Try again price back under THIS operation", async () => {

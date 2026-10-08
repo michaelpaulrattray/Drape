@@ -236,8 +236,8 @@ describe("Credit Reconciliation Logic", () => {
       expect(result.reading.netCost).toBe(650);
       // The no-discrepancy sentence names both sides rather than asserting virtue.
       expect(result.summary).toContain("No discrepancy.");
-      expect(result.summary).toContain("650 credits charged");
-      expect(result.summary).toContain("650 recorded");
+      expect(result.summary).toContain("650 ledger credits charged");
+      expect(result.summary).toContain("650 ledger recorded");
     });
 
     it("should read the charge from the filtered rows, never from the helpers' summary", () => {
@@ -350,7 +350,7 @@ describe("Credit Reconciliation Logic", () => {
       expect(result.reading.unrefundedFailureCost).toBe(350);
       expect(result.summary).toContain("1 failed generation(s)");
       expect(result.summary).toContain("failures refund only catastrophically");
-      expect(result.summary).toContain("unrefunded 350 is expected");
+      expect(result.summary).toContain("unrefunded 350 ledger is expected");
     });
 
     it("no failure note appears when there are no failures", () => {
@@ -382,9 +382,9 @@ describe("Credit Reconciliation Logic", () => {
 
       expect(result.hasDiscrepancy).toBe(true);
       expect(result.reading.discrepancy).toBe(350); // 700 − 350
-      expect(result.summary).toContain("Discrepancy of 350 credits");
+      expect(result.summary).toContain("Discrepancy of 350 ledger credits");
       expect(result.summary).toContain("charged more than the records show");
-      expect(result.summary).toContain("700 charged against 350 recorded");
+      expect(result.summary).toContain("700 ledger charged against 350 ledger recorded");
     });
 
     it("should detect records showing more than was ever charged", () => {
@@ -575,7 +575,7 @@ describe("Credit Reconciliation Logic", () => {
       expect(result.reading.unrefundedFailureCost).toBe(0);
       expect(result.summary).toContain("No discrepancy.");
       expect(result.summary).toContain("2 failed generation(s)");
-      expect(result.summary).toContain("650 refunded");
+      expect(result.summary).toContain("650 ledger refunded");
     });
   });
   it("a refund anomaly read through a DATE WINDOW is worded as the window's, never as an all-time fact", () => {

@@ -1209,7 +1209,13 @@
 - symbol: BadRequestError
   file: shared/_core/errors.ts
   verdict: KEEP
-  why: "one of four convenience constructors over HttpError, declared as a set by a docblock that states their job (\"Throw this from route handlers to send specific HTTP errors\"). ForbiddenError is live at server/_core/sdk.ts:2; this product routes through tRPC, so the other three are an unused remainder of a complete vocabulary rather than three independent dead symbols. Was also reachable through the barrel shared/types.ts:7 (export * from ./_core/errors) until #106 deleted that never-imported barrel on 2026-09-16"
+  why: "one of four convenience constructors over HttpError, declared as a set by a docblock that states their job (\"Throw this from route handlers to send specific HTTP errors\"). ForbiddenError was live at server/_core/sdk.ts:2 until #1990 (2026-10-08) replaced its two throws with SessionRejectedError, a subclass of the same HttpError that callers can tell from an infrastructure failure; this product routes through tRPC, so all four are an unused remainder of a complete vocabulary rather than three independent dead symbols. Was also reachable through the barrel shared/types.ts:7 (export * from ./_core/errors) until #106 deleted that never-imported barrel on 2026-09-16"
+  argued: 29e
+
+- symbol: ForbiddenError
+  file: shared/_core/errors.ts
+  verdict: KEEP
+  why: "see BadRequestError — same four-member set, same docblock. It lost its last importer to #1990 (2026-10-08), where sdk.ts's two session refusals became SessionRejectedError (still an HttpError 403, so every caller's behaviour is unchanged) so createContext can tell a refused session from a database that failed to answer; the vocabulary is kept whole rather than losing one member to a rename"
   argued: 29e
 
 - symbol: UnauthorizedError
@@ -1533,6 +1539,18 @@
   verdict: KEEP
   why: "server/testing/ is test infrastructure by directory (the readListedSource precedent, 13a), so a production-importer reading of it is zero by construction and says nothing. It is the walk server/creditDisplayGuard.test.ts derives its population from: every place a customer reads a credit number, refused when a ledger value reaches a render without shared/creditDisplay.ts. It carries the P1-1 census - 79 shapes over 106 occurrences - as a budget that only shrinks, so the routing slices have a checkable remainder rather than an opinion. Deleting it takes both halves: the walk floors that tell a clean tree from a reader that stopped parsing, and the only reading of hand-written scale arithmetic (/ 5, / 50, * 50), which the branded DisplayCredits type cannot see"
   argued: "#1600"
+
+- symbol: unlabelledLedgerFigures
+  file: server/testing/creditDisplaySites.ts
+  verdict: KEEP
+  why: "server/testing/ is test infrastructure by directory (the readListedSource precedent, 13a), so a production-importer reading of it is zero by construction and says nothing. It is the census's RENDERED half for the moderator road (#2027): server/moderatorRoadLedger.test.ts drives the road's pure producers (the Credits row, both history CSVs, the reconciliation pane, its CSV and the summary sentence) with sentinel ledger figures and this reads what comes out — a figure is labelled only if the word ledger follows it or its heading says ledger. The source rules read NAMES and cannot see the pane's `grouped(credits.totalEarned)` in a value attribute; deleting it returns those figures to being unguarded, on the road where a copied ledger figure grants five times over"
+  argued: "#2027"
+
+- symbol: storedDescriptionTemplates
+  file: server/testing/creditDisplaySites.ts
+  verdict: KEEP
+  why: "server/testing/ is test infrastructure by directory (the readListedSource precedent, 13a), so a production-importer reading of it is zero by construction and says nothing. It renders each stored-description writer's own template — read from the census rows marked storedDescription, not a second list (working law 4) — with sentinel figures, so creditDisplayGuard.test.ts can hold shared/creditDisplay.ts's staffLedgerProse to labelling every figure a writer composes (#2027). A row whose template is gone throws rather than passing as covered; deleting it leaves a new description shape free to reach the moderator unlabelled"
+  argued: "#2027"
 
 - symbol: ENGINE_AND_VENDOR_NAMES
   file: shared/engineVocabulary.ts

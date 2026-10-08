@@ -5,7 +5,7 @@ import {
   INK_DESIGN_IMAGE_PATH_PREFIX,
   INK_DESIGN_READS_PER_MINUTE,
 } from "../../shared/inkDesignDelivery";
-import { sdk } from "../_core/sdk";
+import { answerForSessionFailure, sdk } from "../_core/sdk";
 import {
   INK_DESIGN_FORMATS,
   inkDesignContentType,
@@ -144,7 +144,17 @@ export function createInkDesignDeliveryRouter(
   router.get(
     INK_DESIGN_IMAGE_PATH_PREFIX + "/:designId",
     async (req: Request, res: Response) => {
-      const user = await dependencies.authenticate(req).catch(() => null);
+      let user: Awaited<ReturnType<InkDesignDeliveryDependencies["authenticate"]>>;
+      try {
+        user = await dependencies.authenticate(req);
+      } catch (error) {
+        // A refused session is 401 as before; a lookup that could not finish is
+        // 503 "try again" — never read as "not signed in" (#1997).
+        const answer = answerForSessionFailure(error);
+        if (answer.status === 503) log.error({ err: error }, "[Auth] Session check could not finish — answering 503, not a sign-in refusal (#1997)");
+        refuse(res, answer.status, answer.message);
+        return;
+      }
       if (!user) {
         refuse(res, 401, "Authentication required");
         return;

@@ -28,6 +28,8 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+import { staffLedgerProse } from "../shared/creditDisplay";
+
 const db = {
   getUserById: vi.fn(),
   getUserCredits: vi.fn(),
@@ -238,6 +240,21 @@ describe("cr_addCredits", () => {
     expect(db.addCredits.mock.calls[0][2]).toBe("refund");
   });
 
+  it("#2010 — moves the STORED LEDGER figure unconverted, and tells the admin the customer's figure beside it", async () => {
+    /* The row holds ledger (a moderator's typed 100 is stored as 500), so the
+       executor must not convert again — a second multiplication would grant
+       2,500 ledger, five times what was asked. */
+    const result = await runCr("cr_addCredits", { creditAmount: 500 });
+    expect(db.addCredits.mock.calls[0][1]).toBe(500);
+    expect(result.message).toContain(`100 credits · 500 ledger`);
+    vi.clearAllMocks();
+    db.getUserById.mockResolvedValue(ORDINARY_USER);
+    db.addCredits.mockResolvedValue({ success: true, newBalance: 600 });
+    const refund = await runCr("cr_refundCredits", { creditAmount: 160 });
+    expect(db.addCredits.mock.calls[0][1]).toBe(160);
+    expect(refund.message).toContain(`32 credits · 160 ledger`);
+  });
+
   it("refuses a non-positive amount", async () => {
     await expect(runCr("cr_addCredits", { creditAmount: 0 })).rejects.toThrow("Invalid credit amount");
     expect(db.addCredits).not.toHaveBeenCalled();
@@ -387,4 +404,24 @@ describe("cr_stripeRefund", () => {
     await expect(runCr("cr_stripeRefund", PURCHASE)).resolves.toBeDefined();
     expectSettled();
   });
+});
+
+// ── #2027: the description these write, as a moderator reads it ────────────
+
+describe("#2027 — a change request's stored description keeps the reason as typed", () => {
+  /*
+    `staffLedgerProse` restates the figures the PRODUCT composed into a
+    description and leaves a person's reason alone, recognising it by the
+    prefix these executors write. Driven through the real executors so a
+    reworded prefix reddens here rather than silently converting a reason
+    whose scale nobody can know.
+  */
+  for (const action of ["cr_addCredits", "cr_refundCredits"] as const) {
+    it(`${action} — "100 credits" in the reason survives the reading untouched`, async () => {
+      await runCr(action, { creditAmount: 25, creditReason: "as promised, 100 credits" });
+      const description = db.addCredits.mock.calls[0][3] as string;
+      expect(description).toContain("as promised, 100 credits");
+      expect(staffLedgerProse(description)).toBe(description);
+    });
+  }
 });

@@ -23,6 +23,7 @@ import { RowId, RowStack, StatePill, pageRange } from "@/features/staff";
 import { DataTable, TableFilter, TableHead } from "@/foundation";
 import type { DataRow } from "@/foundation";
 import { staffDateTime, staffFullDateTime } from "@/foundation/staffDate";
+import { displayBalance, displayRefund, staffCreditFact } from "@shared/creditDisplay";
 import {
   CHANGE_REQUEST_NOT_RECORDED,
   changeRequestStatusLabel,
@@ -146,7 +147,14 @@ export function MyRequestsTab({ data, isLoading }: MyRequestsTabProps) {
               value:
                 request.creditAmount == null
                   ? CHANGE_REQUEST_NOT_RECORDED
-                  : `${request.creditAmount}`,
+                  : /* #2010: stored LEDGER; the customer's figure leads, as on
+                       the admin's review panel. */
+                    staffCreditFact(
+                      request.type === "refund_credits"
+                        ? displayRefund(request.creditAmount)
+                        : displayBalance(request.creditAmount),
+                      request.creditAmount,
+                    ),
             },
           ]
         : []),

@@ -130,6 +130,7 @@ import { mintViewThumbnail } from "./viewThumbnailMint";
 import {
   ProviderError,
   mayStillArrive,
+  providerAlreadyBilled,
   type IdentityEngine,
   type ImageResult,
   type ReferenceImage,
@@ -179,7 +180,9 @@ import {
   type SignSheetEngine,
   type SignSheetKind,
 } from "./signSheet";
+import { ARRIVAL_ATTEMPTS, arrivalBackoffMs, waitMs } from "./arrivalRetry";
 import {
+  SignSheetUnavailableError,
   settleSignSheet,
   settledPanelFor,
   type SettledSignSheet,
@@ -205,8 +208,47 @@ const PACKAGE_KEY_PREFIX = "casting-v2/casts";
  * fails named-and-refunded. It is the number the customer is owed a true
  * sentence about, so nothing may restate it as a word — see
  * {@link VIEW_ARRIVAL_ATTEMPTS} usage at the only place that counts.
+ *
+ * ⚠ **THE NUMBER ITSELF MOVED TO `arrivalRetry.ts` WITH #1966** and this name
+ * is kept because it is what this road's arms express themselves in. The SHEET
+ * road now asks the same question — it did not until that card, so a transport
+ * fault on a sheet lost two or three views where the same fault on a single
+ * view was re-asked twice more — and two copies of one budget is the mirror
+ * working law 4 is about. That module's header carries why this derivation is
+ * safe where {@link SHEET_MAX_RENDERS}'s refusal to derive is also right.
  */
-export const VIEW_ARRIVAL_ATTEMPTS = 3;
+export const VIEW_ARRIVAL_ATTEMPTS = ARRIVAL_ATTEMPTS;
+
+/**
+ * HOW MANY TIMES A FRAME THAT ARRIVED IS OFFERED TO STORAGE (#2045) — the
+ * first store plus two more, the SAME bytes each time and never a new frame.
+ *
+ * #1994 stopped the per-view road re-buying a frame because something after it
+ * failed, which was right about the money and left one loss standing: when the
+ * thing that failed was the STORE, the picture was still in memory, and one
+ * bucket blip cost her the view outright. Re-offering bytes we already hold
+ * buys nothing from the engine.
+ *
+ * ⚠ **NOT DERIVED FROM {@link VIEW_ARRIVAL_ATTEMPTS}, ON PURPOSE.** That
+ * budget answers *"how often do we re-ask the ENGINE for a render that never
+ * came back"*; this one answers *"how often do we re-offer OUR OWN storage
+ * bytes already in hand"*. Two questions about two systems — law 4's
+ * precondition (the same question) does not hold, so one moving must not move
+ * the other.
+ */
+export const VIEW_STORE_ATTEMPTS = 3;
+
+/**
+ * The spacing before each re-store (#2045), indexed by how many stores have
+ * failed. Short: a storage blip is a breath, and the frame that is waiting has
+ * already cost 40-120 seconds to render. The read repeats its last value, so
+ * lengthening {@link VIEW_STORE_ATTEMPTS} without this ladder is safe.
+ */
+export const VIEW_STORE_BACKOFF_MS: readonly number[] = [500, 1_500];
+
+function viewStoreBackoffMs(failures: number): number {
+  return VIEW_STORE_BACKOFF_MS[Math.min(failures - 1, VIEW_STORE_BACKOFF_MS.length - 1)] ?? 0;
+}
 
 /**
  * Generations that reached a VERDICT. Unchanged, and deliberately so: one
@@ -224,22 +266,6 @@ export const VIEW_JUDGED_ATTEMPTS = 2;
  * above. A bound that cannot disagree with its budgets also cannot spin.
  */
 const VIEW_MAX_ATTEMPTS = VIEW_ARRIVAL_ATTEMPTS + VIEW_JUDGED_ATTEMPTS;
-
-/**
- * The spacing between one arrival failure and the next attempt.
- *
- * Short on purpose. The adapter has already exhausted its own transport
- * retries by the time a `ProviderError` reaches this loop, so this is the
- * outer, slower breath — long enough for a provider blip or a rate-limit
- * window to pass, negligible against a 2K render (measured in tens of
- * seconds). The package's operation holds a renewing heartbeat while this
- * runs, so the added wait cannot hand a live Sign to the recovery sweep.
- *
- * Indexed by how many arrival failures have happened, so the second wait is
- * longer than the first; the list is read with its last value repeated rather
- * than indexed off the end.
- */
-const VIEW_ARRIVAL_BACKOFF_MS: readonly number[] = [1_500, 4_000];
 
 /**
  * The per-view refund reference.
@@ -687,6 +713,11 @@ export async function buildCastPackage(
         userId: input.userId,
         operationId: input.operationId,
         ...(dependencies.capture ? { capture: dependencies.capture } : {}),
+        /* #1966 — the sheet's own arrival retries are spaced, and a suite
+           proves the spacing by recording the milliseconds rather than
+           sleeping. The same injection the per-view loop takes, handed to the
+           only place that can re-ask for a SHEET. */
+        ...(dependencies.wait ? { wait: dependencies.wait } : {}),
       })),
     ]),
   ) as Record<SignSheetKind, Promise<SettledSignSheet>>;
@@ -890,6 +921,34 @@ type ViewLanding<T> = (landed: {
 }) => Promise<T | null>;
 
 /**
+ * STORE THE BYTES WE ALREADY HAVE, UP TO {@link VIEW_STORE_ATTEMPTS} TIMES
+ * (#2045). Never calls an engine; the last failure is re-thrown unchanged so the
+ * attempt loop's catch decides exactly as it did before this existed.
+ *
+ * Each try mints a fresh key (the store does), so a try that failed leaves
+ * nothing a later one could collide with.
+ */
+async function storeArrivedFrame(
+  store: NonNullable<PackageOrchestratorDependencies["storeImage"]>,
+  wait: (ms: number) => Promise<void>,
+  storeInput: { operationId: string; bytes: Buffer; contentType: string },
+  context: { angle: CastViewAngle; attempt: number },
+): Promise<{ key: string; url: string }> {
+  for (let tries = 1; ; tries += 1) {
+    try {
+      return await store(storeInput);
+    } catch (error) {
+      if (tries >= VIEW_STORE_ATTEMPTS) throw error;
+      log.warn(
+        { err: error, operationId: storeInput.operationId, ...context, storeTry: tries },
+        "[packageOrchestrator] the view ARRIVED and storing it failed — storing the same bytes again",
+      );
+      await wait(viewStoreBackoffMs(tries));
+    }
+  }
+}
+
+/**
  * GENERATE, STORE, JUDGE — the attempt loop, and it is the WHOLE fidelity
  * contract of a package view.
  *
@@ -903,9 +962,14 @@ type ViewLanding<T> = (landed: {
  * not the same view.**
  *
  * The landing is a callback INSIDE the try on purpose. It is where the commit
- * used to sit, so a throw out of it still lands in this loop's catch and still
- * counts as an arrival failure — the Sign's behaviour across this extraction
- * is unchanged, which is what its own suite is the control for.
+ * used to sit, so a throw out of it still lands in this loop's catch.
+ *
+ * ⚠ **A THROW AFTER THIS ATTEMPT BOUGHT ITS OWN FRAME ENDS THE SLOT (#1994).**
+ * Until that card such a throw — the store, the landing, its commit — read as
+ * an `unknown` failure class, which `mayStillArrive` retries on purpose, so the
+ * loop asked the engine for ANOTHER paid frame because something after the
+ * first one failed. See `paidFrameInHand` in the loop body for why the sheet
+ * road is deliberately left retrying.
  */
 export async function renderViewAttempts<T>(
   dependencies: PackageOrchestratorDependencies,
@@ -950,13 +1014,43 @@ export async function renderViewAttempts<T>(
      derived from the two above, because a `break` can leave the loop without
      either of them moving. */
   let attemptsRun = 0;
-  const wait = dependencies.wait ?? ((ms: number) => new Promise<void>((resolve) => {
-    setTimeout(resolve, ms).unref?.();
-  }));
+  const wait = dependencies.wait ?? waitMs;
 
   for (let attempt = 1; attempt <= VIEW_MAX_ATTEMPTS; attempt += 1) {
     attemptsRun = attempt;
     let stored: { key: string; url: string } | null = null;
+    /*
+      ⚠ **DID THIS ATTEMPT PAY FOR A FRAME THAT IS NOW IN HAND? (#1994)** Set
+      the moment the per-view engine call RESOLVES, and read in the catch below.
+
+      The `try` wraps far more than the engine call: storing the bytes, the
+      judge, the refused-frame keeper, the landing and its commit. The engine's
+      own faults arrive as `ProviderError`s with real classes, but a plain
+      `Error` from anything AFTER it — `storagePut` goes through the S3 SDK, the
+      commit through mysql2 — reached the catch as `unknown`, which
+      `mayStillArrive` retries on purpose (an unmapped transport fault must not
+      cost a paid view its attempts). So a picture that had ARRIVED, and been
+      paid for, was asked for again because something downstream of it failed:
+      up to `VIEW_ARRIVAL_ATTEMPTS` frames bought to learn one answer. Same class
+      as the sheet road's finding on PR #1982, on the road it did not reach.
+
+      What can throw after arrival, read at the code: the store (`storagePut`
+      and the thumbnail beside it) and the landing (`commitSlot`, or the Try
+      again road's own commit). The judge cannot — `judgeUnjudgedOnFailure`
+      turns its faults into an unjudged verdict — and the keeper and every
+      `drop` carry their own `.catch`. The flag does not depend on that list
+      staying true: it reads WHEN the throw happened, not who threw it.
+
+      ⚠ **ONLY THE PER-VIEW ENGINE ROAD SETS IT, AND THE SHEET ROAD IS LEFT
+      RETRYING ON PURPOSE.** There the frame is the coordinator's settled panel
+      — one promise per sheet — so asking again re-stores the SAME bytes and buys
+      nothing. Making it terminal there would turn a passing storage hiccup into
+      a refunded view for no saving at all; an arm holds that direction too.
+
+      ⚠ **And what came before the engine resolved is untouched**: a frame that
+      never arrived still spends its arrival budget exactly as #1208 ruled.
+    */
+    let paidFrameInHand = false;
     try {
       /*
         WHERE THE PICTURE COMES FROM — one of two roads, and the fork is a FIELD
@@ -1042,14 +1136,29 @@ export async function renderViewAttempts<T>(
       const image = panel
         ? panel.image
         : await composeAndGenerateOneView(input, angle, engine);
+      paidFrameInHand = panel === null;
 
       // Bytes land in OUR storage before anything references them; a provider
       // URL is never persisted and never projected (§E, §J).
-      stored = await store({
+      /*
+        ⚠ **A FRAME THIS ATTEMPT BOUGHT IS RE-STORED, NOT LOST (#2045).** On
+        the per-view road a store that throws now breaks the loop (#1994 — the
+        catch below), so without this a passing bucket fault refunded a view
+        whose bytes were sitting right here. Same bytes, spaced, no engine call;
+        if every try fails the throw reaches the catch exactly as before.
+
+        ⚠ **The sheet road is left on a single store**, because there the loop
+        itself already re-stores the same settled panel on its next attempt —
+        wrapping it too would multiply one budget by the other.
+      */
+      const storeInput = {
         operationId: input.operationId,
         bytes: image.bytes,
         contentType: image.contentType,
-      });
+      };
+      stored = paidFrameInHand
+        ? await storeArrivedFrame(store, wait, storeInput, { angle, attempt })
+        : await store(storeInput);
 
       /*
         ⚠ **ONE JUDGEMENT PER RENDERED PANEL, AND IT WAS ALREADY MADE.** On the
@@ -1309,18 +1418,62 @@ export async function renderViewAttempts<T>(
         contract's own terms and are unreachable here; `segment_store` is held
         and `providers/types.ts` says why.
       */
+      /*
+        ⚠ **A SETTLED SHEET THAT DID NOT ARRIVE IS TERMINAL HERE — #1966, and
+        before that card it was not.** One promise per sheet means a settled
+        rejection re-throws the same error instantly to every view awaiting it,
+        so this loop's three attempts were spent WAITING on an answer that
+        could never change. The sheet now asks three times itself, spaced, in
+        `settleSignSheet`; repeating it here would spend one budget twice and
+        put ~5 s of silence in front of a refund the customer is already owed.
+
+        It is tested before `mayStillArrive` rather than mapped into a failure
+        class, because the fact is about OUR settled promise and not about the
+        transport — `settledPanelFor` raises it and its own docblock says why.
+      */
+      if (error instanceof SignSheetUnavailableError) break;
+      /*
+        ⚠ **A FRAME THIS ATTEMPT ALREADY BOUGHT IS NEVER BOUGHT AGAIN (#1994).**
+        Tested before `mayStillArrive` because the class says nothing useful
+        here: whatever threw after the engine resolved, re-asking renders a NEW
+        paid frame and not the one in hand. The slice refunds through `failView`
+        exactly as for any failed view — what stops is the re-buying.
+
+        ⚠ **A STORE THROW REACHES HERE ONLY AFTER {@link VIEW_STORE_ATTEMPTS}
+        tries of the same bytes (#2045)** — `storeArrivedFrame` above.
+      */
+      if (paidFrameInHand) {
+        log.warn(
+          { operationId: input.operationId, angle, attempt, failureClass },
+          "[packageOrchestrator] the view ARRIVED and a later step failed — not buying another frame",
+        );
+        break;
+      }
       if (!mayStillArrive(failureClass)) break;
+      /*
+        ⚠ **THE SECOND INSTANCE OF THE CLASS THE RELAY FOUND ON THE SHEET
+        ROAD (PR #1982), swept here in the same commit.**
+
+        Four of fal's faults are raised AFTER the job reports `COMPLETED` — no
+        image in the payload, a malformed data URI, a failed download, a non-ok
+        result fetch — and their classes (`unknown`, `transport`, and whatever
+        a status maps to) are retryable, because retryable is the right answer
+        for a job that never ran. This one ran and was billed: re-asking
+        renders a NEW frame rather than re-fetching the one we bought, and it
+        fails the same way, so the budget buys up to three frames to learn one
+        answer.
+
+        The slice refunds either way — what the customer stops doing is waiting
+        through 5.5 s of spaced retries for a refund they are already owed.
+      */
+      if (providerAlreadyBilled(error)) break;
       /*
         The view never arrived. Keep trying, spaced — this is our failure to
         deliver something already paid for, not a draw against a judgement.
       */
       arrivalFailures += 1;
       if (arrivalFailures >= VIEW_ARRIVAL_ATTEMPTS) break;
-      await wait(
-        VIEW_ARRIVAL_BACKOFF_MS[
-          Math.min(arrivalFailures - 1, VIEW_ARRIVAL_BACKOFF_MS.length - 1)
-        ] ?? 0,
-      );
+      await wait(arrivalBackoffMs(arrivalFailures));
     }
   }
 

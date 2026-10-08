@@ -53,6 +53,24 @@
 }
 
 /*
+  REPAIRS OWED (#1977) — the one meta that is not faint.
+
+  It sits beside `N open` and says the same kind of thing, so it takes the same
+  type; what it does NOT take is `--faint`, because this one is work somebody
+  owes rather than a tally. It borrows `--ink` and the 500 weight from
+  `.dp-crew__status--wants`, which is already how this page says *this row wants
+  a person* — one vocabulary, not a second.
+
+  ⚠ No colour and no badge. The page is monochrome by the design system, and a
+  red pill here would be the only one on it; weight and ink are enough to make
+  a reader stop, which is all this has to do.
+*/
+.dp-crew__meta--wants {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+/*
   ⚠ **THE ONE FULL-BLEED SECTION (§2).** The eye gallery judges pictures,
   and at 790px a two-up grid gives tiles too small to decide anything with.
   It breaks out to the 1240px working measure — as a wrapper on the section,

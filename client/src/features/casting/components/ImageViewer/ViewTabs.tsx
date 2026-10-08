@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Loader2, MoreHorizontal, Plus, RefreshCw } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
-import { refundOutcomeText } from '@shared/refundCopy';
+import { bareReason, refundOutcomeText } from '@shared/refundCopy';
 import { displayPrice, formatCredits } from "@shared/creditDisplay";
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
@@ -206,17 +206,30 @@ function FailedSlot({
   label,
   failure,
   cost,
-  action = 'Retry',
+  action = 'Try again',
   onRetry,
 }: {
   label: string;
   failure: { reason: string; refunded: number; refundReference?: string };
   cost?: number;
-  action?: 'Retry' | 'Preview';
+  action?: 'Try again' | 'Preview';
   onRetry?: () => void;
 }) {
   const retryable = Boolean(onRetry);
-  const retryLabel = `${label} failed — ${failure.reason}. ${refundOutcomeText(failure)}${
+  /*
+    #1940 B18 — his word 2026-10-08 (*"on 1 and 2 go with your
+    reccomendations"*): the money half reads *"{N} credits returned."* and the
+    verb is **Try again**, one verb everywhere.
+
+    ⚠ **THE LEAD IS `{label}:` AND NOT THE CARD'S `{label} didn't arrive:`, ON
+    PURPOSE.** The reason that follows is already a whole sentence about what
+    happened — #1904's *"This view came out broken, so we didn't keep it"* — so
+    *"Front didn't arrive: This view came out broken…"* says it twice, and the
+    first half is false: the view DID arrive and the check turned it down. The
+    foreman's reading on the card named exactly this collision. The surface
+    supplies the stop, so the reason is trimmed of its own (`bareReason`).
+  */
+  const retryLabel = `${label}: ${bareReason(failure.reason)}. ${refundOutcomeText(failure)}${
     retryable && cost !== undefined
       ? ` ${action} for ${formatCredits(displayPrice(cost))} credits.`
       : ''
@@ -444,7 +457,7 @@ export function ViewTabs() {
                 label={label}
                 failure={slot.failed}
                 cost={plan?.refusal === null ? plan.cost : undefined}
-                action={requiresProjection ? 'Preview' : 'Retry'}
+                action={requiresProjection ? 'Preview' : 'Try again'}
                 onRetry={plan?.refusal === null
                   ? () => requiresProjection
                     ? requestInkProjection(vt)

@@ -39,7 +39,11 @@ import {
   creditDisplaySites,
   creditSitesIn,
   creditDisplayPopulation,
+  moderatorRoadSites,
+  storedDescriptionTemplates,
+  unlabelledLedgerFigures,
 } from "./testing/creditDisplaySites";
+import { staffLedgerProse } from "../shared/creditDisplay";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 
 /* This suite both SPAWNS git (rev-parse, and `git ls-files` inside the
@@ -171,8 +175,16 @@ const repoRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
   censused site and the reader indicts none in it. The rate's surviving home —
   the credit PACKS pane — computes it through `rateFor`, a name these rules do
   not read, so it was never censused either.
+
+  ✅ **15 → 11 (#2010), BY ROUTING.** The four sentences an admin reads back
+  after approving a moderator's credit request — the refund and grant
+  confirmations, and the Stripe refund's review note and confirmation — now
+  go through `staffCreditFact`, the customer's figure first and the ledger
+  beside it, so the toast agrees with the panel the admin approved from. Both
+  rows left by the routing door; the stale-row arm reported each at budgeted
+  2, found 0, before this number was touched.
 */
-const OCCURRENCES_CEILING = 15;
+const OCCURRENCES_CEILING = 11;
 
 const censusedOccurrences = UNROUTED.reduce((total, row) => total + row.count, 0);
 
@@ -1027,5 +1039,62 @@ describe("the census is held to its contract", () => {
     const walked = new Set(creditDisplayPopulation(repoRoot));
     const orphans = UNROUTED.map((row) => row.file).filter((file) => !walked.has(file));
     expect(Array.from(new Set(orphans))).toEqual([]);
+  });
+});
+
+describe("#2027 — the moderator road: every ledger figure converted or labelled", () => {
+  /*
+    The moderator's request form takes the CUSTOMER's figure since #2010. The
+    road around it is staff, and stays exempt from ROUTING — but not from
+    saying which scale a figure is on. No allowlist: a staff figure has no
+    reason to stay unlabelled. The rendered half is `moderatorRoadLedger.test.ts`.
+  */
+  const MODERATOR_FIXTURE = "client/src/features/moderator/Fixture.tsx";
+
+  it("NEGATIVE CONTROL — the road as it stands has no unlabelled site, and the walk read it", () => {
+    const road = moderatorRoadSites(repoRoot);
+    expect(road.files).toBeGreaterThanOrEqual(20);
+    expect(road.sites).toEqual([]);
+  });
+
+  it("POSITIVE CONTROL — a bare ledger figure on the road reddens, including the table's `cr`", () => {
+    const bare = "export const F = () => <span>{`${gen.pointsCost} cr`}</span>;\n";
+    const found = creditSitesIn(MODERATOR_FIXTURE, bare, { moderatorRoad: true });
+    expect(found).toHaveLength(1);
+    expect(found[0]?.expression).toBe("gen.pointsCost");
+    /* …and the same file read as staff, the census's own view, is still exempt. */
+    expect(creditSitesIn(MODERATOR_FIXTURE, bare)).toEqual([]);
+  });
+
+  it("a figure the word ledger FOLLOWS is labelled; a converted one is routed", () => {
+    const labelled = "export const s = (a: any) => `${a.totalCost.toLocaleString()} ledger credits`;\n";
+    const converted =
+      "export const s = (a: any) => `${staffCreditFact(displayPrice(a.totalCost), a.totalCost)} charged`;\n";
+    expect(creditSitesIn(MODERATOR_FIXTURE, labelled, { moderatorRoad: true })).toEqual([]);
+    expect(creditSitesIn(MODERATOR_FIXTURE, converted, { moderatorRoad: true })).toEqual([]);
+  });
+
+  it("⚠ one label in a sentence excuses only the figure it follows", () => {
+    const half =
+      "export const s = (a: any) => `${a.totalCost.toLocaleString()} ledger credits charged, ${a.expectedCost.toLocaleString()} recorded`;\n";
+    const found = creditSitesIn(MODERATOR_FIXTURE, half, { moderatorRoad: true });
+    expect(found.map((site) => site.expression)).toEqual(["a.expectedCost.toLocaleString()"]);
+  });
+
+  it("every stored-description writer's own template is labelled once read through `staffLedgerProse`", () => {
+    const templates = storedDescriptionTemplates(repoRoot);
+    expect(templates.length).toBeGreaterThanOrEqual(4);
+    for (const template of templates) {
+      /* NEGATIVE CONTROL: as stored, the template carries a bare ledger figure. */
+      expect(unlabelledLedgerFigures(template.rendered, template.figures), template.rendered).not.toEqual([]);
+      /* …and as a moderator reads it, none. */
+      const read = staffLedgerProse(template.rendered);
+      expect(unlabelledLedgerFigures(read, template.figures), read).toEqual([]);
+      for (const figure of template.figures) expect(read).toContain(figure.toLocaleString("en-US"));
+    }
+  });
+
+  it("a stored-description row whose template cannot be found refuses, never passes as covered", () => {
+    expect(UNROUTED.filter((row) => row.storedDescription).length).toBeGreaterThanOrEqual(4);
   });
 });

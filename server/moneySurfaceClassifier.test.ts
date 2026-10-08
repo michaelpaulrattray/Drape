@@ -1,14 +1,17 @@
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
-import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 import { readListedSource } from "./testing/listedSource";
 import { codeOnly, withoutComments } from "./testing/withoutComments";
 
-/* This suite reads every module the Atlas lists (the direct-balance guard at the
-   foot of the file), so it carries the class floor rather than the 5 s default. */
-vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
+/* This suite reads every module the Atlas lists (the direct-balance guard) and,
+   since #1906, spawns `git ls-files` for the Stripe-write guard, so it is in the
+   child-process population (#548) — whose floor equals the contended one (30 s),
+   so the class it already carried for the walk is still met. */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 /**
  * WHAT THE GATE CALLS A MONEY DIFF, AND WHY IT IS TWO READINGS (card #958).
@@ -1175,6 +1178,268 @@ describe("the authorisation reading — where a staff money action is APPROVED (
         `${module} no longer keys by a change-request type, so excluding it guards nothing`,
       ).toBe(true);
       expect(pathRe.test(module), `${module} is both excluded and on the list`).toBe(false);
+    }
+  });
+});
+
+/**
+ * THE EIGHTH POSITION IN THE SENTENCE — code that writes to STRIPE from outside
+ * the product (#1906).
+ *
+ * `scripts/ceremony-topup-prices-1606.mts` creates and archives the LIVE top-up
+ * prices on launch day. PR #1839 changed it and nothing else, and neither half
+ * fired: no path entry under `scripts/`, and the symbol half is scoped
+ * `-- server shared` and names credit primitives rather than Stripe calls. It
+ * was held only because a reviewer read it by hand.
+ *
+ * `money-surfaces.sh` carries the measurement, the sweep and why the directory
+ * was declined.
+ */
+describe("the Stripe-write reading — code that changes what Stripe holds (#1906)", () => {
+  const CEREMONY = "scripts/ceremony-topup-prices-1606.mts";
+
+  it("the live top-up price ceremony is a money diff", () => {
+    expect(pathRe.test(CEREMONY)).toBe(true);
+  });
+
+  /**
+   * THE NEGATIVE CONTROL — `scripts/` holds ~600 tracked files and this entry
+   * must not quietly become the directory (`money-surfaces.sh`: NAMED FILES,
+   * NEVER DIRECTORIES). Real neighbours, including other ceremonies and the
+   * merge tool that READS this very declaration.
+   */
+  it.each([
+    "scripts/ceremony-extend-sheet-window-1464.mts",
+    "scripts/ceremony-crew-replies.mts",
+    "scripts/lib/ceremony.mts",
+    "scripts/lib/prMergeOrder.mts",
+    "scripts/pr-merge-in-order.mts",
+    "scripts/ceremony-topup-prices-1606.mts.bak",
+    "scripts/old/ceremony-topup-prices-1606.mts",
+  ])("still leaves %s alone", (file) => {
+    expect(pathRe.test(file)).toBe(false);
+  });
+
+  /**
+   * AND THE WHOLE ARGUMENT FOR THE ENTRY: the symbol half is blind to these
+   * lines even where it would look. Real lines, from the ceremony at the commit
+   * that added it to the list.
+   */
+  it.each([
+    "    const p = await stripe.prices.create({ product, currency: \"usd\", unit_amount: w.cents, lookup_key: w.lookupKey });",
+    "  for (const p of oldOnes) { await stripe.prices.update(p.id, { active: false }); }",
+    "  if (!product) product = (await stripe.products.create({ name: \"Klieg Credit Top-up\" })).id;",
+  ])("the symbol half is blind to %s", (line) => {
+    expect(symbolRe.test(line)).toBe(false);
+  });
+
+  it("both workflows still scope the symbol half away from scripts/, which is why the path entry exists", () => {
+    for (const [name, yml] of [["gate.yml", gateYml], ["review.yml", reviewYml]] as const) {
+      const scopes = [...yml.matchAll(/git diff -G"\$MONEY_SYMBOLS"[^\n]*? -- ([^|\n]+?)\s*\|\|/g)]
+        .map((m) => m[1]!.trim().split(/\s+/));
+      expect(scopes.length, `${name} no longer runs the symbol half — re-read this arm`).toBeGreaterThan(0);
+      for (const scope of scopes) expect(scope).not.toContain("scripts");
+    }
+  });
+
+  /*
+    ⚠ THE DRIFT GUARD, DERIVED RATHER THAN TYPED — the card's own second option,
+    *"match any file that calls Stripe price create/archive"*, widened to the
+    class: any code that holds a Stripe client or calls a Stripe write.
+
+    ⚠ THE POPULATION IS `git ls-files`, NOT THE ATLAS. The Atlas scans
+    `server`, `client/src`, `shared` and `drizzle` and lists no module under
+    `scripts/` at all, so an Atlas-derived population here would be EMPTY on the
+    one directory this card is about — the silence this file's readers refuse.
+
+    ⚠ COMMENTS AND STRING CONTENTS ARE STRIPPED (`codeOnly`) for the call and
+    constructor readings, because the sabotage drives under `scripts/` carry
+    real call lines inside find/replace STRINGS and a docblock in
+    `stripePriceCatalogue.ts` quotes `stripe.prices.create`. The import reading
+    needs the specifier, so it reads `withoutComments` and only a line that
+    BEGINS an import statement.
+  */
+  const STRIPE_CLIENT = /\bnew\s+Stripe\s*\(/;
+  const STRIPE_VALUE_IMPORT =
+    /(?:^|\n)[ \t]*import\s+(?!type\b)[^;]*?\bfrom\s*["']stripe["']|\brequire\(\s*["']stripe["']\s*\)|\bimport\(\s*["']stripe["']\s*\)/;
+  const STRIPE_WRITE =
+    /\.\s*(?:prices|products|coupons|promotionCodes|subscriptions|subscriptionItems|subscriptionSchedules|refunds|customers|paymentIntents|invoices|invoiceItems|plans|paymentLinks|creditNotes|taxRates|checkout\s*\.\s*sessions|billingPortal\s*\.\s*sessions)\s*\.\s*(?:create|update|del|cancel|resume|release|expire|pay|voidInvoice|finalizeInvoice)\s*\(/;
+
+  function writesToStripe(source: string): boolean {
+    const code = codeOnly(source);
+    return STRIPE_CLIENT.test(code) || STRIPE_WRITE.test(code) || STRIPE_VALUE_IMPORT.test(withoutComments(source));
+  }
+
+  function trackedCodeFiles(): string[] {
+    const listed = execFileSync("git", ["ls-files", "-z"], { cwd: repoRoot, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 })
+      .split("\0")
+      .filter((p) => /\.(?:ts|tsx|mts|cts|js|mjs|cjs)$/.test(p))
+      .filter((p) => !/\.test\.[cm]?[jt]sx?$/.test(p) && !/(?:^|\/)node_modules\//.test(p));
+    /* A collector that can come up empty reports a complete answer either way. */
+    if (!listed.some((p) => p.startsWith("scripts/")) || !listed.some((p) => p.startsWith("server/"))) {
+      throw new Error("git ls-files returned no scripts/ or no server/ code — reader broken");
+    }
+    return listed;
+  }
+
+  function stripeWriters(): string[] {
+    const writers: string[] = [];
+    for (const file of trackedCodeFiles()) {
+      const source = readListedSource(path.join(repoRoot, file));
+      if (source === null) continue;
+      if (writesToStripe(source)) writers.push(file);
+    }
+    return writers.sort();
+  }
+
+  it("the reader is driven on constructed sources, both directions", () => {
+    expect(writesToStripe("await stripe.prices.update(id, { active: false });")).toBe(true);
+    expect(writesToStripe("const s = await stripe.checkout.sessions.create({});")).toBe(true);
+    expect(writesToStripe("const stripe = new Stripe(key);")).toBe(true);
+    expect(writesToStripe('import Stripe from "stripe";\nexport const x = 1;')).toBe(true);
+    /* Comment-only, string-only, type-only, and a read — none is a writer. */
+    expect(writesToStripe("/** a plan change called `stripe.prices.create` */\nexport const x = 1;")).toBe(false);
+    expect(writesToStripe("// await stripe.prices.create({})\nexport const x = 1;")).toBe(false);
+    expect(writesToStripe('const find = "await stripe.subscriptions.cancel(id)";')).toBe(false);
+    expect(writesToStripe('import type Stripe from "stripe";\nexport const x = 1;')).toBe(false);
+    expect(writesToStripe("const all = await stripe.prices.list({ limit: 100 });")).toBe(false);
+  });
+
+  it("the reader finds the Stripe writers everybody already agrees about, and the ceremony", () => {
+    const writers = stripeWriters();
+    expect(writers).toContain("server/stripe/stripeService.ts");
+    expect(writers).toContain("server/security/deleteUserData.ts");
+    expect(writers).toContain(CEREMONY);
+  });
+
+  it("every tracked file that writes to Stripe is read as money", () => {
+    const missing = stripeWriters().filter((file) => !pathRe.test(file));
+    expect(
+      missing,
+      "these files hold a Stripe client or call a Stripe write, and a diff touching only them "
+        + `is not read as money: ${missing.join(", ")}. Add each to MONEY_PATHS by name, with its `
+        + "entry in money-surfaces.sh — never `^scripts/`, which #1906 measured and declined.",
+    ).toEqual([]);
+  });
+
+  /*
+    ⚠ AND A FILE CAN REACH STRIPE WITHOUT EVER HOLDING A CLIENT (#2006). The
+    readers above see `new Stripe(`, a `stripe` value import and a direct
+    `.x.create/update/del(` call. A script that imports `issueStripeRefund`,
+    `updateSubscriptionPlan` or `scheduleSubscriptionChange` from
+    `server/stripe/` and calls it does none of the three, so a diff touching
+    only it would pass unlabelled. The population therefore widens to every
+    tracked code file that IMPORTS from `server/stripe/`, whatever it calls.
+
+    The specifier is read from `withoutComments` (it is a string, and `codeOnly`
+    blanks it), and a match counts only when the SAME LINE of `codeOnly` still
+    carries the keyword that introduces it — `from`, `import` or `import(` /
+    `require(` — so an import quoted inside a find/replace string is not an
+    importer. Both outputs keep every newline, which is what makes the line a
+    shared coordinate. A type-only import is erased at compile time, moves no
+    money, and is not counted.
+  */
+  const STATIC_IMPORT =
+    /(?:^|\n)[ \t]*(?:import|export)\s+(type\s+)?[\w\s{},*$]*?\bfrom\s*["']([^"']+)["']/g;
+  const BARE_IMPORT = /(?:^|\n)[ \t]*import\s*["']([^"']+)["']/g;
+  const DYNAMIC_IMPORT = /\b(?:import|require)\s*\(\s*["']([^"']+)["']\s*\)/g;
+
+  /** Every module specifier `file` really imports, resolved to a repo path where it is relative. */
+  function importedPaths(file: string, source: string): string[] {
+    const kept = withoutComments(source);
+    const codeLines = codeOnly(source).split("\n");
+    const lineOf = (offset: number) => codeLines[kept.slice(0, offset).split("\n").length - 1] ?? "";
+    const resolve = (spec: string) =>
+      spec.startsWith(".") ? path.posix.normalize(path.posix.join(path.posix.dirname(file), spec)) : spec;
+    const found: string[] = [];
+    for (const m of kept.matchAll(STATIC_IMPORT)) {
+      if (m[1]) continue; // `import type` / `export type`
+      const at = m.index! + m[0].lastIndexOf(m[2]!);
+      if (/\bfrom\b/.test(lineOf(at))) found.push(resolve(m[2]!));
+    }
+    for (const m of kept.matchAll(BARE_IMPORT)) {
+      const at = m.index! + m[0].lastIndexOf(m[1]!);
+      if (/\bimport\b/.test(lineOf(at))) found.push(resolve(m[1]!));
+    }
+    for (const m of kept.matchAll(DYNAMIC_IMPORT)) {
+      if (/\b(?:import|require)\s*\(/.test(lineOf(m.index!))) found.push(resolve(m[1]!));
+    }
+    return found;
+  }
+
+  const reachesStripeHelper = (file: string, source: string) =>
+    importedPaths(file, source).some((p) => /^server\/stripe\//.test(p));
+
+  /*
+    The two server modules that import a `server/stripe/` helper and are NOT on
+    MONEY_PATHS on the day this arm landed. A STATED REMAINDER, not a verdict:
+    #2006's scope forbade editing `money-surfaces.sh` (PR #1924 was open on it),
+    so both were reported on the PR for the relay to decide.
+     - `server/_core/index.ts` mounts `handleStripeWebhook` behind
+       `express.raw()` — the route every Stripe grant arrives through.
+     - `server/routes/moderator.ts` reads `getSessionChargedAmountCents` to
+       derive the amount a filed Stripe refund request carries.
+  */
+  const STRIPE_IMPORTERS_OFF_THE_LIST = new Set([
+    "server/_core/index.ts",
+    "server/routes/moderator.ts",
+  ]);
+
+  function stripeHelperImporters(): string[] {
+    const importers: string[] = [];
+    for (const file of trackedCodeFiles()) {
+      const source = readListedSource(path.join(repoRoot, file));
+      if (source === null) continue;
+      if (reachesStripeHelper(file, source)) importers.push(file);
+    }
+    return importers.sort();
+  }
+
+  it("the importer reader is driven on constructed sources, both directions", () => {
+    const script = "scripts/refund-everyone.mts";
+    /* Positive: the card's own shape — static, multi-line, dynamic, require, re-export, namespace. */
+    expect(reachesStripeHelper(script, 'import { issueStripeRefund } from "../server/stripe/stripeService";\nawait issueStripeRefund(x);')).toBe(true);
+    expect(reachesStripeHelper(script, 'import {\n  updateSubscriptionPlan,\n  scheduleSubscriptionChange,\n} from "../server/stripe/stripeService";')).toBe(true);
+    expect(reachesStripeHelper(script, 'const { issueStripeRefund } = await import("../server/stripe/stripeService");')).toBe(true);
+    expect(reachesStripeHelper(script, 'const s = require("../server/stripe/stripeService");')).toBe(true);
+    expect(reachesStripeHelper(script, 'export { issueStripeRefund } from "../server/stripe/stripeService";')).toBe(true);
+    expect(reachesStripeHelper("server/lib/x.ts", 'import * as s from "../stripe/stripeService";')).toBe(true);
+    /* Negative: an unrelated server module, type-only, a comment, a string, lookalike paths. */
+    expect(reachesStripeHelper(script, 'import { getDb } from "../server/db/connection";')).toBe(false);
+    expect(reachesStripeHelper(script, 'import type { PlanChange } from "../server/stripe/stripeService";')).toBe(false);
+    expect(reachesStripeHelper(script, '// import { issueStripeRefund } from "../server/stripe/stripeService";\nexport const x = 1;')).toBe(false);
+    expect(reachesStripeHelper(script, 'const find = \'await import("../server/stripe/stripeService")\';')).toBe(false);
+    expect(reachesStripeHelper(script, 'const fixture = `\nimport { issueStripeRefund } from "../server/stripe/stripeService";\n`;')).toBe(false);
+    expect(reachesStripeHelper(script, 'import { x } from "../server/stripeish/thing";')).toBe(false);
+    expect(reachesStripeHelper("server/lib/x.ts", 'import { x } from "./stripe/thing";')).toBe(false);
+  });
+
+  it("the importer reader finds the importers everybody already agrees about, and the ceremony", () => {
+    const importers = stripeHelperImporters();
+    expect(importers).toContain(CEREMONY);
+    expect(importers).toContain("server/routes/billing.ts");
+    expect(importers).toContain("server/lib/adminActions/changeRequestActions.ts");
+    /* A neighbouring ceremony that imports server code but nothing under server/stripe/. */
+    expect(importers).not.toContain("scripts/ceremony-r7-founder-evidence.mts");
+  });
+
+  it("every tracked file that imports a server/stripe helper is read as money, or a stated remainder", () => {
+    const missing = stripeHelperImporters()
+      .filter((file) => !pathRe.test(file) && !STRIPE_IMPORTERS_OFF_THE_LIST.has(file));
+    expect(
+      missing,
+      "these files import from server/stripe/ and a diff touching only them is not read as money: "
+        + `${missing.join(", ")}. Add each to MONEY_PATHS by name, with its entry in money-surfaces.sh `
+        + "— never `^scripts/`, which #1906 measured and declined.",
+    ).toEqual([]);
+  });
+
+  it("each stated importer remainder is real, still an importer, and genuinely off the list", () => {
+    const importers = new Set(stripeHelperImporters());
+    for (const file of STRIPE_IMPORTERS_OFF_THE_LIST) {
+      expect(() => read(file), `${file} no longer exists, so drop it`).not.toThrow();
+      expect(importers.has(file), `${file} no longer imports from server/stripe/, so drop it`).toBe(true);
+      expect(pathRe.test(file), `${file} is now on MONEY_PATHS, so drop it`).toBe(false);
     }
   });
 });

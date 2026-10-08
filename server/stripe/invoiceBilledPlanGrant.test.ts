@@ -486,3 +486,83 @@ describe("4 · the `free` row still gates the handler, and that is a decision", 
     expect(refreshMonthlyCredits).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * 5 · THE SETTLEMENT WINDOW THE GRANT IS SIZED AGAINST (#1937).
+ *
+ * The same handler and the same window as section 2, one money figure
+ * further on. #1930 asked *whose allowance* — this asks *what counts as last
+ * period's leftover*, and the artifact is again the invoice rather than the
+ * state as it stands now.
+ *
+ * `applyPlanChangeSettlement` moves its credits into the plan's part of the
+ * balance, so the renewal's rollover percentage is applied to them. For a
+ * change made inside the period being granted — Stripe having already
+ * advanced the subscription — that hands back a quarter of a proration the
+ * customer paid for on Pro, and half on Starter.
+ *
+ * ⚠ **WHAT THESE ARMS PIN IS THE HANDLER'S HALF, WHICH IS WHICH DATE GOES
+ * DOWN.** The netting arithmetic, the reader and both money directions are
+ * `server/renewalSettlementNetting.test.ts`, driven against the real
+ * compare-and-set loop. Asserting a balance here would be asserting a mock's
+ * return value: `refreshMonthlyCredits` is a spy in this harness, which is
+ * exactly why it can show what it was ASKED.
+ */
+describe("5 · the settlement window — the invoice says when its period began", () => {
+  /** The sixth argument: when the period this grant is for began, or null. */
+  function settlementWindowAsked(): Date | null {
+    expect(refreshMonthlyCredits, "no grant was made at all").toHaveBeenCalledTimes(1);
+    return refreshMonthlyCredits.mock.calls[0][5] as Date | null;
+  }
+
+  it("⚠ the window is the BOUGHT line's own period start, to the second", async () => {
+    await deliver(renewal({ billedPlan: "pro" }));
+    const asked = settlementWindowAsked();
+    expect(asked).toBeInstanceOf(Date);
+    /* `T` is the period start the fixture's line declares; the handler must
+       hand down that instant and not "now", which is what every naive
+       reading of "this period" turns into. */
+    expect(asked!.getTime()).toBe(T * 1000);
+  });
+
+  it("⚠ an UNREADABLE period start takes the old road — null, never an epoch", async () => {
+    /*
+      THE ARM THAT MATTERS MOST IN PRODUCTION, and it is the #1930 clause's
+      sibling: a line with no readable period is the shape whose months are
+      already a fallback guess. `0` would be 1970 and would net out every
+      settlement the account has ever had; `Date.now()` would net out none and
+      lie about why. Null says the invoice could not answer, and the grant is
+      computed exactly as it was before this card.
+    */
+    await deliver({
+      id: "in_noperiod",
+      customer: "cus_1",
+      billing_reason: "subscription_cycle",
+      parent: {
+        subscription_details: {
+          subscription: "sub_1",
+          metadata: { userId: "11", plan: "pro", interval: "monthly" },
+        },
+      },
+      lines: {
+        data: [
+          {
+            parent: { type: "subscription_item_details", subscription_item_details: { proration: false } },
+            price: { recurring: { interval: "month" } },
+            period: { start: null, end: null },
+          },
+        ],
+      },
+      metadata: { env: "local" },
+    });
+    expect(settlementWindowAsked()).toBeNull();
+  });
+
+  it("an annual invoice hands down its own start, not a month ago", async () => {
+    /* A yearly line spans 365 days, so the window a naive "one month back"
+       would compute sits eleven months inside the period it is meant to open
+       — and would roll a proration bought in month two. */
+    await deliver(renewal({ billedPlan: "pro", days: 365 }));
+    expect(settlementWindowAsked()!.getTime()).toBe(T * 1000);
+  });
+});

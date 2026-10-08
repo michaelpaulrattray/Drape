@@ -72,9 +72,26 @@
  * that should have taken it. `log.warn` names the store and the count, so the
  * finding reaches a log instead of being quietly absorbed — a cleanup that
  * hides the bug it cleans up is the thing the old clause was right about.
+ *
+ * ⚠ **ONE CLASS OF ORPHAN IS DELIBERATELY NOT SWEPT, AND IT IS THE ONE THIS
+ * PARAGRAPH'S REASONING DOES NOT COVER — PR #1974, his ruling 2026-10-08,
+ * verbatim and entire: *"i agree with you"*.** The sentence above weighs a
+ * customer's face left up against a bug left visible, and that is the right
+ * trade for a child row whose candidate is GONE. It is the wrong trade for a
+ * child row of hers pointing at a candidate that still exists and belongs to
+ * SOMEBODY ELSE: that row is work made on their cast, *"a customer's cast is
+ * their work"* makes it theirs, and sweeping it broke a stranger's Cast —
+ * including, where the row was the candidate's `selectedVariantId`, leaving
+ * their chosen face pointing at nothing. **So those ids are filtered out of
+ * the deletion scope and warned about instead.** The cost is named rather
+ * than hidden: such a row outlives the deleted account with its object up.
  */
 import { createModuleLogger } from "../logging/logger";
 import type { TransactionHandle } from "../db/connection";
+import {
+  purgeScopeIsEmpty,
+  type PurgeCandidateScope,
+} from "../db/castingV2PurgeScope";
 import type { StorageCleanupManifestItem } from "../casting/storageCleanupContract";
 import {
   deleteAccountCandidateRowsIn,
@@ -110,6 +127,7 @@ import {
 } from "../db/castingV2ReferenceAttachments";
 import {
   listAccountOrphanCandidateIdsIn,
+  listExistingCandidateIdsIn,
   ORPHAN_SCANNED_STORES,
   type OrphanStoreName,
 } from "../db/castingV2Orphans";
@@ -223,20 +241,87 @@ export async function purgeAccountCastingIn(
     orphansByStore[store] = found.length;
     for (const id of found) orphanIds.add(id);
   }
-  if (orphanIds.size > 0) {
-    /*
-      LOUD ON PURPOSE. An orphan here means a row survived the path that
-      should have taken it, and a cleanup that absorbs the bug it cleans up
-      is exactly what the header's old clause was right to object to.
-    */
+  /*
+    THE TWO KINDS OF ORPHAN ID, AND ONLY ONE OF THEM IS HERS TO TAKE — #1959.
+
+    An orphan id was read OFF a child row of hers that points somewhere her
+    own candidates are not. Whether that id still has a `castingCandidates`
+    row decides which of two different bugs this is, and — since his ruling
+    of 2026-10-08 — decides whether her row may be deleted at all:
+
+    - **DROPPED** (no candidate row anywhere): a path dropped a candidate
+      without its children. Her child row is reached by nothing in the
+      product and its object sits at a permanently public URL forever, so it
+      is swept here with the account. The id still proves nothing, so the
+      owner travels in the statement beside it.
+    - **STILL PRESENT** (a candidate row exists, and it is not hers): her
+      child row carries her `userId` while pointing at a candidate somebody
+      else owns. ⚠ **IT IS SKIPPED, AND THAT IS HIS RULING RATHER THAN A
+      TOLERANCE** — the relay's finding on PR #1974, confirmed the same day,
+      verbatim and entire: *"i agree with you"*. A child row under a live
+      candidate is work made ON THAT CUSTOMER'S CAST, so *"a customer's cast
+      is their work"* (founder, 2026-07-25) makes it the candidate owner's
+      whatever `userId` it was mis-stamped with. It is not the deleting
+      person's personal data and it is not ours to destroy on her way out.
+
+    ⚠ **WHAT SKIPPING COSTS IS STATED RATHER THAN HIDDEN**: the mis-owned row
+    outlives the account with its object still up. That is the price of not
+    breaking a stranger's cast, and the warning below is how somebody comes
+    to fix the mis-stamp at its source. What it buys off was concrete:
+    `castingCandidates.selectedVariantId` can be the very variant deleted
+    here, which left another customer's candidate pointing at a face that no
+    longer existed — and the old log line said her rows were untouched while
+    it happened.
+  */
+  const orphanIdList = Array.from(orphanIds);
+  const stillPresent = new Set(await listExistingCandidateIdsIn(tx, orphanIdList));
+  const dropped = orphanIdList.filter((id) => !stillPresent.has(id));
+  /*
+    LOUD ON PURPOSE, AND IT NAMES WHICH OF THE TWO IT FOUND. An orphan here
+    means a row survived the path that should have taken it, and a cleanup
+    that absorbs the bug it cleans up is what the header's old clause was
+    right to object to. One warning used to stand for both, saying *a path
+    dropped a candidate without its children* — true of only one of them and
+    the opposite of true for the other.
+  */
+  if (dropped.length > 0) {
     log.warn(
-      { userId, orphanCandidates: orphanIds.size, ...orphansByStore },
+      { userId, orphanCandidates: dropped.length, ...orphansByStore },
       "[accountCastingPurge] child rows found whose candidate row was already gone — "
         + "a path dropped a candidate without its children; swept here with the account",
     );
   }
+  if (stillPresent.size > 0) {
+    log.warn(
+      { userId, misownedCandidates: stillPresent.size, ...orphansByStore },
+      "[accountCastingPurge] child rows found carrying this account's userId while pointing "
+        + "at a candidate it does not own — LEFT IN PLACE with their objects, because the "
+        + "candidate's owner made that work and it is theirs. Fix the mis-stamp at its "
+        + "source; these rows outlive the deleted account",
+    );
+  }
 
-  const candidateIds = [...liveCandidateIds, ...Array.from(orphanIds)];
+  /*
+    THE TWO KINDS OF ID, AND THE TERMS EACH TRAVELS ON — #1959.
+
+    The live ids came out of `listAccountCandidatesIn(tx, userId)`, so the
+    candidate itself is the proof of ownership and every child row under it
+    goes whatever `userId` the row carries — a mis-owned row under a candidate
+    that IS hers is the litter this sweep is for.
+
+    ⚠ **ONLY THE DROPPED ORPHANS TRAVEL, AND THEY ARE STILL SCOPED TO HER IN
+    THE STATEMENT.** They were read OFF a child row, and that row is itself
+    the evidence that something went wrong, so it cannot also be the warrant
+    for a delete. The owner clause is NOT made redundant by the `dropped`
+    filter and removing it would reopen the same hole one step over: two
+    accounts' child rows can both point at the same DROPPED candidate, and
+    `dropped` is a list of ids read off rows rather than a list of things she
+    owns. `castingV2PurgeScope` carries that rule.
+  */
+  const candidateIds: PurgeCandidateScope = {
+    candidateIds: liveCandidateIds,
+    ownerScoped: { candidateIds: dropped, userId },
+  };
 
   /*
     The candidate's own three objects — the delivered face, its thumbnail and
@@ -249,7 +334,7 @@ export async function purgeAccountCastingIn(
     }
   }
 
-  if (candidateIds.length > 0) {
+  if (!purgeScopeIsEmpty(candidateIds)) {
     // Refinements (D-122): a variant is a paid picture of a person.
     const variants = await listPurgeableVariantsIn(tx, candidateIds);
     for (const variant of variants) {

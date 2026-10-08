@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { moderatorRouter } from "./routes/moderator";
 import { changeRequestsRouter } from "./routes/admin/changeRequests";
-import { CHANGE_REQUEST_ACTION_BY_TYPE } from "./lib/adminActions";
+import { CHANGE_REQUEST_ACTION_BY_TYPE, executeChangeRequestAction } from "./lib/adminActions";
 import { CHANGE_REQUEST_TYPES } from "@shared/changeRequestLabels";
+import { ADMIN_ADJUST_DISPLAY_MAX, displayBalance, ledgerForDisplay } from "@shared/creditDisplay";
 
 // The change-request executors, doubled so the review procedure's own
 // branches are what is under test — the executors have their own suites
@@ -1885,5 +1886,135 @@ describe("Change Request - Execute on approve (#800)", () => {
       expect(order).toEqual(["review-write", "execute"]);
       expect(result).toMatchObject({ success: true, executionResult: { executed: true } });
     });
+  });
+});
+
+// ============================================================
+// #2010 — the moderator's credit request is on the CUSTOMER's scale
+// ============================================================
+/*
+ * #1986's sweep sibling. A moderator who asked for 100 credits for a customer
+ * got them 20 on screen: the typed figure was stored as LEDGER and the admin's
+ * approval moved that ledger unconverted, while every balance anyone reads is
+ * ledger ÷ 5. The form now sends `displayCreditAmount`, the server converts it
+ * once through `ledgerForDisplay`, and the ROW STILL STORES LEDGER — the unit
+ * `creditAmount` has always carried — so a request pending at deploy is
+ * executed exactly as it would have been, never reinterpreted.
+ *
+ * The first arm walks the whole road through the real procedures: the
+ * moderator's create, the row it wrote handed back as the pending request, the
+ * admin's approval, and what the executor is told to move. The executor itself
+ * moving `params.creditAmount` verbatim is `adminActionHandlers.test.ts`'s.
+ */
+describe("#2010 — a moderator's credit request is typed in display credits, stored and executed in ledger", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function mod() {
+    return moderatorRouter.createCaller({
+      user: { id: 10, role: "moderator", name: "Mod User", suspendedAt: null },
+    } as never);
+  }
+  function admin() {
+    return changeRequestsRouter.createCaller({
+      user: { id: 1, role: "admin", email: "admin@example.com", name: "Admin", openId: null, suspendedAt: null },
+      req: { headers: {}, socket: {} },
+    } as never);
+  }
+  const CREDIT_REQUEST = {
+    type: "add_credits",
+    priority: "normal",
+    targetUserId: 42,
+    targetUserName: "Loyal User",
+    title: "Goodwill credits",
+    description: "The roll never delivered and the customer waited a day",
+    creditReason: "Goodwill",
+  };
+
+  /** The one row the procedure wrote — and a control that it wrote exactly one. */
+  async function storedRow(): Promise<Record<string, unknown>> {
+    const { createChangeRequest } = await import("./db");
+    const calls = vi.mocked(createChangeRequest).mock.calls;
+    if (calls.length !== 1) throw new Error(`expected exactly one stored row, saw ${calls.length}`);
+    return calls[0][0] as unknown as Record<string, unknown>;
+  }
+
+  it("100 typed → 500 ledger stored → the approval executes 500 ledger, which the customer reads as 100", async () => {
+    await mod().createChangeRequest({ ...CREDIT_REQUEST, displayCreditAmount: 100 } as never);
+    const row = await storedRow();
+    expect(row.creditAmount).toBe(500);
+    expect(displayBalance(row.creditAmount as number)).toBe(100);
+
+    const { getChangeRequestById } = await import("./db");
+    vi.mocked(getChangeRequestById).mockResolvedValueOnce({
+      ...row,
+      id: 77,
+      status: "pending",
+      createdAt: new Date("2026-10-08T10:00:00Z"),
+      updatedAt: new Date("2026-10-08T10:00:00Z"),
+    } as never);
+    await admin().reviewChangeRequest({ id: 77, action: "approved" } as never);
+
+    const calls = vi.mocked(executeChangeRequestAction).mock.calls;
+    expect(calls).toHaveLength(1);
+    expect(calls[0][0]).toMatchObject({ action: "cr_addCredits", targetId: "42" });
+    expect((calls[0][0] as { params: Record<string, unknown> }).params.creditAmount).toBe(500);
+  });
+
+  it("a refund request converts the same way, and the audit row carries the ledger with the typed figure beside it", async () => {
+    const { logAuditEvent } = await import("./auditLog");
+    await mod().createChangeRequest({ ...CREDIT_REQUEST, type: "refund_credits", displayCreditAmount: 32 } as never);
+    expect((await storedRow()).creditAmount).toBe(160);
+    expect(logAuditEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({ creditAmount: 160, displayCreditAmount: 32 }),
+      }),
+    );
+  });
+
+  it("⚠ CONTROL — the legacy `creditAmount` (LEDGER) still means ledger for the one deploy it is accepted, never multiplied", async () => {
+    /* A staff bundle loaded before this deploy sends `creditAmount: 50` and
+       meant 50 ledger; converting it would grant five times what was asked. */
+    await mod().createChangeRequest({ ...CREDIT_REQUEST, creditAmount: 50 } as never);
+    expect((await storedRow()).creditAmount).toBe(50);
+  });
+
+  it("⚠ a row stored before this change executes its stored ledger figure unchanged", async () => {
+    /* A pending `add_credits` written before this change holds
+       `creditAmount: 100` — in ledger. Its approval must move 100, not 500. */
+    const { getChangeRequestById } = await import("./db");
+    vi.mocked(getChangeRequestById).mockResolvedValueOnce({
+      ...CREDIT_REQUEST,
+      id: 78,
+      status: "pending",
+      submittedById: 10,
+      submittedByName: "Mod User",
+      creditAmount: 100,
+      createdAt: new Date("2026-10-01T10:00:00Z"),
+      updatedAt: new Date("2026-10-01T10:00:00Z"),
+    } as never);
+    await admin().reviewChangeRequest({ id: 78, action: "approved" } as never);
+    const calls = vi.mocked(executeChangeRequestAction).mock.calls;
+    expect(calls).toHaveLength(1);
+    expect((calls[0][0] as { params: Record<string, unknown> }).params.creditAmount).toBe(100);
+  });
+
+  it("refuses a fractional figure, one above the cap, and both fields at once — and stores nothing", async () => {
+    const { createChangeRequest } = await import("./db");
+    for (const bad of [
+      { displayCreditAmount: 1.5 },
+      { displayCreditAmount: 0 },
+      { displayCreditAmount: ADMIN_ADJUST_DISPLAY_MAX + 1 },
+      { displayCreditAmount: 10, creditAmount: 50 },
+    ]) {
+      await expect(mod().createChangeRequest({ ...CREDIT_REQUEST, ...bad } as never)).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+      });
+    }
+    expect(createChangeRequest).not.toHaveBeenCalled();
+    // POSITIVE CONTROL at the cap itself.
+    await mod().createChangeRequest({ ...CREDIT_REQUEST, displayCreditAmount: ADMIN_ADJUST_DISPLAY_MAX } as never);
+    expect((await storedRow()).creditAmount).toBe(ledgerForDisplay(ADMIN_ADJUST_DISPLAY_MAX));
   });
 });

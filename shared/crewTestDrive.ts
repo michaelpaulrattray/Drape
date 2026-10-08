@@ -406,3 +406,40 @@ export function testDriveOpenSteps(
   }
   return open;
 }
+
+/**
+ * WHICH DRIVES HIS PAGE STILL DRAWS (#1988) — every drive, less the ones that
+ * are FINISHED: the card is closed AND he has answered every step.
+ *
+ * His report, 2026-10-08, verbatim: *"i finished the test drive but its still
+ * showing on my desk"* — P2's drive (#1933), five of five *Matched*, the header
+ * reading *all done*, the section still drawn. The live reader keeps cards closed
+ * inside the 48-hour window on purpose (#1646: a drive must be lookable on the
+ * day it lands), and nothing took a drive away once he had finished it.
+ *
+ * ⚠ **BOTH HALVES ARE NEEDED, AND EACH NEGATIVE IS A DECISION.** An OPEN card
+ * with every step answered stays, because closing it is still his to do. A
+ * CLOSED card with any step unanswered stays, because there is still something
+ * on it for his hands.
+ *
+ * ⚠ **"ANSWERED" IS `testDriveAnswers`, THE SAME READER THE LABEL USES** — never
+ * a second one (working law 4). A `did not match` is an answer: he has said his
+ * word on that step, and the reply is what the bug card is cut from.
+ *
+ * ⚠ **THIS IS THE ONE PLACE THE PAGE DECIDES IT.** The section and the section
+ * menu's count both read the list this returns, so the jump link and the
+ * section cannot disagree about whether there is a drive.
+ */
+export function testDrivesStillDrawn<
+  Drive extends {
+    readonly issueNumber: number;
+    readonly steps: readonly CrewTestDriveStep[];
+    readonly cardClosed: boolean;
+  },
+>(drives: readonly Drive[], replies: readonly CrewTestDriveReply[]): Drive[] {
+  return drives.filter((drive) => {
+    if (!drive.cardClosed) return true;
+    const answers = testDriveAnswers(drive.issueNumber, replies);
+    return drive.steps.some((step) => !answers.has(step.n));
+  });
+}

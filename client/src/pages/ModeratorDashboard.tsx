@@ -13,6 +13,7 @@ import { Button } from "@/foundation";
 import type { SurfaceBarSegment } from "@/foundation";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { ADMIN_ADJUST_DISPLAY_MAX, formatCredits } from "@shared/creditDisplay";
 import {
   AuditLogsTab,
   UserInvestigationTab,
@@ -313,7 +314,12 @@ export default function ModeratorDashboard() {
     if (!crTitle || crTitle.length < 5) return toast.error("Please provide a title (at least 5 characters)");
     if (!crDescription || crDescription.length < 10) return toast.error("Please provide a description (at least 10 characters)");
     if (!crTargetUserId || isNaN(parseInt(crTargetUserId))) return toast.error("Please specify a valid target user ID");
-    if ((crType === "refund_credits" || crType === "add_credits") && (!crCreditAmount || parseInt(crCreditAmount) < 1)) return toast.error("Please specify a valid credit amount");
+    // #2010: the figure is DISPLAY credits — the number the customer reads —
+    // and goes as `displayCreditAmount`; the server stores the ledger figure.
+    const isCreditRequest = crType === "refund_credits" || crType === "add_credits";
+    const displayCreditAmount = Number(crCreditAmount);
+    if (isCreditRequest && (!crCreditAmount || !Number.isInteger(displayCreditAmount) || displayCreditAmount < 1)) return toast.error("Enter a whole number of credits above zero");
+    if (isCreditRequest && displayCreditAmount > ADMIN_ADJUST_DISPLAY_MAX) return toast.error(`At most ${formatCredits(ADMIN_ADJUST_DISPLAY_MAX)} credits in one request`);
     if (crType === "block_ip" && !crIpAddress) return toast.error("Please specify an IP address");
     if (crType === "stripe_refund" && !crStripeSessionId) return toast.error("Stripe session ID is required for refund requests");
 
@@ -324,7 +330,7 @@ export default function ModeratorDashboard() {
       title: crTitle, description: crDescription,
       evidenceSummary: crEvidenceSummary || undefined,
       relatedAuditLogId: crRelatedAuditLogId ? parseInt(crRelatedAuditLogId) : undefined,
-      creditAmount: crCreditAmount ? parseInt(crCreditAmount) : undefined,
+      displayCreditAmount: isCreditRequest ? displayCreditAmount : undefined,
       creditReason: crCreditReason || undefined,
       ipAddress: crIpAddress || undefined,
       stripeSessionId: crStripeSessionId || undefined,

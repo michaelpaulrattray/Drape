@@ -26,6 +26,7 @@ import {
   crewCardBuildState,
   crewCardBuildViews,
   handFindingNoteForPullRequest,
+  repairFlaggedAtForPullRequest,
   handVerdictForPullRequest,
   notBuiltCards,
   type CrewBuildPullRequest,
@@ -50,6 +51,7 @@ import { QUEUE_TITLES_PER_CATEGORY, type CrewQueueTitle } from "../../shared/cre
 import { CREW_WORK_CATEGORIES, homeWorkCategoryFor } from "../../shared/crewWorkSwitches";
 import type { CrewPipelineGroupView, CrewQueueCountView } from "../db/crewWorkSwitches";
 import type { LiveQueueItem, LiveQueueReading } from "./liveQueue";
+import { exactHandReading, type LivePullRequestHead } from "./liveRepairs";
 
 export const ORDERED_LABEL = "founder-ordered";
 const URGENT_LABEL = "urgent";
@@ -133,6 +135,18 @@ export type LivePullRequest = {
   readonly cards: readonly number[];
   readonly author: string;
   readonly updatedAt: string;
+  /**
+   * When the relay last said something was wrong — the timestamp of the very
+   * finding this row's words are quoted from, or `null` on any row that is not
+   * `finding` (#1977).
+   *
+   * ⚠ **NOT `updatedAt`, which is the row's own clock and moves on a label or a
+   * reply from anybody.** It is the finding the row is held on (`liveHandReading`,
+   * #1984) — the newest one, because the comment store keeps the newest of each
+   * kind; the seat cut's reader dates the same hold by the OLDEST finding on the
+   * head, which is the question of *since when the repair has been owed*.
+   */
+  readonly repairFlaggedAt: string | null;
   readonly url: string;
 };
 
@@ -593,25 +607,89 @@ export function livePullRequestState(
   return "gate";
 }
 
+/**
+ * WHAT THE RELAY'S HAND COMMENTS MEAN FOR ONE OPEN PULL REQUEST — the stage, the
+ * relay's words when it is held, and when it was flagged — from ONE resolution,
+ * so the row's state, its quote and its clock cannot come from two readings.
+ *
+ * ⚠ **WITH THE HEAD COMMIT'S DATE IT IS THE MERGE TOOL'S OWN READING (#1984).**
+ * `exactHandReading` hands the facts to `tallyRounds` + `reviewPresence` — the
+ * reader `scripts/lib/repairsOwed.mts` and `pr-merge-in-order` use — so a seat
+ * replying under a finding no longer makes the page forget it. Measured the day
+ * it was filed: 5 shown where that reader saw 9.
+ *
+ * Without the date (the head reader has not answered, or the pull request opened
+ * inside its TTL) it falls back to the `updatedAt` bound every row used before,
+ * which under-counts and never invents a hold.
+ */
+export type LiveHandReading = {
+  readonly handVerdict: HandVerdictFreshness;
+  readonly note: string | null;
+  readonly flaggedAt: string | null;
+};
+
+export function liveHandReading(
+  item: Pick<LiveQueueItem, "number" | "updatedAt" | "createdAt">,
+  facts: readonly CrewCardCommentFact[],
+  headDates: ReadonlyMap<number, string> = new Map<number, string>(),
+): LiveHandReading {
+  const headCommittedAt = headDates.get(item.number);
+  if (headCommittedAt === undefined) {
+    const input = { pullRequest: item.number, updatedAt: item.updatedAt, facts };
+    return {
+      handVerdict: handVerdictForPullRequest(input),
+      note: handFindingNoteForPullRequest(input),
+      flaggedAt: repairFlaggedAtForPullRequest(input),
+    };
+  }
+  const exact = exactHandReading({
+    pullRequest: item.number,
+    createdAt: item.createdAt,
+    headCommittedAt,
+    facts,
+  });
+  if (exact.handVerdict !== "finding") return { handVerdict: exact.handVerdict, note: null, flaggedAt: null };
+  /* The finding the reader held it on — its words travel with its clock. */
+  const finding = facts.find((fact) => fact.kind === "finding" && fact.card === item.number && fact.at === exact.flaggedAt);
+  return {
+    handVerdict: "finding",
+    note: finding?.kind === "finding" ? finding.note : null,
+    flaggedAt: exact.flaggedAt,
+  };
+}
+
+/** The head dates a `LivePullRequestHead` reading carries, keyed for `liveHandReading`. */
+export function headDatesFrom(heads: readonly LivePullRequestHead[]): Map<number, string> {
+  const dates = new Map<number, string>();
+  for (const head of heads) {
+    if (head.headCommittedAt !== null) dates.set(head.number, head.headCommittedAt);
+  }
+  return dates;
+}
+
 /** Open PRs, most recently touched first — what is in flight right now. */
 export function livePullRequests(
   reading: LiveQueueReading,
   facts: readonly CrewCardCommentFact[] = [],
+  headDates: ReadonlyMap<number, string> = new Map<number, string>(),
 ): LivePullRequest[] {
   const known = knownCards(reading);
   return openPulls(reading)
-    .map((item) => ({
-      number: item.number,
-      title: item.title,
-      state: livePullRequestState(
-        item,
-        handVerdictForPullRequest({ pullRequest: item.number, updatedAt: item.updatedAt, facts }),
-      ),
-      cards: cardsNamedIn(item.title, known),
-      author: item.author,
-      updatedAt: item.updatedAt,
-      url: item.url,
-    }))
+    .map((item) => {
+      const hand = liveHandReading(item, facts, headDates);
+      return {
+        number: item.number,
+        title: item.title,
+        state: livePullRequestState(item, hand.handVerdict),
+        cards: cardsNamedIn(item.title, known),
+        author: item.author,
+        updatedAt: item.updatedAt,
+        /* The same resolution as the state, so the row's clock is the finding
+           the row is held on (#1977). */
+        repairFlaggedAt: hand.flaggedAt,
+        url: item.url,
+      };
+    })
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
@@ -667,35 +745,31 @@ export function liveRecent(reading: LiveQueueReading): LiveRecentRow[] {
 function liveBuildBoard(
   reading: LiveQueueReading,
   facts: readonly CrewCardCommentFact[],
+  headDates: ReadonlyMap<number, string>,
 ): { items: CrewCardBuildView[]; heldOffOffer: Set<number> } {
-  const pulls: CrewBuildPullRequest[] = openPulls(reading).map((item) => ({
-    number: item.number,
-    title: item.title,
-    body: item.body,
-    draft: item.draft,
-    labels: item.labels,
-    /* ⚠ HIS DESK CORRECTION OF 2026-09-26: a pull request the relay has already
-       reviewed was reading *"waiting on review"* beside one nobody had looked at.
-       The verdict is a COMMENT, so it arrives in `facts` from the comment reader,
-       and the pull request's own `updatedAt` is what dates it — the reasoning and
-       the measurement are in `shared/handVerdict.ts`. With no comment read this
-       is `none` and the phrase is exactly the one it was before. */
-    handVerdict: handVerdictForPullRequest({
-      pullRequest: item.number,
-      updatedAt: item.updatedAt,
-      facts,
-    }),
-    /* ⚠ THE RELAY'S OWN WORDS FOR A HOLD (#1705). His board had one hold state
-       for two different things — "a repair is owed" and "sound, held for merge
-       order" — and it drew both as the first. It answers `null` for every pull
-       request that is not held, and for a header that says nothing beyond
-       "held", in which case the row reads exactly as it did before. */
-    handFindingNote: handFindingNoteForPullRequest({
-      pullRequest: item.number,
-      updatedAt: item.updatedAt,
-      facts,
-    }),
-  }));
+  const pulls: CrewBuildPullRequest[] = openPulls(reading).map((item) => {
+    const hand = liveHandReading(item, facts, headDates);
+    return {
+      number: item.number,
+      title: item.title,
+      body: item.body,
+      draft: item.draft,
+      labels: item.labels,
+      /* ⚠ HIS DESK CORRECTION OF 2026-09-26: a pull request the relay has already
+         reviewed was reading *"waiting on review"* beside one nobody had looked at.
+         The verdict is a COMMENT, so it arrives in `facts` from the comment reader,
+         and it is dated against the head commit when that is known (#1984,
+         `liveHandReading`) and the pull request's own `updatedAt` otherwise. With no comment read this
+         is `none` and the phrase is exactly the one it was before. */
+      handVerdict: hand.handVerdict,
+      /* ⚠ THE RELAY'S OWN WORDS FOR A HOLD (#1705). His board had one hold state
+         for two different things — "a repair is owed" and "sound, held for merge
+         order" — and it drew both as the first. It answers `null` for every pull
+         request that is not held, and for a header that says nothing beyond
+         "held", in which case the row reads exactly as it did before. */
+      handFindingNote: hand.note,
+    };
+  });
   const parsed = Date.parse(reading.readAt);
   const nowMs = Number.isFinite(parsed) ? parsed : Date.now();
   const cards = openIssues(reading).map((item) => item.number);
@@ -724,14 +798,19 @@ export function deriveLiveDesk(
   rungKeys: readonly string[],
   activity: { readonly facts: readonly CrewCardCommentFact[]; readonly why: string | null }
     = { facts: [], why: "the card comments have not been read" },
+  /**
+   * The head commit's date per open pull request (#1984) — `headDatesFrom` over
+   * `liveRepairs`' reading. Empty means every row is read the way it was before.
+   */
+  headDates: ReadonlyMap<number, string> = new Map<number, string>(),
 ): LiveDesk {
-  const board = liveBuildBoard(reading, activity.facts);
+  const board = liveBuildBoard(reading, activity.facts, headDates);
   return {
     readAt: reading.readAt,
     builds: { items: board.items, commentsWhy: activity.why },
     ladderCards: { readAt: reading.readAt, items: liveLadderCards(reading, rungKeys) },
     nextUp: { readAt: reading.readAt, items: liveNextUp(reading) },
-    pullRequests: livePullRequests(reading, activity.facts),
+    pullRequests: livePullRequests(reading, activity.facts, headDates),
     recent: liveRecent(reading),
     work: liveWorkCounts(reading, board.heldOffOffer),
     heldCards: openIssues(reading)

@@ -19,6 +19,7 @@ import { Button, DataTable, Field, IconButton, Input, LabelledField, TableHead }
 import type { DataRow } from "@/foundation";
 import { STAFF_LOCALE } from "@/foundation/staffDate";
 import { INVITE_CODE_MAX_LENGTH, INVITE_CODE_NOTE_MAX_LENGTH } from "@shared/inputLimits";
+import { INVITE_CODE_EXAMPLE, mintInviteCode } from "@shared/referralCodeFormat";
 
 /* ─── helpers ─── */
 
@@ -43,12 +44,9 @@ const STATUS_LABELS: Record<CodeStatus, string> = {
   deactivated: "Deactivated",
 };
 
-function generateRandomCode(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  const seg = () =>
-    Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-  return `DRAPE-${seg()}-${seg()}`;
-}
+/* The shape and prefix come from `shared/referralCodeFormat.ts` (#2007), so a
+   new invite starts with the product's current name and never a dead one. */
+const generateRandomCode = (): string => mintInviteCode();
 
 /*
  * ⚠ **STAYS LOCAL ON THE PROMOTION PASS'S OWN BAR OF TWO (#902): one
@@ -257,7 +255,7 @@ export default function AdminInviteCodes() {
                   type="text"
                   value={code}
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
-                  placeholder="DRAPE-XXXX-XXXX"
+                  placeholder={INVITE_CODE_EXAMPLE}
                   aria-label="The code itself"
                   required
                   maxLength={INVITE_CODE_MAX_LENGTH}

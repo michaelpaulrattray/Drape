@@ -6,7 +6,7 @@
  * are excluded from the export to prevent information leakage.
  */
 
-import { eq, desc, or } from "drizzle-orm";
+import { eq, desc, inArray } from "drizzle-orm";
 import {
   users,
   credits,
@@ -25,6 +25,13 @@ import {
   type EvidenceDeliveryAdapter,
 } from "../casting/evidence/evidenceDelivery";
 import { assertOwnedEvidenceStorageKey } from "../casting/evidence/evidenceLifecycle";
+
+/**
+ * How many casts' assets one `model_assets` statement asks for (#1989). It
+ * bounds the length of one `IN (…)` list and nothing else — the chunks run
+ * sequentially, so the export holds one pool slot at a time at any size.
+ */
+export const GDPR_EXPORT_ASSET_CHUNK = 500;
 
 export interface GdprExportData {
   exportedAt: string;
@@ -173,33 +180,74 @@ export async function exportUserData(
     .where(eq(models.userId, userId))
     .orderBy(desc(models.createdAt));
 
-  const modelsWithAssets = await Promise.all(
-    userModels.map(async (model) => {
-      const assets = await db
-        .select({
-          viewType: modelAssets.viewType,
-          resolution: modelAssets.resolution,
-          storageUrl: modelAssets.storageUrl,
-          createdAt: modelAssets.createdAt,
-        })
-        .from(modelAssets)
-        .where(eq(modelAssets.modelId, model.id))
-        .orderBy(desc(modelAssets.createdAt));
+  /*
+    ⚠ **ONE READ PER CHUNK OF CASTS, NEVER ONE READ PER CAST — #1989.**
 
-      return {
-        name: model.name,
-        agencyId: model.agencyId,
-        status: model.status,
-        createdAt: model.createdAt.toISOString(),
-        assets: assets.map((a) => ({
-          viewType: a.viewType,
-          resolution: a.resolution,
-          storageUrl: a.storageUrl,
-          createdAt: a.createdAt.toISOString(),
-        })),
+    This was `Promise.all(userModels.map(… select from model_assets …))`: one
+    query per cast, all fired at once, onto the ONE shared pool every request
+    in the building draws on (`connection.ts`: `connectionLimit: 20`,
+    `queueLimit: 50`). Twenty in flight plus fifty queued is seventy, and the
+    seventy-first was rejected outright with `Queue limit reached.` — so an
+    account with more than about seventy casts could not export its data at
+    all (measured on the dev fixture's 77 casts: a 500 whose `cause` read
+    exactly that, at `Promise.all (index 70)`). In production the ceiling was
+    lower, because other requests hold slots of the same pool.
+
+    Now the assets are read with `modelId IN (…)`, one statement per chunk of
+    `GDPR_EXPORT_ASSET_CHUNK` casts, the chunks run ONE AFTER ANOTHER, and the
+    rows are grouped in memory. The export holds at most one pool slot at a
+    time whatever the account's size. The chunk only bounds the length of a
+    single statement's `IN` list; it is not a concurrency knob.
+
+    `server/gdprExportBounded.test.ts` drives the real procedure over 200
+    casts on a pool that refuses past seventy, and reddens if the per-cast
+    fan-out comes back.
+  */
+  const modelIds = userModels.map((model) => model.id);
+  const assetsByModel = new Map<number, Array<{
+    viewType: string;
+    resolution: string;
+    storageUrl: string;
+    createdAt: Date;
+  }>>();
+  for (let at = 0; at < modelIds.length; at += GDPR_EXPORT_ASSET_CHUNK) {
+    const chunk = modelIds.slice(at, at + GDPR_EXPORT_ASSET_CHUNK);
+    const rows = await db
+      .select({
+        modelId: modelAssets.modelId,
+        viewType: modelAssets.viewType,
+        resolution: modelAssets.resolution,
+        storageUrl: modelAssets.storageUrl,
+        createdAt: modelAssets.createdAt,
+      })
+      .from(modelAssets)
+      .where(inArray(modelAssets.modelId, chunk))
+      .orderBy(desc(modelAssets.createdAt));
+    for (const row of rows) {
+      const list = assetsByModel.get(row.modelId);
+      const asset = {
+        viewType: row.viewType,
+        resolution: row.resolution,
+        storageUrl: row.storageUrl,
+        createdAt: row.createdAt,
       };
-    })
-  );
+      if (list) list.push(asset);
+      else assetsByModel.set(row.modelId, [asset]);
+    }
+  }
+
+  const modelsWithAssets = userModels.map((model) => ({
+    name: model.name,
+    agencyId: model.agencyId,
+    status: model.status,
+    createdAt: model.createdAt.toISOString(),
+    assets: (assetsByModel.get(model.id) ?? []).map((a) => ({
+      viewType: a.viewType,
+      resolution: a.resolution,
+      storageUrl: a.storageUrl,
+      createdAt: a.createdAt.toISOString(),
+    })),
+  }));
 
   // Evidence contains customer-uploaded likeness data. It is exported only
   // through the owner-delivery adapter; raw object keys, ingestion receipts,
@@ -217,6 +265,15 @@ export async function exportUserData(
   if ((referencePlates.length > 0 || evidenceCrops.length > 0) && !evidenceDelivery) {
     throw new Error("Evidence owner delivery is unavailable for GDPR export");
   }
+  /*
+    These two `Promise.all`s look like the fan-out above and are not (#1989,
+    read at the code): neither one touches the database. Each row is checked
+    against its owner in memory and handed to `resolveOwnerDelivery`, which in
+    the shipping adapter (`privateEvidenceStorage.ts`) formats an
+    `/api/evidence/…` path and returns — no pool slot, no network. They would
+    become the same defect only if an adapter started doing I/O per row, and
+    that adapter would have to bound itself.
+  */
   const exportedReferencePlates = await Promise.all(referencePlates.map(async (plate) => {
     assertOwnedEvidenceStorageKey({
       storageKey: plate.storageKey,

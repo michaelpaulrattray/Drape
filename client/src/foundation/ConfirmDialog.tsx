@@ -66,7 +66,15 @@ export function ConfirmDialog({
   busy: boolean;
   /** Present = a required note, and the confirm stays inert until it is typed. */
   notes?: { label: string; placeholder: string; maxLength: number };
-  cancelLabel?: string;
+  /**
+   * `null` = ONE button (#1987 repair). A dialog that only informs — a plan
+   * change the server will refuse — has nothing to cancel, and two buttons
+   * that both close it make the reader choose between identical outcomes. The
+   * confirm button then takes focus, which is safe because its press only
+   * closes: a consumer passing `null` must not wire anything destructive to
+   * `onConfirm`.
+   */
+  cancelLabel?: string | null;
   /**
    * What the confirm button is FOR (#664). This dialog was born destructive
    * — its go-button wears `var(--error)` — and every consumer until the plan
@@ -81,6 +89,7 @@ export function ConfirmDialog({
   onCancel: () => void;
 }) {
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const goRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const notesRef = useRef<HTMLTextAreaElement>(null);
   const notesId = useId();
@@ -136,7 +145,8 @@ export function ConfirmDialog({
       no safety bought.
     */
     if (notesRef.current) notesRef.current.focus();
-    else cancelRef.current?.focus();
+    else if (cancelRef.current) cancelRef.current.focus();
+    else goRef.current?.focus();
 
     return () => {
       document.removeEventListener("keydown", onKeyDown, true);
@@ -198,16 +208,19 @@ export function ConfirmDialog({
           </LabelledField>
         )}
         <div className="dpc-confirm__actions">
+          {cancelLabel !== null && (
+            <button
+              ref={cancelRef}
+              type="button"
+              className="dpc-confirm__keep"
+              onClick={onCancel}
+              disabled={busy}
+            >
+              {cancelLabel}
+            </button>
+          )}
           <button
-            ref={cancelRef}
-            type="button"
-            className="dpc-confirm__keep"
-            onClick={onCancel}
-            disabled={busy}
-          >
-            {cancelLabel}
-          </button>
-          <button
+            ref={goRef}
             type="button"
             className={tone === "primary" ? "dpc-confirm__go dpc-confirm__go--primary" : "dpc-confirm__go"}
             onClick={() => onConfirm(typed.trim())}

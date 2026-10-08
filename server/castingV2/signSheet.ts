@@ -294,12 +294,31 @@ export const DIVIDER_SEARCH_FRACTION = 0.06;
 const DIVIDER_BAND_TOLERANCE = 12;
 
 /**
- * HOW BRIGHT A BAND MUST BE AGAINST ITS NEIGHBOURHOOD TO BE A DIVIDER AT ALL.
+ * HOW BRIGHT A BAND MUST BE AGAINST ITS NEIGHBOURHOOD TO BE A DIVIDER AT ALL —
+ * against EACH side of it, not against their average (#1976).
  *
- * Measured contrast on the twelve real boundaries: **53 to 101**. The floor is
- * set at 25 — under half the weakest real one — because the cost of the two
- * errors is wildly asymmetric: a missed divider falls back to the fifth, and a
- * false one cuts a panel at a bright patch of backdrop.
+ * Measured contrast on the twelve court boundaries, as the average of the two
+ * sides: **53 to 101**. The floor is set at 25 — under half the weakest real
+ * one — because the cost of the two errors is wildly asymmetric: a missed
+ * divider falls back to the fifth, and a false one cuts a panel at a bright
+ * patch of backdrop.
+ *
+ * ⚠ **SINCE #1976 IT IS A FLOOR ON THE WEAKER SIDE, and the number did not
+ * have to move.** Every real divider in both fixtures — the twelve court
+ * boundaries, the body sheet's one and the serial head sheet's two, fifteen in
+ * all — stands **49.9 to 91.3** above its WEAKER side, so 25 is still under
+ * half the weakest. What the averaged reading let through was a figure across
+ * a boundary: the band is the backdrop beside it, one sample lands in the
+ * body, and the average scored **55–62** while the backdrop side read only
+ * **19.1–21.1**. Driven over 306 figures (spans 12–400 px, three darknesses,
+ * eleven offsets) across both boundaries of the shipping head sheet, the
+ * average called **290** of them a divider and the two-sided reading calls
+ * **none**. ⚠ **The margin on that side is thin and is stated
+ * rather than hidden**: 21.1 against 25. A backdrop with a steeper fall-off
+ * 20 px out than the shipping sheet's would cross it, and 30 is the floor that
+ * clears the same 306 by nine greylevels while staying 20 under the weakest
+ * real divider — a re-tune that changes where no measured sheet is cut, left
+ * to the eye that closes #1904 rather than taken here.
  */
 export const DIVIDER_MIN_CONTRAST = 25;
 
@@ -322,6 +341,17 @@ const DIVIDER_BACKGROUND_OFFSET = 20;
  * there would be the worse answer**, because the peak is still sitting on a real
  * divider and the fifth is up to 74 px away from it. So the band is clamped
  * around its peak and the cut stays on the divider.
+ *
+ * ⚠ **THAT CASE IS REASONED, NOT MEASURED — and #1976 found the clamp's real
+ * customer was the opposite one.** On every sheet in both fixtures the clamp
+ * fires on no real divider at all (they are 2–9 px); it fired only on the
+ * shipping head sheet, which falls back before reaching it, and on a FIGURE
+ * across a boundary, where the "band" is the backdrop beside the body and the
+ * clamp turned it into a confident cut up to 155 px off the seam. The
+ * two-sided floor now refuses that before the clamp is reached. **The cost,
+ * named:** a real divider whose backdrop on one side sits within the floor of
+ * it would now fall back too — and the fallback is loud when it lands on no
+ * seam, where the false divider was silent. No measured sheet has one.
  */
 const DIVIDER_MAX_WIDTH_FRACTION = 0.01;
 
@@ -340,8 +370,128 @@ const DIVIDER_MAX_WIDTH_FRACTION = 0.01;
  */
 const MIN_PANEL_FRACTION_OF_EQUAL = 0.4;
 
+/**
+ * HOW FAR FROM THE EQUAL SHARE A DARK SEAM MAY SIT AND STILL BE *ITS* SEAM.
+ *
+ * The question this answers is not *where is the seam* but *did the line I
+ * already chose land on one*, so the window is tight on purpose: a seam 40 px
+ * away means the fallback cut in the wrong place and the alarm should fire.
+ * Measured on the shipping head sheet, both seams sit at offset **0**, and the
+ * serial head sheet's bright peaks sit at **+1** — so 4 px is several times
+ * the worst real deviation and still an order of magnitude inside the panel.
+ */
+const SEAM_SEARCH_PX = 4;
+
+/**
+ * HOW WIDE A DARK RUN MAY BE BEFORE IT IS A FIGURE RATHER THAN A SEAM.
+ *
+ * ⚠ **This is the clause that tells the two apart, and it is the whole point.**
+ * A seam painted between two flush panels is a hairline; a body crossing the
+ * line is hundreds of columns of hair, skin and clothing. Measured with the
+ * same {@link DIVIDER_BAND_TOLERANCE} the bright side uses: the two real seams
+ * span **1 and 2 px**, while the deepest dark run near any other boundary in
+ * either fixture spans **7** — so 4 is double the widest real seam and well
+ * under the narrowest impostor.
+ */
+const DARK_SEAM_MAX_SPAN_PX = 4;
+
+/**
+ * HOW FAR BELOW ITS NEIGHBOURHOOD A HAIRLINE MUST SIT TO BE A SEAM.
+ *
+ * The mirror of {@link DIVIDER_MIN_CONTRAST} and set by the same reasoning.
+ * Measured on the shipping head sheet's two seams: **89.0 and 58.5**. The floor
+ * is under half the weaker one, because the two errors here are asymmetric in
+ * the other direction from the divider search — this decides only whether to
+ * WARN, so a missed seam costs a false alarm and a false seam costs a real one.
+ *
+ * ⚠ **The span cap and this floor exclude the one near-miss independently**:
+ * court sheet 3's first boundary carries a 24.1-deep dark run, which is close
+ * to this floor and nowhere near the span cap at 7 px wide. Two clauses, each
+ * sufficient, is what keeps a single re-measured constant from opening a hole.
+ */
+export const DARK_SEAM_MIN_DEPTH = 25;
+
+/**
+ * HOW FAR INSIDE A CUT EDGE THE PANEL'S OWN BACKDROP IS SAMPLED FROM, AND OVER
+ * HOW MANY COLUMNS.
+ *
+ * ⚠ **Local, and the locality is the whole repair — {@link DIVIDER_BACKGROUND_OFFSET}
+ * was tried first and is the wrong instrument for this question.** Sampling 20
+ * px inside the edge answers *"is this band brighter than the neighbourhood"*,
+ * which is what the divider search needs; it does NOT answer *"has this edge
+ * reached the backdrop"*, because 20 px inside a panel is often a figure.
+ * Measured: on court sheet 2's first boundary the 20 px sample reads **177**
+ * where the backdrop beside that edge is **202**, so the walk never converged
+ * and ran **17 px** into the picture — three of the fifteen edges behaved that
+ * way. A median taken 3 px in over 6 columns reads the right number on all
+ * fifteen, and the worst walk becomes 2 px.
+ *
+ * The guard of 3 clears the shoulder itself (measured 0–2 px wide), so the
+ * sample is never the thing being measured against.
+ */
+const PANEL_EDGE_BACKDROP_GUARD_PX = 3;
+const PANEL_EDGE_BACKDROP_SPAN_PX = 6;
+
+/**
+ * HOW FAR OFF ITS PANEL'S BACKDROP A CUT EDGE'S COLUMN MAY SIT AND STILL BE
+ * BACKDROP RATHER THAN SEAM.
+ *
+ * Measured on the real sheets, both directions, which is what fixes the number:
+ * **backdrop noise is ±1–3** greylevels column to column (the flat runs at
+ * every sheet edge read 196/196/195 and 178/178/179); the **faintest real
+ * artifact** is the pair of bright highlights flanking the shipping head
+ * sheet's second seam, at **+9 and +11**; and the loudest are the seam itself
+ * at **−58 and −89** and a bright divider's shoulder at **+15 to +58**. Eight
+ * sits above every noise reading and below every artifact, the nearest call
+ * being that +9 highlight.
+ *
+ * ⚠ **Both signs, one test.** The defect he reported is a DARK hairline, and
+ * its sibling on the bright boundaries is a BRIGHT shoulder; a floor that only
+ * looked downward would have cleaned his view and left eleven of the twelve
+ * court edges still carrying the divider's own glow.
+ */
+const PANEL_EDGE_TRIM_TOLERANCE = 8;
+
+/**
+ * THE FURTHEST A TRIM CAN WALK — **derived from the backdrop window, because
+ * the window is what bounds it, and a second number here would be a mirror
+ * that drifts** (working law 4).
+ *
+ * ⚠ **THIS REPLACED A CAP, AND THE CAP WAS DEAD MACHINERY — found by sabotage
+ * rather than by reading.** The first shape of this repair carried its own cap
+ * of 8 and a docblock saying it REFUSED past it so that a figure could never be
+ * eaten. Driving it proved the refusal unreachable: **the backdrop is the
+ * MEDIAN of columns `edge+3 … edge+8`, and a median of an integer-indexed
+ * sample is one of its own members** — so one column inside that window reads
+ * exactly 0 off the backdrop, and the walk is guaranteed to stop at or before
+ * it. Sabotaging the refusal into taking its cap changed the answer on no input
+ * at all, which is the definition of a control that does not exist (invariant
+ * 7) — and the docblock claiming it protected a figure was the part that
+ * mattered, because **it is not the cap that protects a figure.**
+ *
+ * What actually protects one, measured: a figure wide enough to matter FILLS
+ * the backdrop window, so it reads as this panel's own backdrop and the walk
+ * stops on its first step. A 300-column body pressed against a divider trims
+ * **0**. The trim only ever removes something that differs from what lies just
+ * behind it — which is what a seam is, and what a figure is not.
+ *
+ * So the loop is bounded by the window it reads, and the return past the loop
+ * is kept as the SAFE answer rather than as a control: if the argument above is
+ * ever wrong, trimming nothing leaves the hairline he reported, while trimming
+ * nine columns takes a picture nobody gets back.
+ */
+const PANEL_EDGE_TRIM_BOUND_PX =
+  PANEL_EDGE_BACKDROP_GUARD_PX + PANEL_EDGE_BACKDROP_SPAN_PX - 1;
+
 /** Where a panel boundary came from, carried on the receipt rather than inferred. */
 export type SheetBoundarySource = "divider" | "fifth";
+
+/** A run of columns read off the profile, bright or dark. */
+export type SheetSeamBand = {
+  readonly start: number;
+  readonly end: number;
+  readonly contrast: number;
+};
 
 export type SheetBoundary = {
   /** The last column of the panel to the left of this boundary. */
@@ -349,9 +499,144 @@ export type SheetBoundary = {
   /** The first column of the panel to the right of it. */
   readonly rightStart: number;
   readonly source: SheetBoundarySource;
-  /** The bright run this was read off, or `null` where the fifth was used. */
-  readonly band: { readonly start: number; readonly end: number; readonly contrast: number } | null;
+  /** The BRIGHT run this was read off, or `null` where the fifth was used. */
+  readonly band: SheetSeamBand | null;
+  /**
+   * For a `fifth` boundary: the DARK hairline the equal share turned out to
+   * land on, or `null` when the line sits on nothing readable.
+   *
+   * ⚠ **IT CHANGES NO CUT — IT IS ONLY HOW LOUD THE RECEIPT IS, #1967.** The
+   * detector looks for a bright divider and the shipping head sheet's panels
+   * are joined by a DARK one, so every head sheet falls back and the caller's
+   * *"a panel may be cut inside the figure"* warning fired on every Sign. An
+   * alarm that always cries cannot report the case it exists for. A fallback
+   * that lands on a visible seam is a correct cut; a fallback that lands on
+   * nothing, or in the middle of a figure, is the case worth shouting about.
+   *
+   * Always `null` on a `divider` boundary, which was read off a bright band
+   * and needs no second opinion.
+   */
+  readonly darkSeam: SheetSeamBand | null;
+  /**
+   * HOW MANY COLUMNS WERE TRIMMED OFF EACH SIDE OF THIS BOUNDARY so that
+   * neither panel keeps the seam that marks it — #1971, his *"i can see on the
+   * left side of the image where the gap line was"*.
+   *
+   * On the receipt rather than inferable from the numbers, because `leftEnd`
+   * and `rightStart` cannot tell a trim from a differently-placed boundary and
+   * the log line is the only place a wrong cut can be noticed at all.
+   */
+  readonly trimmed: { readonly left: number; readonly right: number };
 };
+
+/**
+ * THE PANEL'S OWN BACKDROP BESIDE A CUT EDGE — a median, taken locally.
+ *
+ * A median rather than a mean because the window may clip a figure's first
+ * columns, and one dark column of hair in six would drag a mean 10 greylevels
+ * while the median does not move.
+ */
+function backdropBeside(
+  means: ArrayLike<number>,
+  width: number,
+  from: number,
+  direction: -1 | 1,
+): number {
+  const samples: number[] = [];
+  for (let i = 0; i < PANEL_EDGE_BACKDROP_SPAN_PX; i += 1) {
+    const x = from + direction * (PANEL_EDGE_BACKDROP_GUARD_PX + i);
+    if (x < 0 || x > width - 1) continue;
+    samples.push(means[x]);
+  }
+  if (samples.length === 0) return means[Math.min(width - 1, Math.max(0, from))];
+  samples.sort((a, b) => a - b);
+  return samples[Math.floor(samples.length / 2)]!;
+}
+
+/**
+ * HOW MANY COLUMNS OF SEAM A CUT EDGE IS STILL HOLDING — the repair for #1971,
+ * and it is one reader for both kinds of boundary on purpose.
+ *
+ * ⚠ **The defect is not the boundary being in the wrong place; it is the
+ * boundary being in the RIGHT place and the cut keeping the line that marks
+ * it.** His three-quarter view is the middle panel of the head sheet and its
+ * left edge is interior boundary 1, where the equal share lands at **1280** and
+ * the sheet's hairline seam IS column 1280, 1 px wide and **89 greylevels**
+ * below its neighbourhood. `leftEnd = 1279` keeps the left panel clean and
+ * `rightStart = 1280` hands the three-quarter panel the whole seam as its first
+ * column. Measured on the shipping head sheet, **three of its four cut edges**
+ * carried seam: 1280 on panel 2's left, 2559 on panel 2's right, 2560 on panel
+ * 3's left.
+ *
+ * ⚠ **AND THE BRIGHT BOUNDARIES HAVE THE SAME DEFECT, WHICH IS WHY THIS IS NOT
+ * A DARK-SEAM SPECIAL CASE (working law 7 — the class, not the instance).**
+ * {@link DIVIDER_BAND_TOLERANCE} grows a band 12 greylevels down from its PEAK,
+ * so a divider at 254 stops claiming columns at 242 — and the shoulder columns
+ * below that are still **+15 to +58 over their panel's backdrop**. Court sheet
+ * 3's second panel began at column 779 reading **219 against a 161 backdrop**:
+ * the same visible line he reported, in the other direction, on a sheet whose
+ * cut his eye had passed. Eleven of the twelve court edges carried one.
+ *
+ * So the rule is read from the panel outward and takes no view on where the
+ * seam came from: **walk inward from the cut edge while the column is still
+ * more than {@link PANEL_EDGE_TRIM_TOLERANCE} off this panel's own backdrop**,
+ * bounded by {@link PANEL_EDGE_TRIM_BOUND_PX} — which that constant's own note
+ * shows can never bind, and says what protects a figure instead.
+ */
+export function seamColumnsAtEdge(
+  means: ArrayLike<number>,
+  width: number,
+  edge: number,
+  /** Which way the panel lies: `1` for a panel starting at `edge`, `-1` for one ending there. */
+  inward: -1 | 1,
+): number {
+  const backdrop = backdropBeside(means, width, edge, inward);
+  for (let walked = 0; walked <= PANEL_EDGE_TRIM_BOUND_PX; walked += 1) {
+    const x = edge + inward * walked;
+    if (x < 0 || x > width - 1) return walked;
+    if (Math.abs(means[x] - backdrop) <= PANEL_EDGE_TRIM_TOLERANCE) return walked;
+  }
+  /* Unreachable — see `PANEL_EDGE_TRIM_BOUND_PX`, and 0 is the safe answer
+     if that argument is ever wrong. */
+  return 0;
+}
+
+/**
+ * THE DARK HAIRLINE AT A GIVEN LINE, OR `null` — the mirror of the bright
+ * search above, measured the same way so the two speak one vocabulary.
+ *
+ * Deliberately NOT wired into the cut. Teaching the detector to cut on dark
+ * seams would move where paid panels are sliced, which is #1904's question and
+ * his eye's to close; this only decides whether the fallback is reported as an
+ * alarm or as a fact.
+ */
+export function findDarkSeamAt(
+  means: ArrayLike<number>,
+  width: number,
+  line: number,
+): SheetSeamBand | null {
+  const lo = Math.max(0, line - SEAM_SEARCH_PX);
+  const hi = Math.min(width - 1, line + SEAM_SEARCH_PX);
+
+  let dip = lo;
+  for (let x = lo; x <= hi; x += 1) if (means[x] < means[dip]) dip = x;
+
+  /* The run is grown past the search window: a seam is identified by where its
+     darkest column sits, and clipping its WIDTH at the window would make a
+     broad figure read as a narrow hairline — the one confusion that matters. */
+  let start = dip;
+  let end = dip;
+  while (start - 1 >= 0 && means[start - 1] <= means[dip] + DIVIDER_BAND_TOLERANCE) start -= 1;
+  while (end + 1 <= width - 1 && means[end + 1] <= means[dip] + DIVIDER_BAND_TOLERANCE) end += 1;
+  if (end - start + 1 > DARK_SEAM_MAX_SPAN_PX) return null;
+
+  const left = means[Math.max(0, start - DIVIDER_BACKGROUND_OFFSET)];
+  const right = means[Math.min(width - 1, end + DIVIDER_BACKGROUND_OFFSET)];
+  const depth = (left + right) / 2 - means[dip];
+  if (depth < DARK_SEAM_MIN_DEPTH) return null;
+
+  return { start, end, contrast: depth };
+}
 
 export type SheetPanelGeometry = {
   readonly panels: readonly { readonly left: number; readonly width: number }[];
@@ -381,6 +666,32 @@ export async function sheetColumnMeans(bytes: Buffer): Promise<{
   }
   for (let x = 0; x < width; x += 1) means[x] /= height;
   return { means, width, height };
+}
+
+/**
+ * MOVE A CHOSEN BOUNDARY'S TWO EDGES OFF THE SEAM — #1971, applied to every
+ * boundary whatever found it.
+ *
+ * ⚠ **It never moves a boundary; it only shrinks the two panels away from one.**
+ * The widths change by at most {@link PANEL_EDGE_TRIM_BOUND_PX} a side and the
+ * boundary's own position, its `source` and its `band` are untouched, so every
+ * reading that judges WHERE the cut fell — the court's judged widths, the
+ * fallback alarm, the false-divider finding — is asking the same question of
+ * the same answer as before.
+ */
+function trimBoundary(
+  means: ArrayLike<number>,
+  width: number,
+  raw: Omit<SheetBoundary, "trimmed">,
+): SheetBoundary {
+  const left = seamColumnsAtEdge(means, width, raw.leftEnd, -1);
+  const right = seamColumnsAtEdge(means, width, raw.rightStart, 1);
+  return {
+    ...raw,
+    leftEnd: raw.leftEnd - left,
+    rightStart: raw.rightStart + right,
+    trimmed: { left, right },
+  };
 }
 
 /**
@@ -429,10 +740,39 @@ export function findSheetPanelGeometry(
 
     const left = means[Math.max(0, start - DIVIDER_BACKGROUND_OFFSET)];
     const right = means[Math.min(width - 1, end + DIVIDER_BACKGROUND_OFFSET)];
-    const contrast = means[peak] - (left + right) / 2;
+    /*
+      ⚠ **EACH SIDE ON ITS OWN, NEVER THE TWO AVERAGED — #1976.** A divider has
+      backdrop on BOTH sides of it; a figure's edge has backdrop on ONE. The
+      average let the dark side carry the bright one: with a body across the
+      line, one sample lands inside the figure, and a plain backdrop-to-body
+      step scored 55–62 against this floor while its backdrop side sat 19–21
+      below it. So the band must stand clear of BOTH neighbours, and the
+      receipt carries the weaker of the two — the number the decision was made
+      on. See `DIVIDER_MIN_CONTRAST` for both populations, measured.
+    */
+    const contrast = Math.min(means[peak] - left, means[peak] - right);
 
     if (contrast < DIVIDER_MIN_CONTRAST) {
-      boundaries.push({ leftEnd: equal - 1, rightStart: equal, source: "fifth", band: null });
+      /* Whether the equal share happened to land on a dark hairline — the
+         receipt's own answer to "is this fallback the right line", #1967. */
+      const darkSeam = findDarkSeamAt(means, width, equal);
+      /*
+        ⚠ **THE CUT GOES OUTSIDE THE SEAM'S RUN RATHER THAN THROUGH ITS CENTRE
+        — #1971.** `equal - 1 / equal` splits a hairline between the two
+        panels: a 1 px seam sitting exactly on `equal` lands WHOLE on the right
+        panel's first column, and a 2 px one gives each panel half of it. That
+        is his three-quarter view. The seam is the boundary the picture actually
+        claims, so each panel starts and ends past the whole of it — which also
+        moves the line by up to `SEAM_SEARCH_PX` onto the seam the fallback only
+        approximated.
+      */
+      boundaries.push(trimBoundary(means, width, {
+        leftEnd: darkSeam ? darkSeam.start - 1 : equal - 1,
+        rightStart: darkSeam ? darkSeam.end + 1 : equal,
+        source: "fifth",
+        band: null,
+        darkSeam,
+      }));
       continue;
     }
 
@@ -445,12 +785,13 @@ export function findSheetPanelGeometry(
       end = Math.min(hi, start + maxBandWidth - 1);
     }
 
-    boundaries.push({
+    boundaries.push(trimBoundary(means, width, {
       leftEnd: start - 1,
       rightStart: end + 1,
       source: "divider",
       band: { start, end, contrast },
-    });
+      darkSeam: null,
+    }));
   }
 
   const panels: { left: number; width: number }[] = [];
@@ -815,26 +1156,45 @@ export async function renderSignSheet(input: {
   });
 
   const cut = await cutSignSheet(image.bytes, panelOrder);
-  const fellBack = cut.geometry.boundaries.filter((boundary) => boundary.source === "fifth").length;
+  const fallbacks = cut.geometry.boundaries.filter((boundary) => boundary.source === "fifth");
+  /*
+    A fallback that landed on a visible hairline is a correct cut; one that
+    landed on nothing readable is the case the alarm exists for — #1967.
+  */
+  const onNothing = fallbacks.filter((boundary) => boundary.darkSeam === null).length;
   const line = {
     operationId: input.operationId ?? null,
     returned: cut.source,
     panelWidths: cut.geometry.panels.map((panel) => panel.width),
-    dividersFound: cut.geometry.boundaries.length - fellBack,
-    boundariesFromFifths: fellBack,
+    dividersFound: cut.geometry.boundaries.length - fallbacks.length,
+    boundariesFromFifths: fallbacks.length,
+    fifthsOnADarkSeam: fallbacks.length - onNothing,
+    fifthsOnNothing: onNothing,
     latencyMs: image.latencyMs ?? Date.now() - started,
     estimatedCostUsd: image.estimatedCostUsd ?? null,
   };
-  if (fellBack > 0) {
+  if (onNothing > 0) {
     /*
       ⚠ **LOUD, because this is the one failure the product cannot see.** A
       boundary taken from a fifth may sit inside a figure, and the judge's three
       surviving axes — identity, intact, people — would all pass a beheaded
       panel. The log line is the only alarm there is, so it is a warning with
       the operation id on it rather than a debug note.
+
+      ⚠ **AND IT NO LONGER FIRES ON EVERY SIGN — #1967, his *"3) go with your
+      rec"* on #1904.** It used to fire on any fallback at all, and the shipping
+      head sheet falls back on BOTH its boundaries forever: the detector hunts a
+      bright divider and that sheet's panels are joined by a dark one. So the
+      alarm cried on every Sign, which is the same as not having it. It now
+      fires only where the chosen line sits on nothing readable — see
+      `findDarkSeamAt`.
     */
-    log.warn(line, "[signSheet] some panel boundaries came from equal fifths — no divider was "
-      + "visible there, so a panel may be cut inside the figure");
+    log.warn(line, "[signSheet] some panel boundaries came from equal shares with no seam "
+      + "visible at the line — nothing in the picture claims a boundary there, so a panel "
+      + "may be cut inside the figure");
+  } else if (fallbacks.length > 0) {
+    log.info(line, "[signSheet] the Sign sheet landed; some boundaries came from equal shares "
+      + "and each one landed on the sheet's own hairline seam");
   } else {
     log.info(line, "[signSheet] the Sign sheet landed and was cut on its own dividers");
   }

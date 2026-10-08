@@ -15,6 +15,7 @@
  * dispatch to BoardPage (which owns modals, the trust net, and optimistic
  * landings); Download acts directly.
  */
+import { productFilename } from "@shared/brand";
 import { memo, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
@@ -408,7 +409,7 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
       label: data.imageUrl ? "Download" : "No image yet",
       disabled: !data.imageUrl,
       onClick: () => {
-        if (data.imageUrl) void downloadImage(data.imageUrl, `drape-${data.label || data.itemId}.png`);
+        if (data.imageUrl) void downloadImage(data.imageUrl, productFilename(`${data.label || data.itemId}.png`));
       },
     },
     {
@@ -768,7 +769,7 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
                               close();
                             }}
                           >
-                            <span>{slot.failed && !slot.filled ? "Retry" : "Refresh"}</span>
+                            <span>{slot.failed && !slot.filled ? "Try again" : "Refresh"}</span>
                             <CostLabel credits={refreshCost} />
                           </button>
                         )}

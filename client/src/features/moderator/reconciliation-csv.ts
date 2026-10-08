@@ -1,6 +1,14 @@
-/** Generates a CSV string from reconciliation data for billing dispute tickets. */
+/**
+ * Generates a CSV string from reconciliation data for billing dispute tickets.
+ *
+ * Every credit column says it is LEDGER (#2027): this file is the books, and a
+ * moderator reading a bare "717" here beside a request form that takes the
+ * customer's figure (#2010) could grant five times what was meant. The values
+ * stay ledger so the file matches the audit log; only the headings changed.
+ */
+import { PRODUCT_NAME } from "@shared/brand";
 
-interface ReconciliationData {
+export interface ReconciliationData {
   credits: {
     totalEarned: number;
     totalSpent: number;
@@ -26,6 +34,7 @@ interface ReconciliationData {
     netGenerationCost: number;
     completedGenerationCost: number;
     pendingGenerationCost: number;
+    expectedCost: number;
     discrepancy: number;
     hasDiscrepancy: boolean;
     summary: string;
@@ -52,7 +61,7 @@ export function buildReconciliationCsv(
   const lines: string[] = [];
 
   // ── Report Header ──
-  lines.push(row("Drape — Credit Reconciliation Report"));
+  lines.push(row(`${PRODUCT_NAME} — Credit Reconciliation Report`));
   lines.push(row("Generated", new Date().toISOString()));
   lines.push(row("User ID", userId));
   lines.push(row("Date Range", startDate || "All time", endDate || "Present"));
@@ -60,7 +69,7 @@ export function buildReconciliationCsv(
 
   // ── Credit Summary ──
   lines.push(row("CREDIT SUMMARY"));
-  lines.push(row("Metric", "Value"));
+  lines.push(row("Metric", "Value (ledger credits)"));
   lines.push(row("Total Earned", data.credits.totalEarned));
   lines.push(row("Total Spent", data.credits.totalSpent));
   lines.push(row("Gross Generation Deductions", data.credits.grossGenerationDeductions));
@@ -70,7 +79,7 @@ export function buildReconciliationCsv(
 
   // ── Credit Breakdown by Type ──
   lines.push(row("CREDIT BREAKDOWN BY TYPE"));
-  lines.push(row("Type", "Count", "Total Amount"));
+  lines.push(row("Type", "Count", "Total Amount (ledger credits)"));
   for (const [type, info] of Object.entries(data.credits.byType)) {
     lines.push(row(type, info.count, info.totalAmount));
   }
@@ -84,14 +93,14 @@ export function buildReconciliationCsv(
   lines.push(row("Failed", data.generations.failed));
   lines.push(row("Pending", data.generations.pending));
   lines.push(row("Failure Rate (%)", data.generations.failureRate));
-  lines.push(row("Completed Cost (credits)", data.generations.creditsOnCompleted));
-  lines.push(row("Failed Cost (credits)", data.generations.creditsOnFailed));
-  lines.push(row("Pending Cost (credits)", data.generations.creditsOnPending));
+  lines.push(row("Completed Cost (ledger credits)", data.generations.creditsOnCompleted));
+  lines.push(row("Failed Cost (ledger credits)", data.generations.creditsOnFailed));
+  lines.push(row("Pending Cost (ledger credits)", data.generations.creditsOnPending));
   lines.push("");
 
   // ── Generation Breakdown by Type ──
   lines.push(row("GENERATION BREAKDOWN BY TYPE"));
-  lines.push(row("Type", "Count", "Total Cost"));
+  lines.push(row("Type", "Count", "Total Cost (ledger credits)"));
   for (const entry of data.generations.byType) {
     lines.push(row(entry.type, entry.totalCount, entry.totalCost));
   }
@@ -99,7 +108,7 @@ export function buildReconciliationCsv(
 
   // ── Reconciliation ──
   lines.push(row("RECONCILIATION"));
-  lines.push(row("Metric", "Value"));
+  lines.push(row("Metric", "Value (ledger credits)"));
   lines.push(row("Gross Generation Deductions", data.reconciliation.grossGenerationDeductions));
   lines.push(row("Refunds", data.reconciliation.totalRefunds));
   lines.push(row("Net Generation Cost", data.reconciliation.netGenerationCost));

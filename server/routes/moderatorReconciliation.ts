@@ -29,22 +29,31 @@ export function buildSummary(ctx: {
   windowed?: boolean;
 }): string {
   const { reading, failedCount, pendingCount, windowed = false } = ctx;
+  /*
+    ⚠ EVERY CREDIT FIGURE IN THIS SENTENCE IS LEDGER AND SAYS SO (#2027). The
+    sentence is the reconciliation pane's summary and its CSV's assessment, on
+    the same moderator road as a request form that takes the CUSTOMER's figure
+    since #2010 — so "Discrepancy of 350 credits" was a number a moderator could
+    copy and grant five times over. Counts of generations are not credits and
+    stay bare. The word is written beside each figure rather than added by a
+    helper, so the census's moderator-road reader can see it (#2027).
+  */
   const hasDiscrepancy = Math.abs(reading.discrepancy) > 0;
   const anomalyNote = reading.refundAnomaly
     ? windowed
-      ? ` ⚠ Refunds (${reading.totalRefunds.toLocaleString()}) exceed generation charges IN THIS DATE WINDOW (${reading.grossDeductions.toLocaleString()}) — a refund can land days after its charge, so clear the range before reading this as an all-time fact.`
-      : ` ⚠ Refunds (${reading.totalRefunds.toLocaleString()}) exceed every generation charge ever made (${reading.grossDeductions.toLocaleString()}) — this account has been credited more than it was charged; read the refund rows.`
+      ? ` ⚠ Refunds (${reading.totalRefunds.toLocaleString()} ledger) exceed generation charges IN THIS DATE WINDOW (${reading.grossDeductions.toLocaleString()} ledger) — a refund can land days after its charge, so clear the range before reading this as an all-time fact.`
+      : ` ⚠ Refunds (${reading.totalRefunds.toLocaleString()} ledger) exceed every generation charge ever made (${reading.grossDeductions.toLocaleString()} ledger) — this account has been credited more than it was charged; read the refund rows.`
     : "";
 
   const failureNote =
     failedCount > 0
       ? reading.unrefundedFailureCost > 0
-        ? ` ${failedCount} failed generation(s): ${reading.failedCost.toLocaleString()} credits, ${reading.totalRefunds.toLocaleString()} refunded — failures refund only catastrophically by ruling, so the unrefunded ${reading.unrefundedFailureCost.toLocaleString()} is expected.`
-        : ` ${failedCount} failed generation(s): ${reading.failedCost.toLocaleString()} credits, against ${reading.totalRefunds.toLocaleString()} refunded overall (not all of it for failures) — failures refund only catastrophically by ruling, so a smaller refund figure here would also be expected.`
+        ? ` ${failedCount} failed generation(s): ${reading.failedCost.toLocaleString()} ledger credits, ${reading.totalRefunds.toLocaleString()} ledger refunded — failures refund only catastrophically by ruling, so the unrefunded ${reading.unrefundedFailureCost.toLocaleString()} ledger is expected.`
+        : ` ${failedCount} failed generation(s): ${reading.failedCost.toLocaleString()} ledger credits, against ${reading.totalRefunds.toLocaleString()} ledger refunded overall (not all of it for failures) — failures refund only catastrophically by ruling, so a smaller refund figure here would also be expected.`
       : "";
 
   if (!hasDiscrepancy) {
-    return `No discrepancy. ${reading.grossDeductions.toLocaleString()} credits charged, ${reading.expectedCost.toLocaleString()} recorded.${anomalyNote}${failureNote}`;
+    return `No discrepancy. ${reading.grossDeductions.toLocaleString()} ledger credits charged, ${reading.expectedCost.toLocaleString()} ledger recorded.${anomalyNote}${failureNote}`;
   }
 
   const absDisc = Math.abs(reading.discrepancy).toLocaleString();
@@ -54,7 +63,7 @@ export function buildSummary(ctx: {
       ? ` ${pendingCount} generation(s) still in flight — a charge can precede its record by minutes, so re-read once they settle.`
       : "";
 
-  return `Discrepancy of ${absDisc} credits — ${direction} (${reading.grossDeductions.toLocaleString()} charged against ${reading.expectedCost.toLocaleString()} recorded).${anomalyNote}${pendingNote}${failureNote}`;
+  return `Discrepancy of ${absDisc} ledger credits — ${direction} (${reading.grossDeductions.toLocaleString()} ledger charged against ${reading.expectedCost.toLocaleString()} ledger recorded).${anomalyNote}${pendingNote}${failureNote}`;
 }
 
 export const moderatorReconciliationRouter = router({

@@ -30,6 +30,12 @@ import {
 import { planCreditSliderUnitsAllowed } from "./planCreditSlider";
 import { environmentMetadata } from "./environmentTag";
 import { subscriptionPeriodSec } from "./subscriptionPeriods";
+import {
+  readPendingPlanChange,
+  releaseScheduleBeforeWrite,
+  releaseScheduleOn,
+  type PendingPlanChange,
+} from "./subscriptionSchedule";
 import { PLAN_TIERS, PlanTier } from "../../drizzle/schema";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("stripe/stripeService");
@@ -266,6 +272,22 @@ export async function getSubscriptionDetails(subscriptionId: string): Promise<{
   /** The interval the customer is actually billed on, read from the price
    *  itself (#664 decision 5) — never from metadata a writer might drop. */
   billingInterval: "month" | "year" | null;
+  /**
+   * ⚠ **THE CHANGE WAITING AT THE PERIOD BOUNDARY (#1936), AND THE DEFECT IS
+   * WHAT HAPPENS WITHOUT IT.** This read is what every billing surface draws
+   * its plan from, and it reads the tier off the subscription item — so a
+   * scheduled downgrade would be completely invisible: the customer asks to
+   * drop to Pro, is told it happens on 7 November, and then every screen she
+   * looks at goes on saying Pro Plus with no sign that anything is coming.
+   *
+   * `null` means nothing is pending **or the schedule could not be read** —
+   * the two are deliberately collapsed HERE and nowhere else, because this
+   * function already collapses every failure into its own `null` return and a
+   * surface that cannot be sure says nothing rather than claiming there is no
+   * pending change. The road that must tell them apart (the undo) reads
+   * `readPendingPlanChange` directly and gets all three outcomes.
+   */
+  pendingChange: PendingPlanChange | null;
 } | null> {
   try {
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
@@ -286,14 +308,21 @@ export async function getSubscriptionDetails(subscriptionId: string): Promise<{
     const stripeInterval =
       subscriptionItemsOf(subscription).base?.price?.recurring?.interval;
 
+    /* Read off the SAME subscription object the plan above came from, so the
+       live plan and the pending one cannot be two different moments. */
+    const pending = await readPendingPlanChange(stripe, subscription);
+
     return {
       status: subscription.status,
       currentPeriodStart: new Date(startSec * 1000),
       currentPeriodEnd: new Date(endSec * 1000),
       plan,
-      cancelAtPeriodEnd: subscription.cancel_at_period_end,
+      /* Either of Stripe's two ending shapes (#1987's law-7 sweep) — the
+         flag alone read a `cancel_at` ending as a plan that renews. */
+      cancelAtPeriodEnd: subscriptionEndsAtSec(subscription, endSec) !== null,
       billingInterval:
         stripeInterval === "year" || stripeInterval === "month" ? stripeInterval : null,
+      pendingChange: pending.outcome === "pending" ? pending.change : null,
     };
   } catch (error) {
     log.error({ err: error }, `[Stripe] Failed to get subscription ${subscriptionId}:`);
@@ -342,6 +371,26 @@ export async function retrieveLiveSubscription(
  */
 export async function cancelSubscription(subscriptionId: string): Promise<boolean> {
   try {
+    /* ⚠ **RELEASE FIRST, THEN CANCEL — STRIPE'S OWN DOCUMENTED ORDER (#1936).**
+       Their automatic dispute cancellation is specified exactly this way:
+       *"For subscriptions managed with schedules, the subscription is first
+       released from the schedule and then canceled."* So a customer who
+       scheduled a downgrade and then decided to leave altogether is cancelled
+       cleanly, and the pending change is discarded with the subscription —
+       which is the right outcome, because she is going.
+
+       A failed release REFUSES the cancellation rather than attempting it: a
+       cancel that silently did not take is the one failure a leaving customer
+       discovers on her next statement. */
+    const released = await releaseScheduleBeforeWrite(stripe, subscriptionId);
+    if (released.outcome === "failed") {
+      log.error(
+        { subscriptionId, error: released.error },
+        "[Stripe] Refusing to cancel — the pending scheduled change could not be released",
+      );
+      return false;
+    }
+
     await stripe.subscriptions.update(subscriptionId, {
       cancel_at_period_end: true,
     });
@@ -471,7 +520,61 @@ export type SubscriptionBillingState = {
    * re-prices or deletes. `null` means the line has to be ADDED.
    */
   creditItemId: string | null;
+  /**
+   * ⚠ **WHETHER THIS SUBSCRIPTION IS ALREADY SET TO END AT THE BOUNDARY, AND IT
+   * IS HERE BECAUSE A DEFERRED CHANGE COULD OTHERWISE UNDO A CANCELLATION
+   * (#1936 repair 2).** A scheduled decrease mints a two-phase schedule whose
+   * second phase STARTS at the renewal, so a customer who had cancelled and
+   * then lowered her plan got a subscription that continued past the date it
+   * was meant to end — and was charged for it.
+   *
+   * It is read off the same `subscriptions.retrieve` as the period it concerns,
+   * never off our own `subscriptions` row: the local mirror is written by a
+   * webhook and a change made in Stripe's own portal reaches it late, so a
+   * stale `false` here is exactly the reading that would schedule past a
+   * cancellation.
+   *
+   * ⚠ **IT IS A DATE, NOT `cancel_at_period_end`, SINCE #1987 — AND THE
+   * BOOLEAN WAS BLIND TO HALF OF THE WAYS A PLAN IS SET TO END.** This field
+   * read `cancel_at_period_end === true` and nothing else, while Stripe
+   * records an ending two ways: the flag, or a `cancel_at` timestamp (the
+   * shape the 2025-07-30 `cancel_at` changelog widened, and the one a
+   * portal or dashboard cancellation can produce depending on configuration
+   * and API version). A plan ending by `cancel_at` read as not ending, and
+   * #1936's refusal let the deferral through on exactly the shape it exists
+   * to stop. So this is WHEN the plan ends — `cancel_at` when Stripe states
+   * one, the period end when only the flag is set — and `null` only when
+   * neither is.
+   */
+  endsAtSec: number | null;
+  /**
+   * The subscription's own status and whether its collection is paused, read
+   * off the same retrieve (#1987). `changePlan` lets only an `active`,
+   * unpaused plan change at all; every other state is refused in a sentence
+   * — see `planChangeRefusal` in `routes/billing.ts`.
+   */
+  status: Stripe.Subscription.Status;
+  collectionPaused: boolean;
 };
+
+/**
+ * WHEN A SUBSCRIPTION IS SET TO END, IN EITHER OF STRIPE'S TWO SHAPES (#1987).
+ *
+ * `cancel_at` wins when it is present — it is the date Stripe will actually
+ * end it, and it is ALSO what Stripe stamps beside `cancel_at_period_end`
+ * when the flag is set. The flag alone answers the period end. One reader,
+ * so the billing state and the Billing tab's details cannot disagree about
+ * whether a plan is ending.
+ */
+export function subscriptionEndsAtSec(
+  subscription: { cancel_at?: number | null; cancel_at_period_end?: boolean | null },
+  periodEndSec: number,
+): number | null {
+  if (typeof subscription.cancel_at === "number" && subscription.cancel_at > 0) {
+    return subscription.cancel_at;
+  }
+  return subscription.cancel_at_period_end === true ? periodEndSec : null;
+}
 
 /**
  * THE BASE ITEM AND THE ADD-ON ITEM, TOLD APART BY THEIR LOOKUP KEYS (#1832).
@@ -562,6 +665,12 @@ export async function readSubscriptionBillingState(
       periodEndSec: endSec,
       currentCreditUnits: Math.max(0, Math.trunc(addonQuantity)),
       creditItemId: addon?.id ?? null,
+      endsAtSec: subscriptionEndsAtSec(subscription, endSec),
+      status: subscription.status,
+      /* `pause_collection` is how the portal's "pause" feature pauses a plan
+         while its status stays `active` — so status alone would let a paused
+         plan through (#1987). */
+      collectionPaused: subscription.pause_collection != null,
     };
   } catch (error) {
     log.error({ err: error }, `[Stripe] Failed to read billing state for ${subscriptionId}:`);
@@ -671,6 +780,17 @@ export type PlanChangeQuote = {
    * to the customer's balance in the same act; a grant kept while its money
    * comes back is the credit-minting loop the review found. 0 on an
    * interval switch (the invoice grants; `creditUnwind` deducts).
+   *
+   * ⚠ **THE NEGATIVE DIRECTION IS SUPERSEDED BY #1936 AND IS NO LONGER
+   * REACHABLE ON A REAL DOWNGRADE — read the sentence above as history.** The
+   * mirror rule was right and it could not win: it handed back the unused
+   * share of the allowance while the take-back floored at what was LEFT of it
+   * (*"spent credits are spent"*), so a customer who SPENT first kept the
+   * credits and got the money anyway. That is the loop #1936 was filed about.
+   * His option 1 removes the money instead — a decrease is scheduled for the
+   * period boundary and moves nothing today — so there is no refund to mirror
+   * and this field reads 0 whenever `deferred` is true. The POSITIVE direction
+   * is untouched and still does exactly what the sentence above says.
    */
   creditAdjustment: number;
   /**
@@ -678,8 +798,106 @@ export type PlanChangeQuote = {
    * interval switch — the same fraction of the same period Stripe credits
    * back in money. Without it, switch → switch-back alternation mints a
    * period's allowance per round trip. 0 for same-interval changes.
+   *
+   * ⚠ **SINCE #1965 IT IS ONLY THE PART OF THAT SHARE STILL ON THE BALANCE.**
+   * The part already spent cannot be taken back (*"spent credits are spent"*),
+   * so it is moved to {@link spentShareCredits} and paid for instead. The two
+   * always add up to the whole unconsumed share of the old period's grant.
    */
   creditUnwind: number;
+  /**
+   * ⚠ **THE UNCONSUMED SHARE OF THE OLD PERIOD THAT IS ALREADY SPENT, AND WHAT
+   * IT COSTS (#1965).** On an interval switch Stripe credits the unused share
+   * of the old period — plan AND dial — against the new invoice. The credits
+   * that share bought are taken back by `creditUnwind`, but only as far as
+   * the allowance still holds them; whatever the customer has already spent
+   * came back as MONEY with no credits behind it. Raise the dial early in the
+   * month, spend the credits, switch to annual, and the dial's unused value
+   * is deducted from the year while the take-back finds nothing.
+   *
+   * **The remedy taken is the first of the card's two: the shortfall is
+   * charged**, as one line on the switch's own invoice, at exactly the rate
+   * Stripe credited it — `unusedValue × spentShareCredits / (whole share)`,
+   * rounded down so the customer is never charged a cent more than the
+   * credit she received for those credits. Not the second ("don't credit the
+   * dial's unused share"): that remedy is about the DIAL only, while the
+   * allowance is one pool — nothing can say whether the credits she spent
+   * were the plan's or the dial's — and the same hole is open on the plan's
+   * own allowance. Charging the shortfall closes both with one number.
+   *
+   * 0 on a same-interval change, on a deferred change, and whenever the
+   * allowance left covers the whole share. Absent `planAllowanceLeftLedger`
+   * (the caller did not read the balance) also answers 0 — which is why both
+   * procedures that quote a change read it first, and why
+   * `server/routes/planChangeSpentShareAndStates.test.ts` drives that they do.
+   */
+  spentShareCredits: number;
+  /** Cents — see {@link spentShareCredits}. Included in `proratedAmount` and
+   *  `immediateCharge`, because it is due today on the same invoice. */
+  spentShareCharge: number;
+  /**
+   * ⚠ **WHETHER THIS CHANGE HAPPENS NOW OR AT THE PERIOD BOUNDARY (#1936).**
+   * His ruling, verbatim: *"1 for the slider fix"* — **a DECREASE takes effect
+   * at the next renewal, with no refund and no credit take-back; an INCREASE
+   * stays instant.**
+   *
+   * **`deferred` IS THE SINGLE TEST `proratedAmount < 0`, AND THE TWO TEMPTING
+   * EXTRA CLAUSES ARE BOTH WRONG — worth saying here because each one looks
+   * like extra safety.**
+   *
+   * The loop this closes is minted by MONEY COMING BACK while spent credits
+   * stay spent, so money-back is the whole engine and `proratedAmount < 0` is
+   * exactly the set of changes that return any.
+   *
+   * · Adding `|| creditAdjustment < 0` would defer a change the customer is
+   *   PAYING MORE for — a move up the ladder that drops the dial's steps (the
+   *   dial is clamped to the target rung) raises the price and could lower the
+   *   allowance in one action. No money comes back **on that case**, so
+   *   nothing can be minted from it, and deferring an upgrade is against his
+   *   word. ⚠ **Measured rather than
+   *   asserted, and the measurement corrected this sentence's first draft: on
+   *   TODAY's ladder that case is UNREACHABLE** — the dial's rung at its
+   *   maximum is still 20,000 ledger credits below the rung above it, so an
+   *   upgrade's `creditAdjustment` cannot be negative. The clause stays out
+   *   because it is wrong in principle; what keeps "wrong in principle" from
+   *   becoming "wrong in practice" is a coincidence of two numbers in a price
+   *   table that has been re-cut twice this month, so
+   *   `deferredPlanChange.test.ts` pins that coincidence and reddens if a
+   *   future ladder breaks it.
+   * · Adding `|| creditUnwind > 0` would defer **monthly → annual**, which
+   *   carries an unwind on every interval switch and is the largest upgrade
+   *   this product sells.
+   *
+   * ⚠ **AND THE "NO MONEY COMES BACK" READING IS NOT TRUE OF EVERY INSTANT
+   * CHANGE — IT IS SCOPED TO THE TWO BULLETS ABOVE.** On an instant interval
+   * switch (monthly → annual, and annual → monthly at the knife edge) Stripe
+   * DOES credit the unused share of the old period back against the new
+   * invoice, plan and dial alike, and `proratedAmount < 0` does not catch it
+   * because the switch charges a whole period up front. That money is
+   * matched by `creditUnwind`, which floors at what is left of the
+   * allowance — so when the allowance was SPENT, the money came back and the
+   * credits did not: #1965, the same engine as #1936 on the one road this
+   * test calls instant. ✅ **Closed by {@link PlanChangeQuote.spentShareCharge}
+   * rather than by deferring the switch**: the share of that credit whose
+   * credits are already spent is charged back on the same invoice, so the
+   * customer is credited only for what she can still hand back. Deferral is
+   * not this road's answer — monthly → annual is the largest upgrade the
+   * product sells and his word keeps every increase instant.
+   *
+   * ⚠ **AND WHEN THIS IS TRUE, EVERY MONEY AND CREDIT FIELD ABOVE READS 0** —
+   * see the end of {@link quotePlanChange}. That is the mechanism rather than
+   * a courtesy: it means the charge road, the settlement road and every
+   * surface do nothing on a deferred change by construction, instead of each
+   * one remembering to ask.
+   */
+  deferred: boolean;
+  /**
+   * The end of the period the customer has paid for, as Unix seconds — when a
+   * deferred change takes effect, and the renewal date on an instant one.
+   * Carried on the quote so the confirm step's date and the scheduled phase's
+   * start cannot be two readings.
+   */
+  effectiveAtSec: number;
 };
 
 export function quotePlanChange(
@@ -699,6 +917,15 @@ export function quotePlanChange(
    * which is the same mirror rule the plan's own allowance already follows.
    */
   requestedCreditUnits?: number,
+  /**
+   * What is left of the PLAN's part of the customer's balance, in ledger
+   * credits — `planAllowanceRemaining` of her credit row, read by the caller
+   * (#1965). It decides how much of an interval switch's unconsumed share can
+   * still be taken back and how much has to be paid for instead. Absent means
+   * the caller did not read it, and answers as if the whole share were still
+   * there: no charge, which is the road as it stood before #1965.
+   */
+  planAllowanceLeftLedger?: number,
 ): PlanChangeQuote {
   // Absent means KEEP the interval the customer is on. This is also the fix
   // for the sibling defect the #664 read found: the old update path minted
@@ -798,22 +1025,66 @@ export function quotePlanChange(
         )
       : 0;
 
+  /* ⚠ **THE DIRECTION, AND THEN THE DEFERRAL (#1936).** A change that hands
+     money back does not happen today — his option 1. The test is the signed
+     figure this quote has already computed, and the two tempting extra clauses
+     are wrong for the reasons on `deferred`'s own declaration above.
+
+     ⚠ **THE ZEROING BELOW IS THE MECHANISM, NOT A COURTESY.** Every road that
+     moves money or credits on a plan change reads these fields and nothing
+     else: `changePlan` derives its settlement `direction` from
+     `creditAdjustment` and `creditUnwind`, and the confirm step derives
+     "due today" from `immediateCharge` and "back to your balance" from
+     `creditBalance`. Zeroing them in ONE place means the charge road, the
+     settlement road and all three customer surfaces do nothing on a deferred
+     change by construction — rather than each of them remembering to ask,
+     which is how one of them would eventually forget. */
+  const deferred = proratedAmount < 0;
+
+  /* ⚠ **THE SPENT SHARE OF AN INTERVAL SWITCH IS PAID FOR, NOT GIVEN BACK
+     (#1965).** `unusedValue` is the money Stripe credits for the old period's
+     unused days, and `creditUnwind` is the SAME fraction of the same period's
+     grant — one share, priced and counted. What the take-back cannot reach
+     (the allowance is already spent) came back as money with nothing behind
+     it, so that part of the credit is charged back at the rate it was given.
+
+     ⚠ **IT IS DECIDED AFTER `deferred`, ON PURPOSE.** The deferral is his
+     ruling about decreases and it reads the money Stripe would return; adding
+     this charge first would turn a deferred annual → monthly into an instant
+     one whenever she had spent, which re-rules his option 1 by arithmetic. */
+  const allowanceLeft =
+    planAllowanceLeftLedger === undefined
+      ? creditUnwind
+      : Math.max(0, Math.floor(planAllowanceLeftLedger));
+  const spentShareCredits =
+    !deferred && kind === "interval-switch" ? Math.max(0, creditUnwind - allowanceLeft) : 0;
+  const spentShareCharge =
+    spentShareCredits > 0 && creditUnwind > 0
+      ? Math.floor((unusedValue * spentShareCredits) / creditUnwind)
+      : 0;
+  const keptUnwind = creditUnwind - spentShareCredits;
+  const charged = proratedAmount + spentShareCharge;
+
   return {
     kind,
     currentInterval: state.currentInterval,
     targetInterval,
     isUpgrade,
-    proratedAmount,
-    immediateCharge: Math.max(proratedAmount, 0),
-    creditBalance: Math.max(-proratedAmount, 0),
+    proratedAmount: deferred ? 0 : charged,
+    immediateCharge: deferred ? 0 : Math.max(charged, 0),
+    creditBalance: deferred ? 0 : Math.max(-charged, 0),
     newPlanPrice,
     currentPlanPrice,
     currentCreditUnits,
     targetCreditUnits,
     daysRemaining,
     totalDays,
-    creditAdjustment,
-    creditUnwind,
+    creditAdjustment: deferred ? 0 : creditAdjustment,
+    creditUnwind: deferred ? 0 : keptUnwind,
+    spentShareCredits,
+    spentShareCharge,
+    deferred,
+    effectiveAtSec: state.periodEndSec,
   };
 }
 
@@ -844,6 +1115,12 @@ export async function updateSubscriptionPlan(
    * alone*, which is every caller that predates the slider.
    */
   credits?: { targetCreditUnits: number; creditItemId: string | null },
+  /**
+   * Cents — the quote's `spentShareCharge` (#1965): the part of the old
+   * period's unused credit whose credits are already spent, charged back as
+   * one line on the SAME invoice the switch raises. 0 or absent adds nothing.
+   */
+  spentShareCharge?: number,
 ): Promise<{
   success: boolean;
   /** What Stripe actually invoiced for the change, when it can be read. */
@@ -858,9 +1135,77 @@ export async function updateSubscriptionPlan(
   error?: string;
 }> {
   try {
+    /* ⚠ **A PENDING SCHEDULED CHANGE IS RELEASED BEFORE THIS WRITE (#1936).**
+       An instant change asked for while a decrease is pending — she lowered
+       the dial yesterday and has thought better of it today — must REPLACE the
+       pending one, and `subscriptions.update` on a schedule-managed
+       subscription is not a state this product may guess about. The release
+       moves no money and no price (`subscriptionSchedule.ts` quotes the
+       documentation), so it costs one read when there is nothing pending.
+
+       It REFUSES rather than carrying on: the alternative is attempting a
+       charge against a subscription whose management we could not establish,
+       and `changePlan` has nothing to undo once Stripe has invoiced. */
+    /* ⚠ **ONE RETRIEVE, TWO QUESTIONS (#1936).** This read answers both the
+       pending-schedule check below and the plan's item id when the caller did
+       not supply one. The first draft asked twice — the release had its own
+       read — and `annualPlanChange.test.ts`'s *"the item id was supplied, so
+       nothing re-fetched the subscription"* arm caught it, having guarded that
+       round trip since #664. */
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+
+    /* ⚠ **THE SPENT SHARE'S LINE IS BUILT BEFORE ANYTHING IS WRITTEN (#1965).**
+       It rides the same `subscriptions.update` as the price change —
+       `add_invoice_items` is appended to the invoice that update raises, which
+       under `always_invoice` is the switch's own invoice — so the customer is
+       charged ONE figure for one action, and the line cannot land without the
+       switch or the switch without the line. Its price is inline
+       (`price_data`), under the plan's own product, so no catalogue object is
+       minted. A product or currency this read cannot state REFUSES here,
+       before the pending-schedule release and before the update: charging the
+       switch without the line is the exact mint this exists to close. */
+    let spentShareLine: Record<string, unknown> | null = null;
+    if (spentShareCharge !== undefined && spentShareCharge > 0) {
+      const baseProduct = subscriptionItemsOf(subscription).base?.price?.product;
+      const productId =
+        typeof baseProduct === "string" ? baseProduct : (baseProduct?.id ?? null);
+      const currency =
+        (subscription as any).currency
+        ?? subscriptionItemsOf(subscription).base?.price?.currency
+        ?? null;
+      if (!productId || !currency) {
+        log.error(
+          { subscriptionId, productId, currency },
+          "[Stripe] Refusing a switch whose spent-share line cannot be built — the plan's product or currency is unreadable",
+        );
+        return {
+          success: false,
+          error:
+            "We could not work out today's charge for this change, so nothing was changed. Please try again.",
+        };
+      }
+      spentShareLine = {
+        price_data: {
+          currency,
+          product: productId,
+          unit_amount: Math.trunc(spentShareCharge),
+        },
+        quantity: 1,
+        metadata: { kind: "spent-allowance-share", ...environmentMetadata() },
+      };
+    }
+
+    const released = await releaseScheduleOn(stripe, subscription);
+    if (released.outcome === "failed") {
+      return {
+        success: false,
+        error:
+          "We could not clear the change already scheduled on your plan, so nothing was changed. Please try again.",
+      };
+    }
+
     let itemId = subscriptionItemId;
     if (!itemId) {
-      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
       /* ⚠ The PLAN's item, never `data[0]` — with a credit add-on on the
          subscription that index can be the $9 line, and re-pricing it to the
          new plan's price would make a customer's add-on their whole bill
@@ -919,6 +1264,7 @@ export async function updateSubscriptionPlan(
 
     const updated = await stripe.subscriptions.update(subscriptionId, {
       items: items as any,
+      ...(spentShareLine ? { add_invoice_items: [spentShareLine as any] } : {}),
       proration_behavior: "always_invoice",
       metadata: {
         userId: userId.toString(),

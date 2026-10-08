@@ -7,7 +7,7 @@
     {
       "id": "domain:admin",
       "name": "admin",
-      "moduleCount": 63
+      "moduleCount": 64
     },
     {
       "id": "domain:api",
@@ -17,7 +17,7 @@
     {
       "id": "domain:billing",
       "name": "billing",
-      "moduleCount": 14
+      "moduleCount": 16
     },
     {
       "id": "domain:boards",
@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 191
+      "moduleCount": 192
     },
     {
       "id": "domain:castingV2",
@@ -42,12 +42,12 @@
     {
       "id": "domain:client-shared",
       "name": "client-shared",
-      "moduleCount": 9
+      "moduleCount": 10
     },
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 66
+      "moduleCount": 67
     },
     {
       "id": "domain:evidence",
@@ -77,7 +77,7 @@
     {
       "id": "domain:moderator",
       "name": "moderator",
-      "moduleCount": 20
+      "moduleCount": 24
     },
     {
       "id": "domain:operations",
@@ -117,12 +117,12 @@
     {
       "id": "domain:settings",
       "name": "settings",
-      "moduleCount": 16
+      "moduleCount": 17
     },
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 83
+      "moduleCount": 86
     },
     {
       "id": "domain:staff",
@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 55
+      "moduleCount": 56
     },
     {
       "id": "domain:wardrobe",
@@ -195,6 +195,12 @@
     {
       "id": "module:client/src/components/PageTransition.tsx",
       "path": "client/src/components/PageTransition.tsx",
+      "domain": "client-shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/components/ReconnectingNotice.tsx",
+      "path": "client/src/components/ReconnectingNotice.tsx",
       "domain": "client-shared",
       "lifecycle": "active"
     },
@@ -517,6 +523,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/features/admin/components/crew/crewRepairsOwed.ts",
+      "path": "client/src/features/admin/components/crew/crewRepairsOwed.ts",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/features/admin/components/crew/crewTypes.ts",
       "path": "client/src/features/admin/components/crew/crewTypes.ts",
       "domain": "admin",
@@ -639,6 +651,12 @@
     {
       "id": "module:client/src/features/billing/index.ts",
       "path": "client/src/features/billing/index.ts",
+      "domain": "billing",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/billing/spentShareSentence.ts",
+      "path": "client/src/features/billing/spentShareSentence.ts",
       "domain": "billing",
       "lifecycle": "active"
     },
@@ -1801,6 +1819,18 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/features/moderator/creditRowText.ts",
+      "path": "client/src/features/moderator/creditRowText.ts",
+      "domain": "moderator",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/moderator/factFigures.tsx",
+      "path": "client/src/features/moderator/factFigures.tsx",
+      "domain": "moderator",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/features/moderator/figures.ts",
       "path": "client/src/features/moderator/figures.ts",
       "domain": "moderator",
@@ -1839,6 +1869,18 @@
     {
       "id": "module:client/src/features/moderator/reconciliation-csv.ts",
       "path": "client/src/features/moderator/reconciliation-csv.ts",
+      "domain": "moderator",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/moderator/reconciliationView.ts",
+      "path": "client/src/features/moderator/reconciliationView.ts",
+      "domain": "moderator",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/moderator/staffCsvExport.ts",
+      "path": "client/src/features/moderator/staffCsvExport.ts",
       "domain": "moderator",
       "lifecycle": "active"
     },
@@ -2001,6 +2043,12 @@
     {
       "id": "module:client/src/features/settings/sections/UsageSection.tsx",
       "path": "client/src/features/settings/sections/UsageSection.tsx",
+      "domain": "settings",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/settings/sections/exportAccountData.ts",
+      "path": "client/src/features/settings/sections/exportAccountData.ts",
       "domain": "settings",
       "lifecycle": "active"
     },
@@ -3589,6 +3637,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/arrivalRetry.ts",
+      "path": "server/castingV2/arrivalRetry.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/askReference.ts",
       "path": "server/castingV2/askReference.ts",
       "domain": "casting-v2",
@@ -4753,6 +4807,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/crew/liveRepairs.ts",
+      "path": "server/crew/liveRepairs.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/db/accountDeletion.ts",
       "path": "server/db/accountDeletion.ts",
       "domain": "data",
@@ -4863,6 +4923,12 @@
     {
       "id": "module:server/db/castingV2Orphans.ts",
       "path": "server/db/castingV2Orphans.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/db/castingV2PurgeScope.ts",
+      "path": "server/db/castingV2PurgeScope.ts",
       "domain": "data",
       "lifecycle": "active"
     },
@@ -5773,6 +5839,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/stripe/subscriptionSchedule.ts",
+      "path": "server/stripe/subscriptionSchedule.ts",
+      "domain": "billing",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/stripe/webhooks.ts",
       "path": "server/stripe/webhooks.ts",
       "domain": "billing",
@@ -6247,6 +6319,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:shared/customerDate.ts",
+      "path": "shared/customerDate.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:shared/engineVocabulary.ts",
       "path": "shared/engineVocabulary.ts",
       "domain": "shared",
@@ -6391,6 +6469,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:shared/planCancelCopy.ts",
+      "path": "shared/planCancelCopy.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:shared/planCreditSlider.ts",
       "path": "shared/planCreditSlider.ts",
       "domain": "shared",
@@ -6469,6 +6553,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:shared/waitPhrase.ts",
+      "path": "shared/waitPhrase.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:shared/wardrobeTryOnDoor.ts",
       "path": "shared/wardrobeTryOnDoor.ts",
       "domain": "shared",
@@ -6505,16 +6595,6 @@
       "input": "strict",
       "rateLimited": true,
       "file": "server/routes/access.ts"
-    },
-    {
-      "id": "route:account.deleteAccount",
-      "namespace": "account",
-      "name": "deleteAccount",
-      "type": "mutation",
-      "auth": "protected",
-      "input": "open",
-      "rateLimited": true,
-      "file": "server/routes/account.ts"
     },
     {
       "id": "route:account.exportData",
@@ -6885,6 +6965,16 @@
       "input": "none",
       "rateLimited": false,
       "file": "server/routes/auth.ts"
+    },
+    {
+      "id": "route:billing.cancelScheduledChange",
+      "namespace": "billing",
+      "name": "cancelScheduledChange",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "none",
+      "rateLimited": false,
+      "file": "server/routes/billing.ts"
     },
     {
       "id": "route:billing.cancelSubscription",
@@ -10797,6 +10887,10 @@
   ],
   "tests": [
     {
+      "id": "test:client/src/_core/hooks/useAuth.test.ts",
+      "path": "client/src/_core/hooks/useAuth.test.ts"
+    },
+    {
       "id": "test:client/src/appRoutes.test.ts",
       "path": "client/src/appRoutes.test.ts"
     },
@@ -10823,6 +10917,10 @@
     {
       "id": "test:client/src/features/admin/components/crew/crewBodyWhitespace.test.ts",
       "path": "client/src/features/admin/components/crew/crewBodyWhitespace.test.ts"
+    },
+    {
+      "id": "test:client/src/features/admin/components/crew/crewRepairsOwed.test.ts",
+      "path": "client/src/features/admin/components/crew/crewRepairsOwed.test.ts"
     },
     {
       "id": "test:client/src/features/admin/components/crew/crewTypes.test.ts",
@@ -10857,12 +10955,20 @@
       "path": "client/src/features/billing/creditPacks1606-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/billing/deferredChange1936-guard.test.ts",
+      "path": "client/src/features/billing/deferredChange1936-guard.test.ts"
+    },
+    {
       "id": "test:client/src/features/billing/freeAddCredits1836-guard.test.ts",
       "path": "client/src/features/billing/freeAddCredits1836-guard.test.ts"
     },
     {
       "id": "test:client/src/features/billing/monthlyDelta1761-guard.test.ts",
       "path": "client/src/features/billing/monthlyDelta1761-guard.test.ts"
+    },
+    {
+      "id": "test:client/src/features/billing/planChangeRefusal1987-guard.test.ts",
+      "path": "client/src/features/billing/planChangeRefusal1987-guard.test.ts"
     },
     {
       "id": "test:client/src/features/billing/plansRedesign1832-guard.test.ts",
@@ -11125,8 +11231,16 @@
       "path": "client/src/features/lobby/lobbyStub.test.ts"
     },
     {
+      "id": "test:client/src/features/moderator/factFigures.test.ts",
+      "path": "client/src/features/moderator/factFigures.test.ts"
+    },
+    {
       "id": "test:client/src/features/moderator/section09-guard.test.ts",
       "path": "client/src/features/moderator/section09-guard.test.ts"
+    },
+    {
+      "id": "test:client/src/features/moderator/staffCsvExport.test.ts",
+      "path": "client/src/features/moderator/staffCsvExport.test.ts"
     },
     {
       "id": "test:client/src/features/operations/bridgeOwnership.test.ts",
@@ -11163,6 +11277,10 @@
     {
       "id": "test:client/src/features/settings/card425-guard.test.ts",
       "path": "client/src/features/settings/card425-guard.test.ts"
+    },
+    {
+      "id": "test:client/src/features/settings/exportAccountData.test.ts",
+      "path": "client/src/features/settings/exportAccountData.test.ts"
     },
     {
       "id": "test:client/src/features/settings/planBlurbs.test.ts",
@@ -11227,6 +11345,14 @@
     {
       "id": "test:client/src/foundation/anchoredPanel.test.ts",
       "path": "client/src/foundation/anchoredPanel.test.ts"
+    },
+    {
+      "id": "test:client/src/foundation/canonicalWording.test.ts",
+      "path": "client/src/foundation/canonicalWording.test.ts"
+    },
+    {
+      "id": "test:client/src/foundation/downloadFilenameBrand.test.ts",
+      "path": "client/src/foundation/downloadFilenameBrand.test.ts"
     },
     {
       "id": "test:client/src/foundation/focusRing.test.ts",
@@ -11309,6 +11435,10 @@
       "path": "server/_core/numericEnv.test.ts"
     },
     {
+      "id": "test:server/_core/sessionLookupFailure.test.ts",
+      "path": "server/_core/sessionLookupFailure.test.ts"
+    },
+    {
       "id": "test:server/abuseStripHonesty.test.ts",
       "path": "server/abuseStripHonesty.test.ts"
     },
@@ -11325,12 +11455,20 @@
       "path": "server/accountDeletionCoverage.test.ts"
     },
     {
+      "id": "test:server/accountDeletionOrphanOwnerScope.test.ts",
+      "path": "server/accountDeletionOrphanOwnerScope.test.ts"
+    },
+    {
       "id": "test:server/accountDeletionOrphans.test.ts",
       "path": "server/accountDeletionOrphans.test.ts"
     },
     {
       "id": "test:server/accountDeletionReachability.test.ts",
       "path": "server/accountDeletionReachability.test.ts"
+    },
+    {
+      "id": "test:server/accountErasureEntrance.test.ts",
+      "path": "server/accountErasureEntrance.test.ts"
     },
     {
       "id": "test:server/accountFreeze.test.ts",
@@ -12949,6 +13087,10 @@
       "path": "server/castingV2/signSheet.test.ts"
     },
     {
+      "id": "test:server/castingV2/signSheetCutWarning.test.ts",
+      "path": "server/castingV2/signSheetCutWarning.test.ts"
+    },
+    {
       "id": "test:server/castingV2/signViewEngineChain.test.ts",
       "path": "server/castingV2/signViewEngineChain.test.ts"
     },
@@ -13279,6 +13421,14 @@
     {
       "id": "test:server/crew/liveQueue.test.ts",
       "path": "server/crew/liveQueue.test.ts"
+    },
+    {
+      "id": "test:server/crew/liveRepairs.test.ts",
+      "path": "server/crew/liveRepairs.test.ts"
+    },
+    {
+      "id": "test:server/crew/liveRepairsRouter.test.ts",
+      "path": "server/crew/liveRepairsRouter.test.ts"
     },
     {
       "id": "test:server/crewBriefingFieldReaders.test.ts",
@@ -13641,6 +13791,10 @@
       "path": "server/gateTriggers.test.ts"
     },
     {
+      "id": "test:server/gdprExportBounded.test.ts",
+      "path": "server/gdprExportBounded.test.ts"
+    },
+    {
       "id": "test:server/ghQueueTransport.test.ts",
       "path": "server/ghQueueTransport.test.ts"
     },
@@ -13785,6 +13939,10 @@
       "path": "server/moderatorReconciliation.test.ts"
     },
     {
+      "id": "test:server/moderatorRoadLedger.test.ts",
+      "path": "server/moderatorRoadLedger.test.ts"
+    },
+    {
       "id": "test:server/moduleResolution.test.ts",
       "path": "server/moduleResolution.test.ts"
     },
@@ -13831,6 +13989,10 @@
     {
       "id": "test:server/patrolClocks.test.ts",
       "path": "server/patrolClocks.test.ts"
+    },
+    {
+      "id": "test:server/perRowFanOutBounded.test.ts",
+      "path": "server/perRowFanOutBounded.test.ts"
     },
     {
       "id": "test:server/phase-a-quota.test.ts",
@@ -13949,6 +14111,10 @@
       "path": "server/providers/falMaskedEditWire.test.ts"
     },
     {
+      "id": "test:server/providers/falPostCompletionFault.test.ts",
+      "path": "server/providers/falPostCompletionFault.test.ts"
+    },
+    {
       "id": "test:server/providers/falSignSheetWire.test.ts",
       "path": "server/providers/falSignSheetWire.test.ts"
     },
@@ -13959,6 +14125,10 @@
     {
       "id": "test:server/providers/providerFailureContract.test.ts",
       "path": "server/providers/providerFailureContract.test.ts"
+    },
+    {
+      "id": "test:server/providers/withRetryBilled.test.ts",
+      "path": "server/providers/withRetryBilled.test.ts"
     },
     {
       "id": "test:server/publicInputStrictness.test.ts",
@@ -14289,6 +14459,10 @@
       "path": "server/r7-wardrobe-image-authority.test.ts"
     },
     {
+      "id": "test:server/rateLimitVerdictRead.test.ts",
+      "path": "server/rateLimitVerdictRead.test.ts"
+    },
+    {
       "id": "test:server/readerAskTrim.test.ts",
       "path": "server/readerAskTrim.test.ts"
     },
@@ -14319,6 +14493,14 @@
     {
       "id": "test:server/refinePanelDoors.test.ts",
       "path": "server/refinePanelDoors.test.ts"
+    },
+    {
+      "id": "test:server/renewalSettlementNetting.test.ts",
+      "path": "server/renewalSettlementNetting.test.ts"
+    },
+    {
+      "id": "test:server/repairsOwed.test.ts",
+      "path": "server/repairsOwed.test.ts"
     },
     {
       "id": "test:server/replyHosts.test.ts",
@@ -14377,6 +14559,10 @@
       "path": "server/routes/crewEyeFrames.test.ts"
     },
     {
+      "id": "test:server/routes/deferredPlanChangeRoute.test.ts",
+      "path": "server/routes/deferredPlanChangeRoute.test.ts"
+    },
+    {
       "id": "test:server/routes/emailAuth.test.ts",
       "path": "server/routes/emailAuth.test.ts"
     },
@@ -14409,8 +14595,20 @@
       "path": "server/routes/modelCreatePayload.test.ts"
     },
     {
+      "id": "test:server/routes/moneyWording1940.test.ts",
+      "path": "server/routes/moneyWording1940.test.ts"
+    },
+    {
+      "id": "test:server/routes/planChangeSpentShareAndStates.test.ts",
+      "path": "server/routes/planChangeSpentShareAndStates.test.ts"
+    },
+    {
       "id": "test:server/routes/referenceDelivery.test.ts",
       "path": "server/routes/referenceDelivery.test.ts"
+    },
+    {
+      "id": "test:server/routes/sessionFailureRoutes.test.ts",
+      "path": "server/routes/sessionFailureRoutes.test.ts"
     },
     {
       "id": "test:server/schemaConformance.test.ts",
@@ -14585,6 +14783,10 @@
       "path": "server/stripe/checkoutProductText.test.ts"
     },
     {
+      "id": "test:server/stripe/deferredPlanChange.test.ts",
+      "path": "server/stripe/deferredPlanChange.test.ts"
+    },
+    {
       "id": "test:server/stripe/environmentTag.test.ts",
       "path": "server/stripe/environmentTag.test.ts"
     },
@@ -14599,6 +14801,10 @@
     {
       "id": "test:server/stripe/planChangeSettlement.test.ts",
       "path": "server/stripe/planChangeSettlement.test.ts"
+    },
+    {
+      "id": "test:server/stripe/planChangeSpentShareAndStates.test.ts",
+      "path": "server/stripe/planChangeSpentShareAndStates.test.ts"
     },
     {
       "id": "test:server/stripe/planCreditSliderGrant.test.ts",
@@ -14631,6 +14837,10 @@
     {
       "id": "test:server/stripe/topupGrant.test.ts",
       "path": "server/stripe/topupGrant.test.ts"
+    },
+    {
+      "id": "test:server/stripe/undeliveredPlanFeatures1953.test.ts",
+      "path": "server/stripe/undeliveredPlanFeatures1953.test.ts"
     },
     {
       "id": "test:server/stripe/voidInvoiceStatus.test.ts",
@@ -14795,6 +15005,10 @@
     {
       "id": "test:server/w6-thumbnail-restore.test.ts",
       "path": "server/w6-thumbnail-restore.test.ts"
+    },
+    {
+      "id": "test:server/waitPhrase.test.ts",
+      "path": "server/waitPhrase.test.ts"
     },
     {
       "id": "test:server/waitlist.test.ts",
@@ -15061,6 +15275,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/components/ReconnectingNotice.tsx",
+      "to": "module:client/src/foundation/KliegWordmark.tsx",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/components/ui/badge.tsx",
       "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
@@ -15298,6 +15517,11 @@
     {
       "from": "module:client/src/features/admin/ChangeRequestList.tsx",
       "to": "module:shared/changeRequestLabels.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/ChangeRequestList.tsx",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -15542,6 +15766,11 @@
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewPipeline.tsx",
+      "to": "module:client/src/features/admin/components/crew/crewRepairsOwed.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewPipeline.tsx",
       "to": "module:client/src/features/admin/components/crew/CrewShell.tsx",
       "kind": "imports"
     },
@@ -15618,6 +15847,11 @@
     {
       "from": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
       "to": "module:shared/crewQueueTitles.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/crewRepairsOwed.ts",
+      "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
       "kind": "imports"
     },
     {
@@ -16002,6 +16236,11 @@
     },
     {
       "from": "module:client/src/features/admin/UserActionModals.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/UserActionModals.tsx",
       "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
@@ -16028,6 +16267,11 @@
     {
       "from": "module:client/src/features/admin/UserTable.tsx",
       "to": "module:client/src/foundation/staffDate.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/UserTable.tsx",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -16082,6 +16326,11 @@
     },
     {
       "from": "module:client/src/features/billing/ChangePlanModal.tsx",
+      "to": "module:client/src/features/billing/spentShareSentence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/ChangePlanModal.tsx",
       "to": "module:client/src/features/billing/useCycleSpend.ts",
       "kind": "imports"
     },
@@ -16132,6 +16381,11 @@
     },
     {
       "from": "module:client/src/features/billing/ChangePlanModal.tsx",
+      "to": "module:shared/planCancelCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/ChangePlanModal.tsx",
       "to": "module:shared/planCreditSlider.ts",
       "kind": "imports"
     },
@@ -16152,6 +16406,11 @@
     },
     {
       "from": "module:client/src/features/billing/LowBalanceWarning.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/spentShareSentence.ts",
       "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
@@ -16382,6 +16641,11 @@
     },
     {
       "from": "module:client/src/features/boards/BoardPage.tsx",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/BoardPage.tsx",
       "to": "module:shared/clientRequestId.ts",
       "kind": "imports"
     },
@@ -16408,6 +16672,11 @@
     {
       "from": "module:client/src/features/boards/canvas/CanvasImageViewer.tsx",
       "to": "module:client/src/features/boards/canvas/ImageFallback.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/canvas/CanvasImageViewer.tsx",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
@@ -16662,6 +16931,11 @@
     },
     {
       "from": "module:client/src/features/boards/canvas/nodes/CastNode.tsx",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/canvas/nodes/CastNode.tsx",
       "to": "module:shared/canvasCastDoor.ts",
       "kind": "imports"
     },
@@ -16833,6 +17107,11 @@
     {
       "from": "module:client/src/features/boards/components/NodeContextMenu.tsx",
       "to": "module:client/src/features/boards/canvas/imageActions.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/components/NodeContextMenu.tsx",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
@@ -18427,6 +18706,11 @@
     },
     {
       "from": "module:client/src/features/moderator/AuditLogsTab.tsx",
+      "to": "module:client/src/features/moderator/staffCsvExport.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/AuditLogsTab.tsx",
       "to": "module:client/src/features/staff/index.ts",
       "kind": "imports"
     },
@@ -18438,6 +18722,11 @@
     {
       "from": "module:client/src/features/moderator/AuditLogsTab.tsx",
       "to": "module:client/src/foundation/staffDate.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/AuditLogsTab.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
     {
@@ -18516,13 +18805,38 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
+      "from": "module:client/src/features/moderator/ChangeRequestModal.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/creditRowText.ts",
       "to": "module:client/src/features/moderator/figures.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/creditRowText.ts",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
+      "to": "module:client/src/features/moderator/creditRowText.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
+      "to": "module:client/src/features/moderator/factFigures.tsx",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
       "to": "module:client/src/features/moderator/moderatorConstants.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
+      "to": "module:client/src/features/moderator/staffCsvExport.ts",
       "kind": "imports"
     },
     {
@@ -18542,7 +18856,22 @@
     },
     {
       "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/factFigures.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
@@ -18586,6 +18915,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/moderator/FlaggedReferralsTab.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
+      "to": "module:client/src/features/moderator/staffCsvExport.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
       "to": "module:client/src/features/staff/index.ts",
       "kind": "imports"
@@ -18602,7 +18941,17 @@
     },
     {
       "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -18686,13 +19035,23 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/moderator/ReconciliationSubTab.tsx",
-      "to": "module:client/src/features/moderator/figures.ts",
+      "from": "module:client/src/features/moderator/MyRequestsTab.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/reconciliation-csv.ts",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/moderator/ReconciliationSubTab.tsx",
       "to": "module:client/src/features/moderator/reconciliation-csv.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/ReconciliationSubTab.tsx",
+      "to": "module:client/src/features/moderator/reconciliationView.ts",
       "kind": "imports"
     },
     {
@@ -18703,6 +19062,26 @@
     {
       "from": "module:client/src/features/moderator/ReconciliationSubTab.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/reconciliationView.ts",
+      "to": "module:client/src/features/moderator/figures.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/reconciliationView.ts",
+      "to": "module:client/src/features/moderator/reconciliation-csv.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/reconciliationView.ts",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/staffCsvExport.ts",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
@@ -18768,6 +19147,11 @@
     {
       "from": "module:client/src/features/moderator/UserInvestigationWidgets.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/UserInvestigationWidgets.tsx",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -18843,6 +19227,11 @@
     {
       "from": "module:client/src/features/profile/index.ts",
       "to": "module:client/src/features/profile/ProfileVisual.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/profile/ProfileVisual.tsx",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
@@ -18937,6 +19326,11 @@
     },
     {
       "from": "module:client/src/features/settings/planMath.ts",
+      "to": "module:shared/customerDate.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/planMath.ts",
       "to": "module:shared/planCreditSlider.ts",
       "kind": "imports"
     },
@@ -18998,6 +19392,16 @@
     {
       "from": "module:client/src/features/settings/sections/BillingSection.tsx",
       "to": "module:shared/creditTopups.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/BillingSection.tsx",
+      "to": "module:shared/planCancelCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/exportAccountData.ts",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
@@ -19068,6 +19472,11 @@
     {
       "from": "module:client/src/features/settings/sections/SecuritySection.tsx",
       "to": "module:client/src/features/settings/parts.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/SecuritySection.tsx",
+      "to": "module:client/src/features/settings/sections/exportAccountData.ts",
       "kind": "imports"
     },
     {
@@ -19458,6 +19867,11 @@
     {
       "from": "module:client/src/features/studio/components/ImageActionBar.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/studio/components/ImageActionBar.tsx",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
@@ -20801,6 +21215,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/pages/AdminInviteCodes.tsx",
+      "to": "module:shared/referralCodeFormat.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/pages/AdminOverview.tsx",
       "to": "module:client/src/_core/hooks/useAuth.ts",
       "kind": "imports"
@@ -20871,6 +21290,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/pages/AdminUserManagement.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/pages/AppLobby.tsx",
       "to": "module:client/src/_core/hooks/useAuth.ts",
       "kind": "imports"
@@ -20878,6 +21302,11 @@
     {
       "from": "module:client/src/pages/AppLobby.tsx",
       "to": "module:client/src/components/AppChrome.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AppLobby.tsx",
+      "to": "module:client/src/components/ReconnectingNotice.tsx",
       "kind": "imports"
     },
     {
@@ -20937,12 +21366,12 @@
     },
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
-      "to": "module:shared/creditDisplay.ts",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
-      "to": "module:shared/inputLimits.ts",
+      "to": "module:shared/refundCopy.ts",
       "kind": "imports"
     },
     {
@@ -21277,6 +21706,11 @@
     },
     {
       "from": "module:client/src/pages/DrapeStudio.tsx",
+      "to": "module:client/src/components/ReconnectingNotice.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/DrapeStudio.tsx",
       "to": "module:client/src/features/billing/AddCreditsModal.tsx",
       "kind": "imports"
     },
@@ -21446,6 +21880,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/pages/Login.tsx",
+      "to": "module:shared/waitPhrase.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/pages/ModeratorDashboard.tsx",
       "to": "module:client/src/_core/hooks/useAuth.ts",
       "kind": "imports"
@@ -21473,6 +21912,11 @@
     {
       "from": "module:client/src/pages/ModeratorDashboard.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/ModeratorDashboard.tsx",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -21553,6 +21997,16 @@
     {
       "from": "module:server/_core/context.ts",
       "to": "module:server/_core/sdk.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/context.ts",
+      "to": "module:server/_core/spokenError.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/context.ts",
+      "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
     {
@@ -21812,6 +22266,11 @@
     },
     {
       "from": "module:server/_core/sdk.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/sdk.ts",
       "to": "module:shared/_core/errors.ts",
       "kind": "imports"
     },
@@ -21863,6 +22322,11 @@
     {
       "from": "module:server/_core/trpc.ts",
       "to": "module:shared/const.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/trpc.ts",
+      "to": "module:shared/waitPhrase.ts",
       "kind": "imports"
     },
     {
@@ -22003,6 +22467,11 @@
     {
       "from": "module:server/casting/atomicCredits.ts",
       "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/atomicCredits.ts",
+      "to": "module:shared/refundCopy.ts",
       "kind": "imports"
     },
     {
@@ -24311,6 +24780,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/casting/operationRecovery.ts",
+      "to": "module:shared/refundCopy.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/casting/packagePricing.ts",
       "to": "module:server/casting/castingCreditCosts.ts",
       "kind": "imports"
@@ -24958,6 +25432,11 @@
     {
       "from": "module:server/castingV2/accountCastingPurge.ts",
       "to": "module:server/db/castingV2Orphans.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/db/castingV2PurgeScope.ts",
       "kind": "imports"
     },
     {
@@ -27037,6 +27516,11 @@
     },
     {
       "from": "module:server/castingV2/packageOrchestrator.ts",
+      "to": "module:server/castingV2/arrivalRetry.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageOrchestrator.ts",
       "to": "module:server/castingV2/castPronouns.ts",
       "kind": "imports"
     },
@@ -29071,6 +29555,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/retryService.ts",
+      "to": "module:shared/refundCopy.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/rollEngine.ts",
       "to": "module:server/_core/env.ts",
       "kind": "imports"
@@ -29328,6 +29817,11 @@
     {
       "from": "module:server/castingV2/rollService.ts",
       "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollService.ts",
+      "to": "module:shared/refundCopy.ts",
       "kind": "imports"
     },
     {
@@ -29673,6 +30167,11 @@
     {
       "from": "module:server/castingV2/signSheet.ts",
       "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheetCoordinator.ts",
+      "to": "module:server/castingV2/arrivalRetry.ts",
       "kind": "imports"
     },
     {
@@ -30067,6 +30566,11 @@
     },
     {
       "from": "module:server/crew/liveDesk.ts",
+      "to": "module:server/crew/liveRepairs.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveDesk.ts",
       "to": "module:server/db/crewWorkSwitches.ts",
       "kind": "imports"
     },
@@ -30131,6 +30635,21 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/crew/liveRepairs.ts",
+      "to": "module:server/crew/liveQueue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveRepairs.ts",
+      "to": "module:shared/crewCardBuildState.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveRepairs.ts",
+      "to": "module:shared/handVerdict.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/db/accountDeletion.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -30173,6 +30692,11 @@
     {
       "from": "module:server/db/accountDeletion.ts",
       "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/accountDeletion.ts",
+      "to": "module:server/db/generationOperations.ts",
       "kind": "imports"
     },
     {
@@ -30248,6 +30772,11 @@
     {
       "from": "module:server/db/billing.ts",
       "to": "module:server/db/credits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/billing.ts",
+      "to": "module:server/db/planChangeSettlements.ts",
       "kind": "imports"
     },
     {
@@ -30347,6 +30876,11 @@
     },
     {
       "from": "module:server/db/castingV2FaceScans.ts",
+      "to": "module:server/db/castingV2PurgeScope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2FaceScans.ts",
       "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
@@ -30358,6 +30892,11 @@
     {
       "from": "module:server/db/castingV2InkDeliveryCrops.ts",
       "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2InkDeliveryCrops.ts",
+      "to": "module:server/db/castingV2PurgeScope.ts",
       "kind": "imports"
     },
     {
@@ -30398,6 +30937,11 @@
     {
       "from": "module:server/db/castingV2InkDesigns.ts",
       "to": "module:server/castingV2/inkUploadDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2InkDesigns.ts",
+      "to": "module:server/db/castingV2PurgeScope.ts",
       "kind": "imports"
     },
     {
@@ -30477,6 +31021,11 @@
     },
     {
       "from": "module:server/db/castingV2InkPlates.ts",
+      "to": "module:server/db/castingV2PurgeScope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2InkPlates.ts",
       "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
@@ -30547,6 +31096,11 @@
     },
     {
       "from": "module:server/db/castingV2ReferenceAttachments.ts",
+      "to": "module:server/db/castingV2PurgeScope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2ReferenceAttachments.ts",
       "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
@@ -30563,6 +31117,11 @@
     {
       "from": "module:server/db/castingV2ReferenceCrops.ts",
       "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2ReferenceCrops.ts",
+      "to": "module:server/db/castingV2PurgeScope.ts",
       "kind": "imports"
     },
     {
@@ -30602,6 +31161,11 @@
     },
     {
       "from": "module:server/db/castingV2ReferenceLibrary.ts",
+      "to": "module:server/db/castingV2PurgeScope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2ReferenceLibrary.ts",
       "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
@@ -30633,6 +31197,11 @@
     {
       "from": "module:server/db/castingV2Segments.ts",
       "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2Segments.ts",
+      "to": "module:server/db/castingV2PurgeScope.ts",
       "kind": "imports"
     },
     {
@@ -30678,6 +31247,11 @@
     {
       "from": "module:server/db/castingV2Variants.ts",
       "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2Variants.ts",
+      "to": "module:server/db/castingV2PurgeScope.ts",
       "kind": "imports"
     },
     {
@@ -31846,6 +32420,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/lib/adminActions/changeRequestActions.ts",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/lib/adminActions/index.ts",
       "to": "module:server/lib/adminActions/changeRequestActions.ts",
       "kind": "imports"
@@ -32437,16 +33016,6 @@
     },
     {
       "from": "module:server/routes/account.ts",
-      "to": "module:server/logging/logger.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/account.ts",
-      "to": "module:server/security/deleteUserData.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/account.ts",
       "to": "module:server/security/rateLimit.ts",
       "kind": "imports"
     },
@@ -32747,6 +33316,11 @@
     },
     {
       "from": "module:server/routes/admin/users.ts",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/admin/users.ts",
       "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
@@ -32862,6 +33436,11 @@
     },
     {
       "from": "module:server/routes/billing.ts",
+      "to": "module:server/stripe/subscriptionSchedule.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/billing.ts",
       "to": "module:shared/annualBilling.ts",
       "kind": "imports"
     },
@@ -32873,6 +33452,16 @@
     {
       "from": "module:server/routes/billing.ts",
       "to": "module:shared/creditTopups.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/billing.ts",
+      "to": "module:shared/customerDate.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/billing.ts",
+      "to": "module:shared/planCancelCopy.ts",
       "kind": "imports"
     },
     {
@@ -33388,6 +33977,11 @@
     {
       "from": "module:server/routes/crew.ts",
       "to": "module:server/crew/liveQueue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/crew.ts",
+      "to": "module:server/crew/liveRepairs.ts",
       "kind": "imports"
     },
     {
@@ -34476,6 +35070,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/routes/moderator.ts",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/routes/moderatorAttachments.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -34513,6 +35112,11 @@
     {
       "from": "module:server/routes/moderatorExports.ts",
       "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/moderatorExports.ts",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -34688,6 +35292,11 @@
     {
       "from": "module:server/routes/referral.ts",
       "to": "module:shared/referralCodeFormat.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/referral.ts",
+      "to": "module:shared/waitPhrase.ts",
       "kind": "imports"
     },
     {
@@ -34892,12 +35501,22 @@
     },
     {
       "from": "module:server/security/deleteUserData.ts",
+      "to": "module:server/_core/spokenError.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/security/deleteUserData.ts",
       "to": "module:server/auditLog.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/security/deleteUserData.ts",
       "to": "module:server/db/accountDeletion.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/security/deleteUserData.ts",
+      "to": "module:server/db/generationOperations.ts",
       "kind": "imports"
     },
     {
@@ -34976,6 +35595,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/security/rateLimit.ts",
+      "to": "module:shared/waitPhrase.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/security/trustedImageFetch.ts",
       "to": "module:server/security/urlValidator.ts",
       "kind": "imports"
@@ -35008,6 +35632,11 @@
     {
       "from": "module:server/stripe/planChangeSettlement.ts",
       "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/planChangeSettlement.ts",
+      "to": "module:server/db/planChangeSettlements.ts",
       "kind": "imports"
     },
     {
@@ -35107,6 +35736,11 @@
     },
     {
       "from": "module:server/stripe/stripeService.ts",
+      "to": "module:server/stripe/subscriptionSchedule.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/stripeService.ts",
       "to": "module:shared/annualBilling.ts",
       "kind": "imports"
     },
@@ -35123,6 +35757,36 @@
     {
       "from": "module:server/stripe/stripeService.ts",
       "to": "module:shared/planCreditSlider.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/subscriptionSchedule.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/subscriptionSchedule.ts",
+      "to": "module:server/stripe/environmentTag.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/subscriptionSchedule.ts",
+      "to": "module:server/stripe/planCreditSlider.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/subscriptionSchedule.ts",
+      "to": "module:server/stripe/stripePriceCatalogue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/subscriptionSchedule.ts",
+      "to": "module:server/stripe/stripeProducts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/subscriptionSchedule.ts",
+      "to": "module:shared/annualBilling.ts",
       "kind": "imports"
     },
     {
@@ -35616,6 +36280,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:shared/planCancelCopy.ts",
+      "to": "module:shared/customerDate.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:shared/planCreditSlider.ts",
       "to": "module:shared/annualBilling.ts",
       "kind": "imports"
@@ -35628,6 +36297,11 @@
     {
       "from": "module:shared/productEventCatalogue.ts",
       "to": "module:shared/bugReportVocabulary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/referralCodeFormat.ts",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
@@ -36501,13 +37175,6 @@
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:access.redeem",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:account.deleteAccount",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:account.deleteAccount",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
@@ -37505,24 +38172,24 @@
       "message": "Names 7 of LockFacts's 7 fields (server/castingV2/castingIntent.ts), 7 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:1479",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:1480",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:1479",
+      "subject": "server/castingV2/rollService.ts:1480",
       "message": "Names 2 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:272",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:273",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:272",
+      "subject": "server/castingV2/rollService.ts:273",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:318",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:319",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:318",
+      "subject": "server/castingV2/rollService.ts:319",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     }
   ]

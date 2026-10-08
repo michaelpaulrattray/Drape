@@ -36,7 +36,7 @@
 import { Router, type Request, type Response } from "express";
 
 import type { User } from "../../drizzle/schema";
-import { sdk } from "../_core/sdk";
+import { answerForSessionFailure, sdk } from "../_core/sdk";
 import { eyeFrameKeys, readCrewBriefing } from "../crew/crewBriefing";
 import { captureCrewTabEnabled } from "../crew/crewTabScope";
 import { createModuleLogger } from "../logging/logger";
@@ -112,8 +112,12 @@ export function createCrewEyeFrameRouter(
     let user: CrewEyeUser;
     try {
       user = await dependencies.authenticate(req);
-    } catch {
-      fixedError(res, 401, "Authentication required");
+    } catch (error) {
+      // A refused session is 401 as before; a lookup that could not finish is
+      // 503 "try again" — never read as "not signed in" (#1997).
+      const answer = answerForSessionFailure(error);
+      if (answer.status === 503) log.error({ err: error }, "[Auth] Session check could not finish — answering 503, not a sign-in refusal (#1997)");
+      fixedError(res, answer.status, answer.message);
       return;
     }
 

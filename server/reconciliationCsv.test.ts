@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { PRODUCT_NAME } from "@shared/brand";
 
 /*
  * ⚠ A HUNDRED LINES OF `client/src/features/moderator/reconciliation-csv.ts`
@@ -59,9 +60,10 @@ function makeSampleData(overrides?: Partial<ReconciliationData>): Reconciliation
       netGenerationCost: 717,
       completedGenerationCost: 711,
       pendingGenerationCost: 0,
+      expectedCost: 711,
       discrepancy: 6,
       hasDiscrepancy: true,
-      summary: "Discrepancy of 6 credits.",
+      summary: "Discrepancy of 6 ledger credits.",
       ...overrides?.reconciliation,
     },
   };
@@ -74,7 +76,9 @@ describe("Reconciliation CSV Export", () => {
     const csv = buildReconciliationCsv(makeSampleData(), 42);
     const lines = csv.trim().split("\n");
 
-    expect(lines[0]).toContain("Drape");
+    // #1992: the header says the product's name, read from the one declaration.
+    expect(lines[0]).toContain(PRODUCT_NAME);
+    expect(lines[0]).not.toMatch(/drape/i);
     expect(lines[2]).toBe("User ID,42");
     expect(lines[3]).toContain("All time");
     expect(lines[3]).toContain("Present");
@@ -98,7 +102,7 @@ describe("Reconciliation CSV Export", () => {
 
     // Assessment
     expect(csv).toContain("ASSESSMENT");
-    expect(csv).toContain("Discrepancy of 6 credits.");
+    expect(csv).toContain("Discrepancy of 6 ledger credits.");
   });
 
   it("should include date range when provided", () => {
@@ -115,6 +119,7 @@ describe("Reconciliation CSV Export", () => {
         netGenerationCost: 711,
         completedGenerationCost: 711,
         pendingGenerationCost: 0,
+        expectedCost: 711,
         discrepancy: 0,
         hasDiscrepancy: false,
         summary: "No discrepancies found.",
@@ -161,6 +166,7 @@ describe("Reconciliation CSV Export", () => {
         netGenerationCost: 350,
         completedGenerationCost: 350,
         pendingGenerationCost: 0,
+        expectedCost: 350,
         discrepancy: 0,
         hasDiscrepancy: false,
         summary: "No discrepancy.",
@@ -181,6 +187,7 @@ describe("Reconciliation CSV Export", () => {
         netGenerationCost: 717,
         completedGenerationCost: 711,
         pendingGenerationCost: 0,
+        expectedCost: 711,
         discrepancy: 6,
         hasDiscrepancy: true,
         summary: 'Discrepancy of 6 credits, likely caused by failures.',
@@ -200,6 +207,7 @@ describe("Reconciliation CSV Export", () => {
         netGenerationCost: 717,
         completedGenerationCost: 711,
         pendingGenerationCost: 0,
+        expectedCost: 711,
         discrepancy: 6,
         hasDiscrepancy: true,
         summary: 'Discrepancy "detected" in records.',
@@ -230,7 +238,7 @@ describe("Reconciliation CSV Export", () => {
     expect(csv).toContain("GENERATION BREAKDOWN BY TYPE");
     // No type rows, just the header then empty line
     const lines = csv.split("\n");
-    const headerIdx = lines.findIndex((l) => l === "Type,Count,Total Cost");
+    const headerIdx = lines.findIndex((l) => l === "Type,Count,Total Cost (ledger credits)");
     expect(lines[headerIdx + 1]).toBe("");
   });
 

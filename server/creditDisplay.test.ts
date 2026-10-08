@@ -26,10 +26,14 @@ import {
   LEDGER_PER_DISPLAY_CREDIT,
   MILLIONS_STYLE_FROM,
   displayBalance,
+  displayMovement,
   displayPrice,
   displayRefund,
   displaySpent,
   formatCredits,
+  ledgerForDisplay,
+  staffCreditFact,
+  staffLedgerProse,
   wholeDisplayLedger,
 } from "../shared/creditDisplay";
 
@@ -331,5 +335,95 @@ describe("formatCredits — what the customer actually reads", () => {
       (999_999).toLocaleString(),
     );
     expect(formatCredits(MILLIONS_STYLE_FROM)).toBe("1M");
+  });
+});
+
+describe("ledgerForDisplay — a typed display figure becomes exactly that on screen (#1986)", () => {
+  it("round-trips: what is typed is what the balance reads, for every whole figure in range, both signs", () => {
+    const broken = exhaustive().filter(
+      (display) =>
+        displayBalance(ledgerForDisplay(display)) !== display ||
+        ledgerForDisplay(-display) !== -ledgerForDisplay(display),
+    );
+    expect(broken).toEqual([]);
+  });
+
+  it("the founder's own figure: 100,000 typed moves 500,000 ledger, which reads 100,000", () => {
+    expect(ledgerForDisplay(100_000)).toBe(500_000);
+    expect(displayBalance(ledgerForDisplay(100_000))).toBe(100_000);
+    expect(ledgerForDisplay(-20)).toBe(-100);
+  });
+
+  it("refuses a figure it would have to round, rather than moving a different amount", () => {
+    for (const bad of [1.5, Number.NaN, Number.POSITIVE_INFINITY, 2 ** 60]) {
+      expect(() => ledgerForDisplay(bad)).toThrow(TypeError);
+    }
+  });
+});
+
+describe("displayMovement — one row of a credit history on the customer's scale (#2010)", () => {
+  it("a grant rounds down like a balance, a charge's size rounds up like a price, zero is zero", () => {
+    expect(displayMovement(1_600)).toBe(320);
+    expect(displayMovement(-1_600)).toBe(-320);
+    expect(displayMovement(7)).toBe(1);
+    expect(displayMovement(-7)).toBe(-2);
+    expect(Object.is(displayMovement(0), 0)).toBe(true);
+  });
+
+  it("agrees with the two functions it delegates to, for every ledger value from 0 to 5,000, both signs", () => {
+    const broken = exhaustive().filter(
+      (n) => displayMovement(n) !== displayBalance(n) || displayMovement(-n) !== (n === 0 ? 0 : -displayPrice(n)),
+    );
+    expect(broken).toEqual([]);
+  });
+
+  it("refuses a non-finite figure rather than printing NaN in a ledger", () => {
+    expect(() => displayMovement(Number.NaN)).toThrow(TypeError);
+  });
+});
+
+describe("staffCreditFact — the customer's figure first, the ledger beside it (#2010)", () => {
+  it("writes both numbers, grouped, the display one leading", () => {
+    expect(staffCreditFact(displayBalance(500_000), 500_000)).toBe(
+      `${(100_000).toLocaleString()} credits · ${(500_000).toLocaleString()} ledger`,
+    );
+  });
+
+  it("keeps the caller's rounding: a deduction of 7 ledger reads as 2, a grant of 7 as 1", () => {
+    expect(staffCreditFact(displayPrice(7), 7)).toBe("2 credits · 7 ledger");
+    expect(staffCreditFact(displayBalance(7), 7)).toBe("1 credits · 7 ledger");
+  });
+});
+
+describe("staffLedgerProse — a stored description, as staff read it (#2027)", () => {
+  it("restates every figure the product composed, customer's figure first", () => {
+    expect(staffLedgerProse("Credit top-up: 50000 credits")).toBe("Credit top-up: 10,000 credits · 50,000 ledger");
+    expect(staffLedgerProse("Monthly credit refresh (180000 credits + 7333 rollover)")).toBe(
+      "Monthly credit refresh (36,000 credits · 180,000 ledger + 1,466 credits · 7,333 ledger rollover)",
+    );
+    expect(staffLedgerProse("Annual credit grant — 12 months up front (1,200,000 credits + rollover)")).toBe(
+      "Annual credit grant — 12 months up front (240,000 credits · 1,200,000 ledger + rollover)",
+    );
+  });
+
+  it("leaves a description with no composed figure exactly as stored", () => {
+    for (const plain of ["Welcome bonus - free credits for new users", "Roll #812", "Refund: catastrophic failure"]) {
+      expect(staffLedgerProse(plain)).toBe(plain);
+    }
+  });
+
+  it("⚠ leaves a person's reason AS TYPED — its scale is unknowable", () => {
+    for (const prefix of [
+      "Admin adjustment by admin 7: ",
+      "Credits added via change request #12: ",
+      "Refund via change request #12: ",
+    ]) {
+      expect(staffLedgerProse(`${prefix}promised 100 credits`)).toBe(`${prefix}promised 100 credits`);
+    }
+  });
+
+  it("does not read an id or a decimal as a figure", () => {
+    expect(staffLedgerProse("Order #5000 credits note")).toBe("Order #5000 credits note");
+    expect(staffLedgerProse("rate 1.5 credits")).toBe("rate 1.5 credits");
   });
 });

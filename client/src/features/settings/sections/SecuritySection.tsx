@@ -45,6 +45,7 @@ import { ModalScrim } from "@/foundation/CastingModal";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 
 import { SettingsCard, SettingsGroup, StubControl, StubNote } from "../parts";
+import { exportAccountData } from "./exportAccountData";
 
 export function SecuritySection({
   user,
@@ -54,7 +55,22 @@ export function SecuritySection({
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [exporting, setExporting] = useState(false);
 
-  const exportData = trpc.account.exportData.useQuery(undefined, { enabled: false });
+  /*
+    ⚠ **THE EXPORT IS NOT A CACHED QUERY, AND THAT WAS THE DEFECT (#1962).**
+    It was `useQuery(undefined, { enabled: false })` called through `refetch()`,
+    which RESOLVES with `{ error }` rather than throwing — so the `catch` that
+    held the refusal toast could never fire, the silent `if (!result.data)
+    return;` swallowed every refusal, and `data` (the last SUCCESSFUL value)
+    made a refused second click re-download the stale file and claim success.
+    The stock `new QueryClient()` then retried three times, spending the
+    server's one-per-five-minutes allowance on a single transient failure.
+
+    `utils.client` is the vanilla tRPC client: it THROWS on a refusal, caches
+    nothing and retries nothing. `exportAccountData` owns the rest and is
+    driven directly in `exportAccountData.test.ts`, because component rendering
+    is outside `pnpm test`.
+  */
+  const utils = trpc.useUtils();
   const deleteAccount = trpc.auth.deleteAccount.useMutation();
 
   const providerLabel =
@@ -67,21 +83,30 @@ export function SecuritySection({
   const runExport = async () => {
     setExporting(true);
     try {
-      const result = await exportData.refetch();
-      if (!result.data) return;
-      const blob = new Blob([JSON.stringify(result.data, null, 2)], {
-        type: "application/json",
+      await exportAccountData({
+        fetchExport: () => utils.client.account.exportData.query(),
+        download: ({ name, json }) => {
+          const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = name;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        },
+        onSuccess: (message) => toast.success(message),
+        onFailure: (message) => toast.error(message),
+        logFailure: logRawFailure,
+        readFailure: readableFailure,
       });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `drape-data-export-${new Date().toISOString().split("T")[0]}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      toast.success("Your data has downloaded.");
     } catch (error) {
+      /*
+        The routine answers every refusal itself, so this is the backstop for
+        the BROWSER half — a blob URL or an anchor click that fails. It is kept
+        rather than dropped because a download that did not happen must still
+        say so, which is the whole of this card's finding.
+      */
       logRawFailure("account.exportData", error);
       toast.error(readableFailure(error, "That export could not be made."));
     } finally {

@@ -8,6 +8,7 @@
  * package design (D-39), and those capabilities return through their proper
  * milestones (R3 edit path, R5 package).
  */
+import { productFilename } from "@shared/brand";
 import { useEffect, useRef } from 'react';
 import {
   Pencil,
@@ -125,7 +126,7 @@ export function NodeContextMenu({
 
   const handleItemClick = (item: MenuItem) => {
     if (item.action === 'download' && imageUrl) {
-      downloadImage(imageUrl, `drape-${nodeId}.png`);
+      downloadImage(imageUrl, productFilename(`${nodeId}.png`));
       onClose();
       return;
     }

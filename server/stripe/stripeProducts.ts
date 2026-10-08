@@ -192,6 +192,24 @@ export function ownPlanFacts(tier: string): {
  * the plan cards, the change-plan modal and the audit rows read it; nothing
  * sends it to Stripe. `checkoutProductText.test.ts` asserts the absence at the
  * wire rather than leaving it to this sentence.
+ *
+ * **WHAT THE FEATURE LINES MAY PROMISE (#1953, #1973).** Only what the
+ * product does by itself, plus — on the Enterprise band alone — what he can
+ * agree to and deliver by hand in a sales conversation: *"Dedicated account
+ * manager"*, *"Custom integrations"*, *"White-glove onboarding"*. His word on
+ * #1973, 2026-10-08: *"go with B"* — the *"SLA guarantee"* line is gone,
+ * because a written uptime commitment is something we have no way to measure
+ * or back. `undeliveredPlanFeatures1953.test.ts` refuses a support tier, an
+ * early-access promise, or an SLA / uptime / guarantee line in this table.
+ * ⚠ **This sentence said *"at the wire"* until #1972 half 1 took `features`
+ * off the public `getPlans` projection: nothing serves these lines any more,
+ * so the table is where they are held, and the same test asserts the wire
+ * carries none of them.**
+ *
+ * **EVERY ROLLOVER LINE IS DERIVED FROM `PLAN_TIERS` (#1972 half 2).** Five
+ * rungs typed `"100% …"` while two derived it; all five were right, and the
+ * day a rollover percent changed it would have been a two-place edit on a
+ * money surface. The same test refuses a literal percentage in this file.
  */
 export const SUBSCRIPTION_PRODUCTS: Record<string, {
   name: string;
@@ -208,7 +226,6 @@ export const SUBSCRIPTION_PRODUCTS: Record<string, {
     features: [
       `${PLAN_TIERS.starter.rolloverPercent}% unused credit rollover`,
       "All generation features",
-      "Standard support",
     ],
   },
   pro: {
@@ -219,8 +236,6 @@ export const SUBSCRIPTION_PRODUCTS: Record<string, {
     features: [
       `${PLAN_TIERS.pro.rolloverPercent}% unused credit rollover`,
       "All generation features",
-      "Priority support",
-      "Early access to new features",
     ],
   },
   studio: {
@@ -229,10 +244,8 @@ export const SUBSCRIPTION_PRODUCTS: Record<string, {
     credits: PLAN_TIERS.studio.monthlyCredits,
     interval: "month",
     features: [
-      "100% unused credit rollover",
+      `${PLAN_TIERS.studio.rolloverPercent}% unused credit rollover`,
       "All generation features",
-      "Priority support",
-      "Early access to new features",
     ],
   },
   business: {
@@ -241,9 +254,8 @@ export const SUBSCRIPTION_PRODUCTS: Record<string, {
     credits: PLAN_TIERS.business.monthlyCredits,
     interval: "month",
     features: [
-      "100% unused credit rollover",
+      `${PLAN_TIERS.business.rolloverPercent}% unused credit rollover`,
       "All generation features",
-      "Priority support",
       "Dedicated account manager",
     ],
   },
@@ -253,9 +265,8 @@ export const SUBSCRIPTION_PRODUCTS: Record<string, {
     credits: PLAN_TIERS.scale.monthlyCredits,
     interval: "month",
     features: [
-      "100% unused credit rollover",
+      `${PLAN_TIERS.scale.rolloverPercent}% unused credit rollover`,
       "All generation features",
-      "Priority support",
       "Dedicated account manager",
       "Custom integrations",
     ],
@@ -266,12 +277,10 @@ export const SUBSCRIPTION_PRODUCTS: Record<string, {
     credits: PLAN_TIERS.enterprise.monthlyCredits,
     interval: "month",
     features: [
-      "100% unused credit rollover",
+      `${PLAN_TIERS.enterprise.rolloverPercent}% unused credit rollover`,
       "All generation features",
-      "Priority support",
       "Dedicated account manager",
       "Custom integrations",
-      "SLA guarantee",
     ],
   },
   // HIDDEN (#391): a real product for the account he approves by hand, so the
@@ -284,12 +293,10 @@ export const SUBSCRIPTION_PRODUCTS: Record<string, {
     credits: PLAN_TIERS.ultimate.monthlyCredits,
     interval: "month",
     features: [
-      "100% unused credit rollover",
+      `${PLAN_TIERS.ultimate.rolloverPercent}% unused credit rollover`,
       "All generation features",
-      "Priority support",
       "Dedicated account manager",
       "Custom integrations",
-      "SLA guarantee",
       "White-glove onboarding",
     ],
   },

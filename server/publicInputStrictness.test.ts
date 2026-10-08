@@ -245,7 +245,9 @@ describe("moderator.createChangeRequest, closed on #705", () => {
     description: "The roll never delivered and the credits were held.",
     evidenceSummary: undefined,
     relatedAuditLogId: undefined,
-    creditAmount: 160,
+    /* #2010: the dashboard sends DISPLAY credits under this name now; the
+       legacy LEDGER `creditAmount` is the arm below. */
+    displayCreditAmount: 32,
     creditReason: "roll 249 never delivered",
     ipAddress: undefined,
     stripeSessionId: undefined,
@@ -283,6 +285,20 @@ describe("moderator.createChangeRequest, closed on #705", () => {
         }),
       "createChangeRequest silently dropped an undeclared field — invariant 4 is not enforced on it",
     ).toThrow();
+  });
+
+  it("⚠ CONTROL — a bundle loaded before #2010 still sends LEDGER `creditAmount`, and it parses for the one deploy the removal contract owes it", async () => {
+    /*
+      `.strict()` rejects an UNKNOWN key, and `creditAmount` must not become one
+      in the commit that stops sending it — that is CLAUDE.md's billing removal
+      contract, and the reason the field is still declared. Remove it, and this
+      arm with it, after a full deploy has shipped the new dashboard.
+    */
+    const { moderatorRouter } = await import("./routes/moderator");
+    const { displayCreditAmount: _display, ...legacy } = AS_THE_DASHBOARD_SENDS_IT;
+    expect(() =>
+      parserOf(moderatorRouter, "createChangeRequest").parse({ ...legacy, creditAmount: 160 }),
+    ).not.toThrow();
   });
 
   it("⚠ rejects the two fields #418 removed — the removal is now enforced, not merely ignored", async () => {
@@ -363,7 +379,8 @@ describe("referral.claim, closed on #1010", () => {
  *
  *   admin.adjustCredits        one caller, `AdminUserManagement.tsx` —
  *                              `{ userId, amount, reason }`, exactly the three
- *                              declared keys
+ *                              declared keys (#1986: now `displayAmount` in
+ *                              place of `amount`, both declared for one deploy)
  *   admin.reviewChangeRequest  one caller, `AdminChangeRequests.tsx` —
  *                              `{ id, action, reviewNotes }`, the last
  *                              `undefined` when the operator left it blank
@@ -377,7 +394,10 @@ describe("referral.claim, closed on #1010", () => {
 describe("the two staff money procedures, closed on #1360", () => {
   /** What the admin panel actually sends, `undefined` optional and all. */
   const AS_THE_PANEL_SENDS_IT = {
-    adjustCredits: { userId: 823, amount: -160, reason: "roll 249 never delivered" },
+    // #1986: the panel sends DISPLAY credits as `displayAmount` now. The
+    // pre-#1986 `amount` (ledger) shape is parsed in the control below, because
+    // a bundle loaded before the deploy still sends it for one deploy.
+    adjustCredits: { userId: 823, displayAmount: -32, reason: "roll 249 never delivered" },
     reviewChangeRequest: { id: 41, action: "approved", reviewNotes: undefined },
   } as const;
 
@@ -394,6 +414,11 @@ describe("the two staff money procedures, closed on #1360", () => {
     ).not.toThrow();
     expect(() =>
       parserOf(adminRouter, "reviewChangeRequest").parse({ ...AS_THE_PANEL_SENDS_IT.reviewChangeRequest }),
+    ).not.toThrow();
+    /* The removal contract (#1986): the bundle from BEFORE the deploy sends the
+       ledger `amount`, and it must still parse for that one deploy. */
+    expect(() =>
+      parserOf(adminRouter, "adjustCredits").parse({ userId: 823, amount: -160, reason: "roll 249 never delivered" }),
     ).not.toThrow();
     /* And the review with its optional note actually filled in, since a blank
        one is the shape above. */
@@ -431,6 +456,7 @@ describe("the two staff money procedures, closed on #1360", () => {
     const adjust = parserOf(adminRouter, "adjustCredits");
     expect(() => adjust.parse({ userId: 823, amount: 50, reason: "   " }), "a blank reason").toThrow();
     expect(() => adjust.parse({ userId: 823, amount: 100001, reason: "too big" }), "over the cap").toThrow();
+    expect(() => adjust.parse({ userId: 823, displayAmount: 100001, reason: "too big" }), "over the display cap").toThrow();
     expect(() =>
       parserOf(adminRouter, "reviewChangeRequest").parse({ id: 41, action: "maybe" }),
       "an action outside the enum",
