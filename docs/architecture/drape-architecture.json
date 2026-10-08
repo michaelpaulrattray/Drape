@@ -6495,16 +6495,6 @@
       "file": "server/routes/access.ts"
     },
     {
-      "id": "route:account.deleteAccount",
-      "namespace": "account",
-      "name": "deleteAccount",
-      "type": "mutation",
-      "auth": "protected",
-      "input": "open",
-      "rateLimited": true,
-      "file": "server/routes/account.ts"
-    },
-    {
       "id": "route:account.exportData",
       "namespace": "account",
       "name": "exportData",
@@ -11316,6 +11306,10 @@
       "path": "server/accountDeletionReachability.test.ts"
     },
     {
+      "id": "test:server/accountErasureEntrance.test.ts",
+      "path": "server/accountErasureEntrance.test.ts"
+    },
+    {
       "id": "test:server/accountFreeze.test.ts",
       "path": "server/accountFreeze.test.ts"
     },
@@ -14266,6 +14260,10 @@
     {
       "id": "test:server/r7-wardrobe-image-authority.test.ts",
       "path": "server/r7-wardrobe-image-authority.test.ts"
+    },
+    {
+      "id": "test:server/rateLimitVerdictRead.test.ts",
+      "path": "server/rateLimitVerdictRead.test.ts"
     },
     {
       "id": "test:server/readerAskTrim.test.ts",
@@ -32365,16 +32363,6 @@
     },
     {
       "from": "module:server/routes/account.ts",
-      "to": "module:server/logging/logger.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/account.ts",
-      "to": "module:server/security/deleteUserData.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/account.ts",
       "to": "module:server/security/rateLimit.ts",
       "kind": "imports"
     },
@@ -36419,13 +36407,6 @@
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:access.redeem",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:account.deleteAccount",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:account.deleteAccount",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {

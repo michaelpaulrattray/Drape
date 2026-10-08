@@ -71,34 +71,23 @@ describe("Placeholder Image Detection", () => {
 
 // ─── Fix 14: Account Deletion ──────────────────────────────────────────────
 
-describe("Account Deletion Route", () => {
-  it("exports accountRouter with deleteAccount procedure", async () => {
-    const { accountRouter } = await import("./routes/account");
-    expect(accountRouter).toBeDefined();
-    expect(accountRouter._def.procedures).toHaveProperty("deleteAccount");
-  });
+/*
+  ⚠ **"Fix 14: Account Deletion" IS NOW ONE PROCEDURE, NOT TWO — #1962, and the
+  two arms that stood here are retired rather than moved.**
 
-  /* ⚠ THIS ARM USED TO VALIDATE ITS OWN TRANSCRIPTION of `deleteAccount`'s
-     schema — a hand-copy of the refine and its message, declared here and
-     asserted against. It had not drifted yet; `vto.checkIdentity`'s copy in
-     `wardrobe.test.ts` had, twice, and silently. The schema now comes off the
-     running procedure (`invalidInputWire.test.ts`'s technique). */
-  it("rejects wrong confirmation string via Zod validation", async () => {
-    const { accountRouter } = await import("./routes/account");
-    const procedures = (accountRouter as unknown as {
-      _def: { procedures: Record<string, { _def: { inputs: unknown[] } }> };
-    })._def.procedures;
-    const inputs = procedures.deleteAccount!._def.inputs;
-    expect(inputs).toHaveLength(1);
-    const schema = inputs[0] as import("zod").ZodTypeAny;
+  They asserted that `accountRouter` EXPORTS a `deleteAccount` procedure and
+  that its schema refuses a wrong confirmation phrase. That procedure is gone:
+  it was the app's unused second erasure entrance, with a rate limit that
+  enforced nothing. Keeping the arms pointed at `auth.deleteAccount` instead
+  would be a rename rather than a decision — the surviving entrance has its own
+  coverage, and what is actually owed here is the opposite claim.
 
-    const badResult = schema.safeParse({ confirmation: "delete" });
-    expect(badResult.success).toBe(false);
-
-    const goodResult = schema.safeParse({ confirmation: "DELETE MY ACCOUNT" });
-    expect(goodResult.success).toBe(true);
-  });
-});
+  **`server/accountErasureEntrance.test.ts` carries it**: exactly one procedure
+  erases an account, the retired one does not come back, and the survivor keeps
+  its cookie clear and its refusal. It is an ABSENCE test, in the shape the
+  deleted public Cast registry's already uses, and it holds a positive control
+  so it cannot pass by the capability having vanished altogether.
+*/
 
 describe("Account Deletion DB Helper", () => {
   it("exports deleteUserAccount function", async () => {

@@ -154,10 +154,27 @@ export const AUDIT_ACTIONS = {
   ACCOUNT_UNFROZEN: "account.unfrozen",
   
   // Account lifecycle events
+  /*
+    ⚠ THREE SIBLINGS LEFT THIS BLOCK WITH THE SECOND ERASURE ENTRANCE — #1962,
+    and it is working law 7's other half: when a road closes, ask what was
+    bolted to it, at the closing commit.
+
+    `account.deletion_requested`, `account.deletion_failed` and
+    `account.deletion_completed` were written by `account.deleteAccount` and by
+    nothing else in the product — no second writer, no label in
+    `client/src/features/admin/overview/actionLabel.ts`, no icon in the alerts
+    feed, no category anywhere. With that procedure retired they had no writer
+    at all, which is the dead-constant shape this repository has paid for before.
+
+    They were read at the ROWS before being deleted, not assumed: production
+    holds ZERO audit rows for all three — and zero for `account.deleted` too, so
+    no account has ever been erased here. Nothing historical loses its name.
+
+    What survives is `ACCOUNT_DELETED` below, which `deleteUserData` writes on
+    both the success and the failure path and is therefore the erasure's real
+    trail on the one entrance that is left.
+  */
   ACCOUNT_DELETED: "account.deleted",
-  ACCOUNT_DELETION_REQUESTED: "account.deletion_requested",
-  ACCOUNT_DELETION_FAILED: "account.deletion_failed",
-  ACCOUNT_DELETION_COMPLETED: "account.deletion_completed",
   
   // Export events
   AUDIT_LOG_EXPORTED: "audit_log.exported",
