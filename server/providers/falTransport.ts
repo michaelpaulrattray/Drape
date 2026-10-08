@@ -110,6 +110,36 @@ async function cancelFalUrl(
   return response.status === 400 ? "completed" : "cancelled";
 }
 
+/**
+ * CANCEL, AND SAY WHETHER THE FRAME WAS ALREADY BOUGHT (#2038).
+ *
+ * Every exit from the poll loop that walks away from a submitted job goes
+ * through here — the abort, the refused status check, the deadline. Walking
+ * away without cancelling leaves the job running on fal, where it renders and
+ * bills; and the refused status check classifies `transport` / `rate_limit`,
+ * so `withRetry` then submitted a SECOND job beside it. One flaky poll, two
+ * frames.
+ *
+ * The answer is the fact the caller's error carries: `true` when fal answered
+ * 400 ALREADY_COMPLETED, meaning the frame finished before we asked and is
+ * paid for, so a re-ask would buy another. Best-effort: a cancel that throws
+ * is `false` (we do not know it ran, so the road keeps the retrying direction,
+ * which is `ProviderError.completed`'s stated default) and never replaces the
+ * fault the caller is about to raise.
+ */
+async function cancelOutstanding(
+  apiKey: string,
+  cancelUrl: string,
+  requestId: string,
+  reason: string,
+): Promise<boolean> {
+  const outcome = await cancelFalUrl(apiKey, cancelUrl).catch(() => "unanswered" as const);
+  if (outcome === "unanswered") {
+    log.warn({ requestId, reason }, "[fal] cancel did not answer — the job may still run");
+  }
+  return outcome === "completed";
+}
+
 /** Convenience for callers holding an endpoint + id rather than a cancel URL. */
 export async function cancelFalRequest(
   apiKey: string,
@@ -245,8 +275,8 @@ async function runFalImageJobUncounted(input: {
 
   while (Date.now() < deadline) {
     if (signal?.aborted) {
-      await cancelFalUrl(apiKey, cancelUrl).catch(() => undefined);
-      throw new ProviderError("capability", "cancelled", { providerRef: requestId });
+      const completed = await cancelOutstanding(apiKey, cancelUrl, requestId, "aborted");
+      throw new ProviderError("capability", "cancelled", { providerRef: requestId, completed });
     }
 
     await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
@@ -257,9 +287,15 @@ async function runFalImageJobUncounted(input: {
 
     if (!status.ok) {
       const text = await status.text().catch(() => "");
+      /* #2038: we are walking away from a job fal still holds, and this class
+         is retryable — so cancel it first, or `withRetry` submits a second job
+         while the first renders and bills. If the cancel says the job already
+         finished, that frame is bought and the flag stops every re-ask. */
+      const completed = await cancelOutstanding(apiKey, cancelUrl, requestId, "status check failed");
       throw new ProviderError(classifyFalHttp(status.status, text), "fal.ai status check failed", {
         status: status.status,
         providerRef: requestId,
+        completed,
       });
     }
 
@@ -368,9 +404,11 @@ async function runFalImageJobUncounted(input: {
   }
 
   // Deadline hit. Cancel, so a timeout does not silently become spend.
-  await cancelFalUrl(apiKey, cancelUrl).catch(() => undefined);
-  log.warn({ endpoint, requestId }, "[fal] deadline expired — cancelled");
+  // A `completed` answer means it finished in the gap and the frame is bought.
+  const completed = await cancelOutstanding(apiKey, cancelUrl, requestId, "deadline");
+  log.warn({ endpoint, requestId, completed }, "[fal] deadline expired — cancelled");
   throw new ProviderError("timeout", "fal.ai did not complete within the deadline", {
     providerRef: requestId,
+    completed,
   });
 }
