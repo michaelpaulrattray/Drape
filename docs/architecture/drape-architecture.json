@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 189
+      "moduleCount": 191
     },
     {
       "id": "domain:castingV2",
@@ -4557,6 +4557,18 @@
     {
       "id": "module:server/castingV2/signService.ts",
       "path": "server/castingV2/signService.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/signSheet.ts",
+      "path": "server/castingV2/signSheet.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/signSheetCoordinator.ts",
+      "path": "server/castingV2/signSheetCoordinator.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -12570,10 +12582,6 @@
       "path": "server/castingV2/packageOrchestrator.test.ts"
     },
     {
-      "id": "test:server/castingV2/packageOrchestratorPlate.test.ts",
-      "path": "server/castingV2/packageOrchestratorPlate.test.ts"
-    },
-    {
       "id": "test:server/castingV2/partialDeference.test.ts",
       "path": "server/castingV2/partialDeference.test.ts"
     },
@@ -12908,6 +12916,10 @@
     {
       "id": "test:server/castingV2/signService.test.ts",
       "path": "server/castingV2/signService.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/signSheet.test.ts",
+      "path": "server/castingV2/signSheet.test.ts"
     },
     {
       "id": "test:server/castingV2/signViewEngineChain.test.ts",
@@ -13908,6 +13920,10 @@
     {
       "id": "test:server/providers/falMaskedEditWire.test.ts",
       "path": "server/providers/falMaskedEditWire.test.ts"
+    },
+    {
+      "id": "test:server/providers/falSignSheetWire.test.ts",
+      "path": "server/providers/falSignSheetWire.test.ts"
     },
     {
       "id": "test:server/providers/providerContract.test.ts",
@@ -26960,6 +26976,16 @@
     },
     {
       "from": "module:server/castingV2/packageOrchestrator.ts",
+      "to": "module:server/castingV2/signSheet.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageOrchestrator.ts",
+      "to": "module:server/castingV2/signSheetCoordinator.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageOrchestrator.ts",
       "to": "module:server/castingV2/viewConformance.ts",
       "kind": "imports"
     },
@@ -29265,6 +29291,11 @@
     },
     {
       "from": "module:server/castingV2/signEngine.ts",
+      "to": "module:server/castingV2/signSheet.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signEngine.ts",
       "to": "module:server/castingV2/viewConformance.ts",
       "kind": "imports"
     },
@@ -29516,6 +29547,71 @@
     {
       "from": "module:server/castingV2/signService.ts",
       "to": "module:shared/inkPlacementVocabulary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheet.ts",
+      "to": "module:server/castingV2/castPronouns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheet.ts",
+      "to": "module:server/castingV2/castViewPackage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheet.ts",
+      "to": "module:server/castingV2/inkViewReferences.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheet.ts",
+      "to": "module:server/castingV2/viewFeatureWords.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheet.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheet.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheet.ts",
+      "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheetCoordinator.ts",
+      "to": "module:server/castingV2/diagnosticCapture.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheetCoordinator.ts",
+      "to": "module:server/castingV2/signSheet.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheetCoordinator.ts",
+      "to": "module:server/castingV2/viewConformance.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheetCoordinator.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheetCoordinator.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheetCoordinator.ts",
+      "to": "module:shared/boardTypes.ts",
       "kind": "imports"
     },
     {

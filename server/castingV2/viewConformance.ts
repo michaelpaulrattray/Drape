@@ -374,7 +374,7 @@ const judgeSystemFor = (pronouns: CastPronouns): string => [
   "You are given two images: IMAGE 1 is the signed reference photograph of the person, and IMAGE 2 is a new photograph that is supposed to be the same person.",
   "You are looking ONLY for catastrophic failures. Judge three things independently. Do not let one influence another.",
   `1. identity — is the person in IMAGE 2 the same individual as in IMAGE 1? Judge bone structure, facial proportions, skin, hair and build, and also the MARKINGS AND MAKEUP ${pronouns.possessive} skin carries: tattoos and ink, piercings, scars, birthmarks and freckling, and the makeup ${pronouns.subject} ${pronouns.plural ? "are" : "is"} wearing. Anything of that kind visible in IMAGE 1 must be present in IMAGE 2 wherever IMAGE 2's frame reaches it — a bare, unmade version of the same face is a FAIL, not a match. Judge only where both frames reach: a marking outside IMAGE 2's crop is not missing. A similar-looking person of the same type is a FAIL.`,
-  "IMAGE 2 may be taken from ANY angle, including from the side or from directly behind, where little or none of the face is visible. That is expected and is NEVER by itself a reason to be unsure about identity: judge from whatever IMAGE 2 does show — hair, build, skin, markings, costume — and answer \"differs\" only when what you can see belongs to somebody else.",
+  "IMAGE 2 may be taken from ANY angle, including from the side or from directly behind, where little or none of the face is visible. That is expected and is NEVER by itself a reason to be unsure about identity: judge from whatever IMAGE 2 does show — hair, build, skin, markings — and answer \"differs\" only when what you can see belongs to somebody else.",
   "2. intact — is IMAGE 2 a real, complete photograph? Answer \"differs\" ONLY if it is blank, a solid or near-solid colour, corrupted, scrambled, or so garbled that it does not read as a photograph of anything at all.",
   "3. people — how many people are in IMAGE 2? Look over the WHOLE frame, edge to edge, before answering: a second person can be standing beside the subject, behind them, or at either edge. Answer \"matches\" for exactly one, and \"differs\" if there is nobody at all or if more than one person is present. Reflections, statues, posters, mannequins and background crowds that are clearly not the subject do not count as extra people.",
   "Do NOT judge the crop, the camera angle, the pose, the direction the person faces, what is or is not visible, or the clothing. Those are not your business and are never a reason to answer \"differs\".",
@@ -419,6 +419,53 @@ export function unjudgedVerdict(
 
 /** The in-file name, unchanged, so every call site below reads as it did. */
 const unjudged = unjudgedVerdict;
+
+/**
+ * ASK THE JUDGE, AND TURN ITS OWN FAILURE INTO AN HONEST VERDICT RATHER THAN
+ * INTO A VERDICT AT ALL.
+ *
+ * The judge converts a refusal or an unreadable answer into `unjudged` itself;
+ * what reaches here is a transport failure that survived its retries, and it
+ * gets the same treatment. **`unjudged` is not "it failed" — it is "nobody
+ * looked"**, and since D-246 every caller DELIVERS on it and records the fact.
+ *
+ * §I's fail-closed law is not repealed by that. It said a check that reports
+ * success loudest exactly when it understood nothing is worthless, and that is
+ * still true: nothing here reports success. It reports that no opinion exists,
+ * which is a different sentence and lands on the row as one.
+ *
+ * ⚠ **IT LIVES HERE, BESIDE {@link unjudgedVerdict}, BECAUSE THERE ARE TWO
+ * ROADS NOW AND A SECOND COPY WOULD HAVE BEEN THE WORST POSSIBLE ONE — #1904.**
+ * It was `packageOrchestrator`'s private helper, called once, on the per-view
+ * road. His option A moved the Sign's judging into `signSheetCoordinator`,
+ * which needs exactly this rule — and the first draft of that coordinator let a
+ * judge fault propagate instead, on the plausible-sounding ground that
+ * delivering an unlooked-at picture would be dishonest. **It would have made a
+ * judge outage refund the whole Sign**: D-246's founder ruling exactly inverted
+ * (*detectors must not block real generations because the detectors are
+ * flawed*), and nothing in the row would have been more honest for it. One
+ * function, two roads, one rule — and the arm that caught it is the Sign's own
+ * *"DELIVERS a view it could not check"*.
+ */
+export async function judgeUnjudgedOnFailure(
+  judge: ViewConformanceJudge,
+  input: Parameters<ViewConformanceJudge>[0],
+): Promise<ViewConformanceVerdict> {
+  try {
+    return await judge(input);
+  } catch (error) {
+    log.error(
+      { angle: input.angle, err: error },
+      "[viewConformance] the conformance judge failed — no opinion exists about this view",
+    );
+    /* ⚠ THE AXES WERE SPELLED OUT BY HAND AT THE OLD CALL SITE AND ARE DERIVED
+       NOW — #1903. A second list of the axis names in a second file is working
+       law 4, and it was found the hard way: the rename broke that literal. The
+       silent version of the same mistake ships a verdict naming axes nothing
+       reads. */
+    return unjudgedVerdict("unavailable", "the view could not be checked");
+  }
+}
 
 export type ViewConformanceJudgeConfig = {
   engine: TextEngine;
