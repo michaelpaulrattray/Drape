@@ -51,6 +51,7 @@ import {
 } from "./invoiceLines";
 import {
   applyPlanChangeSettlement,
+  collectPlanChangeShortfall,
   voidPlanChangeSettlement,
 } from "./planChangeSettlement";
 import {
@@ -1352,6 +1353,27 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<W
 
   if (!result.success) {
     return { success: false, message: "Failed to refresh credits", error: result.error };
+  }
+
+  /* ⚠ THE PART OF A SWITCH'S TAKE-BACK SPENT WHILE ITS INVOICE WAITED (#2054).
+     The settlement above floors at the allowance left NOW; on a 3DS card she
+     can spend between Confirm and paying, and Stripe has already credited
+     those credits' money. Taken here, AFTER the period grant, from the plan's
+     part of the balance — see `collectPlanChangeShortfall`. A failure fails
+     the event; the grant's and this deduct's own ledger keys make the
+     redelivery safe. */
+  const shortfall = await collectPlanChangeShortfall(invoice.id as string);
+  if (shortfall.outcome === "failed") {
+    return {
+      success: false,
+      message: `Plan-change shortfall for invoice ${invoice.id} failed — refusing so Stripe redelivers`,
+      error: shortfall.error,
+    };
+  }
+  if (shortfall.outcome === "collected") {
+    log.info(
+      `[Webhook] Collected ${shortfall.creditsMoved} credits spent before switch invoice ${invoice.id} was paid (user ${userId})`,
+    );
   }
 
   log.info(
