@@ -54,21 +54,30 @@ describe("what the redo says about money when a view does not arrive", () => {
     So the subject is cut out: `const back =` through the end of the `toast(`
     call. That region is code only, and it is where both defects lived.
   */
-  const REDO_TOAST = (() => {
+  /*
+    ⚠ **A FUNCTION, NOT A MODULE-LEVEL CONSTANT — found by sabotaging it.**
+    The slice's own `expect`s ran while the file was being collected, so a
+    sabotage that moved the anchor took the WHOLE suite down with a collection
+    error: vitest then prints `Tests no tests` beside `Test Files 1 failed`,
+    which a reader scanning the `Tests` line reads as a pass. Called inside
+    each arm, a missing anchor fails that arm by name and leaves its siblings
+    able to speak.
+  */
+  const redoToast = (): string => {
     const start = ROOM.indexOf("const back = result.refundedCredits");
     expect(start, "the redo's money line is gone from the room").toBeGreaterThan(-1);
     const end = ROOM.indexOf("The rest are new.", start);
     expect(end, "the redo's partial-failure toast is gone from the room").toBeGreaterThan(start);
     return ROOM.slice(start, end);
-  })();
+  };
 
   it("never tells her she wasn't charged for a view of a set she paid for", () => {
-    expect(REDO_TOAST).not.toContain("You weren't charged");
+    expect(redoToast()).not.toContain("You weren't charged");
     /* And not the retired spelling of the refund line either: #1940 replaced
        four of them with one helper, and this branch had brought one back
        (*"Your N credits … are back."*). */
-    expect(REDO_TOAST).not.toContain("are back");
-    expect(REDO_TOAST).not.toMatch(/credits for/);
+    expect(redoToast()).not.toContain("are back");
+    expect(redoToast()).not.toMatch(/credits for/);
   });
 
   it("says the money line only when money moved, in the ONE shared vocabulary", () => {
@@ -77,11 +86,11 @@ describe("what the redo says about money when a view does not arrive", () => {
       sentence: the money clause must still EXIST, and it must be the shared
       helper rather than a fifth hand-built spelling.
     */
-    expect(REDO_TOAST).toContain("result.refundedCredits > 0");
-    expect(REDO_TOAST).toContain("creditsReturnedText(result.refundedCredits)");
+    expect(redoToast()).toContain("result.refundedCredits > 0");
+    expect(redoToast()).toContain("creditsReturnedText(result.refundedCredits)");
     /* The empty alternative is the repair: no claim at all when nothing came
        back. A literal sentence here would be the defect returning. */
-    expect(REDO_TOAST).toMatch(/\?\s*` \$\{creditsReturnedText\(result\.refundedCredits\)\}`\s*:\s*""/);
+    expect(redoToast()).toMatch(/\?\s*` \$\{creditsReturnedText\(result\.refundedCredits\)\}`\s*:\s*""/);
   });
 
   it("does its own credit arithmetic nowhere — the helper converts", () => {
