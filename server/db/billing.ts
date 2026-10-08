@@ -156,16 +156,33 @@ export async function getUserByStripeCustomerId(
  * the proration bought days of the NEW period and a quarter of it is handed
  * back on Pro (half on Starter) before the customer has had those days.
  *
- *     balance = purchased + max(0, grant + rollover(planPart − carried) + carried)
+ *     kept    = min(carried, planPart)
+ *     balance = purchased + max(0, grant + rollover(planPart − kept) + kept)
+ *
+ * ⚠ **`carried` IS WHAT MOVED; `kept` IS WHAT IS STILL THERE, AND THE WHOLE
+ * CARD TURNS ON NOT CONFUSING THEM** (PR #1946 review, repair 1). A proration
+ * the customer has already SPENT is not on the balance to cross any boundary,
+ * and crossing it whole regardless handed back up to its entire value: an
+ * upgrade of 125,000 spent down to 30,000 granted 305,000 where the on-time
+ * timeline gives 205,000. The clamp is inert on an unwind, where `carried` is
+ * negative and `planPart` cannot be.
  *
  * ⚠ **THE TWO FLOORS ARE NOT DECORATION AND THEY ARE ON DIFFERENT THINGS.**
- * The rollover base is clamped at zero because a GRANT larger than the
- * allowance still on the row (a customer who spent down after upgrading)
- * would otherwise hand a negative balance to a percentage. The outer clamp is
- * on the plan's part ALONE, with `purchased` added outside it, because an
- * UNWIND bigger than the new grant must never reach into credits the customer
- * bought — #1604's law, held here by construction rather than by the caller
- * remembering it.
+ * The rollover base is clamped at zero as belt and braces — with `kept`
+ * clamped at `planPart` the subtraction can no longer go negative, and the
+ * floor stays because it is one character and the alternative is a percentage
+ * of a negative number on a money path. The outer clamp is on the plan's part
+ * ALONE, with `purchased` added outside it, because an UNWIND bigger than the
+ * new grant must never reach into credits the customer bought — #1604's law,
+ * held here by construction rather than by the caller remembering it.
+ *
+ * ⚠ **ONE RESIDUE IS NAMED RATHER THAN CLAIMED CLOSED.** Nothing on the row
+ * says WHICH credits a spend came out of, so a customer who spent part of
+ * last period's leftover rather than the proration carries a little more than
+ * the on-time timeline would give — bounded by `rolloverPercent × spend`
+ * (2,500 ledger on a 10,000 spend at Pro), where the defect this closes was
+ * bounded by the whole proration. Lot-tracking is the only exact answer and
+ * is #664's "coarse mirror" ruling's own stated limit.
  *
  * ⚠ **EVERY EXISTING CALLER IS ARITHMETICALLY UNCHANGED, not merely unchanged
  * in intent.** `carriedWhole` defaults to 0, and with it zero the expression
@@ -222,12 +239,22 @@ export async function refreshMonthlyCredits(
         periodStartForSettlements === null
           ? 0
           : await netAppliedPlanChangeSettlementsSince(userId, periodStartForSettlements);
-      const rolloverBase = Math.max(0, planAllowance - carried);
+      /* ⚠ ONLY WHAT IS STILL ON THE PLAN'S PART CROSSES WHOLE. `carried` is
+         what the settlement MOVED; this clamp is what survives of it, and the
+         two are different numbers the moment the customer spends. An upgrade
+         proration of 125,000 spent down to 30,000 carries 30,000, not 125,000
+         — handing back a proration that is no longer there was an over-grant
+         of up to its whole value, every time the window opened (PR #1946
+         review, repair 1).
+         An UNWIND is untouched by it: `carried` is negative there and
+         `planAllowance` cannot be, so the minimum is the unwind itself. */
+      const carriedKept = Math.min(carried, planAllowance);
+      const rolloverBase = Math.max(0, planAllowance - carriedKept);
       const rolloverCredits = Math.max(0, Math.floor(computeRollover(rolloverBase)));
       // Purchased credits are added OUTSIDE the clamp: an unwind bigger than
       // the new grant empties the plan's part and stops there (#1604).
       const newBalance =
-        purchasedKept + Math.max(0, monthlyCredits + rolloverCredits + carried);
+        purchasedKept + Math.max(0, monthlyCredits + rolloverCredits + carriedKept);
 
       const written = await withTransaction(async (tx) => {
         const updateResult = await tx

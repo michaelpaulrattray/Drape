@@ -11,11 +11,30 @@
  * failure) says so instead of reading as queued work forever.
  */
 import { and, eq, gte, inArray } from "drizzle-orm";
-import { planChangeSettlements, type PlanChangeSettlement } from "../../drizzle/schema";
+import {
+  creditTransactions,
+  planChangeSettlements,
+  type PlanChangeSettlement,
+} from "../../drizzle/schema";
 import { getDb } from "./connection";
 import { createModuleLogger } from "../logging/logger";
 
 const log = createModuleLogger("db/planChangeSettlements");
+
+/**
+ * The ONE ledger key for a change invoice's credit move — `changePlan`, the
+ * webhook and the renewal's netting reader all spell it from here.
+ *
+ * ⚠ **IT LIVED IN `server/stripe/planChangeSettlement.ts` UNTIL PR #1946's
+ * REVIEW AND IS RE-EXPORTED THERE, NOT RE-DECLARED.** The netting reader has
+ * to look the move up in the ledger, and that module imports `../db` — so
+ * reading it from there would have closed an import cycle through the whole
+ * database barrel. A second spelling beside the table would have been working
+ * law 4 on the one string that makes two racing appliers safe.
+ */
+export function settlementLedgerRef(stripeInvoiceId: string): string {
+  return `plan-change-settle:${stripeInvoiceId}`;
+}
 
 export type RecordPlanChangeSettlementInput = {
   userId: number;
@@ -136,9 +155,23 @@ export async function resolvePlanChangeSettlement(
  * that cannot be read must not say that.
  */
 /**
- * The SIGNED net of every plan-change credit move of theirs that was APPLIED
- * on or after `since` — a grant counts `+credits`, an unwind `−credits`
- * (#1937).
+ * The SIGNED net of what every plan-change settlement of theirs APPLIED on or
+ * after `since` ACTUALLY MOVED — read off the credit ledger, never off the
+ * settlement row's quoted `credits` (#1937).
+ *
+ * ⚠ **THE QUOTED AMOUNT AND THE MOVED AMOUNT ARE DIFFERENT NUMBERS, AND
+ * READING THE FIRST AS THE SECOND SUBTRACTED MONEY NOBODY TOOK** (PR #1946
+ * review, repair 2). `applyPlanChangeSettlement` floors an unwind at the
+ * plan's part of the live balance (#1661) and resolves the row `applied`
+ * EVEN WHEN NOTHING MOVED — correctly, because the floor working is not a
+ * failure. So an unwind quoted at 40,000 of which 10,000 was takeable nets
+ * −40,000 off a quoted read, and −10,000 off this one; at `returnable = 0`
+ * the quoted read docked the customer a take-back that never happened.
+ *
+ * ⚠ **SO THE DIRECTION COLUMN IS NOT CONSULTED AT ALL.** The ledger's
+ * `amount` is already signed — `+credits` from `addCredits`, `-credits` from
+ * `deductCredits` — and a sign derived a second time from a second column is
+ * the mirror this reader exists to stop being.
  *
  * # WHAT IT IS FOR
  *
@@ -157,7 +190,10 @@ export async function resolvePlanChangeSettlement(
  *
  * So the caller passes the invoice's own period start, and what comes back is
  * netted out of the rollover base and added whole — exactly the treatment
- * purchased credits already get, for the same reason.
+ * purchased credits already get, for the same reason. ⚠ What the CALLER adds
+ * back is this number clamped at the plan's part, because what moved and what
+ * is still on the balance are two facts and only the second can cross a
+ * boundary; `server/db/billing.ts` carries that half.
  *
  * ⚠ **`since` IS THE INVOICE'S PERIOD START, NEVER `lastRefreshAt`, AND THE
  * DIFFERENCE IS THE WHOLE DISCRIMINATOR.** Both timestamps are to hand and
@@ -172,7 +208,15 @@ export async function resolvePlanChangeSettlement(
  * ⚠ **`applied` ONLY.** A `pending` row has not moved the balance, and a
  * `void` row never will; netting either out would subtract a number that is
  * not there. `resolvedAt` is the moment the move actually landed, which is
- * why it rather than `createdAt` is the column compared.
+ * why it rather than `createdAt` is the column compared. The ledger lookup
+ * does not make the status filter redundant: a pending row has no ledger line
+ * to find, but it is the WINDOW that is being asked for here, and the window
+ * is a property of the settlement rather than of the ledger.
+ *
+ * ⚠ **A DUPLICATE APPLICATION CANNOT DOUBLE-COUNT, BY CONSTRUCTION.** The
+ * ledger's unique (userId, referenceId) index is what makes the changePlan /
+ * webhook race safe, so one invoice has at most one line whoever wins — which
+ * is also why the lookup is keyed on the ref and not on a time range.
  *
  * Throws on an unreadable database rather than answering `0` (#791's reader
  * rule, and it bites harder here than usual): `0` is a perfectly ordinary
@@ -189,11 +233,10 @@ export async function netAppliedPlanChangeSettlementsSince(
     log.error("[Settlement] Cannot read applied settlements: database not available");
     throw new Error("Database not available");
   }
-  const rows = await db
-    .select({
-      direction: planChangeSettlements.direction,
-      credits: planChangeSettlements.credits,
-    })
+  /* Which settlements fall in the window — the settlement row owns that
+     question, because `resolvedAt` is the moment the move landed. */
+  const settled = await db
+    .select({ stripeInvoiceId: planChangeSettlements.stripeInvoiceId })
     .from(planChangeSettlements)
     .where(
       and(
@@ -202,10 +245,31 @@ export async function netAppliedPlanChangeSettlementsSince(
         gte(planChangeSettlements.resolvedAt, since),
       ),
     );
+  const refs = settled
+    .map((row) => row.stripeInvoiceId)
+    .filter((id): id is string => typeof id === "string" && id.length > 0)
+    .map(settlementLedgerRef);
+  /* The ordinary answer, and it is reached without a second statement. */
+  if (refs.length === 0) return 0;
+
+  /* HOW MUCH MOVED — the ledger's own signed amounts, user-scoped. `amount`
+     is `+credits` on an add and `-credits` on a deduct (`server/db/credits.ts`),
+     so the sum IS the signed net and the direction column is not consulted. */
+  const moves = await db
+    .select({ amount: creditTransactions.amount })
+    .from(creditTransactions)
+    .where(
+      and(
+        eq(creditTransactions.userId, userId),
+        inArray(creditTransactions.referenceId, refs),
+      ),
+    );
   let net = 0;
-  for (const row of rows) {
-    const credits = Number.isFinite(row.credits) ? Math.floor(row.credits) : 0;
-    net += row.direction === "unwind" ? -credits : credits;
+  for (const move of moves) {
+    /* A column that cannot be read as a number contributes nothing rather
+       than poisoning a money sum with NaN. */
+    if (!Number.isFinite(move.amount)) continue;
+    net += Math.trunc(move.amount);
   }
   return net;
 }
