@@ -117,7 +117,7 @@
     {
       "id": "domain:settings",
       "name": "settings",
-      "moduleCount": 16
+      "moduleCount": 17
     },
     {
       "id": "domain:shared",
@@ -2007,6 +2007,12 @@
     {
       "id": "module:client/src/features/settings/sections/UsageSection.tsx",
       "path": "client/src/features/settings/sections/UsageSection.tsx",
+      "domain": "settings",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/settings/sections/exportAccountData.ts",
+      "path": "client/src/features/settings/sections/exportAccountData.ts",
       "domain": "settings",
       "lifecycle": "active"
     },
@@ -6505,16 +6511,6 @@
       "input": "strict",
       "rateLimited": true,
       "file": "server/routes/access.ts"
-    },
-    {
-      "id": "route:account.deleteAccount",
-      "namespace": "account",
-      "name": "deleteAccount",
-      "type": "mutation",
-      "auth": "protected",
-      "input": "open",
-      "rateLimited": true,
-      "file": "server/routes/account.ts"
     },
     {
       "id": "route:account.exportData",
@@ -11164,6 +11160,10 @@
       "path": "client/src/features/settings/card425-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/settings/exportAccountData.test.ts",
+      "path": "client/src/features/settings/exportAccountData.test.ts"
+    },
+    {
       "id": "test:client/src/features/settings/planBlurbs.test.ts",
       "path": "client/src/features/settings/planBlurbs.test.ts"
     },
@@ -11334,6 +11334,10 @@
     {
       "id": "test:server/accountDeletionReachability.test.ts",
       "path": "server/accountDeletionReachability.test.ts"
+    },
+    {
+      "id": "test:server/accountErasureEntrance.test.ts",
+      "path": "server/accountErasureEntrance.test.ts"
     },
     {
       "id": "test:server/accountFreeze.test.ts",
@@ -14290,6 +14294,10 @@
     {
       "id": "test:server/r7-wardrobe-image-authority.test.ts",
       "path": "server/r7-wardrobe-image-authority.test.ts"
+    },
+    {
+      "id": "test:server/rateLimitVerdictRead.test.ts",
+      "path": "server/rateLimitVerdictRead.test.ts"
     },
     {
       "id": "test:server/readerAskTrim.test.ts",
@@ -19026,6 +19034,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/settings/sections/exportAccountData.ts",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/settings/sections/MembersSection.tsx",
       "to": "module:client/src/features/profile/ProfileVisual.tsx",
       "kind": "imports"
@@ -19093,6 +19106,11 @@
     {
       "from": "module:client/src/features/settings/sections/SecuritySection.tsx",
       "to": "module:client/src/features/settings/parts.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/SecuritySection.tsx",
+      "to": "module:client/src/features/settings/sections/exportAccountData.ts",
       "kind": "imports"
     },
     {
@@ -32467,16 +32485,6 @@
     },
     {
       "from": "module:server/routes/account.ts",
-      "to": "module:server/logging/logger.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/account.ts",
-      "to": "module:server/security/deleteUserData.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/account.ts",
       "to": "module:server/security/rateLimit.ts",
       "kind": "imports"
     },
@@ -36536,13 +36544,6 @@
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:access.redeem",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:account.deleteAccount",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:account.deleteAccount",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
