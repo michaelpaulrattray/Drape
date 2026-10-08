@@ -104,7 +104,9 @@ describe("the page asks the view question about the view", () => {
     */
     expect(source).toContain("paidBusy={awaitingNewRoll}");
     expect(source).toContain("disabled={awaitingNewRoll}");
-    expect(source).toContain('{awaitingNewRoll ? "Rolling…" : "Roll again"}');
+    /* The label still turns on the latch; since #1952 the idle face carries
+       its served price (`Roll again · {served} credits`). */
+    expect(source).toMatch(/\{awaitingNewRoll\s*\?\s*"Rolling…"\s*:\s*price/);
     /*
       And the pill itself EXISTS for the whole dispatch whatever she is looking
       at — it carries the live dot that says a roll is being cast at all.

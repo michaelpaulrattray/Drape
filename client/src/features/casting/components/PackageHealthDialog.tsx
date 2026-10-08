@@ -255,7 +255,7 @@ export function CastingDetailsDialog() {
                           : requiresProjection
                             ? `Preview · ${formatCredits(displayPrice(plan?.cost ?? 0))} credits`
                             : `${slot.failed
-                            ? (evidenceAware ? 'Try again' : 'Retry')
+                            ? 'Try again'
                             : evidenceStatus === 'missing'
                               ? 'Add'
                               : evidenceAware

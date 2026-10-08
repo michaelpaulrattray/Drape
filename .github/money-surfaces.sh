@@ -490,12 +490,37 @@
 # returns nothing), and the eight scripts the credit-symbol grep returns over
 # `scripts/` name a primitive only in a comment or a sabotage string.
 #
+# ⚠ A SECOND CEREMONY JOINED IT 2026-10-09 (#2023), BY NAME and found by the
+# drift guard below rather than by memory: `scripts/ceremony-spent-share-
+# product-2023.mts` creates the catalogue product the spent-share line on a
+# switch to yearly is billed under (`stripe.products.create`). Change its id
+# and the server asks for a product that does not exist, so every switch from
+# a spent month refuses; #1609 runs it under the LIVE key.
+#
 # MEASURED BEFORE AND AFTER, on the two windows #1662 established (merged PRs
 # into `main`, newest first, read 2026-10-08): the delta is +1 on each — 60
 # newest (#1985…#1846) and 200 newest (#1985…#1563) — and the one PR it adds is
 # #1868, the specimen. No other merged PR in either window touches the file.
 #
-MONEY_PATHS='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/routes/admin/changeRequests\.ts$|^server/db/(billing|credits|admin|accountDeletion)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^server/lib/adminActions/(approvalExecution|approvalStateBlocker|changeRequestActions)\.ts$|^server/casting/atomicCredits\.ts$|^server/casting/(castingCreditCosts|packagePricing)\.ts$|^server/casting/evidence/evidenceCandidateContract\.ts$|^server/wardrobe/creditCosts\.ts$|^server/castingV2/(castViewPackage|packageOrchestrator)\.ts$|^client/src/features/casting/(constants|castingPrices)\.ts$|^shared/(const|creditDisplay|annualBilling|creditTopups|planCreditSlider|changeRequestApproval|changeRequestLabels)\.ts$|^scripts/ceremony-topup-prices-1606\.mts$|^drizzle/'
+# ⚠ `server/billing/renewalReminder.ts` IS HERE BY NAME, AND THE DERIVED
+# GUARD IS WHAT PUT IT HERE (#1941, 2026-10-09). The yearly renewal notice
+# reads Stripe's own invoice preview and writes an AMOUNT to a paying
+# customer, so a diff touching only it is a money diff by this file's own
+# first sentence — where money is STORED, BOUGHT, DECIDED or SET.
+#
+# ROAD: it could not have been on #2006's stated remainder, because it is a
+# NEW module on the branch that adds it and that list was derived from `main`.
+# The arm `every tracked file that imports a server/stripe helper is read as
+# money` reddened the moment this branch merged `main` forward — which is that
+# guard doing exactly what it was built for, on the first file it could not
+# have seen. The import it reads (`retrieveLiveSubscription`,
+# `readPendingPlanChange`) predates the arm and is not what the repair added.
+#
+# NAMED, NOT `^server/billing/`: the directory holds one file today, and a
+# later module there (a receipt renderer, a dunning note) is its own
+# judgement rather than something this entry decides in advance.
+#
+MONEY_PATHS='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/routes/admin/changeRequests\.ts$|^server/db/(billing|credits|admin|accountDeletion)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^server/lib/adminActions/(approvalExecution|approvalStateBlocker|changeRequestActions)\.ts$|^server/casting/atomicCredits\.ts$|^server/casting/(castingCreditCosts|packagePricing)\.ts$|^server/casting/evidence/evidenceCandidateContract\.ts$|^server/wardrobe/creditCosts\.ts$|^server/billing/renewalReminder\.ts$|^server/castingV2/(castViewPackage|packageOrchestrator)\.ts$|^client/src/features/casting/(constants|castingPrices)\.ts$|^shared/(const|creditDisplay|annualBilling|creditTopups|planCreditSlider|changeRequestApproval|changeRequestLabels)\.ts$|^scripts/ceremony-topup-prices-1606\.mts$|^scripts/ceremony-spent-share-product-2023\.mts$|^drizzle/'
 
 # ── 2 · SYMBOLS — where money is DECIDED ────────────────────────────────────
 #

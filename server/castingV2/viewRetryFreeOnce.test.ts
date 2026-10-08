@@ -313,38 +313,85 @@ describe("the spent-free-retry predicate", () => {
     expect(params).toContain(0);
   });
 
-  it("excludes a row still at the claim, where plannedCredits is 0 by DEFAULT", () => {
+  it("⚠ counts only a row that REACHED running, not merely one that left `claimed`", () => {
     /*
-      THE ARM THAT EARNS THIS SUITE ITS KEEP.
+      THE ARM THAT EARNS THIS SUITE ITS KEEP, AND #1943 IS WHAT THE WEAKER
+      SPELLING COST.
 
-      `plannedCredits` is written by `markGenerationOperationRunning`, one
-      statement AFTER the claim, and its column default is 0. So a row still at
-      `claimed` reads 0 whatever it was about to cost — and without this arm of
-      the predicate, every PAID Try again would consume the free ask for its
-      angle during the milliseconds in between. Nothing downstream would
-      disagree: the customer would simply find their free ask gone.
+      This read used to ask `status <> 'claimed'`, which is a true reading of
+      *"did this one run"* only while a press that never ran STAYS at `claimed`.
+      Two roads settle one terminally without it ever running, and each burned
+      her one free Try again for a picture nobody asked for:
 
-      It is also the right product answer on its own terms. A claim that never
-      reached `running` dispatched no render, so the customer has had nothing and
-      keeps the free ask they were offered.
+        - a busy slot lock — since #1932 `beginDirectOperation` fails its own row
+          the moment the lock is refused, so pressing *Try again* on a view that
+          is already rendering wrote a terminal `failed` row at once;
+        - a `markRunning` that throws — settled through a finalizer that requires
+          `running`, so the row lands at `recovery_required`.
+
+      `heartbeatAt` is the marker because it is written in the SAME statement as
+      `status = 'running'`, so it cannot be set by a row that never started, and
+      nothing ever clears it. It SUBSUMES the old clause — a `claimed` row has no
+      heartbeat — which is why there is no `status` predicate left to assert.
     */
-    const { sql, params } = rendered();
-    expect(sql).toMatch(/`generation_operations`\.`status` (<>|!=) \?/);
-    expect(params).toContain("claimed");
+    const { sql } = rendered();
+    expect(sql).toContain("`generation_operations`.`heartbeatAt` is not null");
+    /* The old spelling must be GONE, not sitting beside it as a comforting
+       duplicate that the next reader takes for the load-bearing one. */
+    expect(sql).not.toMatch(/`generation_operations`\.`status`/);
   });
 
-  it("the claimed status it excludes is the schema's own default for that column", () => {
+  it("⚠ no heartbeat means never ran — derived from EVERY writer of the column", () => {
     /*
-      WORKING LAW 4, PAID FOR RATHER THAN PROMISED. The module spells `"claimed"`
-      because drizzle exposes no column default as a value, so it is a second
-      spelling of one fact. This holds it to the first: rename the status in the
-      schema and the module would quietly start admitting every claimed row,
-      which is the direction that hands out free renders.
+      THE PREMISE THE PREDICATE RESTS ON, HELD TO THE CODE RATHER THAN BELIEVED.
+
+      *"A row with no `heartbeatAt` never ran"* is only true while every statement
+      that writes that column also requires the row to be entering `running` or
+      to be `running` already. So the writers are WALKED out of the module and
+      each one is held to that, instead of three being named here — a fourth
+      writer added on a `claimed` row is precisely the change that would quietly
+      start handing out free renders again, and a list would never hear of it.
+
+      It replaces an arm that held the string `"claimed"` to the schema's own
+      default: the discriminator is a COLUMN the compiler resolves now, so that
+      second spelling no longer exists to drift.
     */
-    const column = generationOperations.status as unknown as { default?: unknown };
-    expect(column.default).toBe("claimed");
-    expect(readSource("db/castingV2ViewRetry.ts"))
-      .toContain('const CLAIMED_OPERATION_STATUS = "claimed";');
+    const source = readSource("db/generationOperations.ts");
+
+    /* Every `.set({ … })` in the module, with the statement it belongs to: the
+       object is brace-matched rather than cut at a fixed width, so a writer that
+       grows cannot slip out of the population. */
+    const statements: { assignment: string; statement: string }[] = [];
+    for (let at = source.indexOf(".set({"); at >= 0; at = source.indexOf(".set({", at + 1)) {
+      let depth = 0;
+      let cursor = source.indexOf("{", at);
+      for (; cursor < source.length; cursor += 1) {
+        if (source[cursor] === "{") depth += 1;
+        else if (source[cursor] === "}") {
+          depth -= 1;
+          if (depth === 0) break;
+        }
+      }
+      const assignment = source.slice(at, cursor + 1);
+      const semicolon = source.indexOf(";", cursor);
+      statements.push({ assignment, statement: source.slice(at, semicolon < 0 ? cursor : semicolon) });
+    }
+
+    const writers = statements.filter(({ assignment }) => /\bheartbeatAt\b/.test(assignment));
+    expect(writers.length).toBeGreaterThanOrEqual(3);
+    for (const { assignment, statement } of writers) {
+      expect(
+        statement,
+        "a writer of heartbeatAt that does not require claimed-or-running would let a row that never ran read as spent",
+      ).toMatch(/generationOperations\.status, "(claimed|running)"/);
+      /* Nothing may ever clear it: the marker is durable, which is what lets a
+         terminal row still answer "this one ran". */
+      expect(assignment).not.toMatch(/heartbeatAt:\s*null/);
+    }
+    /* And the one that moves a row OUT of `claimed` writes both facts at once,
+       so the status and the marker can never disagree. */
+    const started = writers.find(({ assignment }) => assignment.includes('status: "running"'));
+    expect(started).toBeDefined();
   });
 
   it("an unavailable database THROWS rather than answering nothing-spent", () => {

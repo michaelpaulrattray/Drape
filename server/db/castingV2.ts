@@ -740,6 +740,21 @@ export async function listSessionRolls(userId: number, sessionId: number): Promi
  */
 const OPEN_SESSION_CEILING = 40;
 
+/**
+ * How many open sheets the lobby's card reader builds at one time (#2000).
+ *
+ * Each card is four reads (`listSessionRolls`, `listKeptCandidates`,
+ * `listRollCandidates`, `listSessionSignedCastNames`), so a `Promise.all` over
+ * every session held one pool slot per sheet — up to {@link
+ * OPEN_SESSION_CEILING} of the shared pool's 20 + 50 at one moment. Under the
+ * refusal by itself, which is why nobody ever saw it fail, and still more than
+ * half the pool held by one lobby read. The chunks run one after another, so
+ * `castingV2.openSessions` holds at most this many slots whatever the ceiling
+ * becomes — and it is declared BESIDE the ceiling because the two only mean
+ * anything read together.
+ */
+export const OPEN_SESSION_CARD_CHUNK = 5;
+
 export async function listOpenCastingSessions(
   userId: number,
   limit = OPEN_SESSION_CEILING,

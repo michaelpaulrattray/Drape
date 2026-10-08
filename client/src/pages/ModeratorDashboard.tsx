@@ -13,7 +13,7 @@ import { Button } from "@/foundation";
 import type { SurfaceBarSegment } from "@/foundation";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { ADMIN_ADJUST_DISPLAY_MAX } from "@shared/creditDisplay";
+import { ADMIN_ADJUST_DISPLAY_MAX, formatCredits } from "@shared/creditDisplay";
 import {
   AuditLogsTab,
   UserInvestigationTab,
@@ -319,7 +319,7 @@ export default function ModeratorDashboard() {
     const isCreditRequest = crType === "refund_credits" || crType === "add_credits";
     const displayCreditAmount = Number(crCreditAmount);
     if (isCreditRequest && (!crCreditAmount || !Number.isInteger(displayCreditAmount) || displayCreditAmount < 1)) return toast.error("Enter a whole number of credits above zero");
-    if (isCreditRequest && displayCreditAmount > ADMIN_ADJUST_DISPLAY_MAX) return toast.error(`At most ${ADMIN_ADJUST_DISPLAY_MAX.toLocaleString()} credits in one request`);
+    if (isCreditRequest && displayCreditAmount > ADMIN_ADJUST_DISPLAY_MAX) return toast.error(`At most ${formatCredits(ADMIN_ADJUST_DISPLAY_MAX)} credits in one request`);
     if (crType === "block_ip" && !crIpAddress) return toast.error("Please specify an IP address");
     if (crType === "stripe_refund" && !crStripeSessionId) return toast.error("Stripe session ID is required for refund requests");
 

@@ -102,6 +102,37 @@ export const DISPLAY_HELPERS = [
   "displayRefund",
   "displaySpent",
   "formatCredits",
+  /*
+    #2027 — the three that write a STAFF figure. `displayMovement` converts a
+    signed history row; `staffCreditFact` writes "N credits · L ledger", whose
+    ledger half is labelled by construction; `staffLedgerProse` restates a
+    stored description's composed figures that way. A number inside any of
+    them has been converted or labelled, which is all this list asserts.
+  */
+  "displayMovement",
+  "staffCreditFact",
+  "staffLedgerProse",
+] as const;
+
+/**
+ * THE MODERATOR ROAD (#2027) — staff surfaces that sit beside a request form
+ * taking the CUSTOMER's figure (#2010), so a ledger figure a moderator reads
+ * here and copies there grants five times what was meant.
+ *
+ * They are on `STAFF_SURFACES` and stay exempt from routing — staff may read
+ * the books. What they may not do is show a ledger figure WITHOUT SAYING SO:
+ * `moderatorRoadSites` runs rules 1, 2 and 4 over these files as if they were
+ * a customer's, and excuses a site only when it is converted (a display
+ * helper) or labelled (the sentence or text around it says "ledger").
+ *
+ * ⚠ The admin panel is NOT on this list, deliberately and as a limit: its own
+ * Add credits takes the customer's figure since #1986, so the same argument
+ * reaches it, and it is a different card's surface. Named rather than implied.
+ */
+export const MODERATOR_ROAD = [
+  "client/src/features/moderator/",
+  "client/src/pages/Moderator",
+  "server/routes/moderator",
 ] as const;
 
 /**
@@ -461,21 +492,58 @@ export const UNROUTED: readonly {
    * every row to having one, and holds the still-to-route rows to being gone.
    */
   stays: string | null;
+  /**
+   * #2027 — this site composes a `creditTransactions.description`, a sentence
+   * that is STORED and later read on the moderator road. The census arm in
+   * `creditDisplayGuard.test.ts` renders the writer's own template with
+   * sentinel figures and holds `staffLedgerProse` to labelling every one.
+   */
+  storedDescription?: true;
 }[] = [
   { file: "client/src/features/settings/planMath.ts", rule: "named-on-the-way-out", expression: "Math.round(perDollar).toLocaleString(\"en-US\")", count: 1, stays: "the rate's own formatting, inside the function that has already converted. Through `displayBalance` it would be divided by five twice." },
   { file: "server/castingV2/reliabilityReport.ts", rule: "beside-the-word", expression: "report.creditsRefunded", count: 1, stays: "an OPERATOR diagnostic — a text table of delivery rates whose only consumers in the tree are its own suites. Ledger units, like every staff reading." },
-  { file: "server/db/billing.ts", rule: "beside-the-word", expression: "creditAmount", count: 1, stays: "the `description` of a `creditTransactions` ROW. Its one live reader is the moderator credit history, which prints it beside the ledger `amount`; `credits.getTransactions` has no client caller. Ledger units, as the card asks of a staff surface. The trap when a customer history is built is #1736." },
-  { file: "server/db/billing.ts", rule: "beside-the-word", expression: "monthlyCredits", count: 1, stays: "the `description` of a `creditTransactions` ROW. Its one live reader is the moderator credit history, which prints it beside the ledger `amount`; `credits.getTransactions` has no client caller. Ledger units, as the card asks of a staff surface. The trap when a customer history is built is #1736." },
-  { file: "server/db/billing.ts", rule: "beside-the-word", expression: "rolloverCredits", count: 1, stays: "the `description` of a `creditTransactions` ROW. Its one live reader is the moderator credit history, which prints it beside the ledger `amount`; `credits.getTransactions` has no client caller. Ledger units, as the card asks of a staff surface. The trap when a customer history is built is #1736." },
+  { file: "server/db/billing.ts", rule: "beside-the-word", expression: "creditAmount", count: 1, stays: "the `description` of a `creditTransactions` ROW, stored, so it stays in ledger. Its live readers are the moderator credit history and its CSV, which restate every composed figure through `staffLedgerProse` (#2027); `credits.getTransactions` has no client caller. The trap when a customer history is built is #1736.", storedDescription: true },
+  { file: "server/db/billing.ts", rule: "beside-the-word", expression: "monthlyCredits", count: 1, stays: "the `description` of a `creditTransactions` ROW, stored, so it stays in ledger. Its live readers are the moderator credit history and its CSV, which restate every composed figure through `staffLedgerProse` (#2027); `credits.getTransactions` has no client caller. The trap when a customer history is built is #1736.", storedDescription: true },
+  { file: "server/db/billing.ts", rule: "beside-the-word", expression: "rolloverCredits", count: 1, stays: "the `description` of a `creditTransactions` ROW, stored, so it stays in ledger. Its live readers are the moderator credit history and its CSV, which restate every composed figure through `staffLedgerProse` (#2027); `credits.getTransactions` has no client caller. The trap when a customer history is built is #1736.", storedDescription: true },
   { file: "server/stripe/webhooks.ts", rule: "beside-the-word", expression: "Math.abs(priorRevoke.amount)", count: 1, stays: "the webhook's own `actions` array — its reply to Stripe and its log line. An operator reading, never a sentence. Reached only once `amount$` joined rule 2's vocabulary." },
   { file: "server/stripe/webhooks.ts", rule: "beside-the-word", expression: "creditsRestored", count: 1, stays: "a change-request review note, appended for staff after a Stripe refund failed." },
   { file: "server/stripe/webhooks.ts", rule: "beside-the-word", expression: "creditsToRestore", count: 2, stays: "the webhook's own `actions` array — its reply to Stripe and its log line. An operator reading, never a sentence." },
   { file: "server/stripe/webhooks.ts", rule: "beside-the-word", expression: "currentBalance", count: 1, stays: "the webhook's own `actions` array — its reply to Stripe and its log line. An operator reading, never a sentence." },
-  { file: "server/stripe/webhooks.ts", rule: "beside-the-word", expression: "grantCredits", count: 1, stays: "the `description` of a `creditTransactions` ROW. Its one live reader is the moderator credit history, which prints it beside the ledger `amount`; `credits.getTransactions` has no client caller. Ledger units, as the card asks of a staff surface. The trap when a customer history is built is #1736." },
+  { file: "server/stripe/webhooks.ts", rule: "beside-the-word", expression: "grantCredits", count: 1, stays: "the `description` of a `creditTransactions` ROW, stored, so it stays in ledger. Its live readers are the moderator credit history and its CSV, which restate every composed figure through `staffLedgerProse` (#2027); `credits.getTransactions` has no client caller. The trap when a customer history is built is #1736.", storedDescription: true },
 ];
 
 function isStaff(file: string): boolean {
   return STAFF_SURFACES.some((surface) => file.startsWith(surface));
+}
+
+/**
+ * Is this site's figure LABELLED ledger — is the very next word "ledger"? (#2027)
+ *
+ * ⚠ ADJACENT, not anywhere in the sentence. The first shape read the whole
+ * template for the word, and a sentence like *"No discrepancy. 650 ledger
+ * credits charged, 650 recorded."* then excused the second figure on the
+ * strength of the first one's label — exactly the half-labelled sentence this
+ * card exists to end. The word must follow the hole it labels.
+ */
+function saysLedger(node: ts.Node, sourceFile: ts.SourceFile): boolean {
+  const parent = node.parent;
+  if (parent && ts.isTemplateSpan(parent) && parent.expression === node) {
+    return /^\s*ledger\b/i.test(parent.literal.text);
+  }
+  if (parent && ts.isJsxExpression(parent) && parent.parent) {
+    const host = parent.parent;
+    if (ts.isJsxElement(host) || ts.isJsxFragment(host)) {
+      const at = host.children.indexOf(parent as ts.JsxChild);
+      const next = at >= 0 ? host.children[at + 1] : undefined;
+      return next !== undefined && ts.isJsxText(next) && /^\s*ledger\b/i.test(next.getText(sourceFile));
+    }
+  }
+  return false;
+}
+
+/** The staff tables abbreviate credits to "cr" — `48 cr` — which rule 2's word test cannot see. */
+function saysCr(text: string): boolean {
+  return /\bcr\b/i.test(text);
 }
 
 /**
@@ -847,7 +915,12 @@ function namedOnTheWayOut(node: ts.Node): boolean {
   return false;
 }
 
-export function creditSitesIn(file: string, source: string): CreditSite[] {
+export function creditSitesIn(
+  file: string,
+  source: string,
+  /** #2027: read a moderator-road file as a customer's, excusing a labelled ledger figure. */
+  options: { readonly moderatorRoad?: boolean } = {},
+): CreditSite[] {
   type Located = CreditSite & { at: number };
   const sourceFile = ts.createSourceFile(
     file,
@@ -857,7 +930,10 @@ export function creditSitesIn(file: string, source: string): CreditSite[] {
     file.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
   );
   const sites: Located[] = [];
-  const staff = isStaff(file);
+  const moderatorRoad = options.moderatorRoad === true;
+  const staff = isStaff(file) && !moderatorRoad;
+  /* On the moderator road a figure that SAYS it is ledger is the books, labelled — not a site. */
+  const labelledLedger = (node: ts.Node): boolean => moderatorRoad && saysLedger(node, sourceFile);
 
   const visit = (node: ts.Node): void => {
     /* Rule 3 — scale arithmetic. Runs on staff surfaces too. */
@@ -894,7 +970,8 @@ export function creditSitesIn(file: string, source: string): CreditSite[] {
         if (
           namesIn(receiver).some((name) => STRICT_CREDIT_NAME.test(name)) &&
           !insideDisplayHelper(node) &&
-          !insideALogCall(node)
+          !insideALogCall(node) &&
+          !labelledLedger(node)
         ) {
           sites.push({
             file,
@@ -918,6 +995,7 @@ export function creditSitesIn(file: string, source: string): CreditSite[] {
         !namesIn(node.expression.expression).some((name) => STRICT_CREDIT_NAME.test(name)) &&
         !insideDisplayHelper(node) &&
         !insideALogCall(node) &&
+        !labelledLedger(node) &&
         namedOnTheWayOut(node)
       ) {
         sites.push({
@@ -938,7 +1016,8 @@ export function creditSitesIn(file: string, source: string): CreditSite[] {
         !insideDisplayHelper(node) &&
         !routedThroughHelper(node) &&
         !insideALogCall(node) &&
-        !cannotBeAnAmount(node)
+        !cannotBeAnAmount(node) &&
+        !labelledLedger(node)
       ) {
         const around = surroundingText(node, sourceFile);
         /*
@@ -982,7 +1061,7 @@ export function creditSitesIn(file: string, source: string): CreditSite[] {
         const inACreditSentence = formattedHere && saysCredits(sentenceAround(node));
         if (
           inACreditSentence ||
-          (saysCredits(around) && namesIn(node).some((name) => LOOSE_CREDIT_NAME.test(name)))
+          ((saysCredits(around) || (moderatorRoad && saysCr(around))) && namesIn(node).some((name) => LOOSE_CREDIT_NAME.test(name)))
         ) {
           sites.push({
             file,
@@ -1114,4 +1193,118 @@ export function creditDisplaySites(repoRoot: string): CreditDisplayReading {
   }
 
   return { sites, files, formatCalls, interpolations };
+}
+
+/** Is this file on the moderator road (#2027)? */
+export function onTheModeratorRoad(file: string): boolean {
+  return MODERATOR_ROAD.some((road) => file.startsWith(road));
+}
+
+/**
+ * Every credit figure on the moderator road that is neither converted nor
+ * labelled ledger (#2027). Must be empty — there is no allowlist, because a
+ * staff figure has no reason to stay unlabelled.
+ *
+ * The population is `creditDisplayPopulation`'s, filtered, so a file this
+ * guard reads is a file the customer census reads too; `files` is returned so
+ * a reader that silently found nothing cannot pass as a clean road.
+ */
+export function moderatorRoadSites(repoRoot: string): { sites: CreditSite[]; files: number } {
+  const sites: CreditSite[] = [];
+  let files = 0;
+  for (const file of creditDisplayPopulation(repoRoot).filter(onTheModeratorRoad)) {
+    const source = readListedSource(join(repoRoot, file));
+    if (source === null) continue;
+    files += 1;
+    sites.push(...creditSitesIn(file, source, { moderatorRoad: true }));
+  }
+  return { sites, files };
+}
+
+/** Escape a literal for a RegExp. */
+function literalPattern(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * THE RENDERED HALF (#2027) — what a source reader cannot see.
+ *
+ * The rules above read NAMES, and the reconciliation pane's figures reach the
+ * screen as `grouped(credits.totalEarned)` in a `value=` attribute beside no
+ * word at all. So the moderator road's pure view functions are driven with
+ * SENTINEL ledger figures, and this reads what they produce: a sentinel that
+ * appears in `text` is labelled only if the word "ledger" follows it, or the
+ * `context` it sits under (a column header, a section eyebrow) says ledger.
+ *
+ * A sentinel is matched grouped (`987,654`) or bare (`987654`), with or
+ * without a sign, and never inside a longer number. Returns the unlabelled
+ * figures, one entry per occurrence.
+ */
+export function unlabelledLedgerFigures(
+  text: string,
+  ledgerFigures: readonly number[],
+  context = "",
+): number[] {
+  if (/ledger/i.test(context)) return [];
+  const found: number[] = [];
+  for (const figure of ledgerFigures) {
+    const magnitude = Math.abs(figure);
+    const shapes = Array.from(new Set([magnitude.toLocaleString("en-US"), String(magnitude)]));
+    for (const shape of shapes) {
+      const pattern = new RegExp(`(?<![\\d,.])[+\\u2212-]?${literalPattern(shape)}(?![\\d]|[,.]\\d)`, "g");
+      for (let match = pattern.exec(text); match !== null; match = pattern.exec(text)) {
+        const after = text.slice(match.index + match[0].length);
+        if (!/^\s*ledger/i.test(after)) found.push(figure);
+      }
+    }
+  }
+  return found;
+}
+
+/**
+ * Each stored-description writer's own template, rendered with sentinel
+ * figures in every hole (#2027). Read from the census rows marked
+ * `storedDescription`, so a new writer marked there is driven with no second
+ * list, and a row whose template cannot be found THROWS rather than passing as
+ * covered.
+ */
+export function storedDescriptionTemplates(
+  repoRoot: string,
+): { file: string; expression: string; rendered: string; figures: number[] }[] {
+  const out: { file: string; expression: string; rendered: string; figures: number[] }[] = [];
+  for (const row of UNROUTED.filter((candidate) => candidate.storedDescription)) {
+    const source = readListedSource(join(repoRoot, row.file));
+    if (source === null) throw new Error(`stored-description row names an unreadable file: ${row.file}`);
+    const sourceFile = ts.createSourceFile(row.file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+    const templates: ts.TemplateExpression[] = [];
+    const visit = (node: ts.Node): void => {
+      if (
+        ts.isTemplateExpression(node) &&
+        /* A log line is not a sentence anyone reads, and the census does not count it either. */
+        !insideALogCall(node) &&
+        node.templateSpans.some((span) => textOf(span.expression, sourceFile) === row.expression)
+      ) {
+        templates.push(node);
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(sourceFile);
+    if (templates.length !== row.count) {
+      throw new Error(
+        `${row.file}: ${templates.length} template(s) hold \`${row.expression}\`, the census row says ${row.count} — re-measure it`,
+      );
+    }
+    for (const template of templates) {
+      const figures: number[] = [];
+      let rendered = template.head.text;
+      template.templateSpans.forEach((span, index) => {
+        /* Distinct, large and not a multiple of five, so no figure collides with another's display. */
+        const figure = 987_654 + index * 111_111;
+        figures.push(figure);
+        rendered += String(figure) + span.literal.text;
+      });
+      out.push({ file: row.file, expression: row.expression, rendered, figures });
+    }
+  }
+  return out;
 }

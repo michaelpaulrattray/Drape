@@ -14,15 +14,18 @@
  * database module is substituted.
  *
  * The redirect condition is read off the observer exactly as the hook builds
- * it: `user = data ?? null`, `loading = isLoading`.
+ * it: `user = data ?? null`, `loading = isSessionCheckPending(result)` — the
+ * hook's own function, imported, so this suite cannot read a different
+ * condition from the one the hook renders (#2026).
  */
 import express from "express";
 import type { Server } from "node:http";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { createTRPCClient, httpBatchLink, TRPCClientError } from "@trpc/client";
-import { QueryClient, QueryObserver } from "@tanstack/react-query";
+import { focusManager, onlineManager, QueryClient, QueryObserver } from "@tanstack/react-query";
 import superjson from "superjson";
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { COOKIE_NAME } from "@shared/const";
 import { baseUrlOf, listenOnFetchablePort } from "../../../../server/testing/fetchablePort";
@@ -70,6 +73,7 @@ const { router, publicProcedure } = await import("../../../../server/_core/trpc"
 const {
   AUTH_ME_QUERY_OPTIONS,
   AUTH_ME_RECONNECTING_AFTER_FAILURES,
+  isSessionCheckPending,
   isSessionCheckReconnecting,
   isTransientSessionCheckFailure,
 } = await import("./useAuth");
@@ -136,7 +140,7 @@ async function observe(
     const r = observer.getCurrentResult();
     seen.push({
       user: r.data ?? null,
-      loading: r.isLoading,
+      loading: isSessionCheckPending(r),
       status: r.status,
       reconnecting: isSessionCheckReconnecting(r),
     });
@@ -280,5 +284,242 @@ describe("#2018 — when the wait becomes something to say", () => {
     expect(seen.some((s) => s.hasUser && s.failureCount >= AUTH_ME_RECONNECTING_AFTER_FAILURES)).toBe(true);
     // …and the page was never swapped for the notice.
     expect(seen.some((s) => s.reconnecting)).toBe(false);
+  });
+});
+
+/**
+ * #2026 — A PAUSED RETRY IS STILL WAITING. In react-query v5 `isLoading` is
+ * `isPending && isFetching`; a retry paused by a background tab or the browser
+ * going offline has `fetchStatus: 'paused'`, so `isLoading` reads false with no
+ * answer yet — and the hook used to read that as signed out. Driven with
+ * react-query's own `onlineManager` / `focusManager`, through the same real
+ * stack, with the hook's own `isSessionCheckPending` / `isSessionCheckReconnecting`.
+ */
+describe("#2026 — a paused session check is still a session check", () => {
+  const token = () => sdk.createSessionToken(KNOWN_OPEN_ID, { name: "Verify" });
+
+  afterEach(() => {
+    onlineManager.setOnline(true);
+    focusManager.setFocused(undefined);
+  });
+
+  type PausedSeen = Seen & { fetchStatus: string; oldIsLoading: boolean };
+
+  /**
+   * Fail the check past the reconnect threshold, then `pause()` (offline or
+   * hidden tab) before the next retry; record every state until the retry is
+   * PAUSED; then `resume()` with the database healthy and record until it
+   * settles.
+   */
+  async function pauseMidRetry(pause: () => void, resume: () => void) {
+    const client = await clientWith(await token());
+    const queryClient = new QueryClient();
+    queryClient.mount(); // subscribes the cache to onlineManager / focusManager, as the app's provider does
+    const observer = new QueryObserver(queryClient, {
+      queryKey: ["auth.me"],
+      queryFn: () => client.me.query(),
+      ...AUTH_ME_QUERY_OPTIONS,
+      retryDelay: 5,
+    });
+    dbState.lookupFailuresLeft = 1000;
+    const seen: PausedSeen[] = [];
+    let paused = false;
+    const settled = new Promise<void>((resolve) => {
+      const reachedPause = new Promise<void>((onPaused) => {
+        const unsubscribe = observer.subscribe((r) => {
+          seen.push({
+            user: r.data ?? null,
+            loading: isSessionCheckPending(r),
+            status: r.status,
+            reconnecting: isSessionCheckReconnecting(r),
+            fetchStatus: r.fetchStatus,
+            oldIsLoading: r.isLoading,
+          });
+          if (!paused && r.failureCount >= AUTH_ME_RECONNECTING_AFTER_FAILURES) {
+            paused = true;
+            pause();
+          }
+          if (r.fetchStatus === "paused") onPaused();
+          if (r.status !== "pending") {
+            unsubscribe();
+            resolve();
+          }
+        });
+      });
+      void reachedPause.then(async () => {
+        // Sit paused for a while: nothing may move toward a redirect.
+        await new Promise((r) => setTimeout(r, 60));
+        dbState.lookupFailuresLeft = 0;
+        resume();
+      });
+    });
+    await settled;
+    queryClient.unmount();
+    queryClient.clear();
+    return seen;
+  }
+
+  for (const [name, pause, resume] of [
+    ["the browser goes offline", () => onlineManager.setOnline(false), () => onlineManager.setOnline(true)],
+    ["the tab goes to the background", () => focusManager.setFocused(false), () => focusManager.setFocused(true)],
+  ] as const) {
+    it(`${name} mid-retry: still loading, still reconnecting, never a redirect — and it recovers`, async () => {
+      const seen = await pauseMidRetry(pause, resume);
+      const pausedStates = seen.filter((s) => s.fetchStatus === "paused");
+      // The instrument really reached the case: the retry was paused with no answer…
+      expect(pausedStates.length).toBeGreaterThan(0);
+      expect(pausedStates.every((s) => s.user === null && s.status === "pending")).toBe(true);
+      // …negative control: the OLD reading (`isLoading`) called that state settled-and-signed-out.
+      expect(pausedStates.every((s) => s.oldIsLoading === false)).toBe(true);
+      // The hook's reading: still waiting, and saying so.
+      expect(pausedStates.every((s) => s.loading && s.reconnecting)).toBe(true);
+      expect(seen.some(wouldRedirect)).toBe(false);
+      // On resume it carries on and signs the customer in.
+      expect(seen.at(-1)).toMatchObject({ status: "success", user: { id: 1997 }, reconnecting: false });
+    });
+  }
+
+  it("offline before the very first check: waits (no redirect), says so at once (#2030), and checks on reconnect", async () => {
+    onlineManager.setOnline(false);
+    const client = await clientWith(await token());
+    const queryClient = new QueryClient();
+    queryClient.mount();
+    const observer = new QueryObserver(queryClient, {
+      queryKey: ["auth.me"],
+      queryFn: () => client.me.query(),
+      ...AUTH_ME_QUERY_OPTIONS,
+      retryDelay: 5,
+    });
+    const seen: PausedSeen[] = [];
+    const settled = new Promise<void>((resolve) => {
+      const unsubscribe = observer.subscribe((r) => {
+        seen.push({
+          user: r.data ?? null,
+          loading: isSessionCheckPending(r),
+          status: r.status,
+          reconnecting: isSessionCheckReconnecting(r),
+          fetchStatus: r.fetchStatus,
+          oldIsLoading: r.isLoading,
+        });
+        if (r.status !== "pending") {
+          unsubscribe();
+          resolve();
+        }
+      });
+    });
+    await new Promise((r) => setTimeout(r, 30));
+    const whileOffline = observer.getCurrentResult();
+    expect(whileOffline.fetchStatus).toBe("paused");
+    expect(dbState.lookups).toBe(0);
+    expect(whileOffline.isLoading).toBe(false); // the old reading would have redirected here
+    expect(isSessionCheckPending(whileOffline)).toBe(true);
+    // #2030: no attempt has failed, so the failure threshold alone never fires…
+    expect(whileOffline.failureCount).toBe(0);
+    expect(
+      isSessionCheckPending(whileOffline) &&
+        whileOffline.failureCount >= AUTH_ME_RECONNECTING_AFTER_FAILURES,
+    ).toBe(false);
+    // …and the hook's reading says it anyway: nothing is coming until the connection is.
+    expect(isSessionCheckReconnecting(whileOffline)).toBe(true);
+    onlineManager.setOnline(true);
+    await settled;
+    queryClient.unmount();
+    queryClient.clear();
+    expect(seen.some(wouldRedirect)).toBe(false);
+    expect(seen.filter((s) => s.reconnecting).every((s) => s.loading)).toBe(true);
+    expect(seen.at(-1)).toMatchObject({ status: "success", user: { id: 1997 }, reconnecting: false });
+  });
+
+  it("#2030 — offline after ONE failed attempt (below the threshold): says so while paused, clears on reconnect", async () => {
+    const client = await clientWith(await token());
+    const queryClient = new QueryClient();
+    queryClient.mount();
+    const observer = new QueryObserver(queryClient, {
+      queryKey: ["auth.me"],
+      queryFn: () => client.me.query(),
+      ...AUTH_ME_QUERY_OPTIONS,
+      retryDelay: 5,
+    });
+    dbState.lookupFailuresLeft = 1000;
+    const seen: (PausedSeen & { failureCount: number })[] = [];
+    let wentOffline = false;
+    const settled = new Promise<void>((resolve) => {
+      const unsubscribe = observer.subscribe((r) => {
+        seen.push({
+          user: r.data ?? null,
+          loading: isSessionCheckPending(r),
+          status: r.status,
+          reconnecting: isSessionCheckReconnecting(r),
+          fetchStatus: r.fetchStatus,
+          oldIsLoading: r.isLoading,
+          failureCount: r.failureCount,
+        });
+        if (!wentOffline && r.failureCount === 1) {
+          wentOffline = true;
+          onlineManager.setOnline(false);
+          void new Promise((t) => setTimeout(t, 60)).then(() => {
+            dbState.lookupFailuresLeft = 0;
+            onlineManager.setOnline(true);
+          });
+        }
+        if (r.status !== "pending") {
+          unsubscribe();
+          resolve();
+        }
+      });
+    });
+    await settled;
+    queryClient.unmount();
+    queryClient.clear();
+    const pausedStates = seen.filter((s) => s.fetchStatus === "paused");
+    // The instrument reached the case: paused below the threshold, still no answer.
+    expect(pausedStates.length).toBeGreaterThan(0);
+    expect(pausedStates.every((s) => s.status === "pending" && s.user === null)).toBe(true);
+    expect(pausedStates.every((s) => s.failureCount < AUTH_ME_RECONNECTING_AFTER_FAILURES)).toBe(true);
+    expect(pausedStates.every((s) => s.loading && s.reconnecting)).toBe(true);
+    expect(seen.some(wouldRedirect)).toBe(false);
+    expect(seen.at(-1)).toMatchObject({ status: "success", user: { id: 1997 }, reconnecting: false });
+  });
+
+  it("a genuinely refused session still redirects at once even when the tab is in the background", async () => {
+    focusManager.setFocused(false);
+    dbState.missing = true;
+    const seen = await observe(AUTH_ME_QUERY_OPTIONS.retry, await token());
+    expect(dbState.lookups).toBe(1);
+    expect(seen.some((s) => s.reconnecting)).toBe(false);
+    expect(wouldRedirect(seen.at(-1)!)).toBe(true);
+  });
+});
+
+/**
+ * #2026 — THE HOOK READS THE FUNCTION THE SUITE DRIVES. There is no DOM
+ * renderer in this repository's test stack, so `useAuth` itself is not
+ * mounted; the arms above drive `isSessionCheckPending` /
+ * `isSessionCheckReconnecting` through the real query machinery, and this arm
+ * holds the hook's body to those functions. It is a reading of the source,
+ * and says so: it proves the hook's `loading`, its redirect guard and its
+ * `reconnecting` cannot quietly go back to `isLoading`.
+ */
+describe("#2026 — the hook keys on the driven functions", () => {
+  const source = readFileSync(new URL("./useAuth.ts", import.meta.url), "utf8");
+  const start = source.indexOf("export function useAuth(");
+  const body = source.slice(start);
+
+  it("the hook body is found (positive control on the slice)", () => {
+    expect(start).toBeGreaterThan(0);
+    expect(body).toContain("trpc.auth.me.useQuery");
+  });
+
+  it("`loading`, the redirect guard and `reconnecting` read the driven functions, and nothing reads `isLoading`", () => {
+    expect(body).toMatch(/loading:\s*isSessionCheckPending\(meQuery\)/);
+    expect(body).toMatch(/if \(isSessionCheckPending\(meQuery\) \|\| logoutMutation\.isPending\) return;/);
+    expect(body).toMatch(/reconnecting:\s*isSessionCheckReconnecting\(meQuery\)/);
+    expect(body).not.toMatch(/\.isLoading\b/);
+  });
+
+  it("#2030 — the memo that builds `reconnecting` recomputes when the check pauses", () => {
+    const memo = body.slice(body.indexOf("const state = useMemo("), body.indexOf("useEffect("));
+    expect(memo).toContain("reconnecting: isSessionCheckReconnecting(meQuery)");
+    expect(memo).toMatch(/\bmeQuery\.fetchStatus,/);
   });
 });

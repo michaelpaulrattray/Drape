@@ -81,7 +81,7 @@ export function candidateIdOfLockKey(lockKey: string): number | null {
 }
 
 /** The customer's sentence for a swept retry — named, so the sheet and the receipt agree. */
-export const RECOVERED_RETRY_SENTENCE = "That retry didn't make it. Your credits are back.";
+export const RECOVERED_RETRY_SENTENCE = "That retry didn't make it. Your credits were returned.";
 /** The seal's other two sentences, named for the same reason: the live road
  *  (#867) throws the words it just sealed, and the sweep parks with them. */
 export const RECOVERED_RETRY_FREE_SENTENCE = "That retry didn't start. You were not charged.";

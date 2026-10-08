@@ -107,7 +107,7 @@
  */
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { displayBalance, displaySpent, formatCredits } from "@shared/creditDisplay";
-import { spentShareSentence } from "./spentShareSentence";
+import { spentShareSentence, yearlySwitchOffsetSentence } from "./spentShareSentence";
 /* #1836 — the one declaration of who may buy a credit pack, read here so §6f
    and the Add-credits door cannot answer that question differently. */
 import { topupEligibility } from "@shared/creditTopups";
@@ -118,6 +118,12 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/foundation";
 import { ModalScrim } from "@/foundation/CastingModal";
 import { ConfirmDialog } from "@/foundation";
+import {
+  CANCEL_ANY_TIME_SHORT,
+  RENEWAL_BALANCE_SENTENCE,
+  RENEWAL_SENTENCE,
+  cancelPlanBody,
+} from "@shared/planCancelCopy";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import "@/features/settings/settings.css";
 import {
@@ -210,6 +216,19 @@ const ONE_FOR_EVERY_PLAN = `${EVERY_PLAN_PERK}, on every plan — the only diffe
  */
 const TRUST_LINE =
   "See the price before you make anything. Credits back if a result doesn't arrive.";
+
+/**
+ * WHAT "CREDITS BACK" COVERS — #1952 item 3, his *"yes"* 2026-10-08, beside the
+ * trust line above.
+ *
+ * ⚠ **The card's optional second clause about a free first Try again is NOT
+ * here, and the card says why:** *"Drop the 'first Try again is free' sentence
+ * if the free Try again is gone at launch (#1903 slice 3)"*. The sentence
+ * below is true either way — it only promises what the button says.
+ */
+const CREDITS_BACK_COVERS =
+  "Credits come back if a result fails, is blocked, or doesn't arrive. "
+  + "If a result arrives and you want a different one, making it again costs the credits shown on the button.";
 
 /**
  * WHAT EVERY PLAN OPENS TODAY — said ONCE under the three cards rather than
@@ -550,6 +569,9 @@ export function ChangePlanModal({
       toast.success(data.message);
       setConfirmingDrop(false);
       void refetchStatus();
+      /* The Billing tab reads the cancelled state off this query (#1940 B26),
+         so it must not go on saying "renews" after the press. */
+      void utils.billing.getSubscriptionDetails.invalidate();
       void utils.credits.getBalance.invalidate();
       onClose();
     },
@@ -1591,6 +1613,15 @@ export function ChangePlanModal({
         )}
 
         <p className="dp-plan__trust">{TRUST_LINE}</p>
+        {/*
+          #1952 items 3–5 — his *"yes"*, 2026-10-08: what "credits back" covers,
+          how renewal works, and what cancelling does to credits (version A:
+          top-ups never expire). Said ONCE here, under the trust line it
+          explains, in either mode — the trust line's own placement rule.
+        */}
+        <p className="dp-plan__terms">
+          {CREDITS_BACK_COVERS} {RENEWAL_SENTENCE} {CANCEL_ANY_TIME_SHORT} {RENEWAL_BALANCE_SENTENCE}
+        </p>
 
         {/* §6f — the honest version of "Expand credit limit" */}
         {/*
@@ -1661,7 +1692,7 @@ export function ChangePlanModal({
             two meanings of `false` this branch was written for. */}
         {hasSubscription === true ? (
           <Button variant="quiet" size="small" onClick={() => setConfirmingDrop(true)}>
-            Drop to Free
+            Cancel plan
           </Button>
         ) : null}
         <Button variant="quiet" size="small" onClick={onClose}>
@@ -1752,9 +1783,18 @@ export function ChangePlanModal({
 
       {confirmingDrop ? (
         <ConfirmDialog
-          title="Drop to Free"
-          body="Your subscription ends at the renewal date and the account moves to Free. Credits you have already been given stay on the balance."
-          confirmLabel="Drop to Free"
+          /* #1940 B24 — his word 2026-10-08, *"on 1 and 2 go with your
+             reccomendations"*. "Drop to Free" named the destination; a
+             customer leaving a plan is CANCELLING it, and the dialog now says
+             what that means for the money: the plan runs to the date she paid
+             for, nothing is charged after it, and her credits stay
+             (`handleSubscriptionDeleted` sets `planTier: "free"` and touches
+             no balance). The date is the period end `getStatus` already
+             serves — never typed, and never guessed when it is unread. */
+          title="Cancel your plan?"
+          body={cancelPlanBody(status?.currentPeriodEnd ?? null)}
+          confirmLabel="Cancel plan"
+          cancelLabel="Keep plan"
           busyLabel="Cancelling…"
           busy={cancelSubscription.isPending}
           onConfirm={() => cancelSubscription.mutate()}
@@ -2299,6 +2339,9 @@ function describeChange(
        and the credits it pays for, both from the server's own quote. */
     spentShareCharge?: number;
     spentShareCredits?: number;
+    /* What is still taken back of the old cycle's share — 0 when every
+       credit of it is already used (#2023). */
+    creditUnwind?: number;
     currentInterval?: "monthly" | "annual";
   },
   /**
@@ -2385,9 +2428,9 @@ function describeChange(
     if (quote.targetInterval === "annual") {
       return (
         `${plan.name} costs ${formatDollars(quote.newPlanPrice)} for the year. ` +
-        `The unused part of your current cycle comes off that, so about ` +
-        `${formatDollars(quote.immediateCharge)} is due today.` +
-        spentShareSentence(quote) +
+        /* What comes off, and what is paid for instead when her credits are
+           already used (#2023) — chosen by the quote, in one place. */
+        yearlySwitchOffsetSentence(quote, formatDollars(quote.immediateCharge)) +
         ` Your new billing year ` +
         `starts now, and the full year of credits lands as soon as the payment settles, ` +
         `replacing what was left of this cycle's allowance.`

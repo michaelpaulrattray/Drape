@@ -48,6 +48,7 @@ export function CandidateTile({
   busy,
   paidBusy,
   rollPriceCredits,
+  followPriceCredits,
   onKeep,
   onDiscard,
   onFollow,
@@ -134,6 +135,18 @@ export function CandidateTile({
    * in flight, and because a future surface may need to print it again.
    */
   rollPriceCredits?: number;
+  /**
+   * THE FOLLOW BUTTON'S OWN PRICE — and it IS printed again, on his word.
+   *
+   * #1952 item 1, his *"yes"* 2026-10-08: **"Every paid button shows its
+   * price"** — `Follow · {served} credits`. That supersedes the 2026-08-02
+   * ruling and D-109 recorded above (price once, in the dock's cost line):
+   * the dock's line now carries the balance alone, so the number is still
+   * stated once per button rather than twice beside it. `undefined` until the
+   * sheet's settings answer, and then the button reads plain `Follow` rather
+   * than a price of nothing (#1727).
+   */
+  followPriceCredits?: number;
   onKeep: () => void;
   onDiscard: () => void;
   onFollow: () => void;
@@ -371,7 +384,7 @@ export function CandidateTile({
             style={{ alignSelf: "flex-start" }}
           >
             <RotateCcw size={12} aria-hidden="true" />
-            {retryPriceCredits !== undefined ? `Retry · ${formatCredits(displayPrice(retryPriceCredits))} credits` : "Retry"}
+            {retryPriceCredits !== undefined ? `Try again · ${formatCredits(displayPrice(retryPriceCredits))} credits` : "Try again"}
           </Button>
         ) : null}
       </div>
@@ -450,7 +463,9 @@ export function CandidateTile({
         </Button>
         <Button variant="quiet" size="small" disabled={busy || paidBusy} onClick={onFollow}>
           <Icon d={P.follow} size={11} />
-          Follow
+          {followPriceCredits !== undefined
+            ? `Follow · ${formatCredits(displayPrice(followPriceCredits))} credits`
+            : "Follow"}
         </Button>
         <Button
           variant="quiet"

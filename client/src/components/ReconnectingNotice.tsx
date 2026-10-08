@@ -10,10 +10,36 @@
  *
  * Tokens only, so it follows the theme like the rest of the app — including
  * over the legacy studio, whose canvas field is a light-only colour.
+ *
+ * WHEN IT IS THEIR CONNECTION, IT SAYS SO — #2030. Since #2030 the notice also
+ * shows the moment the check pauses because the browser is offline. "This
+ * usually takes a moment. You don't need to do anything." would be false then:
+ * how long it takes is up to their connection, not us. So while the browser
+ * reports itself offline the two lines say that instead, and switch back the
+ * instant it is online again. The browser's own online/offline signal is the
+ * source — the same events react-query's `onlineManager` pauses on.
  */
+import { useSyncExternalStore } from 'react';
 import { KliegWordmark } from '@/foundation/KliegWordmark';
 
+function subscribeToConnection(onChange: () => void) {
+  window.addEventListener('online', onChange);
+  window.addEventListener('offline', onChange);
+  return () => {
+    window.removeEventListener('online', onChange);
+    window.removeEventListener('offline', onChange);
+  };
+}
+
+const browserIsOffline = () =>
+  typeof navigator !== 'undefined' && navigator.onLine === false;
+
 export function ReconnectingNotice() {
+  const offline = useSyncExternalStore(
+    subscribeToConnection,
+    browserIsOffline,
+    () => false,
+  );
   return (
     <div
       role="status"
@@ -36,10 +62,12 @@ export function ReconnectingNotice() {
         <KliegWordmark fontSize={15} />
       </span>
       <p style={{ margin: 0, fontSize: 14, color: 'var(--ink)' }}>
-        Reconnecting to Klieg…
+        {offline ? "You're offline" : 'Reconnecting to Klieg…'}
       </p>
       <p style={{ margin: 0, fontSize: 13, color: 'var(--metaStrong)' }}>
-        This usually takes a moment. You don't need to do anything.
+        {offline
+          ? 'Klieg will carry on as soon as your connection is back.'
+          : "This usually takes a moment. You don't need to do anything."}
       </p>
     </div>
   );

@@ -192,15 +192,16 @@ const DECLARED: ReadonlyArray<{
     symbol: "rollPriceCredits",
     verdict: "safe",
     why:
-      "The dock's roll/follow price, and its zero is DELIBERATE and read as a"
-      + " third state rather than as a figure: the cost line draws only under"
-      + " `price ? (`, so a zero holds the line back. It is the same promise the"
+      "The roll/follow price, and its zero is DELIBERATE and read as a"
+      + " third state rather than as a figure: since #1952 it is printed on the"
+      + " Roll again button only under `: price ?`, so a zero draws the plain"
+      + " label rather than a price of nothing. It is the same promise the"
       + " #1727 sites now keep, written the other way round — and the docblock"
       + " above it records why it is not simply `null` (until the roll query"
       + " resolves the sheet cannot know whether it is quoting a Roll or a"
       + " Follow, and a price that CHANGES under the cursor is worse than one"
       + " that arrives a moment late).",
-    gate: ["{price ? ("],
+    gate: [": price\n", "? `Roll again · ${formatCredits(displayPrice(price))} credits`"],
   },
   {
     file: "features/casting/components/PackageHealthDialog.tsx",

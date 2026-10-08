@@ -23,6 +23,8 @@ import { DataTable } from "@/foundation";
 import type { DataRow } from "@/foundation";
 import { staffDateTime } from "@/foundation/staffDate";
 
+import { displayBalance, formatCredits, staffCreditFact } from "@shared/creditDisplay";
+
 import { type OpenChangeRequestOptions } from "./moderatorConstants";
 
 const PAGE_SIZE = 20;
@@ -83,7 +85,7 @@ export function FlaggedReferralsTab({
         <StatePill key="match" label={exactMatch ? "same IP" : "near match"} attention={exactMatch} />,
         <span key="status">{item.status.replace("_", " ")}</span>,
         <span key="credits">
-          {item.referrerCredited || item.referredCredited ? `${item.creditsAwarded} cr` : "—"}
+          {item.referrerCredited || item.referredCredited ? `${formatCredits(displayBalance(item.creditsAwarded))} cr` : "—"}
         </span>,
         <span key="when">{staffDateTime(item.createdAt)}</span>,
       ],
@@ -102,11 +104,11 @@ export function FlaggedReferralsTab({
         { label: "REFEREE IP", value: item.referredIp || "—" },
         {
           label: "REFERRER PAID",
-          value: item.referrerCredited ? `${item.creditsAwarded} credits` : "not paid",
+          value: item.referrerCredited ? staffCreditFact(displayBalance(item.creditsAwarded), item.creditsAwarded) : "not paid",
         },
         {
           label: "REFEREE PAID",
-          value: item.referredCredited ? `${item.creditsAwarded} credits` : "not paid",
+          value: item.referredCredited ? staffCreditFact(displayBalance(item.creditsAwarded), item.creditsAwarded) : "not paid",
         },
         { label: "STARTED", value: staffDateTime(item.createdAt) },
         { label: "COMPLETED", value: item.completedAt ? staffDateTime(item.completedAt) : "—" },

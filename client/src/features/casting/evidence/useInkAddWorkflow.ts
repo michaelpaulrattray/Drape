@@ -7,6 +7,7 @@ import {
   type CanonicalViewAngle,
 } from "@shared/boardTypes";
 import { trpc } from "@/lib/trpc";
+import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import {
   publishCastProjectionChanged,
   subscribeCastProjectionChanged,
@@ -40,13 +41,24 @@ type ActiveInkSubject =
       priceCredits: number;
     };
 
+/**
+ * The one sentence this hook authors itself, before any request leaves the
+ * browser — so it is ours, and true: nothing was sent, nothing could be charged.
+ */
+export class ReferenceReadError extends Error {
+  constructor() {
+    super("The reference image could not be read.");
+    this.name = "ReferenceReadError";
+  }
+}
+
 function readReferenceFile(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onerror = () => reject(new Error("The reference image could not be read."));
+    reader.onerror = () => reject(new ReferenceReadError());
     reader.onload = () => {
       if (typeof reader.result !== "string") {
-        reject(new Error("The reference image could not be read."));
+        reject(new ReferenceReadError());
         return;
       }
       resolve(reader.result);
@@ -55,9 +67,29 @@ function readReferenceFile(file: File): Promise<string> {
   });
 }
 
-function publicMessage(error: unknown): string {
-  if (error instanceof Error && error.message.trim()) return error.message;
-  return "Tattoo previews are temporarily unavailable. Nothing was charged.";
+/**
+ * WHAT A TATTOO STEP SAYS WHEN IT COULD NOT READ THE ERROR — card #2048.
+ *
+ * This used to show any `error.message` raw (a gateway's 502 text, a parser's
+ * complaint) and otherwise *"Tattoo previews are temporarily unavailable.
+ * Nothing was charged."* — a money claim on an error the client never read,
+ * on six actions, one of them the paid preview. The server's own sentences
+ * still pass through (`readableFailure`); the fallback now says only what is
+ * known.
+ *
+ * ⚠ The surface is unreachable today: every `evidence.*Ink*` procedure calls
+ * `requireInkCapability`, which refuses while `R7_EVIDENCE_COMPOSER_SCOPE` is
+ * off (production and dev), and that refusal is a spoken `PRECONDITION_FAILED`.
+ * Whether the hook should be removed is a separate decision; this only stops
+ * its copy from claiming what it does not know.
+ */
+export const INK_STEP_UNCONFIRMED_SENTENCE =
+  "We couldn't confirm that tattoo step. Check the preview before trying again.";
+
+export function inkStepFailureSentence(error: unknown): string {
+  if (error instanceof ReferenceReadError) return error.message;
+  logRawFailure("useInkAddWorkflow", error);
+  return readableFailure(error, INK_STEP_UNCONFIRMED_SENTENCE);
 }
 
 export interface UseInkAddWorkflowOptions {
@@ -213,7 +245,7 @@ export function useInkAddWorkflow({
       await refreshTruth(modelId);
       return true;
     } catch (error) {
-      setActionError(publicMessage(error));
+      setActionError(inkStepFailureSentence(error));
       await refreshTruth(modelId);
       return false;
     } finally {
@@ -250,7 +282,7 @@ export function useInkAddWorkflow({
       setReferenceFileState(null);
       await refreshTruth(modelId);
     } catch (error) {
-      setActionError(publicMessage(error));
+      setActionError(inkStepFailureSentence(error));
       await refreshTruth(modelId);
     } finally {
       setAction(null);
@@ -282,7 +314,7 @@ export function useInkAddWorkflow({
       await refreshTruth(modelId);
       return true;
     } catch (error) {
-      setActionError(publicMessage(error));
+      setActionError(inkStepFailureSentence(error));
       await refreshTruth(modelId);
       return false;
     } finally {
@@ -314,7 +346,7 @@ export function useInkAddWorkflow({
       await onAccepted(result.modelId);
       setPanelOpen(false);
     } catch (error) {
-      setActionError(publicMessage(error));
+      setActionError(inkStepFailureSentence(error));
       await refreshTruth(modelId);
     } finally {
       setAction(null);
@@ -348,7 +380,7 @@ export function useInkAddWorkflow({
       }
       await refreshTruth(modelId);
     } catch (error) {
-      setActionError(publicMessage(error));
+      setActionError(inkStepFailureSentence(error));
       await refreshTruth(modelId);
     } finally {
       setAction(null);
@@ -382,7 +414,7 @@ export function useInkAddWorkflow({
       setPanelOpen(false);
       await refreshTruth(modelId);
     } catch (error) {
-      setActionError(publicMessage(error));
+      setActionError(inkStepFailureSentence(error));
       await refreshTruth(modelId);
     } finally {
       setAction(null);

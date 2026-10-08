@@ -40,6 +40,7 @@ import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { Bar, SettingsCard, SettingsGroup, SettingsList } from "../parts";
 import { ReferralBlock } from "../ReferralBlock";
 import { formatDollars, formatShortDate } from "../planMath";
+import { cancelledPlanSegment } from "@shared/planCancelCopy";
 
 export function BillingSection({
   planName,
@@ -240,7 +241,22 @@ export function BillingSection({
               The sentence itself is `pendingSentence`, composed above — see
               its note for why it is not a ternary in here.
             */
-            pendingSentence ?? (renewsAt ? `renews ${formatShortDate(renewsAt)}` : null),
+            /*
+              #1940 B26 — a cancelled plan says when it ENDS and that it won't
+              renew, read off the cancelled state `getSubscriptionDetails`
+              already serves (Yuna's C7). It outranks a pending change: a
+              cancel releases the schedule first, so both cannot be true.
+
+              ⚠ **THE DATE IS `renewsAt` — THE SAME `getStatus` PERIOD END THE
+              "renews" SEGMENT, THE CANCEL DIALOG AND THE SERVER'S RECEIPT ALL
+              QUOTE — AND NOT `subscriptionDetails.currentPeriodEnd`.** Seen at
+              the frame on the dev fixture: the details read answered 9 Sept
+              while the row (and so the dialog a moment earlier) said 9 Oct. One
+              fact, one source, or the toast and this line name two days.
+            */
+            subscriptionDetails?.cancelAtPeriodEnd === true
+              ? cancelledPlanSegment(renewsAt)
+              : pendingSentence ?? (renewsAt ? `renews ${formatShortDate(renewsAt)}` : null),
           ]
             .filter(Boolean)
             .join(" · ")}

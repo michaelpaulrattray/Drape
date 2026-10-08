@@ -88,7 +88,9 @@ export function FlaggedDiscrepanciesCard({
     <div
       className={`dp-inv__flagged${flaggedCount === 0 ? " dp-inv__flagged--clear" : ""}`}
     >
-      <TableHead eyebrow="Credit discrepancies">
+      {/* #2027: every figure on this card is LEDGER — the threshold, the charged and
+          recorded totals and each discrepancy — and the eyebrow says so once. */}
+      <TableHead eyebrow="Credit discrepancies · ledger">
         {/*
           The threshold was behind a gear that opened a hidden row. It is the
           question this card answers — "above what?" — so it is the card's
@@ -116,7 +118,7 @@ export function FlaggedDiscrepanciesCard({
       ) : flaggedCount === 0 ? (
         <EmptyState
           title="No accounts need looking at."
-          body={`Nothing above ${threshold} credits across ${scannedCount} accounts.`}
+          body={`Nothing above ${threshold} ledger credits across ${scannedCount} accounts.`}
         />
       ) : (
         <>
@@ -129,7 +131,7 @@ export function FlaggedDiscrepanciesCard({
               {flaggedCount} of {scannedCount}
             </span>{" "}
             accounts scanned are above{" "}
-            <span className="dp-inv__flaggedcount">{threshold}</span> credits
+            <span className="dp-inv__flaggedcount">{threshold}</span> ledger credits
           </p>
           <div className="dp-inv__flaggedrows">
             {visibleUsers.map((user) => (

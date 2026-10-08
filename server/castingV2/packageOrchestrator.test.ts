@@ -71,10 +71,13 @@ const {
   packagePromotionChargeReference,
   packageSlotChargeReference,
   promisedPackageAngles,
+  renderViewAttempts,
   refusedViewReason,
   unsettledPackageAngles,
   VIEW_ARRIVAL_ATTEMPTS,
   VIEW_JUDGED_ATTEMPTS,
+  VIEW_STORE_ATTEMPTS,
+  VIEW_STORE_BACKOFF_MS,
 } = await import("./packageOrchestrator");
 const { CAST_PACKAGE_VIEWS, CAST_PACKAGE_VIEW_PRICE, CASTING_V2_SIGN_PRICE_CREDITS } = await import("./castViewPackage");
 const { CASTING_V2_SIGN_COSTS } = await import("../casting/castingCreditCosts");
@@ -948,13 +951,19 @@ describe("the attempt budgets are the ones that were ruled", () => {
   provider faults are worth asking again about, how long a customer waits, and
   whether her money comes back either way.
 
-  ⚠ **AND ONE NUMBER CHANGES SHAPE RATHER THAN VALUE, which is the finding these
-  arms now carry: a dead sheet costs ONE render, not one per view.** Five views
-  await the same promise, so a settled rejection re-throws instantly — the
-  orchestrator's own docblock says exactly that, and until these arms moved to a
-  sheet double nothing anywhere held it. The arrival budget is still spent (the
-  waits are still counted) and buys nothing, which is why the pair is asserted
-  together.
+  ⚠ **AND THE ARRIVAL BUDGET IS THE SHEET'S NOW — #1966, his *"2) go with your
+  recc"* of 2026-10-08.** These arms used to read *"a dead sheet costs ONE
+  render, and five views spend their budget waiting on it"*, and that was the
+  defect: a transport fault lost two or three views at once where the same fault
+  on a single view would have been re-asked twice more. The SHEET is what can be
+  re-asked, so it asks `VIEW_ARRIVAL_ATTEMPTS` times, spaced — and a settled
+  sheet rejection is terminal in the per-view loop (`SignSheetUnavailableError`),
+  because repeating it there would spend one budget twice and put ~5 s of silence
+  in front of a refund.
+
+  **So the two readings that moved are the frame count and the wait count, and
+  they moved in opposite directions**: frames per dead sheet 1 → 3, waits
+  10 (5 views × 2) → 4 (2 sheets × 2). Nobody waits who cannot change the answer.
 */
 describe("generation failures", () => {
   it("does not retry a content refusal — it will refuse again", async () => {
@@ -972,27 +981,157 @@ describe("generation failures", () => {
   });
 
   /*
-    #1208, his "yes": a view that NEVER ARRIVED is our failure to deliver
+    #1208, his "yes": something that NEVER ARRIVED is our failure to deliver
     something already paid for, so it is asked for again — three times, spaced
-    — before it is written off. This arm read `toHaveBeenCalledTimes(10)` (one
-    regeneration) until that ruling.
+    — before it is written off.
 
-    ⚠ **ON THE SHEET ROAD IT ASKS AGAIN AND BUYS NOTHING, which is the honest
-    reading and is asserted as a pair.** Each view still spends its three
-    attempts, and all three await one already-rejected promise — so the budget
-    is spent on waiting rather than on frames. That is deliberate (awaiting the
-    sheet in `buildCastPackage` instead would leave five audit rows open and the
-    Sign charged with not one view attempted) and it is the shape a reader of
-    the old arm would have got wrong.
+    ⚠ **THE SHEET IS WHAT GETS ASKED AGAIN, AND UNTIL #1966 NOTHING DID.** This
+    arm used to assert `{ body: 1, head: 1 }` and five views' worth of waiting:
+    one request per sheet, and the per-view budget spent on an already-settled
+    rejection that re-throws instantly.
+
+    ⚠ **AND ITS FIXTURE WAS A PLAIN `Error`, WHICH PINNED A DEFECT (the relay's
+    finding on PR #1982).** The old body threw `new Error("something odd")` and
+    asserted three renders, on the reasoning that an unmapped fault is `unknown`
+    to `mayStillArrive` and must not quietly cost a paid view its attempts. That
+    is right on the per-view road and wrong here: this thunk is the whole of
+    `renderSignSheet`, so a plain `Error` out of it means **the frame arrived
+    and the CUT failed** — and each re-ask bought another ~$0.11 Sunburst sheet
+    that failed the same way. A real non-arrival is a `ProviderError`, because
+    `server/providers/falTransport.ts` maps every transport fault to one; the
+    fixture now says what it means.
   */
-  it("spends a view's arrival budget on a dead sheet, and buys no second frame with it", async () => {
+  it("asks three times for a sheet that never arrived, and no view repeats it", async () => {
     await buildCastPackage(
-      deps({ signSheetEngine: deadSheetEngine(() => new Error("something odd")) }),
+      deps({
+        signSheetEngine: deadSheetEngine(() => new ProviderError("transport", "fal.ai unreachable")),
+      }),
       input,
     );
-    expect(rendersPerSheet()).toEqual({ body: 1, head: 1 });
-    /* Two waits per view, five views — the budget was really spent. */
-    expect(waitedMs).toHaveLength(5 * (VIEW_ARRIVAL_ATTEMPTS - 1));
+    expect(rendersPerSheet())
+      .toEqual({ body: VIEW_ARRIVAL_ATTEMPTS, head: VIEW_ARRIVAL_ATTEMPTS });
+    /* Two waits per SHEET, two sheets — and not one more from the five views,
+       whose own budget a settled rejection no longer spends. */
+    expect(waitedMs).toHaveLength(2 * (VIEW_ARRIVAL_ATTEMPTS - 1));
+  });
+
+  /*
+    ⚠ **THE MONEY ARM (the relay's finding on PR #1982): A FRAME THAT ARRIVED
+    AND COULD NOT BE CUT IS ASKED FOR ONCE.**
+
+    Everything after the engine call — the decode, `findSheetPanelGeometry`, the
+    panel cut, the provenance check — throws a plain `Error`
+    (`signSheet.ts` 477, 511, 512, 578, 780, ~839), and every one of those is a
+    picture that ARRIVED and was paid for. They are deterministic, so a re-ask
+    buys another sheet and fails identically; at `ARRIVAL_ATTEMPTS` per sheet
+    per generation that is up to four wasted Sunburst sheets on one Sign.
+
+    This drives the REAL post-arrival road rather than faking it: the engine
+    returns successfully with bytes `sharp` cannot decode, so the throw comes
+    out of the product's own cut.
+  */
+  it("asks ONCE for a sheet that arrived and could not be cut", async () => {
+    const arrivedUnusable = (kind: SignSheetKind) => ({
+      id: `test-sheet-${kind}`,
+      editWithReferences: vi.fn(async (request: { prompt: string; references: unknown[] }) => {
+        sheetCalls.push({ kind, prompt: request.prompt, references: [] });
+        /* It ARRIVED — the engine resolved, the money is spent — and it is
+           not an image, so the cut throws a plain Error. */
+        return {
+          bytes: Buffer.from("this is not a png"),
+          contentType: "image/png",
+          latencyMs: 61_000,
+          provenance: {
+            provider: "fal" as const,
+            model: `sunburst-sheet-${kind}`,
+            providerRef: `sheet-ref-${kind}-gen1`,
+          },
+        };
+      }),
+      generateView: vi.fn(),
+    });
+
+    const result = await buildCastPackage(deps({ signSheetEngine: arrivedUnusable }), input);
+
+    expect(
+      rendersPerSheet(),
+      "a frame that arrived must never be re-bought — it fails the same way every time",
+    ).toEqual({ body: 1, head: 1 });
+    expect(waitedMs, "nothing waits for a sheet that already arrived").toEqual([]);
+    /* The customer is still made whole: nothing was delivered, so the whole
+       Sign comes back exactly as it does for a terminal refusal. */
+    expect(result.failed).toHaveLength(5);
+    expect(result.refundedCredits).toBe(SIGN_PRICE);
+  });
+
+  /*
+    ⚠ **THE SECOND MONEY ARM (the relay's second finding on PR #1982): A
+    FRAME THE PROVIDER ALREADY FINISHED IS ASKED FOR ONCE, WHATEVER ITS CLASS.**
+
+    The arm above covers a frame that arrived and threw a plain `Error` out of
+    the cut. These cover the harder half: four of fal's faults are raised AFTER
+    the job reports `COMPLETED`, so they are real `ProviderError`s with
+    RETRYABLE classes — `"could not download fal.ai result"` is `transport`,
+    `"fal.ai completed without an image"` and the malformed data URI are
+    `unknown`, and a non-ok result fetch is whatever its status maps to. Every
+    one of them had been bought and billed, and every one of them was re-asked.
+
+    Worst case before this: 3 arrival attempts x 2 sheet renders = 6 frames per
+    sheet where the budget intends 2, on top of the engine's own `withRetry`.
+
+    ⚠ **ONE CASE PER ARM, NEVER A LOOP INSIDE ONE** — `beforeEach` fires
+    between arms and not between iterations, which this suite has already been
+    bitten by (the sentence arm at the foot of this file). The first case would
+    record its refund and the second would read a deduped zero.
+  */
+  it.each([
+    ["a result that would not download", () => new ProviderError(
+      "transport", "could not download fal.ai result", { providerRef: "req-1", completed: true },
+    )],
+    ["a completed job with no image in it", () => new ProviderError(
+      "unknown", "fal.ai completed without an image", { providerRef: "req-2", completed: true },
+    )],
+    ["a result fetch the provider rate-limited", () => new ProviderError(
+      "rate_limit", "fal.ai result fetch failed (429): slow down",
+      { providerRef: "req-3", status: 429, completed: true },
+    )],
+  ])("asks ONCE for a frame the provider finished: %s", async (_what, fault) => {
+    const result = await buildCastPackage(
+      deps({ signSheetEngine: deadSheetEngine(fault) }),
+      input,
+    );
+
+    expect(
+      rendersPerSheet(),
+      "a frame that was already bought was re-bought — asking again renders a NEW one",
+    ).toEqual({ body: 1, head: 1 });
+    expect(waitedMs, "nothing waits for a frame that already arrived").toEqual([]);
+    /* The customer is still made whole: nothing was delivered, so the whole
+       Sign comes back exactly as it does for a terminal refusal. */
+    expect(result.failed).toHaveLength(5);
+    expect(result.refundedCredits).toBe(SIGN_PRICE);
+  });
+
+  /*
+    THE CONTROL FOR THE THREE ARMS ABOVE (law 2). The SAME classes, with the
+    provider never having finished, are still asked for three times — so those
+    arms are reading the flag and not the class, and nothing retryable was
+    quietly made terminal for every road.
+  */
+  it.each([
+    ["an unreachable host", () => new ProviderError("transport", "fal.ai unreachable")],
+    ["a submit with no request id", () => new ProviderError("unknown", "fal.ai returned no request id")],
+    ["a refused submit", () => new ProviderError(
+      "rate_limit", "fal.ai refused the request (429): slow down", { status: 429 },
+    )],
+  ])("still asks three times when the job never ran: %s", async (_what, fault) => {
+    await buildCastPackage(deps({ signSheetEngine: deadSheetEngine(fault) }), input);
+
+    expect(
+      rendersPerSheet(),
+      "a job that never ran stopped being re-asked — it is still owed its attempts",
+    ).toEqual({ body: VIEW_ARRIVAL_ATTEMPTS, head: VIEW_ARRIVAL_ATTEMPTS });
+    expect(waitedMs).toHaveLength(2 * (VIEW_ARRIVAL_ATTEMPTS - 1));
   });
 
   it("SPACES the arrival retries rather than hammering the provider", async () => {
@@ -1001,12 +1140,14 @@ describe("generation failures", () => {
       input,
     );
 
-    // One wait between attempts, never after the last: two per view, five views.
-    expect(waitedMs).toHaveLength(5 * (VIEW_ARRIVAL_ATTEMPTS - 1));
-    // Every wait is a real pause, and the second is longer than the first.
+    // One wait between attempts, never after the last: two per SHEET, two sheets.
+    expect(waitedMs).toHaveLength(2 * (VIEW_ARRIVAL_ATTEMPTS - 1));
+    // Every wait is a real pause, and the ladder really climbs (#1966).
     expect(waitedMs.every((ms) => ms > 0)).toBe(true);
-    const perView = waitedMs.filter((_, index) => index % 2 === 0);
-    expect(perView.length).toBeGreaterThan(0);
+    expect(
+      Math.max(...waitedMs),
+      "the second wait is not longer than the first — the backoff ladder is flat",
+    ).toBeGreaterThan(Math.min(...waitedMs));
   });
 
   /*
@@ -1061,12 +1202,14 @@ describe("generation failures", () => {
     const result = await buildCastPackage(deps({ judge, signSheetEngine }), input);
 
     /*
-      The head sheet never arrived: ONE frame, and its three views spend their
-      arrival budget on waiting. The body sheet arrived and was refused: its one
-      re-render, and no waits at all.
+      The head sheet never arrived: its own arrival budget, spaced (#1966). The
+      body sheet arrived and was refused: its one house re-render, and no waits
+      at all — a rejection is not an arrival failure. Neither budget lends to
+      the other, which is the whole of this arm.
     */
-    expect(rendersPerSheet()).toEqual({ head: 1, body: SHEET_MAX_RENDERS });
-    expect(waitedMs).toHaveLength(3 * (VIEW_ARRIVAL_ATTEMPTS - 1));
+    expect(rendersPerSheet())
+      .toEqual({ head: VIEW_ARRIVAL_ATTEMPTS, body: SHEET_MAX_RENDERS });
+    expect(waitedMs).toHaveLength(VIEW_ARRIVAL_ATTEMPTS - 1);
     /* Four of the five refund; `frontFull` rode the good body frame. */
     expect(result.failed.sort())
       .toEqual(["backFull", "closeUp", "sideClose", "threeQuarter"]);
@@ -1087,11 +1230,11 @@ describe("generation failures", () => {
       deps({ signSheetEngine: deadSheetEngine(() => new ProviderError("unknown", "no idea")) }),
       input,
     );
-    /* The direction is what this pins: `unknown` keeps RETRYING, so the waits
-       are there. The frame count is one per sheet either way — see the
-       describe's own note on why that number changed shape, not value. */
-    expect(waitedMs).toHaveLength(5 * (VIEW_ARRIVAL_ATTEMPTS - 1));
-    expect(rendersPerSheet()).toEqual({ body: 1, head: 1 });
+    /* The direction is what this pins: `unknown` keeps RETRYING, so both the
+       waits and the extra frames are there (#1966). */
+    expect(waitedMs).toHaveLength(2 * (VIEW_ARRIVAL_ATTEMPTS - 1));
+    expect(rendersPerSheet())
+      .toEqual({ body: VIEW_ARRIVAL_ATTEMPTS, head: VIEW_ARRIVAL_ATTEMPTS });
   });
 
   /*
@@ -1142,8 +1285,9 @@ describe("generation failures", () => {
         deps({ signSheetEngine: deadSheetEngine(() => new ProviderError(failure, failure)) }),
         input,
       );
-      expect(waitedMs, failure).toHaveLength(5 * (VIEW_ARRIVAL_ATTEMPTS - 1));
-      expect(rendersPerSheet(), failure).toEqual({ body: 1, head: 1 });
+      expect(waitedMs, failure).toHaveLength(2 * (VIEW_ARRIVAL_ATTEMPTS - 1));
+      expect(rendersPerSheet(), failure)
+        .toEqual({ body: VIEW_ARRIVAL_ATTEMPTS, head: VIEW_ARRIVAL_ATTEMPTS });
     }
   });
 
@@ -2387,6 +2531,12 @@ describe("⚠ the free re-render is OURS, and its limits", () => {
 
       `frontFull` passed on the body sheet's first frame and must still be
       delivered, from that frame, after the re-render dies.
+
+      ⚠ **THE FIXTURE FAILS EVERY RE-RENDER ATTEMPT, AND IT USED TO FAIL ONLY
+      THE SECOND CALL — #1966.** With the sheet's arrival retries in place, one
+      transient fault is now RESCUED (the arm below drives exactly that), so a
+      fixture that threw once would stop measuring this asymmetry altogether
+      and would have read as a pass while proving the opposite thing.
     */
     const judge = () => vi.fn(async (request: { angle: string }) =>
       request.angle === "backFull" ? fail : pass);
@@ -2396,7 +2546,7 @@ describe("⚠ the free re-render is OURS, and its limits", () => {
         ...working,
         editWithReferences: vi.fn(async (request: { prompt: string; references: unknown[] }) => {
           const already = sheetCalls.filter((call) => call.kind === kind).length;
-          if (kind === "body" && already === 1) {
+          if (kind === "body" && already >= 1) {
             sheetCalls.push({ kind, prompt: request.prompt, references: [] });
             throw new ProviderError("transport", "the second frame never came");
           }
@@ -2406,8 +2556,11 @@ describe("⚠ the free re-render is OURS, and its limits", () => {
     };
     const result = await buildCastPackage(deps({ judge, signSheetEngine }), input);
 
-    /* Both frames were asked for; the second never arrived. */
-    expect(rendersPerSheet()).toEqual({ body: SHEET_MAX_RENDERS, head: 1 });
+    /* The first frame, then the re-render asked for its full arrival budget and
+       never arriving (#1966). It is NOT `SHEET_MAX_RENDERS` any more: that
+       budget counts frames the house PAYS for, and a request that produced no
+       frame paid for nothing. */
+    expect(rendersPerSheet()).toEqual({ body: 1 + VIEW_ARRIVAL_ATTEMPTS, head: 1 });
     /* The view that passed on frame 1 is delivered FROM frame 1. */
     expect(committed.sort())
       .toEqual(["closeUp", "frontFull", "sideClose", "threeQuarter"]);
@@ -2421,6 +2574,71 @@ describe("⚠ the free re-render is OURS, and its limits", () => {
       { amount: VIEW_PRICE, reference: packageSlotChargeReference(OPERATION_ID, "backFull") },
     ]);
     expect(result.totalLoss).toBe(false);
+  });
+
+  it("⚠ #1966 — a re-render that drops ONCE is asked again, and rescues its sheet", async () => {
+    /*
+      THE OTHER SIDE OF THE ARM ABOVE, and the reason this card exists. A
+      transport fault is not a judgement: nothing came back, so nothing was
+      drawn and nothing was judged. Before #1966 this exact sequence settled
+      from frame 1 and refunded `backFull` — a slice lost to OUR dropped
+      request, which is what the per-view road has refused to do since #1208.
+
+      The budgets stay apart: the house still pays for ONE re-render
+      (`SHEET_MAX_RENDERS`), and the second ASK for it is a repeat of a request
+      that produced nothing.
+    */
+    const judge = () => {
+      let judged = 0;
+      return vi.fn(async (request: { angle: string }) => {
+        /* backFull fails on generation 1 and passes on generation 2 — the
+           sheet's one house re-render doing its job, once it arrives. */
+        if (request.angle !== "backFull") return pass;
+        judged += 1;
+        return judged === 1 ? fail : pass;
+      });
+    };
+    let bodyDrops = 0;
+    const signSheetEngine = (kind: SignSheetKind) => {
+      const working = defaultSheetEngine(kind);
+      return {
+        ...working,
+        editWithReferences: vi.fn(async (request: { prompt: string; references: unknown[] }) => {
+          const already = sheetCalls.filter((call) => call.kind === kind).length;
+          if (kind === "body" && already === 1 && bodyDrops === 0) {
+            bodyDrops += 1;
+            sheetCalls.push({ kind, prompt: request.prompt, references: [] });
+            throw new ProviderError("transport", "the re-render's request dropped");
+          }
+          return working.editWithReferences(request);
+        }),
+      };
+    };
+    const result = await buildCastPackage(deps({ judge, signSheetEngine }), input);
+
+    /* One frame, one dropped request, then the frame the house paid for. */
+    expect(rendersPerSheet()).toEqual({ body: 3, head: 1 });
+    expect(waitedMs, "the retry was hammered rather than spaced").toHaveLength(1);
+    expect(waitedMs[0]).toBeGreaterThan(0);
+
+    /* Nobody refunds, and every view is delivered. */
+    expect(result.failed).toEqual([]);
+    expect(refunds).toEqual([]);
+    expect(committed.sort())
+      .toEqual(["backFull", "closeUp", "frontFull", "sideClose", "threeQuarter"]);
+    /*
+      And the whole body sheet comes from ONE frame — his *"replace all of that
+      sheet's views together"* — namely the one that actually arrived.
+
+      ⚠ The fixture's ref counts REQUESTS, not generations, so the rescued frame
+      is `gen3`: request 1 drew it, request 2 dropped, request 3 is the house's
+      one paid re-render arriving. That the two views agree on a single ref is
+      the claim; which number it carries is the fixture's arithmetic.
+    */
+    const bodyRefs = committedProvenance
+      .filter((entry) => entry.angle === "frontFull" || entry.angle === "backFull")
+      .map((entry) => entry.providerRef);
+    expect(bodyRefs).toEqual(["sheet-ref-body-gen3", "sheet-ref-body-gen3"]);
   });
 
   it("charges the customer NOTHING for the second frame, and never a third", async () => {
@@ -2506,8 +2724,10 @@ describe("⚠ the free re-render is OURS, and its limits", () => {
 describe("⚠ the refusal line a customer reads, end to end", () => {
   const compose = (reason: string) =>
     /* `client/src/features/casting/components/ImageViewer/ViewTabs.tsx`'s
-       `FailedSlot`: `${label} failed — ${failure.reason}. ${refundOutcomeText(failure)}` */
-    `Front failed — ${reason}. ${refundOutcomeText({ refunded: VIEW_PRICE })}`;
+       `FailedSlot`: `${label}: ${bareReason(failure.reason)}. ${refundOutcomeText(failure)}`
+       — #1940 B18. The lead is `{label}:` because the reason is already the
+       whole account of what happened (see that component's own note). */
+    `Front: ${reason}. ${refundOutcomeText({ refunded: VIEW_PRICE })}`;
 
   it("reads as one sentence, with no doubled stop and no term of art", () => {
     for (const axis of CONFORMANCE_AXES) {
@@ -2519,7 +2739,9 @@ describe("⚠ the refusal line a customer reads, end to end", () => {
       expect(line.toLowerCase(), axis).not.toMatch(/identity|intact|people|axis|verdict|judge/);
       /* It says what happened, what we did, and what came back — in that order. */
       expect(line, axis).toContain("so we didn't keep it.");
-      expect(line, axis).toContain("credits refunded — you weren't charged.");
+      /* #1940 B13 — the money half is *"{N} credits returned."* */
+      expect(line, axis).toContain(" credits returned.");
+      expect(line, axis).not.toContain("refunded");
     }
   });
 
@@ -2547,12 +2769,188 @@ describe("⚠ the refusal line a customer reads, end to end", () => {
       "client/src/features/casting/components/ImageViewer/ViewTabs.tsx",
     ));
     expect(source, "the surface this arm derives from is gone — re-point it").not.toBeNull();
-    expect(source!).toContain("${label} failed — ${failure.reason}. ${refundOutcomeText(failure)}");
+    expect(source!).toContain("${label}: ${bareReason(failure.reason)}. ${refundOutcomeText(failure)}");
   });
   it("names the Cast in the line, or calls it this character", () => {
     expect(compose(refusedViewReason(["identity"], "Sifr")))
-      .toBe("Front failed — This view didn't clearly look like Sifr, so we didn't keep it. "
+      .toBe("Front: This view didn't clearly look like Sifr, so we didn't keep it. "
         + `${refundOutcomeText({ refunded: VIEW_PRICE })}`);
     expect(compose(refusedViewReason(["identity"]))).toContain("this character");
+  });
+});
+
+/*
+  ⚠ **THE PER-VIEW ROAD NEVER RE-BUYS A FRAME THAT ARRIVED — #1994**, the
+  sibling of the sheet road's PR #1982 finding, on the road that one did not
+  reach. This road is the Try again (`viewRetryService` renders through
+  `renderViewAttempts` with no sheets), so these arms drive the loop directly
+  with no `signSheets`, and the engine is a per-view `generateView`.
+
+  The loop's `try` wraps the store and the landing as well as the engine, and a
+  plain `Error` from either read as `unknown` — retryable — so a picture that
+  had ARRIVED and been paid for was asked for again. Counted here at the engine:
+  each `generateView` call is one paid frame.
+*/
+describe("⚠ a view that arrived is never bought twice (#1994)", () => {
+  function perViewEngine(fault?: () => unknown) {
+    const generateView = vi.fn(async () => {
+      if (fault) throw fault();
+      return {
+        bytes: Buffer.from("view"),
+        contentType: "image/png",
+        latencyMs: 1,
+        provenance: { provider: "fal" as const, model: "nbp", providerRef: "ref" },
+      };
+    });
+    return {
+      generateView,
+      identityEngine: () => ({ id: "test-identity", editWithReferences: vi.fn(), generateView }),
+    };
+  }
+
+  const landed = async (value: { stored: { key: string } }) => ({ key: value.stored.key });
+
+  it("asks ONCE when the frame arrived and could NEVER be stored — the same bytes re-offered, then it gives up", async () => {
+    const { generateView, identityEngine } = perViewEngine();
+    const offered: string[] = [];
+    const storeImage = vi.fn(async (offer: { bytes: Buffer }) => {
+      offered.push(offer.bytes.toString());
+      throw new Error("S3: the bucket did not answer");
+    });
+
+    const result = await renderViewAttempts(
+      deps({ identityEngine, storeImage }) as never,
+      input as never,
+      "frontClose",
+      landed as never,
+    );
+
+    expect(generateView, "a frame that arrived was re-bought because the store failed")
+      .toHaveBeenCalledTimes(1);
+    expect(result.status).toBe("failed");
+    /* #2045: the bytes in hand are offered to storage VIEW_STORE_ATTEMPTS
+       times — the SAME bytes, spaced by the store ladder and nothing else. */
+    expect(offered, "the frame in hand was not re-stored before giving up")
+      .toEqual(Array(VIEW_STORE_ATTEMPTS).fill("view"));
+    expect(waitedMs, "the only waits are the re-store spacing — no arrival backoff for a frame that arrived")
+      .toEqual(VIEW_STORE_BACKOFF_MS.slice(0, VIEW_STORE_ATTEMPTS - 1));
+    expect(result.tally.arrivalFailures, "it ARRIVED — this is not an arrival failure").toBe(0);
+  });
+
+  /*
+    #2045 — THE LOSS #1994 LEFT STANDING. The store failing once used to break
+    the loop with the picture still in memory; now the same bytes are stored
+    again and the view lands, on ONE paid frame.
+  */
+  it("a store that fails ONCE then succeeds lands the view on the one frame it bought (#2045)", async () => {
+    const { generateView, identityEngine } = perViewEngine();
+    let failedOnce = false;
+    const offered: string[] = [];
+    const storeImage = vi.fn(async (offer: { bytes: Buffer }) => {
+      offered.push(offer.bytes.toString());
+      if (!failedOnce) {
+        failedOnce = true;
+        throw new Error("S3: the bucket did not answer");
+      }
+      const key = `casting-v2/casts/${OPERATION_ID}/views/${storedKeys.length}.png`;
+      storedKeys.push(key);
+      return { key, url: `https://cdn.example/${key}` };
+    });
+
+    const result = await renderViewAttempts(
+      deps({ identityEngine, storeImage }) as never,
+      input as never,
+      "frontClose",
+      landed as never,
+    );
+
+    expect(result.status, "a passing storage fault cost her the view").toBe("landed");
+    expect(generateView, "re-storing bought a second frame").toHaveBeenCalledTimes(1);
+    expect(offered).toEqual(["view", "view"]);
+    expect(waitedMs).toEqual([VIEW_STORE_BACKOFF_MS[0]]);
+    expect(result.tally).toMatchObject({ attempts: 1, arrivalFailures: 0 });
+  });
+
+  it("asks ONCE when the frame arrived, passed, and its LANDING threw", async () => {
+    const { generateView, identityEngine } = perViewEngine();
+    const land = vi.fn(async () => {
+      throw new Error("the commit lost its connection");
+    });
+
+    const result = await renderViewAttempts(
+      deps({ identityEngine }) as never,
+      input as never,
+      "frontClose",
+      land as never,
+    );
+
+    expect(generateView, "a frame that arrived was re-bought because the commit failed")
+      .toHaveBeenCalledTimes(1);
+    expect(land).toHaveBeenCalledTimes(1);
+    expect(result.status).toBe("failed");
+    expect(waitedMs).toEqual([]);
+    /* The stored object is dropped, so nothing is left in the bucket that no
+       row will ever point at. */
+    expect(deletedKeys).toEqual(storedKeys);
+    expect(storedKeys).toHaveLength(1);
+  });
+
+  /*
+    THE CONTROLS (law 2): the flag reads WHEN the throw happened, not what it
+    was. The same plain `Error`, thrown BY the engine — the frame never arrived
+    — still spends the whole arrival budget; and a landed view is still landed.
+  */
+  it("⚠ CONTROL — the same plain Error from the ENGINE still gets every arrival attempt", async () => {
+    const { generateView, identityEngine } = perViewEngine(() => new Error("an unmapped engine fault"));
+
+    const result = await renderViewAttempts(
+      deps({ identityEngine }) as never,
+      input as never,
+      "frontClose",
+      landed as never,
+    );
+
+    expect(generateView, "a frame that never arrived stopped being re-asked")
+      .toHaveBeenCalledTimes(VIEW_ARRIVAL_ATTEMPTS);
+    expect(result.status).toBe("failed");
+    expect(waitedMs).toHaveLength(VIEW_ARRIVAL_ATTEMPTS - 1);
+  });
+
+  it("⚠ CONTROL — a view whose store and landing succeed lands on the first frame", async () => {
+    const { generateView, identityEngine } = perViewEngine();
+
+    const result = await renderViewAttempts(
+      deps({ identityEngine }) as never,
+      input as never,
+      "frontClose",
+      landed as never,
+    );
+
+    expect(result.status).toBe("landed");
+    expect(generateView).toHaveBeenCalledTimes(1);
+  });
+
+  /*
+    ⚠ THE SHEET ROAD IS LEFT RETRYING, AND THIS IS THE ARM THAT SAYS SO. There
+    the frame is the coordinator's settled panel — one promise per sheet — so a
+    second attempt re-stores the SAME bytes and buys nothing. A store that fails
+    once must still deliver the view, and still on one render per sheet.
+  */
+  it("⚠ CONTROL — on the SHEET road a store hiccup re-stores the same panel and buys nothing", async () => {
+    let failedOnce = false;
+    const storeImage = vi.fn(async () => {
+      if (!failedOnce) {
+        failedOnce = true;
+        throw new Error("S3: the bucket did not answer");
+      }
+      const key = `casting-v2/casts/${OPERATION_ID}/views/${storedKeys.length}.png`;
+      storedKeys.push(key);
+      return { key, url: `https://cdn.example/${key}` };
+    });
+
+    const result = await buildCastPackage(deps({ storeImage }), input);
+
+    expect(result.failed, "a free re-store was turned into a refunded view").toHaveLength(0);
+    expect(rendersPerSheet()).toEqual({ body: 1, head: 1 });
   });
 });

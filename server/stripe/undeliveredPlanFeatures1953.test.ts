@@ -41,6 +41,19 @@ import { PURCHASABLE_PLANS, SUBSCRIPTION_PRODUCTS } from "./stripeProducts";
  * field from a public money projection is its own decision and this card did
  * not ask for one.
  *
+ * ✅ **AND IT IS FIXED NOW — CARD #1972 HALF 1, on the relay's ruling: the
+ * field leaves the public projection on #1605's ground.** Re-read at the code
+ * the day it landed: no client file has read `features` off `getPlans` since
+ * the Section 03 rebuild (#370, 2026-09-01), and `pnpm check` compiles the
+ * whole client with the field gone — so no deployed bundle reads it and the
+ * removal is skew-safe. **That moves this file's centre of gravity**: the wire
+ * arms no longer look for bad lines among the served ones, they assert that NO
+ * line is served (the exact key set, and every table line absent from the whole
+ * payload), and the rulings on WHICH lines the table may hold — #1953's
+ * removals, #1973's kept three, the rollover survival — are held at the table,
+ * hidden rung included. The lines stay in `SUBSCRIPTION_PRODUCTS`: removing
+ * them is a further decision nobody asked for.
+ *
  * ⚠ **FOUR SIBLING STRINGS WERE SWEPT UP AND DELIBERATELY LEFT (law 7).** The
  * same arrays carry *"Dedicated account manager"*, *"Custom integrations"*,
  * *"SLA guarantee"* and *"White-glove onboarding"*, undelivered in the same
@@ -56,7 +69,7 @@ import { PURCHASABLE_PLANS, SUBSCRIPTION_PRODUCTS } from "./stripeProducts";
  * Enterprise deal — and REMOVE *"SLA guarantee"*, a formal uptime commitment we
  * have no way to measure or back. So the predicate below now refuses an SLA,
  * uptime or guarantee line too, and the three kept lines sit in its does-NOT-
- * flag control AND in arms asserting they are still served on their rungs — a
+ * flag control AND in arms asserting they are still on their rungs — a
  * ruling that kept three lines is as much a contract as the one that removed
  * one. Swept (law 7) the same day: `stripeProducts.ts` was the only live place
  * the product stated an SLA or uptime promise; the compare table
@@ -66,8 +79,8 @@ import { PURCHASABLE_PLANS, SUBSCRIPTION_PRODUCTS } from "./stripeProducts";
  * ✅ **CARD #1972 HALF 2 RIDES WITH IT — the same lines.** Five rungs typed
  * `"100% unused credit rollover"` while `starter` and `pro` derived the figure
  * from `PLAN_TIERS`; all were right, and all now derive, so the day he changes
- * a rollover percent it is one edit. The last-but-one describe block pins it at
- * the wire and at the source.
+ * a rollover percent it is one edit. The last-but-one describe block pins it in
+ * the table and at the source.
  */
 
 const HERE = new URL(".", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
@@ -162,85 +175,75 @@ describe("card #1953 — the predicate can fail (the negative control comes firs
   });
 });
 
-describe("card #1953 — billing.getPlans serves no support or early-access line", () => {
+describe("card #1972 half 1 — billing.getPlans serves no feature lines at all", () => {
   const caller = billingRouter.createCaller({} as never);
+
+  /**
+   * THE FIELDS THE PUBLIC PROJECTION MAY CARRY, written out rather than read
+   * off the procedure — reading them off the thing under test would make this
+   * arm agree with whatever it serves. `description` left with #1605,
+   * `features` with this card; a key added here is a deliberate edit to a
+   * public money wire, which is the point of having to type it.
+   */
+  const SERVED_KEYS = ["credits", "id", "interval", "name", "priceInCents"];
 
   it("the population is the whole purchasable ladder, so an empty read cannot pass as a clean one", async () => {
     const plans = await caller.getPlans();
     expect(plans.subscriptions.map((plan) => plan.id)).toEqual([...PURCHASABLE_PLANS]);
     /* A floor beneath the derivation: six rungs were served the day this landed. */
     expect(plans.subscriptions.length).toBeGreaterThanOrEqual(6);
-    /*
-      And every rung still carries feature lines AT ALL — the positive control
-      for every absence arm below. A projection that served `features: []`
-      would otherwise satisfy all of them.
-    */
+  });
+
+  it("every served rung carries exactly the declared keys — no `features`, no `description`", async () => {
+    const plans = await caller.getPlans();
     for (const plan of plans.subscriptions) {
-      expect(plan.features.length, `${plan.id} serves no feature lines at all`).toBeGreaterThan(0);
+      expect(Object.keys(plan).sort(), `${plan.id} serves an undeclared key`).toEqual(SERVED_KEYS);
     }
   });
 
-  it("no served feature line is a support tier or an early-access promise", async () => {
-    const plans = await caller.getPlans();
-    const offending = plans.subscriptions.flatMap((plan) =>
-      plan.features.filter(promisesUndelivered).map((line) => `${plan.id}: ${line}`),
-    );
-    expect(offending).toEqual([]);
-  });
-
-  it("the three lines are gone from the WHOLE payload, not only the field we thought of", async () => {
+  it("no feature line from the table reaches the WHOLE payload, under any key", async () => {
     const wire = JSON.stringify(await caller.getPlans());
-    /* Positive control first: the payload really was read. */
-    expect(wire).toContain("unused credit rollover");
+    /* Positive control: the payload really was read, and it is the ladder. */
+    for (const key of PURCHASABLE_PLANS) {
+      expect(wire).toContain(JSON.stringify(SUBSCRIPTION_PRODUCTS[key].name));
+    }
+    let checked = 0;
+    for (const key of PURCHASABLE_PLANS) {
+      /* And the table still HAS lines to leak — an empty list would pass this arm by having nothing to find. */
+      expect(SUBSCRIPTION_PRODUCTS[key].features.length, `${key} has no feature lines to check`).toBeGreaterThan(0);
+      for (const line of SUBSCRIPTION_PRODUCTS[key].features) {
+        expect(wire, `the wire still carries ${key}'s "${line}"`).not.toContain(line);
+        checked += 1;
+      }
+    }
+    expect(checked).toBeGreaterThan(0);
+    /* #1953's and #1973's removed lines, by their own spelling, whatever the table says. */
     for (const line of REMOVED_LINES) {
       expect(wire, `the wire still carries "${line}"`).not.toContain(line);
     }
   });
-
-  it("the rollover line SURVIVES on every purchasable rung — his ruling kept it", async () => {
-    const plans = await caller.getPlans();
-    for (const plan of plans.subscriptions) {
-      expect(
-        plan.features.some((line) => /unused credit rollover$/i.test(line.trim())),
-        `${plan.id} lost its rollover line`,
-      ).toBe(true);
-    }
-  });
 });
 
-describe("card #1973 — the three lines he kept are still served on their rungs", () => {
-  const caller = billingRouter.createCaller({} as never);
-
-  it("at the wire, on every purchasable rung that carried them", async () => {
-    const plans = await caller.getPlans();
-    const served = new Map(plans.subscriptions.map((plan) => [plan.id as string, plan.features]));
+describe("card #1973 — the three lines he kept are still in the table on their rungs", () => {
+  it("hidden rung included", () => {
     let checked = 0;
-    for (const [rung, lines] of Object.entries(KEPT_ENTERPRISE_LINES)) {
-      if (!served.has(rung)) continue; /* hidden — the table arm below owns it */
-      for (const line of lines) {
-        expect(served.get(rung), `${rung} lost "${line}"`).toContain(line);
-        checked += 1;
-      }
-    }
-    /* business 1 + scale 2 + enterprise 2 — an arm that checked nothing cannot pass. */
-    expect(checked).toBe(5);
-  });
-
-  it("in the table, hidden rung included", () => {
     for (const [rung, lines] of Object.entries(KEPT_ENTERPRISE_LINES)) {
       for (const line of lines) {
         expect(SUBSCRIPTION_PRODUCTS[rung].features, `${rung} lost "${line}"`).toContain(line);
+        checked += 1;
       }
     }
+    /* business 1 + scale 2 + enterprise 2 + ultimate 3 — an arm that checked nothing cannot pass. */
+    expect(checked).toBe(8);
   });
 });
 
 describe("card #1953 — the table itself is clean, hidden rung included", () => {
   it("no rung in SUBSCRIPTION_PRODUCTS carries one of the three lines", () => {
     /*
-      The wire arms above cannot see `ultimate`: it is hidden, so `getPlans`
-      never maps it. The line came off it in the same edit, and this is the only
-      arm that can say so.
+      Since #1972 half 1 the wire carries no feature lines at all, so this
+      table arm is the one that holds #1953's ruling on every rung — `ultimate`
+      included, which `getPlans` never mapped even when it served them.
     */
     const offending = Object.entries(SUBSCRIPTION_PRODUCTS).flatMap(([rung, product]) =>
       product.features
@@ -258,17 +261,7 @@ describe("card #1953 — the table itself is clean, hidden rung included", () =>
 });
 
 describe("card #1972 half 2 — every rollover line derives from PLAN_TIERS", () => {
-  const caller = billingRouter.createCaller({} as never);
-
-  it("at the wire, each served rollover line names its own rung's rolloverPercent", async () => {
-    const plans = await caller.getPlans();
-    for (const plan of plans.subscriptions) {
-      const tier = PLAN_TIERS[plan.id as keyof typeof PLAN_TIERS];
-      expect(tier, `${plan.id} has no PLAN_TIERS row`).toBeDefined();
-      expect(plan.features).toContain(`${tier.rolloverPercent}% unused credit rollover`);
-    }
-  });
-
+  /* Also #1953's survival arm: his ruling KEPT the rollover line on every rung. */
   it("in the table, hidden rung included", () => {
     for (const [rung, product] of Object.entries(SUBSCRIPTION_PRODUCTS)) {
       const tier = PLAN_TIERS[rung as keyof typeof PLAN_TIERS];
@@ -278,7 +271,7 @@ describe("card #1972 half 2 — every rollover line derives from PLAN_TIERS", ()
 
   it("the source types no literal percentage — a hardcoded 100% equal to today's value is the drift this closes", () => {
     /*
-      The two arms above cannot tell `"100% …"` from the derived form while
+      The arm above cannot tell `"100% …"` from the derived form while
       the value is 100, which is exactly how five rungs sat hardcoded and
       green. Only the source can see the difference.
     */

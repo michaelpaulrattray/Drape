@@ -375,7 +375,7 @@ describe("a scope that closes under a live control never speaks to the customer"
       await readFile(new URL("../../pages/CastingSheet.tsx", import.meta.url), "utf8"),
     );
     /* Retry is behind CASTING_RETRY_SCOPE and is LIVE on his account today. */
-    expect(sheet).toContain(`readableGatedFailure(error, "That tile didn't arrive again.`);
+    expect(sheet).toContain("readableGatedFailure(error, RETRY_UNCONFIRMED_SENTENCE)");
   });
 });
 

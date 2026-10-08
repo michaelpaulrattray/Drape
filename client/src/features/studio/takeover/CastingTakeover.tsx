@@ -34,6 +34,7 @@ import { CastModelModal, draftNameToPersist } from '../components/CastModelModal
 import { useCastGate } from '../hooks/useCastGate';
 import { resetCastingSession } from '../hooks/castingSessionReset';
 import { IdentityChangeDialog } from './IdentityChangeDialog';
+import { logRawFailure, readableFailure } from '@/lib/failureSentence';
 import { honestModelName } from '@/features/casting/modelDisplayTruth';
 import { openCastingDetails } from '@/features/casting/components/PackageHealthDialog';
 import { useCastingRefreshStore } from '@/features/casting/stores/useCastingRefreshStore';
@@ -127,6 +128,28 @@ function diffPreferences(
     }
   }
   return { changes, labels: Array.from(labels) };
+}
+
+/**
+ * WHAT THE FORK DIALOG SAYS WHEN IT COULD NOT READ THE ERROR — card #2048.
+ *
+ * The dialog's `.catch` used to put any `err.message` on screen (a gateway's
+ * 502 text, a JSON parser's complaint) and, when there was none, say *"The
+ * fork was refused — nothing was charged."* Both halves claimed more than the
+ * client knew: a dropped connection is not a refusal, and the copy may have
+ * been made on the server before the answer was lost. The fork itself is free
+ * (`plannedCredits: 0` in `boardOps.applyModelEdit.execute`), so the honest
+ * fallback is about the COPY, not about money: we could not confirm it.
+ *
+ * The server's own refusals (the canvas door's sentence, "Generate a headshot
+ * before forking this Cast.") still pass through untouched — `readableFailure`
+ * is the rule, this is only the fallback.
+ */
+export const IDENTITY_COMMIT_UNCONFIRMED_SENTENCE =
+  "We couldn't confirm the copy was made. Check your canvas before trying again.";
+
+export function identityCommitFailureSentence(error: unknown): string {
+  return readableFailure(error, IDENTITY_COMMIT_UNCONFIRMED_SENTENCE);
 }
 
 export function CastingTakeover({
@@ -719,11 +742,8 @@ export function CastingTakeover({
                 setIdentityDialog(null);
               })
               .catch((err: unknown) => {
-                setIdentityCommitError(
-                  err instanceof Error && err.message
-                    ? err.message
-                    : 'The fork was refused — nothing was charged.',
-                );
+                logRawFailure('CastingTakeover.identityCommit', err);
+                setIdentityCommitError(identityCommitFailureSentence(err));
               })
               .finally(() => setIdentityCommitPending(false));
           }}

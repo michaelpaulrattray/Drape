@@ -9,6 +9,10 @@ vi.mock("./db", async (importOriginal) => {
     capUserSessions: vi.fn(),
     getSessionById: vi.fn(),
     getGarmentById: vi.fn(),
+    /* #2000 — the compose/swap roads read every garment named in ONE
+       owner-scoped statement now, so the double has to be the same reader
+       the route calls or it falls through to a null database. */
+    getOwnedGarmentsByIds: vi.fn(),
     createGeneration: vi.fn(),
     updateSession: vi.fn(),
   };
@@ -103,6 +107,7 @@ import {
   createGeneration,
   createSession,
   getGarmentById,
+  getOwnedGarmentsByIds,
   getSessionById,
   updateSession,
 } from "./db";
@@ -184,7 +189,7 @@ describe("R7-7B5 Wardrobe session image authority", () => {
       updatedAt: new Date(),
     });
     vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue(currentState());
-    vi.mocked(getGarmentById).mockResolvedValue({
+    const garment = {
       id: 3,
       userId: 7,
       slotType: "tops",
@@ -195,7 +200,14 @@ describe("R7-7B5 Wardrobe session image authority", () => {
       originalImageUrl: "https://garments.example/original.png",
       sourceImageUrl: null,
       status: "ready",
-    } as Awaited<ReturnType<typeof getGarmentById>>);
+    } as NonNullable<Awaited<ReturnType<typeof getGarmentById>>>;
+    vi.mocked(getGarmentById).mockResolvedValue(garment);
+    /* The batch reader answers from the SAME fixture, keyed by the id asked
+       for — so the two doubles cannot drift and an arm cannot pass because
+       one of them was forgotten (#2000). */
+    vi.mocked(getOwnedGarmentsByIds).mockImplementation(async (_userId, ids) =>
+      new Map(ids.map((id) => [id, { ...garment, id }])),
+    );
     vi.mocked(createGeneration).mockResolvedValue({
       success: true,
       generationId: 501,
@@ -434,6 +446,7 @@ describe("R7-7B5 Wardrobe session image authority", () => {
     })).rejects.toMatchObject({ code: "NOT_FOUND" });
 
     expect(getGarmentById).not.toHaveBeenCalled();
+    expect(getOwnedGarmentsByIds).not.toHaveBeenCalled();
     expect(createGeneration).not.toHaveBeenCalled();
     expect(withAtomicCredits).not.toHaveBeenCalled();
     expect(getImageAspectBucket).not.toHaveBeenCalled();

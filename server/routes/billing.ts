@@ -28,6 +28,7 @@ import {
   scheduleSubscriptionChange,
 } from "../stripe/subscriptionSchedule";
 import { formatCustomerShortDate } from "@shared/customerDate";
+import { planCancelledReceipt } from "@shared/planCancelCopy";
 import {
   queuePlanChangeSettlement,
   applyPlanChangeSettlement,
@@ -209,9 +210,18 @@ export const billingRouter = router({
           // credits figure comes from `credits` below through P1-1's display
           // helper. A field nobody reads is a second copy of a number, which
           // is working law 4 on a money surface.
+          //
+          // `features` left it with #1972 half 1, on the same ground and the
+          // relay's ruling: no client file has read it since the Section 03
+          // rebuild (#370, 2026-09-01), the Phase 2 compare table (#1834)
+          // draws the plan comparison, and a public money projection carrying
+          // a list no screen draws is where the next wrong promise goes
+          // unseen — #1953's three undelivered lines sat here for exactly
+          // that reason. The lines stay in `SUBSCRIPTION_PRODUCTS`; only the
+          // wire stopped carrying them. `undeliveredPlanFeatures1953.test.ts`
+          // pins the served keys.
           priceInCents: plan.priceInCents,
           credits: plan.credits,
-          features: plan.features,
           interval: plan.interval,
         };
       }),
@@ -698,7 +708,9 @@ export const billingRouter = router({
       req: ctx.req,
     });
 
-    return { success: true, message: "Subscription will be canceled at the end of the billing period." };
+    /* #1940 B25 — his approved receipt, with the period end this row already
+       holds (the plan runs to it: `cancel_at_period_end`). */
+    return { success: true, message: planCancelledReceipt(subscription.currentPeriodEnd) };
   }),
 
   // Reactivate canceled subscription
