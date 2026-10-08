@@ -52,7 +52,8 @@ function refusal(code: string, message: string): Error & { data: { code: string 
   return error;
 }
 
-describe("a refused staff export says so, and downloads nothing (#1991)", () => {
+/* #1991 */
+describe("a refused staff export says so, and downloads nothing", () => {
   it("shows the SERVER'S OWN sentence on a refusal, with no file and no success", async () => {
     const said = "You no longer have moderator access.";
     const r = recorder(() => Promise.reject(refusal("FORBIDDEN", said)));
@@ -161,7 +162,8 @@ function exportReaches(): { file: string; procedure: string; method: string }[] 
   return reaches;
 }
 
-describe("every staff CSV export goes through the vanilla client (#1991's class)", () => {
+/* #1991's class */
+describe("every staff CSV export goes through the vanilla client", () => {
   it("finds the three exports — the population is not empty", () => {
     const procedures = new Set(exportReaches().map((r) => r.procedure));
     expect([...procedures].sort()).toEqual([
