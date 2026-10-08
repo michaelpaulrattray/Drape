@@ -139,6 +139,28 @@ describe("the gate's money classifier is declared and wired (#958)", () => {
   });
 
   /**
+   * ⚠ **EVERY FILE EXTENSION IN THE PATH LIST IS AN ESCAPED DOT — the class,
+   * not the instance (#1903 review, "the merge dropped the backslash in
+   * `packageRedoService).ts$`").**
+   *
+   * A bare dot is any character, so `packageRedoService).ts$` also selects
+   * `packageRedoServiceXts`. On this list that is harmless today and will not
+   * stay harmless by itself: the line is edited by hand on every money card, a
+   * three-way merge of two cards touching one 936-character line is exactly how
+   * the backslash was lost, and **nothing noticed** — every other arm here asks
+   * only whether a REAL file is selected, which both spellings answer the same
+   * way. Sabotage proved that: the escape removed again, 129 arms green.
+   *
+   * So this reads the DECLARATION rather than its effect, which is the only
+   * reader that can tell the two apart.
+   */
+  it("escapes every file extension in the path list", () => {
+    const unescaped = [...PATTERNS.matchAll(/[^\\]\.(ts|tsx|mts|sh|json)\$/g)].map((match) => match[0]);
+    expect(unescaped, "a bare dot before a file extension matches any character")
+      .toEqual([]);
+  });
+
+  /**
    * Invariant 7 in miniature: a pattern nobody consults is not a control. The
    * whole #958 defect was a rule doing no work, so the coupling is asserted
    * rather than assumed — a `SYMBOLS` left declared after its `git diff -G`
