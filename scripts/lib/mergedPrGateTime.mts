@@ -206,7 +206,15 @@ export function readMergedPrs(sinceIso: string, options: ReadMergedPrsOptions = 
       minutes += (new Date(run.updated_at).getTime() - created) / 60_000;
       count += 1;
     }
-    prs.push({ number: pr.number, mergedAt: pr.mergedAt!, gateMinutes: minutes, gateRuns: count });
+    // The head branch rides along so the join can anchor the PR to the run that
+    // names that branch (#2097) — it is already read above for the gate runs.
+    prs.push({
+      number: pr.number,
+      mergedAt: pr.mergedAt!,
+      gateMinutes: minutes,
+      gateRuns: count,
+      headRefName: pr.headRefName,
+    });
   }
   return { ok: true, prs };
 }
