@@ -20,7 +20,27 @@ const SURFACES = [
   ["CandidateTile.tsx", new URL("./components/CandidateTile.tsx", import.meta.url)],
   ["KeptTray.tsx", new URL("./components/KeptTray.tsx", import.meta.url)],
   ["SignConfirm.tsx", new URL("./components/SignConfirm.tsx", import.meta.url)],
+  /*
+    ⚠ **THE SERVER COMPOSES CUSTOMER SENTENCES TOO, AND THIS LIST DID NOT
+    LOOK AT IT UNTIL PR #1924’s REVIEW.** Nine sentences about a Cast’s views
+    hard-coded *her* and *she*, and they reach a paying customer verbatim — a
+    refusal, two receipts and a refund description. A client-only guard cannot
+    see them, so the surfaces that SPEAK about a Cast are listed here whichever
+    side of the wire they live on.
+  */
+  ["packageRedoService.ts", new URL("../../../../server/castingV2/packageRedoService.ts", import.meta.url)],
+  ["viewRetryRecovery.ts", new URL("../../../../server/castingV2/viewRetryRecovery.ts", import.meta.url)],
 ] as const;
+
+/**
+ * ⚠ **THIS LIST IS HAND-KEPT, AND THE REVIEW THAT ADDED THE SERVER HALF ALSO
+ * SHOWED WHY THAT IS A FLOOR** (working law 4). The finding named FOUR
+ * offending sentences in `packageRedoService.ts`; there were FIVE — a second
+ * `Asking for all her views again` in the operation-time refusal that a
+ * hand-read missed. A derived population is the real answer and is its own
+ * card; until then a surface that speaks about a Cast and is not on this list
+ * is unguarded, and that sentence is the honest state rather than a promise.
+ */
 
 /**
  * Comments are stripped before the scan.

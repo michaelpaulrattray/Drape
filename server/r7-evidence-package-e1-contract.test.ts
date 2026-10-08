@@ -122,6 +122,16 @@ describe("R7-7E1 evidence-aware package foundation contract", () => {
       // module, which is the purity this suite is actually about.
       "castingV2/castProjection.ts",
       "castingV2/castViewPackage.ts",
+      // ⚠ A FOURTH PRICE READER ARRIVED ON 2026-10-07 (#1903 slice 2), and this
+      // inventory surfaced it before the gate did — again, which is the job it
+      // was written for. The paid redo quotes
+      // `CASTING_V2_PACKAGE_REDO_VIEW_PRICE_CREDITS` per view. Still a
+      // declaration-only read: no dependency is added to the price module,
+      // which is the purity this suite is actually about. Worth noticing what
+      // is NOT here beside it — the redo declares no package TOTAL, because
+      // `castPackageRedoOffer` prices the slots a Cast actually owns, so the
+      // projection above reads the slice and nothing reads a total.
+      "castingV2/packageRedoService.ts",
       // Refine (M8) quotes its one-unit price the same way. The adjudicator is
       // deliberately NOT here: it reads the charge back off the ledger rather
       // than re-deriving it from today's price, so a price change can never

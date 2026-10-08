@@ -107,6 +107,7 @@ const tuple = <T extends string>(values: readonly T[]) => values as unknown as [
 import { createRoll, cancelRoll } from "../castingV2/rollService";
 import { CAST_VIEW_ANGLES } from "../../shared/boardTypes";
 import { retryCandidate } from "../castingV2/retryService";
+import { redoCastPackage } from "../castingV2/packageRedoService";
 import { retryCastView } from "../castingV2/viewRetryService";
 import { captureCastingRetryEnabled } from "../castingV2/castingV2Scope";
 import { signCandidate } from "../castingV2/signService";
@@ -2062,7 +2063,7 @@ export const castingV2Router = router({
       if (model.status === "provisioning") {
         throw new TRPCError({
           code: "CONFLICT",
-          message: "She's still building — you can delete her once her package finishes.",
+          message: "This Cast is still building — you can delete it once the package finishes.",
         });
       }
       return runFinalCastDeletionCeremony({
@@ -2449,6 +2450,40 @@ export const castingV2Router = router({
         clientRequestId: input.clientRequestId,
         castId: input.castId,
         angle: input.angle,
+      });
+    }),
+
+  /**
+   * ASK FOR ALL HER VIEWS AGAIN (#1903 slice 2).
+   *
+   * **His ruling, verbatim (2026-10-07):** *"maybe we should allow retry by
+   * default incase they didnt like the outfit that was invented or whatever but
+   * it costs per retry and regens all views not just one"*.
+   *
+   * No fault has to be found first — this is the one road on the Cast that
+   * answers taste rather than a defect — and it is never free. The price on the
+   * button comes from the same reading that authorizes the spend
+   * (`castPackageRedoOffer`, over the projection the room is shown), and it is
+   * priced from the slots SHE owns rather than today's profile.
+   *
+   * A PAID procedure, so it sits in the paid bucket with `createRoll`, `refine`,
+   * `retry` and `retryView`. `clientRequestId` is the idempotency key for the
+   * whole press: the service derives one id per view from it, so the same press
+   * replays the same five operations rather than buying a second package.
+   */
+  redoPackage: protectedProcedure
+    .input(z.object({
+      clientRequestId: z.string(),
+      castId: z.string().min(1).max(32),
+    }).strict())
+    .mutation(async ({ ctx, input }) => {
+      requireCastingV2(ctx.user.id);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.generation);
+      assertClientRequestId(input.clientRequestId);
+      return redoCastPackage({}, {
+        userId: ctx.user.id,
+        clientRequestId: input.clientRequestId,
+        castId: input.castId,
       });
     }),
 

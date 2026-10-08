@@ -184,6 +184,24 @@ export const CASTING_V2_SIGN_PROMOTION_PRICE = CASTING_V2_SIGN_COSTS.promotion;
 export const CASTING_V2_SIGN_PRICE_CREDITS =
   CASTING_V2_SIGN_COSTS.promotion + CAST_PACKAGE_VIEW_PRICE * CAST_PACKAGE_VIEWS.length;
 
+/*
+  ⚠ **A REDO'S TOTAL IS ONE CONSTANT NOW, AND IT IS NOT HERE** (#1903, his
+  word of 2026-10-08: *"make both sign and redo/regenerate 650 credis"*).
+
+  What stood here argued that no package total should exist at all, because the
+  price was a per-view SLICE and `castPackageRedoOffer` had to multiply it by
+  the slots a Cast actually owns — two live Casts own a retired `walk`, so a
+  total derived from today's five views would have printed one number on the
+  button and charged another at the till. Both halves of that are gone with the
+  slice: `CASTING_V2_PACKAGE_REDO_PRICE_CREDITS` IS the total, it is flat
+  whatever she owns, and the offer serves it unmultiplied.
+
+  It lives in `castingCreditCosts.ts` beside every other price rather than here
+  beside the Sign's derivation, because it is not derived from anything: the
+  Sign's total is `promotion + view x views`, and his redo price is a number he
+  set.
+*/
+
 /**
  * WHAT ONE FINISHED CHARACTER COSTS — the plan card's worked example, derived
  * from the three prices that make one (#1607, P1-8).

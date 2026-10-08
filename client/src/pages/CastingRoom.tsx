@@ -22,6 +22,10 @@ import {
   slotShowsWorking,
 } from "@/features/castingV2/roomBusy";
 import {
+  PACKAGE_REDO_WORKING,
+  packageRedoLabel,
+} from "@/features/castingV2/packageRedoRow";
+import {
   VIEW_RETRY_LINK,
   VIEW_RETRY_SEPARATOR,
   VIEW_RETRY_WORDS,
@@ -165,6 +169,24 @@ export default function CastingRoom() {
    * makes the press visible before the next read lands.
    */
   const [asking, setAsking] = useState<ReadonlySet<string>>(() => new Set());
+  /*
+    ASK FOR ALL HER VIEWS AGAIN (#1903 slice 2).
+
+    His ruling: a redo for a customer who simply does not like what arrived, no
+    fault needing to be found first. The price is not decided here and is not a
+    constant in this file — it arrives on the Cast (`data.redo.priceCredits`),
+    from the same server reading that authorizes the spend, so the button and
+    the till can never disagree.
+  */
+  const redoPackage = trpc.castingV2.redoPackage.useMutation();
+  /*
+    OUR OWN PRESS, for the first frame only — the same job `asking` does for one
+    tile, and it is a boolean because a redo is one press on the whole Cast.
+    The server's answer takes over the moment it lands: every slot reads
+    `retrying`, so all five tiles draw the working state they draw for any view
+    being made, and `data.redo` is withheld for as long as the operations run.
+  */
+  const [askingAll, setAskingAll] = useState(false);
   /** The sibling face being looked at, if any. */
   const [viewingSibling, setViewingSibling] = useState<
     // Derived from the projection rather than restated, so a field added
@@ -255,6 +277,94 @@ export default function CastingRoom() {
           release(angle);
           logRawFailure('castingV2.retryView', error);
           toast.error(readableFailure(error, "That view couldn't be asked for again."));
+        },
+      },
+    );
+  };
+
+  /**
+   * Ask for all her views again.
+   *
+   * One press, no choice, no second dialog — the price is on the button, so the
+   * decision was made before the finger landed. The server re-reads whether she
+   * may be asked at all and what it costs, so a room left open in another tab
+   * cannot spend against a Cast that has since started making something.
+   */
+  const askForAllViewsAgain = () => {
+    if (!data || askingAll) return;
+    setAskingAll(true);
+    /*
+      EVERY TILE GOES TO WORK IN THE SAME FRAME THE FINGER LEAVES THE BUTTON.
+
+      The per-slot set already exists for the Try again and already drives
+      `slotShowsWorking`, so a redo reuses it rather than teaching the strip a
+      second way to look busy — five tiles that behave exactly as one does when
+      it is being asked for again. The server's `retrying` takes over on the
+      next read; this is only the first frame.
+    */
+    setAsking(new Set(data.slots.map((slot) => slot.angle)));
+    redoPackage.mutate(
+      { clientRequestId: createClientRequestId(), castId: data.castId },
+      {
+        onSuccess: (result) => {
+          setAskingAll(false);
+          setAsking(new Set());
+          void utils.castingV2.getCast.invalidate({ castId: data.castId });
+          /*
+            NO TOAST WHEN THEY ALL ARRIVED — the retry road's answer and the
+            same reasoning: the new pictures ARE the notice, and a better one
+            than a sentence about them. The price was on the button before the
+            press, so nothing about the money is news either.
+          */
+          if (result.failed.length === 0) return;
+          /*
+            Truthful about the money even when it went wrong, and the test stays
+            on the LEDGER with only the printed number converted (#1600).
+            Branching on the displayed figure would say "you weren't charged" to
+            somebody who was charged and refunded a sum too small to show.
+          */
+          if (!result.refundRecorded) {
+            toast("Some views didn't arrive — and the refund couldn't be recorded. Support can restore it.");
+            return;
+          }
+          /* NO PRONOUN. A Cast is referred to by the pronouns on her own
+             record (`castPronouns`) or by name — never by one typed into a
+             sentence, which is how Jericho came to be called the wrong thing on
+             his own page. These say "the views", which needs no record at all
+             and reads the same for every cast. */
+          /*
+            ⚠ **NOTHING COMES BACK FOR ONE VIEW UNDER THE FLAT PRICE, so this
+            line says nothing about money unless money actually moved** (#1968,
+            his word of 2026-10-08; #1903's card names it — *"nothing may imply
+            credits came back for that view"*). Repaired on PR #1924 when
+            `main` merged forward.
+
+            It used to end with a sentence telling her she had not been charged
+            — and under the flat price that is the ORDINARY partial failure,
+            because her slot rows cost nothing and `refundedCredits` is 0. True
+            of the pipeline, false to the person who paid 650 for the set. So
+            the claim is removed rather than reworded: the honest line says
+            which views are new and makes none about the till.
+
+            ⚠ **And when money DID come back it is said in the product's one
+            refund vocabulary** (`creditsReturnedText`, #1940). The spelling
+            this branch had — *"Your N credits … are back."* — is one of the
+            four that helper was built to retire, reintroduced on a branch cut
+            before it landed. Exactly the drift `shared/refundCopy.ts` exists
+            to prevent.
+          */
+          const back = result.refundedCredits > 0
+            ? ` ${creditsReturnedText(result.refundedCredits)}`
+            : "";
+          toast(result.committed.length === 0
+            ? `None of the views arrived this time.${back}`
+            : `${result.failed.length} of the views didn't arrive.${back} The rest are new.`);
+        },
+        onError: (error) => {
+          setAskingAll(false);
+          setAsking(new Set());
+          logRawFailure('castingV2.redoPackage', error);
+          toast.error(readableFailure(error, "Those views couldn't be asked for again."));
         },
       },
     );
@@ -726,6 +836,47 @@ export default function CastingRoom() {
                         before: absent while she builds, absent while the
                         server's door is shut.
                       */}
+                      {/*
+                        ASK FOR ALL HER VIEWS AGAIN (#1903 slice 2) — on the row
+                        of things you do to the WHOLE Cast rather than to one
+                        picture, which is where the other one already is.
+
+                        ⚠ **BEFORE Delete and not after**, because that button
+                        carries its own standing rule two comments down: it is
+                        accent-coloured and LAST *"because it is the last thing
+                        anyone should reach for"*. The first draft of this row
+                        put the redo after it and the frame said so — a reading
+                        no test could have given, and law 6 exactly.
+
+                        ⚠ **THE OFFER DECIDES WHETHER IT IS DRAWN, NOT THIS
+                        COMPONENT.** The server withholds `redo` while she is
+                        building and while anything of hers is in flight, so
+                        there is no second rule here to drift from it — and no
+                        disabled button wearing a verb, which is the shape #1235
+                        took off the tiles.
+                      */}
+                      {askingAll ? (
+                        /* ⚠ NOT `dpc-slot__row`, which is the muted line UNDER
+                           A TILE. Borrowing it put a second element with that
+                           class above the strip, and `viewRetryRow.test.ts`
+                           slices the component from the FIRST one — so his two
+                           Try again sentences were being read out of this header
+                           instead. A guard whose anchor another element can
+                           steal is the shape that memory is about. */
+                        <span className="dpc-room__redo-working" role="status">{PACKAGE_REDO_WORKING}</span>
+                      ) : data.redo ? (
+                        <button
+                          type="button"
+                          className="dpc-room__redo"
+                          onClick={askForAllViewsAgain}
+                        >
+                          {/* The LEDGER price, straight off the wire. The copy
+                              module converts it through the one converter
+                              (#1600) so the routing is visible where it happens;
+                              this file does no arithmetic at all. */}
+                          {packageRedoLabel(data.redo.priceCredits)}
+                        </button>
+                      ) : null}
                       {deleteDoorOpen && data.status !== "building" ? (
                         <button
                           type="button"

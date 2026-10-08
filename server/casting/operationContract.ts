@@ -70,9 +70,86 @@ export const GENERATION_OPERATION_KINDS = [
     ask the only question it has — did a picture land under this operation?
   */
   "castingV2.viewRetry",
+  /*
+    Redo the whole package (#1903, his word 2026-10-07: *"it costs per retry
+    and regens all views not just one"*): ONE view of a signed Cast rendered
+    again, dispatched five-at-a-time from one press, under an operation PER
+    VIEW rather than one for the batch.
+
+    ⚠ **IT CARRIES NO MONEY ANY MORE — his flat price of 2026-10-08
+    moved that to `castingV2.packageRedoPress`, and the paragraph this replaces
+    is the record of why it used to.** It read: *"the unit that can fail has to
+    be the unit that is charged"*, which was true while a refused view refunded
+    its own slice at 350. Under *"make both sign and redo/regenerate 650
+    credits"* with no per-view refund, there is no per-view money left to
+    carry: a slot row is `plannedCredits` 0, and the question it answers is
+    about PICTURES rather than credits — did one land under this operation.
+
+    What a slot row still is: the lock, the claim, the commit fence and the
+    sweep's per-slot authority over an unfinished render.
+
+    **It is its own kind and not the Try again's**, even though it takes that
+    road's claim payload, its slot lock and its adjudicator. The kind is the
+    one field only this road writes, so every later reading — the free-ask
+    accounting (`spentFreeViewRetryFilter`, which keys on the retry kind and a
+    zero price), a support read, a per-road measurement — can tell a redo from
+    a customer asking for one view again. Sharing the kind would have saved
+    three lines and made the two roads indistinguishable in the record.
+  */
+  "castingV2.packageRedo",
+  /*
+    THE PRESS ITSELF (#1903, his flat price of 2026-10-08: *"on this card make
+    both sign and redo/regenerate 650 credis"*).
+
+    ⚠ **IT HOLDS THE MONEY AND NOTHING ELSE.** A flat price cannot be
+    charged five times, and it cannot be charged on one of the five slot rows
+    either: the sweep refunds an unsettled operation's planned credits, so a
+    slot carrying the whole 3,250 would hand back a whole redo whenever THAT
+    slot was the one left unsettled, even though its four siblings delivered.
+    So the press is its own row: `plannedCredits` 3,250, one charge, and the
+    only operation the recovery sweep can refund.
+
+    ⚠ **IT HOLDS THE CAST-LEVEL LOCK, AND THE SLOTS HOLD THEIR OWN.**
+    `generation_operation_locks` has a unique index on `operationId`, so one
+    operation holds exactly one lock key — which is why the five slot locks
+    need five operations and the press could not simply take them all. Its own
+    `model:<id>` key is what makes a second press on one Cast refuse at the
+    claim, before a slot is taken or a credit moves, and it is what
+    `operationLockWire` requires of any operation binding a `modelId`.
+
+    It is NOT in {@link VIEW_REPLACING_OPERATION_KINDS}: it commits no picture,
+    and widening the commit fence to a row that never lands bytes is the
+    mistake that list's own header names.
+  */
+  "castingV2.packageRedoPress",
 ] as const;
 
 export type GenerationOperationKind = typeof GENERATION_OPERATION_KINDS[number];
+
+/**
+ * THE KINDS THAT MAY REPLACE A VIEW ON A LIVE, SIGNED CAST — declared once,
+ * read by the commit fence, the busy read and the subject hash (#1903).
+ *
+ * Two roads reach the same durable act (a new picture into an occupied slot of
+ * an `active` Cast) and they are deliberately different kinds: one is a
+ * customer asking for a single view again, one is a paid redo of all five.
+ * **Everything that cares "is this road allowed to replace a view" reads THIS
+ * and never a literal** — `commitRetriedViewAsset`'s fence and
+ * `runningViewRetryFilter` both did carry a literal, and a second kind arriving
+ * beside a hard-coded one is how a committed picture silently reads as fenced.
+ *
+ * ⚠ **It is NOT the list of kinds that may spend on a Cast**, and it must not
+ * grow into one. The Sign's own commit is excluded on purpose: it requires
+ * `models.status = 'provisioning'` and has its own fence, and widening a live
+ * money path to serve a new one is the mistake `castingV2ViewRetry`'s own
+ * header names.
+ */
+export const VIEW_REPLACING_OPERATION_KINDS = [
+  "castingV2.viewRetry",
+  "castingV2.packageRedo",
+] as const satisfies readonly GenerationOperationKind[];
+
+export type ViewReplacingOperationKind = typeof VIEW_REPLACING_OPERATION_KINDS[number];
 
 const GENERATION_OPERATION_STATUSES = [
   "claimed",
@@ -410,22 +487,96 @@ export function castViewRetryClaimPayload(input: {
 }
 
 /**
- * The `payloadHash` a running Try again on this Cast's view would carry.
+ * The `payloadHash` a running ask on this Cast's view would carry, on whichever
+ * road asked (#1903).
  *
  * `modelId` is part of it because the claim binds the model at the claim — so
  * the hash is unambiguous about WHICH Cast even though the public id is in the
  * payload too.
+ *
+ * ⚠ **THE KIND IS PART OF THE HASH, WHICH IS WHY THIS FUNCTION TAKES ONE.**
+ * `hashGenerationOperationSubject` mixes `kind` in, so the kind-fixed version
+ * of this reader could not see a redo's claim at all: the busy read would
+ * return no angles while five views rendered, every tile would draw a Try
+ * again button over a render in flight, and pressing one would charge against
+ * a slot that is already being replaced — which is #1235's double charge
+ * arriving by a new door. One parameter, and the two roads share the shape
+ * rather than the blindness.
+ */
+export function castViewSubjectHash(input: {
+  kind: ViewReplacingOperationKind;
+  modelId: number;
+  castId: string;
+  angle: string;
+}): string {
+  return hashGenerationOperationSubject({
+    kind: input.kind,
+    modelId: input.modelId,
+    payload: castViewRetryClaimPayload(input),
+  });
+}
+
+/**
+ * The `payloadHash` a running Try again on this Cast's view would carry.
+ *
+ * Kept as its own name with its own signature — #1235's wire guard asserts the
+ * retry entrance's claim hashes to exactly this, and the retry road has no
+ * business naming a kind it is.
  */
 export function castViewRetrySubjectHash(input: {
   modelId: number;
   castId: string;
   angle: string;
 }): string {
-  return hashGenerationOperationSubject({
-    kind: "castingV2.viewRetry",
-    modelId: input.modelId,
-    payload: castViewRetryClaimPayload(input),
-  });
+  return castViewSubjectHash({ ...input, kind: "castingV2.viewRetry" });
+}
+
+/**
+ * FIVE DETERMINISTIC REQUEST IDS FROM ONE PRESS (#1903).
+ *
+ * A redo is one deliberate intent that becomes five operations, and every
+ * operation needs its own `clientRequestId` because that id IS the idempotency
+ * key: two operations sharing one would have the second read as a replay of the
+ * first and return its result. So the five are DERIVED from the press rather
+ * than minted fresh — a customer who double-presses, or a client that retries a
+ * dropped response, replays the same five operations instead of buying a second
+ * package.
+ *
+ * ⚠ **IT HAS TO BE A UUID AND `${id}:${angle}` IS NOT ONE.**
+ * `assertClientRequestId` requires the real UUID grammar, so the obvious
+ * concatenation throws at the first claim. This is the name-based shape (RFC
+ * 4122 §4.3): sha256 over the parent and the label, the first sixteen bytes,
+ * **version 5 and the RFC variant written into the bits that the grammar
+ * checks.** Those two writes are not cosmetic — without them roughly 15 of
+ * every 16 derivations would land outside `[1-8]` or `[89ab]` and throw, which
+ * is a failure that would look random rather than wrong.
+ *
+ * Stable across processes and deploys, because it is a hash of its inputs and
+ * nothing else: the same press on the same view derives the same id tomorrow.
+ */
+export function derivedClientRequestId(parentId: string, label: string): string {
+  assertClientRequestId(parentId);
+  if (label.length === 0) throw new TypeError("label must not be empty");
+  const digest = createHash("sha256").update(`${parentId}:${label}`).digest();
+  const bytes = Uint8Array.prototype.slice.call(digest, 0, 16);
+  // Version 5 (name-based, sha1 by the RFC's letter; the digest is stronger).
+  bytes[6] = (bytes[6]! & 0x0f) | 0x50;
+  // The RFC 4122 variant — the `[89ab]` nibble the grammar insists on.
+  bytes[8] = (bytes[8]! & 0x3f) | 0x80;
+  const hex = Buffer.from(bytes).toString("hex");
+  const derived = [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    hex.slice(12, 16),
+    hex.slice(16, 20),
+    hex.slice(20, 32),
+  ].join("-");
+  /* Asserted on the way OUT, not merely trusted from the bit-twiddling above:
+     this value is about to be an idempotency key on a money path, and the one
+     thing worse than a throw here is a key the claim store accepts and the
+     grammar would not. */
+  assertClientRequestId(derived);
+  return derived;
 }
 
 export function operationChargeReference(operationId: string): string {

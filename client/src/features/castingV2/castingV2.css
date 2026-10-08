@@ -2795,6 +2795,41 @@
 .dpc-room__delete:hover { opacity: 1; text-decoration: underline; }
 .dpc-room__delete:focus-visible { outline: 2px solid var(--accentSolid); outline-offset: 2px; }
 
+/* ASK FOR ALL HER VIEWS AGAIN (#1903 slice 2) — the other whole-Cast action,
+   and a deliberate SIBLING of the sentence above rather than of the tile's
+   `dpc-slot__again`.
+
+   ⚠ It wore `dpc-slot__again` first and the frame is what said no: that class
+   is `font: inherit` with a standing underline, written for a muted line under
+   a picture, and in this header it inherited the row's larger type and became
+   the loudest thing on a line whose only coloured word is meant to be Delete.
+   Same 12px as its neighbour, `--meta` because nothing here is destructive,
+   and the underline arrives on hover exactly as the delete sentence's does —
+   three actions, one rhythm, one coloured. */
+.dpc-room__redo {
+  margin-left: 12px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: 400 12px/1.4 var(--font-sans);
+  color: var(--meta);
+  cursor: pointer;
+  transition: color var(--t-fast) var(--ease);
+}
+
+.dpc-room__redo:hover { color: var(--ink); text-decoration: underline; }
+.dpc-room__redo:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* What stands in its place while the new set is being made — the same type and
+   the same colour, so the row does not shift when the button becomes a
+   sentence. Not pressable and says so by being a span, rather than by being a
+   button wearing a verb and a disabled attribute (#1235's shape). */
+.dpc-room__redo-working {
+  margin-left: 12px;
+  font: 400 12px/1.4 var(--font-sans);
+  color: var(--meta);
+}
+
 @keyframes dpc-modal-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes dpc-modal-rise {
   from { opacity: 0; transform: translateY(8px) scale(0.99); }

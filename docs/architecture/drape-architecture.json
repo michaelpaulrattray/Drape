@@ -27,17 +27,17 @@
     {
       "id": "domain:casting",
       "name": "casting",
-      "moduleCount": 123
+      "moduleCount": 124
     },
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 192
+      "moduleCount": 193
     },
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 52
+      "moduleCount": 53
     },
     {
       "id": "domain:client-shared",
@@ -1461,6 +1461,12 @@
     {
       "id": "module:client/src/features/castingV2/keptStrip.ts",
       "path": "client/src/features/castingV2/keptStrip.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/packageRedoRow.ts",
+      "path": "client/src/features/castingV2/packageRedoRow.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -3283,6 +3289,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/casting/flatPressCharge.ts",
+      "path": "server/casting/flatPressCharge.ts",
+      "domain": "casting",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/casting/geminiCircuitBreaker.ts",
       "path": "server/casting/geminiCircuitBreaker.ts",
       "domain": "casting",
@@ -4215,6 +4227,12 @@
     {
       "id": "module:server/castingV2/packageOrchestrator.ts",
       "path": "server/castingV2/packageOrchestrator.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/packageRedoService.ts",
+      "path": "server/castingV2/packageRedoService.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -7767,6 +7785,16 @@
       "file": "server/routes/castingV2.ts"
     },
     {
+      "id": "route:castingV2.redoPackage",
+      "namespace": "castingV2",
+      "name": "redoPackage",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
       "id": "route:castingV2.reference.attach",
       "namespace": "castingV2.reference",
       "name": "attach",
@@ -10048,6 +10076,16 @@
       "contract": "server/casting/operationContract.ts"
     },
     {
+      "id": "operation:castingV2.packageRedo",
+      "kind": "castingV2.packageRedo",
+      "contract": "server/casting/operationContract.ts"
+    },
+    {
+      "id": "operation:castingV2.packageRedoPress",
+      "kind": "castingV2.packageRedoPress",
+      "contract": "server/casting/operationContract.ts"
+    },
+    {
       "id": "operation:castingV2.refine",
       "kind": "castingV2.refine",
       "contract": "server/casting/operationContract.ts"
@@ -10217,6 +10255,13 @@
       "constant": "CASTING_V2_FOLLOW_PRICE_CREDITS",
       "credits": 1600,
       "derivedFrom": "CASTING_V2_COSTS.followCandidate * CASTING_V2_COSTS.rollCandidateCount",
+      "file": "server/casting/castingCreditCosts.ts"
+    },
+    {
+      "id": "cost:server/casting/castingCreditCosts.ts:CASTING_V2_PACKAGE_REDO_PRICE_CREDITS",
+      "name": "CASTING_V2_PACKAGE_REDO_PRICE_CREDITS",
+      "constant": "CASTING_V2_PACKAGE_REDO_PRICE_CREDITS",
+      "credits": 3250,
       "file": "server/casting/castingCreditCosts.ts"
     },
     {
@@ -11095,6 +11140,10 @@
       "path": "client/src/features/castingV2/modalAnatomy.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/packageRedoRow.test.ts",
+      "path": "client/src/features/castingV2/packageRedoRow.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/panelBridge.test.ts",
       "path": "client/src/features/castingV2/panelBridge.test.ts"
     },
@@ -11777,6 +11826,10 @@
     {
       "id": "test:server/casting/composeIdentityPayload.test.ts",
       "path": "server/casting/composeIdentityPayload.test.ts"
+    },
+    {
+      "id": "test:server/casting/derivedClientRequestId.test.ts",
+      "path": "server/casting/derivedClientRequestId.test.ts"
     },
     {
       "id": "test:server/casting/effectiveCastProjections.test.ts",
@@ -12761,6 +12814,14 @@
     {
       "id": "test:server/castingV2/packageOrchestrator.test.ts",
       "path": "server/castingV2/packageOrchestrator.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/packageRedoPrice.test.ts",
+      "path": "server/castingV2/packageRedoPrice.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/packageRedoService.test.ts",
+      "path": "server/castingV2/packageRedoService.test.ts"
     },
     {
       "id": "test:server/castingV2/partialDeference.test.ts",
@@ -18370,6 +18431,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/packageRedoRow.ts",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/pictureBytes.ts",
       "to": "module:shared/pictureFormats.ts",
       "kind": "imports"
@@ -21362,6 +21428,11 @@
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
       "to": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingRoom.tsx",
+      "to": "module:client/src/features/castingV2/packageRedoRow.ts",
       "kind": "imports"
     },
     {
@@ -27650,6 +27721,126 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/packageRedoService.ts",
+      "to": "module:server/casting/atomicCredits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageRedoService.ts",
+      "to": "module:server/casting/castingCreditCosts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageRedoService.ts",
+      "to": "module:server/casting/directOperation.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageRedoService.ts",
+      "to": "module:server/casting/flatPressCharge.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageRedoService.ts",
+      "to": "module:server/casting/operationContract.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageRedoService.ts",
+      "to": "module:server/castingV2/castProjection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageRedoService.ts",
+      "to": "module:server/castingV2/castPronouns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageRedoService.ts",
+      "to": "module:server/castingV2/castViewPackage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageRedoService.ts",
+      "to": "module:server/castingV2/packageOrchestrator.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageRedoService.ts",
+      "to": "module:server/castingV2/signEngine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageRedoService.ts",
+      "to": "module:server/castingV2/signService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageRedoService.ts",
+      "to": "module:server/castingV2/signSheet.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageRedoService.ts",
+      "to": "module:server/castingV2/signSheetCoordinator.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageRedoService.ts",
+      "to": "module:server/castingV2/spendGuards.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageRedoService.ts",
+      "to": "module:server/castingV2/viewConformance.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageRedoService.ts",
+      "to": "module:server/castingV2/viewRetryService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageRedoService.ts",
+      "to": "module:server/castingV2/wardrobeLine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageRedoService.ts",
+      "to": "module:server/db/castingV2ViewRetry.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageRedoService.ts",
+      "to": "module:server/db/credits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageRedoService.ts",
+      "to": "module:server/db/generationOperations.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageRedoService.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageRedoService.ts",
+      "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageRedoService.ts",
+      "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageRedoService.ts",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/poolTendencies.ts",
       "to": "module:server/castingV2/castingIntent.ts",
       "kind": "imports"
@@ -30402,6 +30593,11 @@
     {
       "from": "module:server/castingV2/viewRetryRecovery.ts",
       "to": "module:server/casting/atomicCredits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryRecovery.ts",
+      "to": "module:server/casting/flatPressCharge.ts",
       "kind": "imports"
     },
     {
@@ -33767,6 +33963,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/inkUploadDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/packageRedoService.ts",
       "kind": "imports"
     },
     {
@@ -38169,6 +38370,13 @@
       "kind": "redeclared-shape",
       "subject": "server/castingV2/maskGeometry.ts:314",
       "message": "Names 3 of Raster's 3 fields (server/castingV2/maskedComposite.ts), 3 of Mask's 3 fields (server/castingV2/maskedComposite.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
+    },
+    {
+      "id": "finding:redeclared-shape:server/castingV2/packageRedoService.ts:195",
+      "severity": "warn",
+      "kind": "redeclared-shape",
+      "subject": "server/castingV2/packageRedoService.ts:195",
+      "message": "Names 3 of ViewRetryInput's 4 fields (server/castingV2/viewRetryService.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
       "id": "finding:redeclared-shape:server/castingV2/referenceAttachDoor.ts:59",

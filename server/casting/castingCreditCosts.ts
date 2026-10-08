@@ -349,6 +349,39 @@ export const CASTING_V2_REFINE_PRICE_CREDITS = 1750;
 export const CASTING_V2_VIEW_RETRY_PRICE_CREDITS = 1850;
 
 /**
+ * A WHOLE PACKAGE AGAIN, FLAT (#1903 slice 2) — every view of a signed Cast
+ * rendered once more for a customer who simply does not like what arrived.
+ *
+ * **His price, verbatim, 2026-10-08 (terminal, on #1968):** *"on this card make
+ * both sign and redo/regenerate 650 credis"*. **650 display = 3,250 ledger**,
+ * and it is ONE number for the whole press however many views the Cast owns.
+ *
+ * ⚠ **IT WAS 350 PER VIEW UNTIL THIS COMMIT, AND THE SHAPE MOVED WITH
+ * THE NUMBER.** The old constant was `CASTING_V2_PACKAGE_REDO_VIEW_PRICE_CREDITS`
+ * — a per-SLOT price, five of which made 1,750 ledger — and a view that did not
+ * arrive refunded its own slice. His word of 2026-10-08 ends both halves:
+ *
+ *   > *"Drop the 700 base + 200 per view split, since views are cut from two
+ *   > sheets and can't be refunded one by one... Credits only come back if the
+ *   > Sign can't be delivered at all."*
+ *
+ * The redo renders from the same two sheets, so the same sentence is true of
+ * it: a refused view costs the house a whole re-rendered sheet, not a fifth of
+ * one, and a per-slice refund would pay a customer back for a frame we bought.
+ *
+ * ⚠ **SO THERE IS NO PER-SLOT CONSTANT, AND THAT ABSENCE IS THE CONTROL.**
+ * A surviving `*_VIEW_PRICE_CREDITS` for this road would be a back door: the
+ * arithmetic for a slice refund would still be sitting there, one `/ 5` away
+ * from being re-added by somebody reading an older comment.
+ * `server/castingV2/packageRedoPrice.test.ts` refuses the name's return.
+ *
+ * **What a customer is never charged twice for**: the whole press is one
+ * charge on one operation, and the only way credits come back is zero views
+ * delivered — the total-loss road, which gives back all 3,250 exactly once.
+ */
+export const CASTING_V2_PACKAGE_REDO_PRICE_CREDITS = 3250;
+
+/**
  * Sign (§H.4/H.10, founder-decided 2026-07-30; repriced 2026-10-01 under his
  * approved pricing, #1601 item 1): one price, one operation, **decomposed** —
  * because a failed view has to refund its exact slice under the same charge

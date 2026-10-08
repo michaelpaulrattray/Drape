@@ -3,6 +3,8 @@ import { recoverCastingV2RefineOperation } from "../castingV2/refineRecovery";
 import { RETRY_SUPPORT_REVIEW_SENTENCE, recoverCastingV2RetryOperation } from "../castingV2/retryRecovery";
 import {
   VIEW_RETRY_SUPPORT_REVIEW_SENTENCE,
+  recoverCastingV2PackageRedoOperation,
+  recoverCastingV2PackageRedoPressOperation,
   recoverCastingV2ViewRetryOperation,
 } from "../castingV2/viewRetryRecovery";
 import { recoverCastingV2SignOperation } from "../castingV2/signRecovery";
@@ -109,6 +111,10 @@ const PUBLIC_RESULT_RECOVERY_BY_KIND: Readonly<
   "castingV2.retry": "not_reconstructable",
   /* Same: the Cast's room reads her own asset rows and shows the view. */
   "castingV2.viewRetry": "not_reconstructable",
+  /* Same again, five times over: a redo is five replaced views and the room
+     reads each of them off her own asset rows. */
+  "castingV2.packageRedo": "not_reconstructable",
+  "castingV2.packageRedoPress": "not_reconstructable",
 };
 
 type StaleRecoveryStrategy =
@@ -118,6 +124,8 @@ type StaleRecoveryStrategy =
   | "castingv2_refine"
   | "castingv2_retry"
   | "castingv2_view_retry"
+  | "castingv2_package_redo"
+  | "castingv2_package_redo_press"
   | "ink_evidence"
   | "evidence_fork"
   | "evidence_mint";
@@ -188,6 +196,26 @@ const STALE_RECOVERY_BY_KIND: Readonly<
     closes free — read, never assumed.
   */
   "castingV2.viewRetry": "castingv2_view_retry",
+  /*
+    Bespoke in the table and SHARED in the code (#1903), which is the one
+    entry here that deserves its own sentence. A redo is five operations, each
+    replacing one view, so its fork variable is the Try again's exactly: did a
+    picture land under THIS operation? It therefore reuses that adjudicator
+    rather than a copy of it — the alternative was a second two-hundred-line
+    reading of the same ledger, whose drift would be a customer refunded twice
+    or not at all. The strategy is its own name because the KIND is its own
+    kind, and a shared cell would make the table lie about which road a row
+    came from.
+  */
+  "castingV2.packageRedo": "castingv2_package_redo",
+  /*
+    ⚠ **THE ONLY ROW OF A REDO THAT CARRIES MONEY (#1903, his flat
+    price).** Its own strategy because its question is its own: a slot row asks
+    *did a picture land under THIS operation*, and the press asks *did one land
+    under ANY of them* — which is the whole of his rule that credits come
+    back only when nothing could be delivered at all.
+  */
+  "castingV2.packageRedoPress": "castingv2_package_redo_press",
 };
 
 const LANDING_RECOVERY_BY_KIND: Readonly<
@@ -228,6 +256,9 @@ const LANDING_RECOVERY_BY_KIND: Readonly<
   "castingV2.refine": null,
   "castingV2.retry": null,
   "castingV2.viewRetry": null,
+  "castingV2.packageRedo": null,
+  /* The press commits no asset, so there is no landing to recover. */
+  "castingV2.packageRedoPress": null,
 };
 
 function assertNever(value: never): never {
@@ -1187,6 +1218,30 @@ async function settleStaleGenerationOperation(
     });
     if (recovered.type === "durable_success") return "durable_success";
     if (recovered.type === "paid_failure") return "paid_failure";
+    if (recovered.type === "deferred") {
+      /*
+        ⚠ **LEFT EXACTLY AS FOUND, AND `"skipped"` RATHER THAN A FALL-THROUGH
+        (#1903 review finding, the sweep side of B1).**
+
+        A view can still arrive, so nothing has been decided and nothing is
+        written. Returning here is load-bearing: below this if-chain the
+        function continues into the GENERIC stale-operation handling — the
+        ledger comparison and the standard finalizers — which would seal a row
+        this adjudicator deliberately declined to judge. The comment at that
+        boundary says every path past it assumes a `claimed` or `running`
+        operation, which is true of this one, so only an explicit return keeps
+        it out.
+
+        `claimRecoveryAttempt` has already stamped `recoveryAttemptedAt`, so
+        the next attempt is ~5 minutes away rather than on the next 60-second
+        pass.
+      */
+      log.info(
+        { operationId: operation.id, reason: recovered.reason },
+        "[OperationRecovery] deferred — a view of this Cast can still arrive",
+      );
+      return "skipped";
+    }
     if (recovered.type === "free_failure") return "free_failure";
     if (recovered.type === "recovery_required") {
       await markGenerationOperationRecoveryRequired({
@@ -1198,6 +1253,176 @@ async function settleStaleGenerationOperation(
       });
       return "recovery_required";
     }
+    /*
+      ⚠ **THE COMPILER IS THIS BRANCH'S GUARD AGAINST FALLING THROUGH, and
+      falling through is the dangerous direction (#1903 review finding, the
+      sweep side of B1).**
+
+      Below these kind branches the function continues into the GENERIC
+      stale-operation handling — the ledger comparison and the standard
+      finalizers — and the comment at that boundary says every path past it
+      assumes a `claimed` or `running` operation, which is true of every row
+      arriving here. So an outcome this branch forgets to name would not be
+      refused: it would be settled by machinery that never asked this road's
+      question.
+
+      `assertNever` makes that a TYPE ERROR rather than a test nobody wrote.
+      When `ViewRetryRecoveryOutcome` grows a variant, `tsc` names this line
+      and its two siblings; the throw is only the backstop. It is the one
+      instrument that cannot be green while the hazard is open, which is why
+      it is here instead of a text read of the source.
+    */
+    return assertNever(recovered);
+  }
+  if (operation.kind === "castingV2.packageRedo") {
+    /*
+      ONE VIEW OF A REDO (#1903). Five of these exist per press and each is
+      settled on its own question — did a picture land under THIS slot — which
+      decides the sentence the customer reads and nothing about the money.
+
+      ⚠ **A SLOT CARRIES NO CREDITS UNDER HIS FLAT PRICE, so there is no slice
+      to refund here.** This comment described the retired per-view price and
+      its per-slice refund (`350`, "gets it back") for one commit after the flat
+      price landed; the code it describes had already stopped doing that. The
+      3,250 is on the press row and is settled by the branch below; a slot found
+      carrying a charge is PARKED rather than refunded, because it is money this
+      road cannot explain.
+
+      **The Try again's adjudicator with the redo's words** — the question is
+      identical and only the sentence differs.
+    */
+    const recovered = await recoverCastingV2PackageRedoOperation({
+      ...operation,
+      // Narrowed by the gate above; the row's column type is a bare string.
+      status: operation.status === "claimed" ? "claimed" : "running",
+    });
+    if (recovered.type === "durable_success") return "durable_success";
+    if (recovered.type === "paid_failure") return "paid_failure";
+    if (recovered.type === "deferred") {
+      /*
+        ⚠ **LEFT EXACTLY AS FOUND, AND `"skipped"` RATHER THAN A FALL-THROUGH
+        (#1903 review finding, the sweep side of B1).**
+
+        A view can still arrive, so nothing has been decided and nothing is
+        written. Returning here is load-bearing: below this if-chain the
+        function continues into the GENERIC stale-operation handling — the
+        ledger comparison and the standard finalizers — which would seal a row
+        this adjudicator deliberately declined to judge. The comment at that
+        boundary says every path past it assumes a `claimed` or `running`
+        operation, which is true of this one, so only an explicit return keeps
+        it out.
+
+        `claimRecoveryAttempt` has already stamped `recoveryAttemptedAt`, so
+        the next attempt is ~5 minutes away rather than on the next 60-second
+        pass.
+      */
+      log.info(
+        { operationId: operation.id, reason: recovered.reason },
+        "[OperationRecovery] deferred — a view of this Cast can still arrive",
+      );
+      return "skipped";
+    }
+    if (recovered.type === "free_failure") return "free_failure";
+    if (recovered.type === "recovery_required") {
+      await markGenerationOperationRecoveryRequired({
+        userId: operation.userId,
+        operationId: operation.id,
+        publicMessage: VIEW_RETRY_SUPPORT_REVIEW_SENTENCE(operation.id),
+        chargedCredits: recovered.chargedCredits,
+        refundedCredits: recovered.refundedCredits,
+      });
+      return "recovery_required";
+    }
+    /*
+      ⚠ **THE COMPILER IS THIS BRANCH'S GUARD AGAINST FALLING THROUGH, and
+      falling through is the dangerous direction (#1903 review finding, the
+      sweep side of B1).**
+
+      Below these kind branches the function continues into the GENERIC
+      stale-operation handling — the ledger comparison and the standard
+      finalizers — and the comment at that boundary says every path past it
+      assumes a `claimed` or `running` operation, which is true of every row
+      arriving here. So an outcome this branch forgets to name would not be
+      refused: it would be settled by machinery that never asked this road's
+      question.
+
+      `assertNever` makes that a TYPE ERROR rather than a test nobody wrote.
+      When `ViewRetryRecoveryOutcome` grows a variant, `tsc` names this line
+      and its two siblings; the throw is only the backstop. It is the one
+      instrument that cannot be green while the hazard is open, which is why
+      it is here instead of a text read of the source.
+    */
+    return assertNever(recovered);
+  }
+  if (operation.kind === "castingV2.packageRedoPress") {
+    /*
+      THE PRESS OF A REDO (#1903, his flat price). The ONLY row of that road
+      that carries credits, and the only one that can give them back: it asks
+      whether ANY view of the press landed, through the shared flat-price
+      adjudication that #1968's Sign will use as well.
+    */
+    const recovered = await recoverCastingV2PackageRedoPressOperation({
+      ...operation,
+      // Narrowed by the gate above; the row's column type is a bare string.
+      status: operation.status === "claimed" ? "claimed" : "running",
+    });
+    if (recovered.type === "durable_success") return "durable_success";
+    if (recovered.type === "paid_failure") return "paid_failure";
+    if (recovered.type === "deferred") {
+      /*
+        ⚠ **LEFT EXACTLY AS FOUND, AND `"skipped"` RATHER THAN A FALL-THROUGH
+        (#1903 review finding, the sweep side of B1).**
+
+        A view can still arrive, so nothing has been decided and nothing is
+        written. Returning here is load-bearing: below this if-chain the
+        function continues into the GENERIC stale-operation handling — the
+        ledger comparison and the standard finalizers — which would seal a row
+        this adjudicator deliberately declined to judge. The comment at that
+        boundary says every path past it assumes a `claimed` or `running`
+        operation, which is true of this one, so only an explicit return keeps
+        it out.
+
+        `claimRecoveryAttempt` has already stamped `recoveryAttemptedAt`, so
+        the next attempt is ~5 minutes away rather than on the next 60-second
+        pass.
+      */
+      log.info(
+        { operationId: operation.id, reason: recovered.reason },
+        "[OperationRecovery] deferred — a view of this Cast can still arrive",
+      );
+      return "skipped";
+    }
+    if (recovered.type === "free_failure") return "free_failure";
+    if (recovered.type === "recovery_required") {
+      await markGenerationOperationRecoveryRequired({
+        userId: operation.userId,
+        operationId: operation.id,
+        publicMessage: VIEW_RETRY_SUPPORT_REVIEW_SENTENCE(operation.id),
+        chargedCredits: recovered.chargedCredits,
+        refundedCredits: recovered.refundedCredits,
+      });
+      return "recovery_required";
+    }
+    /*
+      ⚠ **THE COMPILER IS THIS BRANCH'S GUARD AGAINST FALLING THROUGH, and
+      falling through is the dangerous direction (#1903 review finding, the
+      sweep side of B1).**
+
+      Below these kind branches the function continues into the GENERIC
+      stale-operation handling — the ledger comparison and the standard
+      finalizers — and the comment at that boundary says every path past it
+      assumes a `claimed` or `running` operation, which is true of every row
+      arriving here. So an outcome this branch forgets to name would not be
+      refused: it would be settled by machinery that never asked this road's
+      question.
+
+      `assertNever` makes that a TYPE ERROR rather than a test nobody wrote.
+      When `ViewRetryRecoveryOutcome` grows a variant, `tsc` names this line
+      and its two siblings; the throw is only the backstop. It is the one
+      instrument that cannot be green while the hazard is open, which is why
+      it is here instead of a text read of the source.
+    */
+    return assertNever(recovered);
   }
   if (operation.kind === "castingV2.sign") {
     const recovered = await recoverCastingV2SignOperation({
