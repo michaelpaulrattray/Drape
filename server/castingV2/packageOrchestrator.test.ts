@@ -11,7 +11,6 @@ import {
   CONFORMANCE_AXES,
   unjudgedVerdict,
   viewConformanceRefuses,
-  viewDeliveredUnchecked,
   type ViewConformanceVerdict,
 } from "./viewConformance";
 import { pronounsForSex } from "./castPronouns";
@@ -2355,9 +2354,17 @@ describe("only a catastrophe takes a picture away", () => {
     /* The verdict IS persisted — support can still read what was asked. */
     expect(provenance.conformanceMethod).toBe("judge:test");
     expect(provenance.conformance?.intact.verdict).toBe("unsure");
-    /* And it reads as checked through the SAME function the room uses. */
+    /* And the axis the judge was unsure about PASSED, which is the whole of
+       "unsure is not a catastrophe": the row records the doubt and the view is
+       delivered clean.
+
+       ⚠ **A LINE BELOW THIS USED TO RE-READ THE ROW THROUGH THE ROOM'S OWN
+       delivered-unchecked reader — that function is deleted with the free ask
+       (#1903 slice 3), so there is no second reader left to agree with.** What
+       replaced it is the stronger statement the deletion makes possible: the
+       room cannot mark this row at all, because nothing reads a stored axis any
+       more. `viewRetryNoFreeAsk.test.ts` holds that end. */
     expect(provenance.conformance?.intact.pass).toBe(true);
-    expect(viewDeliveredUnchecked(provenance)).toBe(false);
   });
 
   /*

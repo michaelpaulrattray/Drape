@@ -535,6 +535,24 @@
 #     the price the button shows AND the price the till charges (one reading, by
 #     design), so a change to its branches is a repricing.
 #
+# ⚠ BOTH FILES STAY ON THE LIST AND BOTH REASONS ABOVE ARE NOW HISTORY — #1903
+# slice 3 (2026-10-07), one day after this entry landed. His ruling retired the
+# free Try again, so `spentFreeViewRetryFilter` is DELETED and `castSlotRetryOffer`
+# has no free branch left to decide between. THE ENTRY IS NOT REMOVED, because
+# what each file decides about money did not stop — it narrowed:
+#
+#   server/db/castingV2ViewRetry.ts   still holds the readers a REFUND is decided
+#     from — `pressViewLanded`, `retriedViewLanded` and `viewReplacementInFlight`,
+#     the last of which is what defers a redo's refund while a picture can still
+#     arrive (#1924). Loosen one and a customer is refunded for a view she has.
+#   server/castingV2/castProjection.ts  still decides WHETHER there is a price at
+#     all: a delivered view offers nothing and a refunded one offers the Try again
+#     price, which is the same branch read for the same reason.
+#
+# The sentences above are kept rather than rewritten in place because the ROAD is
+# the content: a reader meeting a `plannedCredits = 0` row in the database needs
+# to know what used to write it, and that it cannot any more.
+#
 # THE LIVE INSTANCE: PR #2067 (card #1943) rewrote the free/paid predicate —
 # `-    ne(generationOperations.status, CLAIMED_OPERATION_STATUS),` became
 # `+    isNotNull(generationOperations.heartbeatAt),` — and neither half fired.

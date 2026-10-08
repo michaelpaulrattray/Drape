@@ -60,7 +60,6 @@ import { deductCredits } from "../db/credits";
 import {
   commitRetriedViewAsset,
   listRunningViewRetryAngles,
-  listSpentFreeViewRetryAngles,
   readCastViewRenderSource,
   retriedViewLanded,
 } from "../db/castingV2ViewRetry";
@@ -146,17 +145,12 @@ export type CastSlotsRead = {
    * that is not `ready`.
    */
   status: ReturnType<typeof projectSignedCast>["status"];
-  /**
-   * THE VIEWS WHOSE ONE FREE TRY AGAIN IS ALREADY SPENT (#1601 item 4).
-   *
-   * Carried out of the read rather than re-queried at the till, for the reason
-   * this whole type exists: the offer the room was shown and the offer the money
-   * moves against have to come from ONE reading. The entrance re-asks
-   * `castSlotRetryOffer` — it does not trust the client's price — and this is the
-   * third fact that answer needs, so it travels with the slots that are the
-   * other two.
-   */
-  freeRetrySpentAngles: readonly CastViewAngle[];
+  /*
+    ⚠ **A SPENT-FREE-ASK LIST STOOD HERE AND IS RETIRED — #1903 slice 3.** It
+    was the third fact `castSlotRetryOffer` needed while a view's first Try
+    again was free (#1601 item 4). The free ask is gone, so the offer now needs
+    two facts and this read carries two.
+  */
   /**
    * THE STORAGE KEY OF EACH DELIVERED FULL-LENGTH VIEW THAT HAS ONE (#1474).
    *
@@ -266,7 +260,7 @@ export function deliveredOutfitKeysFrom(
 export async function readCastSlots(userId: number, castPublicId: string): Promise<CastSlotsRead | null> {
   const model = await getOwnedCastByPublicId(userId, castPublicId);
   if (!model) return null;
-  const [assets, lineage, promisedAngles, retryingAngles, freeRetrySpentAngles] = await Promise.all([
+  const [assets, lineage, promisedAngles, retryingAngles] = await Promise.all([
     listCastAssets(userId, model.id),
     getCastLineage(userId, model),
     listCastPromisedAngles(userId, model.id),
@@ -274,19 +268,14 @@ export async function readCastSlots(userId: number, castPublicId: string): Promi
        the same statement, which is what makes a slot's Try again disappear and
        this entrance refuse for the same reason at the same moment. */
     listRunningViewRetryAngles({ userId, modelId: model.id, castId: castPublicId }),
-    /* WHOSE FREE ASK IS ALREADY SPENT (#1601 item 4). Read here and not at the
-       till for the same reason the line above is: one reading behind the button
-       and the charge. */
-    listSpentFreeViewRetryAngles({ userId, modelId: model.id, castId: castPublicId }),
   ]);
   const projection = projectSignedCast({
-    model, assets, lineage, promisedAngles, retryingAngles, freeRetrySpentAngles,
+    model, assets, lineage, promisedAngles, retryingAngles,
   });
   return {
     modelId: model.id,
     slots: projection.slots,
     status: projection.status,
-    freeRetrySpentAngles,
     /* #1474 — derived from the assets this function already read, never from a
        second query. */
     deliveredOutfitKeys: deliveredOutfitKeysFrom(assets),
@@ -488,13 +477,7 @@ export async function retryCastView(
     been filled — by a sweep, by another tab — offers nothing, and the answer
     is a free refusal rather than a second picture nobody asked for.
   */
-  const offer = castSlotRetryOffer(
-    slot,
-    CASTING_V2_VIEW_RETRY_PRICE_CREDITS,
-    /* THE THIRD FACT, from the SAME read the slot came out of (#1601 item 4) —
-       never a second query here, which would be a reading the room never had. */
-    read.freeRetrySpentAngles.includes(input.angle),
-  );
+  const offer = castSlotRetryOffer(slot, CASTING_V2_VIEW_RETRY_PRICE_CREDITS);
   if (!offer) {
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
@@ -586,12 +569,20 @@ export async function retryCastView(
       WHAT THIS TRY AGAIN COSTS, WRITTEN WHERE THE ROW IS BORN (#1767) — and on
       THIS road it is not housekeeping, it is the defect itself.
 
-      `plannedCredits = 0` is how the product recognises a FREE Try again
+      `plannedCredits = 0` WAS how the product recognised a FREE Try again
       (`spentFreeViewRetryFilter`). Until this line the column was written one
       statement below, so a PAID retry whose `markRunning` threw settled as
       `failed` carrying the schema default — indistinguishable from the free ask
       the customer had not used. She then found her one free Try again on that
       view already spent and was asked to pay 370 credits for it.
+
+      ⚠ **THAT READER IS DELETED — #1903 slice 3 — AND THE LINE STAYS WHERE IT
+      IS.** Every Try again is paid now, so nothing reads a zero on this kind
+      and no row can be mistaken for a spent free ask. The reason the figure
+      belongs at the CLAIM rather than one statement down outlives the defect
+      that found it: the recovery sweep refunds an unsettled row's planned
+      credits, and a row that dies in the gap carrying the default is a refund
+      that never happens.
 
       The figure is the same `price` the running transition writes, read off the
       offer forty-five lines above; nothing here chooses a number.

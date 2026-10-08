@@ -140,7 +140,7 @@ import {
   listSessionSignedCastNames,
   listSignedCasts,
 } from "../db/castingV2Sign";
-import { listRunningViewRetryAngles, listSpentFreeViewRetryAngles } from "../db/castingV2ViewRetry";
+import { listRunningViewRetryAngles } from "../db/castingV2ViewRetry";
 import { discard, setKept, undo } from "../castingV2/candidateService";
 import { updateModel } from "../db/models";
 import {
@@ -2092,7 +2092,7 @@ export const castingV2Router = router({
       const model = await getOwnedCastByPublicId(ctx.user.id, input.castId);
       if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
       const [
-        assets, lineage, promisedAngles, sessionId, retryingAngles, freeRetrySpentAngles,
+        assets, lineage, promisedAngles, sessionId, retryingAngles,
       ] = await Promise.all([
         listCastAssets(ctx.user.id, model.id),
         getCastLineage(ctx.user.id, model),
@@ -2115,20 +2115,12 @@ export const castingV2Router = router({
           castId: input.castId,
         }),
         /*
-          WHOSE ONE FREE TRY AGAIN IS ALREADY SPENT (#1601 item 4).
-
-          The same statement the retry entrance makes, for the same reason as the
-          read above it: an unchecked view's first ask is free and its second is
-          an ordinary paid ask, and the row's link must mean what the till will
-          do. Read here rather than inferred from the slot, because a free ask
-          does not change the slot — a second unchecked picture is still
-          unchecked, which is exactly how the free ask used to renew itself.
+          ⚠ **A SIXTH READ STOOD HERE AND IS RETIRED — #1903 slice 3.** It
+          asked which views had already spent their one free Try again (#1601
+          item 4), so the row's link would mean what the till would do. There is
+          no free ask left for it to ration, so the statement is not made: a
+          query whose answer nothing consults is a cost with no reader.
         */
-        listSpentFreeViewRetryAngles({
-          userId: ctx.user.id,
-          modelId: model.id,
-          castId: input.castId,
-        }),
       ]);
       const siblingRows = sessionId && model.sourceCandidateId
         ? await listCastSiblings({
@@ -2154,7 +2146,6 @@ export const castingV2Router = router({
         lineage,
         promisedAngles,
         retryingAngles,
-        freeRetrySpentAngles,
         siblings,
         // Whether her sheet is still a place you can go (§G.6 protects the
         // candidates, not the session).
