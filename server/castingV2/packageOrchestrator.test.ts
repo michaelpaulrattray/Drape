@@ -71,6 +71,7 @@ const {
   packagePromotionChargeReference,
   packageSlotChargeReference,
   promisedPackageAngles,
+  renderViewAttempts,
   refusedViewReason,
   unsettledPackageAngles,
   VIEW_ARRIVAL_ATTEMPTS,
@@ -2773,5 +2774,140 @@ describe("⚠ the refusal line a customer reads, end to end", () => {
       .toBe("Front: This view didn't clearly look like Sifr, so we didn't keep it. "
         + `${refundOutcomeText({ refunded: VIEW_PRICE })}`);
     expect(compose(refusedViewReason(["identity"]))).toContain("this character");
+  });
+});
+
+/*
+  ⚠ **THE PER-VIEW ROAD NEVER RE-BUYS A FRAME THAT ARRIVED — #1994**, the
+  sibling of the sheet road's PR #1982 finding, on the road that one did not
+  reach. This road is the Try again (`viewRetryService` renders through
+  `renderViewAttempts` with no sheets), so these arms drive the loop directly
+  with no `signSheets`, and the engine is a per-view `generateView`.
+
+  The loop's `try` wraps the store and the landing as well as the engine, and a
+  plain `Error` from either read as `unknown` — retryable — so a picture that
+  had ARRIVED and been paid for was asked for again. Counted here at the engine:
+  each `generateView` call is one paid frame.
+*/
+describe("⚠ a view that arrived is never bought twice (#1994)", () => {
+  function perViewEngine(fault?: () => unknown) {
+    const generateView = vi.fn(async () => {
+      if (fault) throw fault();
+      return {
+        bytes: Buffer.from("view"),
+        contentType: "image/png",
+        latencyMs: 1,
+        provenance: { provider: "fal" as const, model: "nbp", providerRef: "ref" },
+      };
+    });
+    return {
+      generateView,
+      identityEngine: () => ({ id: "test-identity", editWithReferences: vi.fn(), generateView }),
+    };
+  }
+
+  const landed = async (value: { stored: { key: string } }) => ({ key: value.stored.key });
+
+  it("asks ONCE when the frame arrived and could not be STORED", async () => {
+    const { generateView, identityEngine } = perViewEngine();
+    const storeImage = vi.fn(async () => {
+      throw new Error("S3: the bucket did not answer");
+    });
+
+    const result = await renderViewAttempts(
+      deps({ identityEngine, storeImage }) as never,
+      input as never,
+      "frontClose",
+      landed as never,
+    );
+
+    expect(generateView, "a frame that arrived was re-bought because the store failed")
+      .toHaveBeenCalledTimes(1);
+    expect(result.status).toBe("failed");
+    expect(waitedMs, "nothing waits for a frame that already arrived").toEqual([]);
+    expect(result.tally.arrivalFailures, "it ARRIVED — this is not an arrival failure").toBe(0);
+  });
+
+  it("asks ONCE when the frame arrived, passed, and its LANDING threw", async () => {
+    const { generateView, identityEngine } = perViewEngine();
+    const land = vi.fn(async () => {
+      throw new Error("the commit lost its connection");
+    });
+
+    const result = await renderViewAttempts(
+      deps({ identityEngine }) as never,
+      input as never,
+      "frontClose",
+      land as never,
+    );
+
+    expect(generateView, "a frame that arrived was re-bought because the commit failed")
+      .toHaveBeenCalledTimes(1);
+    expect(land).toHaveBeenCalledTimes(1);
+    expect(result.status).toBe("failed");
+    expect(waitedMs).toEqual([]);
+    /* The stored object is dropped, so nothing is left in the bucket that no
+       row will ever point at. */
+    expect(deletedKeys).toEqual(storedKeys);
+    expect(storedKeys).toHaveLength(1);
+  });
+
+  /*
+    THE CONTROLS (law 2): the flag reads WHEN the throw happened, not what it
+    was. The same plain `Error`, thrown BY the engine — the frame never arrived
+    — still spends the whole arrival budget; and a landed view is still landed.
+  */
+  it("⚠ CONTROL — the same plain Error from the ENGINE still gets every arrival attempt", async () => {
+    const { generateView, identityEngine } = perViewEngine(() => new Error("an unmapped engine fault"));
+
+    const result = await renderViewAttempts(
+      deps({ identityEngine }) as never,
+      input as never,
+      "frontClose",
+      landed as never,
+    );
+
+    expect(generateView, "a frame that never arrived stopped being re-asked")
+      .toHaveBeenCalledTimes(VIEW_ARRIVAL_ATTEMPTS);
+    expect(result.status).toBe("failed");
+    expect(waitedMs).toHaveLength(VIEW_ARRIVAL_ATTEMPTS - 1);
+  });
+
+  it("⚠ CONTROL — a view whose store and landing succeed lands on the first frame", async () => {
+    const { generateView, identityEngine } = perViewEngine();
+
+    const result = await renderViewAttempts(
+      deps({ identityEngine }) as never,
+      input as never,
+      "frontClose",
+      landed as never,
+    );
+
+    expect(result.status).toBe("landed");
+    expect(generateView).toHaveBeenCalledTimes(1);
+  });
+
+  /*
+    ⚠ THE SHEET ROAD IS LEFT RETRYING, AND THIS IS THE ARM THAT SAYS SO. There
+    the frame is the coordinator's settled panel — one promise per sheet — so a
+    second attempt re-stores the SAME bytes and buys nothing. A store that fails
+    once must still deliver the view, and still on one render per sheet.
+  */
+  it("⚠ CONTROL — on the SHEET road a store hiccup re-stores the same panel and buys nothing", async () => {
+    let failedOnce = false;
+    const storeImage = vi.fn(async () => {
+      if (!failedOnce) {
+        failedOnce = true;
+        throw new Error("S3: the bucket did not answer");
+      }
+      const key = `casting-v2/casts/${OPERATION_ID}/views/${storedKeys.length}.png`;
+      storedKeys.push(key);
+      return { key, url: `https://cdn.example/${key}` };
+    });
+
+    const result = await buildCastPackage(deps({ storeImage }), input);
+
+    expect(result.failed, "a free re-store was turned into a refunded view").toHaveLength(0);
+    expect(rendersPerSheet()).toEqual({ body: 1, head: 1 });
   });
 });

@@ -903,9 +903,14 @@ type ViewLanding<T> = (landed: {
  * not the same view.**
  *
  * The landing is a callback INSIDE the try on purpose. It is where the commit
- * used to sit, so a throw out of it still lands in this loop's catch and still
- * counts as an arrival failure — the Sign's behaviour across this extraction
- * is unchanged, which is what its own suite is the control for.
+ * used to sit, so a throw out of it still lands in this loop's catch.
+ *
+ * ⚠ **A THROW AFTER THIS ATTEMPT BOUGHT ITS OWN FRAME ENDS THE SLOT (#1994).**
+ * Until that card such a throw — the store, the landing, its commit — read as
+ * an `unknown` failure class, which `mayStillArrive` retries on purpose, so the
+ * loop asked the engine for ANOTHER paid frame because something after the
+ * first one failed. See `paidFrameInHand` in the loop body for why the sheet
+ * road is deliberately left retrying.
  */
 export async function renderViewAttempts<T>(
   dependencies: PackageOrchestratorDependencies,
@@ -955,6 +960,38 @@ export async function renderViewAttempts<T>(
   for (let attempt = 1; attempt <= VIEW_MAX_ATTEMPTS; attempt += 1) {
     attemptsRun = attempt;
     let stored: { key: string; url: string } | null = null;
+    /*
+      ⚠ **DID THIS ATTEMPT PAY FOR A FRAME THAT IS NOW IN HAND? (#1994)** Set
+      the moment the per-view engine call RESOLVES, and read in the catch below.
+
+      The `try` wraps far more than the engine call: storing the bytes, the
+      judge, the refused-frame keeper, the landing and its commit. The engine's
+      own faults arrive as `ProviderError`s with real classes, but a plain
+      `Error` from anything AFTER it — `storagePut` goes through the S3 SDK, the
+      commit through mysql2 — reached the catch as `unknown`, which
+      `mayStillArrive` retries on purpose (an unmapped transport fault must not
+      cost a paid view its attempts). So a picture that had ARRIVED, and been
+      paid for, was asked for again because something downstream of it failed:
+      up to `VIEW_ARRIVAL_ATTEMPTS` frames bought to learn one answer. Same class
+      as the sheet road's finding on PR #1982, on the road it did not reach.
+
+      What can throw after arrival, read at the code: the store (`storagePut`
+      and the thumbnail beside it) and the landing (`commitSlot`, or the Try
+      again road's own commit). The judge cannot — `judgeUnjudgedOnFailure`
+      turns its faults into an unjudged verdict — and the keeper and every
+      `drop` carry their own `.catch`. The flag does not depend on that list
+      staying true: it reads WHEN the throw happened, not who threw it.
+
+      ⚠ **ONLY THE PER-VIEW ENGINE ROAD SETS IT, AND THE SHEET ROAD IS LEFT
+      RETRYING ON PURPOSE.** There the frame is the coordinator's settled panel
+      — one promise per sheet — so asking again re-stores the SAME bytes and buys
+      nothing. Making it terminal there would turn a passing storage hiccup into
+      a refunded view for no saving at all; an arm holds that direction too.
+
+      ⚠ **And what came before the engine resolved is untouched**: a frame that
+      never arrived still spends its arrival budget exactly as #1208 ruled.
+    */
+    let paidFrameInHand = false;
     try {
       /*
         WHERE THE PICTURE COMES FROM — one of two roads, and the fork is a FIELD
@@ -1040,6 +1077,7 @@ export async function renderViewAttempts<T>(
       const image = panel
         ? panel.image
         : await composeAndGenerateOneView(input, angle, engine);
+      paidFrameInHand = panel === null;
 
       // Bytes land in OUR storage before anything references them; a provider
       // URL is never persisted and never projected (§E, §J).
@@ -1321,6 +1359,20 @@ export async function renderViewAttempts<T>(
         transport — `settledPanelFor` raises it and its own docblock says why.
       */
       if (error instanceof SignSheetUnavailableError) break;
+      /*
+        ⚠ **A FRAME THIS ATTEMPT ALREADY BOUGHT IS NEVER BOUGHT AGAIN (#1994).**
+        Tested before `mayStillArrive` because the class says nothing useful
+        here: whatever threw after the engine resolved, re-asking renders a NEW
+        paid frame and not the one in hand. The slice refunds through `failView`
+        exactly as for any failed view — what stops is the re-buying.
+      */
+      if (paidFrameInHand) {
+        log.warn(
+          { operationId: input.operationId, angle, attempt, failureClass },
+          "[packageOrchestrator] the view ARRIVED and a later step failed — not buying another frame",
+        );
+        break;
+      }
       if (!mayStillArrive(failureClass)) break;
       /*
         ⚠ **THE SECOND INSTANCE OF THE CLASS THE RELAY FOUND ON THE SHEET
