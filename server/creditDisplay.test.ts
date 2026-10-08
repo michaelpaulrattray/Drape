@@ -26,11 +26,13 @@ import {
   LEDGER_PER_DISPLAY_CREDIT,
   MILLIONS_STYLE_FROM,
   displayBalance,
+  displayMovement,
   displayPrice,
   displayRefund,
   displaySpent,
   formatCredits,
   ledgerForDisplay,
+  staffCreditFact,
   wholeDisplayLedger,
 } from "../shared/creditDisplay";
 
@@ -355,5 +357,39 @@ describe("ledgerForDisplay — a typed display figure becomes exactly that on sc
     for (const bad of [1.5, Number.NaN, Number.POSITIVE_INFINITY, 2 ** 60]) {
       expect(() => ledgerForDisplay(bad)).toThrow(TypeError);
     }
+  });
+});
+
+describe("displayMovement — one row of a credit history on the customer's scale (#2010)", () => {
+  it("a grant rounds down like a balance, a charge's size rounds up like a price, zero is zero", () => {
+    expect(displayMovement(1_600)).toBe(320);
+    expect(displayMovement(-1_600)).toBe(-320);
+    expect(displayMovement(7)).toBe(1);
+    expect(displayMovement(-7)).toBe(-2);
+    expect(Object.is(displayMovement(0), 0)).toBe(true);
+  });
+
+  it("agrees with the two functions it delegates to, for every ledger value from 0 to 5,000, both signs", () => {
+    const broken = exhaustive().filter(
+      (n) => displayMovement(n) !== displayBalance(n) || displayMovement(-n) !== (n === 0 ? 0 : -displayPrice(n)),
+    );
+    expect(broken).toEqual([]);
+  });
+
+  it("refuses a non-finite figure rather than printing NaN in a ledger", () => {
+    expect(() => displayMovement(Number.NaN)).toThrow(TypeError);
+  });
+});
+
+describe("staffCreditFact — the customer's figure first, the ledger beside it (#2010)", () => {
+  it("writes both numbers, grouped, the display one leading", () => {
+    expect(staffCreditFact(displayBalance(500_000), 500_000)).toBe(
+      `${(100_000).toLocaleString()} credits · ${(500_000).toLocaleString()} ledger`,
+    );
+  });
+
+  it("keeps the caller's rounding: a deduction of 7 ledger reads as 2, a grant of 7 as 1", () => {
+    expect(staffCreditFact(displayPrice(7), 7)).toBe("2 credits · 7 ledger");
+    expect(staffCreditFact(displayBalance(7), 7)).toBe("1 credits · 7 ledger");
   });
 });

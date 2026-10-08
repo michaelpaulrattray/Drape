@@ -245,7 +245,9 @@ describe("moderator.createChangeRequest, closed on #705", () => {
     description: "The roll never delivered and the credits were held.",
     evidenceSummary: undefined,
     relatedAuditLogId: undefined,
-    creditAmount: 160,
+    /* #2010: the dashboard sends DISPLAY credits under this name now; the
+       legacy LEDGER `creditAmount` is the arm below. */
+    displayCreditAmount: 32,
     creditReason: "roll 249 never delivered",
     ipAddress: undefined,
     stripeSessionId: undefined,
@@ -283,6 +285,20 @@ describe("moderator.createChangeRequest, closed on #705", () => {
         }),
       "createChangeRequest silently dropped an undeclared field — invariant 4 is not enforced on it",
     ).toThrow();
+  });
+
+  it("⚠ CONTROL — a bundle loaded before #2010 still sends LEDGER `creditAmount`, and it parses for the one deploy the removal contract owes it", async () => {
+    /*
+      `.strict()` rejects an UNKNOWN key, and `creditAmount` must not become one
+      in the commit that stops sending it — that is CLAUDE.md's billing removal
+      contract, and the reason the field is still declared. Remove it, and this
+      arm with it, after a full deploy has shipped the new dashboard.
+    */
+    const { moderatorRouter } = await import("./routes/moderator");
+    const { displayCreditAmount: _display, ...legacy } = AS_THE_DASHBOARD_SENDS_IT;
+    expect(() =>
+      parserOf(moderatorRouter, "createChangeRequest").parse({ ...legacy, creditAmount: 160 }),
+    ).not.toThrow();
   });
 
   it("⚠ rejects the two fields #418 removed — the removal is now enforced, not merely ignored", async () => {
