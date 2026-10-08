@@ -5,9 +5,16 @@ import { ZodError } from "zod";
 import type { TrpcContext } from "./context";
 import { validateAdminAccess, logUnauthorizedAdminAccess } from "../security/adminSecurity";
 import { APP_UPDATE_REQUIRED_MESSAGE } from "@shared/clientRequestId";
+import { waitPhrase } from "@shared/waitPhrase";
 import { withSpokenFlag } from "./spokenError";
 import { invalidInputMessage } from "./invalidInputMessage";
 import { judgeRequestOrigin } from "../security/crossSiteGuard";
+
+/** The lockout refusal's sentence. It said "minute(s)" until #1993; the wait
+ *  clause is `waitPhrase`'s, shared with every other refusal that names one. */
+export function accountLockedMessage(remainingMs: number): string {
+  return `Your account is temporarily locked. Please try again ${waitPhrase(remainingMs)}.`;
+}
 
 export function appUpdateRequiredMessage(cause: unknown): string | null {
   if (!(cause instanceof ZodError)) return null;
@@ -149,12 +156,11 @@ const requireUser = t.middleware(async opts => {
 
   // Real-time lockout check - blocks temporarily locked accounts
   if (ctx.user.lockedUntil && new Date(ctx.user.lockedUntil) > new Date()) {
-    const remainingMinutes = Math.ceil(
-      (new Date(ctx.user.lockedUntil).getTime() - Date.now()) / 60000
-    );
     throw new TRPCError({ 
       code: "FORBIDDEN", 
-      message: `Your account is temporarily locked. Please try again in ${remainingMinutes} minute(s).`,
+      message: accountLockedMessage(
+        new Date(ctx.user.lockedUntil).getTime() - Date.now(),
+      ),
     });
   }
 

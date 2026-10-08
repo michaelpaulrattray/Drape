@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 83
+      "moduleCount": 84
     },
     {
       "id": "domain:staff",
@@ -6471,6 +6471,12 @@
     {
       "id": "module:shared/viewThumbnails.ts",
       "path": "shared/viewThumbnails.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/waitPhrase.ts",
+      "path": "shared/waitPhrase.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -14832,6 +14838,10 @@
       "path": "server/w6-thumbnail-restore.test.ts"
     },
     {
+      "id": "test:server/waitPhrase.test.ts",
+      "path": "server/waitPhrase.test.ts"
+    },
+    {
       "id": "test:server/waitlist.test.ts",
       "path": "server/waitlist.test.ts"
     },
@@ -21501,6 +21511,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/pages/Login.tsx",
+      "to": "module:shared/waitPhrase.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/pages/ModeratorDashboard.tsx",
       "to": "module:client/src/_core/hooks/useAuth.ts",
       "kind": "imports"
@@ -21923,6 +21938,11 @@
     {
       "from": "module:server/_core/trpc.ts",
       "to": "module:shared/const.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/trpc.ts",
+      "to": "module:shared/waitPhrase.ts",
       "kind": "imports"
     },
     {
@@ -34741,6 +34761,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/routes/referral.ts",
+      "to": "module:shared/waitPhrase.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/routes/usage.ts",
       "to": "module:server/_core/trpc.ts",
       "kind": "imports"
@@ -35033,6 +35058,11 @@
     {
       "from": "module:server/security/loginAttackAlert.ts",
       "to": "module:server/security/rateLimit.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/security/rateLimit.ts",
+      "to": "module:shared/waitPhrase.ts",
       "kind": "imports"
     },
     {
