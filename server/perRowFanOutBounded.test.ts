@@ -58,7 +58,7 @@ function answer(table: string, sql: string, params: unknown[]): Row[] {
   const usersById = new Map((tables.users ?? []).map((u) => [u.id, u]));
   switch (table) {
     case "users": {
-      const wanted = new Set(params.filter((p) => typeof p === "number"));
+      const wanted = new Set<unknown>(params.filter((p) => typeof p === "number"));
       return (tables.users ?? []).filter((u) => wanted.has(u.id));
     }
     case "referrals": {
