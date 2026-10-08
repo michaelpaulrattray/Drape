@@ -340,8 +340,56 @@ const DIVIDER_MAX_WIDTH_FRACTION = 0.01;
  */
 const MIN_PANEL_FRACTION_OF_EQUAL = 0.4;
 
+/**
+ * HOW FAR FROM THE EQUAL SHARE A DARK SEAM MAY SIT AND STILL BE *ITS* SEAM.
+ *
+ * The question this answers is not *where is the seam* but *did the line I
+ * already chose land on one*, so the window is tight on purpose: a seam 40 px
+ * away means the fallback cut in the wrong place and the alarm should fire.
+ * Measured on the shipping head sheet, both seams sit at offset **0**, and the
+ * serial head sheet's bright peaks sit at **+1** — so 4 px is several times
+ * the worst real deviation and still an order of magnitude inside the panel.
+ */
+const SEAM_SEARCH_PX = 4;
+
+/**
+ * HOW WIDE A DARK RUN MAY BE BEFORE IT IS A FIGURE RATHER THAN A SEAM.
+ *
+ * ⚠ **This is the clause that tells the two apart, and it is the whole point.**
+ * A seam painted between two flush panels is a hairline; a body crossing the
+ * line is hundreds of columns of hair, skin and clothing. Measured with the
+ * same {@link DIVIDER_BAND_TOLERANCE} the bright side uses: the two real seams
+ * span **1 and 2 px**, while the deepest dark run near any other boundary in
+ * either fixture spans **7** — so 4 is double the widest real seam and well
+ * under the narrowest impostor.
+ */
+const DARK_SEAM_MAX_SPAN_PX = 4;
+
+/**
+ * HOW FAR BELOW ITS NEIGHBOURHOOD A HAIRLINE MUST SIT TO BE A SEAM.
+ *
+ * The mirror of {@link DIVIDER_MIN_CONTRAST} and set by the same reasoning.
+ * Measured on the shipping head sheet's two seams: **89.0 and 58.5**. The floor
+ * is under half the weaker one, because the two errors here are asymmetric in
+ * the other direction from the divider search — this decides only whether to
+ * WARN, so a missed seam costs a false alarm and a false seam costs a real one.
+ *
+ * ⚠ **The span cap and this floor exclude the one near-miss independently**:
+ * court sheet 3's first boundary carries a 24.1-deep dark run, which is close
+ * to this floor and nowhere near the span cap at 7 px wide. Two clauses, each
+ * sufficient, is what keeps a single re-measured constant from opening a hole.
+ */
+export const DARK_SEAM_MIN_DEPTH = 25;
+
 /** Where a panel boundary came from, carried on the receipt rather than inferred. */
 export type SheetBoundarySource = "divider" | "fifth";
+
+/** A run of columns read off the profile, bright or dark. */
+export type SheetSeamBand = {
+  readonly start: number;
+  readonly end: number;
+  readonly contrast: number;
+};
 
 export type SheetBoundary = {
   /** The last column of the panel to the left of this boundary. */
@@ -349,9 +397,62 @@ export type SheetBoundary = {
   /** The first column of the panel to the right of it. */
   readonly rightStart: number;
   readonly source: SheetBoundarySource;
-  /** The bright run this was read off, or `null` where the fifth was used. */
-  readonly band: { readonly start: number; readonly end: number; readonly contrast: number } | null;
+  /** The BRIGHT run this was read off, or `null` where the fifth was used. */
+  readonly band: SheetSeamBand | null;
+  /**
+   * For a `fifth` boundary: the DARK hairline the equal share turned out to
+   * land on, or `null` when the line sits on nothing readable.
+   *
+   * ⚠ **IT CHANGES NO CUT — IT IS ONLY HOW LOUD THE RECEIPT IS, #1967.** The
+   * detector looks for a bright divider and the shipping head sheet's panels
+   * are joined by a DARK one, so every head sheet falls back and the caller's
+   * *"a panel may be cut inside the figure"* warning fired on every Sign. An
+   * alarm that always cries cannot report the case it exists for. A fallback
+   * that lands on a visible seam is a correct cut; a fallback that lands on
+   * nothing, or in the middle of a figure, is the case worth shouting about.
+   *
+   * Always `null` on a `divider` boundary, which was read off a bright band
+   * and needs no second opinion.
+   */
+  readonly darkSeam: SheetSeamBand | null;
 };
+
+/**
+ * THE DARK HAIRLINE AT A GIVEN LINE, OR `null` — the mirror of the bright
+ * search above, measured the same way so the two speak one vocabulary.
+ *
+ * Deliberately NOT wired into the cut. Teaching the detector to cut on dark
+ * seams would move where paid panels are sliced, which is #1904's question and
+ * his eye's to close; this only decides whether the fallback is reported as an
+ * alarm or as a fact.
+ */
+export function findDarkSeamAt(
+  means: ArrayLike<number>,
+  width: number,
+  line: number,
+): SheetSeamBand | null {
+  const lo = Math.max(0, line - SEAM_SEARCH_PX);
+  const hi = Math.min(width - 1, line + SEAM_SEARCH_PX);
+
+  let dip = lo;
+  for (let x = lo; x <= hi; x += 1) if (means[x] < means[dip]) dip = x;
+
+  /* The run is grown past the search window: a seam is identified by where its
+     darkest column sits, and clipping its WIDTH at the window would make a
+     broad figure read as a narrow hairline — the one confusion that matters. */
+  let start = dip;
+  let end = dip;
+  while (start - 1 >= 0 && means[start - 1] <= means[dip] + DIVIDER_BAND_TOLERANCE) start -= 1;
+  while (end + 1 <= width - 1 && means[end + 1] <= means[dip] + DIVIDER_BAND_TOLERANCE) end += 1;
+  if (end - start + 1 > DARK_SEAM_MAX_SPAN_PX) return null;
+
+  const left = means[Math.max(0, start - DIVIDER_BACKGROUND_OFFSET)];
+  const right = means[Math.min(width - 1, end + DIVIDER_BACKGROUND_OFFSET)];
+  const depth = (left + right) / 2 - means[dip];
+  if (depth < DARK_SEAM_MIN_DEPTH) return null;
+
+  return { start, end, contrast: depth };
+}
 
 export type SheetPanelGeometry = {
   readonly panels: readonly { readonly left: number; readonly width: number }[];
@@ -432,7 +533,15 @@ export function findSheetPanelGeometry(
     const contrast = means[peak] - (left + right) / 2;
 
     if (contrast < DIVIDER_MIN_CONTRAST) {
-      boundaries.push({ leftEnd: equal - 1, rightStart: equal, source: "fifth", band: null });
+      boundaries.push({
+        leftEnd: equal - 1,
+        rightStart: equal,
+        source: "fifth",
+        band: null,
+        /* Whether the equal share happened to land on a dark hairline — the
+           receipt's own answer to "is this fallback the right line", #1967. */
+        darkSeam: findDarkSeamAt(means, width, equal),
+      });
       continue;
     }
 
@@ -450,6 +559,7 @@ export function findSheetPanelGeometry(
       rightStart: end + 1,
       source: "divider",
       band: { start, end, contrast },
+      darkSeam: null,
     });
   }
 
@@ -815,26 +925,45 @@ export async function renderSignSheet(input: {
   });
 
   const cut = await cutSignSheet(image.bytes, panelOrder);
-  const fellBack = cut.geometry.boundaries.filter((boundary) => boundary.source === "fifth").length;
+  const fallbacks = cut.geometry.boundaries.filter((boundary) => boundary.source === "fifth");
+  /*
+    A fallback that landed on a visible hairline is a correct cut; one that
+    landed on nothing readable is the case the alarm exists for — #1967.
+  */
+  const onNothing = fallbacks.filter((boundary) => boundary.darkSeam === null).length;
   const line = {
     operationId: input.operationId ?? null,
     returned: cut.source,
     panelWidths: cut.geometry.panels.map((panel) => panel.width),
-    dividersFound: cut.geometry.boundaries.length - fellBack,
-    boundariesFromFifths: fellBack,
+    dividersFound: cut.geometry.boundaries.length - fallbacks.length,
+    boundariesFromFifths: fallbacks.length,
+    fifthsOnADarkSeam: fallbacks.length - onNothing,
+    fifthsOnNothing: onNothing,
     latencyMs: image.latencyMs ?? Date.now() - started,
     estimatedCostUsd: image.estimatedCostUsd ?? null,
   };
-  if (fellBack > 0) {
+  if (onNothing > 0) {
     /*
       ⚠ **LOUD, because this is the one failure the product cannot see.** A
       boundary taken from a fifth may sit inside a figure, and the judge's three
       surviving axes — identity, intact, people — would all pass a beheaded
       panel. The log line is the only alarm there is, so it is a warning with
       the operation id on it rather than a debug note.
+
+      ⚠ **AND IT NO LONGER FIRES ON EVERY SIGN — #1967, his *"3) go with your
+      rec"* on #1904.** It used to fire on any fallback at all, and the shipping
+      head sheet falls back on BOTH its boundaries forever: the detector hunts a
+      bright divider and that sheet's panels are joined by a dark one. So the
+      alarm cried on every Sign, which is the same as not having it. It now
+      fires only where the chosen line sits on nothing readable — see
+      `findDarkSeamAt`.
     */
-    log.warn(line, "[signSheet] some panel boundaries came from equal fifths — no divider was "
-      + "visible there, so a panel may be cut inside the figure");
+    log.warn(line, "[signSheet] some panel boundaries came from equal shares with no seam "
+      + "visible at the line — nothing in the picture claims a boundary there, so a panel "
+      + "may be cut inside the figure");
+  } else if (fallbacks.length > 0) {
+    log.info(line, "[signSheet] the Sign sheet landed; some boundaries came from equal shares "
+      + "and each one landed on the sheet's own hairline seam");
   } else {
     log.info(line, "[signSheet] the Sign sheet landed and was cut on its own dividers");
   }
