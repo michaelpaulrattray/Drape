@@ -11687,6 +11687,10 @@
       "path": "server/boardsCasting.test.ts"
     },
     {
+      "id": "test:server/boardsClientStorageKey.test.ts",
+      "path": "server/boardsClientStorageKey.test.ts"
+    },
+    {
       "id": "test:server/briefingAtCommit.test.ts",
       "path": "server/briefingAtCommit.test.ts"
     },
