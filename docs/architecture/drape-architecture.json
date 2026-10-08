@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 82
+      "moduleCount": 83
     },
     {
       "id": "domain:staff",
@@ -5997,6 +5997,12 @@
     {
       "id": "module:shared/bodyAnchorRegions.ts",
       "path": "shared/bodyAnchorRegions.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/brand.ts",
+      "path": "shared/brand.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -14470,6 +14476,10 @@
       "path": "server/selfInvocationCheck.test.ts"
     },
     {
+      "id": "test:server/serverBrandCopy.test.ts",
+      "path": "server/serverBrandCopy.test.ts"
+    },
+    {
       "id": "test:server/serverResilience.test.ts",
       "path": "server/serverResilience.test.ts"
     },
@@ -20200,6 +20210,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/foundation/brand.ts",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/foundation/CardMenu.tsx",
       "to": "module:client/src/foundation/useAnchoredPanel.ts",
       "kind": "imports"
@@ -24237,6 +24252,11 @@
     {
       "from": "module:server/casting/pdfPreferences.ts",
       "to": "module:server/casting/pdfService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/pdfService.ts",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
@@ -31710,6 +31730,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/klaviyo.ts",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/lib/adminActions/approvalStateBlocker.ts",
       "to": "module:server/db/index.ts",
       "kind": "imports"
@@ -34190,6 +34215,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/routes/imageProxy.ts",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/routes/inkDesignDelivery.ts",
       "to": "module:server/_core/sdk.ts",
       "kind": "imports"
@@ -34562,6 +34592,11 @@
     {
       "from": "module:server/routes/referral.ts",
       "to": "module:server/security/rateLimit.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/referral.ts",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
