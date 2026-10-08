@@ -62,6 +62,7 @@ import {
   listRunningViewRetryAngles,
   listSpentFreeViewRetryAngles,
   readCastViewRenderSource,
+  retriedViewLanded,
 } from "../db/castingV2ViewRetry";
 import {
   getCastLineage,
@@ -81,6 +82,7 @@ import { CASTING_V2_VIEW_RETRY_PRICE_CREDITS } from "../casting/castingCreditCos
 import { castPackageView } from "./castViewPackage";
 import {
   renderViewAttempts,
+  ViewLandingUndecidedError,
   type PackageOrchestratorDependencies,
   type ViewAttemptTally,
 } from "./packageOrchestrator";
@@ -105,6 +107,10 @@ export type ViewRetryServiceDependencies = PackageOrchestratorDependencies & {
   markRunning?: typeof markGenerationOperationRunning;
   deduct?: typeof deductCredits;
   commitRetried?: typeof commitRetriedViewAsset;
+  /** Asked only when the commit THREW (#2080): did this operation's row land
+   *  anyway? Injected so an arm can make the commit lose its acknowledgement
+   *  and see the answer the database gives. */
+  retriedLanded?: typeof retriedViewLanded;
   /** The fenced exit's one write (#2073) — injected so an arm can see it is
    *  called and that no receipt is sealed beside it. */
   handoffToRecovery?: typeof handoffGenerationOperationToRecovery;
@@ -657,7 +663,7 @@ export async function retryCastView(
   const drop = dependencies.deleteObject ?? storageDelete;
   const commit = dependencies.commitRetried ?? commitRetriedViewAsset;
 
-  let rendered: Awaited<ReturnType<typeof renderViewAttempts<{ assetId: number; url: string }>>>;
+  let rendered: Awaited<ReturnType<typeof renderViewAttempts<{ url: string }>>>;
   /* HOISTED for the settled line (#1608), not for the render. `outfitReference`
      is computed inside the try below and the settle point sits after the catch,
      so the one fact the line needs about the wardrobe — was a fresh plate minted
@@ -770,7 +776,7 @@ export async function retryCastView(
          real type, which is working law 4's shape and is exactly why a third
          conformance field could be added to one writer and missed here. */
       async (landed) => {
-        const assetId = await commit({
+        const commitInput = {
           userId: input.userId,
           operationId,
           modelId: read.modelId,
@@ -788,8 +794,66 @@ export async function retryCastView(
             ...landed.provenance,
             ...conformanceProvenance(landed.verdict),
           },
-        });
-        return assetId === null ? null : { assetId, url: landed.stored.url };
+        };
+        /*
+          ⚠ **A COMMIT THAT THROWS MAY STILL HAVE COMMITTED (#2080).**
+
+          The transaction can commit and its acknowledgement be lost on the
+          wire, so the throw arrives while the row exists. On this road a
+          throw after the frame was bought is terminal (#1994 — no replay, so
+          #2065's idempotent commit is never reached), and the loop's catch
+          then DROPPED the stored bytes and its `failed` exit REFUNDED: the
+          customer got her 50 credits back AND a tile pointing at a deleted
+          object, because `slotEvidence` shows the newest filled asset.
+
+          So the throw is not believed until the database is asked. The
+          question is `retriedViewLanded` — the sweep's own question, keyed on
+          the `retryOperationId` the commit stamps from the typed operation id
+          — asked once, with no engine call: **never another frame (#1994).**
+
+          - It landed → delivered. Returned as a landing, so the loop keeps
+            the bytes and the charge stands. The row can only be THIS
+            attempt's: on this road a commit throw is terminal, so no earlier
+            attempt of this operation ever reached the commit.
+          - It did not → the original throw, unchanged, and everything behaves
+            as it did before this card (drop, refund).
+          - The question itself fails → {@link ViewLandingUndecidedError}: the
+            loop passes it out WITHOUT dropping the bytes, the operation stays
+            `running`, and the sweep — which asks the same question of the
+            same rows — settles the money.
+
+          The value carries no asset id because nothing reads one, and the
+          landed-anyway answer does not have it.
+        */
+        let assetId: number | null;
+        try {
+          assetId = await commit(commitInput);
+        } catch (commitError) {
+          let didLand: boolean;
+          try {
+            didLand = await (dependencies.retriedLanded ?? retriedViewLanded)({
+              userId: input.userId,
+              modelId: read.modelId,
+              operationId,
+            });
+          } catch (readError) {
+            log.error(
+              { operationId, castId: input.castId, angle: input.angle, err: commitError, readErr: readError },
+              "[viewRetryService] the commit threw and whether it landed cannot be read — the sweep decides",
+            );
+            throw new ViewLandingUndecidedError(
+              "the retried view's commit threw and whether it landed could not be read",
+              { cause: commitError },
+            );
+          }
+          if (!didLand) throw commitError;
+          log.warn(
+            { operationId, castId: input.castId, angle: input.angle, err: commitError },
+            "[viewRetryService] the commit threw but its row LANDED — a lost acknowledgement, delivering",
+          );
+          return { url: landed.stored.url };
+        }
+        return assetId === null ? null : { url: landed.stored.url };
       },
     );
   } catch (error) {

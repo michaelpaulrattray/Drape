@@ -715,6 +715,109 @@ describe("try again on one view — what moves, and in what order", () => {
     expect(receipts.failure).not.toHaveBeenCalled();
   });
 
+  /*
+    ⚠ **A COMMIT THAT COMMITTED AND LOST ITS ACKNOWLEDGEMENT (#2080).**
+
+    The fake below is the database's side of that fault, faithfully: the row
+    is written (into `rows`, which is what `retriedViewLanded` reads — the
+    stamp the real commit writes), and THEN the call throws. Before the card
+    the loop's catch dropped the bytes the row points at and the failed exit
+    refunded 50 credits — a refund AND a broken tile.
+  */
+  describe("a commit that throws after it committed (#2080)", () => {
+    const LIVE_KEY = "views/new.png";
+    let rows: Array<{ retryOperationId: string; storageKey: string }>;
+    let dropped: string[];
+    let landedAsks: number;
+
+    function lostAck(options: { writes: boolean; landedRead?: "throws" }) {
+      return dependencies([slot()], {
+        commitRetried: (async (request: {
+          operationId: string;
+          storageKey: string;
+        }) => {
+          journal.push("commit");
+          if (options.writes) {
+            rows.push({ retryOperationId: request.operationId, storageKey: request.storageKey });
+          }
+          throw new Error("Connection lost: The server closed the connection.");
+        }) as ViewRetryServiceDependencies["commitRetried"],
+        retriedLanded: (async (request: { operationId: string }) => {
+          landedAsks += 1;
+          journal.push("landed?");
+          if (options.landedRead === "throws") throw new Error("Connection lost again");
+          return rows.some((row) => row.retryOperationId === request.operationId);
+        }) as ViewRetryServiceDependencies["retriedLanded"],
+        deleteObject: (async (key: string) => {
+          dropped.push(key);
+          return { success: true as const };
+        }) as ViewRetryServiceDependencies["deleteObject"],
+      });
+    }
+
+    beforeEach(() => {
+      rows = [];
+      dropped = [];
+      landedAsks = 0;
+    });
+
+    it("THE CARD: the row landed — delivered, ONE asset, its bytes live, nothing refunded", async () => {
+      const result = await retryCastView(lostAck({ writes: true }), input);
+
+      expect(result.outcome).toBe("ready");
+      expect(result.url).toBe("https://public/views/new.png");
+      expect(result.chargedCredits).toBe(TRY_AGAIN_PRICE);
+      expect(result.refundedCredits).toBe(0);
+      expect(refunds, "a landed view was refunded").toHaveLength(0);
+      /* Exactly one asset, and the object it points at was never deleted. */
+      expect(rows).toEqual([{ retryOperationId: OPERATION_ID, storageKey: LIVE_KEY }]);
+      expect(dropped, "the bytes the landed row points at were deleted").not.toContain(LIVE_KEY);
+      /* Never another frame (#1994): one render, one commit, one question. */
+      expect(engineCalls).toBe(1);
+      expect(journal).toEqual(["claim", "running", "deduct", "render", "commit", "landed?"]);
+      expect(receipts.success).toHaveBeenCalledTimes(1);
+      expect(handoffs).toHaveLength(0);
+    });
+
+    it("CONTROL: the commit truly failed — the bytes are dropped and the 50 credits go back", async () => {
+      const result = await retryCastView(lostAck({ writes: false }), input);
+
+      expect(result.outcome).toBe("failed");
+      expect(result.url).toBeNull();
+      expect(result.refundedCredits).toBe(TRY_AGAIN_PRICE);
+      expect(refunds).toHaveLength(1);
+      expect(rows).toHaveLength(0);
+      expect(dropped).toEqual([LIVE_KEY]);
+      expect(landedAsks).toBe(1);
+      expect(engineCalls, "a failed commit bought another frame").toBe(1);
+    });
+
+    it("CONTROL: a commit that does NOT throw never asks the question", async () => {
+      await retryCastView(dependencies([slot()], {
+        retriedLanded: (async () => {
+          landedAsks += 1;
+          return false;
+        }) as ViewRetryServiceDependencies["retriedLanded"],
+      }), input);
+      expect(landedAsks).toBe(0);
+    });
+
+    it("the question cannot be answered — no refund, no drop, the sweep owns it", async () => {
+      await expect(retryCastView(lostAck({ writes: true, landedRead: "throws" }), input))
+        .rejects.toThrow(/could not be read/);
+
+      /* Neither reading is acted on: the bytes stay for a row that may point
+         at them, and no refund is written for a view she may be holding. The
+         operation is left `running` — no receipt — so the sweep reads the
+         asset rows and settles it. */
+      expect(dropped).toHaveLength(0);
+      expect(refunds).toHaveLength(0);
+      expect(receipts.success).not.toHaveBeenCalled();
+      expect(receipts.failure).not.toHaveBeenCalled();
+      expect(engineCalls).toBe(1);
+    });
+  });
+
   it("CONTROL: a view that lands seals its receipt and never hands off", async () => {
     await retryCastView(dependencies([slot()]), input);
     expect(receipts.success).toHaveBeenCalledTimes(1);
