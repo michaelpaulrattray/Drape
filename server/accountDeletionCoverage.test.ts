@@ -33,7 +33,18 @@
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
-import { ACCOUNT_DELETION_DISPOSITIONS } from "./db/accountDeletion";
+import {
+  wardrobeGarments,
+  wardrobeLooks,
+  wardrobeOutfits,
+  wardrobeSessions,
+} from "../drizzle/schema";
+import {
+  ACCOUNT_DELETION_DISPOSITIONS,
+  collectAccountOwnedStorageItemsIn,
+  wardrobeOwnedKeyPrefixes,
+} from "./db/accountDeletion";
+import type { TransactionHandle } from "./db/connection";
 import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
 import { readListedSource } from "./testing/listedSource";
 import { codeOnly, withoutComments } from "./testing/withoutComments";
@@ -370,5 +381,144 @@ describe("account deletion answers for every user-keyed table (#1935)", () => {
     expect(code).toMatch(/\.where\(eq\(referrals\.referredUserId,\s*userId\)\)/);
     expect(code).toMatch(/referredByUserId:\s*null/);
     expect(code).toMatch(/\.where\(eq\(users\.referredByUserId,\s*userId\)\)/);
+  });
+});
+
+/*
+  #2020 — THE WARDROBE'S PICTURES, DRIVEN THROUGH THE REAL COLLECTOR.
+
+  `collectAccountOwnedStorageItemsIn` is run as erasure runs it, over a
+  transaction that answers each table's read with the rows given here (every
+  other table answers empty). The arms assert on the manifest it returns — the
+  deletion set itself — never on a constant near it.
+*/
+const PUBLIC = "https://pub-test.r2.dev";
+const ME = 41;
+const OTHER = 77;
+
+function fakeTx(rowsByTable: Map<unknown, unknown[]>): TransactionHandle {
+  return {
+    select() {
+      let table: unknown;
+      const chain: Record<string, unknown> = {};
+      for (const method of ["where", "limit", "for", "innerJoin", "orderBy"]) {
+        chain[method] = () => chain;
+      }
+      chain.from = (source: unknown) => {
+        table = source;
+        return chain;
+      };
+      chain.then = (resolve: (rows: unknown[]) => unknown, reject: (error: unknown) => unknown) =>
+        Promise.resolve(rowsByTable.get(table) ?? []).then(resolve, reject);
+      return chain;
+    },
+  } as unknown as TransactionHandle;
+}
+
+function garmentRow(overrides: Record<string, unknown>): Record<string, unknown> {
+  return {
+    id: 1,
+    userId: ME,
+    originalImageUrl: `${PUBLIC}/${ME}-wardrobe/original-1-a.png`,
+    originalImageKey: `${ME}-wardrobe/original-1-a.png`,
+    isolatedImageUrl: null,
+    isolatedImageKey: null,
+    sourceImageUrl: null,
+    sourceImageKey: null,
+    ...overrides,
+  };
+}
+
+async function publicKeysFor(tables: Map<unknown, unknown[]>): Promise<string[]> {
+  const items = await collectAccountOwnedStorageItemsIn(fakeTx(tables), ME, PUBLIC);
+  return items.filter((item) => item.storageBackend === "public_r2").map((item) => item.storageKey);
+}
+
+describe("an erasure removes the wardrobe's pictures, and only this account's (#2020)", () => {
+  it("✅ a digitized flat-lay with a URL and no key is in the deletion set", async () => {
+    const flatLay = `wardrobe/${ME}/flat-lays/1700000000000-abc.png`;
+    const keys = await publicKeysFor(new Map([[wardrobeGarments, [garmentRow({
+      isolatedImageUrl: `${PUBLIC}/${flatLay}`,
+      isolatedImageKey: null,
+    })]]]));
+    expect(keys).toContain(flatLay);
+    // The keyed original still arrives by its key, so the reader is not URL-only.
+    expect(keys).toContain(`${ME}-wardrobe/original-1-a.png`);
+  });
+
+  it("✅ an imported garment's URL-only original and source, under her own prefix, are in it too", async () => {
+    const crop = `${ME}-wardrobe/decomposed/top-1.png`;
+    const source = `${ME}-wardrobe/decompose-1-b.png`;
+    const keys = await publicKeysFor(new Map([[wardrobeGarments, [garmentRow({
+      originalImageUrl: `${PUBLIC}/${crop}`,
+      originalImageKey: null,
+      sourceImageUrl: `${PUBLIC}/${source}`,
+    })]]]));
+    expect(keys).toEqual(expect.arrayContaining([crop, source]));
+  });
+
+  it("✅ looks, outfits and try-on history under her prefix are still swept by URL", async () => {
+    const look = `wardrobe/${ME}/vto-results/look.png`;
+    const thumb = `wardrobe/${ME}/vto-results/thumb.png`;
+    const step = `wardrobe/${ME}/vto-results/step.png`;
+    const keys = await publicKeysFor(new Map<unknown, unknown[]>([
+      [wardrobeLooks, [{ imageUrl: `${PUBLIC}/${look}` }]],
+      [wardrobeOutfits, [{ resultThumbKey: null, resultThumbUrl: `${PUBLIC}/${thumb}` }]],
+      [wardrobeSessions, [{ history: JSON.stringify([`${PUBLIC}/${step}`]) }]],
+    ]));
+    expect(keys).toEqual(expect.arrayContaining([look, thumb, step]));
+  });
+
+  it("⚠ a URL the customer typed cannot make an erasure delete somebody else's picture", async () => {
+    /*
+      `garments.import`, `looks.save`, `outfits.save` and `sessions.update`
+      each store a URL the CLIENT sends. Every one below is a URL a customer
+      could have typed into one of those rows; none may become a deletion key.
+    */
+    const typed = [
+      `${PUBLIC}/wardrobe/${OTHER}/flat-lays/theirs.png`, //  another customer's wardrobe
+      `${PUBLIC}/${OTHER}-wardrobe/original-1-c.png`, //      her other prefix
+      `${PUBLIC}/wardrobe/${ME}1/flat-lays/theirs.png`, //    a longer id that begins with mine
+      `${PUBLIC}/${ME}1-wardrobe/original-1-d.png`, //        and the other prefix's version of it
+      `${PUBLIC}/casting/v2/candidates/someone-else.png`, //  a cast's picture on the same bucket
+      `${PUBLIC}/wardrobe/${ME}/../${OTHER}/flat-lays/x.png`, // a dot-segment climb
+      `${PUBLIC}/wardrobe/${ME}/%2e%2e/${OTHER}/x.png`, //     the encoded climb
+      `https://files.manuscdn.com/wardrobe/${ME}/flat-lays/legacy.png`, // legacy host
+      `https://d1abc.cloudfront.net/wardrobe/${ME}/flat-lays/legacy.png`, // legacy host
+      `https://example.com/wardrobe/${ME}/flat-lays/elsewhere.png`, //      any other origin
+    ];
+    const keys = await publicKeysFor(new Map<unknown, unknown[]>([
+      [wardrobeGarments, typed.map((url, index) => garmentRow({
+        id: index + 1,
+        originalImageUrl: url,
+        originalImageKey: null,
+        isolatedImageUrl: url,
+        sourceImageUrl: url,
+      }))],
+      [wardrobeLooks, typed.map((imageUrl) => ({ imageUrl }))],
+      [wardrobeOutfits, typed.map((resultThumbUrl) => ({ resultThumbKey: null, resultThumbUrl }))],
+      [wardrobeSessions, [{ history: JSON.stringify(typed) }]],
+    ]));
+    expect(keys).toEqual([]);
+  });
+
+  it("names the two prefixes the wardrobe writers actually use", () => {
+    /*
+      A mirror of the writers' prefixes is a mirror (working law 4), so it is
+      pinned against the writers' own source: if a writer moves its pictures,
+      this arm reddens rather than the erasure silently starting to leak them.
+    */
+    expect(wardrobeOwnedKeyPrefixes(ME)).toEqual([`wardrobe/${ME}/`, `${ME}-wardrobe/`]);
+    const writers = [
+      "server/wardrobe/garmentDigitization.ts",
+      "server/wardrobe/garmentRefinement.ts",
+      "server/wardrobe/vtoGeneration.ts",
+      "server/wardrobe/outfitDecomposition.ts",
+      "server/routes/wardrobe.ts",
+    ].map((module) => withoutComments(read(module))).join("\n");
+    const prefixes = [...writers.matchAll(/`(wardrobe\/\$\{[^}]+\}\/|\$\{[^}]+\}-wardrobe\/)/g)]
+      .map((match) => match[1]!.replace(/\$\{[^}]+\}/, "<id>"));
+    expect(prefixes.length, "the writers' prefixes were not found — the arm is blind").toBeGreaterThan(5);
+    expect(new Set(prefixes)).toEqual(new Set(["wardrobe/<id>/", "<id>-wardrobe/"]));
   });
 });

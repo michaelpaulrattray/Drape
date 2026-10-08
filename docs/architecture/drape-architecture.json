@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 54
+      "moduleCount": 56
     },
     {
       "id": "domain:wardrobe",
@@ -2863,6 +2863,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/billing/renewalReminder.ts",
+      "path": "server/billing/renewalReminder.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/casting/aiService.ts",
       "path": "server/casting/aiService.ts",
       "domain": "casting",
@@ -5290,6 +5296,12 @@
       "id": "module:server/logging/requestContextMiddleware.ts",
       "path": "server/logging/requestContextMiddleware.ts",
       "domain": "platform",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/mail.ts",
+      "path": "server/mail.ts",
+      "domain": "unassigned",
       "lifecycle": "active"
     },
     {
@@ -9962,6 +9974,11 @@
       "id": "worker:startStorageCleanupWorker",
       "name": "startStorageCleanupWorker",
       "startedFrom": "server/_core/index.ts"
+    },
+    {
+      "id": "worker:startYearlyRenewalReminderSweep",
+      "name": "startYearlyRenewalReminderSweep",
+      "startedFrom": "server/_core/index.ts"
     }
   ],
   "operationKinds": [
@@ -11646,6 +11663,10 @@
       "path": "server/billing.test.ts"
     },
     {
+      "id": "test:server/billing/renewalReminder.test.ts",
+      "path": "server/billing/renewalReminder.test.ts"
+    },
+    {
       "id": "test:server/boardDeletionChildren.test.ts",
       "path": "server/boardDeletionChildren.test.ts"
     },
@@ -11664,6 +11685,10 @@
     {
       "id": "test:server/boardsCasting.test.ts",
       "path": "server/boardsCasting.test.ts"
+    },
+    {
+      "id": "test:server/boardsClientStorageKey.test.ts",
+      "path": "server/boardsClientStorageKey.test.ts"
     },
     {
       "id": "test:server/briefingAtCommit.test.ts",
@@ -22097,6 +22122,11 @@
     },
     {
       "from": "module:server/_core/index.ts",
+      "to": "module:server/billing/renewalReminder.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
       "to": "module:server/casting/evidence/evidenceComposerSchema.ts",
       "kind": "imports"
     },
@@ -22346,6 +22376,56 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/billing/renewalReminder.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/renewalReminder.ts",
+      "to": "module:server/_core/appOrigin.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/renewalReminder.ts",
+      "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/renewalReminder.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/renewalReminder.ts",
+      "to": "module:server/mail.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/renewalReminder.ts",
+      "to": "module:server/stripe/stripeService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/renewalReminder.ts",
+      "to": "module:server/stripe/subscriptionPeriods.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/renewalReminder.ts",
+      "to": "module:server/stripe/subscriptionSchedule.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/renewalReminder.ts",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/renewalReminder.ts",
+      "to": "module:shared/const.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/casting/aiService.ts",
       "to": "module:server/casting/castingCreditCosts.ts",
       "kind": "imports"
@@ -22388,6 +22468,11 @@
     {
       "from": "module:server/casting/atomicCredits.ts",
       "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/atomicCredits.ts",
+      "to": "module:server/_core/spokenError.ts",
       "kind": "imports"
     },
     {
@@ -29397,6 +29482,11 @@
     },
     {
       "from": "module:server/castingV2/retryService.ts",
+      "to": "module:server/_core/spokenError.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryService.ts",
       "to": "module:server/casting/atomicCredits.ts",
       "kind": "imports"
     },
@@ -29618,6 +29708,11 @@
     {
       "from": "module:server/castingV2/rollService.ts",
       "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollService.ts",
+      "to": "module:server/_core/spokenError.ts",
       "kind": "imports"
     },
     {
@@ -32581,6 +32676,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/mail.ts",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/monitoring/errorTracker.ts",
       "to": "module:server/_core/env.ts",
       "kind": "imports"
@@ -34117,12 +34217,22 @@
     },
     {
       "from": "module:server/routes/emailVerification.ts",
+      "to": "module:server/mail.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/emailVerification.ts",
       "to": "module:server/security/crossSiteExpressGuard.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/routes/emailVerification.ts",
       "to": "module:server/security/rateLimit.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/emailVerification.ts",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
@@ -38108,24 +38218,24 @@
       "message": "Names 7 of LockFacts's 7 fields (server/castingV2/castingIntent.ts), 7 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:1480",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:1485",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:1480",
+      "subject": "server/castingV2/rollService.ts:1485",
       "message": "Names 2 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:273",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:274",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:273",
+      "subject": "server/castingV2/rollService.ts:274",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:319",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:320",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:319",
+      "subject": "server/castingV2/rollService.ts:320",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     }
   ]

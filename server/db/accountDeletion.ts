@@ -14,7 +14,8 @@
  *   9. generations (userId)
  *  9b. generationOperationLocks (via the account's operations), then
  *      generationOperations (userId)
- *  9c. bugReports (userId), faceScanDailyUsage (userId)
+ *  9c. bugReports (userId), faceScanDailyUsage (userId),
+ *      subscriptionRenewalReminders (userId)
  *  10. creditTransactions (userId)
  *  11. credits (userId)
  *  12. auditLogs (userId) — anonymize, don't delete (compliance)
@@ -57,6 +58,7 @@ import {
   generationOperationLocks,
   bugReports,
   faceScanDailyUsage,
+  subscriptionRenewalReminders,
   auditLogs,
   changeRequests,
   changeRequestAttachments,
@@ -186,6 +188,18 @@ export const ACCOUNT_DELETION_DISPOSITIONS = {
     rows survive or not — deleting them loses no control at all.
   */
   "faceScanDailyUsage.userId": "deleted",
+
+  /* ---- a claim with nothing left to claim ---- */
+  /*
+    One row per renewal notice already sent (#1941). It exists only to stop a
+    second notice going to the same address about the same renewal, and the
+    shortlist it guards is read from `points`, which is deleted in this same
+    transaction — so the row can never be consulted again once the account is
+    gone. It holds her plan and the amount she was quoted, which is hers, and
+    deleting it loses no control at all: a duplicate send would need the
+    account to exist.
+  */
+  "subscriptionRenewalReminders.userId": "deleted",
 
   /* ---- anonymised ---- */
   /*
@@ -359,6 +373,7 @@ function zeroDeletionCounts() {
     generationOperationLocks: 0,
     bugReports: 0,
     faceScanDailyUsage: 0,
+    subscriptionRenewalReminders: 0,
     creditTransactions: 0,
     credits: 0,
     auditLogsAnonymized: 0,
@@ -437,6 +452,105 @@ function addOwnedAccountKey(
   if (classified.kind === "explicit_key" || classified.kind === "current_origin_url") {
     keys.add(classified.key);
   }
+}
+
+/**
+ * The two places the wardrobe writers put a customer's pictures, each carrying
+ * her id: `wardrobe/<id>/…` (the flat-lay, the refinement and every try-on
+ * result — `uploadBase64ToS3`'s prefix at all five call sites) and
+ * `<id>-wardrobe/…` (the upload road's original, the scan and decompose
+ * uploads, and the decomposed crops). Both unchanged since the wardrobe was
+ * built (`7681ddc2f`, 2026-03-24).
+ */
+export function wardrobeOwnedKeyPrefixes(userId: number): readonly [string, string] {
+  return [`wardrobe/${userId}/`, `${userId}-wardrobe/`];
+}
+
+/**
+ * A wardrobe row's picture, read by key when the row has one and by URL when
+ * it does not (#2020) — with ONE extra condition on the URL.
+ *
+ * ⚠ **A WARDROBE URL IS NOT PROOF OF OWNERSHIP, BECAUSE THE CUSTOMER CAN TYPE
+ * IT.** `garments.import` stores the client's `sourceImageUrl`/`cropUrl` as
+ * the garment's `originalImageUrl`/`sourceImageUrl`, `outfits.save` stores the
+ * client's `resultThumbUrl`, `looks.save` the client's `imageUrl`, and
+ * `sessions.update` the client's `history`. Each is a `z.string().url()` and
+ * nothing more, so any of them can hold ANOTHER customer's picture on our own
+ * bucket — and the bare `addOwnedAccountKey` turns any current-bucket URL into
+ * a deletion key. Erasing the account that typed it would then delete the
+ * other customer's object. So a URL counts only when the key it names sits
+ * under one of THIS account's own wardrobe prefixes; anything else — another
+ * customer's key, a cast's key, a legacy host (`files.manuscdn.com`,
+ * `*.cloudfront.net`), any other origin — is left alone. An explicit key
+ * column is written by the server alone and stays trusted as before.
+ *
+ * The cost is stated rather than hidden: a row this account wrote whose URL
+ * does not carry its prefix is no longer swept by URL. Every wardrobe writer
+ * has used the two prefixes since the wardrobe was built, so the only such
+ * URL is one the customer supplied — exactly the case that must not be
+ * deletion authority.
+ */
+function addOwnedWardrobeReference(
+  keys: Set<string>,
+  currentPublicUrl: string,
+  userId: number,
+  reference: { storageKey?: unknown; url?: unknown },
+): void {
+  const classified = classifyStorageReference({ ...reference, currentPublicUrl });
+  if (classified.kind === "explicit_key") {
+    keys.add(classified.key);
+    return;
+  }
+  if (
+    classified.kind === "current_origin_url"
+    && wardrobeOwnedKeyPrefixes(userId).some((prefix) => classified.key.startsWith(prefix))
+  ) {
+    keys.add(classified.key);
+  }
+}
+
+/**
+ * A board's two key columns — `boards.thumbnailKey` and `board_items.imageKey`
+ * — are NEVER deletion authority on their own (#2056, the erasure half).
+ *
+ * ⚠ **THE OWNERSHIP RULE IS "UNDER A PREFIX THIS ACCOUNT'S WRITERS USE FOR
+ * THESE COLUMNS", AND READ AT THE WRITERS THAT SET IS EMPTY.** Read
+ * 2026-10-08 across `server/` and the whole of git history:
+ *   · `board_items.imageKey` has never had a server writer — `boardOps`
+ *     writes `imageUrl` only — and the client has only ever put `null` in an
+ *     optimistic cache row, never in a request. Its one road in was the four
+ *     board routes taking it from the client, closed at the input by #2060.
+ *   · `boards.thumbnailKey`'s only server writer is
+ *     `recomputeBoardThumbnailIn` (`server/casting/finalCastDeletion.ts`),
+ *     which COPIES the newest item's `imageKey` — so it inherits the
+ *     column above rather than minting a key of its own. The other road was
+ *     `boards.update` taking it from the client, closed by #2060 too.
+ *   · No prefix could stand in for a row either: a cast's picture key is
+ *     `casting-v2/candidates/<uuid>…` and carries no account id, so a prefix
+ *     rule cannot tell this account's cast picture from another's.
+ * So any non-null value on a row was typed through the old routes, by this
+ * account, before #2060 — exactly the case that must not delete another
+ * customer's picture. It is SKIPPED and LOGGED (board, item and column; never
+ * the key, which names somebody's object), and the rows themselves are still
+ * deleted below.
+ *
+ * Nothing this account owns is lost by it: no product road ever stored a key
+ * here, and every picture the account does own reaches the manifest through
+ * the row that proves it — its casts, its wardrobe, its uploads. If a server
+ * writer ever starts writing either column, it must give its keys a prefix
+ * carrying the account id and add the rule here; `server/
+ * boardsClientStorageKey.test.ts` reads the writers and reddens until it does.
+ */
+function skipUnownedBoardKey(
+  userId: number,
+  where: { boardId: number; itemId?: number; column: "boards.thumbnailKey" | "board_items.imageKey" },
+  storageKey: string | null,
+): void {
+  if (storageKey == null || storageKey === "") return;
+  log.warn(
+    { userId, ...where },
+    "[AccountDeletion] a board key no server writer could have stored was left alone, not deleted",
+  );
 }
 
 /**
@@ -659,13 +773,28 @@ export async function collectAccountOwnedStorageItemsIn(
   const garments = await tx.select().from(wardrobeGarments)
     .where(eq(wardrobeGarments.userId, userId)).for("update");
   for (const garment of garments) {
-    addOwnedAccountKey(publicKeys, currentPublicUrl, { storageKey: garment.originalImageKey });
-    addOwnedAccountKey(publicKeys, currentPublicUrl, { storageKey: garment.isolatedImageKey });
-    addOwnedAccountKey(publicKeys, currentPublicUrl, { storageKey: garment.sourceImageKey });
+    /*
+      #2020: the KEY columns alone left the digitized flat-lay behind —
+      `isolatedImageKey` has no writer anywhere, so the garment's main picture
+      outlived the account at a permanently public URL. The URL beside each key
+      is read too, under the wardrobe ownership rule above.
+    */
+    addOwnedWardrobeReference(publicKeys, currentPublicUrl, userId, {
+      storageKey: garment.originalImageKey,
+      url: garment.originalImageUrl,
+    });
+    addOwnedWardrobeReference(publicKeys, currentPublicUrl, userId, {
+      storageKey: garment.isolatedImageKey,
+      url: garment.isolatedImageUrl,
+    });
+    addOwnedWardrobeReference(publicKeys, currentPublicUrl, userId, {
+      storageKey: garment.sourceImageKey,
+      url: garment.sourceImageUrl,
+    });
   }
   const outfits = await tx.select().from(wardrobeOutfits)
     .where(eq(wardrobeOutfits.userId, userId)).for("update");
-  for (const outfit of outfits) addOwnedAccountKey(publicKeys, currentPublicUrl, {
+  for (const outfit of outfits) addOwnedWardrobeReference(publicKeys, currentPublicUrl, userId, {
     storageKey: outfit.resultThumbKey,
     url: outfit.resultThumbUrl,
   });
@@ -676,21 +805,29 @@ export async function collectAccountOwnedStorageItemsIn(
     // generated history is deletion authority when no explicit key exists.
     const history = parseJsonValue(session.history);
     if (Array.isArray(history)) {
-      for (const url of history) addOwnedAccountKey(publicKeys, currentPublicUrl, { url });
+      for (const url of history) addOwnedWardrobeReference(publicKeys, currentPublicUrl, userId, { url });
     }
   }
   const looks = await tx.select().from(wardrobeLooks)
     .where(eq(wardrobeLooks.userId, userId)).for("update");
-  for (const look of looks) addOwnedAccountKey(publicKeys, currentPublicUrl, { url: look.imageUrl });
+  for (const look of looks) addOwnedWardrobeReference(publicKeys, currentPublicUrl, userId, { url: look.imageUrl });
 
   const userBoards = await tx.select().from(boards)
     .where(eq(boards.userId, userId)).for("update");
-  for (const board of userBoards) addOwnedAccountKey(publicKeys, currentPublicUrl, { storageKey: board.thumbnailKey });
+  for (const board of userBoards) {
+    skipUnownedBoardKey(userId, { boardId: board.id, column: "boards.thumbnailKey" }, board.thumbnailKey);
+  }
   if (userBoards.length > 0) {
     const boardIds = userBoards.map((board) => board.id);
     const items = await tx.select().from(boardItems)
       .where(inArray(boardItems.boardId, boardIds)).for("update");
-    for (const item of items) addOwnedAccountKey(publicKeys, currentPublicUrl, { storageKey: item.imageKey });
+    for (const item of items) {
+      skipUnownedBoardKey(
+        userId,
+        { boardId: item.boardId, itemId: item.id, column: "board_items.imageKey" },
+        item.imageKey,
+      );
+    }
     // URL-only Canvas references/history can be shared inputs. The dry-run
     // orphan audit counts them, but they are not automatic delete authority.
   }
@@ -1125,6 +1262,10 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
         .delete(faceScanDailyUsage)
         .where(eq(faceScanDailyUsage.userId, userId));
       counts.faceScanDailyUsage = (scanUsageResult as any)[0]?.affectedRows ?? 0;
+      const renewalReminderResult = await tx
+        .delete(subscriptionRenewalReminders)
+        .where(eq(subscriptionRenewalReminders.userId, userId));
+      counts.subscriptionRenewalReminders = (renewalReminderResult as any)[0]?.affectedRows ?? 0;
 
       // Step 10: Delete credit transactions
       const txResult = await tx

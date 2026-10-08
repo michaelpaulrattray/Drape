@@ -218,7 +218,7 @@ async function recomputeBoardThumbnailIn(tx: TransactionHandle, boardId: number)
     .where(eq(boards.id, boardId));
 }
 
-async function collectCanvasCleanupKeysIn(input: {
+export async function collectCanvasCleanupKeysIn(input: {
   tx: TransactionHandle;
   modelId: number;
   assetUrls: string[];
@@ -247,7 +247,8 @@ async function collectCanvasCleanupKeysIn(input: {
     const isCast = item.sourceModelId === modelId || provenance?.modelId === modelId;
     if (!isCast && item.imageUrl && assetUrls.includes(item.imageUrl)) continue;
     linkedIds.push(item.id);
-    collectManifestKey(storageKeys, currentPublicUrl, { storageKey: item.imageKey, url: item.imageUrl });
+    // The item's URL only, never `imageKey` — see the note at the second read below (#2056).
+    collectManifestKey(storageKeys, currentPublicUrl, { url: item.imageUrl });
   }
   if (linkedIds.length) {
     const versions = await tx
@@ -352,7 +353,16 @@ async function deleteCanvasDependenciesIn(input: {
     affectedBoards.add(item.boardId);
 
     if (linked) {
-      collectManifestKey(storageKeys, currentPublicUrl, { storageKey: item.imageKey, url: item.imageUrl });
+      /*
+        #2056: `board_items.imageKey` is NOT read as deletion authority. No
+        server writer has ever stored one — the only road in was the board
+        routes taking it from the client, closed by #2060 — so a non-null value
+        on an older row was typed by a customer and may name another
+        customer's picture. The account erasure skips it for the same reason
+        (`skipUnownedBoardKey`, `server/db/accountDeletion.ts`). The Cast's own
+        pictures still arrive through its assets and through this URL.
+      */
+      collectManifestKey(storageKeys, currentPublicUrl, { url: item.imageUrl });
       const allVersions = await tx
         .select({ id: boardItemVersions.id, imageUrl: boardItemVersions.imageUrl })
         .from(boardItemVersions)
