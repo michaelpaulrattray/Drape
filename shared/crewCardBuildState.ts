@@ -846,11 +846,13 @@ export function handFindingNoteForPullRequest(input: {
  * quotes, so the row's words and the row's clock are the same event by
  * construction rather than by agreement.
  *
- * ⚠ **THE COST OF THAT BOUND IS MEASURED AND FILED — #1984.** On the real board
- * the day this landed it saw 5 of 9 held pull requests, because a seat answering
- * a finding under its own header moves the clock (31 seconds, on #1960). The
- * rows this feeds have always read that way; what is new is only that a count
- * makes the gap visible.
+ * ⚠ **THE COST OF THAT BOUND WAS MEASURED — #1984 — AND THIS IS NOW ONLY THE
+ * FALLBACK.** On the real board the day #1977 landed it saw 5 of 9 held pull
+ * requests, because a seat answering a finding under its own header moves the
+ * clock (31 seconds, on #1960). His page now reads each pull request's head
+ * commit date and asks the merge tool's own reader (`server/crew/liveRepairs.ts`,
+ * `liveDesk`'s `liveHandReading`); this road answers only for a pull request
+ * whose head could not be read.
  */
 export function repairFlaggedAtForPullRequest(input: {
   readonly pullRequest: number;
