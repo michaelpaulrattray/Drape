@@ -25,6 +25,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createFalSunburstSheetEngine } from "./falImages";
+import { createFalIdentityEngine } from "./falQueue";
 import { SIGN_SHEET_SIZES } from "../castingV2/signSheet";
 import { ProviderError, providerAlreadyBilled } from "./types";
 
@@ -189,4 +190,96 @@ describe("#1966 — the predicate reads the error, not the class", () => {
       new ProviderError("transport", "bought", { completed: true }),
     )).toBe(true);
   });
+});
+
+/*
+  #2032 — THE LAYER UNDERNEATH. Everything above proves the transport SETS the
+  flag. These arms prove the engine's own `withRetry` READS it: a real fal
+  engine, the real queue, the real retry loop, and a stubbed `fetch` that counts
+  how many times a job was SUBMITTED — the one request fal bills for. A
+  post-completion fault must submit exactly once; the pre-completion control
+  must still be retried to the budget (1 + 2 retries = 3), or the guard has
+  silently stopped retrying real outages.
+*/
+function countingFetch(script: {
+  submit?: () => Response;
+  result?: () => Response;
+  download?: () => Response;
+}): { submits: () => number } {
+  let submits = 0;
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      const address = String(url);
+      if (init?.method === "POST" && !address.includes("/requests/")) {
+        submits += 1;
+        return script.submit?.() ?? new Response(JSON.stringify({ request_id: `submit-${submits}` }), { status: 200 });
+      }
+      if (address.includes("/status")) {
+        return new Response(JSON.stringify({ status: "COMPLETED" }), { status: 200 });
+      }
+      if (address.startsWith("https://cdn.example.test/")) {
+        return script.download?.() ?? new Response(PIXEL, { status: 200 });
+      }
+      return script.result?.() ?? new Response(JSON.stringify({ images: [] }), { status: 200 });
+    }),
+  );
+  return { submits: () => submits };
+}
+
+const ENGINES = {
+  "the Sign sheet engine (Sunburst edit)": () =>
+    createFalSunburstSheetEngine({ apiKey: "test-key", size: SIGN_SHEET_SIZES.head, pollIntervalMs: 1 })
+      .editWithReferences(REQUEST),
+  "the identity engine (Nano Banana Pro edit — delivered views, refine)": () =>
+    createFalIdentityEngine({ apiKey: "test-key", pollIntervalMs: 1 }).editWithReferences(REQUEST),
+};
+
+describe("#2032 — the engine's own retry never re-buys a frame fal already finished", () => {
+  for (const [name, call] of Object.entries(ENGINES)) {
+    /*
+      ⚠ Only the RETRYABLE post-completion faults are subjects here. The card
+      listed `unknown` among them, and read at the code it is not: `unknown` is
+      outside `RETRYABLE_FAILURES` (`types.ts`), so an empty payload or a
+      malformed data URI was never re-submitted by this loop. The two that WERE
+      re-bought are the result fetch refused (its HTTP class — `rate_limit`
+      here) and the CDN download that fails (`transport`).
+    */
+    it(`${name}: a completed job whose image will not download is submitted exactly ONCE`, async () => {
+      const wire = countingFetch({
+        result: () => new Response(
+          JSON.stringify({ images: [{ url: "https://cdn.example.test/frame.png", content_type: "image/png" }] }),
+          { status: 200 },
+        ),
+        download: () => new Response("gone", { status: 503 }),
+      });
+      const fault = await call().then(
+        () => { throw new Error("the engine returned a picture — this arm asserts a fault"); },
+        (error: unknown) => error,
+      );
+      expect((fault as ProviderError).failureClass).toBe("transport");
+      expect(providerAlreadyBilled(fault)).toBe(true);
+      expect(wire.submits(), "a post-completion fault bought another frame").toBe(1);
+    });
+
+    it(`${name}: a completed job whose result fetch is refused is submitted exactly ONCE`, async () => {
+      const wire = countingFetch({
+        result: () => new Response("slow down", { status: 429 }),
+      });
+      await expect(call()).rejects.toBeInstanceOf(ProviderError);
+      expect(wire.submits(), "a post-completion fault bought another frame").toBe(1);
+    });
+
+    it(`${name}: THE CONTROL — a submit refused before any job ran is still retried to the budget`, async () => {
+      const wire = countingFetch({
+        submit: () => new Response("slow down", { status: 429 }),
+      });
+      const fault = await call().then(
+        () => { throw new Error("the engine returned a picture — this arm asserts a fault"); },
+        (error: unknown) => error,
+      );
+      expect(providerAlreadyBilled(fault)).toBe(false);
+      expect(wire.submits(), "a job that never ran stopped being retried").toBe(3);
+    });
+  }
 });

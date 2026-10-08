@@ -14074,6 +14074,10 @@
       "path": "server/providers/providerFailureContract.test.ts"
     },
     {
+      "id": "test:server/providers/withRetryBilled.test.ts",
+      "path": "server/providers/withRetryBilled.test.ts"
+    },
+    {
       "id": "test:server/publicInputStrictness.test.ts",
       "path": "server/publicInputStrictness.test.ts"
     },
