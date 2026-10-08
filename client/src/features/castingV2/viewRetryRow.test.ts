@@ -93,9 +93,21 @@ function renderable(source: string): string {
 }
 
 describe("the row is his one muted line", () => {
-  it("says exactly what he wrote, both roads, character for character", () => {
-    expect(viewRetryLine("unchecked")).toBe("Unchecked · Try again");
+  /**
+   * ⚠ **IT WAS *"both roads"* AND THERE IS ONE ROAD NOW — #1903 slice 3.**
+   *
+   * His 2026-09-26 shape ruling gave the row two spellings, *"Unchecked · Try
+   * again"* and *"Refunded · Try again"*. His 2026-10-07 ruling retired the
+   * check behind the first, so a delivered view carries no row at all and only
+   * the refunded spelling survives. **The SHAPE he ruled on is untouched and is
+   * what this still holds character for character**: one muted line, one word,
+   * one link, no credit count.
+   */
+  it("says exactly what he wrote, character for character", () => {
     expect(viewRetryLine("refunded")).toBe("Refunded · Try again");
+    /* The map is the server's union, so a word with no reason behind it cannot
+       sit here unread — and `unchecked` is gone from both ends. */
+    expect(Object.keys(VIEW_RETRY_WORDS)).toEqual(["refunded"]);
   });
 
   it("puts the link on the last two words only — the word is not pressable", async () => {
@@ -228,7 +240,23 @@ describe("the word can only ever come from the server's own reason", () => {
     const union = declaration.slice(0, declaration.indexOf(";"));
     const reasons = [...union.matchAll(/"([a-z-]+)"/g)].map((match) => match[1]).sort();
 
-    expect(reasons.length, `read "${union}"`).toBeGreaterThan(1);
+    /*
+      ⚠ **THE FLOOR WAS `> 1` AND IS `> 0` — #1903 slice 3, and the reason it
+      moved is not that the suite went red.**
+
+      It is a PARSE floor, never a claim about the product: it stops this arm
+      passing on a slice that read nothing and compared two empty lists. His
+      ruling genuinely left the union with ONE member, so `> 1` had become a
+      transcription of yesterday's population wearing a sanity check's clothes.
+
+      **Lowering a floor is how a guard stops guarding, so the parse is held
+      from the other side as well** — a slice that over-ran into the next
+      declaration, or under-ran to nothing, now fails here rather than quietly
+      agreeing with a map that is also wrong.
+    */
+    expect(reasons.length, `read "${union}"`).toBeGreaterThan(0);
+    expect(union, "the slice over-ran the reason declaration").not.toContain("}");
+    expect(union, "the slice did not reach the union").toContain("reason:");
     expect(Object.keys(VIEW_RETRY_WORDS).sort()).toEqual(reasons);
     for (const reason of reasons) {
       expect(VIEW_RETRY_WORDS[reason as keyof typeof VIEW_RETRY_WORDS]).toBeTruthy();

@@ -274,10 +274,19 @@ describe("the retried-view commit's fence", () => {
       path.join(process.cwd(), "server/db/castingV2ViewRetry.ts"),
       "utf8",
     );
-    /* SLICED to the commit, because this module's other statements legitimately
-       name the Try again kind on their own (the free-ask filter keys on it, and
-       must keep doing so — a redo is never free). A whole-file read would be
-       satisfied, or broken, by a neighbour. */
+    /* SLICED to the commit rather than read whole, because a whole-file read of
+       this module is satisfied, or broken, by a neighbour.
+
+       ⚠ **THE SLICE'S CONTROL USED TO BE A SIBLING LITERAL AND IS NOW
+       STRUCTURAL — #1903 slice 3.** It asserted that the free-ask filter's own
+       `eq(generationOperations.kind, "castingV2.viewRetry")` was still present
+       one function away, which proved the slice really narrowed. That filter is
+       deleted with the free ask, and no single-kind literal survives anywhere in
+       the module — so the control's own subject went with it, and the arm went
+       red on a deletion that was correct. **A control anchored on a neighbour's
+       existence is a control with a deletion date.** It is anchored below on
+       what a slice can actually get wrong: too short (no statement body) and too
+       long (the next declaration swallowed). */
     const start = source.indexOf("export async function commitRetriedViewAsset");
     /* To the NEXT top-level declaration, not to the first `\n}` — which was the
        first draft and it stopped at the input OBJECT's closing brace, four
@@ -291,10 +300,20 @@ describe("the retried-view commit's fence", () => {
     expect(commit).toContain("await tx");
     expect(commit).toContain("inArray(generationOperations.kind, [...VIEW_REPLACING_OPERATION_KINDS])");
     expect(commit).not.toContain('eq(generationOperations.kind, "castingV2.viewRetry")');
-    /* And the free-ask filter's own literal is still there, one function away —
-       the negative control for the slice above, and a rule in its own right:
-       the redo must never be mistaken for a spent free Try again. */
-    expect(source).toContain('eq(generationOperations.kind, "castingV2.viewRetry")');
+    /* THE SLICE IS NEITHER TOO SHORT NOR TOO LONG, proven on the slice itself.
+
+       Too short was the first draft's real mistake (it stopped at the input
+       object's closing brace, four lines in); too long is the quieter half, and
+       it would make this arm a whole-file read wearing a slice's name. So: the
+       body is in it (the transaction and the fence above), and the declaration
+       that FOLLOWS it is not. */
+    expect(commit).not.toContain("export const RUNNING_VIEW_RETRY_STATUSES");
+    expect(commit).not.toContain("export function runningViewRetryFilter");
+    expect(commit.length).toBeLessThan(source.length);
+    /* And the file really does still contain that next declaration, so the two
+       refusals above are refusing something that exists rather than passing on
+       a rename. */
+    expect(source).toContain("export function runningViewRetryFilter");
   });
 
   /**

@@ -498,10 +498,18 @@ describe("a view being asked for again (#1235)", () => {
 
   it("keeps the picture she already has while the new one renders", () => {
     /*
-      An UNJUDGED view: delivered, charged, kept, and nobody looked at it. Its
-      Try again is free, and its picture is hers until a new one lands — the
-      retry never writes a failure marker over it (#1233), so the url stays and
-      the room draws the working state over the top of it.
+      A DELIVERED view: charged, kept, and nobody was able to look at it. Its
+      picture is hers until a new one lands — the re-render never writes a
+      failure marker over it (#1233), so the url stays and the room draws the
+      working state over the top of it.
+
+      ⚠ **WHAT PUTS IT IN `retryingAngles` IS NOW THE WHOLE-PACKAGE REDO — #1903
+      slice 3.** This arm used to assert `retry` was a free offer at rest and
+      read `unjudged: true` off the wire; both are retired, and a delivered view
+      can no longer be asked for on its own at all. It can still be RE-RENDERED,
+      because `listRunningViewRetryAngles` reads every view-replacing kind and
+      the redo is one — so the #1233 question this arm exists for is live and
+      arrives by a different road.
     */
     const unjudged = asset({
       viewType: "backFull",
@@ -510,8 +518,12 @@ describe("a view being asked for again (#1235)", () => {
     const assets = ledger(anchor(), unjudged);
 
     const atRest = backFull(projectSignedCast({ model: model(), assets, lineage }));
-    expect(atRest.retry).toEqual({ priceCredits: 0, reason: "unchecked" });
-    expect(atRest.unjudged).toBe(true);
+    /* Nothing to ask for, and nothing said about it — the slice-3 rule. */
+    expect(atRest.retry).toBeUndefined();
+    expect(atRest.note).toBeNull();
+    /* The control for the arm below: she really does have the picture at rest,
+       so "the url survives" is about the retry and not about an empty slot. */
+    expect(atRest.url).toBe(unjudged.storageUrl);
 
     const asking = backFull(projectSignedCast({
       model: model(),

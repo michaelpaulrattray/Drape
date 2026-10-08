@@ -90,11 +90,15 @@ export const GENERATION_OPERATION_KINDS = [
 
     **It is its own kind and not the Try again's**, even though it takes that
     road's claim payload, its slot lock and its adjudicator. The kind is the
-    one field only this road writes, so every later reading — the free-ask
-    accounting (`spentFreeViewRetryFilter`, which keys on the retry kind and a
-    zero price), a support read, a per-road measurement — can tell a redo from
-    a customer asking for one view again. Sharing the kind would have saved
-    three lines and made the two roads indistinguishable in the record.
+    one field only this road writes, so every later reading — a support read, a
+    per-road measurement, a refund adjudication — can tell a redo from a
+    customer asking for one view again. Sharing the kind would have saved three
+    lines and made the two roads indistinguishable in the record.
+
+    ⚠ This sentence used to lead that list with the free-ask accounting
+    (`spentFreeViewRetryFilter`, keyed on the retry kind and a zero price).
+    **#1903 slice 3 deleted it with the free Try again**; the argument for a
+    separate kind is untouched and now rests on the readers that remain.
   */
   "castingV2.packageRedo",
   /*

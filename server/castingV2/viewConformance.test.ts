@@ -11,7 +11,6 @@ import {
   forcedFailAnglesFromEnv,
   unjudgedVerdict,
   viewConformanceRefuses,
-  viewDeliveredUnchecked,
   type ViewConformanceVerdict,
 } from "./viewConformance";
 
@@ -661,119 +660,23 @@ describe("which verdict takes a picture away", () => {
   });
 });
 
-/**
- * ⚠ **WAS IT DELIVERED WITHOUT A COMPLETE CHECK — read at the row.**
- *
- * This is what turns a slot into `Unchecked · Try again` at a price of zero, so
- * every arm below is a money arm. Its population was measured on production
- * before it was written: 46 landed views with a full judged record, 3 with
- * `unavailable`, **20 with no conformance key at all**, and **0 carrying a
- * failing axis** — the last number is why the second road below moved no
- * history, and the third is why absence is not read as failure.
- *
- * ⚠ **THAT LAST NUMBER IS 3 NOW, AND RE-READING IT RATHER THAN CARRYING IT IS
- * WHAT MADE #1903 SAFE.** #1612 part 2 merged on 2026-10-07 and began writing
- * exactly the rows that sentence said could not exist. Read at production the
- * same day: assets **383, 389 and 391** each carry a failing `angle` axis under
- * a real judge method, plus three older rows under `unavailable`.
- *
- * So the axis rename in #1903 would have stopped this reader seeing three live
- * rows — **three customers quietly losing a free Try again they are owed** —
- * and the arms below are what hold the retired names in the reader.
- */
-describe("was this view delivered unchecked", () => {
-  it("YES when nobody looked — the D-246 road, an equality on a contract value", () => {
-    expect(viewDeliveredUnchecked({ conformanceMethod: "unavailable" })).toBe(true);
-  });
+/*
+  ⚠ **A `was this view delivered unchecked` BLOCK STOOD HERE AND IS RETIRED
+  WITH ITS SUBJECT — #1903 slice 3.**
 
-  it("YES when somebody looked and an axis did not hold — the #1612 road", () => {
-    expect(viewDeliveredUnchecked({
-      conformanceMethod: "judge:test",
-      conformance: {
-        identity: { pass: true, note: "" },
-        intact: { pass: false, note: "garbled" },
-        people: { pass: true, note: "" },
-      },
-    })).toBe(true);
-  });
+  Ten arms held `viewDeliveredUnchecked` to reading both roads into *this
+  picture arrived and nothing vouched for it* — `conformanceMethod:
+  "unavailable"` and a recorded axis that did not pass — including the retired
+  `angle`/`wardrobe` names that three live rows still carry. Every one of them
+  was right about the rule it tested; **his ruling removed the rule.**
 
-  /**
-   * ⚠ **THE THREE LIVE ROWS — the arm #1903 could most easily have shipped
-   * without, because nothing would have failed.**
-   *
-   * This is the shape assets 383/389/391 carry on production right now: a real
-   * judge method and a failing `angle`, an axis name this product no longer
-   * asks for. Reading only the CURRENT axis set returns `false` here, the room
-   * drops the `Unchecked` line, and the free Try again those three views are
-   * owed disappears with no error anywhere.
-   */
-  it("⚠ YES on a row carrying a RETIRED axis — assets 383/389/391, read at production", () => {
-    expect(viewDeliveredUnchecked({
-      conformanceMethod: "judge:openrouter:anthropic/claude-sonnet-5",
-      conformance: {
-        identity: { pass: true, verdict: "matches", note: "" },
-        angle: { pass: false, verdict: "differs", note: "measured out of band" },
-        wardrobe: { pass: true, verdict: "matches", note: "" },
-      },
-    })).toBe(true);
-  });
+  The coverage is not simply dropped. What those arms protected was a free
+  per-view ask, and `viewRetryNoFreeAsk.test.ts` now holds the opposite and
+  stronger fact: **no slot shape can produce a free ask, and a delivered view
+  gets no offer at all.** A guard on the live rule beats a guard on a deleted
+  one.
 
-  it("NO when every recorded axis passed under a real judge", () => {
-    expect(viewDeliveredUnchecked({
-      conformanceMethod: "judge:test",
-      conformance: {
-        identity: { pass: true, note: "" },
-        intact: { pass: true, note: "" },
-        people: { pass: true, note: "" },
-      },
-    })).toBe(false);
-  });
-
-  it("CONTROL — a retired axis that PASSED is not read as unchecked either", () => {
-    expect(viewDeliveredUnchecked({
-      conformanceMethod: "judge:test",
-      conformance: {
-        identity: { pass: true, note: "" },
-        angle: { pass: true, note: "" },
-        wardrobe: { pass: true, note: "" },
-      },
-    })).toBe(false);
-  });
-
-  it("⚠ NO when there is no conformance record at all — 20 live rows, unchanged", () => {
-    expect(viewDeliveredUnchecked({ provider: "fal", engine: "fal-ai/nano-banana-pro" })).toBe(false);
-    expect(viewDeliveredUnchecked({ conformanceMethod: "judge:test" })).toBe(false);
-  });
-
-  it("NO on a row with no provenance at all, rather than throwing on it", () => {
-    expect(viewDeliveredUnchecked(null)).toBe(false);
-    expect(viewDeliveredUnchecked(undefined)).toBe(false);
-    expect(viewDeliveredUnchecked("not an object")).toBe(false);
-  });
-
-  it("reads only RECORDED axes — a half-written record is not a failing one", () => {
-    expect(viewDeliveredUnchecked({
-      conformanceMethod: "judge:test",
-      conformance: { identity: { pass: true, note: "" } },
-    })).toBe(false);
-  });
-
-  /*
-    The two roads are ONE reading on purpose: `conformanceProvenance` writes the
-    record and this reads it, in the same file. The projection used to keep its
-    own copy of the equality, which is working law 4's shape on a surface where
-    drift means the room offering a free Try again the entrance charges for.
-  */
-  it("is the reading the stored provenance is written for", () => {
-    const written = conformanceProvenance({
-      pass: false,
-      method: "judge:test",
-      axes: {
-        identity: { pass: false, verdict: "unsure", note: "" },
-        intact: { pass: true, verdict: "matches", note: "" },
-        people: { pass: true, verdict: "matches", note: "" },
-      },
-    });
-    expect(viewDeliveredUnchecked(written)).toBe(true);
-  });
-});
+  What the judge RECORDS is untouched and is still covered below
+  (`conformanceProvenance`): the verdict is written on every landed row for
+  diagnosis. What has gone is the customer-facing consequence of reading it.
+*/

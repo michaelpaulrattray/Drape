@@ -21,7 +21,7 @@
  *
  * The contract is *which rows can this statement reach*, and the honest place
  * to read it is the statement — invariant 5, and the shape
- * `viewRetryFreeOnce.test.ts` and `viewRetryBusy.test.ts` already use here. A
+ * `viewRetryNoFreeAsk.test.ts` and `viewRetryBusy.test.ts` already use here. A
  * row-level arm would need a disposable database, and `vitest.setup.ts` strips
  * `DATABASE_URL` on purpose: such a suite SKIPS in CI, which is an instrument
  * that proves nothing while reading green (working law 2).

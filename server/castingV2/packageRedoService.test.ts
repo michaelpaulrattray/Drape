@@ -256,7 +256,6 @@ function dependencies(
       status: castStatus,
       slots: slots(),
       deliveredOutfitKeys: {},
-      freeRetrySpentAngles: [],
     }),
     readSource: async () => ({
       modelId: 7,
@@ -820,7 +819,7 @@ describe("the free refusals, all of them before any claim", () => {
     await expect(redoCastPackage(
       dependencies({
         readSlots: async () => ({
-          modelId: 7, status: "ready", slots: [], deliveredOutfitKeys: {}, freeRetrySpentAngles: [],
+          modelId: 7, status: "ready", slots: [], deliveredOutfitKeys: {},
         }),
       }),
       input,

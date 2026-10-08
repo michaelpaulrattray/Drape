@@ -1478,15 +1478,32 @@ describe("the Stripe-write reading — code that changes what Stripe holds (#190
  * A Try again on an unchecked view is free once, then a purchase. The price is
  * DECLARED in `castViewPackage.ts` / `castingCreditCosts.ts`, both on the list;
  * whether a customer PAYS it is decided in two modules that were on neither
- * half — `spentFreeViewRetryFilter` (has this view had its free ask?) and
+ * half — the free-ask fact (has this view had its free ask?) and
  * `castSlotRetryOffer` (so what does the button show and the till charge?).
  *
  * `money-surfaces.sh` carries the measurement (27 → 28 of 60, 65 → 67 of 200,
  * with the reader checked against the gate's own labels first) and the sweep.
+ *
+ * ⚠ **THE FREE/PAID BRANCH THIS ENTRY WAS ABOUT IS GONE — #1903 slice 3, ONE
+ * DAY after the entry landed — AND BOTH FILES STAY ON THE LIST.** His ruling
+ * retired the free Try again, so the free-ask filter is deleted and
+ * `castSlotRetryOffer` has no free branch to choose between. What each file
+ * decides about money did not stop; it narrowed, and the arms below are
+ * re-driven on what survives:
+ *
+ * - `castingV2ViewRetry.ts` still holds the readers a REFUND is decided from,
+ *   `viewReplacementInFlight` among them — the one that defers a redo's refund
+ *   while a picture can still arrive (#1924).
+ * - `castProjection.ts` still decides whether there is a price AT ALL: a
+ *   delivered view offers nothing, a refunded one offers the Try again price.
+ *
+ * **The entry is narrowed rather than removed, which is the opposite of what a
+ * green suite would have suggested**: deleting it because its original specimen
+ * died would take two refund-deciding modules off the money gate.
  */
 describe("the free-or-paid reading — a branch that decides WHETHER she pays (#2068)", () => {
   it.each([
-    ["server/db/castingV2ViewRetry.ts", "spentFreeViewRetryFilter — has this view had its free ask"],
+    ["server/db/castingV2ViewRetry.ts", "the readers a refund is decided from, deferral included"],
     ["server/castingV2/castProjection.ts", "castSlotRetryOffer — the price the button shows and the till charges"],
   ])("%s is a money diff (%s)", (file) => {
     expect(pathRe.test(file)).toBe(true);
@@ -1501,7 +1518,7 @@ describe("the free-or-paid reading — a branch that decides WHETHER she pays (#
    */
   const SPECIMEN_FILES_PR_2067 = [
     "server/casting/directOperation.ts",
-    "server/castingV2/viewRetryFreeOnce.test.ts",
+    "server/castingV2/viewRetryNoFreeAsk.test.ts",
     "server/db/castingV2ViewRetry.ts",
     "server/directOperationProductEvents.test.ts",
   ];
@@ -1532,27 +1549,48 @@ describe("the free-or-paid reading — a branch that decides WHETHER she pays (#
    * price a customer is charged is decided inside this module. If that ever
    * stops being true the entry is guarding nothing and this arm says so.
    */
-  it("castProjection.ts really decides the price: the same slot is free, then paid", async () => {
+  it("castProjection.ts really decides the price: nothing for a delivered view, the price for a refunded one", async () => {
     const { castSlotRetryOffer } = await import("./castingV2/castProjection");
-    const slot = { state: "ready", unjudged: true, refundedCredits: null } as const;
     const PAID = 1234;
-    expect(castSlotRetryOffer(slot, PAID, false)).toEqual({ priceCredits: 0, reason: "unchecked" });
-    expect(castSlotRetryOffer(slot, PAID, true)).toEqual({ priceCredits: PAID, reason: "unchecked" });
+    /*
+      ⚠ THIS ARM DROVE THE FREE/PAID PAIR UNTIL #1903 SLICE 3 — one slot, two
+      answers, keyed on the third argument. Both the argument and the free
+      answer are deleted, so the branch it proves is now the one that survives:
+      a DELIVERED view has no price and a REFUNDED one has the Try again price.
+      That is still a price decided by a branch in this module, which is the
+      whole reason the file is on the list.
+    */
+    const delivered = { state: "ready", refundedCredits: null } as never;
+    const refunded = { state: "failed-refunded", refundedCredits: 200 } as never;
+    expect(castSlotRetryOffer(delivered, PAID)).toBeNull();
+    expect(castSlotRetryOffer(refunded, PAID)).toEqual({ priceCredits: PAID, reason: "refunded" });
+    /* The injected price is neither of the product's own numbers, so a branch
+       reaching for a constant cannot pass here by coincidence. */
+    expect(PAID).toBe(1234);
   });
 
   /**
-   * And the other half, driven the same way: the real `spentFreeViewRetryFilter`
-   * is rendered to the SQL it sends, and it is the free-ask fact — a view-retry
-   * operation planned at ZERO credits — that the price branch above reads.
+   * And the other half, driven the same way — at the SQL the module really
+   * sends, never at a constant beside it (invariant 5).
+   *
+   * ⚠ **IT DROVE THE FREE-ASK FILTER UNTIL #1903 SLICE 3 and now drives
+   * `runningViewRetryFilter`, which is the reader a REFUND turns on.** Both
+   * `viewReplacementInFlight` (defer a redo's refund while a picture can still
+   * land, #1924) and `listRunningViewRetryAngles` (what the room draws as busy)
+   * read it, so loosening one clause here refunds a customer for a view she is
+   * about to receive. That is the same kind of fact the deleted filter was, on
+   * the same money path, in the same file.
    */
-  it("castingV2ViewRetry.ts really decides whether the free ask is spent", async () => {
+  it("castingV2ViewRetry.ts really decides whether a replacement is still in flight", async () => {
     const { MySqlDialect } = await import("drizzle-orm/mysql-core");
-    const { spentFreeViewRetryFilter } = await import("./db/castingV2ViewRetry");
-    const filter = spentFreeViewRetryFilter({ userId: 7, modelId: 11 });
-    if (!filter) throw new Error("spentFreeViewRetryFilter returned no condition");
+    const { runningViewRetryFilter } = await import("./db/castingV2ViewRetry");
+    const filter = runningViewRetryFilter({ userId: 7, modelId: 11 });
+    if (!filter) throw new Error("runningViewRetryFilter returned no condition");
     const query = new MySqlDialect().sqlToQuery(filter);
-    expect(query.sql).toMatch(/`plannedCredits` = \?/);
-    expect(query.params).toEqual(expect.arrayContaining([7, 11, "castingV2.viewRetry", 0]));
+    /* The owner and the Cast are both in the WHERE (invariant 1), and the
+       statuses it admits are the in-flight pair rather than a single literal. */
+    expect(query.params).toEqual(expect.arrayContaining([7, 11]));
+    expect(query.params).toEqual(expect.arrayContaining(["claimed", "running"]));
   });
 
   /**

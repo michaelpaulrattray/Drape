@@ -13292,8 +13292,8 @@
       "path": "server/castingV2/viewRetryBusy.test.ts"
     },
     {
-      "id": "test:server/castingV2/viewRetryFreeOnce.test.ts",
-      "path": "server/castingV2/viewRetryFreeOnce.test.ts"
+      "id": "test:server/castingV2/viewRetryNoFreeAsk.test.ts",
+      "path": "server/castingV2/viewRetryNoFreeAsk.test.ts"
     },
     {
       "id": "test:server/castingV2/viewRetryOffer.test.ts",
@@ -26076,11 +26076,6 @@
     {
       "from": "module:server/castingV2/castProjection.ts",
       "to": "module:server/castingV2/castViewPackage.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/castProjection.ts",
-      "to": "module:server/castingV2/viewConformance.ts",
       "kind": "imports"
     },
     {

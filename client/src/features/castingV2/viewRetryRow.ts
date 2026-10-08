@@ -13,6 +13,12 @@
  * > same line. No credit count in the row.*
  * > *The three good views carry nothing, as now."*
  *
+ * ⚠ **THE FIRST OF HIS TWO ROWS IS GONE — #1903 slice 3, 2026-10-07.** His
+ * later ruling retired the check that produced *"Unchecked"* and the free ask
+ * under it, so only the refunded row survives. **His shape ruling above is
+ * untouched and is why this module still exists**: one muted line, one word,
+ * one link, no credit count — now true of every row because there is one.
+ *
  * What it replaced: a sentence (*"We didn't get to check this one"*) plus a
  * priced button (*"Try again · 50 CR"*) — three lines under a picture the
  * customer had no complaint about, beside two lines under the one that failed.
@@ -45,11 +51,23 @@ import type { CastSlotRetry } from "../../../../server/castingV2/castProjection"
  * TypeScript error here rather than a blank space on his page.
  */
 export const VIEW_RETRY_WORDS: Record<CastSlotRetry["reason"], string> = {
-  /** The picture is here and nobody looked at it (D-246). Asking again is free. */
-  unchecked: "Unchecked",
   /**
    * The view never arrived and the money went back — the empty tile, and the
    * legacy stand-in that wears her Master in a portrait slot.
+   *
+   * ⚠ **IT IS THE ONLY WORD NOW — `unchecked: "Unchecked"` stood beside it and
+   * is retired (#1903 slice 3, his ruling of 2026-10-07).** That word sat under
+   * a picture that HAD arrived, to say that the product could not vouch for it,
+   * and it bought the customer a free ask. His ruling: *"i think we ditch the
+   * measure and checker… it should only detect catastropic failure the image
+   * engine is excellent and following our prompting."* So a delivered view
+   * carries no label at all, and the remedy for one she does not like is the
+   * paid whole-package redo rather than a per-view apology.
+   *
+   * **The map still exists, and that is deliberate.** It is keyed on the
+   * server's own union, so a second reason added server-side is a TypeScript
+   * error here rather than a blank space on his page — the reason this was a
+   * module and not a literal in the component.
    */
   refunded: "Refunded",
 };

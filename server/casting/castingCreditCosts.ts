@@ -338,9 +338,17 @@ export const CASTING_V2_REFINE_PRICE_CREDITS = 1750;
  * a pure function of the slot's state, and a free retry does not move that
  * state: a view delivered unchecked whose retry also arrived unchecked is still
  * unchecked. So the free ask renewed itself for as long as the conformance judge
- * stayed unavailable. The fact the slot could not carry lives on the operation
+ * stayed unavailable. The fact the slot could not carry lived on the operation
  * rows (`listSpentFreeViewRetryAngles`), which is where #1235 already proved a
  * per-slot fact can be read without a column.
+ *
+ * ⚠ **ALL OF THAT IS HISTORY AS OF #1903 SLICE 3 (2026-10-07) AND THE PRICE
+ * BELOW IS NOT.** His ruling retired the free Try again, the reader above and
+ * the once-only accounting; **this constant is what a Try again costs, and it
+ * is now what EVERY Try again costs** — the only road left to one is a view
+ * that was refunded, and there is no free branch to choose between. The
+ * paragraphs above are kept because a reader meeting a `plannedCredits = 0`
+ * row in the database needs to know what wrote it and that nothing can again.
  *
  * Charge and refund are one number here: `viewRetryService` charges
  * `offer.priceCredits` and refunds the same figure, so conservation does not
