@@ -785,7 +785,7 @@ describe("generation.iterate boundaries", () => {
     const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(
       caller.generation.iterate({ modelId: 7, feedback: "brighten the lighting", assetId: 100 }),
-    ).rejects.toMatchObject({ message: expect.stringContaining("refunded") });
+    ).rejects.toMatchObject({ message: expect.stringContaining("credits returned") });
     expect(iterateModel).toHaveBeenCalledTimes(1);
     expect(deductCredits).toHaveBeenCalledTimes(1);
     expect(addCredits).toHaveBeenCalledTimes(1);
@@ -827,7 +827,7 @@ describe("generation.iterate boundaries", () => {
     await expect(
       caller.generation.iterate({ modelId: 7, feedback: "make the jawline sharper", assetId: 100 }),
     ).rejects.toMatchObject({
-      message: expect.stringContaining("refunded"),
+      message: expect.stringContaining("credits returned"),
     });
 
     expect(iterateModelRaw).toHaveBeenCalledTimes(2);
@@ -851,7 +851,7 @@ describe("generation.iterate boundaries", () => {
     await expect(
       caller.generation.iterate({ modelId: 7, feedback: "make the jawline sharper", assetId: 100 }),
     ).rejects.toMatchObject({
-      message: expect.stringMatching(/couldn't be verified.*refunded/i),
+      message: expect.stringMatching(/couldn't be verified.*credits returned/i),
     });
 
     expect(iterateModelRaw).toHaveBeenCalledTimes(1);
@@ -870,7 +870,7 @@ describe("generation.castingImage boundaries", () => {
     vi.mocked(createGeneration).mockResolvedValue({ success: false } as never);
     const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(caller.generation.castingImage({ modelId: 7 })).rejects.toMatchObject({
-      message: expect.stringContaining("refunded"),
+      message: expect.stringContaining("credits returned"),
     });
     expect(generateCastingImage).not.toHaveBeenCalled();
     expect(addCredits).toHaveBeenCalledTimes(1);
@@ -888,7 +888,7 @@ describe("generation.castingImage boundaries", () => {
     } as never);
     const caller = appRouter.createCaller(authCtx(1, "admin"));
     await expect(caller.generation.castingImage({ modelId: 7 })).rejects.toMatchObject({
-      message: expect.stringContaining("refunded"),
+      message: expect.stringContaining("credits returned"),
     });
     expect(addCredits).toHaveBeenCalledTimes(1);
     expect(storageDelete).toHaveBeenCalledWith("casting/x.png");
@@ -972,7 +972,7 @@ describe("applyModelEdit boundaries", () => {
     tx.failVersionInsert = true; // inside the shared identity+landing tx
     await expect(
       executeApplyModelEdit({ userId: 1, itemId: 3, decision: "update", changes: { jawline: "Sharp / Chiseled" } }),
-    ).rejects.toMatchObject({ message: expect.stringContaining("refunded") });
+    ).rejects.toMatchObject({ message: expect.stringContaining("credits returned") });
     // refund recorded exactly once under the derived id
     expect(addCredits).toHaveBeenCalledTimes(1);
     const refundRef = vi.mocked(addCredits).mock.calls[0][4] as string;
@@ -988,7 +988,7 @@ describe("applyModelEdit boundaries", () => {
 
     await expect(
       executeApplyModelEdit({ userId: 1, itemId: 3, decision: "update", changes: { jawline: "Sharp / Chiseled" } }),
-    ).rejects.toMatchObject({ message: expect.stringContaining("refunded") });
+    ).rejects.toMatchObject({ message: expect.stringContaining("credits returned") });
 
     expect(storageDelete).toHaveBeenCalledTimes(1);
     expect(addCredits).toHaveBeenCalledTimes(1);
@@ -999,7 +999,7 @@ describe("applyModelEdit boundaries", () => {
 
     await expect(
       executeApplyModelEdit({ userId: 1, itemId: 3, decision: "update", changes: { jawline: "Sharp / Chiseled" } }),
-    ).rejects.toMatchObject({ message: expect.stringContaining("refunded") });
+    ).rejects.toMatchObject({ message: expect.stringContaining("credits returned") });
 
     expect(generateCastingImageRaw).toHaveBeenCalledTimes(1);
     expect(storageDelete).not.toHaveBeenCalled();
@@ -1011,7 +1011,7 @@ describe("applyModelEdit boundaries", () => {
     tx.failStampUpdate = true;
     await expect(
       executeApplyModelEdit({ userId: 1, itemId: 3, decision: "update", changes: { jawline: "Sharp / Chiseled" } }),
-    ).rejects.toMatchObject({ message: expect.stringContaining("refunded") });
+    ).rejects.toMatchObject({ message: expect.stringContaining("credits returned") });
     expect(addCredits).toHaveBeenCalledTimes(1);
   });
 
@@ -1020,7 +1020,7 @@ describe("applyModelEdit boundaries", () => {
     tx.failStaleStatusUpdate = true;
     await expect(
       executeApplyModelEdit({ userId: 1, itemId: 3, decision: "update", changes: { jawline: "Sharp / Chiseled" } }),
-    ).rejects.toMatchObject({ message: expect.stringContaining("refunded") });
+    ).rejects.toMatchObject({ message: expect.stringContaining("credits returned") });
     expect(addCredits).toHaveBeenCalledTimes(1);
   });
 
@@ -1037,7 +1037,7 @@ describe("applyModelEdit boundaries", () => {
     tx.failVersionInsert = true;
     await expect(
       executeApplyModelEdit({ userId: 1, itemId: 3, decision: "update", changes: {}, intent: "rerun" }),
-    ).rejects.toMatchObject({ message: expect.stringContaining("refunded") });
+    ).rejects.toMatchObject({ message: expect.stringContaining("credits returned") });
     expect(addCredits).toHaveBeenCalledTimes(1);
     expect(verifyIdentityEdit).not.toHaveBeenCalled();
     expect(generateCastingImageRaw).not.toHaveBeenCalled();
@@ -1086,7 +1086,7 @@ describe("canvas creation boundaries", () => {
     vi.mocked(createModelAsset).mockResolvedValue({ success: false } as never);
     await expect(
       executeRunGeneration({ userId: 1, itemId: 3, userPrompt: "sharp editorial Nordic face" }),
-    ).rejects.toMatchObject({ message: expect.stringContaining("refunded") });
+    ).rejects.toMatchObject({ message: expect.stringContaining("credits returned") });
     expect(addCredits).toHaveBeenCalledTimes(1);
     const refundRef = vi.mocked(addCredits).mock.calls[0][4] as string;
     expect(refundRef.startsWith("refund:board-item-3-")).toBe(true);
@@ -1162,7 +1162,7 @@ describe("public error sanitization at the paid doors", () => {
     expect(message).not.toContain("SECRET_TOKEN");
     expect(message).not.toContain("ECONNREFUSED");
     expect(message).not.toContain("10.7.7.7");
-    expect(message).toContain("refunded"); // the refund truth still travels
+    expect(message).toContain("credits returned"); // the refund truth still travels
     expect(addCredits).toHaveBeenCalledTimes(1);
   });
 
@@ -1195,7 +1195,7 @@ describe("public error sanitization at the paid doors", () => {
     }
     expect(message).not.toContain("SECRET_TOKEN");
     expect(message).toContain("The recast failed.");
-    expect(message).toContain("refunded");
+    expect(message).toContain("credits returned");
   });
 
   it("variations: per-candidate failure copy is sanitized and still carries the refund sentence", async () => {
@@ -1208,7 +1208,7 @@ describe("public error sanitization at the paid doors", () => {
     }
     expect(message).not.toContain("SECRET_TOKEN");
     expect(message).toContain("Generation failed.");
-    expect(message).toContain("refunded");
+    expect(message).toContain("credits returned");
   });
 
   it("runGeneration: the board card's error status carries safe wording + refund truth, never internals", async () => {
@@ -1224,6 +1224,6 @@ describe("public error sanitization at the paid doors", () => {
     const statusMessage = (statusWrite![0] as { metadata: { status: { message: string } } }).metadata.status.message;
     expect(statusMessage).not.toContain("SECRET_TOKEN");
     expect(statusMessage).toContain("Generation failed.");
-    expect(statusMessage).toContain("refunded");
+    expect(statusMessage).toContain("credits returned");
   });
 });

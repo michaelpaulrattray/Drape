@@ -69,6 +69,6 @@ export const RENEWAL_SENTENCE =
 export const CANCEL_ANY_TIME_SHORT = "Cancel any time. Your credits stay on your balance.";
 
 /** #1952 item 5, version A — what a renewal does to credits. */
-export const RENEWAL_CREDITS_SENTENCE =
+export const RENEWAL_BALANCE_SENTENCE =
   "At each renewal, unspent plan credits follow the rule on your plan's card. "
   + "Credits you buy as top-ups are never removed by a renewal.";

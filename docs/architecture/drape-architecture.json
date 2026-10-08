@@ -10453,14 +10453,6 @@
       "file": "shared/creditTopups.ts"
     },
     {
-      "id": "cost:shared/planCancelCopy.ts:RENEWAL_CREDITS_SENTENCE",
-      "name": "RENEWAL_CREDITS_SENTENCE",
-      "constant": "RENEWAL_CREDITS_SENTENCE",
-      "credits": null,
-      "derivedFrom": "\"At each renewal, unspent plan credits follow the rule on your plan's card. \" + \"Credits you buy as top-ups are never removed by a renewal.\"",
-      "file": "shared/planCancelCopy.ts"
-    },
-    {
       "id": "cost:shared/planCreditSlider.ts:PLAN_CREDIT_SLIDER_CENTS_PER_UNIT",
       "name": "PLAN_CREDIT_SLIDER_CENTS_PER_UNIT",
       "constant": "PLAN_CREDIT_SLIDER_CENTS_PER_UNIT",

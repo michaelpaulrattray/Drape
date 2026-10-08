@@ -73,7 +73,7 @@ describe("the sheet dock commits to one candidate", () => {
     expect(signButton.slice(0, 300)).not.toContain("priceCredits");
   });
 
-  it("states an immediate-fire cost once — on the button, since #1952", async () => {
+  it("states an immediate-fire cost once — on the button, since card 1952", async () => {
     /*
       ⚠ **D-109's OTHER HALF IS SUPERSEDED BY HIS WORD, 2026-10-08 (#1952 item
       1): *"yes"* to "Every paid button shows its price" — `Roll · {served}

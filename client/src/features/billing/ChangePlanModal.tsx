@@ -120,7 +120,7 @@ import { ModalScrim } from "@/foundation/CastingModal";
 import { ConfirmDialog } from "@/foundation";
 import {
   CANCEL_ANY_TIME_SHORT,
-  RENEWAL_CREDITS_SENTENCE,
+  RENEWAL_BALANCE_SENTENCE,
   RENEWAL_SENTENCE,
   cancelPlanBody,
 } from "@shared/planCancelCopy";
@@ -1620,7 +1620,7 @@ export function ChangePlanModal({
           explains, in either mode — the trust line's own placement rule.
         */}
         <p className="dp-plan__terms">
-          {CREDITS_BACK_COVERS} {RENEWAL_SENTENCE} {CANCEL_ANY_TIME_SHORT} {RENEWAL_CREDITS_SENTENCE}
+          {CREDITS_BACK_COVERS} {RENEWAL_SENTENCE} {CANCEL_ANY_TIME_SHORT} {RENEWAL_BALANCE_SENTENCE}
         </p>
 
         {/* §6f — the honest version of "Expand credit limit" */}
