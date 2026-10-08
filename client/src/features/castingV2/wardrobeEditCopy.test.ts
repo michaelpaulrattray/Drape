@@ -58,7 +58,6 @@ describe("the ask box says what it can do, and it is one sentence", () => {
   it("still tells somebody what the box can do, before they type", async () => {
     const panel = withoutProse(await readFile(PANEL, "utf8"));
     expect(panel).toContain("not their clothes or the room");
-    expect(panel).toContain("credits each");
   });
 
   /*
@@ -95,20 +94,23 @@ describe("the ask box says what it can do, and it is one sentence", () => {
     move any sentence out of the arm's sight — the shape of the sabotage the
     arm above was widened to catch, one indirection further out.
   */
-  it("the clause interpolated into that sentence can only ever be the price", async () => {
+  it("the price is on the Refine button, and the sentence carries none (#1952)", async () => {
+    /*
+      #1952 item 1, his *"yes"* 2026-10-08: every paid button shows its price.
+      The note's old `· N credits each` suffix (`refinePriceClause`, #1727)
+      stated the same price a second time beside the button that now carries
+      it, so it went (the relay's finding on PR #2031). This arm holds both
+      halves: the button prices itself from the served figure and stands down
+      to plain `Refine` while it is unread, and the capability sentence
+      interpolates nothing at all.
+    */
     const panel = withoutProse(await readFile(PANEL, "utf8"));
-    const start = panel.indexOf("const refinePriceClause");
-    expect(start, "the price clause is no longer derived under that name — re-read this arm"
-      + " before renaming it, because it is the only thing keeping the element's own ban"
-      + " from being walked around. Card 1727.").toBeGreaterThan(-1);
-    const decl = panel.slice(start, panel.indexOf(";", panel.indexOf("credits each", start)));
-    expect(decl, "the price clause no longer turns on the price alone. Card 1727.")
-      .toContain("priceCredits === null");
-    for (const banned of ["wardrobe", "Edits", "path", "enabled", "Enabled"]) {
-      expect(decl, `the price clause now reads \`${banned}\` — it has stopped being about`
-        + " the price, and the sentence it joins is a capability claim. Card 203 slice 2"
-        + " step c, card 1727.").not.toContain(banned);
-    }
+    expect(panel).toContain("`Refine · ${formatCredits(displayPrice(priceCredits))} credits`");
+    expect(panel).toMatch(/priceCredits === null\s*\?\s*"Refine"/);
+    const open = panel.lastIndexOf('<p className="dpc-refine__note">', panel.indexOf("not their clothes or the room"));
+    const element = panel.slice(open, panel.indexOf("</p>", open));
+    expect(element, "the capability sentence carries a price (or anything else) again").not.toContain("{");
+    expect(panel).not.toContain("credits each");
   });
 
   it("never claims it can reach her clothes", async () => {
