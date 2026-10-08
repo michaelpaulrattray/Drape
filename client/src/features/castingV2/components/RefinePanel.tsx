@@ -944,7 +944,14 @@ export function RefinePanel({
           aria-label="What to change about this person"
         />
         <Button type="submit" size="small" disabled={!trimmed || busy || pictureUnclaimed}>
-          {busy ? "Refining…" : "Refine"}
+          {/* #1952 item 1, his *"yes"* 2026-10-08: every paid button shows its
+              served price — `Refine · {served} credits`; plain `Refine` while
+              the price is unread (#1727). */}
+          {busy
+            ? "Refining…"
+            : priceCredits === null
+              ? "Refine"
+              : `Refine · ${formatCredits(displayPrice(priceCredits))} credits`}
         </Button>
         {/*
           REGENERATE — the founder's own ask (2026-08-15), after Grok's

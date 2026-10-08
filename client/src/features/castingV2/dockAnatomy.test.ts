@@ -73,26 +73,27 @@ describe("the sheet dock commits to one candidate", () => {
     expect(signButton.slice(0, 300)).not.toContain("priceCredits");
   });
 
-  it("states an immediate-fire cost once, as metadata", async () => {
+  it("states an immediate-fire cost once — on the button, since #1952", async () => {
     /*
-      D-109's other half. Roll again and Follow are immediate-fire, so the
-      buttons go clean and the cost lives once in the adjacent meta line —
-      right-aligned, muted, mono, with the balance because THIS action repeats.
+      ⚠ **D-109's OTHER HALF IS SUPERSEDED BY HIS WORD, 2026-10-08 (#1952 item
+      1): *"yes"* to "Every paid button shows its price" — `Roll · {served}
+      credits`, `Follow · {served} credits`.** So the price moved ONTO Roll
+      again and each tile's Follow, and the dock's meta line keeps the half
+      that was always its own reason to exist: the balance, because THIS
+      action repeats. Still once — the line no longer repeats the price beside
+      the button that now carries it.
     */
     const sheet = await readFile(SHEET, "utf8");
     expect(sheet).toContain("dpc-dock__cost");
-    expect(sheet).toContain("credits");
-    expect(sheet).toContain("left");
-    /*
-      The tilde, shared with the sign modal. Generation cost varies, and a
-      number presented as exact that then differs is worse than one that never
-      claimed to be — so every cost line in the product hedges the same way.
-    */
-    expect(sheet).toContain("dpc-modal__tilde");
+    expect(sheet).toContain("credits left");
+    // The price is on the button, from the served price — never a literal.
+    expect(sheet).toContain("`Roll again · ${formatCredits(displayPrice(price))} credits`");
+    // And NOT also on the meta line beside it: the tilde-hedged quote is gone.
+    const costLine = sheet.slice(sheet.indexOf('className="dp-chrome dpc-dock__cost"'));
+    expect(costLine.slice(0, 200)).not.toContain("displayPrice");
+    expect(costLine.slice(0, 200)).not.toContain("dpc-modal__tilde");
     const lobby = await readFile(new URL("../../pages/CastingV2.tsx", import.meta.url), "utf8");
     expect(lobby).toContain("dpc-modal__tilde");
-    // No price on any immediate-fire button.
-    expect(sheet).not.toMatch(/Roll again[^"`]*\d+\s*(cr|credits)/);
 
     const css = await readFile(CSS, "utf8");
     /*

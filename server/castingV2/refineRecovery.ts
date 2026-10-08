@@ -71,7 +71,7 @@ const log = createModuleLogger("castingV2/refineRecovery");
  * a test that cannot fail — and silently retired the second. Both now read
  * this name.
  */
-export const RECOVERED_REFINE_SENTENCE = "That one didn't make it. Your credits are back.";
+export const RECOVERED_REFINE_SENTENCE = "That one didn't make it. Your credits were returned.";
 
 export type RefineRecoveryOutcome =
   | { type: "durable_success"; chargedCredits: number; refundedCredits: number }

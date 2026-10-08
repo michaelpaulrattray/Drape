@@ -42,6 +42,7 @@ import {
   type PublicOperationResult,
 } from "./operationContract";
 import { isCanonicalViewType } from "../../shared/exportViews";
+import { creditsReturnedText } from "../../shared/refundCopy";
 import {
   MINT_TIER_SLOTS,
   type CanonicalViewAngle,
@@ -586,8 +587,9 @@ export async function recoverEvidencePackageSyncOperation(
       userId: operation.userId,
       operationId: operation.id,
       errorCode: "INTERNAL_SERVER_ERROR",
+      /* #1940 B22 — his approved wording, with the number that came back. */
       publicMessage:
-        "The view update stopped before it was saved. The charged credits were refunded.",
+        `That view stopped before it was saved. ${creditsReturnedText(refundedCredits)}`,
       chargedCredits,
       refundedCredits,
     });
@@ -1490,7 +1492,8 @@ async function settleStaleGenerationOperation(
         userId: operation.userId,
         operationId: operation.id,
         errorCode: "INTERNAL_SERVER_ERROR",
-        publicMessage: "The generation failed and the charged credits were refunded.",
+        /* #1940 B21 — his approved wording, with the number that came back. */
+        publicMessage: `That didn't finish. ${creditsReturnedText(refundedCredits)}`,
         chargedCredits,
         refundedCredits,
       });

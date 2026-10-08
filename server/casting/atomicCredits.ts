@@ -24,6 +24,7 @@
 
 import { randomUUID } from "node:crypto";
 import { displayPrice, displayRefund, formatCredits } from "../../shared/creditDisplay";
+import { creditsReturnedText } from "../../shared/refundCopy";
 import { deductCredits, addCredits, normalizeCreditReferenceId } from "../db";
 import type { CreditToolKind } from "../db/credits";
 import { TRPCError } from "@trpc/server";
@@ -144,8 +145,10 @@ export async function recordRefund(
  */
 export function refundTruth(outcome: RefundOutcome): string {
   const shown = formatCredits(displayRefund(outcome.amount));
+  /* #1940 B17: one sentence for credits that came back, from the one module
+     that writes it (`shared/refundCopy.ts`). */
   return outcome.recorded
-    ? `${shown} credits were refunded.`
+    ? creditsReturnedText(outcome.amount)
     : `The automatic refund could not be recorded — quote reference ${outcome.reference} and support will restore the ${shown} credits.`;
 }
 

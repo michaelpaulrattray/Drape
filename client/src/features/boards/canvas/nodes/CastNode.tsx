@@ -769,7 +769,7 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
                               close();
                             }}
                           >
-                            <span>{slot.failed && !slot.filled ? "Retry" : "Refresh"}</span>
+                            <span>{slot.failed && !slot.filled ? "Try again" : "Refresh"}</span>
                             <CostLabel credits={refreshCost} />
                           </button>
                         )}

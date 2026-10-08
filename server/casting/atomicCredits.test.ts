@@ -198,7 +198,8 @@ describe("withAtomicCredits refund contract (review finding 1)", () => {
         throw new Error("engine down");
       }),
     ).rejects.toMatchObject({
-      message: expect.stringContaining(`${formatCredits(displayRefund(350))} credits were refunded`),
+      /* #1940 B17 — his approved wording, *"{N} credits returned."* */
+      message: expect.stringContaining(`${formatCredits(displayRefund(350))} credits returned.`),
     });
 
     ledger.failNextAdd = true;
@@ -224,17 +225,19 @@ describe("shared refund copy helpers (client surfaces, final correction 1)", () 
       typed as 60: a literal here would be a second copy of the scale, which is
       the exact working-law-4 defect `shared/creditDisplay.ts` exists to prevent.
     */
+    /* #1940 B13: *"{N} credits returned."* — and nothing after it. */
     expect(refundOutcomeText({ refunded: 300 }))
-      .toContain(`${formatCredits(displayRefund(300))} credits refunded`);
+      .toBe(`${formatCredits(displayRefund(300))} credits returned.`);
     expect(refundOutcomeText({ refunded: 300 })).not.toContain("300 credits");
     expect(refundOutcomeText({ refunded: 0, refundReference: "refund:slot-gen-9" })).toContain("quote refund:slot-gen-9");
     expect(refundOutcomeText({ refunded: 0 })).toContain("contact support");
-    expect(refundBadgeText(300)).toBe("You weren't charged");
+    expect(refundBadgeText(300)).toBe("Credits returned");
     expect(refundBadgeText(0)).toBe("Refund pending — contact support");
     const ok = slotFailureMessage({ label: "Side profile", reason: "gate", refunded: 300, markerPersisted: true });
-    expect(ok).toContain('"Retry"');
+    /* One verb, Try again, everywhere (#1940 B18). */
+    expect(ok).toContain('"Try again"');
     const noMarker = slotFailureMessage({ label: "Side profile", reason: "gate", refunded: 0, markerPersisted: false });
-    expect(noMarker).not.toContain('"Retry"');
+    expect(noMarker).not.toContain('"Try again"');
     expect(noMarker).toContain("couldn't be saved to the package");
   });
 
@@ -252,7 +255,7 @@ describe("shared refund copy helpers (client surfaces, final correction 1)", () 
     expect(displayRefund(3)).toBe(0);
     const sentence = refundOutcomeText({ refunded: 3 });
     expect(sentence).not.toContain("0 credits");
-    expect(sentence).toContain("Your credits were refunded");
-    expect(sentence).toContain("you weren't charged");
+    /* #1940 B14. */
+    expect(sentence).toBe("Your credits were returned.");
   });
 });

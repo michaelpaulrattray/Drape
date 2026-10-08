@@ -1479,11 +1479,17 @@ function CreditPacksPane({
           itself, so a price edit that makes this row a lie goes red rather than
           shipping.
         */}
+        {/*
+          #1940 B28 — his word 2026-10-08, *"on 1 and 2 go with your
+          reccomendations"*, and recommendation 2 was to **drop "cost less
+          each"**: the row now says what a plan does rather than arguing price,
+          which #1952 also forbids (*"no 'cheaper' claims in customer copy"*).
+        */}
         <div className="dp-plan__cross">
           <span className="dp-set__rowtext">
-            <span className="dp-set__label">A bigger plan gives more for the money</span>
+            <span className="dp-set__label">Need credits every month?</span>
             <span className="dp-set__note">
-              Credits on a plan arrive every month and cost less each.
+              A plan adds credits each month.
             </span>
           </span>
           <span className="dp-set__spacer" />

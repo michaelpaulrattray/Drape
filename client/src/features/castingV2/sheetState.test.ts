@@ -157,7 +157,7 @@ describe("what a cancel says", () => {
     /* 240 ledger reads 48 (#1600 — a customer sees the ledger at a fifth). The
        expectation is written as a literal rather than computed from the helper,
        so a change to the conversion reddens this arm instead of moving with it. */
-    expect(notice).toContain("48 credits back");
+    expect(notice).toContain("48 credits returned");
     expect(notice).toContain("3 still finishing");
   });
 
@@ -223,8 +223,8 @@ describe("the cancel arc is a state, not an event", () => {
     /* 160 and 120 ledger read 32 and 24 (#1600). Eight slices at 20 ledger is
        the roll today; the sentence states what the customer's balance will
        show, and the two literals are what go red if the conversion moves. */
-    expect(arc(8, 0)).toContain("32 credits back");
-    expect(arc(6, 0)).toContain("24 credits back");
+    expect(arc(8, 0)).toContain("32 credits returned");
+    expect(arc(6, 0)).toContain("24 credits returned");
   });
 
   it("NEVER MOVES BACKWARDS across the whole arc", () => {
@@ -241,7 +241,7 @@ describe("the cancel arc is a state, not an event", () => {
     // Monotonic: every line is distinct from the one before it.
     for (let i = 1; i < seen.length; i += 1) expect(seen[i]).not.toBe(seen[i - 1]);
     // And it ends on a total, not on a count.
-    expect(seen[seen.length - 1]).toContain("credits back");
+    expect(seen[seen.length - 1]).toContain("credits returned");
     expect(seen[seen.length - 1]).not.toContain("finishing");
   });
 
@@ -278,13 +278,13 @@ describe("the cancel arc is a state, not an event", () => {
 
     // Eight dispatched, none delivered, all expired after the cancel.
     /* 160 ledger reads 32 (#1600). */
-    expect(fromCounts(8, 0, 0)).toContain("32 credits back");
+    expect(fromCounts(8, 0, 0)).toContain("32 credits returned");
     expect(fromCounts(8, 0, 0)).not.toContain("nothing to refund");
     // Mid-arc, five still landing.
     expect(fromCounts(8, 0, 5)).toBe("Cancelled — 3 of 8 refunded · 5 finishing");
     // Two genuinely delivered before the cancel: those are not refunded.
     /* Six refundable slices at 20 ledger is 120, which reads 24 (#1600). */
-    expect(fromCounts(8, 2, 0)).toContain("24 credits back");
+    expect(fromCounts(8, 2, 0)).toContain("24 credits returned");
   });
 
   it("survives a reload with no stored sentence, because it derives", () => {

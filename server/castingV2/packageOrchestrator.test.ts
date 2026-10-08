@@ -2506,8 +2506,10 @@ describe("⚠ the free re-render is OURS, and its limits", () => {
 describe("⚠ the refusal line a customer reads, end to end", () => {
   const compose = (reason: string) =>
     /* `client/src/features/casting/components/ImageViewer/ViewTabs.tsx`'s
-       `FailedSlot`: `${label} failed — ${failure.reason}. ${refundOutcomeText(failure)}` */
-    `Front failed — ${reason}. ${refundOutcomeText({ refunded: VIEW_PRICE })}`;
+       `FailedSlot`: `${label}: ${bareReason(failure.reason)}. ${refundOutcomeText(failure)}`
+       — #1940 B18. The lead is `{label}:` because the reason is already the
+       whole account of what happened (see that component's own note). */
+    `Front: ${reason}. ${refundOutcomeText({ refunded: VIEW_PRICE })}`;
 
   it("reads as one sentence, with no doubled stop and no term of art", () => {
     for (const axis of CONFORMANCE_AXES) {
@@ -2519,7 +2521,9 @@ describe("⚠ the refusal line a customer reads, end to end", () => {
       expect(line.toLowerCase(), axis).not.toMatch(/identity|intact|people|axis|verdict|judge/);
       /* It says what happened, what we did, and what came back — in that order. */
       expect(line, axis).toContain("so we didn't keep it.");
-      expect(line, axis).toContain("credits refunded — you weren't charged.");
+      /* #1940 B13 — the money half is *"{N} credits returned."* */
+      expect(line, axis).toContain(" credits returned.");
+      expect(line, axis).not.toContain("refunded");
     }
   });
 
@@ -2547,11 +2551,11 @@ describe("⚠ the refusal line a customer reads, end to end", () => {
       "client/src/features/casting/components/ImageViewer/ViewTabs.tsx",
     ));
     expect(source, "the surface this arm derives from is gone — re-point it").not.toBeNull();
-    expect(source!).toContain("${label} failed — ${failure.reason}. ${refundOutcomeText(failure)}");
+    expect(source!).toContain("${label}: ${bareReason(failure.reason)}. ${refundOutcomeText(failure)}");
   });
   it("names the Cast in the line, or calls it this character", () => {
     expect(compose(refusedViewReason(["identity"], "Sifr")))
-      .toBe("Front failed — This view didn't clearly look like Sifr, so we didn't keep it. "
+      .toBe("Front: This view didn't clearly look like Sifr, so we didn't keep it. "
         + `${refundOutcomeText({ refunded: VIEW_PRICE })}`);
     expect(compose(refusedViewReason(["identity"]))).toContain("this character");
   });

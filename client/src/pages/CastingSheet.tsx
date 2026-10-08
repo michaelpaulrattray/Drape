@@ -847,7 +847,7 @@ export default function CastingSheet() {
       .catch((error: Error) => {
         /* Gated: Retry is behind CASTING_RETRY_SCOPE, so a scope that closes
            under an open sheet would otherwise toast "No such thing." */
-        toast(readableGatedFailure(error, "That tile didn't arrive again. Your credits are back."));
+        toast(readableGatedFailure(error, "That tile didn't arrive again. Your credits were returned."));
       })
       .finally(() => {
         void invalidate().finally(() => {
@@ -3081,6 +3081,7 @@ export default function CastingSheet() {
                   // eight ways to buy the same thing twice.
                   paidBusy={awaitingNewRoll}
                   rollPriceCredits={price}
+                  followPriceCredits={config.data?.followPriceCredits ?? undefined}
                   onKeep={() =>
                     onKeep(
                       candidate.candidateId,
@@ -3214,7 +3215,18 @@ export default function CastingSheet() {
               onClick={() => dispatchRoll("roll")}
               disabled={awaitingNewRoll}
             >
-              {awaitingNewRoll ? "Rolling…" : "Roll again"}
+              {/*
+                #1952 item 1, his *"yes"* 2026-10-08: every paid button shows
+                its price — `Roll · {served} credits`. `price` is the served
+                price of what this button fires (roll or standing follow) and
+                is 0 while that is not yet known, so the label waits rather
+                than quoting nothing.
+              */}
+              {awaitingNewRoll
+                ? "Rolling…"
+                : price
+                  ? `Roll again · ${formatCredits(displayPrice(price))} credits`
+                  : "Roll again"}
             </Button>
           </div>
           {/* The one quiet line about what just happened to the words — under the box they happened in (#535 §1). */}
@@ -3331,16 +3343,18 @@ export default function CastingSheet() {
               to its confirm, which is where the commitment happens.
 
             */}
-            {price ? (
+            {/*
+              ⚠ **THE PRICE LEFT THIS LINE FOR THE BUTTONS — #1952 item 1, his
+              *"yes"* 2026-10-08: "Every paid button shows its price".** Roll
+              again and each tile's Follow now carry their own served price, so
+              repeating it here would state one fact twice, side by side (the
+              card's own rule: one sentence per fact). What stays is the half
+              that was always this line's reason to exist — the balance, because
+              this action repeats and the number is genuinely moving.
+            */}
+            {typeof balance === "number" ? (
               <span className="dp-chrome dpc-dock__cost">
-                {/*
-                  The tilde carries the same meaning it does in the sign modal:
-                  generation cost varies, and a number presented as exact that
-                  then differs is worse than one that never claimed to be. It
-                  qualifies the COST only — the balance beside it is exact.
-                */}
-                <span className="dpc-modal__tilde">~</span> {formatCredits(displayPrice(price))} credits
-                {typeof balance === "number" ? ` · ${formatCredits(displayBalance(balance))} left` : ""}
+                {formatCredits(displayBalance(balance))} credits left
               </span>
             ) : null}
             {/*

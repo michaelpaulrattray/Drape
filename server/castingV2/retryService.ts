@@ -85,6 +85,7 @@ import { storageReadBytes } from "../storage";
 import { createModuleLogger } from "../logging/logger";
 import { candidateFailureKind, isRetryableFailure } from "../../shared/candidateFailure";
 import { displayPrice, displayRefund, formatCredits } from "../../shared/creditDisplay";
+import { creditsReturnedText } from "../../shared/refundCopy";
 import type { StatedInk } from "./castingIntent";
 import type { CreativeEngine } from "../providers/types";
 
@@ -543,7 +544,7 @@ export async function retryCandidate(
   }
   const refundSentence = refundUnrecorded
     ? `The refund could not be recorded — quote operation ${operationId} and support will restore the balance.`
-    : `${formatCredits(displayRefund(refunded))} credits were refunded.`;
+    : creditsReturnedText(refunded);
   log.warn(
     { operationId, candidate: candidate.publicId, failureClass: settlement.failureClass ?? "unknown", refunded },
     "[retryService] the retried tile failed again — refunded under the retry's own reference",

@@ -8424,7 +8424,7 @@ describe("a compensating write that throws is settled by the road's own adjudica
     vi.mocked(recordRefund).mockRejectedValueOnce(torn);
     adjudicator.verdict = async () => ({ type: "paid_failure", chargedCredits: REFINE_PRICE, refundedCredits: REFINE_PRICE });
 
-    await expect(refineCandidate(greenEyes, input)).rejects.toThrow(/That one didn't make it\. Your credits are back\./);
+    await expect(refineCandidate(greenEyes, input)).rejects.toThrow(/That one didn't make it\. Your credits were returned\./);
 
     // The adjudicator was handed THIS operation, running, at the price charged.
     expect(adjudicatedOperations).toEqual([
@@ -8449,7 +8449,7 @@ describe("a compensating write that throws is settled by the road's own adjudica
     vi.mocked(failVariant).mockRejectedValueOnce(torn);
     adjudicator.verdict = async () => ({ type: "paid_failure", chargedCredits: REFINE_PRICE, refundedCredits: REFINE_PRICE });
 
-    await expect(refineCandidate(greenEyes, input)).rejects.toThrow(/Your credits are back/);
+    await expect(refineCandidate(greenEyes, input)).rejects.toThrow(/Your credits were returned/);
 
     // The refund DID record before the throw; the adjudicator reads it off the
     // ledger rather than the service re-issuing it.
