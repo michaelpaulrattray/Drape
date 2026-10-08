@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { REFERENCE_IMAGE_PATH_PREFIX, referenceImagePath } from "../../shared/referenceDelivery";
 import { baseUrlOf, listenOnFetchablePort } from "../testing/fetchablePort";
+import { SessionRejectedError } from "../_core/sdk";
 import {
   createReferenceDeliveryRouter,
   type ReferenceDeliveryDependencies,
@@ -79,7 +80,7 @@ describe("who may look at a picture she attached", () => {
 
   it("refuses when authentication itself throws, rather than serving", async () => {
     const response = await get({
-      authenticate: async () => { throw new Error("no session"); },
+      authenticate: async () => { throw new SessionRejectedError("Invalid session cookie"); },
     });
     expect(response.status).toBe(401);
   });

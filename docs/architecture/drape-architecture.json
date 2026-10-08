@@ -10828,6 +10828,10 @@
   ],
   "tests": [
     {
+      "id": "test:client/src/_core/hooks/useAuth.test.ts",
+      "path": "client/src/_core/hooks/useAuth.test.ts"
+    },
+    {
       "id": "test:client/src/appRoutes.test.ts",
       "path": "client/src/appRoutes.test.ts"
     },
@@ -14510,6 +14514,10 @@
     {
       "id": "test:server/routes/referenceDelivery.test.ts",
       "path": "server/routes/referenceDelivery.test.ts"
+    },
+    {
+      "id": "test:server/routes/sessionFailureRoutes.test.ts",
+      "path": "server/routes/sessionFailureRoutes.test.ts"
     },
     {
       "id": "test:server/schemaConformance.test.ts",
@@ -22044,6 +22052,11 @@
     {
       "from": "module:server/_core/sdk.ts",
       "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/sdk.ts",
+      "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
     {
