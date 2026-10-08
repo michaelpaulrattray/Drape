@@ -70,6 +70,11 @@ describe("R7-7C1 owned-evidence schema contract", () => {
       // diagnose a failure, and their retention answers to that purpose rather
       // than to any candidate's lifecycle.
       "casting_diagnostic_cleanup",
+      // Wardrobe scratch uploads (migration 0074, #1961). Its own value for the
+      // same reason again: a customer's photograph put to a public key only so a
+      // detector can read it back, whose retention is "the request is over" —
+      // nothing like a candidate's lifecycle or a diagnostic frame's.
+      "wardrobe_scratch_cleanup",
     ]);
     expect(GENERATION_OPERATION_KINDS).toContain("evidence_plate_ingest");
     expect(GENERATION_OPERATION_KINDS).toContain("evidence_plate_discard");

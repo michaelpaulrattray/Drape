@@ -12,7 +12,7 @@ import sharp from "sharp";
 import { randomUUID } from "node:crypto";
 import { detectGarmentsInImage, type DetectedItem } from "./garmentDetection";
 import { uploadBase64ToS3 } from "./utils";
-import { storagePut } from "../storage";
+import { putWardrobeScratchUpload } from "./scratchUpload";
 import { createModuleLogger } from "../logging/logger";
 
 const log = createModuleLogger("wardrobe/outfitDecomposition");
@@ -83,12 +83,13 @@ async function cropGarment(
  * Decompose an outfit photo into individual garment crops.
  *
  * @param imageUrl - S3 URL of the outfit photo
- * @param userId - User ID for S3 path namespacing
+ * @param userId - the account's own id: it namespaces the S3 path AND owns the
+ *   cleanup manifest each crop is registered under (#1961)
  * @returns Array of decomposed garments with crop URLs
  */
 export async function decomposeOutfit(
   imageUrl: string,
-  userId: string,
+  userId: number,
 ): Promise<DecompositionResult> {
   // Step 1: Detect garments and bounding boxes
   const detected = await detectGarmentsInImage(imageUrl);
@@ -110,7 +111,23 @@ export async function decomposeOutfit(
 
       const suffix = randomUUID();
       const key = `${userId}-wardrobe/decomposed/${item.id}-${suffix}.png`;
-      const { url: cropUrl } = await storagePut(key, croppedBuffer, "image/png");
+      /* REGISTERED BEFORE IT EXISTS (#1961). The card named the two ROUTE
+         uploads; these crops are the third shape of the same defect and were
+         found by the class sweep — one public object per detected garment,
+         keyed on nothing, written on every analyze.
+
+         ⚠ `userId` BECAME A NUMBER WITH THIS CARD, and a test arm is what
+         said so. It was a string purely to interpolate into a path, and
+         `Number(userId)` for the manifest is a conversion that is only
+         sometimes right — the column is an int, and a manifest written under
+         `NaN` belongs to no account and would never be swept with one. The
+         single caller already held the number. */
+      const { url: cropUrl } = await putWardrobeScratchUpload({
+        userId,
+        key,
+        bytes: croppedBuffer,
+        contentType: "image/png",
+      });
 
       garments.push({
         id: item.id,

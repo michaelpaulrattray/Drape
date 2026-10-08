@@ -34,6 +34,12 @@ import {
 } from "../casting/modelReadProjections";
 import { captureSnapshotReadMode } from "../casting/snapshotReadScope";
 import { storagePut } from "../storage";
+import { putWardrobeScratchUpload } from "../wardrobe/scratchUpload";
+import {
+  adoptGarmentPictures,
+  garmentRowPictures,
+  importPictureChoice,
+} from "../wardrobe/garmentAdoption";
 import { detectGarmentsInImage } from "../wardrobe/garmentDetection";
 import { digitizeGarment } from "../wardrobe/garmentDigitization";
 import { assertWardrobeTryOnOpen } from "../wardrobe/tryOnDoor";
@@ -140,14 +146,19 @@ const garmentRouter = router({
       );
       const { url: originalUrl } = await storagePut(fileKey, imageBuffer, "image/png");
 
-      // Create garment record (status: processing)
+      /* Create garment record (status: processing). NO RECEIPTS: this road
+         writes its own `original-*` key above and registers no manifest for it,
+         so there is nothing to discharge — the row owns the key and the account
+         sweep reads it. That the put is unregistered at all is a sibling of
+         #1961 and is filed on its own card: a crash between the put and this
+         insert leaves an orphan. It is a window, not an orphan at birth. */
       const garmentId = await createGarment({
         userId: ctx.user.id,
         slotType: input.slotType,
         originalImageUrl: originalUrl,
         originalImageKey: fileKey,
         status: "processing",
-      });
+      }, []);
 
       // Create generation record
       const genResult = await createGeneration({
@@ -233,7 +244,17 @@ const garmentRouter = router({
         input.imageBase64.replace(/^data:image\/\w+;base64,/, ""),
         "base64",
       );
-      const { url: sourceImageUrl } = await storagePut(fileKey, imageBuffer, "image/png");
+      /* REGISTERED BEFORE IT EXISTS (#1961). Nothing read this key, so no
+         cleanup could ever reach the object and it stayed at a permanently
+         public URL for good. The detector inlines the bytes it is handed, so
+         the upload exists only to give the client a URL `import` can persist —
+         which is why it is registered-and-swept rather than removed. */
+      const { url: sourceImageUrl } = await putWardrobeScratchUpload({
+        userId: ctx.user.id,
+        key: fileKey,
+        bytes: imageBuffer,
+        contentType: "image/png",
+      });
 
       // Run lightweight detection (no credits — UX guard only)
       const detected = await detectGarmentsInImage(sourceImageUrl);
@@ -605,7 +626,15 @@ const decomposeRouter = router({
         input.imageBase64.replace(/^data:image\/\w+;base64,/, ""),
         "base64",
       );
-      const { url } = await storagePut(fileKey, imageBuffer, "image/png");
+      /* REGISTERED BEFORE IT EXISTS (#1961) — the same orphan as quickDetect's,
+         and the crops `decomposeOutfit` cuts from it are registered the same
+         way, which the card did not name and the class sweep found. */
+      const { url } = await putWardrobeScratchUpload({
+        userId: ctx.user.id,
+        key: fileKey,
+        bytes: imageBuffer,
+        contentType: "image/png",
+      });
 
       const result = await withAtomicCredits(
         {
@@ -617,7 +646,7 @@ const decomposeRouter = router({
           toolKind: "image",
         },
         async () => {
-          return decomposeOutfit(url, String(ctx.user.id));
+          return decomposeOutfit(url, ctx.user.id);
         },
       );
 
@@ -635,18 +664,43 @@ const decomposeRouter = router({
       throwIfRateLimited(ctx.user.id);
       await enforceDailyQuota(ctx.user.id);
 
-      // Use crop URL if available (decomposed garment), otherwise fall back to source
-      const garmentImageUrl = input.cropUrl || input.sourceImageUrl;
+      /*
+        THE GARMENT TAKES ITS OWN COPIES (#1961, the relay's finding on PR
+        #1979). Both URLs name SCRATCH objects, registered for the cleanup
+        worker by `quickDetect` and `decompose.analyze` — so writing them onto
+        the row left a garment pointing at objects the worker was promised it
+        could delete, about five minutes later. Copying first makes the row's
+        pictures the row's own and puts their KEYS on it, which is what
+        `accountDeletion.ts` reads.
+
+        It runs BEFORE the credit hold on purpose: a refusal here costs the
+        customer nothing, and a copy that fails must not leave a charged import.
+
+        ⚠ Every step is a named function with arms, including the two that look
+        like one line of route code. The crop-or-photograph choice and the row's
+        picture fields are where the defect lived, and nothing in `pnpm test`
+        can drive a decision written inside a tRPC handler.
+      */
+      const chosen = importPictureChoice(input);
+      const adopted = await adoptGarmentPictures({
+        userId: ctx.user.id,
+        imageUrl: chosen.imageUrl,
+        sourceUrl: chosen.sourceUrl,
+        currentPublicUrl: process.env.R2_PUBLIC_URL ?? "",
+      });
+      /* The digitize reads the garment's OWN object from here on, never the
+         scratch key it was cut from — one source of truth for what this row is
+         made of. */
+      const garmentImageUrl = adopted.image.url;
 
       // Create garment record — originalImageUrl is the crop, sourceImageUrl is the full outfit
       const garmentId = await createGarment({
         userId: ctx.user.id,
         slotType: input.slotType,
-        originalImageUrl: garmentImageUrl,
-        sourceImageUrl: input.cropUrl ? input.sourceImageUrl : undefined,
+        ...garmentRowPictures(adopted),
         shortName: input.label,
         status: "processing",
-      });
+      }, adopted.receipts);
 
       try {
         const result = await withAtomicCredits(
@@ -897,7 +951,15 @@ const modelRouter = router({
         input.imageBase64.replace(/^data:image\/\w+;base64,/, ""),
         "base64",
       );
-      const { url } = await storagePut(fileKey, imageBuffer, "image/png");
+      /* REGISTERED BEFORE IT EXISTS (#1961). The quietest of the four: the
+         studio keeps this URL in a Zustand store and no row anywhere has ever
+         held the key. */
+      const { url } = await putWardrobeScratchUpload({
+        userId: ctx.user.id,
+        key: fileKey,
+        bytes: imageBuffer,
+        contentType: "image/png",
+      });
 
       log.info(`Model photo uploaded for user ${ctx.user.id}: ${fileKey}`);
       return { url, fileKey };

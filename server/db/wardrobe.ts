@@ -9,19 +9,88 @@ import {
   wardrobeSessions,
   wardrobeLooks,
   models,
+  storageCleanupBatches,
+  storageCleanupItems,
   type InsertWardrobeGarment,
   type InsertWardrobeOutfit,
   type InsertWardrobeSession,
   type InsertWardrobeLook,
 } from "../../drizzle/schema";
 import { assertOwnedAvailableModelIn } from "./modelReferenceFence";
+import { undischargedStorageCleanupBatchWhere } from "./storageCleanup";
+
+function affectedRows(result: unknown): number {
+  if (Array.isArray(result)) return Number((result[0] as { affectedRows?: unknown })?.affectedRows ?? 0);
+  return Number((result as { affectedRows?: unknown })?.affectedRows ?? 0);
+}
+
+export class GarmentPictureReceiptError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "GarmentPictureReceiptError";
+  }
+}
 
 // ── Garments ───────────────────────────────────────────────────────────────
 
-export async function createGarment(data: InsertWardrobeGarment) {
-  const db = (await getDb())!;
-  const [result] = await db.insert(wardrobeGarments).values(data).$returningId();
-  return result.id;
+/**
+ * Insert a garment, discharging the receipts for the objects it now owns.
+ *
+ * ⚠ **`adoptedReceipts` IS REQUIRED, NOT OPTIONAL, AND THAT IS THE WHOLE
+ * CONTROL** (#1961, the relay's finding on PR #1979). An optional field is one
+ * a caller can forget, and forgetting it is precisely the defect this repair is
+ * about: `wardrobe.garments.import` wrote scratch URLs onto a row and handed no
+ * receipt to anything, so the cleanup worker kept its promise and the row
+ * survived pointing at nothing. The precedent and its own history are in
+ * `server/db/castingV2ReferenceAttachments.ts`. A required parameter makes
+ * every future caller answer *does this garment own bytes somebody registered
+ * for deletion?* instead of inheriting an answer.
+ *
+ * ⚠ Pass `[]` only when the garment's objects were never registered — and that
+ * is a sibling defect rather than a clean state: `garments.upload` writes its
+ * own `original-*` key with a bare `storagePut` and no manifest at all, so a
+ * crash between the put and this insert leaves an orphan. Filed on its own
+ * card; it is a window, not an orphan at birth, and the row does own the key.
+ */
+export async function createGarment(
+  data: InsertWardrobeGarment,
+  adoptedReceipts: readonly string[],
+) {
+  if (adoptedReceipts.length === 0) {
+    const db = (await getDb())!;
+    const [result] = await db.insert(wardrobeGarments).values(data).$returningId();
+    return result.id;
+  }
+  const receipts = Array.from(new Set(adoptedReceipts));
+  if (receipts.length !== adoptedReceipts.length) {
+    throw new GarmentPictureReceiptError("a garment's receipts must each name one object");
+  }
+  return withTransaction(async (tx) => {
+    /*
+      THE RECEIPTS ARE RELEASED IN THE SAME TRANSACTION AS THE ROW, and never
+      before it — the keeper-receipt pattern. Until this commits, a crash leaves
+      undischarged manifests and the worker collects the copies, which is
+      correct: no row references them.
+
+      Each delete is scoped to the OWNER and to an UNDISCHARGED batch, and a
+      count of anything but one throws. A discharge that silently affected zero
+      rows would leave exactly the state this fixes while reporting success.
+    */
+    for (const batchId of receipts) {
+      await tx.delete(storageCleanupItems)
+        .where(eq(storageCleanupItems.batchId, batchId));
+      const released = await tx.delete(storageCleanupBatches).where(and(
+        eq(storageCleanupBatches.id, batchId),
+        eq(storageCleanupBatches.userId, data.userId),
+        undischargedStorageCleanupBatchWhere(),
+      ));
+      if (affectedRows(released) !== 1) {
+        throw new GarmentPictureReceiptError("no undischarged manifest for this garment's picture");
+      }
+    }
+    const [result] = await tx.insert(wardrobeGarments).values(data).$returningId();
+    return result.id;
+  });
 }
 
 export async function getGarmentById(garmentId: number) {
