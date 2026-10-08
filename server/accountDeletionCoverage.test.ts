@@ -518,6 +518,11 @@ describe("an erasure removes the wardrobe's pictures, and only this account's (#
       /* #1980 — the try-on results' key is spelled here now (`uploadTryOnResult`),
          not in the three pipelines that call it. */
       "server/wardrobe/utils.ts",
+      /* #2095 — the flat-lay's key moved into `utils.ts` beside the try-on's, so
+         the spellings fell below the blind-arm floor. The population is
+         WIDENED rather than the floor lowered: the garment-owned copies
+         (`garmentOwnedKey`) are a wardrobe writer this list never named. */
+      "server/wardrobe/garmentAdoption.ts",
     ].map((module) => withoutComments(read(module))).join("\n");
     const prefixes = [...writers.matchAll(/`(wardrobe\/\$\{[^}]+\}\/|\$\{[^}]+\}-wardrobe\/)/g)]
       .map((match) => match[1]!.replace(/\$\{[^}]+\}/, "<id>"));

@@ -195,7 +195,7 @@ function collectManifestKey(
  * each a bare string, and a picture address is public. So until this check a
  * customer could save another customer's picture as a look on her own Cast,
  * delete the Cast, and the other customer's object went into HER deletion
- * manifest. Every server writer of a wardrobe output (`uploadBase64ToS3` under
+ * manifest. Every server writer of a wardrobe output (`server/wardrobe/utils.ts`'s registered writer under
  * `wardrobe/<id>/…`) carries the prefix, so nothing this account made is lost;
  * anything else is left alone. These keys are added AFTER `castOwnedKeys` is
  * frozen, so a wardrobe address can never vouch for a canvas picture either.

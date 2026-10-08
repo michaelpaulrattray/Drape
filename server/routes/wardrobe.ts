@@ -209,17 +209,22 @@ const garmentRouter = router({
           },
         );
 
-        // Update garment record with results
+        /* The row records the flat-lay's KEY and discharges its receipt in one
+           transaction (#2095). A throw anywhere before here — the analysis
+           above, most likely — leaves the manifest standing, and the worker
+           collects the flat-lay instead of it sitting public for ever. */
         const qualityIssues = result.quality.issues.length > 0 ? result.quality.issues : null;
-        await updateGarment(garmentId, {
+        const flatLay = result.digitized.flatLay;
+        await updateGarment(garmentId, ctx.user.id, {
           shortName: result.metadata.shortName,
           description: result.metadata.description,
           tags: result.metadata.tags,
           suggestedActions: result.metadata.suggestedActions,
           isolatedImageUrl: result.digitized.flatLayUrl,
+          ...(flatLay ? { isolatedImageKey: flatLay.key } : {}),
           qualityIssues,
           status: "ready",
-        });
+        }, flatLay ? [flatLay.cleanupBatchId] : []);
 
         log.info(`Garment ${garmentId} processed for user ${ctx.user.id}: ${result.metadata.shortName}`);
 
@@ -231,7 +236,7 @@ const garmentRouter = router({
           status: "ready" as const,
         };
       } catch (err) {
-        await updateGarment(garmentId, { status: "failed" });
+        await updateGarment(garmentId, ctx.user.id, { status: "failed" }, []);
         throw err;
       }
     }),
@@ -732,18 +737,21 @@ const decomposeRouter = router({
           },
         );
 
-        await updateGarment(garmentId, {
+        // The garment adopts its flat-lay, or the worker collects it (#2095 — see `upload`).
+        const flatLay = result.digitized.flatLay;
+        await updateGarment(garmentId, ctx.user.id, {
           shortName: result.metadata.shortName,
           description: result.metadata.description,
           tags: result.metadata.tags,
           suggestedActions: result.metadata.suggestedActions,
           isolatedImageUrl: result.digitized.flatLayUrl,
+          ...(flatLay ? { isolatedImageKey: flatLay.key } : {}),
           status: "ready",
-        });
+        }, flatLay ? [flatLay.cleanupBatchId] : []);
 
         return { garmentId, shortName: result.metadata.shortName };
       } catch (err) {
-        await updateGarment(garmentId, { status: "failed" });
+        await updateGarment(garmentId, ctx.user.id, { status: "failed" }, []);
         throw err;
       }
     }),
@@ -894,13 +902,17 @@ const outfitRouter = router({
           throw new TRPCError({ code: "NOT_FOUND", message: `Garment ${id} not found` });
         }
       }
+      /* A thumbnail made with no session is still in this account's scratch
+         manifest; the insert adopts it in its own transaction (#2094), or it
+         would be collected after the hold and the Outfit would point at
+         nothing. Another account's picture is never adopted. */
       const outfitId = await createOutfit({
         userId: ctx.user.id,
         name: input.name,
         garmentIds: input.garmentIds,
         styleNotes: input.styleNotes,
         resultThumbUrl: input.resultThumbUrl,
-      });
+      }, process.env.R2_PUBLIC_URL ?? "");
       return { outfitId };
     }),
 
@@ -1003,6 +1015,7 @@ const looksRouter = router({
       garmentIds: z.array(z.number()),
     }))
     .mutation(async ({ ctx, input }) => {
+      // The Look adopts a session-less try-on picture, or it would be collected (#2094 — see `outfits.save`).
       const lookId = await saveLook({
         userId: ctx.user.id,
         sessionId: input.sessionId ?? null,
@@ -1010,7 +1023,7 @@ const looksRouter = router({
         imageUrl: input.imageUrl,
         name: input.name ?? null,
         garmentIds: input.garmentIds,
-      });
+      }, process.env.R2_PUBLIC_URL ?? "");
       log.info(`Look saved: id=${lookId} model=${input.modelId} user=${ctx.user.id}`);
       return { lookId };
     }),

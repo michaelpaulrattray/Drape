@@ -325,8 +325,13 @@ describe("#1980 — uploadTryOnResult registers under the owner, at the erasure 
  * for the unregistered writer without saying which row records its key.
  */
 const UNREGISTERED_WRITER_CALLERS: Readonly<Record<string, string>> = {
-  "server/wardrobe/garmentDigitization.ts":
-    "the flat-lay, written onto the garment row as `isolatedImageUrl` by `garments.upload` and `garments.import`",
+  /*
+    EMPTY SINCE #2095, and the writer itself is deleted. Its last caller was
+    the digitize flat-lay, recorded on the garment row only if the analysis
+    after it also succeeded — so when analysis threw, nothing named the key.
+    It now goes through `uploadGarmentFlatLay`, which registers first. A module
+    that brings the name back, as a definition or a call, reddens here.
+  */
 };
 
 const REPO_ROOT = new URL("../../", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
@@ -351,7 +356,6 @@ describe("#1980 — the unregistered writer has exactly the callers that may use
     const sources = serverSources();
     expect(sources.length, "the walk found nothing — it is pointed at the wrong place").toBeGreaterThan(100);
     const callers = sources
-      .filter(({ file }) => file !== "server/wardrobe/utils.ts")
       .filter(({ text }) => /\buploadBase64ToS3\s*\(/.test(text))
       .map(({ file }) => file)
       .sort();

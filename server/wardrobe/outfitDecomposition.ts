@@ -11,7 +11,6 @@
 import sharp from "sharp";
 import { randomUUID } from "node:crypto";
 import { detectGarmentsInImage, type DetectedItem } from "./garmentDetection";
-import { uploadBase64ToS3 } from "./utils";
 import { putWardrobeScratchUpload } from "./scratchUpload";
 import { createModuleLogger } from "../logging/logger";
 

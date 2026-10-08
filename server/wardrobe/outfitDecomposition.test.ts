@@ -18,9 +18,9 @@ vi.mock("./scratchUpload", () => ({
   putWardrobeScratchUpload: vi.fn(),
 }));
 
-vi.mock("./utils", () => ({
-  uploadBase64ToS3: vi.fn(),
-}));
+/* #2095 deleted `uploadBase64ToS3`, the one export this mock carried; the
+   module stays mocked so nothing it reaches loads a provider client. */
+vi.mock("./utils", () => ({}));
 
 vi.mock("../logging/logger", () => ({
   createModuleLogger: () => ({
