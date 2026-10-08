@@ -439,6 +439,15 @@ async function startServer() {
     }).catch(err => {
       log.error({ err }, "Scheduler: failed to start casting candidate retention sweep");
     });
+
+    // #1941: one notice before a yearly plan renews. Nobody is on a yearly
+    // plan yet, so every pass is one indexed read that finds nothing — it must
+    // exist before go-live, which is when that stops being true.
+    import("../billing/renewalReminder").then(({ startYearlyRenewalReminderSweep }) => {
+      startYearlyRenewalReminderSweep();
+    }).catch(err => {
+      log.error({ err }, "Scheduler: failed to start the yearly renewal reminder sweep");
+    });
   });
 
   // Register shutdown handlers after server is listening

@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 54
+      "moduleCount": 56
     },
     {
       "id": "domain:wardrobe",
@@ -2863,6 +2863,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/billing/renewalReminder.ts",
+      "path": "server/billing/renewalReminder.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/casting/aiService.ts",
       "path": "server/casting/aiService.ts",
       "domain": "casting",
@@ -5290,6 +5296,12 @@
       "id": "module:server/logging/requestContextMiddleware.ts",
       "path": "server/logging/requestContextMiddleware.ts",
       "domain": "platform",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/mail.ts",
+      "path": "server/mail.ts",
+      "domain": "unassigned",
       "lifecycle": "active"
     },
     {
@@ -9962,6 +9974,11 @@
       "id": "worker:startStorageCleanupWorker",
       "name": "startStorageCleanupWorker",
       "startedFrom": "server/_core/index.ts"
+    },
+    {
+      "id": "worker:startYearlyRenewalReminderSweep",
+      "name": "startYearlyRenewalReminderSweep",
+      "startedFrom": "server/_core/index.ts"
     }
   ],
   "operationKinds": [
@@ -11644,6 +11661,10 @@
     {
       "id": "test:server/billing.test.ts",
       "path": "server/billing.test.ts"
+    },
+    {
+      "id": "test:server/billing/renewalReminder.test.ts",
+      "path": "server/billing/renewalReminder.test.ts"
     },
     {
       "id": "test:server/boardDeletionChildren.test.ts",
@@ -22097,6 +22118,11 @@
     },
     {
       "from": "module:server/_core/index.ts",
+      "to": "module:server/billing/renewalReminder.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
       "to": "module:server/casting/evidence/evidenceComposerSchema.ts",
       "kind": "imports"
     },
@@ -22343,6 +22369,56 @@
     {
       "from": "module:server/auditLog.ts",
       "to": "module:shared/auditActionCategories.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/renewalReminder.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/renewalReminder.ts",
+      "to": "module:server/_core/appOrigin.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/renewalReminder.ts",
+      "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/renewalReminder.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/renewalReminder.ts",
+      "to": "module:server/mail.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/renewalReminder.ts",
+      "to": "module:server/stripe/stripeService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/renewalReminder.ts",
+      "to": "module:server/stripe/subscriptionPeriods.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/renewalReminder.ts",
+      "to": "module:server/stripe/subscriptionSchedule.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/renewalReminder.ts",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/renewalReminder.ts",
+      "to": "module:shared/const.ts",
       "kind": "imports"
     },
     {
@@ -32581,6 +32657,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/mail.ts",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/monitoring/errorTracker.ts",
       "to": "module:server/_core/env.ts",
       "kind": "imports"
@@ -34117,12 +34198,22 @@
     },
     {
       "from": "module:server/routes/emailVerification.ts",
+      "to": "module:server/mail.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/emailVerification.ts",
       "to": "module:server/security/crossSiteExpressGuard.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/routes/emailVerification.ts",
       "to": "module:server/security/rateLimit.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/emailVerification.ts",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
