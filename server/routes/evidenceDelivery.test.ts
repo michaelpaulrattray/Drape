@@ -1,5 +1,6 @@
 import express from "express";
 import { baseUrlOf, listenOnFetchablePort } from "../testing/fetchablePort";
+import { SessionRejectedError } from "../_core/sdk";
 import { describe, expect, it, vi } from "vitest";
 import type { PrivateEvidenceStorageAdapter } from "../casting/evidence/evidenceDelivery";
 import { buildOwnerPrivateEvidenceEtag } from "../casting/evidence/evidenceDeliveryHttp";
@@ -79,7 +80,7 @@ async function withRoute(
 describe("R7-7C5C authenticated evidence delivery", () => {
   it("authenticates before rate limit, database authority, or storage", async () => {
     const deps = dependencies();
-    vi.mocked(deps.authenticate).mockRejectedValueOnce(new Error("no session"));
+    vi.mocked(deps.authenticate).mockRejectedValueOnce(new SessionRejectedError("Invalid session cookie"));
     await withRoute(deps, async (baseUrl) => {
       const response = await fetch(`${baseUrl}/api/evidence/plate/${entityId}`);
       expect(response.status).toBe(401);

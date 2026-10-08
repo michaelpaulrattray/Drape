@@ -40,7 +40,10 @@
  *   3. the FIGURE — a boundary with a body across it is not a seam, driven on a
  *      profile built for it, because no fixture carries that case;
  *   4. the ALARM — end to end through `renderSignSheet`, silent on the real
- *      head-sheet profile and loud on a blind one.
+ *      head-sheet profile and loud on a blind one;
+ *   5. the FIGURE ACROSS THE LINE (#1976) — it falls back and warns rather
+ *      than being cut as a divider at its own edge, and every real boundary in
+ *      both fixtures is pinned where it was cut before that change.
  *
  * # Why a profile rebuilt into pixels is the real sheet, for this question
  *
@@ -60,6 +63,7 @@ import type { ReferenceImage } from "../providers/types";
 import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
 import {
   DARK_SEAM_MIN_DEPTH,
+  DIVIDER_MIN_CONTRAST,
   findDarkSeamAt,
   findSheetPanelGeometry,
   renderSignSheet,
@@ -264,54 +268,55 @@ describe("a body across the line is not a seam (#1967)", () => {
 
 /* ---------------------------------------------------------------- the alarm */
 
-describe("the alarm, end to end through renderSignSheet (#1967)", () => {
-  const HEAD_ORDER = ["closeUp", "threeQuarter", "sideClose"] as const;
+/* The render road's helpers, shared by the alarm arms and the #1976 figure arm. */
+const HEAD_ORDER = ["closeUp", "threeQuarter", "sideClose"] as const;
 
-  /** A picture whose column means ARE the fixture's — see the header. */
-  async function sheetFromMeans(means: readonly number[], height: number): Promise<Buffer> {
-    const width = means.length;
-    const raw = Buffer.alloc(width * height);
-    for (let y = 0; y < height; y += 1) {
-      const row = y * width;
-      for (let x = 0; x < width; x += 1) raw[row + x] = Math.round(means[x]!);
-    }
-    return sharp(raw, { raw: { width, height, channels: 1 } }).png().toBuffer();
+/** A picture whose column means ARE the fixture's — see the header. */
+async function sheetFromMeans(means: readonly number[], height: number): Promise<Buffer> {
+  const width = means.length;
+  const raw = Buffer.alloc(width * height);
+  for (let y = 0; y < height; y += 1) {
+    const row = y * width;
+    for (let x = 0; x < width; x += 1) raw[row + x] = Math.round(means[x]!);
   }
+  return sharp(raw, { raw: { width, height, channels: 1 } }).png().toBuffer();
+}
 
-  async function anchor(): Promise<ReferenceImage> {
-    const bytes = await sharp({
-      create: { width: 64, height: 96, channels: 3, background: "#808080" },
-    }).png().toBuffer();
-    return { bytes, contentType: "image/png" };
-  }
+async function anchor(): Promise<ReferenceImage> {
+  const bytes = await sharp({
+    create: { width: 64, height: 96, channels: 3, background: "#808080" },
+  }).png().toBuffer();
+  return { bytes, contentType: "image/png" };
+}
 
-  async function render(bytes: Buffer): Promise<Array<{ level: "warn" | "info"; message: string }>> {
-    logged.length = 0;
-    await renderSignSheet({
-      engine: {
-        async editWithReferences() {
-          return {
-            bytes,
-            contentType: "image/png",
-            latencyMs: 61_000,
-            estimatedCostUsd: null,
-            provenance: { provider: "fal", model: "openai/gpt-image-2.5/sunburst/edit" },
-          };
-        },
+async function render(bytes: Buffer): Promise<Array<{ level: "warn" | "info"; message: string }>> {
+  logged.length = 0;
+  await renderSignSheet({
+    engine: {
+      async editWithReferences() {
+        return {
+          bytes,
+          contentType: "image/png",
+          latencyMs: 61_000,
+          estimatedCostUsd: null,
+          provenance: { provider: "fal", model: "openai/gpt-image-2.5/sunburst/edit" },
+        };
       },
-      anchor: await anchor(),
-      panelOrder: HEAD_ORDER as unknown as readonly CastViewAngle[],
-      operationId: 1967,
-    });
-    return logged
-      .filter((entry) => entry.message.includes("[signSheet] the Sign sheet")
-        || entry.message.includes("[signSheet] some panel boundaries"))
-      .map((entry) => ({
-        level: entry.message.includes("some panel boundaries") ? "warn" as const : "info" as const,
-        message: entry.message,
-      }));
-  }
+    },
+    anchor: await anchor(),
+    panelOrder: HEAD_ORDER as unknown as readonly CastViewAngle[],
+    operationId: 1967,
+  });
+  return logged
+    .filter((entry) => entry.message.includes("[signSheet] the Sign sheet")
+      || entry.message.includes("[signSheet] some panel boundaries"))
+    .map((entry) => ({
+      level: entry.message.includes("some panel boundaries") ? "warn" as const : "info" as const,
+      message: entry.message,
+    }));
+}
 
+describe("the alarm, end to end through renderSignSheet (#1967)", () => {
   it("⚠ SILENT on the real head-sheet profile — the whole point of the card", async () => {
     /* 64 rows rather than 1648: the detector averages down a column, and a
        column of identical greys has the same mean at any height. */
@@ -370,71 +375,229 @@ describe("the alarm, end to end through renderSignSheet (#1967)", () => {
   });
 });
 
-/* ------------------------------------------------- what this card does NOT fix */
+
+/* ------------------------------------------- a figure across the line (#1976) */
 
 /**
- * ⚠ **A FIGURE ACROSS A BOUNDARY NEVER REACHES THE FALLBACK AT ALL, SO NOTHING
- * WARNS ABOUT IT — MEASURED HERE, FIXED NOWHERE, AND FILED.**
+ * ⚠ **A FIGURE ACROSS A BOUNDARY FALLS BACK NOW, AND THE ALARM HEARS IT — #1976.**
  *
- * #1967 asked for *"an arm with a figure crossing the boundary shows one
- * [warning]"*. Driven on the real head-sheet profile with a dark body patched
- * across its second boundary, that arm **cannot exist on the fallback road**:
- * the bright search finds a 55–62 contrast step at the FIGURE'S OWN EDGE, calls
- * it a divider, and cuts there. `source` is `divider`, no fallback happens, and
- * neither the old warning nor the new one fires.
+ * This block replaces the one that pinned the defect (*"a finding, not a
+ * fix"*). Driven on the real head-sheet profile with a dark body patched across
+ * its second boundary, the bright search used to find a 55–62 contrast step at
+ * the FIGURE'S OWN EDGE, call it a divider, and cut there — 57 to 155 px off
+ * the seam, `source: "divider"`, and no warning on either road:
  *
- * So the case the alarm's sentence describes — *a panel may be cut inside the
- * figure* — actually arrives by a road the alarm has never watched, and the
- * panels come out visibly unequal while the receipt reads as a clean read.
- * `findDarkSeamAt` is right about the figure (it refuses it, arm above); the
- * bright search is what hands it a false divider first.
+ * | figure width | was cut at | was read as |
+ * |---|---|---|
+ * | 20 px | 2617 (+57) | divider, 62.4 |
+ * | 60 px | 2617 (+57) | divider, 62.4 |
+ * | 160 px | 2667 (+107) | divider, 62.0 |
+ * | 320 px | 2405 (−155) | divider, 55.3 |
  *
- * **Not fixed here on purpose.** Teaching the divider search to reject a step
- * that is a figure edge changes WHERE paid panels are cut, which is #1904's
- * question and his eye's to close; this card is explicitly *"logging only; no
- * customer surface"*. Pinned so the finding lives in the tree and not only on a
- * card — **if this arm goes red because a later change makes the figure case
- * fall back, that is the fix landing: delete the arm and close #1976**, which
- * carries the table below and a possible shape for the repair.
+ * The cause was one line: the band's contrast was the AVERAGE of the two
+ * neighbours 20 px out, so the sample landing inside the body carried the
+ * backdrop sample that sat only 19–21 below the band. A divider has backdrop on
+ * both sides; a figure's edge has it on one. So each side must clear the floor
+ * on its own, and these arms hold both halves of that: the figure falls back,
+ * and every real boundary in both fixtures is cut exactly where it was.
  */
-describe("⚠ the false divider at a figure's edge — a finding, not a fix (#1976)", () => {
-  const headMeans = (): number[] => {
-    const sheet = TWO_SHEET.find((s) => s.kind === "head" && s.render === "parallel");
-    return [...sheet!.columnMeans];
-  };
+describe("⚠ a figure across a boundary is a fallback, not a divider (#1976)", () => {
+  const headMeans = (): number[] => [...headSheet("parallel").columnMeans];
 
-  it("a body across the second boundary is read as a divider, not as a fallback", () => {
+  /** A dark body patched across a line, the same shape #1976's table was measured on. */
+  function withFigure(means: number[], centre: number, span: number, level = 95): number[] {
+    const half = Math.floor(span / 2);
+    for (let x = centre - half; x <= centre + half; x += 1) means[x] = level;
+    return means;
+  }
+
+  it("⚠ the four measured figures fall back to the equal share, where the seam is", () => {
     for (const span of [20, 60, 160, 320]) {
-      const means = headMeans();
-      const half = Math.floor(span / 2);
-      for (let x = 2560 - half; x <= 2560 + half; x += 1) means[x] = 95;
-
+      const means = withFigure(headMeans(), 2560, span);
       const geometry = findSheetPanelGeometry(Float64Array.from(means), 3840, 3);
       const second = geometry.boundaries[1]!;
 
       expect(
         second.source,
-        `span ${span}: the figure case now falls back — the repair has landed, so delete this`
-          + " arm and close #1976",
-      ).toBe("divider");
-      expect(second.band!.contrast, `span ${span}: the false band`).toBeGreaterThan(
-        DARK_SEAM_MIN_DEPTH,
-      );
-      /* The cut moves off the true seam, which is the cost of the finding. */
-      expect(Math.abs(second.rightStart - 2560), `span ${span}: the cut stayed on the seam`)
-        .toBeGreaterThan(40);
-      /* And the criterion this card DID build is right about it either way. */
-      expect(findDarkSeamAt(means, 3840, 2560), `span ${span}: the figure read as a hairline`)
-        .toBeNull();
+        `span ${span}: a figure's edge was read as a divider — the cut moves off the seam`,
+      ).toBe("fifth");
+      expect(second.band).toBeNull();
+      /* On the equal share, which is where the sheet's own seam sits. The body
+         covers the seam, so no dark hairline is credited and the line is the
+         plain third. */
+      expect(second.darkSeam, `span ${span}: the figure read as a hairline`).toBeNull();
+      expect({ leftEnd: second.leftEnd, rightStart: second.rightStart }).toEqual({
+        leftEnd: 2559,
+        rightStart: 2560,
+      });
     }
   });
 
-  it("the first boundary is untouched by it — the damage is local to the one window", () => {
-    const means = headMeans();
-    for (let x = 2530; x <= 2590; x += 1) means[x] = 95;
+  it("⚠ the whole driven population: no figure across either head boundary reads as a divider", () => {
+    /*
+      Not four hand-picked spans: every figure that covers the seam, at widths
+      12–400 px, three darknesses and eleven offsets, across BOTH boundaries of
+      the shipping head sheet. The AVERAGED reading calls 290 of the 306 a
+      divider — counted here too, so this arm is proven able to see the defect
+      rather than assumed to.
+    */
+    const sheet = headSheet("parallel");
+    let driven = 0;
+    let falseDividers = 0;
+    let averagedWouldHave = 0;
+    for (const [index, line] of [1280, 2560].entries()) {
+      for (const span of [12, 20, 40, 60, 100, 160, 240, 320, 400]) {
+        for (const offset of [-150, -100, -60, -30, -10, 0, 10, 30, 60, 100, 150]) {
+          for (const level of [40, 95, 140]) {
+            const lo = line + offset - Math.floor(span / 2);
+            const hi = lo + span - 1;
+            /* It must cover the seam, or it is a figure BESIDE the line. */
+            if (lo > line - 4 || hi < line + 4) continue;
+            const means = [...sheet.columnMeans];
+            for (let x = lo; x <= hi; x += 1) means[x] = level;
+            const boundary = findSheetPanelGeometry(Float64Array.from(means), 3840, 3)
+              .boundaries[index]!;
+            driven += 1;
+            if (boundary.source === "divider") falseDividers += 1;
+            if (averagedContrastAt(means, 3840, line) >= DIVIDER_MIN_CONTRAST) averagedWouldHave += 1;
+          }
+        }
+      }
+    }
+    expect(driven, "the population was not driven").toBe(306);
+    expect(averagedWouldHave, "the control cannot see the defect — this arm proves nothing")
+      .toBe(290);
+    expect(falseDividers, "a figure across a head-sheet boundary was cut as a divider").toBe(0);
+  });
+
+  it("⚠ end to end: the alarm fires on a figure across the line, and the receipt says why", async () => {
+    /* #1967 asked for exactly this arm and it could not exist then — the false
+       divider meant no fallback, so nothing warned. */
+    const lines = await render(await sheetFromMeans(withFigure(headMeans(), 2560, 160), 64));
+
+    expect(lines).toHaveLength(1);
+    expect(lines[0]!.level, "a figure across a boundary went unreported").toBe("warn");
+    const receipt = logged.find((entry) => entry.message.includes("[signSheet] some panel boundaries"))
+      ?.fields;
+    expect(receipt?.dividersFound).toBe(0);
+    expect(receipt?.fifthsOnADarkSeam).toBe(1);
+    expect(receipt?.fifthsOnNothing).toBe(1);
+  });
+
+  it("the first boundary is untouched by it — the change is local to the one window", () => {
+    const means = withFigure(headMeans(), 2560, 60);
     const geometry = findSheetPanelGeometry(Float64Array.from(means), 3840, 3);
     expect(geometry.boundaries[0]!.source).toBe("fifth");
     expect(geometry.boundaries[0]!.darkSeam).not.toBeNull();
   });
 
+  it("⚠ a band clear of ONE side only is refused; clear of both is a divider — the rule itself", () => {
+    /*
+      The rule driven directly, with nothing else in the frame. A 3 px band at
+      200 with 150 on its left: 50 clear. With 190 on its right it stands only
+      10 clear there — the averaged reading says 30, over the floor, which is
+      the defect's own shape, and the two-sided one must refuse it. With 170 on
+      its right both sides clear the floor and it is a divider.
+    */
+    const width = 600;
+    const profile = (leftLevel: number, rightLevel: number): Float64Array => {
+      const means = new Float64Array(width);
+      for (let x = 0; x < width; x += 1) means[x] = x < 300 ? leftLevel : rightLevel;
+      for (let x = 299; x <= 301; x += 1) means[x] = 200;
+      return means;
+    };
+
+    const oneSided = profile(150, 190);
+    expect(averagedContrastAt(Array.from(oneSided), width, 300)).toBeGreaterThanOrEqual(
+      DIVIDER_MIN_CONTRAST,
+    );
+    expect(findSheetPanelGeometry(oneSided, width, 2).boundaries[0]!.source).toBe("fifth");
+
+    const bothSides = profile(150, 170);
+    const found = findSheetPanelGeometry(bothSides, width, 2).boundaries[0]!;
+    expect(found.source).toBe("divider");
+    /* The receipt carries the WEAKER side — the number the decision was made on. */
+    expect(found.band!.contrast).toBe(30);
+  });
 });
+
+/**
+ * ⚠ **EVERY REAL BOUNDARY IS CUT EXACTLY WHERE IT WAS — #1976 changed no
+ * measured sheet.** Fifteen dividers and two fallbacks across both fixtures,
+ * with #1971's edge trim folded in, pinned column for column. The values are
+ * the cut as it stood before the two-sided floor, read off the same function
+ * at the parent commit; they are written out rather than recomputed, because a
+ * pin that derives its answer from the code under test cannot notice it move.
+ */
+describe("⚠ every real sheet is cut where it was before #1976", () => {
+  const BEFORE: Record<string, { widths: number[]; cuts: Array<[number, number, string]> }> = {
+    "body/parallel": { widths: [1748, 1748], cuts: [[1747, 1756, "divider"]] },
+    "head/parallel": { widths: [1279, 1278, 1278], cuts: [[1278, 1281, "fifth"], [2558, 2562, "fifth"]] },
+    "head/serial": { widths: [1279, 1275, 1277], cuts: [[1278, 1283, "divider"], [2557, 2563, "divider"]] },
+    "court/sheet1": {
+      widths: [830, 760, 620, 837, 752],
+      cuts: [[829, 841, "divider"], [1600, 1611, "divider"], [2230, 2241, "divider"], [3077, 3088, "divider"]],
+    },
+    "court/sheet2": {
+      widths: [797, 779, 683, 869, 695],
+      cuts: [[796, 802, "divider"], [1580, 1585, "divider"], [2267, 2272, "divider"], [3140, 3145, "divider"]],
+    },
+    "court/sheet3": {
+      widths: [770, 760, 747, 761, 766],
+      cuts: [[769, 780, "divider"], [1539, 1548, "divider"], [2294, 2304, "divider"], [3064, 3074, "divider"]],
+    },
+  };
+
+  const sheets = [...TWO_SHEET, ...COURT].map((sheet) => ({
+    name: `${sheet.kind ?? "court"}/${sheet.render ?? `sheet${sheet.sheet}`}`,
+    sheet,
+  }));
+
+  it("the population is every fixture sheet, derived, and the table covers it", () => {
+    expect(sheets.map((entry) => entry.name).sort()).toEqual(Object.keys(BEFORE).sort());
+  });
+
+  for (const name of Object.keys(BEFORE)) {
+    it(`${name}: same panels, same cuts, same sources`, () => {
+      const { sheet } = sheets.find((entry) => entry.name === name)!;
+      const geometry = findSheetPanelGeometry(
+        Float64Array.from(sheet.columnMeans),
+        sheet.width,
+        sheet.panels ?? 5,
+      );
+      expect(geometry.panels.map((panel) => panel.width)).toEqual(BEFORE[name]!.widths);
+      expect(geometry.boundaries.map((b) => [b.leftEnd, b.rightStart, b.source]))
+        .toEqual(BEFORE[name]!.cuts);
+    });
+  }
+
+  it("⚠ and every real divider clears its WEAKER side by about twice the floor", () => {
+    /* The margin the two-sided rule spends: 49.9 at the weakest of fifteen. */
+    const contrasts = sheets.flatMap(({ sheet }) =>
+      findSheetPanelGeometry(Float64Array.from(sheet.columnMeans), sheet.width, sheet.panels ?? 5)
+        .boundaries.filter((b) => b.source === "divider").map((b) => b.band!.contrast));
+    expect(contrasts).toHaveLength(15);
+    expect(Math.min(...contrasts)).toBeCloseTo(49.9, 0);
+  });
+});
+
+/**
+ * THE AVERAGED READING #1976 RETIRED, kept here as the CONTROL and nowhere
+ * else: the arms above count what it would have called a divider, so they are
+ * proven able to see the defect rather than assumed to. Same window, same peak,
+ * same band growth as the detector; only the last line differs.
+ */
+function averagedContrastAt(means: ArrayLike<number>, width: number, line: number): number {
+  const window = Math.round(width * 0.06);
+  const lo = Math.max(0, line - window);
+  const hi = Math.min(width - 1, line + window);
+  let peak = lo;
+  for (let x = lo; x <= hi; x += 1) if (means[x]! > means[peak]!) peak = x;
+  let start = peak;
+  let end = peak;
+  while (start - 1 >= lo && means[start - 1]! >= means[peak]! - 12) start -= 1;
+  while (end + 1 <= hi && means[end + 1]! >= means[peak]! - 12) end += 1;
+  const left = means[Math.max(0, start - 20)]!;
+  const right = means[Math.min(width - 1, end + 20)]!;
+  return means[peak]! - (left + right) / 2;
+}

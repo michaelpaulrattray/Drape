@@ -29,8 +29,9 @@ import { adminProcedure, router } from "../_core/trpc";
 import { crewBriefingForPage, readCrewBriefing } from "../crew/crewBriefing";
 import { captureCrewTabEnabled } from "../crew/crewTabScope";
 import { readCardActivity } from "../crew/cardActivity";
-import { deriveLiveDesk, type LiveDeskState } from "../crew/liveDesk";
+import { deriveLiveDesk, headDatesFrom, type LiveDeskState } from "../crew/liveDesk";
 import { readLiveQueue } from "../crew/liveQueue";
+import { readPullRequestHeads } from "../crew/liveRepairs";
 import { readCrewCardIntents, setCrewCardIntent } from "../db/crewCardIntents";
 import { insertCrewReply, listCrewReplies } from "../db/crewReplies";
 import { listCrewShiftRuns } from "../db/crewShiftRuns";
@@ -125,13 +126,25 @@ const cardIntentInput = z.object({
 async function liveDeskState(rungKeys: readonly string[]): Promise<LiveDeskState> {
   const [queue, activity] = await Promise.all([readLiveQueue(), readCardActivity()]);
   if (!queue.available) return { available: false, why: queue.why };
+  /* ⚠ THE HEAD DATES (#1984) are read AFTER the comments, because only a pull
+     request the relay has spoken on is worth a commit read, and they sink
+     nothing: an unread head leaves that row on the old `updatedAt` reading. */
+  const facts = activity.available ? activity.facts : [];
+  const spokenOn = new Set(facts.filter((fact) => fact.kind === "finding" || fact.kind === "verdict").map((fact) => fact.card));
+  /* Nothing to date when the relay has spoken on nothing — and no GitHub call. */
+  const heads = spokenOn.size > 0 ? await readPullRequestHeads(spokenOn) : null;
   return {
     available: true,
     stale: queue.stale,
     why: queue.stale ? queue.why : null,
-    desk: deriveLiveDesk(queue, rungKeys, activity.available
-      ? { facts: activity.facts, why: activity.stale ? activity.why : null }
-      : { facts: [], why: activity.why }),
+    desk: deriveLiveDesk(
+      queue,
+      rungKeys,
+      activity.available
+        ? { facts: activity.facts, why: activity.stale ? activity.why : null }
+        : { facts: [], why: activity.why },
+      heads !== null && heads.available ? headDatesFrom(heads.heads) : undefined,
+    ),
   };
 }
 

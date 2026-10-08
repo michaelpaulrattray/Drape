@@ -95,6 +95,67 @@ export function BillingSection({
     SEEING them is the thing his word forbids.
   */
   const { data: status } = trpc.billing.getStatus.useQuery();
+  /*
+    ⚠ **THE CHANGE WAITING AT THE PERIOD BOUNDARY (#1936) — AND WITHOUT THIS
+    QUERY THE WHOLE DEFERRAL IS INVISIBLE.** Since his option 1, asking to drop
+    a plan or lower the dial no longer does anything today: it is scheduled for
+    the renewal. So a customer is told *"Pro starts on 7 Nov"* in one toast, and
+    then every screen she looks at — this one most of all — goes on saying Pro
+    Plus with nothing to show that a change is coming and no way to call it off.
+    That is the machinery showing through by omission, and this is where it is
+    closed.
+
+    ⚠ **IT IS `getSubscriptionDetails` AND DELIBERATELY NOT A FIELD ON
+    `getStatus`, for the reason the dial's own procedure already records: the
+    answer costs TWO Stripe round trips** (retrieve the subscription, then
+    retrieve its schedule), and `getStatus` is on the hot path that every
+    surface in this product waits on. A pending change is worth a request on
+    the one pane that shows plan state; it is not worth slowing down every
+    paint everywhere.
+  */
+  const { data: subscriptionDetails } = trpc.billing.getSubscriptionDetails.useQuery();
+  const pendingChange = subscriptionDetails?.pendingChange ?? null;
+  /*
+    WHAT IS CHANGING AND WHEN, in her words — `null` when nothing is pending.
+    It names whichever thing is actually moving, because a dial move keeps the
+    plan's own name and *"Pro Plus from 7 Nov"* on a Pro Plus account reads as
+    nothing happening at all.
+
+    ⚠ **IT IS A BLOCK RATHER THAN A TERNARY IN THE JSX, AND #1741's GUARD IS
+    WHY.** The first draft compared `subscriptionDetails?.billingInterval ===
+    "year"` inline, and `server/unreadPlanIdentity.test.ts` caught it: an
+    optional chain there answers *monthly* about a customer nobody has read.
+    It happened to be unreachable — `pendingChange` comes off the same query,
+    so there is no paint where one is known and the other is not — but the
+    SHAPE is the defect that file exists to keep out of this surface, and the
+    early return below makes the interval a fact read off a value that is
+    present rather than a comparison against `undefined`.
+  */
+  const pendingSentence = (() => {
+    if (!subscriptionDetails?.pendingChange) return null;
+    const pending = subscriptionDetails.pendingChange;
+    const on = formatShortDate(new Date(pending.effectiveAt));
+    if (pending.plan !== status?.planTier) return `${pending.planName} from ${on}`;
+    const billedYearly = subscriptionDetails.billingInterval === "year";
+    if ((pending.interval === "annual") !== billedYearly) {
+      return `billed ${pending.interval === "annual" ? "yearly" : "monthly"} from ${on}`;
+    }
+    return `${formatCredits(displayBalance(pending.monthlyCredits))} credits/mo from ${on}`;
+  })();
+  const utils = trpc.useUtils();
+  const cancelScheduledChange = trpc.billing.cancelScheduledChange.useMutation({
+    onSuccess: (result) => {
+      toast.success(result.message);
+      /* Both reads, because the pending change lives on one and the plan a
+         customer sees lives on the other. */
+      void utils.billing.getSubscriptionDetails.invalidate();
+      void utils.billing.getStatus.invalidate();
+    },
+    onError: (error) => {
+      logRawFailure("billing.cancelScheduledChange", error);
+      toast.error(readableFailure(error, "That change could not be cancelled."));
+    },
+  });
   const portal = trpc.billing.createPortalSession.useMutation({
     onSuccess: (result) => {
       if (result?.portalUrl) window.open(result.portalUrl, "_blank");
@@ -168,14 +229,53 @@ export function BillingSection({
                 ? `${formatDollars(planPriceInCents)}/mo`
                 : "No charge",
             renews && granted ? `${formatCredits(displayBalance(allowance))} credits/mo` : null,
-            renewsAt ? `renews ${formatShortDate(renewsAt)}` : null,
+            /*
+              ⚠ **A PENDING CHANGE REPLACES THE RENEWAL SEGMENT RATHER THAN
+              SITTING BESIDE IT (#1936).** Both facts land on the same date —
+              the scheduled change happens AT the renewal — so printing both
+              gives *"renews 7 Nov · Pro from 7 Nov"*, which says one date
+              twice and makes a customer work out that they are the same
+              event. One segment, the thing she actually wants to know.
+
+              The sentence itself is `pendingSentence`, composed above — see
+              its note for why it is not a ternary in here.
+            */
+            pendingSentence ?? (renewsAt ? `renews ${formatShortDate(renewsAt)}` : null),
           ]
             .filter(Boolean)
             .join(" · ")}
         >
-          <Button variant="secondary" size="small" onClick={onChangePlan}>
-            Change plan
-          </Button>
+          {/*
+            ⚠ **THE WAY BACK OUT OF A SCHEDULED CHANGE (#1936), AND IT SHIPS IN
+            THE SAME COMMIT AS THE DEFERRAL BECAUSE THE DEFERRAL CREATES THE
+            STATE IT RESCUES.** Before his option 1 there was nothing to undo:
+            a downgrade happened the moment it was asked for. Now she can ask
+            to drop to Pro on the 1st and change her mind on the 3rd, and
+            without this control her only road back is to buy an INCREASE she
+            does not want and pay a proration for it.
+
+            It stands IN PLACE of `Change plan` while something is pending,
+            rather than beside it. Two buttons offering to change the plan —
+            one of which cancels a change — is the busy, decide-this-first
+            shape his candidate-count ruling refused; and `Change plan` still
+            works from the modal, which is where a customer who wants a
+            DIFFERENT change is going anyway (asking for one replaces the
+            pending one on the server, by the same release rule).
+          */}
+          {pendingChange ? (
+            <Button
+              variant="secondary"
+              size="small"
+              disabled={cancelScheduledChange.isPending}
+              onClick={() => cancelScheduledChange.mutate()}
+            >
+              Keep my plan
+            </Button>
+          ) : (
+            <Button variant="secondary" size="small" onClick={onChangePlan}>
+              Change plan
+            </Button>
+          )}
           {/*
             ⚠ **AND THIS ONE IS PRIMARY-WEIGHTED, WHICH IS WHY IT IS THE LIKELY
             BUTTON HE PRESSED — #1836.** His word, 2026-10-03: *"you shouldnt be

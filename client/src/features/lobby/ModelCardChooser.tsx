@@ -76,7 +76,7 @@ export function ModelCardChooser({ model, onClose }: { model: ChooserModel | nul
     {
       icon: IdCard,
       verb: 'View comp card',
-      desc: 'The canonical card — every view in one place.',
+      desc: 'Every view of them, on one card.',
       onPick: () => setMode('card'),
     },
     {

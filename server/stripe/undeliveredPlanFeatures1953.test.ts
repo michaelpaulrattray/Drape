@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { PLAN_TIERS } from "../../drizzle/schema";
 import { billingRouter } from "../routes/billing";
 import { PURCHASABLE_PLANS, SUBSCRIPTION_PRODUCTS } from "./stripeProducts";
 
@@ -48,6 +49,25 @@ import { PURCHASABLE_PLANS, SUBSCRIPTION_PRODUCTS } from "./stripeProducts";
  * rung. **A thing a salesperson can agree to in a conversation is not the same
  * as a self-serve plan card promising it**, so whether that band may offer them
  * is his call and not a sweep's. Filed; not widened here.
+ *
+ * ✅ **AND HE CALLED IT — CARD #1973, 2026-10-08 (terminal), verbatim: *"go
+ * with B"*.** Keep *"Dedicated account manager"*, *"Custom integrations"* and
+ * *"White-glove onboarding"* — things he can agree to and deliver himself in an
+ * Enterprise deal — and REMOVE *"SLA guarantee"*, a formal uptime commitment we
+ * have no way to measure or back. So the predicate below now refuses an SLA,
+ * uptime or guarantee line too, and the three kept lines sit in its does-NOT-
+ * flag control AND in arms asserting they are still served on their rungs — a
+ * ruling that kept three lines is as much a contract as the one that removed
+ * one. Swept (law 7) the same day: `stripeProducts.ts` was the only live place
+ * the product stated an SLA or uptime promise; the compare table
+ * (`ChangePlanModal.tsx`) and `PRICING_PHASE2_PLANS_DESIGN.md` already say the
+ * copy claims NO SLA, and the crew briefing's mentions are the card's history.
+ *
+ * ✅ **CARD #1972 HALF 2 RIDES WITH IT — the same lines.** Five rungs typed
+ * `"100% unused credit rollover"` while `starter` and `pro` derived the figure
+ * from `PLAN_TIERS`; all were right, and all now derive, so the day he changes
+ * a rollover percent it is one edit. The last-but-one describe block pins it at
+ * the wire and at the source.
  */
 
 const HERE = new URL(".", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
@@ -64,7 +84,20 @@ const REMOVED_LINES = [
   "Standard support",
   "Priority support",
   "Early access to new features",
+  /* #1973, "go with B": it sat on `enterprise` and the hidden `ultimate`. */
+  "SLA guarantee",
 ] as const;
+
+/**
+ * THE THREE LINES #1973 KEPT, on the rungs each sat on the day he ruled.
+ * `ultimate` is hidden, so only the table arm can see its row.
+ */
+const KEPT_ENTERPRISE_LINES: Record<string, readonly string[]> = {
+  business: ["Dedicated account manager"],
+  scale: ["Dedicated account manager", "Custom integrations"],
+  enterprise: ["Dedicated account manager", "Custom integrations"],
+  ultimate: ["Dedicated account manager", "Custom integrations", "White-glove onboarding"],
+};
 
 /**
  * IS THIS FEATURE LINE A SUPPORT TIER OR AN EARLY-ACCESS PROMISE?
@@ -83,17 +116,34 @@ const REMOVED_LINES = [
  */
 function promisesUndelivered(line: string): boolean {
   const text = line.trim();
-  return /\bsupport$/i.test(text) || /\bearly access\b/i.test(text);
+  return (
+    /\bsupport$/i.test(text) ||
+    /\bearly access\b/i.test(text) ||
+    /*
+      #1973: an SLA, an uptime figure or a guarantee is a written commitment
+      we have no instrument to measure or back. Whole words, so "Guaranteed"
+      and "SLAs" are caught and "Slack" is not.
+    */
+    /\bSLAs?\b/i.test(text) ||
+    /\bservice[- ]level\b/i.test(text) ||
+    /\buptime\b/i.test(text) ||
+    /\bguarantee(?:s|d)?\b/i.test(text)
+  );
 }
 
 describe("card #1953 — the predicate can fail (the negative control comes first)", () => {
-  it("flags all three lines it was written for", () => {
+  it("flags every line it was written for (#1953's three, #1973's one)", () => {
     for (const line of REMOVED_LINES) {
       expect(promisesUndelivered(line), `the predicate missed "${line}"`).toBe(true);
     }
     /* Two spellings the card never named, proving it reads the shape. */
     expect(promisesUndelivered("Premium support")).toBe(true);
     expect(promisesUndelivered("Early access to the cinema studio")).toBe(true);
+    /* #1973's shape, in spellings the card never named. */
+    expect(promisesUndelivered("99.9% uptime")).toBe(true);
+    expect(promisesUndelivered("Guaranteed response times")).toBe(true);
+    expect(promisesUndelivered("Enterprise SLA")).toBe(true);
+    expect(promisesUndelivered("Service-level agreement")).toBe(true);
   });
 
   it("does NOT flag the lines that stay — an arm that refuses correct copy is worthless", () => {
@@ -103,9 +153,9 @@ describe("card #1953 — the predicate can fail (the negative control comes firs
       "All generation features",
       "Dedicated account manager",
       "Custom integrations",
-      "SLA guarantee",
       "White-glove onboarding",
       "Supports 4K export",
+      "Slack-style shortcuts",
     ]) {
       expect(promisesUndelivered(line), `the predicate wrongly flagged "${line}"`).toBe(false);
     }
@@ -158,6 +208,33 @@ describe("card #1953 — billing.getPlans serves no support or early-access line
   });
 });
 
+describe("card #1973 — the three lines he kept are still served on their rungs", () => {
+  const caller = billingRouter.createCaller({} as never);
+
+  it("at the wire, on every purchasable rung that carried them", async () => {
+    const plans = await caller.getPlans();
+    const served = new Map(plans.subscriptions.map((plan) => [plan.id as string, plan.features]));
+    let checked = 0;
+    for (const [rung, lines] of Object.entries(KEPT_ENTERPRISE_LINES)) {
+      if (!served.has(rung)) continue; /* hidden — the table arm below owns it */
+      for (const line of lines) {
+        expect(served.get(rung), `${rung} lost "${line}"`).toContain(line);
+        checked += 1;
+      }
+    }
+    /* business 1 + scale 2 + enterprise 2 — an arm that checked nothing cannot pass. */
+    expect(checked).toBe(5);
+  });
+
+  it("in the table, hidden rung included", () => {
+    for (const [rung, lines] of Object.entries(KEPT_ENTERPRISE_LINES)) {
+      for (const line of lines) {
+        expect(SUBSCRIPTION_PRODUCTS[rung].features, `${rung} lost "${line}"`).toContain(line);
+      }
+    }
+  });
+});
+
 describe("card #1953 — the table itself is clean, hidden rung included", () => {
   it("no rung in SUBSCRIPTION_PRODUCTS carries one of the three lines", () => {
     /*
@@ -167,13 +244,50 @@ describe("card #1953 — the table itself is clean, hidden rung included", () =>
     */
     const offending = Object.entries(SUBSCRIPTION_PRODUCTS).flatMap(([rung, product]) =>
       product.features
-        .filter((line) => (REMOVED_LINES as readonly string[]).includes(line.trim()))
+        .filter(
+          (line) =>
+            (REMOVED_LINES as readonly string[]).includes(line.trim()) || promisesUndelivered(line),
+        )
         .map((line) => `${rung}: ${line}`),
     );
     expect(offending).toEqual([]);
     /* Positive control: the table was actually read, hidden rung included. */
     expect(Object.keys(SUBSCRIPTION_PRODUCTS).length).toBeGreaterThanOrEqual(7);
     expect(SUBSCRIPTION_PRODUCTS.ultimate.features.length).toBeGreaterThan(0);
+  });
+});
+
+describe("card #1972 half 2 — every rollover line derives from PLAN_TIERS", () => {
+  const caller = billingRouter.createCaller({} as never);
+
+  it("at the wire, each served rollover line names its own rung's rolloverPercent", async () => {
+    const plans = await caller.getPlans();
+    for (const plan of plans.subscriptions) {
+      const tier = PLAN_TIERS[plan.id as keyof typeof PLAN_TIERS];
+      expect(tier, `${plan.id} has no PLAN_TIERS row`).toBeDefined();
+      expect(plan.features).toContain(`${tier.rolloverPercent}% unused credit rollover`);
+    }
+  });
+
+  it("in the table, hidden rung included", () => {
+    for (const [rung, product] of Object.entries(SUBSCRIPTION_PRODUCTS)) {
+      const tier = PLAN_TIERS[rung as keyof typeof PLAN_TIERS];
+      expect(product.features).toContain(`${tier.rolloverPercent}% unused credit rollover`);
+    }
+  });
+
+  it("the source types no literal percentage — a hardcoded 100% equal to today's value is the drift this closes", () => {
+    /*
+      The two arms above cannot tell `"100% …"` from the derived form while
+      the value is 100, which is exactly how five rungs sat hardcoded and
+      green. Only the source can see the difference.
+    */
+    const source = readFileSync(join(HERE, "stripeProducts.ts"), "utf8");
+    /* Positive control: the right file, with one derived line per rung. */
+    const derived =
+      source.match(/`\$\{PLAN_TIERS\.\w+\.rolloverPercent\}% unused credit rollover`/g) ?? [];
+    expect(derived.length).toBe(Object.keys(SUBSCRIPTION_PRODUCTS).length);
+    expect(source).not.toMatch(/["'`]\d+% unused credit rollover/);
   });
 });
 

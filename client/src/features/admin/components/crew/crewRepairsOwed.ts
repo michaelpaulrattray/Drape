@@ -16,19 +16,20 @@
  * which rows it counts.
  *
  * ⚠ **THE CLOCK IS *last flagged*, NOT *owed since*, AND THE WORDING SAYS SO.**
- * This page cannot see a push, so it cannot know whether an older finding was
- * already repaired; `repairFlaggedAtForPullRequest` carries the whole argument.
- * The reader that can afford the exact question is the seat cut's
- * (`scripts/lib/repairsOwed.mts`), which is what ORDERS the work — this is the
- * glance that tells him it is piling up.
+ * The page keeps the newest finding per pull request, not every one, so it
+ * dates the hold by the finding it is held on. The reader that orders the work
+ * is the seat cut's (`scripts/lib/repairsOwed.mts`), and it dates by the oldest
+ * finding on the current head — this is the glance that tells him it is piling up.
  *
- * ⚠ **AND IT UNDER-COUNTS TODAY, BY A MEASURED AMOUNT — #1984.** Drawn on the
- * real board the day it landed it read **5** where the exact reader saw **9**:
- * any comment after the relay makes a finding read stale on this road, and a
- * seat answering a finding under its own header is enough (31 seconds, on
- * #1960). It is the rows beside it that are quiet, not this summary — agreeing
- * with them is the right relationship, and the repair is #1984 rather than a
- * second rule here.
+ * ⚠ **IT UNDER-COUNTED UNTIL #1984, BY A MEASURED AMOUNT.** Drawn on the real
+ * board the day it landed it read **5** where the exact reader saw **9**: the
+ * rows dated a finding against the pull request's `updatedAt`, so a seat
+ * answering under its own header (31 seconds later, on #1960) made the finding
+ * read stale. The rows now read the head commit's date and hand the comments to
+ * the merge tool's own reader (`server/crew/liveRepairs.ts`), so this summary —
+ * still derived from those rows and nothing else — names the same pull requests.
+ * When the head cannot be read the rows fall back to the old bound and the
+ * under-count returns, in that direction only.
  */
 import type { CrewLivePullRequest } from "./crewTypes";
 

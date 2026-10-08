@@ -13,6 +13,7 @@ import express from "express";
 import { describe, expect, it } from "vitest";
 
 import { baseUrlOf, listenOnFetchablePort } from "../testing/fetchablePort";
+import { SessionRejectedError } from "../_core/sdk";
 import {
   createCrewEyeFrameRouter,
   type CrewEyeFrameRouteDependencies,
@@ -63,7 +64,7 @@ describe("/api/crew/eye-frame — the doors, in order", () => {
 
   it("401 with no session", async () => {
     const { status } = await get({
-      authenticate: async () => { throw new Error("no cookie"); },
+      authenticate: async () => { throw new SessionRejectedError("Invalid session cookie"); },
     });
     expect(status).toBe(401);
   });

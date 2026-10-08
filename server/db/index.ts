@@ -245,6 +245,7 @@ export {
   getBoardItemVersions,
   getLatestVersionNumber,
   getVersionCount,
+  getVersionCountsForBoard,
   // Atomic landing records (Batch C final corrections 3+4)
   stampBoardItemWithVersion,
   stampBoardItemWithVersionIn,

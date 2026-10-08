@@ -1,3 +1,4 @@
+import { PRODUCT_NAME } from "@shared/brand";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 
 type ProfileIdentity = {
@@ -77,7 +78,7 @@ export function getProfileVisualDefaults(
         <path d="M400 48V312M800 48V312"/>
         <circle cx="${flip ? 840 : 360}" cy="180" r="${82 + (hash % 46)}"/>
       </g>
-      <text x="${flip ? 72 : 1128}" y="292" text-anchor="${flip ? "start" : "end"}" font-family="Inter,Arial,sans-serif" font-size="22" letter-spacing="5" fill="${palette.ink}" fill-opacity=".72">DRAPE / ${initial}</text>
+      <text x="${flip ? 72 : 1128}" y="292" text-anchor="${flip ? "start" : "end"}" font-family="Inter,Arial,sans-serif" font-size="22" letter-spacing="5" fill="${palette.ink}" fill-opacity=".72">${PRODUCT_NAME.toUpperCase()} / ${initial}</text>
     </svg>
   `);
 
