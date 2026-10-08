@@ -47,7 +47,7 @@
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 65
+      "moduleCount": 66
     },
     {
       "id": "domain:evidence",
@@ -4839,6 +4839,12 @@
     {
       "id": "module:server/db/castingV2OpenLaneDemand.ts",
       "path": "server/db/castingV2OpenLaneDemand.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/db/castingV2Orphans.ts",
+      "path": "server/db/castingV2Orphans.ts",
       "domain": "data",
       "lifecycle": "active"
     },
@@ -11282,6 +11288,14 @@
     {
       "id": "test:server/accountDeletionCoverage.test.ts",
       "path": "server/accountDeletionCoverage.test.ts"
+    },
+    {
+      "id": "test:server/accountDeletionOrphans.test.ts",
+      "path": "server/accountDeletionOrphans.test.ts"
+    },
+    {
+      "id": "test:server/accountDeletionReachability.test.ts",
+      "path": "server/accountDeletionReachability.test.ts"
     },
     {
       "id": "test:server/accountFreeze.test.ts",
@@ -24836,6 +24850,11 @@
     },
     {
       "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/db/castingV2Orphans.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
       "to": "module:server/db/castingV2ReferenceAttachments.ts",
       "kind": "imports"
     },
@@ -30322,6 +30341,16 @@
     {
       "from": "module:server/db/castingV2OpenLaneDemand.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2Orphans.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2Orphans.ts",
+      "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
     {

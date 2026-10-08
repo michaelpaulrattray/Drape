@@ -76,14 +76,40 @@ function read(relativePath: string): string {
 }
 
 /**
- * Every `mysqlTable("name", …)` in the schema that declares a `userId` column,
- * as `{ symbol, table }`.
+ * ⚠ **A COLUMN NAMES A USER BY ITS ROLE, NOT BY BEING SPELLED `userId`
+ * (#1948 M2).**
  *
- * Read at the DECLARATION rather than at a shape: the table's exported symbol
- * and its SQL name both come out of the `export const X = mysqlTable("y"` line,
- * and the `userId` column is attributed to whichever declaration most recently
- * opened — which is how the tree is actually written (one table per `export
- * const`, none nested).
+ * This reader matched `/^\s{2,4}userId:\s/` and nothing else, so a user id
+ * under any other name was invisible: the table was not in the population, so
+ * it was neither declared deleted nor declared exempt, **and the guard could
+ * not see that it was missing.** That is #1935's own silence one level down —
+ * the thing this suite exists to make impossible, reproduced by the reader
+ * rather than by the map.
+ *
+ * Measured at the tree the day it was widened: the old rule saw **35** tables;
+ * the rule below sees **49 columns**, so fourteen were unanswerable. Among
+ * them `referrals.referredUserId` — a deleted customer's row surviving on
+ * somebody else's referral, with her email and IP still on it.
+ *
+ * **The rule, and why each half of it is there:**
+ *
+ * - **It reads the declared TYPE, and only `int(` counts.** A Drape user id is
+ *   an `int`. Two columns in the tree end in `By` and are not: `users.frozenBy`
+ *   is a varchar holding `"system"` or a moderator id as text, and
+ *   `emergencyTokens.usedBy` is a **Slack** user id, which is not a user of
+ *   this product at all (Slack was retired in #800). Reading the type is what
+ *   keeps both out without a list of exceptions.
+ * - **`user` anywhere in the name, case-insensitive** — `userId`,
+ *   `targetUserId`, `referredByUserId`, `authorUserId`, `markedByUserId`.
+ * - **or a name ending `By` / `ById`** — the actor columns: `createdBy`,
+ *   `submittedById`, `blockedBy`, `suspendedBy`, `reviewedById`,
+ *   `uploadedById`. Measured across all **291** int columns in the schema,
+ *   that clause has **zero** false positives: every int column ending `By` or
+ *   `ById` in this tree is a user reference.
+ *
+ * Returned as `{ symbol, table, column }` so the map can be keyed on
+ * `table.column` — a table may have several (`changeRequests` has three) and a
+ * table-level answer cannot say different things about them.
  *
  * ⚠ **`withoutComments` AND NOT `codeOnly`, AND THE DIFFERENCE IS THE WHOLE
  * READING.** `codeOnly` drops literal CONTENTS, so `mysqlTable("users"` comes
@@ -93,11 +119,15 @@ function read(relativePath: string): string {
  * docblock discussing a table cannot be read as declaring one. The delete-call
  * arm reads `codeOnly` for the opposite reason: a quoted call is not a call.
  */
-function userKeyedTables(): Array<{ symbol: string; table: string }> {
+export function columnNamesAUser(column: string, declaration: string): boolean {
+  if (!/^int\(/.test(declaration.trim())) return false;
+  return /user/i.test(column) || /By$|ById$/.test(column);
+}
+
+function userKeyedColumns(): Array<{ symbol: string; table: string; column: string }> {
   const source = withoutComments(read(SCHEMA));
-  const found: Array<{ symbol: string; table: string }> = [];
+  const found: Array<{ symbol: string; table: string; column: string }> = [];
   let current: { symbol: string; table: string } | null = null;
-  let currentHasUserId = false;
   const declaration = /^export const (\w+) = mysqlTable\(\s*$|^export const (\w+) = mysqlTable\(\s*"([^"]+)"/;
   const tableName = /mysqlTable\(\s*\n?\s*"([^"]+)"/;
   const lines = source.split("\n");
@@ -105,18 +135,27 @@ function userKeyedTables(): Array<{ symbol: string; table: string }> {
     const line = lines[index]!;
     const match = declaration.exec(line);
     if (match) {
-      if (current && currentHasUserId) found.push(current);
       const symbol = match[2] ?? match[1]!;
       const name = match[3]
         ?? tableName.exec(`${line}\n${lines[index + 1] ?? ""}`)?.[1];
       current = name ? { symbol, table: name } : null;
-      currentHasUserId = false;
       continue;
     }
-    if (current && /^\s{2,4}userId:\s/.test(line)) currentHasUserId = true;
+    const column = /^\s{2,4}(\w+):\s*(.*)$/.exec(line);
+    if (current && column && columnNamesAUser(column[1]!, column[2]!)) {
+      found.push({ ...current, column: column[1]! });
+    }
   }
-  if (current && currentHasUserId) found.push(current);
   return found;
+}
+
+/** The distinct tables those columns live in — for the population controls. */
+function userKeyedTables(): Array<{ symbol: string; table: string }> {
+  const seen = new Map<string, { symbol: string; table: string }>();
+  for (const row of userKeyedColumns()) {
+    if (!seen.has(row.symbol)) seen.set(row.symbol, { symbol: row.symbol, table: row.table });
+  }
+  return [...seen.values()];
 }
 
 describe("account deletion answers for every user-keyed table (#1935)", () => {
@@ -136,14 +175,18 @@ describe("account deletion answers for every user-keyed table (#1935)", () => {
     expect(symbols).toContain("castingCandidates");
     expect(symbols).toContain("bugReports");
     /*
-      A negative control: a table with no owner column must not be in it.
-      `users` is the sharper of the two — it is the account itself and its
-      owner column is `id`, so a reader that admitted it would be reading
-      something other than what it claims to.
+      ⚠ A NEGATIVE CONTROL THAT CHANGED SIDES, AND SAYING SO IS THE POINT
+      (#1948 M2). It read `expect(symbols).not.toContain("users")` and
+      `.not.toContain("blockedIps")`, on the correct ground that neither has a
+      `userId` column. Both DO carry a column that names a user —
+      `users.referredByUserId` and `blockedIps.blockedBy` — and the old reader
+      could not see either, which is the defect. They are in the population
+      now and each has a declared answer, so the control that remains is the
+      one that was never about spelling: a table with no user reference at all
+      must still be absent.
     */
-    expect(symbols).not.toContain("users");
-    expect(symbols).not.toContain("blockedIps");
     expect(symbols).not.toContain("generationOperationLocks");
+    expect(symbols).not.toContain("emergencyTokens");
     // Every row carries a real SQL table name beside its symbol.
     for (const name of names) expect(name).toMatch(/^[a-z][a-z0-9_]*$/);
     /*
@@ -156,23 +199,58 @@ describe("account deletion answers for every user-keyed table (#1935)", () => {
       .toBe("point_transactions");
   });
 
-  it("names every user-keyed table, and names nothing else", () => {
-    const schemaTables = userKeyedTables().map((entry) => entry.symbol).sort();
+  it("⚠ the two varchar actor columns stay OUT, and that is the type rule earning its place", () => {
+    /*
+      `users.frozenBy` holds `"system"` or a moderator id as TEXT, and
+      `emergencyTokens.usedBy` holds a SLACK user id — not a user of this
+      product at all, and Slack was retired in #800. Both end in `By`, so only
+      reading the declared type keeps them out; without it the map would owe a
+      decision about two columns that hold no Drape user id.
+    */
+    expect(columnNamesAUser("frozenBy", 'varchar("frozenBy", { length: 64 }),')).toBe(false);
+    expect(columnNamesAUser("usedBy", 'varchar("usedBy", { length: 128 }),')).toBe(false);
+    // And the positive side of the same rule, so it is not passing by refusing everything.
+    expect(columnNamesAUser("usedBy", 'int("usedBy"),')).toBe(true);
+    expect(columnNamesAUser("userId", 'int("userId").notNull(),')).toBe(true);
+    expect(columnNamesAUser("referredByUserId", 'int("referredByUserId"),')).toBe(true);
+    // A column that names no user is out whatever its type.
+    expect(columnNamesAUser("modelId", 'int("modelId").notNull(),')).toBe(false);
+    expect(columnNamesAUser("creditsAwarded", 'int("creditsAwarded").default(0),')).toBe(false);
+  });
+
+  it("names every column that names a user, and names nothing else", () => {
+    const schemaColumns = userKeyedColumns()
+      .map((entry) => `${entry.symbol}.${entry.column}`)
+      .sort();
     const declared = Object.keys(ACCOUNT_DELETION_DISPOSITIONS).sort();
-    expect(declared).toEqual(schemaTables);
+    expect(declared).toEqual(schemaColumns);
   });
 
   it("gives every exemption a reason", () => {
     const exemptions = Object.entries(ACCOUNT_DELETION_DISPOSITIONS)
       .filter(([, disposition]) => disposition.startsWith("exempt"));
-    // The three the product has today. A fourth is a decision, not a default.
-    expect(exemptions.map(([table]) => table).sort()).toEqual([
-      "freeGrantClaims",
-      "planChangeSettlements",
-      "storageCleanupBatches",
+    /*
+      ⚠ THREE BECAME ELEVEN, AND EIGHT OF THE EIGHT NEW ONES ARE A STAFF
+      ACTOR'S ID ON SOMEBODY ELSE'S RECORD (#1948 M2) — not the deleting
+      customer's data under another name. They are enumerated rather than
+      counted, so a ninth is a decision somebody had to type here.
+    */
+    expect(exemptions.map(([column]) => column).sort()).toEqual([
+      "announcements.createdBy",
+      "blockedIps.blockedBy",
+      "changeRequestAttachments.uploadedById",
+      "changeRequests.reviewedById",
+      "crewCardIntents.markedByUserId",
+      "crewReplies.authorUserId",
+      "crewWorkSwitches.changedByUserId",
+      "freeGrantClaims.userId",
+      "inviteCodes.createdBy",
+      "planChangeSettlements.userId",
+      "storageCleanupBatches.userId",
+      "users.suspendedBy",
     ]);
-    for (const [table, disposition] of exemptions) {
-      expect(disposition.startsWith("exempt: "), `${table} must say why`).toBe(true);
+    for (const [column, disposition] of exemptions) {
+      expect(disposition.startsWith("exempt: "), `${column} must say why`).toBe(true);
       expect(disposition.slice("exempt: ".length).length).toBeGreaterThan(20);
     }
   });
@@ -180,8 +258,9 @@ describe("account deletion answers for every user-keyed table (#1935)", () => {
   it("has a delete statement for every table it says it deletes", () => {
     const code = DELETION_MODULES.map((module) => codeOnly(read(module))).join("\n");
     const missing: string[] = [];
-    for (const [symbol, disposition] of Object.entries(ACCOUNT_DELETION_DISPOSITIONS)) {
+    for (const [key, disposition] of Object.entries(ACCOUNT_DELETION_DISPOSITIONS)) {
       if (disposition !== "deleted") continue;
+      const symbol = key.slice(0, key.indexOf("."));
       /*
         Anchored on the symbol inside the call, so a mention of the table in a
         SELECT or an UPDATE elsewhere in these modules cannot satisfy it. The
@@ -193,14 +272,103 @@ describe("account deletion answers for every user-keyed table (#1935)", () => {
     expect(missing).toEqual([]);
   });
 
+  it("⚠ every key read in the collector is a LOCKING read, or a declared exception", () => {
+    /*
+      #1948 L2. A plain `SELECT` inside a REPEATABLE READ transaction reads the
+      snapshot taken when the transaction began; the `DELETE`s act on the
+      latest rows. So a render still finishing during an erasure could commit
+      its key AFTER the read — the row is deleted and **its key never enters
+      the manifest**, leaving the object at a permanently public URL with the
+      last pointer to it gone.
+
+      ⚠ **THE ARM IS DERIVED FROM THE FUNCTION'S OWN BODY, NOT A COUNT.** A
+      count would pass a new unlocked read being added beside a locked one,
+      which is exactly the shape of the regression worth catching: the whole
+      defect was a reader somebody added without thinking about the snapshot.
+      Every `await tx` statement in the collector is found and each must carry
+      the lock or be one of the two exceptions named here with its reason.
+    */
+    /* ⚠ withoutComments, NOT codeOnly: codeOnly empties string literals, so
+       `.for("update")` reads back as `.for("")` and every statement below looks
+       unlocked. Comments are still stripped, so prose about a lock cannot stand
+       in for one — which is the property that actually matters here. */
+    const source = withoutComments(read("server/db/accountDeletion.ts"));
+    const open = "export async function collectAccountOwnedStorageItemsIn(";
+    const start = source.indexOf(open);
+    expect(start, "the collector moved — this arm is reading nothing").toBeGreaterThan(-1);
+    const end = source.indexOf("\nfunction byBackendThenKey(", start);
+    expect(end, "the collector's closing anchor moved").toBeGreaterThan(start);
+    const body = source.slice(start, end);
+
+    /* Each `await tx` begins a statement; it ends at the first `;`. */
+    const reads = body
+      .split("await tx")
+      .slice(1)
+      .map((chunk) => chunk.slice(0, chunk.indexOf(";")))
+      .filter((chunk) => chunk.includes(".select("));
+    expect(reads.length, "no reads were found in the collector — the arm is blind")
+      .toBeGreaterThan(10);
+
+    /*
+      THE TWO THAT DO NOT LOCK, each for a reason this suite states rather
+      than tolerates: the cleanup-manifest read touches tables this deletion
+      does not delete (`storageCleanupBatches` is exempt), and locking them
+      would hold rows the cleanup worker is walking.
+    */
+    const unlocked = reads.filter((statement) => !statement.includes('.for("update")'));
+    for (const statement of unlocked) {
+      expect(
+        statement.includes("storageCleanupItems") && statement.includes("storageCleanupBatches"),
+        "a read in the collector does not lock and is not the declared manifest exception —"
+          + " a render committing a key after it would leave the object up forever:"
+          + ` ${statement.replace(/\s+/g, " ").slice(0, 160)}`,
+      ).toBe(true);
+    }
+    expect(unlocked.length, "the declared exception is the manifest read, and there is one")
+      .toBe(1);
+
+    /*
+      AND THE CASTING SIDE, whose candidate reader lives in another module:
+      the nine child stores are reached through this one row, and their own
+      readers are shared with the retention sweep and deliberately untouched.
+    */
+    const casting = withoutComments(read("server/db/castingV2.ts"));
+    const listAccount = casting.slice(casting.indexOf("export async function listAccountCandidatesIn"));
+    expect(
+      listAccount.slice(0, listAccount.indexOf("\n}")),
+      "the account's candidate read stopped locking — a candidate whose imageKey commits"
+        + " mid-erasure is deleted with its key uncollected",
+    ).toContain('.for("update")');
+  });
+
   it("anonymises rather than deletes exactly where it says so", () => {
     const anonymised = Object.entries(ACCOUNT_DELETION_DISPOSITIONS)
       .filter(([, disposition]) => disposition === "anonymised")
-      .map(([table]) => table);
-    expect(anonymised).toEqual(["auditLogs"]);
+      .map(([column]) => column)
+      .sort();
+    expect(anonymised).toEqual([
+      "auditLogs.userId",
+      "referrals.referredUserId",
+      "users.referredByUserId",
+    ]);
     const code = codeOnly(read("server/db/accountDeletion.ts"));
     // The row survives with its person removed: an UPDATE, never a DELETE.
     expect(code).toMatch(/\.update\(auditLogs\)/);
     expect(code).not.toMatch(/\.delete\(\s*auditLogs\s*\)/);
+    /*
+      ⚠ THE TWO ADDED BY #1948 ARE PINNED AT THE COLUMN THEY CLEAR, not just
+      at the UPDATE. `referrals` is already DELETED by this function on the
+      other predicate (`referrerUserId`), so a bare "there is an update on
+      referrals" would be satisfied by almost anything; what the decision
+      actually says is that a row somebody else owns loses the erasing
+      customer's id AND the two details of hers it carries.
+    */
+    expect(code).toMatch(/\.update\(referrals\)/);
+    expect(code).toMatch(/referredUserId:\s*null/);
+    expect(code).toMatch(/referredEmail:\s*null/);
+    expect(code).toMatch(/referredIp:\s*null/);
+    expect(code).toMatch(/\.where\(eq\(referrals\.referredUserId,\s*userId\)\)/);
+    expect(code).toMatch(/referredByUserId:\s*null/);
+    expect(code).toMatch(/\.where\(eq\(users\.referredByUserId,\s*userId\)\)/);
   });
 });
