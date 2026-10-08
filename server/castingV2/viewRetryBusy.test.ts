@@ -366,8 +366,26 @@ describe("the retried-view commit's fence", () => {
       3. it is scoped to the same `userId`, so the fence cannot be satisfied by
          somebody else's press (invariant 3's shape on a fence).
     */
-    const press = body.slice(body.indexOf("if (input.pressOperationId !== undefined) {"));
-    expect(press, "the press fence is gone from the commit").not.toBe("");
+    /*
+      ⚠ **SLICED TO THE PRESS FENCE'S OWN BRACES, and the first draft of this
+      arm was not.** It sliced to the end of the body, so
+      `toContain('.for("update")')` was satisfied by the MODEL select two
+      statements later — the arm survived a sabotage that removed the press
+      fence's own row lock. A whole-slice `toContain` passing on an identical
+      line in a neighbouring statement is a trap this repository has paid for
+      before; the subject has to be cut out before it is asked about.
+    */
+    const pressOpen = "    if (input.pressOperationId !== undefined) {";
+    const bodyLines = body.split(/\r?\n/);
+    const pressStart = bodyLines.findIndex((line) => line === pressOpen);
+    expect(pressStart, "the press fence is gone from the commit").toBeGreaterThan(-1);
+    const pressEnd = bodyLines.findIndex((line, index) => index > pressStart && line === "    }");
+    expect(pressEnd).toBeGreaterThan(pressStart);
+    const press = bodyLines.slice(pressStart, pressEnd + 1).join("\n");
+    /* The cut must be the fence and nothing after it: the model select that
+       follows carries its own `.for("update")`, which is precisely what made
+       the first draft inert. */
+    expect(press).not.toContain("models");
     expect(press).toContain("eq(generationOperations.id, input.pressOperationId)");
     expect(press).toContain('eq(generationOperations.status, "running")');
     expect(press).toContain("eq(generationOperations.userId, input.userId)");
