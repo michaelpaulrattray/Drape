@@ -121,6 +121,33 @@ const POLL_MS = 2_500;
  */
 const IDLE_POLL_MS = 12_000;
 const TERMINAL_ROLL_STATUSES = new Set(["complete", "partial", "failed", "cancelled"]);
+/**
+ * WHAT A FAILED TRY AGAIN SAYS WHEN THE SERVER'S OWN SENTENCE NEVER ARRIVED
+ * (#2033).
+ *
+ * The fallback used to read *"That tile didn't arrive again. Your credits were
+ * returned."* — a money fact the client does not hold. It fired for every
+ * error the server did not speak: a flag-first `NOT_FOUND` refused before any
+ * charge (nothing to return), a dropped connection where the outcome never
+ * reached us (a refund nobody confirmed), and the two settlement throws whose
+ * sentence is not yet marked spoken. The one road on which a refund really
+ * happened — the tile failing a second time — arrives as the server's own
+ * `PRECONDITION_FAILED` sentence, which names the credits returned or the
+ * operation to quote, and passes through untouched.
+ *
+ * So the fallback says only what is known: we could not confirm it, and the
+ * tile (which the `.finally` below re-reads) shows how it went. The balance
+ * and the receipt carry the money; this toast never does.
+ */
+export const RETRY_UNCONFIRMED_SENTENCE =
+  "We couldn't confirm that retry. The tile shows where it stands.";
+
+export function retryFailureSentence(error: unknown): string {
+  /* Gated: Retry is behind CASTING_RETRY_SCOPE, so a scope that closes
+     under an open sheet would otherwise toast "No such thing." */
+  return readableGatedFailure(error, RETRY_UNCONFIRMED_SENTENCE);
+}
+
 export default function CastingSheet() {
   const [, params] = useRoute("/app/casting/s/:sessionId");
   const [, navigate] = useLocation();
@@ -845,9 +872,7 @@ export default function CastingSheet() {
     retry
       .mutateAsync({ clientRequestId: crypto.randomUUID(), candidateId })
       .catch((error: Error) => {
-        /* Gated: Retry is behind CASTING_RETRY_SCOPE, so a scope that closes
-           under an open sheet would otherwise toast "No such thing." */
-        toast(readableGatedFailure(error, "That tile didn't arrive again. Your credits were returned."));
+        toast(retryFailureSentence(error));
       })
       .finally(() => {
         void invalidate().finally(() => {
