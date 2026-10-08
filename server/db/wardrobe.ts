@@ -362,6 +362,13 @@ export async function deleteGarment(garmentId: number, userId: number) {
  * is written only when it was adopted, which is to say proven this account's.
  */
 export async function createOutfit(data: InsertWardrobeOutfit, currentPublicUrl: string) {
+  /* No thumbnail, nothing to adopt — a plain insert, as `createGarment`'s
+     no-receipt road is. */
+  if (!data.resultThumbUrl) {
+    const db = (await getDb())!;
+    const [result] = await db.insert(wardrobeOutfits).values(data).$returningId();
+    return result.id;
+  }
   return withTransaction(async (tx) => {
     const adoptedKey = await adoptOwnedScratchKeyIn(tx, {
       userId: data.userId,
