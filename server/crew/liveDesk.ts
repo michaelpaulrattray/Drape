@@ -26,6 +26,7 @@ import {
   crewCardBuildState,
   crewCardBuildViews,
   handFindingNoteForPullRequest,
+  repairFlaggedAtForPullRequest,
   handVerdictForPullRequest,
   notBuiltCards,
   type CrewBuildPullRequest,
@@ -133,6 +134,17 @@ export type LivePullRequest = {
   readonly cards: readonly number[];
   readonly author: string;
   readonly updatedAt: string;
+  /**
+   * When the relay last said something was wrong — the timestamp of the very
+   * finding this row's words are quoted from, or `null` on any row that is not
+   * `finding` (#1977).
+   *
+   * ⚠ **NOT `updatedAt`, which is the row's own clock and moves on a label or a
+   * reply from anybody.** And deliberately not *since when the repair has been
+   * owed*, which needs the head commit — `repairFlaggedAtForPullRequest` says why
+   * that question belongs to the seat cut's reader and not to a page.
+   */
+  readonly repairFlaggedAt: string | null;
   readonly url: string;
 };
 
@@ -610,6 +622,13 @@ export function livePullRequests(
       cards: cardsNamedIn(item.title, known),
       author: item.author,
       updatedAt: item.updatedAt,
+      /* The one reader, asked here so his page and a shift's board cannot
+         disagree about when a repair became owed (#1977). */
+      repairFlaggedAt: repairFlaggedAtForPullRequest({
+        pullRequest: item.number,
+        updatedAt: item.updatedAt,
+        facts,
+      }),
       url: item.url,
     }))
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));

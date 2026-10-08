@@ -120,7 +120,7 @@ export default function VerifyEmail() {
             {/* Instructions */}
             <div className="space-y-3 mb-6">
               {[
-                "Open the email from Drape",
+                "Open the email from Klieg",
                 "Click the verification link",
                 "You'll be signed in automatically",
               ].map((step, i) => (

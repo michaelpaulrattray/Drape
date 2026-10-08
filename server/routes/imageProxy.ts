@@ -5,6 +5,7 @@
  * magic-byte verification all live in `fetchTrustedImage`.
  */
 import { Router, type Request, type Response } from "express";
+import { PRODUCT_NAME } from "@shared/brand";
 import type { User } from "../../drizzle/schema";
 import { sdk } from "../_core/sdk";
 import { createModuleLogger } from "../logging/logger";
@@ -60,7 +61,10 @@ function safeDownloadFilename(url: string, mime: TrustedImage["mime"]): string {
     // optional filename and must not become response-header input.
   }
   const safe = candidate.replace(/[^A-Za-z0-9._-]/g, "_").slice(0, 128);
-  return safe || `drape-image.${fallbackExtension}`;
+  /* #1955: the name a customer sees in their Downloads folder when the source
+     URL carried no usable filename — copy, not an identifier, so it moved with
+     the rest of the brand lines. Lowercased because it is a filename. */
+  return safe || `${PRODUCT_NAME.toLowerCase()}-image.${fallbackExtension}`;
 }
 
 function fixedError(res: Response, status: number, message: string): void {

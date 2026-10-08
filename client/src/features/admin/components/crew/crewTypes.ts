@@ -544,36 +544,105 @@ export function nextUpFor(live: CrewLiveView, briefing: CrewBriefingView): CrewN
  * # The rule, derived from `cardId` and from nothing else
  *
  * An eye item is MERGED when its `cardId` names a Needs-you card that is still
- * on his desk. Everything else — no `cardId`, or a card that is done — stays in
- * For your eyes exactly as it was.
+ * on his desk, and **ANSWERED — dropped — when its card is one the edition
+ * wrote and the page is no longer drawing.** Only an item with no `cardId`, or
+ * one naming a card the edition never had, stands on its own.
  *
- * ⚠ **NO SECOND LIST (working law 4).** Both halves are this one function read
- * two ways, so a section cannot disagree with the other about what is paired:
- * the gallery draws `standalone`, each card draws `mergedInto.get(card.id)`.
- * The briefing schema already REFUSES an eye item whose `cardId` names no
- * needs-you card, and refuses an open item on an answered card (#133), so the
- * pairing is validated before it is ever drawn.
+ * ⚠ **THE ANSWERED LIMB IS #1938, AND WITHOUT IT THE MERGE CREATED THE DEFECT
+ * IT WAS BUILT TO FIX, ONE ROAD OVER.** `needsYouFor` takes a card off the
+ * live desk the moment the relay records his answer and lifts the hold (#1193)
+ * — the card is still OPEN, because its next slice is being built, so
+ * `eyeItemsFor` cannot see it: that reader drops an item only when its issue is
+ * CLOSED. The host then failed the `drawn` test, fell into `standalone`, and
+ * the gallery drew the frames as their own item **with their own reply box**.
+ * So from his answer until the next edition, the pictures came back asking
+ * again — #1895's double-answer failure, by another road.
+ *
+ * ⚠ **AND THE REPAIR BELONGS HERE RATHER THAN IN `eyeItemsFor`, WHICH IS WHERE
+ * IT LOOKS LIKE IT BELONGS.** That reader keys on the item's OWN
+ * `issueNumber`, and an eye item's issue need not be the issue of the card
+ * asking its question: `retry-outfit-1474` carries issue 1474 and hosts on
+ * `sheet-shape-1278`. A drop keyed on `issueNumber` would therefore judge the
+ * wrong card. The question *"has the thing that asked this been answered"* is
+ * about the HOST, so it is asked where the host is known.
+ *
+ * ⚠ **IT NEEDS BOTH LISTS AND THE DIFFERENCE IS THE WHOLE POINT.** `cards` is
+ * what the page DRAWS (post-`needsYouFor`); `editionCards` is what the edition
+ * WROTE. A host missing from the first is answered; a host missing from BOTH is
+ * a `cardId` naming nothing, which the briefing schema refuses (#133) and which
+ * is therefore kept visible rather than dropped — frames cannot be re-created
+ * from a vanished item, so the one case this function cannot explain fails
+ * toward his eye (law 9).
+ *
+ * ⚠ **NO SECOND LIST (working law 4).** Both drawn halves are this one function
+ * read two ways, so a section cannot disagree with the other about what is
+ * paired: the gallery draws `standalone`, each card draws
+ * `mergedInto.get(card.id)`. `answered` is returned rather than quietly
+ * discarded so that *nothing is lost* stays a provable property — the three
+ * halves between them are the whole list — instead of a claim about a function
+ * that drops things.
  */
 export function partitionEyeItems(
   items: readonly CrewEyeItem[],
   cards: readonly CrewNeedsYouCard[],
-): { standalone: CrewEyeItem[]; mergedInto: Map<string, CrewEyeItem[]> } {
+  editionCards: readonly CrewNeedsYouCard[],
+): {
+  standalone: CrewEyeItem[];
+  mergedInto: Map<string, CrewEyeItem[]>;
+  answered: CrewEyeItem[];
+  /**
+   * How many NEEDS-YOU CARDS the page will draw — `drawn.size`, which this
+   * function already computes (#1950).
+   *
+   * It is returned rather than recomputed by the caller because the section
+   * menu's count has to be the number of things the sections render, and the
+   * only honest way to get that is to read it off the thing that decided.
+   */
+  drawnCardCount: number;
+} {
   /* The cards this page is actually DRAWING — the same `crewCardNeedsHim`
      filter `CrewNeedsYou` applies, because an item merged into a card that is
      not rendered would vanish, and a vanishing is what #354 called "the
      vanishing the design forbids". */
   const drawn = new Set(cards.filter((card) => crewCardNeedsHim(card.state)).map((card) => card.id));
+  /* Every card the edition wrote, whatever state it is in — the set that tells
+     an ANSWERED host from one that never existed. */
+  const written = new Set(editionCards.map((card) => card.id));
   const standalone: CrewEyeItem[] = [];
+  const answered: CrewEyeItem[] = [];
   const mergedInto = new Map<string, CrewEyeItem[]>();
   for (const item of items) {
+    /*
+      ⚠ **AN ITEM'S OWN STATE IS ASKED BEFORE ITS HOST IS (#1950).**
+
+      This test was absent, so an item that no longer needed him went to
+      `standalone` whenever it had no drawn host — and `CrewEyeGallery`
+      filtered it out at render. The bucket therefore held things the gallery
+      never drew, which is how the section menu's count came to exceed the
+      section: it counted `standalone.length`.
+
+      Asking here makes the three buckets mean what their names say. An item
+      in `answered` or `done` with no card at all is ANSWERED — it was never
+      standing on its own in any sense the page uses — and *nothing is lost*
+      still holds as a provable property, because it lands in the bucket this
+      function already returns for exactly that.
+    */
+    if (!crewCardNeedsHim(item.state)) {
+      answered.push(item);
+      continue;
+    }
     const host = item.cardId ?? null;
-    if (host === null || !drawn.has(host)) {
+    if (host === null || !written.has(host)) {
       standalone.push(item);
+      continue;
+    }
+    if (!drawn.has(host)) {
+      answered.push(item);
       continue;
     }
     const beside = mergedInto.get(host);
     if (beside) beside.push(item);
     else mergedInto.set(host, [item]);
   }
-  return { standalone, mergedInto };
+  return { standalone, mergedInto, answered, drawnCardCount: drawn.size };
 }

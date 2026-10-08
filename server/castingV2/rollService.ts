@@ -1737,13 +1737,34 @@ export async function dispatchCandidate(input: {
         points at the key, and the cleanup worker only ever deletes keys a row
         handed it. Best-effort delete now, or it is an orphan in the bucket
         forever — invisible, unbilled to anyone, and impossible to find later.
+
+        ⚠ **AND THE SMALL COPY GOES WITH IT — #1954's sweep, and it was being
+        LEFT.** This dropped `stored.key` alone, so every lost landing left the
+        thumbnail written three statements earlier sitting in the public bucket.
+        It is a second, independent `randomUUID()` key under this same prefix
+        (`thumbnails.ts`'s `thumbnailKey`), recorded nowhere but the row that
+        was never written — so unlike a signed view's, it is NOT swept by
+        `storageDelete` itself, whose derived-key sweep is deliberately narrow
+        to the views prefix. The refine road already states this defect in its
+        own words — *"a thumbnail put to a public key with nothing that knows
+        it exists is the same orphan as a frame, at a twentieth of the size and
+        none of the excuse"* — and answers it by registering both keys in a
+        manifest BEFORE it writes either. This road answers it the way this
+        road already works, which is a best-effort drop of everything it put.
+
+        Sequential rather than concurrent on purpose: `storageDelete` is the
+        audited primitive and these are two requests on a failure road nobody
+        is waiting on.
       */
-      await storageDelete(stored.key).catch((error) => {
-        log.warn(
-          { operationId, candidate: candidate.publicId, err: error },
-          "[rollService] could not delete an orphaned candidate object",
-        );
-      });
+      const orphans = thumbKey === null ? [stored.key] : [stored.key, thumbKey];
+      for (const orphan of orphans) {
+        await storageDelete(orphan).catch((error) => {
+          log.warn(
+            { operationId, candidate: candidate.publicId, err: error },
+            "[rollService] could not delete an orphaned candidate object",
+          );
+        });
+      }
       return { outcome: "skipped", refundedCredits: 0 };
     }
     /*

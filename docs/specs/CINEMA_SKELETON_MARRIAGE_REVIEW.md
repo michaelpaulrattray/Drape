@@ -776,3 +776,46 @@ crew paid; copying them would re-pay for lessons already bought. (Settled
 after a data check: the 2,149 captured ZEPHYR/Special prompts hold no
 headless order and their template asks for heads — the headless PROMPT is
 the third production's, which is exactly the one we copy.)
+
+
+## 12. Two outside sources reviewed — the "Match this ad" door and the reference-video craft (founder order, 2026-10-08)
+
+Reviewed at his order: his team's VIDEO-BREAKDOWN-SOP (Klieg Developer
+Docs — three cross-checking layers: ffmpeg objective truth, the
+Higgsfield video analyzer, Whisper verbatim; measured cuts win; "the
+agent must look at the frames itself" = law 9 re-derived) and the public
+miko-ai-ad-factory skill (reference-first ad workflow; epistemically
+disciplined; categorically WEAK exactly where Klieg is strong — verbatim
+"Do not create character reference images", text-only characters with the
+admitted inconsistency; the moat confirmed from outside).
+
+**Adopted as a future design addendum — the THIRD ENTRY DOOR: "I have a
+reference."** Upload a winning ad/clip; the SOP pipeline produces the
+breakdown; the breakdown IS the production (shot table -> proposed shots,
+settings/people -> scene documents, measured stats -> pacing) with miko's
+source-beat mapping as one more read-back badge: FROM YOUR REFERENCE ·
+0:04-0:07, beside FROM YOUR SCRIPT and YOUR LINE; their needed-assets
+column is the gap tiles. "Research informs what to say; the reference
+informs how to stage it."
+
+**Craft folded into the prompt-assembly canon:** the anti-caption clause
+verbatim, always ("no subtitles, no captions, no transcript text, no
+added lower thirds"; text physically inside a graphic/label permitted);
+named objects not adjectives for settings; dialogue verbatim, labelled,
+"spoken exactly as written, lip-synced"; camera by beat not timestamp; a
+UGC realism block as a style profile ("genuine handheld phone footage, no
+cinematic grading, no beauty filter"); reference hygiene with numbers —
+crop burned-in captions off reference videos (they bleed into output),
+mute style clips so the voice reference is the only audio signal,
+Seedance 2.5 budgets (4-30s, 30k-char prompts, 30 image / 10 video / 10
+audio refs, pixel-area bounds on video references); still-first
+animate-second graphics with a deterministic-typesetting fallback; >30s
+chunked at natural boundaries with an ACCEPTED clip as continuation
+reference for dependent scenes (an optional lane, islands intact); and
+the honesty clause kept word for word: "Do not pretend the
+natural-language scene timestamps are hard execution guarantees."
+
+**Skipped:** their research machinery's weight (the evidence-linked
+claims idea — every ad claim tracing to a typed finding — noted for the
+ads door's future legal/brand-safety questions), provider lock-in, and
+their consistency approach entirely.

@@ -1,4 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { join, resolve } from "node:path";
+
+import sharp from "sharp";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ProviderError } from "../providers/types";
 /* The REAL composition the failed-slot row is stored with — #1492's seam arm
@@ -73,7 +76,7 @@ const {
   VIEW_ARRIVAL_ATTEMPTS,
   VIEW_JUDGED_ATTEMPTS,
 } = await import("./packageOrchestrator");
-const { CAST_PACKAGE_VIEWS, CAST_PACKAGE_VIEW_PRICE, CASTING_V2_SIGN_PRICE_CREDITS, composePackageViewPrompt } = await import("./castViewPackage");
+const { CAST_PACKAGE_VIEWS, CAST_PACKAGE_VIEW_PRICE, CASTING_V2_SIGN_PRICE_CREDITS } = await import("./castViewPackage");
 const { CASTING_V2_SIGN_COSTS } = await import("../casting/castingCreditCosts");
 /**
  * THE PACKAGE'S MONEY, READ FROM THE PRODUCT — #1601 item 1, 2026-10-01.
@@ -89,6 +92,29 @@ const VIEW_PRICE = CAST_PACKAGE_VIEW_PRICE;
 const PROMOTION = CASTING_V2_SIGN_COSTS.promotion;
 const SIGN_PRICE = CASTING_V2_SIGN_PRICE_CREDITS;
 import type { CastViewAngle } from "../../shared/boardTypes";
+import {
+  composeSignSheetPrompt,
+  signSheetKindFor,
+  signSheetPlan,
+  type SignSheetKind,
+} from "./signSheet";
+import { SHEET_MAX_RENDERS } from "./signSheetCoordinator";
+import { refundOutcomeText } from "../../shared/refundCopy";
+import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
+import { readListedSource } from "../testing/listedSource";
+
+/*
+  ⚠ **THE TREE READER PUT THIS SUITE IN #741'S POPULATION, AND IT FOUND OUT AT
+  THE GUARD RATHER THAN BY BEING REMEMBERED — which is the guard working.**
+
+  One arm here reads `ViewTabs.tsx` off the real tree so that the refusal line's
+  join is DERIVED rather than quoted, and `sourceSweepSuites` keys on reaching
+  for the tree reader at all rather than on how many files a suite then reads.
+  That is deliberate on its part — a population keyed on the files already fixed
+  stops watching the moment one is fixed — so the floor is declared here rather
+  than argued about on the ground that this suite reads exactly one file.
+*/
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 const pass: ViewConformanceVerdict = {
   pass: true,
@@ -111,6 +137,18 @@ const fail: ViewConformanceVerdict = {
 
 const refunds: Array<{ amount: number; reference: string }> = [];
 const committed: string[] = [];
+/**
+ * WHICH FRAME EACH DELIVERED VIEW CAME FROM — the asset row's own provenance.
+ *
+ * ⚠ **Added for #1904, because his ruling's load-bearing clause is
+ * unassertable without it**: *"replace all of that sheet's views together, so
+ * the views on a sheet always come from one render"*. Every other signal in
+ * this suite — the commit count, the refund count, the engine count — is
+ * identical whether a re-rendered sheet replaces all of its views or only the
+ * refused one. The `providerRef` the sheet stamps on its panels is the one
+ * field that can tell those two apart, and the product persists it.
+ */
+const committedProvenance: Array<{ angle: string; providerRef?: string }> = [];
 const failures: Array<Record<string, unknown>> = [];
 const storedKeys: string[] = [];
 const deletedKeys: string[] = [];
@@ -133,8 +171,161 @@ const captured: Array<{
 const waitedMs: number[] = [];
 let refundRecords = true;
 
+/**
+ * THE SHEETS EVERY SIGN NOW RENDERS, as synthetic frames (#1904, reshaped to
+ * his #1926 two-sheet ruling).
+ *
+ * ⚠ **REAL IMAGES, not `Buffer.from("view")` stand-ins, and they have to be**:
+ * the orchestrator cuts the bytes it is handed with `sharp`, so a sheet that is
+ * not an image fails the cut and every arm below would read as a dead Sign.
+ * Panels of DIFFERENT widths with white dividers between them, so the cut
+ * exercises its detector rather than falling back to equal shares.
+ *
+ * ⚠ **ONE PER KIND, keyed by the panel count the plan asks for.** A single
+ * synthetic sheet would be cut into three panels for the head sheet and two for
+ * the body sheet from the same bytes — which passes, and proves nothing about
+ * whether each view was routed to its own sheet.
+ */
+async function syntheticSheetBytes(panels: number): Promise<Buffer> {
+  const width = 100 * panels + 20 * (panels - 1);
+  const height = 40;
+  /* Deliberately unequal, so a fallback to equal shares is visible. */
+  const widths = Array.from({ length: panels }, (_, index) => 100 + (index % 2 === 0 ? 12 : -12));
+  const spare = width - widths.reduce((a, b) => a + b, 0) - 4 * (panels - 1);
+  widths[widths.length - 1] = widths[widths.length - 1]! + spare;
+  const raw = Buffer.alloc(width * height, 0);
+  let x = 0;
+  widths.forEach((panelWidth, index) => {
+    for (let y = 0; y < height; y += 1) {
+      raw.fill(40 + index * 20, y * width + x, y * width + x + panelWidth);
+    }
+    x += panelWidth;
+    if (index < widths.length - 1) {
+      for (let y = 0; y < height; y += 1) raw.fill(255, y * width + x, y * width + x + 4);
+      x += 4;
+    }
+  });
+  return sharp(raw, { raw: { width, height, channels: 1 } }).png().toBuffer();
+}
+
+const sheetPngs = new Map<SignSheetKind, Buffer>();
+
+/**
+ * HER MASTER, AS A REAL IMAGE — and it has to be one now (#1904).
+ *
+ * ⚠ **This was `Buffer.from("anchor")` and the sheet road made that fatal.**
+ * `renderSignSheet` converts the anchor to JPEG with `sharp` before dispatch
+ * (`sheetReferenceFromMaster`, for the measured 13.8% size saving), so a
+ * stand-in that is not an image rejects the sheet promise with *"Input buffer
+ * contains unsupported image format"* — which reaches every view as a sheet
+ * that never arrived, and reads in this suite as a dead Sign rather than as a
+ * broken fixture. The per-view road never cared, because it passed the bytes
+ * through untouched.
+ */
+const ANCHOR_PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+  "base64",
+);
+
+/**
+ * The default sheet engines — TWO calls per Sign, one per sheet, each recorded
+ * with the kind it was asked for so an arm can count and attribute them.
+ *
+ * ⚠ **The count and the KIND are both the point.** Five views used to mean five
+ * engine calls and now mean two, and an arm that could not see the difference
+ * would pass just as happily if every view quietly rendered its own sheet. The
+ * kind matters for the same reason the engine takes a size at all: the two
+ * sheets differ only in their pixels, so a double that ignored the argument
+ * would let every arm pass while both rendered at one shape.
+ */
+const sheetCalls: {
+  kind: SignSheetKind;
+  prompt: string;
+  /**
+   * ⚠ **THE REFERENCES THEMSELVES, NOT A COUNT — widened for #1904.** The ink
+   * crops and the master now ride the SHEET rather than five view requests, so
+   * the ordinal arms (*"the sentence quoting reference N and the picture in slot
+   * N come from one list"*) have nowhere else to be driven. A count cannot hold
+   * that rule; it cannot even tell the master from a crop.
+   */
+  references: Array<{ bytes: string; contentType: string }>;
+}[] = [];
+
+function defaultSheetEngine(kind: SignSheetKind) {
+  return {
+    id: `test-sheet-${kind}`,
+    editWithReferences: vi.fn(async (request: { prompt: string; references: unknown[] }) => {
+      sheetCalls.push({
+        kind,
+        prompt: request.prompt,
+        references: (request.references as Array<{ bytes: Buffer; contentType: string }>).map(
+          (reference) => ({ bytes: reference.bytes.toString(), contentType: reference.contentType }),
+        ),
+      });
+      /*
+        ⚠ **THE REF NAMES THE GENERATION — #1904, his option A.** The provenance
+        travels from the sheet onto every asset row it painted, so a ref that
+        counted only the kind could not tell a first frame's panel from a
+        re-rendered one. His *"replace all of that sheet's views together"* is a
+        claim about exactly that, and this is what makes it assertable.
+      */
+      const generation = sheetCalls.filter((call) => call.kind === kind).length;
+      return {
+        bytes: sheetPngs.get(kind) as Buffer,
+        contentType: "image/png",
+        latencyMs: 61_000,
+        provenance: {
+          provider: "fal" as const,
+          model: `sunburst-sheet-${kind}`,
+          providerRef: `sheet-ref-${kind}-gen${generation}`,
+        },
+      };
+    }),
+    generateView: vi.fn(),
+  };
+}
+
+/**
+ * A SHEET ENGINE THAT NEVER DELIVERS — the dead-sheet road, both kinds.
+ *
+ * ⚠ **It records its call in `sheetCalls` BEFORE throwing**, which is the only
+ * thing that lets an arm COUNT renders rather than infer them. The claim the
+ * dead-sheet arms are about is that the views awaiting one sheet do not buy one
+ * render each: the orchestrator's own docblock says *"a settled rejection
+ * re-throws instantly, so a dead sheet costs the arrival budget's waiting and
+ * never a second call"*, and until these arms moved to this double nothing
+ * anywhere held it.
+ */
+function deadSheetEngine(makeError: () => unknown) {
+  return (kind: SignSheetKind) => ({
+    id: `test-sheet-${kind}`,
+    editWithReferences: vi.fn(async (request: { prompt: string; references: unknown[] }) => {
+      sheetCalls.push({
+        kind,
+        prompt: request.prompt,
+        references: (request.references as Array<{ bytes: Buffer; contentType: string }>).map(
+          (reference) => ({ bytes: reference.bytes.toString(), contentType: reference.contentType }),
+        ),
+      });
+      throw makeError();
+    }),
+    generateView: vi.fn(),
+  });
+}
+
+/** How many times each sheet kind was asked for — the render budget, counted. */
+function rendersPerSheet(): Record<SignSheetKind, number> {
+  return Object.fromEntries(
+    signSheetPlan().map((plan) => [
+      plan.kind,
+      sheetCalls.filter((call) => call.kind === plan.kind).length,
+    ]),
+  ) as Record<SignSheetKind, number>;
+}
+
 function deps(overrides: Record<string, unknown> = {}) {
   return {
+    signSheetEngine: defaultSheetEngine,
     identityEngine: () => ({
       id: "test-identity",
       editWithReferences: vi.fn(),
@@ -153,6 +344,10 @@ function deps(overrides: Record<string, unknown> = {}) {
     }),
     commitSlot: vi.fn(async (input: Record<string, unknown>) => {
       committed.push(input.angle as string);
+      committedProvenance.push({
+        angle: input.angle as string,
+        providerRef: (input.provenance as { providerRef?: string } | undefined)?.providerRef,
+      });
       return committed.length;
     }),
     recordFailure: vi.fn(async (input: Record<string, unknown>) => {
@@ -206,12 +401,22 @@ const input = {
   modelId: 901,
   identityRevisionId: "rev-1",
   identityText: "identity",
-  anchor: { bytes: Buffer.from("anchor"), contentType: "image/png" },
+  anchor: { bytes: ANCHOR_PNG, contentType: "image/png" },
 };
 
+beforeAll(async () => {
+  /* Derived from the plan, never a literal pair: a third sheet kind gets its
+     synthetic frame without this block being remembered. */
+  for (const plan of signSheetPlan()) {
+    sheetPngs.set(plan.kind, await syntheticSheetBytes(plan.panelOrder.length));
+  }
+});
+
 beforeEach(() => {
+  sheetCalls.length = 0;
   refunds.length = 0;
   committed.length = 0;
+  committedProvenance.length = 0;
   failures.length = 0;
   storedKeys.length = 0;
   deletedKeys.length = 0;
@@ -267,17 +472,27 @@ describe("the Cast's wardrobe line, at the wire", () => {
     };
   }
 
-  it("carries the line into every view's prompt, and into NO judge call (#1903)", async () => {
+  it("carries the line into BOTH sheet prompts, and into NO judge call (#1903)", async () => {
     const seen = recording();
     await buildCastPackage(
       deps({ identityEngine: seen.identityEngine, judge: seen.judge }),
       { ...input, wardrobeLine: LINE },
     );
-    expect(seen.prompts).toHaveLength(5);
+    /*
+      ⚠ **NO VIEW COMPOSES A PROMPT ANY MORE — #1904, and the arm moved to the
+      wire the outfit is actually sent on.** The five pictures are panels of two
+      sheets, so the line is said TWICE (once per sheet) instead of five times
+      and `generateView` is never reached. The claim is unchanged and is the one
+      that costs money: the outfit the Cast's record carries is what the engine
+      is told. The empty expectation beside it is the control — an assertion
+      about sheet prompts that passed while views were still rendering their own
+      would prove nothing about the split.
+    */
+    expect(seen.prompts, "no view renders its own picture on the sheet road").toEqual([]);
+    expect(sheetCalls).toHaveLength(2);
+    for (const call of sheetCalls) expect(call.prompt, call.kind).toContain(LINE);
+    /* Five judgements still — one per panel, across the two sheets. */
     expect(seen.judged).toHaveLength(5);
-    const shared = seen.prompts.filter((entry) => entry.angle !== "closeUp");
-    expect(shared.length).toBeGreaterThan(0);
-    for (const entry of shared) expect(entry.prompt, entry.angle).toContain(LINE);
     /*
       ⚠ **THE JUDGE IS HANDED NO OUTFIT AT ALL — #1903, and this arm asserted
       the opposite until his ruling.**
@@ -311,14 +526,23 @@ describe("the Cast's wardrobe line, at the wire", () => {
     */
     const seen = recording();
     await buildCastPackage(deps({ identityEngine: seen.identityEngine, judge: seen.judge }), input);
-    for (const entry of seen.prompts) {
-      expect(entry.prompt, entry.angle).not.toContain(LINE);
-      if (entry.angle !== "closeUp") {
-        expect(entry.prompt, entry.angle).toContain("the SAME outfit the reference photograph shows");
-      }
+    /*
+      ⚠ **THIS ARM WENT VACUOUS WHEN THE SHEET ROAD LANDED AND IT PASSED ANYWAY
+      — #1904.** It looped over `seen.prompts`, which is now empty on every
+      Sign, so a `for` over nothing asserted nothing and the file stayed green.
+      The sentence it is about moved to the sheet, so the loop did too, and the
+      length assertion below is what stops the same thing happening again.
+    */
+    expect(sheetCalls, "two sheets, so two outfit sentences to check").toHaveLength(2);
+    for (const call of sheetCalls) {
+      expect(call.prompt, call.kind).not.toContain(LINE);
+      /* The sheet's own wording for a Cast with neither a stored line nor a
+         brief: it names reference 1 and invents no adjective. */
+      expect(call.prompt, call.kind).toContain("OUTFIT is the one reference 1 shows");
     }
     /* And with no line either, the judge is still told nothing — the same
        absence, so the arm above is not passing on the fixture's emptiness. */
+    expect(seen.judged).toHaveLength(5);
     for (const call of seen.judged) {
       expect((call as { wardrobeLine?: unknown }).wardrobeLine).toBeUndefined();
     }
@@ -348,18 +572,66 @@ describe("a package where everything lands", () => {
 });
 
 describe("one regeneration, then named-and-refunded", () => {
-  it("keeps a view that passes on the second attempt, and charges nothing extra", async () => {
-    let calls = 0;
-    const judge = () => vi.fn(async () => {
-      calls += 1;
-      return calls === 1 ? fail : pass;
+  /**
+   * ⚠ **THE RE-RENDER IS THE SHEET'S NOW, AND IT REPLACES ALL OF THAT SHEET'S
+   * VIEWS — his #1904 ruling of 2026-10-08, verbatim and entire: *"go with A"*.**
+   *
+   * This arm read *"keeps a view that passes on the second attempt"* and drove
+   * a judge that failed its FIRST call, whichever panel that happened to be.
+   * Two things make that the wrong shape now, and the second is why it had to
+   * be rewritten rather than retargeted:
+   *
+   * 1. **The two sheets judge concurrently**, so "the first call" is a
+   *    scheduling fact rather than a statement about a view — the arm would
+   *    have been a clock in disguise.
+   * 2. **A re-render replaces every view on its sheet.** So the thing to hold
+   *    is not that one view came back good; it is that BOTH body views came
+   *    from the SECOND body frame while the head sheet was never touched —
+   *    which is his consistency clause, and the only assertion here that a
+   *    per-view latch would fail.
+   */
+  it("re-renders the refused view's SHEET once and replaces all of its views together", async () => {
+    const seen = new Map<string, number>();
+    const judge = () => vi.fn(async (request: { angle: string }) => {
+      const nth = (seen.get(request.angle) ?? 0) + 1;
+      seen.set(request.angle, nth);
+      /* One panel, on its first judgement only — so the body sheet is re-rendered
+         exactly once and comes back clean. */
+      return request.angle === "backFull" && nth === 1 ? fail : pass;
     });
     const result = await buildCastPackage(deps({ judge }), input);
 
     expect(result.failed).toHaveLength(0);
     expect(refunds).toHaveLength(0);
-    // The rejected attempt's object is deleted rather than orphaned.
-    expect(deletedKeys.length).toBeGreaterThan(0);
+    expect(committed).toHaveLength(5);
+    /* ONE re-render, and only of the sheet that held the refusal. */
+    expect(rendersPerSheet()).toEqual({ body: 2, head: 1 });
+    /*
+      ⚠ **THE CLAUSE THAT NEEDS THE PROVENANCE: both body views come from the
+      SECOND frame, including `frontFull`, which PASSED on the first one.**
+      Delivering `frontFull` from frame 1 beside `backFull` from frame 2 would
+      satisfy every other expectation in this arm and would be exactly the
+      inconsistency his ruling forbids — two views of one person in two
+      different outfits.
+    */
+    const refOf = (angle: string) =>
+      committedProvenance.find((entry) => entry.angle === angle)?.providerRef;
+    expect(refOf("frontFull")).toBe("sheet-ref-body-gen2");
+    expect(refOf("backFull")).toBe("sheet-ref-body-gen2");
+    /* And the head sheet's three are untouched by a body refusal. */
+    for (const angle of ["closeUp", "threeQuarter", "sideClose"]) {
+      expect(refOf(angle), angle).toBe("sheet-ref-head-gen1");
+    }
+    /*
+      ⚠ **NOTHING IS ORPHANED AND NOTHING IS DELETED, which is a CHANGE and is
+      the better direction.** The per-view road stored a picture and then
+      dropped it when the judge turned it down; a sheet panel is judged before
+      it is ever stored, so a refused frame costs no bucket write at all. The
+      old assertion here was `deletedKeys.length > 0`, and it would now pass
+      only if something were storing refused panels.
+    */
+    expect(deletedKeys).toEqual([]);
+    expect(storedKeys).toHaveLength(5);
   });
 
   it("fails and refunds exactly one slice when both attempts fail conformance", async () => {
@@ -487,12 +759,23 @@ describe("one regeneration, then named-and-refunded", () => {
       .toEqual(["at", "reason", "refundReference", "refunded", "state"]);
   });
 
-  it("leaves no orphaned object behind a failed view", async () => {
+  it("leaves no orphaned object behind a failed view — by never storing one", async () => {
     const judge = () => vi.fn(async (request: { angle: string }) =>
       request.angle === "backFull" ? fail : pass);
     await buildCastPackage(deps({ judge }), input);
-    // Both attempts at backFull stored an object; both were deleted.
-    expect(deletedKeys).toHaveLength(2);
+    /*
+      ⚠ **THIS ARM READ `deletedKeys).toHaveLength(2)` AND THE SHEET ROAD MAKES
+      THE RIGHT ANSWER ZERO — #1904.** The per-view road stored every picture
+      before judging it, so a refusal had an object to drop and the only
+      question was whether it remembered to. A sheet's panel is judged in the
+      coordinator, above the views, so a refused panel never reaches storage:
+      there is nothing to orphan rather than something that was cleaned up.
+      The pair below is what makes that a measurement and not a weakening — the
+      four delivered views DID store, so a road storing nothing at all would
+      redden here.
+    */
+    expect(deletedKeys).toEqual([]);
+    expect(storedKeys).toHaveLength(4);
   });
 });
 
@@ -504,9 +787,15 @@ describe("one regeneration, then named-and-refunded", () => {
   the verdict and the judge's note never leaves the process. So there was
   nothing for his eye to overrule (law 9) and nothing for a court to read.
 
-  ⚠ These arms are on `renderViewAttempts`'s refusal branch rather than on
+  ⚠ These arms were on `renderViewAttempts`'s refusal branch rather than on
   either road, because ONE call site serves both the Sign's five views and a Try
-  again — and the retry is the half he was actually stuck in.
+  again — and the retry is the half he was actually stuck in. ⚠ **THE SIGN'S
+  HALF MOVED TO `signSheetCoordinator` WITH #1904** — it is where the panels are
+  judged now, so it is where a refused one is held — and the Try again still
+  takes the per-view branch unchanged (`viewRetryService.test.ts` is its
+  control). The claim is the same on both roads and so is the hazard: the KEY
+  must distinguish the frames, or a capture that keeps one of two is worse than
+  none because it looks like evidence.
 */
 describe("a refused view keeps its frame", () => {
   it("hands the refused frame to the keeper before deleting the object", async () => {
@@ -514,39 +803,46 @@ describe("a refused view keeps its frame", () => {
       request.angle === "backFull" ? fail : pass);
     await buildCastPackage(deps({ judge }), input);
 
-    /* Two judged attempts at backFull, so two frames — and the PAIR is the
-       point: it is what shows whether the engine drew the same wrong thing
-       twice, which is exactly the question his three retries could not answer. */
+    /* Two renders of the body sheet, so two refused frames of backFull — and
+       the PAIR is the point: it is what shows whether the engine drew the same
+       wrong thing twice, which is exactly the question his three retries could
+       not answer. */
     expect(captured).toHaveLength(2);
     expect(captured.every((entry) => entry.userId === 1)).toBe(true);
     expect(captured.every((entry) => entry.operationId === OPERATION_ID)).toBe(true);
-    /* The bytes are the engine's own, not the stored object read back. */
-    expect(captured.map((entry) => entry.bytes)).toEqual([["view"], ["view"]]);
+    /* One frame per call: only the refused panel is kept, never the sheet's
+       passing neighbours. */
+    expect(captured.map((entry) => entry.names.length)).toEqual([1, 1]);
   });
 
-  it("names the angle AND the attempt, so the second never overwrites the first", async () => {
+  it("names the angle AND the sheet generation, so the second never overwrites the first", async () => {
     const judge = () => vi.fn(async (request: { angle: string }) =>
       request.angle === "backFull" ? fail : pass);
     await buildCastPackage(deps({ judge }), input);
 
     /*
       ⚠ `diagnosticKey` is `…/<userId>/<operationId>/<name>.png`, and ONE Sign
-      renders five angles under ONE operation id with up to two judged attempts
-      each. A name that carried only the angle would silently overwrite, and a
-      capture that keeps one of two frames is worse than none — it looks like
-      evidence.
+      renders five angles under ONE operation id. ⚠ **The second segment used to
+      be the view's ATTEMPT and is the SHEET's GENERATION now (#1904)**, because
+      that is what actually distinguishes the two frames on this road: a panel
+      gets one judgement per render, and the two renders are the sheet's.
     */
     expect(captured.flatMap((entry) => entry.names))
-      .toEqual(["view-backFull-attempt1", "view-backFull-attempt2"]);
+      .toEqual(["view-backFull-sheet1", "view-backFull-sheet2"]);
   });
 
-  it("says which axes refused it, so the frame is not an unlabelled picture", async () => {
+  it("says which axes refused it, and which view, so the frame is not an unlabelled picture", async () => {
     const judge = () => vi.fn(async (request: { angle: string }) =>
       request.angle === "closeUp" ? fail : pass);
     await buildCastPackage(deps({ judge }), input);
 
-    /* `fail`'s own shape: identity refuses, angle and wardrobe pass. */
-    expect(captured[0]!.reason).toBe("view_refused:identity");
+    /*
+      `fail`'s own shape: identity refuses, the other two pass. ⚠ **The ANGLE is
+      in the reason now as well as in the frame name**, because one capture call
+      can carry several refused panels of one sheet — a reason naming only the
+      axes could not say which of three head views it was about.
+    */
+    expect(captured[0]!.reason).toBe("sheet_view_refused:closeUp:identity");
   });
 
   it("keeps NOTHING when every view passes", async () => {
@@ -590,15 +886,17 @@ describe("a refused view keeps its frame", () => {
       ⚠ AND THE ROAD IS UNCHANGED, WHICH IS THE ARM THAT MATTERS AND THE ONE
       THIS SUITE ALMOST DID NOT HAVE.
 
-      The capture sits inside the attempt loop's `try`, so a keeper that threw
-      would be caught as an ARRIVAL failure: it would spend the wrong budget,
-      skip the `drop` two lines down and leave an orphaned object in the public
-      bucket — a diagnostic making a real mess of the refusal it exists to
-      document. `.catch()` at the call site is what stops it, and these two
+      On the per-view road the capture sat inside the attempt loop's `try`, so a
+      keeper that threw was caught as an ARRIVAL failure — wrong budget, skipped
+      `drop`, orphaned object. ⚠ **On the sheet road the stake is HIGHER and
+      that is why the `.catch()` moved with the capture**: the keeper runs
+      between the first judgement and the decision to spend house money on a
+      second frame, so a keeper that threw would abort the whole SHEET — two or
+      three paid slices refunded because a diagnostic bucket was full. These
       numbers are what prove the catch is there.
     */
-    expect(deletedKeys, "a refused view's object is deleted, keeper or no keeper")
-      .toHaveLength(2);
+    expect(rendersPerSheet(), "the re-render still happened, keeper or no keeper")
+      .toEqual({ body: SHEET_MAX_RENDERS, head: 1 });
     expect(failures.find((entry) => entry.angle === "backFull")).toBeDefined();
   });
 });
@@ -625,21 +923,49 @@ describe("the attempt budgets are the ones that were ruled", () => {
     expect(VIEW_ARRIVAL_ATTEMPTS).toBe(3);
   });
 
+  it("renders a SHEET at most twice (#1904, his \"at most one automatic re-render per sheet\")", () => {
+    /*
+      ⚠ **ITS OWN LITERAL, BESIDE THE OTHER TWO AND FOR THE SAME REASON.** This
+      number and `VIEW_JUDGED_ATTEMPTS` are both 2 and they answer different
+      questions about different money — one is how many draws a CUSTOMER's paid
+      slice gets, the other is how many frames the HOUSE pays for to rescue a
+      sheet. An arm reading `SHEET_MAX_RENDERS` against itself would let his
+      ruling move silently; this is where moving it costs a deliberate edit.
+    */
+    expect(SHEET_MAX_RENDERS).toBe(2);
+  });
+
   it("keeps ONE regeneration after a judged rejection (D-39/D-40, untouched)", () => {
     expect(VIEW_JUDGED_ATTEMPTS).toBe(2);
   });
 });
 
+/*
+  ⚠ **THE PICTURE COMES FROM A SHEET NOW, SO THESE ARMS DRIVE THE SHEET ENGINE
+  — #1904.** They drove `generateView`, which a Sign no longer calls at all, so
+  every one of them was measuring a road this package does not take. What they
+  are ABOUT is unchanged and is still the whole of #1208/#1212/#1301: which
+  provider faults are worth asking again about, how long a customer waits, and
+  whether her money comes back either way.
+
+  ⚠ **AND ONE NUMBER CHANGES SHAPE RATHER THAN VALUE, which is the finding these
+  arms now carry: a dead sheet costs ONE render, not one per view.** Five views
+  await the same promise, so a settled rejection re-throws instantly — the
+  orchestrator's own docblock says exactly that, and until these arms moved to a
+  sheet double nothing anywhere held it. The arrival budget is still spent (the
+  waits are still counted) and buys nothing, which is why the pair is asserted
+  together.
+*/
 describe("generation failures", () => {
   it("does not retry a content refusal — it will refuse again", async () => {
-    const generateView = vi.fn(async () => {
-      throw new ProviderError("content_policy", "refused");
-    });
-    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
-    const result = await buildCastPackage(deps({ identityEngine }), input);
+    const result = await buildCastPackage(
+      deps({ signSheetEngine: deadSheetEngine(() => new ProviderError("content_policy", "refused")) }),
+      input,
+    );
 
-    // Five views, one attempt each.
-    expect(generateView).toHaveBeenCalledTimes(5);
+    // One attempt per SHEET — two frames for five dead views, never ten.
+    expect(rendersPerSheet()).toEqual({ body: 1, head: 1 });
+    expect(waitedMs, "a terminal class waits for nothing").toEqual([]);
     expect(result.failed).toHaveLength(5);
     // Nothing landed, so the base returns with the slices — the whole Sign, not just the views.
     expect(result.refundedCredits).toBe(SIGN_PRICE);
@@ -650,22 +976,30 @@ describe("generation failures", () => {
     something already paid for, so it is asked for again — three times, spaced
     — before it is written off. This arm read `toHaveBeenCalledTimes(10)` (one
     regeneration) until that ruling.
+
+    ⚠ **ON THE SHEET ROAD IT ASKS AGAIN AND BUYS NOTHING, which is the honest
+    reading and is asserted as a pair.** Each view still spends its three
+    attempts, and all three await one already-rejected promise — so the budget
+    is spent on waiting rather than on frames. That is deliberate (awaiting the
+    sheet in `buildCastPackage` instead would leave five audit rows open and the
+    Sign charged with not one view attempted) and it is the shape a reader of
+    the old arm would have got wrong.
   */
-  it("keeps trying a view that never arrived, up to the arrival budget", async () => {
-    const generateView = vi.fn(async () => {
-      throw new Error("something odd");
-    });
-    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
-    await buildCastPackage(deps({ identityEngine }), input);
-    expect(generateView).toHaveBeenCalledTimes(5 * VIEW_ARRIVAL_ATTEMPTS);
+  it("spends a view's arrival budget on a dead sheet, and buys no second frame with it", async () => {
+    await buildCastPackage(
+      deps({ signSheetEngine: deadSheetEngine(() => new Error("something odd")) }),
+      input,
+    );
+    expect(rendersPerSheet()).toEqual({ body: 1, head: 1 });
+    /* Two waits per view, five views — the budget was really spent. */
+    expect(waitedMs).toHaveLength(5 * (VIEW_ARRIVAL_ATTEMPTS - 1));
   });
 
   it("SPACES the arrival retries rather than hammering the provider", async () => {
-    const generateView = vi.fn(async () => {
-      throw new ProviderError("timeout", "no answer");
-    });
-    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
-    await buildCastPackage(deps({ identityEngine }), input);
+    await buildCastPackage(
+      deps({ signSheetEngine: deadSheetEngine(() => new ProviderError("timeout", "no answer")) }),
+      input,
+    );
 
     // One wait between attempts, never after the last: two per view, five views.
     expect(waitedMs).toHaveLength(5 * (VIEW_ARRIVAL_ATTEMPTS - 1));
@@ -681,19 +1015,24 @@ describe("generation failures", () => {
     keeps its single regeneration (D-39/D-40) — the arrival budget must not
     lift it, which is the defect a one-number loop would have shipped.
   */
-  it("does NOT extend the judge's one regeneration with the arrival budget", async () => {
-    const generateView = vi.fn(async () => ({
-      bytes: Buffer.from("view"),
-      contentType: "image/png",
-      latencyMs: 1,
-      provenance: { provider: "fal" as const, model: "nbp", providerRef: "ref" },
-    }));
-    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
+  it("does NOT extend the SHEET's one re-render with the arrival budget", async () => {
+    /*
+      ⚠ **THE JUDGED BUDGET ON THIS ROAD IS THE SHEET'S, AND IT IS ITS OWN
+      NUMBER — `SHEET_MAX_RENDERS`, never `VIEW_JUDGED_ATTEMPTS` (#1904).**
+      The two are both 2 today and they answer different questions about
+      different money: one is how many draws a customer's paid slice gets, the
+      other is how many frames the HOUSE pays for to rescue a sheet. This arm
+      reads the sheet's constant so that moving either does not silently move
+      the other.
+    */
     const judge = () => vi.fn(async () => fail);
-    const result = await buildCastPackage(deps({ identityEngine, judge }), input);
+    const result = await buildCastPackage(deps({ judge }), input);
 
-    expect(generateView).toHaveBeenCalledTimes(5 * VIEW_JUDGED_ATTEMPTS);
+    expect(rendersPerSheet())
+      .toEqual({ body: SHEET_MAX_RENDERS, head: SHEET_MAX_RENDERS });
     expect(result.failed).toHaveLength(5);
+    /* Five panels judged twice — one judgement per rendered panel, no more. */
+    expect(result.refundedCredits).toBe(SIGN_PRICE);
     // Nothing waited: a rejection is not an arrival failure.
     expect(waitedMs).toHaveLength(0);
   });
@@ -703,32 +1042,35 @@ describe("generation failures", () => {
     than read off the attempt number — which is the only thing that can tell
     "one arrival failure then two rejections" from "three attempts".
   */
-  it("counts each road's budget separately when a view fails both ways", async () => {
-    let call = 0;
-    const generateView = vi.fn(async () => {
-      call += 1;
-      if (call === 1) throw new ProviderError("transport", "dropped");
-      return {
-        bytes: Buffer.from("view"),
-        contentType: "image/png",
-        latencyMs: 1,
-        provenance: { provider: "fal" as const, model: "nbp", providerRef: "ref" },
-      };
-    });
-    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
+  it("counts each budget separately when one sheet dies and the other is refused", async () => {
+    /*
+      ⚠ **THE TWO ROADS ARE PER-SHEET NOW, so "a view failing both ways" is no
+      longer reachable and the honest arm is the one this is (#1904).** A view
+      is a panel: either its sheet arrived (and the coordinator's render budget
+      governs) or it did not (and the view's arrival budget governs). What CAN
+      happen in one Sign is both at once on different sheets, and the budgets
+      must not borrow from each other across them.
+    */
     const judge = () => vi.fn(async (request: { angle: string }) =>
       request.angle === "backFull" ? fail : pass);
-    await buildCastPackage(deps({ identityEngine, judge }), input);
+    const signSheetEngine = (kind: SignSheetKind) => (
+      kind === "head"
+        ? deadSheetEngine(() => new ProviderError("transport", "dropped"))(kind)
+        : defaultSheetEngine(kind)
+    );
+    const result = await buildCastPackage(deps({ judge, signSheetEngine }), input);
 
     /*
-      One view ate the single arrival failure and then landed or was judged;
-      backFull spent its two judged attempts. The total is bounded by the two
-      budgets and never by a third number.
+      The head sheet never arrived: ONE frame, and its three views spend their
+      arrival budget on waiting. The body sheet arrived and was refused: its one
+      re-render, and no waits at all.
     */
-    expect(generateView.mock.calls.length).toBeLessThanOrEqual(
-      5 * (VIEW_ARRIVAL_ATTEMPTS + VIEW_JUDGED_ATTEMPTS),
-    );
-    expect(waitedMs).toHaveLength(1);
+    expect(rendersPerSheet()).toEqual({ head: 1, body: SHEET_MAX_RENDERS });
+    expect(waitedMs).toHaveLength(3 * (VIEW_ARRIVAL_ATTEMPTS - 1));
+    /* Four of the five refund; `frontFull` rode the good body frame. */
+    expect(result.failed.sort())
+      .toEqual(["backFull", "closeUp", "sideClose", "threeQuarter"]);
+    expect(committed).toEqual(["frontFull"]);
   });
 
   /*
@@ -741,12 +1083,15 @@ describe("generation failures", () => {
     engine fault is a view that did not arrive, and it gets the arrival budget.
   */
   it("treats an unmapped engine fault as a view that did not arrive, not a refusal", async () => {
-    const generateView = vi.fn(async () => {
-      throw new ProviderError("unknown", "no idea");
-    });
-    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
-    await buildCastPackage(deps({ identityEngine }), input);
-    expect(generateView).toHaveBeenCalledTimes(5 * VIEW_ARRIVAL_ATTEMPTS);
+    await buildCastPackage(
+      deps({ signSheetEngine: deadSheetEngine(() => new ProviderError("unknown", "no idea")) }),
+      input,
+    );
+    /* The direction is what this pins: `unknown` keeps RETRYING, so the waits
+       are there. The frame count is one per sheet either way — see the
+       describe's own note on why that number changed shape, not value. */
+    expect(waitedMs).toHaveLength(5 * (VIEW_ARRIVAL_ATTEMPTS - 1));
+    expect(rendersPerSheet()).toEqual({ body: 1, head: 1 });
   });
 
   /*
@@ -768,12 +1113,16 @@ describe("generation failures", () => {
     card was about.
   */
   it("asks the terminal set, not two class names - driven on a class only the set knows", async () => {
-    const generateView = vi.fn(async () => {
-      throw new ProviderError("cannot_say", "no slot for that");
-    });
-    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
-    await buildCastPackage(deps({ identityEngine }), input);
-    expect(generateView).toHaveBeenCalledTimes(5);
+    await buildCastPackage(
+      deps({ signSheetEngine: deadSheetEngine(() => new ProviderError("cannot_say", "no slot for that")) }),
+      input,
+    );
+    /* ⚠ The WAITS are the reading here, not the frame count: one frame per
+       sheet is true of a retrying class too, so a terminal class can only be
+       told apart from a retrying one by the absence of the spacing. The old
+       arm read 5 engine calls against 15, which the sheet road cannot express. */
+    expect(waitedMs).toEqual([]);
+    expect(rendersPerSheet()).toEqual({ body: 1, head: 1 });
   });
 
   /*
@@ -787,12 +1136,14 @@ describe("generation failures", () => {
   */
   it("still spends the arrival budget on a class that might come back clean", async () => {
     for (const failure of ["render_fault", "facts_missing"] as const) {
-      const generateView = vi.fn(async () => {
-        throw new ProviderError(failure, failure);
-      });
-      const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
-      await buildCastPackage(deps({ identityEngine }), input);
-      expect(generateView, failure).toHaveBeenCalledTimes(5 * VIEW_ARRIVAL_ATTEMPTS);
+      sheetCalls.length = 0;
+      waitedMs.length = 0;
+      await buildCastPackage(
+        deps({ signSheetEngine: deadSheetEngine(() => new ProviderError(failure, failure)) }),
+        input,
+      );
+      expect(waitedMs, failure).toHaveLength(5 * (VIEW_ARRIVAL_ATTEMPTS - 1));
+      expect(rendersPerSheet(), failure).toEqual({ body: 1, head: 1 });
     }
   });
 
@@ -814,14 +1165,13 @@ describe("generation failures", () => {
     money decision — it was the only reason #1212 declined to take it.
   */
   it("asks ONCE when our provider account is unusable — and still refunds every credit", async () => {
-    const generateView = vi.fn(async () => {
-      throw new ProviderError("provider_account", "402 no funds");
-    });
-    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
-    const result = await buildCastPackage(deps({ identityEngine }), input);
+    const result = await buildCastPackage(
+      deps({ signSheetEngine: deadSheetEngine(() => new ProviderError("provider_account", "402 no funds")) }),
+      input,
+    );
 
-    // Five views, one attempt each — 5 rather than 15.
-    expect(generateView).toHaveBeenCalledTimes(5);
+    // Two frames, one per sheet, and no second attempt at either.
+    expect(rendersPerSheet()).toEqual({ body: 1, head: 1 });
     // And not one spaced wait, which is the whole of what she stops sitting through.
     expect(waitedMs).toHaveLength(0);
     expect(result.failed).toHaveLength(5);
@@ -830,14 +1180,10 @@ describe("generation failures", () => {
   });
 
   it("still activates the Cast when every view fails — the master is usable", async () => {
-    const identityEngine = () => ({
-      id: "e",
-      editWithReferences: vi.fn(),
-      generateView: vi.fn(async () => {
-        throw new ProviderError("capability", "no");
-      }),
-    });
-    const result = await buildCastPackage(deps({ identityEngine }), input);
+    const result = await buildCastPackage(
+      deps({ signSheetEngine: deadSheetEngine(() => new ProviderError("capability", "no")) }),
+      input,
+    );
 
     expect(result.activated).toBe(true);
     /*
@@ -929,27 +1275,19 @@ describe("the fence", () => {
     already owns and bill a customer for a race.
   */
   it("never retries after losing the fence", async () => {
-    let generated = 0;
-    const identityEngine = () => ({
-      id: "fal:test",
-      generateView: vi.fn(async () => {
-        generated += 1;
-        return {
-          bytes: Buffer.from("view"),
-          contentType: "image/png",
-          latencyMs: 1,
-          provenance: { provider: "fal" as const, model: "nano-banana-pro", providerRef: "req" },
-        };
-      }),
-    });
     const commitSlot = vi.fn(async () => null);
-    const result = await buildCastPackage(
-      deps({ commitSlot, identityEngine } as never),
-      input,
-    );
+    const result = await buildCastPackage(deps({ commitSlot }), input);
 
-    // Five views, one generation each. A second pass would read 10.
-    expect(generated).toBe(5);
+    /*
+      ⚠ **READ AT THE SHEETS NOW — #1904.** It counted `generateView` calls and
+      asserted five rather than ten; a Sign renders two sheets, so the same
+      claim is that neither sheet is asked for twice. A fenced view that looped
+      would re-await its settled sheet and generate nothing, so the frame count
+      alone could no longer catch it — the STORE count is what does: five
+      pictures stored, not ten, and every one of them dropped.
+    */
+    expect(rendersPerSheet()).toEqual({ body: 1, head: 1 });
+    expect(storedKeys).toHaveLength(5);
     expect(result.failed).toHaveLength(5);
     expect(refunds).toHaveLength(0);
   });
@@ -1047,14 +1385,10 @@ describe("the promise a Cast was actually charged against", () => {
 
 describe("zero of N — the base goes back too", () => {
   it("refunds the promotion under its own reference when nothing lands", async () => {
-    const identityEngine = () => ({
-      id: "e",
-      editWithReferences: vi.fn(),
-      generateView: vi.fn(async () => {
-        throw new ProviderError("provider_account", "out of funds");
-      }),
-    });
-    const result = await buildCastPackage(deps({ identityEngine }), input);
+    const result = await buildCastPackage(
+      deps({ signSheetEngine: deadSheetEngine(() => new ProviderError("provider_account", "out of funds")) }),
+      input,
+    );
 
     expect(result.totalLoss).toBe(true);
     expect(result.committed).toHaveLength(0);
@@ -1073,14 +1407,19 @@ describe("zero of N — the base goes back too", () => {
       package keeps its promotion. The customer has views in hand and a Cast to
       keep them in — the permanence they bought is real.
     */
-    let call = 0;
-    const judge = () => vi.fn(async () => {
-      call += 1;
-      return call === 1 ? pass : fail;
-    });
+    /*
+      ⚠ **DRIVEN PER ANGLE RATHER THAN PER CALL — #1904.** It read `call === 1 ?
+      pass : fail`, which on the sheet road says "whichever panel the scheduler
+      judged first survives" — a clock in disguise, and with the body sheet then
+      re-rendered the survivor could change between runs. One named sheet passes
+      and the other is refused twice, which is the same partial package stated
+      as a fact about views instead of about timing.
+    */
+    const judge = () => vi.fn(async (request: { angle: string }) =>
+      signSheetKindFor(request.angle as CastViewAngle) === "head" ? pass : fail);
     const result = await buildCastPackage(deps({ judge }), input);
 
-    expect(result.committed.length).toBeGreaterThan(0);
+    expect(result.committed).toEqual(["closeUp", "threeQuarter", "sideClose"]);
     expect(result.totalLoss).toBe(false);
     expect(refunds.some((entry) => entry.amount === PROMOTION)).toBe(false);
   });
@@ -1100,12 +1439,19 @@ describe("zero of N — the base goes back too", () => {
   });
 });
 
-type ViewRequest = {
-  prompt: string;
-  references: Array<{ bytes: Buffer; contentType: string }>;
-  resolution: string;
-  viewAngle: CastViewAngle;
-};
+/*
+  ⚠ `ViewRequest`, the `plate()` fixture and `recordView()` STOOD HERE AND ARE
+  GONE — #1904, and they are deleted rather than kept "for the retry road".
+
+  All three existed to read a per-view `generateView` request, which a Sign no
+  longer sends: the pictures are panels of two sheets, so the wire these arms
+  are driven on is `sheetCalls`. The Try again road still composes per-view
+  requests and has its own typed recorder in `viewRetryService.test.ts`, which
+  is where that road's arms live — a spare copy here would be a fixture nothing
+  drives, and a fixture nothing drives is how an arm comes to pass by reading
+  it. `plate()` had already outlived its lane (#1158 slice 4f) and only the
+  deletion of its last reader made that visible.
+*/
 
 /**
  * HER TATTOOS RIDE INTO EVERY VIEW — asserted ON THE OUTGOING REQUEST
@@ -1119,15 +1465,6 @@ type ViewRequest = {
  * on EVERY view, and that a Cast with no ink is untouched.
  */
 describe("a signed Cast's tattoos ride into every view", () => {
-  const plate = (over: Record<string, unknown> = {}) => ({
-    designPublicId: "design-1",
-    placement: "upperArm" as const,
-    side: "left" as const,
-    bytes: Buffer.from("plate-bytes"),
-    contentType: "image/png",
-    ...over,
-  });
-
   const crop = (over: Record<string, unknown> = {}) => ({
     cropPublicId: "11111111-1111-4111-8111-111111111111",
     slot: "ink:upperArm@left",
@@ -1138,16 +1475,6 @@ describe("a signed Cast's tattoos ride into every view", () => {
     contentType: "image/png",
     ...over,
   });
-
-  /* Typed on the REQUEST, so `mock.calls` carries what was sent — an untyped
-     mock records the arguments and hands them back as `never`, which is how a
-     wire assertion turns into a cast that proves nothing. */
-  const recordView = () => vi.fn(async (_request: ViewRequest) => ({
-    bytes: Buffer.from("view"),
-    contentType: "image/png",
-    latencyMs: 1,
-    provenance: { provider: "fal" as const, model: "nbp", providerRef: "ref" },
-  }));
 
   it("carries several crops in order, and their ordinals match their slots", async () => {
     /*
@@ -1162,10 +1489,7 @@ describe("a signed Cast's tattoos ride into every view", () => {
       without re-pointing would have left the surviving lane's ordinals proved
       at the CLAUSE (`inkViewReferences.test.ts`) and nowhere at the WIRE.
     */
-    const generateView = recordView();
-    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
-
-    await buildCastPackage(deps({ identityEngine }), {
+    await buildCastPackage(deps(), {
       ...input,
       inkCrops: [
         crop({ bytes: Buffer.from("arm-crop") }),
@@ -1180,88 +1504,104 @@ describe("a signed Cast's tattoos ride into every view", () => {
       pronouns: pronounsForSex("male"),
     });
 
-    const request = generateView.mock.calls[0]![0];
-    expect(request.references.map((reference) => reference.bytes.toString()))
-      .toEqual(["anchor", "arm-crop", "neck-crop"]);
-    expect(request.prompt).toContain("Reference 2 is the exact left upper arm tattoo he already has");
-    expect(request.prompt).toContain("Reference 3 is the exact neck tattoo he already has");
+    /*
+      ⚠ **BOTH SHEETS, NOT ONE VIEW — #1904.** The crops rode five view requests
+      and now ride two sheet requests, so the ordinal rule is checked on each of
+      them: the sentence quoting reference N and the picture sitting in slot N
+      are built from one list, and a sheet whose crops arrived in a different
+      order from its sentence would paint the wrong tattoo on every panel it
+      holds rather than on one view.
+
+      ⚠ **Her tattoos go to BOTH sheets on purpose** — they are facts about the
+      PERSON, true of every camera, and splitting them by apparent relevance
+      would be inventing a taxonomy no reader here can apply.
+    */
+    expect(sheetCalls).toHaveLength(2);
+    for (const call of sheetCalls) {
+      /* The master is reference 1, re-encoded as a JPEG for the measured
+         latency saving — so it is identified by its TYPE, never by the PNG
+         bytes it was handed. */
+      expect(call.references, call.kind).toHaveLength(3);
+      expect(call.references[0]!.contentType, call.kind).toBe("image/jpeg");
+      expect(call.references.slice(1).map((reference) => reference.bytes), call.kind)
+        .toEqual(["arm-crop", "neck-crop"]);
+      expect(call.prompt, call.kind)
+        .toContain("Reference 2 is the exact left upper arm tattoo he already has");
+      expect(call.prompt, call.kind)
+        .toContain("Reference 3 is the exact neck tattoo he already has");
+    }
   });
 
   it("is INERT for a Cast with no ink — one reference, and not a word added", async () => {
     /*
       The control that matters most, because this lane reaches every package view
-      in the product. Absent plates, the request must be what it was before this
-      existed: the anchor alone, and the view prompt with nothing appended.
+      in the product. Absent crops, the request must be what it was before this
+      existed: the master alone, and the sheet prompt with nothing appended.
+
+      ⚠ **THIS ARM WENT VACUOUS WHEN THE SHEET ROAD LANDED AND PASSED ANYWAY —
+      #1904.** It looped over `generateView.mock.calls`, which a Sign no longer
+      fills, so the `for` ran zero times and asserted nothing. The length
+      expectation below is what stops that happening again, and it is why the
+      inertness is now stated against the sheet composer's own output.
     */
-    /* Typed on the REQUEST, so `mock.calls` carries what was sent — an untyped
-       mock records the arguments and hands them back as `never`, which is how a
-       wire assertion turns into a cast that proves nothing. */
-    const generateView = vi.fn(async (_request: ViewRequest) => ({
-      bytes: Buffer.from("view"),
-      contentType: "image/png",
-      latencyMs: 1,
-      provenance: { provider: "fal" as const, model: "nbp", providerRef: "ref" },
-    }));
-    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
+    await buildCastPackage(deps(), input);
 
-    await buildCastPackage(deps({ identityEngine }), input);
-
-    for (const call of generateView.mock.calls) {
-      const request = call[0];
-      expect(request.references).toHaveLength(1);
+    expect(sheetCalls).toHaveLength(2);
+    for (const call of sheetCalls) {
+      expect(call.references, call.kind).toHaveLength(1);
       /*
-        Byte-for-byte the composer's own output — the honest inertness test.
-        NOT "the prompt says nothing about tattoos": the cohort block already
-        names a tattoo as a structural feature to render plainly if the
-        character has one, which is a sentence this lane agrees with rather than
-        contradicts, and an assertion against the word would have failed on the
-        product being right.
+        Byte-for-byte the sheet composer's own output — the honest inertness
+        test. NOT "the prompt says nothing about tattoos": the sheet's reference
+        paragraph already names any tattoos the master SHOWS, which is a
+        sentence this lane agrees with rather than contradicts, and an assertion
+        against the word would have failed on the product being right.
       */
-      expect(request.prompt).toBe(composePackageViewPrompt(request.viewAngle));
+      const plan = signSheetPlan().find((candidate) => candidate.kind === call.kind)!;
+      expect(call.prompt, call.kind).toBe(composeSignSheetPrompt({
+        panelOrder: plan.panelOrder,
+      }));
     }
   });
 
-  it("sends the DELIVERED CROP beside the anchor on every view, with its own sentence", async () => {
+  it("sends the DELIVERED CROP beside the master on every sheet, with its own sentence", async () => {
     /*
       The lane that actually carries something. Its source is the frame that
       really delivered the ink, so the sentence is the transform road's — the
       picture is HER, and the mannequin disclaimer would be a lie about it.
     */
-    const generateView = recordView();
-    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
-
-    await buildCastPackage(deps({ identityEngine }), {
+    await buildCastPackage(deps(), {
       ...input,
       inkCrops: [crop()],
       pronouns: pronounsForSex("male"),
     });
 
-    expect(generateView).toHaveBeenCalledTimes(CAST_PACKAGE_VIEWS.length);
-    for (const call of generateView.mock.calls) {
-      const request = call[0];
-      expect(request.references).toHaveLength(2);
-      expect(request.references[0]!.bytes.toString()).toBe("anchor");
-      expect(request.references[1]!.bytes.toString()).toBe("arm-crop");
+    expect(sheetCalls).toHaveLength(2);
+    for (const call of sheetCalls) {
+      expect(call.references, call.kind).toHaveLength(2);
+      expect(call.references[0]!.contentType, call.kind).toBe("image/jpeg");
+      expect(call.references[1]!.bytes, call.kind).toBe("arm-crop");
       /* The picture is named as what it IS — cut out of a photograph of him —
          and placed where prose is the only thing that can carry the side. */
-      expect(request.prompt).toContain("Reference 2 is the exact left upper arm tattoo he already has");
-      expect(request.prompt).toContain("It is on his left upper arm (on the right");
+      expect(call.prompt, call.kind)
+        .toContain("Reference 2 is the exact left upper arm tattoo he already has");
+      expect(call.prompt, call.kind).toContain("It is on his left upper arm (on the right");
       /* And never the plate lane's sentence about a form that is not there. */
-      expect(request.prompt).not.toContain("plain grey mannequin form");
-      expect(request.prompt).toContain("Keep this exact person unchanged");
+      expect(call.prompt, call.kind).not.toContain("plain grey mannequin form");
     }
   });
 
   it("is INERT for a Cast with no delivered crop — absent and empty alike", async () => {
-    const generateView = recordView();
-    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
+    await buildCastPackage(deps(), { ...input, inkCrops: [] });
 
-    await buildCastPackage(deps({ identityEngine }), { ...input, inkCrops: [] });
-
-    for (const call of generateView.mock.calls) {
-      const request = call[0];
-      expect(request.references).toHaveLength(1);
-      expect(request.prompt).toBe(composePackageViewPrompt(request.viewAngle));
+    /* The second spelling of nothing: an empty array must behave exactly as an
+       absent field does, which is the arm above. */
+    expect(sheetCalls).toHaveLength(2);
+    for (const call of sheetCalls) {
+      expect(call.references, call.kind).toHaveLength(1);
+      const plan = signSheetPlan().find((candidate) => candidate.kind === call.kind)!;
+      expect(call.prompt, call.kind).toBe(composeSignSheetPrompt({
+        panelOrder: plan.panelOrder,
+      }));
     }
   });
 
@@ -1316,32 +1656,31 @@ describe("a signed Cast's hidden features ride into every view as words", () => 
     ...over,
   });
 
-  const recorder = () => vi.fn(async (_request: ViewRequest) => ({
-    bytes: Buffer.from("view"),
-    contentType: "image/png",
-    latencyMs: 1,
-    provenance: { provider: "fal" as const, model: "nbp", providerRef: "ref" },
-  }));
+  /** The sheet prompt each kind composes when nothing rides — the inertness floor. */
+  const bareSheetPrompt = (kind: SignSheetKind) => composeSignSheetPrompt({
+    panelOrder: signSheetPlan().find((plan) => plan.kind === kind)!.panelOrder,
+  });
 
-  it("names the hidden feature on EVERY view, beside the anchor and never instead of it", async () => {
-    const generateView = recorder();
-    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
+  it("names the hidden feature on EVERY sheet, beside the master and never instead of it", async () => {
+    await buildCastPackage(deps(), { ...input, featureWords: [hidden()] });
 
-    await buildCastPackage(deps({ identityEngine }), { ...input, featureWords: [hidden()] });
-
-    expect(generateView).toHaveBeenCalledTimes(CAST_PACKAGE_VIEWS.length);
-    for (const call of generateView.mock.calls) {
-      const request = call[0];
-      /* The words are words: they add no reference, and the anchor stays alone
+    /*
+      ⚠ **BOTH SHEETS — #1904, and *"every view"* is now *"every sheet"*.** Five
+      view requests became two sheet requests, and the words go to BOTH for the
+      reason the crops do: a hidden feature is a fact about the PERSON, true of
+      every camera, and no reader here can tell a facial scar from a tail.
+    */
+    expect(sheetCalls).toHaveLength(2);
+    for (const call of sheetCalls) {
+      /* The words are words: they add no reference, and the master stays alone
          and first. A lane that quietly added an image would be a different
          feature wearing this one's test. */
-      expect(request.references).toHaveLength(1);
-      expect(request.prompt).toContain("a long scaled tail at the base of the spine");
+      expect(call.references, call.kind).toHaveLength(1);
+      expect(call.prompt, call.kind).toContain("a long scaled tail at the base of the spine");
       /* Bound 4 (fable-876 §2, "the reference is still king") written into the
-         prompt itself rather than trusted to the blocks below it. */
-      expect(request.prompt).toContain("Everything the reference photograph DOES show is authoritative");
-      /* Added, never substituted. */
-      expect(request.prompt).toContain("Keep this exact person unchanged");
+         prompt itself rather than trusted to the blocks around it. */
+      expect(call.prompt, call.kind)
+        .toContain("Everything the reference photograph DOES show is authoritative");
     }
   });
 
@@ -1352,25 +1691,21 @@ describe("a signed Cast's hidden features ride into every view as words", () => 
       cannot produce NOTHING would be re-describing the person on every Sign in
       the product, which is the drift the bound forbids.
     */
-    const generateView = recorder();
-    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
+    await buildCastPackage(deps(), input);
 
-    await buildCastPackage(deps({ identityEngine }), input);
-
-    for (const call of generateView.mock.calls) {
-      const request = call[0];
-      expect(request.prompt).toBe(composePackageViewPrompt(request.viewAngle));
+    expect(sheetCalls).toHaveLength(2);
+    for (const call of sheetCalls) {
+      expect(call.prompt, call.kind).toBe(bareSheetPrompt(call.kind));
     }
   });
 
   it("is inert for an EMPTY list too, not only an absent one", async () => {
-    const generateView = recorder();
-    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
+    await buildCastPackage(deps(), { ...input, featureWords: [] });
 
-    await buildCastPackage(deps({ identityEngine }), { ...input, featureWords: [] });
-
-    const request = generateView.mock.calls[0]![0];
-    expect(request.prompt).toBe(composePackageViewPrompt(request.viewAngle));
+    expect(sheetCalls).toHaveLength(2);
+    for (const call of sheetCalls) {
+      expect(call.prompt, call.kind).toBe(bareSheetPrompt(call.kind));
+    }
   });
 
   it("rides BESIDE a delivered crop without either clause eating the other", async () => {
@@ -1379,21 +1714,26 @@ describe("a signed Cast's hidden features ride into every view as words", () => 
       two things appended to one prompt both survive — it was driven with a
       plate because that lane existed, never because the rule was about plates.
       The surviving ink lane is the delivered crop, so it drives it now.
-    */
-    const generateView = recorder();
-    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
 
-    await buildCastPackage(deps({ identityEngine }), {
+      ⚠ **AND IT IS NOW CHECKED ON BOTH SHEETS RATHER THAN ONE VIEW (#1904).**
+      It read the FIRST `generateView` call, which was one of five identical
+      compositions; the two sheets are genuinely different asks, so reading one
+      of them would leave the other's appends unproven.
+    */
+    await buildCastPackage(deps(), {
       ...input,
       inkCrops: [crop()],
       pronouns: pronounsForSex("male"),
       featureWords: [hidden()],
     });
 
-    const request = generateView.mock.calls[0]![0];
-    expect(request.references).toHaveLength(2);
-    expect(request.prompt).toContain("Reference 2 is the exact left upper arm tattoo he already has");
-    expect(request.prompt).toContain("a long scaled tail at the base of the spine");
+    expect(sheetCalls).toHaveLength(2);
+    for (const call of sheetCalls) {
+      expect(call.references, call.kind).toHaveLength(2);
+      expect(call.prompt, call.kind)
+        .toContain("Reference 2 is the exact left upper arm tattoo he already has");
+      expect(call.prompt, call.kind).toContain("a long scaled tail at the base of the spine");
+    }
   });
 });
 
@@ -1597,7 +1937,8 @@ describe("only a catastrophe takes a picture away", () => {
       { amount: VIEW_PRICE, reference: packageSlotChargeReference(OPERATION_ID, "sideClose") },
     ]);
     const marker = failures.find((entry) => entry.angle === "sideClose");
-    expect((marker?.failure as { reason: string }).reason).toBe("This view didn't hold the signed likeness");
+    expect((marker?.failure as { reason: string }).reason)
+      .toBe("This view didn't clearly look like this character, so we didn't keep it");
   });
 
   /**
@@ -1609,24 +1950,45 @@ describe("only a catastrophe takes a picture away", () => {
    * customer their picture *"didn't hold the signed likeness"* — in the room's
    * failed tile and in the health dialog, verbatim, beside the refund. The arm
    * above is now the CONTROL for the one axis that sentence was always true of.
+   *
+   * ⚠ **AND THE THREE SENTENCES ARE YUNA'S NOW, ON HIS WORD — #1904,
+   * 2026-10-08, posted with his *"go with A"*.** Two things changed that these
+   * arms hold: *"signed likeness"* is gone everywhere (a term of art from the
+   * pipeline, on a path a customer cannot avoid), and each sentence says what
+   * we DID with the picture rather than only what was wrong with it.
    */
   const reasonFor = async (
     axes: Partial<Record<"identity" | "intact" | "people", "differs" | "unsure">>,
+    castName?: string,
   ): Promise<string> => {
-    await buildCastPackage(deps({ judge: rejecting("sideClose", axes) }), input);
+    /*
+      ⚠ **SELF-CONTAINED, because `failures.find` returns the FIRST match and
+      `beforeEach` only fires between arms.** An arm calling this twice read the
+      first Sign's sentence back for the second one and passed on it — found the
+      hard way on the name arm below, which asks the same angle two different
+      questions in one `it`.
+    */
+    failures.length = 0;
+    refunds.length = 0;
+    committed.length = 0;
+    sheetCalls.length = 0;
+    await buildCastPackage(
+      deps({ judge: rejecting("sideClose", axes) }),
+      castName === undefined ? input : { ...input, castName },
+    );
     const marker = failures.find((entry) => entry.angle === "sideClose");
     return (marker?.failure as { reason: string }).reason;
   };
 
   it("⚠ a DAMAGED frame says so, and never that it wasn't her", async () => {
     const reason = await reasonFor({ intact: "differs" });
-    expect(reason).toBe("This view came back damaged");
+    expect(reason).toBe("This view came out broken, so we didn't keep it");
     expect(reason).not.toContain("likeness");
   });
 
   it("⚠ a frame with the wrong PEOPLE in it says so, and never that it wasn't her", async () => {
     const reason = await reasonFor({ people: "differs" });
-    expect(reason).toBe("This view didn't come back with your cast alone in it");
+    expect(reason).toBe("This view didn't show just this character, so we didn't keep it");
     expect(reason).not.toContain("likeness");
   });
 
@@ -1638,7 +2000,45 @@ describe("only a catastrophe takes a picture away", () => {
       them when what actually happened is that it did not render.
     */
     expect(await reasonFor({ intact: "differs", identity: "differs" }))
-      .toBe("This view came back damaged");
+      .toBe("This view came out broken, so we didn't keep it");
+  });
+
+  it("⚠ WRONG PEOPLE outranks identity too — his order, 2026-10-08", async () => {
+    /*
+      ⚠ **HIS WORD, verbatim: *"If several fail, show one line, in this order:
+      broken, then wrong people, then not her."*** The order was
+      intact → identity → people; `people` moved ahead of `identity`, and this
+      is the only arm that can tell the two orders apart. The reasoning is the
+      damaged-frame one gone one step further: a frame holding two people, or
+      nobody, has no single face to recognise — so *"didn't show just X"* is the
+      true fault and *"didn't clearly look like X"* is its symptom.
+    */
+    expect(await reasonFor({ people: "differs", identity: "differs" }))
+      .toBe("This view didn't show just this character, so we didn't keep it");
+  });
+
+  /**
+   * ⚠ **THE CAST'S NAME STANDS WHERE *"signed likeness"* STOOD — his ruling's
+   * own words: *"use the Cast's name, or \"this character\" when it has none"*.**
+   *
+   * Both halves are driven, because the fallback is the ordinary case rather
+   * than an edge: `SignInput.name` is optional and *"a Cast with no name shows
+   * its KI id until its owner gives it one"*. ⚠ **The id is never the answer
+   * here** — it is the machinery showing through on a path a refused customer
+   * cannot avoid.
+   */
+  it("⚠ names the Cast when it has a name", async () => {
+    expect(await reasonFor({ identity: "differs" }, "Sifr"))
+      .toBe("This view didn't clearly look like Sifr, so we didn't keep it");
+    expect(await reasonFor({ people: "differs" }, "Sifr"))
+      .toBe("This view didn't show just Sifr, so we didn't keep it");
+  });
+
+  it("⚠ a blank name is no name, not a gap in the sentence", async () => {
+    /* `"  "` would read "didn't clearly look like  , so we didn't keep it",
+       which is worse than the generic sentence. */
+    expect(await reasonFor({ identity: "differs" }, "   "))
+      .toBe("This view didn't clearly look like this character, so we didn't keep it");
   });
 
   it("⚠ CONTROL — every catastrophe has its own sentence, derived from the axis set and not from a list here", () => {
@@ -1737,34 +2137,28 @@ describe("only a catastrophe takes a picture away", () => {
     alternative was declined deliberately, and this arm is what holds it: a
     delivered view costs exactly ONE generation.
   */
-  it("spends ONE generation on a delivered view, and the budget on a refusal", async () => {
-    const calls: string[] = [];
-    const counting = () => ({
-      id: "test-identity",
-      editWithReferences: vi.fn(),
-      generateView: vi.fn(async (request: { viewAngle: string }) => {
-        calls.push(request.viewAngle);
-        return {
-          bytes: Buffer.from("view"),
-          contentType: "image/png",
-          latencyMs: 1,
-          provenance: { provider: "fal" as const, model: "nbp", providerRef: "ref" },
-        };
-      }),
-    });
-
+  it("spends ONE sheet render on a delivered package, and the budget on a refusal", async () => {
+    /*
+      ⚠ **THE SPEND IS THE SHEET'S NOW — #1904.** It counted `generateView`
+      calls per angle; a Sign renders two sheets, so the same claim is about
+      frames per SHEET: a package nothing refuses costs one render of each, and
+      only a catastrophe buys the second. `sideClose` is a head-sheet view, so a
+      refusal on it must move the head count and leave the body's alone.
+    */
     await buildCastPackage(
-      deps({ identityEngine: counting, judge: rejecting("sideClose", { intact: "unsure" }) }),
+      deps({ judge: rejecting("sideClose", { intact: "unsure" }) }),
       input,
     );
-    expect(calls.filter((angle) => angle === "sideClose")).toHaveLength(1);
+    expect(rendersPerSheet(), "an UNSURE delivers, so nothing is re-rendered")
+      .toEqual({ head: 1, body: 1 });
 
-    calls.length = 0;
+    sheetCalls.length = 0;
     await buildCastPackage(
-      deps({ identityEngine: counting, judge: rejecting("sideClose", { identity: "differs" }) }),
+      deps({ judge: rejecting("sideClose", { identity: "differs" }) }),
       input,
     );
-    expect(calls.filter((angle) => angle === "sideClose")).toHaveLength(VIEW_JUDGED_ATTEMPTS);
+    expect(rendersPerSheet(), "a refusal buys its own sheet one more frame, and only its own")
+      .toEqual({ head: SHEET_MAX_RENDERS, body: 1 });
   });
 
   /*
@@ -1780,7 +2174,7 @@ describe("only a catastrophe takes a picture away", () => {
     captured.length = 0;
     await buildCastPackage(deps({ judge: rejecting("sideClose", { identity: "differs" }) }), input);
     expect(captured.length).toBeGreaterThan(0);
-    expect(captured[0]!.reason).toBe("view_refused:identity");
+    expect(captured[0]!.reason).toBe("sheet_view_refused:sideClose:identity");
   });
 
   /*
@@ -1902,5 +2296,263 @@ describe("only a catastrophe takes a picture away", () => {
     expect(refunded).toBe(VIEW_PRICE);
     expect(kept + refunded).toBe(charged);
     expect(result.refundedCredits).toBe(VIEW_PRICE);
+  });
+});
+
+/**
+ * ⚠ **WHAT A SIGN SPENDS ON SHEETS — and the arm that was MISSING.**
+ *
+ * `sheetCalls` has been recorded on every engine call since the sheet road was
+ * written, and its own docblock says *"the count is the point of recording
+ * it"* — while **nothing asserted on it**. A number collected and summed
+ * nowhere is a number nobody has: every arm in this file would have passed just
+ * as happily if each of the five views had quietly rendered its own sheet, at
+ * five times the house cost and five different outfits.
+ *
+ * His #1926 ruling is TWO renders a Sign. That is the whole assertion.
+ */
+describe("⚠ what a Sign spends on sheets — two renders, not one per view", () => {
+  it("renders exactly one sheet per KIND, whatever the view count", async () => {
+    const result = await buildCastPackage(deps(), input);
+    expect(result.committed).toHaveLength(5);
+
+    /* Two calls, not five — the regression this arm exists for. */
+    expect(sheetCalls).toHaveLength(signSheetPlan().length);
+    expect(sheetCalls).toHaveLength(2);
+    expect([...sheetCalls.map((call) => call.kind)].sort()).toEqual(["body", "head"]);
+
+    /*
+      ⚠ **AND EACH SHEET WAS ASKED FOR ITS OWN PANELS** — the kind argument is
+      the only thing separating the two engines, so an arm that counted two
+      calls without reading their prompts would pass if both had been asked for
+      the same sheet twice.
+    */
+    for (const plan of signSheetPlan()) {
+      const call = sheetCalls.find((candidate) => candidate.kind === plan.kind);
+      expect(call, `no sheet call for ${plan.kind}`).toBeDefined();
+      expect(call!.prompt).toContain(`${plan.panelOrder.length} vertical panels`);
+      /* One reference each — her master, and nothing else. Both sheets take the
+         master alone; the head sheet does NOT wait for the body sheet, which is
+         what "in parallel" costs and buys. */
+      expect(call!.references).toHaveLength(1);
+    }
+
+    /* The two prompts are genuinely different asks. Without this the loop above
+       would pass if the plan returned the same panel list twice. */
+    expect(sheetCalls[0]!.prompt).not.toBe(sheetCalls[1]!.prompt);
+  });
+});
+
+/**
+ * ⚠ **THE SHEET COORDINATOR'S OWN RULES — his option A, driven through the real
+ * `buildCastPackage` rather than against the coordinator alone (#1904,
+ * 2026-10-08, his word verbatim and entire: *"go with A"*).**
+ *
+ * Driven through the entrance on purpose: every one of these claims is about
+ * what a CUSTOMER is charged and handed, and the coordinator cannot answer that
+ * by itself — the refund, the commit and the confession are all on the other
+ * side of it. A unit test of `settleSignSheet` would pass on a coordinator
+ * whose settled map nothing consumed, which is the shape invariant 7 exists
+ * for.
+ */
+describe("⚠ the free re-render is OURS, and its limits", () => {
+  it("does NOT buy a re-render for a panel nobody could judge", async () => {
+    /*
+      ⚠ **D-246 AT THE SPEND, WHICH IS WHERE IT COSTS US RATHER THAN HER.** An
+      unreachable judge fails every axis closed, so a coordinator asking
+      *"did any axis fail?"* would re-render BOTH sheets of EVERY Sign during a
+      judge outage — house money spent on frames nobody can have an opinion
+      about, five times a Sign. `viewConformanceRefuses` excludes `unjudged` and
+      this is the arm that holds the spending decision to it.
+    */
+    const judge = () => vi.fn(async () => {
+      throw new ProviderError("transport", "judge unreachable");
+    });
+    const result = await buildCastPackage(deps({ judge }), input);
+
+    expect(rendersPerSheet()).toEqual({ body: 1, head: 1 });
+    /* And D-246's own half: the pictures are delivered, not refunded. */
+    expect(result.committed).toHaveLength(5);
+    expect(refunds).toEqual([]);
+  });
+
+  it("settles from the FIRST frame when the free re-render does not arrive", async () => {
+    /*
+      ⚠ **THE ASYMMETRY THIS FILE'S HARDEST MONEY DECISION RESTS ON.** A fault
+      in the FIRST render has nothing to deliver, so it propagates and every
+      slice refunds. A fault in the SECOND must NOT: that frame is house money
+      bought to rescue one refused slice, and letting its failure fail the sheet
+      would take views the customer already paid for and the judge already
+      passed, to pay for OUR outage — which is what the confession law forbids.
+
+      `frontFull` passed on the body sheet's first frame and must still be
+      delivered, from that frame, after the re-render dies.
+    */
+    const judge = () => vi.fn(async (request: { angle: string }) =>
+      request.angle === "backFull" ? fail : pass);
+    const signSheetEngine = (kind: SignSheetKind) => {
+      const working = defaultSheetEngine(kind);
+      return {
+        ...working,
+        editWithReferences: vi.fn(async (request: { prompt: string; references: unknown[] }) => {
+          const already = sheetCalls.filter((call) => call.kind === kind).length;
+          if (kind === "body" && already === 1) {
+            sheetCalls.push({ kind, prompt: request.prompt, references: [] });
+            throw new ProviderError("transport", "the second frame never came");
+          }
+          return working.editWithReferences(request);
+        }),
+      };
+    };
+    const result = await buildCastPackage(deps({ judge, signSheetEngine }), input);
+
+    /* Both frames were asked for; the second never arrived. */
+    expect(rendersPerSheet()).toEqual({ body: SHEET_MAX_RENDERS, head: 1 });
+    /* The view that passed on frame 1 is delivered FROM frame 1. */
+    expect(committed.sort())
+      .toEqual(["closeUp", "frontFull", "sideClose", "threeQuarter"]);
+    expect(
+      committedProvenance.find((entry) => entry.angle === "frontFull")?.providerRef,
+    ).toBe("sheet-ref-body-gen1");
+    /* Only the refused slice refunds, and the base stays — this is a PARTIAL
+       package, not a total loss. */
+    expect(result.failed).toEqual(["backFull"]);
+    expect(refunds).toEqual([
+      { amount: VIEW_PRICE, reference: packageSlotChargeReference(OPERATION_ID, "backFull") },
+    ]);
+    expect(result.totalLoss).toBe(false);
+  });
+
+  it("charges the customer NOTHING for the second frame, and never a third", async () => {
+    /*
+      His ruling's two money sentences, together: *"at our cost"* and *"at most
+      one automatic re-render per sheet per Sign. No loop."* A judge that
+      refuses forever is the worst case, and the whole of what it may cost is
+      one extra frame per sheet and the customer's full refund.
+    */
+    const judge = () => vi.fn(async () => fail);
+    const result = await buildCastPackage(deps({ judge }), input);
+
+    expect(rendersPerSheet())
+      .toEqual({ body: SHEET_MAX_RENDERS, head: SHEET_MAX_RENDERS });
+    /* Five slices and the base — nothing extra was charged for the re-renders,
+       and nothing was withheld because of them. */
+    expect(result.refundedCredits).toBe(SIGN_PRICE);
+    expect(refunds.filter((entry) => entry.amount === VIEW_PRICE)).toHaveLength(5);
+    expect(refunds.filter((entry) => entry.amount === PROMOTION)).toHaveLength(1);
+  });
+
+  it("judges each rendered panel exactly ONCE", async () => {
+    /*
+      ⚠ **THE DEFECT THIS REPLACED, named because it was measured and not
+      supposed:** on the per-view road `VIEW_JUDGED_ATTEMPTS` gave a refused
+      slot a second attempt, and on a sheet that second attempt re-read the SAME
+      settled pixels — one more paid judge call asking an identical question
+      about an identical picture, and then the slice failed anyway.
+
+      So the count is the arm: five panels on a clean Sign is five judgements,
+      and five panels across two re-rendered sheets is ten. Never fifteen.
+    */
+    const clean: Array<string> = [];
+    await buildCastPackage(
+      deps({ judge: () => vi.fn(async (request: { angle: string }) => {
+        clean.push(request.angle);
+        return pass;
+      }) }),
+      input,
+    );
+    expect(clean.sort()).toEqual([...CAST_PACKAGE_VIEWS].sort());
+
+    const refused: Array<string> = [];
+    sheetCalls.length = 0;
+    await buildCastPackage(
+      deps({ judge: () => vi.fn(async (request: { angle: string }) => {
+        refused.push(request.angle);
+        return fail;
+      }) }),
+      input,
+    );
+    /* Ten: every panel judged once per frame, two frames per sheet. */
+    expect(refused).toHaveLength(CAST_PACKAGE_VIEWS.length * SHEET_MAX_RENDERS);
+    for (const angle of CAST_PACKAGE_VIEWS) {
+      expect(refused.filter((seen) => seen === angle), angle).toHaveLength(SHEET_MAX_RENDERS);
+    }
+  });
+});
+
+/**
+ * ⚠ **THE WHOLE LINE THE CUSTOMER READS, COMPOSED THROUGH THE REAL HELPERS —
+ * and it is the arm that would have caught the defect this card nearly shipped.**
+ *
+ * Yuna's sentences are complete sentences ending in *"so we didn't keep it"*,
+ * and `ViewTabs`'s failed slot composes `${label} failed — ${reason}.
+ * ${money}`. Shipped with their own full stop they read *"…we didn't keep
+ * it.."* on the one surface a Sign's refusal actually lands on — a punctuation
+ * bug nobody would find by reading either file alone, because the sentence is
+ * right in `packageOrchestrator` and the composition is right in `ViewTabs`.
+ *
+ * So the LINE is the subject here, not the sentence: the reason this road
+ * raises is pushed through the money helper every surface shares, and the
+ * composed result is read for the two things a reader cannot see from one side
+ * — no doubled stop, and no term of art. **It is a mechanizable design law and
+ * therefore an assertion rather than review memory** (the UI milestone
+ * contract's own rule).
+ *
+ * ⚠ **The `.` is `ViewTabs`'s and is quoted from it rather than invented**, so
+ * an arm that passed while the real surface composed something else is not what
+ * this is. If that expression changes, this arm's own comment is the pointer to
+ * change with it.
+ */
+describe("⚠ the refusal line a customer reads, end to end", () => {
+  const compose = (reason: string) =>
+    /* `client/src/features/casting/components/ImageViewer/ViewTabs.tsx`'s
+       `FailedSlot`: `${label} failed — ${failure.reason}. ${refundOutcomeText(failure)}` */
+    `Front failed — ${reason}. ${refundOutcomeText({ refunded: VIEW_PRICE })}`;
+
+  it("reads as one sentence, with no doubled stop and no term of art", () => {
+    for (const axis of CONFORMANCE_AXES) {
+      const line = compose(refusedViewReason([axis], "Sifr"));
+      expect(line, axis).not.toContain("..");
+      /* The pipeline's own words, each one checked by name: an axis name, a
+         verdict word, and the term his ruling removed. */
+      expect(line.toLowerCase(), axis).not.toContain("likeness");
+      expect(line.toLowerCase(), axis).not.toMatch(/identity|intact|people|axis|verdict|judge/);
+      /* It says what happened, what we did, and what came back — in that order. */
+      expect(line, axis).toContain("so we didn't keep it.");
+      expect(line, axis).toContain("credits refunded — you weren't charged.");
+    }
+  });
+
+  it("⚠ CONTROL — the arm reddens on a sentence carrying its own stop", () => {
+    /*
+      Without this the arm above could pass on a reader that never looked at the
+      join. The failing shape is the exact one a well-meaning edit produces:
+      Yuna's sentence pasted in with the full stop she wrote.
+    */
+    expect(compose("This view came out broken, so we didn't keep it.")).toContain("..");
+  });
+
+  it("⚠ DERIVES its join from the real surface, so a quoted composition cannot rot", () => {
+    /*
+      ⚠ **THE ARM ABOVE QUOTES `ViewTabs`, AND A QUOTE IS A MIRROR (working law
+      4).** If that component stops putting a full stop after the reason, the
+      arm above goes on passing while the real line changes shape — which is
+      the drift this repository has paid for repeatedly. So the join is READ
+      out of the component rather than trusted: the expression must still put
+      a `.` between the reason and the money, because that is the whole reason
+      these sentences ship without one.
+    */
+    const source = readListedSource(join(
+      resolve(import.meta.dirname, "../.."),
+      "client/src/features/casting/components/ImageViewer/ViewTabs.tsx",
+    ));
+    expect(source, "the surface this arm derives from is gone — re-point it").not.toBeNull();
+    expect(source!).toContain("${label} failed — ${failure.reason}. ${refundOutcomeText(failure)}");
+  });
+  it("names the Cast in the line, or calls it this character", () => {
+    expect(compose(refusedViewReason(["identity"], "Sifr")))
+      .toBe("Front failed — This view didn't clearly look like Sifr, so we didn't keep it. "
+        + `${refundOutcomeText({ refunded: VIEW_PRICE })}`);
+    expect(compose(refusedViewReason(["identity"]))).toContain("this character");
   });
 });

@@ -1075,8 +1075,17 @@ describe("the milestone comes from the ladder he declared, not the top of his ba
        cannot see `.agents/foreman/PROGRAM.md`, so a briefing left behind while
        his word reached the rulebook passes here. The arm that holds the two
        EQUAL is `server/seatFocusTwoTruths.test.ts`, and the pin above and that
-       arm move together: a flip that changes this line changes both files. */
-    expect(focusRungFromLadder(ladder)).toBe("P2");
+       arm move together: a flip that changes this line changes both files.
+
+       ⚠ **MOVED P2 → N2b ON 2026-10-08, AND THE ROAD IS THE ONE THIS DOCBLOCK
+       PRESCRIBES.** His Desk reply #271 on the P2 completion card (#1933) was
+       `"n2b"`, given after he drove all five of P2's test-drive steps and all
+       five came back `matched` (#266–#270). The rulebook's `CURRENT FOCUS`
+       line, the briefing's ladder and this pin moved in ONE commit, which is
+       what #1840 cost the program when they did not. **This pin moves only on
+       his word. The next flip is N2b → N2c, on N2b's completion card and his
+       word — never on N2b merely finishing.** */
+    expect(focusRungFromLadder(ladder)).toBe("N2b");
   });
 
   describe("tonight's two measured shapes, driven through the ordered gate", () => {
@@ -2066,7 +2075,17 @@ describe("the cut derives rather than mirrors", () => {
        the first thing on the line (`.agents/` is gitignored — no suite can read
        that regex, which is exactly why this is asserted here). */
     expect(/`SEATS \$\{plan\.seatCount\} \| cards/.test(cli)).toBe(true);
-    expect(/`SEATS 0 \| nothing on offer\$\{rungWord\}/.test(cli)).toBe(true);
+    /*
+      ⚠ **THE SECOND PIN NAMED `${rungWord}` BY ADJACENCY AND NOW NAMES THE
+      ORDER — #1977.** The claim above is that the COUNT is first; which word
+      follows was incidental, and pinning it meant any new word on this line
+      reddened an arm about something else. What replaces it is stricter rather
+      than looser: the repairs word leads the trailing words on BOTH branches,
+      which is #1977's own rule (a repair owed comes before any new card) said
+      where the runner logs it.
+    */
+    expect(/`SEATS 0 \| nothing on offer\$\{repairWord\}\$\{rungWord\}/.test(cli)).toBe(true);
+    expect(/cards \$\{plan\.cardCount\}[^`]*\$\{repairWord\}\$\{rungWord\}/.test(cli)).toBe(true);
   });
 
   it("names no work label, hold label or domain of its own — IN EVERY FILE OF THE FEATURE", () => {

@@ -40,8 +40,9 @@
  */
 import { createOpenRouterTextEngine, DEFAULT_INTERPRETER_MODEL } from "../providers/openrouterText";
 import { createFalIdentityEngine } from "../providers/falQueue";
-import { createFalSunburstPlateEngine } from "../providers/falImages";
+import { createFalSunburstPlateEngine, createFalSunburstSheetEngine } from "../providers/falImages";
 import { falAllowanceOf } from "./falBudget";
+import { SIGN_SHEET_SIZES, type SignSheetKind } from "./signSheet";
 import { ProviderQueue } from "../providers/providerQueue";
 import type { IdentityEngine } from "../providers/types";
 import { CAST_PACKAGE_VIEWS } from "./castViewPackage";
@@ -57,6 +58,16 @@ let viewQueue: ProviderQueue | null = null;
 let identityEngine: IdentityEngine | null = null;
 let viewEngine: IdentityEngine | null = null;
 let plateEngine: IdentityEngine | null = null;
+/**
+ * ONE MEMO PER SHEET KIND — his #1926 ruling renders two sheets of different
+ * shapes, and the SIZE is baked into each engine at construction.
+ *
+ * ⚠ **A single memo would hand the second caller the FIRST sheet's pixels**,
+ * silently: both engines share a door, a quality and a queue, so the wrong one
+ * returns a perfectly good picture of the wrong shape, the cut succeeds, and
+ * #1903's three surviving judge axes cannot see framing.
+ */
+const sheetEngines: Record<SignSheetKind, IdentityEngine | null> = { head: null, body: null };
 let judge: ViewConformanceJudge | null = null;
 
 function castPackageQueue(): ProviderQueue {
@@ -142,6 +153,52 @@ export function castingOutfitPlateEngine(): IdentityEngine {
   return plateEngine;
 }
 
+/**
+ * WHAT THE SIGN SHEET RENDERS ON — GPT Image 2.5 Sunburst at `high`.
+ *
+ * **His word, 2026-10-07 (terminal), closing #1690:** *"and then we go with the
+ * sunburst 2.5 max quality for the sign sheet"*, after judging the three-engine
+ * A/B and the cut views by eye. ⚠ **This is the fourth engine this file has
+ * named in nine days and the record above is why the dates matter**: #1459
+ * moved the delivered views to Sunburst, path E moved them back to Nano Banana
+ * Pro 2K with Sunburst keeping the plate, and this card replaces all five views
+ * AND the plate with ONE Sunburst frame. Each move was his eye on real frames,
+ * and none of them cancels the one before — they answered different questions.
+ *
+ * ⚠ **`castingViewEngine` ABOVE IS STILL LIVE AND MUST STAY**, which is the one
+ * thing a reader could get wrong here. The Sign no longer calls it, but a **Try
+ * again** renders one view against its delivered sibling on that engine
+ * (`viewRetryService.ts`), and so does the paid refine's road. Deleting it as
+ * "the old Sign engine" would take two live roads with it — the path-three
+ * death this file's siblings have paid for four times.
+ *
+ * ⚠ **IT IS A NEW ROAD, NOT A NEW DECLARED PATH, so `assertFalBudget()` is
+ * unmoved.** It draws from `SIGN_VIEW_CONCURRENCY` through the queue below,
+ * exactly as the plate does — and the arithmetic gets *easier* rather than
+ * tighter: a Sign used to put one plate and five views through that allowance
+ * and now puts ONE sheet through it, so the account ceiling this table protects
+ * sees a sixth of the pressure it did yesterday.
+ *
+ * The missing-credential refusal is its siblings', for the reason at the top of
+ * this file: it fires before the money moves, never at dispatch.
+ */
+export function castingSignSheetEngine(kind: SignSheetKind): IdentityEngine {
+  let engine = sheetEngines[kind];
+  if (!engine) {
+    const apiKey = process.env.FAL_KEY;
+    if (!apiKey) throw new Error("FAL_KEY is required to render a signed Cast's sheet");
+    engine = createFalSunburstSheetEngine({
+      apiKey,
+      /* The size is the sheet's own, from the one table that also owns its
+         panel list — so the pixels and the panels cannot disagree. */
+      size: SIGN_SHEET_SIZES[kind],
+      queue: castPackageQueue(),
+    });
+    sheetEngines[kind] = engine;
+  }
+  return engine;
+}
+
 export function castingViewConformanceJudge(): ViewConformanceJudge {
   if (!judge) {
     const apiKey = process.env.OPENROUTER_API_KEY;
@@ -210,5 +267,10 @@ export function resetSignEnginesForTests(): void {
      names is the shape every one of these leaks has. */
   viewEngine = null;
   plateEngine = null;
+  /* The sheet engines join the reset in the SAME commit that memoizes them —
+     the docblock above records what it cost when viewEngine did not. ⚠ Keyed
+     off the record rather than written out, so a third sheet kind cannot be
+     added and left un-reset. */
+  for (const kind of Object.keys(sheetEngines) as SignSheetKind[]) sheetEngines[kind] = null;
   judge = null;
 }

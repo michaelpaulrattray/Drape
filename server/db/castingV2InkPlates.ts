@@ -56,7 +56,7 @@
  * both of which now build their fixture row with a raw INSERT, because the
  * helper that used to build it is gone.
  */
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, notInArray } from "drizzle-orm";
 
 import {
   castingCandidates,
@@ -155,5 +155,57 @@ export async function deleteInkPlateRowsIn(
   const result = await tx
     .delete(castingInkPlates)
     .where(inArray(castingInkPlates.id, doomed.map((plate) => plate.id)));
+  return affectedRows(result);
+}
+
+/**
+ * THE PLATES THE JOIN ABOVE CANNOT SEE — #1948 L1.
+ *
+ * `listPurgeableInkPlatesIn` reaches a plate through its design row, which is
+ * the only path a candidate has to one. **A plate whose design row is ALSO
+ * gone is therefore invisible to every sweep in the product** — retention,
+ * `finalCastDeletion` and the account purge all start at the candidate — and
+ * its bytes sit at a permanently public URL with nothing left pointing at
+ * them. The comment on the function above is where that risk is named: *"once
+ * the design rows are gone a plate row is an orphan nothing can find"*. This
+ * is the reader for the ones where that already happened.
+ *
+ * It takes the plate ids the candidate-scoped pass already handled and
+ * excludes them, so what comes back is exactly the remainder. It names
+ * `storageKey` — the one thing `castingV2Orphans.ts` is built not to do —
+ * which is why it lives HERE, beside the only other reader that names it,
+ * rather than in a second file that knows where a plate's bytes are.
+ *
+ * ⚠ **A ROW IT FINDS IS A BUG SOMEWHERE ELSE, AND THE CALLER SAYS SO OUT
+ * LOUD.** Sweeping it silently would turn a dropped design into a thing
+ * nobody ever learns about, which is the objection the purge's own header
+ * raised against orphan sweeping and is answered by the log line, not by
+ * leaving the picture up.
+ */
+export async function listAccountOrphanInkPlatesIn(
+  tx: TransactionHandle,
+  userId: number,
+  handledPlateIds: readonly number[],
+): Promise<Array<{ id: number; storageKey: string }>> {
+  const owned = eq(castingInkPlates.userId, userId);
+  return tx
+    .select({ id: castingInkPlates.id, storageKey: castingInkPlates.storageKey })
+    .from(castingInkPlates)
+    .where(
+      handledPlateIds.length > 0
+        ? and(owned, notInArray(castingInkPlates.id, [...handledPlateIds]))
+        : owned,
+    );
+}
+
+/** Delete plate rows by their own id — the orphan road's only writer. */
+export async function deleteInkPlateRowsByIdIn(
+  tx: TransactionHandle,
+  plateIds: readonly number[],
+): Promise<number> {
+  if (plateIds.length === 0) return 0;
+  const result = await tx
+    .delete(castingInkPlates)
+    .where(inArray(castingInkPlates.id, [...plateIds]));
   return affectedRows(result);
 }

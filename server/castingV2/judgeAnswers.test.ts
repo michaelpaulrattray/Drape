@@ -218,11 +218,14 @@ describe("the conformance judge asks for the room it needs", () => {
       judge itself wrote `unjudged("unavailable", "the conformance judge could
       not be reached")` — the exact sentence on three charged views.
 
-      D-246 is untouched by the move. `judgeUnjudgedOnFailure` in
-      `packageOrchestrator` catches precisely this and records the view as
-      unjudged, delivered, `method: "unavailable"` — so the customer still gets a
-      picture that may be perfect rather than nothing. What changed is only how
-      often the sentence is true, never whether it may be said.
+      D-246 is untouched by the move. `judgeUnjudgedOnFailure` catches precisely
+      this and records the view as unjudged, delivered, `method: "unavailable"` —
+      so the customer still gets a picture that may be perfect rather than
+      nothing. What changed is only how often the sentence is true, never
+      whether it may be said. ⚠ It lived in `packageOrchestrator` until #1904
+      and lives beside `unjudgedVerdict` in `viewConformance.ts` now, because
+      the Sign's sheet coordinator needs the same rule and a second copy of
+      D-246 is the last place in the product that should have one.
     */
     const { sent } = network([() => reply({ finishReason: "length", reasoning: "again" })]);
 

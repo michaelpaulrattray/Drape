@@ -719,3 +719,195 @@ export function createFalSunburstPlateEngine(config: {
     },
   };
 }
+
+/**
+ * THE SIGN SHEET'S ENGINE — GPT Image 2.5 Sunburst at `high`, on the edit door.
+ *
+ * It is {@link createFalSunburstPlateEngine}'s sibling and shares its door, its
+ * quality and its three refusals; what differs is the SIZE it asks for and the
+ * fact that **what comes back is DELIVERED to a customer** rather than used as
+ * a reference nobody ever sees. That second difference is why this is a
+ * separate factory and not a size argument on the plate's: the plate's own
+ * docblock records that it is a door the next ruling can move without touching
+ * its neighbour, and a factory shared by a scratch reference and five paid
+ * pictures is a factory no ruling can move safely.
+ *
+ * ⚠ **IT IS NOT THE PLATE ENGINE WITH A WIDER ASK.** A caller that handed the
+ * plate's factory a sheet size would get a picture of the right
+ * shape with the plate's prompt discipline around it; the two roads carry
+ * different prompts, different reference rules and — from this card — different
+ * lifetimes. Keeping them apart costs one factory and buys the ability to
+ * price, measure and retire either one on its own.
+ *
+ * What is measured here, and what is not:
+ *
+ *   size      the caller's, required — see this factory's `size` argument and
+ *             `signSheet.SIGN_SHEET_SIZES`, which carries the reading at the
+ *             RETURNED BYTES of all five real sheets. Never inferred from the
+ *             ask, which this endpoint reports as `width: null`.
+ *   latency   **~61–69 s a sheet**, three runs (#1690, 2026-10-07), against the
+ *             ~1.5–2 min recorded for today's plate plus five views. One render
+ *             stands where six stood, so the saving is a customer's whole wait
+ *             rather than a slice of it.
+ *   cost      **~$0.07 a sheet** — a fal balance reading across that court,
+ *             quantised to the cent, against ~$0.90 for today's road (plate
+ *             ~$0.145 + 5 × Nano Banana Pro 2K at ~$0.15). ⚠ It is deliberately
+ *             NOT added to {@link FAL_MEASURED_USD_PER_IMAGE}: that table is
+ *             keyed on MODEL and this endpoint's price moves with the SIZE, so
+ *             one number there would misprice the plate and the repaint — the
+ *             defect that table's own docblock warns about twice. The figure
+ *             lives here, where a size can be recorded beside it, and
+ *             `estimatedCostUsd` therefore comes back `undefined`, which reads
+ *             as UNPRICED rather than as another price.
+ *   quality   **his eye, on the cut views of those three sheets** (law 9), and
+ *             it is the only reason this engine exists. Not claimed by this
+ *             docblock. His own named compromise rides with it: a delivered
+ *             view is about **620–870 × 1648** where today's is 1696x2528 —
+ *             roughly 30% of the pixels — and he judged the cut views at that
+ *             size before saying go.
+ */
+export function createFalSunburstSheetEngine(config: {
+  apiKey: string;
+  /**
+   * THE PIXELS THIS ENGINE ASKS FOR — required, and deliberately without a
+   * default.
+   *
+   * ⚠ **A default here would be the defect this argument exists to prevent.**
+   * His #1926 ruling renders two sheets of different shapes, and the panel
+   * ASPECT is the entire reason there are two: one five-panel sheet showed 58%
+   * of a paid view in the strip, the two shipped shapes show 94–97%. A caller
+   * that forgot the argument would silently get the other sheet's shape, the
+   * cut would succeed, and nothing downstream could see it — #1903 left the
+   * judge three axes and none of them is framing.
+   *
+   * The numbers and their measurement live on `signSheet.SIGN_SHEET_SIZES`,
+   * beside the panel list they have to agree with. This layer takes them as an
+   * argument rather than importing them: `providers/` sits below
+   * `castingV2/`, and a provider reaching up for a product constant is a
+   * dependency direction this tree does not have anywhere else.
+   *
+   * ⚠ **WHAT THE DOOR DOES TO AN ASK IT DOES NOT LIKE IS THE CONSTRAINT ON
+   * ANY FUTURE NUMBER, and it belongs here because that is this layer's own
+   * fact.** {@link OUTFIT_PLATE_SIZE}'s docblock carries the two measured
+   * behaviours: the door preserves aspect and **caps the long side at 3840**
+   * (#1394 — 4688x1760 asked, 3840x1440 answered, every time). Both shipped
+   * sheets sit at or under that cap (head's long side IS 3840, body's is
+   * 3504), which is why both come back unscaled. ⚠ **A size whose long side
+   * exceeds 3840 will be silently resized, and the cut would then divide a
+   * picture of the wrong shape** — so a new sheet shape is read at the
+   * returned bytes before it is trusted, never at the ask.
+   */
+  size: { width: number; height: number };
+  model?: string;
+  timeoutMs?: number;
+  pollIntervalMs?: number;
+  queue?: ProviderQueue;
+}): IdentityEngine {
+  if (!config.apiKey) {
+    /* Refused at construction for the reason both its siblings are: a Sign that
+       reaches dispatch has already taken 8,500 credits, so a credential nobody
+       set is a configuration fault and never a generation failure a customer
+       should have to be refunded for. */
+    throw new ProviderError("capability", "the Sign sheet needs FAL_KEY to render");
+  }
+  const model = config.model ?? FAL_GPT_IMAGE_25_SUNBURST_EDIT;
+  const timeoutMs = config.timeoutMs ?? 300_000;
+  const pollIntervalMs = config.pollIntervalMs ?? 1_500;
+  const queue =
+    config.queue ?? new ProviderQueue({ name: "fal-sign-sheet", concurrency: 1, maxQueueDepth: 32 });
+
+  async function edit(request: IdentityEditRequest): Promise<ImageResult> {
+    if (request.resolution !== "2K") {
+      /*
+        The signed-view TIER, and the word is a role rather than a pixel count —
+        `packageOrchestrator`'s own note on `resolution: "2K"` says so at
+        length: it names the tier the 1K anchor is not, and
+        `model_assets.resolution` keeps saying it so the two readers asking *is
+        this a full view rather than the anchor?* keep working. A sheet carries
+        five views of that tier, so it asks for that tier.
+      */
+      throw new ProviderError(
+        "capability",
+        `the Sign sheet engine renders one sheet size only — asked for ${request.resolution}`,
+      );
+    }
+    /*
+      An edit with nothing to edit is the one request this door cannot serve —
+      measured on the real door during #1278's build, **422: "Number of image
+      URLs must be at least 1"**. His card names exactly one reference (*"One
+      reference: her signed master"*), and refusing here turns that 422 into a
+      sentence before any money moves.
+    */
+    if (request.references.length < 1) {
+      throw new ProviderError(
+        "capability",
+        "the Sign sheet is edited from the signed master and needs at least one reference image",
+      );
+    }
+    if (request.references.length > SIGNED_VIEW_MAX_REFERENCES) {
+      throw new ProviderError("capability", "too many reference images for the Sign sheet engine");
+    }
+
+    return queue.run("signSheet", () =>
+      withRetry(
+        "fal.signSheet",
+        async () => {
+          const job = await runFalImageJob({
+            apiKey: config.apiKey,
+            endpoint: model,
+            body: {
+              prompt: request.prompt,
+              image_urls: request.references.map(
+                (reference) =>
+                  `data:${reference.contentType};base64,${reference.bytes.toString("base64")}`,
+              ),
+              image_size: config.size,
+              num_images: 1,
+              /* His word: *"sunburst 2.5 max quality for the sign sheet"*. */
+              quality: "high",
+              output_format: "png",
+            },
+            timeoutMs,
+            pollIntervalMs,
+            signal: request.signal,
+          });
+
+          return {
+            bytes: job.bytes,
+            contentType: job.contentType,
+            width: job.width,
+            height: job.height,
+            latencyMs: job.latencyMs,
+            /* UNPRICED on purpose — see this factory's docblock. The ~$0.07
+               reading is size-keyed and that table is model-keyed. */
+            estimatedCostUsd: measuredUsdPerImage(model),
+            provenance: { provider: "fal" as const, model, providerRef: job.requestId },
+          };
+        },
+        { signal: request.signal },
+      ),
+    );
+  }
+
+  return {
+    id: `fal:${model}:sheet`,
+    editWithReferences: edit,
+    /*
+      ⚠ **A SHEET HAS NO ANGLE, AND THIS IS THE PLACE THAT HAS TO SAY SO.** The
+      plate's sibling appends `View: <angle>.` to its prompt here, which is
+      harmless for a two-panel reference nobody judges. A sheet carries all five
+      cameras in one frame and its prompt declares them panel by panel, so a
+      trailing `View: closeUp.` is an instruction to make the WHOLE SHEET a
+      close-up, fighting the four panel lines above it. The road a caller might
+      reach for out of habit therefore REFUSES, rather than quietly composing a
+      prompt that contradicts itself.
+    */
+    async generateView(): Promise<ImageResult> {
+      throw new ProviderError(
+        "capability",
+        "the Sign sheet is one frame holding every view — render it with editWithReferences, "
+        + "never per angle",
+      );
+    },
+  };
+}
