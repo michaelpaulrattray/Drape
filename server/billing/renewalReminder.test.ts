@@ -33,6 +33,7 @@ import { isDuplicateCreditReferenceError } from "../db/credits";
 import { escapeEmailHtml } from "../mail";
 import { verificationEmail } from "../routes/emailVerification";
 import type { RenewalReminderCandidate } from "../db/billing";
+import type { PendingChangeRead } from "../stripe/subscriptionSchedule";
 import type { ProductEmail } from "../mail";
 import {
   MIN_NOTICE_DAYS,
@@ -40,6 +41,7 @@ import {
   formatRenewalAmount,
   formatRenewalDate,
   renewalReminderEmail,
+  pendingRenewalPlan,
   renewalVerdict,
   runYearlyRenewalReminderSweep,
   type RenewalReminderDeps,
@@ -90,6 +92,30 @@ function subscription(overrides: {
 }
 
 /**
+ * What `readPendingPlanChange` answers, in its own three-outcome shape.
+ *
+ * ⚠ **The DATE matters as much as the plan**, which is why it is a parameter
+ * and not a constant: a phase beginning at the renewal prices the invoice this
+ * notice is about, and a phase beginning later prices a different one.
+ */
+function pendingChange(overrides: {
+  plan?: string;
+  interval?: "monthly" | "annual";
+  daysToEffective?: number;
+} = {}): PendingChangeRead {
+  return {
+    outcome: "pending",
+    change: {
+      scheduleId: "sub_sched_1941",
+      effectiveAt: new Date(NOW.getTime() + (overrides.daysToEffective ?? 20) * DAY_MS),
+      plan: overrides.plan ?? "pro",
+      interval: overrides.interval ?? "annual",
+      creditUnits: 0,
+    },
+  } as PendingChangeRead;
+}
+
+/**
  * The fake outside world, with a claim store that enforces the real unique key.
  */
 function harness(options: {
@@ -106,6 +132,8 @@ function harness(options: {
    */
   sendThrows?: boolean;
   claimUnreachable?: boolean;
+  /** What the schedule read answers; nothing pending by default. */
+  pendingRead?: PendingChangeRead;
   now?: Date;
 } = {}) {
   const claimed = new Set<string>();
@@ -122,6 +150,7 @@ function harness(options: {
       if (outcome === "failed") return { outcome: "failed", error: "network" };
       return { outcome: "found", subscription: options.subscription ?? subscription() };
     },
+    readPendingChange: async () => options.pendingRead ?? { outcome: "none" },
     previewRenewal: async () =>
       options.charge === undefined ? { amountCents: 67_200, currency: "usd" } : options.charge,
     claim: async (row) => {
@@ -227,6 +256,95 @@ describe("#1941 — a failed send releases its claim, so the next pass tries aga
       "the claim was kept after a failed send, so this renewal would never get a notice",
     ).toHaveLength(1);
     expect(failing.claimed.size).toBe(0);
+  });
+});
+
+describe("#1941 — a change waiting at the boundary decides what the renewal buys", () => {
+  /* The relay's finding on PR #1975: `metadata.plan` is the phase IN PROGRESS,
+     and since #1963 the previewed amount is the NEXT phase's. These arms are
+     about the two facts in the email agreeing with each other. */
+
+  it("a pending decrease names the plan the customer is about to be billed for, beside that phase's amount", async () => {
+    const { deps, sentEmails } = harness({
+      /* She is on Pro Plus today and has asked to drop to Pro at the renewal. */
+      subscription: subscription({ plan: "studio" }),
+      pendingRead: pendingChange({ plan: "pro", interval: "annual" }),
+      charge: { amountCents: 67_200, currency: "usd" },
+    });
+
+    const result = await runYearlyRenewalReminderSweep(deps);
+
+    expect(result.sent).toBe(1);
+    const email = sentEmails[0]!;
+    expect(
+      email.html,
+      "the email named the plan she is leaving beside the amount of the plan she is joining",
+    ).toContain(PLAN_TIERS.pro.name);
+    expect(email.html).not.toContain(PLAN_TIERS.studio.name);
+    expect(email.subject).toBe(`Your ${PLAN_TIERS.pro.name} plan renews on 21 November 2026`);
+    expect(email.html).toContain("$672.00");
+  });
+
+  it("a pending yearly → monthly change sends nothing — there is no annual renewal to warn about", async () => {
+    const { deps, sentEmails } = harness({
+      pendingRead: pendingChange({ plan: "pro", interval: "monthly" }),
+    });
+
+    const result = await runYearlyRenewalReminderSweep(deps);
+
+    expect(sentEmails, "a yearly renewal was announced that is not going to happen").toHaveLength(0);
+    expect(result.sent).toBe(0);
+    expect(result.skipped["pending-not-yearly"]).toBe(1);
+  });
+
+  it("a schedule read that FAILED refuses rather than naming the current plan", async () => {
+    const { deps, sentEmails } = harness({
+      pendingRead: { outcome: "failed", error: "network" },
+    });
+
+    const result = await runYearlyRenewalReminderSweep(deps);
+
+    expect(sentEmails).toHaveLength(0);
+    expect(result.skipped["pending-change-unreadable"]).toBe(1);
+  });
+
+  it("a refused pending read leaves no claim, so the next pass can still send it", async () => {
+    const failing = harness({ pendingRead: { outcome: "failed", error: "network" } });
+    await runYearlyRenewalReminderSweep(failing.deps);
+    expect(
+      failing.claimed.size,
+      "the refusal took a claim with it, so this renewal could never get its notice",
+    ).toBe(0);
+  });
+
+  it("a pending phase that begins AFTER this renewal does not rename it", async () => {
+    const { deps, sentEmails } = harness({
+      subscription: subscription({ plan: "studio", daysToRenewal: 20 }),
+      /* A phase starting a year and a bit out prices a later invoice entirely. */
+      pendingRead: pendingChange({ plan: "pro", daysToEffective: 400 }),
+    });
+
+    const result = await runYearlyRenewalReminderSweep(deps);
+
+    expect(result.sent).toBe(1);
+    expect(sentEmails[0]!.html).toContain(PLAN_TIERS.studio.name);
+  });
+
+  it("nothing pending leaves the subscription's own plan as the name", () => {
+    expect(pendingRenewalPlan({ outcome: "none" }, new Date(NOW.getTime() + 20 * DAY_MS))).toEqual({
+      outcome: "current",
+    });
+  });
+
+  it("a pending phase naming a plan this product does not price refuses rather than captioning it", () => {
+    /* Unreachable through `readPendingPlanChange` today — every
+       `SUBSCRIPTION_PRODUCTS` key is a `PLAN_TIERS` key — so it is driven
+       directly, which is the only way to prove the drift guard works at all. */
+    const read = pendingChange({ plan: "legacy_agency" });
+    expect(pendingRenewalPlan(read, new Date(NOW.getTime() + 20 * DAY_MS))).toEqual({
+      outcome: "refuse",
+      reason: "pending-change-unreadable",
+    });
   });
 });
 

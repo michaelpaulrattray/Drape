@@ -61,6 +61,15 @@
  * overlapping sweeps: the index arbitrates, and the loser is told
  * `already-sent` by the database rather than by a SELECT it could have raced.
  *
+ * ## WHAT THE RENEWAL ACTUALLY BUYS, WHEN A CHANGE IS WAITING FOR IT
+ *
+ * Since #1963 a plan or dial DECREASE is a subscription schedule whose next
+ * phase begins at the renewal, and the preview above prices that phase. So the
+ * plan the email NAMES comes from {@link pendingRenewalPlan} rather than from
+ * the subscription metadata alone: the pending phase when one begins at this
+ * renewal, the phase in progress otherwise. A pending MONTHLY phase earns no
+ * notice at all, because there is then no annual renewal to warn about.
+ *
  * ## WHAT THE CUSTOMER MUST LEARN TO USE THIS — none of it
  *
  * The disappearing-technology gate (CLAUDE.md), answered in this file because
@@ -91,6 +100,10 @@ import {
   type LiveSubscriptionRead,
 } from "../stripe/stripeService";
 import { subscriptionPeriodSec } from "../stripe/subscriptionPeriods";
+import {
+  readPendingPlanChange,
+  type PendingChangeRead,
+} from "../stripe/subscriptionSchedule";
 
 const log = createModuleLogger("billing/renewalReminder");
 
@@ -127,6 +140,13 @@ export interface RenewalReminderDeps {
   now: () => Date;
   candidates: (windowStart: Date, windowEnd: Date) => Promise<RenewalReminderCandidate[]>;
   readSubscription: (subscriptionId: string) => Promise<LiveSubscriptionRead>;
+  /**
+   * What is scheduled to take effect at the period boundary, read off the
+   * subscription Stripe just answered with rather than from a second read of
+   * our own. Free when there is no schedule — {@link readPendingPlanChange}
+   * answers `none` without calling Stripe at all.
+   */
+  readPendingChange: (subscription: Stripe.Subscription) => Promise<PendingChangeRead>;
   previewRenewal: (subscriptionId: string) => Promise<RenewalCharge | null>;
   claim: (row: {
     userId: number;
@@ -151,6 +171,8 @@ export type RenewalSkipReason =
   | "status-not-live"
   | "not-yearly"
   | "renewal-outside-window"
+  | "pending-change-unreadable"
+  | "pending-not-yearly"
   | "amount-unreadable"
   | "already-sent"
   | "claim-unreachable"
@@ -229,6 +251,68 @@ function isYearly(subscription: Stripe.Subscription): boolean {
 }
 
 /**
+ * WHICH PLAN THIS RENEWAL ACTUALLY BUYS, WHEN A CHANGE IS WAITING AT THE
+ * BOUNDARY — the relay's finding on PR #1975, and it only became wrong when
+ * #1963 shipped.
+ *
+ * `subscription.metadata.plan` is the phase IN PROGRESS. Since #1963 a
+ * scheduled decrease lives on a subscription schedule whose next phase begins
+ * at the renewal, and `invoices.createPreview` prices THAT phase — so a
+ * customer with a pending decrease would have been told *"Your Pro Plus plan
+ * renews on 21 November"* beside the lower plan's amount, which is two facts
+ * from two different months in one sentence. Worse, a pending yearly → monthly
+ * change would have announced a yearly renewal that is not going to happen.
+ *
+ * Three answers, and each is a different fact rather than one combined test:
+ *
+ *   * `current` — nothing is pending, or what is pending begins AFTER this
+ *     renewal, so this invoice still bills the phase in progress and the
+ *     subscription's own metadata is the right name. ⚠ The comparison is
+ *     against the renewal we are writing about, not against "soon": a phase
+ *     starting later prices a later invoice, and naming it here would be the
+ *     mirror image of the defect.
+ *   * `refuse` — we cannot say what this renewal buys. A schedule read that
+ *     FAILED is not a subscription with nothing pending (`readPendingPlanChange`
+ *     keeps those three apart for exactly this reason), and a pending phase
+ *     naming a plan this product does not price cannot be captioned. Both
+ *     refuse rather than falling back to the current plan's name, on the same
+ *     ground the module already refuses an unreadable amount: a notice stating
+ *     the wrong plan is worse than a notice sent a day later.
+ *   * `named` — the pending phase is what the customer is about to be billed
+ *     for, so it is the plan the email names, beside the amount Stripe
+ *     previewed for the same phase.
+ *
+ * ⚠ **AND A PENDING MONTHLY PHASE IS A REFUSAL, NOT A RENAME.** The notice
+ * exists because an annual term renews silently; if the next phase is monthly
+ * there is no annual renewal to warn about, and the law this module is built
+ * from is about terms of a year or more.
+ */
+export type PendingRenewalPlan =
+  | { outcome: "current" }
+  | { outcome: "named"; planTier: PlanTier }
+  | { outcome: "refuse"; reason: "pending-change-unreadable" | "pending-not-yearly" };
+
+export function pendingRenewalPlan(read: PendingChangeRead, periodEnd: Date): PendingRenewalPlan {
+  if (read.outcome === "failed") return { outcome: "refuse", reason: "pending-change-unreadable" };
+  if (read.outcome === "none") return { outcome: "current" };
+
+  const { change } = read;
+  if (change.effectiveAt.getTime() > periodEnd.getTime()) return { outcome: "current" };
+  if (change.interval !== "annual") return { outcome: "refuse", reason: "pending-not-yearly" };
+
+  /* ⚠ UNREACHABLE TODAY AND KEPT AS A DRIFT GUARD, said plainly rather than
+     left to be discovered: `readPendingPlanChange` already refuses a phase
+     whose plan is not a key of `SUBSCRIPTION_PRODUCTS`, and every one of those
+     keys is a `PLAN_TIERS` key. This arm is what happens the day those two
+     lists stop agreeing — a refusal, never a plan name this product cannot
+     price. */
+  if (!(change.plan in PLAN_TIERS)) {
+    return { outcome: "refuse", reason: "pending-change-unreadable" };
+  }
+  return { outcome: "named", planTier: change.plan as PlanTier };
+}
+
+/**
  * Which plan to NAME in the email.
  *
  * Stripe's `metadata.plan` is what checkout and `updateSubscriptionPlan` wrote,
@@ -265,6 +349,7 @@ export function liveRenewalReminderDeps(): RenewalReminderDeps {
     now: () => new Date(),
     candidates: getYearlyRenewalReminderCandidates,
     readSubscription: retrieveLiveSubscription,
+    readPendingChange: (subscription) => readPendingPlanChange(stripe, subscription),
     previewRenewal: previewRenewalCharge,
     claim: claimRenewalReminder,
     release: releaseRenewalReminderClaim,
@@ -307,6 +392,28 @@ export async function runYearlyRenewalReminderSweep(
       continue;
     }
 
+    /**
+     * ⚠ **WHAT IS WAITING AT THE BOUNDARY IS READ BEFORE THE PREVIEW IS PAID
+     * FOR**, because a pending monthly phase means no notice at all and there
+     * is no reason to ask Stripe to price an invoice nobody is going to be
+     * told about. It costs nothing on the common road: with no schedule on the
+     * subscription, `readPendingPlanChange` answers `none` without calling
+     * Stripe.
+     */
+    const pending = pendingRenewalPlan(
+      await deps.readPendingChange(read.subscription),
+      verdict.periodEnd,
+    );
+    if (pending.outcome === "refuse") {
+      skip(pending.reason);
+      continue;
+    }
+    /* The plan the renewal actually buys — the pending phase's when one begins
+       at this renewal, the subscription's own otherwise. It is used for the
+       email AND for the claim row, so the record and the sentence cannot
+       disagree. */
+    const planTier = pending.outcome === "named" ? pending.planTier : verdict.planTier;
+
     const charge = await deps.previewRenewal(candidate.stripeSubscriptionId);
     if (!charge) {
       skip("amount-unreadable");
@@ -317,7 +424,7 @@ export async function runYearlyRenewalReminderSweep(
       userId: candidate.userId,
       stripeSubscriptionId: candidate.stripeSubscriptionId,
       periodEnd: verdict.periodEnd,
-      planTier: verdict.planTier,
+      planTier,
       amountCents: charge.amountCents,
       currency: charge.currency,
     });
@@ -361,7 +468,7 @@ export async function runYearlyRenewalReminderSweep(
         renewalReminderEmail({
           to: candidate.email,
           name: candidate.name,
-          planTier: verdict.planTier,
+          planTier,
           periodEnd: verdict.periodEnd,
           charge,
         }),
@@ -388,7 +495,7 @@ export async function runYearlyRenewalReminderSweep(
 
     result.sent += 1;
     log.info(
-      { userId: candidate.userId, planTier: verdict.planTier },
+      { userId: candidate.userId, planTier },
       "[renewalReminder] renewal notice sent",
     );
   }
