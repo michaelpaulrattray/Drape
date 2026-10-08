@@ -29,6 +29,21 @@ import type { Server } from "node:http";
 import { COOKIE_NAME, UNAUTHED_ERR_MSG } from "@shared/const";
 import { baseUrlOf, listenOnFetchablePort } from "../testing/fetchablePort";
 
+/*
+  A TEST-ONLY SECRET AND APP ID, SET BEFORE ANYTHING READS THEM.
+
+  `ENV` (server/_core/env.ts) freezes `JWT_SECRET` and `VITE_APP_ID` when it is
+  first imported, and CI has no .env — so a suite that leaned on the local file
+  minted with a zero-length key and jose refused it ("Zero-length key is not
+  supported"). Set unconditionally, in `vi.hoisted`, so this runs before any
+  import that could reach env.ts and the suite reads the same values on every
+  machine. The values are not credentials.
+*/
+vi.hoisted(() => {
+  process.env.JWT_SECRET = "drape-test-session-secret-1990-not-a-real-credential";
+  process.env.VITE_APP_ID = "drape-test-app-1990";
+});
+
 type DbState = {
   available: boolean;
   lookup: "found" | "missing" | "throws";
