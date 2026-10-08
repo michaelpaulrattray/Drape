@@ -35,6 +35,11 @@ import {
 import { captureSnapshotReadMode } from "../casting/snapshotReadScope";
 import { storagePut } from "../storage";
 import { putWardrobeScratchUpload } from "../wardrobe/scratchUpload";
+import {
+  adoptGarmentPictures,
+  garmentRowPictures,
+  importPictureChoice,
+} from "../wardrobe/garmentAdoption";
 import { detectGarmentsInImage } from "../wardrobe/garmentDetection";
 import { digitizeGarment } from "../wardrobe/garmentDigitization";
 import { assertWardrobeTryOnOpen } from "../wardrobe/tryOnDoor";
@@ -141,14 +146,19 @@ const garmentRouter = router({
       );
       const { url: originalUrl } = await storagePut(fileKey, imageBuffer, "image/png");
 
-      // Create garment record (status: processing)
+      /* Create garment record (status: processing). NO RECEIPTS: this road
+         writes its own `original-*` key above and registers no manifest for it,
+         so there is nothing to discharge — the row owns the key and the account
+         sweep reads it. That the put is unregistered at all is a sibling of
+         #1961 and is filed on its own card: a crash between the put and this
+         insert leaves an orphan. It is a window, not an orphan at birth. */
       const garmentId = await createGarment({
         userId: ctx.user.id,
         slotType: input.slotType,
         originalImageUrl: originalUrl,
         originalImageKey: fileKey,
         status: "processing",
-      });
+      }, []);
 
       // Create generation record
       const genResult = await createGeneration({
@@ -653,18 +663,43 @@ const decomposeRouter = router({
       throwIfRateLimited(ctx.user.id);
       await enforceDailyQuota(ctx.user.id);
 
-      // Use crop URL if available (decomposed garment), otherwise fall back to source
-      const garmentImageUrl = input.cropUrl || input.sourceImageUrl;
+      /*
+        THE GARMENT TAKES ITS OWN COPIES (#1961, the relay's finding on PR
+        #1979). Both URLs name SCRATCH objects, registered for the cleanup
+        worker by `quickDetect` and `decompose.analyze` — so writing them onto
+        the row left a garment pointing at objects the worker was promised it
+        could delete, about five minutes later. Copying first makes the row's
+        pictures the row's own and puts their KEYS on it, which is what
+        `accountDeletion.ts` reads.
+
+        It runs BEFORE the credit hold on purpose: a refusal here costs the
+        customer nothing, and a copy that fails must not leave a charged import.
+
+        ⚠ Every step is a named function with arms, including the two that look
+        like one line of route code. The crop-or-photograph choice and the row's
+        picture fields are where the defect lived, and nothing in `pnpm test`
+        can drive a decision written inside a tRPC handler.
+      */
+      const chosen = importPictureChoice(input);
+      const adopted = await adoptGarmentPictures({
+        userId: ctx.user.id,
+        imageUrl: chosen.imageUrl,
+        sourceUrl: chosen.sourceUrl,
+        currentPublicUrl: process.env.R2_PUBLIC_URL ?? "",
+      });
+      /* The digitize reads the garment's OWN object from here on, never the
+         scratch key it was cut from — one source of truth for what this row is
+         made of. */
+      const garmentImageUrl = adopted.image.url;
 
       // Create garment record — originalImageUrl is the crop, sourceImageUrl is the full outfit
       const garmentId = await createGarment({
         userId: ctx.user.id,
         slotType: input.slotType,
-        originalImageUrl: garmentImageUrl,
-        sourceImageUrl: input.cropUrl ? input.sourceImageUrl : undefined,
+        ...garmentRowPictures(adopted),
         shortName: input.label,
         status: "processing",
-      });
+      }, adopted.receipts);
 
       try {
         const result = await withAtomicCredits(

@@ -42,23 +42,78 @@
  * instant it lands, because the in-flight fence tests a live operation row and
  * these batches carry a synthetic operation id that matches none. That race
  * really fired once (it deleted a delivered crop mid-mint), so the hold is the
- * one `createStorageCleanupManifestIn` already speaks, and it is the same
- * lease an in-flight operation holds — derived, not chosen.
+ * one `createStorageCleanupManifestIn` already speaks.
  *
- * ## What a customer notices: nothing
+ * ⚠ **AND THE HOLD IS THE CUSTOMER'S WORKING WINDOW, NOT THE WRITE'S — IT WAS
+ * FIVE MINUTES AND THAT WAS THE SECOND DEFECT THE RELAY FOUND ON PR #1979.**
+ * It was `storageCleanupManifestHeldUntil()`, derived from the in-flight
+ * generation lease, on the stated ground that one constant should mean one
+ * thing. The derivation was the mistake: *how long may a writer keep its claim
+ * while it writes* and *how long does a customer work against this picture* are
+ * different questions, and borrowing the answer to the first silently answered
+ * the second. See {@link WARDROBE_SCRATCH_HOLD_MS}.
  *
- * Nothing in the product renders these objects — the decomposition drawer
- * draws its preview from a local `URL.createObjectURL` of the file in the
- * browser, read at `client/src/features/wardrobe/components/DecompositionDrawer.tsx`
- * — and the one road that would persist them, `wardrobe.garments.import`,
- * refuses on his word (#1537, *"SWITCH IT OFF"*). So the sweep that follows
- * takes bytes no screen was showing.
+ * ## What a customer notices
+ *
+ * The decomposition drawer draws its own preview from a local
+ * `URL.createObjectURL` of the file in the browser (read at
+ * `client/src/features/wardrobe/components/DecompositionDrawer.tsx`), so the
+ * scan and the outfit photo are never rendered from these URLs.
+ *
+ * ⚠ **The MODEL PHOTO is, and that is why the hold had to move.** The studio
+ * keeps it in a Zustand store and the wardrobe workspace renders it as the base
+ * picture (`WardrobeWorkspaceSection.tsx`, `displayUrl={gen.currentResult ||
+ * modelImageUrl}`), so a five-minute sweep took the picture off the screen
+ * mid-session.
+ *
+ * ⚠ **AND THE ONE REMAINDER IS NAMED RATHER THAN LEFT TO BE FOUND: a model
+ * photo outlives this hold and is then swept, so a session RESUMED later than
+ * the hold shows a picture that is gone.** No row owns that key and the
+ * account-erasure sweep says why in its own comment — *"A session's
+ * modelImageUrl is a reference input and may be shared"* — so a
+ * `modelImageKey` column written only for upload-only sessions is a build with
+ * a migration, filed as its own card rather than folded in here. Before this
+ * card the same object lived at a public URL **for ever**, which is what the
+ * sweep is for.
  */
 import { randomUUID } from "crypto";
 
-import { createStorageCleanupManifestIn, storageCleanupManifestHeldUntil } from "../db/storageCleanup";
+import { createStorageCleanupManifestIn } from "../db/storageCleanup";
 import { withTransaction } from "../db/connection";
 import { storagePut } from "../storage";
+
+/**
+ * How long a wardrobe scratch object is held before the worker may collect it.
+ *
+ * ⚠ **IT ANSWERS "HOW LONG IS A CUSTOMER STILL USING THIS PICTURE", AND
+ * NOTHING ELSE.** It was `STORAGE_CLEANUP_MANIFEST_HOLD_MS` — five minutes, the
+ * in-flight generation lease — and that is a writer's claim on bytes it is
+ * still writing. These four objects are a customer's working set: a scan they
+ * are picking garments out of, an outfit photo and its crops they will import
+ * from, a model photo the workspace is rendering. Five minutes is shorter than
+ * choosing, and shorter than the paid digitize the chosen crop feeds.
+ *
+ * **A day**, and the number is stated with its trade rather than derived from a
+ * constant that answers a different question:
+ *
+ * - It is the one window in this tree answering the same shape of question —
+ *   `CASTING_DISCARD_RETENTION_MS`, *"a discarded candidate stays undoable"* —
+ *   and it is the figure the relay named on the finding.
+ * - ⚠ **What it costs, said plainly: one of these objects now sits at a
+ *   permanently public, unguessable URL for up to a day instead of up to five
+ *   minutes.** Against *for ever*, which is what #1961 is about, and against a
+ *   working feature, which five minutes was not.
+ * - It is **not** derived from `vtoSession.ts`'s 30-minute `SESSION_TTL_MS`,
+ *   which was the tempting read: that evicts an in-memory chat on an engine
+ *   Google shut down, behind the closed door. Deriving from a constant that
+ *   answers a different question is how the five minutes got here.
+ */
+export const WARDROBE_SCRATCH_HOLD_MS = 24 * 60 * 60 * 1000;
+
+/** The instant a wardrobe scratch manifest born now stops holding itself. */
+export function wardrobeScratchHeldUntil(now: Date = new Date()): Date {
+  return new Date(now.getTime() + WARDROBE_SCRATCH_HOLD_MS);
+}
 
 export interface ScratchUploadResult {
   /** The public URL, exactly as `storagePut` returns it. */
@@ -98,7 +153,7 @@ function liveDeps(): ScratchUploadDeps {
         operationId: input.operationId,
         kind: "wardrobe_scratch_cleanup",
         storageItems: [{ storageKey: input.storageKey, storageBackend: "public_r2" }],
-        heldUntil: storageCleanupManifestHeldUntil(),
+        heldUntil: wardrobeScratchHeldUntil(),
       }));
     },
     put: (key, bytes, contentType) => storagePut(key, bytes, contentType),

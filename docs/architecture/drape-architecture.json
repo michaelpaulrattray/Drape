@@ -152,7 +152,7 @@
     {
       "id": "domain:wardrobe",
       "name": "wardrobe",
-      "moduleCount": 38
+      "moduleCount": 39
     }
   ],
   "modules": [
@@ -5877,6 +5877,12 @@
     {
       "id": "module:server/wardrobe/editClassifier.ts",
       "path": "server/wardrobe/editClassifier.ts",
+      "domain": "wardrobe",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/wardrobe/garmentAdoption.ts",
+      "path": "server/wardrobe/garmentAdoption.ts",
       "domain": "wardrobe",
       "lifecycle": "active"
     },
@@ -14800,6 +14806,10 @@
     {
       "id": "test:server/wardrobe.test.ts",
       "path": "server/wardrobe.test.ts"
+    },
+    {
+      "id": "test:server/wardrobe/garmentAdoption.test.ts",
+      "path": "server/wardrobe/garmentAdoption.test.ts"
     },
     {
       "id": "test:server/wardrobe/outfitDecomposition.test.ts",
@@ -31714,6 +31724,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/db/wardrobe.ts",
+      "to": "module:server/db/storageCleanup.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/health.ts",
       "to": "module:server/_core/env.ts",
       "kind": "imports"
@@ -34715,6 +34730,11 @@
     },
     {
       "from": "module:server/routes/wardrobe.ts",
+      "to": "module:server/wardrobe/garmentAdoption.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/wardrobe.ts",
       "to": "module:server/wardrobe/garmentAnalysis.ts",
       "kind": "imports"
     },
@@ -35201,6 +35221,31 @@
     {
       "from": "module:server/wardrobe/editClassifier.ts",
       "to": "module:shared/modelRegistry.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/garmentAdoption.ts",
+      "to": "module:server/casting/deletionAudit.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/garmentAdoption.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/garmentAdoption.ts",
+      "to": "module:server/db/storageCleanup.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/garmentAdoption.ts",
+      "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/garmentAdoption.ts",
+      "to": "module:server/wardrobe/scratchUpload.ts",
       "kind": "imports"
     },
     {
