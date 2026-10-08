@@ -14,7 +14,8 @@
  *   9. generations (userId)
  *  9b. generationOperationLocks (via the account's operations), then
  *      generationOperations (userId)
- *  9c. bugReports (userId), faceScanDailyUsage (userId)
+ *  9c. bugReports (userId), faceScanDailyUsage (userId),
+ *      subscriptionRenewalReminders (userId)
  *  10. creditTransactions (userId)
  *  11. credits (userId)
  *  12. auditLogs (userId) — anonymize, don't delete (compliance)
@@ -57,6 +58,7 @@ import {
   generationOperationLocks,
   bugReports,
   faceScanDailyUsage,
+  subscriptionRenewalReminders,
   auditLogs,
   changeRequests,
   changeRequestAttachments,
@@ -186,6 +188,18 @@ export const ACCOUNT_DELETION_DISPOSITIONS = {
     rows survive or not — deleting them loses no control at all.
   */
   "faceScanDailyUsage.userId": "deleted",
+
+  /* ---- a claim with nothing left to claim ---- */
+  /*
+    One row per renewal notice already sent (#1941). It exists only to stop a
+    second notice going to the same address about the same renewal, and the
+    shortlist it guards is read from `points`, which is deleted in this same
+    transaction — so the row can never be consulted again once the account is
+    gone. It holds her plan and the amount she was quoted, which is hers, and
+    deleting it loses no control at all: a duplicate send would need the
+    account to exist.
+  */
+  "subscriptionRenewalReminders.userId": "deleted",
 
   /* ---- anonymised ---- */
   /*
@@ -359,6 +373,7 @@ function zeroDeletionCounts() {
     generationOperationLocks: 0,
     bugReports: 0,
     faceScanDailyUsage: 0,
+    subscriptionRenewalReminders: 0,
     creditTransactions: 0,
     credits: 0,
     auditLogsAnonymized: 0,
@@ -1125,6 +1140,10 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
         .delete(faceScanDailyUsage)
         .where(eq(faceScanDailyUsage.userId, userId));
       counts.faceScanDailyUsage = (scanUsageResult as any)[0]?.affectedRows ?? 0;
+      const renewalReminderResult = await tx
+        .delete(subscriptionRenewalReminders)
+        .where(eq(subscriptionRenewalReminders.userId, userId));
+      counts.subscriptionRenewalReminders = (renewalReminderResult as any)[0]?.affectedRows ?? 0;
 
       // Step 10: Delete credit transactions
       const txResult = await tx
