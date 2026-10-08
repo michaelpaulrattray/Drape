@@ -30,13 +30,16 @@
  * disposable `TEST_DATABASE_URL` and skips without one, which is stated here
  * rather than left for a reader to discover from a green run.
  */
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { ACCOUNT_DELETION_DISPOSITIONS } from "./db/accountDeletion";
+import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
 import { readListedSource } from "./testing/listedSource";
 import { codeOnly, withoutComments } from "./testing/withoutComments";
+
+/* Reads thirteen files off the real tree, so it is in #741's class. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 const repoRoot = join(import.meta.dirname, "..");
 
