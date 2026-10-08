@@ -42,7 +42,7 @@
     {
       "id": "domain:client-shared",
       "name": "client-shared",
-      "moduleCount": 9
+      "moduleCount": 10
     },
     {
       "id": "domain:data",
@@ -195,6 +195,12 @@
     {
       "id": "module:client/src/components/PageTransition.tsx",
       "path": "client/src/components/PageTransition.tsx",
+      "domain": "client-shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/components/ReconnectingNotice.tsx",
+      "path": "client/src/components/ReconnectingNotice.tsx",
       "domain": "client-shared",
       "lifecycle": "active"
     },
@@ -15198,6 +15204,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/components/ReconnectingNotice.tsx",
+      "to": "module:client/src/foundation/KliegWordmark.tsx",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/components/ui/badge.tsx",
       "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
@@ -21144,6 +21155,11 @@
     },
     {
       "from": "module:client/src/pages/AppLobby.tsx",
+      "to": "module:client/src/components/ReconnectingNotice.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AppLobby.tsx",
       "to": "module:client/src/const.ts",
       "kind": "imports"
     },
@@ -21535,6 +21551,11 @@
     {
       "from": "module:client/src/pages/DrapeStudio.tsx",
       "to": "module:client/src/_core/hooks/useAuth.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/DrapeStudio.tsx",
+      "to": "module:client/src/components/ReconnectingNotice.tsx",
       "kind": "imports"
     },
     {

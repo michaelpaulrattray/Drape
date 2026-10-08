@@ -67,7 +67,12 @@ vi.mock("../../../../server/db", async (importOriginal) => {
 const { createContext } = await import("../../../../server/_core/context");
 const { sdk } = await import("../../../../server/_core/sdk");
 const { router, publicProcedure } = await import("../../../../server/_core/trpc");
-const { AUTH_ME_QUERY_OPTIONS, isTransientSessionCheckFailure } = await import("./useAuth");
+const {
+  AUTH_ME_QUERY_OPTIONS,
+  AUTH_ME_RECONNECTING_AFTER_FAILURES,
+  isSessionCheckReconnecting,
+  isTransientSessionCheckFailure,
+} = await import("./useAuth");
 
 /* `auth.me`'s own shape (server/routes/auth.ts): null for a stranger. */
 const probeRouter = router({
@@ -107,7 +112,7 @@ async function clientWith(cookie: string | null) {
   });
 }
 
-type Seen = { user: unknown; loading: boolean; status: string };
+type Seen = { user: unknown; loading: boolean; status: string; reconnecting: boolean };
 
 /**
  * Run `auth.me` through a real QueryObserver with the given retry option and
@@ -129,7 +134,12 @@ async function observe(
   const seen: Seen[] = [];
   const record = () => {
     const r = observer.getCurrentResult();
-    seen.push({ user: r.data ?? null, loading: r.isLoading, status: r.status });
+    seen.push({
+      user: r.data ?? null,
+      loading: r.isLoading,
+      status: r.status,
+      reconnecting: isSessionCheckReconnecting(r),
+    });
   };
   await new Promise<void>((resolve) => {
     const unsubscribe = observer.subscribe((r) => {
@@ -203,5 +213,72 @@ describe("#1997 — which failures are worth waiting out", () => {
     expect(isTransientSessionCheckFailure(withStatus(403))).toBe(false);
     expect(isTransientSessionCheckFailure(withStatus(400))).toBe(false);
     expect(isTransientSessionCheckFailure(new Error("not a tRPC error"))).toBe(false);
+  });
+});
+
+/**
+ * #2018 — A SUSTAINED OUTAGE SAYS SO, A BLINK DOES NOT. Driven through the same
+ * real stack: `reconnecting` is read off the real observer result exactly as
+ * the hook reads it (`isSessionCheckReconnecting(meQuery)`).
+ */
+describe("#2018 — when the wait becomes something to say", () => {
+  const token = () => sdk.createSessionToken(KNOWN_OPEN_ID, { name: "Verify" });
+
+  it("a sustained outage turns `reconnecting` on after the threshold, keeps retrying, and clears on recovery", async () => {
+    dbState.lookupFailuresLeft = AUTH_ME_RECONNECTING_AFTER_FAILURES + 2;
+    const seen = await observe(AUTH_ME_QUERY_OPTIONS.retry, await token());
+    expect(dbState.lookups).toBe(AUTH_ME_RECONNECTING_AFTER_FAILURES + 3);
+    expect(seen.some((s) => s.reconnecting)).toBe(true);
+    // Only ever while still loading — never alongside a settled answer.
+    expect(seen.filter((s) => s.reconnecting).every((s) => s.loading)).toBe(true);
+    expect(seen.at(-1)).toMatchObject({ status: "success", user: { id: 1997 }, reconnecting: false });
+    expect(seen.some(wouldRedirect)).toBe(false);
+  });
+
+  it("negative control: a blink one short of the threshold never shows it", async () => {
+    dbState.lookupFailuresLeft = AUTH_ME_RECONNECTING_AFTER_FAILURES - 1;
+    const seen = await observe(AUTH_ME_QUERY_OPTIONS.retry, await token());
+    expect(seen.at(-1)).toMatchObject({ status: "success", user: { id: 1997 } });
+    expect(seen.some((s) => s.reconnecting)).toBe(false);
+  });
+
+  it("a healthy load never shows it", async () => {
+    const seen = await observe(AUTH_ME_QUERY_OPTIONS.retry, await token());
+    expect(seen.some((s) => s.reconnecting)).toBe(false);
+  });
+
+  it("a genuinely refused session never shows it and still settles signed-out at once", async () => {
+    dbState.missing = true;
+    const seen = await observe(AUTH_ME_QUERY_OPTIONS.retry, await token());
+    expect(seen.some((s) => s.reconnecting)).toBe(false);
+    expect(wouldRedirect(seen.at(-1)!)).toBe(true);
+  });
+
+  it("a signed-in page whose background re-check keeps failing is NOT replaced by the notice", async () => {
+    const client = await clientWith(await token());
+    const queryClient = new QueryClient();
+    const observer = new QueryObserver(queryClient, {
+      queryKey: ["auth.me"],
+      queryFn: () => client.me.query(),
+      ...AUTH_ME_QUERY_OPTIONS,
+      retryDelay: 5,
+    });
+    const seen: { reconnecting: boolean; failureCount: number; hasUser: boolean }[] = [];
+    const unsubscribe = observer.subscribe((r) => {
+      seen.push({
+        reconnecting: isSessionCheckReconnecting(r),
+        failureCount: r.failureCount,
+        hasUser: r.data != null,
+      });
+    });
+    await observer.refetch(); // the first load succeeds
+    dbState.lookupFailuresLeft = AUTH_ME_RECONNECTING_AFTER_FAILURES + 2;
+    await observer.refetch(); // a background re-check rides out a sustained outage
+    unsubscribe();
+    queryClient.clear();
+    // The re-check really did fail past the threshold while the user was on screen…
+    expect(seen.some((s) => s.hasUser && s.failureCount >= AUTH_ME_RECONNECTING_AFTER_FAILURES)).toBe(true);
+    // …and the page was never swapped for the notice.
+    expect(seen.some((s) => s.reconnecting)).toBe(false);
   });
 });
