@@ -11308,6 +11308,10 @@
       "path": "server/_core/numericEnv.test.ts"
     },
     {
+      "id": "test:server/_core/sessionLookupFailure.test.ts",
+      "path": "server/_core/sessionLookupFailure.test.ts"
+    },
+    {
       "id": "test:server/abuseStripHonesty.test.ts",
       "path": "server/abuseStripHonesty.test.ts"
     },
@@ -21600,6 +21604,16 @@
     {
       "from": "module:server/_core/context.ts",
       "to": "module:server/_core/sdk.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/context.ts",
+      "to": "module:server/_core/spokenError.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/context.ts",
+      "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
     {
