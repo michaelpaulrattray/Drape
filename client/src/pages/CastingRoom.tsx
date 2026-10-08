@@ -652,10 +652,19 @@ export default function CastingRoom() {
                       `castPronouns.ts` was written at all: the room used to call
                       every Cast "she", and Jericho is male.
                     */}
+                    {/*
+                      THE FINISHED LINE PROMISES THE LOCK, NOT A CHECK (#2087).
+                      It read "Every view here was checked against the face you
+                      signed." — false for a view the checker never reached,
+                      which is delivered and charged on purpose (3 of 119 read at
+                      production, 2026-10-08), and since #1903 nothing on the
+                      page admits it. The lock is true whatever the checker
+                      managed, and it is what IDENTITY LOCKED beside it claims.
+                    */}
                     <span className="dpc-master__retention">
                       {data.status === "building"
                         ? `Building ${data.pronouns.possessive} other views…`
-                        : "Every view here was checked against the face you signed."}
+                        : "The face you signed is locked across every view."}
                     </span>
                     <span className="dpc-master__locked">
                       <Lock size={11} strokeWidth={2} aria-hidden="true" />

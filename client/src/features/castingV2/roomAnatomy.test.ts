@@ -238,4 +238,21 @@ describe("the casting room is built to the drawing", () => {
       expect(source, `"${fiction}" is prototype fiction`).not.toContain(fiction);
     }
   });
+
+  it("promises the lock under the views, never a check that may not have run (#2087)", async () => {
+    /*
+      A delivered view is no longer guaranteed a check: one the checker never
+      reached is still delivered and charged (#1903), so a sentence claiming
+      every view was checked is false for that cast. Read on the RENDERABLE
+      source, comments stripped, because the deviation comment quotes the old
+      sentence on purpose.
+    */
+    const source = (await readFile(ROOM, "utf8"))
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .split(String.fromCharCode(10))
+      .map((line) => line.replace(/\/\/.*$/, ""))
+      .join(String.fromCharCode(10));
+    expect(source).toContain("The face you signed is locked across every view.");
+    expect(source).not.toMatch(/checked against the face/i);
+  });
 });
