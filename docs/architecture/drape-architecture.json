@@ -77,7 +77,7 @@
     {
       "id": "domain:moderator",
       "name": "moderator",
-      "moduleCount": 23
+      "moduleCount": 24
     },
     {
       "id": "domain:operations",
@@ -1821,6 +1821,12 @@
     {
       "id": "module:client/src/features/moderator/creditRowText.ts",
       "path": "client/src/features/moderator/creditRowText.ts",
+      "domain": "moderator",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/moderator/factFigures.tsx",
+      "path": "client/src/features/moderator/factFigures.tsx",
       "domain": "moderator",
       "lifecycle": "active"
     },
@@ -11208,6 +11214,10 @@
       "path": "client/src/features/lobby/lobbyStub.test.ts"
     },
     {
+      "id": "test:client/src/features/moderator/factFigures.test.ts",
+      "path": "client/src/features/moderator/factFigures.test.ts"
+    },
+    {
       "id": "test:client/src/features/moderator/section09-guard.test.ts",
       "path": "client/src/features/moderator/section09-guard.test.ts"
     },
@@ -18795,6 +18805,11 @@
     },
     {
       "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
+      "to": "module:client/src/features/moderator/factFigures.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
       "to": "module:client/src/features/moderator/moderatorConstants.ts",
       "kind": "imports"
     },
@@ -18831,6 +18846,11 @@
     {
       "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
       "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/factFigures.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
