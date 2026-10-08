@@ -28,7 +28,9 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
+
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 
 import {
   oldestRepairAgeHours,
@@ -40,12 +42,13 @@ import {
 } from "../scripts/lib/repairsOwed.mts";
 
 /**
- * ⚠ **A SPAWNING SUITE DECLARES ITS OWN TIMEOUT AT FILE LEVEL**, which
- * `contendedTestTimeouts` holds every suite in this repository to: the cut arm
- * runs a real `tsx` process, and under a contended full run that is minutes
- * rather than seconds.
+ * ⚠ **A SPAWNING SUITE TAKES THE CLASS'S OWN TIMEOUT, NOT ONE OF ITS OWN.**
+ * The cut arm below runs a real `tsx` process, and `childProcessTestTimeouts`
+ * holds every such suite to this exact pair — which is the point: a suite that
+ * invented its own number would be a second declaration of one rule, and the
+ * first shape of this file did precisely that and went red for it.
  */
-const CONTENDED_TEST_TIMEOUT_MS = 240_000;
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const LIVE = JSON.parse(
   readFileSync("server/__fixtures__/repairsOwed.live.json", "utf8"),
@@ -80,11 +83,18 @@ describe("the repairs-owed reading (#1977)", () => {
   });
 
   it("⚠ the three unheld pull requests are NOT repairs — the fixture's own negative control", () => {
+    /*
+      ⚠ **WHICH LIMB THIS PINS, SAID PRECISELY BECAUSE SABOTAGE MEASURED IT.**
+      Removing the `reviewPresence` check entirely left this arm GREEN: a pull
+      request nobody has found anything on carries no findings at all, so the
+      `if (!oldest) continue;` below it already excludes these three. What this
+      arm guards is THAT limb. The `reviewPresence` limb is guarded by the
+      verdict-ordering arm below, which is the only one that reddened — and it
+      is the limb that matters, because a pull request the relay found something
+      on and then PASSED still has findings on it.
+    */
     const reading = repairsOwedFrom(LIVE.rows, LIVE.ownerLogin);
     const held = new Set(reading.repairs.map((repair) => repair.pullRequest));
-    /* They are open, they are in the fixture, and nobody has found anything on
-       them. A reader that answered "every open pull request" would pass every
-       other arm in this file. */
     expect(held.has(1892)).toBe(false);
     expect(held.has(1889)).toBe(false);
     expect(held.has(1983)).toBe(false);
@@ -324,7 +334,7 @@ describe("⚠ the cut offers the repair before the card (#1977)", () => {
         "--switches", write("switches.json", { master: true, bugs: true, smallfix: true }),
         "--out", planPath,
       ],
-      { encoding: "utf8", timeout: CONTENDED_TEST_TIMEOUT_MS, stdio: ["ignore", "pipe", "pipe"] },
+      { encoding: "utf8", timeout: CHILD_PROCESS_TEST_TIMEOUT_MS, stdio: ["ignore", "pipe", "pipe"] },
     );
     return { stdout, plan: JSON.parse(readFileSync(planPath, "utf8")) };
   };
@@ -424,7 +434,7 @@ describe("⚠ the cut offers the repair before the card (#1977)", () => {
         "--switches", write("switches.json", { master: true, bugs: true, smallfix: true }),
         "--out", planPath,
       ],
-      { encoding: "utf8", timeout: CONTENDED_TEST_TIMEOUT_MS, stdio: ["ignore", "pipe", "pipe"] },
+      { encoding: "utf8", timeout: CHILD_PROCESS_TEST_TIMEOUT_MS, stdio: ["ignore", "pipe", "pipe"] },
     );
 
     const seats = stdout.split(/\r?\n/).find((line) => line.startsWith("SEATS "))!;
@@ -456,7 +466,7 @@ describe("⚠ the cut offers the repair before the card (#1977)", () => {
         "--switches", write("switches2.json", { master: true, bugs: true, smallfix: true }),
         "--out", join(dir, "plan2.json"),
       ],
-      { encoding: "utf8", timeout: CONTENDED_TEST_TIMEOUT_MS, stdio: ["ignore", "pipe", "pipe"] },
+      { encoding: "utf8", timeout: CHILD_PROCESS_TEST_TIMEOUT_MS, stdio: ["ignore", "pipe", "pipe"] },
     )).toThrow();
   });
-}, CONTENDED_TEST_TIMEOUT_MS);
+});

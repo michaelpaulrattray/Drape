@@ -2075,7 +2075,17 @@ describe("the cut derives rather than mirrors", () => {
        the first thing on the line (`.agents/` is gitignored — no suite can read
        that regex, which is exactly why this is asserted here). */
     expect(/`SEATS \$\{plan\.seatCount\} \| cards/.test(cli)).toBe(true);
-    expect(/`SEATS 0 \| nothing on offer\$\{rungWord\}/.test(cli)).toBe(true);
+    /*
+      ⚠ **THE SECOND PIN NAMED `${rungWord}` BY ADJACENCY AND NOW NAMES THE
+      ORDER — #1977.** The claim above is that the COUNT is first; which word
+      follows was incidental, and pinning it meant any new word on this line
+      reddened an arm about something else. What replaces it is stricter rather
+      than looser: the repairs word leads the trailing words on BOTH branches,
+      which is #1977's own rule (a repair owed comes before any new card) said
+      where the runner logs it.
+    */
+    expect(/`SEATS 0 \| nothing on offer\$\{repairWord\}\$\{rungWord\}/.test(cli)).toBe(true);
+    expect(/cards \$\{plan\.cardCount\}[^`]*\$\{repairWord\}\$\{rungWord\}/.test(cli)).toBe(true);
   });
 
   it("names no work label, hold label or domain of its own — IN EVERY FILE OF THE FEATURE", () => {

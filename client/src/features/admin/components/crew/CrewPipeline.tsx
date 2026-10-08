@@ -15,6 +15,7 @@
 import { cn } from "@/lib/utils";
 import { SectionHead, SectionShell } from "./CrewShell";
 import { ago } from "./crewAgo";
+import { crewRepairsOwed, crewRepairsOwedLabel } from "./crewRepairsOwed";
 import { pipelineNotDone } from "./crewTypes";
 import type { CrewLivePullRequest, CrewLiveView, CrewPipelineItem, CrewQueueRead } from "./crewTypes";
 import { QueueReadStamp } from "./QueueReadStamp";
@@ -41,38 +42,6 @@ const PR_STATE_LABEL: Record<CrewLivePullRequest["state"], string> = {
   passed: "Reviewed — merging",
   gate: "In the gate",
 };
-
-/**
- * THE REPAIRS OWED, SUMMARISED — #1977, his word 2026-10-08: *"yes shouldnt the
- * manager be on top of this when delegating the work to the crew"*.
- *
- * ⚠ **A COUNT ALONE IS WHAT HE ALREADY HAD.** Every held row already says *Needs
- * a repair*, and on the day he asked there were NINE of them among twelve open
- * rows — so the thing missing was never which pull request, it was that one had
- * been waiting nine hours while seats opened new cards. The age is the half that
- * makes the count mean something, and it is the oldest rather than an average,
- * because the oldest is the one that is actually wrong.
- *
- * It is DERIVED from the rows the section already draws, so the summary and the
- * list can never disagree (working law 4).
- *
- * ⚠ **THE CLOCK IS *last flagged*, NOT *owed since*, AND THE WORDING SAYS SO.*
- * This page cannot see a push, so it cannot know whether an older finding was
- * already repaired; `repairFlaggedAtForPullRequest` carries the whole argument.
- * The reader that can afford the exact question is the seat cut's, which is what
- * ORDERS the work — this is the glance that tells him it is piling up.
- */
-function repairsOwed(rows: readonly CrewLivePullRequest[]): {
-  count: number;
-  oldest: string | null;
-} {
-  const held = rows.filter((pr) => pr.state === "finding");
-  const since = held
-    .map((pr) => pr.repairFlaggedAt)
-    .filter((at): at is string => typeof at === "string" && at !== "")
-    .sort();
-  return { count: held.length, oldest: since[0] ?? null };
-}
 
 function SnapshotRow({ item }: { item: CrewPipelineItem }) {
   const wantsAHuman = item.status === "waiting-founder" || item.status === "blocked";
@@ -129,7 +98,8 @@ export function CrewPipeline({
   const liveRows = live.available ? live.desk.pullRequests : null;
   const snapshotRows = pipelineNotDone(snapshot);
   const count = liveRows ? liveRows.length : snapshotRows.length;
-  const owed = repairsOwed(liveRows ?? []);
+  const owed = crewRepairsOwed(liveRows ?? []);
+  const owedLabel = crewRepairsOwedLabel(owed);
   return (
     <SectionShell embedded={embedded} first={first} testId="crew-pipeline">
       <SectionHead embedded={embedded} eyebrow="In flight">
@@ -137,9 +107,9 @@ export function CrewPipeline({
         {/* ⚠ Only when something IS owed (#1977). A row reading *0 need a repair*
             on a clean board is a number nobody can act on, which is the thing his
             ruling on the problems list was about. */}
-        {owed.count > 0 && (
+        {owedLabel !== null && (
           <span className="dp-crew__meta dp-crew__meta--wants" data-testid="crew-repairs-owed">
-            {owed.count === 1 ? "1 needs a repair" : `${owed.count} need a repair`}
+            {owedLabel}
             {owed.oldest !== null && <> · oldest flagged {ago(owed.oldest, now)}</>}
           </span>
         )}
