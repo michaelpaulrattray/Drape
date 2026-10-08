@@ -847,6 +847,10 @@ export const billingRouter = router({
         creditAdjustment: quote.creditAdjustment,
         creditUnwind: quote.creditUnwind,
         spentShareCharge: quote.spentShareCharge,
+        /* The credits that charge pays for (#1965 repair) — the confirm step
+           says "Includes N credits you've already used", and N must be THIS
+           quote's figure, never a second calculation on the client. */
+        spentShareCredits: quote.spentShareCredits,
         kind: quote.kind,
         currentInterval: quote.currentInterval,
         targetInterval: quote.targetInterval,

@@ -157,6 +157,11 @@ describe("#1965 — the spent share, through the procedures", () => {
     const preview = await caller().previewPlanChange({ newPlan: DIAL_PLAN, interval: "annual" });
     expect(preview.spentShareCharge).toBeGreaterThan(0);
     expect(preview.refusal).toBeNull();
+    /* The credits the confirm step names come off the SAME quote (#1965 repair). */
+    expect(preview.spentShareCredits).toBe(
+      quotePlanChange(state(), DIAL_PLAN, "annual", undefined, undefined, 0).spentShareCredits,
+    );
+    expect(preview.spentShareCredits).toBeGreaterThan(0);
 
     const result = await caller().changePlan({ newPlan: DIAL_PLAN, interval: "annual" });
     expect(result.deferred).toBe(false);
@@ -180,6 +185,9 @@ describe("#1965 — the spent share, through the procedures", () => {
   it("NEGATIVE CONTROL — allowance intact: no charge is sent and the full unwind is queued as before", async () => {
     await caller().changePlan({ newPlan: DIAL_PLAN, interval: "annual" });
 
+    const preview = await caller().previewPlanChange({ newPlan: DIAL_PLAN, interval: "annual" });
+    expect(preview.spentShareCharge).toBe(0);
+    expect(preview.spentShareCredits).toBe(0);
     expect(vi.mocked(updateSubscriptionPlan).mock.calls[0][6]).toBe(0);
     expect(queuePlanChangeSettlement).toHaveBeenCalledTimes(1);
     const queued = vi.mocked(queuePlanChangeSettlement).mock.calls[0][0];

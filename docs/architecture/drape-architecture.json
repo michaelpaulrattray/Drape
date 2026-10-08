@@ -17,7 +17,7 @@
     {
       "id": "domain:billing",
       "name": "billing",
-      "moduleCount": 15
+      "moduleCount": 16
     },
     {
       "id": "domain:boards",
@@ -645,6 +645,12 @@
     {
       "id": "module:client/src/features/billing/index.ts",
       "path": "client/src/features/billing/index.ts",
+      "domain": "billing",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/billing/spentShareSentence.ts",
+      "path": "client/src/features/billing/spentShareSentence.ts",
       "domain": "billing",
       "lifecycle": "active"
     },
@@ -16233,6 +16239,11 @@
     },
     {
       "from": "module:client/src/features/billing/ChangePlanModal.tsx",
+      "to": "module:client/src/features/billing/spentShareSentence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/ChangePlanModal.tsx",
       "to": "module:client/src/features/billing/useCycleSpend.ts",
       "kind": "imports"
     },
@@ -16303,6 +16314,11 @@
     },
     {
       "from": "module:client/src/features/billing/LowBalanceWarning.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/spentShareSentence.ts",
       "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },

@@ -17,6 +17,8 @@ import { join } from "node:path";
 
 import { sourceBand } from "../../../../server/testing/sourceBand";
 import { withoutComments } from "../../../../server/testing/withoutComments";
+import { spentShareSentence } from "./spentShareSentence";
+import { displayBalance, formatCredits } from "@shared/creditDisplay";
 
 const BILLING = join(process.cwd(), "client", "src", "features", "billing");
 const changePlanModal = withoutComments(readFileSync(join(BILLING, "ChangePlanModal.tsx"), "utf8"));
@@ -49,6 +51,17 @@ describe("a refused change offers no Confirm", () => {
     "the plan-change ConfirmDialog",
   );
 
+  it("⚠ ONE button when refused — the cancel is dropped, not duplicated", () => {
+    expect(confirmDialog).toMatch(/cancelLabel=\{changeQuote\.data\.refusal \? null : "Not now"\}/);
+    const dialog = withoutComments(
+      readFileSync(join(process.cwd(), "client", "src", "foundation", "ConfirmDialog.tsx"), "utf8"),
+    );
+    /* The foundation renders no cancel button for `null`, and focus then has
+       somewhere to land. */
+    expect(dialog).toMatch(/\{cancelLabel !== null && \(/);
+    expect(dialog).toMatch(/else goRef\.current\?\.focus\(\)/);
+  });
+
   it("labels the button 'Got it' when the quote carries a refusal", () => {
     expect(confirmDialog).toMatch(/changeQuote\.data\.refusal\s*\?\s*"Got it"/);
   });
@@ -62,5 +75,31 @@ describe("a refused change offers no Confirm", () => {
     expect(confirmDialog).toMatch(
       /if \(changeQuote\.data\?\.refusal\) \{\s*setConfirming\(null\);\s*return;\s*\}/,
     );
+  });
+});
+
+/* ─────────── #1965 repair — the higher price says why ─────────── */
+
+describe("the spent-share line appears if and only if the charge is non-zero", () => {
+  const credits = 2_174_665; // ledger credits — any whole display figure
+  it("⚠ non-zero charge: one line, the quote's own credits in display units", () => {
+    const line = spentShareSentence({ spentShareCharge: 78_680, spentShareCredits: credits, currentInterval: "monthly" });
+    expect(line).toBe(` Includes ${formatCredits(displayBalance(credits))} credits you've already used this month.`);
+    expect(spentShareSentence({ spentShareCharge: 1, spentShareCredits: credits, currentInterval: "annual" })).toMatch(
+      /already used this year\.$/,
+    );
+  });
+
+  it("NEGATIVE CONTROL — zero, absent or negative charge: no line at all", () => {
+    expect(spentShareSentence({ spentShareCharge: 0, spentShareCredits: credits })).toBe("");
+    expect(spentShareSentence({ spentShareCredits: credits })).toBe("");
+    expect(spentShareSentence({ spentShareCharge: -5, spentShareCredits: credits })).toBe("");
+    expect(spentShareSentence({})).toBe("");
+  });
+
+  it("both interval-switch sentences carry it, right after the due-today figure", () => {
+    const switchBand = sourceBand(describeChange, 'if (quote.kind === "interval-switch")', "if (quote.isUpgrade)", "switch branch");
+    const calls = switchBand.match(/is due today\.(` \+\s*)?(\$\{)?spentShareSentence\(quote\)/g) ?? [];
+    expect(calls).toHaveLength(2);
   });
 });
