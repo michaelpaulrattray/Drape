@@ -519,10 +519,17 @@ export type BuildPackageInput = {
    * ⚠ **A PROMISE RATHER THAN A SHEET, and that is a money decision rather than
    * a style one.** `buildCastPackage` cannot await it before dispatching the
    * views: a sheet that never arrived would then leave five audit rows open and
-   * 8,500 credits taken with **not one view attempted**, and an unattempted
+   * 3,250 credits taken with **not one view attempted**, and an unattempted
    * view is the one failure mode this road has no refund path for. Carried in
-   * flight, a dead sheet is an ordinary generation failure five times over and
-   * every slice refunds itself.
+   * flight, a dead sheet is an ordinary generation failure five times over, so
+   * nothing commits and the total-loss road gives the whole charge back.
+   *
+   * ⚠ **THE SENTENCE THAT CLOSED THIS CLAUSE SAID *"every slice refunds
+   * itself"* AND #1968 RETIRED THE SLICE.** The hazard is unchanged and is if
+   * anything sharper: with no per-view refund, a view that is never ATTEMPTED
+   * has no road back at all except zero-of-N, so the thing that rescues the
+   * money is `committed` reaching zero — which only happens because the views
+   * are dispatched and fail, rather than never being dispatched.
    *
    * ⚠ **The Try again leaves this unset and must keep doing so.**
    * `viewRetryService.ts` renders ONE view against its delivered sibling, and
@@ -750,8 +757,10 @@ export async function buildCastPackage(
            `castingViewConformanceJudge` throws on a missing `OPENROUTER_API_KEY`
            — the §I door refusal, and the right one — and eagerly in the
            argument list that throw would be SYNCHRONOUS here, after five audit
-           rows exist and 8,500 credits are gone. Inside, it is a sheet that
-           never arrived, and every slice refunds itself. */
+           rows exist and 3,250 credits are gone. Inside, it is a sheet that
+           never arrived, nothing commits, and the total-loss road gives the
+           whole charge back (#1968 — it read *"every slice refunds itself"*
+           while a view had a slice to refund). */
         judge: (dependencies.judge ?? castingViewConformanceJudge)(),
         anchor: input.anchor,
         pronouns: input.pronouns ?? pronounsForSex(null),
@@ -1159,10 +1168,12 @@ export async function renderViewAttempts<T>(
         THE VIEWS ARE DISPATCHED.** Awaiting it in `buildCastPackage` would read
         more simply and would reach the one failure mode this road has no refund
         path for: a sheet that never arrived would leave five audit rows open,
-        8,500 credits taken and **not one view ever attempted**. Awaited here, a
-        dead sheet is an ordinary generation failure five times over — each slice
-        refunds through `failView`, nothing committed refunds the base too, and
-        the Cast still activates and confesses in place. This file's header names
+        3,250 credits taken and **not one view ever attempted**. Awaited here, a
+        dead sheet is an ordinary generation failure five times over — every
+        view fails through `failView`, nothing commits, the whole charge goes
+        back on the total-loss road, and the Cast still activates and confesses
+        in place. (It read *"each slice refunds through `failView`, nothing
+        committed refunds the base too"* until #1968 made the charge flat.) This file's header names
         that hazard in as many words, and the plate's `.catch` beside it exists
         for the same reason.
 

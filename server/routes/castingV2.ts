@@ -273,7 +273,7 @@ async function loadRollProjection(userId: number, rollPublicId: string): Promise
   const lineage = await getRollLineage(userId, roll);
   /*
     Signed candidates need their Cast's public id, or the tile can badge but not
-    LINK — which is the half-fix that leaves an 8,500-credit purchase as decoration.
+    LINK — which is the half-fix that leaves a 3,250-credit purchase as decoration.
   */
   const castPublicIdByCandidateId = await listCastPublicIdsForCandidates(userId, candidates);
   return projectRoll({

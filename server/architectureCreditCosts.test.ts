@@ -345,13 +345,20 @@ describe("the committed Atlas against the values TypeScript evaluates", () => {
       from two separately declared slices that happen to agree, and the identities
       asserted above are what prove each still comes from its own. This arm went
       red on the price change, which is exactly what a literal pin is for.
+
+      ⚠ **AND THE SIGN MOVED AGAIN ON 2026-10-08 (#1968): 8,500 → 3,250, his
+      *make both sign and redo/regenerate 650 credis*.** It is no longer a
+      DERIVED price at all — the promotion-plus-slices arithmetic is gone with
+      the per-view refund that needed it — so it is pinned here as a flat
+      declaration beside the three that are still folded. This arm went red on
+      that change too.
     */
     expect([
       CASTING_V2_ROLL_PRICE_CREDITS,
       CASTING_V2_FOLLOW_PRICE_CREDITS,
       CASTING_V2_SIGN_PRICE_CREDITS,
       CASTING_V2_VIEW_RETRY_PRICE_CREDITS,
-    ]).toEqual([1600, 1600, 8500, 1850]);
+    ]).toEqual([1600, 1600, 3250, 1850]);
   });
 
   it("holds the price that lives outside both cost modules", () => {

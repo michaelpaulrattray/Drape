@@ -578,18 +578,38 @@ const PROSE_NOT_A_CURRENT_PRICE: ReadonlyArray<{
       + "typographic specimen, not a claim about what anything costs.",
   },
   {
+    file: "server/castingV2/castingV2Scope.ts",
+    credits: 3500,
+    quote: "kept 3,500 credits of a customer's money during our",
+    why:
+      "A RECORD OF A DOCBLOCK THAT WAS WRONG, not a claim about a price. The "
+      + "sentence narrates what this file's own fail-closed paragraph used to "
+      + "DESCRIBE — a Sign that kept its promotion through a total loss — and the "
+      + "founder's ruling of 2026-08-02 removed that behaviour. The figure is the "
+      + "promotion portion of the Sign price at the time, and #1968 deleted the "
+      + "promotion itself (his *make both sign and redo 650 credis*), so 3,500 is "
+      + "no longer any part of any price. ⚠ It is DECLARED rather than rewritten: "
+      + "moving the number would make the sentence describe a product that kept "
+      + "3,250, which was never true of anything. The tense was corrected "
+      + "(describes → described) because the paragraph is about a past state.",
+  },
+  {
     file: "client/src/features/castingV2/components/KeptTray.tsx",
     credits: 500,
-    quote: "the price the day he said it; 8,500 since #1601",
+    quote: "the price the day he said it; 3,250 since #1968",
     why:
       "THE FOUNDER'S OWN FINDING, at the Sign price of the day — the tray's one "
       + "job is comparing a shortlist before a Sign, and 24px chips were not "
-      + "comparable. ⚠ It is STAMPED rather than rewritten (`500 … 8,500 since "
-      + "#1601`), which is the one shape that serves both readers: a human sees "
+      + "comparable. ⚠ It is STAMPED rather than rewritten (`500 … 3,250 since "
+      + "#1968`), which is the one shape that serves both readers: a human sees "
       + "today's price without the record being falsified, and this declaration "
       + "quotes the stamp so a bare `500` coming back is still a finding. The "
-      + "claim about today in the same file — *an 8,500-credit ceremony* — is "
-      + "corrected rather than declared, which is the distinction this card names.",
+      + "claim about today in the same file — *a 3,250-credit ceremony* — is "
+      + "corrected rather than declared, which is the distinction this card names. "
+      + "⚠ The stamp moved 8,500 → 3,250 with #1968 and this guard is what asked "
+      + "for it: the stale `since` figure raised its own finding on the same line, "
+      + "which made the 500 exemption unreachable — a stamp is only honest while "
+      + "the price it stamps is today’s.",
   },
   {
     file: "client/src/features/settings/sections/UsageSection.tsx",
