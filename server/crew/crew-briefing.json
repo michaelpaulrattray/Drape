@@ -126,7 +126,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-08T05:27:29.410Z",
+      "readAt": "2026-10-08T06:31:16.415Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -3617,7 +3617,7 @@
     },
     {
       "id": "sign-sheet-reremake-1904",
-      "title": "Both your answers are filed — the only thing left here is a Sign to drive",
+      "title": "Done — both your answers are filed, and the sheet re-make card is closed",
       "productImpact": "You answered both questions at 05:45 this morning (\"2) go with your recc 3) go with your rec\") and both are now cards an agent can pick up: a sheet that never arrives is asked for again, spaced out, so a dropped connection stops costing you two or three views (#1966); and the cut warning stops crying on every Sign so it can report the one case it exists for (#1967).\n\nNothing on this card needs another word from you. It stays here for one reason only: the last step is your hands and eyes, not an agent's.",
       "workedExample": "WHEN YOU HAVE A MINUTE: sign a cast and look at the five views. They should agree on the outfit, front and back. If the checker turns one down, the credits for that slice come back and you should read one of Yuna's three sentences with the cast's own name in it.\n\nOne thing to know before you drive it: making a sheet again replaces ALL of its views, so a picture that passed can be swapped for one the checker then turns down, and that slice refunds. That is what keeps the views agreeing with each other, and it is a real trade rather than a free win.",
       "options": [
@@ -3637,8 +3637,8 @@
           "consequence": "It waits. Nothing is at risk and no agent is blocked by it."
         }
       ],
-      "recommendation": "Drive it when you have ten minutes. It is the only thing standing between this card and done, and it is the kind of change that reads fine in a report and still looks wrong on a screen.",
-      "state": "waiting",
+      "recommendation": "Nothing to do. You answered both questions at 05:45 and card 1904 closed at 06:31. The two follow-ups carry on as ordinary work: #1966 (a sheet that never arrives is asked for again, spaced) and #1967 (the cut warning stops crying on every Sign).",
+      "state": "done",
       "filedAt": "2026-10-08T03:28:44.785Z",
       "issueNumber": 1904
     },
@@ -9809,9 +9809,9 @@
     },
     {
       "id": "undelivered-plan-features-1953",
-      "status": "in-review",
+      "status": "merged",
       "title": "The plan features nobody delivers come off the wire, and the Follow cost note reads the measured figure (#1953)",
-      "note": "Money surface, held for the relay. Gate green; sabotage 10/10 red.",
+      "note": "Merged 06:29Z, squash 54cf50b3 — relay's verdict. Sabotage 10/10 red.",
       "prNumber": 1970
     }
   ],
@@ -10203,7 +10203,7 @@
     271
   ],
   "nextUp": {
-    "readAt": "2026-10-08T05:27:29.410Z",
+    "readAt": "2026-10-08T06:31:16.415Z",
     "items": [
       {
         "issueNumber": 1903,
@@ -10282,8 +10282,18 @@
         "urgent": false
       },
       {
-        "issueNumber": 1953,
-        "title": "Remove the plan features nobody delivers (support tiers, early access), and correct the stale Follow cost note",
+        "issueNumber": 1966,
+        "title": "A Sign sheet that never arrives is asked for again, spaced, before its views are refunded (his word on #1904)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1968,
+        "title": "Sign is a flat 1,000 credits with no per-view refund, and the whole-set redo is 620 (his word, Cid's reprice 2026-10-08)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1969,
+        "title": "The Sign dialog says \"five canonical views\" — our word, not hers (his word 2026-10-08)",
         "urgent": false
       }
     ]
