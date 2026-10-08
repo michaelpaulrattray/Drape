@@ -323,6 +323,27 @@ const COLLECTORS: Readonly<Record<string, string>> = {
      for the design to go, so the manifest is the delete rather than a hold over
      bytes about to be claimed — there is no row left to carry a receipt. */
   "server/db/castingV2InkDesignRemoval.ts": "a design its owner removed, and the plates drawn from it",
+  /*
+    THE ELEVENTH, #1961, AND IT IS THE HAIR CUTTER'S TWIN: a collector that
+    registers its bytes BEFORE they exist, which is the shape that usually means
+    keeper.
+
+    The difference is what the bytes are FOR. A wardrobe scratch upload is a
+    customer's photograph put to a public key so a detector can read it back —
+    an ask-scoped artifact with no row to carry a receipt, written by four
+    routes that recorded the key nowhere at all until this card. There is
+    nothing to discharge it TO, and that is the design rather than an omission:
+    the register-before-write is what makes the object reachable, and the sweep
+    is what the whole card is for.
+
+    ⚠ IT RETURNS ITS BATCH ID TO ITS CALLER, which is the keeper's shape and is
+    why this entry says so out loud. The id is a RECEIPT ONLY IF A ROW TAKES IT,
+    and no row does: the routes read `url` and drop the rest. If a wardrobe row
+    ever starts holding one of these keys — `wardrobe.garments.import` is the
+    road, closed today on his #1537 — this moves to KEEPERS, and this table is
+    what refuses to let that happen quietly.
+  */
+  "server/wardrobe/scratchUpload.ts": "a photograph uploaded only so a detector could read it, collected once the request is over",
 };
 
 /**
