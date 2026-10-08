@@ -188,10 +188,35 @@ export async function beginDirectOperation(input: {
       lockKey: input.lockKey,
     });
     if (lock.type === "resource_busy") {
-      throw new TRPCError({
-        code: "CONFLICT",
-        message: input.lockBusyMessage
-          ?? "Another operation is already changing this Cast. Wait for it to finish before retrying.",
+      /*
+        FAIL OUR OWN ROW BEFORE THROWING (#1932).
+
+        The claim above created this operation row; the lock below it was
+        refused. Throwing here left the row `claimed` with nobody holding it,
+        and `renderViewAttempts` reads a non-terminal row owned by no live
+        process as `fenced` — *another process owns this money, do not touch
+        it* — so the slot read "being made" until the recovery sweep settled it
+        for free on a later pass, up to about six minutes after a press that
+        charged nothing.
+
+        `failClaimedDirectOperation` is the house instrument for exactly this
+        and it is forty lines below: it writes the terminal failure receipt,
+        falls back to `recovery_required` if that write itself fails, and then
+        throws the error we hand it. **It is called HERE rather than in the
+        callers' unwind because only this function knows both facts the repair
+        needs** — the id the claim just minted, which `beginDirectOperation`
+        never returns on this road, and WHICH refusal this is: `resource_busy`
+        from the claim switch above is somebody else's live row and must not be
+        touched, and both surface to a caller as the same `CONFLICT`.
+      */
+      return failClaimedDirectOperation({
+        userId: input.userId,
+        operationId: claim.operationId,
+        error: new TRPCError({
+          code: "CONFLICT",
+          message: input.lockBusyMessage
+            ?? "Another operation is already changing this Cast. Wait for it to finish before retrying.",
+        }),
       });
     }
   }
@@ -213,9 +238,18 @@ export async function beginDirectOperation(input: {
         `spoken` so the surface shows our words rather than deciding by code
         which sentence it may trust.
       */
-      throw spokenError({
-        code: "CONFLICT",
-        message: "That edit is already being made — it finishes before the next one starts. Nothing extra was charged.",
+      /* Fails our own claimed row first — #1932, and the comment on the
+         `lockKey` branch above carries the whole reason. `SpokenError` extends
+         `TRPCError`, so `failClaimedDirectOperation` re-throws this very
+         instance and her sentence keeps its marker rather than being replaced
+         by the staff one. */
+      return failClaimedDirectOperation({
+        userId: input.userId,
+        operationId: claim.operationId,
+        error: spokenError({
+          code: "CONFLICT",
+          message: "That edit is already being made — it finishes before the next one starts. Nothing extra was charged.",
+        }),
       });
     }
   }
