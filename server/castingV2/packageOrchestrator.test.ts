@@ -76,6 +76,8 @@ const {
   unsettledPackageAngles,
   VIEW_ARRIVAL_ATTEMPTS,
   VIEW_JUDGED_ATTEMPTS,
+  VIEW_STORE_ATTEMPTS,
+  VIEW_STORE_BACKOFF_MS,
 } = await import("./packageOrchestrator");
 const { CAST_PACKAGE_VIEWS, CAST_PACKAGE_VIEW_PRICE, CASTING_V2_SIGN_PRICE_CREDITS } = await import("./castViewPackage");
 const { CASTING_V2_SIGN_COSTS } = await import("../casting/castingCreditCosts");
@@ -2808,9 +2810,11 @@ describe("⚠ a view that arrived is never bought twice (#1994)", () => {
 
   const landed = async (value: { stored: { key: string } }) => ({ key: value.stored.key });
 
-  it("asks ONCE when the frame arrived and could not be STORED", async () => {
+  it("asks ONCE when the frame arrived and could NEVER be stored — the same bytes re-offered, then it gives up", async () => {
     const { generateView, identityEngine } = perViewEngine();
-    const storeImage = vi.fn(async () => {
+    const offered: string[] = [];
+    const storeImage = vi.fn(async (offer: { bytes: Buffer }) => {
+      offered.push(offer.bytes.toString());
       throw new Error("S3: the bucket did not answer");
     });
 
@@ -2824,8 +2828,47 @@ describe("⚠ a view that arrived is never bought twice (#1994)", () => {
     expect(generateView, "a frame that arrived was re-bought because the store failed")
       .toHaveBeenCalledTimes(1);
     expect(result.status).toBe("failed");
-    expect(waitedMs, "nothing waits for a frame that already arrived").toEqual([]);
+    /* #2045: the bytes in hand are offered to storage VIEW_STORE_ATTEMPTS
+       times — the SAME bytes, spaced by the store ladder and nothing else. */
+    expect(offered, "the frame in hand was not re-stored before giving up")
+      .toEqual(Array(VIEW_STORE_ATTEMPTS).fill("view"));
+    expect(waitedMs, "the only waits are the re-store spacing — no arrival backoff for a frame that arrived")
+      .toEqual(VIEW_STORE_BACKOFF_MS.slice(0, VIEW_STORE_ATTEMPTS - 1));
     expect(result.tally.arrivalFailures, "it ARRIVED — this is not an arrival failure").toBe(0);
+  });
+
+  /*
+    #2045 — THE LOSS #1994 LEFT STANDING. The store failing once used to break
+    the loop with the picture still in memory; now the same bytes are stored
+    again and the view lands, on ONE paid frame.
+  */
+  it("a store that fails ONCE then succeeds lands the view on the one frame it bought (#2045)", async () => {
+    const { generateView, identityEngine } = perViewEngine();
+    let failedOnce = false;
+    const offered: string[] = [];
+    const storeImage = vi.fn(async (offer: { bytes: Buffer }) => {
+      offered.push(offer.bytes.toString());
+      if (!failedOnce) {
+        failedOnce = true;
+        throw new Error("S3: the bucket did not answer");
+      }
+      const key = `casting-v2/casts/${OPERATION_ID}/views/${storedKeys.length}.png`;
+      storedKeys.push(key);
+      return { key, url: `https://cdn.example/${key}` };
+    });
+
+    const result = await renderViewAttempts(
+      deps({ identityEngine, storeImage }) as never,
+      input as never,
+      "frontClose",
+      landed as never,
+    );
+
+    expect(result.status, "a passing storage fault cost her the view").toBe("landed");
+    expect(generateView, "re-storing bought a second frame").toHaveBeenCalledTimes(1);
+    expect(offered).toEqual(["view", "view"]);
+    expect(waitedMs).toEqual([VIEW_STORE_BACKOFF_MS[0]]);
+    expect(result.tally).toMatchObject({ attempts: 1, arrivalFailures: 0 });
   });
 
   it("asks ONCE when the frame arrived, passed, and its LANDING threw", async () => {
