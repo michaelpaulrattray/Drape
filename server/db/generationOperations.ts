@@ -383,6 +383,116 @@ export async function getRecentPublicGenerationOperation(input: {
   return toPublicGenerationOperation(operation, children.get(operation.id) ?? []);
 }
 
+/**
+ * THE STATUSES A LIVE PROCESS IS STILL HOLDING — the one question "can this
+ * account's bytes still arrive?" has to ask (#1954).
+ *
+ * `claimed` and `running`, and deliberately NOT `recovery_required`, which is
+ * the third non-terminal status. The difference is what is on the other end of
+ * the row:
+ *
+ * - `claimed` and `running` mean a request thread is executing the work.
+ *   Dispatch is awaited in-request under a heartbeated lease
+ *   (`castingV2/rollService.ts`'s header), so the engine call, the
+ *   `storagePut` and the row write are all still ahead of it.
+ * - `recovery_required` is where the stale-operation sweep PARKS a row it
+ *   cannot adjudicate — an unrecorded refund, a Cast that disagrees with its
+ *   candidate (`casting/operationRecovery.ts:264`). Nothing is executing, and
+ *   nothing will execute it again: a human settles it. Only a FENCED Sign is
+ *   ever picked back up, and that row is on its way to terminal rather than to
+ *   a render.
+ *
+ * ⚠ **THE CAST-DELETION SIBLING REFUSES ON ALL THREE AND THAT IS NOT A
+ * DISAGREEMENT WITH THIS** (`casting/finalCastDeletion.ts`'s `unsettledPrior`).
+ * It is answering a different question — *is this Cast settled?* — and the
+ * customer it refuses can delete something else, or the same Cast once support
+ * has closed the row. An ACCOUNT has no second road: refusing erasure on a
+ * row parked for a human would wedge a customer's right to be erased behind an
+ * internal queue, for as long as that queue takes. So the two lists differ by
+ * one value on purpose, and neither is derived from the other (deriving from a
+ * set that answers a different question is a silent behaviour change).
+ */
+export const RENDER_IN_FLIGHT_STATUSES = ["claimed", "running"] as const;
+
+/** What an in-flight render is, to a caller that only has to refuse. */
+export interface InFlightRender {
+  operationId: string;
+  kind: string;
+  status: string;
+}
+
+/**
+ * One filter, read by both forms below, so the locking read and the courtesy
+ * read can never disagree about what counts as in flight (working law 4).
+ */
+function renderInFlightWhere(userId: number) {
+  return and(
+    eq(generationOperations.userId, userId),
+    inArray(generationOperations.status, [...RENDER_IN_FLIGHT_STATUSES]),
+  );
+}
+
+function firstInFlight(
+  rows: readonly { id: string; kind: string; status: string }[],
+): InFlightRender | null {
+  const row = rows[0];
+  return row ? { operationId: row.id, kind: row.kind, status: row.status } : null;
+}
+
+/**
+ * Is a render of this account's still being executed? — the plain read.
+ *
+ * For a caller that has to decide something BEFORE it does anything
+ * irreversible, and therefore cannot be inside the deletion transaction yet.
+ * It is a check-then-act read and is not the control; the locking form below
+ * is. Both exist because they stop different harms, and the comment at each
+ * call site says which.
+ */
+export async function findRenderInFlightForUser(userId: number): Promise<InFlightRender | null> {
+  assertPositiveId(userId, "userId");
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .select({
+      id: generationOperations.id,
+      kind: generationOperations.kind,
+      status: generationOperations.status,
+    })
+    .from(generationOperations)
+    .where(renderInFlightWhere(userId))
+    .limit(1);
+  return firstInFlight(rows);
+}
+
+/**
+ * The same question asked as a LOCKING read, inside a transaction.
+ *
+ * `.for("update")` is the whole point: it reads the latest committed version
+ * rather than the transaction's snapshot, and it holds the index range for
+ * this account for as long as the caller's transaction lives. So a claim
+ * racing an erasure either committed before this read and is seen, or blocks
+ * behind it. A plain `SELECT` here would answer about the moment the
+ * transaction began, which is the class `collectAccountOwnedStorageItemsIn`
+ * was already bitten by (#1948 L2).
+ */
+export async function findRenderInFlightForUserIn(
+  tx: TransactionHandle,
+  userId: number,
+): Promise<InFlightRender | null> {
+  assertPositiveId(userId, "userId");
+  const rows = await tx
+    .select({
+      id: generationOperations.id,
+      kind: generationOperations.kind,
+      status: generationOperations.status,
+    })
+    .from(generationOperations)
+    .where(renderInFlightWhere(userId))
+    .limit(1)
+    .for("update");
+  return firstInFlight(rows);
+}
+
 export async function listActivePublicGenerationOperations(input: {
   userId: number;
   boardId?: number;

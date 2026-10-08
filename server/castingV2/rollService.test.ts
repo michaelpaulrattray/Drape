@@ -1408,6 +1408,90 @@ describe("a delivered face gets a thumbnail", () => {
     const landings = (db.landCandidate as unknown as { mock: { calls: any[][] } }).mock.calls;
     for (const [landing] of landings) expect(landing.thumbKey).toBeNull();
   });
+
+  /*
+    AND A LOST LANDING TAKES THE SMALL COPY WITH IT — #1954's class sweep.
+
+    The `lost` road is where a candidate goes when its row is no longer
+    `dispatched` by the time the picture arrives: the sheet was abandoned, the
+    roll cancelled, or — the card's own case — the ACCOUNT was erased while the
+    render was still in flight. The road already dropped the frame, because
+    nothing will ever reference it. It did not drop the thumbnail, which is a
+    second independent key under the same prefix with no row to name it and no
+    derived-key sweep in `storageDelete` to reach it (that sweep is narrow to
+    the signed-views prefix on purpose).
+
+    Driven at the DELETE calls rather than at a count, because the claim is
+    about WHICH keys are swept.
+  */
+  it("⚠ a lost landing deletes the frame AND its small copy", async () => {
+    const storage = await import("../storage");
+    const deletes = vi.mocked(storage.storageDelete);
+    deletes.mockClear();
+
+    const db = await import("../db/castingV2");
+    /*
+      ⚠ RESTORED IN A `finally`, and the suite's own header is why: this
+      fixture is stateful and shared, so an override left standing here
+      reddened 20 later arms in the file on the first run of this one.
+    */
+    const realLanding = vi.mocked(db.landCandidate).getMockImplementation();
+    /*
+      EXACTLY ONE SLICE LOSES, and that is the shape that carries its own
+      control. Eight lost landings make `createRoll` throw
+      `PRECONDITION_FAILED` — correct, since nothing arrived — and an arm
+      around a throw proves the sweep without ever showing that a DELIVERED
+      frame is left alone. With one loser the other seven land normally, so
+      "two keys swept, fourteen untouched" is one assertion about both halves:
+      the orphan goes, and the fix did not start deleting paid pictures.
+    */
+    let landings = 0;
+    vi.mocked(db.landCandidate).mockImplementation(async (input) => {
+      landings += 1;
+      if (landings === 1) return "lost";
+      return realLanding ? realLanding(input) : "ready";
+    });
+
+    /* Keyed per write so a swept key can be named, not just counted. */
+    const stored: string[] = [];
+    const dependencies = {
+      ...(baseDependencies() as Record<string, unknown>),
+      engine: engineDelivering(await realFrame()),
+      storeImage: vi.fn(async (input: { bytes: Buffer; contentType: string; key?: string }) => {
+        const key = input.key ?? `casting-v2/candidates/frame-${stored.length}.png`;
+        stored.push(key);
+        return { key };
+      }),
+    } as never;
+
+    try {
+      const result = await createRoll(dependencies, INPUT);
+      expect(result.ready, "seven faces should still have been delivered").toBe(7);
+    } finally {
+      if (realLanding) vi.mocked(db.landCandidate).mockImplementation(realLanding);
+    }
+
+    /* Sixteen writes: eight frames and eight small copies. */
+    expect(stored.length, "the fixture stored nothing, so it proves nothing").toBe(16);
+    const swept = deletes.mock.calls.map(([key]) => String(key));
+    expect(
+      swept.length,
+      "the lost slice's two objects should be swept and NOTHING else — a"
+        + " delivered picture deleted here would be the fix causing the harm",
+    ).toBe(2);
+    expect(
+      swept.filter((key) => key.endsWith(".webp")).length,
+      "the small copy was left behind in the public bucket with no row, no"
+        + " manifest and nothing that could ever find it again",
+    ).toBe(1);
+    expect(
+      swept.filter((key) => !key.endsWith(".webp")).length,
+      "the frame itself stopped being swept",
+    ).toBe(1);
+    for (const key of swept) {
+      expect(stored, "a key was deleted that this roll never wrote").toContain(key);
+    }
+  });
 });
 
 /**

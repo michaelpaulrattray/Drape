@@ -30086,6 +30086,11 @@
     },
     {
       "from": "module:server/db/accountDeletion.ts",
+      "to": "module:server/db/generationOperations.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/accountDeletion.ts",
       "to": "module:server/db/storageCleanup.ts",
       "kind": "imports"
     },
@@ -34771,12 +34776,22 @@
     },
     {
       "from": "module:server/security/deleteUserData.ts",
+      "to": "module:server/_core/spokenError.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/security/deleteUserData.ts",
       "to": "module:server/auditLog.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/security/deleteUserData.ts",
       "to": "module:server/db/accountDeletion.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/security/deleteUserData.ts",
+      "to": "module:server/db/generationOperations.ts",
       "kind": "imports"
     },
     {

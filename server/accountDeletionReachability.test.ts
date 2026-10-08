@@ -49,7 +49,10 @@
 import { getTableName, type Table } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ACCOUNT_DELETION_DISPOSITIONS } from "./db/accountDeletion";
+import {
+  ACCOUNT_DELETION_DISPOSITIONS,
+  ACCOUNT_DELETION_RENDER_IN_FLIGHT,
+} from "./db/accountDeletion";
 
 /** Tables whose reads answer empty — see the header; each is named, not a class. */
 const READS_EMPTY = new Set([
@@ -63,6 +66,40 @@ const READS_EMPTY = new Set([
 const deleted: string[] = [];
 const updated: string[] = [];
 const inserted: string[] = [];
+/** Every `select`ed table, in the order the function asked for it (#1954). */
+const selected: string[] = [];
+
+/**
+ * WHAT THE IN-FLIGHT RENDER READ FINDS — the one answer an arm sets (#1954).
+ *
+ * `[]` is "nothing of this account's is rendering", which is every pre-existing
+ * arm's world and is why they are unchanged. An arm that puts a row here is
+ * driving the refusal.
+ */
+let inFlightRows: unknown[] = [];
+
+/**
+ * ⚠ **THE IN-FLIGHT READ IS RECOGNISED BY BEING FIRST, NOT BY ITS FIELDS.**
+ *
+ * `generation_operations` is read TWICE by this function — once by the refusal
+ * at the top of the transaction, once by step 9b to find the leases to delete —
+ * and the double has to answer them differently: empty for the first (so the
+ * deletion proceeds) and a row for the second (so the lock delete branch is
+ * taken). Telling them apart by a selected field name would be keying on a
+ * spelling for a meaning, and it would stop working the first time either
+ * projection was edited.
+ *
+ * The refusal's own comment in `accountDeletion.ts` says it is the
+ * transaction's FIRST act, and that is load-bearing rather than tidiness — the
+ * lock it takes has to be held for everything below it. So the double keys on
+ * exactly that, and `the in-flight read is the transaction's first statement`
+ * below holds the invariant the keying rests on. Move the check down and that
+ * arm reddens instead of this double quietly answering the wrong read.
+ */
+function isFirstOperationsRead(table: unknown): boolean {
+  return tableNameOf(table) === "generation_operations"
+    && !selected.includes("generation_operations");
+}
 
 /** One synthetic row shaped by whatever the caller asked for. */
 function synthRow(fields: Record<string, unknown> | undefined): Record<string, unknown> {
@@ -92,7 +129,15 @@ function selectChain(fields: Record<string, unknown> | undefined) {
   const chain: Record<string, unknown> = {};
   const passthrough = (...args: unknown[]) => {
     const first = args[0];
-    if (first !== undefined && READS_EMPTY.has(tableNameOf(first))) rows = [];
+    if (first !== undefined) {
+      /* `from(table)` is the only stage that names one, and it is where the
+         answer is decided — before the table is recorded, so "first" means
+         first as this run saw it. */
+      if (isFirstOperationsRead(first)) rows = inFlightRows;
+      else if (READS_EMPTY.has(tableNameOf(first))) rows = [];
+      const name = tableNameOf(first);
+      if (name !== "<unknown>") selected.push(name);
+    }
     return chain;
   };
   for (const stage of ["from", "where", "limit", "orderBy", "for", "innerJoin", "leftJoin", "groupBy"]) {
@@ -131,6 +176,8 @@ beforeEach(() => {
   deleted.length = 0;
   updated.length = 0;
   inserted.length = 0;
+  selected.length = 0;
+  inFlightRows = [];
   process.env.R2_PUBLIC_URL ??= "https://pub-test.r2.dev";
 });
 
@@ -185,5 +232,99 @@ describe("deleteUserAccount reaches every table it declares deleted (#1948 M1)",
       something the map does not say.
     */
     expect(deleted, "the audit trail was deleted rather than anonymised").not.toContain("audit_logs");
+  });
+});
+
+/**
+ * AN ERASURE DOES NOT RUN OVER A RENDER THAT IS STILL BEING EXECUTED — #1954.
+ *
+ * Driven through the real `deleteUserAccount` rather than through a
+ * re-implementation of its predicate, which is the only reading that can tell
+ * a wired refusal from a written one (invariant 7). The four arms are the
+ * finding, its two controls and the invariant the double's keying rests on:
+ *
+ * - **the refusal** — one in-flight row and NOTHING is deleted;
+ * - **the negative control** — the same run with no in-flight row deletes
+ *   everything, which is the `records a real run` arm above and is why it was
+ *   left exactly as it was;
+ * - **the discrimination control** — step 9b's own read of the same table
+ *   still gets its row, so the double is answering the FIRST read and not
+ *   every read (sabotage it and `generation_operation_locks` stops being
+ *   deleted);
+ * - **the ordering invariant** — the refusal is the transaction's first
+ *   statement, because the lock it takes has to cover everything below it.
+ */
+describe("account erasure refuses while a render is still being executed (#1954)", () => {
+  const RUNNING = { id: "op-running-1", kind: "castingV2.roll", status: "running" };
+
+  it("⚠ refuses, and deletes NOTHING — not the manifest, not the account", async () => {
+    inFlightRows = [RUNNING];
+    const result = await deleteUserAccount(4242);
+
+    expect(result.success).toBe(false);
+    expect(result.refusal).toBe("render_in_flight");
+    expect(result.refusedOnOperationId).toBe(RUNNING.id);
+    expect(
+      deleted,
+      "a table was deleted under an account whose render is still finishing",
+    ).toEqual([]);
+    expect(updated, "a row was anonymised on a refused erasure").toEqual([]);
+    expect(
+      inserted,
+      "a storage-cleanup manifest was written for an account that still exists",
+    ).toEqual([]);
+    expect(result.cleanupBatchId).toBeNull();
+    expect(result.cleanupObjects).toBe(0);
+    /* The reported counts are the real ones rather than a placeholder: nothing
+       ran, so every one of them is zero. */
+    expect(Object.values(result.deletedCounts).every((count) => count === 0)).toBe(true);
+  });
+
+  it("a `claimed` operation refuses on the same ground as a `running` one", async () => {
+    inFlightRows = [{ id: "op-claimed-1", kind: "castingV2.sign", status: "claimed" }];
+    const result = await deleteUserAccount(4242);
+    expect(result.refusal).toBe("render_in_flight");
+    expect(deleted).toEqual([]);
+  });
+
+  it("the refusal carries the customer's sentence and names no machinery", () => {
+    expect(ACCOUNT_DELETION_RENDER_IN_FLIGHT).toMatch(/still finishing/);
+    expect(ACCOUNT_DELETION_RENDER_IN_FLIGHT).toMatch(/nothing was deleted/i);
+    /*
+      THE DISAPPEARING-TECHNOLOGY LAW, DRIVEN RATHER THAN PROMISED. A refusal
+      is a path the customer is standing on, so no engine, table, status or
+      operation id may appear in it.
+    */
+    for (const leak of [
+      "operation", "generation", "claimed", "running", "castingV2", "fal",
+      "Sunburst", "Nano Banana", "storagePut", "R2", "lease", "transaction",
+    ]) {
+      expect(
+        ACCOUNT_DELETION_RENDER_IN_FLIGHT.toLowerCase(),
+        `the refusal says "${leak}" to a customer`,
+      ).not.toContain(leak.toLowerCase());
+    }
+  });
+
+  it("the in-flight read is the transaction's FIRST statement", async () => {
+    await deleteUserAccount(4242);
+    expect(
+      selected[0],
+      "the refusal no longer reads first, so its lock does not cover the"
+        + " statements below it — and the double above keys on this order",
+    ).toBe("generation_operations");
+  });
+
+  it("step 9b still reads the same table for its leases, and deletes them", async () => {
+    await deleteUserAccount(4242);
+    expect(
+      selected.filter((name) => name === "generation_operations").length,
+      "the two reads of this table collapsed into one",
+    ).toBe(2);
+    expect(
+      deleted,
+      "the operation leases stopped being deleted — the double answered both"
+        + " reads from the in-flight fixture instead of only the first",
+    ).toContain("generation_operation_locks");
   });
 });
