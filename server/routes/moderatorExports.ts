@@ -1,11 +1,96 @@
 import { moderatorProcedure, router } from "../_core/trpc";
 import { z } from "zod";
+import {
+  displayBalance,
+  displayMovement,
+  displayPrice,
+  staffLedgerProse,
+} from "../../shared/creditDisplay";
 
 function escapeCsv(val: string): string {
   if (val.includes('"') || val.includes(',') || val.includes('\n')) {
     return `"${val.replace(/"/g, '""')}"`;
   }
   return val;
+}
+
+/**
+ * The credit-history CSV, as a pure function so its figures can be driven (#2027).
+ *
+ * Every credit column names its scale. The ledger columns are the books and
+ * match the audit log; the credits columns are what the customer and the
+ * moderator's Credits tab read. Until #2027 the file said `Amount` and
+ * `Balance After` over ledger figures and printed each stored description with
+ * its composed ledger figures bare — on the same road as a request form that
+ * takes the customer's figure (#2010), so a copied number granted five times
+ * over. A description is restated through `staffLedgerProse`; the stored row
+ * is untouched.
+ */
+export function creditHistoryCsv(
+  transactions: readonly {
+    id: number;
+    createdAt: Date | string;
+    type: string;
+    amount: number;
+    balanceAfter: number;
+    description?: string | null;
+    referenceId?: string | null;
+    engineUsed?: string | null;
+  }[],
+): string {
+  const header =
+    "ID,Timestamp,Type,Amount (credits),Amount (ledger),Balance After (credits),Balance After (ledger),Description,Reference ID,Engine Used";
+  const rows = transactions.map((tx) => {
+    const ts = new Date(tx.createdAt).toISOString();
+    return [
+      tx.id, ts, tx.type,
+      displayMovement(tx.amount), tx.amount,
+      displayBalance(tx.balanceAfter), tx.balanceAfter,
+      tx.description ? escapeCsv(staffLedgerProse(tx.description)) : "",
+      tx.referenceId ?? "", tx.engineUsed ?? "",
+    ].join(",");
+  });
+  return [header, ...rows].join("\n");
+}
+
+/**
+ * The generation-history CSV (#2027): the cost names its scale both ways, as
+ * the Generations tab's COST fact does. A charge rounds UP (`displayPrice`).
+ */
+export function generationHistoryCsv(
+  generations: readonly {
+    id: number;
+    createdAt: Date | string;
+    completedAt?: Date | string | null;
+    type: string;
+    status: string;
+    pointsCost: number;
+    modelName?: string | null;
+    modelId?: number | string | null;
+    hasResult: boolean;
+    errorMessage?: string | null;
+  }[],
+): string {
+  // "Has Result" replaced the image-link column: a CSV of permanent public
+  // links to a customer's work is the staff image boundary at its worst —
+  // it walks out of the building. Support needs to know an image was
+  // produced, not to hold it (CLAUDE.md, "Metadata only is a boundary").
+  const header =
+    "ID,Timestamp,Type,Status,Cost (credits),Cost (ledger),Model Name,Model ID,Has Result,Error Message,Completed At";
+  const rows = generations.map((gen) => {
+    const ts = new Date(gen.createdAt).toISOString();
+    const completedTs = gen.completedAt ? new Date(gen.completedAt).toISOString() : "";
+    return [
+      gen.id, ts, gen.type, gen.status,
+      displayPrice(gen.pointsCost), gen.pointsCost,
+      gen.modelName ? escapeCsv(gen.modelName) : "",
+      gen.modelId ?? "",
+      gen.hasResult ? "yes" : "no",
+      gen.errorMessage ? escapeCsv(gen.errorMessage) : "",
+      completedTs,
+    ].join(",");
+  });
+  return [header, ...rows].join("\n");
 }
 
 export const moderatorExportsRouter = router({
@@ -80,17 +165,7 @@ export const moderatorExportsRouter = router({
         severity: "info",
       });
 
-      const header = "ID,Timestamp,Type,Amount,Balance After,Description,Reference ID,Engine Used";
-      const rows = result.transactions.map((tx) => {
-        const ts = new Date(tx.createdAt).toISOString();
-        return [
-          tx.id, ts, tx.type, tx.amount, tx.balanceAfter,
-          tx.description ? escapeCsv(tx.description) : "",
-          tx.referenceId ?? "", tx.engineUsed ?? "",
-        ].join(",");
-      });
-
-      return { csv: [header, ...rows].join("\n"), total: result.transactions.length };
+      return { csv: creditHistoryCsv(result.transactions), total: result.transactions.length };
     }),
 
   exportUserGenerationHistoryCsv: moderatorProcedure
@@ -128,26 +203,8 @@ export const moderatorExportsRouter = router({
         severity: "info",
       });
 
-      // "Has Result" replaced the image-link column: a CSV of permanent public
-      // links to a customer's work is the staff image boundary at its worst —
-      // it walks out of the building. Support needs to know an image was
-      // produced, not to hold it (CLAUDE.md, "Metadata only is a boundary").
-      const header = "ID,Timestamp,Type,Status,Credits Cost,Model Name,Model ID,Has Result,Error Message,Completed At";
-      const rows = result.generations.map((gen) => {
-        const ts = new Date(gen.createdAt).toISOString();
-        const completedTs = gen.completedAt ? new Date(gen.completedAt).toISOString() : "";
-        return [
-          gen.id, ts, gen.type, gen.status, gen.pointsCost,
-          gen.modelName ? escapeCsv(gen.modelName) : "",
-          gen.modelId ?? "",
-          gen.hasResult ? "yes" : "no",
-          gen.errorMessage ? escapeCsv(gen.errorMessage) : "",
-          completedTs,
-        ].join(",");
-      });
-
       return {
-        csv: [header, ...rows].join("\n"),
+        csv: generationHistoryCsv(result.generations),
         total: result.generations.length,
         summary: result.summary,
       };

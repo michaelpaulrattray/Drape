@@ -69,7 +69,11 @@
  * no stored row is reinterpreted), and every staff screen that shows a request
  * or a transaction reads the customer's figure first with the ledger beside it
  * (`staffCreditFact`). What still reads the books in ledger is the audit and
- * immutable logs and the staff CSV exports, which are the books.
+ * immutable logs and the staff CSV exports, which are the books — and since
+ * #2027 the exports, the reconciliation pane and a stored transaction
+ * description say so on every figure (`staffLedgerProse` for the last), because
+ * an unlabelled ledger figure copied into the display-unit request form grants
+ * five times what was meant.
  */
 
 /**
@@ -273,6 +277,55 @@ export function staffCreditFact(display: DisplayCredits, ledger: number): string
 }
 
 /**
+ * Where a stored description stops being the product's sentence and becomes a
+ * person's own words (#2027).
+ *
+ * Three writers end a `creditTransactions.description` with what a member of
+ * staff typed: `Admin adjustment by admin 7: <reason>` (`server/db/admin.ts`),
+ * `Credits added via change request #12: <reason>` and `Refund via change
+ * request #12: <reason>` (`server/lib/adminActions/changeRequestActions.ts`).
+ * A figure inside that reason is in whatever scale its author had in mind —
+ * ledger before #1986/#2010, quite possibly display after — so no conversion
+ * can be honest about it, and it is left exactly as typed. The row's own
+ * AMOUNT fact states the real figure on both scales.
+ */
+const STAFF_WORDS_FOLLOW = /(?:by admin \d+|via change request #\d+): /;
+
+/** `N credits`, `N,NNN credit`, `N rollover` — a figure the product composed. */
+const COMPOSED_LEDGER_FIGURE = /(?<![\w#.,−+-])(\d{1,3}(?:,\d{3})+|\d+)(?![\d,.])(\s+)(credits?\b|rollover\b)/gi;
+
+/**
+ * A stored transaction description, as a member of staff reads it (#2027).
+ *
+ * The product writes descriptions with LEDGER figures in them — *"Monthly
+ * credit refresh (N credits + R rollover)"*, *"Credit top-up: N
+ * credits"* — and they are stored, so they stay that way; nothing here
+ * rewrites a row. What changes is the reading: every figure the product
+ * composed is restated the way every other staff figure is
+ * (`staffCreditFact`), so a moderator who copies a number into the request
+ * form — which takes the customer's figure since #2010 — copies the
+ * customer's figure and not one five times larger.
+ *
+ * A grant rounds down like a balance (`displayBalance`); every composed figure
+ * in a stored description today is a grant, which the census arm in
+ * `server/creditDisplayGuard.test.ts` drives from the writers' own templates.
+ * A person's reason is left as typed (see `STAFF_WORDS_FOLLOW`).
+ */
+export function staffLedgerProse(description: string): string {
+  const marker = STAFF_WORDS_FOLLOW.exec(description);
+  const cut = marker ? marker.index + marker[0].length : description.length;
+  const composed = description.slice(0, cut).replace(
+    COMPOSED_LEDGER_FIGURE,
+    (_whole, figure: string, _space: string, word: string) => {
+      const ledger = Number(figure.replace(/,/g, ""));
+      const fact = staffCreditFact(displayBalance(ledger), ledger);
+      return /^rollover$/i.test(word) ? `${fact} rollover` : fact;
+    },
+  );
+  return composed + description.slice(cut);
+}
+
+/**
  * The most one admin Add or Deduct may move, in DISPLAY credits (#1986) — and,
  * since #2010, the most one moderator credit request may ask for.
  *
@@ -288,7 +341,7 @@ export function staffCreditFact(display: DisplayCredits, ledger: number): string
  * CAP, not a price, which is why its name does not say COST, PRICE or CREDIT:
  * the Atlas's price collector reads those words as a price.
  */
-export const ADMIN_ADJUST_DISPLAY_MAX = 100_000;
+export const ADMIN_ADJUST_DISPLAY_MAX: DisplayCredits = 100_000 as DisplayCredits;
 
 /**
  * Display credits above which the product reads them in millions.

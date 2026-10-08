@@ -33,6 +33,7 @@ import {
   formatCredits,
   ledgerForDisplay,
   staffCreditFact,
+  staffLedgerProse,
   wholeDisplayLedger,
 } from "../shared/creditDisplay";
 
@@ -391,5 +392,38 @@ describe("staffCreditFact — the customer's figure first, the ledger beside it 
   it("keeps the caller's rounding: a deduction of 7 ledger reads as 2, a grant of 7 as 1", () => {
     expect(staffCreditFact(displayPrice(7), 7)).toBe("2 credits · 7 ledger");
     expect(staffCreditFact(displayBalance(7), 7)).toBe("1 credits · 7 ledger");
+  });
+});
+
+describe("staffLedgerProse — a stored description, as staff read it (#2027)", () => {
+  it("restates every figure the product composed, customer's figure first", () => {
+    expect(staffLedgerProse("Credit top-up: 50000 credits")).toBe("Credit top-up: 10,000 credits · 50,000 ledger");
+    expect(staffLedgerProse("Monthly credit refresh (180000 credits + 7333 rollover)")).toBe(
+      "Monthly credit refresh (36,000 credits · 180,000 ledger + 1,466 credits · 7,333 ledger rollover)",
+    );
+    expect(staffLedgerProse("Annual credit grant — 12 months up front (1,200,000 credits + rollover)")).toBe(
+      "Annual credit grant — 12 months up front (240,000 credits · 1,200,000 ledger + rollover)",
+    );
+  });
+
+  it("leaves a description with no composed figure exactly as stored", () => {
+    for (const plain of ["Welcome bonus - free credits for new users", "Roll #812", "Refund: catastrophic failure"]) {
+      expect(staffLedgerProse(plain)).toBe(plain);
+    }
+  });
+
+  it("⚠ leaves a person's reason AS TYPED — its scale is unknowable", () => {
+    for (const prefix of [
+      "Admin adjustment by admin 7: ",
+      "Credits added via change request #12: ",
+      "Refund via change request #12: ",
+    ]) {
+      expect(staffLedgerProse(`${prefix}promised 100 credits`)).toBe(`${prefix}promised 100 credits`);
+    }
+  });
+
+  it("does not read an id or a decimal as a figure", () => {
+    expect(staffLedgerProse("Order #5000 credits note")).toBe("Order #5000 credits note");
+    expect(staffLedgerProse("rate 1.5 credits")).toBe("rate 1.5 credits");
   });
 });

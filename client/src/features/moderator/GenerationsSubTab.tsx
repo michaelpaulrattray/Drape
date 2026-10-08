@@ -32,6 +32,8 @@ import { staffDateTime } from "@/foundation/staffDate";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { trpc } from "@/lib/trpc";
 
+import { displayPrice, formatCredits, staffCreditFact } from "@shared/creditDisplay";
+
 import { runStaffCsvExport, saveCsvFile, staffCsvFileName } from "./staffCsvExport";
 
 const PAGE_SIZE = 20;
@@ -88,7 +90,7 @@ export function GenerationsSubTab({
         fetchExport: () => utils.client.moderatorExports.exportUserGenerationHistoryCsv.query(input),
         fileName: staffCsvFileName(`generation-history-user-${userId}`),
         successMessage: (answer) =>
-          `Exported ${answer.total} generation records (${answer.summary.failedCount} failed, ${answer.summary.totalCreditsUsed} credits used)`,
+          `Exported ${answer.total} generation records (${answer.summary.failedCount} failed, ${formatCredits(displayPrice(answer.summary.totalCreditsUsed))} credits used)`,
         fallbackFailure: "The generation history could not be exported.",
         download: ({ name, csv }) => saveCsvFile(name, csv),
         onSuccess: (message) => toast.success(message),
@@ -114,14 +116,15 @@ export function GenerationsSubTab({
         {gen.modelName ? <span className="dp-table__id">{gen.modelName}</span> : null}
       </span>,
       <RowId key="id">#{gen.id}</RowId>,
-      <span key="cost">{gen.pointsCost > 0 ? `${gen.pointsCost} cr` : "—"}</span>,
+      <span key="cost">{gen.pointsCost > 0 ? `${formatCredits(displayPrice(gen.pointsCost))} cr` : "—"}</span>,
       <span key="when">{staffDateTime(new Date(gen.createdAt))}</span>,
     ],
     facts: [
       { label: "GENERATION", value: `#${gen.id}` },
       { label: "KIND", value: gen.type || "unknown" },
       { label: "CAST", value: gen.modelName || "—" },
-      { label: "COST", value: gen.pointsCost > 0 ? `${gen.pointsCost} credits` : "free" },
+      /* #2027: the customer's figure first, the ledger beside it, as on the Credits tab. */
+      { label: "COST", value: gen.pointsCost > 0 ? staffCreditFact(displayPrice(gen.pointsCost), gen.pointsCost) : "free" },
       { label: "STARTED", value: staffDateTime(new Date(gen.createdAt)) },
       {
         label: "TOOK",
@@ -140,7 +143,7 @@ export function GenerationsSubTab({
         {summary ? (
           <span className="dp-small">
             {summary.completedCount} finished, {summary.failedCount} failed,{" "}
-            {summary.totalCreditsUsed} credits
+            {formatCredits(displayPrice(summary.totalCreditsUsed))} credits
           </span>
         ) : null}
         <TableFilter
