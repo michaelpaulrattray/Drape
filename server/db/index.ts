@@ -104,6 +104,7 @@ export {
   resolvePlanChangeSettlement,
   voidPendingPlanChangeSettlementsForUser,
   getVoidPlanChangeSettlementInvoiceIdsForUser,
+  netAppliedPlanChangeSettlementsSince,
   type RecordPlanChangeSettlementInput,
 } from "./planChangeSettlements";
 

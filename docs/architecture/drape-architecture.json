@@ -14314,6 +14314,10 @@
       "path": "server/refinePanelDoors.test.ts"
     },
     {
+      "id": "test:server/renewalSettlementNetting.test.ts",
+      "path": "server/renewalSettlementNetting.test.ts"
+    },
+    {
       "id": "test:server/repairsOwed.test.ts",
       "path": "server/repairsOwed.test.ts"
     },
@@ -30218,6 +30222,11 @@
     },
     {
       "from": "module:server/db/billing.ts",
+      "to": "module:server/db/planChangeSettlements.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/billing.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
@@ -34969,6 +34978,11 @@
     {
       "from": "module:server/stripe/planChangeSettlement.ts",
       "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/planChangeSettlement.ts",
+      "to": "module:server/db/planChangeSettlements.ts",
       "kind": "imports"
     },
     {

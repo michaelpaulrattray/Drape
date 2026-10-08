@@ -1300,6 +1300,44 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<W
   const grantCredits =
     (getMonthlyCredits(grantPlan) + sliderLedgerCredits) * grantMonths;
 
+  /* ⚠ A PLAN CHANGE ALREADY SETTLED FOR *THIS* PERIOD IS NOT LAST PERIOD'S
+     LEFTOVER, AND MUST NOT BE ROLLED (#1937).
+
+     Same window as the plan reading above, one money figure further on.
+     `applyPlanChangeSettlement` moves its credits the moment the change's
+     invoice is paid, and that move lands in the plan's part of the balance —
+     so the SET below, which rolls the plan's part at a percentage, applies
+     that percentage to a proration the customer bought for days of the period
+     this grant is opening. On Pro the customer loses three quarters of their
+     upgrade's credits; on Starter, half. The unwind direction is the mirror:
+     a downgrade's take-back is partly undone instead of biting in full.
+
+     The discriminator is the INVOICE'S OWN PERIOD START, and it has to be:
+     `lastRefreshAt` would also catch every ordinary mid-period change, whose
+     proration DID buy days of the period now closing and should roll like any
+     other unspent allowance. A settlement applied after this period began is
+     the late-webhook window and nothing else.
+
+     ⚠ **AN UNREADABLE PERIOD START TAKES THE OLD ROAD** — the #1930 clause
+     above, for the same reason. `periodBought` answers `null` there only when
+     the line carried no readable period at all, which is also the shape that
+     makes the months a fallback guess; inventing a window boundary on an
+     artifact that could not state one would net out moves from any distance.
+
+     ⚠ **THE DATE GOES DOWN, NOT THE NET.** `refreshMonthlyCredits` does the
+     read itself, inside its compare-and-set loop, so the settlements and the
+     balance come off the same attempt — a net read here and a balance re-read
+     by a retry are two moments, and a settlement landing between them would
+     be subtracted from a balance that already has it. Which artifact states
+     the period is this handler's question; reading it consistently with the
+     write is that function's. */
+  const settlementWindowStart = bought.startSec === null ? null : new Date(bought.startSec * 1000);
+  if (settlementWindowStart === null) {
+    log.info(
+      `[Webhook] Invoice ${invoice.id} states no period start — plan-change settlements are rolled as before for user ${userId}`,
+    );
+  }
+
   // Refresh credits
   const result = await refreshMonthlyCredits(
     userId,
@@ -1309,6 +1347,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<W
     grantMonths === 12
       ? `Annual credit grant — 12 months up front (${grantCredits} credits + rollover)`
       : undefined,
+    settlementWindowStart,
   );
 
   if (!result.success) {

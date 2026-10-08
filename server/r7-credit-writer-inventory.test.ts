@@ -43,9 +43,26 @@ describe("R7-1B deterministic retryable credit writers", () => {
        own INVOICE — one invoice, one credit move, whatever the client
        retries — shared by changePlan and the webhook so their race is safe.
        The clientRequestId keying above survives only on the declared
-       no-invoice fallback road. */
-    const settlement = source("./stripe/planChangeSettlement.ts");
+       no-invoice fallback road.
+
+       ⚠ **IT IS DECLARED IN server/db/planChangeSettlements.ts SINCE PR
+       #1946's REVIEW, NOT IN THE STRIPE MODULE, AND THIS ARM IS WHAT CAUGHT
+       THE MOVE.** The renewal's netting reader looks a move up in the ledger
+       by this key and lives beside the table; the stripe module imports
+       ../db, so reading it the other way would have closed an import cycle.
+       A guard that names a symbol need not live beside it — the suites of
+       all four changed files were green when this arm reddened. */
+    const settlement = source("./db/planChangeSettlements.ts");
     expect(settlement).toContain("`plan-change-settle:${stripeInvoiceId}`");
+    /* And it is re-exported rather than re-declared, so every importer keeps
+       its path and there is ONE spelling of the string two racing appliers
+       rely on (working law 4). */
+    const applier = source("./stripe/planChangeSettlement.ts");
+    expect(applier).toContain('export { settlementLedgerRef } from "../db/planChangeSettlements";');
+    expect(
+      applier,
+      "a second declaration of the ref would be the drift this re-export exists to stop",
+    ).not.toContain("function settlementLedgerRef");
 
     const root = new URL("../client/src/", import.meta.url).pathname.replace(
       /^\/([A-Za-z]:)/,

@@ -68,6 +68,23 @@ export type PeriodBought = {
   monthsBought: 1 | 12;
   /** The span the line actually covers, for the log. */
   spanDays: number;
+  /**
+   * When the bought period STARTS, in Stripe's epoch seconds — or `null` when
+   * the line carried no readable period and the months came off the classic
+   * interval field instead (#1937).
+   *
+   * It is read here rather than by a second walker over the same lines,
+   * because the line this answers about must be the very line the months came
+   * from: two readers choosing "the first non-proration subscription line"
+   * independently is the drift working law 4 is about, and here they would
+   * disagree silently on a multi-line invoice.
+   *
+   * ⚠ `null` is a real answer and its caller must have a road for it. It means
+   * *this invoice cannot say when its period began*, which is not the same as
+   * *the period began at zero* — a caller that treats it as an epoch would put
+   * every event in the product's history inside the window.
+   */
+  startSec: number | null;
 };
 
 /**
@@ -94,10 +111,10 @@ export function periodBought(invoice: unknown): PeriodBought | null {
       // conservative grant (never twelve on a guess).
       const classicInterval =
         (line as AnyRecord)?.price?.recurring?.interval ?? (line as AnyRecord)?.plan?.interval;
-      return { monthsBought: classicInterval === "year" ? 12 : 1, spanDays: 0 };
+      return { monthsBought: classicInterval === "year" ? 12 : 1, spanDays: 0, startSec: null };
     }
     const spanDays = Math.round((endSec - startSec) / 86_400);
-    return { monthsBought: spanDays >= 300 ? 12 : 1, spanDays };
+    return { monthsBought: spanDays >= 300 ? 12 : 1, spanDays, startSec };
   }
   return null;
 }
