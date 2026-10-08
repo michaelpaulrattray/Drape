@@ -1,3 +1,5 @@
+import { join, resolve } from "node:path";
+
 import sharp from "sharp";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -97,10 +99,22 @@ import {
   type SignSheetKind,
 } from "./signSheet";
 import { SHEET_MAX_RENDERS } from "./signSheetCoordinator";
-import path from "node:path";
-
 import { refundOutcomeText } from "../../shared/refundCopy";
+import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
 import { readListedSource } from "../testing/listedSource";
+
+/*
+  ⚠ **THE TREE READER PUT THIS SUITE IN #741'S POPULATION, AND IT FOUND OUT AT
+  THE GUARD RATHER THAN BY BEING REMEMBERED — which is the guard working.**
+
+  One arm here reads `ViewTabs.tsx` off the real tree so that the refusal line's
+  join is DERIVED rather than quoted, and `sourceSweepSuites` keys on reaching
+  for the tree reader at all rather than on how many files a suite then reads.
+  That is deliberate on its part — a population keyed on the files already fixed
+  stops watching the moment one is fixed — so the floor is declared here rather
+  than argued about on the ground that this suite reads exactly one file.
+*/
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 const pass: ViewConformanceVerdict = {
   pass: true,
@@ -2528,8 +2542,8 @@ describe("⚠ the refusal line a customer reads, end to end", () => {
       a `.` between the reason and the money, because that is the whole reason
       these sentences ship without one.
     */
-    const source = readListedSource(path.join(
-      process.cwd(),
+    const source = readListedSource(join(
+      resolve(import.meta.dirname, "../.."),
       "client/src/features/casting/components/ImageViewer/ViewTabs.tsx",
     ));
     expect(source, "the surface this arm derives from is gone — re-point it").not.toBeNull();
