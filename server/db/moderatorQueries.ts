@@ -18,6 +18,7 @@ import {
   gte,
   lte,
   sql,
+  inArray,
 } from "drizzle-orm";
 import {
   creditTransactions,
@@ -380,6 +381,13 @@ export async function getDetailedGenerationHistory(
 import { referrals, users } from "../../drizzle/schema";
 
 /**
+ * How many user ids one `IN (…)` read of the flagged-referrals page carries.
+ * It bounds the length of one list and nothing else — the chunks run one
+ * after another, so the page holds at most one pool slot for this read.
+ */
+export const FLAGGED_REFERRAL_USER_CHUNK = 500;
+
+/**
  * Get referrals flagged with sameIpFlag = true for moderator review.
  * Joins user info for both referrer and referee.
  */
@@ -409,9 +417,6 @@ export async function getFlaggedReferrals(
   const db = await getDb();
   if (!db) return { items: [], total: 0 };
 
-  // Alias for the referred user join
-  const referrerUser = users;
-
   const flaggedRows = await db
     .select({
       id: referrals.id,
@@ -439,45 +444,42 @@ export async function getFlaggedReferrals(
     .where(eq(referrals.sameIpFlag, true));
   const total = Number(countResult[0]?.count ?? 0);
 
-  // Enrich with user names/emails
-  const enriched = await Promise.all(
-    flaggedRows.map(async (row) => {
-      let referrerName: string | null = null;
-      let referrerEmail: string | null = null;
-      let referredName: string | null = null;
-
-      // Get referrer info
-      const referrerRows = await db
-        .select({ name: referrerUser.name, email: referrerUser.email })
-        .from(referrerUser)
-        .where(eq(referrerUser.id, row.referrerUserId))
-        .limit(1);
-      if (referrerRows[0]) {
-        referrerName = referrerRows[0].name;
-        referrerEmail = referrerRows[0].email;
-      }
-
-      // Get referred user info
-      if (row.referredUserId) {
-        const referredRows = await db
-          .select({ name: users.name, email: users.email })
-          .from(users)
-          .where(eq(users.id, row.referredUserId))
-          .limit(1);
-        if (referredRows[0]) {
-          referredName = referredRows[0].name;
-        }
-      }
-
-      return {
-        ...row,
-        referrerName,
-        referrerEmail,
-        referredName,
-        referredEmail: row.referredEmail,
-      };
-    })
+  // Enrich with user names/emails — ONE read of every user the page names,
+  // never one read per row fired all at once (#2000). The old fan-out held a
+  // pool slot per row, and a full page (`limit` up to 100) was 100 concurrent
+  // queries onto the shared pool's 20 + 50: past the ceiling, so the page
+  // could fail with `Queue limit reached.`. The ids are read in sequential
+  // chunks of FLAGGED_REFERRAL_USER_CHUNK, so even a caller passing a larger
+  // `limit` than the procedure allows holds one slot at a time. Only `name`
+  // and `email` are projected (invariant 8).
+  const userIds = Array.from(
+    new Set(
+      flaggedRows.flatMap((row) =>
+        row.referredUserId ? [row.referrerUserId, row.referredUserId] : [row.referrerUserId],
+      ),
+    ),
   );
+  const people = new Map<number, { name: string | null; email: string | null }>();
+  for (let at = 0; at < userIds.length; at += FLAGGED_REFERRAL_USER_CHUNK) {
+    const chunk = userIds.slice(at, at + FLAGGED_REFERRAL_USER_CHUNK);
+    const rows = await db
+      .select({ id: users.id, name: users.name, email: users.email })
+      .from(users)
+      .where(inArray(users.id, chunk));
+    for (const row of rows) people.set(row.id, { name: row.name, email: row.email });
+  }
+
+  const enriched = flaggedRows.map((row) => {
+    const referrer = people.get(row.referrerUserId);
+    const referred = row.referredUserId ? people.get(row.referredUserId) : undefined;
+    return {
+      ...row,
+      referrerName: referrer?.name ?? null,
+      referrerEmail: referrer?.email ?? null,
+      referredName: referred?.name ?? null,
+      referredEmail: row.referredEmail,
+    };
+  });
 
   return { items: enriched, total };
 }
