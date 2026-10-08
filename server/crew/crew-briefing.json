@@ -1,7 +1,7 @@
 {
-  "edition": 659,
-  "updatedAt": "2026-10-08T11:50:00.000Z",
-  "shift": "Foreman — foreman-20261008-2158",
+  "edition": 660,
+  "updatedAt": "2026-10-08T13:05:00.000Z",
+  "shift": "Foreman — foreman-20261008-2234",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -126,7 +126,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-08T11:45:02.060Z",
+      "readAt": "2026-10-08T13:29:03.774Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -3645,7 +3645,7 @@
     {
       "id": "enterprise-band-promises-1973",
       "issueNumber": 1973,
-      "state": "waiting",
+      "state": "done",
       "filedAt": "2026-10-08T06:30:06.157Z",
       "title": "Four things our top plans still promise that we have no system for — your call",
       "productImpact": "Tonight I took three promises off the plan list on your word: \"Standard support\", \"Priority support\" and \"Early access to new features\". None of them exists — there are no support tiers and no early-access programme — so the app was offering things it cannot do.\n\nFour more are still there, and I did not touch them, because I do not think they are the same thing: \"Dedicated account manager\", \"Custom integrations\", \"SLA guarantee\" and \"White-glove onboarding\".\n\nNobody is being misled today. Those four sit only on the top rungs, and those stopped being plans anyone can buy when we turned them into the Enterprise \"let's talk\" band. No screen is even drawing them. So this is about what we are on record as offering, not about a screen that looks wrong.",
@@ -6872,7 +6872,7 @@
       "title": "Ask for all views again — the paid redo of a whole signed package, 350 credits (#1903 slice 2)",
       "status": "blocked",
       "prNumber": 1924,
-      "note": "Finished and green, waiting on the sheet work you held it behind. It needs one re-merge once that lands."
+      "note": "Stuck, and it needs a person: the branch has drifted from main so it cannot be merged or re-checked. Not re-merged tonight on purpose — doing that would make the review's own findings read as answered when they are not. Its remaining work is the new Sign price you set (#1968), not a repair."
     },
     {
       "id": "pro-plus-rename-1900",
@@ -9802,7 +9802,7 @@
     },
     {
       "id": "defer-decrease-1936",
-      "status": "in-review",
+      "status": "merged",
       "title": "Dropping a plan or lowering the credit dial now happens at your renewal, not instantly (#1936)",
       "note": "Money surface, held for the relay. Driven against real Stripe test mode: no refund, no invoice, balance unchanged.",
       "prNumber": 1963
@@ -9816,7 +9816,7 @@
     },
     {
       "id": "export-refusal-reaches-her-1962",
-      "status": "in-review",
+      "status": "merged",
       "title": "Ask to download your data twice and the app now says why it refused, instead of nothing (#1962)",
       "note": "Repaired and green, waiting on the relay. The frames caught a second fault in our own wording and that is fixed too.",
       "prNumber": 1981
@@ -9827,6 +9827,13 @@
       "title": "A Sign sheet that arrived but could not be used is no longer paid for three more times (#1966)",
       "note": "Repaired and green, waiting on the relay. House money only; nothing a customer was charged.",
       "prNumber": 1982
+    },
+    {
+      "id": "garment-owns-its-pictures-1961",
+      "status": "in-review",
+      "title": "A garment keeps its own copy of the photograph it came from (#1961)",
+      "prNumber": 1979,
+      "note": "Repaired and green, waiting on the relay. Also found this pull request's gate had been failing since 07:08Z on a check nobody had read."
     }
   ],
   "problems": [
@@ -10231,7 +10238,7 @@
     271
   ],
   "nextUp": {
-    "readAt": "2026-10-08T11:45:02.060Z",
+    "readAt": "2026-10-08T13:29:03.774Z",
     "items": [
       {
         "issueNumber": 1903,
@@ -10281,11 +10288,6 @@
         }
       },
       {
-        "issueNumber": 1936,
-        "title": "The slider (and any downgrade) can be looped for free credits: raise, spend, lower for a Stripe refund, raise again — fix before go-live",
-        "urgent": false
-      },
-      {
         "issueNumber": 1940,
         "title": "In-app money wording: \"credits returned\" everywhere, \"Cancel plan\" instead of \"Drop to Free\", and Billing says when a cancelled plan ends",
         "urgent": false
@@ -10307,31 +10309,7 @@
       },
       {
         "issueNumber": 1968,
-        "title": "Sign is a flat 1,000 credits with no per-view refund, and the whole-set redo is 620 (his word, Cid's reprice 2026-10-08)",
-        "urgent": false
-      },
-      {
-        "issueNumber": 1969,
-        "title": "The Sign dialog says \"five canonical views\" — our word, not hers (his word 2026-10-08)",
-        "urgent": false
-      },
-      {
-        "issueNumber": 1973,
-        "title": "Four more plan feature lines promise things nobody delivers - but they sit only on the hand-sold Enterprise band, so it is your call",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "his desk card `enterprise-band-promises-1973` is open"
-        }
-      },
-      {
-        "issueNumber": 1977,
-        "title": "Held PRs with a repair owed are picked before any new card — the seat picker and the board enforce it (his word 2026-10-08)",
-        "urgent": false
-      },
-      {
-        "issueNumber": 1988,
-        "title": "A finished test drive stays on his Crew page for two days after he answers every step (his report 2026-10-08)",
+        "title": "Sign and the whole-set redo are each a flat 650 credits with no per-view refund (his word 2026-10-08, after Cid's reprice)",
         "urgent": false
       }
     ]
