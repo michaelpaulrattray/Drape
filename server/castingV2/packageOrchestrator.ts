@@ -220,6 +220,37 @@ const PACKAGE_KEY_PREFIX = "casting-v2/casts";
 export const VIEW_ARRIVAL_ATTEMPTS = ARRIVAL_ATTEMPTS;
 
 /**
+ * HOW MANY TIMES A FRAME THAT ARRIVED IS OFFERED TO STORAGE (#2045) — the
+ * first store plus two more, the SAME bytes each time and never a new frame.
+ *
+ * #1994 stopped the per-view road re-buying a frame because something after it
+ * failed, which was right about the money and left one loss standing: when the
+ * thing that failed was the STORE, the picture was still in memory, and one
+ * bucket blip cost her the view outright. Re-offering bytes we already hold
+ * buys nothing from the engine.
+ *
+ * ⚠ **NOT DERIVED FROM {@link VIEW_ARRIVAL_ATTEMPTS}, ON PURPOSE.** That
+ * budget answers *"how often do we re-ask the ENGINE for a render that never
+ * came back"*; this one answers *"how often do we re-offer OUR OWN storage
+ * bytes already in hand"*. Two questions about two systems — law 4's
+ * precondition (the same question) does not hold, so one moving must not move
+ * the other.
+ */
+export const VIEW_STORE_ATTEMPTS = 3;
+
+/**
+ * The spacing before each re-store (#2045), indexed by how many stores have
+ * failed. Short: a storage blip is a breath, and the frame that is waiting has
+ * already cost 40-120 seconds to render. The read repeats its last value, so
+ * lengthening {@link VIEW_STORE_ATTEMPTS} without this ladder is safe.
+ */
+export const VIEW_STORE_BACKOFF_MS: readonly number[] = [500, 1_500];
+
+function viewStoreBackoffMs(failures: number): number {
+  return VIEW_STORE_BACKOFF_MS[Math.min(failures - 1, VIEW_STORE_BACKOFF_MS.length - 1)] ?? 0;
+}
+
+/**
  * Generations that reached a VERDICT. Unchanged, and deliberately so: one
  * generation, one regeneration, then the judge's rejection stands.
  */
@@ -890,6 +921,34 @@ type ViewLanding<T> = (landed: {
 }) => Promise<T | null>;
 
 /**
+ * STORE THE BYTES WE ALREADY HAVE, UP TO {@link VIEW_STORE_ATTEMPTS} TIMES
+ * (#2045). Never calls an engine; the last failure is re-thrown unchanged so the
+ * attempt loop's catch decides exactly as it did before this existed.
+ *
+ * Each try mints a fresh key (the store does), so a try that failed leaves
+ * nothing a later one could collide with.
+ */
+async function storeArrivedFrame(
+  store: NonNullable<PackageOrchestratorDependencies["storeImage"]>,
+  wait: (ms: number) => Promise<void>,
+  storeInput: { operationId: string; bytes: Buffer; contentType: string },
+  context: { angle: CastViewAngle; attempt: number },
+): Promise<{ key: string; url: string }> {
+  for (let tries = 1; ; tries += 1) {
+    try {
+      return await store(storeInput);
+    } catch (error) {
+      if (tries >= VIEW_STORE_ATTEMPTS) throw error;
+      log.warn(
+        { err: error, operationId: storeInput.operationId, ...context, storeTry: tries },
+        "[packageOrchestrator] the view ARRIVED and storing it failed — storing the same bytes again",
+      );
+      await wait(viewStoreBackoffMs(tries));
+    }
+  }
+}
+
+/**
  * GENERATE, STORE, JUDGE — the attempt loop, and it is the WHOLE fidelity
  * contract of a package view.
  *
@@ -1081,11 +1140,25 @@ export async function renderViewAttempts<T>(
 
       // Bytes land in OUR storage before anything references them; a provider
       // URL is never persisted and never projected (§E, §J).
-      stored = await store({
+      /*
+        ⚠ **A FRAME THIS ATTEMPT BOUGHT IS RE-STORED, NOT LOST (#2045).** On
+        the per-view road a store that throws now breaks the loop (#1994 — the
+        catch below), so without this a passing bucket fault refunded a view
+        whose bytes were sitting right here. Same bytes, spaced, no engine call;
+        if every try fails the throw reaches the catch exactly as before.
+
+        ⚠ **The sheet road is left on a single store**, because there the loop
+        itself already re-stores the same settled panel on its next attempt —
+        wrapping it too would multiply one budget by the other.
+      */
+      const storeInput = {
         operationId: input.operationId,
         bytes: image.bytes,
         contentType: image.contentType,
-      });
+      };
+      stored = paidFrameInHand
+        ? await storeArrivedFrame(store, wait, storeInput, { angle, attempt })
+        : await store(storeInput);
 
       /*
         ⚠ **ONE JUDGEMENT PER RENDERED PANEL, AND IT WAS ALREADY MADE.** On the
@@ -1365,6 +1438,9 @@ export async function renderViewAttempts<T>(
         here: whatever threw after the engine resolved, re-asking renders a NEW
         paid frame and not the one in hand. The slice refunds through `failView`
         exactly as for any failed view — what stops is the re-buying.
+
+        ⚠ **A STORE THROW REACHES HERE ONLY AFTER {@link VIEW_STORE_ATTEMPTS}
+        tries of the same bytes (#2045)** — `storeArrivedFrame` above.
       */
       if (paidFrameInHand) {
         log.warn(
