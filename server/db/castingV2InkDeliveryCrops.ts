@@ -49,7 +49,7 @@
  * its Cast's, unconditionally — no flag governs whether it is purged, and the
  * sweep clause lands in the same commit as the writer rather than after it.
  */
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { AnyMySqlColumn } from "drizzle-orm/mysql-core";
 
 import {
@@ -61,6 +61,11 @@ import {
   storageCleanupItems,
 } from "../../drizzle/schema";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
+import {
+  purgeScopeIsEmpty,
+  purgeScopeWhere,
+  type PurgeCandidateSelector,
+} from "./castingV2PurgeScope";
 import { undischargedStorageCleanupBatchWhere } from "./storageCleanup";
 
 /**
@@ -477,22 +482,30 @@ export async function listInkDeliveryPlacements(input: {
  */
 export async function listPurgeableInkDeliveryCropsIn(
   tx: TransactionHandle,
-  candidateIds: readonly number[],
+  candidateIds: PurgeCandidateSelector,
 ): Promise<Array<{ id: number; storageKey: string }>> {
-  if (candidateIds.length === 0) return [];
+  if (purgeScopeIsEmpty(candidateIds)) return [];
   return tx
     .select({ id: castingInkDeliveryCrops.id, storageKey: castingInkDeliveryCrops.storageKey })
     .from(castingInkDeliveryCrops)
-    .where(inArray(castingInkDeliveryCrops.candidateId, [...candidateIds]));
+    .where(purgeScopeWhere(
+      castingInkDeliveryCrops.candidateId,
+      castingInkDeliveryCrops.userId,
+      candidateIds,
+    ));
 }
 
 export async function deleteInkDeliveryCropRowsIn(
   tx: TransactionHandle,
-  candidateIds: readonly number[],
+  candidateIds: PurgeCandidateSelector,
 ): Promise<number> {
-  if (candidateIds.length === 0) return 0;
+  if (purgeScopeIsEmpty(candidateIds)) return 0;
   const result = await tx
     .delete(castingInkDeliveryCrops)
-    .where(inArray(castingInkDeliveryCrops.candidateId, [...candidateIds]));
+    .where(purgeScopeWhere(
+      castingInkDeliveryCrops.candidateId,
+      castingInkDeliveryCrops.userId,
+      candidateIds,
+    ));
   return affectedRows(result);
 }

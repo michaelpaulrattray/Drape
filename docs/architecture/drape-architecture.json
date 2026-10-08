@@ -47,7 +47,7 @@
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 66
+      "moduleCount": 67
     },
     {
       "id": "domain:evidence",
@@ -4863,6 +4863,12 @@
     {
       "id": "module:server/db/castingV2Orphans.ts",
       "path": "server/db/castingV2Orphans.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/db/castingV2PurgeScope.ts",
+      "path": "server/db/castingV2PurgeScope.ts",
       "domain": "data",
       "lifecycle": "active"
     },
@@ -11316,6 +11322,10 @@
     {
       "id": "test:server/accountDeletionCoverage.test.ts",
       "path": "server/accountDeletionCoverage.test.ts"
+    },
+    {
+      "id": "test:server/accountDeletionOrphanOwnerScope.test.ts",
+      "path": "server/accountDeletionOrphanOwnerScope.test.ts"
     },
     {
       "id": "test:server/accountDeletionOrphans.test.ts",
@@ -24927,6 +24937,11 @@
     },
     {
       "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/db/castingV2PurgeScope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
       "to": "module:server/db/castingV2ReferenceAttachments.ts",
       "kind": "imports"
     },
@@ -30322,6 +30337,11 @@
     },
     {
       "from": "module:server/db/castingV2FaceScans.ts",
+      "to": "module:server/db/castingV2PurgeScope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2FaceScans.ts",
       "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
@@ -30333,6 +30353,11 @@
     {
       "from": "module:server/db/castingV2InkDeliveryCrops.ts",
       "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2InkDeliveryCrops.ts",
+      "to": "module:server/db/castingV2PurgeScope.ts",
       "kind": "imports"
     },
     {
@@ -30373,6 +30398,11 @@
     {
       "from": "module:server/db/castingV2InkDesigns.ts",
       "to": "module:server/castingV2/inkUploadDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2InkDesigns.ts",
+      "to": "module:server/db/castingV2PurgeScope.ts",
       "kind": "imports"
     },
     {
@@ -30452,6 +30482,11 @@
     },
     {
       "from": "module:server/db/castingV2InkPlates.ts",
+      "to": "module:server/db/castingV2PurgeScope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2InkPlates.ts",
       "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
@@ -30522,6 +30557,11 @@
     },
     {
       "from": "module:server/db/castingV2ReferenceAttachments.ts",
+      "to": "module:server/db/castingV2PurgeScope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2ReferenceAttachments.ts",
       "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
@@ -30538,6 +30578,11 @@
     {
       "from": "module:server/db/castingV2ReferenceCrops.ts",
       "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2ReferenceCrops.ts",
+      "to": "module:server/db/castingV2PurgeScope.ts",
       "kind": "imports"
     },
     {
@@ -30577,6 +30622,11 @@
     },
     {
       "from": "module:server/db/castingV2ReferenceLibrary.ts",
+      "to": "module:server/db/castingV2PurgeScope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2ReferenceLibrary.ts",
       "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
@@ -30608,6 +30658,11 @@
     {
       "from": "module:server/db/castingV2Segments.ts",
       "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2Segments.ts",
+      "to": "module:server/db/castingV2PurgeScope.ts",
       "kind": "imports"
     },
     {
@@ -30653,6 +30708,11 @@
     {
       "from": "module:server/db/castingV2Variants.ts",
       "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2Variants.ts",
+      "to": "module:server/db/castingV2PurgeScope.ts",
       "kind": "imports"
     },
     {

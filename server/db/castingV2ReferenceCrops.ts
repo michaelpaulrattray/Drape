@@ -16,10 +16,14 @@
  * So the sweep is written FIRST here, before there is anything to sweep, and it
  * is proven against an empty table rather than promised.
  */
-import { inArray } from "drizzle-orm";
 
 import { castingReferenceCrops } from "../../drizzle/schema";
 import type { TransactionHandle } from "./connection";
+import {
+  purgeScopeIsEmpty,
+  purgeScopeWhere,
+  type PurgeCandidateSelector,
+} from "./castingV2PurgeScope";
 
 /* Local, like every other store in this directory — the mysql2 header shape is
    the driver's, and a shared helper for three lines would be a module whose
@@ -36,22 +40,30 @@ function affectedRows(result: unknown): number {
  */
 export async function listPurgeableReferenceCropsIn(
   tx: TransactionHandle,
-  candidateIds: readonly number[],
+  candidateIds: PurgeCandidateSelector,
 ): Promise<Array<{ id: number; storageKey: string }>> {
-  if (candidateIds.length === 0) return [];
+  if (purgeScopeIsEmpty(candidateIds)) return [];
   return tx
     .select({ id: castingReferenceCrops.id, storageKey: castingReferenceCrops.storageKey })
     .from(castingReferenceCrops)
-    .where(inArray(castingReferenceCrops.candidateId, [...candidateIds]));
+    .where(purgeScopeWhere(
+      castingReferenceCrops.candidateId,
+      castingReferenceCrops.userId,
+      candidateIds,
+    ));
 }
 
 export async function deleteReferenceCropRowsIn(
   tx: TransactionHandle,
-  candidateIds: readonly number[],
+  candidateIds: PurgeCandidateSelector,
 ): Promise<number> {
-  if (candidateIds.length === 0) return 0;
+  if (purgeScopeIsEmpty(candidateIds)) return 0;
   const result = await tx
     .delete(castingReferenceCrops)
-    .where(inArray(castingReferenceCrops.candidateId, [...candidateIds]));
+    .where(purgeScopeWhere(
+      castingReferenceCrops.candidateId,
+      castingReferenceCrops.userId,
+      candidateIds,
+    ));
   return affectedRows(result);
 }

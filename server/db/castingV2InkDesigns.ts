@@ -37,7 +37,7 @@
  * flag governs whether a row is WRITTEN and nothing governs whether it is
  * purged.
  */
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 
 import {
@@ -54,6 +54,11 @@ import { isReferenceIntent, type ReferenceIntent } from "../../shared/referenceI
 import { INK_DESIGNS_PER_CANDIDATE } from "../castingV2/inkUploadDoor";
 import { countHeldPicturesIn } from "./castingV2ReferenceAttachments";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
+import {
+  purgeScopeIsEmpty,
+  purgeScopeWhere,
+  type PurgeCandidateSelector,
+} from "./castingV2PurgeScope";
 import { undischargedStorageCleanupBatchWhere } from "./storageCleanup";
 
 async function requireDb() {
@@ -393,22 +398,22 @@ export async function readInkDesign(input: {
  */
 export async function listPurgeableInkDesignsIn(
   tx: TransactionHandle,
-  candidateIds: readonly number[],
+  candidateIds: PurgeCandidateSelector,
 ): Promise<Array<{ id: number; storageKey: string }>> {
-  if (candidateIds.length === 0) return [];
+  if (purgeScopeIsEmpty(candidateIds)) return [];
   return tx
     .select({ id: castingInkDesigns.id, storageKey: castingInkDesigns.storageKey })
     .from(castingInkDesigns)
-    .where(inArray(castingInkDesigns.candidateId, [...candidateIds]));
+    .where(purgeScopeWhere(castingInkDesigns.candidateId, castingInkDesigns.userId, candidateIds));
 }
 
 export async function deleteInkDesignRowsIn(
   tx: TransactionHandle,
-  candidateIds: readonly number[],
+  candidateIds: PurgeCandidateSelector,
 ): Promise<number> {
-  if (candidateIds.length === 0) return 0;
+  if (purgeScopeIsEmpty(candidateIds)) return 0;
   const result = await tx
     .delete(castingInkDesigns)
-    .where(inArray(castingInkDesigns.candidateId, [...candidateIds]));
+    .where(purgeScopeWhere(castingInkDesigns.candidateId, castingInkDesigns.userId, candidateIds));
   return affectedRows(result);
 }

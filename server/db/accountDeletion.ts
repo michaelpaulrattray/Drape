@@ -137,6 +137,25 @@ export const ACCOUNT_DELETION_DISPOSITIONS = {
   "wardrobeLooks.userId": "deleted",
 
   /* ---- the casting studio (`purgeAccountCastingIn`) ---- */
+  /*
+    ⚠ **ONE NAMED EXCEPTION TO `deleted` ON THE EIGHT CHILD STORES, AND IT IS
+    HIS RULING RATHER THAN A GAP — PR #1974, 2026-10-08, verbatim and entire:
+    *"i agree with you"*.** A child row carrying this account's `userId` while
+    pointing at a candidate that STILL EXISTS and belongs to somebody else is
+    LEFT IN PLACE, with its object. It is work made on that customer's cast,
+    and *"a customer's cast is their work"* (founder, 2026-07-25) makes it
+    theirs whatever `userId` it was mis-stamped with — deleting it broke a
+    stranger's Cast, including their chosen face where the row was the
+    candidate's own `selectedVariantId`.
+
+    It is stated HERE because this map is what a privacy answer gets written
+    from, and `deleted` means what it says everywhere else in it. The case
+    needs an earlier bug to exist at all (a child row whose owner is not its
+    candidate's), it is warned about loudly when the erasure meets one, and
+    `castingV2/accountCastingPurge.ts` carries the reasoning in full. The
+    guard below is unaffected: every one of these tables still receives its
+    DELETE from this entry point.
+  */
   "castingSessions.userId": "deleted",
   "castingRolls.userId": "deleted",
   "castingCandidates.userId": "deleted",

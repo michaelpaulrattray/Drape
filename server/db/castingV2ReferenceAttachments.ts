@@ -20,7 +20,7 @@
  * SELECT to check ownership followed by a write keyed on id alone is a
  * check-then-write race, and it is what went wrong in D-64.
  */
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 
 import type { InkProvenance } from "../../shared/inkProvenance";
@@ -32,6 +32,11 @@ import {
   storageCleanupItems,
 } from "../../drizzle/schema";
 import { getDb, type TransactionHandle } from "./connection";
+import {
+  purgeScopeIsEmpty,
+  purgeScopeWhere,
+  type PurgeCandidateSelector,
+} from "./castingV2PurgeScope";
 import { undischargedStorageCleanupBatchWhere } from "./storageCleanup";
 
 /* Local, like every other store in this directory — the mysql2 header shape is
@@ -49,23 +54,31 @@ function affectedRows(result: unknown): number {
  */
 export async function listPurgeableReferenceAttachmentsIn(
   tx: TransactionHandle,
-  candidateIds: readonly number[],
+  candidateIds: PurgeCandidateSelector,
 ): Promise<Array<{ id: number; storageKey: string }>> {
-  if (candidateIds.length === 0) return [];
+  if (purgeScopeIsEmpty(candidateIds)) return [];
   return tx
     .select({ id: castingReferenceAttachments.id, storageKey: castingReferenceAttachments.storageKey })
     .from(castingReferenceAttachments)
-    .where(inArray(castingReferenceAttachments.candidateId, [...candidateIds]));
+    .where(purgeScopeWhere(
+      castingReferenceAttachments.candidateId,
+      castingReferenceAttachments.userId,
+      candidateIds,
+    ));
 }
 
 export async function deleteReferenceAttachmentRowsIn(
   tx: TransactionHandle,
-  candidateIds: readonly number[],
+  candidateIds: PurgeCandidateSelector,
 ): Promise<number> {
-  if (candidateIds.length === 0) return 0;
+  if (purgeScopeIsEmpty(candidateIds)) return 0;
   const result = await tx
     .delete(castingReferenceAttachments)
-    .where(inArray(castingReferenceAttachments.candidateId, [...candidateIds]));
+    .where(purgeScopeWhere(
+      castingReferenceAttachments.candidateId,
+      castingReferenceAttachments.userId,
+      candidateIds,
+    ));
   return affectedRows(result);
 }
 

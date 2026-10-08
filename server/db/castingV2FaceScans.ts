@@ -27,12 +27,17 @@
  *    unconditionally — the flag governs whether rows are WRITTEN and nothing
  *    governs whether they are purged.
  */
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import { randomUUID } from "node:crypto";
 
 import { castingFaceScans, storageCleanupBatches, storageCleanupItems } from "../../drizzle/schema";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
+import {
+  purgeScopeIsEmpty,
+  purgeScopeWhere,
+  type PurgeCandidateSelector,
+} from "./castingV2PurgeScope";
 import { createStorageCleanupManifestIn, undischargedStorageCleanupBatchWhere } from "./storageCleanup";
 
 async function requireDb() {
@@ -438,13 +443,13 @@ export async function readCarriedGeometry(input: {
  */
 export async function listPurgeableFaceScansIn(
   tx: TransactionHandle,
-  candidateIds: readonly number[],
+  candidateIds: PurgeCandidateSelector,
 ): Promise<Array<{ id: number; maskKeys: readonly string[] }>> {
-  if (candidateIds.length === 0) return [];
+  if (purgeScopeIsEmpty(candidateIds)) return [];
   const rows = await tx
     .select({ id: castingFaceScans.id, geometry: castingFaceScans.geometry })
     .from(castingFaceScans)
-    .where(inArray(castingFaceScans.candidateId, [...candidateIds]));
+    .where(purgeScopeWhere(castingFaceScans.candidateId, castingFaceScans.userId, candidateIds));
   return rows.map((row) => ({
     id: row.id,
     maskKeys: ((row.geometry as StoredScanGeometry | null)?.slots ?? [])
@@ -455,11 +460,11 @@ export async function listPurgeableFaceScansIn(
 
 export async function deleteFaceScanRowsIn(
   tx: TransactionHandle,
-  candidateIds: readonly number[],
+  candidateIds: PurgeCandidateSelector,
 ): Promise<number> {
-  if (candidateIds.length === 0) return 0;
+  if (purgeScopeIsEmpty(candidateIds)) return 0;
   const result = await tx
     .delete(castingFaceScans)
-    .where(inArray(castingFaceScans.candidateId, [...candidateIds]));
+    .where(purgeScopeWhere(castingFaceScans.candidateId, castingFaceScans.userId, candidateIds));
   return affectedRows(result);
 }
