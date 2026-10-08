@@ -17,7 +17,7 @@
     {
       "id": "domain:billing",
       "name": "billing",
-      "moduleCount": 13
+      "moduleCount": 14
     },
     {
       "id": "domain:boards",
@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 81
+      "moduleCount": 82
     },
     {
       "id": "domain:staff",
@@ -5707,6 +5707,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/stripe/planCreditSlider.ts",
+      "path": "server/stripe/planCreditSlider.ts",
+      "domain": "billing",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/stripe/stripePriceCatalogue.ts",
       "path": "server/stripe/stripePriceCatalogue.ts",
       "domain": "billing",
@@ -6343,6 +6349,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:shared/planCreditSlider.ts",
+      "path": "shared/planCreditSlider.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:shared/productEventCatalogue.ts",
       "path": "shared/productEventCatalogue.ts",
       "domain": "shared",
@@ -6899,6 +6911,16 @@
       "type": "query",
       "auth": "protected",
       "input": "strict",
+      "rateLimited": false,
+      "file": "server/routes/billing.ts"
+    },
+    {
+      "id": "route:billing.getPlanCreditUnits",
+      "namespace": "billing",
+      "name": "getPlanCreditUnits",
+      "type": "query",
+      "auth": "protected",
+      "input": "none",
       "rateLimited": false,
       "file": "server/routes/billing.ts"
     },
@@ -10209,6 +10231,30 @@
       "file": "server/db/discrepancyQueries.ts"
     },
     {
+      "id": "cost:server/stripe/planCreditSlider.ts:PLAN_CREDIT_SLIDER_CEILING_PLAN",
+      "name": "PLAN_CREDIT_SLIDER_CEILING_PLAN",
+      "constant": "PLAN_CREDIT_SLIDER_CEILING_PLAN",
+      "credits": null,
+      "derivedFrom": "(ARRANGED_DIRECTLY_PLAN_TIERS as readonly string[]) .filter((tier): tier is PlanTier => tier in PLAN_TIERS) .reduce<PlanTier | null>( (cheapest, tier) => cheapest === null || PLAN_TIERS[tier].price < PLAN_TIERS[cheapest].price ? tier : cheapest, null, )",
+      "file": "server/stripe/planCreditSlider.ts"
+    },
+    {
+      "id": "cost:server/stripe/planCreditSlider.ts:PLAN_CREDIT_SLIDER_MAX_UNITS",
+      "name": "PLAN_CREDIT_SLIDER_MAX_UNITS",
+      "constant": "PLAN_CREDIT_SLIDER_MAX_UNITS",
+      "credits": null,
+      "derivedFrom": "PLAN_CREDIT_SLIDER_PLAN === null || PLAN_CREDIT_SLIDER_CEILING_PLAN === null ? 0 : planCreditSliderMaxUnits( PLAN_TIERS[PLAN_CREDIT_SLIDER_PLAN].monthlyCredits, PLAN_TIERS[PLAN_CREDIT_SLIDER_CEILING_PLAN].monthlyCredits, )",
+      "file": "server/stripe/planCreditSlider.ts"
+    },
+    {
+      "id": "cost:server/stripe/planCreditSlider.ts:PLAN_CREDIT_SLIDER_PLAN",
+      "name": "PLAN_CREDIT_SLIDER_PLAN",
+      "constant": "PLAN_CREDIT_SLIDER_PLAN",
+      "credits": null,
+      "derivedFrom": "SELF_SERVE_PLAN_ORDER.filter((tier) => PLAN_TIERS[tier].price > 0).reduce<PlanTier | null>( (dearest, tier) => dearest === null || PLAN_TIERS[tier].price > PLAN_TIERS[dearest].price ? tier : dearest, null, )",
+      "file": "server/stripe/planCreditSlider.ts"
+    },
+    {
       "id": "cost:server/stripe/stripePriceCatalogue.ts:PRICE_LOOKUP_KEY_VERSION",
       "name": "PRICE_LOOKUP_KEY_VERSION",
       "constant": "PRICE_LOOKUP_KEY_VERSION",
@@ -10309,6 +10355,29 @@
       "credits": 25000,
       "derivedFrom": "TOPUP_UNIT_DISPLAY_CREDITS * LEDGER_PER_DISPLAY_CREDIT",
       "file": "shared/creditTopups.ts"
+    },
+    {
+      "id": "cost:shared/planCreditSlider.ts:PLAN_CREDIT_SLIDER_CENTS_PER_UNIT",
+      "name": "PLAN_CREDIT_SLIDER_CENTS_PER_UNIT",
+      "constant": "PLAN_CREDIT_SLIDER_CENTS_PER_UNIT",
+      "credits": 900,
+      "file": "shared/planCreditSlider.ts"
+    },
+    {
+      "id": "cost:shared/planCreditSlider.ts:PLAN_CREDIT_SLIDER_STEP_DISPLAY_CREDITS",
+      "name": "PLAN_CREDIT_SLIDER_STEP_DISPLAY_CREDITS",
+      "constant": "PLAN_CREDIT_SLIDER_STEP_DISPLAY_CREDITS",
+      "credits": 5000,
+      "derivedFrom": "TOPUP_UNIT_DISPLAY_CREDITS",
+      "file": "shared/planCreditSlider.ts"
+    },
+    {
+      "id": "cost:shared/planCreditSlider.ts:PLAN_CREDIT_SLIDER_STEP_LEDGER_CREDITS",
+      "name": "PLAN_CREDIT_SLIDER_STEP_LEDGER_CREDITS",
+      "constant": "PLAN_CREDIT_SLIDER_STEP_LEDGER_CREDITS",
+      "credits": 25000,
+      "derivedFrom": "TOPUP_UNIT_LEDGER_CREDITS",
+      "file": "shared/planCreditSlider.ts"
     }
   ],
   "vocabulary": [
@@ -13713,6 +13782,14 @@
       "path": "server/planChangeQuote.test.ts"
     },
     {
+      "id": "test:server/planCreditSlider.test.ts",
+      "path": "server/planCreditSlider.test.ts"
+    },
+    {
+      "id": "test:server/planNameDerivation.test.ts",
+      "path": "server/planNameDerivation.test.ts"
+    },
+    {
       "id": "test:server/plannedCreditsAtClaim.test.ts",
       "path": "server/plannedCreditsAtClaim.test.ts"
     },
@@ -14449,12 +14526,24 @@
       "path": "server/stripe/environmentTag.test.ts"
     },
     {
+      "id": "test:server/stripe/invoiceBilledPlanGrant.test.ts",
+      "path": "server/stripe/invoiceBilledPlanGrant.test.ts"
+    },
+    {
       "id": "test:server/stripe/moneyEventStream.test.ts",
       "path": "server/stripe/moneyEventStream.test.ts"
     },
     {
       "id": "test:server/stripe/planChangeSettlement.test.ts",
       "path": "server/stripe/planChangeSettlement.test.ts"
+    },
+    {
+      "id": "test:server/stripe/planCreditSliderGrant.test.ts",
+      "path": "server/stripe/planCreditSliderGrant.test.ts"
+    },
+    {
+      "id": "test:server/stripe/planCreditSliderWire.test.ts",
+      "path": "server/stripe/planCreditSliderWire.test.ts"
     },
     {
       "id": "test:server/stripe/refundFailed.test.ts",
@@ -15976,6 +16065,11 @@
     {
       "from": "module:client/src/features/billing/ChangePlanModal.tsx",
       "to": "module:shared/creditTopups.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/ChangePlanModal.tsx",
+      "to": "module:shared/planCreditSlider.ts",
       "kind": "imports"
     },
     {
@@ -18776,6 +18870,11 @@
     {
       "from": "module:client/src/features/settings/planMath.ts",
       "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/planMath.ts",
+      "to": "module:shared/planCreditSlider.ts",
       "kind": "imports"
     },
     {
@@ -32410,6 +32509,11 @@
     },
     {
       "from": "module:server/routes/billing.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/billing.ts",
       "to": "module:server/_core/appOrigin.ts",
       "kind": "imports"
     },
@@ -32460,6 +32564,11 @@
     },
     {
       "from": "module:server/routes/billing.ts",
+      "to": "module:server/stripe/planCreditSlider.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/billing.ts",
       "to": "module:server/stripe/stripePriceCatalogue.ts",
       "kind": "imports"
     },
@@ -32486,6 +32595,11 @@
     {
       "from": "module:server/routes/billing.ts",
       "to": "module:shared/creditTopups.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/billing.ts",
+      "to": "module:shared/planCreditSlider.ts",
       "kind": "imports"
     },
     {
@@ -34604,6 +34718,26 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/stripe/planCreditSlider.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/planCreditSlider.ts",
+      "to": "module:server/stripe/stripeProducts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/planCreditSlider.ts",
+      "to": "module:shared/planCreditSlider.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/stripePriceCatalogue.ts",
+      "to": "module:server/stripe/planCreditSlider.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/stripe/stripePriceCatalogue.ts",
       "to": "module:server/stripe/stripeProducts.ts",
       "kind": "imports"
@@ -34616,6 +34750,11 @@
     {
       "from": "module:server/stripe/stripePriceCatalogue.ts",
       "to": "module:shared/creditTopups.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/stripePriceCatalogue.ts",
+      "to": "module:shared/planCreditSlider.ts",
       "kind": "imports"
     },
     {
@@ -34650,6 +34789,11 @@
     },
     {
       "from": "module:server/stripe/stripeService.ts",
+      "to": "module:server/stripe/planCreditSlider.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/stripeService.ts",
       "to": "module:server/stripe/stripePriceCatalogue.ts",
       "kind": "imports"
     },
@@ -34676,6 +34820,11 @@
     {
       "from": "module:server/stripe/stripeService.ts",
       "to": "module:shared/creditTopups.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/stripeService.ts",
+      "to": "module:shared/planCreditSlider.ts",
       "kind": "imports"
     },
     {
@@ -34735,6 +34884,16 @@
     },
     {
       "from": "module:server/stripe/webhooks.ts",
+      "to": "module:server/stripe/planCreditSlider.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/webhooks.ts",
+      "to": "module:server/stripe/stripePriceCatalogue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/webhooks.ts",
       "to": "module:server/stripe/stripeProducts.ts",
       "kind": "imports"
     },
@@ -34746,6 +34905,11 @@
     {
       "from": "module:server/stripe/webhooks.ts",
       "to": "module:server/stripe/subscriptionPeriods.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/webhooks.ts",
+      "to": "module:shared/annualBilling.ts",
       "kind": "imports"
     },
     {
@@ -35151,6 +35315,16 @@
     {
       "from": "module:shared/inkReleasedPlacements.ts",
       "to": "module:shared/inkPlacementVocabulary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/planCreditSlider.ts",
+      "to": "module:shared/annualBilling.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/planCreditSlider.ts",
+      "to": "module:shared/creditTopups.ts",
       "kind": "imports"
     },
     {

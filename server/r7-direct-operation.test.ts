@@ -4,6 +4,9 @@ import { TRPCError } from "@trpc/server";
 const db = vi.hoisted(() => ({
   claimGenerationOperation: vi.fn(),
   acquireGenerationOperationLock: vi.fn(),
+  /* #1932 — the candidate lock was absent from this fake, so its branch could
+     not be driven here at all and nothing in this file had ever entered it. */
+  acquireCastingCandidateOperationLock: vi.fn(),
   finalizeClaimedGenerationOperationSuccess: vi.fn(),
   finalizeClaimedGenerationOperationFailure: vi.fn(),
   finalizeGenerationOperationFailure: vi.fn(),
@@ -14,6 +17,7 @@ const db = vi.hoisted(() => ({
 }));
 vi.mock("./db", () => db);
 
+import { SpokenError } from "./_core/spokenError";
 import {
   beginDirectOperation,
   completeClaimedDirectOperationSuccess,
@@ -29,6 +33,11 @@ beforeEach(() => {
     type: "acquired",
     operationId: OPERATION_ID,
     lockKey: "model:7",
+    expiresAt: new Date(),
+  });
+  db.acquireCastingCandidateOperationLock.mockResolvedValue({
+    type: "acquired",
+    operationId: OPERATION_ID,
     expiresAt: new Date(),
   });
 });
@@ -90,6 +99,169 @@ describe("R7-1D direct operation adapter", () => {
 
     /* A refusal, not a silent pass: the caller never reaches its money. */
     await expect(beginDirectOperation(claim)).rejects.toBeInstanceOf(TRPCError);
+  });
+
+  /*
+    A REFUSED LOCK FAILS ITS OWN ROW BEFORE IT THROWS (#1932, found by the
+    relay's review of PR #1924).
+
+    ⚠ **The arm directly above this one could never have failed for this
+    defect, and it is the arm that looks like it covers this road.** It asserts
+    what the caller is TOLD — the override sentence, the staff sentence, that it
+    is a `TRPCError` — and the defect was entirely in what was LEFT BEHIND: the
+    claim created an operation row, the lock below it was refused, and the row
+    stayed `claimed` with nobody holding it. `renderViewAttempts` reads a
+    non-terminal row owned by no live process as `fenced`, which both its
+    callers take to mean *another process owns this money, do not refund it*, so
+    the slot read "being made" until the recovery sweep settled it for free on a
+    later pass — up to about six minutes after a press that charged nothing.
+
+    So these arms assert the WRITE, not the throw. Both of them failed before
+    the repair and the negative controls below passed before it, which is the
+    only shape that distinguishes a fix from a rewording.
+  */
+  it("fails its own claimed row before throwing when the resource lock is refused", async () => {
+    db.claimGenerationOperation.mockResolvedValue({
+      type: "claimed",
+      operationId: OPERATION_ID,
+      payloadHash: "hash",
+    });
+    db.acquireGenerationOperationLock.mockResolvedValue({
+      type: "resource_busy",
+      operationId: OPERATION_ID,
+      lockKey: "model:7",
+      ownerOperationId: "22222222-2222-4222-8222-222222222222",
+    });
+    db.finalizeClaimedGenerationOperationFailure.mockResolvedValue(undefined);
+
+    await expect(beginDirectOperation({
+      userId: 1,
+      clientRequestId: OPERATION_ID,
+      kind: "casting.headshot",
+      modelId: 7,
+      payload: { modelId: 7 },
+      lockKey: "model:7",
+    })).rejects.toMatchObject({ code: "CONFLICT" });
+
+    /* The row the claim just minted is terminal, and the receipt carries the
+       sentence the caller was given rather than a staff paraphrase of it. */
+    expect(db.finalizeClaimedGenerationOperationFailure).toHaveBeenCalledWith(expect.objectContaining({
+      userId: 1,
+      operationId: OPERATION_ID,
+      errorCode: "CONFLICT",
+      publicMessage: "Another operation is already changing this Cast. Wait for it to finish before retrying.",
+    }));
+  });
+
+  it("fails its own claimed row when the CANDIDATE lock is refused, and keeps her sentence", async () => {
+    db.claimGenerationOperation.mockResolvedValue({
+      type: "claimed",
+      operationId: OPERATION_ID,
+      payloadHash: "hash",
+    });
+    db.acquireCastingCandidateOperationLock.mockResolvedValue({
+      type: "resource_busy",
+      operationId: OPERATION_ID,
+      ownerOperationId: "22222222-2222-4222-8222-222222222222",
+    });
+    db.finalizeClaimedGenerationOperationFailure.mockResolvedValue(undefined);
+
+    const refusal = await beginDirectOperation({
+      userId: 1,
+      clientRequestId: OPERATION_ID,
+      kind: "castingV2.retry",
+      payload: { candidatePublicId: "cand-1", attempt: 2 },
+      candidateLockPublicId: "cand-1",
+    }).then(() => null, (error: unknown) => error);
+
+    expect(db.finalizeClaimedGenerationOperationFailure).toHaveBeenCalledWith(expect.objectContaining({
+      userId: 1,
+      operationId: OPERATION_ID,
+      errorCode: "CONFLICT",
+    }));
+    /* ⚠ Her sentence, not the staff one (fable-973 §2). The repair routes this
+       refusal through `failClaimedDirectOperation`, which re-throws the very
+       instance it was handed — so the arm asserts the MARKER survives, because a
+       `new TRPCError(...)` in that call would read identically here on message
+       alone and would silently drop the `spoken` flag the surface reads. */
+    expect(refusal).toBeInstanceOf(SpokenError);
+    expect((refusal as SpokenError).message).toContain("That edit is already being made");
+  });
+
+  it("leaves SOMEBODY ELSE'S row alone — the negative control the repair hangs on", async () => {
+    /*
+      Both refusals surface to a caller as the same `CONFLICT`, and only one of
+      them is ours to fail. `resource_busy` and `in_progress` from the CLAIM
+      itself are a row an earlier press created and a live process may still be
+      holding; failing one of those would settle somebody else's money from the
+      wrong process. This is why the repair is inside `beginDirectOperation`,
+      which knows which refusal it is, rather than in a caller's unwind, which
+      cannot tell them apart without matching an error-message string.
+    */
+    for (const claim of [
+      { type: "resource_busy" as const, operationId: OPERATION_ID },
+      { type: "in_progress" as const, operationId: OPERATION_ID },
+    ]) {
+      db.finalizeClaimedGenerationOperationFailure.mockReset();
+      db.claimGenerationOperation.mockResolvedValue(claim);
+
+      await expect(beginDirectOperation({
+        userId: 1,
+        clientRequestId: OPERATION_ID,
+        kind: "casting.headshot",
+        modelId: 7,
+        payload: { modelId: 7 },
+        lockKey: "model:7",
+      })).rejects.toMatchObject({ code: "CONFLICT" });
+
+      expect(db.finalizeClaimedGenerationOperationFailure, `a ${claim.type} claim is not ours to fail`)
+        .not.toHaveBeenCalled();
+      /* It never reached the lock either, so there is no row of ours to leave. */
+      expect(db.acquireGenerationOperationLock).not.toHaveBeenCalled();
+    }
+  });
+
+  it("a refused lock whose own receipt write fails is sealed for recovery, not left claimed", async () => {
+    /*
+      The repair's worst case, driven rather than reasoned about: the receipt
+      write can itself fail, and `failClaimedDirectOperation` falls back to
+      `recovery_required` so the row is still not left `claimed` and silent.
+      That fallback existed; what is new is that this road reaches it.
+    */
+    db.claimGenerationOperation.mockResolvedValue({
+      type: "claimed",
+      operationId: OPERATION_ID,
+      payloadHash: "hash",
+    });
+    db.acquireGenerationOperationLock.mockResolvedValue({
+      type: "resource_busy",
+      operationId: OPERATION_ID,
+      lockKey: "model:7",
+      ownerOperationId: "22222222-2222-4222-8222-222222222222",
+    });
+    db.finalizeClaimedGenerationOperationFailure.mockRejectedValue(new Error("response lost"));
+    db.getGenerationOperationOutcome.mockResolvedValue({
+      type: "in_progress",
+      operationId: OPERATION_ID,
+      status: "claimed",
+    });
+    db.markClaimedGenerationOperationRecoveryRequired.mockResolvedValue(undefined);
+
+    await expect(beginDirectOperation({
+      userId: 1,
+      clientRequestId: OPERATION_ID,
+      kind: "casting.headshot",
+      modelId: 7,
+      payload: { modelId: 7 },
+      lockKey: "model:7",
+    })).rejects.toMatchObject({
+      code: "INTERNAL_SERVER_ERROR",
+      message: expect.stringContaining(OPERATION_ID),
+    });
+    expect(db.markClaimedGenerationOperationRecoveryRequired).toHaveBeenCalledWith(expect.objectContaining({
+      userId: 1,
+      operationId: OPERATION_ID,
+    }));
   });
 
   it("seals a claimed receipt for recovery when its free-failure finalization is uncertain", async () => {

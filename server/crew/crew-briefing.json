@@ -1,33 +1,37 @@
 {
-  "edition": 648,
-  "updatedAt": "2026-10-07T16:50:45.000Z",
-  "shift": "The paid redo is built and is waiting for a review before it goes live — the second of the three pieces of your checker ruling.\n\nWhat it gives you: on any finished cast there is now one quiet line beside Download — Ask for all views again, 350 credits. Press it and all five of her views are made again from the face you signed, in one freshly invented outfit, and the new pictures replace the old ones as they arrive. Nothing has to have gone wrong first. That was your own example: you might simply not like the outfit that was invented.\n\nUnder the bonnet your one price is five equal parts, one per view. That is not me second-guessing the number — it is the only way your refund rule can still work, because that rule gives back ONE view. So if four arrive and one does not, you are charged for four and you keep the picture you already had in the fifth slot. A redo can never leave you with an empty frame.\n\nThere is a question for you on your desk and it is only arithmetic on your own two numbers. A redo of all five views costs 350. A single Try again on one view costs 370 — you set that on 1 October, on your finance guy's note that it was needed to keep every worst case profitable for ONE picture. So replacing all five is now cheaper than replacing one, and we pay for five pictures at a price worked out for one. I have shipped your 350 exactly as you said it rather than quietly changing it. Leaving it is my recommendation, and it is a real choice rather than an oversight.\n\nOne thing you will see and should know about: while a redo runs, all five pictures go blank for a minute or two and only the Master stays. That is exactly what one tile already does when you press Try again on it, five times over. If you would rather the old pictures sat there faded until the new ones land, say so and it is its own small job.\n\nI looked at it in the running app in both light and dark before opening the review, and that is what caught the only two things wrong with it. The button had landed AFTER Delete this cast — and delete is meant to be the last thing on that row, because it is the last thing anyone should reach for. And it was drawn louder than everything else on the line, which on a row whose only coloured word is Delete is the wrong way round. Both fixed before the review opened, and no test could have told me either.\n\nStill owed on the card: the Unchecked label and its free retry come off next, now that there is something paid to press instead — that is the order you ruled and it is the right way round. And your eye on a real redo of one of your own casts.",
+  "edition": 653,
+  "updatedAt": "2026-10-08T00:05:00.000Z",
+  "shift": "Two things you decided last night are done, your pricing work has reached its finish line, and while I was writing this you and the relay settled two more in your terminal — so this page is written against what is true at midnight, not at half past eleven.\n\n**The Stripe rename is finished.** You chose A, our side had already been live since 7:53pm, and on your *\"yes rename it\"* the relay renamed the product in your dashboard: Klieg Studio is now Klieg Pro Plus, read back afterwards, with the description, all four prices and the internal lookup names untouched. Both sides of that name now agree, so nothing about it is waiting on anybody.\n\n**The picture-shape question is answered.** You picked option 1 — two sheets rendered side by side instead of one — so the shape nothing could proceed without is settled, and the build of it lives on its own card. What that unlocks, in order: the one-sheet Sign, then the paid redo of a cast's views, then the small tidy-up after it.\n\n**Your answer on the redo is in and it is held.** You said hold it until the Sign work lands, so it is held — the work itself is finished, reviewed, and green; it simply will not be switched on until the thing that makes it pay for itself is there. Your 350 stays exactly as you set it.\n\n**And pricing phase 2 is built and live.** Your plans page offers three plans instead of seven, the biggest one has the credit dial at $9 for each extra 5,000 a month, the four enormous rungs are gone in favour of one Enterprise card that offers a conversation, and Compare plans is organised by what you make. I read all of that back off the live site rather than off the merge notes. Its fourth card — Team priced per seat — cannot start until a shared workspace exists, which is a feature you have never asked for, so it is the only one left open and it is named on the completion card.\n\n**So there is a short test drive on your desk, and one word needed: what the crew builds next.** My recommendation is N2b — personality and voice born at Sign — because it is your own stated order and it makes your casts better rather than your pages better. Until you name it, the crew runs maintenance only.\n\nNothing was spent this shift: no credits, no renders, no change to the live service beyond this page.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
-      "state": "confirmed",
-      "title": "Pricing Phase 2 — the plans redesigned. Three plans instead of seven, with a credit slider on the biggest; Enterprise becomes a conversation rather than a support address; and Compare plans is organised by what you make. The brief you approved is the spec, and four build cards are cut from it.",
-      "quote": "phase 2 gets built next not n2b",
-      "quotedAt": "2026-10-03T17:33:25+10:00"
+      "state": "none",
+      "title": "No focus is set — Phase 2's building is done and the next rung is yours to name. Its completion card and a short test drive are below (#1933). Until you name the next one, the crew works maintenance only: your background switches, the patrols on their clocks, and a bug a customer can actually hit.",
+      "quote": "after n2 is wrapped up start the pricing/money work then proceed onto n2b and n2c",
+      "quotedAt": "2026-10-01T07:40:00+10:00"
     },
     "milestone": {
-      "title": "P2 — pricing, phase 2: the plan surface rebuilt to the brief you approved. Four cards, one per surface, and every one of them waits for an eye on the frames before it goes live",
+      "title": "P2 — pricing, phase 2: built and live. Three plans instead of seven, the credit dial on the biggest, Enterprise as a conversation, and Compare plans organised by what you make. Its completion card and your test drive are on your desk (#1933); its fourth card waits on a workspace you have never ordered",
       "steps": [
         {
-          "title": "Three plans instead of seven — Starter $27, Pro $68, Studio $159, with Free as the state you are in rather than a card, and an Enterprise band instead of a support address (#1832, #1833)",
+          "title": "Three plans instead of seven — Starter $27, Pro $68, Pro Plus $159, with Free as the state you are in rather than a card, and an Enterprise band instead of a support address (#1832, #1833)",
           "state": "done"
         },
         {
-          "title": "Studio's credit slider at $9 for each extra 5,000 a month — built last, because it needs a price created inside Stripe by hand before anything on screen can be bought (#1832)",
-          "state": "waiting"
+          "title": "Pro Plus's credit dial at $9 for each extra 5,000 a month — live (#1832)",
+          "state": "done"
         },
         {
           "title": "Compare plans organised by what you make, with the cinema row marked coming (#1834)",
           "state": "done"
         },
         {
-          "title": "Team priced per seat at $68 a seat, after the shared workspace exists (#1835, #1788)",
+          "title": "The completion card and your test drive — five things worth a few minutes, and one word on the next rung (#1933)",
           "state": "waiting"
+        },
+        {
+          "title": "Team priced per seat at $68 a seat — cannot start until a shared workspace exists, which you have never ordered (#1835, #1788)",
+          "state": "blocked"
         }
       ]
     },
@@ -126,8 +130,14 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-07T16:50:43.117Z",
+      "readAt": "2026-10-07T23:51:53.603Z",
       "items": [
+        {
+          "issueNumber": 1933,
+          "title": "P2 is built and live — pricing phase 2's completion card and your test-drive list (three plans, a dial on the top one, and one word needed on what comes next)",
+          "kind": "rung",
+          "rung": "P2"
+        },
         {
           "issueNumber": 1242,
           "title": "N2b — Personality and voice are born at Sign, as editable text: two drafted lines on the cast's page, badged Drafted for you, free to edit (founder-ordered 2026-09-25)",
@@ -271,29 +281,62 @@
   },
   "needsYou": [
     {
-      "id": "redo-price-1925",
-      "title": "Your redo price (350) is lower than your single Try again (370) — leave it, or raise one?",
-      "productImpact": "Asking for ALL FIVE of a cast's views again costs 350 credits. Asking for ONE of them again costs 370. Both numbers are yours, and they now sit side by side in the same room for the first time.\n\nNothing went wrong. On 1 October you set the single Try again to 370, on your finance guy's note that it was needed to keep every worst case profitable for one picture plus its check. On 7 October you set the redo at 350. Neither decision knew about the other, and the redo is only now built.\n\nIn practice: somebody who dislikes one picture pays LESS to replace all five than to replace that one, so almost nobody will press the single one. And we pay for five pictures plus a wardrobe plate at a price worked out to cover one.",
-      "workedExample": "You sign a cast and the invented outfit is not what you wanted, but the close-up of her face is perfect.\n\nPressing Try again on just the outfit view costs 370 and keeps the face you liked. Pressing Ask for all views again costs 350, replaces all five, and gives you a different face-shot too.\n\nSo the cheaper button is the one that throws away the picture you were happy with. That is the whole of it.",
+      "id": "pro-plus-stripe-rename-1900",
+      "title": "Done — the plan is called Pro Plus on both sides now, ours and Stripe's",
+      "productImpact": "You chose A: rename it in Stripe once our side was live. Our side went live at 7:53pm, and on your word in the terminal — \"yes rename it\" — the relay renamed the product in your dashboard. Klieg Studio is Klieg Pro Plus, read back after the change.\n\nNothing else on it moved: not the description, not any of the four prices, and not the internal lookup names you said could stay.\n\nSo the checkout page, the invoice and Stripe's emails all say Pro Plus now, the same as our plan cards, our dial and our compare table. There is nothing left on this.",
+      "workedExample": "Somebody upgrades today. Our page says Pro Plus and quotes $159, the Stripe page they pay on says Klieg Pro Plus, and so do the invoice and the receipt email. The mismatch is gone.",
+      "options": [],
+      "recommendation": "",
+      "state": "done",
+      "filedAt": "2026-10-07T19:50:00.000Z",
+      "issueNumber": 1900
+    },
+    {
+      "id": "p2-complete-1933",
+      "title": "Pricing phase 2 is built and live — drive it, then name the next rung",
+      "productImpact": "Your plans page used to offer seven rungs, four of them at prices nobody would pick off a page. It now offers three — Starter $27, Pro $68, Pro Plus $159 — with Free shown as the state you are in rather than a card you could buy, and the biggest plan carries the credit dial: $9 for each extra 5,000 credits a month, in the same steps as the dial on Add credits.\n\nThe four enormous rungs are gone from the page. In their place is one Enterprise card that says who it is for and offers a conversation. No plan card shows a credits-per-dollar rate any more. Compare plans is organised by what you make, with the cinema row marked coming.\n\nI read every one of those back off the live site this morning rather than off the merge notes.\n\nThe fourth card — Team priced per seat at $68 a seat — cannot start until a shared workspace exists, because an account is one login today. That workspace is a feature of its own and you have never asked for it, so it is the only Phase 2 card still open.",
+      "workedExample": "Five things worth a few minutes:\n\n1. Open Change plan — three cards and Free. Do the prices and the credit numbers read right?\n2. Drag the dial on Pro Plus — price and credits should move together in 5,000 steps at $9 a step, and the confirm step should quote the same numbers.\n3. Look at the Enterprise card — does it sound like us, and would you answer it?\n4. Open Compare plans — is it readable, and is coming clear enough that nothing reads as a promise?\n5. Check Pro Plus reads right everywhere. Anything still saying Studio on our side is a bug; I found none, but your eye is the one that counts.",
       "options": [
         {
-          "key": "leave",
-          "label": "Leave it — a redo is the generous option",
-          "consequence": "Nothing changes. The single Try again becomes the rarely-pressed one, and we lose a little on each redo."
+          "key": "n2b",
+          "label": "N2b — personality and voice born at Sign, as editable text",
+          "consequence": "Your own stated order, designed and carded. The next thing that makes a cast better rather than a page better."
         },
         {
-          "key": "raise",
-          "label": "Raise the redo above 370 — say 450",
-          "consequence": "Still one price, still simple, and the single Try again stops being the silly choice. One number, under an hour."
+          "key": "n2c",
+          "label": "N2c — Campaigns, the cast library's named collections",
+          "consequence": "Comes after N2b by your own order. Designed and carded too."
         },
         {
-          "key": "drop",
-          "label": "Drop the single Try again below the redo instead",
-          "consequence": "The other way round, if you would rather the cheap option be the small one. Also one number."
+          "key": "workspace",
+          "label": "The shared workspace — several people, one pool of credits, one bill",
+          "consequence": "A bigger feature. Building it is what lets Team per seat exist and closes Phase 2's last card. You have never asked for it."
         }
       ],
-      "recommendation": "Leave it. A redo is the moment somebody is disappointed, and being generous right there buys more than it costs us — the single Try again going quiet is not a problem, because the redo does the same job better.",
+      "recommendation": "N2b. It is your own stated order, it is designed and carded, and it is the next thing that makes your casts better rather than your pages better. Nothing starts until you say — until then the crew runs maintenance only.",
       "state": "open",
+      "filedAt": "2026-10-07T23:58:00.000Z",
+      "issueNumber": 1933
+    },
+    {
+      "id": "sign-sheet-shape-1926",
+      "title": "Answered — you picked option 1: two sheets rendered side by side",
+      "productImpact": "Your word, in the terminal: \"yes option 1 cooks well done\". So a Sign renders TWO sheets at the same time rather than one — a body sheet for the full front and back, and a head sheet for the close-up, the three-quarter and the profile — each drawn from the master, and cut into the five views.\n\nThat settles the shape question nothing could get past. The build of it lives on its own card, and what it unlocks in order is: the Sign work itself, then the paid redo of all five views, then the small tidy-up after that.\n\nThe three options this card originally offered are moot — you rejected the simple one on sight (\"looks terrible\") and the relay tested two more on your ask before you picked this one.",
+      "workedExample": "You sign a cast. Two sheets render side by side, the five views are cut from them, and each one arrives in the shape the strip expects — nobody loses a mouth and nobody loses their boots.",
+      "options": [],
+      "recommendation": "",
+      "state": "done",
+      "filedAt": "2026-10-07T18:45:00.000Z",
+      "issueNumber": 1926
+    },
+    {
+      "id": "redo-price-1925",
+      "title": "Answered — the redo is held until the one-sheet Sign lands, and your 350 never moves",
+      "productImpact": "You said: hold the redo until #1904 lands. So it is held, and nothing is re-priced.\n\nThe work itself is finished — it was reviewed, two faults were found and fixed, and the gate is green. It just will not be switched on until the Sign work is there to make it pay for itself at the price you set.\n\nThe shape question that was holding the Sign work is now answered too, so what is left in front of this is a build rather than a decision of yours.",
+      "workedExample": "Nobody can press Ask for all views again yet, and that is deliberate. The moment the one-sheet Sign lands, the button appears at 350 credits and earns more than it costs.",
+      "options": [],
+      "recommendation": "",
+      "state": "done",
       "filedAt": "2026-10-07T16:50:45.000Z",
       "issueNumber": 1925
     },
@@ -342,7 +385,7 @@
         }
       ],
       "recommendation": "Close it. The rule did exactly what you asked — nothing was thrown away, and the one wrong label costs a word on a picture you still have.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-10-03T17:30:00.000Z",
       "issueNumber": 1612
     },
@@ -3567,7 +3610,7 @@
         }
       ],
       "recommendation": "MY RECOMMENDATION: build it, feet first. The saving is real and close to half, the speed is slightly better not worse, and the part I expected to fail — keeping it the same person across five panels — did not fail at all. The feet fault is in how we word the request for the sheet, not a limit of the idea, and the back view coming out right both times is the evidence for that.\n\nBut I am not the judge of whether that right-hand picture looks as good as today's. Look at the second image and tell me, because if the answer is no then none of the saving matters.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-10-03T16:50:00.000Z",
       "issueNumber": 1690
     },
@@ -3594,7 +3637,7 @@
         }
       ],
       "recommendation": "Set up both. It is one sitting in Stripe and it is the only thing standing between you and a finished pricing screen — and doing the yearly one now avoids asking you back for it next week, which is the mistake we made with the top-up prices.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-10-04T00:00:26.000Z",
       "issueNumber": 1832
     }
@@ -3620,7 +3663,7 @@
       "id": "law9-sign-1612",
       "title": "The first cast signed under the new picture rule — and two of the five are marked unchecked",
       "question": "This is a whole cast signed under the rule you approved on 30 September, start to finish. Five pictures, one man.\n\nRead the labels under them. Three say delivered. Two say delivered, unchecked, free retry — those are the two the checker was unhappy with, and the whole point of your ruling is that you still get them instead of losing them.\n\nWhat I would like your eye on, in order:\n\n1. Is this the same man in all five? Same face, same jacket, same weather.\n\n2. The full front — he should be head to toe with room above the hair and below the boots. He is, to my eye. This is the view that lost its feet twice in last night's cost test, so it matters that today's road gets it right.\n\n3. The two marked unchecked. The three-quarter has his head turned the wrong way, which is a fair complaint. The close-up was marked for being cropped too tight and I think that is simply wrong — he has room below the chin. If you agree, the rule is still doing its job: you kept the picture, you only got a label you can ignore.\n\nIf the five look right, say so and the card closes.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-10-03T17:30:00.000Z",
       "issueNumber": 1612,
       "frames": [
@@ -3651,7 +3694,7 @@
       "id": "framing-template-court-1612-sifr2",
       "title": "Sifr2, with and without the framing example — did the crop come in enough?",
       "question": "This is the pair that decides it, and it is a straight before and after on the same cast.\n\nOn the LEFT is what the studio sends today for a close-up. On the RIGHT is the same thing with a stored example picture attached showing where to crop, plus a sentence telling the engine the example is a guide and nothing else.\n\nWhat to look for: the right-hand picture IS tighter. Less chest, less shoulder, the face bigger in the frame. That is the idea working.\n\nAnd then look at how much neck and collarbone is still there. A close-up is supposed to stop just under the chin. It has come in and it has not come in far enough — which is exactly what the numbers say: the typical picture moved from 0.51 of a face-height of room below the chin to 0.42, where we need 0.30.\n\nThis cast is the one that produced your original complaint about close-ups coming back as portraits, so it is the fairest possible test. My recommendation is on the job: stop here, and consider instead whether 0.30 is simply a shade tight.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-10-03T02:35:00.000Z",
       "issueNumber": 1612,
       "frames": [
@@ -3666,7 +3709,7 @@
       "id": "portrait-band-1612",
       "title": "Where a Portrait stops being a Portrait — six of your own, in order",
       "question": "WHAT YOU ARE LOOKING AT — six pictures you already own, put in order of how much picture sits below the face. The number under each is the whole measurement: 1.10 means about one face's worth of chest below the chin, 7.72 means head to toe. The black line is where the studio now draws the boundary between a Portrait and a full-length picture.\n\nWHY IT MATTERS. Until tonight the Portrait slot had one test — is the whole head inside the frame — and a head-to-toe picture passes that easily. So a full-length picture delivered where you asked for a Portrait would have gone through unnoticed. Now the distance is measured, so it would not.\n\nTHE ONE THING WORTH YOUR EYE is the pair either side of the line: Hingu at 3.03, which we keep and say nothing about, and Jenny Craig at 4.61, which we would hand over marked unchecked with a free Try again beside it. Everything further out is obvious in both directions. The line sits in a wide empty gap — across every picture you own there is nothing at all between 3.03 and 4.61.\n\nIf you would rather it sat tighter — so Hingu's also got a free Try again — say so and it is one number. Nothing here throws a picture away: the strictest this can ever do is hand you the picture and offer another go.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-10-02T11:00:00.000Z",
       "issueNumber": 1612,
       "frames": [
@@ -6749,7 +6792,7 @@
       "id": "sign-cost-sheet-1690",
       "title": "One sheet instead of five pictures — it saves about half, and it loses her feet",
       "question": "WHAT YOU ARE LOOKING AT — two pictures, and they answer different halves of the question.\n\nThe first is the whole sheet: all five views rendered as ONE picture for 30 cents, instead of five separate ones for 75 cents. Look at whether it is the same woman five times — face, hair, tattoos, the outfit, the lighting. To my eye it is, and that was the thing most likely to go wrong.\n\nThe second is the one that decides it. On the LEFT is the full-length front view the studio delivers today. On the RIGHT is the same view cut out of the sheet. Both are shown at the same height so you are comparing the pictures and not my scaling.\n\nTwo things to judge there. First, the quality — the right-hand one is about four fifths the size of the left, and I want to know whether that reads as worse to you or not at all. Second, the fault: her feet are gone. The view is supposed to run head to toe with a margin top and bottom, and the sheet cut her off at the thigh. It did the same thing on a second run, at the knee. The full-length BACK view came out right both times, which is why I think this is solvable rather than a dead end.\n\nWhat it would save, if it is solved: about 45 cents every time somebody signs a cast, which is close to half of what a Sign costs us. It is also slightly faster.\n\nMy reading is that it is worth building once the feet are fixed. But a saving is never worth a worse picture, and whether that right-hand picture is good enough is yours and not mine.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-10-03T16:50:00.000Z",
       "issueNumber": 1690,
       "cardId": "sign-cost-1690",
@@ -6765,15 +6808,50 @@
           "caption": "The same view, same height, so the comparison is fair. LEFT is what we deliver today (75 cents for five). RIGHT is the one cut out of the sheet (30 cents for five). Her feet are missing on the right — that is the fault, and it happened on both runs."
         }
       ]
+    },
+    {
+      "id": "sign-sheet-shape-1904",
+      "title": "The one-sheet Sign works — and the five views come out a different shape",
+      "question": "WHAT YOU ARE LOOKING AT — two pictures of the same real sheet I rendered tonight, for 8 cents.\n\nThe FIRST is the five views as they really come out. This is the thing to judge: is it the same woman five times, is it one outfit, is every camera right, is anybody cut off. To my eye all five are whole and the outfit is identical across them, which was the thing most likely to go wrong and is the whole reason for doing it this way.\n\nThe SECOND is the problem, and it is not about the pictures — it is about where they go. The strip of five on a finished cast puts each view in a short wide tile. These pictures are tall and narrow, so the tile shows only the top of each one. Look at the close-up: no mouth. Look at the front and the back: no legs, no boots. That is what you would see on your own cast page today if this shipped as it is.\n\nThe big viewer is fine. It is only the strip.\n\nThree ways out, on card 1926. A: ask the engine for a shorter sheet so the views come back nearer today's shape — needs another render and your eye again, and only gets us part of the way. B: show the whole picture in each tile with a little background either side. C: make the tiles tall and narrow to match.\n\nI recommend B. A tall picture is the right shape for a standing figure, and the strip is there for you to pick one — a tile that cuts the face off cannot do that job. Background either side costs less than a missing mouth. But it changes what you look at every day, so it is yours.",
+      "state": "done",
+      "filedAt": "2026-10-07T18:45:00.000Z",
+      "issueNumber": 1926,
+      "cardId": "sign-sheet-shape-1926",
+      "frames": [
+        {
+          "key": "crew-eye/b5aab00f-def5-4495-b954-af3b3fa64835.jpg",
+          "arm": "the five views, cut from one sheet",
+          "caption": "Close-up, three-quarter, full front, side profile, full back — all cut from ONE picture that cost 8 cents and took 63 seconds. One outfit across all five because they were painted in the same frame. Nobody is cut in half and no join lines show."
+        },
+        {
+          "key": "crew-eye/ce2659b2-e190-4d6a-b0fe-3b5e24a7080a.jpg",
+          "arm": "the same five, as the strip shows them",
+          "caption": "The strip's tiles are short and wide, so each one shows the top 58% of a tall picture. The close-up loses its mouth; the front and back lose their legs and boots. This is the thing to decide — card 1926 has three options and my recommendation."
+        }
+      ]
     }
   ],
   "pipeline": [
+    {
+      "id": "slider-grant-invoice-1832",
+      "title": "The renewal credit grant reads the bill that was paid, not where the dial sits now (#1832)",
+      "status": "merged",
+      "prNumber": 1910,
+      "note": "The hand review's one finding, repaired; merged as 25f9015c and read back live at /api/health on a 73-second uptime."
+    },
     {
       "id": "dead-engine-record-1785",
       "title": "Our list of known-bad engines names the canvas's second road, and a file address in it can no longer rot (#1785)",
       "status": "in-review",
       "prNumber": null,
       "note": "The record half of tonight's catch. Your decision on the road itself is on the card, not in this change."
+    },
+    {
+      "id": "pro-plus-rename-1900",
+      "title": "The Studio plan is called Pro Plus (#1900)",
+      "status": "merged",
+      "prNumber": 1927,
+      "note": "Live since 7:53pm, and the Stripe product is renamed too on your word — both sides say Pro Plus."
     },
     {
       "id": "rate-chip-off-plans-1773",
@@ -9685,7 +9763,14 @@
       "title": "Ask for all views again — the paid redo of a whole signed package, 350 credits (#1903 slice 2)",
       "status": "in-review",
       "prNumber": 1924,
-      "note": "Held for a hand review: it charges and refunds."
+      "note": "Finished and green — held on your word: hold the redo until the one-sheet Sign (#1904) lands. Your 350 does not move."
+    },
+    {
+      "id": "sign-sheet-1904",
+      "title": "Sign renders one Sunburst sheet cut into the five views (#1904)",
+      "status": "building",
+      "prNumber": null,
+      "note": "Built and measured on a real sheet; held on your shape decision (#1926) and 58 test arms."
     }
   ],
   "problems": [
@@ -10065,10 +10150,12 @@
     260,
     261,
     262,
-    263
+    263,
+    264,
+    265
   ],
   "nextUp": {
-    "readAt": "2026-10-07T16:50:43.117Z",
+    "readAt": "2026-10-07T23:51:53.602Z",
     "items": [
       {
         "issueNumber": 1903,
@@ -10078,7 +10165,11 @@
       {
         "issueNumber": 1904,
         "title": "Sign renders one GPT Image 2.5 Sunburst sheet (high, 3840×1648, no outfit plate) cut into the five views — his word closing #1690",
-        "urgent": true
+        "urgent": true,
+        "held": {
+          "state": "blocked",
+          "because": "YOU — the views come out a taller shape and the strip cuts them. A/B/C on #1926, recommend B. Built and measured otherwise."
+        }
       },
       {
         "issueNumber": 1469,
@@ -10100,11 +10191,6 @@
         }
       },
       {
-        "issueNumber": 1612,
-        "title": "The view checker measures framing and only refuses on identity: geometry from the segmenter for every framing band, and an unsure framing or wardrobe verdict delivers the picture unchecked instead of dropping it — his ruling 2026-09-30",
-        "urgent": false
-      },
-      {
         "issueNumber": 1689,
         "title": "N3: investigate cutting Refine's cost so its price can come down — count the ~7 Claude checks a Refine makes, court the fewest it can safely keep, report cost per Refine before any price change (his finance guy's note, 2026-10-01)",
         "urgent": false
@@ -10119,11 +10205,6 @@
         }
       },
       {
-        "issueNumber": 1832,
-        "title": "P2-1 — Three individual plans with the credit slider on Studio ($9 per 5,000 credits): the plan cards and pricing surface rebuilt to the brief",
-        "urgent": false
-      },
-      {
         "issueNumber": 1835,
         "title": "P2-4 — Team priced per seat ($68 a seat), after the workspace (#1788) exists",
         "urgent": false,
@@ -10131,11 +10212,6 @@
           "state": "blocked",
           "because": "#1788 — the shared workspace. This card's own body says it does not start until that lands, and #1788 is unbuilt and on the roadmap. No question for you here."
         }
-      },
-      {
-        "issueNumber": 1900,
-        "title": "Rename the Studio plan to Pro Plus everywhere a customer sees it — same price, credits and features, only the name",
-        "urgent": false
       }
     ]
   }

@@ -21,13 +21,52 @@ import {
   stripeIntervalOf,
   choiceOfStripeInterval,
 } from "../shared/annualBilling";
-import { PLAN_TIERS } from "../drizzle/schema";
+import { PLAN_TIERS, type PlanTier } from "../drizzle/schema";
 
 const REPO = process.cwd();
 const read = (...parts: string[]) => readFileSync(join(REPO, ...parts), "utf8");
 /** Source with comments removed, so a story about the old code cannot match. */
 const code = (source: string) =>
   source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^[ \t]*\/\/.*$/gm, "");
+
+/**
+ * ⚠ **STRIPE'S OWN YEARLY `unit_amount`s, READ OFF THE ACCOUNT**, not this
+ * formula applied a second time. Read 2026-10-01 in test mode from the
+ * `klieg_<id>_yearly_v2` lookup keys — the same objects #1605 bullet 1 resolves
+ * checkout against — so these figures are what stops our arithmetic and
+ * Stripe's catalogue drifting apart again. Deriving them here would make the
+ * suite agree with itself and prove nothing, which is exactly how the cent
+ * rounding survived.
+ *
+ * ⚠ **KEYED ON THE RUNG'S ID, NEVER ITS DISPLAY NAME — #1928.** It was keyed on
+ * `tier.name` until 2026-10-08, so his #1900 rename (Studio → Pro Plus) MOVED a
+ * lookup key on a money guard. A display name is a thing the founder renames; an
+ * id is not, and the ids are also the stem of the very lookup keys these amounts
+ * were read by, so an id-keyed table is strictly more faithful to its own
+ * provenance. The `=== undefined` arm below stops being a rename alarm and
+ * becomes a COVERAGE alarm, which is the thing actually worth guarding.
+ *
+ * ⚠ **ONE DECLARATION, read by both the positive arm and the negative control.**
+ * It was typed out TWICE, identically, in the two arms below — working law 4's
+ * mirror on the numbers that charge a card, and the second copy is where a
+ * re-keying slip would have hidden. The negative control must compare the
+ * superseded arithmetic against the SAME amounts the shipped arithmetic is
+ * compared against, or it measures nothing.
+ */
+const STRIPE_YEARLY_UNIT_AMOUNTS: Record<string, number> = {
+  starter: 26_900,
+  pro: 67_700,
+  studio: 158_400,
+  business: 836_600,
+  scale: 4_780_800,
+  enterprise: 14_940_000,
+  ultimate: 47_808_000,
+};
+
+/** The paid rungs by their STABLE ID; declaration order is ladder order. */
+const PAID_RUNG_IDS = (Object.keys(PLAN_TIERS) as PlanTier[]).filter(
+  (id) => PLAN_TIERS[id].price > 0,
+);
 
 describe("the arithmetic itself", () => {
   it("a year is 12 months at the rate, rounded to a whole dollar", () => {
@@ -49,42 +88,28 @@ describe("the arithmetic itself", () => {
       THE CARD'S SENTENCE, DRIVEN: *"today `shared/annualBilling.ts` rounds to
       the cent — Pro $677.28 — while Stripe's yearly price is a whole $677."*
 
-      ⚠ **THE EXPECTATIONS ARE STRIPE'S OWN `unit_amount`s, READ OFF THE
-      ACCOUNT**, not this formula applied a second time. Read 2026-10-01 in
-      test mode from the `klieg_<plan>_yearly_v2` lookup keys — the same
-      objects #1605 bullet 1 will resolve checkout against — so this arm is
-      what stops our arithmetic and Stripe's catalogue drifting apart again.
-      Deriving them here would make the suite agree with itself and prove
-      nothing, which is exactly how the cent rounding survived.
+      The expectations are Stripe's own `unit_amount`s, read off the account —
+      the file-level `STRIPE_YEARLY_UNIT_AMOUNTS` above carries their provenance
+      and the reason they are keyed on the rung's ID (#1928).
 
       ⚠ **THE MONTHLY SIDE IS READ FROM `PLAN_TIERS`, NEVER TYPED.** A price
       edit must redden this arm rather than slide past it: if a monthly price
       moves, the Stripe object has to move with it, and that is the finding.
     */
-    const STRIPE_YEARLY_UNIT_AMOUNTS: Record<string, number> = {
-      Starter: 26_900,
-      Pro: 67_700,
-      Studio: 158_400,
-      Business: 836_600,
-      Scale: 4_780_800,
-      Enterprise: 14_940_000,
-      Ultimate: 47_808_000,
-    };
+    expect(PAID_RUNG_IDS.length, "no paid rungs found — the reader is broken").toBe(7);
 
-    const paid = Object.values(PLAN_TIERS).filter((tier) => tier.price > 0);
-    expect(paid.length, "no paid rungs found — the reader is broken").toBe(7);
-
-    const unpriced = paid.filter((tier) => STRIPE_YEARLY_UNIT_AMOUNTS[tier.name] === undefined);
+    const unpriced = PAID_RUNG_IDS.filter((id) => STRIPE_YEARLY_UNIT_AMOUNTS[id] === undefined);
     expect(
-      unpriced.map((tier) => tier.name),
+      unpriced,
       "a paid rung has no yearly price recorded from Stripe — read the account before shipping it",
     ).toEqual([]);
 
-    for (const tier of paid) {
+    for (const id of PAID_RUNG_IDS) {
+      const tier = PLAN_TIERS[id];
       expect(
         annualPriceInCents(tier.price),
-        `${tier.name}'s yearly price is not the amount Stripe would charge`,
-      ).toBe(STRIPE_YEARLY_UNIT_AMOUNTS[tier.name]);
+        `${tier.name} (rung \`${id}\`): yearly price is not the amount Stripe would charge`,
+      ).toBe(STRIPE_YEARLY_UNIT_AMOUNTS[id]);
     }
   });
 
@@ -97,25 +122,19 @@ describe("the arithmetic itself", () => {
       justified the change, kept where it cannot rot into prose.
     */
     const centRounded = (monthlyInCents: number) => Math.round(monthlyInCents * 12 * ANNUAL_RATE);
-    const STRIPE_YEARLY_UNIT_AMOUNTS: Record<string, number> = {
-      Starter: 26_900,
-      Pro: 67_700,
-      Studio: 158_400,
-      Business: 836_600,
-      Scale: 4_780_800,
-      Enterprise: 14_940_000,
-      Ultimate: 47_808_000,
-    };
 
-    const disagreed = Object.values(PLAN_TIERS)
-      .filter((tier) => tier.price > 0)
-      .filter((tier) => centRounded(tier.price) !== STRIPE_YEARLY_UNIT_AMOUNTS[tier.name])
-      .map((tier) => tier.name);
+    /* ⚠ THE RUNGS ARE NAMED BY ID, so this measurement cannot be moved by a
+       rename either — it read `["Starter", "Pro", "Pro Plus", "Business"]`
+       until 2026-10-08, and the third of those four had already been edited
+       once by #1900 for no reason but a display name (#1928). */
+    const disagreed = PAID_RUNG_IDS.filter(
+      (id) => centRounded(PLAN_TIERS[id].price) !== STRIPE_YEARLY_UNIT_AMOUNTS[id],
+    );
 
     expect(
       disagreed,
       "the superseded cent rounding no longer disagrees with Stripe where it was measured to",
-    ).toEqual(["Starter", "Pro", "Studio", "Business"]);
+    ).toEqual(["starter", "pro", "studio", "business"]);
   });
 
   it("the badge derives from the rate — two months free at 0.83", () => {

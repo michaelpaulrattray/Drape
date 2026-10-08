@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { PLAN_TIERS } from "../../../../drizzle/schema";
+import { PLAN_TIERS, type PlanTier } from "../../../../drizzle/schema";
 import {
   annualPrice,
   creditsPerDollar,
@@ -78,8 +78,25 @@ const code = (text: string) => withoutComments(text);
 const freePane = () => sourceBand(read(TOPUP), "function PlanStepUpPane", "function CreditPacksPane", "the free plan pane");
 const packsPane = () => sourceBand(read(TOPUP), "function CreditPacksPane", "export function AddCreditsModal", "the credit packs pane");
 
-/** The paid rungs, in ladder order, straight off the product's own table. */
-const PAID = Object.values(PLAN_TIERS).filter((tier) => tier.price > 0);
+/**
+ * The paid rungs, in ladder order, straight off the product's own table.
+ *
+ * ⚠ **EACH ONE CARRIES ITS STABLE ID BESIDE ITS DISPLAY NAME — #1928.** This was
+ * `Object.values(PLAN_TIERS)`, so a rung could only be referred to by `name`,
+ * and the one arm below that keys a table of FIGURES had therefore keyed it on a
+ * thing the founder renames — his #1900 (Studio → Pro Plus) moved that lookup
+ * key. There is still exactly ONE derived list here, not a second one shadowing
+ * it (working law 4): the id is added to the same walk rather than listed again.
+ */
+const PAID: {
+  id: PlanTier;
+  name: string;
+  monthlyCredits: number;
+  price: number;
+  rolloverPercent: number;
+}[] = (Object.keys(PLAN_TIERS) as PlanTier[])
+  .filter((id) => PLAN_TIERS[id].price > 0)
+  .map((id) => ({ id, ...PLAN_TIERS[id] }));
 
 describe("card 390 — the ladder on screen is the product's, never the mockup's", () => {
   it("⚠ NO PROTOTYPE PLAN NAME, PRICE OR CREDIT FIGURE IS TYPED INTO THE SURFACE", () => {
@@ -236,15 +253,23 @@ describe("card 390 item 4 — the unit price is inverted, and it still argues fo
       come back empty. Without it, a reader that reports every rung as falling —
       or one that cannot see a fall at all — would pass this arm by accident.
     */
-    /** The superseded proposal's ledger grants, by rung name (#1602's body). */
+    /**
+     * The superseded proposal's ledger grants, BY RUNG ID (#1602's body).
+     *
+     * ⚠ **IT WAS KEYED ON THE DISPLAY NAME UNTIL 2026-10-08, and his #1900
+     * rename therefore MOVED a lookup key on a money guard — #1928.** A display
+     * name is a thing the founder renames; a rung id is not. The `=== undefined`
+     * arm below stops being a rename alarm and becomes a COVERAGE alarm, which
+     * is the thing actually worth guarding here.
+     */
     const PROPOSED_LEDGER_GRANTS: Record<string, number> = {
-      Starter: 75_000,
-      Pro: 190_000,
-      Studio: 440_000,
-      Business: 2_350_000,
-      Scale: 13_350_000,
-      Enterprise: 41_500_000,
-      Ultimate: 133_500_000,
+      starter: 75_000,
+      pro: 190_000,
+      studio: 440_000,
+      business: 2_350_000,
+      scale: 13_350_000,
+      enterprise: 41_500_000,
+      ultimate: 133_500_000,
     };
 
     /** Every rung where the figure does not IMPROVE on the rung below it. */
@@ -258,26 +283,29 @@ describe("card 390 item 4 — the unit price is inverted, and it still argues fo
         )
         .map((tier) => tier.name);
 
-    /* A rung renamed or added must redden here rather than read as `undefined`. */
-    const missing = PAID.filter((tier) => PROPOSED_LEDGER_GRANTS[tier.name] === undefined);
+    /* A rung ADDED must redden here rather than read as `undefined`. A rung
+       RENAMED no longer can, which is the whole of #1928. */
+    const missing = PAID.filter((tier) => PROPOSED_LEDGER_GRANTS[tier.id] === undefined);
     expect(
-      missing.map((tier) => tier.name),
+      missing.map((tier) => tier.id),
       "a paid rung has no figure in the superseded proposal — this arm no longer covers the table",
     ).toEqual([]);
 
     const proposed = PAID.map((tier) => ({
-      name: tier.name,
+      name: tier.id,
       price: tier.price,
-      monthlyCredits: PROPOSED_LEDGER_GRANTS[tier.name],
+      monthlyCredits: PROPOSED_LEDGER_GRANTS[tier.id],
     }));
 
     expect(
       fellAt(proposed),
       "the superseded proposal's ladder no longer falls where the schema's comment says it does",
-    ).toEqual(["Studio", "Scale", "Enterprise"]);
+    ).toEqual(["studio", "scale", "enterprise"]);
 
     expect(
-      fellAt([...PAID]),
+      /* Named by id too, so both halves of the control speak one vocabulary and
+         a fall on the shipped ladder reports the rung a reader can look up. */
+      fellAt(PAID.map((tier) => ({ ...tier, name: tier.id }))),
       "the same reader reports a fall on the SHIPPED ladder — the finding above is the reader, not the proposal",
     ).toEqual([]);
   });

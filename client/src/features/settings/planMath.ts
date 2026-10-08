@@ -319,6 +319,7 @@ export {
 } from "@shared/annualBilling";
 import { annualPriceInCents as sharedAnnualPrice } from "@shared/annualBilling";
 import { displayBalance } from "@shared/creditDisplay";
+import { planCreditSliderPriceInCents } from "@shared/planCreditSlider";
 
 /**
  * WHAT A YEAR COSTS, SAID BY THE MONTH — card 390 item 2.
@@ -341,7 +342,44 @@ import { displayBalance } from "@shared/creditDisplay";
  * `alignToPreview` exists to close one surface further down.
  */
 export function monthlyEquivalent(monthlyInCents: number): number {
-  return Math.round(sharedAnnualPrice(monthlyInCents) / 12);
+  return perMonthOfYear(sharedAnnualPrice(monthlyInCents));
+}
+
+/**
+ * A year's price said by the month — the ÷12 on its own, because two callers
+ * now need it and the one rule must not be written twice (#1832).
+ *
+ * `monthlyEquivalent` above gets its year from `annualPrice`;
+ * {@link creditStepsPriceAMonth} below gets its year from the credit slider's
+ * per-step price times a quantity, which is a DIFFERENT year for a reason that
+ * is measured rather than stylistic — see that function.
+ */
+function perMonthOfYear(yearInCents: number): number {
+  return Math.round(yearInCents / 12);
+}
+
+/**
+ * WHAT THE CREDIT SLIDER'S STEPS COST A MONTH at the selected interval — the
+ * figure that moves under the thumb (#1832).
+ *
+ * ⚠ **IT CANNOT GO THROUGH `monthlyEquivalent`, AND THE REASON IS A MEASURED
+ * DOLLAR RATHER THAN A PREFERENCE.** `annualPrice` rounds the WHOLE amount to
+ * whole dollars (`Math.round(cents × 12 × 0.83 / 100) × 100`), which is right
+ * for a plan — one price, one object, one charge. The slider is **one per-step
+ * price times a quantity**: Stripe holds `klieg_studio_credits_yearly_v2` at
+ * 9000¢ a step, so three steps is exactly 27,000¢ a year, where
+ * `annualPrice(2700)` is **26,900¢**. A dollar apart, and the wrong one would
+ * be the figure on the card against the figure on the invoice — which is the
+ * one defect this surface may not have.
+ *
+ * So the year comes from the shared per-step function (the same one the server
+ * composes the charge from) and only the ÷12 is shared with the plan's own
+ * price. The annual leg is a MONTH's price in both intervals, exactly as every
+ * other price on this surface is (card 390 item 2).
+ */
+export function creditStepsPriceAMonth(units: number, annual: boolean): number {
+  const period = planCreditSliderPriceInCents(units, annual ? "annual" : "monthly");
+  return annual ? perMonthOfYear(period) : period;
 }
 
 /**

@@ -101,3 +101,113 @@ export function periodBought(invoice: unknown): PeriodBought | null {
   }
   return null;
 }
+
+/**
+ * A non-proration subscription line's PRICE IDENTITY and QUANTITY — the two
+ * facts the credit grant needs and the two the dialects disagree about.
+ *
+ * `lookupKey` is `null` on the dialect production actually speaks. Read at the
+ * SDK's own types (`stripe@20.3.0`, `InvoiceLineItems.d.ts`): a clover line
+ * carries `pricing.price_details.price`, a price **id** string, and no
+ * `lookup_key` anywhere — where a pre-Basil line carries the whole `price`
+ * object with its key inline. So a caller that can only match on keys can
+ * identify nothing on the payloads this product receives, and the price-id
+ * road is not a nicety.
+ */
+export type SubscriptionLineIdentity = {
+  /** The price's lookup key when the dialect carries one inline, else null. */
+  lookupKey: string | null;
+  /** The price id, whichever dialect delivered it, else null. */
+  priceId: string | null;
+  /** The quantity billed on this line — the dial's STEPS, on the dial's line. */
+  quantity: number | null;
+};
+
+function priceIdOf(line: AnyRecord | null): string | null {
+  const classic = line?.price;
+  if (typeof classic === "string" && classic) return classic;
+  if (classic && typeof classic === "object" && typeof classic.id === "string") return classic.id;
+  const basil = line?.pricing?.price_details?.price;
+  if (typeof basil === "string" && basil) return basil;
+  if (basil && typeof basil === "object" && typeof basil.id === "string") return basil.id;
+  return null;
+}
+
+function lookupKeyOf(line: AnyRecord | null): string | null {
+  const classic = line?.price;
+  if (classic && typeof classic === "object" && typeof classic.lookup_key === "string") {
+    return classic.lookup_key;
+  }
+  /* Only when the price was EXPANDED into the clover line — normally absent,
+     which is the whole reason `priceId` exists beside this. */
+  const basil = line?.pricing?.price_details?.price;
+  if (basil && typeof basil === "object" && typeof basil.lookup_key === "string") {
+    return basil.lookup_key;
+  }
+  return null;
+}
+
+/**
+ * Every non-proration subscription line on an invoice, in the order Stripe
+ * sent them — the base plan's line and, when the dial is up, the add-on's.
+ *
+ * Deliberately NOT "find me the add-on": this module knows dialects and
+ * nothing about what a plan-credits price is called, which is a catalogue
+ * question one module over. The caller decides identity; this says what is
+ * readable. An EMPTY array therefore means proration-only or unreadable, and
+ * the caller must not read it as *no add-on*.
+ */
+export function nonProrationSubscriptionLines(invoice: unknown): SubscriptionLineIdentity[] {
+  const lines: unknown[] = (invoice as AnyRecord)?.lines?.data ?? [];
+  const out: SubscriptionLineIdentity[] = [];
+  for (const line of lines) {
+    if (!isSubscriptionLine(line) || isProrationLine(line)) continue;
+    const l = line as AnyRecord;
+    out.push({
+      lookupKey: lookupKeyOf(l),
+      priceId: priceIdOf(l),
+      quantity: typeof l?.quantity === "number" ? l.quantity : null,
+    });
+  }
+  return out;
+}
+
+/**
+ * THE SUBSCRIPTION METADATA AN INVOICE WAS FINALIZED WITH — the artifact that
+ * says which plan a paid period bought (#1930).
+ *
+ * Stripe's own contract, read at the SDK types rather than assumed
+ * (`stripe@20.3.0`, `Invoices.d.ts` — `Invoice.Parent.SubscriptionDetails`):
+ *
+ *   > Set of key-value pairs defined as subscription metadata when an invoice
+ *   > is created. **Becomes an immutable snapshot of the subscription metadata
+ *   > at the time of invoice finalization.**
+ *
+ * ⚠ **THAT WORD `immutable` IS THE WHOLE REASON THIS READER EXISTS.** The live
+ * subscription answers *which plan is this account on now*; this answers
+ * *which plan was this invoice billed for*, and the two come apart for up to
+ * ~3 days because `subscription.updated` and `invoice.payment_succeeded` are
+ * separate events with no ordering between them and Stripe redelivers an
+ * unprocessed invoice event for that long. A plan change landing in the gap
+ * cannot move this field, by Stripe's definition of it.
+ *
+ * ⚠ **IT IS DELIBERATELY DIALECT-POSITIVE AND NEVER A GUESS.** The
+ * `parent.subscription_details` position is the one this product actually
+ * receives (`2026-01-28.clover`) and is the one read at the types above; the
+ * top-level position is where the same object sat before the Basil rename and
+ * is read beside it. A dialect that put the snapshot somewhere neither reader
+ * looks answers `null`, which every caller must treat as *unknown* rather than
+ * as *no plan* — so being wrong about a dialect this product does not receive
+ * costs the existing fall-back road and can never mis-size a grant.
+ *
+ * Knows nothing about what a plan is called: like every other reader here it
+ * speaks dialects and leaves the product question to its caller.
+ */
+export function invoiceSubscriptionMetadata(invoice: unknown): Record<string, unknown> | null {
+  const inv = invoice as AnyRecord | null;
+  const classic = inv?.subscription_details?.metadata;
+  if (classic && typeof classic === "object") return classic as Record<string, unknown>;
+  const parented = inv?.parent?.subscription_details?.metadata;
+  if (parented && typeof parented === "object") return parented as Record<string, unknown>;
+  return null;
+}

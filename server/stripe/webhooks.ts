@@ -14,9 +14,16 @@ import {
   cancelSubscription,
   voidInvoice,
   retrieveLiveSubscription,
+  subscriptionItemsOf,
+  readSubscriptionBillingState,
+  planCreditsAddonPriceId,
   REFUND_METADATA_USER_KEY,
   REFUND_METADATA_CHANGE_REQUEST_KEY,
 } from "./stripeService";
+import {
+  monthlyLedgerCreditsFor,
+  planCreditSliderUnitsAllowed,
+} from "./planCreditSlider";
 import { 
   updateUserSubscription, 
   getUserByStripeCustomerId, 
@@ -32,9 +39,16 @@ import {
   appendChangeRequestReviewNote,
 } from "../db";
 import { SubscriptionPlan } from "./stripeProducts";
-import { PlanTier, stripeWebhookEvents } from "../../drizzle/schema";
+import { isPlanCreditsLookupKey } from "./stripePriceCatalogue";
+import type { BillingIntervalChoice } from "@shared/annualBilling";
+import { PLAN_TIERS, PlanTier, stripeWebhookEvents } from "../../drizzle/schema";
 import { subscriptionPeriodSec } from "./subscriptionPeriods";
-import { invoiceSubscriptionId, periodBought } from "./invoiceLines";
+import {
+  invoiceSubscriptionId,
+  invoiceSubscriptionMetadata,
+  nonProrationSubscriptionLines,
+  periodBought,
+} from "./invoiceLines";
 import {
   applyPlanChangeSettlement,
   voidPlanChangeSettlement,
@@ -720,7 +734,13 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
   // decision 5) — this column is a CACHE of the Stripe artifact, refreshed
   // every time Stripe tells us the subscription changed. Anything that is not
   // a month or a year is cached as unknown rather than guessed monthly.
-  const stripeInterval = (live as any).items?.data?.[0]?.price?.recurring?.interval;
+  //
+  // ⚠ THE PLAN'S ITEM, NOT `data[0]` — #1832's law-7 sweep. The credit slider
+  // puts a second item on the subscription, and this column is what every
+  // surface reads to decide whether to say "billed yearly": caching the
+  // ADD-ON's interval would make the two items' agreement load-bearing rather
+  // than incidental.
+  const stripeInterval = subscriptionItemsOf(live).base?.price?.recurring?.interval;
   const billingInterval =
     stripeInterval === "year" || stripeInterval === "month" ? stripeInterval : null;
 
@@ -950,6 +970,58 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
 }
 
 /**
+ * THE PLAN A PAID INVOICE WAS BILLED FOR — `null` when the invoice does not
+ * say (#1930).
+ *
+ * ⚠ **THE PLAN IS OUR WORD, SO THE ARTIFACT THAT CARRIES IT IS OUR OWN
+ * METADATA — READ AT THE INVOICE INSTEAD OF AT THE LIVE SUBSCRIPTION.**
+ * `readSubscriptionBillingState`'s own docblock settled where a plan comes
+ * from months ago — *"the plan still comes from metadata because a plan is OUR
+ * word, not Stripe's"* — and `createSubscriptionCheckout` and `changePlan` are
+ * the two writers (`subscription_data.metadata.plan`, and
+ * `subscriptions.update`'s `metadata.plan` on every change). This function
+ * changes only WHICH READING of that field the grant trusts: the snapshot
+ * Stripe froze when it finalized the invoice, rather than the subscription as
+ * it stands when the webhook happens to run.
+ *
+ * ⚠ **THE PRICE-ID ROAD WAS THE CARD'S OWN FIRST CANDIDATE AND IS DECLINED,
+ * WITH THE REASON, BECAUSE IT HAS A HOLE EXACTLY WHERE THE MONEY IS BIGGEST.**
+ * #1930 proposed identifying the base line by its price (the road the add-on's
+ * steps take). Two findings against it, both read at this tree:
+ *
+ *  · **an ad-hoc price names no plan at all.** `subscriptionItemsOf` already
+ *    records that a subscription created before the catalogue — *"or one a
+ *    hand-sold link produced"* — carries a price with `lookup_key: null`. Its
+ *    id is in no catalogue, so a price-id reading of such an invoice is a
+ *    permanent unknown, and those are the `business`/`ultimate` accounts his
+ *    own email line sells by hand. The metadata is written by the same two
+ *    writers whatever the price's provenance.
+ *  · **it adds a network call to the payment path.** The dialect production
+ *    speaks carries price **ids** and no keys (`invoiceLines.ts`), so the base
+ *    line's plan would need the catalogue read for up to seven rungs, with its
+ *    own failure mode, to answer a question the invoice already states. This
+ *    reader is pure.
+ *
+ * The add-on's steps still come off the LINE, and must: a quantity is Stripe's
+ * number and is on no metadata by deliberate decision (#1832, the checkout
+ * builder's note). Plan from the snapshot, steps from the line — each from the
+ * artifact that states it.
+ *
+ * ⚠ **WHAT IT REFUSES TO ANSWER IS AS LOAD-BEARING AS WHAT IT ANSWERS.** A
+ * `plan` the product no longer declares, and the `free` rung, both read as
+ * `null` rather than as a tier: `getMonthlyCredits` would throw on the first
+ * (the column deliberately still accepts four folded legacy values —
+ * `ownPlanFacts`) and would size a paid period at nothing on the second. A
+ * `null` sends the caller to the road it took before this repair, which is
+ * today's behaviour and today's refusal — never a grant on a guess.
+ */
+function planBilledOnInvoice(invoice: unknown): PlanTier | null {
+  const named = invoiceSubscriptionMetadata(invoice)?.plan;
+  if (typeof named !== "string" || named === "" || named === "free") return null;
+  return named in PLAN_TIERS ? (named as PlanTier) : null;
+}
+
+/**
  * Handle invoice.payment_succeeded event (monthly credit refresh)
  */
 async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<WebhookResult> {
@@ -972,6 +1044,14 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<W
   }
 
   const userId = userWithCredits.id;
+  /* ⚠ OUR OWN ROW, AND FROM HERE ON IT ANSWERS EXACTLY ONE QUESTION: DOES THIS
+     ACCOUNT HAVE A SUBSCRIPTION WITH US AT ALL (#1930). The figures below are
+     sized by `grantPlan`, read off the invoice. This read stays because it is
+     not a sizing read: a `free` row is a subscription this product has already
+     ended — `subscription.deleted` writes it — and a renewal invoice
+     redelivered after that cancellation must not resurrect a grant on the
+     strength of the plan it names. Whether such an invoice SHOULD grant is a
+     different question about a cancelled account, and nobody has asked it. */
   const planTier = userWithCredits.credits?.planTier || "free";
 
   // ⚠ THE PLAN-CHANGE CREDIT MOVE SETTLES HERE (#711) — before the period
@@ -1038,6 +1118,37 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<W
 
   const grantMonths = bought.monthsBought;
 
+  /* ⚠ THE PLAN THIS INVOICE BOUGHT, NOT THE PLAN THE ACCOUNT IS ON NOW
+     (#1930 — the #1832 repair's class, one field over).
+
+     The period comes off the invoice (`periodBought`, #664 decision 3) and the
+     dial's steps come off the invoice (#1832's repair, below); the PLAN came
+     off our own `credits.planTier` row, which the `subscription.updated`
+     handler writes. So a renewal paid on Pro whose upgrade lands before the
+     invoice event is processed granted the NEW rung's allowance for a period
+     Pro paid for — and `applyPlanChangeSettlement`, which ran two hundred
+     lines up, moves the PRORATION money and does not re-size this grant.
+     Stripe's redelivery window is up to ~3 days, so the gap is days wide.
+
+     ⚠ **AN UNREADABLE PLAN IS THE OLD ROAD, NEVER A REFUSAL AND NEVER A
+     ZERO.** The row is still a true reading of a subscription nobody changed,
+     which is every invoice this product has ever received; refusing here would
+     turn the ordinary case into a failed payment event the day a hand-sold
+     subscription arrives without our metadata on it. The disagreement is
+     LOGGED when it happens, because a silent divergence on a money figure is
+     the thing this card is about. */
+  const billedPlan = planBilledOnInvoice(invoice);
+  const grantPlan = (billedPlan ?? planTier) as PlanTier;
+  if (billedPlan === null) {
+    log.info(
+      `[Webhook] Invoice ${invoice.id} names no plan this product declares — sizing the grant from our own row (${planTier}) for user ${userId}`,
+    );
+  } else if (billedPlan !== planTier) {
+    log.warn(
+      `[Webhook] Invoice ${invoice.id} was billed for ${billedPlan} and user ${userId}'s row now says ${planTier} — the grant follows the invoice`,
+    );
+  }
+
   // ⚠ AN EARLY RENEWAL CARRIES THE BALANCE THROUGH IN FULL — because the
   // UNWIND lives in changePlan, not here (#664 review finding 1). An interval
   // switch's anchor reset invoices the new period with billing_reason
@@ -1055,9 +1166,139 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<W
   const computeRollover =
     billingReason === "subscription_update"
       ? (balance: number) => balance
-      : (balance: number) => calculateRolloverCredits(balance, planTier as PlanTier);
+      /* ⚠ The rollover percentage is the BILLED plan's (#1930). A renewal does
+         not change plan, so for a cycle the invoice's plan and the period just
+         ended are the same rung and the two answers agree; where they part is
+         exactly the window above, and there the invoice is the period this
+         balance is being carried into. */
+      : (balance: number) => calculateRolloverCredits(balance, grantPlan);
 
-  const grantCredits = getMonthlyCredits(planTier as PlanTier) * grantMonths;
+  /* ⚠ THE CREDIT SLIDER'S STEPS ARE PART OF THE ALLOWANCE, AND THEY ARE READ
+     OFF THE INVOICE THAT WAS PAID — NOT OFF THE SUBSCRIPTION AS IT STANDS NOW
+     (#1832, and the second clause is the relay's finding on PR #1910).
+
+     The dial is a second line on the subscription priced per step, so a
+     customer on the slider's rung pays for `base + steps × 5,000` a month and
+     must be granted it. The question this block answers is WHICH steps.
+
+     ⚠ **THE LIVE SUBSCRIPTION IS THE WRONG ARTIFACT, AND THE WINDOW IS DAYS
+     WIDE.** `readSubscriptionBillingState` answers *where the dial is at the
+     moment this webhook runs*; the invoice is *what was billed*. Anything that
+     moves the dial between the payment and the webhook mis-sizes the grant,
+     and Stripe's redelivery window is up to ~3 days:
+
+      · **over-grant, credits nobody invoiced.** A checkout or a late-paid
+        renewal at 0 steps; the customer raises the dial to its ceiling before
+        the event is processed. The dial-up settlement correctly bills the
+        prorated share, and then the PERIOD grant reads the ceiling and adds a
+        whole further month of it. This rung keeps its balance at renewal, so
+        nothing ever claws it back.
+      · **under-grant, the mirror.** The dial is lowered after paying for
+        steps; the period grants the base alone.
+
+     So the quantity comes off the invoice's own non-proration add-on line.
+     Three things about how that line is FOUND, because getting the identity
+     wrong is the same defect wearing a different hat:
+
+      · **by lookup key where the dialect carries one, by price id where it
+        does not.** Production speaks `2026-01-28.clover`, whose lines carry a
+        price id and no key at all (`invoiceLines.ts`, read at the SDK types) —
+        so a key-only match would identify nothing on the payloads this
+        product actually receives.
+      · **NO add-on line among lines we could all identify means ZERO steps,
+        and that is a reading rather than a fallback.** It is the first case
+        above: a 0-step invoice has no add-on line BY DESIGN, because the item
+        is deleted and not zeroed off the subscription. Falling through to the
+        live read here would leave the over-grant exactly as it was.
+      · **a line we cannot identify at all is the only unknown**, and only
+        then does the live read stand in — today's road, with today's refusal
+        under it. A paid period whose size cannot be established is not
+        granted on a guess; Stripe redelivers and the failure is visible. */
+  let sliderLedgerCredits = 0;
+  /* ⚠ WHETHER THE INVOICE'S RUNG CARRIES A DIAL, NOT WHETHER TODAY'S DOES
+     (#1930). Both directions of that question were wrong on the row: a
+     downgrade landing early asked `pro` (0 steps allowed), so a customer who
+     had just paid for the dial's rung plus forty steps was granted Pro's base
+     and nothing else — the add-on line on their own invoice never read. The
+     mirror over-asked: an upgrade landing early hunted for an add-on line on a
+     Pro invoice that has none. The ceiling the clamp below enforces is this
+     rung's too. */
+  if (planCreditSliderUnitsAllowed(grantPlan) > 0) {
+    const plan = grantPlan;
+    const interval: BillingIntervalChoice = grantMonths === 12 ? "annual" : "monthly";
+    const lines = nonProrationSubscriptionLines(invoice);
+
+    /* Resolved once, and only when a line actually needs the id road. */
+    let addonPriceId: string | null | undefined;
+    const addonPriceIdOnce = async () => {
+      if (addonPriceId === undefined) {
+        addonPriceId = await planCreditsAddonPriceId(plan as SubscriptionPlan, interval);
+      }
+      return addonPriceId;
+    };
+
+    let unitsOnInvoice: number | null = null;
+    let everyLineIdentified = lines.length > 0;
+    for (const line of lines) {
+      let isAddon: boolean | null = null;
+      if (line.lookupKey !== null) {
+        isAddon = isPlanCreditsLookupKey(line.lookupKey);
+      } else if (line.priceId !== null) {
+        const expected = await addonPriceIdOnce();
+        isAddon = expected === null ? null : line.priceId === expected;
+      }
+      if (isAddon === null) {
+        everyLineIdentified = false;
+        continue;
+      }
+      if (!isAddon) continue;
+      /* The add-on's line, found. A quantity we cannot read on it is an
+         unknown and never a zero — zero is what an ABSENT line means. */
+      if (line.quantity === null) {
+        everyLineIdentified = false;
+        continue;
+      }
+      unitsOnInvoice = line.quantity;
+      break;
+    }
+
+    let units: number;
+    if (unitsOnInvoice !== null) {
+      units = unitsOnInvoice;
+      log.info(
+        `[Webhook] Invoice ${invoice.id}: its own add-on line bills ${units} credit step(s) for user ${userId}`,
+      );
+    } else if (everyLineIdentified) {
+      units = 0;
+      log.info(
+        `[Webhook] Invoice ${invoice.id}: every billed line identified and none is the credit add-on — 0 step(s) for user ${userId}`,
+      );
+    } else {
+      const billingState = await readSubscriptionBillingState(subscriptionId);
+      if (!billingState) {
+        log.error(
+          `[Webhook] Invoice ${invoice.id} is on a rung that can carry credit steps, its own lines could not all be identified, and its subscription ${subscriptionId} could not be read — refusing rather than grant an allowance that may be short`,
+        );
+        return {
+          success: false,
+          message: `Could not read subscription ${subscriptionId} to size the credit grant — refusing so Stripe redelivers`,
+        };
+      }
+      units = billingState.currentCreditUnits;
+      log.warn(
+        `[Webhook] Invoice ${invoice.id}: a billed line could not be identified, so the grant falls back to the subscription as it stands now — ${units} credit step(s) for user ${userId}, which may differ from what was billed`,
+      );
+    }
+
+    const monthly = monthlyLedgerCreditsFor(plan, units);
+    sliderLedgerCredits = monthly - getMonthlyCredits(plan);
+    log.info(
+      `[Webhook] Invoice ${invoice.id}: ${units} credit step(s) add ${sliderLedgerCredits} to each month's allowance for user ${userId}`,
+    );
+  }
+
+  const grantCredits =
+    (getMonthlyCredits(grantPlan) + sliderLedgerCredits) * grantMonths;
 
   // Refresh credits
   const result = await refreshMonthlyCredits(
