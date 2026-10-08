@@ -208,7 +208,6 @@ export const SUBSCRIPTION_PRODUCTS: Record<string, {
     features: [
       `${PLAN_TIERS.starter.rolloverPercent}% unused credit rollover`,
       "All generation features",
-      "Standard support",
     ],
   },
   pro: {
@@ -219,8 +218,6 @@ export const SUBSCRIPTION_PRODUCTS: Record<string, {
     features: [
       `${PLAN_TIERS.pro.rolloverPercent}% unused credit rollover`,
       "All generation features",
-      "Priority support",
-      "Early access to new features",
     ],
   },
   studio: {
@@ -231,8 +228,6 @@ export const SUBSCRIPTION_PRODUCTS: Record<string, {
     features: [
       "100% unused credit rollover",
       "All generation features",
-      "Priority support",
-      "Early access to new features",
     ],
   },
   business: {
@@ -243,7 +238,6 @@ export const SUBSCRIPTION_PRODUCTS: Record<string, {
     features: [
       "100% unused credit rollover",
       "All generation features",
-      "Priority support",
       "Dedicated account manager",
     ],
   },
@@ -255,7 +249,6 @@ export const SUBSCRIPTION_PRODUCTS: Record<string, {
     features: [
       "100% unused credit rollover",
       "All generation features",
-      "Priority support",
       "Dedicated account manager",
       "Custom integrations",
     ],
@@ -268,7 +261,6 @@ export const SUBSCRIPTION_PRODUCTS: Record<string, {
     features: [
       "100% unused credit rollover",
       "All generation features",
-      "Priority support",
       "Dedicated account manager",
       "Custom integrations",
       "SLA guarantee",
@@ -286,7 +278,6 @@ export const SUBSCRIPTION_PRODUCTS: Record<string, {
     features: [
       "100% unused credit rollover",
       "All generation features",
-      "Priority support",
       "Dedicated account manager",
       "Custom integrations",
       "SLA guarantee",
