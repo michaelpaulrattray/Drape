@@ -27,6 +27,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createFalSunburstSheetEngine } from "./falImages";
 import { createFalIdentityEngine } from "./falQueue";
 import { SIGN_SHEET_SIZES } from "../castingV2/signSheet";
+import { runFalImageJob } from "./falTransport";
 import { ProviderError, providerAlreadyBilled } from "./types";
 
 /** A 1x1 PNG, as bytes — enough for a data-URI round trip. */
@@ -282,4 +283,155 @@ describe("#2032 — the engine's own retry never re-buys a frame fal already fin
       expect(wire.submits(), "a job that never ran stopped being retried").toBe(3);
     });
   }
+});
+
+/*
+  #2038 — WALKING AWAY FROM A JOB FAL STILL HOLDS. The poll loop has three exits
+  that abandon a submitted job before its result: a refused status check, the
+  deadline, and an abort. Each must CANCEL the job (or it runs on and bills
+  beside the retry), and each must carry what the cancel said: fal's 400
+  ALREADY_COMPLETED means the frame finished first and is bought, so the flag
+  goes up and `withRetry` stops. A cancel that answers 200 stopped the job, so
+  the retry is still right — that is the control, and it is why these arms
+  count SUBMITS and CANCELS at the wire rather than reading the error alone.
+*/
+function jobWire(script: {
+  status: () => Response;
+  cancel: () => Response;
+}): { submits: () => number; cancels: () => number } {
+  let submits = 0;
+  let cancels = 0;
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      const address = String(url);
+      if (init?.method === "POST" && !address.includes("/requests/")) {
+        submits += 1;
+        return new Response(JSON.stringify({ request_id: `abandon-${submits}` }), { status: 200 });
+      }
+      if (init?.method === "PUT" && address.endsWith("/cancel")) {
+        cancels += 1;
+        return script.cancel();
+      }
+      if (address.includes("/status")) return script.status();
+      throw new Error(`#2038 arm: unexpected request to ${address}`);
+    }),
+  );
+  return { submits: () => submits, cancels: () => cancels };
+}
+
+const ALREADY_COMPLETED = () =>
+  new Response(JSON.stringify({ detail: "ALREADY_COMPLETED" }), { status: 400 });
+const CANCELLED = () => new Response(JSON.stringify({ status: "CANCELLATION_REQUESTED" }), { status: 202 });
+const STATUS_503 = () => new Response("upstream unavailable", { status: 503 });
+const STILL_RUNNING = () => new Response(JSON.stringify({ status: "IN_PROGRESS" }), { status: 200 });
+
+function sheetEngine(timeoutMs?: number) {
+  return createFalSunburstSheetEngine({
+    apiKey: "test-key",
+    size: SIGN_SHEET_SIZES.head,
+    pollIntervalMs: 1,
+    timeoutMs,
+  }).editWithReferences(REQUEST);
+}
+
+async function faultOf(call: () => Promise<unknown>): Promise<ProviderError> {
+  const fault = await call().then(
+    () => { throw new Error("the transport returned a picture — this arm asserts a fault"); },
+    (error: unknown) => error,
+  );
+  expect(fault).toBeInstanceOf(ProviderError);
+  return fault as ProviderError;
+}
+
+describe("#2038 — a refused status check cancels the job it walks away from", () => {
+  it("the cancel answers ALREADY_COMPLETED: the frame is bought, ONE submit, ONE cancel", async () => {
+    const wire = jobWire({ status: STATUS_503, cancel: ALREADY_COMPLETED });
+    const fault = await faultOf(() => sheetEngine());
+    expect(fault.message).toBe("fal.ai status check failed");
+    expect(fault.failureClass).toBe("transport");
+    expect(providerAlreadyBilled(fault), "a job fal says finished read as unbought").toBe(true);
+    expect(wire.cancels(), "the abandoned job was not cancelled").toBe(1);
+    expect(wire.submits(), "a finished frame was bought again").toBe(1);
+  });
+
+  it("THE CONTROL — the cancel stops the job: not bought, every attempt cancelled, retried to the budget", async () => {
+    const wire = jobWire({ status: STATUS_503, cancel: CANCELLED });
+    const fault = await faultOf(() => sheetEngine());
+    expect(providerAlreadyBilled(fault)).toBe(false);
+    expect(wire.submits(), "a stopped job stopped being retried").toBe(3);
+    expect(wire.cancels(), "an attempt walked away without cancelling — that job bills").toBe(3);
+  });
+
+  it("a cancel that never answers does not mask the status fault", async () => {
+    let submits = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+        const address = String(url);
+        if (init?.method === "POST" && !address.includes("/requests/")) {
+          submits += 1;
+          return new Response(JSON.stringify({ request_id: `abandon-${submits}` }), { status: 200 });
+        }
+        if (init?.method === "PUT") throw new TypeError("fetch failed");
+        return STATUS_503();
+      }),
+    );
+    const fault = await faultOf(() => sheetEngine());
+    expect(fault.message).toBe("fal.ai status check failed");
+    expect(fault.failureClass).toBe("transport");
+    expect(providerAlreadyBilled(fault)).toBe(false);
+  });
+});
+
+describe("#2038 — the deadline's cancel says whether the frame was bought", () => {
+  it("the cancel answers ALREADY_COMPLETED: completed, ONE submit", async () => {
+    const wire = jobWire({ status: STILL_RUNNING, cancel: ALREADY_COMPLETED });
+    const fault = await faultOf(() => sheetEngine(25));
+    expect(fault.failureClass).toBe("timeout");
+    expect(providerAlreadyBilled(fault), "a frame that finished in the gap read as unbought").toBe(true);
+    expect(wire.submits(), "a finished frame was bought again").toBe(1);
+    expect(wire.cancels()).toBe(1);
+  });
+
+  it("THE CONTROL — the cancel stops the job: not bought, retried to the budget", async () => {
+    const wire = jobWire({ status: STILL_RUNNING, cancel: CANCELLED });
+    const fault = await faultOf(() => sheetEngine(25));
+    expect(fault.failureClass).toBe("timeout");
+    expect(providerAlreadyBilled(fault)).toBe(false);
+    expect(wire.submits()).toBe(3);
+    expect(wire.cancels()).toBe(3);
+  });
+});
+
+describe("#2038 — the abort's cancel says whether the frame was bought (the swept sibling)", () => {
+  function aborted(cancel: () => Response) {
+    const wire = jobWire({ status: STILL_RUNNING, cancel });
+    const controller = new AbortController();
+    controller.abort();
+    const call = () => runFalImageJob({
+      apiKey: "test-key",
+      endpoint: "openai/gpt-image-2.5/sunburst/edit",
+      body: { prompt: "p" },
+      timeoutMs: 1_000,
+      pollIntervalMs: 1,
+      signal: controller.signal,
+    });
+    return { wire, call };
+  }
+
+  it("ALREADY_COMPLETED: completed", async () => {
+    const { wire, call } = aborted(ALREADY_COMPLETED);
+    const fault = await faultOf(call);
+    expect(fault.message).toBe("cancelled");
+    expect(providerAlreadyBilled(fault)).toBe(true);
+    expect(wire.cancels()).toBe(1);
+  });
+
+  it("THE CONTROL — the cancel stops it: not bought", async () => {
+    const { wire, call } = aborted(CANCELLED);
+    const fault = await faultOf(call);
+    expect(providerAlreadyBilled(fault)).toBe(false);
+    expect(wire.cancels()).toBe(1);
+  });
 });
