@@ -17,10 +17,12 @@ const db = vi.hoisted(() => ({
 }));
 vi.mock("./db", () => db);
 
-import { SpokenError } from "./_core/spokenError";
+import { SpokenError, withSpokenFlag } from "./_core/spokenError";
+import { readableFailure } from "../client/src/lib/failureSentence";
 import {
   beginDirectOperation,
   completeClaimedDirectOperationSuccess,
+  completeDirectOperationFailure,
   completeDirectOperationSuccess,
   failClaimedDirectOperation,
 } from "./casting/directOperation";
@@ -320,5 +322,95 @@ describe("R7-1D direct operation adapter", () => {
       refundedCredits: 0,
     })).resolves.toBeUndefined();
     expect(db.markGenerationOperationRecoveryRequired).not.toHaveBeenCalled();
+  });
+
+  /*
+    THE SUPPORT-REVIEW SENTENCE REACHES HER WITH ITS OPERATION NUMBER (#2049).
+
+    Each of the three roads that write it is driven for real, down to a receipt
+    write that fails, and the error it throws is put through the formatter the
+    server actually wires (`withSpokenFlag`) and then the client's own rule
+    (`readableFailure`). Asserting on the message alone could not fail for this
+    defect: the words were always right, it was the marker that was missing.
+  */
+  const FALLBACK = "We couldn't confirm that. Try again in a moment.";
+  const wire = (error: unknown) => withSpokenFlag(
+    { message: (error as Error).message, data: { code: "INTERNAL_SERVER_ERROR" } },
+    error,
+  );
+  const roads: Array<{ name: string; drive: () => Promise<unknown> }> = [
+    {
+      name: "failClaimedDirectOperation",
+      drive: () => {
+        db.finalizeClaimedGenerationOperationFailure.mockRejectedValue(new Error("response lost"));
+        return failClaimedDirectOperation({
+          userId: 1,
+          operationId: OPERATION_ID,
+          error: new TRPCError({ code: "PRECONDITION_FAILED", message: "Free refusal" }),
+        });
+      },
+    },
+    {
+      name: "completeClaimedDirectOperationSuccess",
+      drive: () => {
+        db.finalizeClaimedGenerationOperationSuccess.mockRejectedValue(new Error("response lost"));
+        return completeClaimedDirectOperationSuccess({
+          userId: 1,
+          operationId: OPERATION_ID,
+          result: { clarification: { kind: "hair_length" } },
+        });
+      },
+    },
+    {
+      name: "completeDirectOperationSuccess (markRecoveryAfterReceiptFailure)",
+      drive: () => {
+        db.finalizeGenerationOperationSuccess.mockRejectedValue(new Error("response lost"));
+        return completeDirectOperationSuccess({
+          userId: 1,
+          operationId: OPERATION_ID,
+          result: { assetId: 9 },
+          chargedCredits: 350,
+          refundedCredits: 0,
+        });
+      },
+    },
+  ];
+
+  for (const road of roads) {
+    it(`${road.name}: the support-review sentence is spoken, so her screen keeps the operation number`, async () => {
+      db.getGenerationOperationOutcome.mockResolvedValue({
+        type: "in_progress",
+        operationId: OPERATION_ID,
+        status: "claimed",
+      });
+      db.markClaimedGenerationOperationRecoveryRequired.mockResolvedValue(undefined);
+      db.markGenerationOperationRecoveryRequired.mockResolvedValue(undefined);
+
+      const refusal = await road.drive().then(() => null, (error: unknown) => error);
+
+      expect(refusal).toBeInstanceOf(SpokenError);
+      expect(refusal).toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
+      const shown = readableFailure(wire(refusal), FALLBACK);
+      expect(shown).toContain("needs support review");
+      expect(shown, "the number she would quote to support").toContain(OPERATION_ID);
+    });
+  }
+
+  it("CONTROL — an unauthored failure on the same module still meets the fallback", async () => {
+    /* The marker must not be a blanket: a crash this module did not write
+       (`"The operation failed."`, minted for a non-tRPC throw) keeps reaching
+       her as the surface's own copy. */
+    db.finalizeGenerationOperationFailure.mockResolvedValue(undefined);
+    const refusal = await completeDirectOperationFailure({
+      userId: 1,
+      operationId: OPERATION_ID,
+      error: new Error("read ECONNRESET"),
+      chargedCredits: 0,
+      refundedCredits: 0,
+    }).then(() => null, (error: unknown) => error);
+
+    expect(refusal).toBeInstanceOf(TRPCError);
+    expect(refusal).not.toBeInstanceOf(SpokenError);
+    expect(readableFailure(wire(refusal), FALLBACK)).toBe(FALLBACK);
   });
 });

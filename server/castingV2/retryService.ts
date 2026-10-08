@@ -30,6 +30,7 @@
  * Everything before the claim is free and says why.
  */
 import { TRPCError } from "@trpc/server";
+import { spokenError } from "../_core/spokenError";
 import { CANDIDATE_RENDER } from "./briefCompiler";
 import { censusOfAttempt } from "./callCensus";
 /* `CASTING_V2_RETRY_PRICE_CREDITS` was imported here until #1601 item 2 moved
@@ -602,7 +603,10 @@ async function settleAbandonedRetry(input: {
       // the lease lapses on its own and the sweep takes the retry within one lease.
       log.fatal({ operationId, err: handoffError }, "[retryService] recovery handoff did not write");
     });
-    throw new TRPCError({
+    /* SPOKEN (#2049): a sentence written for her on INTERNAL_SERVER_ERROR is
+       replaced by the sheet's fallback unless it carries the marker, and the
+       fallback cannot quote the operation id she would give support. */
+    throw spokenError({
       code: "INTERNAL_SERVER_ERROR",
       message: `That retry is still being settled. Operation ${operationId}.`,
       cause: error,
@@ -617,7 +621,7 @@ async function settleAbandonedRetry(input: {
       chargedCredits: outcome.chargedCredits,
       refundedCredits: outcome.refundedCredits,
     });
-    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: RETRY_SUPPORT_REVIEW_SENTENCE(operationId) });
+    throw spokenError({ code: "INTERNAL_SERVER_ERROR", message: RETRY_SUPPORT_REVIEW_SENTENCE(operationId) });
   }
   if (outcome.type === "durable_success") {
     /*

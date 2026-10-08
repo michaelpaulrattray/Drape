@@ -295,7 +295,7 @@ export async function failClaimedDirectOperation(input: {
         "[DirectOperation] claimed receipt and recovery mark both failed",
       );
     }
-    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: publicMessage });
+    throw spokenError({ code: "INTERNAL_SERVER_ERROR", message: publicMessage });
   }
   /*
     AFTER the receipt, and OUTSIDE the block that guards it. The first draft of
@@ -345,7 +345,7 @@ export async function completeClaimedDirectOperationSuccess(input: {
         "[DirectOperation] claimed success receipt and recovery mark both failed",
       );
     }
-    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: publicMessage });
+    throw spokenError({ code: "INTERNAL_SERVER_ERROR", message: publicMessage });
   }
   /*
     A FREE PRE-START ANSWER IS STILL A DELIVERY, AND IT IS RECORDED AS ONE WITH
@@ -367,6 +367,17 @@ export async function completeClaimedDirectOperationSuccess(input: {
   });
 }
 
+/*
+  THE SUPPORT-REVIEW SENTENCE IS SPOKEN, ON ALL THREE ROADS THAT THROW IT (#2049).
+
+  `failClaimedDirectOperation`, `completeClaimedDirectOperationSuccess` and the
+  function below each write *"The result needs support review … Operation <id>."*
+  for a customer and throw it on `INTERNAL_SERVER_ERROR`. Unmarked, the client
+  rule (`client/src/lib/failureSentence.ts`) never reads that code aloud, so she
+  saw the surface's fallback instead — true, but without the operation number
+  she would quote to support. `spokenError` keeps the same code and the same
+  words and adds only the marker.
+*/
 async function markRecoveryAfterReceiptFailure(input: {
   userId: number;
   operationId: string;
@@ -389,7 +400,7 @@ async function markRecoveryAfterReceiptFailure(input: {
       "[DirectOperation] terminal receipt and recovery mark both failed",
     );
   }
-  throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: publicMessage });
+  throw spokenError({ code: "INTERNAL_SERVER_ERROR", message: publicMessage });
 }
 
 async function terminalOutcomeAfterWriteError(userId: number, operationId: string) {
