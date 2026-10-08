@@ -898,3 +898,28 @@ already shaped by the Voice: text line. Build caveats: multi-speaker takes
 need per-speaker separation before each converts to their own cast
 (single-speaker ships first); conversion on music-heavy mixes is where the
 ear-check earns its place.
+
+
+## 15. Demand-side testimony — the product described by its absence (founder's Discord find, 2026-10-08)
+
+A working filmmaker, unprompted, in Gossip Goblin's Discord: "so far i
+failed to find one that's able to handle and organize (not agentic) all
+the elements and has a filmmaker kinda friendly structure and workflow
+for all depts like conceptual arts, voices, music, props etc." GG
+confirms the hole and names his workaround: Figma (visual organization =
+the Wall's job) + Drive (music/audio/scripts = the Shelf's) + frame.io
+(shots and edits = the Composer's + takes review), with generation living
+outside all three. The best independent crew in the space runs the
+four-views product as three stitched generic tools plus human glue —
+the same fragmentation Higgsfield's own pipeline showed from the vendor
+side, now confirmed from the customer side.
+
+Two design signals recorded: (1) **"(not agentic)", her word** — the
+demand is structure a filmmaker recognizes, not a robot that makes the
+film; the defaults-tips-tools posture validated from the demand side, and
+a requirement made explicit: Cinema must be fully useful with ZERO
+generation (an all-uploads production — real music, human composers, own
+footage — gets full value; the upload-as-peer roads are load-bearing,
+not conveniences). (2) **Collaboration is the horizon item**: crews pay
+for frame.io's review-and-comments; shared productions and comments on
+takes are future work this quote puts on the map, not v1.
