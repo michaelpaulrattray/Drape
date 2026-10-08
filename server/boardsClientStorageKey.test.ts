@@ -94,6 +94,7 @@ function callerFor(userId: number) {
     } as NonNullable<TrpcContext["user"]>,
     req: { protocol: "https", headers: {} } as TrpcContext["req"],
     res: { clearCookie: () => {} } as unknown as TrpcContext["res"],
+    correlationId: "test-2056",
   };
   return appRouter.createCaller(ctx);
 }
