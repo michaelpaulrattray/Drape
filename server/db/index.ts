@@ -95,6 +95,14 @@ export {
   addTopupCredits,
   getSubscriptionByUserId,
   getCycleSpend,
+  // The yearly renewal reminder's shortlist and its claim (#1941).
+  getYearlyRenewalReminderCandidates,
+  claimRenewalReminder,
+  releaseRenewalReminderClaim,
+} from "./billing";
+export type {
+  RenewalReminderCandidate,
+  RenewalReminderClaim,
 } from "./billing";
 
 // Plan-change credit settlements (#711)

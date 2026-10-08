@@ -2,10 +2,11 @@
  * Billing Domain — subscriptions, credit top-ups, and cycle spend.
  */
 
-import { eq, and, gte, lt, sql } from "drizzle-orm";
+import { eq, and, gte, inArray, isNotNull, lt, sql } from "drizzle-orm";
 import {
   credits,
   creditTransactions,
+  subscriptionRenewalReminders,
   users,
   PlanTier,
 } from "../../drizzle/schema";
@@ -423,4 +424,161 @@ export async function getCycleSpend(
     basis: window.basis,
     from: window.from,
   };
+}
+
+/* ==========================================================================
+   THE YEARLY RENEWAL REMINDER (#1941)
+   ========================================================================== */
+
+/**
+ * A yearly subscription whose renewal is close enough to write about.
+ *
+ * `email` comes from `users` in the same statement rather than a second read:
+ * a reminder with no address is not a reminder, and joining here means the
+ * sweep never holds a candidate it cannot act on.
+ */
+export interface RenewalReminderCandidate {
+  userId: number;
+  email: string;
+  name: string | null;
+  planTier: PlanTier;
+  stripeSubscriptionId: string;
+  /** Our cached period end. The sweep re-reads Stripe before it believes it. */
+  currentPeriodEnd: Date;
+}
+
+/**
+ * Every yearly subscription whose cached period end falls inside the window.
+ *
+ * ⚠ **IT IS A SHORTLIST, NOT A VERDICT.** Every column here is a CACHE written
+ * by the subscription webhook, so a missed delivery makes it stale — and a
+ * reminder is a statement to a customer about a date and an amount. The sweep
+ * therefore re-reads the live subscription before it sends, and this statement
+ * exists only to keep that read down to the handful of accounts that could
+ * possibly be due. The `billingInterval` and status filters are here for the
+ * same reason and are re-checked against Stripe.
+ *
+ * `trialing` is in the status set deliberately: a yearly plan on trial is
+ * exactly the case an auto-renewal notice law is written about.
+ */
+export async function getYearlyRenewalReminderCandidates(
+  windowStart: Date,
+  windowEnd: Date,
+): Promise<RenewalReminderCandidate[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const rows = await db
+    .select({
+      userId: credits.userId,
+      email: users.email,
+      name: users.name,
+      planTier: credits.planTier,
+      stripeSubscriptionId: credits.stripeSubscriptionId,
+      currentPeriodEnd: credits.currentPeriodEnd,
+    })
+    .from(credits)
+    .innerJoin(users, eq(users.id, credits.userId))
+    .where(
+      and(
+        eq(credits.billingInterval, "year"),
+        inArray(credits.subscriptionStatus, ["active", "trialing"]),
+        isNotNull(credits.stripeSubscriptionId),
+        gte(credits.currentPeriodEnd, windowStart),
+        lt(credits.currentPeriodEnd, windowEnd),
+      ),
+    );
+
+  const candidates: RenewalReminderCandidate[] = [];
+  for (const row of rows) {
+    /* The two NOT NULLs the query already asked for, narrowed for the type
+       rather than asserted — and `email` is the one the query could not ask
+       for, because `users.email` is nullable and an account without one has
+       nowhere to be written to. */
+    if (!row.stripeSubscriptionId || !row.currentPeriodEnd || !row.email) continue;
+    candidates.push({
+      userId: row.userId,
+      email: row.email,
+      name: row.name ?? null,
+      planTier: row.planTier,
+      stripeSubscriptionId: row.stripeSubscriptionId,
+      currentPeriodEnd: row.currentPeriodEnd,
+    });
+  }
+  return candidates;
+}
+
+/** What the claim says about one renewal: mine to write about, or already done. */
+export type RenewalReminderClaim = "claimed" | "already-sent" | "unreachable";
+
+/**
+ * Claim this renewal, so exactly one sweep writes to the customer about it.
+ *
+ * The INSERT is the claim and the unique index on
+ * (stripeSubscriptionId, periodEnd) is the arbiter — the shape
+ * `claimWebhookEvent` (`server/stripe/webhooks.ts`) already uses, and for the
+ * same three reasons its header gives: there is no prior SELECT to race
+ * against, a duplicate key IS "already sent" decided at the only moment two
+ * sweeps can be ordered, and anything else is `unreachable` rather than
+ * `claimed`.
+ *
+ * ⚠ **THE THIRD ANSWER IS THE POINT** (invariant 7): a database we cannot
+ * reach must not read as "go ahead", because the failure that follows is a
+ * second email to a paying customer rather than a missing one.
+ */
+export async function claimRenewalReminder(row: {
+  userId: number;
+  stripeSubscriptionId: string;
+  periodEnd: Date;
+  planTier: PlanTier;
+  amountCents: number;
+  currency: string;
+}): Promise<RenewalReminderClaim> {
+  try {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+    await db.insert(subscriptionRenewalReminders).values(row);
+    return "claimed";
+  } catch (err) {
+    if (isDuplicateCreditReferenceError(err)) return "already-sent";
+    log.warn({ err, userId: row.userId }, "[billing] the renewal-reminder claim could not be reached");
+    return "unreachable";
+  }
+}
+
+/**
+ * Give the claim back, so tomorrow's sweep can try again.
+ *
+ * ⚠ **ITS OWN FAILURE IS THE ONE HOLE IN THIS SHAPE AND IT IS LOGGED LOUDLY
+ * RATHER THAN SWALLOWED**, exactly as `releaseWebhookEventClaim` records: a
+ * release that does not land leaves the renewal looking written-about and the
+ * customer gets no notice. It cannot be retried here — the same database is
+ * what just failed — so what is owed is the line naming the subscription, and
+ * the row is a plain DELETE anybody can undo by hand.
+ *
+ * It fails in the better of the two directions: the window is weeks wide, so a
+ * released claim has many more chances, while an un-released one costs one
+ * customer one notice.
+ */
+export async function releaseRenewalReminderClaim(
+  stripeSubscriptionId: string,
+  periodEnd: Date,
+): Promise<void> {
+  try {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+    await db
+      .delete(subscriptionRenewalReminders)
+      .where(
+        and(
+          eq(subscriptionRenewalReminders.stripeSubscriptionId, stripeSubscriptionId),
+          eq(subscriptionRenewalReminders.periodEnd, periodEnd),
+        ),
+      );
+  } catch (err) {
+    log.error(
+      { err, stripeSubscriptionId },
+      "[billing] the renewal-reminder claim could not be released — this renewal will get no notice until the row is deleted by hand",
+    );
+  }
 }

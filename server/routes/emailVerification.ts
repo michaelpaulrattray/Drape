@@ -9,9 +9,10 @@
 import { Router, type Request, type Response } from "express";
 import { z } from "zod";
 import { randomBytes } from "crypto";
-import { Resend } from "resend";
 import { eq } from "drizzle-orm";
 import { ASSETS_BASE_URL, COOKIE_NAME, SESSION_MAX_AGE_MS } from "@shared/const";
+import { PRODUCT_NAME } from "@shared/brand";
+import { sendProductEmail } from "../mail";
 import { getSessionCookieOptions } from "../_core/cookies";
 import { sdk } from "../_core/sdk";
 import { getDb } from "../db/connection";
@@ -53,17 +54,6 @@ export function generateVerificationToken(): string {
 }
 
 /**
- * Get the Resend client (lazy init)
- */
-function getResendClient(): Resend {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    throw new Error("RESEND_API_KEY is not configured");
-  }
-  return new Resend(apiKey);
-}
-
-/**
  * Build the verification URL from the request origin
  */
 function buildVerifyUrl(req: Request, token: string): string {
@@ -85,16 +75,14 @@ export async function sendVerificationEmail(
   token: string
 ): Promise<{ success: boolean; error?: string }> {
   const verifyUrl = buildVerifyUrl(req, token);
-  const resend = getResendClient();
 
   const logoUrl = `${ASSETS_BASE_URL}/drape-logo-tight.png`;
   const firstName = name ? name.split(" ")[0] : "there";
 
-  const { error } = await resend.emails.send({
-    from: "Klieg <verify@mail.klieglabs.com>",
-    replyTo: "support@klieglabs.com",
+  const result = await sendProductEmail({
+    purpose: "verify",
     to: email,
-    subject: "Verify your email — Klieg",
+    subject: `Verify your email — ${PRODUCT_NAME}`,
     html: `
 <!DOCTYPE html>
 <html lang="en">
@@ -185,9 +173,9 @@ export async function sendVerificationEmail(
     `,
   });
 
-  if (error) {
-    log.error({ err: error }, "[EmailVerification] Failed to send verification email");
-    return { success: false, error: error.message };
+  if (!result.success) {
+    log.error({ err: result.error }, "[EmailVerification] Failed to send verification email");
+    return { success: false, error: result.error };
   }
 
   return { success: true };
