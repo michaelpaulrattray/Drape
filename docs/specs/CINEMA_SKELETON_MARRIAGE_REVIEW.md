@@ -835,3 +835,21 @@ measurement layer pointed at OUR OWN takes as the generation-supervision
 mechanism the spec named but never equipped (did the take hold its length,
 did text bleed, did the camera actually push). A breakdown-for-learning
 "study this scene" tool is noted and left unbuilt.
+
+
+## 13. The voice lane — ADR with voice conversion (practitioner testimony, 2026-10-08)
+
+From Gossip Goblin's production testimony (logged in full on the voice
+open test): audio-INPUT driving of performances is today's clunky lane;
+the working pro lane is ADR — generate the performance free on AI audio,
+then dub. **Klieg's productised version, noted for the dialogue-lane
+design: the dub is a VOICE CONVERSION** — the take's AI audio converted
+to the signed cast's voice, timbre swapped, timing/cadence/inflection
+kept — so mouth sync survives automatically and no booth exists. This
+resolves what the cast's voice asset is FOR: not driving generation but
+owning the audio's identity after the fact. Kavan's locked-voice-as-
+audio-reference = anchor promotion, externally validated again. Market
+note supporting the moat (his words): a tsunami of visually-decent AI
+film is coming, so voice, music, SFX and story become the
+differentiators. All of it dated: his own caveat gives it a ~2-month
+half-life, per the disappearing-technology law's expiry clause.
