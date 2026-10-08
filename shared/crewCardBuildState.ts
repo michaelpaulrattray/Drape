@@ -820,6 +820,52 @@ export function handFindingNoteForPullRequest(input: {
 }
 
 /**
+ * WHEN THE RELAY LAST SAID SOMETHING WAS WRONG on a held pull request, or `null`
+ * when it is not held at all (#1977).
+ *
+ * ⚠ **IT IS THE STAGE'S OWN COMMENT, NOT A SECOND RESOLUTION, AND THE FIRST
+ * SHAPE OF THIS GOT IT WRONG.** That one filtered every finding through
+ * `handVerdictFreshness` and took the OLDEST survivor, to answer *since when has
+ * this been owed*. It went red on its own arms and the red was right: on this
+ * road freshness is measured against the pull request's own `updatedAt`, so a
+ * second finding moves that clock past the first and the first reads stale. The
+ * filter therefore collapsed to *the newest* whenever it mattered, while the
+ * NAME still promised the oldest — a number on his page meaning something other
+ * than what it said.
+ *
+ * ⚠ **AND THE EXACT QUESTION IS NOT THIS ROAD'S TO ANSWER.** *Since when has the
+ * repair been owed* needs the head commit, because what clears a finding is a
+ * PUSH — and `handVerdictFreshness`'s own docblock says why neither his Desk nor
+ * a queue reader can pay for that read (`gh pr list --json commits` over a
+ * hundred pull requests is refused by GitHub outright). The reader that CAN is
+ * `scripts/lib/repairsOwed.mts`, which the seat cut uses and which orders the
+ * work; this one draws a page.
+ *
+ * So it answers the question this road can answer exactly: **the comment the
+ * stage already resolved** — the same `newest` `handFindingNoteForPullRequest`
+ * quotes, so the row's words and the row's clock are the same event by
+ * construction rather than by agreement.
+ *
+ * ⚠ **THE COST OF THAT BOUND WAS MEASURED — #1984 — AND THIS IS NOW ONLY THE
+ * FALLBACK.** On the real board the day #1977 landed it saw 5 of 9 held pull
+ * requests, because a seat answering a finding under its own header moves the
+ * clock (31 seconds, on #1960). His page now reads each pull request's head
+ * commit date and asks the merge tool's own reader (`server/crew/liveRepairs.ts`,
+ * `liveDesk`'s `liveHandReading`); this road answers only for a pull request
+ * whose head could not be read.
+ */
+export function repairFlaggedAtForPullRequest(input: {
+  readonly pullRequest: number;
+  readonly updatedAt: string | null | undefined;
+  readonly facts: readonly CrewCardCommentFact[];
+}): string | null {
+  if (handVerdictForPullRequest(input) !== "finding") return null;
+  const newest = input.facts
+    .filter((fact) => (fact.kind === "verdict" || fact.kind === "finding") && fact.card === input.pullRequest)
+    .sort((a, b) => b.at.localeCompare(a.at))[0];
+  return newest?.kind === "finding" ? newest.at : null;
+}
+/**
  * THE ONE JUDGEMENT — what is happening to this card right now, or `null` when
  * nothing is.
  *

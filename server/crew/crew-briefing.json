@@ -1,7 +1,7 @@
 {
-  "edition": 657,
-  "updatedAt": "2026-10-08T06:30:06.157Z",
-  "shift": "Foreman — foreman-20261008-0610",
+  "edition": 660,
+  "updatedAt": "2026-10-08T13:05:00.000Z",
+  "shift": "Foreman — foreman-20261008-2234",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -126,7 +126,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-08T06:31:16.415Z",
+      "readAt": "2026-10-08T13:29:03.774Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -3645,7 +3645,7 @@
     {
       "id": "enterprise-band-promises-1973",
       "issueNumber": 1973,
-      "state": "waiting",
+      "state": "done",
       "filedAt": "2026-10-08T06:30:06.157Z",
       "title": "Four things our top plans still promise that we have no system for — your call",
       "productImpact": "Tonight I took three promises off the plan list on your word: \"Standard support\", \"Priority support\" and \"Early access to new features\". None of them exists — there are no support tiers and no early-access programme — so the app was offering things it cannot do.\n\nFour more are still there, and I did not touch them, because I do not think they are the same thing: \"Dedicated account manager\", \"Custom integrations\", \"SLA guarantee\" and \"White-glove onboarding\".\n\nNobody is being misled today. Those four sit only on the top rungs, and those stopped being plans anyone can buy when we turned them into the Enterprise \"let's talk\" band. No screen is even drawing them. So this is about what we are on record as offering, not about a screen that looks wrong.",
@@ -6872,7 +6872,7 @@
       "title": "Ask for all views again — the paid redo of a whole signed package, 350 credits (#1903 slice 2)",
       "status": "blocked",
       "prNumber": 1924,
-      "note": "Finished and green, waiting on the sheet work you held it behind. It needs one re-merge once that lands."
+      "note": "Stuck, and it needs a person: the branch has drifted from main so it cannot be merged or re-checked. Not re-merged tonight on purpose — doing that would make the review's own findings read as answered when they are not. Its remaining work is the new Sign price you set (#1968), not a repair."
     },
     {
       "id": "pro-plus-rename-1900",
@@ -9802,7 +9802,7 @@
     },
     {
       "id": "defer-decrease-1936",
-      "status": "in-review",
+      "status": "merged",
       "title": "Dropping a plan or lowering the credit dial now happens at your renewal, not instantly (#1936)",
       "note": "Money surface, held for the relay. Driven against real Stripe test mode: no refund, no invoice, balance unchanged.",
       "prNumber": 1963
@@ -9813,6 +9813,27 @@
       "title": "The plan features nobody delivers come off the wire, and the Follow cost note reads the measured figure (#1953)",
       "note": "Merged 06:29Z, squash 54cf50b3 — relay's verdict. Sabotage 10/10 red.",
       "prNumber": 1970
+    },
+    {
+      "id": "export-refusal-reaches-her-1962",
+      "status": "merged",
+      "title": "Ask to download your data twice and the app now says why it refused, instead of nothing (#1962)",
+      "note": "Repaired and green, waiting on the relay. The frames caught a second fault in our own wording and that is fixed too.",
+      "prNumber": 1981
+    },
+    {
+      "id": "sheet-arrived-not-rebought-1966",
+      "status": "in-review",
+      "title": "A Sign sheet that arrived but could not be used is no longer paid for three more times (#1966)",
+      "note": "Repaired and green, waiting on the relay. House money only; nothing a customer was charged.",
+      "prNumber": 1982
+    },
+    {
+      "id": "garment-owns-its-pictures-1961",
+      "status": "in-review",
+      "title": "A garment keeps its own copy of the photograph it came from (#1961)",
+      "prNumber": 1979,
+      "note": "Repaired and green, waiting on the relay. Also found this pull request's gate had been failing since 07:08Z on a check nobody had read."
     }
   ],
   "problems": [
@@ -9927,6 +9948,20 @@
       "state": "resolved",
       "title": "Add credits told a paying subscriber they were about to start a new subscription, for the moment before it knew they already had one (#1749)",
       "detail": "Open Add credits and the line under the big number reads “Charged today, then on the same date each period.” That sentence is true of somebody buying a plan for the first time. It is not true of somebody who already pays you every month — their charge is worked out pro rata against the time left in the cycle they are already in, which is what the line says once the screen knows who they are.\n\nThe screen asks for your plan details and has to draw something before the answer arrives. Everything else on it already waits politely: the price shows a dash, the button holds. This one sentence did not — it said the confident thing.\n\nTwo things are fixed. The sentence now says nothing at all until the screen knows, which is the honest amount to say about a fact nobody has. And the “Pay yearly instead and 2 of the twelve months are free” offer in the same paragraph was being shown to people ALREADY paying yearly, for the same reason — it now waits too, and still appears for the people it is for.\n\nThe repair went wider than the sentence, deliberately. The same yes-or-no about whether you have a subscription is read in twelve places across the two money screens, and the sharpest of them decides whether pressing a plan button CHANGES your plan or BUYS you a second one. That one could not actually be reached today — last night's fix happens to stop it — but it was right for the wrong reason, which is the kind of thing that comes back when something above it moves.\n\nReviewed by hand, merged on pull request #1756, and live on production tonight — checked at the build that is actually serving, not at the merge."
+    },
+    {
+      "id": "data-export-breaks-for-big-accounts-1989",
+      "severity": "warning",
+      "state": "open",
+      "title": "Asking for a copy of your own data fails if you have more than about seventy casts (#1989)",
+      "detail": "Settings, Security, Export your data. On an account with a lot of casts nothing comes back and the person is told the export could not be made — and then they cannot try again for five minutes, because the failed attempt used up their one go. Measured on a test account with 77 casts: it fails every time. Under seventy or so it works.\n\nThis matters more than most bugs because a copy of your own data is something a customer has a legal right to ask for, and the people most likely to ask are the ones with the most work on the account. Nobody has hit it in the real product that we know of. The cause is known and written on the card; it is a day's work at most, not a redesign."
+    },
+    {
+      "id": "db-hiccup-signs-you-out-1990",
+      "severity": "warning",
+      "state": "open",
+      "title": "A slow moment on the database can sign a customer out mid-session (#1990)",
+      "detail": "If the database is briefly too busy to answer, the next thing the person clicks is treated as though they were never signed in — and the app then sends them to the sign-in page, in the middle of whatever they were doing. Seen twice while testing something else, both times straight after the export above overloaded the database.\n\nThe product cannot currently tell 'this person is not signed in' apart from 'we could not check whether they are signed in'. The second should be an error we own up to, not a silent sign-out. Known cause, written on the card."
     }
   ],
   "acknowledgedReplyIds": [
@@ -10203,21 +10238,12 @@
     271
   ],
   "nextUp": {
-    "readAt": "2026-10-08T06:31:16.415Z",
+    "readAt": "2026-10-08T13:29:03.774Z",
     "items": [
       {
         "issueNumber": 1903,
         "title": "Ditch the framing measurement and the checker's opinions — refuse only catastrophic failures; a paid redo of the whole package, on by default",
         "urgent": true
-      },
-      {
-        "issueNumber": 1904,
-        "title": "Sign renders one GPT Image 2.5 Sunburst sheet (high, 3840×1648, no outfit plate) cut into the five views — his word closing #1690",
-        "urgent": true,
-        "held": {
-          "state": "blocked",
-          "because": "YOU — two small questions in the newest comment, and your eye on a Sign's strip. The build is PR #1957, held for the relay."
-        }
       },
       {
         "issueNumber": 1469,
@@ -10262,11 +10288,6 @@
         }
       },
       {
-        "issueNumber": 1936,
-        "title": "The slider (and any downgrade) can be looped for free credits: raise, spend, lower for a Stripe refund, raise again — fix before go-live",
-        "urgent": false
-      },
-      {
         "issueNumber": 1940,
         "title": "In-app money wording: \"credits returned\" everywhere, \"Cancel plan\" instead of \"Drop to Free\", and Billing says when a cancelled plan ends",
         "urgent": false
@@ -10288,12 +10309,7 @@
       },
       {
         "issueNumber": 1968,
-        "title": "Sign is a flat 1,000 credits with no per-view refund, and the whole-set redo is 620 (his word, Cid's reprice 2026-10-08)",
-        "urgent": false
-      },
-      {
-        "issueNumber": 1969,
-        "title": "The Sign dialog says \"five canonical views\" — our word, not hers (his word 2026-10-08)",
+        "title": "Sign and the whole-set redo are each a flat 650 credits with no per-view refund (his word 2026-10-08, after Cid's reprice)",
         "urgent": false
       }
     ]

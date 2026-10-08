@@ -1,4 +1,5 @@
 /** Generates a CSV string from reconciliation data for billing dispute tickets. */
+import { PRODUCT_NAME } from "@shared/brand";
 
 interface ReconciliationData {
   credits: {
@@ -52,7 +53,7 @@ export function buildReconciliationCsv(
   const lines: string[] = [];
 
   // ── Report Header ──
-  lines.push(row("Drape — Credit Reconciliation Report"));
+  lines.push(row(`${PRODUCT_NAME} — Credit Reconciliation Report`));
   lines.push(row("Generated", new Date().toISOString()));
   lines.push(row("User ID", userId));
   lines.push(row("Date Range", startDate || "All time", endDate || "Present"));

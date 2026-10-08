@@ -44,6 +44,8 @@ vi.mock("../db/crewReplies", () => ({
    One open ordered card and one merged PR are enough for the derived arm
    below; the reader's own behaviour is driven in `liveQueue.test.ts`. */
 vi.mock("../crew/liveQueue", () => ({
+  /* #1984 — the head reader derives its repository and owner from this. */
+  LIVE_QUEUE_REPO: "michaelpaulrattray/Drape",
   readLiveQueue: vi.fn(async () => ({
     available: true,
     stale: false,

@@ -57,15 +57,23 @@ import {
   type RecordPlanChangeSettlementInput,
 } from "../db";
 import { planAllowanceRemaining } from "../db/credits";
+import { settlementLedgerRef } from "../db/planChangeSettlements";
 import { createModuleLogger } from "../logging/logger";
 
 const log = createModuleLogger("stripe/planChangeSettlement");
 
-/** The one ledger key for a change invoice's credit move — shared by the
- *  changePlan path and the webhook path, which is what makes their race safe. */
-export function settlementLedgerRef(stripeInvoiceId: string): string {
-  return `plan-change-settle:${stripeInvoiceId}`;
-}
+/**
+ * The one ledger key for a change invoice's credit move — shared by the
+ * changePlan path and the webhook path, which is what makes their race safe.
+ *
+ * ⚠ **DECLARED IN `server/db/planChangeSettlements.ts` SINCE PR #1946's
+ * REVIEW AND RE-EXPORTED HERE, NOT RE-DECLARED.** The renewal's netting
+ * reader has to look a move up in the ledger by this key, and it lives beside
+ * the table; this module imports `../db`, so reading it the other way would
+ * have closed an import cycle. Every importer keeps its path, and there is
+ * one spelling of the string two racing appliers rely on.
+ */
+export { settlementLedgerRef } from "../db/planChangeSettlements";
 
 export type SettlementApplyResult =
   | { outcome: "applied"; creditsMoved: number }

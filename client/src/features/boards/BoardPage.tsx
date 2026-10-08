@@ -5,6 +5,7 @@
  * and hosts a collapsible tool panel on the right side.
  * Bottom-of-canvas UI: centered toolbar, zoom controls (left), AI chat (right).
  */
+import { productFilename } from "@shared/brand";
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRoute, useLocation } from 'wouter';
 import { toast } from 'sonner';
@@ -1956,7 +1957,7 @@ function BoardPageImpl() {
               const url = URL.createObjectURL(blob);
               const a = document.createElement('a');
               a.href = url;
-              a.download = 'drape-selection.zip';
+              a.download = productFilename('selection.zip');
               a.click();
               URL.revokeObjectURL(url);
             } catch {

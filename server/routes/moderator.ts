@@ -1,6 +1,7 @@
 import { moderatorProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { ADMIN_ADJUST_DISPLAY_MAX, ledgerForDisplay } from "../../shared/creditDisplay";
 
 export const moderatorRouter = router({
   // View audit logs (read-only, same data as admin)
@@ -279,6 +280,19 @@ export const moderatorRouter = router({
       description: z.string().trim().min(10).max(5000),
       evidenceSummary: z.string().max(5000).optional(),
       relatedAuditLogId: z.number().optional(),
+      // ⚠ **THE AMOUNT A MODERATOR TYPES IS DISPLAY CREDITS NOW (#2010, #1986's
+      // sweep).** `displayCreditAmount` is the number the customer reads; the
+      // server converts it ONCE, through `ledgerForDisplay`, and STORES THE
+      // LEDGER in `creditAmount` — the unit that column has always carried. So
+      // every row, written before this change or after it, holds ledger, and
+      // the executor moves the stored figure exactly as it always did: a
+      // request pending at deploy is never reinterpreted.
+      displayCreditAmount: z.number().int().min(1).max(ADMIN_ADJUST_DISPLAY_MAX).optional(),
+      // LEDGER — the pre-#2010 field, unchanged in meaning, accepted for ONE
+      // deploy only (the billing input removal contract: a staff bundle loaded
+      // before this deploy still sends it, and `.strict()` would make that a
+      // BAD_REQUEST mid-deploy). Remove it after a full deploy has shipped a
+      // client that no longer sends it.
       creditAmount: z.number().min(1).optional(),
       creditReason: z.string().max(512).optional(),
       ipAddress: z.string().max(45).optional(),
@@ -299,16 +313,26 @@ export const moderatorRouter = router({
       // `server/publicInputStrictness.test.ts` proves both halves by parsing
       // through the real router — the rejection AND the positive control that
       // `ModeratorDashboard.tsx`'s own payload still parses.
-    }).strict())
+    }).strict().refine(
+      (input) => input.displayCreditAmount === undefined || input.creditAmount === undefined,
+      { message: "Send displayCreditAmount or creditAmount, not both" },
+    ))
     .mutation(async ({ ctx, input }) => {
       const { createChangeRequest } = await import("../db");
+
+      // The one conversion (#2010). What is stored — and what an admin's
+      // approval later moves — is LEDGER, whichever field carried it.
+      const ledgerCreditAmount =
+        input.displayCreditAmount !== undefined
+          ? ledgerForDisplay(input.displayCreditAmount)
+          : input.creditAmount;
       const { logAuditEvent } = await import("../auditLog");
       const { AUDIT_ACTIONS } = await import("../../drizzle/schema");
 
       const moderatorName = ctx.user.name || ctx.user.email || `Moderator ${ctx.user.id}`;
 
       // Validate credit-related fields
-      if ((input.type === "refund_credits" || input.type === "add_credits") && !input.creditAmount) {
+      if ((input.type === "refund_credits" || input.type === "add_credits") && !ledgerCreditAmount) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "Credit amount is required for credit-related requests" });
       }
       if (input.type === "block_ip" && !input.ipAddress) {
@@ -356,7 +380,7 @@ export const moderatorRouter = router({
         description: input.description,
         evidenceSummary: input.evidenceSummary || null,
         relatedAuditLogId: input.relatedAuditLogId || null,
-        creditAmount: input.creditAmount || null,
+        creditAmount: ledgerCreditAmount || null,
         creditReason: input.creditReason || null,
         ipAddress: input.ipAddress || null,
         stripeSessionId: input.stripeSessionId || null,
@@ -394,7 +418,9 @@ export const moderatorRouter = router({
           targetUserId: input.targetUserId,
           targetUserName: input.targetUserName,
           title: input.title,
-          creditAmount: input.creditAmount,
+          // LEDGER, as on the row; the figure the moderator typed beside it.
+          creditAmount: ledgerCreditAmount,
+          displayCreditAmount: input.displayCreditAmount,
           ipAddress: input.ipAddress,
         },
         severity: auditSeverity,

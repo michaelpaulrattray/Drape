@@ -33,6 +33,7 @@ import { honestModelName } from '@/features/casting/modelDisplayTruth';
 import { publishCastProjectionChanged } from '@/features/operations/castProjectionSync';
 import type { MintTier } from '@shared/boardTypes';
 import NotFound from '@/pages/NotFound';
+import { ReconnectingNotice } from '@/components/ReconnectingNotice';
 
 /**
  * THE LEGACY STUDIO — SEALED BEHIND THE ADMIN ROLE (#364, 2026-09-01).
@@ -67,7 +68,7 @@ import NotFound from '@/pages/NotFound';
 
 export default function DrapeStudio() {
   const [, navigate] = useLocation();
-  const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
+  const { user, loading: authLoading, reconnecting, isAuthenticated, logout } = useAuth();
   /* The seal. Declared here because the two redirect effects below have to
      know about it: without that, a signed-out visitor would be bounced to
      /login — a different answer from the one a non-existent address gives. */
@@ -322,6 +323,12 @@ export default function DrapeStudio() {
   */
   if (!authLoading && !isAdmin) {
     return <NotFound />;
+  }
+
+  // The session check has kept failing and is still retrying (#2018): say
+  // so, rather than a spinner that reads as stuck
+  if (reconnecting) {
+    return <ReconnectingNotice />;
   }
 
   // Loading state — held until the URL entry has resolved, so no stale

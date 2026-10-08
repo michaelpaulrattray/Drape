@@ -74,6 +74,7 @@ import {
 } from "../../drizzle/schema";
 import { getDb, withTransaction } from "./connection";
 import type { TransactionHandle } from "./connection";
+import { findRenderInFlightForUserIn, type InFlightRender } from "./generationOperations";
 import { createStorageCleanupManifestIn } from "./storageCleanup";
 import { purgeAccountCastingIn } from "../castingV2/accountCastingPurge";
 import { classifyStorageReference, parseJsonValue } from "../casting/deletionAudit";
@@ -136,6 +137,25 @@ export const ACCOUNT_DELETION_DISPOSITIONS = {
   "wardrobeLooks.userId": "deleted",
 
   /* ---- the casting studio (`purgeAccountCastingIn`) ---- */
+  /*
+    ⚠ **ONE NAMED EXCEPTION TO `deleted` ON THE EIGHT CHILD STORES, AND IT IS
+    HIS RULING RATHER THAN A GAP — PR #1974, 2026-10-08, verbatim and entire:
+    *"i agree with you"*.** A child row carrying this account's `userId` while
+    pointing at a candidate that STILL EXISTS and belongs to somebody else is
+    LEFT IN PLACE, with its object. It is work made on that customer's cast,
+    and *"a customer's cast is their work"* (founder, 2026-07-25) makes it
+    theirs whatever `userId` it was mis-stamped with — deleting it broke a
+    stranger's Cast, including their chosen face where the row was the
+    candidate's own `selectedVariantId`.
+
+    It is stated HERE because this map is what a privacy answer gets written
+    from, and `deleted` means what it says everywhere else in it. The case
+    needs an earlier bug to exist at all (a child row whose owner is not its
+    candidate's), it is warned about loudly when the erasure meets one, and
+    `castingV2/accountCastingPurge.ts` carries the reasoning in full. The
+    guard below is unaffected: every one of these tables still receives its
+    DELETE from this entry point.
+  */
   "castingSessions.userId": "deleted",
   "castingRolls.userId": "deleted",
   "castingCandidates.userId": "deleted",
@@ -359,12 +379,52 @@ function zeroDeletionCounts() {
   };
 }
 
+/**
+ * WHY A DELETION DID NOT HAPPEN, WHEN THE ANSWER IS NOT "IT BROKE" — #1954.
+ *
+ * `success: false` already existed and every one of its roads is a fault: a
+ * database that is not there, a statement that threw. This is the first
+ * outcome that is neither a fault nor a success — the account is intact on
+ * purpose, and the customer can simply do it again shortly. A caller that
+ * cannot tell those apart has to answer *"contact support"* to a person who
+ * needs to be told *"wait a minute"*, which is what both routes did before
+ * this field existed.
+ *
+ * A string union rather than a boolean, so a second reason added later is a
+ * compile error at every reader rather than a silently widened one.
+ */
+export type DeletionRefusal = "render_in_flight";
+
+/**
+ * WHAT THE CUSTOMER IS TOLD, AND IT IS SAID ONCE — #1954.
+ *
+ * Two readers need this sentence — the pre-flight refusal in
+ * `security/deleteUserData.ts` and the one the transaction returns — and they
+ * are refusing the same thing for the same reason, so there is one string and
+ * not two that drift.
+ *
+ * Written the way a refusal is written here: what was refused, and what to do.
+ * No operation id, no status, no engine and no table — the person pressing
+ * Delete account does not have a vocabulary for any of that, and the
+ * disappearing-technology law puts none of it on a path they must walk. It
+ * says *a few minutes* because that is the measured bound rather than a guess:
+ * a live render renews a 5-minute lease every 30 seconds and a dead one is
+ * settled by the recovery sweep within the remaining lease plus one 60-second
+ * pass (`CLAUDE.md`, "Deploying while a paid roll is in flight").
+ */
+export const ACCOUNT_DELETION_RENDER_IN_FLIGHT =
+  "One of your renders is still finishing, so your account was left as it is and nothing was deleted. Try again in a few minutes.";
+
 export interface DeletionResult {
   success: boolean;
   cleanupBatchId: string | null;
   cleanupObjects: number;
   deletedCounts: ReturnType<typeof zeroDeletionCounts>;
   error?: string;
+  /** Set only when the account was deliberately left alone. */
+  refusal?: DeletionRefusal;
+  /** The in-flight operation the refusal names, for the log and the audit row. */
+  refusedOnOperationId?: string;
 }
 
 
@@ -426,11 +486,17 @@ export function isAccountDiagnosticKey(userId: number, storageKey: string): bool
  * their plain reads; the candidate row they all hang off is locked instead, in
  * `listAccountCandidatesIn`.
  *
- * ⚠ **THE RESIDUAL IS NAMED RATHER THAN CLAIMED CLOSED**: this closes the
- * UPDATE race and narrows the INSERT one to what InnoDB's gap locks cover. The
- * complete answer is to refuse deletion while the account has a running
- * operation — a customer-visible refusal, so a product decision rather than a
- * repair, and not taken here.
+ * ⚠ **THE RESIDUAL THIS DOCBLOCK NAMED IS NOW CLOSED — #1954, and the sentence
+ * it replaces is kept because it is the one that prescribed the fix.** It read:
+ * *"this closes the UPDATE race and narrows the INSERT one to what InnoDB's gap
+ * locks cover. The complete answer is to refuse deletion while the account has
+ * a running operation — a customer-visible refusal, so a product decision
+ * rather than a repair, and not taken here."* That refusal is `REFUSED_RENDER_
+ * IN_FLIGHT` below, taken as the transaction's FIRST act, and the product
+ * decision it was waiting on is on the card. The locking reads here are
+ * unchanged and still carry the INSERT narrowing — the refusal is what covers
+ * the case the locks never could, which is a render whose row write arrives
+ * after its own account is gone and therefore lands nowhere at all.
  */
 export async function collectAccountOwnedStorageItemsIn(
   tx: TransactionHandle,
@@ -723,7 +789,44 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
     let cleanupObjects = 0;
 
     // All deletion steps run inside a single transaction for atomicity
-    await withTransaction(async (tx) => {
+    const refusedOn = await withTransaction(async (tx): Promise<InFlightRender | null> => {
+      /*
+        STEP −1: IS ONE OF THIS ACCOUNT'S RENDERS STILL BEING EXECUTED? (#1954)
+
+        FIRST, before the manifest is read and before a single row is touched,
+        because the answer decides whether any of the rest may run at all —
+        and because the lock it takes has to be held for everything below it.
+
+        ⚠ **WHAT GOES WRONG WITHOUT IT IS NOT A STRAY ROW, IT IS AN OBJECT
+        NOBODY CAN EVER FIND AGAIN.** A roll is dispatched in-request under a
+        heartbeated lease, and `rollService.dispatchCandidate` writes the
+        rendered bytes with `storagePut` and only THEN writes the row that
+        names the key. The manifest below is built from the ROWS. So a render
+        that is mid-engine-call when an erasure commits writes its picture
+        afterwards, into a public bucket, with its row write landing on
+        nothing — no `imageKey` anywhere, no manifest item, and nothing in the
+        product or the cleanup worker that ever walks the bucket by prefix.
+        `server/storage.ts` is explicit that these URLs are not presigned and
+        never expire, so the frame of a person's face stays reachable forever
+        by an account that asked to be erased.
+
+        ⚠ **THE LOCKING READ IS THE CONTROL AND THE PRE-FLIGHT READ IN
+        `deleteUserData` IS NOT.** That one runs before the Stripe
+        cancellation so nothing irreversible happens to a customer we are
+        about to refuse; it is a check-then-act read and a claim can land
+        after it. This one reads the latest committed row and holds the
+        account's index range until this transaction ends, so a claim racing
+        the erasure is either seen here or blocked behind it (invariant 1).
+
+        Nothing is written on this road: the callback returns and the
+        transaction commits having only read, so the account is exactly as it
+        was. It is deliberately NOT a throw — a throw here would arrive at the
+        catch below as an indistinguishable failure, and "we broke" is the
+        wrong sentence for "your render is still finishing".
+      */
+      const inFlight = await findRenderInFlightForUserIn(tx, userId);
+      if (inFlight) return inFlight;
+
       const currentPublicUrl = process.env.R2_PUBLIC_URL ?? "";
       if (!currentPublicUrl) throw new Error("R2_PUBLIC_URL is required for account cleanup");
       const storageItems = await collectAccountOwnedStorageItemsIn(tx, userId, currentPublicUrl);
@@ -1048,7 +1151,27 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
       // Step 13: Delete user
       const userResult = await tx.delete(users).where(eq(users.id, userId));
       counts.user = (userResult as any)[0]?.affectedRows ?? 0;
+      return null;
     });
+
+    if (refusedOn) {
+      log.info(
+        { userId, operationId: refusedOn.operationId, kind: refusedOn.kind, status: refusedOn.status },
+        "[AccountDeletion] refused — a render of this account's is still being executed",
+      );
+      return {
+        success: false,
+        cleanupBatchId: null,
+        cleanupObjects: 0,
+        /* Zeroes, and they are honest: the transaction above read and returned
+           without deleting anything, so every count is the truth rather than a
+           placeholder. */
+        deletedCounts: counts,
+        refusal: "render_in_flight",
+        refusedOnOperationId: refusedOn.operationId,
+        error: ACCOUNT_DELETION_RENDER_IN_FLIGHT,
+      };
+    }
 
     return {
       success: counts.user > 0,

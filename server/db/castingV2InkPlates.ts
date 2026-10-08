@@ -56,7 +56,7 @@
  * both of which now build their fixture row with a raw INSERT, because the
  * helper that used to build it is gone.
  */
-import { and, eq, inArray, notInArray } from "drizzle-orm";
+import { and, eq, inArray, isNull, notInArray } from "drizzle-orm";
 
 import {
   castingCandidates,
@@ -66,6 +66,11 @@ import {
 import type { InkPlacement } from "../../shared/inkPlacementVocabulary";
 import type { InkSide } from "../../shared/inkReleasedPlacements";
 import { getDb, type TransactionHandle } from "./connection";
+import {
+  purgeScopeIsEmpty,
+  purgeScopeWhere,
+  type PurgeCandidateSelector,
+} from "./castingV2PurgeScope";
 
 async function requireDb() {
   const db = await getDb();
@@ -125,14 +130,23 @@ export async function deleteInkPlateRowsForDesignIn(
 
 export async function listPurgeableInkPlatesIn(
   tx: TransactionHandle,
-  candidateIds: readonly number[],
+  candidateIds: PurgeCandidateSelector,
 ): Promise<Array<{ id: number; storageKey: string }>> {
-  if (candidateIds.length === 0) return [];
+  if (purgeScopeIsEmpty(candidateIds)) return [];
   const rows = await tx
     .select({ id: castingInkPlates.id, storageKey: castingInkPlates.storageKey })
     .from(castingInkPlates)
     .innerJoin(castingInkDesigns, eq(castingInkDesigns.id, castingInkPlates.designId))
-    .where(inArray(castingInkDesigns.candidateId, [...candidateIds]));
+    /*
+      THE PLATE OWNER, NEVER THE DESIGN OWNER (#1959). The plate is the row
+      being collected and deleted, so it is the plate whose deletion must be
+      refused when the candidate id came off a row rather than a scoped read.
+    */
+    .where(purgeScopeWhere(
+      castingInkDesigns.candidateId,
+      castingInkPlates.userId,
+      candidateIds,
+    ));
   return rows;
 }
 
@@ -147,9 +161,9 @@ export async function listPurgeableInkPlatesIn(
  */
 export async function deleteInkPlateRowsIn(
   tx: TransactionHandle,
-  candidateIds: readonly number[],
+  candidateIds: PurgeCandidateSelector,
 ): Promise<number> {
-  if (candidateIds.length === 0) return 0;
+  if (purgeScopeIsEmpty(candidateIds)) return 0;
   const doomed = await listPurgeableInkPlatesIn(tx, candidateIds);
   if (doomed.length === 0) return 0;
   const result = await tx
@@ -181,6 +195,18 @@ export async function deleteInkPlateRowsIn(
  * nobody ever learns about, which is the objection the purge's own header
  * raised against orphan sweeping and is answered by the log line, not by
  * leaving the picture up.
+ *
+ * ⚠ **AND THE DESIGN BEING GONE IS ASKED IN THE STATEMENT, NOT ASSUMED FROM
+ * THE EXCLUSION LIST — PR #1974's repair, his ruling of 2026-10-08.** This
+ * read used to be *her plates, minus the ones the candidate pass handled*,
+ * which is a larger set than its own first paragraph describes. Once the
+ * account purge stopped sweeping orphan ids that point at another customer's
+ * LIVE candidate, a plate of hers hanging off a design under THAT candidate
+ * fell out of the handled list and straight into this one — so the row his
+ * ruling spared at the candidate depth was taken here instead, one hop down,
+ * with its object. The `LEFT JOIN … IS NULL` asks the question this function
+ * actually means: is the design row gone? A plate whose design still exists
+ * is reachable through it and is not this road's business, whoever owns it.
  */
 export async function listAccountOrphanInkPlatesIn(
   tx: TransactionHandle,
@@ -188,13 +214,15 @@ export async function listAccountOrphanInkPlatesIn(
   handledPlateIds: readonly number[],
 ): Promise<Array<{ id: number; storageKey: string }>> {
   const owned = eq(castingInkPlates.userId, userId);
+  const designGone = isNull(castingInkDesigns.id);
   return tx
     .select({ id: castingInkPlates.id, storageKey: castingInkPlates.storageKey })
     .from(castingInkPlates)
+    .leftJoin(castingInkDesigns, eq(castingInkDesigns.id, castingInkPlates.designId))
     .where(
       handledPlateIds.length > 0
-        ? and(owned, notInArray(castingInkPlates.id, [...handledPlateIds]))
-        : owned,
+        ? and(owned, designGone, notInArray(castingInkPlates.id, [...handledPlateIds]))
+        : and(owned, designGone),
     );
 }
 

@@ -34,6 +34,11 @@ import {
 import { isRefineStep, type RefineStep } from "../../shared/refineSteps";
 import { isRefineFigure, type RefineFigure } from "../../shared/refineFigure";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
+import {
+  purgeScopeIsEmpty,
+  purgeScopeWhere,
+  type PurgeCandidateSelector,
+} from "./castingV2PurgeScope";
 
 function assertPositiveId(value: number, name: string): void {
   if (!Number.isSafeInteger(value) || value <= 0) {
@@ -1020,9 +1025,9 @@ export async function findVariantByOperation(
  */
 export async function listPurgeableVariantsIn(
   tx: TransactionHandle,
-  candidateIds: readonly number[],
+  candidateIds: PurgeCandidateSelector,
 ): Promise<Array<{ id: number; imageKey: string | null; thumbKey: string | null }>> {
-  if (candidateIds.length === 0) return [];
+  if (purgeScopeIsEmpty(candidateIds)) return [];
   const rows = await tx
     .select({
       id: castingCandidateVariants.id,
@@ -1030,15 +1035,19 @@ export async function listPurgeableVariantsIn(
       thumbKey: castingCandidateVariants.thumbKey,
     })
     .from(castingCandidateVariants)
-    .where(inArray(castingCandidateVariants.candidateId, [...candidateIds]));
+    .where(purgeScopeWhere(
+      castingCandidateVariants.candidateId,
+      castingCandidateVariants.userId,
+      candidateIds,
+    ));
   return rows;
 }
 
 export async function deleteVariantRowsIn(
   tx: TransactionHandle,
-  candidateIds: readonly number[],
+  candidateIds: PurgeCandidateSelector,
 ): Promise<number> {
-  if (candidateIds.length === 0) return 0;
+  if (purgeScopeIsEmpty(candidateIds)) return 0;
   /*
     The pointer goes first. A candidate row that survives its variants while
     still pointing at one would resolve its face to a deleted row — the join
@@ -1048,10 +1057,14 @@ export async function deleteVariantRowsIn(
   await tx
     .update(castingCandidates)
     .set({ selectedVariantId: null })
-    .where(inArray(castingCandidates.id, [...candidateIds]));
+    .where(purgeScopeWhere(castingCandidates.id, castingCandidates.userId, candidateIds));
   const result = await tx
     .delete(castingCandidateVariants)
-    .where(inArray(castingCandidateVariants.candidateId, [...candidateIds]));
+    .where(purgeScopeWhere(
+      castingCandidateVariants.candidateId,
+      castingCandidateVariants.userId,
+      candidateIds,
+    ));
   return affectedRows(result);
 }
 

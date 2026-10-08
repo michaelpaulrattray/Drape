@@ -35,14 +35,43 @@
  * fewer consumer. `server/db/referrals.ts` imports from here.
  */
 
+import { PRODUCT_NAME } from "./brand";
+
 /**
- * The brand segment. **This is the only place it is written down.**
+ * The brand segment every code this product ISSUES starts with — referral
+ * codes minted by the server and invite codes minted on the admin page alike.
+ * **It is derived from `PRODUCT_NAME`, not spelled** (#2007).
  *
- * It has moved once already (`FORMA` → `DRAPE`) and the record holds a further
- * rebrand decided but not executed in code, so treat the next move as a
- * question of changing this line and nothing else.
+ * It has moved twice (`FORMA` → `DRAPE` → `KLIEG`), and the second move was
+ * owed for months: after the product became Klieg, every new code was still
+ * minted `DRAPE-…` and a mistyping customer was told *"Expected:
+ * DRAPE-XXXXXX"*. Spelled here, the prefix waited for someone to remember it
+ * at the rename; derived, it moves WITH the name.
  */
-export const REFERRAL_CODE_PREFIX = "DRAPE";
+export const ISSUED_CODE_PREFIX = PRODUCT_NAME.toUpperCase();
+
+/**
+ * Prefixes this product used to issue, still honoured on the way IN and never
+ * minted again.
+ *
+ * ⚠ **A code is persisted and shared — it sits in `users.referralCode` and in
+ * links customers have already posted** — so renaming the prefix must not
+ * break a single one of them. This list is the whole of that promise: the
+ * validator accepts `ISSUED_CODE_PREFIX` and every entry here, and nothing
+ * else reads it. `FORMA` is deliberately absent: no code ever minted begins
+ * with it (see the docblock above), so readmitting it would be leniency with
+ * nothing to protect.
+ *
+ * Invite codes need no such list: `validateInviteCode` is a database lookup
+ * with no shape check, so an old `DRAPE-` invite keeps working by construction.
+ */
+export const RETIRED_CODE_PREFIXES: readonly string[] = ["DRAPE"];
+
+/** Every prefix the validator accepts — the current one first. */
+export const REFERRAL_CODE_ACCEPTED_PREFIXES: readonly string[] = [
+  ISSUED_CODE_PREFIX,
+  ...RETIRED_CODE_PREFIXES,
+];
 
 /** How many characters follow the separator. */
 export const REFERRAL_CODE_BODY_LENGTH = 6;
@@ -70,7 +99,7 @@ export const REFERRAL_CODE_MINT_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 export const REFERRAL_CODE_ACCEPTED_CLASS = "A-Z2-9";
 
 /**
- * `DRAPE-A3K9X2` — **12.** The real length of every code that has ever existed.
+ * `KLIEG-A3K9X2` — **12.** The real length of every code that has ever existed.
  *
  * ⚠ IT WAS WRITTEN IN `0efe3f9f` AND DELETED THE SAME HOUR, because the
  * disposition door refused the build over it — `unread 1` — its only wanting
@@ -79,20 +108,26 @@ export const REFERRAL_CODE_ACCEPTED_CLASS = "A-Z2-9";
  * now with its reader, in the same commit, which is the only order the door
  * permits.
  *
+ * It is the LONGEST accepted shape, not the minted one, so the box can never
+ * refuse a customer typing an older code if a future prefix is shorter.
+ *
  * **The box used to say 16.** Nobody was ever locked out — no code is longer
  * than 12 — but the number came from nowhere, and 12 comes from the format.
  */
 export const REFERRAL_CODE_LENGTH =
-  REFERRAL_CODE_PREFIX.length + REFERRAL_CODE_SEPARATOR.length + REFERRAL_CODE_BODY_LENGTH;
+  Math.max(...REFERRAL_CODE_ACCEPTED_PREFIXES.map((prefix) => prefix.length)) +
+  REFERRAL_CODE_SEPARATOR.length +
+  REFERRAL_CODE_BODY_LENGTH;
 
 /**
- * `DRAPE-XXXXXX` — the shape, spelled for a human.
+ * `KLIEG-XXXXXX` — the shape, spelled for a human. Always the CURRENT prefix:
+ * an older code is still accepted, but nobody is told to type one.
  *
  * This is what the placeholder shows and what the refusal names, so those two
  * can never disagree with each other or with the generator.
  */
 export const REFERRAL_CODE_EXAMPLE =
-  `${REFERRAL_CODE_PREFIX}${REFERRAL_CODE_SEPARATOR}${"X".repeat(REFERRAL_CODE_BODY_LENGTH)}`;
+  `${ISSUED_CODE_PREFIX}${REFERRAL_CODE_SEPARATOR}${"X".repeat(REFERRAL_CODE_BODY_LENGTH)}`;
 
 /**
  * The shape test itself, built from the parts above.
@@ -104,7 +139,7 @@ export const REFERRAL_CODE_EXAMPLE =
  */
 export function referralCodePattern(): RegExp {
   return new RegExp(
-    `^${REFERRAL_CODE_PREFIX}${REFERRAL_CODE_SEPARATOR}[${REFERRAL_CODE_ACCEPTED_CLASS}]{${REFERRAL_CODE_BODY_LENGTH}}$`,
+    `^(?:${REFERRAL_CODE_ACCEPTED_PREFIXES.join("|")})${REFERRAL_CODE_SEPARATOR}[${REFERRAL_CODE_ACCEPTED_CLASS}]{${REFERRAL_CODE_BODY_LENGTH}}$`,
   );
 }
 
@@ -119,3 +154,25 @@ export function referralCodePattern(): RegExp {
  */
 export const REFERRAL_CODE_FORMAT_MESSAGE =
   `Invalid referral code format. Expected: ${REFERRAL_CODE_EXAMPLE}`;
+
+/**
+ * INVITE CODES — staff mint them on the admin page, customers type them at
+ * sign-up. `KLIEG-XXXX-XXXX`: the issued prefix and two four-character groups
+ * from the same confusable-free alphabet. Declared here so the admin page's
+ * generator and its placeholder cannot drift from the referral prefix.
+ */
+export const INVITE_CODE_GROUP_LENGTH = 4;
+
+export const INVITE_CODE_EXAMPLE =
+  `${ISSUED_CODE_PREFIX}${REFERRAL_CODE_SEPARATOR}${"X".repeat(INVITE_CODE_GROUP_LENGTH)}` +
+  `${REFERRAL_CODE_SEPARATOR}${"X".repeat(INVITE_CODE_GROUP_LENGTH)}`;
+
+/** A fresh invite code. `random` is injectable so a test can drive it. */
+export function mintInviteCode(random: () => number = Math.random): string {
+  const group = () =>
+    Array.from(
+      { length: INVITE_CODE_GROUP_LENGTH },
+      () => REFERRAL_CODE_MINT_ALPHABET[Math.floor(random() * REFERRAL_CODE_MINT_ALPHABET.length)],
+    ).join("");
+  return `${ISSUED_CODE_PREFIX}${REFERRAL_CODE_SEPARATOR}${group()}${REFERRAL_CODE_SEPARATOR}${group()}`;
+}

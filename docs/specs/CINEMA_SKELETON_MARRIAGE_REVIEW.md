@@ -819,3 +819,140 @@ natural-language scene timestamps are hard execution guarantees."
 claims idea — every ad claim tracing to a typed finding — noted for the
 ads door's future legal/brand-safety questions), provider lock-in, and
 their consistency approach entirely.
+
+
+**§12 addendum (founder Q, 2026-10-08): does any of this apply to scripted
+film, or only ads?** The line, ruled into the record: **for ads the
+reference is the SKELETON (structure transplanted, content swapped); for
+film the reference is an INGREDIENT (grammar extracted, structure never)**
+— a short film copying another film's cut beat-for-beat is derivative by
+construction; the script is film's skeleton. What crosses over to cinema:
+the engine craft entirely (it is about engines, not ads); "match this"
+widened from a still to a clip, extracting LOOK + RHYTHM (shot-length
+distribution, cut frequency, camera behaviour, pacing stats) into the
+style profile and scene overrides, never the shot list; and the SOP's
+measurement layer pointed at OUR OWN takes as the generation-supervision
+mechanism the spec named but never equipped (did the take hold its length,
+did text bleed, did the camera actually push). A breakdown-for-learning
+"study this scene" tool is noted and left unbuilt.
+
+
+## 13. The voice lane — ADR with voice conversion (practitioner testimony, 2026-10-08)
+
+From Gossip Goblin's production testimony (logged in full on the voice
+open test): audio-INPUT driving of performances is today's clunky lane;
+the working pro lane is ADR — generate the performance free on AI audio,
+then dub. **Klieg's productised version, noted for the dialogue-lane
+design: the dub is a VOICE CONVERSION** — the take's AI audio converted
+to the signed cast's voice, timbre swapped, timing/cadence/inflection
+kept — so mouth sync survives automatically and no booth exists. This
+resolves what the cast's voice asset is FOR: not driving generation but
+owning the audio's identity after the fact. Kavan's locked-voice-as-
+audio-reference = anchor promotion, externally validated again. Market
+note supporting the moat (his words): a tsunami of visually-decent AI
+film is coming, so voice, music, SFX and story become the
+differentiators. All of it dated: his own caveat gives it a ~2-month
+half-life, per the disappearing-technology law's expiry clause.
+
+
+## 14. Cinematique (vvsvs.pro) reviewed — mechanism-not-label, failure modes, and the cut vocabulary (founder order, 2026-10-08)
+
+A free 150+-technique cinematography prompt handbook by a credible solo
+practitioner (Ivan Flugelman; top-of-funnel for his paid course). Not a
+competitor — no software, no identity half at all (the fourth outside
+source in a week with the same hole; the moat keeps being confirmed by
+absence). Three takes for the DP skill, method only, our own sentences
+(his pages are his content — we adopt the METHOD, never scrape the
+templates):
+
+1. **Mechanism, not label** — a technique's NAME alone yields generic
+   output; its PHYSICS yields the technique ("key light high at 45
+   degrees creating the triangle on the shadow-side cheek", the dolly's
+   parallax layers and track). Build instruction for the camera picker:
+   the customer picks the move by eye; the assembler writes the
+   mechanism sentence. His site teaches humans the machinery; ours bakes
+   it in — the disappearing-technology law with a live counter-example.
+2. **The failure-mode catalogue** — three classic mistakes per technique
+   (conflating dolly/zoom, dropping the defining signature, stacking
+   contradictory terms) = DP-skill training material, plus a
+   CONTRADICTION LINT on assembled prompts (mutually exclusive lighting
+   terms never ship in one shot).
+3. **The cut vocabulary** — his editing/storytelling categories (smash
+   cut, cross-cutting, long take, in medias res, motif) extend the
+   grammar past the camera picker into transitions and the Composer
+   stage.
+
+
+**§13 mechanics (founder Q, 2026-10-08: "how would we use the audio after
+the video is generated?"):** four steps — the take arrives already talking
+(native engine audio, unconstrained performance); the soundtrack is SPLIT
+into stems (dialogue vs room/SFX/music — karaoke-class source separation);
+the dialogue stem is VOICE-CONVERTED speech-to-speech to the cast's signed
+voice (same words, timing, pauses, emphasis — her timbre; timing unmoved,
+so lips stay matched; the picture untouched); and the converted dialogue
+REMIXES with the original background layers. Product placement: a quiet
+finishing step ON KEEP — a kept take with a speaking, voice-owning cast
+converts automatically, priced per second of dialogue, judged by ear;
+tossed takes never pay; a voiceless cast keeps the take's born audio,
+already shaped by the Voice: text line. Build caveats: multi-speaker takes
+need per-speaker separation before each converts to their own cast
+(single-speaker ships first); conversion on music-heavy mixes is where the
+ear-check earns its place.
+
+
+## 15. Demand-side testimony — the product described by its absence (founder's Discord find, 2026-10-08)
+
+A working filmmaker, unprompted, in Gossip Goblin's Discord: "so far i
+failed to find one that's able to handle and organize (not agentic) all
+the elements and has a filmmaker kinda friendly structure and workflow
+for all depts like conceptual arts, voices, music, props etc." GG
+confirms the hole and names his workaround: Figma (visual organization =
+the Wall's job) + Drive (music/audio/scripts = the Shelf's) + frame.io
+(shots and edits = the Composer's + takes review), with generation living
+outside all three. The best independent crew in the space runs the
+four-views product as three stitched generic tools plus human glue —
+the same fragmentation Higgsfield's own pipeline showed from the vendor
+side, now confirmed from the customer side.
+
+Two design signals recorded: (1) **"(not agentic)", her word** — the
+demand is structure a filmmaker recognizes, not a robot that makes the
+film; the defaults-tips-tools posture validated from the demand side, and
+a requirement made explicit: Cinema must be fully useful with ZERO
+generation (an all-uploads production — real music, human composers, own
+footage — gets full value; the upload-as-peer roads are load-bearing,
+not conveniences). (2) **Collaboration is the horizon item**: crews pay
+for frame.io's review-and-comments; shared productions and comments on
+takes are future work this quote puts on the map, not v1.
+
+
+## 16b. The Yuna thread — founder rulings, and the build truth recovered into the repo (2026-10-08)
+
+A live multi-agent design room formed on Yuna's Notion page (Yuna design,
+Cid pricing, Quistis claims, Squall engineering, the PM relaying the
+founder). Founder-ruled in the terminal the same day: **try the shell**
+(one frame — left pane characters/scenes/script/media, centre Shots/Watch
+modes, assistant right; the four stages and their laws survive inside
+it); **the prompt leaves the main road** ("How this was made" in plain
+words, exact text behind "Show the exact instructions", editing starts a
+new SETUP — the team's "version" slip caught against the vocabulary
+law); **take count starts at 1, the customer's choice to a server-capped
+4**, per-take refunds on the live per-slice machinery, no invented wait
+numbers until our own distributions are logged; plus the upload glyph
+("Uploaded"), "planned" over "intended", the watermark-free export
+popover, and staleness copy naming its count. Sign's flat-price change
+stays in the casting/pricing track (the founder: "sign is a casting
+studio thing"); its one cinema consequence — takes refund per-take,
+never per-kept-shot — is ruled. Quistis's sourcing discipline on the
+consistency claim was answered with the dated citations in
+COMPETITOR_WORKFLOW_ANALYSIS.md.
+
+**And the build truth came home:** the consolidated brief
+(12-cinema-full.md) had lived only in the old PC's Downloads and did not
+survive the migration — found missing today, reconstructed verbatim from
+the relay's session record (the full §§0–15 read plus every §16
+amendment as written), and committed to
+docs/specs/Casting-ui-ux-design/drape-redesign/12-cinema-full.md with
+§16.10 carrying the Yuna-thread rulings. The risk flagged at
+confirmation time ("copy it into the repo at build kickoff") fired
+exactly as written; it is now structurally closed — the build truth is
+versioned beside the code it governs.

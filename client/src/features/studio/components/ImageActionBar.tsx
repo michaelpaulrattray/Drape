@@ -11,6 +11,7 @@
  *   - Copy to clipboard (via server proxy for CORS)
  *   - Triple-dot menu (opens to the LEFT, toggles on click)
  */
+import { productFilename } from "@shared/brand";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Heart, Download, Copy, MoreVertical, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
@@ -211,7 +212,7 @@ export function ImageActionBar({
     setIsDownloading(true);
     try {
       const proxy = await proxyImageMutation.mutateAsync({ imageUrl });
-      triggerDownload(proxy.base64, `drape-${Date.now()}.png`);
+      triggerDownload(proxy.base64, productFilename(`${Date.now()}.png`));
       toast.success("Image saved to your device");
     } catch {
       toast.error("Could not download the image");

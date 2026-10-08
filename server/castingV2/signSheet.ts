@@ -294,12 +294,31 @@ export const DIVIDER_SEARCH_FRACTION = 0.06;
 const DIVIDER_BAND_TOLERANCE = 12;
 
 /**
- * HOW BRIGHT A BAND MUST BE AGAINST ITS NEIGHBOURHOOD TO BE A DIVIDER AT ALL.
+ * HOW BRIGHT A BAND MUST BE AGAINST ITS NEIGHBOURHOOD TO BE A DIVIDER AT ALL —
+ * against EACH side of it, not against their average (#1976).
  *
- * Measured contrast on the twelve real boundaries: **53 to 101**. The floor is
- * set at 25 — under half the weakest real one — because the cost of the two
- * errors is wildly asymmetric: a missed divider falls back to the fifth, and a
- * false one cuts a panel at a bright patch of backdrop.
+ * Measured contrast on the twelve court boundaries, as the average of the two
+ * sides: **53 to 101**. The floor is set at 25 — under half the weakest real
+ * one — because the cost of the two errors is wildly asymmetric: a missed
+ * divider falls back to the fifth, and a false one cuts a panel at a bright
+ * patch of backdrop.
+ *
+ * ⚠ **SINCE #1976 IT IS A FLOOR ON THE WEAKER SIDE, and the number did not
+ * have to move.** Every real divider in both fixtures — the twelve court
+ * boundaries, the body sheet's one and the serial head sheet's two, fifteen in
+ * all — stands **49.9 to 91.3** above its WEAKER side, so 25 is still under
+ * half the weakest. What the averaged reading let through was a figure across
+ * a boundary: the band is the backdrop beside it, one sample lands in the
+ * body, and the average scored **55–62** while the backdrop side read only
+ * **19.1–21.1**. Driven over 306 figures (spans 12–400 px, three darknesses,
+ * eleven offsets) across both boundaries of the shipping head sheet, the
+ * average called **290** of them a divider and the two-sided reading calls
+ * **none**. ⚠ **The margin on that side is thin and is stated
+ * rather than hidden**: 21.1 against 25. A backdrop with a steeper fall-off
+ * 20 px out than the shipping sheet's would cross it, and 30 is the floor that
+ * clears the same 306 by nine greylevels while staying 20 under the weakest
+ * real divider — a re-tune that changes where no measured sheet is cut, left
+ * to the eye that closes #1904 rather than taken here.
  */
 export const DIVIDER_MIN_CONTRAST = 25;
 
@@ -322,6 +341,17 @@ const DIVIDER_BACKGROUND_OFFSET = 20;
  * there would be the worse answer**, because the peak is still sitting on a real
  * divider and the fifth is up to 74 px away from it. So the band is clamped
  * around its peak and the cut stays on the divider.
+ *
+ * ⚠ **THAT CASE IS REASONED, NOT MEASURED — and #1976 found the clamp's real
+ * customer was the opposite one.** On every sheet in both fixtures the clamp
+ * fires on no real divider at all (they are 2–9 px); it fired only on the
+ * shipping head sheet, which falls back before reaching it, and on a FIGURE
+ * across a boundary, where the "band" is the backdrop beside the body and the
+ * clamp turned it into a confident cut up to 155 px off the seam. The
+ * two-sided floor now refuses that before the clamp is reached. **The cost,
+ * named:** a real divider whose backdrop on one side sits within the floor of
+ * it would now fall back too — and the fallback is loud when it lands on no
+ * seam, where the false divider was silent. No measured sheet has one.
  */
 const DIVIDER_MAX_WIDTH_FRACTION = 0.01;
 
@@ -710,7 +740,17 @@ export function findSheetPanelGeometry(
 
     const left = means[Math.max(0, start - DIVIDER_BACKGROUND_OFFSET)];
     const right = means[Math.min(width - 1, end + DIVIDER_BACKGROUND_OFFSET)];
-    const contrast = means[peak] - (left + right) / 2;
+    /*
+      ⚠ **EACH SIDE ON ITS OWN, NEVER THE TWO AVERAGED — #1976.** A divider has
+      backdrop on BOTH sides of it; a figure's edge has backdrop on ONE. The
+      average let the dark side carry the bright one: with a body across the
+      line, one sample lands inside the figure, and a plain backdrop-to-body
+      step scored 55–62 against this floor while its backdrop side sat 19–21
+      below it. So the band must stand clear of BOTH neighbours, and the
+      receipt carries the weaker of the two — the number the decision was made
+      on. See `DIVIDER_MIN_CONTRAST` for both populations, measured.
+    */
+    const contrast = Math.min(means[peak] - left, means[peak] - right);
 
     if (contrast < DIVIDER_MIN_CONTRAST) {
       /* Whether the equal share happened to land on a dark hairline — the

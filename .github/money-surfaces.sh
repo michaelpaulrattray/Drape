@@ -439,7 +439,63 @@
 # would be in neither population. That hole is not closed here and is not
 # pretended to be.
 #
-MONEY_PATHS='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/routes/admin/changeRequests\.ts$|^server/db/(billing|credits|admin|accountDeletion)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^server/lib/adminActions/(approvalExecution|approvalStateBlocker|changeRequestActions)\.ts$|^server/casting/atomicCredits\.ts$|^server/casting/(castingCreditCosts|packagePricing)\.ts$|^server/casting/evidence/evidenceCandidateContract\.ts$|^server/wardrobe/creditCosts\.ts$|^server/castingV2/(castViewPackage|packageOrchestrator|packageRedoService)\.ts$|^client/src/features/casting/(constants|castingPrices)\.ts$|^shared/(const|creditDisplay|annualBilling|creditTopups|planCreditSlider|changeRequestApproval|changeRequestLabels)\.ts$|^drizzle/'
+# ⚠ AND CODE THAT WRITES TO STRIPE FROM OUTSIDE THE PRODUCT WAS MISSING FROM
+# BOTH HALVES UNTIL 2026-10-08 (#1906). It is the eighth position in the
+# sentence above, and it is the first that is not product code at all: a SCRIPT
+# that creates, archives or changes what Stripe itself holds.
+#
+# `scripts/ceremony-topup-prices-1606.mts` is the go-live ceremony #1609 runs on
+# launch day under the LIVE key: it creates the top-up product, creates the
+# three live top-up prices (`stripe.prices.create`, :113) and archives the old
+# ones (`stripe.prices.update(…, { active: false })`, :116). Change an amount,
+# a lookup key or the archive list in it and a customer is charged a different
+# number the day it runs. Neither half saw such a diff: the path half named no
+# file under `scripts/`, and the symbol half is scoped `-- server shared` and
+# names credit primitives, not Stripe calls.
+#
+# FOUND BY A REVIEWER'S HAND, not by the gate: PR #1839 (card #1828) changed
+# this file and nothing else, carried no `founder-review` label, and was held
+# only because Squall read it. Its replacement, PR #1868, merged with the same
+# single file — `needs-fable` was applied by hand and no mechanical half fired.
+#
+# ROAD: never covered. `git log -S "scripts/" -- .github/money-surfaces.sh`
+# finds no path entry under `scripts/` at any time.
+#
+# ⚠ ONE FILE BY NAME, NOT THE DIRECTORY, AND THE DIRECTORY WAS THE CARD'S FIRST
+# OPTION. `scripts/` holds ~600 tracked files — instruments, ceremonies, crew
+# tooling, disposable drives — and it is in a large share of every week's PRs;
+# `^scripts/` would be #958's rejected-at-17-of-60 judgement many times over.
+# The card's second option (*"match any file that calls Stripe price
+# create/archive"*) is what is shipped instead, in the shape this file already
+# uses for prices and direct ledger writers: a NAMED entry here, and a DERIVED
+# drift guard in `server/moneySurfaceClassifier.test.ts` whose population is
+# EVERY tracked code file in the repository (not the Atlas, which does not scan
+# `scripts/`) that holds a Stripe client or calls a Stripe write. A new script
+# that starts writing to Stripe reddens the gate's own test run on the PR that
+# adds it, and the repair that test asks for — adding it here — is itself a
+# change to the review rules, so the PR holds either way.
+#
+# ⚠ THE LAW-7 SWEEP, with its reader named. Read at the tree 2026-10-08, every
+# tracked non-test code file holding a Stripe client (`new Stripe(`, a value
+# import of `stripe`) or calling a Stripe write (`.prices`/`.products`/
+# `.subscriptions`/`.refunds`/`.customers`/… `.create`/`.update`/`.del`/
+# `.cancel`, comments and string contents stripped):
+#
+#     server/stripe/{stripeService,webhooks}.ts   already here (`^server/stripe/`)
+#     server/security/deleteUserData.ts           already here (`^server/security/`)
+#     scripts/ceremony-topup-prices-1606.mts      ADDED — the only one off the list
+#
+# Two siblings of the class were read and are NOT added. No script WRITES the
+# credits table or the ledger directly (the #1662 reader over `scripts/`
+# returns nothing), and the eight scripts the credit-symbol grep returns over
+# `scripts/` name a primitive only in a comment or a sabotage string.
+#
+# MEASURED BEFORE AND AFTER, on the two windows #1662 established (merged PRs
+# into `main`, newest first, read 2026-10-08): the delta is +1 on each — 60
+# newest (#1985…#1846) and 200 newest (#1985…#1563) — and the one PR it adds is
+# #1868, the specimen. No other merged PR in either window touches the file.
+#
+MONEY_PATHS='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/routes/admin/changeRequests\.ts$|^server/db/(billing|credits|admin|accountDeletion)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^server/lib/adminActions/(approvalExecution|approvalStateBlocker|changeRequestActions)\.ts$|^server/casting/atomicCredits\.ts$|^server/casting/(castingCreditCosts|packagePricing)\.ts$|^server/casting/evidence/evidenceCandidateContract\.ts$|^server/wardrobe/creditCosts\.ts$|^server/castingV2/(castViewPackage|packageOrchestrator|packageRedoService)\.ts$|^client/src/features/casting/(constants|castingPrices)\.ts$|^shared/(const|creditDisplay|annualBilling|creditTopups|planCreditSlider|changeRequestApproval|changeRequestLabels)\.ts$|^scripts/ceremony-topup-prices-1606\.mts$|^drizzle/'
 
 # ── 2 · SYMBOLS — where money is DECIDED ────────────────────────────────────
 #
