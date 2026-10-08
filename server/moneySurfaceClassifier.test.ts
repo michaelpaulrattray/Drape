@@ -1202,6 +1202,11 @@ describe("the Stripe-write reading — code that changes what Stripe holds (#190
     expect(pathRe.test(CEREMONY)).toBe(true);
   });
 
+  it("the spent-share product ceremony is a money diff too (#2023)", () => {
+    expect(pathRe.test("scripts/ceremony-spent-share-product-2023.mts")).toBe(true);
+    expect(pathRe.test("scripts/ceremony-spent-share-product-2023.mts.bak")).toBe(false);
+  });
+
   /**
    * THE NEGATIVE CONTROL — `scripts/` holds ~600 tracked files and this entry
    * must not quietly become the directory (`money-surfaces.sh`: NAMED FILES,
