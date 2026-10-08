@@ -12,6 +12,18 @@
  *    concurrent user lookups.
  *  - `referral.getHistory` — one name lookup per referral, unbounded.
  *  - `boardOps.getSnapshot` — one version count per board item, unbounded.
+ *  - `wardrobe` — FIVE reads of one garment per id from input arrays with no
+ *    `.max()` on them (the card named four; the sweep found the fifth, a
+ *    sequential loop in `outfits.save` that could not trip the ceiling and was
+ *    still one round trip per garment). `outfits.save` is the one of the five
+ *    that is NOT behind the closed try-on door (#1537), so it is driven here
+ *    for real; the other four share its one db reader, which is driven
+ *    directly beside it.
+ *
+ * `castingV2.openSessions` is the card's fifth site and is driven in
+ * `server/openSessionCardsBounded.test.ts` — its subject is how many SESSIONS
+ * are read at one time rather than the shape of a statement, so its instrument
+ * counts calls into the db layer instead of faking a pool.
  *
  * WHY A FAKE CLIENT AND NOT A DATABASE — the same reasoning as
  * `server/gdprExportBounded.test.ts`: `vitest.setup.ts` strips `DATABASE_URL`,
@@ -40,6 +52,7 @@ const tables: Record<string, Row[]> = {};
 const sent: Array<{ table: string; sql: string; params: unknown[] }> = [];
 let inFlight = 0;
 let maxInFlight = 0;
+let inserted = 0;
 
 function columnsOf(sql: string): string[] {
   const list = sql.slice("select ".length, sql.indexOf(" from `"));
@@ -77,6 +90,16 @@ function answer(table: string, sql: string, params: unknown[]): Row[] {
           .map((r) => ({ ...r, name: usersById.get(r.referredUserId)?.name ?? null }));
       }
       break;
+    }
+    case "wardrobe_garments": {
+      /* The owner is in the statement, so the fake honours it rather than
+         handing back every row and letting the caller filter — an instrument
+         that ignores the WHERE cannot see invariant 1 break. */
+      const owner = params[0];
+      const wanted = new Set(params.slice(1));
+      return (tables.wardrobe_garments ?? []).filter(
+        (g) => g.userId === owner && wanted.has(g.id),
+      );
     }
     case "boards":
       return (tables.boards ?? []).filter((b) => b.id === params[0]);
@@ -117,6 +140,13 @@ const fakeClient = {
     maxInFlight = Math.max(maxInFlight, inFlight);
     try {
       await new Promise((resolve) => setTimeout(resolve, 2));
+      /* One write road reaches this fake — `outfits.save`'s insert, which the
+         read under test guards. It answers like mysql2's ResultSetHeader so
+         `$returningId()` has an id, and nothing here asserts on that id. */
+      if (sql.startsWith("insert into ")) {
+        inserted += 1;
+        return [{ insertId: 9_000 + inserted, affectedRows: 1 }, []];
+      }
       if (table === "?") return [[], []];
       const cols = columnsOf(sql);
       const rows = answer(table, sql, params);
@@ -140,7 +170,9 @@ vi.mock("./auditLog", () => ({ logAuditEvent: async () => undefined }));
 const { moderatorRouter } = await import("./routes/moderator");
 const { referralRouter } = await import("./routes/referral");
 const { boardOpsRouter } = await import("./routes/boardOps");
+const { wardrobeRouter } = await import("./routes/wardrobe");
 const { FLAGGED_REFERRAL_USER_CHUNK } = await import("./db/moderatorQueries");
+const { GARMENT_BATCH_CHUNK, getOwnedGarmentsByIds } = await import("./db/wardrobe");
 
 function stamp(i: number): string {
   const s = String(i % 60).padStart(2, "0");
@@ -159,6 +191,7 @@ beforeEach(() => {
   sent.length = 0;
   inFlight = 0;
   maxInFlight = 0;
+  inserted = 0;
 });
 
 describe("#2000 — the instrument can fail", () => {
@@ -360,5 +393,119 @@ describe("#2000 — a board snapshot", () => {
     await expect(
       boardOpsRouter.createCaller({ user: customer(6_004) } as never).getSnapshot({ boardId: 44 }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+});
+
+describe("#2000 — the wardrobe's garment reads", () => {
+  function seedGarments(ownerId: number, count: number): void {
+    tables.wardrobe_garments = Array.from({ length: count }, (_, i) => ({
+      id: 300_000 + i,
+      userId: ownerId,
+      shortName: `Garment ${i}`,
+      slotType: "tops",
+      originalImageUrl: `https://example.invalid/${i}.png`,
+      status: "ready",
+    }));
+    /* Somebody else's garment, with an id this account will ask for. */
+    tables.wardrobe_garments.push({
+      id: 777_777,
+      userId: ownerId + 1,
+      shortName: "Not hers",
+      slotType: "tops",
+      originalImageUrl: "https://example.invalid/theirs.png",
+      status: "ready",
+    });
+  }
+
+  const ids = (count: number) => Array.from({ length: count }, (_, i) => 300_000 + i);
+
+  it("⚠ saving an outfit of 200 garments succeeds on a pool that refuses past seventy", async () => {
+    const userId = 8_001;
+    seedGarments(userId, 200);
+    await wardrobeRouter.createCaller({ user: customer(userId) } as never).outfits.save({
+      name: "Everything",
+      garmentIds: ids(200),
+    });
+    expect(maxInFlight, "the save held more than one pool slot at once").toBeLessThanOrEqual(1);
+    const reads = statementsOn("wardrobe_garments");
+    expect(reads, "one read per garment — the fan-out is back").toHaveLength(1);
+    expect(reads[0].sql).toContain(" in (");
+  });
+
+  it("⚠ the owner is in the statement, not checked after it (invariant 1)", async () => {
+    const userId = 8_002;
+    seedGarments(userId, 3);
+    await expect(
+      wardrobeRouter.createCaller({ user: customer(userId) } as never).outfits.save({
+        name: "Someone else's",
+        garmentIds: [300_000, 777_777],
+      }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    const reads = statementsOn("wardrobe_garments");
+    expect(reads).toHaveLength(1);
+    expect(reads[0].sql).toContain("`userId` = ?");
+    /* The owner is the FIRST parameter, ahead of the id list — so the row is
+       never read, rather than read and discarded. */
+    expect(reads[0].params[0]).toBe(userId);
+    expect(reads[0].params).toContain(777_777);
+  });
+
+  it("the refusal names the FIRST missing id in the customer's own order, every time", async () => {
+    const userId = 8_003;
+    seedGarments(userId, 5);
+    for (let attempt = 0; attempt < 5; attempt++) {
+      await expect(
+        wardrobeRouter.createCaller({ user: customer(userId) } as never).outfits.save({
+          name: "Gaps",
+          garmentIds: [300_001, 400_001, 400_002, 300_002],
+        }),
+      ).rejects.toMatchObject({ message: "Garment 400001 not found" });
+    }
+  });
+
+  it("NEGATIVE CONTROL — an outfit of garments that are all hers still saves", async () => {
+    const userId = 8_004;
+    seedGarments(userId, 5);
+    const saved = await wardrobeRouter.createCaller({ user: customer(userId) } as never).outfits.save({
+      name: "Hers",
+      garmentIds: [300_000, 300_004],
+    });
+    expect(saved.outfitId).toBeTruthy();
+    expect(statementsOn("wardrobe_outfits")).toHaveLength(0); // the insert carries no `from`
+    expect(sent.some((one) => one.sql.startsWith("insert into"))).toBe(true);
+  });
+
+  it("⚠ the reader the other four roads share: 450 ids, chunked, one slot at a time", async () => {
+    const userId = 8_005;
+    seedGarments(userId, 450);
+    const found = await getOwnedGarmentsByIds(userId, [...ids(450), 777_777]);
+
+    expect(found.size).toBe(450);
+    expect(found.has(777_777), "someone else's garment came back").toBe(false);
+    expect(found.get(300_123)?.shortName).toBe("Garment 123");
+
+    const reads = statementsOn("wardrobe_garments");
+    expect(reads.length).toBe(Math.ceil(451 / GARMENT_BATCH_CHUNK));
+    for (const read of reads) {
+      /* The owner plus at most one chunk of ids. */
+      expect(read.params.length).toBeLessThanOrEqual(GARMENT_BATCH_CHUNK + 1);
+    }
+    expect(maxInFlight, "the chunks ran at once rather than one after another").toBeLessThanOrEqual(1);
+  });
+
+  it("a repeated id is read once, not twice", async () => {
+    const userId = 8_006;
+    seedGarments(userId, 3);
+    await getOwnedGarmentsByIds(userId, [300_000, 300_000, 300_001, 300_000]);
+    const read = statementsOn("wardrobe_garments")[0];
+    expect(read.params).toEqual([userId, 300_000, 300_001]);
+  });
+
+  it("no ids at all sends no statement", async () => {
+    const userId = 8_007;
+    seedGarments(userId, 3);
+    const found = await getOwnedGarmentsByIds(userId, []);
+    expect(found.size).toBe(0);
+    expect(statementsOn("wardrobe_garments")).toHaveLength(0);
   });
 });
