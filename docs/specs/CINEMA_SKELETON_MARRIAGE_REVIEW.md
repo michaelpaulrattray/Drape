@@ -923,3 +923,36 @@ footage — gets full value; the upload-as-peer roads are load-bearing,
 not conveniences). (2) **Collaboration is the horizon item**: crews pay
 for frame.io's review-and-comments; shared productions and comments on
 takes are future work this quote puts on the map, not v1.
+
+
+## 16b. The Yuna thread — founder rulings, and the build truth recovered into the repo (2026-10-08)
+
+A live multi-agent design room formed on Yuna's Notion page (Yuna design,
+Cid pricing, Quistis claims, Squall engineering, the PM relaying the
+founder). Founder-ruled in the terminal the same day: **try the shell**
+(one frame — left pane characters/scenes/script/media, centre Shots/Watch
+modes, assistant right; the four stages and their laws survive inside
+it); **the prompt leaves the main road** ("How this was made" in plain
+words, exact text behind "Show the exact instructions", editing starts a
+new SETUP — the team's "version" slip caught against the vocabulary
+law); **take count starts at 1, the customer's choice to a server-capped
+4**, per-take refunds on the live per-slice machinery, no invented wait
+numbers until our own distributions are logged; plus the upload glyph
+("Uploaded"), "planned" over "intended", the watermark-free export
+popover, and staleness copy naming its count. Sign's flat-price change
+stays in the casting/pricing track (the founder: "sign is a casting
+studio thing"); its one cinema consequence — takes refund per-take,
+never per-kept-shot — is ruled. Quistis's sourcing discipline on the
+consistency claim was answered with the dated citations in
+COMPETITOR_WORKFLOW_ANALYSIS.md.
+
+**And the build truth came home:** the consolidated brief
+(12-cinema-full.md) had lived only in the old PC's Downloads and did not
+survive the migration — found missing today, reconstructed verbatim from
+the relay's session record (the full §§0–15 read plus every §16
+amendment as written), and committed to
+docs/specs/Casting-ui-ux-design/drape-redesign/12-cinema-full.md with
+§16.10 carrying the Yuna-thread rulings. The risk flagged at
+confirmation time ("copy it into the repo at build kickoff") fired
+exactly as written; it is now structurally closed — the build truth is
+versioned beside the code it governs.
