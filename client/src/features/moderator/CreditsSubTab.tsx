@@ -48,6 +48,7 @@ import { trpc } from "@/lib/trpc";
 import { displayBalance, displayPrice, formatCredits } from "@shared/creditDisplay";
 
 import { creditRowText } from "./creditRowText";
+import { staffFacts } from "./factFigures";
 import { runStaffCsvExport, saveCsvFile, staffCsvFileName } from "./staffCsvExport";
 import { type OpenChangeRequestOptions } from "./moderatorConstants";
 
@@ -152,7 +153,8 @@ export function CreditsSubTab({
         <RowId key="balance">{text.balance}</RowId>,
         <span key="when">{staffDateTime(new Date(tx.createdAt))}</span>,
       ],
-      facts: [...text.facts],
+      /* Each two-figure fact wraps at its ` · ` only, never mid-number (#2035). */
+      facts: staffFacts(text.facts),
       evidence: text.evidence,
       /*
         The refund action. It opens the change-request form; it does not itself
