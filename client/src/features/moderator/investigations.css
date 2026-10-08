@@ -350,7 +350,8 @@
 
 /*
   One figure of a two-figure credit fact (`factFigures.tsx`, #2035). The fact
-  cell is `word-break: break-all` for its ids and hashes; this holds a number
-  and its unit whole, so the cell wraps at the ` · ` and nowhere else.
+  cell is `overflow-wrap: anywhere` for its ids and hashes (it was `break-all`
+  until #2043); this holds a number and its unit whole, so the cell wraps at
+  the ` · ` and nowhere else.
 */
 .dp-inv__figure { white-space: nowrap; }

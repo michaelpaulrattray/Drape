@@ -2,11 +2,15 @@
  * A fact that states one amount twice — `+37,466 credits · +187,330 ledger` —
  * may wrap only at its ` · `, never inside a figure or a word (#2035).
  *
- * The foundation's fact value is `word-break: break-all` on purpose: those
- * cells carry ids, hashes and user agents, and one unbroken 64-character value
- * would otherwise blow the grid open. A two-figure credit fact is the one value
- * that rule mangles — PR #2034's frames read `+187,3 / 30 ledger` and
- * `8,340 le / dger` in a 168px column. So each figure goes in its own
+ * The foundation's fact value was `word-break: break-all` when this was
+ * written: those cells carry ids, hashes and user agents, and one unbroken
+ * 64-character value would otherwise blow the grid open. A two-figure credit
+ * fact is the one value that rule mangled — PR #2034's frames read
+ * `+187,3 / 30 ledger` and `8,340 le / dger` in a 168px column. #2043 moved
+ * the foundation to `overflow-wrap: anywhere`, which tries a space first and
+ * so fixes every fact cell at once; this helper stays because it is stricter —
+ * it keeps a number and its unit together, so the break lands at the ` · `
+ * rather than between `+37,466` and `credits`. So each figure goes in its own
  * `white-space: nowrap` span (`investigations.css`), the separator stays in the
  * text, and the cell's words are exactly the string `creditRowText` returns:
  * nothing a reader of the row's text — the census, a copy-paste — can tell apart.
