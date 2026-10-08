@@ -1,12 +1,25 @@
 /**
- * Product name shown in V2 chrome.
+ * Product name shown in V2 chrome — the VALUE now lives in `shared/brand.ts`.
  *
- * Founder ruling (plan §O-2, 2026-07-30): V2 ships as Klieg. The public
- * rebrand — domain, Google OAuth redirect URI, Resend sending domain,
- * Stripe-facing copy — is a founder-executed workstream (M5b) that gates
- * widening scope beyond the founder, not this constant.
+ * ⚠ **It moved there in #1955 and nothing about this file's contract changed.**
+ * The server needed the product's name — the identity PDF a customer downloads
+ * spelled it out in eight string literals — and a second constant for the same
+ * word is the drift working law 4 names and that `server/db/referrals.ts` has
+ * already recorded the cost of. The founder ruling that governs the value moved
+ * with it, so it is read where the value is.
+ *
+ * ⚠ **THE SHARED DECLARATION IS `PRODUCT_NAME`; THIS ALIAS IS WHY THE RENAME
+ * DID NOT TOUCH NINE CALL SITES.** It could not be called `BRAND_NAME` there:
+ * `server/casting/geminiPrompts.ts` has a dead `BRAND_NAME` of its own that
+ * #29 holds and nobody may delete yet, and a name declared under both
+ * `server/` and `shared/` goes silent in the un-wiring differ (its own arm
+ * says so). The reason is on the shared constant.
+ *
+ * `WORKSPACE_NAME` and `WORKSPACE_ROLE_LABEL` below stay here: they are chrome
+ * and have no server reader, and #381's whole point was that the workspace is a
+ * different noun from the product.
  */
-export const BRAND_NAME = "Klieg";
+export { PRODUCT_NAME as BRAND_NAME } from "@shared/brand";
 
 /**
  * THE WORKSPACE NAME — a different noun from the product name, and the reason

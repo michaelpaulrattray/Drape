@@ -1,5 +1,5 @@
 /**
- * Drape AI Service
+ * AI Service
  * Wrapper around geminiService for tRPC integration
  * Uses Google Gemini API directly with exact same models as reference app
  */
