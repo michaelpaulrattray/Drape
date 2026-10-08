@@ -81,8 +81,10 @@ export type CastSlotProjection = {
     question answered wrongly.
 
     ⚠ **A DELIVERED VIEW NOW CARRIES NO LABEL AND NO PER-VIEW OFFER AT ALL**,
-    which is his sentence verbatim. The only Try again left belongs to a view
-    that was REFUNDED — see {@link castSlotRetryOffer}.
+    which is his sentence verbatim. ~~The only Try again left belongs to a view
+    that was REFUNDED~~ — and since #2089 (his *"regenerate is the only
+    option"*) not even that: no slot carries a per-view offer, and the redo is
+    the room's one remedy. See {@link castSlotRetryOffer}.
   */
   /**
    * TRUE while a Try again on this view is actually running (#1235).
@@ -105,6 +107,10 @@ export type CastSlotProjection = {
    * the SAME function the retry entrance authorizes with — a second reading of
    * "may this be retried" would be working law 4's parallel copy on a money
    * surface, and it would drift toward offering a button the server refuses.
+   *
+   * ⚠ **NEVER SET SINCE #2089** — that function answers null for every slot,
+   * so no per-view offer reaches the room, and the room no longer reads the
+   * field. It leaves the wire with the `viewRetry` road, on its own card.
    */
   retry?: CastSlotRetry;
 };
@@ -387,6 +393,11 @@ export const TOTAL_LOSS_CONFESSION =
  * WHAT ASKING FOR THIS VIEW AGAIN COSTS — the single authority, read by the
  * room and by the entrance that spends the money.
  *
+ * ⚠ **IT ANSWERS NULL FOR EVERY SLOT SINCE #2089 (his *"regenerate is the only
+ * option"*, 2026-10-08).** The paragraphs below describe the offers it USED to
+ * make and are kept as the record of what a `viewRetry` operation row in the
+ * database was bought under; the body says why each is gone.
+ *
  * His rule, verbatim (2026-09-25): *"you pay 50 for each view you keep."*
  * ⚠ **The 50 in that sentence is history as of 2026-10-01 — a view is 1,000
  * ledger (200 display) under his approved pricing (#1601 item 1), and a paid
@@ -429,44 +440,44 @@ export const TOTAL_LOSS_CONFESSION =
  * because there is one reading and the server does it.
  */
 export function castSlotRetryOffer(
-  slot: Pick<CastSlotProjection, "state" | "standIn" | "refundedCredits">,
-  paidRetryPrice: number,
+  _slot: Pick<CastSlotProjection, "state" | "standIn" | "refundedCredits">,
+  _paidRetryPrice: number,
 ): CastSlotRetry | null {
-  if (slot.state === "failed-refunded") {
-    return { priceCredits: paidRetryPrice, reason: "refunded" };
-  }
-  if (slot.state !== "ready") return null;
   /*
-    THE STAND-IN IS A REFUNDED VIEW WEARING A PICTURE, so it says the same word
-    as the empty tile. Its own close-up never arrived and the money went back —
-    the only difference is that the signed face fills the hole rather than a
-    confession, which is a fact about the PICTURE and not about what happened.
-  */
-  if (slot.standIn === true) {
-    return slot.refundedCredits === null
-      ? null
-      : { priceCredits: paidRetryPrice, reason: "refunded" };
-  }
-  /*
-    ⚠ **THE UNCHECKED BRANCH STOOD HERE AND IS RETIRED — #1903 slice 3.**
+    ⚠ **NOTHING IS OFFERED ON ANY SLOT — #2089, his word of 2026-10-08
+    (terminal), verbatim and entire: *"regenerate is the only option"*.**
 
-    It read `if (slot.unjudged === true)` and answered `priceCredits: 0` the
-    first time and the paid price after (#1601 item 4's one-free-then-paid
-    accounting). Both roads are gone, and so is the third argument that carried
-    the accounting, because **there is no longer a free ask for the accounting
-    to ration.**
+    Two branches stood here and both are retired. A `failed-refunded` slot
+    answered a paid ask at the Try again price, and the legacy stand-in (a
+    `frontClose` whose own close-up was refunded, wearing her Master) answered
+    the same. #1903 slice 3 had already removed the third — the free ask under
+    a delivered view — and kept these two because she paid for a picture she
+    never received. His ruling on #2089 answers that case too: the remedy for
+    ANY view, arrived or refunded, is the whole-set redo
+    ({@link castPackageRedoOffer}, *Regenerate · 650 credits*), because views
+    are cut from two sheets and a single view re-made on its own matches its
+    siblings less well than a set made together.
 
-    **What replaces it is not a cheaper per-view ask — it is a different
-    remedy.** His ruling: a customer who does not like what arrived presses the
-    whole-package redo, which charges once and re-makes every view together so
-    the invented outfit stays consistent across the set. A per-view ask on a
-    DELIVERED picture had only ever existed to apologise for a check the
-    product no longer performs.
+    **This stays the single authority rather than being deleted**, and that
+    is the point of answering null here instead of at each caller: the room's
+    offer pass and the retry entrance's admission (`viewRetryService.ts`) both
+    ask THIS function, so the tile cannot draw a row and the till cannot take a
+    press that the other refuses. A tab left open before this deploy, still
+    showing *"Refunded · Try again"*, presses into a free `PRECONDITION_FAILED`
+    before the claim — nothing claimed, nothing charged, nothing rendered.
 
-    ⚠ **A `ready` view therefore falls through to `null` — no price, no word,
-    no row** — and that is the whole of *"a delivered view carries no label"*.
-    The two branches above are untouched: a view that was REFUNDED still has
-    something to ask for, because she paid for a picture she never received.
+    **The `viewRetry` road behind the admission is kept** — its claim, render,
+    settle and its recovery sweep — so a Try again already in flight at the
+    deploy still lands or refunds exactly as it was bought. Retiring the road
+    itself, and this signature with it, is a separate card; until then the
+    parameters are kept so the two callers read the same question they always
+    asked.
+
+    ⚠ **What the refunded tile still says is unchanged and still true**: the
+    Sign charges each view its own refundable slice (`CAST_PACKAGE_VIEW_PRICE`),
+    so a view that never arrived WAS refunded — {@link FAILED_SLOT_CONFESSION}.
+    A redo never writes a failure marker (a slot that does not re-arrive keeps
+    the picture it had), so the redo's flat price cannot reach that sentence.
   */
   return null;
 }

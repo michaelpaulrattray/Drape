@@ -25,11 +25,6 @@ import {
   PACKAGE_REDO_WORKING,
   packageRedoLabel,
 } from "@/features/castingV2/packageRedoRow";
-import {
-  VIEW_RETRY_LINK,
-  VIEW_RETRY_SEPARATOR,
-  VIEW_RETRY_WORDS,
-} from "@/features/castingV2/viewRetryRow";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { CAST_NAME_MAX_LENGTH } from "@shared/inputLimits";
 
@@ -148,14 +143,13 @@ export default function CastingRoom() {
   }).data?.enabled ?? false;
   const deleteCast = trpc.castingV2.deleteCast.useMutation();
   /*
-    TRY AGAIN ON ONE VIEW (#1208 slice 2, #1220 slice 2).
-
-    His rule, verbatim: *"you pay 50 for each view you keep."* The price is not
-    decided here and is not a constant in this file — it arrives on the slot
-    (`slot.retry.priceCredits`), from the same server reading that authorizes
-    the spend, so the button and the till can never disagree.
+    ⚠ **TRY AGAIN ON ONE VIEW STOOD HERE AND IS RETIRED — #2089, his word of
+    2026-10-08 (terminal), verbatim and entire: *"regenerate is the only
+    option"*.** The `retryView` mutation, its press handler and its toasts are
+    gone with the row that called them; the server answers no per-view offer on
+    any slot and refuses a stale press for free. The one remedy on this page is
+    the whole-set redo below.
   */
-  const retryView = trpc.castingV2.retryView.useMutation();
   /**
    * The angles WE have just pressed — the optimistic first frame, nothing more
    * (#1235).
@@ -217,70 +211,6 @@ export default function CastingRoom() {
   }, [config.data, navigate]);
 
   const data = cast.data;
-
-  /** Let this tile go once its own answer is in — the others are untouched. */
-  const release = (angle: string) => setAsking((current) => {
-    const next = new Set(current);
-    next.delete(angle);
-    return next;
-  });
-
-  /**
-   * Ask for one view again.
-   *
-   * The whole affordance: one press, no choice, no second dialog. The server
-   * re-reads whether this view may be asked for at all and what it costs, so a
-   * tile left open in another tab cannot spend against a slot that has since
-   * been filled.
-   */
-  const askAgain = (angle: string) => {
-    /* Per ANGLE, never per room: a second press on THIS tile is the only thing
-       to hold off, and the server refuses it anyway from the slot's own state
-       (#1235). Pressing a different view while this one renders is a thing the
-       product can do and now does. */
-    if (!data || asking.has(angle)) return;
-    setAsking((current) => new Set(current).add(angle));
-    retryView.mutate(
-      { clientRequestId: createClientRequestId(), castId: data.castId, angle: angle as never },
-      {
-        onSuccess: (result) => {
-          release(angle);
-          void utils.castingV2.getCast.invalidate({ castId: data.castId });
-          /*
-            NO TOAST ON SUCCESS — D-110's question, answered honestly: the
-            picture replacing the confession IS the notice, and it is a better
-            one than a sentence about it. The price was on the button before
-            the press, so nothing about the money is news either.
-          */
-          if (result.outcome === "ready") return;
-          /*
-            Truthful about the money even when it went wrong: a refund that did
-            not record is never reported as "you weren't charged" (the refund
-            law this product has had since D-64).
-          */
-          /*
-            The test stays on the LEDGER and only the printed number is
-            converted (#1600). Branching on the displayed figure would say
-            "You weren't charged" to somebody who was charged and refunded a
-            sum too small to show — and `creditDisplayFloor.test.ts` is
-            what keeps that sum impossible, at the price table rather than here.
-          */
-          /* #1940 / #1952: *"{N} credits returned."* and *"Nothing was made,
-             so nothing was charged."* — his approved receipts, 2026-10-08. */
-          toast(result.refundRecorded
-            ? (result.refundedCredits > 0
-              ? `It didn't arrive again. ${creditsReturnedText(result.refundedCredits)}`
-              : "It didn't arrive again. Nothing was made, so nothing was charged.")
-            : "It didn't arrive again — and the refund couldn't be recorded. Support can restore it.");
-        },
-        onError: (error) => {
-          release(angle);
-          logRawFailure('castingV2.retryView', error);
-          toast.error(readableFailure(error, "That view couldn't be asked for again."));
-        },
-      },
-    );
-  };
 
   /**
    * Ask for all her views again.
@@ -858,7 +788,7 @@ export default function CastingRoom() {
                       {askingAll ? (
                         /* ⚠ NOT `dpc-slot__row`, which is the muted line UNDER
                            A TILE. Borrowing it put a second element with that
-                           class above the strip, and `viewRetryRow.test.ts`
+                           class above the strip, and `viewRetryRow.test.ts` (deleted with the row, #2089)
                            slices the component from the FIRST one — so his two
                            Try again sentences were being read out of this header
                            instead. A guard whose anchor another element can
@@ -969,55 +899,18 @@ export default function CastingRoom() {
                         </button>
                         <span className="dpc-slot__label">{slot.label}</span>
                         {/*
-                          ONE MUTED LINE UNDER THE NAME, NOTHING ELSE (#1347) —
-                          his ruling on the real strip, 2026-09-26 (Desk reply
-                          224): *"Too heavy — the good tiles have become louder
-                          than the broken one… one muted line under the name,
-                          nothing else."* So the row is two lines everywhere:
-                          the name, then `Refunded · Try again`. A good view
-                          carries nothing, as it always did.
-
-                          ⚠ **AND SINCE #1903 SLICE 3 THERE IS ONLY ONE ROW.**
-                          This read *"`Unchecked · Try again` or `Refunded · Try
-                          again`"*; his 2026-10-07 ruling retired the check that
-                          produced *"Unchecked"* and the free ask under it, so a
-                          DELIVERED view now carries no row at all whatever the
-                          judge managed to say about it. The remedy for one she
-                          does not like is the paid whole-package redo on the
-                          room, not a per-view apology.
-
-                          **It supersedes two things he had ruled before, and
-                          both deliberately.** The caption that used to sit here
-                          (*"We didn't get to check this one"*, #1220) is gone —
-                          the single word says it. And the PRICE has left the
-                          link (#1208's *"one price on the button"*) on his
-                          *"No credit count in the row."*
-
-                          The word comes from the offer's own `reason`, so a
-                          word can never be drawn without the link under it, nor
-                          the link without its word — there is no shape in which
-                          the server offers one and not the other.
-
-                          ⚠ **AND THE WHOLE ROW LEAVES WHILE THE VIEW IS BEING
-                          MADE** rather than sitting there disabled with a verb
-                          on it (#1235). A tile that is working has nothing to
-                          offer: the server withholds the offer for as long as
-                          the operation runs, so a press that came back to a
-                          reloaded page cannot buy the same view twice.
+                          ⚠ **NOTHING UNDER THE NAME, ON ANY VIEW — #2089, his
+                          word of 2026-10-08: *"regenerate is the only
+                          option"*.** A muted `Refunded · Try again` row stood
+                          here (#1347's shape, his Desk reply 224) under a view
+                          that never arrived, and #1903 slice 3 had already
+                          taken its `Unchecked` sibling. Both are gone: the
+                          empty tile keeps its one true sentence above, and the
+                          remedy for any view, arrived or refunded, is the
+                          whole-set *Regenerate* on the row of things done to
+                          the whole Cast. The server offers no per-view ask, so
+                          there is nothing here for a client to draw.
                         */}
-                        {slot.retry && !beingAsked ? (
-                          <span className="dpc-slot__row">
-                            {VIEW_RETRY_WORDS[slot.retry.reason]}
-                            <span aria-hidden="true">{VIEW_RETRY_SEPARATOR}</span>
-                            <button
-                              type="button"
-                              className="dpc-slot__again"
-                              onClick={() => askAgain(slot.angle)}
-                            >
-                              {VIEW_RETRY_LINK}
-                            </button>
-                          </span>
-                        ) : null}
                       </article>
                       );
                     })}

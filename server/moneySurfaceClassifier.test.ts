@@ -1504,7 +1504,7 @@ describe("the Stripe-write reading — code that changes what Stripe holds (#190
 describe("the free-or-paid reading — a branch that decides WHETHER she pays (#2068)", () => {
   it.each([
     ["server/db/castingV2ViewRetry.ts", "the readers a refund is decided from, deferral included"],
-    ["server/castingV2/castProjection.ts", "castSlotRetryOffer — the price the button shows and the till charges"],
+    ["server/castingV2/castProjection.ts", "castPackageRedoOffer and castSlotRetryOffer — whether a button carries a price, and the till re-reads it"],
   ])("%s is a money diff (%s)", (file) => {
     expect(pathRe.test(file)).toBe(true);
   });
@@ -1549,21 +1549,26 @@ describe("the free-or-paid reading — a branch that decides WHETHER she pays (#
    * price a customer is charged is decided inside this module. If that ever
    * stops being true the entry is guarding nothing and this arm says so.
    */
-  it("castProjection.ts really decides the price: nothing for a delivered view, the price for a refunded one", async () => {
-    const { castSlotRetryOffer } = await import("./castingV2/castProjection");
+  it("castProjection.ts really decides the price: no per-view ask on any slot, and the redo's price only when she is ready", async () => {
+    const { castPackageRedoOffer, castSlotRetryOffer } = await import("./castingV2/castProjection");
     const PAID = 1234;
     /*
-      ⚠ THIS ARM DROVE THE FREE/PAID PAIR UNTIL #1903 SLICE 3 — one slot, two
-      answers, keyed on the third argument. Both the argument and the free
-      answer are deleted, so the branch it proves is now the one that survives:
-      a DELIVERED view has no price and a REFUNDED one has the Try again price.
-      That is still a price decided by a branch in this module, which is the
-      whole reason the file is on the list.
+      ⚠ THIS ARM DROVE THE FREE/PAID PAIR UNTIL #1903 SLICE 3, THEN DELIVERED
+      vs REFUNDED UNTIL #2089 (his *"regenerate is the only option"*,
+      2026-10-08). `castSlotRetryOffer` now answers null for every slot — a
+      refunded one included — and the entrance refuses on that null, so the
+      price-deciding branch that keeps this file on the list is the redo's:
+      `castPackageRedoOffer` puts a price on the button when she is ready and
+      none while she is building. Both functions are driven, because the
+      retirement is itself a money decision made in this module.
     */
     const delivered = { state: "ready", refundedCredits: null } as never;
     const refunded = { state: "failed-refunded", refundedCredits: 200 } as never;
     expect(castSlotRetryOffer(delivered, PAID)).toBeNull();
-    expect(castSlotRetryOffer(refunded, PAID)).toEqual({ priceCredits: PAID, reason: "refunded" });
+    expect(castSlotRetryOffer(refunded, PAID)).toBeNull();
+    const slots = [{}, {}] as never;
+    expect(castPackageRedoOffer({ status: "ready", slots }, PAID)).toEqual({ priceCredits: PAID });
+    expect(castPackageRedoOffer({ status: "building", slots }, PAID)).toBeNull();
     /* The injected price is neither of the product's own numbers, so a branch
        reaching for a constant cannot pass here by coincidence. */
     expect(PAID).toBe(1234);
