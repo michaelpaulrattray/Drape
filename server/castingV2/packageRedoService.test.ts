@@ -175,7 +175,15 @@ let pressReplay: unknown = null;
  * `status: "fenced"`), and `throw` is the road the repair moved the other
  * three onto. The default stays "land it", so no existing arm moves.
  */
-let commitBehaviour: Record<string, "null" | "throw"> = {};
+/**
+ * ⚠ `throw-once` EXISTS FOR THE RETRY QUESTION THE RELAY ASKED (#1903).
+ *
+ * A commit that throws rolls its transaction back, so the asset row it was
+ * inserting never exists; the attempt loop then asks again. What must be true
+ * is that the slot ends with exactly ONE asset, never two.
+ */
+let commitBehaviour: Record<string, "null" | "throw" | "throw-once"> = {};
+const commitThrows: Record<string, number> = {};
 /** Every `markGenerationOperationRunning` the service asked for, in order. */
 const running: Array<{
   operationId: string;
@@ -339,6 +347,15 @@ function dependencies(
       const behaviour = commitBehaviour[request.angle];
       if (behaviour === "null") return null;
       if (behaviour === "throw") throw new Error("the commit transaction was lost");
+      if (behaviour === "throw-once") {
+        commitThrows[request.angle] = (commitThrows[request.angle] ?? 0) + 1;
+        /* The FIRST call throws, as a lost transaction does, and leaves no row
+           behind it. Every later call behaves normally, which is what makes
+           the "exactly one asset" assertion mean something. */
+        if (commitThrows[request.angle] === 1) {
+          throw new Error("the commit transaction was lost after it was sent");
+        }
+      }
       committed.push({
         angle: request.angle,
         operationId: request.operationId,
@@ -441,6 +458,7 @@ beforeEach(() => {
   lockedAngles = new Set();
   pressReplay = null;
   commitBehaviour = {};
+  for (const key of Object.keys(commitThrows)) delete commitThrows[key];
   running.length = 0;
   handedOff.length = 0;
   receiptRefusals = new Set();
@@ -981,6 +999,46 @@ describe("a view whose commit did not land (review finding 1)", () => {
     expect(refunds).toEqual([]);
     /* The lease goes to the sweep rather than being sealed here. */
     expect(handedOff).toContain(derivedClientRequestId(PRESS, angle));
+  });
+
+  /**
+   * ⚠ **A COMMIT THAT WAS LOST LANDS ONE ASSET, NEVER TWO — the relay's
+   * interaction arm for #2039's retrying sheet road.**
+   *
+   * Its words: *"#2039's sheet road keeps retrying after an arrival-time
+   * throw, which for the redo can be the commit itself, so add an arm that a
+   * retried commit cannot land a second asset for one slot."*
+   *
+   * Read at the code, the redo runs on the sheet road, where `paidFrameInHand`
+   * is `false` (the frame is the coordinator's settled panel, so re-storing it
+   * costs no engine call) — so #1994's terminal break does NOT apply and a
+   * thrown commit IS re-attempted. The protection is the transaction: a commit
+   * that throws rolls back, so its row never existed and the next attempt
+   * inserts the first and only one.
+   *
+   * ⚠ **AND THE HONEST REMAINDER, because this arm cannot reach it:** if the
+   * statement COMMITTED and the acknowledgement was lost in transit, the row
+   * exists and the retry inserts a second. The customer sees one picture —
+   * `slotEvidence` takes the newest filled asset per angle — so the cost is a
+   * duplicate row and one storage object nobody will ever show. Closing it
+   * needs an idempotency key on the commit, which is a new control rather than
+   * part of this repair, and it is filed instead of folded in.
+   */
+  it("lands exactly one asset for a slot whose commit was lost and retried", async () => {
+    const angle = CAST_PACKAGE_VIEWS[2]!;
+    commitBehaviour = { [angle]: "throw-once" };
+
+    const result = await redoCastPackage(dependencies(), input);
+
+    /* The slot was DELIVERED — the retry is the point, not the failure. */
+    expect(result.committed).toContain(angle);
+    expect(result.failed).not.toContain(angle);
+    /* The commit was reached twice and landed ONCE. */
+    expect(commitThrows[angle]).toBeGreaterThan(1);
+    expect(committed.filter((row) => row.angle === angle)).toHaveLength(1);
+    /* Every slot delivered, so nothing comes back under the flat price. */
+    expect(result.refundedCredits).toBe(0);
+    expect(refunds).toEqual([]);
   });
 
   it("⚠ a press whose every slot fenced refunds the whole price", async () => {
