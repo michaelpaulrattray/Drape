@@ -1,7 +1,7 @@
 {
-  "edition": 661,
-  "updatedAt": "2026-10-08T17:27:05.927Z",
-  "shift": "Foreman — foreman-20261009-015956",
+  "edition": 662,
+  "updatedAt": "2026-10-08T20:28:00.000Z",
+  "shift": "Foreman — foreman-20261009-035302",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -126,7 +126,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-08T17:26:26.224Z",
+      "readAt": "2026-10-08T20:28:13.051Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -6861,6 +6861,13 @@
   ],
   "pipeline": [
     {
+      "id": "press-busy-pin-1903",
+      "title": "The redo's own row can never be mistaken for a picture being made (#1903)",
+      "status": "merged",
+      "prNumber": 2078,
+      "note": "A safety check with its reason attached, so the next person to touch that list is told what breaks."
+    },
+    {
       "id": "slider-grant-invoice-1832",
       "title": "The renewal credit grant reads the bill that was paid, not where the dial sits now (#1832)",
       "status": "merged",
@@ -6870,9 +6877,9 @@
     {
       "id": "package-redo-1903-slice2",
       "title": "Ask for all views again — the paid redo of a whole signed package, 650 credits (#1903 slice 2)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1924,
-      "note": "Repaired and waiting on the reviewer. Two money faults were found in it and are closed: a redo could have been refunded and still handed over its new pictures, and the rule deciding that refund was written out twice in two places."
+      "note": "Live. The last money fault is closed: a clean-up could have given your 650 credits back while the new pictures were still arriving, so you would have kept both."
     },
     {
       "id": "pro-plus-rename-1900",
@@ -9838,6 +9845,13 @@
   ],
   "problems": [
     {
+      "id": "stale-run-row-2079",
+      "severity": "warning",
+      "state": "open",
+      "title": "Your Working now table has shown a finished shift as running for ten hours (#2079)",
+      "detail": "Two nights in a row a shift read that row, could not prove the job was dead, and correctly left it rather than guess. A sibling row WAS settled tonight, because its log recorded that the session had hit its limit; this one has no such record, and the check that would have answered it cannot work on a lane that runs two jobs at once. The repair is to write down which process a job belongs to, so finished is something we read instead of infer."
+    },
+    {
       "id": "advisory-gate-blind-1899",
       "severity": "warning",
       "state": "resolved",
@@ -10238,7 +10252,7 @@
     271
   ],
   "nextUp": {
-    "readAt": "2026-10-08T17:26:26.223Z",
+    "readAt": "2026-10-08T20:28:13.051Z",
     "items": [
       {
         "issueNumber": 1903,
@@ -10295,7 +10309,11 @@
       {
         "issueNumber": 1952,
         "title": "Customer pricing wording: price on every paid button, plain receipts, renewal and cancel lines (top-ups never expire)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "PR #1924 and card #1968 for the Sign and redo button prices, plus a job-card receipt surface that does not exist yet. Nothing else is left."
+        }
       },
       {
         "issueNumber": 1966,
