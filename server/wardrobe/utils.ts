@@ -13,6 +13,7 @@ import {
 import { randomUUID } from "node:crypto";
 import { withTextQueue, withImageQueue } from "../casting/geminiQueue";
 import { storagePut } from "../storage";
+import { putWardrobeScratchUpload } from "./scratchUpload";
 import { createModuleLogger } from "../logging/logger";
 
 const log = createModuleLogger("wardrobe/utils");
@@ -142,7 +143,59 @@ export async function toInlinePart(
   return { inlineData: { data, mimeType } };
 }
 
-/** Upload a base64 data URL to S3 and return the public URL */
+/**
+ * A TRY-ON RESULT, REGISTERED BEFORE IT EXISTS (#1980).
+ *
+ * `vto.generate`, `vto.incremental` (both of its exits) and `vto.refine` wrote
+ * their result through {@link uploadBase64ToS3} and then recorded it on
+ * `wardrobeSessions.history` — **only when the request carried a session that
+ * was found**. With none, the URL went back to the client and nothing in the
+ * product ever named the key again: a permanently public object no cleanup
+ * could reach.
+ *
+ * So the result goes through {@link putWardrobeScratchUpload} — #1961's
+ * register-before-write, not a second mechanism — and the receipt it returns
+ * travels back to the route, which hands it to `appendSessionResult`. That
+ * discharges the manifest IN THE SAME TRANSACTION that writes the URL onto the
+ * session's history, so the two outcomes are the only two there are: a session
+ * holds the key and the manifest is gone, or no session holds it and the
+ * worker collects it once `WARDROBE_SCRATCH_HOLD_MS` has passed.
+ *
+ * The bytes, the key's shape (`wardrobe/<id>/vto-results/<ms>-<uuid>.png`) and
+ * the content type are exactly `uploadBase64ToS3`'s, so the account-erasure
+ * sweep's prefix reading (`wardrobeOwnedKeyPrefixes`) is unchanged.
+ */
+export async function uploadTryOnResult(
+  base64DataUrl: string,
+  userId: string,
+): Promise<{ url: string; cleanupBatchId: string }> {
+  /* The pipeline carries the account id as a string (it is a chat-session key
+     too). A manifest belongs to an account by its numeric id, and a value that
+     does not round-trip is refused rather than registered under a wrong
+     owner — the write then never happens, which is the safe side. */
+  const ownerId = Number(userId);
+  if (!Number.isSafeInteger(ownerId) || ownerId <= 0 || String(ownerId) !== userId) {
+    throw new Error(`a try-on result needs a numeric account id, got "${userId}"`);
+  }
+  const base64Data = base64DataUrl.replace(/^data:.*?;base64,/, "");
+  const { url, cleanupBatchId } = await putWardrobeScratchUpload({
+    userId: ownerId,
+    key: `wardrobe/${ownerId}/vto-results/${Date.now()}-${randomUUID()}.png`,
+    bytes: Buffer.from(base64Data, "base64"),
+    contentType: "image/png",
+  });
+  return { url, cleanupBatchId };
+}
+
+/**
+ * Upload a base64 data URL to S3 and return the public URL.
+ *
+ * ⚠ **ONE CALLER IS LEFT, AND IT IS THE ONE WHOSE ROW RECORDS THE KEY**: the
+ * flat-lay `digitizeGarment` returns, which `garments.upload` writes onto the
+ * garment as `isolatedImageUrl`. The try-on results moved to
+ * {@link uploadTryOnResult} (#1980). A new caller whose result is not written
+ * onto a row before the request ends belongs there, not here.
+ */
 export async function uploadBase64ToS3(
   base64DataUrl: string,
   prefix: string,

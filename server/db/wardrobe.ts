@@ -47,10 +47,11 @@ export class GarmentPictureReceiptError extends Error {
  * for deletion?* instead of inheriting an answer.
  *
  * ⚠ Pass `[]` only when the garment's objects were never registered — and that
- * is a sibling defect rather than a clean state: `garments.upload` writes its
- * own `original-*` key with a bare `storagePut` and no manifest at all, so a
- * crash between the put and this insert leaves an orphan. Filed on its own
- * card; it is a window, not an orphan at birth, and the row does own the key.
+ * is a defect rather than a clean state, because a picture written before its
+ * row with no manifest is an orphan if the request dies in between. **No
+ * caller passes `[]` today**: `garments.upload` was the last one, and since
+ * #2021 its photograph goes through `putWardrobeScratchUpload` and the receipt
+ * comes here.
  */
 export async function createGarment(
   data: InsertWardrobeGarment,
@@ -287,6 +288,72 @@ export async function updateSession(
         eq(wardrobeSessions.userId, userId),
       ),
     );
+}
+
+/**
+ * A try-on result joins a session's history, and the session ADOPTS it (#1980).
+ *
+ * `vto.generate`, `vto.incremental` and `vto.refine` each read the session,
+ * pushed the URL in TypeScript and wrote the whole array back — three
+ * statements and no lock. Their result is now registered in a cleanup manifest
+ * before its bytes exist (`uploadTryOnResult`), so the history write is also
+ * where the manifest must be discharged, and the read-then-write had to close
+ * first: two results landing at once would each read the same history, the
+ * second write would drop the first URL, and BOTH manifests would be
+ * discharged — one object named by nothing, which is the orphan this card
+ * exists to end, now with a receipt saying it was kept.
+ *
+ * So the read takes the row `FOR UPDATE`, the push, the write and the
+ * discharge happen in one transaction, and a discharge that does not remove
+ * exactly one undischarged batch for this owner throws and rolls the history
+ * back with it (`createGarment`'s rule, one table over). Until this commits, a
+ * crash leaves the manifest standing and the worker collects the object, which
+ * is correct: no row names it.
+ *
+ * Returns `false`, touching nothing, when the session is not this account's —
+ * the result is then left to its manifest, exactly as the no-session road is.
+ */
+export async function appendSessionResult(input: {
+  sessionId: number;
+  userId: number;
+  resultUrl: string;
+  /** The manifest `uploadTryOnResult` registered for `resultUrl`. */
+  cleanupBatchId: string;
+  patch?: Omit<Partial<InsertWardrobeSession>, "history" | "historyIndex" | "userId" | "id">;
+}): Promise<boolean> {
+  return withTransaction(async (tx) => {
+    const [session] = await tx
+      .select({ id: wardrobeSessions.id, history: wardrobeSessions.history })
+      .from(wardrobeSessions)
+      .where(and(
+        eq(wardrobeSessions.id, input.sessionId),
+        eq(wardrobeSessions.userId, input.userId),
+      ))
+      .limit(1)
+      .for("update");
+    if (!session) return false;
+
+    const history = [...((session.history as string[] | null) ?? []), input.resultUrl];
+    await tx
+      .update(wardrobeSessions)
+      .set({ ...input.patch, history, historyIndex: history.length - 1 })
+      .where(and(
+        eq(wardrobeSessions.id, input.sessionId),
+        eq(wardrobeSessions.userId, input.userId),
+      ));
+
+    await tx.delete(storageCleanupItems)
+      .where(eq(storageCleanupItems.batchId, input.cleanupBatchId));
+    const released = await tx.delete(storageCleanupBatches).where(and(
+      eq(storageCleanupBatches.id, input.cleanupBatchId),
+      eq(storageCleanupBatches.userId, input.userId),
+      undischargedStorageCleanupBatchWhere(),
+    ));
+    if (affectedRows(released) !== 1) {
+      throw new GarmentPictureReceiptError("no undischarged manifest for this try-on result");
+    }
+    return true;
+  });
 }
 
 export async function deleteSession(sessionId: number, userId: number) {

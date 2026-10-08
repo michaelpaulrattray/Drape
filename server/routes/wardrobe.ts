@@ -23,7 +23,7 @@ import {
   createGarment, getGarmentById, getOwnedGarmentsByIds, getUserGarments, getUserGarmentsBySlot,
   updateGarment, deleteGarment,
   createOutfit, getUserOutfits, getOutfitById, deleteOutfit,
-  createSession, getSessionById, getUserSessions, updateSession, deleteSession,
+  createSession, getSessionById, getUserSessions, updateSession, deleteSession, appendSessionResult,
   getLatestUserSession, getRecentUserSessions, capUserSessions,
   createGeneration,
   saveLook, getUserLooksByModel, getUserLooks, renameLook, deleteLook,
@@ -33,7 +33,6 @@ import {
   getUserMintedModelsWithThumbnailForRead,
 } from "../casting/modelReadProjections";
 import { captureSnapshotReadMode } from "../casting/snapshotReadScope";
-import { storagePut } from "../storage";
 import { putWardrobeScratchUpload } from "../wardrobe/scratchUpload";
 import {
   adoptGarmentPictures,
@@ -137,28 +136,34 @@ const garmentRouter = router({
       throwIfRateLimited(ctx.user.id);
       await enforceDailyQuota(ctx.user.id);
 
-      // Upload original image to S3
+      /* THE PHOTOGRAPH IS REGISTERED BEFORE IT IS WRITTEN (#2021). It used to
+         be a bare `storagePut` one statement ahead of the insert, so a request
+         that died in between — a database hiccup, a deploy — left her
+         photograph on a permanently public key that no row and no manifest
+         named. Now a held manifest names the key first, and `createGarment`
+         discharges it IN THE SAME TRANSACTION as the insert: either the row
+         owns the key, or the worker collects it. */
       const suffix = randomUUID();
       const fileKey = `${ctx.user.id}-wardrobe/original-${Date.now()}-${suffix}.png`;
       const imageBuffer = Buffer.from(
         input.imageBase64.replace(/^data:image\/\w+;base64,/, ""),
         "base64",
       );
-      const { url: originalUrl } = await storagePut(fileKey, imageBuffer, "image/png");
+      const { url: originalUrl, cleanupBatchId: originalReceipt } = await putWardrobeScratchUpload({
+        userId: ctx.user.id,
+        key: fileKey,
+        bytes: imageBuffer,
+        contentType: "image/png",
+      });
 
-      /* Create garment record (status: processing). NO RECEIPTS: this road
-         writes its own `original-*` key above and registers no manifest for it,
-         so there is nothing to discharge — the row owns the key and the account
-         sweep reads it. That the put is unregistered at all is a sibling of
-         #1961 and is filed on its own card: a crash between the put and this
-         insert leaves an orphan. It is a window, not an orphan at birth. */
+      // Create garment record (status: processing) — the row adopts the photograph.
       const garmentId = await createGarment({
         userId: ctx.user.id,
         slotType: input.slotType,
         originalImageUrl: originalUrl,
         originalImageKey: fileKey,
         status: "processing",
-      }, []);
+      }, [originalReceipt]);
 
       // Create generation record
       const genResult = await createGeneration({
@@ -351,20 +356,25 @@ const vtoRouter = router({
         },
       );
 
-      // Update session history if provided
+      /* THE SESSION ADOPTS THE RESULT, OR THE WORKER COLLECTS IT (#1980). The
+         result was registered in a cleanup manifest before its bytes were
+         written; `appendSessionResult` writes it onto the history and
+         discharges that manifest in one transaction. With no session, or one
+         that is not this account's, nothing discharges it — the picture stays
+         reachable for the scratch hold and is then swept, where it used to sit
+         at a public URL that nothing named, for ever. */
       if (input.sessionId) {
-        const session = await getSessionById(input.sessionId, ctx.user.id);
-        if (session) {
-          const history = (session.history as string[] || []);
-          history.push(result.resultUrl);
-          await updateSession(input.sessionId, ctx.user.id, {
-            history,
-            historyIndex: history.length - 1,
+        await appendSessionResult({
+          sessionId: input.sessionId,
+          userId: ctx.user.id,
+          resultUrl: result.resultUrl,
+          cleanupBatchId: result.cleanupBatchId,
+          patch: {
             activeGarmentIds: input.garmentIds,
             ...(input.tattooMap ? { tattooMapData: input.tattooMap } : {}),
             ...(input.styleNotes ? { styleNotes: input.styleNotes } : {}),
-          });
-        }
+          },
+        });
       }
 
       log.info(`VTO generated for user ${ctx.user.id} with ${garments.length} garments`);
@@ -454,20 +464,19 @@ const vtoRouter = router({
         },
       );
 
-      // Persist incremental result to DB session
+      // The session adopts the result, or the worker collects it (#1980 — see `generate`).
       if (input.sessionId) {
-        const session = await getSessionById(input.sessionId, ctx.user.id);
-        if (session) {
-          const history = (session.history as string[] || []);
-          history.push(result.resultUrl);
-          await updateSession(input.sessionId, ctx.user.id, {
-            history,
-            historyIndex: history.length - 1,
+        await appendSessionResult({
+          sessionId: input.sessionId,
+          userId: ctx.user.id,
+          resultUrl: result.resultUrl,
+          cleanupBatchId: result.cleanupBatchId,
+          patch: {
             activeGarmentIds: input.allGarmentIds,
             ...(input.tattooMap ? { tattooMapData: input.tattooMap } : {}),
             ...(input.styleNotes ? { styleNotes: input.styleNotes } : {}),
-          });
-        }
+          },
+        });
       }
 
       return { resultUrl: result.resultUrl };
@@ -554,17 +563,14 @@ const vtoRouter = router({
         },
       );
 
-      // Persist refinement result to DB session
+      // The session adopts the result, or the worker collects it (#1980 — see `generate`).
       if (input.sessionId) {
-        const session = await getSessionById(input.sessionId, ctx.user.id);
-        if (session) {
-          const history = (session.history as string[] || []);
-          history.push(result.resultUrl);
-          await updateSession(input.sessionId, ctx.user.id, {
-            history,
-            historyIndex: history.length - 1,
-          });
-        }
+        await appendSessionResult({
+          sessionId: input.sessionId,
+          userId: ctx.user.id,
+          resultUrl: result.resultUrl,
+          cleanupBatchId: result.cleanupBatchId,
+        });
       }
 
       return { resultUrl: result.resultUrl };
