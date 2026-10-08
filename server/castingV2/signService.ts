@@ -138,7 +138,7 @@ export type InkCropDisposition =
       | "unmeasuredPlacement"
       | "unnameableSlot";
   };
-import { CASTING_V2_SIGN_PRICE_CREDITS } from "./castViewPackage";
+import { CASTING_V2_SIGN_PRICE_CREDITS } from "../casting/castingCreditCosts";
 import { buildCastPackage, type PackageOrchestratorDependencies } from "./packageOrchestrator";
 import { assertNotFrozen } from "./spendGuards";
 
@@ -1090,6 +1090,10 @@ async function completeSignPackage(
       modelId: input.modelId,
       identityRevisionId: input.identityRevisionId,
       identityText: input.identityText,
+      /* What the deduct actually took for THIS Sign, threaded from the
+         entrance rather than re-read from a constant, so a total loss gives
+         back what was charged even across a price change (#1968). */
+      chargedCredits: input.chargedCredits,
       anchor: anchorBytes,
       inkCrops: delivered.crops,
       pronouns: input.pronouns,

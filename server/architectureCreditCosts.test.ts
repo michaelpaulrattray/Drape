@@ -60,15 +60,11 @@ import {
   CASTING_V2_FOLLOW_PRICE_CREDITS,
   CASTING_V2_REFINE_PRICE_CREDITS,
   CASTING_V2_ROLL_PRICE_CREDITS,
-  CASTING_V2_SIGN_COSTS,
+  CASTING_V2_SIGN_PRICE_CREDITS,
   CASTING_V2_VIEW_RETRY_PRICE_CREDITS,
   CREDIT_COSTS,
 } from "./casting/castingCreditCosts";
 import { INK_ADD_PRICE_CREDITS } from "./casting/evidence/evidenceCandidateContract";
-import {
-  CASTING_V2_SIGN_PRICE_CREDITS,
-  CAST_PACKAGE_VIEW_PRICE,
-} from "./castingV2/castViewPackage";
 import { WARDROBE_CREDIT_COSTS } from "./wardrobe/creditCosts";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -278,10 +274,6 @@ describe("the committed Atlas against the values TypeScript evaluates", () => {
         ([member, value]) =>
           [CASTING, `CASTING_V2_COSTS.${member}`, value] as [string, string, number],
       ),
-      ...Object.entries(CASTING_V2_SIGN_COSTS).map(
-        ([member, value]) =>
-          [CASTING, `CASTING_V2_SIGN_COSTS.${member}`, value] as [string, string, number],
-      ),
       ...Object.entries(WARDROBE_CREDIT_COSTS).map(
         ([member, value]) =>
           [WARDROBE, `WARDROBE_CREDIT_COSTS.${member}`, value] as [string, string, number],
@@ -322,10 +314,14 @@ describe("the committed Atlas against the values TypeScript evaluates", () => {
     expect(atlasCredits(CASTING, "CASTING_V2_FOLLOW_PRICE_CREDITS")).toBe(
       CASTING_V2_FOLLOW_PRICE_CREDITS,
     );
-    expect(atlasCredits(PACKAGE, "CASTING_V2_SIGN_PRICE_CREDITS")).toBe(
+    /* ⚠ **THE SIGN PRICE MOVED MODULE WITH #1968** — it is a flat number he set,
+       declared beside every other price in `castingCreditCosts.ts`, so the
+       atlas reports it under CASTING rather than under the package module. Its
+       companion row `CAST_PACKAGE_VIEW_PRICE` is gone with the per-view slice
+       the card retired. */
+    expect(atlasCredits(CASTING, "CASTING_V2_SIGN_PRICE_CREDITS")).toBe(
       CASTING_V2_SIGN_PRICE_CREDITS,
     );
-    expect(atlasCredits(PACKAGE, "CAST_PACKAGE_VIEW_PRICE")).toBe(CAST_PACKAGE_VIEW_PRICE);
     expect(atlasCredits(CASTING, "CASTING_V2_REFINE_PRICE_CREDITS")).toBe(
       CASTING_V2_REFINE_PRICE_CREDITS,
     );

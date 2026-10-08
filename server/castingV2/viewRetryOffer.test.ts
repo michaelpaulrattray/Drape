@@ -7,7 +7,19 @@ import {
   projectSignedCast,
 } from "./castProjection";
 import { CASTING_V2_VIEW_RETRY_PRICE_CREDITS } from "../casting/castingCreditCosts";
-import { CAST_PACKAGE_VIEW_PRICE } from "./castViewPackage";
+
+/**
+ * What a view's slice was refunded under the rule #1968 retired — a LEDGER and
+ * ROW fact, not a product constant.
+ *
+ * ⚠ **It was `CAST_PACKAGE_VIEW_PRICE` and that constant is gone.** His word of
+ * 2026-10-08 makes a Sign one flat charge with no per-view refund, so nothing
+ * in the tree can produce this number any more — but Casts signed before it
+ * carry slot markers that say exactly this, and the room still reads them. A
+ * literal on purpose: deriving it from a live constant would be a fiction that
+ * moves with his next price word.
+ */
+const LEGACY_VIEW_SLICE = 1000;
 
 /*
   `storagePublicUrl` reads the R2 config from an import-time ENV snapshot and
@@ -104,7 +116,7 @@ const anchor = () =>
   });
 
 /** A written-off view: the marker the room confesses from. */
-const failed = (viewType: string, refunded = CAST_PACKAGE_VIEW_PRICE) =>
+const failed = (viewType: string, refunded = LEGACY_VIEW_SLICE) =>
   asset({
     id: 500 + viewType.length,
     viewType: viewType as ModelAsset["viewType"],
@@ -143,7 +155,7 @@ describe("what a tile offers, and what it costs", () => {
     /*
       ⚠ **IT WAS THE VIEW'S PRICE UNTIL 2026-10-01 AND THIS ARM COULD NOT TELL
       WHICH CONSTANT THE CODE READ.** Both callers passed
-      `CAST_PACKAGE_VIEW_PRICE` into `castSlotRetryOffer`, so an arm asserting
+      the view's own slice into `castSlotRetryOffer`, so an arm asserting
       the view price proved only that the offer carried SOME number. A paid Try
       again is its own price under his approved pricing (#1601 item 1) — 1,850
       against a view's 1,000 — so the two are asserted apart and the arm names
@@ -157,7 +169,7 @@ describe("what a tile offers, and what it costs", () => {
     });
     /* The control that the arm above is about the Try again price and not
        about a view's: a code path still reading the view price fails here. */
-    expect(CASTING_V2_VIEW_RETRY_PRICE_CREDITS).not.toBe(CAST_PACKAGE_VIEW_PRICE);
+    expect(CASTING_V2_VIEW_RETRY_PRICE_CREDITS).not.toBe(LEGACY_VIEW_SLICE);
   });
 
   /**
@@ -202,7 +214,7 @@ describe("what a tile offers, and what it costs", () => {
     const slot = slots.get("frontClose");
     expect(slot?.standIn).toBe(true);
     /* What went BACK is the view's slice — that is what was charged for it. */
-    expect(slot?.refundedCredits).toBe(CAST_PACKAGE_VIEW_PRICE);
+    expect(slot?.refundedCredits).toBe(LEGACY_VIEW_SLICE);
     /* What asking again COSTS is the Try again price, which is a different
        number since #1601 item 1. The two sit side by side here on purpose:
        this slot is the one place a refund and a re-purchase are both visible,

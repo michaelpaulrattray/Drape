@@ -127,18 +127,29 @@ import {
   hashGenerationOperationClaim,
 } from "../casting/operationContract";
 import { CASTING_V2_VIEW_RETRY_PRICE_CREDITS } from "../casting/castingCreditCosts";
-import { CAST_PACKAGE_VIEW_PRICE } from "./castViewPackage";
+/**
+ * What a view's slice was refunded under the rule #1968 retired — a LEDGER and
+ * ROW fact, not a product constant.
+ *
+ * ⚠ **It was `LEGACY_VIEW_SLICE` and that constant is gone.** His word of
+ * 2026-10-08 makes a Sign one flat charge with no per-view refund, so nothing
+ * in the tree can produce this number any more — but Casts signed before it
+ * carry slot markers that say exactly this, and the room still reads them. A
+ * literal on purpose: deriving it from a live constant would be a fiction that
+ * moves with his next price word.
+ */
+const LEGACY_VIEW_SLICE = 1000;
 
 /**
  * TWO PRICES SINCE 2026-10-01, AND THIS SUITE READ ONE CONSTANT FOR BOTH.
  *
  * ⚠ **#1601 item 1 made the paid Try again its own price (1,850 ledger / 370
  * display) where it had been a view's (1,000 / 200).** Every arm below that
- * said `CAST_PACKAGE_VIEW_PRICE` was saying one of two different things, and
+ * said `LEGACY_VIEW_SLICE` was saying one of two different things, and
  * while the numbers agreed nothing could tell them apart:
  *
  *   • what went BACK for the original view — the view's own slice, which is
- *     what was charged for it. Still `CAST_PACKAGE_VIEW_PRICE`.
+ *     what was charged for it. Still `LEGACY_VIEW_SLICE`.
  *   • what asking AGAIN costs — the Try again price, which is what this
  *     service charges, refunds and writes onto the new row.
  *
@@ -197,7 +208,7 @@ function slot(overrides: Partial<CastSlotProjection> = {}): CastSlotProjection {
     state: "failed-refunded",
     url: null,
     note: "This view didn't arrive — refunded",
-    refundedCredits: CAST_PACKAGE_VIEW_PRICE,
+    refundedCredits: LEGACY_VIEW_SLICE,
     /*
       ⚠ The `as` below means this object does NOT have to satisfy the type, so
       `reason` was the only one of the three fixtures in this file that the
@@ -1059,7 +1070,7 @@ describe("deliveredOutfitKeysFrom — which key belongs to which angle (#1474)",
     resolution: "2K",
     storageUrl: "https://cdn.example/view.png",
     storageKey: "key",
-    pointsCost: CAST_PACKAGE_VIEW_PRICE,
+    pointsCost: LEGACY_VIEW_SLICE,
     pinned: false,
     status: null,
     provenance: {},
@@ -1097,7 +1108,7 @@ describe("deliveredOutfitKeysFrom — which key belongs to which angle (#1474)",
         viewType: "frontFull",
         storageUrl: "",
         storageKey: "a-key-on-a-confession",
-        status: { state: "failed", reason: "didn't arrive", refunded: CAST_PACKAGE_VIEW_PRICE },
+        status: { state: "failed", reason: "didn't arrive", refunded: LEGACY_VIEW_SLICE },
       }),
     ])).toEqual({});
   });
@@ -1346,7 +1357,7 @@ describe("only a catastrophe takes a retried picture away", () => {
   it("a PAID try again nobody could judge still ARRIVES — charged, kept, not refunded", async () => {
     const refunded = slot({
       state: "failed-refunded",
-      refundedCredits: CAST_PACKAGE_VIEW_PRICE,
+      refundedCredits: LEGACY_VIEW_SLICE,
       retry: { priceCredits: TRY_AGAIN_PRICE, reason: "refunded" },
     });
     const result = await retryCastView(
@@ -1364,7 +1375,7 @@ describe("only a catastrophe takes a retried picture away", () => {
   it("⚠ and one whose IDENTITY is turned down still does not arrive, and the money goes back", async () => {
     const refunded = slot({
       state: "failed-refunded",
-      refundedCredits: CAST_PACKAGE_VIEW_PRICE,
+      refundedCredits: LEGACY_VIEW_SLICE,
       retry: { priceCredits: TRY_AGAIN_PRICE, reason: "refunded" },
     });
     const result = await retryCastView(
@@ -1427,7 +1438,7 @@ describe("only a catastrophe takes a retried picture away", () => {
     it(`a PAID try again refused on ${axis} does not arrive, and the money goes back`, async () => {
       const refunded = slot({
         state: "failed-refunded",
-        refundedCredits: CAST_PACKAGE_VIEW_PRICE,
+        refundedCredits: LEGACY_VIEW_SLICE,
         retry: { priceCredits: TRY_AGAIN_PRICE, reason: "refunded" },
       });
       const result = await retryCastView(
@@ -1470,7 +1481,7 @@ describe("the settled line, one per Try again (#1608)", () => {
   const paidSlot = () =>
     slot({
       state: "failed-refunded",
-      refundedCredits: CAST_PACKAGE_VIEW_PRICE,
+      refundedCredits: LEGACY_VIEW_SLICE,
       retry: { priceCredits: TRY_AGAIN_PRICE, reason: "refunded" },
     });
 

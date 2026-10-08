@@ -125,7 +125,7 @@ import {
   selectVariant,
 } from "../db/castingV2Variants";
 import { filedSubjectsOf } from "../castingV2/refineDelta";
-import { CASTING_V2_SIGN_PRICE_CREDITS } from "../castingV2/castViewPackage";
+import { CASTING_V2_SIGN_PRICE_CREDITS } from "../casting/castingCreditCosts";
 import { CASTING_V2_REFINE_PRICE_CREDITS } from "../casting/castingCreditCosts";
 import { CASTING_V2_ROLL_TYPICAL_SECONDS } from "../castingV2/rollDuration";
 import { projectSignedCast } from "../castingV2/castProjection";

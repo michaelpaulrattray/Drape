@@ -36,7 +36,11 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { CASTING_V2_COSTS, CASTING_V2_SIGN_COSTS, CREDIT_COSTS } from "./casting/castingCreditCosts";
+import {
+  CASTING_V2_COSTS,
+  CASTING_V2_SIGN_PRICE_CREDITS,
+  CREDIT_COSTS,
+} from "./casting/castingCreditCosts";
 import { displayBalance, displayPrice, displayRefund } from "../shared/creditDisplay";
 
 /**
@@ -52,8 +56,11 @@ import { displayBalance, displayPrice, displayRefund } from "../shared/creditDis
  */
 const REFUNDABLE_LEDGER_AMOUNTS: readonly { name: string; ledger: number }[] = [
   { name: "CASTING_V2_COSTS.rollCandidate", ledger: CASTING_V2_COSTS.rollCandidate },
-  { name: "CASTING_V2_SIGN_COSTS.promotion", ledger: CASTING_V2_SIGN_COSTS.promotion },
-  { name: "CASTING_V2_SIGN_COSTS.view", ledger: CASTING_V2_SIGN_COSTS.view },
+  /* ⚠ **ONE ROW WHERE THERE WERE TWO — #1968.** `CASTING_V2_SIGN_COSTS.promotion`
+     and `.view` were the Sign’s two refundable parts; his flat price makes the
+     whole charge the only thing that can be handed back, so the amount this
+     floor has to hold is that one figure. */
+  { name: "CASTING_V2_SIGN_PRICE_CREDITS", ledger: CASTING_V2_SIGN_PRICE_CREDITS },
   { name: "CREDIT_COSTS.castingImage", ledger: CREDIT_COSTS.castingImage },
   { name: "CREDIT_COSTS.fullBody", ledger: CREDIT_COSTS.fullBody },
   { name: "CREDIT_COSTS.multiView", ledger: CREDIT_COSTS.multiView },

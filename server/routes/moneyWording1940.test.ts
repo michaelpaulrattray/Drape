@@ -55,7 +55,7 @@ import {
   cancelledPlanSegment,
   planCancelledReceipt,
 } from "@shared/planCancelCopy";
-import { bareReason, creditsReturnedText, refundOutcomeText } from "@shared/refundCopy";
+import { bareReason, creditsReturnedText, joinSentences, refundOutcomeText } from "@shared/refundCopy";
 import { displayRefund, formatCredits } from "@shared/creditDisplay";
 
 const ROOT = resolve(import.meta.dirname, "../..");
@@ -178,17 +178,36 @@ describe("#1940 B13/B14/B17 — one sentence for credits that came back", () => 
 
 describe("#1940 B18 — the failed view's line, composed the way ViewTabs composes it", () => {
   const source = read("client/src/features/casting/components/ImageViewer/ViewTabs.tsx");
-  const EXPRESSION = "${label}: ${bareReason(failure.reason)}. ${refundOutcomeText(failure)}";
+  /*
+    ⚠ **THE SURFACE JOINS NOW INSTEAD OF INTERPOLATING — #1968.** It read one
+    template literal, `"${label}: ${bareReason(failure.reason)}. "` followed by
+    the money half. A refused view on a signed package refunds nothing, so that
+    half can be the empty string and interpolating it would leave a double
+    space; the two parts go through `joinSentences` instead. Both are still read
+    out of the real component, which is the whole point of this arm — a quoted
+    composition is a mirror (working law 4) and this is what catches it moving.
+  */
+  const REASON_PART = "`${label}: ${bareReason(failure.reason)}.`";
+  const MONEY_PART = "refundOutcomeText(failure)";
 
   it("the surface still composes the line this arm models", () => {
-    expect(source).toContain(EXPRESSION);
+    expect(source).toContain(REASON_PART);
+    expect(source).toContain(MONEY_PART);
+    expect(source, "the join is what lets the money half be empty").toContain("joinSentences(");
     // One verb, Try again, everywhere — the failed slot's default action.
     expect(source).toContain("action = 'Try again'");
     expect(source).not.toContain("action = 'Retry'");
   });
 
+  /*
+    A REFUNDED fixture on purpose: this arm is about the STOP between the reason
+    and the money, so it needs a money half to put a stop in front of. The
+    refresh and mint roads still refund per slot, so a line with both halves is
+    still a line the product composes — and the empty-half case is held in
+    `packageOrchestrator.test.ts`, on the road that produces it.
+  */
   const compose = (reason: string) =>
-    `Front: ${bareReason(reason)}. ${refundOutcomeText({ refunded: 250 })}`;
+    joinSentences(`Front: ${bareReason(reason)}.`, refundOutcomeText({ refunded: 250 }));
 
   it("never doubles a stop, whichever way the reason arrives", () => {
     expect(compose("This view came out broken, so we didn't keep it")).not.toContain("..");
@@ -200,6 +219,23 @@ describe("#1940 B18 — the failed view's line, composed the way ViewTabs compos
 
   it("CONTROL — the bare join WITHOUT the trim does double the stop", () => {
     const reason = "This view came out broken, so we didn't keep it.";
-    expect(`Front: ${reason}. ${refundOutcomeText({ refunded: 250 })}`).toContain("..");
+    expect(joinSentences(`Front: ${reason}.`, refundOutcomeText({ refunded: 250 })))
+      .toContain("..");
+  });
+
+  it("⚠ and it drops the money half entirely when nothing was owed (#1968)", () => {
+    /*
+      The sentence a refused view on a signed package actually gets. Without the
+      join this reads *"…so we didn't keep it. "* with a trailing space, and
+      under the pre-#1968 reading of a bare zero it read *"… The automatic refund
+      couldn't be recorded — contact support"* about money nobody owed.
+    */
+    const line = joinSentences(
+      "Front: This view came out broken, so we didn't keep it.",
+      refundOutcomeText({ refunded: 0 }),
+    );
+    expect(line).toBe("Front: This view came out broken, so we didn't keep it.");
+    expect(line).not.toContain("support");
+    expect(line).toBe(line.trim());
   });
 });

@@ -50,7 +50,7 @@ import {
 import { getDb, withTransaction } from "../db/connection";
 import { createModuleLogger } from "../logging/logger";
 import type { CastViewAngle } from "../../shared/boardTypes";
-import { CAST_PACKAGE_VIEWS, CAST_PACKAGE_VIEW_PRICE } from "./castViewPackage";
+import { CAST_PACKAGE_VIEWS } from "./castViewPackage";
 import {
   committedPackageAngles,
   packagePromotionChargeReference,
@@ -58,7 +58,6 @@ import {
   promisedPackageAngles,
   unsettledPackageAngles,
 } from "./packageOrchestrator";
-import { CASTING_V2_SIGN_COSTS } from "../casting/castingCreditCosts";
 
 const log = createModuleLogger("castingV2/signRecovery");
 
@@ -337,29 +336,61 @@ export async function recoverCastingV2SignOperation(
   }
 
   /*
-    WHAT THIS SIGN PAID FOR, not what today's profile sells.
+    WHAT THIS SIGN PROMISED — read from the operation's own durable audit rows.
 
-    Read from the operation's own durable audit rows. When there are none — a
-    crash before any view was opened — the fallback is today's profile, and it
-    is only trustworthy if the price agrees with it. It if does not, this Sign
-    was bought under a package composition this build cannot reconstruct, and
-    the honest move is a human rather than a refund of the wrong size.
+    When there are none — a crash before any view was opened — the fallback is
+    today's profile. It decides one thing only: whether this Sign owed any views
+    at all, which is what makes "not one landed" a total loss rather than a Sign
+    that promised nothing.
+
+    ⚠ **IT NO LONGER DECIDES THE PRICE, AND THE CHECK THAT USED TO IS GONE
+    (#1968).** What stood here derived `CASTING_V2_SIGN_COSTS.promotion +
+    CAST_PACKAGE_VIEW_PRICE × promise.angles.length` and PARKED the operation
+    when it disagreed with `plannedCredits`, on the stated ground that *"this
+    Sign was bought under a package composition this build cannot reconstruct,
+    and the honest move is a human rather than a refund of the wrong size"*.
+
+    That reasoning was right and its premise is gone: his reprice makes the
+    Sign one flat charge, so the composition cannot imply a price any more, and
+    **the refund size now comes from the LEDGER rather than from any
+    constant** — see the total-loss branch below. Keeping the comparison would
+    have parked every Sign in flight across this deploy: an 8,500 charge
+    against a 3,250 derivation, a customer left charged until a human looked,
+    for a price change that is not a fault.
+
+    What still protects the money is the conservation ceiling in that branch,
+    which compares against `ledger.charge.credits` — a durable row, not a
+    build-time number.
   */
   const promise = await (options.promisedAngles ?? promisedPackageAngles)({
     userId: operation.userId,
     operationId: operation.id,
   });
-  const impliedPrice =
-    CASTING_V2_SIGN_COSTS.promotion + CAST_PACKAGE_VIEW_PRICE * promise.angles.length;
-  if (operation.plannedCredits > 0 && impliedPrice !== operation.plannedCredits) {
-    return park(options, operation, {
-      type: "recovery_required",
-      reason: `the promised package (${promise.angles.length} views, ${promise.source}) does not match the ${operation.plannedCredits} planned`,
-      chargedCredits: ledger.charge.credits,
-      refundedCredits: ledger.alreadyRefunded,
-    });
-  }
 
+  /*
+    ⚠ **NO PER-VIEW REFUND LOOP ANY MORE — #1968, and this is the half of the
+    card that moves real money.**
+
+    What stood here read `unsettledPackageAngles` and refunded
+    `CAST_PACKAGE_VIEW_PRICE` under each one's slot reference, writing a
+    recovered-failure marker beside it. His word of 2026-10-08 ends it:
+
+      > *"Drop the 700 base + 200 per view split, since views are cut from two
+      > sheets and can't be refunded one by one... Credits only come back if
+      > the Sign can't be delivered at all."*
+
+    So an unsettled view is now settled by the confession alone, exactly as a
+    refused view is on the live road. The markers still matter — a slot with no
+    marker renders as an empty shimmer forever, which is the founder's own gate
+    condition — so they are still written below, with `refunded: 0`.
+
+    ⚠ **A SIGN PART-REFUNDED BY SLICE UNDER THE OLD BUILD IS NOT CLAWED BACK
+    AND IS NOT PAID TWICE.** Those rows are still summed into
+    `ledger.alreadyRefunded` (`readSignLedger` reads every slot reference over
+    `CAST_VIEW_ANGLES` for exactly this reason, D-102), and the total-loss
+    branch refunds the charge MINUS that sum. A partial package keeps whatever
+    slices it was already given.
+  */
   const unsettled = await (options.unsettledAngles ?? unsettledPackageAngles)({
     userId: operation.userId,
     modelId: cast.modelId,
@@ -368,45 +399,40 @@ export async function recoverCastingV2SignOperation(
 
   let refundedCredits = ledger.alreadyRefunded;
   let unrecorded = 0;
-  for (const angle of unsettled) {
-    if (refundedCredits + CAST_PACKAGE_VIEW_PRICE > ledger.charge.credits) {
-      /*
-        The conservation ceiling. Slices are read from a code constant and the
-        ledger from the database; if they ever disagree enough to overpay, that
-        is a support case, not a silent overpayment.
-      */
-      log.error(
-        { operationId: operation.id, angle, refundedCredits, charged: ledger.charge.credits },
-        "[signRecovery] slot refunds would exceed the recorded charge — stopping",
-      );
-      return park(options, operation, {
-        type: "recovery_required",
-        reason: "slot refunds would exceed the recorded charge",
-        chargedCredits: ledger.charge.credits,
-        refundedCredits,
-      });
-    }
-    const outcome = await (options.refund ?? recordRefund)(
-      operation.userId,
-      CAST_PACKAGE_VIEW_PRICE,
-      "Cast package: a view didn't arrive",
-      packageSlotChargeReference(operation.id, angle),
+
+  /*
+    ⚠ **THE CONSERVATION CEILING, AND #1968 MOVED IT AHEAD OF THE SETTLE.**
+
+    It lived inside the two refund loops, comparing a code constant against the
+    ledger before each payment. There is one payment now and its size is a
+    SUBTRACTION over two ledger figures, so the only way it can be wrong is a
+    ledger that already contradicts itself — more refunded under this operation
+    than was ever charged for it.
+
+    That is a support case on either road, so it is asked once, here, before
+    anything is settled or sealed. **The first shape of this repair treated it
+    as a benign "nothing left to give back" and sealed a receipt over it**, and
+    `never refunds more than was charged` is the arm that caught it — a sealed
+    receipt is exactly what destroys the trail a human would need.
+  */
+  if (refundedCredits > ledger.charge.credits) {
+    log.error(
+      { operationId: operation.id, refundedCredits, charged: ledger.charge.credits },
+      "[signRecovery] the ledger shows more refunded than charged — stopping",
     );
-    // Same rule as the full refund above: a duplicate was already counted in
-    // `alreadyRefunded`, so adding it again would report money moving twice.
-    if (outcome.recorded && !outcome.duplicate) refundedCredits += outcome.amount;
-    else if (!outcome.recorded) {
-      unrecorded += 1;
-      log.error(
-        { operationId: operation.id, angle, reference: outcome.reference },
-        "[signRecovery] slot refund did not record — the owner remains charged",
-      );
-    }
+    return park(options, operation, {
+      type: "recovery_required",
+      reason: "the ledger shows more refunded than charged",
+      chargedCredits: ledger.charge.credits,
+      refundedCredits,
+    });
+  }
+  for (const angle of unsettled) {
     /*
       The failure is written where the ROOM reads it, not only where support
-      does. A slot that was refunded but has no marker renders as an empty
+      does. A slot that was never settled and has no marker renders as an empty
       shimmer forever — the founder's gate condition is that it confesses in
-      place instead.
+      place instead. Since #1968 it confesses with no money beside it.
     */
     await (options.recordSlotFailure ?? recordRecoveredSlotFailure)({
       userId: operation.userId,
@@ -414,8 +440,9 @@ export async function recoverCastingV2SignOperation(
       angle: angle as CastViewAngle,
       failure: {
         reason: "This view didn't arrive",
-        refunded: outcome.recorded ? outcome.amount : 0,
-        refundReference: outcome.reference,
+        /* No slice comes back for a view (#1968), and no reference either —
+           `failView` carries why the absence is the signal. */
+        refunded: 0,
       },
     }).catch((error) => {
       log.error(
@@ -443,24 +470,46 @@ export async function recoverCastingV2SignOperation(
     promised: promise.angles,
   });
   if (committed.length === 0 && promise.angles.length > 0) {
-    if (refundedCredits + CASTING_V2_SIGN_COSTS.promotion > ledger.charge.credits) {
-      log.error(
+    /*
+      ⚠ **THE WHOLE CHARGE, READ OFF THE LEDGER, MINUS WHATEVER ALREADY WENT
+      BACK — #1968, and deriving it is what lets one build settle both prices.**
+
+      It read `CASTING_V2_SIGN_COSTS.promotion` — correct while five slices
+      refunded themselves alongside it and summed to the charge. With the
+      slices gone there is ONE refund, and a build-time constant is the wrong
+      place to read its size from: a Sign in flight across this deploy was
+      charged 8,500 and today's price is 3,250, so a constant would short the
+      customer by 5,250 on our own outage.
+
+      `ledger.charge.credits` is the durable row this operation actually wrote,
+      and `alreadyRefunded` already counts every slot refund the old build may
+      have managed before it died (D-102). Their difference is exactly what is
+      still owed, whatever price the Sign was bought at.
+
+      It cannot go negative: a ledger whose refunds already exceed its charge
+      is caught by the conservation ceiling below before this is read.
+    */
+    /*
+      Never negative: the ceiling above has already parked a ledger whose
+      refunds exceed its charge, so this is the honest remainder and nothing
+      more. Zero is the ordinary case for a Sign a previous pass settled, or one
+      the old build part-refunded all the way to its charge.
+    */
+    const owed = ledger.charge.credits - refundedCredits;
+    if (owed === 0) {
+      log.warn(
         { operationId: operation.id, refundedCredits, charged: ledger.charge.credits },
-        "[signRecovery] the promotion refund would exceed the recorded charge — stopping",
+        "[signRecovery] total loss with nothing still owed — the charge is already fully refunded",
       );
-      return park(options, operation, {
-        type: "recovery_required",
-        reason: "the promotion refund would exceed the recorded charge",
-        chargedCredits: ledger.charge.credits,
-        refundedCredits,
-      });
     }
-    const outcome = await (options.refund ?? recordRefund)(
-      operation.userId,
-      CASTING_V2_SIGN_COSTS.promotion,
-      "Cast package: nothing arrived — the Sign refunded in full",
-      packagePromotionChargeReference(operation.id),
-    );
+    const outcome = owed > 0
+      ? await (options.refund ?? recordRefund)(
+        operation.userId,
+        owed,
+        "Cast package: nothing arrived — the Sign refunded in full",
+        packagePromotionChargeReference(operation.id),
+      )
+      : { recorded: true, duplicate: true, amount: 0, reference: packagePromotionChargeReference(operation.id) };
     if (outcome.recorded && !outcome.duplicate) refundedCredits += outcome.amount;
     else if (!outcome.recorded) {
       unrecorded += 1;

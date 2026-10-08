@@ -138,8 +138,6 @@ import {
 import { CAST_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
 import {
   CAST_PACKAGE_VIEWS,
-  CAST_PACKAGE_VIEW_PRICE,
-  CASTING_V2_SIGN_PROMOTION_PRICE,
   castPackageView,
   composePackageViewPrompt,
 } from "./castViewPackage";
@@ -268,12 +266,25 @@ export const VIEW_JUDGED_ATTEMPTS = 2;
 const VIEW_MAX_ATTEMPTS = VIEW_ARRIVAL_ATTEMPTS + VIEW_JUDGED_ATTEMPTS;
 
 /**
- * The per-view refund reference.
+ * The per-view refund reference — **HISTORICAL, AND READ-ONLY SINCE #1968.**
  *
- * `mintPackage`'s `<chargeRef>:slot:<angle>` shape, derived through the shared
- * charge helper at one site. The live orchestrator and the recovery adjudicator
- * must produce byte-identical references or the ledger's uniqueness cannot make
- * a retry idempotent — it would make it a second refund.
+ * ⚠ **NOTHING WRITES A REFUND UNDER THIS SHAPE ANY MORE** (his word of
+ * 2026-10-08: views are cut from two sheets and *"can't be refunded one by
+ * one"*). `failView` no longer refunds and the recovery sweep no longer settles
+ * unsettled views, so no new `<chargeRef>:slot:<angle>` row can be created.
+ *
+ * ⚠ **AND IT MUST NOT BE DELETED, WHICH IS THE OPPOSITE OF THE USUAL RULE
+ * HERE.** `signRecovery`'s ledger read sums every reference a Sign *could* have
+ * refunded under, over `CAST_VIEW_ANGLES`, precisely because *"a Sign bought
+ * under a different composition has slot refunds this build does not sell, and
+ * missing them here understates `alreadyRefunded`"* (D-102). A Sign charged
+ * 8,500 before this commit, part-refunded by slice, and settled by the sweep
+ * after it is exactly that case: drop this helper and the total-loss refund
+ * pays the full charge again on top of slices already given back.
+ *
+ * So it stays as a READER's key. The shape is frozen for the same reason it
+ * always was: the live path and the adjudicator must produce byte-identical
+ * references, or the ledger's uniqueness reads a repeat as a fresh refund.
  */
 export function packageSlotChargeReference(
   operationId: string,
@@ -283,12 +294,20 @@ export function packageSlotChargeReference(
 }
 
 /**
- * The PROMOTION refund reference — the base, refunded only on a total loss.
+ * The TOTAL-LOSS refund reference — the one reference a Sign refunds under.
  *
- * Derived through the same helper for the same reason: the live orchestrator
- * and the recovery adjudicator both settle a zero-view package, and if their
- * references differed by a byte the ledger's uniqueness would read the second
- * one as a fresh refund rather than a repeat of the first.
+ * Derived through the same helper for the same reason it always was: the live
+ * orchestrator and the recovery adjudicator both settle a zero-view package,
+ * and if their references differed by a byte the ledger's uniqueness would read
+ * the second one as a fresh refund rather than a repeat of the first.
+ *
+ * ⚠ **THE WORD `promotion` IN THE STRING IS HISTORY AND IS FROZEN — DO NOT
+ * TIDY IT (#1968).** There is no promotion price any longer: the Sign is one
+ * flat charge and this reference now carries the WHOLE refund rather than a
+ * base on top of slices. The suffix is an IDEMPOTENCY KEY, not a description,
+ * and it is shared with every Sign ever settled under the old decomposition.
+ * Renaming it would make the sweep's refund invisible to the live path's and
+ * pay a total loss twice for any Sign in flight across the deploy.
  */
 export function packagePromotionChargeReference(operationId: string): string {
   return `${operationChargeReference(operationId)}:promotion`;
@@ -567,9 +586,35 @@ async function defaultStoreImage(input: {
  * independent, the room streams them in as they land, and gating the fifth on
  * the fourth would only make the customer wait longer for the same result.
  */
+/**
+ * WHAT A WHOLE SIGN NEEDS THAT ONE RENDERED VIEW DOES NOT — the money (#1968).
+ *
+ * ⚠ **`chargedCredits` IS DELIBERATELY NOT ON {@link BuildPackageInput}, AND
+ * THE REASON IS A REAL HAZARD RATHER THAN TIDINESS.** That type is shared with
+ * {@link renderViewAttempts}, which the paid redo (`packageRedoService`) and a
+ * single view's Try again (`viewRetryService`) both compose to RENDER a view
+ * and settle their own money themselves. Putting a Sign's charge on it would
+ * force two unrelated roads to supply a figure they never read — and the
+ * tempting repair, making it optional, fails in the one direction that costs a
+ * customer money: an absent charge would refund `undefined` on a total loss.
+ *
+ * Only the road that CHARGED carries what it charged.
+ */
+export type SignPackageInput = BuildPackageInput & {
+  /**
+   * The deduct this Sign actually made, in ledger credits.
+   *
+   * Threaded from `signService`'s own `price` rather than read from
+   * `CASTING_V2_SIGN_PRICE_CREDITS` here, because a Sign in flight across a
+   * price change must be given back what it was charged — and his Sign price
+   * has moved three times in ten days (450 → 8,500 → 3,250).
+   */
+  readonly chargedCredits: number;
+};
+
 export async function buildCastPackage(
   dependencies: PackageOrchestratorDependencies,
-  input: BuildPackageInput,
+  input: SignPackageInput,
 ): Promise<PackageResult> {
   /*
     THE PROMISE, WRITTEN DOWN BEFORE ANY WORK — and it is a money control, not
@@ -758,7 +803,13 @@ export async function buildCastPackage(
   }
 
   /*
-    ZERO OF N — the base goes back too (founder ruling, 2026-08-02).
+    ZERO OF N — the WHOLE charge goes back (founder ruling, 2026-08-02; the
+    figure made flat by his word of 2026-10-08, #1968).
+
+    ⚠ **THIS IS THE ONLY ROAD A SIGN REFUNDS ON NOW**, which is his sentence
+    exactly: *"Credits only come back if the Sign can't be delivered at all."*
+    Until #1968 a refused view gave back its own slice here and this branch
+    only added the base on top; `failView` carries why that ended.
 
     The promotion charge buys permanence: the anchor is rescued from the sheet's
     purge, the identity is sealed, the Cast is repairable. That story is true and
@@ -768,8 +819,11 @@ export async function buildCastPackage(
 
     Zero-of-N is only reachable through systemic failure: our provider account
     exhausted, a transport outage, a judge that could not be reached. Never
-    through ordinary stochastic misses. Retaining 200 credits there charges the
-    customer for OUR outage, which is precisely what the confession law forbids.
+    through ordinary stochastic misses — a judge that CAN be reached and refuses
+    every panel still delivers nothing, and that is why this branch reads
+    `committed`, not `refused`. Retaining any part of the charge there bills the
+    customer for OUR outage, which is precisely what the confession law
+    forbids.
 
     The Cast still stands. She keeps the master she chose and the room says
     plainly what happened — see `TOTAL_LOSS_CONFESSION`. What changes is only
@@ -794,7 +848,17 @@ export async function buildCastPackage(
   if (promised.length > 0 && committed.length === 0 && !anyFenced) {
     const outcome = await (dependencies.refund ?? recordRefund)(
       input.userId,
-      CASTING_V2_SIGN_PROMOTION_PRICE,
+      /*
+        ⚠ **WHAT THIS SIGN WAS CHARGED, NOT WHAT A SIGN COSTS TODAY — #1968.**
+
+        It read `CASTING_V2_SIGN_PROMOTION_PRICE` while the per-view slices
+        refunded themselves, so the base and five slices summed to the whole
+        charge. With no slices there is one refund, and reading it off a
+        constant would pay the wrong amount the moment he moves the price with
+        a Sign in flight. `chargedCredits` is the figure `signService`
+        deducted, one statement earlier in the same process.
+      */
+      input.chargedCredits,
       "Cast package: nothing arrived — the Sign refunded in full",
       packagePromotionChargeReference(input.operationId),
     );
@@ -871,7 +935,11 @@ async function openViewAudit(
     viewAngle: angle,
     type: "multiView",
     status: "processing",
-    pointsCost: CAST_PACKAGE_VIEW_PRICE,
+    /* A view has no price of its own since #1968 — the Sign is one flat
+       charge on the operation row. Zero here is the honest record, and it
+       keeps every per-child sum (the generic stale-operation sweep's
+       `ensureFailedChildRefunds` among them) from inventing a slice. */
+    pointsCost: 0,
     metadata: { viewType: angle, source: "castingV2.sign" },
   });
   return audit.success ? audit.generationId ?? null : null;
@@ -1735,7 +1803,8 @@ async function buildOneView(
       storageUrl: landed.stored.url,
       identityRevisionId: input.identityRevisionId,
       identityText: input.identityText,
-      pointsCost: CAST_PACKAGE_VIEW_PRICE,
+      /* No per-view price since #1968; `openViewAudit` carries why. */
+      pointsCost: 0,
       provenance: {
         source: "castingV2.sign",
         ...landed.provenance,
@@ -1966,31 +2035,33 @@ async function failView(
     label: string;
   },
 ): Promise<PackageSlotOutcome> {
-  const refund = dependencies.refund ?? recordRefund;
-  const outcome = await refund(
-    input.userId,
-    CAST_PACKAGE_VIEW_PRICE,
-    `Cast package: ${detail.label} didn't arrive`,
-    packageSlotChargeReference(input.operationId, angle),
-  );
   /*
-    Two different numbers, deliberately.
+    ⚠ **NOTHING IS REFUNDED HERE ANY MORE — #1968, his word of 2026-10-08.**
 
-    The SLOT shows what the customer got back for this view, and a duplicate
-    means they did get it back — just earlier, from whoever refunded it first.
-    The RECEIPT total counts only what this process actually moved, because
-    adding a duplicate would report the same 50 credits twice.
+    This function used to begin with a `recordRefund` of one view's slice under
+    `packageSlotChargeReference`, and that was the whole reason the Sign's price
+    was decomposed. His reprice ends it:
+
+      > *"Drop the 700 base + 200 per view split, since views are cut from two
+      > sheets and can't be refunded one by one. A failed check re-makes the
+      > whole sheet at our cost... Credits only come back if the Sign can't be
+      > delivered at all."*
+
+    Since #1957 this view is a panel cut from a landscape sheet that two or
+    three other views were cut from too, and a catastrophe on any of them buys
+    a whole replacement sheet at HOUSE cost (`SHEET_MAX_RENDERS`). So the frame
+    behind a refused view was paid for, twice over in the worst case, and
+    handing back a fifth of the Sign for it pays a customer for work we bought.
+
+    **What a refused view still does, unchanged:** it confesses in place. The
+    marker below is written exactly as before, the room draws the refusal
+    sentence from it, and D-246 still means a view nobody could judge is
+    DELIVERED rather than refused. Only the money line is gone.
+
+    `refunded: 0` on the marker is therefore the truth rather than a stub — the
+    room must never imply credits came back for this view, which is #1940's own
+    rule pointed at this road.
   */
-  const refundedForSlot = outcome.recorded ? outcome.amount : 0;
-  const refundedCredits = outcome.recorded && !outcome.duplicate ? outcome.amount : 0;
-  if (!outcome.recorded) {
-    // A refund that did not record is never reported as "you weren't charged".
-    log.error(
-      { operationId: input.operationId, angle, reference: outcome.reference },
-      "[packageOrchestrator] view refund did not record — the owner remains charged",
-    );
-  }
-
   if (detail.auditId) {
     await updateGeneration(detail.auditId, {
       status: "failed",
@@ -2006,10 +2077,15 @@ async function failView(
     angle,
     failure: {
       reason: detail.reason,
-      // What ACTUALLY recorded, so the room never claims money moved that did
-      // not.
-      refunded: refundedForSlot,
-      refundReference: outcome.reference,
+      /*
+        No slice comes back for a refused view (#1968), and `refundReference` is
+        OMITTED rather than blanked: its absence is what tells the room nothing
+        was owed, as against a refund that was attempted and failed. The two
+        read identically at `refunded: 0` otherwise, and only one of them is a
+        fault worth sending somebody to support about — `refundOutcomeText`
+        carries the table.
+      */
+      refunded: 0,
       /*
         The FINAL verdict stays where it was, under the same key, because the
         room and any dispute read that shape — widening it would be a projection
@@ -2041,8 +2117,8 @@ async function failView(
     angle,
     status: "failed",
     reason: detail.reason,
-    refundedCredits,
-    refundUnrecorded: !outcome.recorded,
+    refundedCredits: 0,
+    refundUnrecorded: false,
   };
 }
 

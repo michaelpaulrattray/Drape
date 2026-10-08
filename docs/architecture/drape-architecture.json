@@ -10292,19 +10292,10 @@
       "file": "server/casting/castingCreditCosts.ts"
     },
     {
-      "id": "cost:server/casting/castingCreditCosts.ts:CASTING_V2_SIGN_COSTS.promotion",
-      "name": "CASTING_V2_SIGN_COSTS.promotion",
-      "constant": "CASTING_V2_SIGN_COSTS",
-      "member": "promotion",
-      "credits": 3500,
-      "file": "server/casting/castingCreditCosts.ts"
-    },
-    {
-      "id": "cost:server/casting/castingCreditCosts.ts:CASTING_V2_SIGN_COSTS.view",
-      "name": "CASTING_V2_SIGN_COSTS.view",
-      "constant": "CASTING_V2_SIGN_COSTS",
-      "member": "view",
-      "credits": 1000,
+      "id": "cost:server/casting/castingCreditCosts.ts:CASTING_V2_SIGN_PRICE_CREDITS",
+      "name": "CASTING_V2_SIGN_PRICE_CREDITS",
+      "constant": "CASTING_V2_SIGN_PRICE_CREDITS",
+      "credits": 3250,
       "file": "server/casting/castingCreditCosts.ts"
     },
     {
@@ -10385,35 +10376,11 @@
       "file": "server/castingV2/carriedGeometry.ts"
     },
     {
-      "id": "cost:server/castingV2/castViewPackage.ts:CAST_PACKAGE_VIEW_PRICE",
-      "name": "CAST_PACKAGE_VIEW_PRICE",
-      "constant": "CAST_PACKAGE_VIEW_PRICE",
-      "credits": 1000,
-      "derivedFrom": "CASTING_V2_SIGN_COSTS.view",
-      "file": "server/castingV2/castViewPackage.ts"
-    },
-    {
       "id": "cost:server/castingV2/castViewPackage.ts:CASTING_V2_ONE_CHARACTER_CREDITS",
       "name": "CASTING_V2_ONE_CHARACTER_CREDITS",
       "constant": "CASTING_V2_ONE_CHARACTER_CREDITS",
-      "credits": 11850,
+      "credits": 6600,
       "derivedFrom": "CASTING_V2_ROLL_PRICE_CREDITS + CASTING_V2_REFINE_PRICE_CREDITS + CASTING_V2_SIGN_PRICE_CREDITS",
-      "file": "server/castingV2/castViewPackage.ts"
-    },
-    {
-      "id": "cost:server/castingV2/castViewPackage.ts:CASTING_V2_SIGN_PRICE_CREDITS",
-      "name": "CASTING_V2_SIGN_PRICE_CREDITS",
-      "constant": "CASTING_V2_SIGN_PRICE_CREDITS",
-      "credits": 8500,
-      "derivedFrom": "CASTING_V2_SIGN_COSTS.promotion + CAST_PACKAGE_VIEW_PRICE * CAST_PACKAGE_VIEWS.length",
-      "file": "server/castingV2/castViewPackage.ts"
-    },
-    {
-      "id": "cost:server/castingV2/castViewPackage.ts:CASTING_V2_SIGN_PROMOTION_PRICE",
-      "name": "CASTING_V2_SIGN_PROMOTION_PRICE",
-      "constant": "CASTING_V2_SIGN_PROMOTION_PRICE",
-      "credits": 3500,
-      "derivedFrom": "CASTING_V2_SIGN_COSTS.promotion",
       "file": "server/castingV2/castViewPackage.ts"
     },
     {
@@ -30190,11 +30157,6 @@
     },
     {
       "from": "module:server/castingV2/signRecovery.ts",
-      "to": "module:server/casting/castingCreditCosts.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/signRecovery.ts",
       "to": "module:server/casting/operationContract.ts",
       "kind": "imports"
     },
@@ -30245,6 +30207,11 @@
     },
     {
       "from": "module:server/castingV2/signService.ts",
+      "to": "module:server/casting/castingCreditCosts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signService.ts",
       "to": "module:server/casting/castPublicId.ts",
       "kind": "imports"
     },
@@ -30266,11 +30233,6 @@
     {
       "from": "module:server/castingV2/signService.ts",
       "to": "module:server/castingV2/castPronouns.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/signService.ts",
-      "to": "module:server/castingV2/castViewPackage.ts",
       "kind": "imports"
     },
     {
@@ -33951,11 +33913,6 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/castPronouns.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/castingV2.ts",
-      "to": "module:server/castingV2/castViewPackage.ts",
       "kind": "imports"
     },
     {

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Loader2, MoreHorizontal, Plus, RefreshCw } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
-import { bareReason, refundOutcomeText } from '@shared/refundCopy';
+import { bareReason, joinSentences, refundOutcomeText } from '@shared/refundCopy';
 import { displayPrice, formatCredits } from "@shared/creditDisplay";
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
@@ -229,11 +229,21 @@ function FailedSlot({
     foreman's reading on the card named exactly this collision. The surface
     supplies the stop, so the reason is trimmed of its own (`bareReason`).
   */
-  const retryLabel = `${label}: ${bareReason(failure.reason)}. ${refundOutcomeText(failure)}${
+  /*
+    ⚠ **THE MONEY HALF CAN BE EMPTY SINCE #1968, SO THE PARTS ARE JOINED.**
+    A view refused on a signed package refunds nothing by design — views are
+    cut from two sheets and cannot be refunded one by one — so
+    `refundOutcomeText` returns `''` for it rather than inventing a fault.
+    Interpolating it would leave *"came out broken.  Try again for …"* with a
+    double space; `joinSentences` is the one place that join lives.
+  */
+  const retryLabel = joinSentences(
+    `${label}: ${bareReason(failure.reason)}.`,
+    refundOutcomeText(failure),
     retryable && cost !== undefined
-      ? ` ${action} for ${formatCredits(displayPrice(cost))} credits.`
-      : ''
-  }`;
+      ? `${action} for ${formatCredits(displayPrice(cost))} credits.`
+      : '',
+  );
   return (
     <button
       type="button"
