@@ -13,8 +13,8 @@ import crypto from "crypto";
 import {
   REFERRAL_CODE_BODY_LENGTH,
   REFERRAL_CODE_FORMAT_MESSAGE,
+  ISSUED_CODE_PREFIX,
   REFERRAL_CODE_MINT_ALPHABET,
-  REFERRAL_CODE_PREFIX,
   REFERRAL_CODE_SEPARATOR,
   referralCodePattern,
 } from "../../shared/referralCodeFormat";
@@ -22,7 +22,8 @@ import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("db/referrals");
 
 /**
- * Generate a unique referral code — `DRAPE-A3K9X2` in today's shape.
+ * Generate a unique referral code — `KLIEG-A3K9X2` in today's shape (#2007:
+ * the prefix is derived from the product's name, so it follows a rename).
  *
  * Every part of that shape comes from `shared/referralCodeFormat.ts`. It used
  * to be spelled here and quoted, by hand, in the refusal one file away; the
@@ -35,11 +36,13 @@ function createReferralCode(): string {
   for (let i = 0; i < REFERRAL_CODE_BODY_LENGTH; i++) {
     code += chars[crypto.randomInt(chars.length)];
   }
-  return `${REFERRAL_CODE_PREFIX}${REFERRAL_CODE_SEPARATOR}${code}`;
+  return `${ISSUED_CODE_PREFIX}${REFERRAL_CODE_SEPARATOR}${code}`;
 }
 
 /**
- * Validate referral code format: `DRAPE-XXXXXX` (6 minted characters).
+ * Validate referral code format: `KLIEG-XXXXXX` (6 minted characters), and
+ * every code minted under a retired prefix (`DRAPE-XXXXXX`) still passes — a
+ * code a customer already shared must keep working after a rename.
  *
  * The pattern is derived, not written — see `referralCodePattern` for why the
  * accepted class is deliberately wider than the mint alphabet.
