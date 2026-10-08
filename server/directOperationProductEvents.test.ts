@@ -23,6 +23,9 @@
  * The capture is placed outside the `try` that guards each receipt, and the arm
  * for that drives a transport which throws.
  */
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import { TRPCError } from "@trpc/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -389,5 +392,112 @@ describe("⚠ the stream can never cost a customer their receipt", () => {
        failure the placement of the capture outside the `try` exists to prevent. */
     expect(db.finalizeGenerationOperationSuccess).toHaveBeenCalledTimes(1);
     expect(db.markGenerationOperationRecoveryRequired).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * A PRESS REFUSED BEFORE IT STARTED IS NOT A FAILED GENERATION (#1943 item 2).
+ *
+ * `generation started` is emitted at the BOTTOM of `beginDirectOperation`, after
+ * the locks, because that is the moment the customer's action began. Both
+ * lock-refused exits sit ABOVE it and used to send a terminal `generation failed`
+ * anyway — so the stream carried a failure with no start before it, and because
+ * `rememberAction` is on the start event's own line, the failure's action read
+ * `unnamed action`. A customer pressing *Try again* on a view that is already
+ * rendering produced exactly that: *"a generation failed, we do not know which
+ * kind"*, for a press that rendered nothing and charged nothing.
+ *
+ * The receipt is still written either way — #1932's whole point, and the arms
+ * below assert it rather than assuming it, because a repair that stopped settling
+ * the row would leave the slot reading *"being made"* for six minutes and these
+ * arms would be the only thing that could have said so.
+ */
+describe("a press refused before it started sends nothing", () => {
+  async function pressWithBusySlotLock(): Promise<unknown> {
+    db.claimGenerationOperation.mockResolvedValue({ type: "claimed", operationId: "op-busy" });
+    db.acquireGenerationOperationLock.mockResolvedValue({ type: "resource_busy" });
+    db.finalizeClaimedGenerationOperationFailure.mockResolvedValue(undefined);
+    return beginDirectOperation({
+      userId: 7,
+      clientRequestId: "req-busy",
+      kind: "castingV2.viewRetry",
+      payload: {},
+      lockKey: "model:7",
+      lockBusyMessage: "That view is already being made.",
+    }).catch((error: unknown) => error);
+  }
+
+  it("⚠ a busy slot lock settles the row and emits NO event — not a start, not a failure", async () => {
+    const error = await pressWithBusySlotLock();
+
+    expect(error).toBeInstanceOf(TRPCError);
+    expect((error as TRPCError).code).toBe("CONFLICT");
+    /* The receipt IS written: #1932's repair is untouched by this one. */
+    expect(db.finalizeClaimedGenerationOperationFailure).toHaveBeenCalledTimes(1);
+    /* And the stream heard nothing, because nothing happened to a generation. */
+    expect(sent).toEqual([]);
+  });
+
+  it("the positive control: the same press with the lock FREE does send its start", async () => {
+    /*
+      Without this, the arm above passes on a suite where the capture client was
+      never installed, or where `beginDirectOperation` threw before reaching
+      either road — both of which look exactly like *"no event was sent"*.
+    */
+    db.claimGenerationOperation.mockResolvedValue({ type: "claimed", operationId: "op-free" });
+    db.acquireGenerationOperationLock.mockResolvedValue({ type: "acquired" });
+    await beginDirectOperation({
+      userId: 7,
+      clientRequestId: "req-free",
+      kind: "castingV2.viewRetry",
+      payload: {},
+      lockKey: "model:7",
+    });
+    expect(sent.map((event) => event.event)).toEqual(["generation started"]);
+  });
+
+  it("a busy CANDIDATE lock does the same, and keeps her own sentence", async () => {
+    db.claimGenerationOperation.mockResolvedValue({ type: "claimed", operationId: "op-cand" });
+    db.acquireCastingCandidateOperationLock.mockResolvedValue({ type: "resource_busy" });
+    db.finalizeClaimedGenerationOperationFailure.mockResolvedValue(undefined);
+
+    const error = await beginDirectOperation({
+      userId: 7,
+      clientRequestId: "req-cand",
+      kind: "castingV2.refine",
+      payload: {},
+      candidateLockPublicId: "cand-1",
+    }).catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(TRPCError);
+    expect((error as TRPCError).message).toContain("already being made");
+    expect(db.finalizeClaimedGenerationOperationFailure).toHaveBeenCalledTimes(1);
+    expect(sent).toEqual([]);
+  });
+
+  it("⚠ THE FENCE: no exit inside `beginDirectOperation` may take the event-sending road", () => {
+    /*
+      THE CLASS, NOT THE TWO INSTANCES. The population is bounded by the code's
+      own shape — only a statement between the claim and the start event can emit
+      a terminal before a start, and every one of those lives in this function —
+      so a THIRD lock, gate or refusal added here is the whole of the risk, and a
+      driven arm per instance could never see it.
+
+      Sliced out of the function rather than searched for in the file: every other
+      caller of `failClaimedDirectOperation` in the tree is past the gate, so its
+      operation did start and its terminal event is owed (#1636's class — a
+      whole-file assertion is satisfied by a neighbour).
+    */
+    const source = readFileSync(resolve(import.meta.dirname, "casting/directOperation.ts"), "utf8");
+    const start = source.indexOf("export async function beginDirectOperation");
+    expect(start).toBeGreaterThan(-1);
+    const end = source.indexOf('  return { type: "execute", operationId: claim.operationId };', start);
+    expect(end).toBeGreaterThan(start);
+    const body = source.slice(start, end);
+
+    expect(body).not.toContain("failClaimedDirectOperation(");
+    /* The positive control on the slice itself: if this stopped being the
+       refusal road, both counts would be zero and the arm would be vacuous. */
+    expect(body.split("refuseClaimedBeforeStart(").length - 1).toBe(2);
   });
 });
