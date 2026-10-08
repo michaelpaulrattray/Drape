@@ -12,6 +12,8 @@ import {
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { REFERRAL_REWARD_CREDITS } from "../../drizzle/schema";
+import { PRODUCT_NAME } from "@shared/brand";
+import { waitPhrase } from "@shared/waitPhrase";
 import { REFERRAL_CODE_FORMAT_MESSAGE } from "../../shared/referralCodeFormat";
 import { checkRateLimit, getClientIp } from "../security/rateLimit";
 import { isDisposableEmail } from "../security/disposableEmails";
@@ -87,7 +89,7 @@ export const referralRouter = router({
       if (!rateCheck.allowed) {
         throw new TRPCError({
           code: "TOO_MANY_REQUESTS",
-          message: `Invite limit reached. Try again in ${Math.ceil(rateCheck.resetIn / 60000)} minutes.`,
+          message: `Invite limit reached. Try again ${waitPhrase(rateCheck.resetIn)}.`,
         });
       }
 
@@ -122,7 +124,10 @@ export const referralRouter = router({
 
       sendReferralInviteEmail({
         inviteeEmail: input.email,
-        referrerName: ctx.user.name || "A Drape user",
+        /* #1955: the product's name, from the one constant. The invitee has
+           never heard of us, so this is the one place in the fix where the
+           name is the information rather than noise. */
+        referrerName: ctx.user.name || `A ${PRODUCT_NAME} user`,
         referralLink,
         rewardCredits: REFERRAL_REWARD_CREDITS,
       }).catch((err) => {
@@ -151,7 +156,7 @@ export const referralRouter = router({
       if (!rateCheck.allowed) {
         throw new TRPCError({
           code: "TOO_MANY_REQUESTS",
-          message: `Too many attempts. Try again in ${Math.ceil(rateCheck.resetIn / 60000)} minutes.`,
+          message: `Too many attempts. Try again ${waitPhrase(rateCheck.resetIn)}.`,
         });
       }
 
@@ -199,7 +204,7 @@ export const referralRouter = router({
       if (!rateCheck.allowed) {
         throw new TRPCError({
           code: "TOO_MANY_REQUESTS",
-          message: `Too many attempts. Try again in ${Math.ceil(rateCheck.resetIn / 60000)} minutes.`,
+          message: `Too many attempts. Try again ${waitPhrase(rateCheck.resetIn)}.`,
         });
       }
 

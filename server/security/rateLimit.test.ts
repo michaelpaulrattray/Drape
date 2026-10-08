@@ -169,8 +169,8 @@ describe('Rate Limiting', () => {
       expect(rateLimitError(120000)).toBe('Too many requests. Please try again in 2 minutes.');
     });
 
-    it('should use singular minute', () => {
-      expect(rateLimitError(60000)).toBe('Too many requests. Please try again in 1 minute.');
+    it('should say one minute as a word (#1993 — the clause is shared/waitPhrase.ts)', () => {
+      expect(rateLimitError(60000)).toBe('Too many requests. Please try again in a minute.');
     });
   });
 

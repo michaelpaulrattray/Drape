@@ -102,3 +102,55 @@ editor — and that is exactly the axis our whole design occupies.**
 *Companions: `CINEMA_SKELETON_MARRIAGE_REVIEW.md` (the design this is held
 against), `12b-cinema-amendments.md` in the design pack (§H amended, §L
 added per the two takes above).*
+
+
+## Appendix — primary sources with URLs (added 2026-10-08 after Quistis's audit)
+
+Quistis (the founder's Grok positioning agent) checked this document's
+quotes against main and found it carried summaries without the source
+URLs, and that one fuller quote lived only in the research agent's report
+rather than in any committed file. Both correct; repaired here. Caveat
+that rides every row: these quotes are what our research agents returned
+from the live pages ON THE DATES GIVEN; pages move, so recheck the live
+URL before any public use.
+
+**Runway (read 2026-09-03):**
+- "For longer films or projects requiring advanced editing features,
+  consider a local video editor" — help.runwayml.com/hc/en-us/articles/26871350018835-How-to-create-longer-videos-and-films
+- References/consistency method ("change one variable at a time" is
+  Runway's wording; "consistency as craft" is OUR summary of it) —
+  help.runwayml.com/hc/en-us/articles/40042718905875 (Gen-4 Image
+  References), runway.com/resources/ai-character-references-tips
+- Also read: articles 39789879462419 (Gen-4 Video Prompting Guide),
+  46974685288467 (Gen-4.5), 51601639579667 (Runway Agent),
+  42311337895827 (Act-Two), 50985233945747 (Story Panels),
+  51683104370451 (Edit Studio), 4402458964115 (Timeline),
+  15124877443219 (credits), 18053095835795 (Unlimited);
+  runway.com/product/aleph-2; runway.com/workflows.
+
+**Higgsfield (read 2026-09-03 and 2026-09-04):**
+- "clearly the same person rather than a pixel-identical face" — the
+  research agent's rendering of the Soul ID help article;
+  higgsfield.ai/creator-hub/help-center/ai-models/how-do-i-create-and-use-a-soul-id-character
+  (this document's shorter paraphrase dropped "a … face"; the agent's
+  fuller form is the one to recheck against the live page)
+- Also read: help-center articles how-do-i-use-cinema-studio,
+  how-do-i-use-seedance, how-do-i-use-popcorn, how-do-i-use-canvas,
+  how-credits-work, how-do-i-write-a-good-prompt; blog cinema-studio-3.0,
+  cinema-studio-4-0, ai-short-film-pipeline;
+  higgsfield.ai/cinematic-video-generator; /camera-controls;
+  creator-hub/changelog.
+
+**miko-ai-ad-factory (read 2026-10-08):**
+- "Do not create character reference images" AND the fuller admission
+  "text alone does not guarantee identical casting across independent
+  generations" — both from
+  github.com/mikoxai/miko-ai-ad-factory/blob/main/skills/miko-ai-ad-factory/references/production.md.
+  The fuller quote appeared only in the research agent's report until
+  this appendix; the marriage review's §12 carried the shorter one.
+
+**Cinematique / vvsvs.pro (read 2026-10-08):** vvsvs.pro/cinematique and
+technique pages (dolly-shot, dutch-angle, rembrandt-lighting), /info,
+/academy; quotes there came back through a summarizing fetcher and are
+the least byte-exact of this appendix — treat as paraphrase until
+recheck.

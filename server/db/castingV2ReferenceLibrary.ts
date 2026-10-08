@@ -86,6 +86,11 @@ import {
   type GuardRefusalReason,
 } from "../castingV2/referenceCompleteness";
 import { withTransaction, getDb, type TransactionHandle } from "./connection";
+import {
+  purgeScopeIsEmpty,
+  purgeScopeWhere,
+  type PurgeCandidateSelector,
+} from "./castingV2PurgeScope";
 import { undischargedStorageCleanupBatchWhere } from "./storageCleanup";
 import { storedGuardKind } from "../castingV2/openKindQuestion";
 
@@ -911,7 +916,7 @@ export async function retireReferenceSlot(input: {
  */
 export async function listPurgeableReferencesIn(
   tx: TransactionHandle,
-  candidateIds: readonly number[],
+  candidateIds: PurgeCandidateSelector,
 ): Promise<Array<{
   id: number;
   storageKey: string | null;
@@ -919,7 +924,7 @@ export async function listPurgeableReferencesIn(
   refusedContentKey: string | null;
   refusedMaskKey: string | null;
 }>> {
-  if (candidateIds.length === 0) return [];
+  if (purgeScopeIsEmpty(candidateIds)) return [];
   /*
     EVERY row, including the words-only ones that hold no object at all.
     Filtering those out here would make an empty result mean two different
@@ -941,16 +946,24 @@ export async function listPurgeableReferencesIn(
       refusedMaskKey: castingReferenceLibrary.refusedMaskKey,
     })
     .from(castingReferenceLibrary)
-    .where(inArray(castingReferenceLibrary.candidateId, [...candidateIds]));
+    .where(purgeScopeWhere(
+      castingReferenceLibrary.candidateId,
+      castingReferenceLibrary.userId,
+      candidateIds,
+    ));
 }
 
 export async function deleteReferenceRowsIn(
   tx: TransactionHandle,
-  candidateIds: readonly number[],
+  candidateIds: PurgeCandidateSelector,
 ): Promise<number> {
-  if (candidateIds.length === 0) return 0;
+  if (purgeScopeIsEmpty(candidateIds)) return 0;
   const result = await tx
     .delete(castingReferenceLibrary)
-    .where(inArray(castingReferenceLibrary.candidateId, [...candidateIds]));
+    .where(purgeScopeWhere(
+      castingReferenceLibrary.candidateId,
+      castingReferenceLibrary.userId,
+      candidateIds,
+    ));
   return affectedRows(result);
 }

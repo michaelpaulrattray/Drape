@@ -383,6 +383,165 @@ export async function getRecentPublicGenerationOperation(input: {
   return toPublicGenerationOperation(operation, children.get(operation.id) ?? []);
 }
 
+/**
+ * THE STATUSES A LIVE PROCESS IS STILL HOLDING — the one question "can this
+ * account's bytes still arrive?" has to ask (#1954).
+ *
+ * `claimed` and `running`, and deliberately NOT `recovery_required`, which is
+ * the third non-terminal status. The difference is what is on the other end of
+ * the row:
+ *
+ * - `claimed` and `running` mean a request thread is executing the work.
+ *   Dispatch is awaited in-request under a heartbeated lease
+ *   (`castingV2/rollService.ts`'s header), so the engine call, the
+ *   `storagePut` and the row write are all still ahead of it.
+ * - `recovery_required` is where the stale-operation sweep PARKS a row it
+ *   cannot adjudicate — an unrecorded refund, a Cast that disagrees with its
+ *   candidate (`casting/operationRecovery.ts:264`). Nothing is executing, and
+ *   nothing will execute it again: a human settles it. Only a FENCED Sign is
+ *   ever picked back up, and that row is on its way to terminal rather than to
+ *   a render.
+ *
+ * ⚠ **THE CAST-DELETION SIBLING REFUSES ON ALL THREE AND THAT IS NOT A
+ * DISAGREEMENT WITH THIS** (`casting/finalCastDeletion.ts`'s `unsettledPrior`).
+ * It is answering a different question — *is this Cast settled?* — and the
+ * customer it refuses can delete something else, or the same Cast once support
+ * has closed the row. An ACCOUNT has no second road: refusing erasure on a
+ * row parked for a human would wedge a customer's right to be erased behind an
+ * internal queue, for as long as that queue takes. So the two lists differ by
+ * one value on purpose, and neither is derived from the other (deriving from a
+ * set that answers a different question is a silent behaviour change).
+ */
+export const RENDER_IN_FLIGHT_STATUSES = ["claimed", "running"] as const;
+
+/** What an in-flight render is, to a caller that only has to refuse. */
+export interface InFlightRender {
+  operationId: string;
+  kind: string;
+  status: string;
+}
+
+/**
+ * ONE DEFINITION of in flight, read by both forms below, so the locking read
+ * and the courtesy read can never disagree about what counts (working law 4).
+ *
+ * ⚠ **WHAT THEY NO LONGER SHARE IS THE PREDICATE, AND THAT IS DELIBERATE
+ * (PR #1960 review).** The courtesy read tests the status in SQL, because it
+ * takes no locks and a status-leading index with `LIMIT 1` is the fastest way
+ * to answer it. The locking read tests it HERE, in code, because under
+ * `FOR UPDATE` the index the optimizer picks decides what gets locked — and a
+ * status predicate bought a status-leading range that locked every account's
+ * in-flight rows. `RENDER_IN_FLIGHT_STATUSES` is the one fact; where it is
+ * applied is a property of locking, not of meaning.
+ */
+function renderInFlightWhere(userId: number) {
+  return and(
+    eq(generationOperations.userId, userId),
+    inArray(generationOperations.status, [...RENDER_IN_FLIGHT_STATUSES]),
+  );
+}
+
+/** The same test, applied to a row rather than to a column. */
+function rowIsRenderInFlight(row: { status: string }): boolean {
+  return (RENDER_IN_FLIGHT_STATUSES as readonly string[]).includes(row.status);
+}
+
+function firstInFlight(
+  rows: readonly { id: string; kind: string; status: string }[],
+): InFlightRender | null {
+  const row = rows[0];
+  return row ? { operationId: row.id, kind: row.kind, status: row.status } : null;
+}
+
+/**
+ * Is a render of this account's still being executed? — the plain read.
+ *
+ * For a caller that has to decide something BEFORE it does anything
+ * irreversible, and therefore cannot be inside the deletion transaction yet.
+ * It is a check-then-act read and is not the control; the locking form below
+ * is. Both exist because they stop different harms, and the comment at each
+ * call site says which.
+ */
+export async function findRenderInFlightForUser(userId: number): Promise<InFlightRender | null> {
+  assertPositiveId(userId, "userId");
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .select({
+      id: generationOperations.id,
+      kind: generationOperations.kind,
+      status: generationOperations.status,
+    })
+    .from(generationOperations)
+    .where(renderInFlightWhere(userId))
+    .limit(1);
+  return firstInFlight(rows);
+}
+
+/**
+ * The same question asked as a LOCKING read, inside a transaction.
+ *
+ * `.for("update")` is the whole point: it reads the latest committed version
+ * rather than the transaction's snapshot, and the range it locks is held for
+ * as long as the caller's transaction lives. So a claim racing an erasure
+ * either committed before this read and is seen, or blocks behind it. A plain
+ * `SELECT` here would answer about the moment the transaction began, which is
+ * the class `collectAccountOwnedStorageItemsIn` was already bitten by
+ * (#1948 L2).
+ *
+ * ⚠ **IT LOCKS BY OWNER ALONE, AND THE STATUS TEST IS IN CODE. ITS DOCBLOCK
+ * CLAIMED — WRONGLY — THAT IT HELD ‘THE INDEX RANGE FOR THIS ACCOUNT’, AND
+ * THE OPTIMIZER DID NOT TAKE THAT RANGE (PR #1960 review).** With
+ * `status IN (…)` in the WHERE, `EXPLAIN` on the real schema took
+ * `idx_generation_ops_status_lease` — a STATUS-leading range — and under
+ * `FOR UPDATE` in REPEATABLE READ, InnoDB next-key-locks every index record it
+ * scans. When the deleting account had no in-flight render, which is the
+ * common case, `LIMIT 1` never stopped early and EVERY customer's `claimed`
+ * and `running` rows stayed locked until the erasure committed — the longest
+ * transaction in the product. Other customers' heartbeats, lease renewals and
+ * settles all block on it.
+ *
+ * Measured on the real schema, both shapes, rather than reasoned about:
+ *
+ *     userId + status IN, LIMIT 1   type=range  key=idx_generation_ops_status_lease
+ *     userId alone, no limit        type=ref    key=uq_generation_ops_user_request
+ *
+ * ⚠ **The second reading is the one that had to be taken rather than assumed,
+ * because owner-only has its OWN risk: no status predicate means less
+ * selectivity, and a FULL SCAN would lock strictly more than the defect did.**
+ * It was measured against the worst case available — an account owning half
+ * the table — and the plan is a user-leading `ref`, not a scan. Both candidate
+ * keys the optimizer considers there are user-leading, so either choice is an
+ * owner-scoped range.
+ *
+ * ⚠ **AND `LIMIT 1` HAD TO GO WITH THE PREDICATE, WHICH IS THE EASY HALF TO
+ * GET WRONG**: with no status test in SQL, `LIMIT 1` would return whichever
+ * row the index reached first and answer `null` for an account whose in-flight
+ * render is not it. The statement returns the account's operations and the
+ * status test is applied here. Measured at the busiest dev account: 248 rows
+ * of three columns, once, inside a transaction that is already purging every
+ * table the account touches.
+ */
+export async function findRenderInFlightForUserIn(
+  tx: TransactionHandle,
+  userId: number,
+): Promise<InFlightRender | null> {
+  assertPositiveId(userId, "userId");
+  const rows = await tx
+    .select({
+      id: generationOperations.id,
+      kind: generationOperations.kind,
+      status: generationOperations.status,
+    })
+    .from(generationOperations)
+    /* OWNER ONLY — see the docblock. A status predicate here is not a tidy-up,
+       it is the defect: it buys a status-leading index and locks every
+       account's in-flight renders. */
+    .where(eq(generationOperations.userId, userId))
+    .for("update");
+  return firstInFlight(rows.filter(rowIsRenderInFlight));
+}
+
 export async function listActivePublicGenerationOperations(input: {
   userId: number;
   boardId?: number;

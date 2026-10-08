@@ -1,5 +1,51 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(node node_modules/vitest/vitest.mjs run *)",
+      "Bash(npx vitest run *)",
+      "Bash(git fetch *)",
+      "Bash(npx tsc --noEmit *)",
+      "Bash(pnpm preflight)",
+      "Bash(curl -s https://drape-production-0232.up.railway.app/api/health*)",
+      "Bash(pnpm check)",
+      "Bash(pnpm test)",
+      "Bash(pnpm architecture:check)",
+      "Bash(pnpm capability:check)",
+      "Bash(npx tsx scripts/gate-stall-check.mts *)",
+      "Bash(npx tsx scripts/check-closing-keyword.mts *)",
+      "Bash(npx tsx scripts/patrol-clocks.mts *)",
+      "Bash(tasklist *)",
+      "Bash(npx tsx scripts/dev-servers.mts)",
+      "Bash(npx tsx scripts/crew-count-queue.mts *)",
+      "Bash(curl -s http://localhost:*)",
+      "Bash(npx tsx scripts/check-eye-frames.mts *)",
+      "Bash(npx tsx scripts/queue-rot-read.mts *)",
+      "Bash(railway.cmd logs *)",
+      "Bash(railway logs *)",
+      "Bash(railway.cmd deployment list *)",
+      "Bash(gh run watch *)",
+      "mcp__railway__get_logs",
+      "mcp__railway__list_deployments",
+      "mcp__railway__list_services",
+      "mcp__railway__service_metrics",
+      "mcp__railway__whoami",
+      "mcp__playwright__browser_take_screenshot",
+      "mcp__playwright__browser_snapshot",
+      "mcp__playwright__browser_console_messages",
+      "mcp__claude-in-chrome__tabs_context_mcp",
+      "mcp__claude-in-chrome__read_page",
+      "mcp__claude-in-chrome__get_page_text",
+      "mcp__claude-in-chrome__find",
+      "mcp__unreal__capture_image",
+      "mcp__unityMCP__read_console"
+    ]
+  },
   "enabledPlugins": {
-    "frontend-design@claude-plugins-official": true
+    "frontend-design@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "context7@claude-plugins-official": true,
+    "sentry@claude-plugins-official": true,
+    "posthog@claude-plugins-official": true,
+    "stripe@claude-plugins-official": true
   }
 }

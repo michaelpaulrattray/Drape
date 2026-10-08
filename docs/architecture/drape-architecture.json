@@ -7,7 +7,7 @@
     {
       "id": "domain:admin",
       "name": "admin",
-      "moduleCount": 63
+      "moduleCount": 64
     },
     {
       "id": "domain:api",
@@ -47,7 +47,7 @@
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 66
+      "moduleCount": 67
     },
     {
       "id": "domain:evidence",
@@ -117,12 +117,12 @@
     {
       "id": "domain:settings",
       "name": "settings",
-      "moduleCount": 16
+      "moduleCount": 17
     },
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 83
+      "moduleCount": 85
     },
     {
       "id": "domain:staff",
@@ -513,6 +513,12 @@
     {
       "id": "module:client/src/features/admin/components/crew/crewAgo.ts",
       "path": "client/src/features/admin/components/crew/crewAgo.ts",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/admin/components/crew/crewRepairsOwed.ts",
+      "path": "client/src/features/admin/components/crew/crewRepairsOwed.ts",
       "domain": "admin",
       "lifecycle": "active"
     },
@@ -2001,6 +2007,12 @@
     {
       "id": "module:client/src/features/settings/sections/UsageSection.tsx",
       "path": "client/src/features/settings/sections/UsageSection.tsx",
+      "domain": "settings",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/settings/sections/exportAccountData.ts",
+      "path": "client/src/features/settings/sections/exportAccountData.ts",
       "domain": "settings",
       "lifecycle": "active"
     },
@@ -4861,6 +4873,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/db/castingV2PurgeScope.ts",
+      "path": "server/db/castingV2PurgeScope.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/db/castingV2ReferenceAttachments.ts",
       "path": "server/db/castingV2ReferenceAttachments.ts",
       "domain": "data",
@@ -6007,6 +6025,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:shared/brand.ts",
+      "path": "shared/brand.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:shared/briefLength.ts",
       "path": "shared/briefLength.ts",
       "domain": "shared",
@@ -6463,6 +6487,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:shared/waitPhrase.ts",
+      "path": "shared/waitPhrase.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:shared/wardrobeTryOnDoor.ts",
       "path": "shared/wardrobeTryOnDoor.ts",
       "domain": "shared",
@@ -6499,16 +6529,6 @@
       "input": "strict",
       "rateLimited": true,
       "file": "server/routes/access.ts"
-    },
-    {
-      "id": "route:account.deleteAccount",
-      "namespace": "account",
-      "name": "deleteAccount",
-      "type": "mutation",
-      "auth": "protected",
-      "input": "open",
-      "rateLimited": true,
-      "file": "server/routes/account.ts"
     },
     {
       "id": "route:account.exportData",
@@ -10824,6 +10844,10 @@
       "path": "client/src/features/admin/components/crew/crewBodyWhitespace.test.ts"
     },
     {
+      "id": "test:client/src/features/admin/components/crew/crewRepairsOwed.test.ts",
+      "path": "client/src/features/admin/components/crew/crewRepairsOwed.test.ts"
+    },
+    {
       "id": "test:client/src/features/admin/components/crew/crewTypes.test.ts",
       "path": "client/src/features/admin/components/crew/crewTypes.test.ts"
     },
@@ -11168,6 +11192,10 @@
       "path": "client/src/features/settings/card425-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/settings/exportAccountData.test.ts",
+      "path": "client/src/features/settings/exportAccountData.test.ts"
+    },
+    {
       "id": "test:client/src/features/settings/planBlurbs.test.ts",
       "path": "client/src/features/settings/planBlurbs.test.ts"
     },
@@ -11230,6 +11258,14 @@
     {
       "id": "test:client/src/foundation/anchoredPanel.test.ts",
       "path": "client/src/foundation/anchoredPanel.test.ts"
+    },
+    {
+      "id": "test:client/src/foundation/canonicalWording.test.ts",
+      "path": "client/src/foundation/canonicalWording.test.ts"
+    },
+    {
+      "id": "test:client/src/foundation/downloadFilenameBrand.test.ts",
+      "path": "client/src/foundation/downloadFilenameBrand.test.ts"
     },
     {
       "id": "test:client/src/foundation/focusRing.test.ts",
@@ -11312,6 +11348,10 @@
       "path": "server/_core/numericEnv.test.ts"
     },
     {
+      "id": "test:server/_core/sessionLookupFailure.test.ts",
+      "path": "server/_core/sessionLookupFailure.test.ts"
+    },
+    {
       "id": "test:server/abuseStripHonesty.test.ts",
       "path": "server/abuseStripHonesty.test.ts"
     },
@@ -11328,12 +11368,20 @@
       "path": "server/accountDeletionCoverage.test.ts"
     },
     {
+      "id": "test:server/accountDeletionOrphanOwnerScope.test.ts",
+      "path": "server/accountDeletionOrphanOwnerScope.test.ts"
+    },
+    {
       "id": "test:server/accountDeletionOrphans.test.ts",
       "path": "server/accountDeletionOrphans.test.ts"
     },
     {
       "id": "test:server/accountDeletionReachability.test.ts",
       "path": "server/accountDeletionReachability.test.ts"
+    },
+    {
+      "id": "test:server/accountErasureEntrance.test.ts",
+      "path": "server/accountErasureEntrance.test.ts"
     },
     {
       "id": "test:server/accountFreeze.test.ts",
@@ -12948,6 +12996,10 @@
       "path": "server/castingV2/signSheet.test.ts"
     },
     {
+      "id": "test:server/castingV2/signSheetCutWarning.test.ts",
+      "path": "server/castingV2/signSheetCutWarning.test.ts"
+    },
+    {
       "id": "test:server/castingV2/signViewEngineChain.test.ts",
       "path": "server/castingV2/signViewEngineChain.test.ts"
     },
@@ -13640,6 +13692,10 @@
       "path": "server/gateTriggers.test.ts"
     },
     {
+      "id": "test:server/gdprExportBounded.test.ts",
+      "path": "server/gdprExportBounded.test.ts"
+    },
+    {
       "id": "test:server/ghQueueTransport.test.ts",
       "path": "server/ghQueueTransport.test.ts"
     },
@@ -13830,6 +13886,10 @@
     {
       "id": "test:server/patrolClocks.test.ts",
       "path": "server/patrolClocks.test.ts"
+    },
+    {
+      "id": "test:server/perRowFanOutBounded.test.ts",
+      "path": "server/perRowFanOutBounded.test.ts"
     },
     {
       "id": "test:server/phase-a-quota.test.ts",
@@ -14288,6 +14348,10 @@
       "path": "server/r7-wardrobe-image-authority.test.ts"
     },
     {
+      "id": "test:server/rateLimitVerdictRead.test.ts",
+      "path": "server/rateLimitVerdictRead.test.ts"
+    },
+    {
       "id": "test:server/readerAskTrim.test.ts",
       "path": "server/readerAskTrim.test.ts"
     },
@@ -14318,6 +14382,14 @@
     {
       "id": "test:server/refinePanelDoors.test.ts",
       "path": "server/refinePanelDoors.test.ts"
+    },
+    {
+      "id": "test:server/renewalSettlementNetting.test.ts",
+      "path": "server/renewalSettlementNetting.test.ts"
+    },
+    {
+      "id": "test:server/repairsOwed.test.ts",
+      "path": "server/repairsOwed.test.ts"
     },
     {
       "id": "test:server/replyHosts.test.ts",
@@ -14500,6 +14572,10 @@
       "path": "server/selfInvocationCheck.test.ts"
     },
     {
+      "id": "test:server/serverBrandCopy.test.ts",
+      "path": "server/serverBrandCopy.test.ts"
+    },
+    {
       "id": "test:server/serverResilience.test.ts",
       "path": "server/serverResilience.test.ts"
     },
@@ -14634,6 +14710,10 @@
     {
       "id": "test:server/stripe/topupGrant.test.ts",
       "path": "server/stripe/topupGrant.test.ts"
+    },
+    {
+      "id": "test:server/stripe/undeliveredPlanFeatures1953.test.ts",
+      "path": "server/stripe/undeliveredPlanFeatures1953.test.ts"
     },
     {
       "id": "test:server/stripe/voidInvoiceStatus.test.ts",
@@ -14798,6 +14878,10 @@
     {
       "id": "test:server/w6-thumbnail-restore.test.ts",
       "path": "server/w6-thumbnail-restore.test.ts"
+    },
+    {
+      "id": "test:server/waitPhrase.test.ts",
+      "path": "server/waitPhrase.test.ts"
     },
     {
       "id": "test:server/waitlist.test.ts",
@@ -15545,6 +15629,11 @@
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewPipeline.tsx",
+      "to": "module:client/src/features/admin/components/crew/crewRepairsOwed.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewPipeline.tsx",
       "to": "module:client/src/features/admin/components/crew/CrewShell.tsx",
       "kind": "imports"
     },
@@ -15621,6 +15710,11 @@
     {
       "from": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
       "to": "module:shared/crewQueueTitles.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/crewRepairsOwed.ts",
+      "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
       "kind": "imports"
     },
     {
@@ -16385,6 +16479,11 @@
     },
     {
       "from": "module:client/src/features/boards/BoardPage.tsx",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/BoardPage.tsx",
       "to": "module:shared/clientRequestId.ts",
       "kind": "imports"
     },
@@ -16411,6 +16510,11 @@
     {
       "from": "module:client/src/features/boards/canvas/CanvasImageViewer.tsx",
       "to": "module:client/src/features/boards/canvas/ImageFallback.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/canvas/CanvasImageViewer.tsx",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
@@ -16665,6 +16769,11 @@
     },
     {
       "from": "module:client/src/features/boards/canvas/nodes/CastNode.tsx",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/canvas/nodes/CastNode.tsx",
       "to": "module:shared/canvasCastDoor.ts",
       "kind": "imports"
     },
@@ -16836,6 +16945,11 @@
     {
       "from": "module:client/src/features/boards/components/NodeContextMenu.tsx",
       "to": "module:client/src/features/boards/canvas/imageActions.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/components/NodeContextMenu.tsx",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
@@ -18689,6 +18803,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/moderator/reconciliation-csv.ts",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/moderator/ReconciliationSubTab.tsx",
       "to": "module:client/src/features/moderator/figures.ts",
       "kind": "imports"
@@ -18846,6 +18965,11 @@
     {
       "from": "module:client/src/features/profile/index.ts",
       "to": "module:client/src/features/profile/ProfileVisual.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/profile/ProfileVisual.tsx",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
@@ -19009,6 +19133,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/settings/sections/exportAccountData.ts",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/settings/sections/MembersSection.tsx",
       "to": "module:client/src/features/profile/ProfileVisual.tsx",
       "kind": "imports"
@@ -19076,6 +19205,11 @@
     {
       "from": "module:client/src/features/settings/sections/SecuritySection.tsx",
       "to": "module:client/src/features/settings/parts.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/SecuritySection.tsx",
+      "to": "module:client/src/features/settings/sections/exportAccountData.ts",
       "kind": "imports"
     },
     {
@@ -19466,6 +19600,11 @@
     {
       "from": "module:client/src/features/studio/components/ImageActionBar.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/studio/components/ImageActionBar.tsx",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
@@ -20236,6 +20375,11 @@
     {
       "from": "module:client/src/foundation/AppShell.tsx",
       "to": "module:client/src/foundation/Topbar.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/brand.ts",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
@@ -21449,6 +21593,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/pages/Login.tsx",
+      "to": "module:shared/waitPhrase.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/pages/ModeratorDashboard.tsx",
       "to": "module:client/src/_core/hooks/useAuth.ts",
       "kind": "imports"
@@ -21556,6 +21705,16 @@
     {
       "from": "module:server/_core/context.ts",
       "to": "module:server/_core/sdk.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/context.ts",
+      "to": "module:server/_core/spokenError.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/context.ts",
+      "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
     {
@@ -21861,6 +22020,11 @@
     {
       "from": "module:server/_core/trpc.ts",
       "to": "module:shared/const.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/trpc.ts",
+      "to": "module:shared/waitPhrase.ts",
       "kind": "imports"
     },
     {
@@ -24280,6 +24444,11 @@
     },
     {
       "from": "module:server/casting/pdfService.ts",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/pdfService.ts",
       "to": "module:shared/exportViews.ts",
       "kind": "imports"
     },
@@ -24906,6 +25075,11 @@
     {
       "from": "module:server/castingV2/accountCastingPurge.ts",
       "to": "module:server/db/castingV2Orphans.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/db/castingV2PurgeScope.ts",
       "kind": "imports"
     },
     {
@@ -30125,6 +30299,11 @@
     },
     {
       "from": "module:server/db/accountDeletion.ts",
+      "to": "module:server/db/generationOperations.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/accountDeletion.ts",
       "to": "module:server/db/storageCleanup.ts",
       "kind": "imports"
     },
@@ -30196,6 +30375,11 @@
     {
       "from": "module:server/db/billing.ts",
       "to": "module:server/db/credits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/billing.ts",
+      "to": "module:server/db/planChangeSettlements.ts",
       "kind": "imports"
     },
     {
@@ -30295,6 +30479,11 @@
     },
     {
       "from": "module:server/db/castingV2FaceScans.ts",
+      "to": "module:server/db/castingV2PurgeScope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2FaceScans.ts",
       "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
@@ -30306,6 +30495,11 @@
     {
       "from": "module:server/db/castingV2InkDeliveryCrops.ts",
       "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2InkDeliveryCrops.ts",
+      "to": "module:server/db/castingV2PurgeScope.ts",
       "kind": "imports"
     },
     {
@@ -30346,6 +30540,11 @@
     {
       "from": "module:server/db/castingV2InkDesigns.ts",
       "to": "module:server/castingV2/inkUploadDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2InkDesigns.ts",
+      "to": "module:server/db/castingV2PurgeScope.ts",
       "kind": "imports"
     },
     {
@@ -30425,6 +30624,11 @@
     },
     {
       "from": "module:server/db/castingV2InkPlates.ts",
+      "to": "module:server/db/castingV2PurgeScope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2InkPlates.ts",
       "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
@@ -30495,6 +30699,11 @@
     },
     {
       "from": "module:server/db/castingV2ReferenceAttachments.ts",
+      "to": "module:server/db/castingV2PurgeScope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2ReferenceAttachments.ts",
       "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
@@ -30511,6 +30720,11 @@
     {
       "from": "module:server/db/castingV2ReferenceCrops.ts",
       "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2ReferenceCrops.ts",
+      "to": "module:server/db/castingV2PurgeScope.ts",
       "kind": "imports"
     },
     {
@@ -30550,6 +30764,11 @@
     },
     {
       "from": "module:server/db/castingV2ReferenceLibrary.ts",
+      "to": "module:server/db/castingV2PurgeScope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2ReferenceLibrary.ts",
       "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
@@ -30581,6 +30800,11 @@
     {
       "from": "module:server/db/castingV2Segments.ts",
       "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2Segments.ts",
+      "to": "module:server/db/castingV2PurgeScope.ts",
       "kind": "imports"
     },
     {
@@ -30626,6 +30850,11 @@
     {
       "from": "module:server/db/castingV2Variants.ts",
       "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2Variants.ts",
+      "to": "module:server/db/castingV2PurgeScope.ts",
       "kind": "imports"
     },
     {
@@ -31749,6 +31978,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/klaviyo.ts",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/lib/adminActions/approvalStateBlocker.ts",
       "to": "module:server/db/index.ts",
       "kind": "imports"
@@ -32371,16 +32605,6 @@
     {
       "from": "module:server/routes/account.ts",
       "to": "module:server/db/gdprExport.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/account.ts",
-      "to": "module:server/logging/logger.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/account.ts",
-      "to": "module:server/security/deleteUserData.ts",
       "kind": "imports"
     },
     {
@@ -34239,6 +34463,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/routes/imageProxy.ts",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/routes/inkDesignDelivery.ts",
       "to": "module:server/_core/sdk.ts",
       "kind": "imports"
@@ -34615,7 +34844,17 @@
     },
     {
       "from": "module:server/routes/referral.ts",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/referral.ts",
       "to": "module:shared/referralCodeFormat.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/referral.ts",
+      "to": "module:shared/waitPhrase.ts",
       "kind": "imports"
     },
     {
@@ -34820,12 +35059,22 @@
     },
     {
       "from": "module:server/security/deleteUserData.ts",
+      "to": "module:server/_core/spokenError.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/security/deleteUserData.ts",
       "to": "module:server/auditLog.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/security/deleteUserData.ts",
       "to": "module:server/db/accountDeletion.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/security/deleteUserData.ts",
+      "to": "module:server/db/generationOperations.ts",
       "kind": "imports"
     },
     {
@@ -34904,6 +35153,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/security/rateLimit.ts",
+      "to": "module:shared/waitPhrase.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/security/trustedImageFetch.ts",
       "to": "module:server/security/urlValidator.ts",
       "kind": "imports"
@@ -34936,6 +35190,11 @@
     {
       "from": "module:server/stripe/planChangeSettlement.ts",
       "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/planChangeSettlement.ts",
+      "to": "module:server/db/planChangeSettlements.ts",
       "kind": "imports"
     },
     {
@@ -36464,13 +36723,6 @@
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:access.redeem",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:account.deleteAccount",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:account.deleteAccount",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {

@@ -73,3 +73,21 @@ The planned cast voice pairs an **asset** (identity) with a **`Voice:` text
 line** (performance style). This test decides *when* the asset must ride:
 every line, or only where identity is exposed. It does not decide *whether*
 to build the asset — that is already planned, and the delivery lane is proven.
+
+
+## Practitioner testimony, logged 2026-10-08 (evidence, not a measurement)
+
+Gossip Goblin (named AI short-film creator), in his own Discord, from
+production experience — and it names a THIRD outcome this test's design
+did not list: driving a character's performance with voice-actor audio
+input "will tend to limit the performance, and the character's acting
+comes out very clunky and bizarre a lot of the time"; pure AI audio gives
+the more fluid on-screen performance. Their working lane is ADR: generate
+with AI audio, lock the edit, dub real voices after ("the fluidity of
+pure AI performance with the clarity/richness of voice actors"). A second
+practitioner in the same thread (Kavan) locks a generated voice and feeds
+it back as an audio-only reference with the lines in the prompt — the
+anchor-promotion mechanic, independently reinvented. His own expiry
+caveat: "out of date in ~2 months." Testimony, not a controlled pair;
+the test's arms stand — but the design should add the third arm: does
+audio-driving DEGRADE the visual performance versus description-only?

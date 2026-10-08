@@ -66,8 +66,18 @@ const INK_INTENT_UNSUPPORTED =
   "That request is outside this tattoo preview. Describe one tattoo design for the visible upper torso.";
 const INK_ANYWHERE_INTENT_UNSUPPORTED =
   "Describe one new tattoo and one exact body location. Existing tattoos cannot be changed in this release.";
+/*
+  THE NAME CAME OUT RATHER THAN BEING RENAMED — #1955.
+
+  It said *"Tell Drape the exact body location…"*. Its three siblings above are
+  bare imperatives that name nobody — *"Describe one tattoo design…"*,
+  *"Describe one new tattoo and one exact body location…"* — so this was the
+  only refusal in the file that put the product between the customer and what
+  she has to do. Naming the product in a refusal gives the reader nothing she
+  can act on, which is what the sentence is for.
+*/
 const INK_ANYWHERE_INTENT_AMBIGUOUS =
-  "Tell Drape the exact body location and side, such as right full sleeve or left upper back. Nothing was charged.";
+  "Name the exact body location and side, such as right full sleeve or left upper back. Nothing was charged.";
 
 export interface InkAddCapabilityDto {
   inkAdd: boolean;

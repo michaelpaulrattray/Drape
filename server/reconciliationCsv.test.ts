@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { PRODUCT_NAME } from "@shared/brand";
 
 /*
  * ⚠ A HUNDRED LINES OF `client/src/features/moderator/reconciliation-csv.ts`
@@ -74,7 +75,9 @@ describe("Reconciliation CSV Export", () => {
     const csv = buildReconciliationCsv(makeSampleData(), 42);
     const lines = csv.trim().split("\n");
 
-    expect(lines[0]).toContain("Drape");
+    // #1992: the header says the product's name, read from the one declaration.
+    expect(lines[0]).toContain(PRODUCT_NAME);
+    expect(lines[0]).not.toMatch(/drape/i);
     expect(lines[2]).toBe("User ID,42");
     expect(lines[3]).toContain("All time");
     expect(lines[3]).toContain("Present");

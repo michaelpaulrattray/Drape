@@ -131,15 +131,38 @@ function nameOf(value: unknown): string {
   }
 }
 
+/**
+ * ⚠ **ONLY `from` NAMES THE SUBJECT OF A READ, AND A JOIN MUST NOT OVERWRITE
+ * IT — found by PR #1974's left join, latent since the double was written.**
+ *
+ * Every stage used to share one setter, so the LAST recognisable table won.
+ * `listPurgeableInkPlatesIn` has always been
+ * `.from(castingInkPlates).innerJoin(castingInkDesigns, …)`, so that read was
+ * being keyed `casting_ink_designs` and answered with whatever the DESIGN
+ * fixture held — a plate read answering from the wrong table, quietly, in a
+ * suite about plates. Nothing caught it because the arm that cares sets only
+ * `casting_ink_plates` and the other road (no join) happened to key right.
+ *
+ * It surfaced the moment `listAccountOrphanInkPlatesIn` gained a
+ * `leftJoin(castingInkDesigns, …)`: the orphan-plate arm went red claiming the
+ * plate was never collected, when the product was correct and the double was
+ * looking up the design table. A double that answers from the wrong table
+ * reads exactly like a product that does nothing (working law 2).
+ */
 function chain(fields: Record<string, unknown> | undefined, distinct: boolean) {
   let table = "<unset>";
   const self: Record<string, unknown> = {};
-  const stage = (...args: unknown[]) => {
-    if (args[0] !== undefined && nameOf(args[0]) !== "<unknown>") table = nameOf(args[0]);
+  const named = (value: unknown) => value !== undefined && nameOf(value) !== "<unknown>";
+  self.from = (...args: unknown[]) => {
+    if (named(args[0])) table = nameOf(args[0]);
     return self;
   };
-  for (const name of ["from", "where", "limit", "orderBy", "for", "innerJoin", "leftJoin"]) {
-    self[name] = stage;
+  /* A join widens what a statement may READ; it never changes what it is a
+     read OF. `where(eq(…))` is already inert here because a condition object
+     has no table name, and that guard stays — it is what the `<unknown>`
+     check was originally written for. */
+  for (const name of ["where", "limit", "orderBy", "for", "innerJoin", "leftJoin"]) {
+    self[name] = (..._args: unknown[]) => self;
   }
   self.then = (resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) => {
     recorded.push({ kind: "select", table });
