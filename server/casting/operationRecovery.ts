@@ -463,7 +463,17 @@ async function reconstructPublicResult(
   }
 }
 
-async function claimRecoveryAttempt(operation: GenerationOperation, now: Date): Promise<boolean> {
+/**
+ * THE SWEEP'S CLAIM — and, since #2073, the fence a view commit reads.
+ *
+ * It is the one write the sweep makes before it reads anything about an
+ * operation, and `commitRetriedViewAsset` refuses a row that carries its stamp
+ * under the same row lock. So whatever adjudication follows reads a world in
+ * which no further picture can land under this operation. Exported so that
+ * interleave can be driven against a real database with THIS statement rather
+ * than a copy of it (`scripts/_2073-claim-fence-disposable.mts`).
+ */
+export async function claimRecoveryAttempt(operation: GenerationOperation, now: Date): Promise<boolean> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const retryBefore = new Date(now.getTime() - RECOVERY_RETRY_MS);

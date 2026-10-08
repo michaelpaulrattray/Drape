@@ -69,7 +69,10 @@ import {
   listCastAssets,
   listCastPromisedAngles,
 } from "../db/castingV2Sign";
-import { markGenerationOperationRunning } from "../db/generationOperations";
+import {
+  handoffGenerationOperationToRecovery,
+  markGenerationOperationRunning,
+} from "../db/generationOperations";
 import { createModuleLogger } from "../logging/logger";
 import { storageDelete, storageReadBytes } from "../storage";
 import { castPronouns } from "./castPronouns";
@@ -102,6 +105,9 @@ export type ViewRetryServiceDependencies = PackageOrchestratorDependencies & {
   markRunning?: typeof markGenerationOperationRunning;
   deduct?: typeof deductCredits;
   commitRetried?: typeof commitRetriedViewAsset;
+  /** The fenced exit's one write (#2073) — injected so an arm can see it is
+   *  called and that no receipt is sealed beside it. */
+  handoffToRecovery?: typeof handoffGenerationOperationToRecovery;
   readSource?: typeof readCastViewRenderSource;
   readAnchorBytes?: typeof storageReadBytes;
   /**
@@ -844,10 +850,22 @@ export async function retryCastView(
   }
 
   /*
-    FENCED: this operation is no longer running, so a sweep owns its money and
-    its bytes were already dropped by the loop. Nothing is refunded here —
-    refunding under a reference the sweep is about to use is how one failure
-    becomes two refunds.
+    FENCED: the sweep owns this operation's money and its bytes were already
+    dropped by the loop. Nothing is refunded here — refunding under a reference
+    the sweep is about to use is how one failure becomes two refunds.
+
+    ⚠ **AND NOTHING IS SEALED HERE EITHER (#2073).** The fence now refuses a
+    commit the moment the sweep has CLAIMED the row (`recoveryAttemptedAt`),
+    which is while the row is still `running` — the sweep is reading the
+    ledger and recording its refund at that instant and seals afterwards. A
+    failure receipt written from here would win that race with
+    `refundedCredits: 0` over a refund the sweep had just recorded, and the
+    sweep's own seal would then find no `running` row to write the truth onto:
+    the money right and the receipt lying about it. So this exit does what the
+    redo's fenced exit already does — hands the lease to the sweep, writes no
+    receipt — and tells the customer the same sentence it always has. A row the
+    sweep has already sealed refuses the handoff, which is logged and is the
+    right answer too: there is nothing left to hand.
   */
   if (rendered.status === "fenced") {
     log.warn(
@@ -870,15 +888,18 @@ export async function retryCastView(
       tally: rendered.tally,
       judged: judgedOf(rendered.verdicts),
     });
-    return completeDirectOperationFailure({
+    await (dependencies.handoffToRecovery ?? handoffGenerationOperationToRecovery)({
       userId: input.userId,
       operationId,
-      error: new TRPCError({
-        code: "CONFLICT",
-        message: "That view was settled while it rendered. Refresh the Cast — nothing extra was charged.",
-      }),
-      chargedCredits: price,
-      refundedCredits: 0,
+    }).catch((handoffError: unknown) => {
+      log.warn(
+        { operationId, castId: input.castId, angle: input.angle, err: handoffError },
+        "[viewRetryService] the recovery handoff did not write — the sweep already holds the row",
+      );
+    });
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: "That view was settled while it rendered. Refresh the Cast — nothing extra was charged.",
     });
   }
 

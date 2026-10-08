@@ -106,9 +106,17 @@ export type ViewRetryRecoveryDependencies = {
    * THIS EXISTED.** Only a road that can tell the difference supplies it: the
    * flat-priced press can, because its pictures land under rows it does not
    * own. The Try again cannot — the row that would have to be fenced is the
-   * one being adjudicated, which needs the Sign's fenced-status machinery
-   * rather than a reader (named on the card this repair filed, not closed
-   * here).
+   * one being adjudicated, and the answer about itself is always yes.
+   *
+   * ⚠ **SO THE TRY AGAIN IS FENCED ON THE COMMIT SIDE INSTEAD (#2073), and it
+   * needs no reader here.** The sweep's claim stamps `recoveryAttemptedAt`
+   * before this adjudicator reads anything, and `commitRetriedViewAsset`
+   * refuses an operation that carries the stamp, under the same row lock. So
+   * by the time the landed read below runs, every picture that will ever land
+   * under this operation already has — the read is complete rather than a
+   * snapshot of a moving world. #1924 named the Sign's fenced-status machinery
+   * as the repair; the claim is a fence that already existed and did not need
+   * a new status, a fenced finalizer or a widened sweep selection.
    *
    * `true` leaves the operation untouched for the next sweep pass. It is not a
    * refusal and not a failure: the lease lapsed, the work did not.

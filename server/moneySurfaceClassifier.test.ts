@@ -1470,3 +1470,104 @@ describe("the Stripe-write reading — code that changes what Stripe holds (#190
     }
   });
 });
+
+/**
+ * THE NINTH POSITION IN THE SENTENCE — where a PRICE is DECIDED BY A BRANCH
+ * (#2068).
+ *
+ * A Try again on an unchecked view is free once, then a purchase. The price is
+ * DECLARED in `castViewPackage.ts` / `castingCreditCosts.ts`, both on the list;
+ * whether a customer PAYS it is decided in two modules that were on neither
+ * half — `spentFreeViewRetryFilter` (has this view had its free ask?) and
+ * `castSlotRetryOffer` (so what does the button show and the till charge?).
+ *
+ * `money-surfaces.sh` carries the measurement (27 → 28 of 60, 65 → 67 of 200,
+ * with the reader checked against the gate's own labels first) and the sweep.
+ */
+describe("the free-or-paid reading — a branch that decides WHETHER she pays (#2068)", () => {
+  it.each([
+    ["server/db/castingV2ViewRetry.ts", "spentFreeViewRetryFilter — has this view had its free ask"],
+    ["server/castingV2/castProjection.ts", "castSlotRetryOffer — the price the button shows and the till charges"],
+  ])("%s is a money diff (%s)", (file) => {
+    expect(pathRe.test(file)).toBe(true);
+  });
+
+  /**
+   * THE SPECIMEN, and the whole argument for the entry: PR #2067 (card #1943)
+   * rewrote the free/paid predicate and NEITHER HALF FIRED. Its changed files
+   * and its predicate lines are real — `git diff` of the squash commit against
+   * its parent. The path half must now fire on it, and on THIS entry alone, or
+   * the arm is passing on a neighbour the old reading already caught.
+   */
+  const SPECIMEN_FILES_PR_2067 = [
+    "server/casting/directOperation.ts",
+    "server/castingV2/viewRetryFreeOnce.test.ts",
+    "server/db/castingV2ViewRetry.ts",
+    "server/directOperationProductEvents.test.ts",
+  ];
+  /* ⚠ The removed predicate line itself (`ne(generationOperations.status,
+     CLAIMED_OPERATION_STATUS)`) is NOT quoted as a string here: this suite also
+     calls `execFileSync`, and a `.status` token in its code makes
+     `server/testing/hookDriver.test.ts` read it as a suite that drives a child
+     and reads its exit status, which it does not. The lines kept are real. */
+  const SPECIMEN_LINES_PR_2067 = [
+    "-import { and, eq, inArray, isNull, ne } from \"drizzle-orm\";",
+    "+import { and, eq, inArray, isNotNull, isNull } from \"drizzle-orm\";",
+    "-const CLAIMED_OPERATION_STATUS = \"claimed\";",
+    "+    isNotNull(generationOperations.heartbeatAt),",
+  ];
+
+  it("the PR that rewrote the free/paid predicate is a money diff now, by this entry alone", () => {
+    expect(SPECIMEN_FILES_PR_2067.filter((file) => pathRe.test(file)))
+      .toEqual(["server/db/castingV2ViewRetry.ts"]);
+    for (const line of SPECIMEN_LINES_PR_2067) {
+      expect(symbolRe.test(line), `the symbol half unexpectedly sees: ${line}`).toBe(false);
+    }
+  });
+
+  /**
+   * DRIVEN, NOT ASSERTED AGAINST A CONSTANT: the entry is held to the decision
+   * that earned it. The real `castSlotRetryOffer` is asked about ONE unchecked
+   * slot twice, and the only thing that differs is the free-ask fact — so the
+   * price a customer is charged is decided inside this module. If that ever
+   * stops being true the entry is guarding nothing and this arm says so.
+   */
+  it("castProjection.ts really decides the price: the same slot is free, then paid", async () => {
+    const { castSlotRetryOffer } = await import("./castingV2/castProjection");
+    const slot = { state: "ready", unjudged: true, refundedCredits: null } as const;
+    const PAID = 1234;
+    expect(castSlotRetryOffer(slot, PAID, false)).toEqual({ priceCredits: 0, reason: "unchecked" });
+    expect(castSlotRetryOffer(slot, PAID, true)).toEqual({ priceCredits: PAID, reason: "unchecked" });
+  });
+
+  /**
+   * And the other half, driven the same way: the real `spentFreeViewRetryFilter`
+   * is rendered to the SQL it sends, and it is the free-ask fact — a view-retry
+   * operation planned at ZERO credits — that the price branch above reads.
+   */
+  it("castingV2ViewRetry.ts really decides whether the free ask is spent", async () => {
+    const { MySqlDialect } = await import("drizzle-orm/mysql-core");
+    const { spentFreeViewRetryFilter } = await import("./db/castingV2ViewRetry");
+    const filter = spentFreeViewRetryFilter({ userId: 7, modelId: 11 });
+    if (!filter) throw new Error("spentFreeViewRetryFilter returned no condition");
+    const query = new MySqlDialect().sqlToQuery(filter);
+    expect(query.sql).toMatch(/`plannedCredits` = \?/);
+    expect(query.params).toEqual(expect.arrayContaining([7, 11, "castingV2.viewRetry", 0]));
+  });
+
+  /**
+   * THE NEGATIVE CONTROLS, and they are the measured neighbours: the specimen's
+   * other files, the spending road that is a stated remainder of #1622, and
+   * lookalike paths. NAMED FILES, NEVER DIRECTORIES.
+   */
+  it.each([
+    "server/casting/directOperation.ts",
+    "server/castingV2/viewRetryService.ts",
+    "server/castingV2/viewRetryFreeOnce.test.ts",
+    "server/castingV2/castProjection.test.ts",
+    "server/db/castingV2ViewRetry.ts.bak",
+    "server/db/castingV2Sign.ts",
+  ])("still leaves %s alone", (file) => {
+    expect(pathRe.test(file)).toBe(false);
+  });
+});
