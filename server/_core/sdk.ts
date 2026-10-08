@@ -5,7 +5,10 @@ import type { Request } from "express";
 import { SignJWT, jwtVerify } from "jose";
 import type { User } from "../../drizzle/schema";
 import * as db from "../db";
+import { createModuleLogger } from "../logging/logger";
 import { ENV } from "./env";
+
+const log = createModuleLogger("auth/sdk");
 
 // Utility function
 const isNonEmptyString = (value: unknown): value is string =>
@@ -38,6 +41,32 @@ export class SessionRejectedError extends HttpError {
 
 export function isSessionRejected(error: unknown): error is SessionRejectedError {
   return error instanceof SessionRejectedError;
+}
+
+/**
+ * WHAT AN AUTHENTICATED EXPRESS ROUTE ANSWERS WHEN `authenticateRequest`
+ * THROWS — #1997, the Express sibling of #1990's tRPC repair.
+ *
+ * The six authenticated Express routes (image proxy, evidence, character
+ * sheet, ink design, reference, crew eye frames) each read ANY throw as
+ * "401 Authentication required", so a database blink broke a signed-in
+ * customer's pictures with a sign-in answer. One reader, used by all six,
+ * so the split cannot drift between them (working law 4):
+ *
+ * - a REFUSED session (`SessionRejectedError`) → 401, exactly as before;
+ * - anything else — the lookup could not finish → 503 "try again".
+ *
+ * Neither answer grants access: both refuse the request. Only the reason
+ * the refusal gives changes.
+ */
+export type SessionFailureAnswer =
+  | { status: 401; message: "Authentication required" }
+  | { status: 503; message: "Try again shortly" };
+
+export function answerForSessionFailure(error: unknown): SessionFailureAnswer {
+  return isSessionRejected(error)
+    ? { status: 401, message: "Authentication required" }
+    : { status: 503, message: "Try again shortly" };
 }
 
 type SessionPayload = {
@@ -163,10 +192,24 @@ class SDKServer {
     }
 
     if (options.recordActivity !== false) {
-      await db.upsertUser({
-        openId: user.openId,
-        lastSignedIn: new Date(),
-      });
+      /*
+        BEST-EFFORT BOOKKEEPING — #1997 (the relay's note on #1998).
+        By here the session is verified and the user is read; `lastSignedIn`
+        is a record of activity, not a gate. Letting its write throw turned a
+        fully verified request into a 503. Logged and dropped instead — the
+        request proceeds as the user it has already proven to be.
+      */
+      try {
+        await db.upsertUser({
+          openId: user.openId,
+          lastSignedIn: new Date(),
+        });
+      } catch (error) {
+        log.warn(
+          { err: error, userId: user.id },
+          "[Auth] lastSignedIn write failed — continuing with the verified session",
+        );
+      }
     }
 
     return user;

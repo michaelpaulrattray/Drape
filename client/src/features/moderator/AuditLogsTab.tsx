@@ -26,8 +26,10 @@ import { RawPayload, RowId, StatePill, pageRange } from "@/features/staff";
 import { Button, DataTable, TableFilter, TableHead, TableSearch } from "@/foundation";
 import type { DataRow, RowAction } from "@/foundation";
 import { staffDateTime, staffFullDateTime } from "@/foundation/staffDate";
+import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { trpc } from "@/lib/trpc";
 
+import { runStaffCsvExport, saveCsvFile, staffCsvFileName } from "./staffCsvExport";
 import { AuditLog, formatAction, getActionCategory, type OpenChangeRequestOptions } from "./moderatorConstants";
 
 const PAGE_SIZE = 20;
@@ -79,35 +81,38 @@ export function AuditLogsTab({
   const hasFilters =
     severityFilter !== "all" || categoryFilter !== "all" || userIdSearch || startDate || endDate;
 
-  const exportQuery = trpc.moderatorExports.exportAuditLogsCsv.useQuery(
-    {
+  /*
+    ⚠ THROUGH THE VANILLA CLIENT, NEVER `useQuery({ enabled: false })` + `refetch()`
+    (#1991). `refetch()` resolves with `{ error }` rather than throwing, so a
+    refusal said nothing, and its `data` is the last SUCCESSFUL answer, so a
+    refused second press re-downloaded the previous file. `utils.client` throws,
+    caches nothing and retries nothing; `runStaffCsvExport` says something on
+    every road and is driven in `staffCsvExport.test.ts`.
+  */
+  const utils = trpc.useUtils();
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    const input = {
       severity: severityFilter as any,
       actionCategory: categoryFilter as any,
       userId: userIdSearch && !isNaN(parseInt(userIdSearch)) ? parseInt(userIdSearch) : undefined,
       startDate: startDate || undefined,
       endDate: endDate || undefined,
-    },
-    { enabled: false }
-  );
-
-  const handleExport = async () => {
-    setIsExporting(true);
+    };
     try {
-      const result = await exportQuery.refetch();
-      if (result.data) {
-        const blob = new Blob([result.data.csv], { type: "text/csv;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `audit-logs-${new Date().toISOString().slice(0, 10)}.csv`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        toast.success(`Exported ${result.data.total} audit log entries`);
-      }
-    } catch {
-      toast.error("Failed to export audit logs");
+      await runStaffCsvExport({
+        context: "moderatorExports.exportAuditLogsCsv",
+        fetchExport: () => utils.client.moderatorExports.exportAuditLogsCsv.query(input),
+        fileName: staffCsvFileName("audit-logs"),
+        successMessage: (answer) => `Exported ${answer.total} audit log entries`,
+        fallbackFailure: "The audit logs could not be exported.",
+        download: ({ name, csv }) => saveCsvFile(name, csv),
+        onSuccess: (message) => toast.success(message),
+        onFailure: (message) => toast.error(message),
+        logFailure: logRawFailure,
+        readFailure: readableFailure,
+      });
     } finally {
       setIsExporting(false);
     }

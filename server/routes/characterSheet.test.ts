@@ -79,6 +79,13 @@ describe("who may download a character sheet", () => {
     expect(response.status).toBe(401);
   });
 
+  it("a Cast load that could not FINISH answers 503 'try again', never the 404 of a Cast that is not there (#1997)", async () => {
+    const response = await get({
+      loadCast: async () => { throw new Error("read ECONNRESET"); },
+    }, "/api/cast/KI-TEST/sheet");
+    expect(response.status).toBe(503);
+  });
+
   it("refuses a suspended account", async () => {
     const response = await get({ authenticate: async () => ({ id: 7, suspendedAt: new Date(), lockedUntil: null }), }, "/api/cast/KI-TEST/sheet");
     expect(response.status).toBe(403);

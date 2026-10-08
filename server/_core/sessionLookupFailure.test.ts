@@ -202,9 +202,15 @@ describe("#1990 — a session that could not be CHECKED is not a sign-out", () =
     expectNotSignedOut(await call("whoami", await validCookie()));
   });
 
-  it("the activity write throws after the user was found → 503, never the sign-in message", async () => {
+  it("the activity write throws after the user was found → the request is SERVED (#1997: lastSignedIn is best-effort bookkeeping, not a gate)", async () => {
     dbState.activityWriteThrows = true;
-    expectNotSignedOut(await call("whoami", await validCookie()));
+    const { upsertUser } = await import("../db");
+    vi.mocked(upsertUser).mockClear();
+    const answer = await call("whoami", await validCookie());
+    expect(answer.status).toBe(200);
+    expect(answer.data).toEqual({ id: 1990 });
+    // The write was attempted — the arm is about a write that FAILED, not one skipped.
+    expect(vi.mocked(upsertUser)).toHaveBeenCalledTimes(1);
   });
 
   it("a public procedure does not silently proceed as a stranger when the lookup failed", async () => {

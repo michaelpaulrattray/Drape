@@ -77,7 +77,7 @@
     {
       "id": "domain:moderator",
       "name": "moderator",
-      "moduleCount": 20
+      "moduleCount": 21
     },
     {
       "id": "domain:operations",
@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 53
+      "moduleCount": 54
     },
     {
       "id": "domain:wardrobe",
@@ -1845,6 +1845,12 @@
     {
       "id": "module:client/src/features/moderator/reconciliation-csv.ts",
       "path": "client/src/features/moderator/reconciliation-csv.ts",
+      "domain": "moderator",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/moderator/staffCsvExport.ts",
+      "path": "client/src/features/moderator/staffCsvExport.ts",
       "domain": "moderator",
       "lifecycle": "active"
     },
@@ -4755,6 +4761,12 @@
     {
       "id": "module:server/crew/liveQueue.ts",
       "path": "server/crew/liveQueue.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/crew/liveRepairs.ts",
+      "path": "server/crew/liveRepairs.ts",
       "domain": "unassigned",
       "lifecycle": "active"
     },
@@ -10816,6 +10828,10 @@
   ],
   "tests": [
     {
+      "id": "test:client/src/_core/hooks/useAuth.test.ts",
+      "path": "client/src/_core/hooks/useAuth.test.ts"
+    },
+    {
       "id": "test:client/src/appRoutes.test.ts",
       "path": "client/src/appRoutes.test.ts"
     },
@@ -11158,6 +11174,10 @@
     {
       "id": "test:client/src/features/moderator/section09-guard.test.ts",
       "path": "client/src/features/moderator/section09-guard.test.ts"
+    },
+    {
+      "id": "test:client/src/features/moderator/staffCsvExport.test.ts",
+      "path": "client/src/features/moderator/staffCsvExport.test.ts"
     },
     {
       "id": "test:client/src/features/operations/bridgeOwnership.test.ts",
@@ -13336,6 +13356,14 @@
       "path": "server/crew/liveQueue.test.ts"
     },
     {
+      "id": "test:server/crew/liveRepairs.test.ts",
+      "path": "server/crew/liveRepairs.test.ts"
+    },
+    {
+      "id": "test:server/crew/liveRepairsRouter.test.ts",
+      "path": "server/crew/liveRepairsRouter.test.ts"
+    },
+    {
       "id": "test:server/crewBriefingFieldReaders.test.ts",
       "path": "server/crewBriefingFieldReaders.test.ts"
     },
@@ -14494,6 +14522,10 @@
     {
       "id": "test:server/routes/referenceDelivery.test.ts",
       "path": "server/routes/referenceDelivery.test.ts"
+    },
+    {
+      "id": "test:server/routes/sessionFailureRoutes.test.ts",
+      "path": "server/routes/sessionFailureRoutes.test.ts"
     },
     {
       "id": "test:server/schemaConformance.test.ts",
@@ -16111,6 +16143,11 @@
     },
     {
       "from": "module:client/src/features/admin/UserActionModals.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/UserActionModals.tsx",
       "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
@@ -16137,6 +16174,11 @@
     {
       "from": "module:client/src/features/admin/UserTable.tsx",
       "to": "module:client/src/foundation/staffDate.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/UserTable.tsx",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -18556,6 +18598,11 @@
     },
     {
       "from": "module:client/src/features/moderator/AuditLogsTab.tsx",
+      "to": "module:client/src/features/moderator/staffCsvExport.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/AuditLogsTab.tsx",
       "to": "module:client/src/features/staff/index.ts",
       "kind": "imports"
     },
@@ -18567,6 +18614,11 @@
     {
       "from": "module:client/src/features/moderator/AuditLogsTab.tsx",
       "to": "module:client/src/foundation/staffDate.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/AuditLogsTab.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
     {
@@ -18656,6 +18708,11 @@
     },
     {
       "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
+      "to": "module:client/src/features/moderator/staffCsvExport.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
       "to": "module:client/src/features/staff/index.ts",
       "kind": "imports"
     },
@@ -18667,6 +18724,11 @@
     {
       "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
       "to": "module:client/src/foundation/staffDate.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
     {
@@ -18716,6 +18778,11 @@
     },
     {
       "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
+      "to": "module:client/src/features/moderator/staffCsvExport.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
       "to": "module:client/src/features/staff/index.ts",
       "kind": "imports"
     },
@@ -18727,6 +18794,11 @@
     {
       "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
       "to": "module:client/src/foundation/staffDate.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
     {
@@ -18837,6 +18909,11 @@
     {
       "from": "module:client/src/features/moderator/ReconciliationSubTab.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/staffCsvExport.ts",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
@@ -20960,6 +21037,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/pages/AdminInviteCodes.tsx",
+      "to": "module:shared/referralCodeFormat.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/pages/AdminOverview.tsx",
       "to": "module:client/src/_core/hooks/useAuth.ts",
       "kind": "imports"
@@ -21027,6 +21109,11 @@
     {
       "from": "module:client/src/pages/AdminUserManagement.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminUserManagement.tsx",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -21977,6 +22064,11 @@
     {
       "from": "module:server/_core/sdk.ts",
       "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/sdk.ts",
+      "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
     {
@@ -30201,6 +30293,11 @@
     },
     {
       "from": "module:server/crew/liveDesk.ts",
+      "to": "module:server/crew/liveRepairs.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveDesk.ts",
       "to": "module:server/db/crewWorkSwitches.ts",
       "kind": "imports"
     },
@@ -30262,6 +30359,21 @@
     {
       "from": "module:server/crew/liveQueue.ts",
       "to": "module:shared/crewTestDrive.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveRepairs.ts",
+      "to": "module:server/crew/liveQueue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveRepairs.ts",
+      "to": "module:shared/crewCardBuildState.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveRepairs.ts",
+      "to": "module:shared/handVerdict.ts",
       "kind": "imports"
     },
     {
@@ -32921,6 +33033,11 @@
     },
     {
       "from": "module:server/routes/admin/users.ts",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/admin/users.ts",
       "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
@@ -33572,6 +33689,11 @@
     {
       "from": "module:server/routes/crew.ts",
       "to": "module:server/crew/liveQueue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/crew.ts",
+      "to": "module:server/crew/liveRepairs.ts",
       "kind": "imports"
     },
     {
@@ -35862,6 +35984,11 @@
     {
       "from": "module:shared/productEventCatalogue.ts",
       "to": "module:shared/bugReportVocabulary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/referralCodeFormat.ts",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {

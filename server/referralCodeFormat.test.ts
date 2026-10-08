@@ -27,15 +27,23 @@ import { describe, it, expect } from "vitest";
 import { readFile } from "node:fs/promises";
 
 import {
+  INVITE_CODE_EXAMPLE,
+  INVITE_CODE_GROUP_LENGTH,
+  ISSUED_CODE_PREFIX,
   REFERRAL_CODE_ACCEPTED_CLASS,
+  REFERRAL_CODE_ACCEPTED_PREFIXES,
   REFERRAL_CODE_BODY_LENGTH,
   REFERRAL_CODE_EXAMPLE,
   REFERRAL_CODE_FORMAT_MESSAGE,
+  REFERRAL_CODE_LENGTH,
   REFERRAL_CODE_MINT_ALPHABET,
-  REFERRAL_CODE_PREFIX,
   REFERRAL_CODE_SEPARATOR,
+  RETIRED_CODE_PREFIXES,
+  mintInviteCode,
   referralCodePattern,
 } from "../shared/referralCodeFormat";
+import { PRODUCT_NAME } from "../shared/brand";
+import { INVITE_CODE_MAX_LENGTH } from "../shared/inputLimits";
 import { isValidReferralCodeFormat } from "./db/referrals";
 
 const DECLARATION = new URL("../shared/referralCodeFormat.ts", import.meta.url);
@@ -45,6 +53,8 @@ const MODAL = new URL(
   "../client/src/features/referral/RedeemCodeModal.tsx",
   import.meta.url,
 );
+const ADMIN_INVITES = new URL("../client/src/pages/AdminInviteCodes.tsx", import.meta.url);
+const INVITE_ROUTER = new URL("./routes/admin/inviteCodes.ts", import.meta.url);
 
 /**
  * The code with its prose removed — a doc comment explaining a rule must not be
@@ -77,10 +87,10 @@ describe("the referral code's shape is declared once", () => {
           Math.floor(Math.random() * REFERRAL_CODE_MINT_ALPHABET.length)
         ];
       }
-      const minted = `${REFERRAL_CODE_PREFIX}${REFERRAL_CODE_SEPARATOR}${body}`;
+      const minted = `${ISSUED_CODE_PREFIX}${REFERRAL_CODE_SEPARATOR}${body}`;
       expect(isValidReferralCodeFormat(minted), `${minted} was refused`).toBe(true);
       expect(minted).toHaveLength(
-        REFERRAL_CODE_PREFIX.length + REFERRAL_CODE_SEPARATOR.length + REFERRAL_CODE_BODY_LENGTH,
+        ISSUED_CODE_PREFIX.length + REFERRAL_CODE_SEPARATOR.length + REFERRAL_CODE_BODY_LENGTH,
       );
     }
   });
@@ -92,15 +102,15 @@ describe("the referral code's shape is declared once", () => {
       some future leniency), a wrong body length, and an empty string.
     */
     expect(isValidReferralCodeFormat("FORMA-A3K9X2")).toBe(false);
-    expect(isValidReferralCodeFormat(`${REFERRAL_CODE_PREFIX}-A3K9X`)).toBe(false);
-    expect(isValidReferralCodeFormat(`${REFERRAL_CODE_PREFIX}-A3K9X2Z`)).toBe(false);
+    expect(isValidReferralCodeFormat(`${ISSUED_CODE_PREFIX}-A3K9X`)).toBe(false);
+    expect(isValidReferralCodeFormat(`${ISSUED_CODE_PREFIX}-A3K9X2Z`)).toBe(false);
     expect(isValidReferralCodeFormat("")).toBe(false);
     expect(isValidReferralCodeFormat("INVALID")).toBe(false);
   });
 
   it("the pattern is BUILT from the declared parts, not written beside them", async () => {
     expect(referralCodePattern().source).toBe(
-      `^${REFERRAL_CODE_PREFIX}${REFERRAL_CODE_SEPARATOR}[${REFERRAL_CODE_ACCEPTED_CLASS}]{${REFERRAL_CODE_BODY_LENGTH}}$`,
+      `^(?:${REFERRAL_CODE_ACCEPTED_PREFIXES.join("|")})${REFERRAL_CODE_SEPARATOR}[${REFERRAL_CODE_ACCEPTED_CLASS}]{${REFERRAL_CODE_BODY_LENGTH}}$`,
     );
 
     /*
@@ -110,42 +120,54 @@ describe("the referral code's shape is declared once", () => {
       the divergence, which is to say it catches the fossil one rename too late.
       That is precisely how `FORMA-` survived.
 
-      **The invariant that actually holds is a COUNT: the prefix is written down
-      once.** Prose-stripped, its literal text appears exactly once across the
-      declaration and all three consumers, and that once is the declaration.
+      **The invariant that actually holds is a COUNT.** Since #2007 the issued
+      prefix is not written down at all — it is `PRODUCT_NAME.toUpperCase()` —
+      so its literal text appears NOWHERE in the declaration or any consumer,
+      and the one retired prefix appears exactly once, in the declaration's
+      `RETIRED_CODE_PREFIXES`.
     */
     const files = await Promise.all(
-      [DECLARATION, ROUTER, DB, MODAL].map(async (source) => ({
+      [DECLARATION, ROUTER, DB, MODAL, ADMIN_INVITES].map(async (source) => ({
         source,
         code: withoutProse(await readFile(source, "utf8")),
       })),
     );
-    const occurrences = files.flatMap(({ source, code }) =>
-      [...code.matchAll(new RegExp(REFERRAL_CODE_PREFIX, "g"))].map(() => source.pathname),
-    );
-    expect(occurrences, `the prefix is written in ${occurrences.length} places`)
-      .toHaveLength(1);
-    expect(occurrences[0]).toBe(DECLARATION.pathname);
+    const count = (word: string) =>
+      files.flatMap(({ source, code }) =>
+        [...code.matchAll(new RegExp(word, "g"))].map(() => source.pathname),
+      );
+    expect(count(ISSUED_CODE_PREFIX), "the issued prefix is spelled out").toHaveLength(0);
+    for (const retired of RETIRED_CODE_PREFIXES) {
+      expect(count(retired), `${retired} is written more than once`)
+        .toEqual([DECLARATION.pathname]);
+    }
 
     /* The declared gap, asserted so it stays deliberate: the accepted class
        admits I and O, which are never minted. See the module's docblock. */
     expect(REFERRAL_CODE_MINT_ALPHABET).not.toContain("I");
     expect(REFERRAL_CODE_MINT_ALPHABET).not.toContain("O");
-    expect(isValidReferralCodeFormat(`${REFERRAL_CODE_PREFIX}-IOAAAA`)).toBe(true);
+    expect(isValidReferralCodeFormat(`${ISSUED_CODE_PREFIX}-IOAAAA`)).toBe(true);
   });
 
   it("THE DEFECT ITSELF: the customer's sentence names the prefix that is minted", () => {
     /*
       This is the arm the six months bought. It is an assertion about the
-      COMPOSED sentence, not about a spelling: change `REFERRAL_CODE_PREFIX` and
+      COMPOSED sentence, not about a spelling: change `ISSUED_CODE_PREFIX` and
       this still passes, because the message is built from it. Re-type a prefix
       into the message and it goes red.
     */
     expect(REFERRAL_CODE_EXAMPLE).toBe(
-      `${REFERRAL_CODE_PREFIX}${REFERRAL_CODE_SEPARATOR}${"X".repeat(REFERRAL_CODE_BODY_LENGTH)}`,
+      `${ISSUED_CODE_PREFIX}${REFERRAL_CODE_SEPARATOR}${"X".repeat(REFERRAL_CODE_BODY_LENGTH)}`,
     );
     expect(REFERRAL_CODE_FORMAT_MESSAGE).toContain(REFERRAL_CODE_EXAMPLE);
     expect(REFERRAL_CODE_FORMAT_MESSAGE).not.toContain("FORMA");
+    /* #2007: the sentence names the CURRENT product, never a retired prefix. */
+    expect(REFERRAL_CODE_FORMAT_MESSAGE).toBe(
+      `Invalid referral code format. Expected: ${PRODUCT_NAME.toUpperCase()}-XXXXXX`,
+    );
+    for (const retired of RETIRED_CODE_PREFIXES) {
+      expect(REFERRAL_CODE_FORMAT_MESSAGE).not.toContain(`${retired}-`);
+    }
   });
 
   it("NO consumer hand-types the prefix — the mirror, banned by spelling", async () => {
@@ -159,12 +181,22 @@ describe("the referral code's shape is declared once", () => {
       The ban is on ANY `WORD-` prefix literal, not on `FORMA-` alone: a rule
       spelled as the last mistake only catches the last mistake.
     */
-    for (const source of [ROUTER, DB, MODAL]) {
+    for (const source of [DECLARATION, ROUTER, DB, MODAL, ADMIN_INVITES]) {
       const code = withoutProse(await readFile(source, "utf8"));
       expect(
         code,
         `${source.pathname} hand-types a referral code prefix`,
       ).not.toMatch(/[A-Z]{4,}-X{3,}/);
+      /*
+        #2007: the wider ban. A string literal that OPENS with a capitalised
+        word and a hyphen is a hand-typed code prefix whatever follows it —
+        `DRAPE-${seg()}` minted every invite under the old name and matched
+        nothing above, because no `X` followed it.
+      */
+      expect(
+        code,
+        `${source.pathname} hand-types a code prefix in a string literal`,
+      ).not.toMatch(/["'`][A-Z]{4,}-/);
       /*
         ⚠ THIS LINE WAS BORN HOLDING THE DEFECT IT BANS. It read
         `.not.toContain("FORMA")` and went red on the fix itself, because
@@ -214,5 +246,68 @@ describe("the referral code's shape is declared once", () => {
     const modal = withoutProse(await readFile(MODAL, "utf8"));
     expect(modal).toContain("REFERRAL_CODE_EXAMPLE");
     expect(modal).not.toMatch(/placeholder="[A-Z]/);
+  });
+});
+
+describe("#2007 — codes are issued under the product's name, and old ones still work", () => {
+  it("the issued prefix IS the product name — derived, not spelled", async () => {
+    expect(ISSUED_CODE_PREFIX).toBe(PRODUCT_NAME.toUpperCase());
+    const declaration = withoutProse(await readFile(DECLARATION, "utf8"));
+    expect(declaration).toMatch(/ISSUED_CODE_PREFIX\s*=\s*PRODUCT_NAME\.toUpperCase\(\)/);
+    expect(REFERRAL_CODE_ACCEPTED_PREFIXES[0]).toBe(ISSUED_CODE_PREFIX);
+    expect(RETIRED_CODE_PREFIXES).not.toContain(ISSUED_CODE_PREFIX);
+  });
+
+  it("a code minted under the retired DRAPE- prefix still passes — the positive control", () => {
+    expect(RETIRED_CODE_PREFIXES).toContain("DRAPE");
+    expect(isValidReferralCodeFormat("DRAPE-A3K9X2")).toBe(true);
+    expect(isValidReferralCodeFormat("drape-a3k9x2")).toBe(true);
+    expect(isValidReferralCodeFormat(`${ISSUED_CODE_PREFIX}-A3K9X2`)).toBe(true);
+    expect(isValidReferralCodeFormat(`${ISSUED_CODE_PREFIX.toLowerCase()}-a3k9x2`)).toBe(true);
+    /* The box admits the longest accepted shape. */
+    for (const prefix of REFERRAL_CODE_ACCEPTED_PREFIXES) {
+      expect(`${prefix}-A3K9X2`.length).toBeLessThanOrEqual(REFERRAL_CODE_LENGTH);
+    }
+  });
+
+  it("the prefix alternation is anchored — the negative control", () => {
+    /* A pattern written without the group, `^KLIEG|DRAPE-…$`, would admit these. */
+    expect(isValidReferralCodeFormat("XDRAPE-A3K9X2")).toBe(false);
+    expect(isValidReferralCodeFormat(`${ISSUED_CODE_PREFIX}DRAPE-A3K9X2`)).toBe(false);
+    expect(isValidReferralCodeFormat(`${ISSUED_CODE_PREFIX}-A3K9X2-EXTRA`)).toBe(false);
+    expect(isValidReferralCodeFormat(`${ISSUED_CODE_PREFIX}`)).toBe(false);
+    expect(isValidReferralCodeFormat("FORMA-A3K9X2")).toBe(false);
+  });
+
+  it("an invite code is minted under the issued prefix, in a shape the admin route accepts", async () => {
+    let seed = 0;
+    const draws = [() => 0, () => 0.9999, Math.random, () => ((seed += 0.137) % 1)];
+    for (const random of draws) {
+      for (let i = 0; i < 50; i += 1) {
+        const code = mintInviteCode(random);
+        expect(code).toMatch(
+          new RegExp(
+            `^${ISSUED_CODE_PREFIX}-[${REFERRAL_CODE_MINT_ALPHABET}]{${INVITE_CODE_GROUP_LENGTH}}-[${REFERRAL_CODE_MINT_ALPHABET}]{${INVITE_CODE_GROUP_LENGTH}}$`,
+          ),
+        );
+        expect(code.length).toBeLessThanOrEqual(INVITE_CODE_MAX_LENGTH);
+        expect(code).toHaveLength(INVITE_CODE_EXAMPLE.length);
+      }
+    }
+    /* The admin route's own character rule, read off the route rather than retyped. */
+    const route = await readFile(INVITE_ROUTER, "utf8");
+    const rule = route.match(/\.regex\((\/.+?\/)[a-z]*,/);
+    expect(rule, "the invite route's character rule moved").not.toBeNull();
+    const accepted = new Function(`return ${rule![1]}`)() as RegExp;
+    expect(accepted.test(mintInviteCode())).toBe(true);
+    expect(accepted.test("DRAPE-AB12-CD34")).toBe(true);
+    expect(INVITE_CODE_EXAMPLE).toBe(`${ISSUED_CODE_PREFIX}-XXXX-XXXX`);
+  });
+
+  it("the admin page mints with the shared generator and shows the shared placeholder", async () => {
+    const page = withoutProse(await readFile(ADMIN_INVITES, "utf8"));
+    expect(page).toMatch(/placeholder=\{INVITE_CODE_EXAMPLE\}/);
+    expect(page).toMatch(/mintInviteCode\(\)/);
+    expect(page).not.toMatch(/placeholder="[A-Z]{4,}-/);
   });
 });

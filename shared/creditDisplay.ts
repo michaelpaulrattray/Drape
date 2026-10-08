@@ -40,7 +40,7 @@
  * The textual guard covers what a type cannot see — scale arithmetic written
  * out by hand, and the sites not yet routed.
  *
- * # One function here returns LEDGER, not display
+ * # `wholeDisplayLedger` returns LEDGER, not display
  *
  * `wholeDisplayLedger` runs the conversion backwards: it answers "what is the
  * nearest ledger amount a grant may be so that no credit in it is invisible on
@@ -49,11 +49,22 @@
  * multiplied elsewhere. Its own docblock carries the rounding argument and the
  * one case that must never be passed to it.
  *
+ * # A second function returns LEDGER: `ledgerForDisplay`
+ *
+ * It is the one road from a number a PERSON typed on the display scale to the
+ * ledger amount that moves (#1986). It exists because the admin panel's Add
+ * credits sent its typed figure straight to the ledger, so the founder typed
+ * 100,000 and his balance rose by 20,000. The multiplication lives here and
+ * nowhere else, for the same reason the division does.
+ *
  * # What does NOT come through here
  *
- * Admin and moderator surfaces stay in **ledger units, labelled "units"**. They
- * are reading the books, not being quoted a price, and a staff figure that
- * silently changed scale would make every support conversation ambiguous.
+ * Admin and moderator surfaces that READ THE BOOKS stay in ledger units. ⚠ **The
+ * admin Add/Deduct credits road is no longer one of them (#1986)**: an admin
+ * adjusting a balance is answering a customer who reads display credits, so the
+ * figure typed, the toast, and the panel's balance are all on the display
+ * scale. The moderator change-request road and the moderator transaction views
+ * are still on the ledger scale and are filed as #1986's sweep sibling, #2010.
  */
 
 /**
@@ -208,6 +219,40 @@ export function wholeDisplayLedger(ledger: number): number {
     displayBalance(Math.abs(finiteLedger(ledger, "wholeDisplayLedger"))) * LEDGER_PER_DISPLAY_CREDIT;
   return ledger < 0 ? -magnitude : magnitude;
 }
+
+/**
+ * The ledger amount that moves when a person asks for `display` credits on the
+ * scale they read (#1986 — the admin panel's Add / Deduct credits).
+ *
+ * Signed: a deduction is a negative display figure and comes back a negative
+ * ledger figure. Refuses a non-integer or non-finite figure rather than
+ * rounding it, because a credit adjustment that moved a different amount from
+ * the one typed is the exact defect this function exists to end.
+ */
+export function ledgerForDisplay(display: number): number {
+  if (!Number.isSafeInteger(display)) {
+    throw new TypeError(
+      `ledgerForDisplay: a display credit figure must be a whole number, got ${String(display)}`,
+    );
+  }
+  return display * LEDGER_PER_DISPLAY_CREDIT;
+}
+
+/**
+ * The most one admin Add or Deduct may move, in DISPLAY credits (#1986).
+ *
+ * It was `100000` LEDGER until #1986 — one fifth of that on screen — so the cap and
+ * the figure typed were both on a scale nobody in the panel could see. Read by
+ * `server/routes/admin/users.ts` (the authority) and by `CreditModal`.
+ *
+ * It lives in this module rather than beside the reason cap in
+ * `shared/inputLimits.ts` because it bounds a MONEY authority, and this file is
+ * on `MONEY_PATHS` (`.github/money-surfaces.sh`) while that one is not — a
+ * change to how many credits one action may move must read as money. It is a
+ * CAP, not a price, which is why its name does not say COST, PRICE or CREDIT:
+ * the Atlas's price collector reads those words as a price.
+ */
+export const ADMIN_ADJUST_DISPLAY_MAX = 100_000;
 
 /**
  * Display credits above which the product reads them in millions.

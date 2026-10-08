@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { inkDesignImagePath } from "../../shared/inkDesignDelivery";
 import { baseUrlOf, listenOnFetchablePort } from "../testing/fetchablePort";
+import { SessionRejectedError } from "../_core/sdk";
 import type { StoredInkDesign } from "../db/castingV2InkDesigns";
 import {
   createInkDesignDeliveryRouter,
@@ -90,7 +91,7 @@ describe("who may look at a stored design", () => {
   });
 
   it("refuses when authentication itself throws, rather than serving", async () => {
-    const response = await get({ authenticate: async () => { throw new Error("no session"); } });
+    const response = await get({ authenticate: async () => { throw new SessionRejectedError("Invalid session cookie"); } });
     expect(response.status).toBe(401);
   });
 

@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
 
-import { sdk } from "../_core/sdk";
+import { answerForSessionFailure, sdk } from "../_core/sdk";
 import { checkUserRateLimit } from "../security/rateLimit";
 import { getOwnedCastByPublicId, listCastAssets } from "../db/castingV2Sign";
 import { composeCharacterSheet } from "../castingV2/characterSheet";
@@ -69,7 +69,17 @@ export function createCharacterSheetRouter(
   const router = Router();
 
   router.get("/api/cast/:castId/sheet", async (req: Request, res: Response) => {
-    const user = await dependencies.authenticate(req).catch(() => null);
+    let user: Awaited<ReturnType<CharacterSheetRouteDependencies["authenticate"]>>;
+    try {
+      user = await dependencies.authenticate(req);
+    } catch (error) {
+      // A refused session is 401 as before; a lookup that could not finish is
+      // 503 "try again" — never read as "not signed in" (#1997).
+      const answer = answerForSessionFailure(error);
+      if (answer.status === 503) log.error({ err: error }, "[Auth] Session check could not finish — answering 503, not a sign-in refusal (#1997)");
+      refuse(res, answer.status, answer.message);
+      return;
+    }
     if (!user) {
       refuse(res, 401, "Authentication required");
       return;
@@ -92,7 +102,17 @@ export function createCharacterSheetRouter(
       exist — the 404 is the same either way, so a stranger cannot use the
       difference to discover that a Cast id is real.
     */
-    const cast = await dependencies.loadCast(user.id, castId).catch(() => null);
+    let cast: Awaited<ReturnType<CharacterSheetRouteDependencies["loadCast"]>>;
+    try {
+      cast = await dependencies.loadCast(user.id, castId);
+    } catch (error) {
+      /* A load that could not FINISH is not a Cast that is not there (#1997's
+         sweep — the same shape as the session read above). It says nothing
+         about ownership, so answering it differently leaks nothing. */
+      log.error({ castId, err: error }, "[characterSheet] could not load the cast");
+      refuse(res, 503, "Try again shortly");
+      return;
+    }
     if (!cast) {
       refuse(res, 404, "Not found");
       return;

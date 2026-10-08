@@ -39,6 +39,8 @@ import {
   getUserById,
 } from "./db";
 import { logAuditEvent, getFilteredAuditLogs } from "./auditLog";
+import { logAdminAction, writeImmutableLog } from "./security/adminSecurity";
+import { LEDGER_PER_DISPLAY_CREDIT } from "../shared/creditDisplay";
 
 /**
  * THE FOUR ADMIN READS — driven through the real procedures (#697).
@@ -276,6 +278,101 @@ describe("admin.adjustCredits — DRIVEN", () => {
         resourceId: "1",
         metadata: expect.objectContaining({ amount: 100, reason: "Bonus credits" }),
       }),
+    );
+  });
+});
+
+/*
+ * #1986 — his report, 2026-10-08, verbatim: *"i tried to ad 100000 credits to
+ * my account but it only gave me 20000 , why?"* The panel's typed figure
+ * reached `adjustUserCredits` — the LEDGER — unconverted. These arms drive the
+ * real procedure and read what reaches the db helper (the wire into the money),
+ * what the three logs carry, and what comes back.
+ */
+describe("admin.adjustCredits — the typed figure is DISPLAY credits (#1986)", () => {
+  const ADMIN_CTX = {
+    user: {
+      id: 2, role: "admin", email: "admin@example.com", name: "Admin",
+      openId: null, suspendedAt: null,
+    },
+    req: { headers: {}, socket: {} },
+  } as never;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // 600,000 ledger: the founder's 100,000 landing on a 20,000-credit balance.
+    vi.mocked(adjustUserCredits).mockResolvedValue({ success: true, newBalance: 600_000 } as never);
+    vi.mocked(getUserById).mockResolvedValue({ id: 1, role: "user", email: "u@x", name: "User" } as never);
+  });
+
+  async function caller() {
+    const { usersRouter } = await import("./routes/admin/users");
+    return usersRouter.createCaller(ADMIN_CTX);
+  }
+
+  it("100,000 typed moves 500,000 LEDGER — five times the figure, by the shared scale", async () => {
+    await (await caller()).adjustCredits({ userId: 1, displayAmount: 100_000, reason: "Top up" });
+    expect(adjustUserCredits).toHaveBeenCalledWith(1, 500_000, "Top up", 2);
+    expect(500_000).toBe(100_000 * LEDGER_PER_DISPLAY_CREDIT);
+  });
+
+  it("a deduction keeps its sign through the conversion", async () => {
+    await (await caller()).adjustCredits({ userId: 1, displayAmount: -20, reason: "Reversal" });
+    expect(adjustUserCredits).toHaveBeenCalledWith(1, -100, "Reversal", 2);
+  });
+
+  it("returns the balance the customer reads beside the ledger one", async () => {
+    await expect(
+      (await caller()).adjustCredits({ userId: 1, displayAmount: 100_000, reason: "Top up" }),
+    ).resolves.toEqual({ success: true, newBalance: 600_000, newDisplayBalance: 120_000 });
+  });
+
+  it("every log keeps the ledger as `amount` and names the display figure beside it", async () => {
+    await (await caller()).adjustCredits({ userId: 1, displayAmount: 100_000, reason: "Top up" });
+    expect(logAuditEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({
+          amount: 500_000, displayAmount: 100_000, newBalance: 600_000, newDisplayBalance: 120_000,
+        }),
+      }),
+    );
+    expect(writeImmutableLog).toHaveBeenCalledWith(
+      "credits_adjusted",
+      expect.objectContaining({ amount: 500_000, displayAmount: 100_000 }),
+    );
+    const details = vi.mocked(logAdminAction).mock.calls[0]![0].details as string;
+    expect(details).toContain("Added 100,000 credits (500000 ledger units)");
+    expect(details).toContain("New balance: 120,000 credits (600000 ledger units)");
+  });
+
+  it("the cap is 100,000 DISPLAY credits each way — the boundary passes, one past it moves nothing", async () => {
+    const c = await caller();
+    for (const bad of [100_001, -100_001]) {
+      await expect(c.adjustCredits({ userId: 1, displayAmount: bad, reason: "x" })).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+      });
+    }
+    expect(adjustUserCredits).not.toHaveBeenCalled();
+    await expect(c.adjustCredits({ userId: 1, displayAmount: -100_000, reason: "x" })).resolves.toBeDefined();
+  });
+
+  it("refuses a fractional figure, both fields at once, and neither — before any credit moves", async () => {
+    const c = await caller();
+    for (const bad of [
+      { userId: 1, displayAmount: 1.5, reason: "x" },
+      { userId: 1, displayAmount: 10, amount: 50, reason: "x" },
+      { userId: 1, reason: "x" },
+    ]) {
+      await expect(c.adjustCredits(bad as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    }
+    expect(adjustUserCredits).not.toHaveBeenCalled();
+  });
+
+  it("LEGACY ROAD, one deploy only — a bundle still sending ledger `amount` moves exactly that, unconverted", async () => {
+    await (await caller()).adjustCredits({ userId: 1, amount: 100, reason: "Old tab" });
+    expect(adjustUserCredits).toHaveBeenCalledWith(1, 100, "Old tab", 2);
+    expect(logAuditEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ metadata: expect.objectContaining({ amount: 100, displayAmount: 20 }) }),
     );
   });
 });
