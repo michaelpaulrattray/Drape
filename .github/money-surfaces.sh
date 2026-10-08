@@ -490,6 +490,13 @@
 # returns nothing), and the eight scripts the credit-symbol grep returns over
 # `scripts/` name a primitive only in a comment or a sabotage string.
 #
+# ⚠ A SECOND CEREMONY JOINED IT 2026-10-09 (#2023), BY NAME and found by the
+# drift guard below rather than by memory: `scripts/ceremony-spent-share-
+# product-2023.mts` creates the catalogue product the spent-share line on a
+# switch to yearly is billed under (`stripe.products.create`). Change its id
+# and the server asks for a product that does not exist, so every switch from
+# a spent month refuses; #1609 runs it under the LIVE key.
+#
 # MEASURED BEFORE AND AFTER, on the two windows #1662 established (merged PRs
 # into `main`, newest first, read 2026-10-08): the delta is +1 on each — 60
 # newest (#1985…#1846) and 200 newest (#1985…#1563) — and the one PR it adds is
@@ -513,7 +520,7 @@
 # later module there (a receipt renderer, a dunning note) is its own
 # judgement rather than something this entry decides in advance.
 #
-MONEY_PATHS='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/routes/admin/changeRequests\.ts$|^server/db/(billing|credits|admin|accountDeletion)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^server/lib/adminActions/(approvalExecution|approvalStateBlocker|changeRequestActions)\.ts$|^server/casting/atomicCredits\.ts$|^server/casting/(castingCreditCosts|packagePricing)\.ts$|^server/casting/evidence/evidenceCandidateContract\.ts$|^server/wardrobe/creditCosts\.ts$|^server/billing/renewalReminder\.ts$|^server/castingV2/(castViewPackage|packageOrchestrator)\.ts$|^client/src/features/casting/(constants|castingPrices)\.ts$|^shared/(const|creditDisplay|annualBilling|creditTopups|planCreditSlider|changeRequestApproval|changeRequestLabels)\.ts$|^scripts/ceremony-topup-prices-1606\.mts$|^drizzle/'
+MONEY_PATHS='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/routes/admin/changeRequests\.ts$|^server/db/(billing|credits|admin|accountDeletion)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^server/lib/adminActions/(approvalExecution|approvalStateBlocker|changeRequestActions)\.ts$|^server/casting/atomicCredits\.ts$|^server/casting/(castingCreditCosts|packagePricing)\.ts$|^server/casting/evidence/evidenceCandidateContract\.ts$|^server/wardrobe/creditCosts\.ts$|^server/billing/renewalReminder\.ts$|^server/castingV2/(castViewPackage|packageOrchestrator)\.ts$|^client/src/features/casting/(constants|castingPrices)\.ts$|^shared/(const|creditDisplay|annualBilling|creditTopups|planCreditSlider|changeRequestApproval|changeRequestLabels)\.ts$|^scripts/ceremony-topup-prices-1606\.mts$|^scripts/ceremony-spent-share-product-2023\.mts$|^drizzle/'
 
 # ── 2 · SYMBOLS — where money is DECIDED ────────────────────────────────────
 #

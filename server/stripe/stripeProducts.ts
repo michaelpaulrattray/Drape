@@ -303,3 +303,42 @@ export const SUBSCRIPTION_PRODUCTS: Record<string, {
 };
 
 export type SubscriptionPlan = keyof typeof SUBSCRIPTION_PRODUCTS;
+
+/**
+ * THE PRODUCT THE SPENT-SHARE LINE IS BILLED UNDER (#2023).
+ *
+ * On a switch to yearly, Stripe takes the unused part of the old month off the
+ * year; the part of that whose credits are already spent is charged back as
+ * one extra line on the same invoice (#1965). That line used to be priced
+ * under the PLAN's own product, so her invoice read the plan's name twice —
+ * once for the year and once for a charge that is not the plan at all.
+ *
+ * It is billed under this product instead, and its NAME is the line's words on
+ * her invoice. The amount is still worked out per switch (`price_data` under
+ * this product), because no fixed price could be right for every switch.
+ *
+ * ⚠ **THE ID IS FIXED, AND THAT IS THE LOOKUP.** A plan price is found by its
+ * lookup key; a product has no lookup key, so the product is created WITH this
+ * id (Stripe lets a product's id be chosen), in both modes, by the kept
+ * ceremony `scripts/ceremony-spent-share-product-2023.mts` — never by hand in
+ * the dashboard. The id carries the catalogue's generation (`_v2`) for the
+ * reason the price keys do.
+ *
+ * ⚠ **A CATALOGUE THAT DOES NOT HOLD IT DEGRADES THE INVOICE AND NEVER
+ * REFUSES THE SWITCH — the relay's finding on PR #2053, and this paragraph
+ * said the opposite for one commit.** It read *"makes the switch REFUSE before
+ * anything is written, never fall back to the plan's product"*, which meant a
+ * mode whose ceremony had not been run refused **every** monthly → yearly
+ * switch out of a month with credits used — a cosmetic defect traded for a
+ * customer who cannot upgrade. `updateSubscriptionPlan` falls back to the
+ * PLAN's product (the pre-#2023 road) and `log.error`s loudly instead; the
+ * doubled name is the degraded state, and running the ceremony is what clears
+ * it. What still refuses is only a line that cannot be built at all: no
+ * product readable anywhere, or a currency this read cannot state.
+ */
+export const SPENT_SHARE_PRODUCT = {
+  id: "klieg_spent_share_v2",
+  name: "Credits already used this cycle",
+  description:
+    "Charged when switching to yearly billing: the credits already used from the cycle being replaced are paid for rather than refunded.",
+} as const;
