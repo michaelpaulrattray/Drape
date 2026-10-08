@@ -42,6 +42,7 @@ import { createOpenRouterTextEngine, DEFAULT_INTERPRETER_MODEL } from "../provid
 import { createFalIdentityEngine } from "../providers/falQueue";
 import { createFalSunburstPlateEngine, createFalSunburstSheetEngine } from "../providers/falImages";
 import { falAllowanceOf } from "./falBudget";
+import { SIGN_SHEET_SIZES, type SignSheetKind } from "./signSheet";
 import { ProviderQueue } from "../providers/providerQueue";
 import type { IdentityEngine } from "../providers/types";
 import { CAST_PACKAGE_VIEWS } from "./castViewPackage";
@@ -57,7 +58,16 @@ let viewQueue: ProviderQueue | null = null;
 let identityEngine: IdentityEngine | null = null;
 let viewEngine: IdentityEngine | null = null;
 let plateEngine: IdentityEngine | null = null;
-let sheetEngine: IdentityEngine | null = null;
+/**
+ * ONE MEMO PER SHEET KIND — his #1926 ruling renders two sheets of different
+ * shapes, and the SIZE is baked into each engine at construction.
+ *
+ * ⚠ **A single memo would hand the second caller the FIRST sheet's pixels**,
+ * silently: both engines share a door, a quality and a queue, so the wrong one
+ * returns a perfectly good picture of the wrong shape, the cut succeeds, and
+ * #1903's three surviving judge axes cannot see framing.
+ */
+const sheetEngines: Record<SignSheetKind, IdentityEngine | null> = { head: null, body: null };
 let judge: ViewConformanceJudge | null = null;
 
 function castPackageQueue(): ProviderQueue {
@@ -172,13 +182,21 @@ export function castingOutfitPlateEngine(): IdentityEngine {
  * The missing-credential refusal is its siblings', for the reason at the top of
  * this file: it fires before the money moves, never at dispatch.
  */
-export function castingSignSheetEngine(): IdentityEngine {
-  if (!sheetEngine) {
+export function castingSignSheetEngine(kind: SignSheetKind): IdentityEngine {
+  let engine = sheetEngines[kind];
+  if (!engine) {
     const apiKey = process.env.FAL_KEY;
     if (!apiKey) throw new Error("FAL_KEY is required to render a signed Cast's sheet");
-    sheetEngine = createFalSunburstSheetEngine({ apiKey, queue: castPackageQueue() });
+    engine = createFalSunburstSheetEngine({
+      apiKey,
+      /* The size is the sheet's own, from the one table that also owns its
+         panel list — so the pixels and the panels cannot disagree. */
+      size: SIGN_SHEET_SIZES[kind],
+      queue: castPackageQueue(),
+    });
+    sheetEngines[kind] = engine;
   }
-  return sheetEngine;
+  return engine;
 }
 
 export function castingViewConformanceJudge(): ViewConformanceJudge {
@@ -249,8 +267,10 @@ export function resetSignEnginesForTests(): void {
      names is the shape every one of these leaks has. */
   viewEngine = null;
   plateEngine = null;
-  /* The sheet engine joins the reset in the SAME commit that memoizes it — the
-     docblock above records what it cost when viewEngine did not. */
-  sheetEngine = null;
+  /* The sheet engines join the reset in the SAME commit that memoizes them —
+     the docblock above records what it cost when viewEngine did not. ⚠ Keyed
+     off the record rather than written out, so a third sheet kind cannot be
+     added and left un-reset. */
+  for (const kind of Object.keys(sheetEngines) as SignSheetKind[]) sheetEngines[kind] = null;
   judge = null;
 }

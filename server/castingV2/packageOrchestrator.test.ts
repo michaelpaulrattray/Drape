@@ -90,6 +90,7 @@ const VIEW_PRICE = CAST_PACKAGE_VIEW_PRICE;
 const PROMOTION = CASTING_V2_SIGN_COSTS.promotion;
 const SIGN_PRICE = CASTING_V2_SIGN_PRICE_CREDITS;
 import type { CastViewAngle } from "../../shared/boardTypes";
+import { signSheetPlan, type SignSheetKind } from "./signSheet";
 
 const pass: ViewConformanceVerdict = {
   pass: true,
@@ -135,18 +136,27 @@ const waitedMs: number[] = [];
 let refundRecords = true;
 
 /**
- * THE SHEET EVERY SIGN NOW RENDERS, as a synthetic frame (#1904).
+ * THE SHEETS EVERY SIGN NOW RENDERS, as synthetic frames (#1904, reshaped to
+ * his #1926 two-sheet ruling).
  *
- * ⚠ **A REAL IMAGE, not a `Buffer.from("view")` stand-in, and it has to be**:
+ * ⚠ **REAL IMAGES, not `Buffer.from("view")` stand-ins, and they have to be**:
  * the orchestrator cuts the bytes it is handed with `sharp`, so a sheet that is
  * not an image fails the cut and every arm below would read as a dead Sign.
- * Five panels of DIFFERENT widths with white dividers between them, so the cut
- * exercises its detector rather than falling back to fifths.
+ * Panels of DIFFERENT widths with white dividers between them, so the cut
+ * exercises its detector rather than falling back to equal shares.
+ *
+ * ⚠ **ONE PER KIND, keyed by the panel count the plan asks for.** A single
+ * synthetic sheet would be cut into three panels for the head sheet and two for
+ * the body sheet from the same bytes — which passes, and proves nothing about
+ * whether each view was routed to its own sheet.
  */
-async function syntheticSheetBytes(): Promise<Buffer> {
-  const width = 500;
+async function syntheticSheetBytes(panels: number): Promise<Buffer> {
+  const width = 100 * panels + 20 * (panels - 1);
   const height = 40;
-  const widths = [120, 80, 104, 90, 90];
+  /* Deliberately unequal, so a fallback to equal shares is visible. */
+  const widths = Array.from({ length: panels }, (_, index) => 100 + (index % 2 === 0 ? 12 : -12));
+  const spare = width - widths.reduce((a, b) => a + b, 0) - 4 * (panels - 1);
+  widths[widths.length - 1] = widths[widths.length - 1]! + spare;
   const raw = Buffer.alloc(width * height, 0);
   let x = 0;
   widths.forEach((panelWidth, index) => {
@@ -162,28 +172,52 @@ async function syntheticSheetBytes(): Promise<Buffer> {
   return sharp(raw, { raw: { width, height, channels: 1 } }).png().toBuffer();
 }
 
-let sheetPng: Buffer | null = null;
+const sheetPngs = new Map<SignSheetKind, Buffer>();
 
 /**
- * The default sheet engine — one call per Sign, recorded so an arm can count it.
+ * HER MASTER, AS A REAL IMAGE — and it has to be one now (#1904).
  *
- * ⚠ **The count is the point of recording it.** Five views used to mean five
- * engine calls; they now mean ONE, and an arm that could not see the difference
- * would pass just as happily if every view quietly rendered its own sheet at
- * `$0.07` a piece.
+ * ⚠ **This was `Buffer.from("anchor")` and the sheet road made that fatal.**
+ * `renderSignSheet` converts the anchor to JPEG with `sharp` before dispatch
+ * (`sheetReferenceFromMaster`, for the measured 13.8% size saving), so a
+ * stand-in that is not an image rejects the sheet promise with *"Input buffer
+ * contains unsupported image format"* — which reaches every view as a sheet
+ * that never arrived, and reads in this suite as a dead Sign rather than as a
+ * broken fixture. The per-view road never cared, because it passed the bytes
+ * through untouched.
  */
-const sheetCalls: { prompt: string; references: number }[] = [];
+const ANCHOR_PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+  "base64",
+);
 
-function defaultSheetEngine() {
+/**
+ * The default sheet engines — TWO calls per Sign, one per sheet, each recorded
+ * with the kind it was asked for so an arm can count and attribute them.
+ *
+ * ⚠ **The count and the KIND are both the point.** Five views used to mean five
+ * engine calls and now mean two, and an arm that could not see the difference
+ * would pass just as happily if every view quietly rendered its own sheet. The
+ * kind matters for the same reason the engine takes a size at all: the two
+ * sheets differ only in their pixels, so a double that ignored the argument
+ * would let every arm pass while both rendered at one shape.
+ */
+const sheetCalls: { kind: SignSheetKind; prompt: string; references: number }[] = [];
+
+function defaultSheetEngine(kind: SignSheetKind) {
   return {
-    id: "test-sheet",
+    id: `test-sheet-${kind}`,
     editWithReferences: vi.fn(async (request: { prompt: string; references: unknown[] }) => {
-      sheetCalls.push({ prompt: request.prompt, references: request.references.length });
+      sheetCalls.push({ kind, prompt: request.prompt, references: request.references.length });
       return {
-        bytes: sheetPng as Buffer,
+        bytes: sheetPngs.get(kind) as Buffer,
         contentType: "image/png",
         latencyMs: 61_000,
-        provenance: { provider: "fal" as const, model: "sunburst-sheet", providerRef: "sheet-ref" },
+        provenance: {
+          provider: "fal" as const,
+          model: `sunburst-sheet-${kind}`,
+          providerRef: `sheet-ref-${kind}`,
+        },
       };
     }),
     generateView: vi.fn(),
@@ -264,11 +298,15 @@ const input = {
   modelId: 901,
   identityRevisionId: "rev-1",
   identityText: "identity",
-  anchor: { bytes: Buffer.from("anchor"), contentType: "image/png" },
+  anchor: { bytes: ANCHOR_PNG, contentType: "image/png" },
 };
 
 beforeAll(async () => {
-  sheetPng = await syntheticSheetBytes();
+  /* Derived from the plan, never a literal pair: a third sheet kind gets its
+     synthetic frame without this block being remembered. */
+  for (const plan of signSheetPlan()) {
+    sheetPngs.set(plan.kind, await syntheticSheetBytes(plan.panelOrder.length));
+  }
 });
 
 beforeEach(() => {
@@ -1303,7 +1341,7 @@ describe("a signed Cast's tattoos ride into every view", () => {
     for (const call of generateView.mock.calls) {
       const request = call[0];
       expect(request.references).toHaveLength(2);
-      expect(request.references[0]!.bytes.toString()).toBe("anchor");
+      expect(request.references[0]!.bytes).toEqual(ANCHOR_PNG);
       expect(request.references[1]!.bytes.toString()).toBe("arm-crop");
       /* The picture is named as what it IS — cut out of a photograph of him —
          and placed where prose is the only thing that can carry the side. */
@@ -1965,5 +2003,49 @@ describe("only a catastrophe takes a picture away", () => {
     expect(refunded).toBe(VIEW_PRICE);
     expect(kept + refunded).toBe(charged);
     expect(result.refundedCredits).toBe(VIEW_PRICE);
+  });
+});
+
+/**
+ * ⚠ **WHAT A SIGN SPENDS ON SHEETS — and the arm that was MISSING.**
+ *
+ * `sheetCalls` has been recorded on every engine call since the sheet road was
+ * written, and its own docblock says *"the count is the point of recording
+ * it"* — while **nothing asserted on it**. A number collected and summed
+ * nowhere is a number nobody has: every arm in this file would have passed just
+ * as happily if each of the five views had quietly rendered its own sheet, at
+ * five times the house cost and five different outfits.
+ *
+ * His #1926 ruling is TWO renders a Sign. That is the whole assertion.
+ */
+describe("⚠ what a Sign spends on sheets — two renders, not one per view", () => {
+  it("renders exactly one sheet per KIND, whatever the view count", async () => {
+    const result = await buildCastPackage(deps(), input);
+    expect(result.committed).toHaveLength(5);
+
+    /* Two calls, not five — the regression this arm exists for. */
+    expect(sheetCalls).toHaveLength(signSheetPlan().length);
+    expect(sheetCalls).toHaveLength(2);
+    expect([...sheetCalls.map((call) => call.kind)].sort()).toEqual(["body", "head"]);
+
+    /*
+      ⚠ **AND EACH SHEET WAS ASKED FOR ITS OWN PANELS** — the kind argument is
+      the only thing separating the two engines, so an arm that counted two
+      calls without reading their prompts would pass if both had been asked for
+      the same sheet twice.
+    */
+    for (const plan of signSheetPlan()) {
+      const call = sheetCalls.find((candidate) => candidate.kind === plan.kind);
+      expect(call, `no sheet call for ${plan.kind}`).toBeDefined();
+      expect(call!.prompt).toContain(`${plan.panelOrder.length} vertical panels`);
+      /* One reference each — her master, and nothing else. Both sheets take the
+         master alone; the head sheet does NOT wait for the body sheet, which is
+         what "in parallel" costs and buys. */
+      expect(call!.references).toBe(1);
+    }
+
+    /* The two prompts are genuinely different asks. Without this the loop above
+       would pass if the plan returned the same panel list twice. */
+    expect(sheetCalls[0]!.prompt).not.toBe(sheetCalls[1]!.prompt);
   });
 });

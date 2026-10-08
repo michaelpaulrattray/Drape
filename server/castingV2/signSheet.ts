@@ -207,7 +207,30 @@ export const SIGN_SHEET_KINDS: readonly SignSheetKind[] = ["head", "body"];
  * is why it lives here and reaches the provider through the engine factory. The
  * alternative — an `imageSize` on every identity request — would let a body
  * sheet be asked for at head pixels by a caller that simply forgot, and the
- * panel aspect is the whole point of the split.
+ * panel aspect is the whole point of the split. It travels beside
+ * {@link SignSheetPlan.panelOrder} so the pixels and the panel list cannot
+ * disagree about which sheet is being rendered.
+ *
+ * ⚠ **BOTH ARE READ AT THE RETURNED BYTES, NEVER INFERRED FROM THE ASK** —
+ * this paragraph moved here from `falImages.SIGN_SHEET_SIZE`, which the split
+ * deleted, and it is the measurement rather than a citation of one:
+ *
+ *     asked 3840x1648  → returned 3840x1648   (#1690 sheets 1, 2 and 3)
+ *     asked 3840x1648  → returned 3840x1648   (#1926 head sheet, both renders)
+ *     asked 3504x2336  → returned 3504x2336   (#1926 body sheet)
+ *
+ * Head is 6.33 MP and body 8.19 MP, both inside the door's ~8.29 MP ceiling,
+ * and every side is a multiple of 16 as the door requires (3840/16 = 240,
+ * 1648/16 = 103, 3504/16 = 219, 2336/16 = 146). ⚠ **The body sheet sits within
+ * 1.2% of that ceiling**, so a future panel added to it needs the ceiling
+ * re-read and not just a wider number.
+ *
+ * ⚠ **AND NOTHING MAY COMPUTE A PANEL FROM THESE NUMBERS**, which is the one
+ * hazard they carry and {@link cutSignSheet}'s whole subject. On the head sheet
+ * an equal third happens to be right to 2 px; on the five-panel court sheets
+ * the real panels came back 624–868 px against an equal 768, so a cut derived
+ * from a size beheaded a figure on two panels in five. The equal share is the
+ * FALLBACK the detector reaches for, never the answer it starts from.
  */
 export const SIGN_SHEET_SIZES: Readonly<Record<SignSheetKind, { width: number; height: number }>> = {
   head: { width: 3840, height: 1648 },

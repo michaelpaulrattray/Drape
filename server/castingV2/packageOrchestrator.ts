@@ -175,8 +175,11 @@ import {
 } from "./outfitPlate";
 import {
   renderSignSheet,
+  signSheetKindFor,
+  signSheetPlan,
   type RenderedSignSheet,
   type SignSheetEngine,
+  type SignSheetKind,
 } from "./signSheet";
 import {
   conformanceProvenance,
@@ -299,7 +302,13 @@ export type PackageOrchestratorDependencies = {
    * any more, but the dependency bag is shared with the Try again road, which
    * does (#1474).
    */
-  signSheetEngine?: () => SignSheetEngine;
+  /**
+   * ⚠ **KIND-AWARE, because one injector would prove nothing about the split.**
+   * The two sheets differ only in the SIZE baked into their engine, so a double
+   * that ignored the argument would let every arm pass while both sheets
+   * rendered at the same shape — the defect the size argument exists to stop.
+   */
+  signSheetEngine?: (kind: SignSheetKind) => SignSheetEngine;
   /**
    * THE REFUSED FRAME'S KEEPER (#1492).
    *
@@ -461,7 +470,7 @@ export type BuildPackageInput = {
    * `viewRetryService.ts` renders ONE view against its delivered sibling, and
    * handing it a sheet would have it pay for five panels to keep one.
    */
-  signSheet?: Promise<RenderedSignSheet>;
+  signSheets?: Readonly<Record<SignSheetKind, Promise<RenderedSignSheet>>>;
 };
 
 /**
@@ -476,10 +485,16 @@ export type BuildPackageInput = {
  * own log line is where the single true reading lives.
  */
 async function signSheetPanelFor(
-  sheet: Promise<RenderedSignSheet>,
+  sheets: Readonly<Record<SignSheetKind, Promise<RenderedSignSheet>>>,
   angle: CastViewAngle,
 ): Promise<ImageResult> {
-  const settled = await sheet;
+  /*
+    ⚠ **The view's sheet is DERIVED from the angle, never passed in** — one
+    reader (`signSheetKindFor`) answers it for the dispatch, the prompt and
+    this cut alike, so a view cannot be rendered on one sheet and read off the
+    other. The refusal below is what catches a split that forgot an angle.
+  */
+  const settled = await sheets[signSheetKindFor(angle)];
   const panel = settled.panels[angle];
   if (!panel) {
     /*
@@ -587,29 +602,78 @@ export async function buildCastPackage(
     ⚠ **NOTHING WAITS AND NOTHING IS CAUGHT, which is the opposite of the plate
     on both counts.** The plate's promise was deliberately un-awaited so three
     views could start without it, and deliberately `.catch`-ed so a dead plate
-    could never fail a Sign. Here every view needs the sheet, so there is nothing
-    to run beside it; and a dead sheet IS a dead package, so swallowing the fault
-    would hand five slots an empty picture to charge for. The rejection travels
-    to all five views, each fails as *never arrived*, each slice refunds, nothing
-    committed refunds the base, and the Cast activates and confesses — the
-    existing total-loss road, reached without a line of new money code.
+    could never fail a Sign. Here every view needs a sheet, so there is nothing
+    to run beside them; and swallowing the fault would hand a slot an empty
+    picture to charge for. A rejection travels to the views of ITS OWN sheet,
+    each fails as *never arrived*, each slice refunds, nothing committed refunds
+    the base, and the Cast activates and confesses — the existing total-loss
+    road, reached without a line of new money code.
 
-    ⚠ **The engine is built INSIDE the promise for the plate's own reason.**
-    `castingSignSheetEngine()` throws on a missing `FAL_KEY` — the door's own
+    ⚠ **THIS PARAGRAPH SAID *"a dead sheet IS a dead package"* AND THE SPLIT
+    MADE THAT FALSE — corrected in the commit that split it.** With one sheet it
+    was exactly right: one fault, five dead slices, the total-loss road. With
+    two, **a dead body sheet is a 3-view partial** — the head sheet's three
+    views arrive, are judged, are charged and are kept, while the two
+    full-length slices refund. The money is right in both shapes because the
+    refund is per slice; what changed is that a PARTIAL package is now an
+    ordinary outcome of a transport fault rather than a rarity, so the base
+    refund and the confession no longer follow automatically from one sheet
+    dying. Nothing here needed a new money path for that — but a reader
+    reasoning from the old sentence would conclude the opposite.
+
+    ⚠ **AND ONE FORK IS DELIBERATELY NOT TAKEN, because it is his to take.**
+    A per-view render retried an arrival failure three times, spaced, on the
+    stated ground that a transport fault is *"our failure to deliver something
+    already paid for"*. A sheet render is single-shot, so one escaped transport
+    fault now kills two or three paid slices with no retry where it used to kill
+    one. A spaced sheet-level arrival retry would restore that contract, and his
+    *"AT MOST ONE automatic re-render per sheet"* (#1904) can be read either as
+    permitting it or as forbidding it. **That reading is his, so it is asked on
+    the card rather than decided here.**
+
+    ⚠ **Each engine is built INSIDE its own promise for the plate's reason.**
+    `castingSignSheetEngine(kind)` throws on a missing `FAL_KEY` — the door's own
     refusal, and the right one — and built eagerly in the argument list that
     throw would be SYNCHRONOUS here, after five audit rows exist and 8,500
     credits are gone, with nothing to refund it.
   */
-  const sheet = Promise.resolve().then(() => renderSignSheet({
-    engine: (dependencies.signSheetEngine ?? castingSignSheetEngine)(),
-    anchor: input.anchor,
-    wardrobeLine: input.wardrobeLine ?? null,
-    description: input.description ?? null,
-    ...(input.pronouns ? { pronouns: input.pronouns } : {}),
-    inkCrops: input.inkCrops ?? [],
-    featureWords: input.featureWords ?? [],
-    operationId: input.operationId,
-  }));
+  /*
+    ⚠ **TWO SHEETS, DISPATCHED TOGETHER — his #1926 ruling, verbatim: *"yes
+    option 1 cooks well done"*, and the words that matter are IN PARALLEL.**
+
+    The tempting shape is to render the body sheet first and hand it to the head
+    sheet as a second reference showing the finished outfit — the relay's own
+    `prompt-head.txt` does exactly that, and it produces a better-agreed
+    outfit. It is not built, because it serialises two ~70 s renders into ~140 s
+    of a customer's wait for a consistency the brief's outfit paragraph already
+    buys. Both sheets therefore take the master as their only reference and the
+    same outfit words, which is the arm his parallel test actually ran.
+
+    ⚠ **The cast's tattoos and her feature words go to BOTH**, and splitting
+    them by apparent relevance would be inventing a taxonomy: they are facts
+    about the PERSON, true of every camera. A tail belongs on the body sheet and
+    a facial scar on the head sheet, and no reader here can tell which is which.
+  */
+  const signSheets = Object.fromEntries(
+    signSheetPlan().map((plan) => [
+      plan.kind,
+      /* Built inside the promise, for the plate's own reason: `castingSignSheetEngine`
+         throws on a missing FAL_KEY, and eagerly in the argument list that throw
+         would be SYNCHRONOUS here — after five audit rows exist and 8,500
+         credits are gone, with nothing to refund it. Now reachable twice. */
+      Promise.resolve().then(() => renderSignSheet({
+        engine: (dependencies.signSheetEngine ?? castingSignSheetEngine)(plan.kind),
+        anchor: input.anchor,
+        wardrobeLine: input.wardrobeLine ?? null,
+        description: input.description ?? null,
+        ...(input.pronouns ? { pronouns: input.pronouns } : {}),
+        panelOrder: plan.panelOrder,
+        inkCrops: input.inkCrops ?? [],
+        featureWords: input.featureWords ?? [],
+        operationId: input.operationId,
+      })),
+    ]),
+  ) as Record<SignSheetKind, Promise<RenderedSignSheet>>;
 
   const outcomes = await Promise.all(
     /*
@@ -620,7 +684,7 @@ export async function buildCastPackage(
       a sheet.
     */
     promised.map(({ angle, auditId }) =>
-      buildOneView(dependencies, { ...input, signSheet: sheet }, angle, auditId)),
+      buildOneView(dependencies, { ...input, signSheets }, angle, auditId)),
   );
 
   const committed = outcomes
@@ -900,15 +964,32 @@ export async function renderViewAttempts<T>(
         that hazard in as many words, and the plate's `.catch` beside it exists
         for the same reason.
 
-        ⚠ **AND IT IS ONE PROMISE, SO FIVE AWAITS ARE ONE RENDER.** A settled
-        rejection re-throws instantly, so a dead sheet costs the arrival budget's
-        waiting and never a second call. A view's own three attempts therefore
-        cannot buy a second sheet, which is deliberate: the ask that regenerates
-        a sheet is his paid whole-package redo (#1903), not a slot quietly asking
-        again at the house's expense.
+        ⚠ **AND IT IS ONE PROMISE PER SHEET, SO EVERY AWAIT OF ONE SHEET IS ONE
+        RENDER.** A settled rejection re-throws instantly, so a dead sheet costs
+        the arrival budget's waiting and never a second call. A view's own three
+        attempts cannot buy a second sheet.
+
+        ⚠ **ONE CONSEQUENCE OF THE SPLIT, NAMED BECAUSE IT CHANGES WHAT A
+        FAILURE COSTS: a dead sheet is no longer a dead package.** With one
+        sheet, a transport fault lost all five views; with two, a dead body
+        sheet loses two slices and the three head views still arrive and are
+        charged. Each dead slice still refunds itself, so the money is right
+        either way — what changed is that a partial package is now an ordinary
+        outcome rather than a total loss, and this file's header says so.
+
+        ⚠ **WHAT IS RULED AND NOT YET BUILT, so the next reader does not read
+        this fork as the finished road: his #1904 ruling of 2026-10-08 ("go with
+        A") says a view refused for one of the three catastrophes re-renders ITS
+        OWN SHEET once, silently, at our cost, and replaces all of that sheet's
+        views together.** That cannot live in this per-view loop — views commit
+        as they land, so one view could commit a first-render panel while its
+        sibling triggers the re-render, and the two would come from different
+        sheets. It needs a sheet-level coordinator above `buildOneView`. Until
+        it exists, a catastrophic refusal refunds the slice exactly as it does
+        today, which is the behaviour this loop already has and not a regression.
       */
-      const image = input.signSheet
-        ? await signSheetPanelFor(input.signSheet, angle)
+      const image = input.signSheets
+        ? await signSheetPanelFor(input.signSheets, angle)
         : await composeAndGenerateOneView(input, angle, engine);
 
       // Bytes land in OUR storage before anything references them; a provider

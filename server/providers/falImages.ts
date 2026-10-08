@@ -721,37 +721,6 @@ export function createFalSunburstPlateEngine(config: {
 }
 
 /**
- * THE SIGN SHEET'S ASK — one landscape frame holding the whole package.
- *
- * **His word, 2026-10-07 (terminal), closing #1690:** *"and then we go with the
- * sunburst 2.5 max quality for the sign sheet"*, after *"sunburst sheets nail
- * it"* and *"gpt image 2.5 had the best results and we can also drop the outfit
- * plate if using gpt image 2.5 as it can come up with the outfit just as good .
- * only reason for the outfit plate was because NBP sucks at outfit
- * creativity"*. So one render stands where five views and a plate stood.
- *
- * ⚠ **IT IS THE ONE ASK THIS DOOR IS MEASURED TO HONOUR UNSCALED AT 21:9, AND
- * THAT IS WHY IT IS THIS NUMBER.** {@link OUTFIT_PLATE_SIZE}'s docblock carries
- * the door's two measured behaviours — it preserves aspect and caps the long
- * side at 3840 (#1394: 4688x1760 asked, 3840x1440 answered, every time). 3840
- * IS that cap, so there is nothing left for the door to clamp. Read at the
- * RETURNED BYTES of all three real court sheets rather than at the ask or at
- * the provider's report, which answers `width: null` on this endpoint:
- *
- *     asked 3840x1648, master 1024x1536  → returned 3840x1648   (sheet 1)
- *     asked 3840x1648, master 1024x1536  → returned 3840x1648   (sheet 2)
- *     asked 3840x1648, master 1024x1536  → returned 3840x1648   (sheet 3)
- *
- * 6.33 MP, inside the ~8.29 MP ceiling. Both sides are multiples of 16, which
- * the door requires (3840/16 = 240, 1648/16 = 103). At 21:9 an equal fifth is
- * 768 px wide — ⚠ **and nothing may compute a panel from that**, which is this
- * constant's one hazard and `cutSignSheet`'s whole subject: the real panels on
- * those same three sheets came back **624–868 px wide**, so a cut derived from
- * this number would behead a figure on two panels in five.
- */
-export const SIGN_SHEET_SIZE = { width: 3840, height: 1648 } as const;
-
-/**
  * THE SIGN SHEET'S ENGINE — GPT Image 2.5 Sunburst at `high`, on the edit door.
  *
  * It is {@link createFalSunburstPlateEngine}'s sibling and shares its door, its
@@ -764,7 +733,7 @@ export const SIGN_SHEET_SIZE = { width: 3840, height: 1648 } as const;
  * pictures is a factory no ruling can move safely.
  *
  * ⚠ **IT IS NOT THE PLATE ENGINE WITH A WIDER ASK.** A caller that handed the
- * plate's factory {@link SIGN_SHEET_SIZE} would get a picture of the right
+ * plate's factory a sheet size would get a picture of the right
  * shape with the plate's prompt discipline around it; the two roads carry
  * different prompts, different reference rules and — from this card — different
  * lifetimes. Keeping them apart costs one factory and buys the ability to
@@ -772,8 +741,10 @@ export const SIGN_SHEET_SIZE = { width: 3840, height: 1648 } as const;
  *
  * What is measured here, and what is not:
  *
- *   size      read at the RETURNED BYTES of three real sheets — see
- *             {@link SIGN_SHEET_SIZE}. Never inferred from the ask.
+ *   size      the caller's, required — see this factory's `size` argument and
+ *             `signSheet.SIGN_SHEET_SIZES`, which carries the reading at the
+ *             RETURNED BYTES of all five real sheets. Never inferred from the
+ *             ask, which this endpoint reports as `width: null`.
  *   latency   **~61–69 s a sheet**, three runs (#1690, 2026-10-07), against the
  *             ~1.5–2 min recorded for today's plate plus five views. One render
  *             stands where six stood, so the saving is a customer's whole wait
@@ -797,6 +768,36 @@ export const SIGN_SHEET_SIZE = { width: 3840, height: 1648 } as const;
  */
 export function createFalSunburstSheetEngine(config: {
   apiKey: string;
+  /**
+   * THE PIXELS THIS ENGINE ASKS FOR — required, and deliberately without a
+   * default.
+   *
+   * ⚠ **A default here would be the defect this argument exists to prevent.**
+   * His #1926 ruling renders two sheets of different shapes, and the panel
+   * ASPECT is the entire reason there are two: one five-panel sheet showed 58%
+   * of a paid view in the strip, the two shipped shapes show 94–97%. A caller
+   * that forgot the argument would silently get the other sheet's shape, the
+   * cut would succeed, and nothing downstream could see it — #1903 left the
+   * judge three axes and none of them is framing.
+   *
+   * The numbers and their measurement live on `signSheet.SIGN_SHEET_SIZES`,
+   * beside the panel list they have to agree with. This layer takes them as an
+   * argument rather than importing them: `providers/` sits below
+   * `castingV2/`, and a provider reaching up for a product constant is a
+   * dependency direction this tree does not have anywhere else.
+   *
+   * ⚠ **WHAT THE DOOR DOES TO AN ASK IT DOES NOT LIKE IS THE CONSTRAINT ON
+   * ANY FUTURE NUMBER, and it belongs here because that is this layer's own
+   * fact.** {@link OUTFIT_PLATE_SIZE}'s docblock carries the two measured
+   * behaviours: the door preserves aspect and **caps the long side at 3840**
+   * (#1394 — 4688x1760 asked, 3840x1440 answered, every time). Both shipped
+   * sheets sit at or under that cap (head's long side IS 3840, body's is
+   * 3504), which is why both come back unscaled. ⚠ **A size whose long side
+   * exceeds 3840 will be silently resized, and the cut would then divide a
+   * picture of the wrong shape** — so a new sheet shape is read at the
+   * returned bytes before it is trusted, never at the ask.
+   */
+  size: { width: number; height: number };
   model?: string;
   timeoutMs?: number;
   pollIntervalMs?: number;
@@ -860,7 +861,7 @@ export function createFalSunburstSheetEngine(config: {
                 (reference) =>
                   `data:${reference.contentType};base64,${reference.bytes.toString("base64")}`,
               ),
-              image_size: SIGN_SHEET_SIZE,
+              image_size: config.size,
               num_images: 1,
               /* His word: *"sunburst 2.5 max quality for the sign sheet"*. */
               quality: "high",

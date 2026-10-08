@@ -30,8 +30,8 @@ import {
   FAL_GPT_IMAGE_25_SUNBURST_EDIT,
   FAL_GPT_IMAGE_2_EDIT,
   OUTFIT_PLATE_SIZE,
-  SIGN_SHEET_SIZE,
 } from "./falImages";
+import { SIGN_SHEET_SIZES } from "../castingV2/signSheet";
 import { QUEUE_BASE } from "./falTransport";
 
 /** A 1x1 PNG, as bytes — enough for a data-URI round trip. */
@@ -42,14 +42,14 @@ const PIXEL = Buffer.from(
 
 type Captured = { url: string; body: Record<string, unknown> };
 
-function stubFalTransport(): { captured: Captured[] } {
+function stubFalTransport(size = SIGN_SHEET_SIZES.head): { captured: Captured[] } {
   const captured: Captured[] = [];
   const resultImage = {
     images: [{
       url: `data:image/png;base64,${PIXEL.toString("base64")}`,
       content_type: "image/png",
-      width: SIGN_SHEET_SIZE.width,
-      height: SIGN_SHEET_SIZE.height,
+      width: size.width,
+      height: size.height,
     }],
   };
   vi.stubGlobal(
@@ -82,7 +82,7 @@ afterEach(() => {
 describe("the Sign sheet's endpoint, on the bytes fetch() receives", () => {
   it("goes to Sunburst's EDIT door — the engine his eye picked on #1690", async () => {
     const { captured } = stubFalTransport();
-    const engine = createFalSunburstSheetEngine({ apiKey: "test-key", pollIntervalMs: 1 });
+    const engine = createFalSunburstSheetEngine({ apiKey: "test-key", size: SIGN_SHEET_SIZES.head, pollIntervalMs: 1 });
     const result = await engine.editWithReferences(REQUEST);
     expect(captured).toHaveLength(1);
     expect(captured[0]?.url).toBe(`${QUEUE_BASE}/${FAL_GPT_IMAGE_25_SUNBURST_EDIT}`);
@@ -92,42 +92,78 @@ describe("the Sign sheet's endpoint, on the bytes fetch() receives", () => {
     expect(result.provenance.model).toBe(FAL_GPT_IMAGE_25_SUNBURST_EDIT);
   });
 
-  it("asks for 3840x1648 — the long side ON the door's measured cap, so nothing is clamped", async () => {
-    const { captured } = stubFalTransport();
-    await createFalSunburstSheetEngine({ apiKey: "test-key", pollIntervalMs: 1 })
-      .editWithReferences(REQUEST);
-    expect(captured[0]?.body.image_size).toEqual({ width: 3840, height: 1648 });
-    expect(SIGN_SHEET_SIZE).toEqual({ width: 3840, height: 1648 });
-    /* The two facts the number rests on, asserted so a future edit has to meet
-       them: 3840 is the measured cap, and both sides must be multiples of 16. */
-    expect(SIGN_SHEET_SIZE.width).toBe(3840);
-    expect(SIGN_SHEET_SIZE.width % 16).toBe(0);
-    expect(SIGN_SHEET_SIZE.height % 16).toBe(0);
-    expect(captured[0]?.body.num_images).toBe(1);
+  it("asks for the size it was BUILT with, at the wire, for both sheets his ruling ships", async () => {
+    /*
+      ⚠ **Both kinds are driven, because one would prove nothing.** The size is
+      now the caller's argument rather than a constant inside the engine, so an
+      arm that only ever built the head sheet would pass just as happily if the
+      argument were ignored and 3840x1648 hard-coded underneath — which is the
+      exact defect the argument was introduced to prevent.
+    */
+    for (const kind of ["head", "body"] as const) {
+      const size = SIGN_SHEET_SIZES[kind];
+      const { captured } = stubFalTransport(size);
+      await createFalSunburstSheetEngine({ apiKey: "test-key", size, pollIntervalMs: 1 })
+        .editWithReferences(REQUEST);
+      expect(captured[0]?.body.image_size).toEqual(size);
+      expect(captured[0]?.body.num_images).toBe(1);
+      /* The door's two requirements, asserted on whatever number is passed so a
+         new sheet shape has to meet them: long side within the measured 3840
+         cap, both sides multiples of 16. */
+      expect(Math.max(size.width, size.height)).toBeLessThanOrEqual(3840);
+      expect(size.width % 16).toBe(0);
+      expect(size.height % 16).toBe(0);
+      vi.unstubAllGlobals();
+    }
+    /* And the two are genuinely different asks — without this the loop above
+       would pass if both entries held the same numbers. */
+    expect(SIGN_SHEET_SIZES.head).not.toEqual(SIGN_SHEET_SIZES.body);
   });
 
-  it("is NOT the plate's ask — the two roads share a door and must not share a size", async () => {
-    const { captured } = stubFalTransport();
-    await createFalSunburstSheetEngine({ apiKey: "test-key", pollIntervalMs: 1 })
-      .editWithReferences(REQUEST);
-    const plate = stubFalTransport();
+  it("⚠ the BODY sheet's ask IS the plate's, and the head sheet's is not — named, not hidden", async () => {
     /*
-      ⚠ The positive control for the arm above. Both factories build the same
-      endpoint, so an assertion that the sheet asks for "a size" would pass if
-      the sheet were quietly rendering at the PLATE's 3504x2336 — a 3:2 frame
-      whose fifths are 700 px of a different aspect, cut by a function built for
-      21:9. The two sizes are asserted apart, at the wire, on the same door.
+      ⚠ **THIS ARM REVERSED ITS OWN VERDICT ON 2026-10-08 AND THE REASON IS
+      WORTH MORE THAN THE ASSERTION.** It read *"is NOT the plate's ask — the
+      two roads share a door and must not share a size"*, and warned that an
+      assertion about "a size" would pass if the sheet were quietly rendering at
+      the plate's 3504x2336.
+
+      His #1926 body sheet IS 3504x2336. That is not a slip and not a
+      regression: the plate always WAS front-full plus back-full on this door at
+      `high`, and the body sheet is the same two panels of the same person on
+      the same door. **What changed is not the picture but its lifetime** — the
+      plate was a scratch reference no customer ever saw, and the body sheet is
+      delivered. So the two asks coincide, and the thing that must not coincide
+      is the PROMPT.
+
+      The practical gain: the plate's measured latency, price and clamping
+      behaviour on this exact frame transfer to the body sheet directly, rather
+      than being a new unmeasured shape.
     */
+    const head = stubFalTransport(SIGN_SHEET_SIZES.head);
+    await createFalSunburstSheetEngine({ apiKey: "test-key", size: SIGN_SHEET_SIZES.head, pollIntervalMs: 1 })
+      .editWithReferences(REQUEST);
+    expect(head.captured[0]?.body.image_size).not.toEqual(OUTFIT_PLATE_SIZE);
+    vi.unstubAllGlobals();
+
+    const body = stubFalTransport(SIGN_SHEET_SIZES.body);
+    await createFalSunburstSheetEngine({ apiKey: "test-key", size: SIGN_SHEET_SIZES.body, pollIntervalMs: 1 })
+      .editWithReferences(REQUEST);
+    const plate = stubFalTransport(OUTFIT_PLATE_SIZE);
     await createFalSunburstPlateEngine({ apiKey: "test-key", pollIntervalMs: 1 })
       .editWithReferences(REQUEST);
-    expect(captured[0]?.body.image_size).not.toEqual(OUTFIT_PLATE_SIZE);
+
+    expect(body.captured[0]?.body.image_size).toEqual(OUTFIT_PLATE_SIZE);
     expect(plate.captured[0]?.body.image_size).toEqual(OUTFIT_PLATE_SIZE);
-    expect(plate.captured[0]?.url).toBe(captured[0]?.url);
+    /* One door, one quality, one frame — and two roads, which is why they stay
+       two factories the next ruling can move apart. */
+    expect(plate.captured[0]?.url).toBe(body.captured[0]?.url);
+    expect(body.captured[0]?.body.quality).toBe(plate.captured[0]?.body.quality);
   });
 
   it("renders at HIGH quality — his word, *max quality for the sign sheet*", async () => {
     const { captured } = stubFalTransport();
-    await createFalSunburstSheetEngine({ apiKey: "test-key", pollIntervalMs: 1 })
+    await createFalSunburstSheetEngine({ apiKey: "test-key", size: SIGN_SHEET_SIZES.head, pollIntervalMs: 1 })
       .editWithReferences(REQUEST);
     expect(captured[0]?.body.quality).toBe("high");
     /* `medium` is the repaint's tier since his 2026-10-01 word, on the same
@@ -138,7 +174,7 @@ describe("the Sign sheet's endpoint, on the bytes fetch() receives", () => {
 
   it("comes back UNPRICED, because the measured ~$0.07 is size-keyed and the table is model-keyed", async () => {
     stubFalTransport();
-    const result = await createFalSunburstSheetEngine({ apiKey: "test-key", pollIntervalMs: 1 })
+    const result = await createFalSunburstSheetEngine({ apiKey: "test-key", size: SIGN_SHEET_SIZES.head, pollIntervalMs: 1 })
       .editWithReferences(REQUEST);
     /* $0.015 would be the text-to-image sheet's 1024x1536 price on a 6.33 MP
        render — the misprice `FAL_MEASURED_USD_PER_IMAGE`'s own docblock warns
@@ -148,13 +184,13 @@ describe("the Sign sheet's endpoint, on the bytes fetch() receives", () => {
 
   it("refuses at construction without a key, before any request is built", () => {
     const { captured } = stubFalTransport();
-    expect(() => createFalSunburstSheetEngine({ apiKey: "" })).toThrow(/FAL_KEY/);
+    expect(() => createFalSunburstSheetEngine({ apiKey: "", size: SIGN_SHEET_SIZES.head })).toThrow(/FAL_KEY/);
     expect(captured).toHaveLength(0);
   });
 
   it("refuses an edit with nothing to edit — the door's own 422, turned into a sentence", async () => {
     const { captured } = stubFalTransport();
-    const engine = createFalSunburstSheetEngine({ apiKey: "test-key", pollIntervalMs: 1 });
+    const engine = createFalSunburstSheetEngine({ apiKey: "test-key", size: SIGN_SHEET_SIZES.head, pollIntervalMs: 1 });
     await expect(engine.editWithReferences({ ...REQUEST, references: [] }))
       .rejects.toThrow(/needs at least one reference image/);
     expect(captured).toHaveLength(0);
@@ -162,7 +198,7 @@ describe("the Sign sheet's endpoint, on the bytes fetch() receives", () => {
 
   it("refuses a tier it does not render, rather than sending a sheet somebody asked 1K for", async () => {
     const { captured } = stubFalTransport();
-    const engine = createFalSunburstSheetEngine({ apiKey: "test-key", pollIntervalMs: 1 });
+    const engine = createFalSunburstSheetEngine({ apiKey: "test-key", size: SIGN_SHEET_SIZES.head, pollIntervalMs: 1 });
     await expect(engine.editWithReferences({ ...REQUEST, resolution: "1K" }))
       .rejects.toThrow(/one sheet size only/);
     expect(captured).toHaveLength(0);
@@ -178,7 +214,7 @@ describe("the Sign sheet's endpoint, on the bytes fetch() receives", () => {
       would ever disagree.
     */
     const { captured } = stubFalTransport();
-    const engine = createFalSunburstSheetEngine({ apiKey: "test-key", pollIntervalMs: 1 });
+    const engine = createFalSunburstSheetEngine({ apiKey: "test-key", size: SIGN_SHEET_SIZES.head, pollIntervalMs: 1 });
     await expect(engine.generateView({ ...REQUEST, viewAngle: "closeUp" }))
       .rejects.toThrow(/one frame holding every view/);
     expect(captured).toHaveLength(0);
